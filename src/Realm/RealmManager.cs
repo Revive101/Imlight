@@ -27,10 +27,28 @@ namespace Imlight.Realm
         /// <param name="autoStart">Should the realm automatically start the TCP listener?</param>
         public void CreateRealm(string name)
         {
-            // If any errors arrise, the realm itself will handle it.
-            Realm realm = new Realm(name, true);
+            if (!this.doesRealmExist(name))
+            {
+                Realm newRealm = new Realm(name, true);
+                this.Realms.Add(newRealm);
+            }
+        }
 
-            Realms.Add(realm);
+        /// <summary>
+        /// Removes a realm by name.
+        /// </summary>
+        /// <param name="name">The name of the realm to delete.</param>
+        public void RemoveRealm(string name)
+        {
+            if (this.doesRealmExist(name))
+            {
+                Realm realm = Realms.FirstOrDefault(x => x.Name == name);
+                this.Realms.Remove(realm);
+            }
+            else
+            {
+                //@TODO: Log error here
+            }
         }
 
         /// <summary>
@@ -59,6 +77,17 @@ namespace Imlight.Realm
                 // The GC will automatically delete the realm for us.
                 Realms.RemoveAt(i);
             }
+        }
+
+        /// <summary>
+        /// Determines whether a realm exists by name.
+        /// </summary>
+        /// <param name="name">The name of the realm to search.</param>
+        /// <returns>True, if a realm is found by that name. Flase otherwise.</returns>
+        private bool doesRealmExist(string name)
+        {
+            Realm r = this.Realms.First(realm => realm.Name == name);
+            return !(r != null);
         }
 
     }

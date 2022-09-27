@@ -63,6 +63,7 @@ namespace Imlight.Realm
         public void Dispose()
         {
             this.StopServer();
+            GC.SuppressFinalize(this);
         }
 
     }

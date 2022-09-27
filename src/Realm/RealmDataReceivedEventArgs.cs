@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace Imlight.Realm
 {
+    //@TODO: This class should soon be expanded to carry received arguments such as:
+    // - The time of arrival
+    // - The socket itself
     internal class RealmDataReceivedEventArgs : EventArgs
     {
 
