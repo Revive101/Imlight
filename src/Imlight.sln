@@ -17,6 +17,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.Storage", "Storage\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.Storage.Backup", "StorageBackup\Imlight.Storage.Backup.csproj", "{59A8BA84-33F0-442D-B282-9A8E50B64197}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Imlight.Common", "Imlight.Common\Imlight.Common.csproj", "{314D6BF8-787D-4A08-AD12-E0BC073E6CC8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,6 +53,10 @@ Global
 		{59A8BA84-33F0-442D-B282-9A8E50B64197}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{59A8BA84-33F0-442D-B282-9A8E50B64197}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{59A8BA84-33F0-442D-B282-9A8E50B64197}.Release|Any CPU.Build.0 = Release|Any CPU
+		{314D6BF8-787D-4A08-AD12-E0BC073E6CC8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{314D6BF8-787D-4A08-AD12-E0BC073E6CC8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{314D6BF8-787D-4A08-AD12-E0BC073E6CC8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{314D6BF8-787D-4A08-AD12-E0BC073E6CC8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
