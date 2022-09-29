@@ -2,6 +2,7 @@
 using System.Globalization;
 using System;
 using System.Collections.Generic;
+using Imlight.Common.Logger;
 
 /*
 Realm
@@ -31,6 +32,13 @@ namespace Imlight.Realm
             {
                 Realm newRealm = new Realm(name, true);
                 this.Realms.Add(newRealm);
+
+                Log.Info($"New realm \"{name}\" created.");
+            }
+            else
+            {
+                Log.Error($"Attempted to create realm by name \"{name}\", but a realm by that name already exists!");
+                return;
             }
         }
 
@@ -44,10 +52,13 @@ namespace Imlight.Realm
             {
                 Realm realm = Realms.FirstOrDefault(x => x.Name == name);
                 this.Realms.Remove(realm);
+
+                Log.Info($"Realm \"{name}\" removed.");
             }
             else
             {
-                //@TODO: Log error here
+                Log.Error($"Attempted to remove realm by name \"{name}\", but a realm by that name was not found!");
+                return;
             }
         }
 
@@ -56,6 +67,8 @@ namespace Imlight.Realm
         /// </summary>
         public void StopAllRealms()
         {
+            Log.Info("Stopping all realms..");
+
             // Stopping a realm simply stops the server. The realm isn't destroyed.
             for (int i = 0; i < Realms.Count; i++)
             {
@@ -69,6 +82,8 @@ namespace Imlight.Realm
         /// </summary>
         public void DisposeAllRealms()
         {
+            Log.Warn("Disposing all realms..");
+
             // The be-all-end-all. Servers are stopped and deleted with this method.
             for (int i = 0; i < Realms.Count; i++)
             {
@@ -86,8 +101,15 @@ namespace Imlight.Realm
         /// <returns>True, if a realm is found by that name. Flase otherwise.</returns>
         private bool doesRealmExist(string name)
         {
-            Realm r = this.Realms.First(realm => realm.Name == name);
-            return !(r != null);
+            try 
+            {
+                Realm r = this.Realms.First(realm => realm.Name == name);
+                return !(r != null);
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
         }
 
     }
