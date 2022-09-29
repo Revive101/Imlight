@@ -26,8 +26,8 @@ This list is updated sparingly. For more recent updates, use the Trello board fo
   - [ ] Backend
     - [ ] Reviving hung or dead nodes 
   - [ ] Realm
-    - [ ] Handling connections 
-    - [ ] Receiving data
+    - [x] Handling connections 
+    - [x] Receiving data
     - [ ] Returning data
     - [ ] Sending data to a processor
     - [ ] Zones 
@@ -41,6 +41,9 @@ This list is updated sparingly. For more recent updates, use the Trello board fo
     - [ ] Message handlers 
 - [ ] Common
   - [ ] Logging
+    - [x] Logging to console
+    - [x] Logging to file
+    - [ ] Logging events
     - [ ] Rollback log files
     - [ ] Archiving old log files
     - [ ] Logging to a database
