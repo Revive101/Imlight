@@ -14,6 +14,7 @@ namespace Imlight.Common.Logger
     {
 
         internal static ObservableQueue<string> WriteQueue = new ObservableQueue<string>();
+        internal static float writeDiagnosticLockTimeout { get; private set; } = 1.0f;
 
         private static StreamWriter writer = new StreamWriter($"{Directory.GetCurrentDirectory()}/{Log.LogFileName}.txt");
         private static bool attemptedSubscription = false;
@@ -61,19 +62,21 @@ namespace Imlight.Common.Logger
             try
             {
                 var n = new object();
-                using (new TimeoutLock(n, TimeSpan.FromSeconds(Log.LogToFileTimeout)))
+                using (new TimeoutLock(n, TimeSpan.FromSeconds(writeDiagnosticLockTimeout)))
                 {
                     // The log line itself carries a newline character.
                     for (int i = 0; i < messages.Length; i++)
                         writer.Write(messages[i]);
-
-                    WriteQueue.Dequeue();
-                    writer.Flush();
                 }
             }
             catch (Exception ex)
             {
                 Log.Error(ex.ToString());
+            }
+            finally
+            {
+                WriteQueue.Dequeue();
+                writer.Flush();
             }
         }
 
@@ -92,14 +95,16 @@ namespace Imlight.Common.Logger
                     // The log line itself carries a newline character.
                     for (int i = 0; i < messages.Length; i++)
                         writer.WriteLine(messages[i]);
-
-                    WriteQueue.Dequeue();
-                    writer.Flush();
                 }
             }
             catch (Exception ex)
             {
                 Log.Error(ex.ToString());
+            }
+            finally
+            {
+                WriteQueue.Dequeue();
+                writer.Flush();
             }
         }
     }

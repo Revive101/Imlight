@@ -35,7 +35,6 @@ namespace Imlight.Common.Logger
         //@todo: Move this to a configuration file.
         public static bool LogToFile { get; set; } = true;
         public static string LogFileName { get; set; } = "debug-log";
-        public static float LogToFileTimeout { get; set; } = 5.0f;
         public static LogLevel MinimumLogLevel { get; set; } = LogLevel.Verbose;
 
         /// <summary>
