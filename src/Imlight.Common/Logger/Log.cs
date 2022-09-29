@@ -167,10 +167,10 @@ namespace Imlight.Common.Logger
             switch (level)
             {
                 case LogLevel.Verbose:
-                    sb.Append($"VERB]: {message}\n");
+                    sb.Append($"VERB]: {message}{Environment.NewLine}");
                     break;
                 case LogLevel.Debug:
-                    sb.Append($"DEBG]: {message}\n");
+                    sb.Append($"DEBG]: {message}{Environment.NewLine}");
                     break;
                 default:
                     throw new LogUnsupportedInternalException($"Log level of \"{level}\" is unsupported with this method!" +
@@ -221,7 +221,7 @@ namespace Imlight.Common.Logger
             }
 
             // Write message+
-            Console.Write($"]: {message}\n");
+            Console.Write($"]: {message}{Environment.NewLine}");
 
             // Log to local file
             if (LogToFile)

@@ -15,6 +15,7 @@ namespace Imlight.Common.Logger
 
         internal static ObservableQueue<string> WriteQueue = new ObservableQueue<string>();
 
+        private static StreamWriter writer = new StreamWriter($"{Directory.GetCurrentDirectory()}/{Log.LogFileName}.txt");
         private static bool attemptedSubscription = false;
         private static readonly object _lock = new object();
 
@@ -62,14 +63,12 @@ namespace Imlight.Common.Logger
                 var n = new object();
                 using (new TimeoutLock(n, TimeSpan.FromSeconds(Log.LogToFileTimeout)))
                 {
-                    using (StreamWriter writer = new StreamWriter($"{Directory.GetCurrentDirectory()}/{Log.LogFileName}.txt", true))
-                    {
-                        for (int i = 0; i < messages.Length; i++)
-                            writer.WriteLine(messages[i]);
-                        writer.Close();
-                    }
+                    // The log line itself carries a newline character.
+                    for (int i = 0; i < messages.Length; i++)
+                        writer.Write(messages[i]);
 
                     WriteQueue.Dequeue();
+                    writer.Flush();
                 }
             }
             catch (Exception ex)
@@ -90,14 +89,12 @@ namespace Imlight.Common.Logger
             {
                 lock (_lock)
                 {
-                    using (StreamWriter writer = new StreamWriter($"{Directory.GetCurrentDirectory()}/{Log.LogFileName}.txt", true))
-                    {
-                        for (int i = 0; i < messages.Length; i++)
-                            writer.WriteLine(messages[i]);
-                        writer.Close();
-                    }
+                    // The log line itself carries a newline character.
+                    for (int i = 0; i < messages.Length; i++)
+                        writer.WriteLine(messages[i]);
 
                     WriteQueue.Dequeue();
+                    writer.Flush();
                 }
             }
             catch (Exception ex)
