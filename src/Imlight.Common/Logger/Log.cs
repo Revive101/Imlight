@@ -37,6 +37,8 @@ namespace Imlight.Common.Logger
         public static string LogFileName { get; set; } = "debug-log";
         public static LogLevel MinimumLogLevel { get; set; } = LogLevel.Verbose;
 
+        public static event EventHandler<LogCreatedEventArgs> LogCreated;
+
         /// <summary>
         /// Prints a verbose log to the console.
         /// </summary>
@@ -177,6 +179,10 @@ namespace Imlight.Common.Logger
             }
 
             WriteColored(sb.ToString(), ConsoleColor.DarkGray);
+
+            // Invoke event
+            LogCreatedEventArgs eventData = new LogCreatedEventArgs(level, _timeFormatted, callerFormat, message);
+            LogCreated?.Invoke(null, eventData);
         }
 
         /// <summary>
@@ -229,6 +235,10 @@ namespace Imlight.Common.Logger
                 string fullMessage = $"[{_timeFormatted}][{callerFormat}][{level}]: {message}\n";
                 LocalFileWriter.WriteToLogFile(fullMessage);
             }
+
+            // Invoke event
+            LogCreatedEventArgs eventData = new LogCreatedEventArgs(level, _timeFormatted, callerFormat, message);
+            LogCreated?.Invoke(null, eventData);
         }
 
         /// <summary>
