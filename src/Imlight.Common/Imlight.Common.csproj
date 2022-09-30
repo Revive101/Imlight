@@ -4,8 +4,4 @@
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Imlight.Common\Imlight.Common.csproj" />
-  </ItemGroup>
-
 </Project>

@@ -42,23 +42,23 @@ namespace Imlight.Realm
             this.tokenSource = CancellationTokenSource.CreateLinkedTokenSource(new CancellationToken());
             this.Sockets = new List<TcpClient>();
 
-            if (doAutoStart) Task.Run(async () => await StartAsync());
+            if (doAutoStart) Start();
         }
 
         internal bool Listening() => this.listening;
 
         /// <summary>
-        /// Asyncronously start the TCP server.
+        /// Starts the TCP server.
         /// </summary>
         /// <returns></returns>
-        internal async Task StartAsync()
+        internal void Start()
         {
+            this.listener.Start();
             this.token = this.tokenSource.Token;
-            listener.Start();
             this.listening = true;
 
             // Begin listen on subtask
-            await Task.Run(async () => ListenAsync(this.token));
+            Task.Run(async () => ListenAsync(this.token));
         }
 
         /// <summary>
@@ -81,8 +81,7 @@ namespace Imlight.Realm
                 }
                 catch (Exception ex)
                 {
-                    // Log error here
-                    int i = 0;
+                    Imlight.Common.Logger.Log.Error($"REALM LISTEN ERROR: {ex.ToString()}");
                 }
                 finally
                 {

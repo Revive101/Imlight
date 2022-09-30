@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
 using System;
 using System.Net.Sockets;
+using Imlight.Common.Logger;
 
 /*
 Realm
@@ -25,9 +26,7 @@ namespace Imlight.Realm
         public Realm(string name, bool autoStart = true)
         {
             this.Name = name;
-            this.Server = new TcpServer();
-
-            if (autoStart) StartServer();
+            this.Server = new TcpServer(TcpServer.DEFAULT_PORT, autoStart);
         }
 
         /// <summary>
@@ -35,13 +34,14 @@ namespace Imlight.Realm
         /// </summary>
         public void StartServer()
         {
+            // Check if the server is already listening.
             if (this.Server.Listening())
             {
-                // Log error here
+                Log.Warn($"Attempted to start already listening realm \"{this.Name}\".");
                 return;
             }
 
-            Task.Run(async () => this.Server.StartAsync());
+            this.Server.Start();
         }
 
         /// <summary>
@@ -51,7 +51,7 @@ namespace Imlight.Realm
         {
             if (!this.Server.Listening())
             {
-                // Log error here
+                Log.Warn($"Attempted to stop non-running realm \"{this.Name}\".");
                 return;
             }
 
