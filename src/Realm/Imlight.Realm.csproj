@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Engine\Imlight.Engine.csproj" />
     <ProjectReference Include="..\Imlight.Common\Imlight.Common.csproj" />
   </ItemGroup>
 
