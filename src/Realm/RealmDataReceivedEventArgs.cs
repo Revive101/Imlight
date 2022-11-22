@@ -1,23 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Imlight.Realm
 {
-    //@TODO: This class should soon be expanded to carry received arguments such as:
-    // - The time of arrival
-    // - The socket itself
+    /// <summary>
+    /// Event arguments for a realm's TCP server receiving data. This data is raw, meaning any data, not just KI packets.
+    /// </summary>
     internal class RealmDataReceivedEventArgs : EventArgs
     {
 
-        public string Data { get; }
+        public NetworkStream Data { get; }
+        public DateTime Time { get; }
+        public short SocketID { get; }
 
         // Constructor
-        public RealmDataReceivedEventArgs(string data)
+        public RealmDataReceivedEventArgs(NetworkStream data, short socketID)
         {
             this.Data = data;
+            this.Time = DateTime.Now;
+            this.SocketID = socketID;
         }
 
     }
