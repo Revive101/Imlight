@@ -1,5 +1,7 @@
 ﻿using System;
 using Imlight.Realm;
+using Imlight.Engine;
+using Imlight.Common;
 
 namespace Imlight.Backend
 {
@@ -10,12 +12,12 @@ namespace Imlight.Backend
 
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            // Processor test
+            ProcessorManager.StartNewProcessor();
 
             // Realm test
             RealmManager = new RealmManager();
             RealmManager.CreateRealm("test realm");
-            Console.WriteLine("Realm created!");
 
             Console.ReadKey();
         }
