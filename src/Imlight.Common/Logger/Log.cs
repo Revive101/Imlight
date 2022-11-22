@@ -35,7 +35,7 @@ namespace Imlight.Common.Logger
         //@todo: Move this to a configuration file.
         public static bool LogToFile { get; set; } = true;
         public static string LogFileName { get; set; } = "debug-log";
-        public static LogLevel MinimumLogLevel { get; set; } = LogLevel.Verbose;
+        public static LogLevel MinimumLogLevel { get; set; } = LogLevel.Information;
 
         public static event EventHandler<LogCreatedEventArgs> LogCreated;
 
@@ -157,6 +157,8 @@ namespace Imlight.Common.Logger
         /// <exception cref="LogUnsupportedInternalException"></exception>
         private static void IrrelevantLog(LogLevel level, string message, string callerFormat)
         {
+            if (MinimumLogLevel > level) return;
+
             // Build log
             StringBuilder sb = new StringBuilder();
 
@@ -194,6 +196,8 @@ namespace Imlight.Common.Logger
         /// <exception cref="LogUnsupportedInternalException">This does not support verbose or debug logs. Use IrrelevantLog() instead.</exception>
         private static void GenericLog(LogLevel level, string message, string callerFormat)
         {
+            if (MinimumLogLevel > level) return;
+
             // Build log
             // $"[${DateTime.Now}][{callerName}][VERBO]: {message}";
 
@@ -225,10 +229,10 @@ namespace Imlight.Common.Logger
                         $"Use IrrelevantLog() instead.");
             }
 
-            // Write message+
+            // Write message
             Console.Write($"]: {message}{Environment.NewLine}");
 
-            // Log to local file
+            // Log to local file, if wanted.
             if (LogToFile)
             {
                 // Rebuild message
