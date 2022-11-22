@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System;
 using System.Net;
 using System.Collections.Generic;
+using Imlight.Common;
 
 /*
 Realm
@@ -24,7 +25,8 @@ namespace Imlight.Realm
 
         internal const ushort DEFAULT_PORT = 12000;
 
-        internal List<TcpClient> Sockets { get; private set; }
+        // ID, TcpClient
+        internal Dictionary<short, TcpClient> Sockets { get; private set; }
 
         private readonly TcpListener listener;
         private readonly CancellationTokenSource tokenSource;
@@ -40,7 +42,7 @@ namespace Imlight.Realm
             var ip = IPAddress.Parse("0.0.0.0");
             this.listener = new TcpListener(ip, port);
             this.tokenSource = CancellationTokenSource.CreateLinkedTokenSource(new CancellationToken());
-            this.Sockets = new List<TcpClient>();
+            this.Sockets = new Dictionary<short, TcpClient>();
 
             if (doAutoStart) Start();
         }
@@ -72,16 +74,20 @@ namespace Imlight.Realm
             {
                 try
                 {
-                    var client = this.listener.AcceptTcpClientAsync();
-                    var result = client.Result;
+                    var client = await listener.AcceptTcpClientAsync();
 
-                    this.Sockets.Add(result);
+                    var id = RandomGen.Unused.SignedNumber(Sockets.Keys);
+                    this.Sockets.Add(id, client);
 
-                    OnDataReceived?.Invoke(this, new RealmDataReceivedEventArgs(result.GetStream().ToString()));
+                    var stream = client.GetStream();
+
+                    // Invoke event on data received.
+                    RealmDataReceivedEventArgs args = new RealmDataReceivedEventArgs(stream, id);
+                    OnDataReceived?.Invoke(this, args);
                 }
                 catch (Exception ex)
                 {
-                    Imlight.Common.Logger.Log.Error($"REALM LISTEN ERROR: {ex.ToString()}");
+                    Common.Logger.Log.Error($"REALM LISTEN ERROR: {ex.ToString()}");
                 }
                 finally
                 {

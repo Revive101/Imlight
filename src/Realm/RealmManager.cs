@@ -3,6 +3,7 @@ using System.Globalization;
 using System;
 using System.Collections.Generic;
 using Imlight.Common.Logger;
+using Imlight.Common;
 
 /*
 Realm
@@ -19,7 +20,8 @@ namespace Imlight.Realm
     public class RealmManager
     {
 
-        public List<Realm> Realms = new List<Realm>();
+        // Realm dictionary: [ID]: RealmObject
+        public Dictionary<sbyte, Realm> Realms = new Dictionary<sbyte, Realm>();
 
         /// <summary>
         /// Creates a new realm.
@@ -30,8 +32,9 @@ namespace Imlight.Realm
         {
             if (!this.doesRealmExist(name))
             {
-                Realm newRealm = new Realm(name, true);
-                this.Realms.Add(newRealm);
+                sbyte Id = RandomGen.Unused.SignedNumber(Realms.Keys);
+                Realm newRealm = new Realm(name, Id, true);
+                this.Realms.Add(Id, newRealm);
 
                 Log.Info($"New realm \"{name}\" created.");
             }
@@ -50,8 +53,8 @@ namespace Imlight.Realm
         {
             if (this.doesRealmExist(name))
             {
-                Realm realm = Realms.FirstOrDefault(x => x.Name == name);
-                this.Realms.Remove(realm);
+                Realm realm = Realms.Values.FirstOrDefault(x => x.Name == name);
+                this.Realms.Remove(realm.Id);
 
                 Log.Info($"Realm \"{name}\" removed.");
             }
@@ -70,9 +73,9 @@ namespace Imlight.Realm
             Log.Info("Stopping all realms..");
 
             // Stopping a realm simply stops the server. The realm isn't destroyed.
-            for (int i = 0; i < Realms.Count; i++)
+            foreach (Realm realm in Realms.Values)
             {
-                if (Realms[i].IsOpen()) Realms[i].StopServer();
+                if (realm.IsOpen()) realm.StopServer();
                 else continue;
             }
         }
@@ -85,12 +88,12 @@ namespace Imlight.Realm
             Log.Warn("Disposing all realms..");
 
             // The be-all-end-all. Servers are stopped and deleted with this method.
-            for (int i = 0; i < Realms.Count; i++)
+            foreach (Realm realm in Realms.Values)
             {
-                if (Realms[i].IsOpen()) Realms[i].Dispose();
+                realm.Dispose();
 
                 // The GC will automatically delete the realm for us.
-                Realms.RemoveAt(i);
+                Realms.Remove(realm.Id);
             }
         }
 
@@ -103,7 +106,7 @@ namespace Imlight.Realm
         {
             try 
             {
-                Realm r = this.Realms.First(realm => realm.Name == name);
+                Realm r = this.Realms.Values.First(realm => realm.Name == name);
                 return !(r != null);
             }
             catch (Exception ex)
