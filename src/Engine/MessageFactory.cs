@@ -75,7 +75,6 @@ namespace Imlight.Engine
 
             // KINP prefixes smessages with a 2-byte sequence, "0xF00D", in little-endian byte order.
             // This is called the "Start Signal".
-            // We can use this signal to check if a network stream originates from KI.
             if (stream.CanRead)
             {
                 BinaryReader br = new BinaryReader(stream);

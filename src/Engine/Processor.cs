@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Collections.Specialized;
 using Imlight.Common;
+using Imlight.Common.Logger;
 
 namespace Imlight.Engine
 {
@@ -11,6 +12,8 @@ namespace Imlight.Engine
     {
 
         internal const byte MAX_WORKLOAD_COUNT = 5;
+
+        private readonly string _name;
 
         /*
          * Tasks could potentially take more than one server tick to calculate.
@@ -21,7 +24,13 @@ namespace Imlight.Engine
         // ctor
         public Processor()
         {
+            this._name = RandomGen.String(5);
+
+            // Subscribe to events
             InternalWorkload.CollectionChanged += InternalWorkload_CollectionChanged;
+
+            // Log completion
+            Log.Info($"Startup for processor [{this._name}] complete.");
         }
 
         /// <summary>

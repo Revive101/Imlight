@@ -26,8 +26,6 @@ namespace Imlight.Engine
         { 
             Processors.Add(new Processor());
 
-            Log.Info("New processor started.");
-
             // Do ticks if not already
             if (!startedTicks)
             {

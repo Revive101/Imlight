@@ -29,6 +29,8 @@ namespace Imlight.Engine
         private static void AddWizardPacketToWorkload(DataStreamContext context)
         {
             WorkloadPool.Add((WizardMessageContext)context);
+
+            Log.Debug($"Data added to Workload Pool from {context.SocketID}");
         }
 
     }

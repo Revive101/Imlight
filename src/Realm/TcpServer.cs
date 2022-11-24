@@ -7,6 +7,7 @@ using System;
 using System.Net;
 using System.Collections.Generic;
 using Imlight.Common;
+using Imlight.Common.Logger;
 
 /*
 Realm
@@ -28,10 +29,10 @@ namespace Imlight.Realm
         // ID, TcpClient
         internal Dictionary<short, TcpClient> Sockets { get; private set; }
 
-        private readonly TcpListener listener;
-        private readonly CancellationTokenSource tokenSource;
-        private bool listening;
-        private CancellationToken token;
+        private readonly TcpListener r_listener;
+        private readonly CancellationTokenSource r_tokenSource;
+        private bool _listening;
+        private CancellationToken _token;
 
         public event EventHandler<RealmDataReceivedEventArgs> OnDataReceived;
 
@@ -40,14 +41,14 @@ namespace Imlight.Realm
         {
             // Listen to all IPs
             var ip = IPAddress.Parse("0.0.0.0");
-            this.listener = new TcpListener(ip, port);
-            this.tokenSource = CancellationTokenSource.CreateLinkedTokenSource(new CancellationToken());
+            this.r_listener = new TcpListener(ip, port);
+            this.r_tokenSource = CancellationTokenSource.CreateLinkedTokenSource(new CancellationToken());
             this.Sockets = new Dictionary<short, TcpClient>();
 
             if (doAutoStart) Start();
         }
 
-        internal bool Listening() => this.listening;
+        internal bool Listening() => this._listening;
 
         /// <summary>
         /// Starts the TCP server.
@@ -55,12 +56,12 @@ namespace Imlight.Realm
         /// <returns></returns>
         internal void Start()
         {
-            this.listener.Start();
-            this.token = this.tokenSource.Token;
-            this.listening = true;
+            this.r_listener.Start();
+            this._token = this.r_tokenSource.Token;
+            this._listening = true;
 
             // Begin listen on subtask
-            Task.Run(async () => ListenAsync(this.token));
+            Task.Run(async () => ListenAsync(this._token));
         }
 
         /// <summary>
@@ -70,30 +71,36 @@ namespace Imlight.Realm
         /// <returns></returns>
         private async Task ListenAsync(CancellationToken token)
         {
-            while (!token.IsCancellationRequested)
+            // Ascrynously listen for any incoming sockets.
+            // If an error occurs at any point, drop the listener.
+            try
             {
-                try
+                while (!token.IsCancellationRequested)
                 {
-                    var client = await listener.AcceptTcpClientAsync();
+                    if (!this._listening) continue;
 
+                    // Accept socket and add it to connections library.
+                    var client = await r_listener.AcceptTcpClientAsync();
                     var id = RandomGen.Unused.SignedNumber(Sockets.Keys);
                     this.Sockets.Add(id, client);
 
-                    var stream = client.GetStream();
+                    // Log
+                    Log.Info($"New connection recieved from {client.Client.RemoteEndPoint}");
 
                     // Invoke event on data received.
+                    var stream = client.GetStream();
                     RealmDataReceivedEventArgs args = new RealmDataReceivedEventArgs(stream, id);
                     OnDataReceived?.Invoke(this, args);
                 }
-                catch (Exception ex)
-                {
-                    Common.Logger.Log.Error($"REALM LISTEN ERROR: {ex.ToString()}");
-                }
-                finally
-                {
-                    this.listener.Stop();
-                    this.listening = false;
-                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"REALM LISTEN ERROR: {ex}");
+            }
+            finally
+            {
+                this.r_listener.Stop();
+                this._listening = false;
             }
         }
 
@@ -102,7 +109,7 @@ namespace Imlight.Realm
         /// </summary>
         internal void Stop()
         {
-            this.tokenSource?.Cancel();
+            this.r_tokenSource?.Cancel();
         }
 
         public void Dispose()
