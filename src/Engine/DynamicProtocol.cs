@@ -8,7 +8,7 @@ using System.IO;
 using System.Dynamic;
 using Imlight.Common.Logger;
 
-namespace Imlight.Test.DeserializationDiagnostics
+namespace Imlight.Engine
 {
     internal class DynamicProtocol
     {
@@ -39,7 +39,7 @@ namespace Imlight.Test.DeserializationDiagnostics
         internal List<dynamic> Records { get; } = new List<dynamic>();
         internal string Name { get { return this.Info?.Name; } }
 
-        private readonly string _recordsFilePath = $"{Directory.GetCurrentDirectory()}/records";
+        private readonly string _recordsFilePath = $"{Directory.GetCurrentDirectory()}/Records";
 
         // ctor
         public DynamicProtocol(string path)

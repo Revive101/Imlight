@@ -9,23 +9,19 @@ using Imlight.Engine;
 using Imlight.Common.Logger;
 using Newtonsoft.Json;
 
-namespace Imlight.Test.DeserializationDiagnostics
+namespace Imlight.Engine
 {
-    internal static class DynamicDeserializer
+    public static class DynamicDeserializer
     {
 
         private static readonly string _recordsFileLocation = $"{Directory.GetCurrentDirectory()}/records/";
         private static readonly Dictionary<byte, DynamicProtocol> _protocols = new Dictionary<byte, DynamicProtocol>();
         private static bool _hasInitialized = false;
 
-        internal static void Init(bool isDebug = false)
+        public static void Init()
         {
             // If this has already been initialized, wipe it clean.
-            if (_hasInitialized)
-            {
-                _protocols.Clear();
-                _hasInitialized = false;
-            }
+            if (_hasInitialized) _protocols.Clear();
 
             // Load all the *Messages.xml files in the "records" directory.
             // DO NOT SAVE THESE FILES TO THE REPOSITORY. MAKE SURE THEY ARE LOCAL ONLY.
@@ -49,9 +45,7 @@ namespace Imlight.Test.DeserializationDiagnostics
                 // Record the newly created protocol to the library, with format [ID]: Object
                 _protocols.Add(protocol.Info.ServiceID, protocol);
 
-                // Running this 50 times for diagnostics spams the console.
-                if (!isDebug)
-                    Log.Info($"Created protocol {protocol.Name}");
+                Log.Info($"Created protocol {protocol.Name}");
             }
 
             _hasInitialized = true;
