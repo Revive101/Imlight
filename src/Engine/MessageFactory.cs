@@ -82,6 +82,7 @@ namespace Imlight.Engine
                 {
                     var header = br.ReadUInt16();
                     if (header == 0xF00D) return true;
+
                     else return false;
                 }
                 catch (EndOfStreamException ex)

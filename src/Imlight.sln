@@ -21,8 +21,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test", "Test", "{E7172CF7-A
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.Test", "..\test\Imlight.Common.Tests\Imlight.Test.csproj", "{097BD834-8802-4EA1-A418-9BFA583573DF}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.Test.DeserializationDiagnostics", "..\test\Imlight.Test.DeserializationDiagnostics\Imlight.Test.DeserializationDiagnostics.csproj", "{EE4549A3-22F6-4B35-AFD0-7058653AA003}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -61,17 +59,12 @@ Global
 		{097BD834-8802-4EA1-A418-9BFA583573DF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{097BD834-8802-4EA1-A418-9BFA583573DF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{097BD834-8802-4EA1-A418-9BFA583573DF}.Release|Any CPU.Build.0 = Release|Any CPU
-		{EE4549A3-22F6-4B35-AFD0-7058653AA003}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{EE4549A3-22F6-4B35-AFD0-7058653AA003}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{EE4549A3-22F6-4B35-AFD0-7058653AA003}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{EE4549A3-22F6-4B35-AFD0-7058653AA003}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{097BD834-8802-4EA1-A418-9BFA583573DF} = {E7172CF7-A7D5-4F3C-84AC-6A308D096F98}
-		{EE4549A3-22F6-4B35-AFD0-7058653AA003} = {E7172CF7-A7D5-4F3C-84AC-6A308D096F98}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C09017F4-03AE-4C11-B057-D60D20FA893D}

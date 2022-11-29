@@ -7,14 +7,14 @@ using System.Threading.Tasks;
 namespace Imlight.Engine
 {
     /// <summary>
-    /// The workload pool is a pool of messages that have not been processed.
+    /// The workload pool is a pool of messages that have not been yet processed.
     /// </summary>
-    internal static class WorkloadPool
+    public static class WorkloadPool
     {
 
         internal static Queue<WizardMessageContext> Work = new Queue<WizardMessageContext>();
 
-        internal static void Add(WizardMessageContext context)
+        public static void Enqueue(WizardMessageContext context)
         {
             Work.Enqueue(context);
         }

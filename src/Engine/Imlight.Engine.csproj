@@ -5,11 +5,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Imlight.Common\Imlight.Common.csproj" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Serializer\" />
+    <ProjectReference Include="..\Imlight.Common\Imlight.Common.csproj" />
   </ItemGroup>
 
 </Project>

@@ -68,10 +68,9 @@ namespace Imlight.Realm
         private void Server_OnDataReceived(object sender, RealmDataReceivedEventArgs e)
         {
             // Our TCP server has received data and now we must find a processor to send it to.
-            //@todo: SocketID
 
-            DataStreamContext context = new DataStreamContext(e.Data, this.Id, e.SocketID);
-            EngineWorker.AddPacketToWorkload(context);
+            var _messageContext = new WizardMessageContext(e.Data, this.Id, e.SocketID);
+            WorkloadPool.Enqueue(_messageContext);
 
             // Log
             var msg = e.Data.ToString();
