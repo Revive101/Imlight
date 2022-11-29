@@ -13,6 +13,7 @@ namespace Imlight.Backend
         static void Main(string[] args)
         {
             // Processor test
+            DynamicDeserializer.Init();
             ProcessorManager.StartNewProcessor();
 
             // Realm test
