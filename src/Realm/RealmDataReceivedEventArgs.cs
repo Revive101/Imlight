@@ -8,17 +8,17 @@ using System.Threading.Tasks;
 namespace Imlight.Realm
 {
     /// <summary>
-    /// Event arguments for a realm's TCP server receiving data. This data is raw, meaning any data, not just KI packets.
+    /// Event arguments for a realm's TCP server receiving data.
     /// </summary>
     internal class RealmDataReceivedEventArgs : EventArgs
     {
 
-        public NetworkStream Data { get; }
+        public byte[] Data { get; }
         public DateTime Time { get; }
         public short SocketID { get; }
 
         // Constructor
-        public RealmDataReceivedEventArgs(NetworkStream data, short socketID)
+        public RealmDataReceivedEventArgs(byte[] data, short socketID)
         {
             this.Data = data;
             this.Time = DateTime.Now;

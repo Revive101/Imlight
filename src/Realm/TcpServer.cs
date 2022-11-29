@@ -8,6 +8,8 @@ using System.Net;
 using System.Collections.Generic;
 using Imlight.Common;
 using Imlight.Common.Logger;
+using System.Runtime.InteropServices;
+using Imlight.Engine;
 
 /*
 Realm
@@ -25,6 +27,8 @@ namespace Imlight.Realm
     {
 
         internal const ushort DEFAULT_PORT = 12000;
+        internal const ushort MAGIC_HEADER_SIZE = 8;
+        internal const ushort MAX_PACKET_SIZE = ushort.MaxValue;
 
         // ID, TcpClient
         internal Dictionary<short, TcpClient> Sockets { get; private set; }
@@ -61,7 +65,7 @@ namespace Imlight.Realm
             this._listening = true;
 
             // Begin listen on subtask
-            Task.Run(async () => ListenAsync(this._token));
+            Task.Run(async () => ListenAsync());
         }
 
         /// <summary>
@@ -69,13 +73,13 @@ namespace Imlight.Realm
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns></returns>
-        private async Task ListenAsync(CancellationToken token)
+        private async Task ListenAsync()
         {
             // Ascrynously listen for any incoming sockets.
             // If an error occurs at any point, drop the listener.
             try
             {
-                while (!token.IsCancellationRequested)
+                while (!_token.IsCancellationRequested)
                 {
                     if (!this._listening) continue;
 
@@ -87,10 +91,10 @@ namespace Imlight.Realm
                     // Log
                     Log.Info($"New connection recieved from {client.Client.RemoteEndPoint}");
 
-                    // Invoke event on data received.
-                    var stream = client.GetStream();
-                    RealmDataReceivedEventArgs args = new RealmDataReceivedEventArgs(stream, id);
-                    OnDataReceived?.Invoke(this, args);
+                    //OnDataReceived?.Invoke(this, args);
+
+                    // Asyncronously handle incoming data.
+                    await ReceiveDataAsync(client.GetStream(client.GetStream(), id));
                 }
             }
             catch (Exception ex)
@@ -101,6 +105,54 @@ namespace Imlight.Realm
             {
                 this.r_listener.Stop();
                 this._listening = false;
+            }
+        }
+
+        private async Task ReceiveDataAsync(NetworkStream stream, short socketId)
+        {
+            // Start by reading the first 8 bytes for the packet header.
+            byte[] _headerBuffer = new byte[MAGIC_HEADER_SIZE];
+            await stream.ReadAsync(_headerBuffer.AsMemory(0, 8), _token).ConfigureAwait(false);
+
+            // If it contains our magic header:
+            bool _isMagicPacket() => _headerBuffer.AsSpan(0, 2) == stackalloc byte[2] { 0xF0, 0x0D };
+            if (_isMagicPacket())
+            {
+                // Got a KINP packet!
+                byte[] _packetBuffer;
+
+                // Now lets get it's proper size from the second property; the length.
+                // The length will change values if the packet size cannot fit in a uint16_t.
+                UInt16 __shortLength()
+                {
+                    var __len = _headerBuffer.AsSpan(3, 4);
+                    return MemoryMarshal.Read<UInt16>(__len);
+                };
+                if (__shortLength() < 0x777F)
+                {
+                    // This is a small packet. It still uses the prior length.
+                    _packetBuffer = new byte[__shortLength()];
+                    await stream.ReadAsync(_packetBuffer, _token).ConfigureAwait(false);
+                }
+                else
+                {
+                    // This is a large packet, and it's actual length is now stored in the following uint32_t.
+                    UInt32 __bigLength()
+                    {
+                        var __bigLen = _headerBuffer.AsSpan(5, 8);
+                        return MemoryMarshal.Read<UInt32>(__bigLen);
+                    }
+
+                    _packetBuffer = new byte[__bigLength()];
+                    await stream.ReadAsync(_packetBuffer, _token).ConfigureAwait(false);
+                }
+
+                // At this point, we have fully checked the integrity of the packet.
+                // It's now workable and ready for a processor to pick it up.
+
+                // Craft data received event and invoke.
+                var e = new RealmDataReceivedEventArgs(_packetBuffer, socketId);
+                OnDataReceived?.Invoke(this, e);
             }
         }
 
