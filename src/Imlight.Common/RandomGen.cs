@@ -33,8 +33,10 @@ namespace Imlight.Common
             Int32 minVal = Convert.ToInt32(MinValue<T>());
             Int32 maxVal = Convert.ToInt32(MaxValue<T>());
 
+            // Instantiate a random number between the min and max values.
+            // Use absolute value to convert to a positive value.
             var r = new Random();
-            Int32 num = r.Next(minVal, maxVal);
+            Int32 num = Math.Abs(r.Next(minVal, maxVal));
 
             return (T)Convert.ChangeType(num, typeof(T));
         }
