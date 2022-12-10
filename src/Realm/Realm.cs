@@ -29,7 +29,7 @@ namespace Imlight.Realm
         {
             this.Name = name;
             this.Id = Id;
-            this.Server = new TcpServer(TcpServer.DEFAULT_PORT, autoStart);
+            this.Server = new TcpServer(this, TcpServer.DEFAULT_PORT, autoStart);
 
             this.Server.OnDataReceived += Server_OnDataReceived;
         }

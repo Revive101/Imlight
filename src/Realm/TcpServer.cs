@@ -27,11 +27,9 @@ namespace Imlight.Realm
     {
 
         internal const ushort DEFAULT_PORT = 12000;
-        internal const ushort MAGIC_HEADER_SIZE = 8;
-        internal const ushort MAX_PACKET_SIZE = ushort.MaxValue;
 
-        // ID, TcpClient
-        internal Dictionary<short, TcpClient> Sockets { get; private set; }
+        internal List<KISocket> Sockets { get; private set; }
+        internal readonly Realm Realm;
 
         private readonly TcpListener r_listener;
         private readonly CancellationTokenSource r_tokenSource;
@@ -41,13 +39,15 @@ namespace Imlight.Realm
         public event EventHandler<RealmDataReceivedEventArgs> OnDataReceived;
 
         // Constructor
-        internal TcpServer(Int32 port = DEFAULT_PORT, bool doAutoStart = true)
+        internal TcpServer(Realm realm, Int32 port = DEFAULT_PORT, bool doAutoStart = true)
         {
+            this.Realm = realm;
+
             // Listen to all IPs
             var ip = IPAddress.Parse("0.0.0.0");
             this.r_listener = new TcpListener(ip, port);
             this.r_tokenSource = CancellationTokenSource.CreateLinkedTokenSource(new CancellationToken());
-            this.Sockets = new Dictionary<short, TcpClient>();
+            this.Sockets = new List<KISocket>();
 
             if (doAutoStart) Start();
         }
@@ -58,14 +58,14 @@ namespace Imlight.Realm
         /// Starts the TCP server.
         /// </summary>
         /// <returns></returns>
-        internal void Start()
+        internal async void Start()
         {
             this.r_listener.Start();
             this._token = this.r_tokenSource.Token;
             this._listening = true;
 
-            // Begin listen on subtask
-            Task.Run(async () => ListenAsync());
+            // Begin listen.
+            await ListenAsync();
         }
 
         /// <summary>
@@ -75,84 +75,19 @@ namespace Imlight.Realm
         /// <returns></returns>
         private async Task ListenAsync()
         {
-            // Ascrynously listen for any incoming sockets.
-            // If an error occurs at any point, drop the listener.
-            try
+            // Listen for any incoming sockets and accept data they send.
+            while (!_token.IsCancellationRequested)
             {
-                while (!_token.IsCancellationRequested)
-                {
-                    if (!this._listening) continue;
+                if (!this._listening) continue;
 
-                    // Accept socket and add it to connections library.
-                    var client = await r_listener.AcceptTcpClientAsync();
-                    var id = RandomGen.Unused.SignedNumber(Sockets.Keys);
-                    this.Sockets.Add(id, client);
+                // Accept socket.
+                var client = await r_listener.AcceptTcpClientAsync().ConfigureAwait(false);
+                Log.Info($"New connection recieved from {client.Client.RemoteEndPoint}.");
 
-                    // Log
-                    Log.Info($"New connection recieved from {client.Client.RemoteEndPoint}");
-
-                    //OnDataReceived?.Invoke(this, args);
-
-                    // Asyncronously handle incoming data.
-                    await ReceiveDataAsync(client.GetStream(client.GetStream(), id));
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Error($"REALM LISTEN ERROR: {ex}");
-            }
-            finally
-            {
-                this.r_listener.Stop();
-                this._listening = false;
-            }
-        }
-
-        private async Task ReceiveDataAsync(NetworkStream stream, short socketId)
-        {
-            // Start by reading the first 8 bytes for the packet header.
-            byte[] _headerBuffer = new byte[MAGIC_HEADER_SIZE];
-            await stream.ReadAsync(_headerBuffer.AsMemory(0, 8), _token).ConfigureAwait(false);
-
-            // If it contains our magic header:
-            bool _isMagicPacket() => _headerBuffer.AsSpan(0, 2) == stackalloc byte[2] { 0xF0, 0x0D };
-            if (_isMagicPacket())
-            {
-                // Got a KINP packet!
-                byte[] _packetBuffer;
-
-                // Now lets get it's proper size from the second property; the length.
-                // The length will change values if the packet size cannot fit in a uint16_t.
-                UInt16 __shortLength()
-                {
-                    var __len = _headerBuffer.AsSpan(3, 4);
-                    return MemoryMarshal.Read<UInt16>(__len);
-                };
-                if (__shortLength() < 0x777F)
-                {
-                    // This is a small packet. It still uses the prior length.
-                    _packetBuffer = new byte[__shortLength()];
-                    await stream.ReadAsync(_packetBuffer, _token).ConfigureAwait(false);
-                }
-                else
-                {
-                    // This is a large packet, and it's actual length is now stored in the following uint32_t.
-                    UInt32 __bigLength()
-                    {
-                        var __bigLen = _headerBuffer.AsSpan(5, 8);
-                        return MemoryMarshal.Read<UInt32>(__bigLen);
-                    }
-
-                    _packetBuffer = new byte[__bigLength()];
-                    await stream.ReadAsync(_packetBuffer, _token).ConfigureAwait(false);
-                }
-
-                // At this point, we have fully checked the integrity of the packet.
-                // It's now workable and ready for a processor to pick it up.
-
-                // Craft data received event and invoke.
-                var e = new RealmDataReceivedEventArgs(_packetBuffer, socketId);
-                OnDataReceived?.Invoke(this, e);
+                // Create a socket object for the connection, and add it to the connections list.
+                KISocket socket = new KISocket(this, client);
+                Task.Run(() => socket.OpenListen());
+                Sockets.Add(socket);
             }
         }
 
@@ -167,6 +102,10 @@ namespace Imlight.Realm
         public void Dispose()
         {
             this.Stop();
+            foreach (var client in Sockets)
+            {
+                client.Dispose();
+            }
         }
 
     }
