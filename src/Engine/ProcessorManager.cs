@@ -31,6 +31,7 @@ namespace Imlight.Engine
             {
                 startedTicks = true;
                 tickTimer.Elapsed += ServerTick;
+                tickTimer.Start();
             }
         }
 
