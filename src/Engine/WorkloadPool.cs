@@ -14,10 +14,19 @@ namespace Imlight.Engine
 
         internal static Queue<WizardMessageContext> Work = new Queue<WizardMessageContext>();
 
+        /// <summary>
+        /// Enqueues work for processors to inevitably handle.
+        /// </summary>
+        /// <param name="context">The context about the data received.</param>
         public static void Enqueue(WizardMessageContext context)
         {
             Work.Enqueue(context);
         }
+
+        /// <summary>
+        /// Clears the workload pool.
+        /// </summary>
+        public static void ClearQueue() => Work.Clear();
 
     }
 }

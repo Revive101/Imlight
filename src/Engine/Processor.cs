@@ -5,13 +5,14 @@ using System.Net.Sockets;
 using System.Collections.Specialized;
 using Imlight.Common;
 using Imlight.Common.Logger;
+using Imlight.Engine.DML;
 
 namespace Imlight.Engine
 {
     internal class Processor : IDisposable
     {
 
-        internal const byte MAX_WORKLOAD_COUNT = 5;
+        internal const byte MAX_WORKLOAD_COUNT = 25;
 
         private readonly string _name;
 
@@ -38,6 +39,8 @@ namespace Imlight.Engine
         /// </summary>
         internal void GetWork()
         {
+            // The ProcessorManager will call this method for each processor once every server tick.
+
             // Make sure this processor isn't trying to handle too much data.
             if (InternalWorkload.Count >= MAX_WORKLOAD_COUNT) return;
 
@@ -52,14 +55,21 @@ namespace Imlight.Engine
 
         private void InternalWorkload_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
-            // Do work
+            // If there is work in the workload pool, it's already verified as a KI packet.
+            // Starting from here though, it's nothing but a byte stream. It needs to be deserialized first.
+
+            // Deserialize into a DMLRecord object.
+            var workingItem = (WizardMessageContext)e.NewItems[0];
+            var buffer = workingItem.KIPacketBuffer;
+
 
         }
 
-        void IDisposable.Dispose()
+        public void Dispose()
         {
-            //@todo
-            throw new NotImplementedException();
+            InternalWorkload.Clear();
+            InternalWorkload = null;
+            GC.SuppressFinalize(this);
         }
 
     }
