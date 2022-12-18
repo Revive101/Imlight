@@ -150,9 +150,7 @@ namespace Imlight.Generator
             codeClass.BaseTypes.Add(codeClassReference);
             // Add imports
             CodeNamespaceImport codeClassSystemImport = new("System");
-            CodeNamespaceImport codeClassEngineImport = new("Imlight.Engine.DML");
             codeNamespace.Imports.Add(codeClassSystemImport);
-            codeNamespace.Imports.Add(codeClassEngineImport);
 
             // Create properties. In turn this also implements the INetworkProtocol interface.
             // The IndentedTextWriter does not work on generic property snippets, so the tabs must be literal.

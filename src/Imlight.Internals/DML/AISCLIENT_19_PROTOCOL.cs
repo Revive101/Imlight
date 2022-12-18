@@ -9,7 +9,6 @@
 namespace Imlight.Internals.DML
 {
     using System;
-    using Imlight.Engine.DML;
     public sealed class AISCLIENT_19_PROTOCOL : INetworkProtocol
     {
         public byte ServiceID { get; } = 19;

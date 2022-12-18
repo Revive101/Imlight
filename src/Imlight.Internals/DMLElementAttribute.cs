@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Imlight.Engine.DML
+namespace Imlight.Internals
 {
     [System.AttributeUsage(System.AttributeTargets.Field |
                            System.AttributeTargets.Property)]

@@ -9,7 +9,6 @@
 namespace Imlight.Internals.DML
 {
     using System;
-    using Imlight.Engine.DML;
     public sealed class TESTMANAGER_11_PROTOCOL : INetworkProtocol
     {
         public byte ServiceID { get; } = 11;

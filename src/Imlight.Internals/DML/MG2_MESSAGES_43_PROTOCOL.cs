@@ -9,7 +9,6 @@
 namespace Imlight.Internals.DML
 {
     using System;
-    using Imlight.Engine.DML;
     public sealed class MG2_MESSAGES_43_PROTOCOL : INetworkProtocol
     {
         public byte ServiceID { get; } = 43;
