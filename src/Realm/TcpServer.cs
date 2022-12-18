@@ -36,8 +36,6 @@ namespace Imlight.Realm
         private bool _listening;
         private CancellationToken _token;
 
-        public event EventHandler<RealmDataReceivedEventArgs> OnDataReceived;
-
         // Constructor
         internal TcpServer(Realm realm, Int32 port = DEFAULT_PORT, bool doAutoStart = true)
         {

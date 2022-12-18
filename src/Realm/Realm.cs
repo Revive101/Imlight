@@ -30,8 +30,6 @@ namespace Imlight.Realm
             this.Name = name;
             this.Id = Id;
             this.Server = new TcpServer(this, TcpServer.DEFAULT_PORT, autoStart);
-
-            this.Server.OnDataReceived += Server_OnDataReceived;
         }
 
         /// <summary>
@@ -64,25 +62,6 @@ namespace Imlight.Realm
         }
 
         public bool IsOpen() => this.Server.Listening();
-
-        private void Server_OnDataReceived(object sender, RealmDataReceivedEventArgs e)
-        {
-            // Our TCP server has received data and now we must find a processor to send it to.
-
-            var _messageContext = new WizardMessageContext(e.Data, this.Id, e.SocketID);
-            WorkloadPool.Enqueue(_messageContext);
-
-            // Log
-            var msg = e.Data.ToString();
-            if (e.Data.Length >= 100)
-            {
-                // Concat data if it's too long. We want to keep the console clean.
-                msg = msg[..100];
-                // Add dots on the end to signify the message was shortened.
-                msg += "...";
-            }
-            Log.Debug($"Realm [{this.Name}] received data: {msg}");
-        }
 
         public void Dispose()
         {

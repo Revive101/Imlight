@@ -7,6 +7,7 @@ using System.Net;
 using Imlight.Common.Logger;
 using System.Net.Sockets;
 using System.IO;
+using Imlight.Engine.DML;
 
 namespace Imlight.Realm
 {
@@ -19,8 +20,8 @@ namespace Imlight.Realm
         internal short ID { get; private set; }
         internal bool IsOpen { get; private set; }
 
-        private TcpServer _server;
-        private TcpClient _client;
+        private readonly TcpServer _server;
+        private readonly TcpClient _client;
         private readonly byte[] _buffer;
 
         // ctor
@@ -37,30 +38,12 @@ namespace Imlight.Realm
         internal void OpenListen()
         {
             IsOpen = true;
-            using var stream = _client.GetStream();
 
             while (IsOpen)
             {
                 try
                 {
-                    // Loop through all incoming data
-                    int i;
-                    while ((i = stream.Read(_buffer, 0, _buffer.Length)) != 0 && IsOpen)
-                    {
-                        // Translate data bytes to a ASCII string for logging.
-                        string data = Encoding.ASCII.GetString(_buffer, 0, i);
-                        Log.Debug($"Received data from socket ID [{ID}]: {data}");
-
-                        if (!IsWizardPacket(_buffer)) continue;
-
-                        // Trim unnecessary data.
-                        byte[] wizardBuffer = CreateWizardPacket(_buffer);
-
-                        // Craft context and send to the engine for handling.
-                        var realmId = this._server.Realm.Id;
-                        Engine.WizardMessageContext context = new(wizardBuffer, realmId, ID);
-                        Engine.WorkloadPool.Enqueue(context);
-                    }
+                    Listen();
                 }
                 catch (IOException)
                 {
@@ -78,6 +61,29 @@ namespace Imlight.Realm
         }
 
         internal void Close() => this.IsOpen = false;
+
+        private void Listen()
+        {
+            if (!IsOpen) return;
+
+            using var stream = _client.GetStream();
+
+            // Loop through all incoming data
+            int i;
+            while ((i = stream.Read(_buffer, 0, _buffer.Length)) != 0 && IsOpen)
+            {
+                // Translate data bytes to a ASCII string for logging.
+                string data = Encoding.ASCII.GetString(_buffer, 0, i);
+                Log.Debug($"Received data from socket ID [{ID}]: {data}");
+
+                if (!IsWizardPacket(_buffer)) continue;
+
+                // Trim unnecessary data.
+                byte[] wizardBuffer = CreateWizardPacket(_buffer);
+
+                SendPacketToEngine(wizardBuffer);
+            }
+        }
 
         private bool IsWizardPacket(byte[] rawPacket) 
             => (rawPacket.AsSpan()[0..2].SequenceEqual(stackalloc byte[2] { 0x0D, 0xF0 }));
@@ -121,7 +127,16 @@ namespace Imlight.Realm
 
             stream.Dispose();
             reader.Dispose();
+
             return wizardPacket;
+        }
+
+        private void SendPacketToEngine(byte[] packet)
+        {
+            // Craft context and send to the engine for handling.
+            var realmId = this._server.Realm.Id;
+            Engine.WizardMessageContext context = new(packet, realmId, ID);
+            Engine.WorkloadPool.Enqueue(context);
         }
 
         // dtor
