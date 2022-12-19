@@ -39,9 +39,9 @@ namespace Imlight.Internals.DML
         }
         public sealed class MSG_FORCE_DISCONNECT : INetworkMessage
         {
-            [DMLElement("UINT")] public UInt32 Type;
-            [DMLElement("STR")] public String TimeStamp;
-            [DMLElement("STR")] public String Message;
+            [DMLElement(DMLType.UINT)] public UInt32 Type;
+            [DMLElement(DMLType.STR)] public String TimeStamp;
+            [DMLElement(DMLType.STR)] public String Message;
             public byte MessageOrder { get; } = 3;
         }
         public sealed class MSG_RAWRECORD : INetworkMessage
@@ -50,13 +50,13 @@ namespace Imlight.Internals.DML
         }
         public sealed class MSG_RAW_TEXT : INetworkMessage
         {
-            [DMLElement("STR")] public String Message;
+            [DMLElement(DMLType.STR)] public String Message;
             public byte MessageOrder { get; } = 5;
         }
         public sealed class MSG_SERVERMESSAGE : INetworkMessage
         {
-            [DMLElement("UBYT")] public Byte Modal;
-            [DMLElement("WSTR")] public String Message;
+            [DMLElement(DMLType.UBYT)] public Byte Modal;
+            [DMLElement(DMLType.WSTR)] public String Message;
             public byte MessageOrder { get; } = 6;
         }
     }

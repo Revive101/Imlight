@@ -28,13 +28,13 @@ namespace Imlight.Internals.DML
         public sealed class MSG_LOGIN : INetworkMessage
         {
             public byte MessageOrder { get; } = 100;
-            [DMLElement("STR")] public String Username;
-            [DMLElement("STR")] public String Password;
+            [DMLElement(DMLType.STR)] public String Username;
+            [DMLElement(DMLType.STR)] public String Password;
         }
         public sealed class MSG_LOGINRESPONSE : INetworkMessage
         {
             public byte MessageOrder { get; } = 101;
-            [DMLElement("INT")] public Int32 Success;
+            [DMLElement(DMLType.INT)] public Int32 Success;
         }
     }
 }

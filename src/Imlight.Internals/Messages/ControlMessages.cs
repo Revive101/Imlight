@@ -17,35 +17,35 @@ namespace Imlight.Internals
         public class SessionOffer : INetworkMessage
         {
             public byte MessageOrder => 0;
-            [DMLElement("USHRT")] public ushort SessionID;
-            [DMLElement("UINT")] public uint Unknown1; // Possibly the upper 4 bytes of the timestamp ?
-            [DMLElement("UINT")] public uint Timestamp;
-            [DMLElement("UINT")] public uint Milliseconds;
+            [DMLElement(DMLType.USHRT)] public ushort SessionID;
+            [DMLElement(DMLType.UINT)] public uint Unknown1; // Possibly the upper 4 bytes of the timestamp ?
+            [DMLElement(DMLType.UINT)] public uint Timestamp;
+            [DMLElement(DMLType.UINT)] public uint Milliseconds;
         }
 
         public class KeepAlive : INetworkMessage
         {
             public byte MessageOrder => 3;
-            [DMLElement("USHRT")] public ushort SessionID;
-            [DMLElement("USHRT")] public ushort Milliseconds; // SessionOffer uses 32 bits but this one uses 16 ??
-            [DMLElement("USHRT")] public ushort Seconds;
+            [DMLElement(DMLType.USHRT)] public ushort SessionID;
+            [DMLElement(DMLType.USHRT)] public ushort Milliseconds; // SessionOffer uses 32 bits but this one uses 16 ??
+            [DMLElement(DMLType.USHRT)] public ushort Seconds;
         }
 
         public class KeepAliveResponse : INetworkMessage
         {
             public byte MessageOrder => 4;
-            [DMLElement("USHRT")] public ushort Unknown1;
-            [DMLElement("UINT")] public uint Timestamp;
+            [DMLElement(DMLType.USHRT)] public ushort Unknown1;
+            [DMLElement(DMLType.UINT)] public uint Timestamp;
         }
 
         public class SessionAccept : INetworkMessage
         {
             public byte MessageOrder => 5;
-            [DMLElement("USHRT")] public ushort Reserved1;
-            [DMLElement("UINT")] public uint Unknown1; // Possible the upper 4 bytes of the timestamp ?
-            [DMLElement("UINT")] public uint Timestamp;
-            [DMLElement("UINT")] public uint Milliseconds;
-            [DMLElement("USHRT")] public ushort SessionID;
+            [DMLElement(DMLType.USHRT)] public ushort Reserved1;
+            [DMLElement(DMLType.UINT)] public uint Unknown1; // Possible the upper 4 bytes of the timestamp ?
+            [DMLElement(DMLType.UINT)] public uint Timestamp;
+            [DMLElement(DMLType.UINT)] public uint Milliseconds;
+            [DMLElement(DMLType.USHRT)] public ushort SessionID;
         }
 
         public INetworkMessage Dispatch(byte id)

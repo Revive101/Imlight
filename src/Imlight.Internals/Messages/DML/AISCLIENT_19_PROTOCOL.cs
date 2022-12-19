@@ -26,8 +26,8 @@ namespace Imlight.Internals.DML
         }
         public sealed class MSG_AISMESSAGE : INetworkMessage
         {
-            [DMLElement("STR")] public String Message;
-            [DMLElement("UBYT")] public Byte Modal;
+            [DMLElement(DMLType.STR)] public String Message;
+            [DMLElement(DMLType.UBYT)] public Byte Modal;
             public byte MessageOrder { get; } = 1;
         }
     }

@@ -10,9 +10,9 @@ namespace Imlight.Internals
                            System.AttributeTargets.Property)]
     public class DMLElementAttribute : System.Attribute
     {
-        public string SerializedType;
+        public DMLType SerializedType;
 
-        public DMLElementAttribute(string serializedType)
+        public DMLElementAttribute(DMLType serializedType)
         {
             SerializedType = serializedType;
         }

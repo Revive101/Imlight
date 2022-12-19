@@ -31,98 +31,98 @@ namespace Imlight.Internals.DML
         }
         public sealed class MSG_PHYSICS_FORCE : INetworkMessage
         {
-            [DMLElement("FLT")] public Single PositionX;
-            [DMLElement("FLT")] public Single PositionY;
-            [DMLElement("FLT")] public Single PositionZ;
-            [DMLElement("FLT")] public Single RotationX;
-            [DMLElement("FLT")] public Single RotationY;
-            [DMLElement("FLT")] public Single RotationZ;
-            [DMLElement("FLT")] public Single VelocityX;
-            [DMLElement("FLT")] public Single VelocityY;
-            [DMLElement("FLT")] public Single VelocityZ;
-            [DMLElement("FLT")] public Single AngularVelocityX;
-            [DMLElement("FLT")] public Single AngularVelocityY;
-            [DMLElement("FLT")] public Single AngularVelocityZ;
-            [DMLElement("FLT")] public Single ForceX;
-            [DMLElement("FLT")] public Single ForceY;
-            [DMLElement("FLT")] public Single ForceZ;
-            [DMLElement("GID")] public UInt64 GlobalID;
+            [DMLElement(DMLType.FLT)] public Single PositionX;
+            [DMLElement(DMLType.FLT)] public Single PositionY;
+            [DMLElement(DMLType.FLT)] public Single PositionZ;
+            [DMLElement(DMLType.FLT)] public Single RotationX;
+            [DMLElement(DMLType.FLT)] public Single RotationY;
+            [DMLElement(DMLType.FLT)] public Single RotationZ;
+            [DMLElement(DMLType.FLT)] public Single VelocityX;
+            [DMLElement(DMLType.FLT)] public Single VelocityY;
+            [DMLElement(DMLType.FLT)] public Single VelocityZ;
+            [DMLElement(DMLType.FLT)] public Single AngularVelocityX;
+            [DMLElement(DMLType.FLT)] public Single AngularVelocityY;
+            [DMLElement(DMLType.FLT)] public Single AngularVelocityZ;
+            [DMLElement(DMLType.FLT)] public Single ForceX;
+            [DMLElement(DMLType.FLT)] public Single ForceY;
+            [DMLElement(DMLType.FLT)] public Single ForceZ;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             public byte MessageOrder { get; } = 1;
         }
         public sealed class MSG_PHYSICS_FORCE_AT_POS : INetworkMessage
         {
-            [DMLElement("FLT")] public Single PositionX;
-            [DMLElement("FLT")] public Single PositionY;
-            [DMLElement("FLT")] public Single PositionZ;
-            [DMLElement("FLT")] public Single RotationX;
-            [DMLElement("FLT")] public Single RotationY;
-            [DMLElement("FLT")] public Single RotationZ;
-            [DMLElement("FLT")] public Single VelocityX;
-            [DMLElement("FLT")] public Single VelocityY;
-            [DMLElement("FLT")] public Single VelocityZ;
-            [DMLElement("FLT")] public Single AngularVelocityX;
-            [DMLElement("FLT")] public Single AngularVelocityY;
-            [DMLElement("FLT")] public Single AngularVelocityZ;
-            [DMLElement("FLT")] public Single ForceX;
-            [DMLElement("FLT")] public Single ForceY;
-            [DMLElement("FLT")] public Single ForceZ;
-            [DMLElement("FLT")] public Single ForcePosX;
-            [DMLElement("FLT")] public Single ForcePosY;
-            [DMLElement("FLT")] public Single ForcePosZ;
-            [DMLElement("GID")] public UInt64 GlobalID;
+            [DMLElement(DMLType.FLT)] public Single PositionX;
+            [DMLElement(DMLType.FLT)] public Single PositionY;
+            [DMLElement(DMLType.FLT)] public Single PositionZ;
+            [DMLElement(DMLType.FLT)] public Single RotationX;
+            [DMLElement(DMLType.FLT)] public Single RotationY;
+            [DMLElement(DMLType.FLT)] public Single RotationZ;
+            [DMLElement(DMLType.FLT)] public Single VelocityX;
+            [DMLElement(DMLType.FLT)] public Single VelocityY;
+            [DMLElement(DMLType.FLT)] public Single VelocityZ;
+            [DMLElement(DMLType.FLT)] public Single AngularVelocityX;
+            [DMLElement(DMLType.FLT)] public Single AngularVelocityY;
+            [DMLElement(DMLType.FLT)] public Single AngularVelocityZ;
+            [DMLElement(DMLType.FLT)] public Single ForceX;
+            [DMLElement(DMLType.FLT)] public Single ForceY;
+            [DMLElement(DMLType.FLT)] public Single ForceZ;
+            [DMLElement(DMLType.FLT)] public Single ForcePosX;
+            [DMLElement(DMLType.FLT)] public Single ForcePosY;
+            [DMLElement(DMLType.FLT)] public Single ForcePosZ;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             public byte MessageOrder { get; } = 2;
         }
         public sealed class MSG_PHYSICS_GRAB : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("GID")] public UInt64 HolderID;
-            [DMLElement("FLT")] public Single OffsetX;
-            [DMLElement("FLT")] public Single OffsetY;
-            [DMLElement("FLT")] public Single OffsetZ;
-            [DMLElement("FLT")] public Single Force;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.GID)] public UInt64 HolderID;
+            [DMLElement(DMLType.FLT)] public Single OffsetX;
+            [DMLElement(DMLType.FLT)] public Single OffsetY;
+            [DMLElement(DMLType.FLT)] public Single OffsetZ;
+            [DMLElement(DMLType.FLT)] public Single Force;
             public byte MessageOrder { get; } = 3;
         }
         public sealed class MSG_PHYSICS_RELEASE : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("GID")] public UInt64 HolderID;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.GID)] public UInt64 HolderID;
             public byte MessageOrder { get; } = 4;
         }
         public sealed class MSG_PHYSICS_STATE : INetworkMessage
         {
-            [DMLElement("FLT")] public Single PositionX;
-            [DMLElement("FLT")] public Single PositionY;
-            [DMLElement("FLT")] public Single PositionZ;
-            [DMLElement("FLT")] public Single RotationX;
-            [DMLElement("FLT")] public Single RotationY;
-            [DMLElement("FLT")] public Single RotationZ;
-            [DMLElement("FLT")] public Single VelocityX;
-            [DMLElement("FLT")] public Single VelocityY;
-            [DMLElement("FLT")] public Single VelocityZ;
-            [DMLElement("FLT")] public Single AngularVelocityX;
-            [DMLElement("FLT")] public Single AngularVelocityY;
-            [DMLElement("FLT")] public Single AngularVelocityZ;
-            [DMLElement("GID")] public UInt64 GlobalID;
+            [DMLElement(DMLType.FLT)] public Single PositionX;
+            [DMLElement(DMLType.FLT)] public Single PositionY;
+            [DMLElement(DMLType.FLT)] public Single PositionZ;
+            [DMLElement(DMLType.FLT)] public Single RotationX;
+            [DMLElement(DMLType.FLT)] public Single RotationY;
+            [DMLElement(DMLType.FLT)] public Single RotationZ;
+            [DMLElement(DMLType.FLT)] public Single VelocityX;
+            [DMLElement(DMLType.FLT)] public Single VelocityY;
+            [DMLElement(DMLType.FLT)] public Single VelocityZ;
+            [DMLElement(DMLType.FLT)] public Single AngularVelocityX;
+            [DMLElement(DMLType.FLT)] public Single AngularVelocityY;
+            [DMLElement(DMLType.FLT)] public Single AngularVelocityZ;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             public byte MessageOrder { get; } = 5;
         }
         public sealed class MSG_PHYSICS_TORQUE : INetworkMessage
         {
-            [DMLElement("FLT")] public Single PositionX;
-            [DMLElement("FLT")] public Single PositionY;
-            [DMLElement("FLT")] public Single PositionZ;
-            [DMLElement("FLT")] public Single RotationX;
-            [DMLElement("FLT")] public Single RotationY;
-            [DMLElement("FLT")] public Single RotationZ;
-            [DMLElement("FLT")] public Single VelocityX;
-            [DMLElement("FLT")] public Single VelocityY;
-            [DMLElement("FLT")] public Single VelocityZ;
-            [DMLElement("FLT")] public Single AngularVelocityX;
-            [DMLElement("FLT")] public Single AngularVelocityY;
-            [DMLElement("FLT")] public Single AngularVelocityZ;
-            [DMLElement("FLT")] public Single TorqueX;
-            [DMLElement("FLT")] public Single TorqueY;
-            [DMLElement("FLT")] public Single TorqueZ;
-            [DMLElement("GID")] public UInt64 GlobalID;
+            [DMLElement(DMLType.FLT)] public Single PositionX;
+            [DMLElement(DMLType.FLT)] public Single PositionY;
+            [DMLElement(DMLType.FLT)] public Single PositionZ;
+            [DMLElement(DMLType.FLT)] public Single RotationX;
+            [DMLElement(DMLType.FLT)] public Single RotationY;
+            [DMLElement(DMLType.FLT)] public Single RotationZ;
+            [DMLElement(DMLType.FLT)] public Single VelocityX;
+            [DMLElement(DMLType.FLT)] public Single VelocityY;
+            [DMLElement(DMLType.FLT)] public Single VelocityZ;
+            [DMLElement(DMLType.FLT)] public Single AngularVelocityX;
+            [DMLElement(DMLType.FLT)] public Single AngularVelocityY;
+            [DMLElement(DMLType.FLT)] public Single AngularVelocityZ;
+            [DMLElement(DMLType.FLT)] public Single TorqueX;
+            [DMLElement(DMLType.FLT)] public Single TorqueY;
+            [DMLElement(DMLType.FLT)] public Single TorqueZ;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             public byte MessageOrder { get; } = 6;
         }
     }

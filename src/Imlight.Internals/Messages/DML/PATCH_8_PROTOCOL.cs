@@ -29,38 +29,38 @@ namespace Imlight.Internals.DML
         public sealed class MSG_LATEST_FILE_LIST : INetworkMessage
         {
             public byte MessageOrder { get; } = 1;
-            [DMLElement("UINT")] public UInt32 LatestVersion;
-            [DMLElement("STR")] public String ListFileName;
-            [DMLElement("UINT")] public UInt32 ListFileType;
-            [DMLElement("UINT")] public UInt32 ListFileTime;
-            [DMLElement("UINT")] public UInt32 ListFileSize;
-            [DMLElement("UINT")] public UInt32 ListFileCRC;
-            [DMLElement("STR")] public String ListFileURL;
-            [DMLElement("STR")] public String URLPrefix;
-            [DMLElement("STR")] public String URLSuffix;
+            [DMLElement(DMLType.UINT)] public UInt32 LatestVersion;
+            [DMLElement(DMLType.STR)] public String ListFileName;
+            [DMLElement(DMLType.UINT)] public UInt32 ListFileType;
+            [DMLElement(DMLType.UINT)] public UInt32 ListFileTime;
+            [DMLElement(DMLType.UINT)] public UInt32 ListFileSize;
+            [DMLElement(DMLType.UINT)] public UInt32 ListFileCRC;
+            [DMLElement(DMLType.STR)] public String ListFileURL;
+            [DMLElement(DMLType.STR)] public String URLPrefix;
+            [DMLElement(DMLType.STR)] public String URLSuffix;
         }
         public sealed class MSG_LATEST_FILE_LIST_V2 : INetworkMessage
         {
             public byte MessageOrder { get; } = 2;
-            [DMLElement("UINT")] public UInt32 LatestVersion;
-            [DMLElement("STR")] public String ListFileName;
-            [DMLElement("UINT")] public UInt32 ListFileType;
-            [DMLElement("UINT")] public UInt32 ListFileTime;
-            [DMLElement("UINT")] public UInt32 ListFileSize;
-            [DMLElement("UINT")] public UInt32 ListFileCRC;
-            [DMLElement("STR")] public String ListFileURL;
-            [DMLElement("STR")] public String URLPrefix;
-            [DMLElement("STR")] public String URLSuffix;
-            [DMLElement("STR")] public String Locale;
+            [DMLElement(DMLType.UINT)] public UInt32 LatestVersion;
+            [DMLElement(DMLType.STR)] public String ListFileName;
+            [DMLElement(DMLType.UINT)] public UInt32 ListFileType;
+            [DMLElement(DMLType.UINT)] public UInt32 ListFileTime;
+            [DMLElement(DMLType.UINT)] public UInt32 ListFileSize;
+            [DMLElement(DMLType.UINT)] public UInt32 ListFileCRC;
+            [DMLElement(DMLType.STR)] public String ListFileURL;
+            [DMLElement(DMLType.STR)] public String URLPrefix;
+            [DMLElement(DMLType.STR)] public String URLSuffix;
+            [DMLElement(DMLType.STR)] public String Locale;
         }
         public sealed class MSG_NEXT_VERSION : INetworkMessage
         {
             public byte MessageOrder { get; } = 3;
-            [DMLElement("STR")] public String PkgName;
-            [DMLElement("INT")] public Int32 Version;
-            [DMLElement("STR")] public String URLPrefix;
-            [DMLElement("STR")] public String FileName;
-            [DMLElement("INT")] public Int32 FileType;
+            [DMLElement(DMLType.STR)] public String PkgName;
+            [DMLElement(DMLType.INT)] public Int32 Version;
+            [DMLElement(DMLType.STR)] public String URLPrefix;
+            [DMLElement(DMLType.STR)] public String FileName;
+            [DMLElement(DMLType.INT)] public Int32 FileType;
         }
     }
 }

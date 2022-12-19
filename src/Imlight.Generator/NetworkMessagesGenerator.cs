@@ -44,20 +44,20 @@ namespace Imlight.Generator
             "WizardMessages.xml",
             "WizCombatMessages.xml"
         };
-        private static readonly Dictionary<string, Type> _internalTypeTranslationDict = new Dictionary<string, Type>()
+        private static readonly Dictionary<string, (Type, DMLType)> _internalTypeTranslationDict = new()
         {
-            { "BYT", typeof(sbyte) },
-            { "UBYT", typeof(byte) },
-            { "UBYTE", typeof(byte) },
-            { "USHRT", typeof(ushort) },
-            { "USHORT", typeof(ushort) },
-            { "INT", typeof(Int32) },
-            { "UINT", typeof(UInt32) },
-            { "STR", typeof(string) },
-            { "WSTR", typeof(string) },
-            { "FLT", typeof(float) },
-            { "DBL", typeof(double) },
-            { "GID", typeof(UInt64) },
+            { "BYT",    (typeof(sbyte),   DMLType.BYT)   },
+            { "UBYT",   (typeof(byte),    DMLType.UBYT)  },
+            { "UBYTE",  (typeof(byte),    DMLType.UBYT)  },     // Appears exactly 1 time. 
+            { "USHRT",  (typeof(ushort),  DMLType.USHRT) },
+            { "USHORT", (typeof(ushort),  DMLType.USHRT) },     // Appears exactly 1 time.
+            { "INT",    (typeof(Int32),   DMLType.INT)   },
+            { "UINT",   (typeof(UInt32),  DMLType.UINT)  },
+            { "STR",    (typeof(string),  DMLType.STR)   },
+            { "WSTR",   (typeof(string),  DMLType.WSTR)  },
+            { "FLT",    (typeof(float),   DMLType.FLT)   },
+            { "DBL",    (typeof(double),  DMLType.DBL)   },
+            { "GID",    (typeof(UInt64),  DMLType.GID)   },
         };
 
         internal static void Generate(NetworkMessagesGeneratorOptions generatorOptions)
@@ -275,8 +275,8 @@ namespace Imlight.Generator
                     if (!_internalTypeTranslationDict.TryGetValue(rawType, out var type))
                         throw new Exception($"Could not translate internal type [{rawType}]!");
 
-                    string typeWithoutNamespace = type.ToString().Split('.').Last();
-                    var propertySnippet = CreateGenericPropertrySnippet($"            [DMLElement(\"{rawType}\")] public {typeWithoutNamespace} {element.Name};");
+                    string typeWithoutNamespace = type.Item1.ToString().Split('.').Last();
+                    var propertySnippet = CreateGenericPropertrySnippet($"            [DMLElement({nameof(DMLType)}.{type.Item2})] public {typeWithoutNamespace} {element.Name};");
                     codeRecordClass.Members.Add(propertySnippet);
                 }
 

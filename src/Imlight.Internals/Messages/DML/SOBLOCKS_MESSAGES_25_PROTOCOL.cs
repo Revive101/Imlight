@@ -56,33 +56,33 @@ namespace Imlight.Internals.DML
         }
         public sealed class MSG_SOBLOCKS_ATTACK : INetworkMessage
         {
-            [DMLElement("INT")] public Int32 Index1;
-            [DMLElement("INT")] public Int32 Index2;
-            [DMLElement("INT")] public Int32 Index3;
-            [DMLElement("INT")] public Int32 Index4;
-            [DMLElement("INT")] public Int32 Index5;
-            [DMLElement("INT")] public Int32 Index6;
-            [DMLElement("INT")] public Int32 Index7;
+            [DMLElement(DMLType.INT)] public Int32 Index1;
+            [DMLElement(DMLType.INT)] public Int32 Index2;
+            [DMLElement(DMLType.INT)] public Int32 Index3;
+            [DMLElement(DMLType.INT)] public Int32 Index4;
+            [DMLElement(DMLType.INT)] public Int32 Index5;
+            [DMLElement(DMLType.INT)] public Int32 Index6;
+            [DMLElement(DMLType.INT)] public Int32 Index7;
             public byte MessageOrder { get; } = 3;
         }
         public sealed class MSG_SOBLOCKS_COUNTDOWN : INetworkMessage
         {
-            [DMLElement("INT")] public Int32 Number;
+            [DMLElement(DMLType.INT)] public Int32 Number;
             public byte MessageOrder { get; } = 4;
         }
         public sealed class MSG_SOBLOCKS_ENDGAME : INetworkMessage
         {
-            [DMLElement("INT")] public Int32 Score;
+            [DMLElement(DMLType.INT)] public Int32 Score;
             public byte MessageOrder { get; } = 5;
         }
         public sealed class MSG_SOBLOCKS_FREEZEBLOCKS : INetworkMessage
         {
-            [DMLElement("INT")] public Int32 Amount;
+            [DMLElement(DMLType.INT)] public Int32 Amount;
             public byte MessageOrder { get; } = 6;
         }
         public sealed class MSG_SOBLOCKS_INFO : INetworkMessage
         {
-            [DMLElement("STR")] public String Name;
+            [DMLElement(DMLType.STR)] public String Name;
             public byte MessageOrder { get; } = 7;
         }
         public sealed class MSG_SOBLOCKS_LEVELUP : INetworkMessage
@@ -123,40 +123,40 @@ namespace Imlight.Internals.DML
         }
         public sealed class MSG_SOBLOCKS_ROWINFO : INetworkMessage
         {
-            [DMLElement("INT")] public Int32 Index1;
-            [DMLElement("INT")] public Int32 Index2;
-            [DMLElement("INT")] public Int32 Index3;
-            [DMLElement("INT")] public Int32 Index4;
-            [DMLElement("INT")] public Int32 Index5;
-            [DMLElement("INT")] public Int32 Index6;
-            [DMLElement("INT")] public Int32 Index7;
+            [DMLElement(DMLType.INT)] public Int32 Index1;
+            [DMLElement(DMLType.INT)] public Int32 Index2;
+            [DMLElement(DMLType.INT)] public Int32 Index3;
+            [DMLElement(DMLType.INT)] public Int32 Index4;
+            [DMLElement(DMLType.INT)] public Int32 Index5;
+            [DMLElement(DMLType.INT)] public Int32 Index6;
+            [DMLElement(DMLType.INT)] public Int32 Index7;
             public byte MessageOrder { get; } = 17;
         }
         public sealed class MSG_SOBLOCKS_SELECTGAME : INetworkMessage
         {
-            [DMLElement("INT")] public Int32 GameType;
+            [DMLElement(DMLType.INT)] public Int32 GameType;
             public byte MessageOrder { get; } = 18;
         }
         public sealed class MSG_SOBLOCKS_SENDROW : INetworkMessage
         {
-            [DMLElement("INT")] public Int32 Index1;
-            [DMLElement("INT")] public Int32 Index2;
-            [DMLElement("INT")] public Int32 Index3;
-            [DMLElement("INT")] public Int32 Index4;
-            [DMLElement("INT")] public Int32 Index5;
-            [DMLElement("INT")] public Int32 Index6;
-            [DMLElement("INT")] public Int32 Index7;
+            [DMLElement(DMLType.INT)] public Int32 Index1;
+            [DMLElement(DMLType.INT)] public Int32 Index2;
+            [DMLElement(DMLType.INT)] public Int32 Index3;
+            [DMLElement(DMLType.INT)] public Int32 Index4;
+            [DMLElement(DMLType.INT)] public Int32 Index5;
+            [DMLElement(DMLType.INT)] public Int32 Index6;
+            [DMLElement(DMLType.INT)] public Int32 Index7;
             public byte MessageOrder { get; } = 19;
         }
         public sealed class MSG_SOBLOCKS_SETLEVEL : INetworkMessage
         {
-            [DMLElement("INT")] public Int32 Speed;
-            [DMLElement("INT")] public Int32 SpeedUp;
-            [DMLElement("INT")] public Int32 FallSpeed;
-            [DMLElement("INT")] public Int32 RemoveSpeed;
-            [DMLElement("INT")] public Int32 Bonus;
-            [DMLElement("INT")] public Int32 ComboTime;
-            [DMLElement("INT")] public Int32 MultiTime;
+            [DMLElement(DMLType.INT)] public Int32 Speed;
+            [DMLElement(DMLType.INT)] public Int32 SpeedUp;
+            [DMLElement(DMLType.INT)] public Int32 FallSpeed;
+            [DMLElement(DMLType.INT)] public Int32 RemoveSpeed;
+            [DMLElement(DMLType.INT)] public Int32 Bonus;
+            [DMLElement(DMLType.INT)] public Int32 ComboTime;
+            [DMLElement(DMLType.INT)] public Int32 MultiTime;
             public byte MessageOrder { get; } = 20;
         }
         public sealed class MSG_SOBLOCKS_STARTSWAP : INetworkMessage
@@ -165,13 +165,13 @@ namespace Imlight.Internals.DML
         }
         public sealed class MSG_SOBLOCKS_TIMEDDROP : INetworkMessage
         {
-            [DMLElement("INT")] public Int32 Index1;
-            [DMLElement("INT")] public Int32 Index2;
-            [DMLElement("INT")] public Int32 Index3;
-            [DMLElement("INT")] public Int32 Index4;
-            [DMLElement("INT")] public Int32 Index5;
-            [DMLElement("INT")] public Int32 Index6;
-            [DMLElement("INT")] public Int32 Index7;
+            [DMLElement(DMLType.INT)] public Int32 Index1;
+            [DMLElement(DMLType.INT)] public Int32 Index2;
+            [DMLElement(DMLType.INT)] public Int32 Index3;
+            [DMLElement(DMLType.INT)] public Int32 Index4;
+            [DMLElement(DMLType.INT)] public Int32 Index5;
+            [DMLElement(DMLType.INT)] public Int32 Index6;
+            [DMLElement(DMLType.INT)] public Int32 Index7;
             public byte MessageOrder { get; } = 22;
         }
         public sealed class MSG_SOBLOCKS_WIN : INetworkMessage

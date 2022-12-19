@@ -39,131 +39,131 @@ namespace Imlight.Internals.DML
         }
         public sealed class MSG_ACCEPTQUEST : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 MobileID;
-            [DMLElement("STR")] public String QuestName;
+            [DMLElement(DMLType.GID)] public UInt64 MobileID;
+            [DMLElement(DMLType.STR)] public String QuestName;
             public byte MessageOrder { get; } = 1;
         }
         public sealed class MSG_COMPLETEGOAL : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 QuestID;
-            [DMLElement("GID")] public UInt64 GoalID;
-            [DMLElement("STR")] public String CompleteText;
+            [DMLElement(DMLType.GID)] public UInt64 QuestID;
+            [DMLElement(DMLType.GID)] public UInt64 GoalID;
+            [DMLElement(DMLType.STR)] public String CompleteText;
             public byte MessageOrder { get; } = 2;
         }
         public sealed class MSG_COMPLETEPERSONA : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 MobileID;
-            [DMLElement("GID")] public UInt64 QuestID;
-            [DMLElement("GID")] public UInt64 GoalID;
+            [DMLElement(DMLType.GID)] public UInt64 MobileID;
+            [DMLElement(DMLType.GID)] public UInt64 QuestID;
+            [DMLElement(DMLType.GID)] public UInt64 GoalID;
             public byte MessageOrder { get; } = 3;
         }
         public sealed class MSG_COMPLETEQUEST : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 QuestID;
-            [DMLElement("STR")] public String CompleteText;
+            [DMLElement(DMLType.GID)] public UInt64 QuestID;
+            [DMLElement(DMLType.STR)] public String CompleteText;
             public byte MessageOrder { get; } = 4;
         }
         public sealed class MSG_DECLINEQUEST : INetworkMessage
         {
-            [DMLElement("STR")] public String QuestName;
+            [DMLElement(DMLType.STR)] public String QuestName;
             public byte MessageOrder { get; } = 5;
         }
         public sealed class MSG_INTERACTNPC : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("STR")] public String ServiceName;
-            [DMLElement("INT")] public Int32 Reinteract;
-            [DMLElement("UINT")] public UInt32 ServiceIndex;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.STR)] public String ServiceName;
+            [DMLElement(DMLType.INT)] public Int32 Reinteract;
+            [DMLElement(DMLType.UINT)] public UInt32 ServiceIndex;
             public byte MessageOrder { get; } = 6;
         }
         public sealed class MSG_NPCINFO : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 MobileID;
-            [DMLElement("STR")] public String Name;
-            [DMLElement("STR")] public String Greeting;
-            [DMLElement("STR")] public String PersonaMadlibs;
+            [DMLElement(DMLType.GID)] public UInt64 MobileID;
+            [DMLElement(DMLType.STR)] public String Name;
+            [DMLElement(DMLType.STR)] public String Greeting;
+            [DMLElement(DMLType.STR)] public String PersonaMadlibs;
             public byte MessageOrder { get; } = 7;
         }
         public sealed class MSG_PERSONAINFO : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 MobileID;
-            [DMLElement("GID")] public UInt64 QuestID;
-            [DMLElement("GID")] public UInt64 GoalID;
-            [DMLElement("STR")] public String GoalHyperlink;
+            [DMLElement(DMLType.GID)] public UInt64 MobileID;
+            [DMLElement(DMLType.GID)] public UInt64 QuestID;
+            [DMLElement(DMLType.GID)] public UInt64 GoalID;
+            [DMLElement(DMLType.STR)] public String GoalHyperlink;
             public byte MessageOrder { get; } = 8;
         }
         public sealed class MSG_QUESTOFFER : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 MobileID;
-            [DMLElement("STR")] public String QuestName;
-            [DMLElement("STR")] public String QuestTitle;
-            [DMLElement("STR")] public String QuestInfo;
-            [DMLElement("INT")] public Int32 Level;
-            [DMLElement("STR")] public String Rewards;
-            [DMLElement("STR")] public String GoalData;
-            [DMLElement("UBYT")] public Byte Mainline;
+            [DMLElement(DMLType.GID)] public UInt64 MobileID;
+            [DMLElement(DMLType.STR)] public String QuestName;
+            [DMLElement(DMLType.STR)] public String QuestTitle;
+            [DMLElement(DMLType.STR)] public String QuestInfo;
+            [DMLElement(DMLType.INT)] public Int32 Level;
+            [DMLElement(DMLType.STR)] public String Rewards;
+            [DMLElement(DMLType.STR)] public String GoalData;
+            [DMLElement(DMLType.UBYT)] public Byte Mainline;
             public byte MessageOrder { get; } = 9;
         }
         public sealed class MSG_REMOVEGOAL : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 QuestID;
-            [DMLElement("GID")] public UInt64 GoalID;
+            [DMLElement(DMLType.GID)] public UInt64 QuestID;
+            [DMLElement(DMLType.GID)] public UInt64 GoalID;
             public byte MessageOrder { get; } = 10;
         }
         public sealed class MSG_REMOVEQUEST : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 QuestID;
-            [DMLElement("GID")] public UInt64 NpcID;
+            [DMLElement(DMLType.GID)] public UInt64 QuestID;
+            [DMLElement(DMLType.GID)] public UInt64 NpcID;
             public byte MessageOrder { get; } = 11;
         }
         public sealed class MSG_SENDGOAL : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 QuestID;
-            [DMLElement("GID")] public UInt64 GoalID;
-            [DMLElement("UINT")] public UInt32 GoalNameID;
-            [DMLElement("STR")] public String GoalTitle;
-            [DMLElement("STR")] public String GoalLocation;
-            [DMLElement("STR")] public String GoalImage1;
-            [DMLElement("STR")] public String GoalImage2;
-            [DMLElement("STR")] public String PersonaName;
-            [DMLElement("UBYT")] public Byte GoalType;
-            [DMLElement("UBYT")] public Byte GoalStatus;
-            [DMLElement("INT")] public Int32 GoalCount;
-            [DMLElement("INT")] public Int32 GoalTotal;
-            [DMLElement("INT")] public Int32 SubscriberGoalTotal;
-            [DMLElement("UBYT")] public Byte UseTally;
-            [DMLElement("STR")] public String TallyText;
-            [DMLElement("INT")] public Int32 SendType;
-            [DMLElement("STR")] public String GoalMadlibs;
-            [DMLElement("STR")] public String ClientTags;
-            [DMLElement("STR")] public String PatronIcon;
-            [DMLElement("UBYT")] public Byte NoQuestHelper;
-            [DMLElement("UBYT")] public Byte PetOnlyQuest;
+            [DMLElement(DMLType.GID)] public UInt64 QuestID;
+            [DMLElement(DMLType.GID)] public UInt64 GoalID;
+            [DMLElement(DMLType.UINT)] public UInt32 GoalNameID;
+            [DMLElement(DMLType.STR)] public String GoalTitle;
+            [DMLElement(DMLType.STR)] public String GoalLocation;
+            [DMLElement(DMLType.STR)] public String GoalImage1;
+            [DMLElement(DMLType.STR)] public String GoalImage2;
+            [DMLElement(DMLType.STR)] public String PersonaName;
+            [DMLElement(DMLType.UBYT)] public Byte GoalType;
+            [DMLElement(DMLType.UBYT)] public Byte GoalStatus;
+            [DMLElement(DMLType.INT)] public Int32 GoalCount;
+            [DMLElement(DMLType.INT)] public Int32 GoalTotal;
+            [DMLElement(DMLType.INT)] public Int32 SubscriberGoalTotal;
+            [DMLElement(DMLType.UBYT)] public Byte UseTally;
+            [DMLElement(DMLType.STR)] public String TallyText;
+            [DMLElement(DMLType.INT)] public Int32 SendType;
+            [DMLElement(DMLType.STR)] public String GoalMadlibs;
+            [DMLElement(DMLType.STR)] public String ClientTags;
+            [DMLElement(DMLType.STR)] public String PatronIcon;
+            [DMLElement(DMLType.UBYT)] public Byte NoQuestHelper;
+            [DMLElement(DMLType.UBYT)] public Byte PetOnlyQuest;
             public byte MessageOrder { get; } = 12;
         }
         public sealed class MSG_SENDNPCOPTIONS : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 MobileID;
-            [DMLElement("STR")] public String Options;
-            [DMLElement("INT")] public Int32 Reinteract;
+            [DMLElement(DMLType.GID)] public UInt64 MobileID;
+            [DMLElement(DMLType.STR)] public String Options;
+            [DMLElement(DMLType.INT)] public Int32 Reinteract;
             public byte MessageOrder { get; } = 13;
         }
         public sealed class MSG_SENDQUEST : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 QuestID;
-            [DMLElement("UINT")] public UInt32 QuestNameID;
-            [DMLElement("UINT")] public UInt32 QuestType;
-            [DMLElement("STR")] public String QuestTitle;
-            [DMLElement("STR")] public String QuestInfo;
-            [DMLElement("UBYT")] public Byte New;
-            [DMLElement("STR")] public String QuestMadlibs;
-            [DMLElement("STR")] public String GoalData;
-            [DMLElement("STR")] public String Rewards;
-            [DMLElement("STR")] public String ClientTags;
-            [DMLElement("UBYT")] public Byte NoQuestHelper;
-            [DMLElement("UBYT")] public Byte Mainline;
-            [DMLElement("UBYT")] public Byte SkipQHAutoSelect;
-            [DMLElement("UBYT")] public Byte PetOnlyQuest;
+            [DMLElement(DMLType.GID)] public UInt64 QuestID;
+            [DMLElement(DMLType.UINT)] public UInt32 QuestNameID;
+            [DMLElement(DMLType.UINT)] public UInt32 QuestType;
+            [DMLElement(DMLType.STR)] public String QuestTitle;
+            [DMLElement(DMLType.STR)] public String QuestInfo;
+            [DMLElement(DMLType.UBYT)] public Byte New;
+            [DMLElement(DMLType.STR)] public String QuestMadlibs;
+            [DMLElement(DMLType.STR)] public String GoalData;
+            [DMLElement(DMLType.STR)] public String Rewards;
+            [DMLElement(DMLType.STR)] public String ClientTags;
+            [DMLElement(DMLType.UBYT)] public Byte NoQuestHelper;
+            [DMLElement(DMLType.UBYT)] public Byte Mainline;
+            [DMLElement(DMLType.UBYT)] public Byte SkipQHAutoSelect;
+            [DMLElement(DMLType.UBYT)] public Byte PetOnlyQuest;
             public byte MessageOrder { get; } = 14;
         }
     }

@@ -215,44 +215,44 @@ namespace Imlight.Internals.DML
         }
         public sealed class MSG_ADDFISHTOAQUARIUM : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("UINT")] public UInt32 FishTemplateID;
-            [DMLElement("FLT")] public Single Size;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.UINT)] public UInt32 FishTemplateID;
+            [DMLElement(DMLType.FLT)] public Single Size;
             public byte MessageOrder { get; } = 1;
         }
         public sealed class MSG_ADDINSTANCEFISH : INetworkMessage
         {
-            [DMLElement("UINT")] public UInt32 ZoneNameID;
-            [DMLElement("UINT")] public UInt32 FishTemplateID;
-            [DMLElement("FLT")] public Single Size;
-            [DMLElement("UINT")] public UInt32 FishID;
+            [DMLElement(DMLType.UINT)] public UInt32 ZoneNameID;
+            [DMLElement(DMLType.UINT)] public UInt32 FishTemplateID;
+            [DMLElement(DMLType.FLT)] public Single Size;
+            [DMLElement(DMLType.UINT)] public UInt32 FishID;
             public byte MessageOrder { get; } = 2;
         }
         public sealed class MSG_ADDTOTREASURECARDPOSTER : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 TreasureCardPosterID;
-            [DMLElement("UINT")] public UInt32 SpellTemplateID;
-            [DMLElement("UINT")] public UInt32 EnchantmentTemplateID;
-            [DMLElement("UBYT")] public Byte Flags;
+            [DMLElement(DMLType.GID)] public UInt64 TreasureCardPosterID;
+            [DMLElement(DMLType.UINT)] public UInt32 SpellTemplateID;
+            [DMLElement(DMLType.UINT)] public UInt32 EnchantmentTemplateID;
+            [DMLElement(DMLType.UBYT)] public Byte Flags;
             public byte MessageOrder { get; } = 3;
         }
         public sealed class MSG_AUDITATTICRESULTS : INetworkMessage
         {
-            [DMLElement("UINT")] public UInt32 ItemsAudited;
-            [DMLElement("UINT")] public UInt32 ItemsRemoved;
+            [DMLElement(DMLType.UINT)] public UInt32 ItemsAudited;
+            [DMLElement(DMLType.UINT)] public UInt32 ItemsRemoved;
             public byte MessageOrder { get; } = 4;
         }
         public sealed class MSG_BEGINFISHINGCAST : INetworkMessage
         {
-            [DMLElement("FLT")] public Single PositionX;
-            [DMLElement("FLT")] public Single PositionY;
-            [DMLElement("FLT")] public Single PositionZ;
-            [DMLElement("FLT")] public Single EndX;
-            [DMLElement("FLT")] public Single EndY;
-            [DMLElement("FLT")] public Single EndZ;
-            [DMLElement("FLT")] public Single Yaw;
-            [DMLElement("UINT")] public UInt32 SpellTemplateID;
-            [DMLElement("UBYT")] public Byte IsRecast;
+            [DMLElement(DMLType.FLT)] public Single PositionX;
+            [DMLElement(DMLType.FLT)] public Single PositionY;
+            [DMLElement(DMLType.FLT)] public Single PositionZ;
+            [DMLElement(DMLType.FLT)] public Single EndX;
+            [DMLElement(DMLType.FLT)] public Single EndY;
+            [DMLElement(DMLType.FLT)] public Single EndZ;
+            [DMLElement(DMLType.FLT)] public Single Yaw;
+            [DMLElement(DMLType.UINT)] public UInt32 SpellTemplateID;
+            [DMLElement(DMLType.UBYT)] public Byte IsRecast;
             public byte MessageOrder { get; } = 5;
         }
         public sealed class MSG_BLOCKPETSPAWN : INetworkMessage
@@ -261,21 +261,21 @@ namespace Imlight.Internals.DML
         }
         public sealed class MSG_BUYISLANDSPACECONFIRM : INetworkMessage
         {
-            [DMLElement("BYT")] public SByte Failure;
-            [DMLElement("BYT")] public SByte WebFailure;
-            [DMLElement("INT")] public Int32 Credits;
+            [DMLElement(DMLType.BYT)] public SByte Failure;
+            [DMLElement(DMLType.BYT)] public SByte WebFailure;
+            [DMLElement(DMLType.INT)] public Int32 Credits;
             public byte MessageOrder { get; } = 7;
         }
         public sealed class MSG_CASTLEGAMESREQUEST : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             public byte MessageOrder { get; } = 8;
         }
         public sealed class MSG_CASTLEGAMESREQUESTGAMEDATA : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("UINT")] public UInt32 PageNumber;
-            [DMLElement("STR")] public String Data;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.UINT)] public UInt32 PageNumber;
+            [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 9;
         }
         public sealed class MSG_CASTLEGAMESTELEPORTREJECTED : INetworkMessage
@@ -284,13 +284,13 @@ namespace Imlight.Internals.DML
         }
         public sealed class MSG_CASTLEMAGICCHANGEACTION : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("UINT")] public UInt32 ActionNumber;
-            [DMLElement("UINT")] public UInt32 SpellTemplateID;
-            [DMLElement("UINT")] public UInt32 TargetTemplateID;
-            [DMLElement("FLT")] public Single LocX;
-            [DMLElement("FLT")] public Single LocY;
-            [DMLElement("FLT")] public Single LocZ;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.UINT)] public UInt32 ActionNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 SpellTemplateID;
+            [DMLElement(DMLType.UINT)] public UInt32 TargetTemplateID;
+            [DMLElement(DMLType.FLT)] public Single LocX;
+            [DMLElement(DMLType.FLT)] public Single LocY;
+            [DMLElement(DMLType.FLT)] public Single LocZ;
             public byte MessageOrder { get; } = 11;
         }
         public sealed class MSG_CASTLEMAGICCLEAR : INetworkMessage
@@ -299,97 +299,97 @@ namespace Imlight.Internals.DML
         }
         public sealed class MSG_CASTLEMAGICCURRENTSTATE : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 TargetPlayer;
-            [DMLElement("STR")] public String ChangeBuffer;
-            [DMLElement("FLT")] public Single ZoneTime;
-            [DMLElement("BYT")] public SByte OrbFlags;
+            [DMLElement(DMLType.GID)] public UInt64 TargetPlayer;
+            [DMLElement(DMLType.STR)] public String ChangeBuffer;
+            [DMLElement(DMLType.FLT)] public Single ZoneTime;
+            [DMLElement(DMLType.BYT)] public SByte OrbFlags;
             public byte MessageOrder { get; } = 13;
         }
         public sealed class MSG_CASTLEMAGICORB : INetworkMessage
         {
-            [DMLElement("BYT")] public SByte OrbFlags;
+            [DMLElement(DMLType.BYT)] public SByte OrbFlags;
             public byte MessageOrder { get; } = 14;
         }
         public sealed class MSG_CASTLEMAGICREQUESTALLOWMOUNTS : INetworkMessage
         {
-            [DMLElement("BYT")] public SByte State;
+            [DMLElement(DMLType.BYT)] public SByte State;
             public byte MessageOrder { get; } = 15;
         }
         public sealed class MSG_CASTLEMAGICREQUESTALLOWPVP : INetworkMessage
         {
-            [DMLElement("BYT")] public SByte State;
+            [DMLElement(DMLType.BYT)] public SByte State;
             public byte MessageOrder { get; } = 16;
         }
         public sealed class MSG_CASTLEMAGICREQUESTPLAYERTELEPORT : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 TargetPlayerGID;
-            [DMLElement("GID")] public UInt64 TargetGID;
+            [DMLElement(DMLType.GID)] public UInt64 TargetPlayerGID;
+            [DMLElement(DMLType.GID)] public UInt64 TargetGID;
             public byte MessageOrder { get; } = 17;
         }
         public sealed class MSG_CASTLEMAGICREQUESTRANDOM : INetworkMessage
         {
-            [DMLElement("STR")] public String Buffer;
+            [DMLElement(DMLType.STR)] public String Buffer;
             public byte MessageOrder { get; } = 18;
         }
         public sealed class MSG_CASTLEMAGICREQUESTUSE : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 ItemGID;
+            [DMLElement(DMLType.GID)] public UInt64 ItemGID;
             public byte MessageOrder { get; } = 19;
         }
         public sealed class MSG_CASTLEMAGICTUTORIAL : INetworkMessage
         {
-            [DMLElement("BYT")] public SByte State;
+            [DMLElement(DMLType.BYT)] public SByte State;
             public byte MessageOrder { get; } = 20;
         }
         public sealed class MSG_CASTLEMAGICUPDATESTATE : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("UINT")] public UInt32 State;
-            [DMLElement("UINT")] public UInt32 RandomNumbers;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.UINT)] public UInt32 State;
+            [DMLElement(DMLType.UINT)] public UInt32 RandomNumbers;
             public byte MessageOrder { get; } = 21;
         }
         public sealed class MSG_CASTLETOURSADD : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("GID")] public UInt64 HouseGID;
-            [DMLElement("BYT")] public SByte HouseType;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.GID)] public UInt64 HouseGID;
+            [DMLElement(DMLType.BYT)] public SByte HouseType;
             public byte MessageOrder { get; } = 22;
         }
         public sealed class MSG_CASTLETOURSADDRESULT : INetworkMessage
         {
-            [DMLElement("UINT")] public UInt32 Status;
+            [DMLElement(DMLType.UINT)] public UInt32 Status;
             public byte MessageOrder { get; } = 23;
         }
         public sealed class MSG_CASTLETOURSCSRRESULTS : INetworkMessage
         {
-            [DMLElement("STR")] public String Result;
+            [DMLElement(DMLType.STR)] public String Result;
             public byte MessageOrder { get; } = 24;
         }
         public sealed class MSG_CASTLETOURSDELETECHARACTER : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 CharacterID;
+            [DMLElement(DMLType.GID)] public UInt64 CharacterID;
             public byte MessageOrder { get; } = 25;
         }
         public sealed class MSG_CASTLETOURSENABLERATINGDISPLAY : INetworkMessage
         {
-            [DMLElement("BYT")] public SByte CastleType;
-            [DMLElement("BYT")] public SByte Rating;
-            [DMLElement("BYT")] public SByte FirstDisplay;
-            [DMLElement("UINT")] public UInt32 TemplateID;
+            [DMLElement(DMLType.BYT)] public SByte CastleType;
+            [DMLElement(DMLType.BYT)] public SByte Rating;
+            [DMLElement(DMLType.BYT)] public SByte FirstDisplay;
+            [DMLElement(DMLType.UINT)] public UInt32 TemplateID;
             public byte MessageOrder { get; } = 26;
         }
         public sealed class MSG_CASTLETOURSLEADERBOARDRESPONSE : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 CharacterID;
-            [DMLElement("BYT")] public SByte LeaderboardType;
-            [DMLElement("BYT")] public SByte SortType;
-            [DMLElement("UINT")] public UInt32 PageNumber;
-            [DMLElement("STR")] public String LeaderboardData;
+            [DMLElement(DMLType.GID)] public UInt64 CharacterID;
+            [DMLElement(DMLType.BYT)] public SByte LeaderboardType;
+            [DMLElement(DMLType.BYT)] public SByte SortType;
+            [DMLElement(DMLType.UINT)] public UInt32 PageNumber;
+            [DMLElement(DMLType.STR)] public String LeaderboardData;
             public byte MessageOrder { get; } = 27;
         }
         public sealed class MSG_CASTLETOURSPLAYERBANNED : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             public byte MessageOrder { get; } = 28;
         }
         public sealed class MSG_CASTLETOURSRATINGDISPLAY : INetworkMessage
@@ -398,57 +398,57 @@ namespace Imlight.Internals.DML
         }
         public sealed class MSG_CASTLETOURSREMOVE : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("GID")] public UInt64 HouseGID;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.GID)] public UInt64 HouseGID;
             public byte MessageOrder { get; } = 30;
         }
         public sealed class MSG_CASTLETOURSREMOVERESULT : INetworkMessage
         {
-            [DMLElement("UINT")] public UInt32 Status;
+            [DMLElement(DMLType.UINT)] public UInt32 Status;
             public byte MessageOrder { get; } = 31;
         }
         public sealed class MSG_CASTLETOURSREQUEST : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             public byte MessageOrder { get; } = 32;
         }
         public sealed class MSG_CASTLETOURSREQUESTFRIENDS : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 CharacterID;
-            [DMLElement("STR")] public String Data;
+            [DMLElement(DMLType.GID)] public UInt64 CharacterID;
+            [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 33;
         }
         public sealed class MSG_CASTLETOURSREQUESTLEADERBOARD : INetworkMessage
         {
-            [DMLElement("BYT")] public SByte LeaderboardType;
-            [DMLElement("BYT")] public SByte SortType;
-            [DMLElement("UINT")] public UInt32 PageNumber;
-            [DMLElement("STR")] public String LeaderboardData;
+            [DMLElement(DMLType.BYT)] public SByte LeaderboardType;
+            [DMLElement(DMLType.BYT)] public SByte SortType;
+            [DMLElement(DMLType.UINT)] public UInt32 PageNumber;
+            [DMLElement(DMLType.STR)] public String LeaderboardData;
             public byte MessageOrder { get; } = 34;
         }
         public sealed class MSG_CASTLETOURSREQUESTMYCASTLEDATA : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("STR")] public String Data;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 35;
         }
         public sealed class MSG_CASTLETOURSREQUESTMYCASTLES : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("STR")] public String Data;
-            [DMLElement("BYT")] public SByte Days;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.STR)] public String Data;
+            [DMLElement(DMLType.BYT)] public SByte Days;
             public byte MessageOrder { get; } = 36;
         }
         public sealed class MSG_CASTLETOURSSENDRATING : INetworkMessage
         {
-            [DMLElement("BYT")] public SByte Rating;
+            [DMLElement(DMLType.BYT)] public SByte Rating;
             public byte MessageOrder { get; } = 37;
         }
         public sealed class MSG_CASTLETOURSTELEPORTPLAYER : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 CharacterID;
-            [DMLElement("STR")] public String TeleportData;
-            [DMLElement("BYT")] public SByte Source;
+            [DMLElement(DMLType.GID)] public UInt64 CharacterID;
+            [DMLElement(DMLType.STR)] public String TeleportData;
+            [DMLElement(DMLType.BYT)] public SByte Source;
             public byte MessageOrder { get; } = 38;
         }
         public sealed class MSG_CASTLETOURSTELEPORTREJECTED : INetworkMessage
@@ -457,44 +457,44 @@ namespace Imlight.Internals.DML
         }
         public sealed class MSG_CASTLETOURSVISITCASTLE : INetworkMessage
         {
-            [DMLElement("BYT")] public SByte VisitType;
-            [DMLElement("BYT")] public SByte HouseType;
+            [DMLElement(DMLType.BYT)] public SByte VisitType;
+            [DMLElement(DMLType.BYT)] public SByte HouseType;
             public byte MessageOrder { get; } = 40;
         }
         public sealed class MSG_CATCHFISH : INetworkMessage
         {
-            [DMLElement("UINT")] public UInt32 SpellTemplateID;
-            [DMLElement("UBYT")] public Byte IsTreasureCard;
-            [DMLElement("UINT")] public UInt32 FishingPassport;
-            [DMLElement("UINT")] public UInt32 FishID;
+            [DMLElement(DMLType.UINT)] public UInt32 SpellTemplateID;
+            [DMLElement(DMLType.UBYT)] public Byte IsTreasureCard;
+            [DMLElement(DMLType.UINT)] public UInt32 FishingPassport;
+            [DMLElement(DMLType.UINT)] public UInt32 FishID;
             public byte MessageOrder { get; } = 41;
         }
         public sealed class MSG_CATCHOFTHEDAYOPEN : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("UINT")] public UInt32 FishTemplateID;
-            [DMLElement("UINT")] public UInt32 CatchOfTheDayBonus;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.UINT)] public UInt32 FishTemplateID;
+            [DMLElement(DMLType.UINT)] public UInt32 CatchOfTheDayBonus;
             public byte MessageOrder { get; } = 42;
         }
         public sealed class MSG_CATCHSUCCESS : INetworkMessage
         {
-            [DMLElement("UINT")] public UInt32 FishID;
-            [DMLElement("UBYT")] public Byte Assist;
+            [DMLElement(DMLType.UINT)] public UInt32 FishID;
+            [DMLElement(DMLType.UBYT)] public Byte Assist;
             public byte MessageOrder { get; } = 43;
         }
         public sealed class MSG_CHANGEBREADCRUMBREQUEST : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 BreadCrumbGID;
-            [DMLElement("GID")] public UInt64 OtherGID;
-            [DMLElement("BYT")] public SByte AddPet;
-            [DMLElement("BYT")] public SByte LinkBreadCrumb;
-            [DMLElement("BYT")] public SByte SetPetBehavior;
+            [DMLElement(DMLType.GID)] public UInt64 BreadCrumbGID;
+            [DMLElement(DMLType.GID)] public UInt64 OtherGID;
+            [DMLElement(DMLType.BYT)] public SByte AddPet;
+            [DMLElement(DMLType.BYT)] public SByte LinkBreadCrumb;
+            [DMLElement(DMLType.BYT)] public SByte SetPetBehavior;
             public byte MessageOrder { get; } = 44;
         }
         public sealed class MSG_CREATETESTISLAND : INetworkMessage
         {
-            [DMLElement("UINT")] public UInt32 DeedGID;
-            [DMLElement("UINT")] public UInt32 StructureGID;
+            [DMLElement(DMLType.UINT)] public UInt32 DeedGID;
+            [DMLElement(DMLType.UINT)] public UInt32 StructureGID;
             public byte MessageOrder { get; } = 45;
         }
         public sealed class MSG_DAILYPVPOPEN : INetworkMessage
@@ -503,24 +503,24 @@ namespace Imlight.Internals.DML
         }
         public sealed class MSG_DAILYQUESTCOMPLETED : INetworkMessage
         {
-            [DMLElement("UINT")] public UInt32 QuestIndex;
-            [DMLElement("UBYT")] public Byte CurrentCircle;
-            [DMLElement("UBYT")] public Byte ConsecutiveDays;
-            [DMLElement("UBYT")] public Byte Flags;
-            [DMLElement("UINT")] public UInt32 ItemTemplateID;
+            [DMLElement(DMLType.UINT)] public UInt32 QuestIndex;
+            [DMLElement(DMLType.UBYT)] public Byte CurrentCircle;
+            [DMLElement(DMLType.UBYT)] public Byte ConsecutiveDays;
+            [DMLElement(DMLType.UBYT)] public Byte Flags;
+            [DMLElement(DMLType.UINT)] public UInt32 ItemTemplateID;
             public byte MessageOrder { get; } = 47;
         }
         public sealed class MSG_DAILYQUESTCSRDATA : INetworkMessage
         {
-            [DMLElement("STR")] public String QuestData;
+            [DMLElement(DMLType.STR)] public String QuestData;
             public byte MessageOrder { get; } = 48;
         }
         public sealed class MSG_DAILYQUESTEXPLORE : INetworkMessage
         {
-            [DMLElement("FLT")] public Single LocX;
-            [DMLElement("FLT")] public Single LocY;
-            [DMLElement("FLT")] public Single LocZ;
-            [DMLElement("FLT")] public Single Radius;
+            [DMLElement(DMLType.FLT)] public Single LocX;
+            [DMLElement(DMLType.FLT)] public Single LocY;
+            [DMLElement(DMLType.FLT)] public Single LocZ;
+            [DMLElement(DMLType.FLT)] public Single Radius;
             public byte MessageOrder { get; } = 49;
         }
         public sealed class MSG_DAILYQUESTOPEN : INetworkMessage
@@ -529,49 +529,49 @@ namespace Imlight.Internals.DML
         }
         public sealed class MSG_DELETEEQUIPPEDHOUSINGITEM : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 ObjectGID;
-            [DMLElement("GID")] public UInt64 ItemGID;
-            [DMLElement("STR")] public String SlotName;
+            [DMLElement(DMLType.GID)] public UInt64 ObjectGID;
+            [DMLElement(DMLType.GID)] public UInt64 ItemGID;
+            [DMLElement(DMLType.STR)] public String SlotName;
             public byte MessageOrder { get; } = 51;
         }
         public sealed class MSG_DELETEFISH : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("UINT")] public UInt32 FishTemplateID;
-            [DMLElement("FLT")] public Single Size;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.UINT)] public UInt32 FishTemplateID;
+            [DMLElement(DMLType.FLT)] public Single Size;
             public byte MessageOrder { get; } = 52;
         }
         public sealed class MSG_DELETEFROMATTIC : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("GID")] public UInt64 ItemID;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.GID)] public UInt64 ItemID;
             public byte MessageOrder { get; } = 53;
         }
         public sealed class MSG_DELETEMUSICLOOP : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 ObjectGID;
-            [DMLElement("UINT")] public UInt32 LoopNumber;
+            [DMLElement(DMLType.GID)] public UInt64 ObjectGID;
+            [DMLElement(DMLType.UINT)] public UInt32 LoopNumber;
             public byte MessageOrder { get; } = 54;
         }
         public sealed class MSG_DISPLAYCATCHFISH : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 ObjectGID;
-            [DMLElement("UINT")] public UInt32 FishTemplateID;
-            [DMLElement("FLT")] public Single Size;
-            [DMLElement("UINT")] public UInt32 SpellTemplateID;
+            [DMLElement(DMLType.GID)] public UInt64 ObjectGID;
+            [DMLElement(DMLType.UINT)] public UInt32 FishTemplateID;
+            [DMLElement(DMLType.FLT)] public Single Size;
+            [DMLElement(DMLType.UINT)] public UInt32 SpellTemplateID;
             public byte MessageOrder { get; } = 55;
         }
         public sealed class MSG_DISPLAYCAUGHTFISH : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 ObjectGID;
-            [DMLElement("UINT")] public UInt32 FishTemplateID;
-            [DMLElement("FLT")] public Single Length;
-            [DMLElement("UBYT")] public Byte IsSmallFry;
-            [DMLElement("UBYT")] public Byte IsWopper;
-            [DMLElement("STR")] public String LootData;
-            [DMLElement("UBYT")] public Byte Energy;
-            [DMLElement("UBYT")] public Byte IsTournamentFish;
-            [DMLElement("UINT")] public UInt32 CatchOfTheDayBonus;
+            [DMLElement(DMLType.GID)] public UInt64 ObjectGID;
+            [DMLElement(DMLType.UINT)] public UInt32 FishTemplateID;
+            [DMLElement(DMLType.FLT)] public Single Length;
+            [DMLElement(DMLType.UBYT)] public Byte IsSmallFry;
+            [DMLElement(DMLType.UBYT)] public Byte IsWopper;
+            [DMLElement(DMLType.STR)] public String LootData;
+            [DMLElement(DMLType.UBYT)] public Byte Energy;
+            [DMLElement(DMLType.UBYT)] public Byte IsTournamentFish;
+            [DMLElement(DMLType.UINT)] public UInt32 CatchOfTheDayBonus;
             public byte MessageOrder { get; } = 56;
         }
         public sealed class MSG_DISPOSABLEDUNGEONNOOWNER : INetworkMessage
@@ -580,111 +580,111 @@ namespace Imlight.Internals.DML
         }
         public sealed class MSG_DailyPvPUpdate : INetworkMessage
         {
-            [DMLElement("UBYT")] public Byte ConsecutiveDays;
-            [DMLElement("UBYT")] public Byte Flags;
-            [DMLElement("UINT")] public UInt32 TimeLeft;
+            [DMLElement(DMLType.UBYT)] public Byte ConsecutiveDays;
+            [DMLElement(DMLType.UBYT)] public Byte Flags;
+            [DMLElement(DMLType.UINT)] public UInt32 TimeLeft;
             public byte MessageOrder { get; } = 58;
         }
         public sealed class MSG_DailyQuestUpdate : INetworkMessage
         {
-            [DMLElement("UINT")] public UInt32 QuestIndex;
-            [DMLElement("UBYT")] public Byte CurrentCircle;
-            [DMLElement("UBYT")] public Byte ConsecutiveDays;
-            [DMLElement("UBYT")] public Byte Flags;
-            [DMLElement("UINT")] public UInt32 TimeLeft;
+            [DMLElement(DMLType.UINT)] public UInt32 QuestIndex;
+            [DMLElement(DMLType.UBYT)] public Byte CurrentCircle;
+            [DMLElement(DMLType.UBYT)] public Byte ConsecutiveDays;
+            [DMLElement(DMLType.UBYT)] public Byte Flags;
+            [DMLElement(DMLType.UINT)] public UInt32 TimeLeft;
             public byte MessageOrder { get; } = 59;
         }
         public sealed class MSG_EMPTYLOTCHECK : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 EmptyLotGID;
+            [DMLElement(DMLType.GID)] public UInt64 EmptyLotGID;
             public byte MessageOrder { get; } = 60;
         }
         public sealed class MSG_ENDFISHINGCAST : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 ObjectGID;
+            [DMLElement(DMLType.GID)] public UInt64 ObjectGID;
             public byte MessageOrder { get; } = 61;
         }
         public sealed class MSG_ENTERTOURNAMENTFISH : INetworkMessage
         {
-            [DMLElement("UINT")] public UInt32 FishTemplateID;
-            [DMLElement("FLT")] public Single FishSize;
+            [DMLElement(DMLType.UINT)] public UInt32 FishTemplateID;
+            [DMLElement(DMLType.FLT)] public Single FishSize;
             public byte MessageOrder { get; } = 62;
         }
         public sealed class MSG_ENTERTOURNAMENTFISHRESULT : INetworkMessage
         {
-            [DMLElement("INT")] public Int32 Position;
+            [DMLElement(DMLType.INT)] public Int32 Position;
             public byte MessageOrder { get; } = 63;
         }
         public sealed class MSG_EQUIPHOUSEMUSIC : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 MusicPlayerGID;
-            [DMLElement("GID")] public UInt64 MusicGID;
+            [DMLElement(DMLType.GID)] public UInt64 MusicPlayerGID;
+            [DMLElement(DMLType.GID)] public UInt64 MusicGID;
             public byte MessageOrder { get; } = 64;
         }
         public sealed class MSG_EQUIPMANNEQUINITEM : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 MannequinGID;
-            [DMLElement("INT")] public Int32 IsEquip;
-            [DMLElement("GID")] public UInt64 ItemID;
-            [DMLElement("STR")] public String SlotName;
+            [DMLElement(DMLType.GID)] public UInt64 MannequinGID;
+            [DMLElement(DMLType.INT)] public Int32 IsEquip;
+            [DMLElement(DMLType.GID)] public UInt64 ItemID;
+            [DMLElement(DMLType.STR)] public String SlotName;
             public byte MessageOrder { get; } = 65;
         }
         public sealed class MSG_FISHESCAPED : INetworkMessage
         {
-            [DMLElement("UINT")] public UInt32 FishID;
+            [DMLElement(DMLType.UINT)] public UInt32 FishID;
             public byte MessageOrder { get; } = 66;
         }
         public sealed class MSG_FISHINGCSRRESULTS : INetworkMessage
         {
-            [DMLElement("STR")] public String Result;
+            [DMLElement(DMLType.STR)] public String Result;
             public byte MessageOrder { get; } = 67;
         }
         public sealed class MSG_FISHINGSPELLCAST : INetworkMessage
         {
-            [DMLElement("UINT")] public UInt32 SpellTemplateID;
-            [DMLElement("UBYT")] public Byte IsTreasureCard;
-            [DMLElement("UINT")] public UInt32 FishingPassport;
-            [DMLElement("UBYT")] public Byte IsRecast;
+            [DMLElement(DMLType.UINT)] public UInt32 SpellTemplateID;
+            [DMLElement(DMLType.UBYT)] public Byte IsTreasureCard;
+            [DMLElement(DMLType.UINT)] public UInt32 FishingPassport;
+            [DMLElement(DMLType.UBYT)] public Byte IsRecast;
             public byte MessageOrder { get; } = 68;
         }
         public sealed class MSG_FISHTOURNAMENTLEADERBOARDOPEN : INetworkMessage
         {
-            [DMLElement("UINT")] public UInt32 ThisWeeksExpireTime;
-            [DMLElement("UINT")] public UInt32 LastWeeksExpireTime;
+            [DMLElement(DMLType.UINT)] public UInt32 ThisWeeksExpireTime;
+            [DMLElement(DMLType.UINT)] public UInt32 LastWeeksExpireTime;
             public byte MessageOrder { get; } = 69;
         }
         public sealed class MSG_FISHTOURNAMENTLEADERBOARDREQUEST : INetworkMessage
         {
-            [DMLElement("UINT")] public UInt32 ExpireTime;
-            [DMLElement("UINT")] public UInt32 PageNumber;
-            [DMLElement("STR")] public String Data;
+            [DMLElement(DMLType.UINT)] public UInt32 ExpireTime;
+            [DMLElement(DMLType.UINT)] public UInt32 PageNumber;
+            [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 70;
         }
         public sealed class MSG_FISHTOURNAMENTOPEN : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("UINT")] public UInt32 FishTemplateID;
-            [DMLElement("UINT")] public UInt32 FishSizeTarget;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.UINT)] public UInt32 FishTemplateID;
+            [DMLElement(DMLType.UINT)] public UInt32 FishSizeTarget;
             public byte MessageOrder { get; } = 71;
         }
         public sealed class MSG_GARDENINGCASTSPELL : INetworkMessage
         {
-            [DMLElement("UINT")] public UInt32 SpellTemplateID;
-            [DMLElement("GID")] public UInt64 PlayerGID;
-            [DMLElement("FLT")] public Single PositionX;
-            [DMLElement("FLT")] public Single PositionY;
-            [DMLElement("FLT")] public Single PositionZ;
+            [DMLElement(DMLType.UINT)] public UInt32 SpellTemplateID;
+            [DMLElement(DMLType.GID)] public UInt64 PlayerGID;
+            [DMLElement(DMLType.FLT)] public Single PositionX;
+            [DMLElement(DMLType.FLT)] public Single PositionY;
+            [DMLElement(DMLType.FLT)] public Single PositionZ;
             public byte MessageOrder { get; } = 72;
         }
         public sealed class MSG_GARDENINGCOMMAND : INetworkMessage
         {
-            [DMLElement("UBYT")] public Byte Command;
-            [DMLElement("FLT")] public Single PositionX;
-            [DMLElement("FLT")] public Single PositionY;
-            [DMLElement("FLT")] public Single PositionZ;
-            [DMLElement("UINT")] public UInt32 TemplateID;
-            [DMLElement("GID")] public UInt64 ObjectGID;
-            [DMLElement("GID")] public UInt64 ZoneGID;
+            [DMLElement(DMLType.UBYT)] public Byte Command;
+            [DMLElement(DMLType.FLT)] public Single PositionX;
+            [DMLElement(DMLType.FLT)] public Single PositionY;
+            [DMLElement(DMLType.FLT)] public Single PositionZ;
+            [DMLElement(DMLType.UINT)] public UInt32 TemplateID;
+            [DMLElement(DMLType.GID)] public UInt64 ObjectGID;
+            [DMLElement(DMLType.GID)] public UInt64 ZoneGID;
             public byte MessageOrder { get; } = 73;
         }
         public sealed class MSG_GARDENINGCOMMANDRESPONSE : INetworkMessage
@@ -693,58 +693,58 @@ namespace Imlight.Internals.DML
         }
         public sealed class MSG_GARDENINGCSRRESULTS : INetworkMessage
         {
-            [DMLElement("STR")] public String Result;
+            [DMLElement(DMLType.STR)] public String Result;
             public byte MessageOrder { get; } = 75;
         }
         public sealed class MSG_GARDENINGHARVESTPLANT : INetworkMessage
         {
-            [DMLElement("FLT")] public Single PositionX;
-            [DMLElement("FLT")] public Single PositionY;
-            [DMLElement("FLT")] public Single PositionZ;
-            [DMLElement("UINT")] public UInt32 PlantTemplateID;
+            [DMLElement(DMLType.FLT)] public Single PositionX;
+            [DMLElement(DMLType.FLT)] public Single PositionY;
+            [DMLElement(DMLType.FLT)] public Single PositionZ;
+            [DMLElement(DMLType.UINT)] public UInt32 PlantTemplateID;
             public byte MessageOrder { get; } = 76;
         }
         public sealed class MSG_GARDENINGHARVESTPLANTSECONDSPRING : INetworkMessage
         {
-            [DMLElement("FLT")] public Single PositionX;
-            [DMLElement("FLT")] public Single PositionY;
-            [DMLElement("FLT")] public Single PositionZ;
+            [DMLElement(DMLType.FLT)] public Single PositionX;
+            [DMLElement(DMLType.FLT)] public Single PositionY;
+            [DMLElement(DMLType.FLT)] public Single PositionZ;
             public byte MessageOrder { get; } = 77;
         }
         public sealed class MSG_GARDENINGPELLFIZZLE : INetworkMessage
         {
-            [DMLElement("UBYT")] public Byte FizzleType;
+            [DMLElement(DMLType.UBYT)] public Byte FizzleType;
             public byte MessageOrder { get; } = 78;
         }
         public sealed class MSG_GARDENINGSPELLINSPECT : INetworkMessage
         {
-            [DMLElement("FLT")] public Single PositionX;
-            [DMLElement("FLT")] public Single PositionY;
-            [DMLElement("FLT")] public Single PositionZ;
-            [DMLElement("FLT")] public Single Progress;
+            [DMLElement(DMLType.FLT)] public Single PositionX;
+            [DMLElement(DMLType.FLT)] public Single PositionY;
+            [DMLElement(DMLType.FLT)] public Single PositionZ;
+            [DMLElement(DMLType.FLT)] public Single Progress;
             public byte MessageOrder { get; } = 79;
         }
         public sealed class MSG_GARDENLEVELUP : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("INT")] public Int32 NewLevel;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.INT)] public Int32 NewLevel;
             public byte MessageOrder { get; } = 80;
         }
         public sealed class MSG_HIDEHOUSINGOBJECT : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 ObjectGID;
-            [DMLElement("INT")] public Int32 Hide;
+            [DMLElement(DMLType.GID)] public UInt64 ObjectGID;
+            [DMLElement(DMLType.INT)] public Int32 Hide;
             public byte MessageOrder { get; } = 81;
         }
         public sealed class MSG_HOUSINGGAMEREQUESTPOWERUPLOCATIONS : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 ZoneGID;
-            [DMLElement("STR")] public String Data;
+            [DMLElement(DMLType.GID)] public UInt64 ZoneGID;
+            [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 82;
         }
         public sealed class MSG_HOUSINGGAMESTATUSUPDATE : INetworkMessage
         {
-            [DMLElement("UBYT")] public Byte Flags;
+            [DMLElement(DMLType.UBYT)] public Byte Flags;
             public byte MessageOrder { get; } = 83;
         }
         public sealed class MSG_HOUSINGGAMEUSEPOWERUP : INetworkMessage
@@ -757,721 +757,721 @@ namespace Imlight.Internals.DML
         }
         public sealed class MSG_HOUSINGOBJECTPROXIMITY : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 ObjectID;
-            [DMLElement("INT")] public Int32 Inside;
+            [DMLElement(DMLType.GID)] public UInt64 ObjectID;
+            [DMLElement(DMLType.INT)] public Int32 Inside;
             public byte MessageOrder { get; } = 86;
         }
         public sealed class MSG_HOUSINGZONEPLAYER : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 HousingPlayer;
-            [DMLElement("BYT")] public SByte AddPlayer;
+            [DMLElement(DMLType.GID)] public UInt64 HousingPlayer;
+            [DMLElement(DMLType.BYT)] public SByte AddPlayer;
             public byte MessageOrder { get; } = 87;
         }
         public sealed class MSG_HOUSINGZONEPLAYERLIST : INetworkMessage
         {
-            [DMLElement("STR")] public String PlayerListBuffer;
-            [DMLElement("GID")] public UInt64 ZoneGID;
-            [DMLElement("BYT")] public SByte OrbFlags;
+            [DMLElement(DMLType.STR)] public String PlayerListBuffer;
+            [DMLElement(DMLType.GID)] public UInt64 ZoneGID;
+            [DMLElement(DMLType.BYT)] public SByte OrbFlags;
             public byte MessageOrder { get; } = 88;
         }
         public sealed class MSG_INTERACTIVEMUSICERROR : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 ObjectGID;
-            [DMLElement("BYT")] public SByte Error;
+            [DMLElement(DMLType.GID)] public UInt64 ObjectGID;
+            [DMLElement(DMLType.BYT)] public SByte Error;
             public byte MessageOrder { get; } = 89;
         }
         public sealed class MSG_INTERACTIVEMUSICINUSE : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 PlayerGID;
-            [DMLElement("BYT")] public SByte InUse;
+            [DMLElement(DMLType.GID)] public UInt64 PlayerGID;
+            [DMLElement(DMLType.BYT)] public SByte InUse;
             public byte MessageOrder { get; } = 90;
         }
         public sealed class MSG_INTERACTIVEMUSICINUSE2 : INetworkMessage
         {
-            [DMLElement("STR")] public String Data;
+            [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 91;
         }
         public sealed class MSG_ISLANDSPACEBUYREQUEST : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("BYT")] public SByte WebFailure;
-            [DMLElement("INT")] public Int32 Credits;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.BYT)] public SByte WebFailure;
+            [DMLElement(DMLType.INT)] public Int32 Credits;
             public byte MessageOrder { get; } = 92;
         }
         public sealed class MSG_ISLANDSPACESHOPOPEN : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("BYT")] public SByte WebFailure;
-            [DMLElement("INT")] public Int32 Credits;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.BYT)] public SByte WebFailure;
+            [DMLElement(DMLType.INT)] public Int32 Credits;
             public byte MessageOrder { get; } = 93;
         }
         public sealed class MSG_MISSFISH : INetworkMessage
         {
-            [DMLElement("UINT")] public UInt32 SpellTemplateID;
-            [DMLElement("UBYT")] public Byte IsTreasureCard;
+            [DMLElement(DMLType.UINT)] public UInt32 SpellTemplateID;
+            [DMLElement(DMLType.UBYT)] public Byte IsTreasureCard;
             public byte MessageOrder { get; } = 94;
         }
         public sealed class MSG_MONSTERMAGICADDMONSTER : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("UINT")] public UInt32 SpellTemplateID;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.UINT)] public UInt32 SpellTemplateID;
             public byte MessageOrder { get; } = 95;
         }
         public sealed class MSG_MONSTERMAGICERASEMONSTER : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("UINT")] public UInt32 MobTemplateID;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.UINT)] public UInt32 MobTemplateID;
             public byte MessageOrder { get; } = 96;
         }
         public sealed class MSG_MOVEFROMATTIC : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("GID")] public UInt64 ItemID;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.GID)] public UInt64 ItemID;
             public byte MessageOrder { get; } = 97;
         }
         public sealed class MSG_MOVEGEARFROMGEARVAULT : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GearVaultGID;
-            [DMLElement("STR")] public String GearData;
+            [DMLElement(DMLType.GID)] public UInt64 GearVaultGID;
+            [DMLElement(DMLType.STR)] public String GearData;
             public byte MessageOrder { get; } = 98;
         }
         public sealed class MSG_MOVEGEARTOGEARVAULT : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GearVaultGID;
-            [DMLElement("GID")] public UInt64 GearGID;
+            [DMLElement(DMLType.GID)] public UInt64 GearVaultGID;
+            [DMLElement(DMLType.GID)] public UInt64 GearGID;
             public byte MessageOrder { get; } = 99;
         }
         public sealed class MSG_MOVEJEWELFROMJEWELVAULT : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 JewelVaultID;
-            [DMLElement("UINT")] public UInt32 JewelTemplateID;
-            [DMLElement("UINT")] public UInt32 Count;
+            [DMLElement(DMLType.GID)] public UInt64 JewelVaultID;
+            [DMLElement(DMLType.UINT)] public UInt32 JewelTemplateID;
+            [DMLElement(DMLType.UINT)] public UInt32 Count;
             public byte MessageOrder { get; } = 100;
         }
         public sealed class MSG_MOVEJEWELTOJEWELVAULT : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 JewelVaultID;
-            [DMLElement("UINT")] public UInt32 JewelTemplateID;
-            [DMLElement("UINT")] public UInt32 Count;
+            [DMLElement(DMLType.GID)] public UInt64 JewelVaultID;
+            [DMLElement(DMLType.UINT)] public UInt32 JewelTemplateID;
+            [DMLElement(DMLType.UINT)] public UInt32 Count;
             public byte MessageOrder { get; } = 101;
         }
         public sealed class MSG_MOVESEEDFROMGARDENINGSHED : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GardeningShedID;
-            [DMLElement("UINT")] public UInt32 SeedTemplateID;
-            [DMLElement("UINT")] public UInt32 Count;
+            [DMLElement(DMLType.GID)] public UInt64 GardeningShedID;
+            [DMLElement(DMLType.UINT)] public UInt32 SeedTemplateID;
+            [DMLElement(DMLType.UINT)] public UInt32 Count;
             public byte MessageOrder { get; } = 102;
         }
         public sealed class MSG_MOVESEEDTOGARDENINGSHED : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GardeningShedID;
-            [DMLElement("UINT")] public UInt32 SeedTemplateID;
-            [DMLElement("UINT")] public UInt32 Count;
+            [DMLElement(DMLType.GID)] public UInt64 GardeningShedID;
+            [DMLElement(DMLType.UINT)] public UInt32 SeedTemplateID;
+            [DMLElement(DMLType.UINT)] public UInt32 Count;
             public byte MessageOrder { get; } = 103;
         }
         public sealed class MSG_MOVETCFROMTCVAULT : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 TCVaultID;
-            [DMLElement("UINT")] public UInt32 SpellTemplateID;
-            [DMLElement("UINT")] public UInt32 EnchantmentTemplateID;
-            [DMLElement("UINT")] public UInt32 Count;
+            [DMLElement(DMLType.GID)] public UInt64 TCVaultID;
+            [DMLElement(DMLType.UINT)] public UInt32 SpellTemplateID;
+            [DMLElement(DMLType.UINT)] public UInt32 EnchantmentTemplateID;
+            [DMLElement(DMLType.UINT)] public UInt32 Count;
             public byte MessageOrder { get; } = 104;
         }
         public sealed class MSG_MOVETCTOTCVAULT : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 TCVaultID;
-            [DMLElement("UINT")] public UInt32 SpellTemplateID;
-            [DMLElement("UINT")] public UInt32 EnchantmentTemplateID;
-            [DMLElement("UINT")] public UInt32 Count;
+            [DMLElement(DMLType.GID)] public UInt64 TCVaultID;
+            [DMLElement(DMLType.UINT)] public UInt32 SpellTemplateID;
+            [DMLElement(DMLType.UINT)] public UInt32 EnchantmentTemplateID;
+            [DMLElement(DMLType.UINT)] public UInt32 Count;
             public byte MessageOrder { get; } = 105;
         }
         public sealed class MSG_MOVETOATTIC : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("GID")] public UInt64 ItemID;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.GID)] public UInt64 ItemID;
             public byte MessageOrder { get; } = 106;
         }
         public sealed class MSG_NOFISHSPACE : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GameObjectID;
+            [DMLElement(DMLType.GID)] public UInt64 GameObjectID;
             public byte MessageOrder { get; } = 107;
         }
         public sealed class MSG_PATCHADDATTIC : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 BlobGID;
-            [DMLElement("GID")] public UInt64 ObjectID;
-            [DMLElement("STR")] public String SubType;
-            [DMLElement("UINT")] public UInt32 PackageNumber;
-            [DMLElement("UINT")] public UInt32 VersionNumber;
-            [DMLElement("UINT")] public UInt32 GIDID;
-            [DMLElement("STR")] public String Data;
-            [DMLElement("BYT")] public SByte PrimaryColorIndex;
+            [DMLElement(DMLType.GID)] public UInt64 BlobGID;
+            [DMLElement(DMLType.GID)] public UInt64 ObjectID;
+            [DMLElement(DMLType.STR)] public String SubType;
+            [DMLElement(DMLType.UINT)] public UInt32 PackageNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 VersionNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 GIDID;
+            [DMLElement(DMLType.STR)] public String Data;
+            [DMLElement(DMLType.BYT)] public SByte PrimaryColorIndex;
             public byte MessageOrder { get; } = 108;
         }
         public sealed class MSG_PATCHADDHOUSINGOBJECT : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 ObjectID;
-            [DMLElement("FLT")] public Single LocX;
-            [DMLElement("FLT")] public Single LocY;
-            [DMLElement("FLT")] public Single LocZ;
-            [DMLElement("FLT")] public Single Yaw;
-            [DMLElement("STR")] public String SubType;
-            [DMLElement("UINT")] public UInt32 PackageNumber;
-            [DMLElement("UINT")] public UInt32 VersionNumber;
-            [DMLElement("UINT")] public UInt32 GIDID;
-            [DMLElement("STR")] public String Data;
-            [DMLElement("BYT")] public SByte ColorBits;
+            [DMLElement(DMLType.GID)] public UInt64 ObjectID;
+            [DMLElement(DMLType.FLT)] public Single LocX;
+            [DMLElement(DMLType.FLT)] public Single LocY;
+            [DMLElement(DMLType.FLT)] public Single LocZ;
+            [DMLElement(DMLType.FLT)] public Single Yaw;
+            [DMLElement(DMLType.STR)] public String SubType;
+            [DMLElement(DMLType.UINT)] public UInt32 PackageNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 VersionNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 GIDID;
+            [DMLElement(DMLType.STR)] public String Data;
+            [DMLElement(DMLType.BYT)] public SByte ColorBits;
             public byte MessageOrder { get; } = 109;
         }
         public sealed class MSG_PATCHAQUARIUM : INetworkMessage
         {
-            [DMLElement("STR")] public String Data;
-            [DMLElement("STR")] public String SubType;
-            [DMLElement("UINT")] public UInt32 PackageNumber;
-            [DMLElement("UINT")] public UInt32 VersionNumber;
-            [DMLElement("UINT")] public UInt32 GIDID;
+            [DMLElement(DMLType.STR)] public String Data;
+            [DMLElement(DMLType.STR)] public String SubType;
+            [DMLElement(DMLType.UINT)] public UInt32 PackageNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 VersionNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 GIDID;
             public byte MessageOrder { get; } = 110;
         }
         public sealed class MSG_PATCHCASTLEMAGIC : INetworkMessage
         {
-            [DMLElement("STR")] public String Data;
-            [DMLElement("STR")] public String SubType;
-            [DMLElement("UINT")] public UInt32 PackageNumber;
-            [DMLElement("UINT")] public UInt32 VersionNumber;
-            [DMLElement("UINT")] public UInt32 GIDID;
+            [DMLElement(DMLType.STR)] public String Data;
+            [DMLElement(DMLType.STR)] public String SubType;
+            [DMLElement(DMLType.UINT)] public UInt32 PackageNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 VersionNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 GIDID;
             public byte MessageOrder { get; } = 111;
         }
         public sealed class MSG_PATCHDELETEATTIC : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 BlobGID;
-            [DMLElement("GID")] public UInt64 ObjectID;
-            [DMLElement("STR")] public String SubType;
-            [DMLElement("UINT")] public UInt32 PackageNumber;
-            [DMLElement("UINT")] public UInt32 VersionNumber;
-            [DMLElement("UINT")] public UInt32 GIDID;
+            [DMLElement(DMLType.GID)] public UInt64 BlobGID;
+            [DMLElement(DMLType.GID)] public UInt64 ObjectID;
+            [DMLElement(DMLType.STR)] public String SubType;
+            [DMLElement(DMLType.UINT)] public UInt32 PackageNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 VersionNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 GIDID;
             public byte MessageOrder { get; } = 112;
         }
         public sealed class MSG_PATCHDELETEHOUSINGOBJECT : INetworkMessage
         {
-            [DMLElement("STR")] public String SubType;
-            [DMLElement("UINT")] public UInt32 PackageNumber;
-            [DMLElement("UINT")] public UInt32 VersionNumber;
-            [DMLElement("UINT")] public UInt32 GIDID;
+            [DMLElement(DMLType.STR)] public String SubType;
+            [DMLElement(DMLType.UINT)] public UInt32 PackageNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 VersionNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 GIDID;
             public byte MessageOrder { get; } = 113;
         }
         public sealed class MSG_PATCHEQUIPHOUSINGOBJECT : INetworkMessage
         {
-            [DMLElement("STR")] public String Data;
-            [DMLElement("STR")] public String SubType;
-            [DMLElement("UINT")] public UInt32 PackageNumber;
-            [DMLElement("UINT")] public UInt32 VersionNumber;
-            [DMLElement("UINT")] public UInt32 GIDID;
+            [DMLElement(DMLType.STR)] public String Data;
+            [DMLElement(DMLType.STR)] public String SubType;
+            [DMLElement(DMLType.UINT)] public UInt32 PackageNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 VersionNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 GIDID;
             public byte MessageOrder { get; } = 114;
         }
         public sealed class MSG_PATCHGARDENING : INetworkMessage
         {
-            [DMLElement("UBYT")] public Byte Command;
-            [DMLElement("FLT")] public Single PositionX;
-            [DMLElement("FLT")] public Single PositionY;
-            [DMLElement("FLT")] public Single PositionZ;
-            [DMLElement("UINT")] public UInt32 PackageNumber;
-            [DMLElement("UINT")] public UInt32 VersionNumber;
-            [DMLElement("UINT")] public UInt32 GIDID;
-            [DMLElement("UINT")] public UInt32 TemplateID;
-            [DMLElement("UINT")] public UInt32 Time;
+            [DMLElement(DMLType.UBYT)] public Byte Command;
+            [DMLElement(DMLType.FLT)] public Single PositionX;
+            [DMLElement(DMLType.FLT)] public Single PositionY;
+            [DMLElement(DMLType.FLT)] public Single PositionZ;
+            [DMLElement(DMLType.UINT)] public UInt32 PackageNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 VersionNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 GIDID;
+            [DMLElement(DMLType.UINT)] public UInt32 TemplateID;
+            [DMLElement(DMLType.UINT)] public UInt32 Time;
             public byte MessageOrder { get; } = 115;
         }
         public sealed class MSG_PATCHHOUSE : INetworkMessage
         {
-            [DMLElement("UINT")] public UInt32 DeedTemplateID;
+            [DMLElement(DMLType.UINT)] public UInt32 DeedTemplateID;
             public byte MessageOrder { get; } = 116;
         }
         public sealed class MSG_PATCHHOUSINGBREADCRUMB : INetworkMessage
         {
-            [DMLElement("STR")] public String Data;
-            [DMLElement("STR")] public String SubType;
-            [DMLElement("UINT")] public UInt32 PackageNumber;
-            [DMLElement("UINT")] public UInt32 VersionNumber;
-            [DMLElement("UINT")] public UInt32 GIDID;
+            [DMLElement(DMLType.STR)] public String Data;
+            [DMLElement(DMLType.STR)] public String SubType;
+            [DMLElement(DMLType.UINT)] public UInt32 PackageNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 VersionNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 GIDID;
             public byte MessageOrder { get; } = 117;
         }
         public sealed class MSG_PATCHHOUSINGGARDENINGSHED : INetworkMessage
         {
-            [DMLElement("STR")] public String Data;
-            [DMLElement("STR")] public String SubType;
-            [DMLElement("UINT")] public UInt32 PackageNumber;
-            [DMLElement("UINT")] public UInt32 VersionNumber;
-            [DMLElement("UINT")] public UInt32 GIDID;
+            [DMLElement(DMLType.STR)] public String Data;
+            [DMLElement(DMLType.STR)] public String SubType;
+            [DMLElement(DMLType.UINT)] public UInt32 PackageNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 VersionNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 GIDID;
             public byte MessageOrder { get; } = 118;
         }
         public sealed class MSG_PATCHHOUSINGGEARVAULT : INetworkMessage
         {
-            [DMLElement("STR")] public String Data;
-            [DMLElement("STR")] public String SubType;
-            [DMLElement("UINT")] public UInt32 PackageNumber;
-            [DMLElement("UINT")] public UInt32 VersionNumber;
-            [DMLElement("UINT")] public UInt32 GIDID;
+            [DMLElement(DMLType.STR)] public String Data;
+            [DMLElement(DMLType.STR)] public String SubType;
+            [DMLElement(DMLType.UINT)] public UInt32 PackageNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 VersionNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 GIDID;
             public byte MessageOrder { get; } = 119;
         }
         public sealed class MSG_PATCHHOUSINGJEWELVAULT : INetworkMessage
         {
-            [DMLElement("STR")] public String Data;
-            [DMLElement("STR")] public String SubType;
-            [DMLElement("UINT")] public UInt32 PackageNumber;
-            [DMLElement("UINT")] public UInt32 VersionNumber;
-            [DMLElement("UINT")] public UInt32 GIDID;
+            [DMLElement(DMLType.STR)] public String Data;
+            [DMLElement(DMLType.STR)] public String SubType;
+            [DMLElement(DMLType.UINT)] public UInt32 PackageNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 VersionNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 GIDID;
             public byte MessageOrder { get; } = 120;
         }
         public sealed class MSG_PATCHHOUSINGMUSICOBJECT : INetworkMessage
         {
-            [DMLElement("STR")] public String Data;
-            [DMLElement("STR")] public String SubType;
-            [DMLElement("UINT")] public UInt32 PackageNumber;
-            [DMLElement("UINT")] public UInt32 VersionNumber;
-            [DMLElement("UINT")] public UInt32 GIDID;
+            [DMLElement(DMLType.STR)] public String Data;
+            [DMLElement(DMLType.STR)] public String SubType;
+            [DMLElement(DMLType.UINT)] public UInt32 PackageNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 VersionNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 GIDID;
             public byte MessageOrder { get; } = 121;
         }
         public sealed class MSG_PATCHHOUSINGSIGNOBJECT : INetworkMessage
         {
-            [DMLElement("STR")] public String Data;
-            [DMLElement("STR")] public String SubType;
-            [DMLElement("UINT")] public UInt32 PackageNumber;
-            [DMLElement("UINT")] public UInt32 VersionNumber;
-            [DMLElement("UINT")] public UInt32 GIDID;
+            [DMLElement(DMLType.STR)] public String Data;
+            [DMLElement(DMLType.STR)] public String SubType;
+            [DMLElement(DMLType.UINT)] public UInt32 PackageNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 VersionNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 GIDID;
             public byte MessageOrder { get; } = 122;
         }
         public sealed class MSG_PATCHHOUSINGTELEPORTEROBJECT : INetworkMessage
         {
-            [DMLElement("STR")] public String Data;
-            [DMLElement("STR")] public String SubType;
-            [DMLElement("UINT")] public UInt32 PackageNumber;
-            [DMLElement("UINT")] public UInt32 VersionNumber;
-            [DMLElement("UINT")] public UInt32 GIDID;
+            [DMLElement(DMLType.STR)] public String Data;
+            [DMLElement(DMLType.STR)] public String SubType;
+            [DMLElement(DMLType.UINT)] public UInt32 PackageNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 VersionNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 GIDID;
             public byte MessageOrder { get; } = 123;
         }
         public sealed class MSG_PATCHMONSTERARENA : INetworkMessage
         {
-            [DMLElement("STR")] public String Data;
-            [DMLElement("STR")] public String SubType;
-            [DMLElement("UINT")] public UInt32 PackageNumber;
-            [DMLElement("UINT")] public UInt32 VersionNumber;
-            [DMLElement("UINT")] public UInt32 GIDID;
+            [DMLElement(DMLType.STR)] public String Data;
+            [DMLElement(DMLType.STR)] public String SubType;
+            [DMLElement(DMLType.UINT)] public UInt32 PackageNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 VersionNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 GIDID;
             public byte MessageOrder { get; } = 124;
         }
         public sealed class MSG_PATCHMUSICLOOP : INetworkMessage
         {
-            [DMLElement("STR")] public String SubType;
-            [DMLElement("STR")] public String MusicData;
-            [DMLElement("UINT")] public UInt32 PackageNumber;
-            [DMLElement("UINT")] public UInt32 VersionNumber;
-            [DMLElement("UINT")] public UInt32 GIDID;
-            [DMLElement("GID")] public UInt64 ObjectID;
+            [DMLElement(DMLType.STR)] public String SubType;
+            [DMLElement(DMLType.STR)] public String MusicData;
+            [DMLElement(DMLType.UINT)] public UInt32 PackageNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 VersionNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 GIDID;
+            [DMLElement(DMLType.GID)] public UInt64 ObjectID;
             public byte MessageOrder { get; } = 125;
         }
         public sealed class MSG_PATCHREMOVETEXTUREREMAP : INetworkMessage
         {
-            [DMLElement("STR")] public String Data;
-            [DMLElement("STR")] public String SubType;
-            [DMLElement("UINT")] public UInt32 PackageNumber;
-            [DMLElement("UINT")] public UInt32 VersionNumber;
-            [DMLElement("UINT")] public UInt32 GIDID;
-            [DMLElement("UINT")] public UInt32 RemapIndex;
-            [DMLElement("UINT")] public UInt32 TextureType;
+            [DMLElement(DMLType.STR)] public String Data;
+            [DMLElement(DMLType.STR)] public String SubType;
+            [DMLElement(DMLType.UINT)] public UInt32 PackageNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 VersionNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 GIDID;
+            [DMLElement(DMLType.UINT)] public UInt32 RemapIndex;
+            [DMLElement(DMLType.UINT)] public UInt32 TextureType;
             public byte MessageOrder { get; } = 126;
         }
         public sealed class MSG_PATCHTEXTUREREMAP : INetworkMessage
         {
-            [DMLElement("STR")] public String Data;
-            [DMLElement("STR")] public String SubType;
-            [DMLElement("UINT")] public UInt32 PackageNumber;
-            [DMLElement("UINT")] public UInt32 VersionNumber;
-            [DMLElement("UINT")] public UInt32 GIDID;
+            [DMLElement(DMLType.STR)] public String Data;
+            [DMLElement(DMLType.STR)] public String SubType;
+            [DMLElement(DMLType.UINT)] public UInt32 PackageNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 VersionNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 GIDID;
             public byte MessageOrder { get; } = 127;
         }
         public sealed class MSG_PATCHTINTHOUSINGOBJECT : INetworkMessage
         {
-            [DMLElement("STR")] public String SubType;
-            [DMLElement("BYT")] public SByte ColorBits;
-            [DMLElement("UINT")] public UInt32 PackageNumber;
-            [DMLElement("UINT")] public UInt32 VersionNumber;
-            [DMLElement("UINT")] public UInt32 GIDID;
-            [DMLElement("GID")] public UInt64 ObjectID;
+            [DMLElement(DMLType.STR)] public String SubType;
+            [DMLElement(DMLType.BYT)] public SByte ColorBits;
+            [DMLElement(DMLType.UINT)] public UInt32 PackageNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 VersionNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 GIDID;
+            [DMLElement(DMLType.GID)] public UInt64 ObjectID;
             public byte MessageOrder { get; } = 128;
         }
         public sealed class MSG_PATCHTREASURECARDPOSTER : INetworkMessage
         {
-            [DMLElement("STR")] public String Data;
-            [DMLElement("STR")] public String SubType;
-            [DMLElement("UINT")] public UInt32 PackageNumber;
-            [DMLElement("UINT")] public UInt32 VersionNumber;
-            [DMLElement("UINT")] public UInt32 GIDID;
+            [DMLElement(DMLType.STR)] public String Data;
+            [DMLElement(DMLType.STR)] public String SubType;
+            [DMLElement(DMLType.UINT)] public UInt32 PackageNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 VersionNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 GIDID;
             public byte MessageOrder { get; } = 129;
         }
         public sealed class MSG_PATCHTREASURECARDVAULT : INetworkMessage
         {
-            [DMLElement("STR")] public String Data;
-            [DMLElement("STR")] public String SubType;
-            [DMLElement("UINT")] public UInt32 PackageNumber;
-            [DMLElement("UINT")] public UInt32 VersionNumber;
-            [DMLElement("UINT")] public UInt32 GIDID;
+            [DMLElement(DMLType.STR)] public String Data;
+            [DMLElement(DMLType.STR)] public String SubType;
+            [DMLElement(DMLType.UINT)] public UInt32 PackageNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 VersionNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 GIDID;
             public byte MessageOrder { get; } = 130;
         }
         public sealed class MSG_PATCHUPDATEHOUSINGOBJECT : INetworkMessage
         {
-            [DMLElement("FLT")] public Single LocX;
-            [DMLElement("FLT")] public Single LocY;
-            [DMLElement("FLT")] public Single LocZ;
-            [DMLElement("FLT")] public Single Yaw;
-            [DMLElement("STR")] public String SubType;
-            [DMLElement("UINT")] public UInt32 PackageNumber;
-            [DMLElement("UINT")] public UInt32 VersionNumber;
-            [DMLElement("UINT")] public UInt32 GIDID;
-            [DMLElement("GID")] public UInt64 ObjectID;
-            [DMLElement("BYT")] public SByte SwitchTemplateID;
-            [DMLElement("BYT")] public SByte UseExtendedYaw;
+            [DMLElement(DMLType.FLT)] public Single LocX;
+            [DMLElement(DMLType.FLT)] public Single LocY;
+            [DMLElement(DMLType.FLT)] public Single LocZ;
+            [DMLElement(DMLType.FLT)] public Single Yaw;
+            [DMLElement(DMLType.STR)] public String SubType;
+            [DMLElement(DMLType.UINT)] public UInt32 PackageNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 VersionNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 GIDID;
+            [DMLElement(DMLType.GID)] public UInt64 ObjectID;
+            [DMLElement(DMLType.BYT)] public SByte SwitchTemplateID;
+            [DMLElement(DMLType.BYT)] public SByte UseExtendedYaw;
             public byte MessageOrder { get; } = 131;
         }
         public sealed class MSG_PATCHUPEXTENDEDTILE : INetworkMessage
         {
-            [DMLElement("STR")] public String SubType;
-            [DMLElement("UINT")] public UInt32 PackageNumber;
-            [DMLElement("UINT")] public UInt32 VersionNumber;
-            [DMLElement("UINT")] public UInt32 GIDID;
-            [DMLElement("BYT")] public SByte RemapIndex;
-            [DMLElement("BYT")] public SByte IsWallpaper;
-            [DMLElement("GID")] public UInt64 ObjectID;
+            [DMLElement(DMLType.STR)] public String SubType;
+            [DMLElement(DMLType.UINT)] public UInt32 PackageNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 VersionNumber;
+            [DMLElement(DMLType.UINT)] public UInt32 GIDID;
+            [DMLElement(DMLType.BYT)] public SByte RemapIndex;
+            [DMLElement(DMLType.BYT)] public SByte IsWallpaper;
+            [DMLElement(DMLType.GID)] public UInt64 ObjectID;
             public byte MessageOrder { get; } = 132;
         }
         public sealed class MSG_PETTOMESCANATTIC : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             public byte MessageOrder { get; } = 133;
         }
         public sealed class MSG_PICKUPALL : INetworkMessage
         {
-            [DMLElement("UINT")] public UInt32 ItemCount;
-            [DMLElement("BYT")] public SByte ErrorCode;
-            [DMLElement("STR")] public String Exceptions;
+            [DMLElement(DMLType.UINT)] public UInt32 ItemCount;
+            [DMLElement(DMLType.BYT)] public SByte ErrorCode;
+            [DMLElement(DMLType.STR)] public String Exceptions;
             public byte MessageOrder { get; } = 134;
         }
         public sealed class MSG_PICKUPHOUSINGTEXTURE : INetworkMessage
         {
-            [DMLElement("UINT")] public UInt32 RemapIndex;
-            [DMLElement("UINT")] public UInt32 TextureType;
+            [DMLElement(DMLType.UINT)] public UInt32 RemapIndex;
+            [DMLElement(DMLType.UINT)] public UInt32 TextureType;
             public byte MessageOrder { get; } = 135;
         }
         public sealed class MSG_PLACEHOUSINGFISH : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 FishTemplateID;
-            [DMLElement("FLT")] public Single LocX;
-            [DMLElement("FLT")] public Single LocY;
-            [DMLElement("FLT")] public Single LocZ;
-            [DMLElement("FLT")] public Single Yaw;
-            [DMLElement("FLT")] public Single FishSize;
+            [DMLElement(DMLType.GID)] public UInt64 FishTemplateID;
+            [DMLElement(DMLType.FLT)] public Single LocX;
+            [DMLElement(DMLType.FLT)] public Single LocY;
+            [DMLElement(DMLType.FLT)] public Single LocZ;
+            [DMLElement(DMLType.FLT)] public Single Yaw;
+            [DMLElement(DMLType.FLT)] public Single FishSize;
             public byte MessageOrder { get; } = 136;
         }
         public sealed class MSG_PLACEHOUSINGOBJECT : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 ObjectID;
-            [DMLElement("FLT")] public Single LocX;
-            [DMLElement("FLT")] public Single LocY;
-            [DMLElement("FLT")] public Single LocZ;
-            [DMLElement("FLT")] public Single Yaw;
-            [DMLElement("BYT")] public SByte SwitchCastleBlock;
+            [DMLElement(DMLType.GID)] public UInt64 ObjectID;
+            [DMLElement(DMLType.FLT)] public Single LocX;
+            [DMLElement(DMLType.FLT)] public Single LocY;
+            [DMLElement(DMLType.FLT)] public Single LocZ;
+            [DMLElement(DMLType.FLT)] public Single Yaw;
+            [DMLElement(DMLType.BYT)] public SByte SwitchCastleBlock;
             public byte MessageOrder { get; } = 137;
         }
         public sealed class MSG_PLAYERTELEPORTINGTOFRIEND : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 TargetCharacterID;
-            [DMLElement("GID")] public UInt64 OriginatorID;
+            [DMLElement(DMLType.GID)] public UInt64 TargetCharacterID;
+            [DMLElement(DMLType.GID)] public UInt64 OriginatorID;
             public byte MessageOrder { get; } = 138;
         }
         public sealed class MSG_PLAYINTERACTIVEMUSIC : INetworkMessage
         {
-            [DMLElement("UINT")] public UInt32 InstrumentNote;
+            [DMLElement(DMLType.UINT)] public UInt32 InstrumentNote;
             public byte MessageOrder { get; } = 139;
         }
         public sealed class MSG_PLAYINTERACTIVEMUSIC2 : INetworkMessage
         {
-            [DMLElement("STR")] public String InstrumentNotes;
+            [DMLElement(DMLType.STR)] public String InstrumentNotes;
             public byte MessageOrder { get; } = 140;
         }
         public sealed class MSG_PLAYINTERACTIVEMUSICLOOP : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 PlayerGID;
-            [DMLElement("UINT")] public UInt32 TemplateID;
-            [DMLElement("BYT")] public SByte LoopIndex;
-            [DMLElement("GID")] public UInt64 ObjectGID;
-            [DMLElement("STR")] public String TargetPlayers;
-            [DMLElement("FLT")] public Single LoopOffset;
+            [DMLElement(DMLType.GID)] public UInt64 PlayerGID;
+            [DMLElement(DMLType.UINT)] public UInt32 TemplateID;
+            [DMLElement(DMLType.BYT)] public SByte LoopIndex;
+            [DMLElement(DMLType.GID)] public UInt64 ObjectGID;
+            [DMLElement(DMLType.STR)] public String TargetPlayers;
+            [DMLElement(DMLType.FLT)] public Single LoopOffset;
             public byte MessageOrder { get; } = 141;
         }
         public sealed class MSG_PLAYINTERACTIVEMUSICLOOPING : INetworkMessage
         {
-            [DMLElement("UINT")] public UInt32 InstrumentNote;
-            [DMLElement("GID")] public UInt64 ObjectGID;
-            [DMLElement("FLT")] public Single LoopOffset;
+            [DMLElement(DMLType.UINT)] public UInt32 InstrumentNote;
+            [DMLElement(DMLType.GID)] public UInt64 ObjectGID;
+            [DMLElement(DMLType.FLT)] public Single LoopOffset;
             public byte MessageOrder { get; } = 142;
         }
         public sealed class MSG_PLAYINTERACTIVEMUSICLOOPING2 : INetworkMessage
         {
-            [DMLElement("STR")] public String InstrumentNotes;
-            [DMLElement("GID")] public UInt64 ObjectGID;
-            [DMLElement("FLT")] public Single LoopOffset;
+            [DMLElement(DMLType.STR)] public String InstrumentNotes;
+            [DMLElement(DMLType.GID)] public UInt64 ObjectGID;
+            [DMLElement(DMLType.FLT)] public Single LoopOffset;
             public byte MessageOrder { get; } = 143;
         }
         public sealed class MSG_REMOVEFISHFROMAQUARIUM : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("UINT")] public UInt32 FishTemplateID;
-            [DMLElement("FLT")] public Single Size;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.UINT)] public UInt32 FishTemplateID;
+            [DMLElement(DMLType.FLT)] public Single Size;
             public byte MessageOrder { get; } = 144;
         }
         public sealed class MSG_REMOVEHOUSEMUSIC : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 MusicPlayerGID;
-            [DMLElement("UINT")] public UInt32 MusicTemplateID;
+            [DMLElement(DMLType.GID)] public UInt64 MusicPlayerGID;
+            [DMLElement(DMLType.UINT)] public UInt32 MusicTemplateID;
             public byte MessageOrder { get; } = 145;
         }
         public sealed class MSG_REPORTHOUSE : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 CharacterID;
-            [DMLElement("UINT")] public UInt32 DeedTemplateID;
-            [DMLElement("WSTR")] public String Message;
+            [DMLElement(DMLType.GID)] public UInt64 CharacterID;
+            [DMLElement(DMLType.UINT)] public UInt32 DeedTemplateID;
+            [DMLElement(DMLType.WSTR)] public String Message;
             public byte MessageOrder { get; } = 146;
         }
         public sealed class MSG_REQUESTALLFISH : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("STR")] public String FishData;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.STR)] public String FishData;
             public byte MessageOrder { get; } = 147;
         }
         public sealed class MSG_REQUESTATTIC : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             public byte MessageOrder { get; } = 148;
         }
         public sealed class MSG_REQUESTCATCHSUCCESS : INetworkMessage
         {
-            [DMLElement("UINT")] public UInt32 SpellTemplateID;
-            [DMLElement("UINT")] public UInt32 FishingPassport;
-            [DMLElement("UINT")] public UInt32 FishID;
+            [DMLElement(DMLType.UINT)] public UInt32 SpellTemplateID;
+            [DMLElement(DMLType.UINT)] public UInt32 FishingPassport;
+            [DMLElement(DMLType.UINT)] public UInt32 FishID;
             public byte MessageOrder { get; } = 149;
         }
         public sealed class MSG_REQUESTDEEDZONE : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("INT")] public Int32 Status;
-            [DMLElement("INT")] public Int32 Teleport;
-            [DMLElement("STR")] public String Arguments;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.INT)] public Int32 Status;
+            [DMLElement(DMLType.INT)] public Int32 Teleport;
+            [DMLElement(DMLType.STR)] public String Arguments;
             public byte MessageOrder { get; } = 150;
         }
         public sealed class MSG_REQUESTFISHHISTORY : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("STR")] public String FishData;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.STR)] public String FishData;
             public byte MessageOrder { get; } = 151;
         }
         public sealed class MSG_REQUESTHOUSEOWNERCHARACTERID : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 CharacterID;
-            [DMLElement("UINT")] public UInt32 DeedTemplateID;
+            [DMLElement(DMLType.GID)] public UInt64 CharacterID;
+            [DMLElement(DMLType.UINT)] public UInt32 DeedTemplateID;
             public byte MessageOrder { get; } = 152;
         }
         public sealed class MSG_REQUESTHOUSETRANSFERLIST : INetworkMessage
         {
-            [DMLElement("STR")] public String Data;
+            [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 153;
         }
         public sealed class MSG_REQUESTHOUSINGZONE : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("INT")] public Int32 Status;
-            [DMLElement("GID")] public UInt64 TemplateGID;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.INT)] public Int32 Status;
+            [DMLElement(DMLType.GID)] public UInt64 TemplateGID;
             public byte MessageOrder { get; } = 154;
         }
         public sealed class MSG_REQUESTHOUSINGZONETELEPORT : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 TemplateGID;
-            [DMLElement("STR")] public String Location;
+            [DMLElement(DMLType.GID)] public UInt64 TemplateGID;
+            [DMLElement(DMLType.STR)] public String Location;
             public byte MessageOrder { get; } = 155;
         }
         public sealed class MSG_REQUESTINTERACTIVEMUSIC : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 ObjectGID;
-            [DMLElement("UINT")] public UInt32 InUse;
-            [DMLElement("STR")] public String PlayerName;
+            [DMLElement(DMLType.GID)] public UInt64 ObjectGID;
+            [DMLElement(DMLType.UINT)] public UInt32 InUse;
+            [DMLElement(DMLType.STR)] public String PlayerName;
             public byte MessageOrder { get; } = 156;
         }
         public sealed class MSG_REQUESTISLANDSWITCH : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("INT")] public Int32 Status;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.INT)] public Int32 Status;
             public byte MessageOrder { get; } = 157;
         }
         public sealed class MSG_REQUESTSENDAWAY : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 TargetPlayer;
-            [DMLElement("UBYT")] public Byte ISCSR;
+            [DMLElement(DMLType.GID)] public UInt64 TargetPlayer;
+            [DMLElement(DMLType.UBYT)] public Byte ISCSR;
             public byte MessageOrder { get; } = 158;
         }
         public sealed class MSG_REQUESTTELEPORTERHOUSINGCONFIRM : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             public byte MessageOrder { get; } = 159;
         }
         public sealed class MSG_REQUESTTELEPORTERHOUSINGZONE : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("INT")] public Int32 Status;
-            [DMLElement("GID")] public UInt64 TemplateGID;
-            [DMLElement("GID")] public UInt64 StructureGID;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.INT)] public Int32 Status;
+            [DMLElement(DMLType.GID)] public UInt64 TemplateGID;
+            [DMLElement(DMLType.GID)] public UInt64 StructureGID;
             public byte MessageOrder { get; } = 160;
         }
         public sealed class MSG_REQUEST_BLOBS : INetworkMessage
         {
-            [DMLElement("STR")] public String Data;
+            [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 161;
         }
         public sealed class MSG_RESPEC : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("INT")] public Int32 Points;
-            [DMLElement("BYT")] public SByte WebFailure;
-            [DMLElement("INT")] public Int32 Credits;
-            [DMLElement("BYT")] public SByte LevelIsLow;
-            [DMLElement("BYT")] public SByte EncounteredUpgradedTierSpell;
-            [DMLElement("INT")] public Int32 Cost;
-            [DMLElement("STR")] public String Buffer;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.INT)] public Int32 Points;
+            [DMLElement(DMLType.BYT)] public SByte WebFailure;
+            [DMLElement(DMLType.INT)] public Int32 Credits;
+            [DMLElement(DMLType.BYT)] public SByte LevelIsLow;
+            [DMLElement(DMLType.BYT)] public SByte EncounteredUpgradedTierSpell;
+            [DMLElement(DMLType.INT)] public Int32 Cost;
+            [DMLElement(DMLType.STR)] public String Buffer;
             public byte MessageOrder { get; } = 162;
         }
         public sealed class MSG_SELECTHOUSEMUSIC : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 MusicPlayerGID;
-            [DMLElement("UINT")] public UInt32 MusicTemplateID;
+            [DMLElement(DMLType.GID)] public UInt64 MusicPlayerGID;
+            [DMLElement(DMLType.UINT)] public UInt32 MusicTemplateID;
             public byte MessageOrder { get; } = 163;
         }
         public sealed class MSG_SELECTMUSICSTYLE : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 MusicPlayerGID;
-            [DMLElement("UINT")] public UInt32 MusicStyle;
+            [DMLElement(DMLType.GID)] public UInt64 MusicPlayerGID;
+            [DMLElement(DMLType.UINT)] public UInt32 MusicStyle;
             public byte MessageOrder { get; } = 164;
         }
         public sealed class MSG_SELLFISHOPEN : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("UINT")] public UInt32 FishTemplateID;
-            [DMLElement("UINT")] public UInt32 CatchOfTheDayBonus;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.UINT)] public UInt32 FishTemplateID;
+            [DMLElement(DMLType.UINT)] public UInt32 CatchOfTheDayBonus;
             public byte MessageOrder { get; } = 165;
         }
         public sealed class MSG_SELLFISHREQUEST : INetworkMessage
         {
-            [DMLElement("STR")] public String FishData;
+            [DMLElement(DMLType.STR)] public String FishData;
             public byte MessageOrder { get; } = 166;
         }
         public sealed class MSG_SENDHOUSINGOBJECTSTATES : INetworkMessage
         {
-            [DMLElement("STR")] public String Data;
+            [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 167;
         }
         public sealed class MSG_SENDHOUSINGTEXTUREINFO : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 ObjectID;
-            [DMLElement("UINT")] public UInt32 RemapIndex;
+            [DMLElement(DMLType.GID)] public UInt64 ObjectID;
+            [DMLElement(DMLType.UINT)] public UInt32 RemapIndex;
             public byte MessageOrder { get; } = 168;
         }
         public sealed class MSG_SEND_BLOB : INetworkMessage
         {
-            [DMLElement("STR")] public String Data;
-            [DMLElement("UINT")] public UInt32 UserData;
+            [DMLElement(DMLType.STR)] public String Data;
+            [DMLElement(DMLType.UINT)] public UInt32 UserData;
             public byte MessageOrder { get; } = 169;
         }
         public sealed class MSG_SETATTICID : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("GID")] public UInt64 AtticID;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.GID)] public UInt64 AtticID;
             public byte MessageOrder { get; } = 170;
         }
         public sealed class MSG_SETFISHINGPLAYERS : INetworkMessage
         {
-            [DMLElement("UINT")] public UInt32 ZoneNameID;
-            [DMLElement("STR")] public String Data;
+            [DMLElement(DMLType.UINT)] public UInt32 ZoneNameID;
+            [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 171;
         }
         public sealed class MSG_SETHOUSESIGN : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 ObjectID;
-            [DMLElement("STR")] public String SignText;
+            [DMLElement(DMLType.GID)] public UInt64 ObjectID;
+            [DMLElement(DMLType.STR)] public String SignText;
             public byte MessageOrder { get; } = 172;
         }
         public sealed class MSG_SETHOUSETELEPORTER : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 ObjectID;
-            [DMLElement("FLT")] public Single LocX;
-            [DMLElement("FLT")] public Single LocY;
-            [DMLElement("FLT")] public Single LocZ;
-            [DMLElement("FLT")] public Single Yaw;
+            [DMLElement(DMLType.GID)] public UInt64 ObjectID;
+            [DMLElement(DMLType.FLT)] public Single LocX;
+            [DMLElement(DMLType.FLT)] public Single LocY;
+            [DMLElement(DMLType.FLT)] public Single LocZ;
+            [DMLElement(DMLType.FLT)] public Single Yaw;
             public byte MessageOrder { get; } = 173;
         }
         public sealed class MSG_SETHOUSINGGAMESTATE : INetworkMessage
         {
-            [DMLElement("STR")] public String PlayerName;
-            [DMLElement("UINT")] public UInt32 GameState;
-            [DMLElement("GID")] public UInt64 ObjectGID;
-            [DMLElement("STR")] public String Score;
+            [DMLElement(DMLType.STR)] public String PlayerName;
+            [DMLElement(DMLType.UINT)] public UInt32 GameState;
+            [DMLElement(DMLType.GID)] public UInt64 ObjectGID;
+            [DMLElement(DMLType.STR)] public String Score;
             public byte MessageOrder { get; } = 174;
         }
         public sealed class MSG_SETHOUSINGPALETTE : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 ObjectGID;
-            [DMLElement("BYT")] public SByte PrimaryColorIndex;
+            [DMLElement(DMLType.GID)] public UInt64 ObjectGID;
+            [DMLElement(DMLType.BYT)] public SByte PrimaryColorIndex;
             public byte MessageOrder { get; } = 175;
         }
         public sealed class MSG_SETINSTANCEFISH : INetworkMessage
         {
-            [DMLElement("UINT")] public UInt32 ZoneNameID;
-            [DMLElement("STR")] public String Data;
+            [DMLElement(DMLType.UINT)] public UInt32 ZoneNameID;
+            [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 176;
         }
         public sealed class MSG_SETINVISIBLETOFRIENDS : INetworkMessage
         {
-            [DMLElement("UBYT")] public Byte InvisibleToFriends;
+            [DMLElement(DMLType.UBYT)] public Byte InvisibleToFriends;
             public byte MessageOrder { get; } = 177;
         }
         public sealed class MSG_SETMUSICLOOP : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 ObjectGID;
-            [DMLElement("STR")] public String Data;
+            [DMLElement(DMLType.GID)] public UInt64 ObjectGID;
+            [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 178;
         }
         public sealed class MSG_SETTILEWALLPAPER : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 ObjectID;
-            [DMLElement("BYT")] public SByte RemapIndex;
-            [DMLElement("BYT")] public SByte IsWallpaper;
+            [DMLElement(DMLType.GID)] public UInt64 ObjectID;
+            [DMLElement(DMLType.BYT)] public SByte RemapIndex;
+            [DMLElement(DMLType.BYT)] public SByte IsWallpaper;
             public byte MessageOrder { get; } = 179;
         }
         public sealed class MSG_SHOWFISHINGCAST : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 ObjectGID;
-            [DMLElement("FLT")] public Single PositionX;
-            [DMLElement("FLT")] public Single PositionY;
-            [DMLElement("FLT")] public Single PositionZ;
-            [DMLElement("FLT")] public Single Yaw;
-            [DMLElement("UINT")] public UInt32 SpellTemplateID;
+            [DMLElement(DMLType.GID)] public UInt64 ObjectGID;
+            [DMLElement(DMLType.FLT)] public Single PositionX;
+            [DMLElement(DMLType.FLT)] public Single PositionY;
+            [DMLElement(DMLType.FLT)] public Single PositionZ;
+            [DMLElement(DMLType.FLT)] public Single Yaw;
+            [DMLElement(DMLType.UINT)] public UInt32 SpellTemplateID;
             public byte MessageOrder { get; } = 180;
         }
         public sealed class MSG_STARTHOUSINGGAME : INetworkMessage
         {
-            [DMLElement("STR")] public String GameType;
-            [DMLElement("UINT")] public UInt32 GameInProgress;
-            [DMLElement("STR")] public String Data;
-            [DMLElement("BYT")] public SByte IsPublic;
+            [DMLElement(DMLType.STR)] public String GameType;
+            [DMLElement(DMLType.UINT)] public UInt32 GameInProgress;
+            [DMLElement(DMLType.STR)] public String Data;
+            [DMLElement(DMLType.BYT)] public SByte IsPublic;
             public byte MessageOrder { get; } = 181;
         }
         public sealed class MSG_STOPINTERACTIVEMUSICLOOP : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 PlayerGID;
+            [DMLElement(DMLType.GID)] public UInt64 PlayerGID;
             public byte MessageOrder { get; } = 182;
         }
         public sealed class MSG_SWITCHGOTOCOMMONS : INetworkMessage
@@ -1480,50 +1480,50 @@ namespace Imlight.Internals.DML
         }
         public sealed class MSG_TELEPORTEDTODELETEDLOT : INetworkMessage
         {
-            [DMLElement("BYT")] public SByte Quarantined;
+            [DMLElement(DMLType.BYT)] public SByte Quarantined;
             public byte MessageOrder { get; } = 184;
         }
         public sealed class MSG_UPDATEATTICCOUNT : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("INT")] public Int32 ItemCount;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.INT)] public Int32 ItemCount;
             public byte MessageOrder { get; } = 185;
         }
         public sealed class MSG_UPDATEGARDENINGXP : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("INT")] public Int32 XP;
-            [DMLElement("INT")] public Int32 Level;
-            [DMLElement("BYT")] public SByte IsPet;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.INT)] public Int32 XP;
+            [DMLElement(DMLType.INT)] public Int32 Level;
+            [DMLElement(DMLType.BYT)] public SByte IsPet;
             public byte MessageOrder { get; } = 186;
         }
         public sealed class MSG_UPDATEHOUSINGOBJECT : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 ObjectGID;
-            [DMLElement("FLT")] public Single LocX;
-            [DMLElement("FLT")] public Single LocY;
-            [DMLElement("FLT")] public Single LocZ;
-            [DMLElement("FLT")] public Single Yaw;
-            [DMLElement("UINT")] public UInt32 SwitchCastleBlock;
-            [DMLElement("BYT")] public SByte UseExtendedYaw;
+            [DMLElement(DMLType.GID)] public UInt64 ObjectGID;
+            [DMLElement(DMLType.FLT)] public Single LocX;
+            [DMLElement(DMLType.FLT)] public Single LocY;
+            [DMLElement(DMLType.FLT)] public Single LocZ;
+            [DMLElement(DMLType.FLT)] public Single Yaw;
+            [DMLElement(DMLType.UINT)] public UInt32 SwitchCastleBlock;
+            [DMLElement(DMLType.BYT)] public SByte UseExtendedYaw;
             public byte MessageOrder { get; } = 187;
         }
         public sealed class MSG_UPDATEHOUSINGPET : INetworkMessage
         {
-            [DMLElement("STR")] public String Data;
-            [DMLElement("GID")] public UInt64 ZoneID;
+            [DMLElement(DMLType.STR)] public String Data;
+            [DMLElement(DMLType.GID)] public UInt64 ZoneID;
             public byte MessageOrder { get; } = 188;
         }
         public sealed class MSG_UPDATEISLANDSPACE : INetworkMessage
         {
-            [DMLElement("INT")] public Int32 IslandLimit;
+            [DMLElement(DMLType.INT)] public Int32 IslandLimit;
             public byte MessageOrder { get; } = 189;
         }
         public sealed class MSG_UPDATEMAXIMUMHOUSINGITEMS : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 ZoneGID;
-            [DMLElement("UINT")] public UInt32 NewMaximumItems;
-            [DMLElement("UINT")] public UInt32 IncreaseAmount;
+            [DMLElement(DMLType.GID)] public UInt64 ZoneGID;
+            [DMLElement(DMLType.UINT)] public UInt32 NewMaximumItems;
+            [DMLElement(DMLType.UINT)] public UInt32 IncreaseAmount;
             public byte MessageOrder { get; } = 190;
         }
     }

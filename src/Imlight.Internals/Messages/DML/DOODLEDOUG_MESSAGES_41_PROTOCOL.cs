@@ -36,8 +36,8 @@ namespace Imlight.Internals.DML
         }
         public sealed class MSG_DOODLEDOUG_REWARDS : INetworkMessage
         {
-            [DMLElement("INT")] public Int32 score;
-            [DMLElement("STR")] public String gameName;
+            [DMLElement(DMLType.INT)] public Int32 score;
+            [DMLElement(DMLType.STR)] public String gameName;
             public byte MessageOrder { get; } = 3;
         }
     }

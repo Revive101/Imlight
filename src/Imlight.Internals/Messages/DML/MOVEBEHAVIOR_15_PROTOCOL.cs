@@ -29,38 +29,38 @@ namespace Imlight.Internals.DML
         }
         public sealed class MSG_MB_MOVE : INetworkMessage
         {
-            [DMLElement("USHRT")] public UInt16 LocationX;
-            [DMLElement("USHRT")] public UInt16 LocationY;
-            [DMLElement("USHRT")] public UInt16 LocationZ;
-            [DMLElement("UBYT")] public Byte Direction;
-            [DMLElement("UBYT")] public Byte ZoneCounter;
-            [DMLElement("GID")] public UInt64 GlobalID;
+            [DMLElement(DMLType.USHRT)] public UInt16 LocationX;
+            [DMLElement(DMLType.USHRT)] public UInt16 LocationY;
+            [DMLElement(DMLType.USHRT)] public UInt16 LocationZ;
+            [DMLElement(DMLType.UBYT)] public Byte Direction;
+            [DMLElement(DMLType.UBYT)] public Byte ZoneCounter;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             public byte MessageOrder { get; } = 1;
         }
         public sealed class MSG_MB_MOVESTATE : INetworkMessage
         {
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("BYT")] public SByte NewState;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.BYT)] public SByte NewState;
             public byte MessageOrder { get; } = 2;
         }
         public sealed class MSG_MB_MOVE_T : INetworkMessage
         {
-            [DMLElement("USHRT")] public UInt16 LocationX;
-            [DMLElement("USHRT")] public UInt16 LocationY;
-            [DMLElement("USHRT")] public UInt16 LocationZ;
-            [DMLElement("UBYT")] public Byte Direction;
-            [DMLElement("UBYT")] public Byte ZoneCounter;
-            [DMLElement("GID")] public UInt64 GlobalID;
-            [DMLElement("FLT")] public Single Time;
+            [DMLElement(DMLType.USHRT)] public UInt16 LocationX;
+            [DMLElement(DMLType.USHRT)] public UInt16 LocationY;
+            [DMLElement(DMLType.USHRT)] public UInt16 LocationZ;
+            [DMLElement(DMLType.UBYT)] public Byte Direction;
+            [DMLElement(DMLType.UBYT)] public Byte ZoneCounter;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
+            [DMLElement(DMLType.FLT)] public Single Time;
             public byte MessageOrder { get; } = 3;
         }
         public sealed class MSG_MB_TELEPORT : INetworkMessage
         {
-            [DMLElement("USHRT")] public UInt16 LocationX;
-            [DMLElement("USHRT")] public UInt16 LocationY;
-            [DMLElement("USHRT")] public UInt16 LocationZ;
-            [DMLElement("UBYT")] public Byte Direction;
-            [DMLElement("GID")] public UInt64 GlobalID;
+            [DMLElement(DMLType.USHRT)] public UInt16 LocationX;
+            [DMLElement(DMLType.USHRT)] public UInt16 LocationY;
+            [DMLElement(DMLType.USHRT)] public UInt16 LocationZ;
+            [DMLElement(DMLType.UBYT)] public Byte Direction;
+            [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             public byte MessageOrder { get; } = 4;
         }
     }
