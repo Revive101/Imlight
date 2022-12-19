@@ -16,7 +16,7 @@ namespace Imlight.Internals.DML
         public Int32 ProtocolVersion { get; } = 1;
         public string ProtocolDescription { get; } = "Messages related to questing";
         // == RECORDS ==
-        public static INetworkRecord Dispatch(byte id)
+        public static INetworkMessage Dispatch(byte id)
         {
             switch (id)
             {
@@ -37,38 +37,38 @@ namespace Imlight.Internals.DML
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
-        public sealed class MSG_ACCEPTQUEST : INetworkRecord
+        public sealed class MSG_ACCEPTQUEST : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 MobileID;
             [DMLElement("STR")] public String QuestName;
             public byte MessageOrder { get; } = 1;
         }
-        public sealed class MSG_COMPLETEGOAL : INetworkRecord
+        public sealed class MSG_COMPLETEGOAL : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 QuestID;
             [DMLElement("GID")] public UInt64 GoalID;
             [DMLElement("STR")] public String CompleteText;
             public byte MessageOrder { get; } = 2;
         }
-        public sealed class MSG_COMPLETEPERSONA : INetworkRecord
+        public sealed class MSG_COMPLETEPERSONA : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 MobileID;
             [DMLElement("GID")] public UInt64 QuestID;
             [DMLElement("GID")] public UInt64 GoalID;
             public byte MessageOrder { get; } = 3;
         }
-        public sealed class MSG_COMPLETEQUEST : INetworkRecord
+        public sealed class MSG_COMPLETEQUEST : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 QuestID;
             [DMLElement("STR")] public String CompleteText;
             public byte MessageOrder { get; } = 4;
         }
-        public sealed class MSG_DECLINEQUEST : INetworkRecord
+        public sealed class MSG_DECLINEQUEST : INetworkMessage
         {
             [DMLElement("STR")] public String QuestName;
             public byte MessageOrder { get; } = 5;
         }
-        public sealed class MSG_INTERACTNPC : INetworkRecord
+        public sealed class MSG_INTERACTNPC : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GlobalID;
             [DMLElement("STR")] public String ServiceName;
@@ -76,7 +76,7 @@ namespace Imlight.Internals.DML
             [DMLElement("UINT")] public UInt32 ServiceIndex;
             public byte MessageOrder { get; } = 6;
         }
-        public sealed class MSG_NPCINFO : INetworkRecord
+        public sealed class MSG_NPCINFO : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 MobileID;
             [DMLElement("STR")] public String Name;
@@ -84,7 +84,7 @@ namespace Imlight.Internals.DML
             [DMLElement("STR")] public String PersonaMadlibs;
             public byte MessageOrder { get; } = 7;
         }
-        public sealed class MSG_PERSONAINFO : INetworkRecord
+        public sealed class MSG_PERSONAINFO : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 MobileID;
             [DMLElement("GID")] public UInt64 QuestID;
@@ -92,7 +92,7 @@ namespace Imlight.Internals.DML
             [DMLElement("STR")] public String GoalHyperlink;
             public byte MessageOrder { get; } = 8;
         }
-        public sealed class MSG_QUESTOFFER : INetworkRecord
+        public sealed class MSG_QUESTOFFER : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 MobileID;
             [DMLElement("STR")] public String QuestName;
@@ -104,19 +104,19 @@ namespace Imlight.Internals.DML
             [DMLElement("UBYT")] public Byte Mainline;
             public byte MessageOrder { get; } = 9;
         }
-        public sealed class MSG_REMOVEGOAL : INetworkRecord
+        public sealed class MSG_REMOVEGOAL : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 QuestID;
             [DMLElement("GID")] public UInt64 GoalID;
             public byte MessageOrder { get; } = 10;
         }
-        public sealed class MSG_REMOVEQUEST : INetworkRecord
+        public sealed class MSG_REMOVEQUEST : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 QuestID;
             [DMLElement("GID")] public UInt64 NpcID;
             public byte MessageOrder { get; } = 11;
         }
-        public sealed class MSG_SENDGOAL : INetworkRecord
+        public sealed class MSG_SENDGOAL : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 QuestID;
             [DMLElement("GID")] public UInt64 GoalID;
@@ -141,14 +141,14 @@ namespace Imlight.Internals.DML
             [DMLElement("UBYT")] public Byte PetOnlyQuest;
             public byte MessageOrder { get; } = 12;
         }
-        public sealed class MSG_SENDNPCOPTIONS : INetworkRecord
+        public sealed class MSG_SENDNPCOPTIONS : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 MobileID;
             [DMLElement("STR")] public String Options;
             [DMLElement("INT")] public Int32 Reinteract;
             public byte MessageOrder { get; } = 13;
         }
-        public sealed class MSG_SENDQUEST : INetworkRecord
+        public sealed class MSG_SENDQUEST : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 QuestID;
             [DMLElement("UINT")] public UInt32 QuestNameID;

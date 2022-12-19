@@ -16,7 +16,7 @@ namespace Imlight.Internals.DML
         public Int32 ProtocolVersion { get; } = 1;
         public string ProtocolDescription { get; } = "MoveBehavior Messages";
         // == RECORDS ==
-        public static INetworkRecord Dispatch(byte id)
+        public static INetworkMessage Dispatch(byte id)
         {
             switch (id)
             {
@@ -27,7 +27,7 @@ namespace Imlight.Internals.DML
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
-        public sealed class MSG_MB_MOVE : INetworkRecord
+        public sealed class MSG_MB_MOVE : INetworkMessage
         {
             [DMLElement("USHRT")] public UInt16 LocationX;
             [DMLElement("USHRT")] public UInt16 LocationY;
@@ -37,13 +37,13 @@ namespace Imlight.Internals.DML
             [DMLElement("GID")] public UInt64 GlobalID;
             public byte MessageOrder { get; } = 1;
         }
-        public sealed class MSG_MB_MOVESTATE : INetworkRecord
+        public sealed class MSG_MB_MOVESTATE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GlobalID;
             [DMLElement("BYT")] public SByte NewState;
             public byte MessageOrder { get; } = 2;
         }
-        public sealed class MSG_MB_MOVE_T : INetworkRecord
+        public sealed class MSG_MB_MOVE_T : INetworkMessage
         {
             [DMLElement("USHRT")] public UInt16 LocationX;
             [DMLElement("USHRT")] public UInt16 LocationY;
@@ -54,7 +54,7 @@ namespace Imlight.Internals.DML
             [DMLElement("FLT")] public Single Time;
             public byte MessageOrder { get; } = 3;
         }
-        public sealed class MSG_MB_TELEPORT : INetworkRecord
+        public sealed class MSG_MB_TELEPORT : INetworkMessage
         {
             [DMLElement("USHRT")] public UInt16 LocationX;
             [DMLElement("USHRT")] public UInt16 LocationY;

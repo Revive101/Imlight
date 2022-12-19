@@ -16,7 +16,7 @@ namespace Imlight.Internals.DML
         public Int32 ProtocolVersion { get; } = 1;
         public string ProtocolDescription { get; } = "Script Debugger Messages";
         // == RECORDS ==
-        public static INetworkRecord Dispatch(byte id)
+        public static INetworkMessage Dispatch(byte id)
         {
             switch (id)
             {
@@ -43,18 +43,18 @@ namespace Imlight.Internals.DML
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
-        public sealed class MSG_ADD_BREAKPOINT : INetworkRecord
+        public sealed class MSG_ADD_BREAKPOINT : INetworkMessage
         {
             [DMLElement("STR")] public String File;
             [DMLElement("UINT")] public UInt32 Line;
             public byte MessageOrder { get; } = 1;
         }
-        public sealed class MSG_ADD_MESSAGE : INetworkRecord
+        public sealed class MSG_ADD_MESSAGE : INetworkMessage
         {
             [DMLElement("STR")] public String Message;
             public byte MessageOrder { get; } = 2;
         }
-        public sealed class MSG_ADD_PROCESS : INetworkRecord
+        public sealed class MSG_ADD_PROCESS : INetworkMessage
         {
             [DMLElement("UINT")] public UInt32 PID;
             [DMLElement("STR")] public String Root;
@@ -63,79 +63,79 @@ namespace Imlight.Internals.DML
             [DMLElement("STR")] public String Status;
             public byte MessageOrder { get; } = 3;
         }
-        public sealed class MSG_ADD_WATCH : INetworkRecord
+        public sealed class MSG_ADD_WATCH : INetworkMessage
         {
             [DMLElement("STR")] public String Variable;
             public byte MessageOrder { get; } = 4;
         }
-        public sealed class MSG_ATTACH_PROCESS : INetworkRecord
+        public sealed class MSG_ATTACH_PROCESS : INetworkMessage
         {
             [DMLElement("UINT")] public UInt32 PID;
             public byte MessageOrder { get; } = 5;
         }
-        public sealed class MSG_BREAK_PROCESS : INetworkRecord
+        public sealed class MSG_BREAK_PROCESS : INetworkMessage
         {
             public byte MessageOrder { get; } = 6;
         }
-        public sealed class MSG_DEL_BREAKPOINT : INetworkRecord
+        public sealed class MSG_DEL_BREAKPOINT : INetworkMessage
         {
             [DMLElement("STR")] public String File;
             [DMLElement("UINT")] public UInt32 Line;
             public byte MessageOrder { get; } = 7;
         }
-        public sealed class MSG_DEL_WATCH : INetworkRecord
+        public sealed class MSG_DEL_WATCH : INetworkMessage
         {
             [DMLElement("STR")] public String Variable;
             public byte MessageOrder { get; } = 8;
         }
-        public sealed class MSG_DETACH_PROCESS : INetworkRecord
+        public sealed class MSG_DETACH_PROCESS : INetworkMessage
         {
             [DMLElement("UINT")] public UInt32 PID;
             public byte MessageOrder { get; } = 9;
         }
-        public sealed class MSG_ENUM_PROCESS : INetworkRecord
+        public sealed class MSG_ENUM_PROCESS : INetworkMessage
         {
             public byte MessageOrder { get; } = 10;
         }
-        public sealed class MSG_KILL_PROCESS : INetworkRecord
+        public sealed class MSG_KILL_PROCESS : INetworkMessage
         {
             [DMLElement("UINT")] public UInt32 PID;
             public byte MessageOrder { get; } = 11;
         }
-        public sealed class MSG_PROCESS_STATE : INetworkRecord
+        public sealed class MSG_PROCESS_STATE : INetworkMessage
         {
             [DMLElement("UINT")] public UInt32 PID;
             [DMLElement("STR")] public String State;
             public byte MessageOrder { get; } = 12;
         }
-        public sealed class MSG_PROCESS_STATUS : INetworkRecord
+        public sealed class MSG_PROCESS_STATUS : INetworkMessage
         {
             [DMLElement("UINT")] public UInt32 PID;
             [DMLElement("STR")] public String Status;
             public byte MessageOrder { get; } = 13;
         }
-        public sealed class MSG_REMOVE_PROCESS : INetworkRecord
+        public sealed class MSG_REMOVE_PROCESS : INetworkMessage
         {
             [DMLElement("UINT")] public UInt32 PID;
             [DMLElement("STR")] public String Name;
             [DMLElement("STR")] public String Status;
             public byte MessageOrder { get; } = 14;
         }
-        public sealed class MSG_RUN_PROCESS : INetworkRecord
+        public sealed class MSG_RUN_PROCESS : INetworkMessage
         {
             public byte MessageOrder { get; } = 15;
         }
-        public sealed class MSG_SEND_STATE : INetworkRecord
+        public sealed class MSG_SEND_STATE : INetworkMessage
         {
             public byte MessageOrder { get; } = 16;
         }
-        public sealed class MSG_SET_VARIABLE : INetworkRecord
+        public sealed class MSG_SET_VARIABLE : INetworkMessage
         {
             [DMLElement("STR")] public String Variable;
             [DMLElement("STR")] public String Value;
             public byte MessageOrder { get; } = 17;
         }
-        public sealed class MSG_START_PROCESS : INetworkRecord
+        public sealed class MSG_START_PROCESS : INetworkMessage
         {
             [DMLElement("STR")] public String DataRoot;
             [DMLElement("STR")] public String Zone;
@@ -144,11 +144,11 @@ namespace Imlight.Internals.DML
             [DMLElement("INT")] public Int32 StartRunning;
             public byte MessageOrder { get; } = 18;
         }
-        public sealed class MSG_STEPOVER_PROCESS : INetworkRecord
+        public sealed class MSG_STEPOVER_PROCESS : INetworkMessage
         {
             public byte MessageOrder { get; } = 19;
         }
-        public sealed class MSG_STEP_PROCESS : INetworkRecord
+        public sealed class MSG_STEP_PROCESS : INetworkMessage
         {
             public byte MessageOrder { get; } = 20;
         }

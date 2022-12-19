@@ -16,7 +16,7 @@ namespace Imlight.Internals.DML
         public Int32 ProtocolVersion { get; } = 1;
         public string ProtocolDescription { get; } = "Game Messages";
         // == RECORDS ==
-        public static INetworkRecord Dispatch(byte id)
+        public static INetworkMessage Dispatch(byte id)
         {
             switch (id)
             {
@@ -276,26 +276,26 @@ namespace Imlight.Internals.DML
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
-        public sealed class MSG_ADCLICKTHROUGH : INetworkRecord
+        public sealed class MSG_ADCLICKTHROUGH : INetworkMessage
         {
             [DMLElement("STR")] public String Partner;
             [DMLElement("STR")] public String URL;
             public byte MessageOrder { get; } = 1;
         }
-        public sealed class MSG_ADDEFFECT : INetworkRecord
+        public sealed class MSG_ADDEFFECT : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GameObjectID;
             [DMLElement("STR")] public String EffectData;
             public byte MessageOrder { get; } = 2;
         }
-        public sealed class MSG_ADDITEMREQUEST : INetworkRecord
+        public sealed class MSG_ADDITEMREQUEST : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GlobalID;
             [DMLElement("GID")] public UInt64 ItemTemplateID;
             [DMLElement("INT")] public Int32 Quantity;
             public byte MessageOrder { get; } = 3;
         }
-        public sealed class MSG_ADDOBJECT : INetworkRecord
+        public sealed class MSG_ADDOBJECT : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GameObjectID;
             [DMLElement("FLT")] public Single LocationX;
@@ -306,7 +306,7 @@ namespace Imlight.Internals.DML
             [DMLElement("GID")] public UInt64 TemplateID;
             public byte MessageOrder { get; } = 4;
         }
-        public sealed class MSG_ADDPARTICLE : INetworkRecord
+        public sealed class MSG_ADDPARTICLE : INetworkMessage
         {
             [DMLElement("STR")] public String asset;
             [DMLElement("STR")] public String newName;
@@ -319,7 +319,7 @@ namespace Imlight.Internals.DML
             [DMLElement("GID")] public UInt64 parentID;
             public byte MessageOrder { get; } = 5;
         }
-        public sealed class MSG_ADDZONETIMER : INetworkRecord
+        public sealed class MSG_ADDZONETIMER : INetworkMessage
         {
             [DMLElement("INT")] public Int32 TimerID;
             [DMLElement("STR")] public String Title;
@@ -327,7 +327,7 @@ namespace Imlight.Internals.DML
             [DMLElement("FLT")] public Single CountdownTime;
             public byte MessageOrder { get; } = 6;
         }
-        public sealed class MSG_ATTACH : INetworkRecord
+        public sealed class MSG_ATTACH : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GameObjectID;
             [DMLElement("STR")] public String LoginKey;
@@ -346,20 +346,20 @@ namespace Imlight.Internals.DML
             [DMLElement("STR")] public String Locale;
             public byte MessageOrder { get; } = 7;
         }
-        public sealed class MSG_ATTACHFAILED : INetworkRecord
+        public sealed class MSG_ATTACHFAILED : INetworkMessage
         {
             [DMLElement("UINT")] public UInt32 Error;
             [DMLElement("UINT")] public UInt32 Rejected;
             [DMLElement("UINT")] public UInt32 NoDisconnect;
             public byte MessageOrder { get; } = 8;
         }
-        public sealed class MSG_AUCTIONHOUSEUPDATE : INetworkRecord
+        public sealed class MSG_AUCTIONHOUSEUPDATE : INetworkMessage
         {
             [DMLElement("STR")] public String UpdateInfo;
             [DMLElement("GID")] public UInt64 CharacterID;
             public byte MessageOrder { get; } = 9;
         }
-        public sealed class MSG_BADGES : INetworkRecord
+        public sealed class MSG_BADGES : INetworkMessage
         {
             [DMLElement("UINT")] public UInt32 CurrentBadge;
             [DMLElement("BYT")] public SByte UpdateAll;
@@ -372,7 +372,7 @@ namespace Imlight.Internals.DML
             [DMLElement("STR")] public String BadgeFilterInfo;
             public byte MessageOrder { get; } = 10;
         }
-        public sealed class MSG_BAN_RSP : INetworkRecord
+        public sealed class MSG_BAN_RSP : INetworkMessage
         {
             [DMLElement("STR")] public String BannedID;
             [DMLElement("STR")] public String BanTime;
@@ -380,7 +380,7 @@ namespace Imlight.Internals.DML
             [DMLElement("UBYT")] public Byte Success;
             public byte MessageOrder { get; } = 11;
         }
-        public sealed class MSG_BESTFRIEND : INetworkRecord
+        public sealed class MSG_BESTFRIEND : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 ListOwnerGID;
             [DMLElement("GID")] public UInt64 BuddyID;
@@ -388,7 +388,7 @@ namespace Imlight.Internals.DML
             [DMLElement("UBYT")] public Byte FriendSymbol;
             public byte MessageOrder { get; } = 12;
         }
-        public sealed class MSG_BLACKBALL : INetworkRecord
+        public sealed class MSG_BLACKBALL : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 TargetObjID;
             [DMLElement("WSTR")] public String HarassmentType;
@@ -396,13 +396,13 @@ namespace Imlight.Internals.DML
             [DMLElement("BYT")] public SByte IsMute;
             public byte MessageOrder { get; } = 13;
         }
-        public sealed class MSG_BUDDYDROP : INetworkRecord
+        public sealed class MSG_BUDDYDROP : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 ListOwnerGID;
             [DMLElement("GID")] public UInt64 EntryGID;
             public byte MessageOrder { get; } = 14;
         }
-        public sealed class MSG_BUDDYENTRY : INetworkRecord
+        public sealed class MSG_BUDDYENTRY : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 ListOwnerGID;
             [DMLElement("GID")] public UInt64 EntryGID;
@@ -419,12 +419,12 @@ namespace Imlight.Internals.DML
             [DMLElement("UINT")] public UInt32 FriendStatusDate;
             public byte MessageOrder { get; } = 15;
         }
-        public sealed class MSG_BUDDYLISTCOMPLETE : INetworkRecord
+        public sealed class MSG_BUDDYLISTCOMPLETE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 ListOwnerGID;
             public byte MessageOrder { get; } = 16;
         }
-        public sealed class MSG_BUDDYREQUESTACCEPT : INetworkRecord
+        public sealed class MSG_BUDDYREQUESTACCEPT : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 ListOwnerGID;
             [DMLElement("GID")] public UInt64 EntryGID;
@@ -441,7 +441,7 @@ namespace Imlight.Internals.DML
             [DMLElement("UINT")] public UInt32 FriendStatusDate;
             public byte MessageOrder { get; } = 17;
         }
-        public sealed class MSG_BUDDYREQUESTACCEPTFWD : INetworkRecord
+        public sealed class MSG_BUDDYREQUESTACCEPTFWD : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 ListOwnerGID;
             [DMLElement("GID")] public UInt64 EntryGID;
@@ -456,7 +456,7 @@ namespace Imlight.Internals.DML
             [DMLElement("UINT")] public UInt32 FriendStatusDate;
             public byte MessageOrder { get; } = 18;
         }
-        public sealed class MSG_BUDDYREQUESTADD : INetworkRecord
+        public sealed class MSG_BUDDYREQUESTADD : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 ListOwnerGID;
             [DMLElement("GID")] public UInt64 EntryGID;
@@ -466,7 +466,7 @@ namespace Imlight.Internals.DML
             [DMLElement("UBYT")] public Byte Remove;
             public byte MessageOrder { get; } = 19;
         }
-        public sealed class MSG_BUDDYREQUESTADDFWD : INetworkRecord
+        public sealed class MSG_BUDDYREQUESTADDFWD : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 ListOwnerGID;
             [DMLElement("GID")] public UInt64 EntryGID;
@@ -476,39 +476,39 @@ namespace Imlight.Internals.DML
             [DMLElement("UBYT")] public Byte Remove;
             public byte MessageOrder { get; } = 20;
         }
-        public sealed class MSG_BUDDYREQUESTDENY : INetworkRecord
+        public sealed class MSG_BUDDYREQUESTDENY : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 ListOwnerGID;
             [DMLElement("GID")] public UInt64 EntryGID;
             public byte MessageOrder { get; } = 21;
         }
-        public sealed class MSG_BUDDYREQUESTDENYFWD : INetworkRecord
+        public sealed class MSG_BUDDYREQUESTDENYFWD : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 ListOwnerGID;
             [DMLElement("GID")] public UInt64 EntryGID;
             public byte MessageOrder { get; } = 22;
         }
-        public sealed class MSG_BUDDYREQUESTDROP : INetworkRecord
+        public sealed class MSG_BUDDYREQUESTDROP : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 ListOwnerGID;
             [DMLElement("GID")] public UInt64 EntryGID;
             [DMLElement("UBYT")] public Byte Forwarded;
             public byte MessageOrder { get; } = 23;
         }
-        public sealed class MSG_BUDDYREQUESTERROR : INetworkRecord
+        public sealed class MSG_BUDDYREQUESTERROR : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 ListOwnerGID;
             [DMLElement("GID")] public UInt64 EntryGID;
             [DMLElement("UBYT")] public Byte Error;
             public byte MessageOrder { get; } = 24;
         }
-        public sealed class MSG_BUDDYREQUESTLIST : INetworkRecord
+        public sealed class MSG_BUDDYREQUESTLIST : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 ListOwnerGID;
             [DMLElement("UBYT")] public Byte Forwarded;
             public byte MessageOrder { get; } = 25;
         }
-        public sealed class MSG_BUDDYSTATS : INetworkRecord
+        public sealed class MSG_BUDDYSTATS : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 BuddyID;
             [DMLElement("STR")] public String StatBlock;
@@ -529,7 +529,7 @@ namespace Imlight.Internals.DML
             [DMLElement("UINT")] public UInt32 PetJewelID;
             public byte MessageOrder { get; } = 26;
         }
-        public sealed class MSG_BUDDYSTATUSUPDATE : INetworkRecord
+        public sealed class MSG_BUDDYSTATUSUPDATE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 ListOwnerGID;
             [DMLElement("GID")] public UInt64 EntryGID;
@@ -543,18 +543,18 @@ namespace Imlight.Internals.DML
             [DMLElement("UINT")] public UInt32 FriendStatusDate;
             public byte MessageOrder { get; } = 27;
         }
-        public sealed class MSG_BUGREPORT : INetworkRecord
+        public sealed class MSG_BUGREPORT : INetworkMessage
         {
             [DMLElement("STR")] public String Report;
             public byte MessageOrder { get; } = 28;
         }
-        public sealed class MSG_BUGSUBMITRESPONSE : INetworkRecord
+        public sealed class MSG_BUGSUBMITRESPONSE : INetworkMessage
         {
             [DMLElement("BYT")] public SByte Success;
             [DMLElement("BYT")] public SByte Type;
             public byte MessageOrder { get; } = 29;
         }
-        public sealed class MSG_CHANNELCHAT : INetworkRecord
+        public sealed class MSG_CHANNELCHAT : INetworkMessage
         {
             [DMLElement("STR")] public String SourceName;
             [DMLElement("GID")] public UInt64 SourceID;
@@ -564,7 +564,7 @@ namespace Imlight.Internals.DML
             [DMLElement("UINT")] public UInt32 Flags;
             public byte MessageOrder { get; } = 30;
         }
-        public sealed class MSG_CHANNELSUBSCRIPTION : INetworkRecord
+        public sealed class MSG_CHANNELSUBSCRIPTION : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 RecipientID;
             [DMLElement("GID")] public UInt64 ChannelID;
@@ -573,30 +573,30 @@ namespace Imlight.Internals.DML
             [DMLElement("UBYT")] public Byte ChannelType;
             public byte MessageOrder { get; } = 31;
         }
-        public sealed class MSG_CHATDIAGNOSTICS : INetworkRecord
+        public sealed class MSG_CHATDIAGNOSTICS : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 CharacterID;
             [DMLElement("STR")] public String Data;
             public byte MessageOrder { get; } = 32;
         }
-        public sealed class MSG_CHATERROR : INetworkRecord
+        public sealed class MSG_CHATERROR : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 ListOwnerGID;
             [DMLElement("GID")] public UInt64 CharacterID;
             [DMLElement("UINT")] public UInt32 Error;
             public byte MessageOrder { get; } = 33;
         }
-        public sealed class MSG_CHECKSUBSCRIPTION : INetworkRecord
+        public sealed class MSG_CHECKSUBSCRIPTION : INetworkMessage
         {
             [DMLElement("UBYT")] public Byte Success;
             public byte MessageOrder { get; } = 34;
         }
-        public sealed class MSG_CHECK_MAIL : INetworkRecord
+        public sealed class MSG_CHECK_MAIL : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 CharacterID;
             public byte MessageOrder { get; } = 35;
         }
-        public sealed class MSG_CLIENTMOVE : INetworkRecord
+        public sealed class MSG_CLIENTMOVE : INetworkMessage
         {
             [DMLElement("USHRT")] public UInt16 LocationX;
             [DMLElement("USHRT")] public UInt16 LocationY;
@@ -605,72 +605,72 @@ namespace Imlight.Internals.DML
             [DMLElement("UBYT")] public Byte ZoneCounter;
             public byte MessageOrder { get; } = 36;
         }
-        public sealed class MSG_CLIENTMOVESTATE : INetworkRecord
+        public sealed class MSG_CLIENTMOVESTATE : INetworkMessage
         {
             [DMLElement("BYT")] public SByte NewState;
             public byte MessageOrder { get; } = 37;
         }
-        public sealed class MSG_CLIENTNOTIFYTEXT : INetworkRecord
+        public sealed class MSG_CLIENTNOTIFYTEXT : INetworkMessage
         {
             [DMLElement("STR")] public String NotifyText;
             [DMLElement("INT")] public Int32 Type;
             [DMLElement("STR")] public String Madlibs;
             public byte MessageOrder { get; } = 38;
         }
-        public sealed class MSG_CLIENTTUTORIALEVENT : INetworkRecord
+        public sealed class MSG_CLIENTTUTORIALEVENT : INetworkMessage
         {
             [DMLElement("STR")] public String Event;
             public byte MessageOrder { get; } = 39;
         }
-        public sealed class MSG_CLIENT_DISCONNECT : INetworkRecord
+        public sealed class MSG_CLIENT_DISCONNECT : INetworkMessage
         {
             public byte MessageOrder { get; } = 40;
         }
-        public sealed class MSG_CLIENT_ERROR : INetworkRecord
+        public sealed class MSG_CLIENT_ERROR : INetworkMessage
         {
             [DMLElement("STR")] public String Function;
             public byte MessageOrder { get; } = 41;
         }
-        public sealed class MSG_CLIENT_PROCESS_TERMINATED : INetworkRecord
+        public sealed class MSG_CLIENT_PROCESS_TERMINATED : INetworkMessage
         {
             [DMLElement("UINT")] public UInt32 JobID;
             public byte MessageOrder { get; } = 42;
         }
-        public sealed class MSG_COMBINEINVENTORYITEMS : INetworkRecord
+        public sealed class MSG_COMBINEINVENTORYITEMS : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GlobalID;
             [DMLElement("GID")] public UInt64 ItemID1;
             [DMLElement("GID")] public UInt64 ItemID2;
             public byte MessageOrder { get; } = 43;
         }
-        public sealed class MSG_COMMAND : INetworkRecord
+        public sealed class MSG_COMMAND : INetworkMessage
         {
             [DMLElement("WSTR")] public String Command;
             [DMLElement("STR")] public String ResultEvent;
             public byte MessageOrder { get; } = 44;
         }
-        public sealed class MSG_COMMANDRESULT : INetworkRecord
+        public sealed class MSG_COMMANDRESULT : INetworkMessage
         {
             [DMLElement("WSTR")] public String Command;
             [DMLElement("STR")] public String ResultEvent;
             [DMLElement("WSTR")] public String Results;
             public byte MessageOrder { get; } = 45;
         }
-        public sealed class MSG_COMPANIONEFFECTS : INetworkRecord
+        public sealed class MSG_COMPANIONEFFECTS : INetworkMessage
         {
             [DMLElement("UINT")] public UInt32 NPC;
             [DMLElement("STR")] public String EffectInfoList;
             [DMLElement("UBYT")] public Byte Add;
             public byte MessageOrder { get; } = 46;
         }
-        public sealed class MSG_CORE_EMOTE : INetworkRecord
+        public sealed class MSG_CORE_EMOTE : INetworkMessage
         {
             [DMLElement("STR")] public String Name;
             [DMLElement("UBYT")] public Byte ExcludeOriginator;
             [DMLElement("UINT")] public UInt32 PhraseID;
             public byte MessageOrder { get; } = 47;
         }
-        public sealed class MSG_CREATECHANNELRESPONSE : INetworkRecord
+        public sealed class MSG_CREATECHANNELRESPONSE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 SourceID;
             [DMLElement("GID")] public UInt64 ChannelID;
@@ -678,25 +678,25 @@ namespace Imlight.Internals.DML
             [DMLElement("UBYT")] public Byte ErrorCode;
             public byte MessageOrder { get; } = 48;
         }
-        public sealed class MSG_CREATE_SESSION : INetworkRecord
+        public sealed class MSG_CREATE_SESSION : INetworkMessage
         {
             public byte MessageOrder { get; } = 49;
         }
-        public sealed class MSG_CSRBANKITEMS : INetworkRecord
+        public sealed class MSG_CSRBANKITEMS : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GlobalID;
             [DMLElement("UBYT")] public Byte SharedBank;
             [DMLElement("STR")] public String SerializedItem;
             public byte MessageOrder { get; } = 50;
         }
-        public sealed class MSG_CSRBANKITEMSDONE : INetworkRecord
+        public sealed class MSG_CSRBANKITEMSDONE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GlobalID;
             [DMLElement("UBYT")] public Byte SharedBank;
             [DMLElement("INT")] public Int32 Limit;
             public byte MessageOrder { get; } = 51;
         }
-        public sealed class MSG_CSREDITCHARACTER : INetworkRecord
+        public sealed class MSG_CSREDITCHARACTER : INetworkMessage
         {
             [DMLElement("UINT")] public UInt32 ChunkNum;
             [DMLElement("GID")] public UInt64 CharacterID;
@@ -716,12 +716,12 @@ namespace Imlight.Internals.DML
             [DMLElement("INT")] public Int32 CharacterSlots;
             public byte MessageOrder { get; } = 52;
         }
-        public sealed class MSG_CSREDITCHARACTERFAILED : INetworkRecord
+        public sealed class MSG_CSREDITCHARACTERFAILED : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 CharacterID;
             public byte MessageOrder { get; } = 53;
         }
-        public sealed class MSG_CSRFINISHEDHOUSE : INetworkRecord
+        public sealed class MSG_CSRFINISHEDHOUSE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 OldGid;
             [DMLElement("GID")] public UInt64 NewGid;
@@ -729,40 +729,40 @@ namespace Imlight.Internals.DML
             [DMLElement("UBYT")] public Byte Error;
             public byte MessageOrder { get; } = 54;
         }
-        public sealed class MSG_CSRSEARCHLIST : INetworkRecord
+        public sealed class MSG_CSRSEARCHLIST : INetworkMessage
         {
             [DMLElement("UBYT")] public Byte StartEnd;
             [DMLElement("STR")] public String Data;
             public byte MessageOrder { get; } = 55;
         }
-        public sealed class MSG_CSR_MAIL_DATA : INetworkRecord
+        public sealed class MSG_CSR_MAIL_DATA : INetworkMessage
         {
             [DMLElement("STR")] public String Data;
             public byte MessageOrder { get; } = 56;
         }
-        public sealed class MSG_CSR_RECEIVE_GIFTS : INetworkRecord
+        public sealed class MSG_CSR_RECEIVE_GIFTS : INetworkMessage
         {
             [DMLElement("INT")] public Int32 Success;
             [DMLElement("STR")] public String Data;
             public byte MessageOrder { get; } = 57;
         }
-        public sealed class MSG_DEBUGDELETEALLOBJECTS : INetworkRecord
+        public sealed class MSG_DEBUGDELETEALLOBJECTS : INetworkMessage
         {
             public byte MessageOrder { get; } = 58;
         }
-        public sealed class MSG_DELETEOBJECT : INetworkRecord
+        public sealed class MSG_DELETEOBJECT : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GameObjectID;
             [DMLElement("STR")] public String Data;
             public byte MessageOrder { get; } = 59;
         }
-        public sealed class MSG_DELETE_GIFT : INetworkRecord
+        public sealed class MSG_DELETE_GIFT : INetworkMessage
         {
             [DMLElement("STR")] public String GiftID;
             [DMLElement("INT")] public Int32 Success;
             public byte MessageOrder { get; } = 60;
         }
-        public sealed class MSG_DIRECTEDCHAT : INetworkRecord
+        public sealed class MSG_DIRECTEDCHAT : INetworkMessage
         {
             [DMLElement("STR")] public String SourceName;
             [DMLElement("GID")] public UInt64 SourceID;
@@ -771,17 +771,17 @@ namespace Imlight.Internals.DML
             [DMLElement("UBYT")] public Byte Filter;
             public byte MessageOrder { get; } = 61;
         }
-        public sealed class MSG_DIRECTEDCHATBYNAMERESPONSE : INetworkRecord
+        public sealed class MSG_DIRECTEDCHATBYNAMERESPONSE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 TargetID;
             [DMLElement("WSTR")] public String TargetName;
             public byte MessageOrder { get; } = 62;
         }
-        public sealed class MSG_DIRECTEDCHATFAIL : INetworkRecord
+        public sealed class MSG_DIRECTEDCHATFAIL : INetworkMessage
         {
             public byte MessageOrder { get; } = 63;
         }
-        public sealed class MSG_DIRECTEDQUICKCHAT : INetworkRecord
+        public sealed class MSG_DIRECTEDQUICKCHAT : INetworkMessage
         {
             [DMLElement("STR")] public String SourceName;
             [DMLElement("GID")] public UInt64 SourceID;
@@ -790,7 +790,7 @@ namespace Imlight.Internals.DML
             [DMLElement("UINT")] public UInt32 Flags;
             public byte MessageOrder { get; } = 64;
         }
-        public sealed class MSG_DIRECTEDQUICKCHATEXT : INetworkRecord
+        public sealed class MSG_DIRECTEDQUICKCHATEXT : INetworkMessage
         {
             [DMLElement("STR")] public String SourceName;
             [DMLElement("GID")] public UInt64 SourceID;
@@ -799,26 +799,26 @@ namespace Imlight.Internals.DML
             [DMLElement("UINT")] public UInt32 Flags;
             public byte MessageOrder { get; } = 65;
         }
-        public sealed class MSG_DISCONNECT_AFK : INetworkRecord
+        public sealed class MSG_DISCONNECT_AFK : INetworkMessage
         {
             [DMLElement("BYT")] public SByte Warning;
             public byte MessageOrder { get; } = 66;
         }
-        public sealed class MSG_DOWNLOADBROWSER : INetworkRecord
+        public sealed class MSG_DOWNLOADBROWSER : INetworkMessage
         {
             public byte MessageOrder { get; } = 67;
         }
-        public sealed class MSG_DOWNLOADPACKAGE : INetworkRecord
+        public sealed class MSG_DOWNLOADPACKAGE : INetworkMessage
         {
             [DMLElement("STR")] public String Data;
             public byte MessageOrder { get; } = 68;
         }
-        public sealed class MSG_DOWNLOADPACKAGEELEMENT : INetworkRecord
+        public sealed class MSG_DOWNLOADPACKAGEELEMENT : INetworkMessage
         {
             [DMLElement("STR")] public String Data;
             public byte MessageOrder { get; } = 69;
         }
-        public sealed class MSG_DYNAMODBEHAVIOR_UPDATEMODS : INetworkRecord
+        public sealed class MSG_DYNAMODBEHAVIOR_UPDATEMODS : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GlobalID;
             [DMLElement("BYT")] public SByte UpdateAll;
@@ -829,27 +829,27 @@ namespace Imlight.Internals.DML
             [DMLElement("INT")] public Int32 Index;
             public byte MessageOrder { get; } = 70;
         }
-        public sealed class MSG_DYNAMODDUMP : INetworkRecord
+        public sealed class MSG_DYNAMODDUMP : INetworkMessage
         {
             [DMLElement("STR")] public String Data;
             [DMLElement("STR")] public String Filename;
             public byte MessageOrder { get; } = 71;
         }
-        public sealed class MSG_ENTERSTATE : INetworkRecord
+        public sealed class MSG_ENTERSTATE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GameObjectID;
             [DMLElement("UINT")] public UInt32 State;
             [DMLElement("STR")] public String Data;
             public byte MessageOrder { get; } = 72;
         }
-        public sealed class MSG_EQUIPITEM : INetworkRecord
+        public sealed class MSG_EQUIPITEM : INetworkMessage
         {
             [DMLElement("INT")] public Int32 IsEquip;
             [DMLElement("GID")] public UInt64 ItemID;
             [DMLElement("STR")] public String SlotName;
             public byte MessageOrder { get; } = 73;
         }
-        public sealed class MSG_EQUIPMENTBEHAVIOR_EQUIPITEM : INetworkRecord
+        public sealed class MSG_EQUIPMENTBEHAVIOR_EQUIPITEM : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GlobalID;
             [DMLElement("STR")] public String SlotName;
@@ -857,41 +857,41 @@ namespace Imlight.Internals.DML
             [DMLElement("STR")] public String SerializedItem;
             public byte MessageOrder { get; } = 74;
         }
-        public sealed class MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM : INetworkRecord
+        public sealed class MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GlobalID;
             [DMLElement("STR")] public String SerializedInfo;
             public byte MessageOrder { get; } = 75;
         }
-        public sealed class MSG_EQUIPMENTBEHAVIOR_PUBLICUNEQUIPITEM : INetworkRecord
+        public sealed class MSG_EQUIPMENTBEHAVIOR_PUBLICUNEQUIPITEM : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GlobalID;
             [DMLElement("UBYT")] public Byte IndexToRemove;
             public byte MessageOrder { get; } = 76;
         }
-        public sealed class MSG_EQUIPMENTBEHAVIOR_UNEQUIPITEM : INetworkRecord
+        public sealed class MSG_EQUIPMENTBEHAVIOR_UNEQUIPITEM : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GlobalID;
             [DMLElement("GID")] public UInt64 ItemID;
             public byte MessageOrder { get; } = 77;
         }
-        public sealed class MSG_FEEDINVENTORYITEM : INetworkRecord
+        public sealed class MSG_FEEDINVENTORYITEM : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 PetID;
             [DMLElement("GID")] public UInt64 FedObjectID;
             public byte MessageOrder { get; } = 78;
         }
-        public sealed class MSG_FIND_SESSIONS : INetworkRecord
+        public sealed class MSG_FIND_SESSIONS : INetworkMessage
         {
             public byte MessageOrder { get; } = 79;
         }
-        public sealed class MSG_FIND_SESSION_PLAYERS : INetworkRecord
+        public sealed class MSG_FIND_SESSION_PLAYERS : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 ZoneID;
             [DMLElement("GID")] public UInt64 SessionID;
             public byte MessageOrder { get; } = 80;
         }
-        public sealed class MSG_GENERICGAME : INetworkRecord
+        public sealed class MSG_GENERICGAME : INetworkMessage
         {
             [DMLElement("INT")] public Int32 A;
             [DMLElement("INT")] public Int32 B;
@@ -902,14 +902,14 @@ namespace Imlight.Internals.DML
             [DMLElement("STR")] public String Message;
             public byte MessageOrder { get; } = 81;
         }
-        public sealed class MSG_GETLADDER : INetworkRecord
+        public sealed class MSG_GETLADDER : INetworkMessage
         {
             [DMLElement("STR")] public String NameBlob;
             [DMLElement("GID")] public UInt64 CharacterID;
             [DMLElement("UINT")] public UInt32 TournamentNameID;
             public byte MessageOrder { get; } = 82;
         }
-        public sealed class MSG_GET_RANKINGS : INetworkRecord
+        public sealed class MSG_GET_RANKINGS : INetworkMessage
         {
             [DMLElement("STR")] public String Game;
             [DMLElement("INT")] public Int32 RankingCount;
@@ -917,7 +917,7 @@ namespace Imlight.Internals.DML
             [DMLElement("GID")] public UInt64 GroupID;
             public byte MessageOrder { get; } = 83;
         }
-        public sealed class MSG_GIFT_REDEEMED : INetworkRecord
+        public sealed class MSG_GIFT_REDEEMED : INetworkMessage
         {
             [DMLElement("INT")] public Int32 Success;
             [DMLElement("STR")] public String GiftID;
@@ -928,14 +928,14 @@ namespace Imlight.Internals.DML
             [DMLElement("INT")] public Int32 Quantity;
             public byte MessageOrder { get; } = 84;
         }
-        public sealed class MSG_GOTOPLAYER : INetworkRecord
+        public sealed class MSG_GOTOPLAYER : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 TargetCharacterID;
             [DMLElement("GID")] public UInt64 OriginatorID;
             [DMLElement("UBYT")] public Byte MustBeFriend;
             public byte MessageOrder { get; } = 85;
         }
-        public sealed class MSG_GOTOPLAYERRESP : INetworkRecord
+        public sealed class MSG_GOTOPLAYERRESP : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 TargetCharacterID;
             [DMLElement("STR")] public String ZoneName;
@@ -944,13 +944,13 @@ namespace Imlight.Internals.DML
             [DMLElement("UINT")] public UInt32 Error;
             public byte MessageOrder { get; } = 86;
         }
-        public sealed class MSG_HARASSMENTREPORT : INetworkRecord
+        public sealed class MSG_HARASSMENTREPORT : INetworkMessage
         {
             [DMLElement("INT")] public Int32 Count;
             [DMLElement("INT")] public Int32 CountToMute;
             public byte MessageOrder { get; } = 87;
         }
-        public sealed class MSG_IGNOREADD : INetworkRecord
+        public sealed class MSG_IGNOREADD : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 ListOwnerGID;
             [DMLElement("GID")] public UInt64 CharacterGID;
@@ -959,7 +959,7 @@ namespace Imlight.Internals.DML
             [DMLElement("UBYT")] public Byte Forwarded;
             public byte MessageOrder { get; } = 88;
         }
-        public sealed class MSG_IGNOREDROP : INetworkRecord
+        public sealed class MSG_IGNOREDROP : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 ListOwnerGID;
             [DMLElement("GID")] public UInt64 CharacterGID;
@@ -967,45 +967,45 @@ namespace Imlight.Internals.DML
             [DMLElement("UBYT")] public Byte Forwarded;
             public byte MessageOrder { get; } = 89;
         }
-        public sealed class MSG_IGNORELIST : INetworkRecord
+        public sealed class MSG_IGNORELIST : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 ListOwnerGID;
             [DMLElement("STR")] public String ListData;
             [DMLElement("UBYT")] public Byte Add;
             public byte MessageOrder { get; } = 90;
         }
-        public sealed class MSG_INTERACTOBJECT : INetworkRecord
+        public sealed class MSG_INTERACTOBJECT : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GlobalID;
             [DMLElement("GID")] public UInt64 TemplateID;
             public byte MessageOrder { get; } = 91;
         }
-        public sealed class MSG_INTERACTOPTION : INetworkRecord
+        public sealed class MSG_INTERACTOPTION : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 ObjectID;
             [DMLElement("INT")] public Int32 OptionIndex;
             public byte MessageOrder { get; } = 92;
         }
-        public sealed class MSG_INVENTORYBEHAVIOR_ADDITEM : INetworkRecord
+        public sealed class MSG_INVENTORYBEHAVIOR_ADDITEM : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GlobalID;
             [DMLElement("STR")] public String SerializedItem;
             public byte MessageOrder { get; } = 93;
         }
-        public sealed class MSG_INVENTORYBEHAVIOR_REMOVEITEM : INetworkRecord
+        public sealed class MSG_INVENTORYBEHAVIOR_REMOVEITEM : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GlobalID;
             [DMLElement("GID")] public UInt64 ItemID;
             public byte MessageOrder { get; } = 94;
         }
-        public sealed class MSG_INVENTORYBEHAVIOR_TRADEITEM : INetworkRecord
+        public sealed class MSG_INVENTORYBEHAVIOR_TRADEITEM : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GlobalID;
             [DMLElement("GID")] public UInt64 ItemID;
             [DMLElement("INT")] public Int32 Trading;
             public byte MessageOrder { get; } = 95;
         }
-        public sealed class MSG_INVITEFRIEND : INetworkRecord
+        public sealed class MSG_INVITEFRIEND : INetworkMessage
         {
             [DMLElement("STR")] public String PromoID;
             [DMLElement("WSTR")] public String YourName;
@@ -1015,13 +1015,13 @@ namespace Imlight.Internals.DML
             [DMLElement("UBYT")] public Byte SendInEnglish;
             public byte MessageOrder { get; } = 96;
         }
-        public sealed class MSG_INVITE_RESPONSE : INetworkRecord
+        public sealed class MSG_INVITE_RESPONSE : INetworkMessage
         {
             [DMLElement("INT")] public Int32 Success;
             [DMLElement("STR")] public String ErrorDesc;
             public byte MessageOrder { get; } = 97;
         }
-        public sealed class MSG_JOINCHANNELRESPONSE : INetworkRecord
+        public sealed class MSG_JOINCHANNELRESPONSE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 SourceID;
             [DMLElement("GID")] public UInt64 ParentID;
@@ -1032,30 +1032,30 @@ namespace Imlight.Internals.DML
             [DMLElement("GID")] public UInt64 RecipientID;
             public byte MessageOrder { get; } = 98;
         }
-        public sealed class MSG_JOIN_SESSION : INetworkRecord
+        public sealed class MSG_JOIN_SESSION : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 ZoneID;
             [DMLElement("GID")] public UInt64 SessionID;
             public byte MessageOrder { get; } = 99;
         }
-        public sealed class MSG_JUMP : INetworkRecord
+        public sealed class MSG_JUMP : INetworkMessage
         {
             [DMLElement("UBYT")] public Byte ExcludeOriginator;
             public byte MessageOrder { get; } = 100;
         }
-        public sealed class MSG_KILL_CLIENT_PROCESS : INetworkRecord
+        public sealed class MSG_KILL_CLIENT_PROCESS : INetworkMessage
         {
             [DMLElement("UINT")] public UInt32 JobID;
             public byte MessageOrder { get; } = 101;
         }
-        public sealed class MSG_LADDER : INetworkRecord
+        public sealed class MSG_LADDER : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 CharacterID;
             [DMLElement("STR")] public String LadderData;
             [DMLElement("UINT")] public UInt32 TourneyCredits;
             public byte MessageOrder { get; } = 102;
         }
-        public sealed class MSG_LEAVECHANNELRESPONSE : INetworkRecord
+        public sealed class MSG_LEAVECHANNELRESPONSE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 SourceID;
             [DMLElement("GID")] public UInt64 ParentID;
@@ -1066,28 +1066,28 @@ namespace Imlight.Internals.DML
             [DMLElement("GID")] public UInt64 RecipientID;
             public byte MessageOrder { get; } = 103;
         }
-        public sealed class MSG_LEAVEHOUSINGLOT : INetworkRecord
+        public sealed class MSG_LEAVEHOUSINGLOT : INetworkMessage
         {
             public byte MessageOrder { get; } = 104;
         }
-        public sealed class MSG_LEAVESERVICERANGE : INetworkRecord
+        public sealed class MSG_LEAVESERVICERANGE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 MobileID;
             public byte MessageOrder { get; } = 105;
         }
-        public sealed class MSG_LEAVESTATE : INetworkRecord
+        public sealed class MSG_LEAVESTATE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GameObjectID;
             [DMLElement("UINT")] public UInt32 State;
             public byte MessageOrder { get; } = 106;
         }
-        public sealed class MSG_LOADSAVEOBJECTS : INetworkRecord
+        public sealed class MSG_LOADSAVEOBJECTS : INetworkMessage
         {
             [DMLElement("STR")] public String Filename;
             [DMLElement("UBYT")] public Byte Save;
             public byte MessageOrder { get; } = 107;
         }
-        public sealed class MSG_LOGINCOMPLETE : INetworkRecord
+        public sealed class MSG_LOGINCOMPLETE : INetworkMessage
         {
             [DMLElement("STR")] public String ZoneName;
             [DMLElement("STR")] public String Data;
@@ -1108,16 +1108,16 @@ namespace Imlight.Internals.DML
             [DMLElement("STR")] public String CriticalObjects;
             public byte MessageOrder { get; } = 108;
         }
-        public sealed class MSG_MAIL_DATA : INetworkRecord
+        public sealed class MSG_MAIL_DATA : INetworkMessage
         {
             [DMLElement("STR")] public String Data;
             public byte MessageOrder { get; } = 109;
         }
-        public sealed class MSG_MARK_LOCATION : INetworkRecord
+        public sealed class MSG_MARK_LOCATION : INetworkMessage
         {
             public byte MessageOrder { get; } = 110;
         }
-        public sealed class MSG_MARK_LOCATION_RESPONSE : INetworkRecord
+        public sealed class MSG_MARK_LOCATION_RESPONSE : INetworkMessage
         {
             [DMLElement("BYT")] public SByte Result;
             [DMLElement("STR")] public String ZoneName;
@@ -1132,20 +1132,20 @@ namespace Imlight.Internals.DML
             [DMLElement("STR")] public String MarkType;
             public byte MessageOrder { get; } = 111;
         }
-        public sealed class MSG_MATCHAWARD : INetworkRecord
+        public sealed class MSG_MATCHAWARD : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 CharacterID;
             [DMLElement("STR")] public String AwardData;
             public byte MessageOrder { get; } = 112;
         }
-        public sealed class MSG_MATCHINVITE : INetworkRecord
+        public sealed class MSG_MATCHINVITE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 CharacterID;
             [DMLElement("UINT")] public UInt32 TournamentNameID;
             [DMLElement("STR")] public String MatchActor;
             public byte MessageOrder { get; } = 113;
         }
-        public sealed class MSG_MATCHMAKERUPDATE : INetworkRecord
+        public sealed class MSG_MATCHMAKERUPDATE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 CharacterID;
             [DMLElement("STR")] public String MatchTeam;
@@ -1156,7 +1156,7 @@ namespace Imlight.Internals.DML
             [DMLElement("UBYT")] public Byte Status;
             public byte MessageOrder { get; } = 114;
         }
-        public sealed class MSG_MATCHREADY : INetworkRecord
+        public sealed class MSG_MATCHREADY : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 CharacterID;
             [DMLElement("GID")] public UInt64 ZoneID;
@@ -1165,20 +1165,20 @@ namespace Imlight.Internals.DML
             [DMLElement("STR")] public String MatchActor;
             public byte MessageOrder { get; } = 115;
         }
-        public sealed class MSG_MATCHRESULT : INetworkRecord
+        public sealed class MSG_MATCHRESULT : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 CharacterID;
             [DMLElement("STR")] public String ResultData;
             [DMLElement("STR")] public String AwardData;
             public byte MessageOrder { get; } = 116;
         }
-        public sealed class MSG_MESSAGE_PROCESS : INetworkRecord
+        public sealed class MSG_MESSAGE_PROCESS : INetworkMessage
         {
             [DMLElement("UINT")] public UInt32 JobID;
             [DMLElement("STR")] public String Message;
             public byte MessageOrder { get; } = 117;
         }
-        public sealed class MSG_MOVECORRECTION : INetworkRecord
+        public sealed class MSG_MOVECORRECTION : INetworkMessage
         {
             [DMLElement("FLT")] public Single LocationX;
             [DMLElement("FLT")] public Single LocationY;
@@ -1186,19 +1186,19 @@ namespace Imlight.Internals.DML
             [DMLElement("FLT")] public Single Direction;
             public byte MessageOrder { get; } = 118;
         }
-        public sealed class MSG_MOVESTATE : INetworkRecord
+        public sealed class MSG_MOVESTATE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GlobalID;
             [DMLElement("BYT")] public SByte NewState;
             public byte MessageOrder { get; } = 119;
         }
-        public sealed class MSG_MUTE : INetworkRecord
+        public sealed class MSG_MUTE : INetworkMessage
         {
             [DMLElement("STR")] public String MuteTime;
             [DMLElement("UBYT")] public Byte ForceMessage;
             public byte MessageOrder { get; } = 120;
         }
-        public sealed class MSG_MUTE_RSP : INetworkRecord
+        public sealed class MSG_MUTE_RSP : INetworkMessage
         {
             [DMLElement("STR")] public String MutedID;
             [DMLElement("STR")] public String MuteTime;
@@ -1206,38 +1206,38 @@ namespace Imlight.Internals.DML
             [DMLElement("UBYT")] public Byte Success;
             public byte MessageOrder { get; } = 121;
         }
-        public sealed class MSG_NEWOBJECT : INetworkRecord
+        public sealed class MSG_NEWOBJECT : INetworkMessage
         {
             [DMLElement("STR")] public String Data;
             public byte MessageOrder { get; } = 122;
         }
-        public sealed class MSG_NEWSYSSTATS : INetworkRecord
+        public sealed class MSG_NEWSYSSTATS : INetworkMessage
         {
             [DMLElement("INT")] public Int32 CpuUsage;
             [DMLElement("INT")] public Int32 VMemUsed;
             [DMLElement("INT")] public Int32 RMemUsed;
             public byte MessageOrder { get; } = 123;
         }
-        public sealed class MSG_NEWTICKCNT : INetworkRecord
+        public sealed class MSG_NEWTICKCNT : INetworkMessage
         {
             [DMLElement("INT")] public Int32 TickCnt;
             public byte MessageOrder { get; } = 124;
         }
-        public sealed class MSG_NEWTOURNEYREWARDS : INetworkRecord
+        public sealed class MSG_NEWTOURNEYREWARDS : INetworkMessage
         {
             [DMLElement("STR")] public String Data;
             [DMLElement("GID")] public UInt64 BracketID;
             [DMLElement("STR")] public String TourneyNameSTKey;
             public byte MessageOrder { get; } = 125;
         }
-        public sealed class MSG_NEW_MAIL : INetworkRecord
+        public sealed class MSG_NEW_MAIL : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 CharacterID;
             [DMLElement("INT")] public Int32 MailType;
             [DMLElement("UBYT")] public Byte AccountMail;
             public byte MessageOrder { get; } = 126;
         }
-        public sealed class MSG_NOTIFYCHANNELINSTANCE : INetworkRecord
+        public sealed class MSG_NOTIFYCHANNELINSTANCE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 RecipientID;
             [DMLElement("GID")] public UInt64 ParentID;
@@ -1246,21 +1246,21 @@ namespace Imlight.Internals.DML
             [DMLElement("UBYT")] public Byte Create;
             public byte MessageOrder { get; } = 127;
         }
-        public sealed class MSG_NOTIFY_GIFT : INetworkRecord
+        public sealed class MSG_NOTIFY_GIFT : INetworkMessage
         {
             [DMLElement("INT")] public Int32 Gift;
             [DMLElement("INT")] public Int32 CrownsRewards;
             public byte MessageOrder { get; } = 128;
         }
-        public sealed class MSG_NOTMUTED : INetworkRecord
+        public sealed class MSG_NOTMUTED : INetworkMessage
         {
             public byte MessageOrder { get; } = 129;
         }
-        public sealed class MSG_NOT_AFK : INetworkRecord
+        public sealed class MSG_NOT_AFK : INetworkMessage
         {
             public byte MessageOrder { get; } = 130;
         }
-        public sealed class MSG_NPCSPEECH : INetworkRecord
+        public sealed class MSG_NPCSPEECH : INetworkMessage
         {
             [DMLElement("STR")] public String SourceName;
             [DMLElement("GID")] public UInt64 SourceID;
@@ -1271,7 +1271,7 @@ namespace Imlight.Internals.DML
             [DMLElement("INT")] public Int32 WidthOverride;
             public byte MessageOrder { get; } = 131;
         }
-        public sealed class MSG_OBJECT_INFO_QUERY : INetworkRecord
+        public sealed class MSG_OBJECT_INFO_QUERY : INetworkMessage
         {
             [DMLElement("STR")] public String Info;
             [DMLElement("INT")] public Int32 Part;
@@ -1279,69 +1279,69 @@ namespace Imlight.Internals.DML
             [DMLElement("INT")] public Int32 Size;
             public byte MessageOrder { get; } = 132;
         }
-        public sealed class MSG_PARTYDISBAND : INetworkRecord
+        public sealed class MSG_PARTYDISBAND : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 DestinationCharacterID;
             public byte MessageOrder { get; } = 133;
         }
-        public sealed class MSG_PARTYJOINFAILED : INetworkRecord
+        public sealed class MSG_PARTYJOINFAILED : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 DestinationCharacterID;
             [DMLElement("INT")] public Int32 ErrorCode;
             public byte MessageOrder { get; } = 134;
         }
-        public sealed class MSG_PARTYJOINNOTIFICATION : INetworkRecord
+        public sealed class MSG_PARTYJOINNOTIFICATION : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 DestinationCharacterID;
             [DMLElement("GID")] public UInt64 ChannelID;
             [DMLElement("GID")] public UInt64 PartyID;
             public byte MessageOrder { get; } = 135;
         }
-        public sealed class MSG_PARTYLEAVE : INetworkRecord
+        public sealed class MSG_PARTYLEAVE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 SourceCharacterID;
             public byte MessageOrder { get; } = 136;
         }
-        public sealed class MSG_PARTYLEAVENOTIFICATION : INetworkRecord
+        public sealed class MSG_PARTYLEAVENOTIFICATION : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 DestinationCharacterID;
             [DMLElement("GID")] public UInt64 CharacterID;
             public byte MessageOrder { get; } = 137;
         }
-        public sealed class MSG_PARTYLEVELUP : INetworkRecord
+        public sealed class MSG_PARTYLEVELUP : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 CharacterID;
             [DMLElement("INT")] public Int32 NewLevel;
             public byte MessageOrder { get; } = 138;
         }
-        public sealed class MSG_PARTYLEVELUPUPDATE : INetworkRecord
+        public sealed class MSG_PARTYLEVELUPUPDATE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 DestinationCharacterID;
             [DMLElement("GID")] public UInt64 CharacterID;
             [DMLElement("INT")] public Int32 NewLevel;
             public byte MessageOrder { get; } = 139;
         }
-        public sealed class MSG_PARTYMULTIPLAYERMOUNTEQUIP : INetworkRecord
+        public sealed class MSG_PARTYMULTIPLAYERMOUNTEQUIP : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 SourceCharacterID;
             [DMLElement("GID")] public UInt64 MountTemplateID;
             public byte MessageOrder { get; } = 140;
         }
-        public sealed class MSG_PARTYMULTIPLAYERMOUNTEQUIPUPDATE : INetworkRecord
+        public sealed class MSG_PARTYMULTIPLAYERMOUNTEQUIPUPDATE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 DestinationCharacterID;
             [DMLElement("GID")] public UInt64 SourceCharacterID;
             [DMLElement("GID")] public UInt64 MountTemplateID;
             public byte MessageOrder { get; } = 141;
         }
-        public sealed class MSG_PARTYMULTIPLAYERMOUNTJOIN : INetworkRecord
+        public sealed class MSG_PARTYMULTIPLAYERMOUNTJOIN : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 SourceCharacterID;
             [DMLElement("GID")] public UInt64 MountOwnerCharacterID;
             [DMLElement("GID")] public UInt64 MountTemplateID;
             public byte MessageOrder { get; } = 142;
         }
-        public sealed class MSG_PARTYMULTIPLAYERMOUNTJOINUPDATE : INetworkRecord
+        public sealed class MSG_PARTYMULTIPLAYERMOUNTJOINUPDATE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 DestinationCharacterID;
             [DMLElement("GID")] public UInt64 SourceCharacterID;
@@ -1349,19 +1349,19 @@ namespace Imlight.Internals.DML
             [DMLElement("GID")] public UInt64 MountTemplateID;
             public byte MessageOrder { get; } = 143;
         }
-        public sealed class MSG_PARTYREQUESTACCEPT : INetworkRecord
+        public sealed class MSG_PARTYREQUESTACCEPT : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 SourceCharacterID;
             [DMLElement("GID")] public UInt64 PartyID;
             public byte MessageOrder { get; } = 144;
         }
-        public sealed class MSG_PARTYREQUESTDECLINE : INetworkRecord
+        public sealed class MSG_PARTYREQUESTDECLINE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 SourceCharacterID;
             [DMLElement("GID")] public UInt64 PartyID;
             public byte MessageOrder { get; } = 145;
         }
-        public sealed class MSG_PARTYREQUESTINVITE : INetworkRecord
+        public sealed class MSG_PARTYREQUESTINVITE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 SourceCharacterID;
             [DMLElement("GID")] public UInt64 SourceGlobalID;
@@ -1369,7 +1369,7 @@ namespace Imlight.Internals.DML
             [DMLElement("GID")] public UInt64 TargetGlobalID;
             public byte MessageOrder { get; } = 146;
         }
-        public sealed class MSG_PARTYREQUESTJOIN : INetworkRecord
+        public sealed class MSG_PARTYREQUESTJOIN : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 DestinationCharacterID;
             [DMLElement("GID")] public UInt64 CharacterID;
@@ -1378,13 +1378,13 @@ namespace Imlight.Internals.DML
             [DMLElement("GID")] public UInt64 PartyID;
             public byte MessageOrder { get; } = 147;
         }
-        public sealed class MSG_PARTYREQUESTMEMBERZONES : INetworkRecord
+        public sealed class MSG_PARTYREQUESTMEMBERZONES : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 PartyID;
             [DMLElement("GID")] public UInt64 SourceCharacterID;
             public byte MessageOrder { get; } = 148;
         }
-        public sealed class MSG_PARTYREQUESTRESPONSE : INetworkRecord
+        public sealed class MSG_PARTYREQUESTRESPONSE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 DestinationCharacterID;
             [DMLElement("GID")] public UInt64 TargetCharacterID;
@@ -1393,18 +1393,18 @@ namespace Imlight.Internals.DML
             [DMLElement("STR")] public String PlayerNameBlob;
             public byte MessageOrder { get; } = 149;
         }
-        public sealed class MSG_PARTYREQUESTTIMEOUT : INetworkRecord
+        public sealed class MSG_PARTYREQUESTTIMEOUT : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 DestinationCharacterID;
             public byte MessageOrder { get; } = 150;
         }
-        public sealed class MSG_PARTYSUBMITMEMBERZONES : INetworkRecord
+        public sealed class MSG_PARTYSUBMITMEMBERZONES : INetworkMessage
         {
             [DMLElement("STR")] public String PartyMemberZones;
             [DMLElement("GID")] public UInt64 DestinationCharacterID;
             public byte MessageOrder { get; } = 151;
         }
-        public sealed class MSG_PARTYUPDATE : INetworkRecord
+        public sealed class MSG_PARTYUPDATE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 DestinationCharacterID;
             [DMLElement("STR")] public String PlayerNameBlob;
@@ -1412,29 +1412,29 @@ namespace Imlight.Internals.DML
             [DMLElement("GID")] public UInt64 GlobalID;
             public byte MessageOrder { get; } = 152;
         }
-        public sealed class MSG_PARTYZONEREQUEST : INetworkRecord
+        public sealed class MSG_PARTYZONEREQUEST : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 CharacterID;
             public byte MessageOrder { get; } = 153;
         }
-        public sealed class MSG_PARTYZONEREQUESTRESPONSE : INetworkRecord
+        public sealed class MSG_PARTYZONEREQUESTRESPONSE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 CharacterID;
             [DMLElement("GID")] public UInt64 PartyID;
             public byte MessageOrder { get; } = 154;
         }
-        public sealed class MSG_PICKUPOBJECT : INetworkRecord
+        public sealed class MSG_PICKUPOBJECT : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GameObjectID;
             public byte MessageOrder { get; } = 155;
         }
-        public sealed class MSG_PLACEOBJECT : INetworkRecord
+        public sealed class MSG_PLACEOBJECT : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GlobalID;
             [DMLElement("GID")] public UInt64 TemplateID;
             public byte MessageOrder { get; } = 156;
         }
-        public sealed class MSG_PLAYCINEMATIC : INetworkRecord
+        public sealed class MSG_PLAYCINEMATIC : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 CinematicID;
             [DMLElement("GID")] public UInt64 TargetID;
@@ -1448,13 +1448,13 @@ namespace Imlight.Internals.DML
             [DMLElement("UBYT")] public Byte DisableInteraction;
             public byte MessageOrder { get; } = 157;
         }
-        public sealed class MSG_PLAYERBLACKBALLEDALERT : INetworkRecord
+        public sealed class MSG_PLAYERBLACKBALLEDALERT : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 CharacterID;
             [DMLElement("BYT")] public SByte Muted;
             public byte MessageOrder { get; } = 158;
         }
-        public sealed class MSG_PLAYERREADYACK : INetworkRecord
+        public sealed class MSG_PLAYERREADYACK : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 CharacterID;
             [DMLElement("UINT")] public UInt32 TournamentNameID;
@@ -1463,7 +1463,7 @@ namespace Imlight.Internals.DML
             [DMLElement("UBYT")] public Byte Online;
             public byte MessageOrder { get; } = 159;
         }
-        public sealed class MSG_PLAYSOUND : INetworkRecord
+        public sealed class MSG_PLAYSOUND : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 SoundID;
             [DMLElement("FLT")] public Single ReinteractTime;
@@ -1472,28 +1472,28 @@ namespace Imlight.Internals.DML
             [DMLElement("UBYT")] public Byte PlayAtMusicVolume;
             public byte MessageOrder { get; } = 160;
         }
-        public sealed class MSG_POSTZONEEVENTFROMCLIENT : INetworkRecord
+        public sealed class MSG_POSTZONEEVENTFROMCLIENT : INetworkMessage
         {
             [DMLElement("STR")] public String EventName;
             public byte MessageOrder { get; } = 161;
         }
-        public sealed class MSG_PREVIEW_ISLAND : INetworkRecord
+        public sealed class MSG_PREVIEW_ISLAND : INetworkMessage
         {
             [DMLElement("STR")] public String PreviewWorldZone;
             public byte MessageOrder { get; } = 162;
         }
-        public sealed class MSG_PVPUPDATEINFO : INetworkRecord
+        public sealed class MSG_PVPUPDATEINFO : INetworkMessage
         {
             [DMLElement("STR")] public String TournamentInfo;
             [DMLElement("GID")] public UInt64 CharacterID;
             public byte MessageOrder { get; } = 163;
         }
-        public sealed class MSG_QUERY_LOGOUT : INetworkRecord
+        public sealed class MSG_QUERY_LOGOUT : INetworkMessage
         {
             [DMLElement("UBYT")] public Byte IsInstance;
             public byte MessageOrder { get; } = 164;
         }
-        public sealed class MSG_RADIALCHAT : INetworkRecord
+        public sealed class MSG_RADIALCHAT : INetworkMessage
         {
             [DMLElement("STR")] public String SourceName;
             [DMLElement("GID")] public UInt64 SourceID;
@@ -1501,7 +1501,7 @@ namespace Imlight.Internals.DML
             [DMLElement("UBYT")] public Byte Filter;
             public byte MessageOrder { get; } = 165;
         }
-        public sealed class MSG_RADIALQUICKCHAT : INetworkRecord
+        public sealed class MSG_RADIALQUICKCHAT : INetworkMessage
         {
             [DMLElement("STR")] public String SourceName;
             [DMLElement("GID")] public UInt64 SourceID;
@@ -1509,7 +1509,7 @@ namespace Imlight.Internals.DML
             [DMLElement("UBYT")] public Byte Filter;
             public byte MessageOrder { get; } = 166;
         }
-        public sealed class MSG_RADIALQUICKCHATEXT : INetworkRecord
+        public sealed class MSG_RADIALQUICKCHATEXT : INetworkMessage
         {
             [DMLElement("STR")] public String SourceName;
             [DMLElement("GID")] public UInt64 SourceID;
@@ -1517,7 +1517,7 @@ namespace Imlight.Internals.DML
             [DMLElement("UBYT")] public Byte Filter;
             public byte MessageOrder { get; } = 167;
         }
-        public sealed class MSG_RADIALZONECLUSTERQUICKCHAT : INetworkRecord
+        public sealed class MSG_RADIALZONECLUSTERQUICKCHAT : INetworkMessage
         {
             [DMLElement("STR")] public String SourceName;
             [DMLElement("GID")] public UInt64 SourceID;
@@ -1526,7 +1526,7 @@ namespace Imlight.Internals.DML
             [DMLElement("UBYT")] public Byte IsOwner;
             public byte MessageOrder { get; } = 168;
         }
-        public sealed class MSG_RANKING : INetworkRecord
+        public sealed class MSG_RANKING : INetworkMessage
         {
             [DMLElement("UINT")] public UInt32 GameID;
             [DMLElement("STR")] public String Name;
@@ -1535,7 +1535,7 @@ namespace Imlight.Internals.DML
             [DMLElement("INT")] public Int32 Rank;
             public byte MessageOrder { get; } = 169;
         }
-        public sealed class MSG_REALM_INFO_QUERY : INetworkRecord
+        public sealed class MSG_REALM_INFO_QUERY : INetworkMessage
         {
             [DMLElement("STR")] public String RealmInfoList;
             [DMLElement("STR")] public String CurrentRealm;
@@ -1543,115 +1543,115 @@ namespace Imlight.Internals.DML
             [DMLElement("STR")] public String CurrentZone;
             public byte MessageOrder { get; } = 170;
         }
-        public sealed class MSG_RECALL_LOCATION : INetworkRecord
+        public sealed class MSG_RECALL_LOCATION : INetworkMessage
         {
             public byte MessageOrder { get; } = 171;
         }
-        public sealed class MSG_RECEIVE_GIFTS : INetworkRecord
+        public sealed class MSG_RECEIVE_GIFTS : INetworkMessage
         {
             [DMLElement("INT")] public Int32 Success;
             [DMLElement("STR")] public String Data;
             [DMLElement("INT")] public Int32 CrownsRewards;
             public byte MessageOrder { get; } = 172;
         }
-        public sealed class MSG_RECEIVE_PROMOTIONS : INetworkRecord
+        public sealed class MSG_RECEIVE_PROMOTIONS : INetworkMessage
         {
             [DMLElement("INT")] public Int32 Success;
             [DMLElement("STR")] public String Data;
             public byte MessageOrder { get; } = 173;
         }
-        public sealed class MSG_REDEEM_GIFT : INetworkRecord
+        public sealed class MSG_REDEEM_GIFT : INetworkMessage
         {
             [DMLElement("STR")] public String GiftID;
             [DMLElement("GID")] public UInt64 BundleChoiceID;
             [DMLElement("INT")] public Int32 PrimaryColorIndex;
             public byte MessageOrder { get; } = 174;
         }
-        public sealed class MSG_REDEEM_MAIL_GIFT : INetworkRecord
+        public sealed class MSG_REDEEM_MAIL_GIFT : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 MailId;
             [DMLElement("INT")] public Int32 PrimaryColorIndex;
             public byte MessageOrder { get; } = 175;
         }
-        public sealed class MSG_REDEEM_MAIL_GIFT_RESPONSE : INetworkRecord
+        public sealed class MSG_REDEEM_MAIL_GIFT_RESPONSE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 MailId;
             [DMLElement("INT")] public Int32 ErrorCode;
             [DMLElement("GID")] public UInt64 TemplateId;
             public byte MessageOrder { get; } = 176;
         }
-        public sealed class MSG_RELEASEDELAY : INetworkRecord
+        public sealed class MSG_RELEASEDELAY : INetworkMessage
         {
             public byte MessageOrder { get; } = 177;
         }
-        public sealed class MSG_RELOADTEMPLATEDIR : INetworkRecord
+        public sealed class MSG_RELOADTEMPLATEDIR : INetworkMessage
         {
             [DMLElement("STR")] public String Directory;
             [DMLElement("BYT")] public SByte Recursive;
             public byte MessageOrder { get; } = 178;
         }
-        public sealed class MSG_REMOVEDSHOPPER : INetworkRecord
+        public sealed class MSG_REMOVEDSHOPPER : INetworkMessage
         {
             [DMLElement("STR")] public String StateName;
             public byte MessageOrder { get; } = 179;
         }
-        public sealed class MSG_REMOVEEFFECT : INetworkRecord
+        public sealed class MSG_REMOVEEFFECT : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GameObjectID;
             [DMLElement("UINT")] public UInt32 EffectNameID;
             [DMLElement("INT")] public Int32 InternalID;
             public byte MessageOrder { get; } = 180;
         }
-        public sealed class MSG_REMOVEITEMREQUEST : INetworkRecord
+        public sealed class MSG_REMOVEITEMREQUEST : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GlobalID;
             [DMLElement("GID")] public UInt64 ItemTemplateID;
             [DMLElement("INT")] public Int32 Quantity;
             public byte MessageOrder { get; } = 181;
         }
-        public sealed class MSG_REMOVEOBJECT : INetworkRecord
+        public sealed class MSG_REMOVEOBJECT : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GameObjectID;
             public byte MessageOrder { get; } = 182;
         }
-        public sealed class MSG_REMOVEPARTICLE : INetworkRecord
+        public sealed class MSG_REMOVEPARTICLE : INetworkMessage
         {
             [DMLElement("STR")] public String newName;
             [DMLElement("STR")] public String attachTo;
             [DMLElement("GID")] public UInt64 parentID;
             public byte MessageOrder { get; } = 183;
         }
-        public sealed class MSG_REMOVEZONETIMER : INetworkRecord
+        public sealed class MSG_REMOVEZONETIMER : INetworkMessage
         {
             [DMLElement("INT")] public Int32 TimerID;
             public byte MessageOrder { get; } = 184;
         }
-        public sealed class MSG_REPORTADTAKEOVER : INetworkRecord
+        public sealed class MSG_REPORTADTAKEOVER : INetworkMessage
         {
             [DMLElement("STR")] public String PARTNER;
             [DMLElement("STR")] public String URL;
             public byte MessageOrder { get; } = 185;
         }
-        public sealed class MSG_REQASKSERVER : INetworkRecord
+        public sealed class MSG_REQASKSERVER : INetworkMessage
         {
             [DMLElement("UINT")] public UInt32 RequestID;
             [DMLElement("STR")] public String Requirement;
             [DMLElement("UINT")] public UInt32 Response;
             public byte MessageOrder { get; } = 186;
         }
-        public sealed class MSG_REQCHATDIAGNOSTICS : INetworkRecord
+        public sealed class MSG_REQCHATDIAGNOSTICS : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 CharacterID;
             [DMLElement("STR")] public String Data;
             public byte MessageOrder { get; } = 187;
         }
-        public sealed class MSG_REQUESTADVANCECHANNELINSTANCE : INetworkRecord
+        public sealed class MSG_REQUESTADVANCECHANNELINSTANCE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 SourceID;
             [DMLElement("GID")] public UInt64 ChannelID;
             public byte MessageOrder { get; } = 188;
         }
-        public sealed class MSG_REQUESTCHATCODE : INetworkRecord
+        public sealed class MSG_REQUESTCHATCODE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 ListOwnerGID;
             [DMLElement("STR")] public String Code;
@@ -1661,7 +1661,7 @@ namespace Imlight.Internals.DML
             [DMLElement("STR")] public String NameBlob;
             public byte MessageOrder { get; } = 189;
         }
-        public sealed class MSG_REQUESTCREATECHANNEL : INetworkRecord
+        public sealed class MSG_REQUESTCREATECHANNEL : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 SourceID;
             [DMLElement("STR")] public String Name;
@@ -1671,69 +1671,69 @@ namespace Imlight.Internals.DML
             [DMLElement("INT")] public Int32 UserLimit;
             public byte MessageOrder { get; } = 190;
         }
-        public sealed class MSG_REQUESTDIRECTEDCHAT : INetworkRecord
+        public sealed class MSG_REQUESTDIRECTEDCHAT : INetworkMessage
         {
             [DMLElement("WSTR")] public String Message;
             [DMLElement("GID")] public UInt64 TargetID;
             public byte MessageOrder { get; } = 191;
         }
-        public sealed class MSG_REQUESTDIRECTEDCHATBYNAME : INetworkRecord
+        public sealed class MSG_REQUESTDIRECTEDCHATBYNAME : INetworkMessage
         {
             [DMLElement("WSTR")] public String Message;
             [DMLElement("WSTR")] public String TargetName;
             public byte MessageOrder { get; } = 192;
         }
-        public sealed class MSG_REQUESTDIRECTEDQUICKCHAT : INetworkRecord
+        public sealed class MSG_REQUESTDIRECTEDQUICKCHAT : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 TargetID;
             [DMLElement("UINT")] public UInt32 MessageID;
             public byte MessageOrder { get; } = 193;
         }
-        public sealed class MSG_REQUESTDIRECTEDQUICKCHATEXT : INetworkRecord
+        public sealed class MSG_REQUESTDIRECTEDQUICKCHATEXT : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 TargetID;
             [DMLElement("STR")] public String Message;
             public byte MessageOrder { get; } = 194;
         }
-        public sealed class MSG_REQUESTJOINCHANNEL : INetworkRecord
+        public sealed class MSG_REQUESTJOINCHANNEL : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 SourceID;
             [DMLElement("GID")] public UInt64 ChannelID;
             [DMLElement("WSTR")] public String Password;
             public byte MessageOrder { get; } = 195;
         }
-        public sealed class MSG_REQUESTJOINCHANNELBYNAME : INetworkRecord
+        public sealed class MSG_REQUESTJOINCHANNELBYNAME : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 SourceID;
             [DMLElement("WSTR")] public String ChannelName;
             [DMLElement("WSTR")] public String Password;
             public byte MessageOrder { get; } = 196;
         }
-        public sealed class MSG_REQUESTLEAVECHANNEL : INetworkRecord
+        public sealed class MSG_REQUESTLEAVECHANNEL : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 SourceID;
             [DMLElement("GID")] public UInt64 ChannelID;
             public byte MessageOrder { get; } = 197;
         }
-        public sealed class MSG_REQUESTLEAVECHANNELBYNAME : INetworkRecord
+        public sealed class MSG_REQUESTLEAVECHANNELBYNAME : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 SourceID;
             [DMLElement("WSTR")] public String ChannelName;
             public byte MessageOrder { get; } = 198;
         }
-        public sealed class MSG_REQUESTMAXFRIENDS : INetworkRecord
+        public sealed class MSG_REQUESTMAXFRIENDS : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 RequestingPlayerGID;
             [DMLElement("INT")] public Int32 MaximumFriends;
             [DMLElement("INT")] public Int32 MaximumSubscriberFriends;
             public byte MessageOrder { get; } = 199;
         }
-        public sealed class MSG_REQUESTRADIALCHAT : INetworkRecord
+        public sealed class MSG_REQUESTRADIALCHAT : INetworkMessage
         {
             [DMLElement("STR")] public String Message;
             public byte MessageOrder { get; } = 200;
         }
-        public sealed class MSG_REQUESTRADIALFRIENDCHAT : INetworkRecord
+        public sealed class MSG_REQUESTRADIALFRIENDCHAT : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 PlayerGID;
             [DMLElement("STR")] public String Message;
@@ -1742,7 +1742,7 @@ namespace Imlight.Internals.DML
             [DMLElement("STR")] public String SourceName;
             public byte MessageOrder { get; } = 201;
         }
-        public sealed class MSG_REQUESTRADIALFRIENDQUICKCHAT : INetworkRecord
+        public sealed class MSG_REQUESTRADIALFRIENDQUICKCHAT : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 PlayerGID;
             [DMLElement("UINT")] public UInt32 MessageID;
@@ -1751,7 +1751,7 @@ namespace Imlight.Internals.DML
             [DMLElement("STR")] public String SourceName;
             public byte MessageOrder { get; } = 202;
         }
-        public sealed class MSG_REQUESTRADIALOWNERCHAT : INetworkRecord
+        public sealed class MSG_REQUESTRADIALOWNERCHAT : INetworkMessage
         {
             [DMLElement("STR")] public String Message;
             [DMLElement("GID")] public UInt64 SourceID;
@@ -1760,17 +1760,17 @@ namespace Imlight.Internals.DML
             [DMLElement("UBYT")] public Byte IsOwner;
             public byte MessageOrder { get; } = 203;
         }
-        public sealed class MSG_REQUESTRADIALQUICKCHAT : INetworkRecord
+        public sealed class MSG_REQUESTRADIALQUICKCHAT : INetworkMessage
         {
             [DMLElement("UINT")] public UInt32 MessageID;
             public byte MessageOrder { get; } = 204;
         }
-        public sealed class MSG_REQUESTRADIALQUICKCHATEXT : INetworkRecord
+        public sealed class MSG_REQUESTRADIALQUICKCHATEXT : INetworkMessage
         {
             [DMLElement("STR")] public String Message;
             public byte MessageOrder { get; } = 205;
         }
-        public sealed class MSG_REQUESTSESSION : INetworkRecord
+        public sealed class MSG_REQUESTSESSION : INetworkMessage
         {
             [DMLElement("STR")] public String Session;
             [DMLElement("UBYT")] public Byte Valid;
@@ -1781,48 +1781,48 @@ namespace Imlight.Internals.DML
             [DMLElement("UINT")] public UInt32 Threshold;
             public byte MessageOrder { get; } = 206;
         }
-        public sealed class MSG_REQUESTZONECLUSTERQUICKCHAT : INetworkRecord
+        public sealed class MSG_REQUESTZONECLUSTERQUICKCHAT : INetworkMessage
         {
             [DMLElement("UINT")] public UInt32 MessageID;
             [DMLElement("UBYT")] public Byte IsOwner;
             public byte MessageOrder { get; } = 207;
         }
-        public sealed class MSG_REQUEST_GIFTS : INetworkRecord
+        public sealed class MSG_REQUEST_GIFTS : INetworkMessage
         {
             [DMLElement("STR")] public String GiftType;
             public byte MessageOrder { get; } = 208;
         }
-        public sealed class MSG_REQUEST_PROMOTIONS : INetworkRecord
+        public sealed class MSG_REQUEST_PROMOTIONS : INetworkMessage
         {
             [DMLElement("STR")] public String Locale;
             public byte MessageOrder { get; } = 209;
         }
-        public sealed class MSG_RESTORECHAR_RSP : INetworkRecord
+        public sealed class MSG_RESTORECHAR_RSP : INetworkMessage
         {
             [DMLElement("UBYT")] public Byte Success;
             public byte MessageOrder { get; } = 210;
         }
-        public sealed class MSG_RETRIEVE_MAIL : INetworkRecord
+        public sealed class MSG_RETRIEVE_MAIL : INetworkMessage
         {
             public byte MessageOrder { get; } = 211;
         }
-        public sealed class MSG_RETRYTELEPORT : INetworkRecord
+        public sealed class MSG_RETRYTELEPORT : INetworkMessage
         {
             public byte MessageOrder { get; } = 212;
         }
-        public sealed class MSG_SCRIPT : INetworkRecord
+        public sealed class MSG_SCRIPT : INetworkMessage
         {
             [DMLElement("INT")] public Int32 ProcessID;
             [DMLElement("STR")] public String Message;
             public byte MessageOrder { get; } = 213;
         }
-        public sealed class MSG_SELECT_BADGE : INetworkRecord
+        public sealed class MSG_SELECT_BADGE : INetworkMessage
         {
             [DMLElement("UINT")] public UInt32 BadgeNameID;
             [DMLElement("UINT")] public UInt32 Error;
             public byte MessageOrder { get; } = 214;
         }
-        public sealed class MSG_SENDCHATCODE : INetworkRecord
+        public sealed class MSG_SENDCHATCODE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 ListOwnerGID;
             [DMLElement("STR")] public String Code;
@@ -1831,19 +1831,19 @@ namespace Imlight.Internals.DML
             [DMLElement("STR")] public String CreatorName;
             public byte MessageOrder { get; } = 215;
         }
-        public sealed class MSG_SENDINTERACTOPTIONS : INetworkRecord
+        public sealed class MSG_SENDINTERACTOPTIONS : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 MobileID;
             [DMLElement("STR")] public String Options;
             public byte MessageOrder { get; } = 216;
         }
-        public sealed class MSG_SENDTEXT : INetworkRecord
+        public sealed class MSG_SENDTEXT : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 CharacterID;
             [DMLElement("STR")] public String Message;
             public byte MessageOrder { get; } = 217;
         }
-        public sealed class MSG_SERVERMOVE : INetworkRecord
+        public sealed class MSG_SERVERMOVE : INetworkMessage
         {
             [DMLElement("USHRT")] public UInt16 LocationX;
             [DMLElement("USHRT")] public UInt16 LocationY;
@@ -1852,12 +1852,12 @@ namespace Imlight.Internals.DML
             [DMLElement("USHRT")] public UInt16 MobileID;
             public byte MessageOrder { get; } = 218;
         }
-        public sealed class MSG_SERVERSHUTDOWN : INetworkRecord
+        public sealed class MSG_SERVERSHUTDOWN : INetworkMessage
         {
             [DMLElement("UINT")] public UInt32 Message;
             public byte MessageOrder { get; } = 219;
         }
-        public sealed class MSG_SERVERTELEPORT : INetworkRecord
+        public sealed class MSG_SERVERTELEPORT : INetworkMessage
         {
             [DMLElement("USHRT")] public UInt16 LocationX;
             [DMLElement("USHRT")] public UInt16 LocationY;
@@ -1866,7 +1866,7 @@ namespace Imlight.Internals.DML
             [DMLElement("USHRT")] public UInt16 MobileID;
             public byte MessageOrder { get; } = 220;
         }
-        public sealed class MSG_SERVERTRANSFER : INetworkRecord
+        public sealed class MSG_SERVERTRANSFER : INetworkMessage
         {
             [DMLElement("STR")] public String IP;
             [DMLElement("INT")] public Int32 TCPPort;
@@ -1890,7 +1890,7 @@ namespace Imlight.Internals.DML
             [DMLElement("UINT")] public UInt32 TransitionID;
             public byte MessageOrder { get; } = 221;
         }
-        public sealed class MSG_SERVERTUTORIALCOMMAND : INetworkRecord
+        public sealed class MSG_SERVERTUTORIALCOMMAND : INetworkMessage
         {
             [DMLElement("STR")] public String QuestToAdd;
             [DMLElement("STR")] public String QuestToRemove;
@@ -1900,18 +1900,18 @@ namespace Imlight.Internals.DML
             [DMLElement("INT")] public Int32 Value;
             public byte MessageOrder { get; } = 222;
         }
-        public sealed class MSG_SERVER_ERROR : INetworkRecord
+        public sealed class MSG_SERVER_ERROR : INetworkMessage
         {
             [DMLElement("UINT")] public UInt32 Error;
             public byte MessageOrder { get; } = 223;
         }
-        public sealed class MSG_SERVER_PROCESS_RUNNING : INetworkRecord
+        public sealed class MSG_SERVER_PROCESS_RUNNING : INetworkMessage
         {
             [DMLElement("UINT")] public UInt32 PID;
             [DMLElement("UINT")] public UInt32 JobID;
             public byte MessageOrder { get; } = 224;
         }
-        public sealed class MSG_SESSION : INetworkRecord
+        public sealed class MSG_SESSION : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 ZoneID;
             [DMLElement("GID")] public UInt64 SessionID;
@@ -1922,12 +1922,12 @@ namespace Imlight.Internals.DML
             [DMLElement("STR")] public String Rules;
             public byte MessageOrder { get; } = 225;
         }
-        public sealed class MSG_SESSION_ERROR : INetworkRecord
+        public sealed class MSG_SESSION_ERROR : INetworkMessage
         {
             [DMLElement("INT")] public Int32 ErrorCode;
             public byte MessageOrder { get; } = 226;
         }
-        public sealed class MSG_SESSION_PLAYER : INetworkRecord
+        public sealed class MSG_SESSION_PLAYER : INetworkMessage
         {
             [DMLElement("INT")] public Int32 Slot;
             [DMLElement("GID")] public UInt64 CharID;
@@ -1936,21 +1936,21 @@ namespace Imlight.Internals.DML
             [DMLElement("INT")] public Int32 IsFriend;
             public byte MessageOrder { get; } = 227;
         }
-        public sealed class MSG_SETHOUSECUSTOMIZATION : INetworkRecord
+        public sealed class MSG_SETHOUSECUSTOMIZATION : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GameObjectID;
             [DMLElement("STR")] public String TagName;
             [DMLElement("STR")] public String TextureFilename;
             public byte MessageOrder { get; } = 228;
         }
-        public sealed class MSG_SPLITQUANTITY : INetworkRecord
+        public sealed class MSG_SPLITQUANTITY : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GlobalID;
             [DMLElement("GID")] public UInt64 ItemID;
             [DMLElement("INT")] public Int32 Quantity;
             public byte MessageOrder { get; } = 229;
         }
-        public sealed class MSG_STARTSTAGEDCINEMATIC : INetworkRecord
+        public sealed class MSG_STARTSTAGEDCINEMATIC : INetworkMessage
         {
             [DMLElement("STR")] public String CinematicName;
             [DMLElement("STR")] public String InitialStageName;
@@ -1962,26 +1962,26 @@ namespace Imlight.Internals.DML
             [DMLElement("BYT")] public SByte WinningTeamID;
             public byte MessageOrder { get; } = 230;
         }
-        public sealed class MSG_START_CLIENT_PROCESS : INetworkRecord
+        public sealed class MSG_START_CLIENT_PROCESS : INetworkMessage
         {
             [DMLElement("UINT")] public UInt32 JobID;
             [DMLElement("STR")] public String ScriptName;
             [DMLElement("GID")] public UInt64 OwnerGID;
             public byte MessageOrder { get; } = 231;
         }
-        public sealed class MSG_START_SERVER_PROCESS : INetworkRecord
+        public sealed class MSG_START_SERVER_PROCESS : INetworkMessage
         {
             [DMLElement("UINT")] public UInt32 PID;
             [DMLElement("STR")] public String ScriptName;
             [DMLElement("GID")] public UInt64 OwnerGID;
             public byte MessageOrder { get; } = 232;
         }
-        public sealed class MSG_SUBOPTIMAL_BRACKET_RESPONSE : INetworkRecord
+        public sealed class MSG_SUBOPTIMAL_BRACKET_RESPONSE : INetworkMessage
         {
             [DMLElement("UINT")] public UInt32 Choice;
             public byte MessageOrder { get; } = 233;
         }
-        public sealed class MSG_TELEPORT_TO_GAME_ZONE : INetworkRecord
+        public sealed class MSG_TELEPORT_TO_GAME_ZONE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 CharacterID;
             [DMLElement("STR")] public String Game;
@@ -1989,43 +1989,43 @@ namespace Imlight.Internals.DML
             [DMLElement("GID")] public UInt64 ZoneInstanceID;
             public byte MessageOrder { get; } = 234;
         }
-        public sealed class MSG_TOURNAMENTUPDATE : INetworkRecord
+        public sealed class MSG_TOURNAMENTUPDATE : INetworkMessage
         {
             [DMLElement("STR")] public String Updates;
             [DMLElement("GID")] public UInt64 CharacterID;
             public byte MessageOrder { get; } = 235;
         }
-        public sealed class MSG_TRANSFERCHAR_RSP : INetworkRecord
+        public sealed class MSG_TRANSFERCHAR_RSP : INetworkMessage
         {
             [DMLElement("UBYT")] public Byte Success;
             public byte MessageOrder { get; } = 236;
         }
-        public sealed class MSG_TRANSFER_INSTANCE : INetworkRecord
+        public sealed class MSG_TRANSFER_INSTANCE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 ZoneID;
             [DMLElement("UINT")] public UInt32 Error;
             public byte MessageOrder { get; } = 237;
         }
-        public sealed class MSG_TRANSFER_REALMS : INetworkRecord
+        public sealed class MSG_TRANSFER_REALMS : INetworkMessage
         {
             [DMLElement("STR")] public String RealmName;
             [DMLElement("UINT")] public UInt32 Error;
             public byte MessageOrder { get; } = 238;
         }
-        public sealed class MSG_TRASHINVENTORYITEM : INetworkRecord
+        public sealed class MSG_TRASHINVENTORYITEM : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GlobalID;
             [DMLElement("GID")] public UInt64 TemplateID;
             public byte MessageOrder { get; } = 239;
         }
-        public sealed class MSG_TUTORIALS : INetworkRecord
+        public sealed class MSG_TUTORIALS : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GlobalID;
             [DMLElement("INT")] public Int32 Remove;
             [DMLElement("STR")] public String TutorialInfo;
             public byte MessageOrder { get; } = 240;
         }
-        public sealed class MSG_UPDATEOBJECT : INetworkRecord
+        public sealed class MSG_UPDATEOBJECT : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GameObjectID;
             [DMLElement("FLT")] public Single LocationX;
@@ -2037,18 +2037,18 @@ namespace Imlight.Internals.DML
             [DMLElement("INT")] public Int32 StartDragging;
             public byte MessageOrder { get; } = 241;
         }
-        public sealed class MSG_UPDATEQUANTITY : INetworkRecord
+        public sealed class MSG_UPDATEQUANTITY : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GlobalID;
             [DMLElement("INT")] public Int32 Quantity;
             public byte MessageOrder { get; } = 242;
         }
-        public sealed class MSG_UPDATEZONECOUNTER : INetworkRecord
+        public sealed class MSG_UPDATEZONECOUNTER : INetworkMessage
         {
             [DMLElement("UBYT")] public Byte ZoneCounter;
             public byte MessageOrder { get; } = 243;
         }
-        public sealed class MSG_UPDATEZONETIMER : INetworkRecord
+        public sealed class MSG_UPDATEZONETIMER : INetworkMessage
         {
             [DMLElement("INT")] public Int32 TimerID;
             [DMLElement("STR")] public String Title;
@@ -2056,7 +2056,7 @@ namespace Imlight.Internals.DML
             [DMLElement("FLT")] public Single CountdownTime;
             public byte MessageOrder { get; } = 244;
         }
-        public sealed class MSG_USECHATCODE : INetworkRecord
+        public sealed class MSG_USECHATCODE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 ListOwnerGID;
             [DMLElement("GID")] public UInt64 BuddyID;
@@ -2064,7 +2064,7 @@ namespace Imlight.Internals.DML
             [DMLElement("UBYT")] public Byte Forwarded;
             public byte MessageOrder { get; } = 245;
         }
-        public sealed class MSG_VIEWACCOUNT : INetworkRecord
+        public sealed class MSG_VIEWACCOUNT : INetworkMessage
         {
             [DMLElement("STR")] public String AccountName;
             [DMLElement("GID")] public UInt64 AccountID;
@@ -2074,25 +2074,25 @@ namespace Imlight.Internals.DML
             [DMLElement("UBYT")] public Byte CanUseCodes;
             public byte MessageOrder { get; } = 246;
         }
-        public sealed class MSG_WIZBANG : INetworkRecord
+        public sealed class MSG_WIZBANG : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GameObjectID;
             [DMLElement("UINT")] public UInt32 WizBangID;
             public byte MessageOrder { get; } = 247;
         }
-        public sealed class MSG_ZOMBIE_PLAYER : INetworkRecord
+        public sealed class MSG_ZOMBIE_PLAYER : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GlobalID;
             [DMLElement("FLT")] public Single Remaining;
             public byte MessageOrder { get; } = 248;
         }
-        public sealed class MSG_ZONEEVENTTIMEREXPIRED : INetworkRecord
+        public sealed class MSG_ZONEEVENTTIMEREXPIRED : INetworkMessage
         {
             [DMLElement("STR")] public String TimerName;
             [DMLElement("STR")] public String EventName;
             public byte MessageOrder { get; } = 249;
         }
-        public sealed class MSG_ZONETRANSFER : INetworkRecord
+        public sealed class MSG_ZONETRANSFER : INetworkMessage
         {
             [DMLElement("STR")] public String ZoneName;
             [DMLElement("GID")] public UInt64 ZoneID;
@@ -2105,15 +2105,15 @@ namespace Imlight.Internals.DML
             [DMLElement("INT")] public Int32 SessionSlot;
             public byte MessageOrder { get; } = 250;
         }
-        public sealed class MSG_ZONETRANSFERACK : INetworkRecord
+        public sealed class MSG_ZONETRANSFERACK : INetworkMessage
         {
             public byte MessageOrder { get; } = 251;
         }
-        public sealed class MSG_ZONETRANSFERNACK : INetworkRecord
+        public sealed class MSG_ZONETRANSFERNACK : INetworkMessage
         {
             public byte MessageOrder { get; } = 252;
         }
-        public sealed class MSG_ZONETRANSFERREQUEST : INetworkRecord
+        public sealed class MSG_ZONETRANSFERREQUEST : INetworkMessage
         {
             [DMLElement("STR")] public String ZoneName;
             [DMLElement("UBYT")] public Byte SendAck;

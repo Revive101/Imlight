@@ -16,7 +16,7 @@ namespace Imlight.Internals.DML
         public Int32 ProtocolVersion { get; } = 1;
         public string ProtocolDescription { get; } = "PhysicsBehavior Messages";
         // == RECORDS ==
-        public static INetworkRecord Dispatch(byte id)
+        public static INetworkMessage Dispatch(byte id)
         {
             switch (id)
             {
@@ -29,7 +29,7 @@ namespace Imlight.Internals.DML
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
-        public sealed class MSG_PHYSICS_FORCE : INetworkRecord
+        public sealed class MSG_PHYSICS_FORCE : INetworkMessage
         {
             [DMLElement("FLT")] public Single PositionX;
             [DMLElement("FLT")] public Single PositionY;
@@ -49,7 +49,7 @@ namespace Imlight.Internals.DML
             [DMLElement("GID")] public UInt64 GlobalID;
             public byte MessageOrder { get; } = 1;
         }
-        public sealed class MSG_PHYSICS_FORCE_AT_POS : INetworkRecord
+        public sealed class MSG_PHYSICS_FORCE_AT_POS : INetworkMessage
         {
             [DMLElement("FLT")] public Single PositionX;
             [DMLElement("FLT")] public Single PositionY;
@@ -72,7 +72,7 @@ namespace Imlight.Internals.DML
             [DMLElement("GID")] public UInt64 GlobalID;
             public byte MessageOrder { get; } = 2;
         }
-        public sealed class MSG_PHYSICS_GRAB : INetworkRecord
+        public sealed class MSG_PHYSICS_GRAB : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GlobalID;
             [DMLElement("GID")] public UInt64 HolderID;
@@ -82,13 +82,13 @@ namespace Imlight.Internals.DML
             [DMLElement("FLT")] public Single Force;
             public byte MessageOrder { get; } = 3;
         }
-        public sealed class MSG_PHYSICS_RELEASE : INetworkRecord
+        public sealed class MSG_PHYSICS_RELEASE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 GlobalID;
             [DMLElement("GID")] public UInt64 HolderID;
             public byte MessageOrder { get; } = 4;
         }
-        public sealed class MSG_PHYSICS_STATE : INetworkRecord
+        public sealed class MSG_PHYSICS_STATE : INetworkMessage
         {
             [DMLElement("FLT")] public Single PositionX;
             [DMLElement("FLT")] public Single PositionY;
@@ -105,7 +105,7 @@ namespace Imlight.Internals.DML
             [DMLElement("GID")] public UInt64 GlobalID;
             public byte MessageOrder { get; } = 5;
         }
-        public sealed class MSG_PHYSICS_TORQUE : INetworkRecord
+        public sealed class MSG_PHYSICS_TORQUE : INetworkMessage
         {
             [DMLElement("FLT")] public Single PositionX;
             [DMLElement("FLT")] public Single PositionY;

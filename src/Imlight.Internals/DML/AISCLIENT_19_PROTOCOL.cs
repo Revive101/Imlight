@@ -16,7 +16,7 @@ namespace Imlight.Internals.DML
         public Int32 ProtocolVersion { get; } = 1;
         public string ProtocolDescription { get; } = "All Anti-Indulgence System Messages To/From the Client";
         // == RECORDS ==
-        public static INetworkRecord Dispatch(byte id)
+        public static INetworkMessage Dispatch(byte id)
         {
             switch (id)
             {
@@ -24,7 +24,7 @@ namespace Imlight.Internals.DML
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
-        public sealed class MSG_AISMESSAGE : INetworkRecord
+        public sealed class MSG_AISMESSAGE : INetworkMessage
         {
             [DMLElement("STR")] public String Message;
             [DMLElement("UBYT")] public Byte Modal;

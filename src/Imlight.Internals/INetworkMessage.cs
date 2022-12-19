@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Imlight.Internals
 {
-    public interface INetworkRecord
+    public interface INetworkMessage
     {
         public byte MessageOrder { get; }
     }

@@ -16,7 +16,7 @@ namespace Imlight.Internals.DML
         public Int32 ProtocolVersion { get; } = 1;
         public string ProtocolDescription { get; } = "Test Manager Server Messages";
         // == RECORDS ==
-        public static INetworkRecord Dispatch(byte id)
+        public static INetworkMessage Dispatch(byte id)
         {
             switch (id)
             {
@@ -25,13 +25,13 @@ namespace Imlight.Internals.DML
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
-        public sealed class MSG_LOGIN : INetworkRecord
+        public sealed class MSG_LOGIN : INetworkMessage
         {
             public byte MessageOrder { get; } = 100;
             [DMLElement("STR")] public String Username;
             [DMLElement("STR")] public String Password;
         }
-        public sealed class MSG_LOGINRESPONSE : INetworkRecord
+        public sealed class MSG_LOGINRESPONSE : INetworkMessage
         {
             public byte MessageOrder { get; } = 101;
             [DMLElement("INT")] public Int32 Success;

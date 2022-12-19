@@ -16,7 +16,7 @@ namespace Imlight.Internals.DML
         public Int32 ProtocolVersion { get; } = 1;
         public string ProtocolDescription { get; } = "Messages for all Soblocks minigames";
         // == RECORDS ==
-        public static INetworkRecord Dispatch(byte id)
+        public static INetworkMessage Dispatch(byte id)
         {
             switch (id)
             {
@@ -46,15 +46,15 @@ namespace Imlight.Internals.DML
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
-        public sealed class MSG_SOBLOCKS_ADVANCEOFF : INetworkRecord
+        public sealed class MSG_SOBLOCKS_ADVANCEOFF : INetworkMessage
         {
             public byte MessageOrder { get; } = 1;
         }
-        public sealed class MSG_SOBLOCKS_ADVANCEON : INetworkRecord
+        public sealed class MSG_SOBLOCKS_ADVANCEON : INetworkMessage
         {
             public byte MessageOrder { get; } = 2;
         }
-        public sealed class MSG_SOBLOCKS_ATTACK : INetworkRecord
+        public sealed class MSG_SOBLOCKS_ATTACK : INetworkMessage
         {
             [DMLElement("INT")] public Int32 Index1;
             [DMLElement("INT")] public Int32 Index2;
@@ -65,63 +65,63 @@ namespace Imlight.Internals.DML
             [DMLElement("INT")] public Int32 Index7;
             public byte MessageOrder { get; } = 3;
         }
-        public sealed class MSG_SOBLOCKS_COUNTDOWN : INetworkRecord
+        public sealed class MSG_SOBLOCKS_COUNTDOWN : INetworkMessage
         {
             [DMLElement("INT")] public Int32 Number;
             public byte MessageOrder { get; } = 4;
         }
-        public sealed class MSG_SOBLOCKS_ENDGAME : INetworkRecord
+        public sealed class MSG_SOBLOCKS_ENDGAME : INetworkMessage
         {
             [DMLElement("INT")] public Int32 Score;
             public byte MessageOrder { get; } = 5;
         }
-        public sealed class MSG_SOBLOCKS_FREEZEBLOCKS : INetworkRecord
+        public sealed class MSG_SOBLOCKS_FREEZEBLOCKS : INetworkMessage
         {
             [DMLElement("INT")] public Int32 Amount;
             public byte MessageOrder { get; } = 6;
         }
-        public sealed class MSG_SOBLOCKS_INFO : INetworkRecord
+        public sealed class MSG_SOBLOCKS_INFO : INetworkMessage
         {
             [DMLElement("STR")] public String Name;
             public byte MessageOrder { get; } = 7;
         }
-        public sealed class MSG_SOBLOCKS_LEVELUP : INetworkRecord
+        public sealed class MSG_SOBLOCKS_LEVELUP : INetworkMessage
         {
             public byte MessageOrder { get; } = 8;
         }
-        public sealed class MSG_SOBLOCKS_LOSS : INetworkRecord
+        public sealed class MSG_SOBLOCKS_LOSS : INetworkMessage
         {
             public byte MessageOrder { get; } = 9;
         }
-        public sealed class MSG_SOBLOCKS_PAUSE : INetworkRecord
+        public sealed class MSG_SOBLOCKS_PAUSE : INetworkMessage
         {
             public byte MessageOrder { get; } = 10;
         }
-        public sealed class MSG_SOBLOCKS_PAUSEOFF : INetworkRecord
+        public sealed class MSG_SOBLOCKS_PAUSEOFF : INetworkMessage
         {
             public byte MessageOrder { get; } = 11;
         }
-        public sealed class MSG_SOBLOCKS_PAUSEON : INetworkRecord
+        public sealed class MSG_SOBLOCKS_PAUSEON : INetworkMessage
         {
             public byte MessageOrder { get; } = 12;
         }
-        public sealed class MSG_SOBLOCKS_READY : INetworkRecord
+        public sealed class MSG_SOBLOCKS_READY : INetworkMessage
         {
             public byte MessageOrder { get; } = 13;
         }
-        public sealed class MSG_SOBLOCKS_REQUESTROW : INetworkRecord
+        public sealed class MSG_SOBLOCKS_REQUESTROW : INetworkMessage
         {
             public byte MessageOrder { get; } = 14;
         }
-        public sealed class MSG_SOBLOCKS_RESETGAME : INetworkRecord
+        public sealed class MSG_SOBLOCKS_RESETGAME : INetworkMessage
         {
             public byte MessageOrder { get; } = 15;
         }
-        public sealed class MSG_SOBLOCKS_ROCKDROP : INetworkRecord
+        public sealed class MSG_SOBLOCKS_ROCKDROP : INetworkMessage
         {
             public byte MessageOrder { get; } = 16;
         }
-        public sealed class MSG_SOBLOCKS_ROWINFO : INetworkRecord
+        public sealed class MSG_SOBLOCKS_ROWINFO : INetworkMessage
         {
             [DMLElement("INT")] public Int32 Index1;
             [DMLElement("INT")] public Int32 Index2;
@@ -132,12 +132,12 @@ namespace Imlight.Internals.DML
             [DMLElement("INT")] public Int32 Index7;
             public byte MessageOrder { get; } = 17;
         }
-        public sealed class MSG_SOBLOCKS_SELECTGAME : INetworkRecord
+        public sealed class MSG_SOBLOCKS_SELECTGAME : INetworkMessage
         {
             [DMLElement("INT")] public Int32 GameType;
             public byte MessageOrder { get; } = 18;
         }
-        public sealed class MSG_SOBLOCKS_SENDROW : INetworkRecord
+        public sealed class MSG_SOBLOCKS_SENDROW : INetworkMessage
         {
             [DMLElement("INT")] public Int32 Index1;
             [DMLElement("INT")] public Int32 Index2;
@@ -148,7 +148,7 @@ namespace Imlight.Internals.DML
             [DMLElement("INT")] public Int32 Index7;
             public byte MessageOrder { get; } = 19;
         }
-        public sealed class MSG_SOBLOCKS_SETLEVEL : INetworkRecord
+        public sealed class MSG_SOBLOCKS_SETLEVEL : INetworkMessage
         {
             [DMLElement("INT")] public Int32 Speed;
             [DMLElement("INT")] public Int32 SpeedUp;
@@ -159,11 +159,11 @@ namespace Imlight.Internals.DML
             [DMLElement("INT")] public Int32 MultiTime;
             public byte MessageOrder { get; } = 20;
         }
-        public sealed class MSG_SOBLOCKS_STARTSWAP : INetworkRecord
+        public sealed class MSG_SOBLOCKS_STARTSWAP : INetworkMessage
         {
             public byte MessageOrder { get; } = 21;
         }
-        public sealed class MSG_SOBLOCKS_TIMEDDROP : INetworkRecord
+        public sealed class MSG_SOBLOCKS_TIMEDDROP : INetworkMessage
         {
             [DMLElement("INT")] public Int32 Index1;
             [DMLElement("INT")] public Int32 Index2;
@@ -174,7 +174,7 @@ namespace Imlight.Internals.DML
             [DMLElement("INT")] public Int32 Index7;
             public byte MessageOrder { get; } = 22;
         }
-        public sealed class MSG_SOBLOCKS_WIN : INetworkRecord
+        public sealed class MSG_SOBLOCKS_WIN : INetworkMessage
         {
             public byte MessageOrder { get; } = 23;
         }

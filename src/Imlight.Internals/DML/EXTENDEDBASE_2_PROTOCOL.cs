@@ -16,7 +16,7 @@ namespace Imlight.Internals.DML
         public Int32 ProtocolVersion { get; } = 1;
         public string ProtocolDescription { get; } = "Lower level messages for passing DML and RAW string";
         // == RECORDS ==
-        public static INetworkRecord Dispatch(byte id)
+        public static INetworkMessage Dispatch(byte id)
         {
             switch (id)
             {
@@ -29,31 +29,31 @@ namespace Imlight.Internals.DML
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
-        public sealed class MSG_CUSTOMDICT : INetworkRecord
+        public sealed class MSG_CUSTOMDICT : INetworkMessage
         {
             public byte MessageOrder { get; } = 1;
         }
-        public sealed class MSG_CUSTOMRECORD : INetworkRecord
+        public sealed class MSG_CUSTOMRECORD : INetworkMessage
         {
             public byte MessageOrder { get; } = 2;
         }
-        public sealed class MSG_FORCE_DISCONNECT : INetworkRecord
+        public sealed class MSG_FORCE_DISCONNECT : INetworkMessage
         {
             [DMLElement("UINT")] public UInt32 Type;
             [DMLElement("STR")] public String TimeStamp;
             [DMLElement("STR")] public String Message;
             public byte MessageOrder { get; } = 3;
         }
-        public sealed class MSG_RAWRECORD : INetworkRecord
+        public sealed class MSG_RAWRECORD : INetworkMessage
         {
             public byte MessageOrder { get; } = 4;
         }
-        public sealed class MSG_RAW_TEXT : INetworkRecord
+        public sealed class MSG_RAW_TEXT : INetworkMessage
         {
             [DMLElement("STR")] public String Message;
             public byte MessageOrder { get; } = 5;
         }
-        public sealed class MSG_SERVERMESSAGE : INetworkRecord
+        public sealed class MSG_SERVERMESSAGE : INetworkMessage
         {
             [DMLElement("UBYT")] public Byte Modal;
             [DMLElement("WSTR")] public String Message;

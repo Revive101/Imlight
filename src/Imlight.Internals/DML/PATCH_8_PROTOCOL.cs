@@ -16,7 +16,7 @@ namespace Imlight.Internals.DML
         public Int32 ProtocolVersion { get; } = 1;
         public string ProtocolDescription { get; } = "Patch Server Messages";
         // == RECORDS ==
-        public static INetworkRecord Dispatch(byte id)
+        public static INetworkMessage Dispatch(byte id)
         {
             switch (id)
             {
@@ -26,7 +26,7 @@ namespace Imlight.Internals.DML
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
-        public sealed class MSG_LATEST_FILE_LIST : INetworkRecord
+        public sealed class MSG_LATEST_FILE_LIST : INetworkMessage
         {
             public byte MessageOrder { get; } = 1;
             [DMLElement("UINT")] public UInt32 LatestVersion;
@@ -39,7 +39,7 @@ namespace Imlight.Internals.DML
             [DMLElement("STR")] public String URLPrefix;
             [DMLElement("STR")] public String URLSuffix;
         }
-        public sealed class MSG_LATEST_FILE_LIST_V2 : INetworkRecord
+        public sealed class MSG_LATEST_FILE_LIST_V2 : INetworkMessage
         {
             public byte MessageOrder { get; } = 2;
             [DMLElement("UINT")] public UInt32 LatestVersion;
@@ -53,7 +53,7 @@ namespace Imlight.Internals.DML
             [DMLElement("STR")] public String URLSuffix;
             [DMLElement("STR")] public String Locale;
         }
-        public sealed class MSG_NEXT_VERSION : INetworkRecord
+        public sealed class MSG_NEXT_VERSION : INetworkMessage
         {
             public byte MessageOrder { get; } = 3;
             [DMLElement("STR")] public String PkgName;

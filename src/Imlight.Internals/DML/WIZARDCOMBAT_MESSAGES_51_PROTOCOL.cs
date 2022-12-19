@@ -16,7 +16,7 @@ namespace Imlight.Internals.DML
         public Int32 ProtocolVersion { get; } = 1;
         public string ProtocolDescription { get; } = "Messages for all DoodleDoug minigames";
         // == RECORDS ==
-        public static INetworkRecord Dispatch(byte id)
+        public static INetworkMessage Dispatch(byte id)
         {
             switch (id)
             {
@@ -54,43 +54,43 @@ namespace Imlight.Internals.DML
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
-        public sealed class MSG_ALLOWLEAVEPVP : INetworkRecord
+        public sealed class MSG_ALLOWLEAVEPVP : INetworkMessage
         {
             public byte MessageOrder { get; } = 1;
         }
-        public sealed class MSG_COMBATACTIONS : INetworkRecord
+        public sealed class MSG_COMBATACTIONS : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 DuelID;
             [DMLElement("STR")] public String ActionData;
             public byte MessageOrder { get; } = 2;
         }
-        public sealed class MSG_COMBATADD : INetworkRecord
+        public sealed class MSG_COMBATADD : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 DuelID;
             [DMLElement("STR")] public String ParticipantData;
             public byte MessageOrder { get; } = 3;
         }
-        public sealed class MSG_COMBATAFK : INetworkRecord
+        public sealed class MSG_COMBATAFK : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 DuelID;
             [DMLElement("UBYT")] public Byte IsCombatAFK;
             public byte MessageOrder { get; } = 4;
         }
-        public sealed class MSG_COMBATCHEAT : INetworkRecord
+        public sealed class MSG_COMBATCHEAT : INetworkMessage
         {
             [DMLElement("UINT")] public UInt32 CheatFlags;
             public byte MessageOrder { get; } = 5;
         }
-        public sealed class MSG_COMBATDRAW : INetworkRecord
+        public sealed class MSG_COMBATDRAW : INetworkMessage
         {
             public byte MessageOrder { get; } = 6;
         }
-        public sealed class MSG_COMBATFLEE : INetworkRecord
+        public sealed class MSG_COMBATFLEE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 ParticipantID;
             public byte MessageOrder { get; } = 7;
         }
-        public sealed class MSG_COMBATHAND : INetworkRecord
+        public sealed class MSG_COMBATHAND : INetworkMessage
         {
             [DMLElement("STR")] public String HandData;
             [DMLElement("USHRT")] public UInt16 DeckCount;
@@ -99,13 +99,13 @@ namespace Imlight.Internals.DML
             [DMLElement("GID")] public UInt64 ParticipantID;
             public byte MessageOrder { get; } = 8;
         }
-        public sealed class MSG_COMBATHEALTH : INetworkRecord
+        public sealed class MSG_COMBATHEALTH : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 DuelID;
             [DMLElement("STR")] public String HealthData;
             public byte MessageOrder { get; } = 9;
         }
-        public sealed class MSG_COMBATLOADED : INetworkRecord
+        public sealed class MSG_COMBATLOADED : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 DuelID;
             [DMLElement("INT")] public Int32 RoundNum;
@@ -113,20 +113,20 @@ namespace Imlight.Internals.DML
             [DMLElement("STR")] public String ParticipantList;
             public byte MessageOrder { get; } = 10;
         }
-        public sealed class MSG_COMBATMATCHRESULT : INetworkRecord
+        public sealed class MSG_COMBATMATCHRESULT : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 DuelID;
             [DMLElement("INT")] public Int32 WinningTeam;
             public byte MessageOrder { get; } = 11;
         }
-        public sealed class MSG_COMBATMOVE : INetworkRecord
+        public sealed class MSG_COMBATMOVE : INetworkMessage
         {
             [DMLElement("UBYT")] public Byte MoveType;
             [DMLElement("UBYT")] public Byte SpellSelection;
             [DMLElement("UBYT")] public Byte SpellTarget;
             public byte MessageOrder { get; } = 12;
         }
-        public sealed class MSG_COMBATMOVESELECTION : INetworkRecord
+        public sealed class MSG_COMBATMOVESELECTION : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 DuelID;
             [DMLElement("GID")] public UInt64 ParticipantID;
@@ -139,19 +139,19 @@ namespace Imlight.Internals.DML
             [DMLElement("UBYT")] public Byte IsBattleCard;
             public byte MessageOrder { get; } = 13;
         }
-        public sealed class MSG_COMBATPAUSED : INetworkRecord
+        public sealed class MSG_COMBATPAUSED : INetworkMessage
         {
             [DMLElement("BYT")] public SByte Paused;
             public byte MessageOrder { get; } = 14;
         }
-        public sealed class MSG_COMBATPHASE : INetworkRecord
+        public sealed class MSG_COMBATPHASE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 DuelID;
             [DMLElement("UBYT")] public Byte NewPhase;
             [DMLElement("STR")] public String Data;
             public byte MessageOrder { get; } = 15;
         }
-        public sealed class MSG_COMBATPHASEFORSPECTATORS : INetworkRecord
+        public sealed class MSG_COMBATPHASEFORSPECTATORS : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 DuelID;
             [DMLElement("UBYT")] public Byte NewPhase;
@@ -169,19 +169,19 @@ namespace Imlight.Internals.DML
             [DMLElement("UINT")] public UInt32 TeamName1;
             public byte MessageOrder { get; } = 16;
         }
-        public sealed class MSG_COMBATPIPS : INetworkRecord
+        public sealed class MSG_COMBATPIPS : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 DuelID;
             [DMLElement("STR")] public String PipData;
             public byte MessageOrder { get; } = 17;
         }
-        public sealed class MSG_COMBATREMOVE : INetworkRecord
+        public sealed class MSG_COMBATREMOVE : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 DuelID;
             [DMLElement("GID")] public UInt64 ParticipantID;
             public byte MessageOrder { get; } = 18;
         }
-        public sealed class MSG_COMBATREVEALHANGING : INetworkRecord
+        public sealed class MSG_COMBATREVEALHANGING : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 ParticipantID;
             [DMLElement("INT")] public Int32 CloakEffectType;
@@ -192,74 +192,74 @@ namespace Imlight.Internals.DML
             [DMLElement("UBYT")] public Byte ActNum;
             public byte MessageOrder { get; } = 19;
         }
-        public sealed class MSG_COMBATSTATS : INetworkRecord
+        public sealed class MSG_COMBATSTATS : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 DuelID;
             [DMLElement("GID")] public UInt64 PartID;
             [DMLElement("STR")] public String StatsData;
             public byte MessageOrder { get; } = 20;
         }
-        public sealed class MSG_COMBATUPFIRST : INetworkRecord
+        public sealed class MSG_COMBATUPFIRST : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 DuelID;
             [DMLElement("UBYT")] public Byte UpFirst;
             [DMLElement("USHRT")] public UInt16 RoundNum;
             public byte MessageOrder { get; } = 21;
         }
-        public sealed class MSG_COMBATVICTORY : INetworkRecord
+        public sealed class MSG_COMBATVICTORY : INetworkMessage
         {
             public byte MessageOrder { get; } = 22;
         }
-        public sealed class MSG_DUEL : INetworkRecord
+        public sealed class MSG_DUEL : INetworkMessage
         {
             [DMLElement("STR")] public String Data;
             public byte MessageOrder { get; } = 23;
         }
-        public sealed class MSG_ENDDUEL : INetworkRecord
+        public sealed class MSG_ENDDUEL : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 DuelID;
             public byte MessageOrder { get; } = 24;
         }
-        public sealed class MSG_PETWILLCAST : INetworkRecord
+        public sealed class MSG_PETWILLCAST : INetworkMessage
         {
             [DMLElement("STR")] public String PetCastingSpell;
             [DMLElement("INT")] public Int32 Target;
             public byte MessageOrder { get; } = 25;
         }
-        public sealed class MSG_SETPLANNINGPHASETIMER : INetworkRecord
+        public sealed class MSG_SETPLANNINGPHASETIMER : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 DuelID;
             [DMLElement("INT")] public Int32 Time;
             public byte MessageOrder { get; } = 26;
         }
-        public sealed class MSG_SHOWCOMBATUI : INetworkRecord
+        public sealed class MSG_SHOWCOMBATUI : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 DuelID;
             [DMLElement("INT")] public Int32 AltTurn;
             [DMLElement("INT")] public Int32 AltTurnTeam;
             public byte MessageOrder { get; } = 27;
         }
-        public sealed class MSG_SHOWPETCARD : INetworkRecord
+        public sealed class MSG_SHOWPETCARD : INetworkMessage
         {
             [DMLElement("STR")] public String PetData;
             [DMLElement("INT")] public Int32 Cooldown;
             [DMLElement("INT")] public Int32 RequirementFailed;
             public byte MessageOrder { get; } = 28;
         }
-        public sealed class MSG_SIGILSPELL : INetworkRecord
+        public sealed class MSG_SIGILSPELL : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 DuelID;
             [DMLElement("UINT")] public UInt32 Subcircles;
             [DMLElement("INT")] public Int32 SpellID;
             public byte MessageOrder { get; } = 29;
         }
-        public sealed class MSG_UPDATECOMBATPARTICIPANT : INetworkRecord
+        public sealed class MSG_UPDATECOMBATPARTICIPANT : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 ObjectID;
             [DMLElement("UBYT")] public Byte HidePVPEnemyChat;
             public byte MessageOrder { get; } = 30;
         }
-        public sealed class MSG_UPDATEDUELTIMER : INetworkRecord
+        public sealed class MSG_UPDATEDUELTIMER : INetworkMessage
         {
             [DMLElement("GID")] public UInt64 DuelID;
             [DMLElement("UINT")] public UInt32 RemainingTime;
