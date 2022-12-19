@@ -7,6 +7,7 @@ using System.Net;
 using Imlight.Common.Logger;
 using System.Net.Sockets;
 using System.IO;
+using Imlight.IO;
 
 namespace Imlight.Realm
 {
@@ -75,25 +76,20 @@ namespace Imlight.Realm
                 string data = Encoding.ASCII.GetString(_buffer, 0, i);
                 Log.Debug($"Received data from socket ID [{ID}]: {data}");
 
-                if (!IsWizardPacket(_buffer)) continue;
+                if (!KiNPBinaryReader.IsKiNPPacket(_buffer)) continue;
 
                 // Trim unnecessary data.
-                byte[] wizardBuffer = CreateWizardPacket(_buffer);
+                byte[] wizardBuffer = CreateKiNPBuffer(_buffer);
 
                 SendPacketToEngine(wizardBuffer);
             }
         }
 
-        private bool IsWizardPacket(byte[] rawPacket) 
-            => (rawPacket.AsSpan()[0..2].SequenceEqual(stackalloc byte[2] { 0x0D, 0xF0 }));
-
-        private byte[] CreateWizardPacket(byte[] rawPacket)
+        private byte[] CreateKiNPBuffer(byte[] rawPacket)
         {
             // The original NetworkStream packet is put into a buffer of arbitrary length.
             // This is sometimes way more data than necessary. This method exists to shorten the raw
             // packet into a more appropriate size.
-
-            if (!IsWizardPacket(rawPacket)) return null;
 
             Stream stream = new MemoryStream(rawPacket);
             BinaryReader reader = new BinaryReader(stream);
@@ -109,19 +105,21 @@ namespace Imlight.Realm
             if (size < 0x777F)
             {
                 // This is a small packet.
-                wizardPacket = new byte[size];
+                // The +4 comes from the packet header itself, which is not included in the size bytes.
+                wizardPacket = new byte[size + 4];
 
                 // Copy the raw packet into the shiny new packet. Skip the 4 original bytes as that data is no longer necessary.
-                Array.Copy(rawPacket, 4, wizardPacket, 0, size - 4);
+                Array.Copy(rawPacket, 0, wizardPacket, 0, size);
             }
             else
             {
                 // This is a large packet.
+                // The +4 comes from the packet header itself, which is not included in the size bytes.
                 UInt32 bigSize = reader.ReadUInt32();
-                wizardPacket = new byte[bigSize];
+                wizardPacket = new byte[bigSize + 4];
 
                 // Copy the raw packet into the shiny new packet. Skip the 8 original bytes as that data is no longer necessary.
-                Array.Copy(rawPacket, 4, wizardPacket, 0, bigSize - 8);
+                Array.Copy(rawPacket, 0, wizardPacket, 0, bigSize);
             }
 
             stream.Dispose();
