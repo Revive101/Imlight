@@ -12,10 +12,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Engine\Imlight.Engine.csproj" />
     <ProjectReference Include="..\Imlight.Common\Imlight.Common.csproj" />
-    <ProjectReference Include="..\Login\Imlight.Login.csproj" />
     <ProjectReference Include="..\Realm\Imlight.Realm.csproj" />
-    <ProjectReference Include="..\StorageBackup\Imlight.Storage.Backup.csproj" />
-    <ProjectReference Include="..\Storage\Imlight.Storage.csproj" />
   </ItemGroup>
 
 </Project>
