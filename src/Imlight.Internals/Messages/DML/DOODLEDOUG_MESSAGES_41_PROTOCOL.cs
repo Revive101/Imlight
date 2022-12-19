@@ -9,32 +9,32 @@
 namespace Imlight.Internals.DML
 {
     using System;
-    public sealed class SKULLRIDERS_MESSAGES_40_PROTOCOL : INetworkProtocol
+    public sealed class DOODLEDOUG_MESSAGES_41_PROTOCOL : INetworkProtocol
     {
-        public byte ServiceID { get; } = 40;
-        public string ProtocolType { get; } = "SKULLRIDERS_MESSAGES";
+        public byte ServiceID { get; } = 41;
+        public string ProtocolType { get; } = "DOODLEDOUG_MESSAGES";
         public Int32 ProtocolVersion { get; } = 1;
-        public string ProtocolDescription { get; } = "Messages for all SkullRiders minigames";
+        public string ProtocolDescription { get; } = "Messages for all DoodleDoug minigames";
         // == RECORDS ==
-        public static INetworkMessage Dispatch(byte id)
+        public INetworkMessage Dispatch(byte id)
         {
             switch (id)
             {
-                case (1): return new MSG_SKULLRIDERS_CONNECT();
-                case (2): return new MSG_SKULLRIDERS_MOVED();
-                case (3): return new MSG_SKULLRIDERS_REWARDS();
+                case (1): return new MSG_DOODLEDOUG_CONNECT();
+                case (2): return new MSG_DOODLEDOUG_MOVED();
+                case (3): return new MSG_DOODLEDOUG_REWARDS();
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
-        public sealed class MSG_SKULLRIDERS_CONNECT : INetworkMessage
+        public sealed class MSG_DOODLEDOUG_CONNECT : INetworkMessage
         {
             public byte MessageOrder { get; } = 1;
         }
-        public sealed class MSG_SKULLRIDERS_MOVED : INetworkMessage
+        public sealed class MSG_DOODLEDOUG_MOVED : INetworkMessage
         {
             public byte MessageOrder { get; } = 2;
         }
-        public sealed class MSG_SKULLRIDERS_REWARDS : INetworkMessage
+        public sealed class MSG_DOODLEDOUG_REWARDS : INetworkMessage
         {
             [DMLElement("INT")] public Int32 score;
             [DMLElement("STR")] public String gameName;

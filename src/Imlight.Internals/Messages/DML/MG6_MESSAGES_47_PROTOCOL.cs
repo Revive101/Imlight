@@ -9,32 +9,32 @@
 namespace Imlight.Internals.DML
 {
     using System;
-    public sealed class DOODLEDOUG_MESSAGES_41_PROTOCOL : INetworkProtocol
+    public sealed class MG6_MESSAGES_47_PROTOCOL : INetworkProtocol
     {
-        public byte ServiceID { get; } = 41;
-        public string ProtocolType { get; } = "DOODLEDOUG_MESSAGES";
+        public byte ServiceID { get; } = 47;
+        public string ProtocolType { get; } = "MG6_MESSAGES";
         public Int32 ProtocolVersion { get; } = 1;
-        public string ProtocolDescription { get; } = "Messages for all DoodleDoug minigames";
+        public string ProtocolDescription { get; } = "Messages for MG6 MinigameWindow Mini-Game";
         // == RECORDS ==
-        public static INetworkMessage Dispatch(byte id)
+        public INetworkMessage Dispatch(byte id)
         {
             switch (id)
             {
-                case (1): return new MSG_DOODLEDOUG_CONNECT();
-                case (2): return new MSG_DOODLEDOUG_MOVED();
-                case (3): return new MSG_DOODLEDOUG_REWARDS();
+                case (1): return new MSG_MG6_CONNECT();
+                case (2): return new MSG_MG6_MOVED();
+                case (3): return new MSG_MG6_REWARDS();
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
-        public sealed class MSG_DOODLEDOUG_CONNECT : INetworkMessage
+        public sealed class MSG_MG6_CONNECT : INetworkMessage
         {
             public byte MessageOrder { get; } = 1;
         }
-        public sealed class MSG_DOODLEDOUG_MOVED : INetworkMessage
+        public sealed class MSG_MG6_MOVED : INetworkMessage
         {
             public byte MessageOrder { get; } = 2;
         }
-        public sealed class MSG_DOODLEDOUG_REWARDS : INetworkMessage
+        public sealed class MSG_MG6_REWARDS : INetworkMessage
         {
             [DMLElement("INT")] public Int32 score;
             [DMLElement("STR")] public String gameName;

@@ -7,6 +7,7 @@ using Imlight.Common.Logger;
 using System.Linq;
 using System.Reflection;
 using System.Collections.Generic;
+using Imlight.Internals;
 
 namespace Imlight.Generator
 {
@@ -222,7 +223,7 @@ namespace Imlight.Generator
                 codeRecordClass.IsClass = true;
                 codeRecordClass.TypeAttributes = TypeAttributes.Public | TypeAttributes.Sealed;
                 // Add interface.
-                CodeTypeReference codeRecordInterfaceReference = new("INetworkRecord");
+                CodeTypeReference codeRecordInterfaceReference = new(nameof(INetworkMessage));
                 codeRecordClass.BaseTypes.Add(codeRecordInterfaceReference);
 
                 // If `_MsgType` or `_MsgAccessLvl` are not found, we can create them ourselves.
@@ -333,7 +334,7 @@ namespace Imlight.Generator
             // I do not know why, but the indentation does not apply to the first line. The tabs must be literal.
             if (options.CurlyBraceNewline)
             {
-                tw.WriteLine("        public static INetworkRecord Dispatch(byte id)");
+                tw.WriteLine($"        public {nameof(INetworkMessage)} Dispatch(byte id)");
                 tw.WriteLine("{");
                 tw.Indent++;
                 tw.WriteLine("switch (id)");
@@ -342,7 +343,7 @@ namespace Imlight.Generator
             }
             else
             {
-                tw.WriteLine("        public static INetworkRecord Dispatch(byte id) {");
+                tw.WriteLine($"        public {nameof(INetworkMessage)} Dispatch(byte id) ");
                 tw.Indent++;
                 tw.WriteLine("switch (id) {");
                 tw.Indent++;

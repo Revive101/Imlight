@@ -9,32 +9,32 @@
 namespace Imlight.Internals.DML
 {
     using System;
-    public sealed class MG4_MESSAGES_45_PROTOCOL : INetworkProtocol
+    public sealed class MG1_MESSAGES_42_PROTOCOL : INetworkProtocol
     {
-        public byte ServiceID { get; } = 45;
-        public string ProtocolType { get; } = "MG4_MESSAGES";
+        public byte ServiceID { get; } = 42;
+        public string ProtocolType { get; } = "MG1_MESSAGES";
         public Int32 ProtocolVersion { get; } = 1;
-        public string ProtocolDescription { get; } = "Messages for MG4 MinigameWindow Mini-Game";
+        public string ProtocolDescription { get; } = "Messages for MG1 MinigameWindow Mini-Game";
         // == RECORDS ==
-        public static INetworkMessage Dispatch(byte id)
+        public INetworkMessage Dispatch(byte id)
         {
             switch (id)
             {
-                case (1): return new MSG_MG4_CONNECT();
-                case (2): return new MSG_MG4_MOVED();
-                case (3): return new MSG_MG4_REWARDS();
+                case (1): return new MSG_MG1_CONNECT();
+                case (2): return new MSG_MG1_MOVED();
+                case (3): return new MSG_MG1_REWARDS();
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
-        public sealed class MSG_MG4_CONNECT : INetworkMessage
+        public sealed class MSG_MG1_CONNECT : INetworkMessage
         {
             public byte MessageOrder { get; } = 1;
         }
-        public sealed class MSG_MG4_MOVED : INetworkMessage
+        public sealed class MSG_MG1_MOVED : INetworkMessage
         {
             public byte MessageOrder { get; } = 2;
         }
-        public sealed class MSG_MG4_REWARDS : INetworkMessage
+        public sealed class MSG_MG1_REWARDS : INetworkMessage
         {
             [DMLElement("INT")] public Int32 score;
             [DMLElement("STR")] public String gameName;

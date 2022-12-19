@@ -12,5 +12,7 @@ namespace Imlight.Internals
         public string ProtocolType { get; }
         public Int32 ProtocolVersion { get; }
         public string ProtocolDescription { get; }
+
+        public INetworkMessage Dispatch(byte msgid);
     }
 }

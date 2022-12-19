@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Imlight.Common\Imlight.Common.csproj" />
+    <ProjectReference Include="..\Imlight.Internals\Imlight.Internals.csproj" />
   </ItemGroup>
 
 </Project>

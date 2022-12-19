@@ -48,7 +48,7 @@ namespace Imlight.Internals
             [DMLElement("USHRT")] public ushort SessionID;
         }
 
-        public static INetworkMessage Dispatch(byte id)
+        public INetworkMessage Dispatch(byte id)
         {
             return id switch
             {

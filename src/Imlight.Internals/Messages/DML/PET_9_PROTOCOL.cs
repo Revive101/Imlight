@@ -16,7 +16,7 @@ namespace Imlight.Internals.DML
         public Int32 ProtocolVersion { get; } = 1;
         public string ProtocolDescription { get; } = "Pet Messages";
         // == RECORDS ==
-        public static INetworkMessage Dispatch(byte id)
+        public INetworkMessage Dispatch(byte id)
         {
             switch (id)
             {

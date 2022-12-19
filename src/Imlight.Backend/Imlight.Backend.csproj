@@ -10,9 +10,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Engine\Imlight.Engine.csproj" />
     <ProjectReference Include="..\Imlight.Common\Imlight.Common.csproj" />
-    <ProjectReference Include="..\Realm\Imlight.Realm.csproj" />
+    <ProjectReference Include="..\Imlight.Engine\Imlight.Engine.csproj" />
+    <ProjectReference Include="..\Imlight.Generator\Imlight.Generator.csproj" />
+    <ProjectReference Include="..\Imlight.Internals\Imlight.Internals.csproj" />
+    <ProjectReference Include="..\Imlight.IO\Imlight.IO.csproj" />
+    <ProjectReference Include="..\Imlight.Realm\Imlight.Realm.csproj" />
   </ItemGroup>
 
 </Project>

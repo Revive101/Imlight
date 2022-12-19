@@ -6,8 +6,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Engine\Imlight.Engine.csproj" />
     <ProjectReference Include="..\Imlight.Common\Imlight.Common.csproj" />
+    <ProjectReference Include="..\Imlight.Engine\Imlight.Engine.csproj" />
+    <ProjectReference Include="..\Imlight.IO\Imlight.IO.csproj" />
   </ItemGroup>
 
 </Project>
