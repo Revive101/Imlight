@@ -1,8 +1,8 @@
 ﻿using System.Threading.Tasks;
 using System;
 using System.Net.Sockets;
-using Imlight.Common.Logger;
 using Imlight.Engine;
+using Imlight.Common;
 
 /*
 Realm
@@ -40,7 +40,7 @@ namespace Imlight.Realm
             // Check if the server is already listening.
             if (this.Server.Listening())
             {
-                Log.Warn($"Attempted to start already listening realm \"{this.Name}\".");
+                Log.Logger.Warning($"Attempted to start already listening realm \"{this.Name}\".");
                 return;
             }
 
@@ -54,7 +54,7 @@ namespace Imlight.Realm
         {
             if (!this.Server.Listening())
             {
-                Log.Warn($"Attempted to stop non-running realm \"{this.Name}\".");
+                Log.Logger.Warning($"Attempted to stop non-running realm \"{this.Name}\".");
                 return;
             }
 

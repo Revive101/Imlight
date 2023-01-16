@@ -6,8 +6,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Xml;
-using Imlight.Common.Logger;
 using Imlight.Internals;
+using Imlight.Common;
 
 namespace Imlight.Generator.Network
 {
@@ -62,11 +62,11 @@ namespace Imlight.Generator.Network
 
         internal static void Generate(GeneratorOptions generatorOptions)
         {
-            Log.Info("Starting Network message generation..");
+            Log.Logger.Information("Starting Network message generation..");
 
             if (!IsRecordsDirectoryValid())
             {
-                Log.Fatal($"NetworkMessages could not be generated! The directory [{_inputFolderPath}] either doesn't exist or is invalid!");
+                Log.Logger.Fatal($"NetworkMessages could not be generated! The directory [{_inputFolderPath}] either doesn't exist or is invalid!");
                 return;
             }
 
@@ -77,7 +77,7 @@ namespace Imlight.Generator.Network
                 // The filename is the end of the path after the last '/', and it's extension trimmed off.
                 string fileName = path.Split('/').Last().Split('.')[0];
 
-                Log.Debug($"Starting work on {fileName}..");
+                Log.Logger.Debug($"Starting work on {fileName}..");
 
                 XmlDocument xmlDoc = new XmlDocument();
                 xmlDoc.Load(path);
@@ -99,11 +99,11 @@ namespace Imlight.Generator.Network
                 if (generatorOptions.ClearEmptyLines)
                     File.WriteAllLines(outputPath, File.ReadAllLines(outputPath).Where(l => !string.IsNullOrWhiteSpace(l)));
 
-                Log.Info($"Class {protocolName}.cs generated!");
+                Log.Logger.Information($"Class {protocolName}.cs generated!");
             }
 
-            Log.Info("All network protocol classes have been generated. ");
-            Log.Warn("Despite generation being complete, it's highly recommended as a developer to validate each file personally " +
+            Log.Logger.Information("All network protocol classes have been generated. ");
+            Log.Logger.Warning("Despite generation being complete, it's highly recommended as a developer to validate each file personally " +
                 "before committing them to a project.");
         }
 
@@ -114,7 +114,7 @@ namespace Imlight.Generator.Network
             if (xmlDoc is null) throw new ArgumentNullException(nameof(xmlDoc));
             protocolName = default;
 
-            // First we need to gather information from the XMLDocument.
+            // First we need to gather Informationrmation from the XMLDocument.
             byte serviceID = Convert.ToByte(xmlDoc.DocumentElement.SelectSingleNode("//_ProtocolInfo/RECORD/ServiceID").InnerText);
             string protocolType = xmlDoc.DocumentElement.SelectSingleNode("//_ProtocolInfo/RECORD/ProtocolType").InnerText;
             Int32 protocolVersion = Convert.ToInt32(xmlDoc.DocumentElement.SelectSingleNode("//_ProtocolInfo/RECORD/ProtocolVersion").InnerText);
@@ -167,7 +167,7 @@ namespace Imlight.Generator.Network
             // This is an empty member and serves as a whitespace buffer between the members of the protocol and the sub classes.
             codeClass.Members.Add(CreateGenericPropertrySnippet("        // == RECORDS =="));
 
-            Log.Debug($"Created empty protocol class {codeClass.Name}. Properties set, moving onto record sub classes.");
+            Log.Logger.Debug($"Created empty protocol class {codeClass.Name}. Properties set, moving onto record sub classes.");
 
             // Now, we're going to iterate through each record in the Xml and create a class for it.
             // These record classes will be added as subclasses to the protocol class.
@@ -213,9 +213,9 @@ namespace Imlight.Generator.Network
                     continue;
                 }
 
-                Log.Debug($"Starting class creation of record {recordXmlBase.Name}..");
+                Log.Logger.Debug($"Starting class creation of record {recordXmlBase.Name}..");
 
-                // The information is stored in a nested node labeled "RECORD".
+                // The Informationrmation is stored in a nested node labeled "RECORD".
                 var recordXml = recordXmlBase.ChildNodes[0];
 
                 // Create a class for this record.
@@ -320,7 +320,7 @@ namespace Imlight.Generator.Network
                 }
             */
 
-            Log.Info("Starting write on Dispatcher method..");
+            Log.Logger.Information("Starting write on Dispatcher method..");
 
             // CodeDom doesn't support switch/case. It needs to be written manually.
             // Create the IndentedWriter and set options.
@@ -364,7 +364,7 @@ namespace Imlight.Generator.Network
             var dispatcherProp = CreateGenericPropertrySnippet(sw.ToString());
             r_protocolClass.Members.Add(dispatcherProp);
 
-            Log.Info("Dispatcher method written!");
+            Log.Logger.Information("Dispatcher method written!");
 
             sw.Dispose();
             tw.Dispose();
@@ -381,7 +381,7 @@ namespace Imlight.Generator.Network
                 string file = _allMessageFileNames[i];
                 if (!File.Exists($"{_inputFolderPath}/{file}"))
                 {
-                    Log.Fatal($"Xml file {file} doesn't exist in records directory!");
+                    Log.Logger.Fatal($"Xml file {file} doesn't exist in records directory!");
                     return false;
                 }
             }
@@ -401,7 +401,7 @@ namespace Imlight.Generator.Network
         {
             if (protocolRecordsNode is null) throw new ArgumentNullException(nameof(protocolRecordsNode));
 
-            // Skip element 0, as that's the _ProtocolInfo.
+            // Skip element 0, as that's the _ProtocolInformation.
             var nodeToSearchBase = protocolRecordsNode[1];
             var nodeToSearchRecord = nodeToSearchBase.ChildNodes[0];
             for (int i = 0; i < nodeToSearchRecord.ChildNodes.Count; i++)
@@ -431,7 +431,7 @@ namespace Imlight.Generator.Network
                </MSG_PING>
             */
 
-            // Sorting using this method will always leve _ProtocolInfo as the very last element.
+            // Sorting using this method will always leve _ProtocolInformation as the very last element.
             // Create an empty array to inevitably fill with sorted messages.
             XmlNode[] sortedNodes = new XmlNode[messagesChildrenList.Count];
 

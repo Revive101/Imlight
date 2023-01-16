@@ -7,7 +7,6 @@ using System;
 using System.Net;
 using System.Collections.Generic;
 using Imlight.Common;
-using Imlight.Common.Logger;
 using System.Runtime.InteropServices;
 using Imlight.Engine;
 
@@ -80,7 +79,7 @@ namespace Imlight.Realm
 
                 // Accept socket.
                 var client = await r_listener.AcceptTcpClientAsync().ConfigureAwait(false);
-                Log.Info($"New connection recieved from {client.Client.RemoteEndPoint}.");
+                Log.Logger.Information($"New connection recieved from {client.Client.RemoteEndPoint}.");
 
                 // Create a socket object for the connection, and add it to the connections list.
                 KISocket socket = new KISocket(this, client);

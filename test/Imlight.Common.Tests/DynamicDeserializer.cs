@@ -43,9 +43,9 @@ namespace Imlight.Engine
                 DynamicProtocol protocol = new DynamicProtocol(file);
 
                 // Record the newly created protocol to the library, with format [ID]: Object
-                _protocols.Add(protocol.Info.ServiceID, protocol);
+                _protocols.Add(protocol.Information.ServiceID, protocol);
 
-                Log.Info($"Created protocol {protocol.Name}");
+                Log.Information($"Created protocol {protocol.Name}");
             }
 
             _hasInitialized = true;

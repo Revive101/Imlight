@@ -49,7 +49,7 @@ namespace Imlight.Engine
             byte messageId = reader.ReadByte();
             UInt16 dmlSize = reader.ReadUInt16();
 
-            // Now we have all the information we need.
+            // Now we have all the Informationrmation we need.
             // Let's find the corresponding DML record and instantiate a proper C# object.
             if (!DMLDatabase.TryGetProtocolByID(serviceId, out var protocol))
                 throw new Exception($"A DML protocol could not be found for service id {serviceId}!");

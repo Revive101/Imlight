@@ -35,7 +35,7 @@ namespace Imlight.Engine.DML
             // Be sure to read the w101r documenatation on this; do NOT commit these records to any repository.
             if (TryGetRecordsFiles(out var files))
             {
-                Log.Info("Found record files..");
+                Log.Information("Found record files..");
 
                 _protocols = new Dictionary<byte, DMLProtocol>();
                 foreach (var file in files)
@@ -45,9 +45,9 @@ namespace Imlight.Engine.DML
                     protocol.FromXMLTemplate(file);
 
                     // Record the newly created protocol to the library, with format [ID]: Object
-                    _protocols.Add(protocol.Info.ServiceID, protocol);
+                    _protocols.Add(protocol.Information.ServiceID, protocol);
 
-                    Log.Info($"Created protocol {protocol.Name}");
+                    Log.Information($"Created protocol {protocol.Name}");
                 }
 
                 _hasInitialized = true;

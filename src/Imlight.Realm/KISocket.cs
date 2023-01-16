@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Net;
-using Imlight.Common.Logger;
 using System.Net.Sockets;
 using System.IO;
 using Imlight.IO;
+using Imlight.Common;
 
 namespace Imlight.Realm
 {
@@ -47,12 +47,12 @@ namespace Imlight.Realm
                 }
                 catch (IOException)
                 {
-                    Log.Error($"Socket [{this.ID}] connection forcibly closed by remote host. Dropping client..");
+                    Log.Logger.Error($"Socket [{this.ID}] connection forcibly closed by remote host. Dropping client..");
                     break;
                 }
                 catch (Exception ex)
                 {
-                    Log.Error($"Socket unhandled listen error: {ex.Message}");
+                    Log.Logger.Error($"Socket unhandled listen error: {ex.Message}");
                     if (DISPOSE_ON_UNHANDLED_EXCEPTION) break;
                 }
             }
@@ -74,7 +74,7 @@ namespace Imlight.Realm
             {
                 // Translate data bytes to a ASCII string for logging.
                 string data = Encoding.ASCII.GetString(_buffer, 0, i);
-                Log.Debug($"Received data from socket ID [{ID}]: {data}");
+                Log.Logger.Verbose($"Received data from socket ID [{ID}]: {data}");
 
                 if (!KiNPBinaryReader.IsKiNPPacket(_buffer)) continue;
 

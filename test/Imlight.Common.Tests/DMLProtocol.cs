@@ -12,7 +12,7 @@ namespace Imlight.Engine.DML
     public class DMLProtocol
     {
 
-        public class DMLProtocolInfo
+        public class DMLProtocolInformation
         {
             internal readonly byte ServiceID;
             internal readonly string ProtocolType;
@@ -21,7 +21,7 @@ namespace Imlight.Engine.DML
 
             internal readonly string Name;
 
-            public DMLProtocolInfo(byte serviceID, string protocolType, int protocolVersion, string protocolDescription)
+            public DMLProtocolInformation(byte serviceID, string protocolType, int protocolVersion, string protocolDescription)
             {
                 ServiceID = serviceID;
                 ProtocolType = protocolType;
@@ -32,9 +32,9 @@ namespace Imlight.Engine.DML
                 Name = $"{this.ProtocolType}_{this.ServiceID}_PROTOCOL";
             }
         }
-        public DMLProtocolInfo Info { get; private set; }
+        public DMLProtocolInformation Information { get; private set; }
         public Dictionary<byte, DMLRecord> Records { get; private set; }
-        public string Name { get { return this.Info?.Name; } }
+        public string Name { get { return this.Information?.Name; } }
 
         /// <summary>
         /// Sets this object's data from an XML file path.
@@ -49,13 +49,13 @@ namespace Imlight.Engine.DML
             if (!TryGetProtocolXml(recordFilePath, out xmlDoc))
                 throw new ArgumentException($"No xml file found at \"{recordFilePath}\"!");
 
-            // Attempt to set the DMLProtocolInfo for this Protocol.
-            if (TryGetProtocolInfo(xmlDoc, out var info))
+            // Attempt to set the DMLProtocolInformation for this Protocol.
+            if (TryGetProtocolInformation(xmlDoc, out var Information))
             {
-                this.Info = info;
-                Log.Verbose($"DMLProtocol \"{this.Name}\" set information.");
+                this.Information = Information;
+                Log.Verbose($"DMLProtocol \"{this.Name}\" set Informationrmation.");
             }
-            else throw new ArgumentException($"DMLProtocolInfo could not be set for given path \"{recordFilePath}\"!");
+            else throw new ArgumentException($"DMLProtocolInformation could not be set for given path \"{recordFilePath}\"!");
 
             // Attempt to set each DMLRecord for this protocol using the given XML document.
             if (TryGetProtocolRecords(xmlDoc, out var records))
@@ -129,28 +129,28 @@ namespace Imlight.Engine.DML
         }
 
         /// <summary>
-        /// Attempts to parse the _ProtocolInfo RECORD from the given XMLDocument.
+        /// Attempts to parse the _ProtocolInformation RECORD from the given XMLDocument.
         /// </summary>
         /// <param name="xmlDoc">The successfully parsed XMLDocument.</param>
         /// <returns>True on success. False otherwise.</returns>
-        private bool TryGetProtocolInfo(XmlDocument xmlDoc, out DMLProtocolInfo info)
+        private bool TryGetProtocolInformation(XmlDocument xmlDoc, out DMLProtocolInformation Information)
         {
-            info = default;
+            Information = default;
 
-            // Create ProtocolInfo object based off the information from the _ProtocolInfo node.
-            // These fields can be converted ahead of time, since the ProtocolInfo field data types are not unique.
+            // Create ProtocolInformation object based off the Informationrmation from the _ProtocolInformation node.
+            // These fields can be converted ahead of time, since the ProtocolInformation field data types are not unique.
             try
             {
-                byte serviceID = Convert.ToByte(xmlDoc.DocumentElement.SelectSingleNode("//_ProtocolInfo/RECORD/ServiceID").InnerText);
-                string protocolType = xmlDoc.DocumentElement.SelectSingleNode("//_ProtocolInfo/RECORD/ProtocolType").InnerText;
-                Int32 protocolVersion = Convert.ToInt32(xmlDoc.DocumentElement.SelectSingleNode("//_ProtocolInfo/RECORD/ProtocolVersion").InnerText);
-                string protocolDescription = xmlDoc.DocumentElement.SelectSingleNode("//_ProtocolInfo/RECORD/ProtocolDescription").InnerText;
+                byte serviceID = Convert.ToByte(xmlDoc.DocumentElement.SelectSingleNode("//_ProtocolInformation/RECORD/ServiceID").InnerText);
+                string protocolType = xmlDoc.DocumentElement.SelectSingleNode("//_ProtocolInformation/RECORD/ProtocolType").InnerText;
+                Int32 protocolVersion = Convert.ToInt32(xmlDoc.DocumentElement.SelectSingleNode("//_ProtocolInformation/RECORD/ProtocolVersion").InnerText);
+                string protocolDescription = xmlDoc.DocumentElement.SelectSingleNode("//_ProtocolInformation/RECORD/ProtocolDescription").InnerText;
 
-                info = new DMLProtocolInfo(serviceID, protocolType, protocolVersion, protocolDescription);
+                Information = new DMLProtocolInformation(serviceID, protocolType, protocolVersion, protocolDescription);
             }
             catch (Exception ex)
             {
-                Log.Fatal($"Failed to parse DMLProtocolInfo from XML. | Exception: {ex.Message}");
+                Log.Fatal($"Failed to parse DMLProtocolInformation from XML. | Exception: {ex.Message}");
                 return false;
             }
 
@@ -181,11 +181,11 @@ namespace Imlight.Engine.DML
             {
                 foreach (XmlNode node in recordsSorted)
                 {
-                    // Skip the _ProtocolInfo & comments.
-                    if (node.Name == "_ProtocolInfo" 
+                    // Skip the _ProtocolInformation & comments.
+                    if (node.Name == "_ProtocolInformation" 
                         || node.NodeType == XmlNodeType.Comment) continue;
 
-                    // The information is stored in a nested node labeled "RECORD".
+                    // The Informationrmation is stored in a nested node labeled "RECORD".
                     XmlNode recordRaw = node.ChildNodes[0];
                     
                     // Create new DMLRecord object and set all it's data.
@@ -230,7 +230,7 @@ namespace Imlight.Engine.DML
                </MSG_PING>
             */
 
-            // Sorting using this method will always leve _ProtocolInfo as the very last element.
+            // Sorting using this method will always leve _ProtocolInformation as the very last element.
             // Create an empty array to inevitably fill with sorted messages.
             XmlNode[] sortedNodes = new XmlNode[messagesChildrenList.Count];
 

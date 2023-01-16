@@ -2,7 +2,6 @@
 using Imlight.Realm;
 using Imlight.Engine;
 using Imlight.Common;
-using Imlight.Common.Logger;
 using System.Diagnostics;
 
 namespace Imlight.Backend

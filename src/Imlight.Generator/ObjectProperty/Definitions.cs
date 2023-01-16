@@ -1,11 +1,11 @@
-﻿using Imlight.Common.Logger;
-using Imlight.IO;
+﻿using Imlight.IO;
 using SharpDX.Mathematics.Interop;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Xml;
 using SharpDX;
+using Imlight.Common;
 using static System.UInt64;
 
 namespace Imlight.Generator.ObjectProperty
@@ -171,7 +171,7 @@ namespace Imlight.Generator.ObjectProperty
                 }
                 catch (Exception ex)
                 {
-                    Log.Error($"Property [{this.Name}] exception met: {ex.Message}");
+                    Log.Logger.Error($"Property [{this.Name}] exception met: {ex.Message}");
                 }
             }
 

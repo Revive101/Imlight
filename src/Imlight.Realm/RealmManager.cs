@@ -2,7 +2,6 @@
 using System.Globalization;
 using System;
 using System.Collections.Generic;
-using Imlight.Common.Logger;
 using Imlight.Common;
 
 /*
@@ -36,11 +35,11 @@ namespace Imlight.Realm
                 Realm newRealm = new Realm(name, Id, true);
                 this.Realms.Add(Id, newRealm);
 
-                Log.Info($"New realm \"{name}\" created.");
+                Log.Logger.Information($"New realm \"{name}\" created.");
             }
             else
             {
-                Log.Error($"Attempted to create realm by name \"{name}\", but a realm by that name already exists!");
+                Log.Logger.Error($"Attempted to create realm by name \"{name}\", but a realm by that name already exists!");
                 return;
             }
         }
@@ -56,11 +55,11 @@ namespace Imlight.Realm
                 Realm realm = Realms.Values.FirstOrDefault(x => x.Name == name);
                 this.Realms.Remove(realm.Id);
 
-                Log.Info($"Realm \"{name}\" removed.");
+                Log.Logger.Information($"Realm \"{name}\" removed.");
             }
             else
             {
-                Log.Error($"Attempted to remove realm by name \"{name}\", but a realm by that name was not found!");
+                Log.Logger.Error($"Attempted to remove realm by name \"{name}\", but a realm by that name was not found!");
                 return;
             }
         }
@@ -70,7 +69,7 @@ namespace Imlight.Realm
         /// </summary>
         public void StopAllRealms()
         {
-            Log.Info("Stopping all realms..");
+            Log.Logger.Information("Stopping all realms..");
 
             // Stopping a realm simply stops the server. The realm isn't destroyed.
             foreach (Realm realm in Realms.Values)
@@ -85,7 +84,7 @@ namespace Imlight.Realm
         /// </summary>
         public void DisposeAllRealms()
         {
-            Log.Warn("Disposing all realms..");
+            Log.Logger.Warning("Disposing all realms..");
 
             // The be-all-end-all. Servers are stopped and deleted with this method.
             foreach (Realm realm in Realms.Values)

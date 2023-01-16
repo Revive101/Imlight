@@ -6,6 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Serilog" Version="2.12.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
     <PackageReference Include="System.CodeDom" Version="7.0.0" />
   </ItemGroup>
 
@@ -15,6 +17,7 @@
     <ProjectReference Include="..\Imlight.Generator\Imlight.Generator.csproj" />
     <ProjectReference Include="..\Imlight.Internals\Imlight.Internals.csproj" />
     <ProjectReference Include="..\Imlight.IO\Imlight.IO.csproj" />
+    <ProjectReference Include="..\Imlight.Realm\Imlight.Realm.csproj" />
   </ItemGroup>
 
 </Project>

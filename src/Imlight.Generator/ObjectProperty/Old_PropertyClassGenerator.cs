@@ -8,8 +8,8 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Xml;
-using Imlight.Common.Logger;
 using Imlight.IO;
+using Imlight.Common;
 using SharpDX.Mathematics.Interop;
 
 namespace Imlight.Generator.ObjectProperty
@@ -78,11 +78,11 @@ namespace Imlight.Generator.ObjectProperty
             this._outputFileCount = outputFileCount;
             this._optionEnums = new Hashtable();
 
-            Log.Info("Starting generation of Property Classes.");
-            Log.Info($"Outputting [{_outputFileCount}] partial classes.");
+            Log.Logger.Information("Starting generation of Property Classes.");
+            Log.Logger.Information($"Outputting [{_outputFileCount}] partial classes.");
 
             var propDump = GetPropDumpXml();
-            Log.Info("Wizard101 dump found!");
+            Log.Logger.Information("Wizard101 dump found!");
 
             GeneratePropertyClasses(propDump, generatorOptions);
         }
@@ -120,7 +120,7 @@ namespace Imlight.Generator.ObjectProperty
 
             foreach (var strType in uniquePropTypes)
             {
-                Log.Info(strType);
+                Log.Logger.Information(strType);
             }
         }
 
@@ -145,7 +145,7 @@ namespace Imlight.Generator.ObjectProperty
             var classesAllowedPerFileCount = classesList.Count / _outputFileCount;
             var currentClassIndex = 0;
 
-            Log.Debug($"Allowing [{classesAllowedPerFileCount}] classes per file.");
+            Log.Logger.Debug($"Allowing [{classesAllowedPerFileCount}] classes per file.");
 
             // Iterate through each file and add the partial class.
             for (var i = 0; i < _outputFileCount; i++)
@@ -201,7 +201,7 @@ namespace Imlight.Generator.ObjectProperty
                 using var writer = new StreamWriter(outputPath);
                 domProvider.GenerateCodeFromCompileUnit(codeCompileUnit, writer, options);
 
-                Log.Info($"Generated partial class to file {TypesClassName}_{i+1}.cs");
+                Log.Logger.Information($"Generated partial class to file {TypesClassName}_{i+1}.cs");
             }
         }
 
@@ -301,7 +301,7 @@ namespace Imlight.Generator.ObjectProperty
             if (!File.Exists(dumpFilePath))
                 throw new Exception($"PropertyClassDump.xml is not present in the directory \"{_inputFolderPath}\"!");
 
-            Log.Info("PropertyClassDump found!");
+            Log.Logger.Information("PropertyClassDump found!");
 
             // Load PropertyClassDump.xml as document.
             XmlDocument xmlDoc = new();

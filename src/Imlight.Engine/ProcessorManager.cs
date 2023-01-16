@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Timers;
-using Imlight.Common.Logger;
+using Imlight.Common;
 
 namespace Imlight.Engine
 {
@@ -23,7 +23,8 @@ namespace Imlight.Engine
         /// Start a new processor.
         /// </summary>
         public static void StartNewProcessor() 
-        { 
+        {
+            Log.Logger.Information("Starting new processor");
             Processors.Add(new Processor());
 
             // Do ticks if not already
@@ -41,12 +42,12 @@ namespace Imlight.Engine
         /// <param name="count">The amount of new processors to spawn.</param>
         internal static void StartNewProcessors(short count)
         {
-            Log.Info($"Starting new processors of count {count}.");
+            Log.Logger.Information($"Starting new processors of count {count}.");
             for (int i = 0; i < count; i++)
             {
                 Processors.Add(new Processor());
 
-                Log.Info($"Processor [{count}] started.");
+                Log.Logger.Information($"Processor [{count}] started.");
             }
         }
 
@@ -55,7 +56,11 @@ namespace Imlight.Engine
         /// </summary>
         internal static void RemoveProcessor()
         {
-            if (Processors.Count <= 0) throw new Exception("There are no active processors!");
+            if (Processors.Count <= 0)
+            {
+                Log.Logger.Error("Tried to remove processors when none were active!");
+                return;
+            }
 
             // Remove the recently added processor
             Processors.RemoveAt(Processors.Count - 1);

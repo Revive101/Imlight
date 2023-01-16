@@ -13,7 +13,7 @@ namespace Imlight.Engine
     internal class DynamicProtocol
     {
 
-        internal class DynamicProtocolInfo
+        internal class DynamicProtocolInformation
         {
 
             internal readonly byte ServiceID;
@@ -23,7 +23,7 @@ namespace Imlight.Engine
 
             internal readonly string Name;
 
-            public DynamicProtocolInfo(byte serviceID, string protocolType, int protocolVersion, string protocolDescription)
+            public DynamicProtocolInformation(byte serviceID, string protocolType, int protocolVersion, string protocolDescription)
             {
                 ServiceID = serviceID;
                 ProtocolType = protocolType;
@@ -35,9 +35,9 @@ namespace Imlight.Engine
             }
 
         }
-        internal DynamicProtocolInfo Info { get; private set; }
+        internal DynamicProtocolInformation Information { get; private set; }
         internal List<dynamic> Records { get; } = new List<dynamic>();
-        internal string Name { get { return this.Info?.Name; } }
+        internal string Name { get { return this.Information?.Name; } }
 
         private readonly string _recordsFilePath = $"{Directory.GetCurrentDirectory()}/Records";
 
@@ -58,16 +58,16 @@ namespace Imlight.Engine
             // For formatted logging.
             string protocolName;
 
-            // Attempt to set the DynamicProtocolInfo for this Protocol.
-            if (TryGetProtocolInfo(xmlDoc, out var info))
+            // Attempt to set the DynamicProtocolInformation for this Protocol.
+            if (TryGetProtocolInformation(xmlDoc, out var Information))
             {
-                this.Info = info;
-                protocolName = info.Name;
-                Log.Debug($"Successfully set DynamicProtocolInfo for \"{protocolName}\".");
+                this.Information = Information;
+                protocolName = Information.Name;
+                Log.Debug($"Successfully set DynamicProtocolInformation for \"{protocolName}\".");
             }
             else
             {
-                throw new ArgumentException($"DynamicProtocolInfo could not be set for given path \"{path}\"!");
+                throw new ArgumentException($"DynamicProtocolInformation could not be set for given path \"{path}\"!");
             }
 
             // Attempt to set all the RECORDS for this Protocol.
@@ -111,28 +111,28 @@ namespace Imlight.Engine
         }
 
         /// <summary>
-        /// Attempts to parse the _ProtocolInfo RECORD from the given XMLDocument.
+        /// Attempts to parse the _ProtocolInformation RECORD from the given XMLDocument.
         /// </summary>
         /// <param name="xmlDoc">The successfully parsed XMLDocument.</param>
         /// <returns>True on success. False otherwise.</returns>
-        private bool TryGetProtocolInfo(XmlDocument xmlDoc, out DynamicProtocolInfo info)
+        private bool TryGetProtocolInformation(XmlDocument xmlDoc, out DynamicProtocolInformation Information)
         {
-            info = default;
+            Information = default;
 
-            // Create ProtocolInfo object based off the information from the _ProtocolInfo node.
-            // These fields can be converted ahead of time, since the ProtocolInfo field data types are not unique.
+            // Create ProtocolInformation object based off the Informationrmation from the _ProtocolInformation node.
+            // These fields can be converted ahead of time, since the ProtocolInformation field data types are not unique.
             try
             {
-                byte serviceID = Convert.ToByte(xmlDoc.DocumentElement.SelectSingleNode("//_ProtocolInfo/RECORD/ServiceID").InnerText);
-                string protocolType = xmlDoc.DocumentElement.SelectSingleNode("//_ProtocolInfo/RECORD/ProtocolType").InnerText;
-                Int32 protocolVersion = Convert.ToInt32(xmlDoc.DocumentElement.SelectSingleNode("//_ProtocolInfo/RECORD/ProtocolVersion").InnerText);
-                string protocolDescription = xmlDoc.DocumentElement.SelectSingleNode("//_ProtocolInfo/RECORD/ProtocolDescription").InnerText;
+                byte serviceID = Convert.ToByte(xmlDoc.DocumentElement.SelectSingleNode("//_ProtocolInformation/RECORD/ServiceID").InnerText);
+                string protocolType = xmlDoc.DocumentElement.SelectSingleNode("//_ProtocolInformation/RECORD/ProtocolType").InnerText;
+                Int32 protocolVersion = Convert.ToInt32(xmlDoc.DocumentElement.SelectSingleNode("//_ProtocolInformation/RECORD/ProtocolVersion").InnerText);
+                string protocolDescription = xmlDoc.DocumentElement.SelectSingleNode("//_ProtocolInformation/RECORD/ProtocolDescription").InnerText;
 
-                info = new DynamicProtocolInfo(serviceID, protocolType, protocolVersion, protocolDescription);
+                Information = new DynamicProtocolInformation(serviceID, protocolType, protocolVersion, protocolDescription);
             }
             catch (Exception ex)
             {
-                Log.Fatal($"Failed to parse DynamicProtocolInfo from XML. | Exception: {ex.Message}");
+                Log.Fatal($"Failed to parse DynamicProtocolInformation from XML. | Exception: {ex.Message}");
                 return false;
             }
 
@@ -159,7 +159,7 @@ namespace Imlight.Engine
             {
                 if (recordsSorted.Count() <= 0)
                 {
-                    Log.Fatal($"{this.Info.Name} somehow contained no RECORDs! This should not happen.");
+                    Log.Fatal($"{this.Information.Name} somehow contained no RECORDs! This should not happen.");
                     return false;
                 }
 
@@ -167,8 +167,8 @@ namespace Imlight.Engine
                 {
                     XmlNode node = recordsSorted[i];
 
-                    // Skip the _ProtocolInfo RECORD.
-                    if (node.Name == "_ProtocolInfo") continue;
+                    // Skip the _ProtocolInformation RECORD.
+                    if (node.Name == "_ProtocolInformation") continue;
                     else if (node.NodeType == XmlNodeType.Comment) continue;
 
                     // The meat of a node is inside a nested node named RECORD.
@@ -219,7 +219,7 @@ namespace Imlight.Engine
                </MSG_PING>
             */
 
-            // Sorting using this method will always leve _ProtocolInfo as the very last element.
+            // Sorting using this method will always leve _ProtocolInformation as the very last element.
             // Create an empty array to inevitably fill with sorted messages.
             XmlNode[] sortedNodes = new XmlNode[messagesChildrenList.Count];
 

@@ -7,7 +7,7 @@ using System.IO;
 using System.Reflection;
 using Imlight.Internals;
 using Imlight.Internals.DML;
-using Imlight.Common.Logger;
+using Imlight.Common;
 
 namespace Imlight.IO
 {
@@ -35,27 +35,24 @@ namespace Imlight.IO
             if (binaryBuffer.Length <= 0) throw new ArgumentOutOfRangeException(nameof(binaryBuffer));
 
             // Create binary reader.
-            MemoryStream stream = new MemoryStream(binaryBuffer);
-            KiNPBinaryReader reader = new KiNPBinaryReader(stream);
+            var stream = new MemoryStream(binaryBuffer);
+            var reader = new KiNPBinaryReader(stream);
             reader.SkipHeader();
 
-            bool isControl = reader.ReadBoolean();
-            byte opCode = reader.ReadByte();
+            var isControl = reader.ReadBoolean();
+            var opCode = reader.ReadByte();
             reader.ReadUInt16(); // Padding bytes.
 
             // If this is not a control message, it means it's a data message.
             // Data messages have a secondary header to indicate service ID and message ID.
-            byte svcid = (isControl ? (byte)0 : reader.ReadByte());
-            byte msgid = (isControl ? opCode : reader.ReadByte());
+            var svcid = (isControl ? (byte)0 : reader.ReadByte());
+            var msgid = (isControl ? opCode : reader.ReadByte());
             if (!isControl) reader.ReadUInt16(); // Read DML length
 
             // Dispatch to the corresponding protocol and find message record.
             INetworkProtocol protocol = ProtocolDispatcher.Dispatch(svcid);
-            INetworkMessage message = protocol?.Dispatch(msgid);
+            INetworkMessage message = protocol?.Dispatch((byte)(msgid + 1));
             if (protocol is null || message is null) return null;
-
-            // Log
-            Log.Debug($"Deserialized message:\nProtocol: {nameof(protocol)}\nMessage: {nameof(message)}");
 
             // The binary buffer will be in order of the DML elements as they are written.
             // We can use Reflection to map these variables appropriately.
@@ -65,7 +62,7 @@ namespace Imlight.IO
             // First we'll check to see if the record we dispatched is valid.
             // Simply check how many fields there are in the record and compare them to the bytes we still have left.
             // The reason we don't use the DML payload length is to let this be ambigous between DML and control messages.
-            long bytesLeft = reader.BaseStream.Length - reader.BaseStream.Position;
+            var bytesLeft = reader.BaseStream.Length - reader.BaseStream.Position;
             if (!DoesRecordFitBounds(bytesLeft, recordFields))
                 throw new InvalidOperationException("Incorrect record! Record fields does not fit in the bounds of the binary buffer.");
 

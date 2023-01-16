@@ -12,12 +12,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="Input\Records\!base">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Compile>
+    <Content Include="Input\Records\!base">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Serilog" Version="2.12.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
     <PackageReference Include="SharpDX" Version="4.2.0" />
     <PackageReference Include="System.CodeDom" Version="7.0.0" />
   </ItemGroup>

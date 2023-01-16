@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Collections.Specialized;
 using Imlight.Common;
-using Imlight.Common.Logger;
 using Imlight.Internals;
 using Imlight.IO;
 
@@ -32,7 +31,7 @@ namespace Imlight.Engine
             InternalWorkload.CollectionChanged += InternalWorkload_CollectionChanged;
 
             // Log completion
-            Log.Info($"Startup for processor [{this._name}] complete.");
+            Log.Logger.Information($"Startup for processor [{this._name}] complete.");
         }
 
         /// <summary>
@@ -64,6 +63,9 @@ namespace Imlight.Engine
             var workingItem = (WizardMessageContext)e.NewItems[0];
             var buffer = workingItem.KIPacketBuffer;
             INetworkMessage message = Serializer.DeserializeMessageBinary(buffer);
+
+            // Log
+            Log.Logger.Debug($"Processor [{_name}] picked up packet [{message.GetType()}]");
 
         }
 

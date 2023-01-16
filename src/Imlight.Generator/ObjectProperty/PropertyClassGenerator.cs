@@ -1,5 +1,4 @@
-﻿using Imlight.Common.Logger;
-using Imlight.Common;
+﻿using Imlight.Common;
 using System;
 using System.CodeDom;
 using System.CodeDom.Compiler;
@@ -50,32 +49,32 @@ namespace Imlight.Generator.ObjectProperty
         {
             this._options = options;
 
-            Log.Info($"PropertyClassGenerator created with options:" +
+            Log.Logger.Information($"PropertyClassGenerator created with options:" +
                      $"\nInputFileDir: {_options.InputName}");
         }
 
         public void Generate()
         {
-            Log.Warn("Beginning generation on PropertyClasses! This may take many moments.");
+            Log.Logger.Warning("Beginning generation on PropertyClasses! This may take many moments.");
 
             // Begin by grabbing and validating the dump xml from the Wizard101 client.
             var xmlDoc = GetPropDumpXml(_options.InputName);
             if (xmlDoc is null) throw new NullReferenceException($"{_options.InputName} could not be found!");
             SetClassDefs(xmlDoc);
-            Log.Info("Successfully created all class definitions.");
+            Log.Logger.Information("Successfully created all class definitions.");
 
-            // By this point, the generator has all information needed. Initialize the CodeDom
+            // By this point, the generator has all Informationrmation needed. Initialize the CodeDom
             // and generate these classes into files.
-            Log.Info("Starting CodeDom generation..");
+            Log.Logger.Information("Starting CodeDom generation..");
             var compilers = CreateCodeDom();
-            Log.Info("CodeDom generation complete!");
+            Log.Logger.Information("CodeDom generation complete!");
 
-            Log.Info("Writing each class to file..");
+            Log.Logger.Information("Writing each class to file..");
             WriteCodeDomToDisk(compilers);
-            Log.Info("CodeDom written to disk!");
+            Log.Logger.Information("CodeDom written to disk!");
 
-            Log.Info("Generation complete!");
-            Log.Warn("These classes might not be entirely valid. It's highly recommended to check" +
+            Log.Logger.Information("Generation complete!");
+            Log.Logger.Warning("These classes might not be entirely valid. It's highly recommended to check" +
                      " the integrity of these files before using them practically.");
         }
 
@@ -201,7 +200,7 @@ namespace Imlight.Generator.ObjectProperty
 
                     propDef.Options.Name = scopedName;
 
-                    Log.Warn($"Renamed hazard enumerator in [{classDef.Name}] to: {scopedName}");
+                    Log.Logger.Warning($"Renamed hazard enumerator in [{classDef.Name}] to: {scopedName}");
                 }
             }
 
@@ -230,7 +229,7 @@ namespace Imlight.Generator.ObjectProperty
         private void NestSubclasses(ref HashSet<Definitions.ClassDef> classDefs)
         {
             // Some classes will be named to their parent class. They must be declared inside their parent class definition.
-            // For example: `MapInfoManager.MapInfo`
+            // For example: `MapInformationManager.MapInformation`
 
             var nestDefs = new Dictionary<int, List<Definitions.ClassDef>>();
             var renameCollection = new List<Definitions.ClassDef>();
@@ -240,7 +239,7 @@ namespace Imlight.Generator.ObjectProperty
             {
                 // If the class is a double or more nest, save it to another list to perform later, as the previous
                 // class may not yet be generated.
-                // For example: `MapInfoManager.MapInfo.DoodleData`
+                // For example: `MapInformationManager.MapInformation.DoodleData`
                 var nestCount = classDef.Name.Count(x => x == '.');
                 if (nestCount > 1)
                 {
@@ -287,7 +286,7 @@ namespace Imlight.Generator.ObjectProperty
             {
                 var oldName = entry.Name;
                 entry.Name = entry.Name.Replace('.', '_');
-                Log.Warn($"Renamed hazardous class definition [{oldName}] to: {entry.Name}");
+                Log.Logger.Warning($"Renamed hazardous class definition [{oldName}] to: {entry.Name}");
             }
         }
 
@@ -372,7 +371,7 @@ namespace Imlight.Generator.ObjectProperty
                     }
                     prop.Options = new Definitions.EnumDef(typeName);
 
-                    Log.Warn($"Created empty enum under class definition [{scopedTypeDef.Name}] at name [{typeName}].");
+                    Log.Logger.Warning($"Created empty enum under class definition [{scopedTypeDef.Name}] at name [{typeName}].");
                 }
             }
         }
@@ -449,7 +448,7 @@ namespace Imlight.Generator.ObjectProperty
             }
 
             // Create dispatcher method.
-            Log.Info("Creating dispatcher method..");
+            Log.Logger.Information("Creating dispatcher method..");
             var dispatch = GenerateDispatcherMethod();
             fileBaseClassDecl.Members.Add(dispatch);
 
@@ -469,7 +468,7 @@ namespace Imlight.Generator.ObjectProperty
             using var writer = new StreamWriter(outputPath);
             domProvider.GenerateCodeFromCompileUnit(compiler, writer, options);
 
-            Log.Info($"Generated partial class to file {TypesClassName}.cs");
+            Log.Logger.Information($"Generated partial class to file {TypesClassName}.cs");
         }
 
         private static CodeTypeDeclaration CreateDeclarationFromDefinition(Definitions.ClassDef def, bool isSub = false)
@@ -566,7 +565,7 @@ namespace Imlight.Generator.ObjectProperty
             if (!File.Exists(dumpFilePath))
                 throw new Exception($"{fileName} is not present in the directory \"{InputFolderPath}\"!");
 
-            Log.Info($"{fileName} found!");
+            Log.Logger.Information($"{fileName} found!");
 
             // Load PropertyClassDump.xml as document.
             XmlDocument xmlDoc = new();

@@ -5,6 +5,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Serilog" Version="2.12.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Imlight.Common\Imlight.Common.csproj" />
     <ProjectReference Include="..\Imlight.Internals\Imlight.Internals.csproj" />
   </ItemGroup>
