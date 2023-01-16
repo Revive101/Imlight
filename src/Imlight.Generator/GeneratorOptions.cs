@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Imlight.Generator
+﻿namespace Imlight.Generator
 {
-    internal class NetworkMessagesGeneratorOptions
+    internal class GeneratorOptions
     {
 
         /// <summary>
@@ -20,7 +14,7 @@ namespace Imlight.Generator
         internal bool CurlyBraceNewline = true;
 
         /// <summary>
-        /// How many spaces should the identation be.
+        /// How many spaces should the indentation be.
         /// </summary>
         internal string IndentString = "    ";
 

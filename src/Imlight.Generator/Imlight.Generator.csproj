@@ -7,12 +7,25 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Input\Records\!base" />
+    <None Remove="PropertyClassGenerator.cs~RF2b2a8cdb.TMP" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Input\Records\!base">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SharpDX" Version="4.2.0" />
     <PackageReference Include="System.CodeDom" Version="7.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Imlight.Common\Imlight.Common.csproj" />
     <ProjectReference Include="..\Imlight.Internals\Imlight.Internals.csproj" />
+    <ProjectReference Include="..\Imlight.IO\Imlight.IO.csproj" />
   </ItemGroup>
 
 </Project>

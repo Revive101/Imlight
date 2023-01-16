@@ -1,21 +1,21 @@
 using System;
-using System.IO;
 using System.CodeDom;
 using System.CodeDom.Compiler;
-using System.Xml;
-using Imlight.Common.Logger;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Collections.Generic;
+using System.Xml;
+using Imlight.Common.Logger;
 using Imlight.Internals;
 
-namespace Imlight.Generator
+namespace Imlight.Generator.Network
 {
     internal static class NetworkMessagesGenerator
     {
 
         private static readonly string _outputPath = $"{Directory.GetCurrentDirectory()}/output";
-        private static readonly string _recordsFolderPath = $"{Directory.GetCurrentDirectory()}/Records/";
+        private static readonly string _inputFolderPath = $"{Directory.GetCurrentDirectory()}/Input/Records/";
         private static readonly string[] _allMessageFileNames = new string[]
         {
             "AISClientMessages.xml",
@@ -51,28 +51,28 @@ namespace Imlight.Generator
             { "UBYTE",  (typeof(byte),    DMLType.UBYT)  },     // Appears exactly 1 time. 
             { "USHRT",  (typeof(ushort),  DMLType.USHRT) },
             { "USHORT", (typeof(ushort),  DMLType.USHRT) },     // Appears exactly 1 time.
-            { "INT",    (typeof(Int32),   DMLType.INT)   },
-            { "UINT",   (typeof(UInt32),  DMLType.UINT)  },
+            { "INT",    (typeof(int),     DMLType.INT)   },
+            { "UINT",   (typeof(uint),    DMLType.UINT)  },
             { "STR",    (typeof(string),  DMLType.STR)   },
             { "WSTR",   (typeof(string),  DMLType.WSTR)  },
             { "FLT",    (typeof(float),   DMLType.FLT)   },
             { "DBL",    (typeof(double),  DMLType.DBL)   },
-            { "GID",    (typeof(UInt64),  DMLType.GID)   },
+            { "GID",    (typeof(ulong),   DMLType.GID)   },
         };
 
-        internal static void Generate(NetworkMessagesGeneratorOptions generatorOptions)
+        internal static void Generate(GeneratorOptions generatorOptions)
         {
             Log.Info("Starting Network message generation..");
 
             if (!IsRecordsDirectoryValid())
             {
-                Log.Fatal($"NetworkMessages could not be generated! The directory [{_recordsFolderPath}] either doesn't exist or is invalid!");
+                Log.Fatal($"NetworkMessages could not be generated! The directory [{_inputFolderPath}] either doesn't exist or is invalid!");
                 return;
             }
 
             for (int i = 0; i < _allMessageFileNames.Length; i++)
             {
-                string path = $"{_recordsFolderPath}/{_allMessageFileNames[i]}";
+                string path = $"{_inputFolderPath}/{_allMessageFileNames[i]}";
 
                 // The filename is the end of the path after the last '/', and it's extension trimmed off.
                 string fileName = path.Split('/').Last().Split('.')[0];
@@ -108,7 +108,7 @@ namespace Imlight.Generator
         }
 
         private static CodeCompileUnit CreateProtocolClassFromXml(XmlDocument xmlDoc,
-                                                                  NetworkMessagesGeneratorOptions generatorOptions,
+                                                                  GeneratorOptions generatorOptions,
                                                                   out string protocolName)
         {
             if (xmlDoc is null) throw new ArgumentNullException(nameof(xmlDoc));
@@ -193,7 +193,7 @@ namespace Imlight.Generator
 
         private static void AddRecordClassesToProtocol(ref CodeTypeDeclaration r_protocolClass,
                                                        XmlNode[] recordsSortedList,
-                                                       NetworkMessagesGeneratorOptions generatorOptions)
+                                                       GeneratorOptions generatorOptions)
         {
             // There are some duplicate records. It memory, only the first instance is regarded. The others simply arent loaded.
             HashSet<string> seenValues = new HashSet<string>();
@@ -305,7 +305,7 @@ namespace Imlight.Generator
             CreateDispatcherMethod(ref r_protocolClass, ref createdClasses, generatorOptions);
         }
 
-        private static void CreateDispatcherMethod(ref CodeTypeDeclaration r_protocolClass, ref Dictionary<byte, string> r_classes, NetworkMessagesGeneratorOptions options)
+        private static void CreateDispatcherMethod(ref CodeTypeDeclaration r_protocolClass, ref Dictionary<byte, string> r_classes, GeneratorOptions options)
         {
             /*
              * End goal is to create a Dispatch method that looks something along the lines of this.
@@ -374,12 +374,12 @@ namespace Imlight.Generator
         {
             // Validate that the directory exists, and that each *Messages.xml file is accounted for.
             // @TODO: The documentation should contain a quick start article on how developers can aquire these files.
-            if (!Directory.Exists(_recordsFolderPath)) return false;
+            if (!Directory.Exists(_inputFolderPath)) return false;
 
             for (int i = 0; i < _allMessageFileNames.Length; i++)
             {
                 string file = _allMessageFileNames[i];
-                if (!File.Exists($"{_recordsFolderPath}/{file}"))
+                if (!File.Exists($"{_inputFolderPath}/{file}"))
                 {
                     Log.Fatal($"Xml file {file} doesn't exist in records directory!");
                     return false;
