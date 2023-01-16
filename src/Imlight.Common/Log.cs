@@ -11,6 +11,7 @@ namespace Imlight.Common
     {
         private static readonly ILogger _logger = new LoggerConfiguration()
             .MinimumLevel.Debug()
+            .Enrich.FromLogContext()
             .WriteTo.Console()
             .WriteTo.File("logs/imlight.txt", rollingInterval: RollingInterval.Day)
             .CreateLogger();

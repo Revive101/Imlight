@@ -7,6 +7,9 @@ using System.IO;
 
 namespace Imlight.IO
 {
+    /// <summary>
+    /// Inherits BinaryReader, and provides extra functionality to read Kingsisle binary structures.
+    /// </summary>
     public sealed partial class KiNPBinaryReader : BinaryReader, IDisposable, ICloneable
     {
 
@@ -16,6 +19,12 @@ namespace Imlight.IO
             if (input is null) throw new ArgumentNullException(nameof(input));
             if (!input.CanRead) throw new Exception("Stream is not readable!");
             if (!IsKiNPPacket(input)) throw new Exception($"{nameof(KiNPBinaryReader)} does not support anything other than a valid KI packet!");
+        }
+
+        internal string ReadSmallString()
+        {
+            int strLen = base.ReadInt32();
+            return Encoding.UTF8.GetString(base.ReadBytes(strLen));
         }
 
         /// <summary>
@@ -40,6 +49,13 @@ namespace Imlight.IO
             }
 
             return true;
+        }
+
+        internal byte[] GetBytes()
+        {
+            using var memStream = new MemoryStream();
+            base.BaseStream.CopyTo(memStream);
+            return memStream.ToArray();
         }
 
         public object Clone()
