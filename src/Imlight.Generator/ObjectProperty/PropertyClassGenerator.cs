@@ -12,6 +12,7 @@ using System.Reflection;
 using System.Text;
 using System.Xml;
 using System.Text.RegularExpressions;
+using Imlight.Internals;
 
 namespace Imlight.Generator.ObjectProperty
 {
@@ -24,6 +25,7 @@ namespace Imlight.Generator.ObjectProperty
 
         private const string NamespaceName = "Imlight.Internals";
         private const string TypesClassName = "Types";
+        private const string DispatchTabs = "                ";
         private const string PropertyTabs = "            ";
 
         private static readonly string InputFolderPath = $"{Directory.GetCurrentDirectory()}/Input";
@@ -99,8 +101,14 @@ namespace Imlight.Generator.ObjectProperty
             // All class definitions have been created. Now we must iterate through each one again
             // to set the more difficult properties. It's unreliable to do this prior, as some properties
             // rely on other class definitions already existing.
-            foreach (var def in classes.Where(c => c.BaseName is not null or ""))
+            foreach (var def in classes)
             {
+                if (def.Name == "PropertyClass") continue;
+                if (def.BaseName is null or "")
+                {
+                    def.BaseName = "PropertyClass";
+                }
+
                 // Find and set the actual parent definition for this class.
                 var parentDef = classes.FirstOrDefault(x => x.Name == def.BaseName);
                 if (parentDef is not null)
@@ -369,6 +377,34 @@ namespace Imlight.Generator.ObjectProperty
             }
         }
 
+        private CodeMemberMethod GenerateDispatcherMethod()
+        {
+            if (this._classes is null) throw new NullReferenceException($"{nameof(_classes)} cannot be null.");
+
+            var codeMethod = new CodeMemberMethod()
+            {
+                Name = "Dispatch",
+                ReturnType = new CodeTypeReference(typeof(PropertyClass))
+            };
+            var hashParam = new CodeParameterDeclarationExpression(typeof(uint), "hash");
+            codeMethod.Parameters.Add(hashParam);
+
+            // Create the start of this method. Then, iterate through the class definitions to create a case for each hash.
+            var sb = new StringBuilder();
+            sb.Append("switch (hash) {\n");
+            foreach (var classDef in this._classes)
+            {
+                if (classDef.Name == "PropertyClass") continue;
+                sb.Append($"{DispatchTabs}case {classDef.Hash}: return new {classDef.Name}();\n");
+            }
+            sb.Append($"{DispatchTabs}default: return null;\n");
+            sb.Append($"            }}");
+
+            var codeSwitchSnippet = new CodeSnippetExpression(sb.ToString());
+            codeMethod.Statements.Add(codeSwitchSnippet);
+            return codeMethod;
+        }
+
         private CodeCompileUnit CreateCodeDom()
         {
             // Initialize CodeDom.
@@ -411,6 +447,11 @@ namespace Imlight.Generator.ObjectProperty
                 var enumDecl = CreateDeclarationFromDefinition(enumDef);
                 fileBaseClassDecl.Members.Add(enumDecl);
             }
+
+            // Create dispatcher method.
+            Log.Info("Creating dispatcher method..");
+            var dispatch = GenerateDispatcherMethod();
+            fileBaseClassDecl.Members.Add(dispatch);
 
             return codeCompileUnit;
         }
