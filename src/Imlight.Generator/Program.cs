@@ -1,19 +1,19 @@
 ﻿using System;
+using Imlight.Generator.Network;
+using Imlight.Generator.ObjectProperty;
 
 namespace Imlight.Generator
 {
     internal class Program
     {
-
-        static void Main(string[] args)
+        private static void Main()
         {
-            NetworkMessagesGeneratorOptions options = new NetworkMessagesGeneratorOptions()
+            var options = new PropertyClassGeneratorOptions()
             {
-                Verbose = false,
-                ClearEmptyLines = true,
+                InputName = "PropertyClassDump.xml"
             };
-            NetworkMessagesGenerator.Generate(options);
+            var gen = new PropertyClassGenerator(options);
+            gen.Generate();
         }
-
     }
 }
