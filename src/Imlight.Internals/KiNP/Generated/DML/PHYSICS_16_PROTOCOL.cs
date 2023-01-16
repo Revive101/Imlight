@@ -48,6 +48,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.FLT)] public Single ForceZ;
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             public byte MessageOrder { get; } = 1;
+            public byte ServiceID { get; } = 16;
         }
         public sealed class MSG_PHYSICS_FORCE_AT_POS : INetworkMessage
         {
@@ -71,6 +72,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.FLT)] public Single ForcePosZ;
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             public byte MessageOrder { get; } = 2;
+            public byte ServiceID { get; } = 16;
         }
         public sealed class MSG_PHYSICS_GRAB : INetworkMessage
         {
@@ -81,12 +83,14 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.FLT)] public Single OffsetZ;
             [DMLElement(DMLType.FLT)] public Single Force;
             public byte MessageOrder { get; } = 3;
+            public byte ServiceID { get; } = 16;
         }
         public sealed class MSG_PHYSICS_RELEASE : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             [DMLElement(DMLType.GID)] public UInt64 HolderID;
             public byte MessageOrder { get; } = 4;
+            public byte ServiceID { get; } = 16;
         }
         public sealed class MSG_PHYSICS_STATE : INetworkMessage
         {
@@ -104,6 +108,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.FLT)] public Single AngularVelocityZ;
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             public byte MessageOrder { get; } = 5;
+            public byte ServiceID { get; } = 16;
         }
         public sealed class MSG_PHYSICS_TORQUE : INetworkMessage
         {
@@ -124,6 +129,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.FLT)] public Single TorqueZ;
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             public byte MessageOrder { get; } = 6;
+            public byte ServiceID { get; } = 16;
         }
     }
 }

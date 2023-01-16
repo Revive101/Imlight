@@ -32,10 +32,12 @@ namespace Imlight.Internals.DML
         public sealed class MSG_CUSTOMDICT : INetworkMessage
         {
             public byte MessageOrder { get; } = 1;
+            public byte ServiceID { get; } = 2;
         }
         public sealed class MSG_CUSTOMRECORD : INetworkMessage
         {
             public byte MessageOrder { get; } = 2;
+            public byte ServiceID { get; } = 2;
         }
         public sealed class MSG_FORCE_DISCONNECT : INetworkMessage
         {
@@ -43,21 +45,25 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.STR)] public String TimeStamp;
             [DMLElement(DMLType.STR)] public String Message;
             public byte MessageOrder { get; } = 3;
+            public byte ServiceID { get; } = 2;
         }
         public sealed class MSG_RAWRECORD : INetworkMessage
         {
             public byte MessageOrder { get; } = 4;
+            public byte ServiceID { get; } = 2;
         }
         public sealed class MSG_RAW_TEXT : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String Message;
             public byte MessageOrder { get; } = 5;
+            public byte ServiceID { get; } = 2;
         }
         public sealed class MSG_SERVERMESSAGE : INetworkMessage
         {
             [DMLElement(DMLType.UBYT)] public Byte Modal;
             [DMLElement(DMLType.WSTR)] public String Message;
             public byte MessageOrder { get; } = 6;
+            public byte ServiceID { get; } = 2;
         }
     }
 }

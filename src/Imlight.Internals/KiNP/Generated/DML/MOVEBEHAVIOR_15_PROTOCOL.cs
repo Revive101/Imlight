@@ -36,12 +36,14 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UBYT)] public Byte ZoneCounter;
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             public byte MessageOrder { get; } = 1;
+            public byte ServiceID { get; } = 15;
         }
         public sealed class MSG_MB_MOVESTATE : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             [DMLElement(DMLType.BYT)] public SByte NewState;
             public byte MessageOrder { get; } = 2;
+            public byte ServiceID { get; } = 15;
         }
         public sealed class MSG_MB_MOVE_T : INetworkMessage
         {
@@ -53,6 +55,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             [DMLElement(DMLType.FLT)] public Single Time;
             public byte MessageOrder { get; } = 3;
+            public byte ServiceID { get; } = 15;
         }
         public sealed class MSG_MB_TELEPORT : INetworkMessage
         {
@@ -62,6 +65,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UBYT)] public Byte Direction;
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             public byte MessageOrder { get; } = 4;
+            public byte ServiceID { get; } = 15;
         }
     }
 }

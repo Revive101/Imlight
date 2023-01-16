@@ -81,23 +81,27 @@ namespace Imlight.Internals.DML
         {
             [DMLElement(DMLType.STR)] public String CheerCostMods;
             public byte MessageOrder { get; } = 2;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_DERBYEFFECTAPPLY : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String Game;
             [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 3;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_DERBYEFFECTREMOVE : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String Game;
             [DMLElement(DMLType.INT)] public Int32 ID;
             public byte MessageOrder { get; } = 4;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_DERBYEFFECTSLISTUPDATE : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 5;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_DERBYLOCATION : INetworkMessage
         {
@@ -107,6 +111,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.FLT)] public Single YLoc;
             [DMLElement(DMLType.FLT)] public Single ZLoc;
             public byte MessageOrder { get; } = 6;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_DERBYPETENERGYINFO : INetworkMessage
         {
@@ -115,11 +120,13 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 Maximum;
             [DMLElement(DMLType.GID)] public UInt64 GID;
             public byte MessageOrder { get; } = 7;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_DERBYSTATMOD : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 8;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_DERBYSYNC : INetworkMessage
         {
@@ -129,12 +136,14 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.FLT)] public Single RacePositionZ;
             [DMLElement(DMLType.UBYT)] public Byte Lane;
             public byte MessageOrder { get; } = 9;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_HATCHEGGNOW : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 EggGID;
             [DMLElement(DMLType.INT)] public Int32 Gold;
             public byte MessageOrder { get; } = 10;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETDERBYBUFF : INetworkMessage
         {
@@ -142,22 +151,26 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 Type;
             [DMLElement(DMLType.GID)] public UInt64 PetID;
             public byte MessageOrder { get; } = 11;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETDERBYCHEER : INetworkMessage
         {
             [DMLElement(DMLType.UBYT)] public Byte PetIndex;
             public byte MessageOrder { get; } = 12;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETDERBYJUMPDUCK : INetworkMessage
         {
             [DMLElement(DMLType.UBYT)] public Byte PetIndex;
             public byte MessageOrder { get; } = 13;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETDERBYLAP : INetworkMessage
         {
             [DMLElement(DMLType.UBYT)] public Byte PetIndex;
             [DMLElement(DMLType.INT)] public Int32 Count;
             public byte MessageOrder { get; } = 14;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETDERBYMODIFYSTAT : INetworkMessage
         {
@@ -165,39 +178,46 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 Value;
             [DMLElement(DMLType.UBYT)] public Byte Type;
             public byte MessageOrder { get; } = 15;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETDERBYMORALE : INetworkMessage
         {
             [DMLElement(DMLType.UBYT)] public Byte PetIndex;
             [DMLElement(DMLType.INT)] public Int32 Morale;
             public byte MessageOrder { get; } = 16;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETDERBYPHOTOFINISH : INetworkMessage
         {
             [DMLElement(DMLType.INT)] public Int32 Rank;
             [DMLElement(DMLType.UBYT)] public Byte PetIndex;
             public byte MessageOrder { get; } = 17;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETDERBYPLAYERLEFT : INetworkMessage
         {
             [DMLElement(DMLType.UBYT)] public Byte PetIndex;
             public byte MessageOrder { get; } = 18;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETDERBYSLOW : INetworkMessage
         {
             [DMLElement(DMLType.UBYT)] public Byte PetIndex;
             public byte MessageOrder { get; } = 19;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETDERBYSPEED : INetworkMessage
         {
             [DMLElement(DMLType.UBYT)] public Byte PetIndex;
             [DMLElement(DMLType.INT)] public Int32 Speed;
             public byte MessageOrder { get; } = 20;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETDERBYSTART : INetworkMessage
         {
             [DMLElement(DMLType.UBYT)] public Byte GoGoGo;
             public byte MessageOrder { get; } = 21;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETDERBYSWITCHLANE : INetworkMessage
         {
@@ -205,10 +225,12 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UBYT)] public Byte Lane;
             [DMLElement(DMLType.INT)] public Int32 MsgID;
             public byte MessageOrder { get; } = 22;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETDERBYSWITCHLANEFAIL : INetworkMessage
         {
             public byte MessageOrder { get; } = 23;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETDERBYUSETALENT : INetworkMessage
         {
@@ -216,6 +238,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UBYT)] public Byte Used;
             [DMLElement(DMLType.UBYT)] public Byte PetIndex;
             public byte MessageOrder { get; } = 24;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETEGGMORPHED : INetworkMessage
         {
@@ -223,11 +246,13 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UINT)] public UInt32 PetName;
             [DMLElement(DMLType.UINT)] public UInt32 HatchTime;
             public byte MessageOrder { get; } = 25;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETENERGYMAX : INetworkMessage
         {
             [DMLElement(DMLType.INT)] public Int32 MaxEnergy;
             public byte MessageOrder { get; } = 26;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETENERGYTICK : INetworkMessage
         {
@@ -236,51 +261,60 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 MaxEnergy;
             [DMLElement(DMLType.INT)] public Int32 TickTime;
             public byte MessageOrder { get; } = 27;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETGAMEDANCE : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String Moves;
             public byte MessageOrder { get; } = 28;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETGAMEDATA : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String Game;
             [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 29;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETGAMEDERBYRESULTS : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 30;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETGAMEDROPBONUS : INetworkMessage
         {
             [DMLElement(DMLType.UBYT)] public Byte GameCommand;
             [DMLElement(DMLType.INT)] public Int32 Bonus;
             public byte MessageOrder { get; } = 31;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETGAMEDROPOBJECT : INetworkMessage
         {
             [DMLElement(DMLType.UBYT)] public Byte GameCommand;
             [DMLElement(DMLType.GID)] public UInt64 GID;
             public byte MessageOrder { get; } = 32;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETGAMEEND : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String Game;
             [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 33;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETGAMEENDING : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String Game;
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             public byte MessageOrder { get; } = 34;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETGAMEINDIVIDUALRESULTS : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 35;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETGAMEINIT : INetworkMessage
         {
@@ -289,22 +323,26 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UBYT)] public Byte MinLevel;
             [DMLElement(DMLType.UBYT)] public Byte Track;
             public byte MessageOrder { get; } = 36;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETGAMEJOIN : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String Game;
             [DMLElement(DMLType.STR)] public String Track;
             public byte MessageOrder { get; } = 37;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETGAMEJOINRSP : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String Game;
             [DMLElement(DMLType.UBYT)] public Byte Success;
             public byte MessageOrder { get; } = 38;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETGAMEJUMP : INetworkMessage
         {
             public byte MessageOrder { get; } = 39;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETGAMEMAZE : INetworkMessage
         {
@@ -312,31 +350,37 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UBYT)] public Byte GameData;
             [DMLElement(DMLType.GID)] public UInt64 ObjectID;
             public byte MessageOrder { get; } = 40;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETGAMEREADY : INetworkMessage
         {
             public byte MessageOrder { get; } = 41;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETGAMESNACKFEEDFAILED : INetworkMessage
         {
             public byte MessageOrder { get; } = 42;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETGAMESNACKFEEDSUCCESS : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 43;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETGAMESTART : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String Game;
             [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 44;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETHATCHED : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             [DMLElement(DMLType.GID)] public UInt64 TemplateID;
             public byte MessageOrder { get; } = 45;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETLEVELUP : INetworkMessage
         {
@@ -348,11 +392,13 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UINT)] public UInt32 NewDerbyPower;
             [DMLElement(DMLType.UINT)] public UInt32 NewJewel;
             public byte MessageOrder { get; } = 46;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETMORPHCANAFFORD : INetworkMessage
         {
             [DMLElement(DMLType.BYT)] public SByte CanAfford;
             public byte MessageOrder { get; } = 47;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETMORPHINGSLOT : INetworkMessage
         {
@@ -360,33 +406,39 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UBYT)] public Byte Removed;
             [DMLElement(DMLType.UINT)] public UInt32 ExpireTimeCount;
             public byte MessageOrder { get; } = 48;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETMORPHREADY : INetworkMessage
         {
             [DMLElement(DMLType.BYT)] public SByte Confirmed;
             public byte MessageOrder { get; } = 49;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETMORPHSET : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 PetID;
             public byte MessageOrder { get; } = 50;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETSNACKADD : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 51;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETSNACKREMOVE : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             [DMLElement(DMLType.GID)] public UInt64 ItemID;
             public byte MessageOrder { get; } = 52;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETSNACKREMOVEREQUEST : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             public byte MessageOrder { get; } = 53;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETSNACKUPDATE : INetworkMessage
         {
@@ -394,12 +446,14 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.GID)] public UInt64 ItemID;
             [DMLElement(DMLType.INT)] public Int32 Quantity;
             public byte MessageOrder { get; } = 54;
+            public byte ServiceID { get; } = 9;
         }
         public sealed class MSG_PETUPDATEBEHAVIOR : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 55;
+            public byte ServiceID { get; } = 9;
         }
     }
 }

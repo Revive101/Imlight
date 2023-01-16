@@ -29,6 +29,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.STR)] public String Message;
             [DMLElement(DMLType.UBYT)] public Byte Modal;
             public byte MessageOrder { get; } = 1;
+            public byte ServiceID { get; } = 19;
         }
     }
 }

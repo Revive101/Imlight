@@ -30,11 +30,13 @@ namespace Imlight.Internals.DML
             public byte MessageOrder { get; } = 100;
             [DMLElement(DMLType.STR)] public String Username;
             [DMLElement(DMLType.STR)] public String Password;
+            public byte ServiceID { get; } = 11;
         }
         public sealed class MSG_LOGINRESPONSE : INetworkMessage
         {
             public byte MessageOrder { get; } = 101;
             [DMLElement(DMLType.INT)] public Int32 Success;
+            public byte ServiceID { get; } = 11;
         }
     }
 }

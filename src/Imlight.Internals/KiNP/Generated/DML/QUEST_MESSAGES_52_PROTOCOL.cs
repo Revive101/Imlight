@@ -42,6 +42,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.GID)] public UInt64 MobileID;
             [DMLElement(DMLType.STR)] public String QuestName;
             public byte MessageOrder { get; } = 1;
+            public byte ServiceID { get; } = 52;
         }
         public sealed class MSG_COMPLETEGOAL : INetworkMessage
         {
@@ -49,6 +50,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.GID)] public UInt64 GoalID;
             [DMLElement(DMLType.STR)] public String CompleteText;
             public byte MessageOrder { get; } = 2;
+            public byte ServiceID { get; } = 52;
         }
         public sealed class MSG_COMPLETEPERSONA : INetworkMessage
         {
@@ -56,17 +58,20 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.GID)] public UInt64 QuestID;
             [DMLElement(DMLType.GID)] public UInt64 GoalID;
             public byte MessageOrder { get; } = 3;
+            public byte ServiceID { get; } = 52;
         }
         public sealed class MSG_COMPLETEQUEST : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 QuestID;
             [DMLElement(DMLType.STR)] public String CompleteText;
             public byte MessageOrder { get; } = 4;
+            public byte ServiceID { get; } = 52;
         }
         public sealed class MSG_DECLINEQUEST : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String QuestName;
             public byte MessageOrder { get; } = 5;
+            public byte ServiceID { get; } = 52;
         }
         public sealed class MSG_INTERACTNPC : INetworkMessage
         {
@@ -75,6 +80,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 Reinteract;
             [DMLElement(DMLType.UINT)] public UInt32 ServiceIndex;
             public byte MessageOrder { get; } = 6;
+            public byte ServiceID { get; } = 52;
         }
         public sealed class MSG_NPCINFO : INetworkMessage
         {
@@ -83,6 +89,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.STR)] public String Greeting;
             [DMLElement(DMLType.STR)] public String PersonaMadlibs;
             public byte MessageOrder { get; } = 7;
+            public byte ServiceID { get; } = 52;
         }
         public sealed class MSG_PERSONAINFO : INetworkMessage
         {
@@ -91,6 +98,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.GID)] public UInt64 GoalID;
             [DMLElement(DMLType.STR)] public String GoalHyperlink;
             public byte MessageOrder { get; } = 8;
+            public byte ServiceID { get; } = 52;
         }
         public sealed class MSG_QUESTOFFER : INetworkMessage
         {
@@ -103,18 +111,21 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.STR)] public String GoalData;
             [DMLElement(DMLType.UBYT)] public Byte Mainline;
             public byte MessageOrder { get; } = 9;
+            public byte ServiceID { get; } = 52;
         }
         public sealed class MSG_REMOVEGOAL : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 QuestID;
             [DMLElement(DMLType.GID)] public UInt64 GoalID;
             public byte MessageOrder { get; } = 10;
+            public byte ServiceID { get; } = 52;
         }
         public sealed class MSG_REMOVEQUEST : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 QuestID;
             [DMLElement(DMLType.GID)] public UInt64 NpcID;
             public byte MessageOrder { get; } = 11;
+            public byte ServiceID { get; } = 52;
         }
         public sealed class MSG_SENDGOAL : INetworkMessage
         {
@@ -140,6 +151,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UBYT)] public Byte NoQuestHelper;
             [DMLElement(DMLType.UBYT)] public Byte PetOnlyQuest;
             public byte MessageOrder { get; } = 12;
+            public byte ServiceID { get; } = 52;
         }
         public sealed class MSG_SENDNPCOPTIONS : INetworkMessage
         {
@@ -147,6 +159,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.STR)] public String Options;
             [DMLElement(DMLType.INT)] public Int32 Reinteract;
             public byte MessageOrder { get; } = 13;
+            public byte ServiceID { get; } = 52;
         }
         public sealed class MSG_SENDQUEST : INetworkMessage
         {
@@ -165,6 +178,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UBYT)] public Byte SkipQHAutoSelect;
             [DMLElement(DMLType.UBYT)] public Byte PetOnlyQuest;
             public byte MessageOrder { get; } = 14;
+            public byte ServiceID { get; } = 52;
         }
     }
 }

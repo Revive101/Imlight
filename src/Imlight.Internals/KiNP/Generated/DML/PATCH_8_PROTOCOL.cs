@@ -38,6 +38,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.STR)] public String ListFileURL;
             [DMLElement(DMLType.STR)] public String URLPrefix;
             [DMLElement(DMLType.STR)] public String URLSuffix;
+            public byte ServiceID { get; } = 8;
         }
         public sealed class MSG_LATEST_FILE_LIST_V2 : INetworkMessage
         {
@@ -52,6 +53,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.STR)] public String URLPrefix;
             [DMLElement(DMLType.STR)] public String URLSuffix;
             [DMLElement(DMLType.STR)] public String Locale;
+            public byte ServiceID { get; } = 8;
         }
         public sealed class MSG_NEXT_VERSION : INetworkMessage
         {
@@ -61,6 +63,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.STR)] public String URLPrefix;
             [DMLElement(DMLType.STR)] public String FileName;
             [DMLElement(DMLType.INT)] public Int32 FileType;
+            public byte ServiceID { get; } = 8;
         }
     }
 }

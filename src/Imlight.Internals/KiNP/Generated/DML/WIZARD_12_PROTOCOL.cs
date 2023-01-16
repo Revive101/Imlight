@@ -252,6 +252,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.GID)] public UInt64 QuestID;
             [DMLElement(DMLType.GID)] public UInt64 GoalID;
             public byte MessageOrder { get; } = 1;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_ACCESSPASSBUYCONFIRM : INetworkMessage
         {
@@ -259,18 +260,21 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.BYT)] public SByte WebFailure;
             [DMLElement(DMLType.INT)] public Int32 Credits;
             public byte MessageOrder { get; } = 2;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_ACCESSPASSBUYREQUEST : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String AccessPass;
             [DMLElement(DMLType.GID)] public UInt64 TransactionID;
             public byte MessageOrder { get; } = 3;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_ACCESSPASSDECLINED : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 TempQuestGID;
             [DMLElement(DMLType.UINT)] public UInt32 PreReqComplete;
             public byte MessageOrder { get; } = 4;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_ACCESSPASSINFOREQUEST : INetworkMessage
         {
@@ -281,6 +285,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.GID)] public UInt64 ClusterID;
             [DMLElement(DMLType.STR)] public String ClusterName;
             public byte MessageOrder { get; } = 5;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_ACCESSPASSOFFER : INetworkMessage
         {
@@ -290,6 +295,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.BYT)] public SByte WebFailure;
             [DMLElement(DMLType.BYT)] public SByte Failure;
             public byte MessageOrder { get; } = 6;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_ACCESSPASSREJECTED : INetworkMessage
         {
@@ -302,6 +308,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.GID)] public UInt64 ClusterID;
             [DMLElement(DMLType.STR)] public String ClusterName;
             public byte MessageOrder { get; } = 7;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_ACTORDIALOG : INetworkMessage
         {
@@ -317,6 +324,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UBYT)] public Byte IsEncounter;
             [DMLElement(DMLType.STR)] public String DefaultDialogAnimation;
             public byte MessageOrder { get; } = 8;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_ADDQUESTFINDER : INetworkMessage
         {
@@ -324,11 +332,13 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.GID)] public UInt64 GoalID;
             [DMLElement(DMLType.STR)] public String NPCList;
             public byte MessageOrder { get; } = 9;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_ADDSPELLTOBOOK : INetworkMessage
         {
             [DMLElement(DMLType.INT)] public Int32 SpellID;
             public byte MessageOrder { get; } = 10;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_ADDSPELLTODECK : INetworkMessage
         {
@@ -336,12 +346,14 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.GID)] public UInt64 DeckID;
             [DMLElement(DMLType.UBYT)] public Byte Success;
             public byte MessageOrder { get; } = 11;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_ADDTREASURESPELLTOBOOK : INetworkMessage
         {
             [DMLElement(DMLType.INT)] public Int32 SpellID;
             [DMLElement(DMLType.INT)] public Int32 EnchantmentID;
             public byte MessageOrder { get; } = 12;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_ADDTREASURESPELLTODECK : INetworkMessage
         {
@@ -351,6 +363,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UBYT)] public Byte NewSpell;
             [DMLElement(DMLType.UBYT)] public Byte Success;
             public byte MessageOrder { get; } = 13;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_AGGRO : INetworkMessage
         {
@@ -361,22 +374,26 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.FLT)] public Single Yaw;
             [DMLElement(DMLType.GID)] public UInt64 SigilGID;
             public byte MessageOrder { get; } = 14;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_ALCHEMYSTATION : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String AllowedRecipes;
             public byte MessageOrder { get; } = 15;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_ARENA_ERROR : INetworkMessage
         {
             [DMLElement(DMLType.UINT)] public UInt32 Error;
             public byte MessageOrder { get; } = 16;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_AUCTIONHOUSECONTENTS : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             [DMLElement(DMLType.STR)] public String Contents;
             public byte MessageOrder { get; } = 17;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_AUCTIONHOUSEMOREACKNOWLEDGEMENT : INetworkMessage
         {
@@ -385,6 +402,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 TotalPrice;
             [DMLElement(DMLType.INT)] public Int32 QuantityPurchased;
             public byte MessageOrder { get; } = 18;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_AUCTIONHOUSEREQUEST : INetworkMessage
         {
@@ -400,10 +418,12 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UINT)] public UInt32 category;
             [DMLElement(DMLType.UINT)] public UInt32 quantity;
             public byte MessageOrder { get; } = 19;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_AUCTIONREQUESTBANK : INetworkMessage
         {
             public byte MessageOrder { get; } = 20;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_AUCTIONRESPONSE : INetworkMessage
         {
@@ -412,6 +432,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 Cost;
             [DMLElement(DMLType.BYT)] public SByte ReturnCode;
             public byte MessageOrder { get; } = 21;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_BANKDELETE : INetworkMessage
         {
@@ -419,12 +440,14 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.BYT)] public SByte UseShared;
             [DMLElement(DMLType.BYT)] public SByte FromInventory;
             public byte MessageOrder { get; } = 22;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_BANKDELETECONFIRM : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             [DMLElement(DMLType.BYT)] public SByte Failure;
             public byte MessageOrder { get; } = 23;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_BANKTOBANKCONFIRM : INetworkMessage
         {
@@ -432,22 +455,26 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             [DMLElement(DMLType.UINT)] public UInt32 Error;
             public byte MessageOrder { get; } = 24;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_BANKTOINVCONFIRM : INetworkMessage
         {
             [DMLElement(DMLType.BYT)] public SByte Failure;
             public byte MessageOrder { get; } = 25;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_BOOSTERDISTRIBUTIONRESULTS : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String LootList;
             [DMLElement(DMLType.STR)] public String Error;
             public byte MessageOrder { get; } = 26;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_BRACKETREPORT : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String Report;
             public byte MessageOrder { get; } = 27;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_BUYENERGYCONFIRM : INetworkMessage
         {
@@ -455,33 +482,39 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.BYT)] public SByte WebFailure;
             [DMLElement(DMLType.INT)] public Int32 Credits;
             public byte MessageOrder { get; } = 28;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_CHATFILTERBLACK : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             [DMLElement(DMLType.STR)] public String Blacklist;
             public byte MessageOrder { get; } = 29;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_CHATFILTERWHITE : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             [DMLElement(DMLType.STR)] public String Whitelist;
             public byte MessageOrder { get; } = 30;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_CHOOSEFOCUS : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 MobileID;
             [DMLElement(DMLType.INT)] public Int32 SchoolNameID;
             public byte MessageOrder { get; } = 31;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_CLEARALLCRAFTINGSLOTS : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             public byte MessageOrder { get; } = 32;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_CLEAR_EQUIPPED_DECK : INetworkMessage
         {
             public byte MessageOrder { get; } = 33;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_COMPLETEDIALOG : INetworkMessage
         {
@@ -489,30 +522,35 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.STR)] public String CompletionType;
             [DMLElement(DMLType.STR)] public String EntryEvent;
             public byte MessageOrder { get; } = 34;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_CONTROLMUSIC : INetworkMessage
         {
             [DMLElement(DMLType.INT)] public Int32 Action;
             [DMLElement(DMLType.FLT)] public Single FadeTime;
             public byte MessageOrder { get; } = 35;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_CRAFTINGSLOTADD : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 36;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_CRAFTINGSLOTCOUNT : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             [DMLElement(DMLType.INT)] public Int32 BonusSlots;
             public byte MessageOrder { get; } = 37;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_CRAFTINGSLOTREMOVE : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             [DMLElement(DMLType.GID)] public UInt64 ItemID;
             public byte MessageOrder { get; } = 38;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_CREATEBOOSTERDISTRIBUTION : INetworkMessage
         {
@@ -523,6 +561,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.STR)] public String PlayerGender;
             [DMLElement(DMLType.UINT)] public UInt32 Samples;
             public byte MessageOrder { get; } = 39;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_CROWNBALANCE : INetworkMessage
         {
@@ -530,6 +569,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 TotalCrowns;
             [DMLElement(DMLType.GID)] public UInt64 CharacterID;
             public byte MessageOrder { get; } = 40;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_CROWNSBUYCONFIRM : INetworkMessage
         {
@@ -539,6 +579,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.STR)] public String Data;
             [DMLElement(DMLType.GID)] public UInt64 TemplateID;
             public byte MessageOrder { get; } = 41;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_CROWNSBUYREQUEST : INetworkMessage
         {
@@ -546,6 +587,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 AmountEnum;
             [DMLElement(DMLType.INT)] public Int32 ItemIndex;
             public byte MessageOrder { get; } = 42;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_CROWNSERVICESOPEN : INetworkMessage
         {
@@ -555,6 +597,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.BYT)] public SByte WebFailure;
             [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 43;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_CSRCROWNBALANCE : INetworkMessage
         {
@@ -562,26 +605,31 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 Balance;
             [DMLElement(DMLType.GID)] public UInt64 CharacterID;
             public byte MessageOrder { get; } = 44;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_CSR_REQUEST_BLOBS : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 ContainerGID;
             [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 45;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_DELIVERYINVOICEREQUESTBANK : INetworkMessage
         {
             public byte MessageOrder { get; } = 46;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_DISMISSTUTORIALTIP : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String TipID;
             public byte MessageOrder { get; } = 47;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_DONESHOPPING : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 TransactionID;
             public byte MessageOrder { get; } = 48;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_DUELSIMRESULT : INetworkMessage
         {
@@ -592,6 +640,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UINT)] public UInt32 Results;
             [DMLElement(DMLType.UINT)] public UInt32 Time;
             public byte MessageOrder { get; } = 49;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_DYECONFIRM : INetworkMessage
         {
@@ -601,6 +650,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 secondLayer;
             [DMLElement(DMLType.INT)] public Int32 thirdLayer;
             public byte MessageOrder { get; } = 50;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_DYEREQUEST : INetworkMessage
         {
@@ -610,18 +660,21 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 decal2;
             [DMLElement(DMLType.GID)] public UInt64 npcGlobalID;
             public byte MessageOrder { get; } = 51;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_DYESHOPOPEN : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             [DMLElement(DMLType.STR)] public String Title;
             public byte MessageOrder { get; } = 52;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_ELIXIRSTATECHANGE : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 parentID;
             [DMLElement(DMLType.BYT)] public SByte EffectEnabled;
             public byte MessageOrder { get; } = 53;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_ENCOUNTERDIALOG : INetworkMessage
         {
@@ -634,6 +687,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.STR)] public String PersonaName;
             [DMLElement(DMLType.STR)] public String PersonaIcon;
             public byte MessageOrder { get; } = 54;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_ENERGYBUYREQUEST : INetworkMessage
         {
@@ -641,6 +695,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.BYT)] public SByte WebFailure;
             [DMLElement(DMLType.INT)] public Int32 Credits;
             public byte MessageOrder { get; } = 55;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_ENERGYSHOPOPEN : INetworkMessage
         {
@@ -648,17 +703,20 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.BYT)] public SByte WebFailure;
             [DMLElement(DMLType.INT)] public Int32 Credits;
             public byte MessageOrder { get; } = 56;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_ENTERMINIGAME : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             public byte MessageOrder { get; } = 57;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_EXITCONFIRMTELEPORT : INetworkMessage
         {
             [DMLElement(DMLType.UINT)] public UInt32 ZoneCRC;
             [DMLElement(DMLType.STR)] public String PromptKey;
             public byte MessageOrder { get; } = 58;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_EXPANDPVPSEARCH : INetworkMessage
         {
@@ -666,38 +724,46 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UBYT)] public Byte ExpandMatchSearch;
             [DMLElement(DMLType.UINT)] public UInt32 TournamentNameID;
             public byte MessageOrder { get; } = 59;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_FREETOURNEYCREDITINFO : INetworkMessage
         {
             [DMLElement(DMLType.UINT)] public UInt32 HasFreeCredit;
             public byte MessageOrder { get; } = 60;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_GETSNACKLIST : INetworkMessage
         {
             [DMLElement(DMLType.UBYT)] public Byte InvisibleToFriends;
             public byte MessageOrder { get; } = 61;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_GETSUBSCRIBERONLYITEMS : INetworkMessage
         {
             public byte MessageOrder { get; } = 62;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_GETTIMEDACCESSPASSES : INetworkMessage
         {
             public byte MessageOrder { get; } = 63;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_GOHOME : INetworkMessage
         {
             public byte MessageOrder { get; } = 64;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_GOTODORM : INetworkMessage
         {
             public byte MessageOrder { get; } = 65;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_INTERACTAVAILABLEQUEST : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 MobileID;
             [DMLElement(DMLType.STR)] public String QuestName;
             public byte MessageOrder { get; } = 66;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_INTERACTCOMPLETEGOAL : INetworkMessage
         {
@@ -705,12 +771,14 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.GID)] public UInt64 QuestID;
             [DMLElement(DMLType.GID)] public UInt64 GoalID;
             public byte MessageOrder { get; } = 67;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_INTERACTUNDERWAYQUEST : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 MobileID;
             [DMLElement(DMLType.GID)] public UInt64 QuestID;
             public byte MessageOrder { get; } = 68;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_INVTOBANKCONFIRM : INetworkMessage
         {
@@ -718,23 +786,27 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             [DMLElement(DMLType.BYT)] public SByte Failure;
             public byte MessageOrder { get; } = 69;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_ITEMDROP : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 TemplateID;
             [DMLElement(DMLType.UINT)] public UInt32 ErrorID;
             public byte MessageOrder { get; } = 70;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_ITEMLOCK : INetworkMessage
         {
             [DMLElement(DMLType.UBYT)] public Byte ItemLock;
             public byte MessageOrder { get; } = 71;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_ITEMOVERFLOWTOBANK : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 ItemID;
             [DMLElement(DMLType.INT)] public Int32 CountInBank;
             public byte MessageOrder { get; } = 72;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_LEADERBOARDFRIENDREQUEST : INetworkMessage
         {
@@ -743,6 +815,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UINT)] public UInt32 SortType;
             [DMLElement(DMLType.STR)] public String Contents;
             public byte MessageOrder { get; } = 73;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_LEADERBOARDREQUEST : INetworkMessage
         {
@@ -751,6 +824,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UINT)] public UInt32 SortType;
             [DMLElement(DMLType.UBYT)] public Byte ShowMe;
             public byte MessageOrder { get; } = 74;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_LEADERBOARDRESPONSE : INetworkMessage
         {
@@ -758,6 +832,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UINT)] public UInt32 TotalEntries;
             [DMLElement(DMLType.UINT)] public UInt32 CurrentPage;
             public byte MessageOrder { get; } = 75;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_LEASH : INetworkMessage
         {
@@ -765,6 +840,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.GID)] public UInt64 OwnerID;
             [DMLElement(DMLType.UBYT)] public Byte Leashed;
             public byte MessageOrder { get; } = 76;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_LEASHOFFSET : INetworkMessage
         {
@@ -772,16 +848,19 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.FLT)] public Single Radius;
             [DMLElement(DMLType.FLT)] public Single Angle;
             public byte MessageOrder { get; } = 77;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_LEAVEMINIGAME : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             public byte MessageOrder { get; } = 78;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_LEAVESIGILTIMERWAITING : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             public byte MessageOrder { get; } = 79;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_LEVELUP : INetworkMessage
         {
@@ -791,6 +870,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 XP;
             [DMLElement(DMLType.INT)] public Int32 TrainingPoints;
             public byte MessageOrder { get; } = 80;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_LOGCLIENTRESOLUTION : INetworkMessage
         {
@@ -799,6 +879,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UBYT)] public Byte FullScreen;
             [DMLElement(DMLType.UBYT)] public Byte ClassicMode;
             public byte MessageOrder { get; } = 81;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_LOGOFFER : INetworkMessage
         {
@@ -808,17 +889,20 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 TotalCurrency;
             [DMLElement(DMLType.INT)] public Int32 Action;
             public byte MessageOrder { get; } = 82;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_LOOT : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             [DMLElement(DMLType.STR)] public String LootList;
             public byte MessageOrder { get; } = 83;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_MINIGAMEKIOSK : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             public byte MessageOrder { get; } = 84;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_MINIGAMEREWARDS : INetworkMessage
         {
@@ -830,17 +914,20 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 Score;
             [DMLElement(DMLType.INT)] public Int32 Success;
             public byte MessageOrder { get; } = 85;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_MINIGAMESELECT : INetworkMessage
         {
             [DMLElement(DMLType.INT)] public Int32 Index;
             [DMLElement(DMLType.GID)] public UInt64 npcGlobalID;
             public byte MessageOrder { get; } = 86;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_MINIGAMETIMEREND : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 SigilGID;
             public byte MessageOrder { get; } = 87;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_MINIGAMETIMERSTART : INetworkMessage
         {
@@ -848,6 +935,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.GID)] public UInt64 SigilGID;
             [DMLElement(DMLType.BYT)] public SByte Teleport;
             public byte MessageOrder { get; } = 88;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_MOVEBANKTOBANK : INetworkMessage
         {
@@ -855,6 +943,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.GID)] public UInt64 BankSharedID;
             [DMLElement(DMLType.UINT)] public UInt32 Error;
             public byte MessageOrder { get; } = 89;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_MOVEBANKTOINV : INetworkMessage
         {
@@ -862,6 +951,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.BYT)] public SByte UseShared;
             [DMLElement(DMLType.INT)] public Int32 Quantity;
             public byte MessageOrder { get; } = 90;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_MOVEINVTOBANK : INetworkMessage
         {
@@ -870,6 +960,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 Quantity;
             [DMLElement(DMLType.INT)] public Int32 debug;
             public byte MessageOrder { get; } = 91;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_NEWTITLE : INetworkMessage
         {
@@ -877,26 +968,31 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UINT)] public UInt32 PvPIconID;
             [DMLElement(DMLType.STR)] public String Title;
             public byte MessageOrder { get; } = 92;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_NOTIFYSCHOOLFOCUS : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 MobileID;
             [DMLElement(DMLType.INT)] public Int32 SchoolID;
             public byte MessageOrder { get; } = 93;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_OPENBANK : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             public byte MessageOrder { get; } = 94;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_PAID_LOOT_CROWNS_BALANCE : INetworkMessage
         {
             [DMLElement(DMLType.INT)] public Int32 Balance;
             public byte MessageOrder { get; } = 95;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_PAID_LOOT_ROLL_ERROR : INetworkMessage
         {
             public byte MessageOrder { get; } = 96;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_PAID_LOOT_ROLL_PROMPT : INetworkMessage
         {
@@ -904,12 +1000,14 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 Cost;
             [DMLElement(DMLType.INT)] public Int32 Uses;
             public byte MessageOrder { get; } = 97;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_PAID_LOOT_ROLL_RESPONSE : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 Id;
             [DMLElement(DMLType.INT)] public Int32 Response;
             public byte MessageOrder { get; } = 98;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_PAID_LOOT_ROLL_RESULT : INetworkMessage
         {
@@ -919,18 +1017,21 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 Uses;
             [DMLElement(DMLType.STR)] public String Loot;
             public byte MessageOrder { get; } = 99;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_PATCHINGBLOCKED : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String PackageName;
             [DMLElement(DMLType.STR)] public String ZoneName;
             public byte MessageOrder { get; } = 100;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_PCS_LIST_REQUEST : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String Data;
             [DMLElement(DMLType.UINT)] public UInt32 UpdateID;
             public byte MessageOrder { get; } = 101;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_PCS_LIST_RESPONSE : INetworkMessage
         {
@@ -939,12 +1040,14 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UINT)] public UInt32 UpdateID;
             [DMLElement(DMLType.INT)] public Int32 Error;
             public byte MessageOrder { get; } = 102;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_PCS_PATCH : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String Updates;
             [DMLElement(DMLType.UINT)] public UInt32 UpdateID;
             public byte MessageOrder { get; } = 103;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_PCS_PRICE_LOCK_REQUEST : INetworkMessage
         {
@@ -952,6 +1055,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 ItemFlags;
             [DMLElement(DMLType.UINT)] public UInt32 SaleID;
             public byte MessageOrder { get; } = 104;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_PCS_PRICE_LOCK_RESPONSE : INetworkMessage
         {
@@ -961,6 +1065,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 CostTickets;
             [DMLElement(DMLType.INT)] public Int32 Error;
             public byte MessageOrder { get; } = 105;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_PCS_PURCHASE_REQUEST : INetworkMessage
         {
@@ -978,6 +1083,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UINT)] public UInt32 ItemLocator;
             [DMLElement(DMLType.UINT)] public UInt32 PurchaseElixirEquipNow;
             public byte MessageOrder { get; } = 106;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_PCS_PURCHASE_RESPONSE : INetworkMessage
         {
@@ -987,6 +1093,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 Count;
             [DMLElement(DMLType.INT)] public Int32 Error;
             public byte MessageOrder { get; } = 107;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_PETGAMEKIOSK : INetworkMessage
         {
@@ -994,11 +1101,13 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.STR)] public String GameInfo;
             [DMLElement(DMLType.UINT)] public UInt32 GamesWon;
             public byte MessageOrder { get; } = 108;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_PETHATCHCREATE : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 TargetGID;
             public byte MessageOrder { get; } = 109;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_PETHATCHJOINSTATUS : INetworkMessage
         {
@@ -1006,6 +1115,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 TargetStatus;
             [DMLElement(DMLType.INT)] public Int32 PlayerStatus;
             public byte MessageOrder { get; } = 110;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_PETHATCHREADYSTATUS : INetworkMessage
         {
@@ -1013,22 +1123,26 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 TargetStatus;
             [DMLElement(DMLType.INT)] public Int32 PlayerStatus;
             public byte MessageOrder { get; } = 111;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_PETHATCHREQUEST : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 TargetGID;
             public byte MessageOrder { get; } = 112;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_PETHATCHRESULT : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 TargetGID;
             [DMLElement(DMLType.UINT)] public UInt32 Status;
             public byte MessageOrder { get; } = 113;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_PETRENAMECONFIRM : INetworkMessage
         {
             [DMLElement(DMLType.BYT)] public SByte Failure;
             public byte MessageOrder { get; } = 114;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_PETRENAMEREQUEST : INetworkMessage
         {
@@ -1036,17 +1150,20 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UINT)] public UInt32 petName;
             [DMLElement(DMLType.GID)] public UInt64 npcGlobalID;
             public byte MessageOrder { get; } = 115;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_PLAYERARRIVED : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             [DMLElement(DMLType.INT)] public Int32 NodeIndex;
             public byte MessageOrder { get; } = 116;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_PLAYERWIZBANG : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String StateName;
             public byte MessageOrder { get; } = 117;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_PLAYMUSIC : INetworkMessage
         {
@@ -1056,28 +1173,33 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.STR)] public String SoundFilename;
             [DMLElement(DMLType.FLT)] public Single StartDelay;
             public byte MessageOrder { get; } = 118;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_POTIONBUYCONFIRM : INetworkMessage
         {
             [DMLElement(DMLType.BYT)] public SByte Failure;
             public byte MessageOrder { get; } = 119;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_POTIONBUYREQUEST : INetworkMessage
         {
             [DMLElement(DMLType.INT)] public Int32 AmountEnum;
             [DMLElement(DMLType.GID)] public UInt64 npcGlobalID;
             public byte MessageOrder { get; } = 120;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_POTIONSHOPOPEN : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             [DMLElement(DMLType.STR)] public String ShopTitle;
             public byte MessageOrder { get; } = 121;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_PRELEADERBOARD : INetworkMessage
         {
             [DMLElement(DMLType.UINT)] public UInt32 LeaderboardNameID;
             public byte MessageOrder { get; } = 122;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_PREMIUMCONTENT : INetworkMessage
         {
@@ -1092,6 +1214,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UINT)] public UInt32 Tournament;
             [DMLElement(DMLType.STR)] public String PurchaseList;
             public byte MessageOrder { get; } = 123;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_PREPVPKIOSK : INetworkMessage
         {
@@ -1100,6 +1223,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.GID)] public UInt64 TransactionID;
             [DMLElement(DMLType.UBYT)] public Byte Patching;
             public byte MessageOrder { get; } = 124;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_PVPCONFIRM : INetworkMessage
         {
@@ -1107,6 +1231,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UBYT)] public Byte Confirm;
             [DMLElement(DMLType.STR)] public String MatchActor;
             public byte MessageOrder { get; } = 125;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_PVPCONFIRMTOURNEY : INetworkMessage
         {
@@ -1121,6 +1246,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.STR)] public String GoldList;
             [DMLElement(DMLType.INT)] public Int32 PlayerGold;
             public byte MessageOrder { get; } = 126;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_PVPINTENT : INetworkMessage
         {
@@ -1132,6 +1258,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.GID)] public UInt64 MatchID;
             [DMLElement(DMLType.UINT)] public UInt32 AllowExtMatchSearch;
             public byte MessageOrder { get; } = 127;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_PVPISSUETOURNEYCREDIT : INetworkMessage
         {
@@ -1146,6 +1273,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.BYT)] public SByte NonSubscribersPayGold;
             [DMLElement(DMLType.STR)] public String GoldList;
             public byte MessageOrder { get; } = 128;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_PVPMATCHREQUEST : INetworkMessage
         {
@@ -1153,53 +1281,63 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.GID)] public UInt64 MobileID;
             [DMLElement(DMLType.UBYT)] public Byte Failure;
             public byte MessageOrder { get; } = 129;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_PVPREGISTERFAILED : INetworkMessage
         {
             public byte MessageOrder { get; } = 130;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_PVPUPDATEREQUEST : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String InfoRequest;
             public byte MessageOrder { get; } = 131;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_QUESTDIALOG : INetworkMessage
         {
             [DMLElement(DMLType.UINT)] public UInt32 QuestNameID;
             [DMLElement(DMLType.STR)] public String ActorDialog;
             public byte MessageOrder { get; } = 132;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_QUESTFINDEROPTION : INetworkMessage
         {
             [DMLElement(DMLType.UBYT)] public Byte Enable;
             public byte MessageOrder { get; } = 133;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_QUESTREWARDS : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 QuestID;
             [DMLElement(DMLType.STR)] public String LootList;
             public byte MessageOrder { get; } = 134;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_QUICKSELLREQUESTBANK : INetworkMessage
         {
             public byte MessageOrder { get; } = 135;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_REAGENTADD : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 136;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_REAGENTREMOVE : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             [DMLElement(DMLType.GID)] public UInt64 ItemID;
             public byte MessageOrder { get; } = 137;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_REAGENTREMOVEREQUEST : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             public byte MessageOrder { get; } = 138;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_REAGENTUPDATE : INetworkMessage
         {
@@ -1207,29 +1345,34 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.GID)] public UInt64 ItemID;
             [DMLElement(DMLType.INT)] public Int32 Quantity;
             public byte MessageOrder { get; } = 139;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_RECIPEADD : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 140;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_RECIPEREMOVE : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             [DMLElement(DMLType.UINT)] public UInt32 RecipeID;
             public byte MessageOrder { get; } = 141;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_REGISTRAR : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 MobileID;
             [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 142;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_REMOVESPELLFROMBOOK : INetworkMessage
         {
             [DMLElement(DMLType.INT)] public Int32 SpellID;
             public byte MessageOrder { get; } = 143;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_REMOVESPELLFROMDECK : INetworkMessage
         {
@@ -1237,6 +1380,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.GID)] public UInt64 DeckID;
             [DMLElement(DMLType.UBYT)] public Byte Success;
             public byte MessageOrder { get; } = 144;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_REMOVETREASURESPELLFROMBOOK : INetworkMessage
         {
@@ -1244,6 +1388,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 EnchantmentID;
             [DMLElement(DMLType.INT)] public Int32 Quantity;
             public byte MessageOrder { get; } = 145;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_REMOVETREASURESPELLFROMDECK : INetworkMessage
         {
@@ -1253,6 +1398,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UBYT)] public Byte Success;
             [DMLElement(DMLType.UBYT)] public Byte Destroy;
             public byte MessageOrder { get; } = 146;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_REMOVETREASURESPELLFROMVAULT : INetworkMessage
         {
@@ -1260,22 +1406,26 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 EnchantmentID;
             [DMLElement(DMLType.INT)] public Int32 Quantity;
             public byte MessageOrder { get; } = 147;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_RENTALUPDATE : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 TemplateID;
             [DMLElement(DMLType.INT)] public Int32 Reason;
             public byte MessageOrder { get; } = 148;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_REQUESTACTIVEMAPQUESTS : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 149;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_REQUESTCOMBATSIGILS : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 ZoneID;
             public byte MessageOrder { get; } = 150;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_REQUESTFRIENDFINDERCODE : INetworkMessage
         {
@@ -1285,6 +1435,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UBYT)] public Byte Forwarded;
             [DMLElement(DMLType.GID)] public UInt64 ListOwnerGID;
             public byte MessageOrder { get; } = 151;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_REQUESTHOUSETELEPORT : INetworkMessage
         {
@@ -1294,15 +1445,18 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UINT)] public UInt32 TransitionID;
             [DMLElement(DMLType.GID)] public UInt64 ObjectGID;
             public byte MessageOrder { get; } = 152;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_REQUESTNEXTCLOSESTQUEST : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String NPCList;
             public byte MessageOrder { get; } = 153;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_REQUESTPRIVACYOPTIONS : INetworkMessage
         {
             public byte MessageOrder { get; } = 154;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_REQUESTPVPACTOR : INetworkMessage
         {
@@ -1311,6 +1465,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UINT)] public UInt32 MatchNameID;
             [DMLElement(DMLType.GID)] public UInt64 RequestID;
             public byte MessageOrder { get; } = 155;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_REQUESTPVPKIOSK : INetworkMessage
         {
@@ -1318,11 +1473,13 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UINT)] public UInt32 TournamentNameID;
             [DMLElement(DMLType.GID)] public UInt64 TransactionID;
             public byte MessageOrder { get; } = 156;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_REQUESTQUESTDIALOG : INetworkMessage
         {
             [DMLElement(DMLType.UINT)] public UInt32 QuestNameID;
             public byte MessageOrder { get; } = 157;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_REQUESTQUICKSELL : INetworkMessage
         {
@@ -1330,6 +1487,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UBYT)] public Byte Section;
             [DMLElement(DMLType.UINT)] public UInt32 FromTemplateID;
             public byte MessageOrder { get; } = 158;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_REQUESTTOGGLELOCKITEM : INetworkMessage
         {
@@ -1337,6 +1495,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             [DMLElement(DMLType.UINT)] public UInt32 IsLocked;
             public byte MessageOrder { get; } = 159;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_RESPECCONFIRM : INetworkMessage
         {
@@ -1344,6 +1503,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.BYT)] public SByte WebFailure;
             [DMLElement(DMLType.INT)] public Int32 Credits;
             public byte MessageOrder { get; } = 160;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_RESPONSEPRIVACYOPTIONS : INetworkMessage
         {
@@ -1355,6 +1515,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UBYT)] public Byte HidePVPEnemyChat;
             [DMLElement(DMLType.UBYT)] public Byte LimitHomeToFriends;
             public byte MessageOrder { get; } = 161;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_RIDEMOUNT : INetworkMessage
         {
@@ -1365,6 +1526,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.USHRT)] public UInt16 LocationY;
             [DMLElement(DMLType.USHRT)] public UInt16 LocationZ;
             public byte MessageOrder { get; } = 162;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_SEAMSTRESSOPEN : INetworkMessage
         {
@@ -1374,6 +1536,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 MergeCost;
             [DMLElement(DMLType.BYT)] public SByte WebFailure;
             public byte MessageOrder { get; } = 163;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_SENDFRIENDFINDERCODE : INetworkMessage
         {
@@ -1383,11 +1546,13 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UINT)] public UInt32 IsRequester;
             [DMLElement(DMLType.GID)] public UInt64 ListOwnerGID;
             public byte MessageOrder { get; } = 164;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_SENDTALENTDATACSR : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String Talents;
             public byte MessageOrder { get; } = 165;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_SETDECKNAME : INetworkMessage
         {
@@ -1395,17 +1560,20 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UINT)] public UInt32 DeckName;
             [DMLElement(DMLType.UINT)] public UInt32 DeckNameExtension;
             public byte MessageOrder { get; } = 166;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_SETDONTALLOWFRIENDFINDERCODES : INetworkMessage
         {
             [DMLElement(DMLType.UBYT)] public Byte DontAllowFriendFinderCodes;
             public byte MessageOrder { get; } = 167;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_SETRENTALTIMER : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             [DMLElement(DMLType.UINT)] public UInt32 TimerTime;
             public byte MessageOrder { get; } = 168;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_SHOPBUYCONFIRM : INetworkMessage
         {
@@ -1413,6 +1581,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.BYT)] public SByte WebFailure;
             [DMLElement(DMLType.INT)] public Int32 Credits;
             public byte MessageOrder { get; } = 169;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_SHOPBUYREQUEST : INetworkMessage
         {
@@ -1425,6 +1594,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.GID)] public UInt64 npcGlobalID;
             [DMLElement(DMLType.UINT)] public UInt32 quantity;
             public byte MessageOrder { get; } = 170;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_SHOPLIST : INetworkMessage
         {
@@ -1433,12 +1603,14 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 Credits;
             [DMLElement(DMLType.BYT)] public SByte WebFailure;
             public byte MessageOrder { get; } = 171;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_SHOPSELLCONFIRM : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             [DMLElement(DMLType.BYT)] public SByte Failure;
             public byte MessageOrder { get; } = 172;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_SHOPSELLREQUEST : INetworkMessage
         {
@@ -1447,12 +1619,14 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.BYT)] public SByte IsQuickSell;
             [DMLElement(DMLType.GID)] public UInt64 npcGlobalID;
             public byte MessageOrder { get; } = 173;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_SHOWCASEDSTOREITEMINFO : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String StoreTemplateIDsCSV;
             [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 174;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_SHOWCLIENTMESSAGEBOX : INetworkMessage
         {
@@ -1460,23 +1634,27 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 Title;
             [DMLElement(DMLType.BYT)] public SByte Delay;
             public byte MessageOrder { get; } = 175;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_SHOWGUI : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String GUIFileName;
             [DMLElement(DMLType.UBYT)] public Byte StageIndex;
             public byte MessageOrder { get; } = 176;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_SNACKLIST : INetworkMessage
         {
             [DMLElement(DMLType.UBYT)] public Byte InvisibleToFriends;
             [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 177;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_SPELLLIST : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 178;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_SPELLTRAINCOMPLETE : INetworkMessage
         {
@@ -1484,12 +1662,14 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.STR)] public String DisplayText;
             [DMLElement(DMLType.UBYT)] public Byte Success;
             public byte MessageOrder { get; } = 179;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_STARTRIDE : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             [DMLElement(DMLType.FLT)] public Single Time;
             public byte MessageOrder { get; } = 180;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_STITCHITEMS : INetworkMessage
         {
@@ -1497,6 +1677,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.GID)] public UInt64 StatsID;
             [DMLElement(DMLType.GID)] public UInt64 DisplayID;
             public byte MessageOrder { get; } = 181;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_STITCHITEMSCONFIRM : INetworkMessage
         {
@@ -1504,6 +1685,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.BYT)] public SByte WebFailure;
             [DMLElement(DMLType.INT)] public Int32 Credits;
             public byte MessageOrder { get; } = 182;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_STORAGECLIENTADD : INetworkMessage
         {
@@ -1511,6 +1693,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.STR)] public String SerializedItem;
             [DMLElement(DMLType.BYT)] public SByte SharedBank;
             public byte MessageOrder { get; } = 183;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_STORAGECLIENTREMOVE : INetworkMessage
         {
@@ -1518,22 +1701,26 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.BYT)] public SByte SharedBank;
             [DMLElement(DMLType.GID)] public UInt64 ItemID;
             public byte MessageOrder { get; } = 184;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_SUBMITCOMBATSIGILS : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String SigilPositions;
             [DMLElement(DMLType.GID)] public UInt64 ZoneID;
             public byte MessageOrder { get; } = 185;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_SUBSCRIBERONLYITEMS : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 186;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_TIMEDACCESSPASSES : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 187;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_TRADE_CHANGE_ITEM : INetworkMessage
         {
@@ -1543,6 +1730,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UINT)] public UInt32 ItemEnchant;
             [DMLElement(DMLType.UBYT)] public Byte Action;
             public byte MessageOrder { get; } = 188;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_TRADE_CHANGE_MONEY : INetworkMessage
         {
@@ -1550,11 +1738,13 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.GID)] public UInt64 ChangeGID;
             [DMLElement(DMLType.UINT)] public UInt32 Amount;
             public byte MessageOrder { get; } = 189;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_TRADE_CREATE : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 TargetGID;
             public byte MessageOrder { get; } = 190;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_TRADE_JOIN_STATUS : INetworkMessage
         {
@@ -1562,6 +1752,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 TargetStatus;
             [DMLElement(DMLType.INT)] public Int32 PlayerStatus;
             public byte MessageOrder { get; } = 191;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_TRADE_READY_STATUS : INetworkMessage
         {
@@ -1569,11 +1760,13 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 TargetStatus;
             [DMLElement(DMLType.INT)] public Int32 PlayerStatus;
             public byte MessageOrder { get; } = 192;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_TRADE_REQUEST : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 TargetGID;
             public byte MessageOrder { get; } = 193;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_TRADE_RESULT : INetworkMessage
         {
@@ -1582,12 +1775,14 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UINT)] public UInt32 ItemsLost;
             [DMLElement(DMLType.UINT)] public UInt32 Status;
             public byte MessageOrder { get; } = 194;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_TRAIN : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 MobileID;
             [DMLElement(DMLType.INT)] public Int32 TrainingIndex;
             public byte MessageOrder { get; } = 195;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_TREASUREBUY : INetworkMessage
         {
@@ -1596,6 +1791,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.GID)] public UInt64 npcGlobalID;
             [DMLElement(DMLType.INT)] public Int32 Quantity;
             public byte MessageOrder { get; } = 196;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_TREASUREBUYCONFIRM : INetworkMessage
         {
@@ -1603,6 +1799,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.BYT)] public SByte WebFailure;
             [DMLElement(DMLType.INT)] public Int32 Credits;
             public byte MessageOrder { get; } = 197;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_TREASURESHOPLIST : INetworkMessage
         {
@@ -1612,11 +1809,13 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.BYT)] public SByte WebFailure;
             [DMLElement(DMLType.BYT)] public SByte ShowAuctionHouse;
             public byte MessageOrder { get; } = 198;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_TUTORIALEVENT : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String TutorialEvent;
             public byte MessageOrder { get; } = 199;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_UNSTITCHITEMS : INetworkMessage
         {
@@ -1625,6 +1824,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UINT)] public UInt32 StatItemColor1;
             [DMLElement(DMLType.UINT)] public UInt32 StatItemColor2;
             public byte MessageOrder { get; } = 200;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_UNSTITCHOPEN : INetworkMessage
         {
@@ -1634,23 +1834,27 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 MergeCost;
             [DMLElement(DMLType.BYT)] public SByte WebFailure;
             public byte MessageOrder { get; } = 201;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_UPDATEARENAPOINTS : INetworkMessage
         {
             [DMLElement(DMLType.INT)] public Int32 Points;
             public byte MessageOrder { get; } = 202;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_UPDATEGENDER : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             [DMLElement(DMLType.STR)] public String NewGender;
             public byte MessageOrder { get; } = 203;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_UPDATEGOLD : INetworkMessage
         {
             [DMLElement(DMLType.INT)] public Int32 Gold;
             [DMLElement(DMLType.INT)] public Int32 MaxGold;
             public byte MessageOrder { get; } = 204;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_UPDATEHEALTH : INetworkMessage
         {
@@ -1658,23 +1862,27 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 NewHealth;
             [DMLElement(DMLType.INT)] public Int32 NewHealthMax;
             public byte MessageOrder { get; } = 205;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_UPDATEMANA : INetworkMessage
         {
             [DMLElement(DMLType.INT)] public Int32 Mana;
             [DMLElement(DMLType.INT)] public Int32 MaxMana;
             public byte MessageOrder { get; } = 206;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_UPDATEPOTIONS : INetworkMessage
         {
             [DMLElement(DMLType.FLT)] public Single PotionMax;
             [DMLElement(DMLType.FLT)] public Single PotionCharge;
             public byte MessageOrder { get; } = 207;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_UPDATEPOWERPIP : INetworkMessage
         {
             [DMLElement(DMLType.FLT)] public Single PowerPip;
             public byte MessageOrder { get; } = 208;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_UPDATEPRIVACYOPTIONS : INetworkMessage
         {
@@ -1686,22 +1894,26 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UBYT)] public Byte HidePVPEnemyChat;
             [DMLElement(DMLType.UBYT)] public Byte LimitHomeToFriends;
             public byte MessageOrder { get; } = 209;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_UPDATESCHOOL : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String Data;
             [DMLElement(DMLType.UINT)] public UInt32 SchoolHash;
             public byte MessageOrder { get; } = 210;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_UPDATESHADOWPIPRATING : INetworkMessage
         {
             [DMLElement(DMLType.FLT)] public Single ShadowPipRating;
             public byte MessageOrder { get; } = 211;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_UPDATETRAINING : INetworkMessage
         {
             [DMLElement(DMLType.INT)] public Int32 TrainingPoints;
             public byte MessageOrder { get; } = 212;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_UPDATEXP : INetworkMessage
         {
@@ -1709,6 +1921,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 XP;
             [DMLElement(DMLType.INT)] public Int32 OldXP;
             public byte MessageOrder { get; } = 213;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_USEFRIENDFINDERCODE : INetworkMessage
         {
@@ -1717,6 +1930,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UBYT)] public Byte Forwarded;
             [DMLElement(DMLType.GID)] public UInt64 ListOwnerGID;
             public byte MessageOrder { get; } = 214;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_USEFRIENDFINDERCODERESPONSE : INetworkMessage
         {
@@ -1726,10 +1940,12 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.UBYT)] public Byte Forwarded;
             [DMLElement(DMLType.GID)] public UInt64 ListOwnerGID;
             public byte MessageOrder { get; } = 215;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_USEPOTION : INetworkMessage
         {
             public byte MessageOrder { get; } = 216;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_USERECIPE : INetworkMessage
         {
@@ -1737,36 +1953,42 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.GID)] public UInt64 FinalItemID;
             [DMLElement(DMLType.UINT)] public UInt32 Error;
             public byte MessageOrder { get; } = 217;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_WIZGAMESTATS : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 218;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_WIZINVENTORYCLIENTADD : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             [DMLElement(DMLType.STR)] public String SerializedItem;
             public byte MessageOrder { get; } = 219;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_WIZINVENTORYCLIENTREMOVE : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             [DMLElement(DMLType.GID)] public UInt64 ItemID;
             public byte MessageOrder { get; } = 220;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_WORLDTELEPORTLIST : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 GlobalID;
             [DMLElement(DMLType.STR)] public String Data;
             public byte MessageOrder { get; } = 221;
+            public byte ServiceID { get; } = 12;
         }
         public sealed class MSG_WORLDTELEPORTREQUEST : INetworkMessage
         {
             [DMLElement(DMLType.GID)] public UInt64 TeleportID;
             [DMLElement(DMLType.STR)] public String World;
             public byte MessageOrder { get; } = 222;
+            public byte ServiceID { get; } = 12;
         }
     }
 }

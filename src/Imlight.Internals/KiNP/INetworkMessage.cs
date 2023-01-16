@@ -9,5 +9,6 @@ namespace Imlight.Internals
     public interface INetworkMessage
     {
         public byte MessageOrder { get; }
+        public byte ServiceID { get; }
     }
 }

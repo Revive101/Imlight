@@ -28,10 +28,12 @@ namespace Imlight.Internals.DML
         public sealed class MSG_PING : INetworkMessage
         {
             public byte MessageOrder { get; } = 1;
+            public byte ServiceID { get; } = 1;
         }
         public sealed class MSG_PING_RSP : INetworkMessage
         {
             public byte MessageOrder { get; } = 2;
+            public byte ServiceID { get; } = 1;
         }
     }
 }

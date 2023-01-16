@@ -29,16 +29,19 @@ namespace Imlight.Internals.DML
         public sealed class MSG_SKULLRIDERS_CONNECT : INetworkMessage
         {
             public byte MessageOrder { get; } = 1;
+            public byte ServiceID { get; } = 40;
         }
         public sealed class MSG_SKULLRIDERS_MOVED : INetworkMessage
         {
             public byte MessageOrder { get; } = 2;
+            public byte ServiceID { get; } = 40;
         }
         public sealed class MSG_SKULLRIDERS_REWARDS : INetworkMessage
         {
             [DMLElement(DMLType.INT)] public Int32 score;
             [DMLElement(DMLType.STR)] public String gameName;
             public byte MessageOrder { get; } = 3;
+            public byte ServiceID { get; } = 40;
         }
     }
 }

@@ -55,11 +55,13 @@ namespace Imlight.Internals.DML
         {
             public byte MessageOrder { get; } = 1;
             [DMLElement(DMLType.STR)] public String CharacterInfo;
+            public byte ServiceID { get; } = 7;
         }
         public sealed class MSG_CHARACTERLIST : INetworkMessage
         {
             public byte MessageOrder { get; } = 2;
             [DMLElement(DMLType.UINT)] public UInt32 Error;
+            public byte ServiceID { get; } = 7;
         }
         public sealed class MSG_CHARACTERSELECTED : INetworkMessage
         {
@@ -77,50 +79,60 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 PrepPhase;
             [DMLElement(DMLType.INT)] public Int32 Error;
             [DMLElement(DMLType.STR)] public String LoginServer;
+            public byte ServiceID { get; } = 7;
         }
         public sealed class MSG_CREATECHARACTER : INetworkMessage
         {
             public byte MessageOrder { get; } = 4;
             [DMLElement(DMLType.STR)] public String CreationInfo;
+            public byte ServiceID { get; } = 7;
         }
         public sealed class MSG_CREATECHARACTERRESPONSE : INetworkMessage
         {
             public byte MessageOrder { get; } = 5;
             [DMLElement(DMLType.INT)] public Int32 ErrorCode;
+            public byte ServiceID { get; } = 7;
         }
         public sealed class MSG_DELETECHARACTER : INetworkMessage
         {
             public byte MessageOrder { get; } = 6;
             [DMLElement(DMLType.GID)] public UInt64 CharID;
+            public byte ServiceID { get; } = 7;
         }
         public sealed class MSG_DELETECHARACTERRESPONSE : INetworkMessage
         {
             public byte MessageOrder { get; } = 7;
             [DMLElement(DMLType.INT)] public Int32 ErrorCode;
+            public byte ServiceID { get; } = 7;
         }
         public sealed class MSG_REQUESTCHARACTERLIST : INetworkMessage
         {
             public byte MessageOrder { get; } = 8;
+            public byte ServiceID { get; } = 7;
         }
         public sealed class MSG_REQUESTSERVERLIST : INetworkMessage
         {
             public byte MessageOrder { get; } = 9;
+            public byte ServiceID { get; } = 7;
         }
         public sealed class MSG_SELECTCHARACTER : INetworkMessage
         {
             public byte MessageOrder { get; } = 10;
             [DMLElement(DMLType.GID)] public UInt64 CharID;
             [DMLElement(DMLType.STR)] public String ServerName;
+            public byte ServiceID { get; } = 7;
         }
         public sealed class MSG_SERVERLIST : INetworkMessage
         {
             public byte MessageOrder { get; } = 11;
+            public byte ServiceID { get; } = 7;
         }
         public sealed class MSG_STARTCHARACTERLIST : INetworkMessage
         {
             public byte MessageOrder { get; } = 12;
             [DMLElement(DMLType.STR)] public String LoginServer;
             [DMLElement(DMLType.INT)] public Int32 PurchasedCharacterSlots;
+            public byte ServiceID { get; } = 7;
         }
         public sealed class MSG_USER_AUTHEN : INetworkMessage
         {
@@ -132,6 +144,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.STR)] public String CRC;
             [DMLElement(DMLType.GID)] public UInt64 MachineID;
             [DMLElement(DMLType.STR)] public String PatchClientID;
+            public byte ServiceID { get; } = 7;
         }
         public sealed class MSG_USER_AUTHEN_RSP : INetworkMessage
         {
@@ -143,6 +156,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.STR)] public String TimeStamp;
             [DMLElement(DMLType.INT)] public Int32 PayingUser;
             [DMLElement(DMLType.INT)] public Int32 Flags;
+            public byte ServiceID { get; } = 7;
         }
         public sealed class MSG_USER_VALIDATE : INetworkMessage
         {
@@ -152,6 +166,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.GID)] public UInt64 MachineID;
             [DMLElement(DMLType.STR)] public String Locale;
             [DMLElement(DMLType.STR)] public String PatchClientID;
+            public byte ServiceID { get; } = 7;
         }
         public sealed class MSG_USER_VALIDATE_RSP : INetworkMessage
         {
@@ -162,27 +177,32 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.STR)] public String TimeStamp;
             [DMLElement(DMLType.INT)] public Int32 PayingUser;
             [DMLElement(DMLType.INT)] public Int32 Flags;
+            public byte ServiceID { get; } = 7;
         }
         public sealed class MSG_DISCONNECT_LOGIN_AFK : INetworkMessage
         {
             public byte MessageOrder { get; } = 17;
             [DMLElement(DMLType.BYT)] public SByte Warning;
+            public byte ServiceID { get; } = 7;
         }
         public sealed class MSG_LOGIN_NOT_AFK : INetworkMessage
         {
             public byte MessageOrder { get; } = 18;
             [DMLElement(DMLType.UINT)] public UInt32 BadgeNameID;
+            public byte ServiceID { get; } = 7;
         }
         public sealed class MSG_LOGINSERVERSHUTDOWN : INetworkMessage
         {
             public byte MessageOrder { get; } = 19;
             [DMLElement(DMLType.UINT)] public UInt32 Message;
+            public byte ServiceID { get; } = 7;
         }
         public sealed class MSG_USER_ADMIT_IND : INetworkMessage
         {
             public byte MessageOrder { get; } = 20;
             [DMLElement(DMLType.INT)] public Int32 Status;
             [DMLElement(DMLType.UINT)] public UInt32 PositionInQueue;
+            public byte ServiceID { get; } = 7;
         }
         public sealed class MSG_WEBCHARACTERINFO : INetworkMessage
         {
@@ -190,6 +210,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 Name;
             [DMLElement(DMLType.INT)] public Int32 Gender;
             [DMLElement(DMLType.INT)] public Int32 School;
+            public byte ServiceID { get; } = 7;
         }
         public sealed class MSG_USER_AUTHEN_V2 : INetworkMessage
         {
@@ -202,12 +223,14 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.GID)] public UInt64 MachineID;
             [DMLElement(DMLType.STR)] public String Locale;
             [DMLElement(DMLType.STR)] public String PatchClientID;
+            public byte ServiceID { get; } = 7;
         }
         public sealed class MSG_SAVECHARACTER : INetworkMessage
         {
             public byte MessageOrder { get; } = 23;
             [DMLElement(DMLType.GID)] public UInt64 CharID;
             [DMLElement(DMLType.UBYT)] public Byte Success;
+            public byte ServiceID { get; } = 7;
         }
         public sealed class MSG_WEB_AUTHEN : INetworkMessage
         {
@@ -218,6 +241,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.STR)] public String DataRevision;
             [DMLElement(DMLType.STR)] public String CRC;
             [DMLElement(DMLType.GID)] public UInt64 MachineID;
+            public byte ServiceID { get; } = 7;
         }
         public sealed class MSG_WEB_VALIDATE : INetworkMessage
         {
@@ -226,6 +250,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.STR)] public String PassKey3;
             [DMLElement(DMLType.GID)] public UInt64 MachineID;
             [DMLElement(DMLType.STR)] public String Locale;
+            public byte ServiceID { get; } = 7;
         }
         public sealed class MSG_CHANGECHARACTERNAME : INetworkMessage
         {
@@ -233,6 +258,7 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.GID)] public UInt64 CharID;
             [DMLElement(DMLType.WSTR)] public String NewName;
             [DMLElement(DMLType.STR)] public String ServerName;
+            public byte ServiceID { get; } = 7;
         }
         public sealed class MSG_USER_AUTHEN_V3 : INetworkMessage
         {
@@ -246,12 +272,14 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.STR)] public String Locale;
             [DMLElement(DMLType.STR)] public String PatchClientID;
             [DMLElement(DMLType.UINT)] public UInt32 IsSteamPatcher;
+            public byte ServiceID { get; } = 7;
         }
         public sealed class MSG_LOGINLOGCHARACTERCREATION : INetworkMessage
         {
             public byte MessageOrder { get; } = 28;
             [DMLElement(DMLType.UINT)] public UInt32 Stage;
             [DMLElement(DMLType.UINT)] public UInt32 Parameter;
+            public byte ServiceID { get; } = 7;
         }
     }
 }

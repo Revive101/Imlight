@@ -48,11 +48,13 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.STR)] public String File;
             [DMLElement(DMLType.UINT)] public UInt32 Line;
             public byte MessageOrder { get; } = 1;
+            public byte ServiceID { get; } = 10;
         }
         public sealed class MSG_ADD_MESSAGE : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String Message;
             public byte MessageOrder { get; } = 2;
+            public byte ServiceID { get; } = 10;
         }
         public sealed class MSG_ADD_PROCESS : INetworkMessage
         {
@@ -62,57 +64,68 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.STR)] public String Name;
             [DMLElement(DMLType.STR)] public String Status;
             public byte MessageOrder { get; } = 3;
+            public byte ServiceID { get; } = 10;
         }
         public sealed class MSG_ADD_WATCH : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String Variable;
             public byte MessageOrder { get; } = 4;
+            public byte ServiceID { get; } = 10;
         }
         public sealed class MSG_ATTACH_PROCESS : INetworkMessage
         {
             [DMLElement(DMLType.UINT)] public UInt32 PID;
             public byte MessageOrder { get; } = 5;
+            public byte ServiceID { get; } = 10;
         }
         public sealed class MSG_BREAK_PROCESS : INetworkMessage
         {
             public byte MessageOrder { get; } = 6;
+            public byte ServiceID { get; } = 10;
         }
         public sealed class MSG_DEL_BREAKPOINT : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String File;
             [DMLElement(DMLType.UINT)] public UInt32 Line;
             public byte MessageOrder { get; } = 7;
+            public byte ServiceID { get; } = 10;
         }
         public sealed class MSG_DEL_WATCH : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String Variable;
             public byte MessageOrder { get; } = 8;
+            public byte ServiceID { get; } = 10;
         }
         public sealed class MSG_DETACH_PROCESS : INetworkMessage
         {
             [DMLElement(DMLType.UINT)] public UInt32 PID;
             public byte MessageOrder { get; } = 9;
+            public byte ServiceID { get; } = 10;
         }
         public sealed class MSG_ENUM_PROCESS : INetworkMessage
         {
             public byte MessageOrder { get; } = 10;
+            public byte ServiceID { get; } = 10;
         }
         public sealed class MSG_KILL_PROCESS : INetworkMessage
         {
             [DMLElement(DMLType.UINT)] public UInt32 PID;
             public byte MessageOrder { get; } = 11;
+            public byte ServiceID { get; } = 10;
         }
         public sealed class MSG_PROCESS_STATE : INetworkMessage
         {
             [DMLElement(DMLType.UINT)] public UInt32 PID;
             [DMLElement(DMLType.STR)] public String State;
             public byte MessageOrder { get; } = 12;
+            public byte ServiceID { get; } = 10;
         }
         public sealed class MSG_PROCESS_STATUS : INetworkMessage
         {
             [DMLElement(DMLType.UINT)] public UInt32 PID;
             [DMLElement(DMLType.STR)] public String Status;
             public byte MessageOrder { get; } = 13;
+            public byte ServiceID { get; } = 10;
         }
         public sealed class MSG_REMOVE_PROCESS : INetworkMessage
         {
@@ -120,20 +133,24 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.STR)] public String Name;
             [DMLElement(DMLType.STR)] public String Status;
             public byte MessageOrder { get; } = 14;
+            public byte ServiceID { get; } = 10;
         }
         public sealed class MSG_RUN_PROCESS : INetworkMessage
         {
             public byte MessageOrder { get; } = 15;
+            public byte ServiceID { get; } = 10;
         }
         public sealed class MSG_SEND_STATE : INetworkMessage
         {
             public byte MessageOrder { get; } = 16;
+            public byte ServiceID { get; } = 10;
         }
         public sealed class MSG_SET_VARIABLE : INetworkMessage
         {
             [DMLElement(DMLType.STR)] public String Variable;
             [DMLElement(DMLType.STR)] public String Value;
             public byte MessageOrder { get; } = 17;
+            public byte ServiceID { get; } = 10;
         }
         public sealed class MSG_START_PROCESS : INetworkMessage
         {
@@ -143,14 +160,17 @@ namespace Imlight.Internals.DML
             [DMLElement(DMLType.INT)] public Int32 StartAttached;
             [DMLElement(DMLType.INT)] public Int32 StartRunning;
             public byte MessageOrder { get; } = 18;
+            public byte ServiceID { get; } = 10;
         }
         public sealed class MSG_STEPOVER_PROCESS : INetworkMessage
         {
             public byte MessageOrder { get; } = 19;
+            public byte ServiceID { get; } = 10;
         }
         public sealed class MSG_STEP_PROCESS : INetworkMessage
         {
             public byte MessageOrder { get; } = 20;
+            public byte ServiceID { get; } = 10;
         }
     }
 }

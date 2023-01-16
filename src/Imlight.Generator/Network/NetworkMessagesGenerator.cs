@@ -11,7 +11,7 @@ using Imlight.Common;
 
 namespace Imlight.Generator.Network
 {
-    internal static class NetworkMessagesGenerator
+    internal class NetworkMessagesGenerator
     {
 
         private static readonly string _outputPath = $"{Directory.GetCurrentDirectory()}/output";
@@ -59,8 +59,16 @@ namespace Imlight.Generator.Network
             { "DBL",    (typeof(double),  DMLType.DBL)   },
             { "GID",    (typeof(ulong),   DMLType.GID)   },
         };
+        private readonly GeneratorOptions _generatorOptions;
 
-        internal static void Generate(GeneratorOptions generatorOptions)
+        // ctor
+        internal NetworkMessagesGenerator(GeneratorOptions options)
+        {
+            this._generatorOptions = options;
+            Log.Logger.Information("NetworkMessagesGenerator created.");
+        }
+
+        internal void Generate()
         {
             Log.Logger.Information("Starting Network message generation..");
 
@@ -82,13 +90,13 @@ namespace Imlight.Generator.Network
                 XmlDocument xmlDoc = new XmlDocument();
                 xmlDoc.Load(path);
 
-                CodeCompileUnit compileUnit = CreateProtocolClassFromXml(xmlDoc, generatorOptions, out var protocolName);
+                CodeCompileUnit compileUnit = CreateProtocolClassFromXml(xmlDoc, out var protocolName);
                 CodeDomProvider domProvider = CodeDomProvider.CreateProvider("CSharp");
                 string outputPath = $"{GetOrCreateOutputDirectory()}/{protocolName}.cs";
                 CodeGeneratorOptions options = new CodeGeneratorOptions()
                 {
-                    BracingStyle = generatorOptions.CurlyBraceNewline ? "C" : "Block",
-                    IndentString = generatorOptions.IndentString,
+                    BracingStyle = _generatorOptions.CurlyBraceNewline ? "C" : "Block",
+                    IndentString = _generatorOptions.IndentString,
                     ElseOnClosing = false,
                 };
                 using (StreamWriter writer = new StreamWriter(outputPath))
@@ -96,7 +104,7 @@ namespace Imlight.Generator.Network
                     domProvider.GenerateCodeFromCompileUnit(compileUnit, writer, options);
                 }
 
-                if (generatorOptions.ClearEmptyLines)
+                if (_generatorOptions.ClearEmptyLines)
                     File.WriteAllLines(outputPath, File.ReadAllLines(outputPath).Where(l => !string.IsNullOrWhiteSpace(l)));
 
                 Log.Logger.Information($"Class {protocolName}.cs generated!");
@@ -107,9 +115,9 @@ namespace Imlight.Generator.Network
                 "before committing them to a project.");
         }
 
-        private static CodeCompileUnit CreateProtocolClassFromXml(XmlDocument xmlDoc,
-                                                                  GeneratorOptions generatorOptions,
-                                                                  out string protocolName)
+        private CodeCompileUnit CreateProtocolClassFromXml(
+            XmlDocument xmlDoc, 
+            out string protocolName)
         {
             if (xmlDoc is null) throw new ArgumentNullException(nameof(xmlDoc));
             protocolName = default;
@@ -182,7 +190,7 @@ namespace Imlight.Generator.Network
                 : recordsList.Cast<XmlNode>().ToArray();
 
             // Finally, add the record sub-classes to the protocol class.
-            AddRecordClassesToProtocol(ref codeClass, properUsingList, generatorOptions);
+            AddRecordClassesToProtocol(ref codeClass, properUsingList, serviceID);
 
             // Add together.
             compileUnit.Namespaces.Add(codeNamespace);
@@ -191,9 +199,10 @@ namespace Imlight.Generator.Network
             return compileUnit;
         }
 
-        private static void AddRecordClassesToProtocol(ref CodeTypeDeclaration r_protocolClass,
-                                                       XmlNode[] recordsSortedList,
-                                                       GeneratorOptions generatorOptions)
+        private void AddRecordClassesToProtocol(
+            ref CodeTypeDeclaration r_protocolClass,
+            XmlNode[] recordsSortedList,
+            byte serviceId)
         {
             // There are some duplicate records. It memory, only the first instance is regarded. The others simply arent loaded.
             HashSet<string> seenValues = new HashSet<string>();
@@ -239,22 +248,22 @@ namespace Imlight.Generator.Network
                         switch (element.Name)
                         {
                             case "_MsgName":
-                                if (!generatorOptions.Verbose) break;
+                                if (!_generatorOptions.Verbose) break;
                                 var nameProp = CreateGenericPropertrySnippet($"            public const string Name = \"{element.InnerText}\";");
                                 codeRecordClass.Members.Add(nameProp);
                                 break;
                             case "_MsgDescription":
-                                if (!generatorOptions.Verbose) break;
+                                if (!_generatorOptions.Verbose) break;
                                 var descProp = CreateGenericPropertrySnippet($"            public const string Description = \"{element.InnerText}\";");
                                 codeRecordClass.Members.Add(descProp);
                                 break;
                             case "_MsgHandler":
-                                if (!generatorOptions.Verbose) break;
+                                if (!_generatorOptions.Verbose) break;
                                 var handProp = CreateGenericPropertrySnippet($"            public const string Handler = \"{element.InnerText}\";");
                                 codeRecordClass.Members.Add(handProp);
                                 break;
                             case "_MsgAccessLvl":
-                                if (!generatorOptions.Verbose) break;
+                                if (!_generatorOptions.Verbose) break;
                                 var levlProp = CreateGenericPropertrySnippet($"            public const byte AccessLevel = {element.InnerText};");
                                 codeRecordClass.Members.Add(levlProp);
                                 msgLvlExists = true;
@@ -288,12 +297,16 @@ namespace Imlight.Generator.Network
                     var typeProp = CreateGenericPropertrySnippet($"            public byte MessageOrder {{ get; }} = {index};");
                     codeRecordClass.Members.Add(typeProp);
                 }
-                if (generatorOptions.Verbose && !msgLvlExists)
+                if (_generatorOptions.Verbose && !msgLvlExists)
                 {
                     // If the access level metadata node doesn't exist, it's safe to assume that a client of any authority can call.
                     var levlProp = CreateGenericPropertrySnippet("            public const byte AccessLevel = 0;");
                     codeRecordClass.Members.Add(levlProp);
                 }
+
+                // Create ServiceID property for INetworkMessage interface.
+                var svcidProp = CreateGenericPropertrySnippet($"            public byte ServiceID {{ get; }} = {serviceId};");
+                codeRecordClass.Members.Add(svcidProp);
 
                 createdClasses.Add((byte)index, recordXmlBase.Name);
 
@@ -302,10 +315,12 @@ namespace Imlight.Generator.Network
             }
 
             // Create dispatcher method.
-            CreateDispatcherMethod(ref r_protocolClass, ref createdClasses, generatorOptions);
+            CreateDispatcherMethod(ref r_protocolClass, ref createdClasses);
         }
 
-        private static void CreateDispatcherMethod(ref CodeTypeDeclaration r_protocolClass, ref Dictionary<byte, string> r_classes, GeneratorOptions options)
+        private void CreateDispatcherMethod(
+            ref CodeTypeDeclaration r_protocolClass, 
+            ref Dictionary<byte, string> r_classes)
         {
             /*
              * End goal is to create a Dispatch method that looks something along the lines of this.
@@ -332,7 +347,7 @@ namespace Imlight.Generator.Network
 
             // Start by writing the method itself
             // I do not know why, but the indentation does not apply to the first line. The tabs must be literal.
-            if (options.CurlyBraceNewline)
+            if (_generatorOptions.CurlyBraceNewline)
             {
                 tw.WriteLine($"        public {nameof(INetworkMessage)} Dispatch(byte id)");
                 tw.WriteLine("{");
