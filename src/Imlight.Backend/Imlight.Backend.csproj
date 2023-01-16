@@ -15,7 +15,6 @@
     <ProjectReference Include="..\Imlight.Generator\Imlight.Generator.csproj" />
     <ProjectReference Include="..\Imlight.Internals\Imlight.Internals.csproj" />
     <ProjectReference Include="..\Imlight.IO\Imlight.IO.csproj" />
-    <ProjectReference Include="..\Imlight.Realm\Imlight.Realm.csproj" />
   </ItemGroup>
 
 </Project>
