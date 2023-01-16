@@ -5,6 +5,8 @@ using System.Net.Sockets;
 using System.Collections.Specialized;
 using Imlight.Common;
 using Imlight.Common.Logger;
+using Imlight.Internals;
+using Imlight.IO;
 
 namespace Imlight.Engine
 {
@@ -58,9 +60,10 @@ namespace Imlight.Engine
             // Starting from here though, it's nothing but a byte stream. It needs to be deserialized first.
 
             // Deserialize into a DMLRecord object.
+            //@TODO: Change this to process all new items rather than just the first.
             var workingItem = (WizardMessageContext)e.NewItems[0];
             var buffer = workingItem.KIPacketBuffer;
-
+            INetworkMessage message = Serializer.DeserializeMessageBinary(buffer);
 
         }
 

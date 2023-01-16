@@ -29,7 +29,7 @@ namespace Imlight.IO
             { DMLType.GID, 8 }
         };
 
-        public static INetworkMessage DeserializeBinary(byte[] binaryBuffer)
+        public static INetworkMessage DeserializeMessageBinary(byte[] binaryBuffer)
         {
             if (binaryBuffer is null) throw new ArgumentNullException(nameof(binaryBuffer));
             if (binaryBuffer.Length <= 0) throw new ArgumentOutOfRangeException(nameof(binaryBuffer));
@@ -47,9 +47,9 @@ namespace Imlight.IO
             // Data messages have a secondary header to indicate service ID and message ID.
             byte svcid = (isControl ? (byte)0 : reader.ReadByte());
             byte msgid = (isControl ? opCode : reader.ReadByte());
-            if (!isControl) reader.ReadUInt16();
+            if (!isControl) reader.ReadUInt16(); // Read DML length
 
-            // Dispatch to the corresponding protocol.
+            // Dispatch to the corresponding protocol and find message record.
             INetworkProtocol protocol = ProtocolDispatcher.Dispatch(svcid);
             INetworkMessage message = protocol?.Dispatch(msgid);
             if (protocol is null || message is null) return null;
@@ -115,6 +115,58 @@ namespace Imlight.IO
             }
 
             return message;
+        }
+
+        public static uint HashString(string input)
+        {
+            int result = 0;
+
+            var shift1 = 0;
+            var shift2 = 32;
+            foreach (char c in input)
+            {
+                var cb = (byte)c;
+
+                result ^= (cb - 32) << shift1;
+
+                if (shift1 > 24)
+                {
+                    result ^= (cb - 32) >> shift2;
+                    if (shift1 >= 27)
+                    {
+                        shift1 -= 32;
+                        shift2 += 32;
+                    }
+                }
+                shift1 += 5;
+                shift2 -= 5;
+            }
+
+            if (result < 0)
+                result = -result;
+
+            return (uint)result;
+        }
+        
+        public static uint HashPropertyName(string name, string type)
+        {
+            uint typeHash = HashString(type);
+            var propHash = Djb2Hash(name) & 0x7FFF_FFFF;
+
+            // MSB drop
+            return (typeHash + propHash) & 0xFFFF_FFFF;
+        }
+        
+        public static uint Djb2Hash(string str)
+        {
+            uint hash = 5381;
+
+            for (int i = 0; i < str.Length; i++)
+            {
+                hash = ((hash << 5) + hash) + ((byte)str[(int)i]);
+            }
+
+            return hash;
         }
 
         private static bool DoesRecordFitBounds(long byteCount, IEnumerable<FieldInfo> recordFields)
