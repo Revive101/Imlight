@@ -9,6 +9,9 @@ namespace Imlight.Common
     public static class RandomGen
     {
 
+        private const string RANDOM_STRING_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        private static readonly Random s_random = new Random();
+
         /// <summary>
         /// Caches the min and max value for generic numerical values.
         /// </summary>
@@ -30,10 +33,31 @@ namespace Imlight.Common
             Int32 minVal = Convert.ToInt32(MinValue<T>());
             Int32 maxVal = Convert.ToInt32(MaxValue<T>());
 
+            // Instantiate a random number between the min and max values.
+            // Use absolute value to convert to a positive value.
             var r = new Random();
-            Int32 num = r.Next(minVal, maxVal);
+            Int32 num = Math.Abs(r.Next(minVal, maxVal));
 
             return (T)Convert.ChangeType(num, typeof(T));
+        }
+
+        /// <summary>
+        /// Generates a random string. This is unsuitable for anything security related.
+        /// </summary>
+        /// <param name="stringLength">The length of the string generated.</param>
+        /// <returns>A randomly generated string of length.</returns>
+        public static string String(int stringLength)
+        {
+            if (stringLength <= 0) 
+                throw new ArgumentOutOfRangeException($"{nameof(stringLength)} cannot be lower than zero!");
+
+            char[] buffer = new char[stringLength];
+            for (int i = 0; i < stringLength; i++)
+            {
+                buffer[i] = RANDOM_STRING_CHARS[s_random.Next(RANDOM_STRING_CHARS.Length)];
+            }
+
+            return new string(buffer);
         }
 
         private static T MinValue<T>() where T : struct, IComparable<T>

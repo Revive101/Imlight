@@ -5,13 +5,17 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="RandomGen.cs~RF5e47f5a.TMP" />
+    <ProjectReference Include="..\Imlight.Common\Imlight.Common.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Serilog" Version="2.12.0" />
-    <PackageReference Include="Serilog.Sinks.Console" Version="4.1.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
+    <PackageReference Include="SharpDX.Mathematics" Version="4.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Types\Generated\" />
   </ItemGroup>
 
 </Project>
