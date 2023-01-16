@@ -8,4 +8,12 @@
     <ProjectReference Include="..\Imlight.Common\Imlight.Common.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Types\Generated\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SharpDX.Mathematics" Version="4.2.0" />
+  </ItemGroup>
+
 </Project>
