@@ -28,7 +28,116 @@ namespace Imlight.IO
             { DMLType.DBL, 8 },
             { DMLType.GID, 8 }
         };
+        private static readonly IReadOnlyDictionary<DMLType, Func<KiNPBinaryReader, object>> _dmlReaders
+            = new Dictionary<DMLType, Func<KiNPBinaryReader, object>>()
+        {
+            { DMLType.BYT, (r)   => r.ReadSByte()       },
+            { DMLType.UBYT, (r)  => r.ReadByte()        },
+            { DMLType.SHRT, (r)  => r.ReadInt16()       },
+            { DMLType.USHRT, (r) => r.ReadUInt16()      },
+            { DMLType.INT, (r)   => r.ReadInt32()       },
+            { DMLType.UINT, (r)  => r.ReadUInt32()      },
+            { DMLType.STR, (r)   => r.ReadSmallString() },
+            { DMLType.WSTR, (r)  => r.ReadString()      },
+            { DMLType.FLT, (r)   => r.ReadSingle()      },
+            { DMLType.DBL, (r)   => r.ReadDouble()      },
+            { DMLType.GID, (r)   => r.ReadUInt64()      },
+        };
+        private static readonly IReadOnlyDictionary<DMLType, Action<KiNPBinaryWriter, object>> _dmlWriters
+            = new Dictionary<DMLType, Action<KiNPBinaryWriter, object>>()
+        {
+            { DMLType.BYT,   (r, v)   => r.WriteSBYT((sbyte)v)   },
+            { DMLType.UBYT,  (r, v)   => r.WriteBYT((byte)v)     },
+            { DMLType.SHRT,  (r, v)   => r.WriteSHRT((short)v)   },
+            { DMLType.USHRT, (r, v)   => r.WriteUSHRT((ushort)v) },
+            { DMLType.INT,   (r, v)   => r.WriteINT((int)v)      },
+            { DMLType.UINT,  (r, v)   => r.WriteUINT((uint)v)    },
+            { DMLType.STR,   (r, v)   => r.WriteSTR((string)v)   },
+            { DMLType.WSTR,  (r, v)   => r.WriteWSTR((string)v)  },
+            { DMLType.FLT,   (r, v)   => r.WriteFLT((float)v)    },
+            { DMLType.DBL,   (r, v)   => r.WriteDBL((double)v)   },
+            { DMLType.GID,   (r, v)   => r.WriteGID((ulong)v)    },
+        };
 
+        /// <summary>
+        /// Serialize a INetworkMessage class into a binary stream to send to a Wizard101 client.
+        /// </summary>
+        /// <param name="message"></param>
+        public static byte[] SerializeMessageBinary(INetworkMessage message)
+        {
+            // For this, we'll iterate through the DML elements, writing to a binarybuffer as we go.
+            // Once we have all the elements, we can craft the header.
+
+            var elements = message.GetType().GetFields()
+                .Where(f => f.IsDefined(typeof(DMLElementAttribute), false));
+            var writer = new KiNPBinaryWriter();
+
+            foreach (var element in elements)
+            {
+                // Get DMLElement attribute from this property.
+                var dmlType = GetDmlTypeFromAttr(element);
+
+                _dmlWriters[dmlType].Invoke(writer, element.GetValue(element));
+            }
+
+            // Now that all the elements have been defined, we can craft the header.
+            // Refer to docs: https://w101r.github.io/rewritten-docs/documentation/KINP/packet-framing/
+
+            var bytes = writer.GetBytes();
+
+            // Write first packet header.
+            using var headerWriter = new KiNPBinaryWriter();
+            headerWriter.WriteMagicHeader();
+            // Write large header or small header, depending on the size of the payload.
+            // The +9 comes from the body header itself, and the trailing null byte.
+            bool isLongPacket = bytes.Length > 0x777F;
+            headerWriter.WriteUSHRT((ushort)(isLongPacket ? 0x8000 : bytes.Length + 9));
+            if (isLongPacket)
+            {
+                headerWriter.WriteUINT((uint)bytes.Length);
+            }
+
+            // Write body header
+            var isControl = message.ServiceID == 0;
+            headerWriter.WriteBYT((byte)(isControl ? 1 : 0));                 // isControl
+            headerWriter.WriteBYT((byte)(isControl ? message.ServiceID : 0)); // opCode
+            headerWriter.WriteUSHRT(0);                                       // Padding
+            var headerBytes = headerWriter.GetBytes();
+            if (isControl)
+            {
+                // If this is a control message, we can simply craft the whole packet and return;
+                var packet = new byte[bytes.Length + headerBytes.Length + 1];
+                headerBytes.CopyTo(packet, 0);
+                bytes.CopyTo(packet, headerBytes.Length);
+
+                return packet;
+            }
+            else
+            {
+                // However, DML messages require a secondary header to be built.
+                var dmlHeaderWriter = new KiNPBinaryWriter();
+                dmlHeaderWriter.WriteBYT(message.ServiceID);
+                dmlHeaderWriter.WriteBYT((byte)(message.MessageOrder - 1));
+                dmlHeaderWriter.WriteUSHRT((ushort)(bytes.Length));
+
+                var dmlHeaderBytes = dmlHeaderWriter.GetBytes();
+                var packet = new byte[bytes.Length + dmlHeaderBytes.Length + headerBytes.Length + 1];
+                headerBytes.CopyTo(packet, 0);
+                dmlHeaderBytes.CopyTo(packet, headerBytes.Length);
+                bytes.CopyTo(packet, headerBytes.Length + dmlHeaderBytes.Length);
+
+                return packet;
+            }
+        }
+
+        /// <summary>
+        /// Deserializes an incoming Wizard101 packet to a INetworkObject.
+        /// </summary>
+        /// <param name="binaryBuffer">The binary buffer from a packet.</param>
+        /// <returns>An InetworkMessage object.</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="InvalidOperationException"></exception>
         public static INetworkMessage DeserializeMessageBinary(byte[] binaryBuffer)
         {
             if (binaryBuffer is null) throw new ArgumentNullException(nameof(binaryBuffer));
@@ -63,52 +172,15 @@ namespace Imlight.IO
             // Simply check how many fields there are in the record and compare them to the bytes we still have left.
             // The reason we don't use the DML payload length is to let this be ambigous between DML and control messages.
             var bytesLeft = reader.BaseStream.Length - reader.BaseStream.Position;
-            if (!DoesRecordFitBounds(bytesLeft, recordFields))
+            if (!DoesRecordFitBounds(bytesLeft, message))
                 throw new InvalidOperationException("Incorrect record! Record fields does not fit in the bounds of the binary buffer.");
 
             // Iterate through the record fields and read the appropriate type from the binary buffer.
             foreach (var field in recordFields)
             {
-                // Get the DMLType from the attribute.
-                DMLElementAttribute dmlElement = field.GetCustomAttributes(typeof(DMLElementAttribute), false)
-                    .Cast<DMLElementAttribute>()
-                    .ToArray()[0];
-
-                // This is a lazy solution.
-                switch (dmlElement.SerializedType)
-                {
-                    case DMLType.BYT:
-                        field.SetValue(message, reader.ReadSByte());
-                        break;
-                    case DMLType.UBYT:
-                        field.SetValue(message, reader.ReadByte());
-                        break;
-                    case DMLType.SHRT:
-                        field.SetValue(message, reader.ReadInt16());
-                        break;
-                    case DMLType.USHRT:
-                        field.SetValue(message, reader.ReadUInt16());
-                        break;
-                    case DMLType.INT:
-                        field.SetValue(message, reader.ReadInt32());
-                        break;
-                    case DMLType.UINT:
-                        field.SetValue(message, reader.ReadUInt32());
-                        break;
-                    case DMLType.STR:
-                    case DMLType.WSTR:
-                        field.SetValue(message, reader.ReadString());
-                        break;
-                    case DMLType.FLT:
-                        field.SetValue(message, reader.ReadSingle());
-                        break;
-                    case DMLType.DBL:
-                        field.SetValue(message, reader.ReadDouble());
-                        break;
-                    case DMLType.GID:
-                        field.SetValue(message, reader.ReadUInt64());
-                        break;
-                }
+                var dmlType = GetDmlTypeFromAttr(field);
+                var val = _dmlReaders[dmlType](reader);
+                field.SetValue(message, val);
             }
 
             return message;
@@ -166,31 +238,50 @@ namespace Imlight.IO
             return hash;
         }
 
-        private static bool DoesRecordFitBounds(long byteCount, IEnumerable<FieldInfo> recordFields)
+        private static bool DoesRecordFitBounds(long byteCount, INetworkMessage message)
         {
             int currentCount = 0;
-            foreach (FieldInfo field in recordFields)
+            var messageFields = GetDmlElementsFromMessage(message);
+            foreach (var field in messageFields)
             {
-                // Get the DMLType from the attribute.
-                DMLElementAttribute[] dmlElements = field.GetCustomAttributes(typeof(DMLElementAttribute), false)
-                    .Cast<DMLElementAttribute>()
-                    .ToArray();
-                if (dmlElements.Length <= 0) continue; // This is a metadata field.
-
-                // Grab the DML type from the first (and only) DMLElement attribute.
-                // Find it's size value in the dictionary and add it to the total.
-                DMLType dmlType = dmlElements[0].SerializedType;
-                if (_dmlTypeSize.TryGetValue(dmlType, out var len))
-                {
-                    currentCount += len;
-                }
-                else
-                {
-                    throw new Exception($"Type of [{dmlType}] was not found in the size dictionary!");
-                }
+                currentCount += GetDmlTypeSize(field.SerializedType);
             }
 
             return currentCount <= byteCount;
+        }
+
+        private static IEnumerable<DMLElementAttribute> GetDmlElementsFromMessage(INetworkMessage message)
+        {
+            return message.GetType().GetFields()
+                .Where(f => f.IsDefined(typeof(DMLElementAttribute), false))
+                .Cast<DMLElementAttribute>();
+        } 
+
+        private static DMLType GetDmlTypeFromAttr(FieldInfo field)
+        {
+            // Get the DMLType from the attribute.
+            DMLElementAttribute[] dmlElements = field.GetCustomAttributes(typeof(DMLElementAttribute), false)
+                .Cast<DMLElementAttribute>()
+                .ToArray();
+            if (dmlElements.Count() == 0)
+            {
+                Log.Logger.Error($"Attempted to get DMLField attribute from [{field.Name}], but it did not contain one. Returning 0 size.");
+                return 0;
+            }
+            if (dmlElements.Count() > 1)
+            {
+                Log.Logger.Error($"DMLField [{field.Name}] contained duplicate attributes!");
+            }
+
+            return dmlElements[0].SerializedType;
+        }
+
+        private static byte GetDmlTypeSize(DMLType type)
+        {
+            if (!_dmlTypeSize.TryGetValue(type, out var size))
+                throw new Exception($"Could not get size for DMLType [{type.ToString()}].");
+
+            return size;
         }
 
     }

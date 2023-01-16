@@ -8,6 +8,7 @@ using System.Net.Sockets;
 using System.IO;
 using Imlight.IO;
 using Imlight.Common;
+using Imlight.Internals;
 
 namespace Imlight.Realm
 {
@@ -83,6 +84,21 @@ namespace Imlight.Realm
 
                 SendPacketToEngine(wizardBuffer);
             }
+        }
+
+        private async Task SendAsync(INetworkMessage message)
+        {
+            if (!IsOpen)
+            {
+                Log.Logger.Error("Cannot send a packet on an unopened socket!");
+                return;
+            }
+
+            var deserializedMessage = Serializer.SerializeMessageBinary(message);
+
+            var stream = _client.GetStream();
+            await stream.WriteAsync(deserializedMessage);
+            await stream.FlushAsync();
         }
 
         private byte[] CreateKiNPBuffer(byte[] rawPacket)

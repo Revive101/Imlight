@@ -28,7 +28,7 @@ namespace Imlight.Engine
             this._name = RandomGen.String(5);
 
             // Subscribe to events
-            InternalWorkload.CollectionChanged += InternalWorkload_CollectionChanged;
+            InternalWorkload.CollectionChanged += WorkOnData;
 
             // Log completion
             Log.Logger.Information($"Startup for processor [{this._name}] complete.");
@@ -53,13 +53,13 @@ namespace Imlight.Engine
             }
         }
 
-        private void InternalWorkload_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        private void WorkOnData(object sender, NotifyCollectionChangedEventArgs e)
         {
             // If there is work in the workload pool, it's already verified as a KI packet.
             // Starting from here though, it's nothing but a byte stream. It needs to be deserialized first.
 
             // Deserialize into a DMLRecord object.
-            //@TODO: Change this to process all new items rather than just the first.
+            // @TODO: Change this to process all new items rather than just the first.
             var workingItem = (WizardMessageContext)e.NewItems[0];
             var buffer = workingItem.KIPacketBuffer;
             INetworkMessage message = Serializer.DeserializeMessageBinary(buffer);
