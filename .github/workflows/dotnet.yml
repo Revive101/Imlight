@@ -13,6 +13,11 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    env:
+      working-directory: ./src
+    defaults:
+      run:
+        working-directory: ${{ env.working-directory }}
 
     steps:
     - uses: actions/checkout@v3
