@@ -5,10 +5,6 @@ VisualStudioVersion = 17.0.32112.339
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.Common", "Imlight.Common\Imlight.Common.csproj", "{314D6BF8-787D-4A08-AD12-E0BC073E6CC8}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test", "Test", "{E7172CF7-A7D5-4F3C-84AC-6A308D096F98}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.Test", "..\test\Imlight.Common.Tests\Imlight.Test.csproj", "{097BD834-8802-4EA1-A418-9BFA583573DF}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.Generator", "Imlight.Generator\Imlight.Generator.csproj", "{AB7D502A-0728-4793-B4DB-F9E9DDEEA156}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.Internals", "Imlight.Internals\Imlight.Internals.csproj", "{9FE46342-DBBF-4B7F-956D-00AA53A432FF}"
@@ -31,10 +27,6 @@ Global
 		{314D6BF8-787D-4A08-AD12-E0BC073E6CC8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{314D6BF8-787D-4A08-AD12-E0BC073E6CC8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{314D6BF8-787D-4A08-AD12-E0BC073E6CC8}.Release|Any CPU.Build.0 = Release|Any CPU
-		{097BD834-8802-4EA1-A418-9BFA583573DF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{097BD834-8802-4EA1-A418-9BFA583573DF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{097BD834-8802-4EA1-A418-9BFA583573DF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{097BD834-8802-4EA1-A418-9BFA583573DF}.Release|Any CPU.Build.0 = Release|Any CPU
 		{AB7D502A-0728-4793-B4DB-F9E9DDEEA156}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{AB7D502A-0728-4793-B4DB-F9E9DDEEA156}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AB7D502A-0728-4793-B4DB-F9E9DDEEA156}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -62,9 +54,6 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{097BD834-8802-4EA1-A418-9BFA583573DF} = {E7172CF7-A7D5-4F3C-84AC-6A308D096F98}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C09017F4-03AE-4C11-B057-D60D20FA893D}
