@@ -9,13 +9,15 @@ using System.IO;
 using Imlight.IO;
 using Imlight.Common;
 using Imlight.Internals;
+using System.Buffers;
+using System.Threading;
 
 namespace Imlight.Realm
 {
     internal class KISocket : IDisposable
     {
 
-        private const ushort BUFFER_SIZE = 4096;
+        private const int BUFFER_SIZE = 4096;
         private const bool DISPOSE_ON_UNHANDLED_EXCEPTION = true;
 
         internal short ID { get; private set; }
@@ -23,28 +25,26 @@ namespace Imlight.Realm
 
         private readonly TcpServer _server;
         private readonly TcpClient _client;
-        private readonly byte[] _buffer;
+        private readonly SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1);
 
         // ctor
         public KISocket(TcpServer server, TcpClient client)
         {
             this._server = server;
             this._client = client;
-            this._buffer = new byte[BUFFER_SIZE];
-            this.ID = Common.RandomGen.SignedNumber<short>();
+            this.ID = RandomGen.SignedNumber<short>();
 
             IsOpen = false;
         }
 
-        internal void OpenListen()
+        internal async Task OpenListenAsync()
         {
             IsOpen = true;
-
             while (IsOpen)
             {
                 try
                 {
-                    Listen();
+                    await ListenAsync();
                 }
                 catch (IOException)
                 {
@@ -63,26 +63,31 @@ namespace Imlight.Realm
 
         internal void Close() => this.IsOpen = false;
 
-        private void Listen()
+        private async Task ListenAsync()
         {
             if (!IsOpen) return;
 
             using var stream = _client.GetStream();
+            var buffer = ArrayPool<byte>.Shared.Rent(BUFFER_SIZE);
 
-            // Loop through all incoming data
-            int i;
-            while ((i = stream.Read(_buffer, 0, _buffer.Length)) != 0 && IsOpen)
+            try
             {
-                // Translate data bytes to a ASCII string for logging.
-                string data = Encoding.ASCII.GetString(_buffer, 0, i);
-                Log.Logger.Verbose($"Received data from socket ID [{ID}]: {data}");
+                while (IsOpen)
+                {
+                    int bytesRead = await stream.ReadAsync(buffer);
+                    if (bytesRead == 0) break;
 
-                if (!KiNPBinaryReader.IsKiNPPacket(_buffer)) continue;
+                    var data = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                    Log.Logger.Verbose($"Received data from socket ID [{ID}]: {data}");
 
-                // Trim unnecessary data.
-                byte[] wizardBuffer = CreateKiNPBuffer(_buffer);
+                    if (!IsKIPacket(buffer)) continue;
 
-                SendPacketToEngine(wizardBuffer);
+                    SendPacketToEngine(buffer);
+                }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
             }
         }
 
@@ -94,54 +99,18 @@ namespace Imlight.Realm
                 return;
             }
 
-            var deserializedMessage = Serializer.SerializeMessageBinary(message);
-
-            var stream = _client.GetStream();
-            await stream.WriteAsync(deserializedMessage);
-            await stream.FlushAsync();
-        }
-
-        private byte[] CreateKiNPBuffer(byte[] rawPacket)
-        {
-            // The original NetworkStream packet is put into a buffer of arbitrary length.
-            // This is sometimes way more data than necessary. This method exists to shorten the raw
-            // packet into a more appropriate size.
-
-            Stream stream = new MemoryStream(rawPacket);
-            BinaryReader reader = new BinaryReader(stream);
-
-            // Skip KINP packet header.
-            reader.BaseStream.Position += 2;
-
-            byte[] wizardPacket;
-
-            // The next part is the length, which changes sizes depending on the size of this packet.
-            // If the packet is over the size of a uint_16, the following 4 bytes will be a uint_32, which is the actual length.
-            UInt16 size = reader.ReadUInt16();
-            if (size < 0x777F)
+            await _semaphoreSlim.WaitAsync();
+            try
             {
-                // This is a small packet.
-                // The +4 comes from the packet header itself, which is not included in the size bytes.
-                wizardPacket = new byte[size + 4];
-
-                // Copy the raw packet into the shiny new packet. Skip the 4 original bytes as that data is no longer necessary.
-                Array.Copy(rawPacket, 0, wizardPacket, 0, size);
+                var deserializedMessage = MessageSerializer.SerializeMessageBinary(message);
+                var stream = _client.GetStream();
+                await stream.WriteAsync(deserializedMessage);
+                await stream.FlushAsync();
             }
-            else
+            finally
             {
-                // This is a large packet.
-                // The +4 comes from the packet header itself, which is not included in the size bytes.
-                UInt32 bigSize = reader.ReadUInt32();
-                wizardPacket = new byte[bigSize + 4];
-
-                // Copy the raw packet into the shiny new packet. Skip the 8 original bytes as that data is no longer necessary.
-                Array.Copy(rawPacket, 0, wizardPacket, 0, bigSize);
+                _semaphoreSlim.Release();
             }
-
-            stream.Dispose();
-            reader.Dispose();
-
-            return wizardPacket;
         }
 
         private void SendPacketToEngine(byte[] packet)
@@ -151,6 +120,9 @@ namespace Imlight.Realm
             Engine.WizardMessageContext context = new(packet, realmId, ID);
             Engine.WorkloadPool.Enqueue(context);
         }
+
+        private bool IsKIPacket(byte[] buffer)
+            => (buffer.AsSpan()[0..2].SequenceEqual(stackalloc byte[2] { 0x0D, 0xF0 }));
 
         // dtor
         ~KISocket()
@@ -163,10 +135,8 @@ namespace Imlight.Realm
             IsOpen = false;
             _client.GetStream().Close();
             _client.Close();
-
             // Remove this object from the TCP server it's a part of.
             _server.Sockets.Remove(this);
-
             GC.SuppressFinalize(this);
         }
 
