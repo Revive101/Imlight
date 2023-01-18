@@ -11,7 +11,7 @@ using Imlight.Common;
 
 namespace Imlight.IO
 {
-    public static class Serializer
+    public static class MessageSerializer
     {
 
         private static readonly IReadOnlyDictionary<DMLType, byte> _dmlTypeSize = new Dictionary<DMLType, byte>()
@@ -28,35 +28,35 @@ namespace Imlight.IO
             { DMLType.DBL, 8 },
             { DMLType.GID, 8 }
         };
-        private static readonly IReadOnlyDictionary<DMLType, Func<KiNPBinaryReader, object>> _dmlReaders
-            = new Dictionary<DMLType, Func<KiNPBinaryReader, object>>()
+        private static readonly IReadOnlyDictionary<DMLType, Func<BitBuffer, object>> _dmlReaders
+            = new Dictionary<DMLType, Func<BitBuffer, object>>()
         {
-            { DMLType.BYT, (r)   => r.ReadSByte()       },
-            { DMLType.UBYT, (r)  => r.ReadByte()        },
-            { DMLType.SHRT, (r)  => r.ReadInt16()       },
-            { DMLType.USHRT, (r) => r.ReadUInt16()      },
-            { DMLType.INT, (r)   => r.ReadInt32()       },
-            { DMLType.UINT, (r)  => r.ReadUInt32()      },
-            { DMLType.STR, (r)   => r.ReadSmallString() },
-            { DMLType.WSTR, (r)  => r.ReadString()      },
-            { DMLType.FLT, (r)   => r.ReadSingle()      },
-            { DMLType.DBL, (r)   => r.ReadDouble()      },
-            { DMLType.GID, (r)   => r.ReadUInt64()      },
+            { DMLType.BYT,   (r)   => r.ReadUInt8()      },
+            { DMLType.UBYT,  (r)   => r.ReadInt8()      },
+            { DMLType.SHRT,  (r)   => r.ReadInt16()       },
+            { DMLType.USHRT, (r)   => r.ReadUInt16()      },
+            { DMLType.INT,   (r)   => r.ReadInt32()       },
+            { DMLType.UINT,  (r)   => r.ReadUInt32()      },
+            { DMLType.STR,   (r)   => r.ReadString() },
+            { DMLType.WSTR,  (r)   => r.ReadCString()      },
+            { DMLType.FLT,   (r)   => r.ReadFloat()      },
+            { DMLType.DBL,   (r)   => r.ReadDouble()      },
+            { DMLType.GID,   (r)   => r.ReadUInt64()      },
         };
-        private static readonly IReadOnlyDictionary<DMLType, Action<KiNPBinaryWriter, object>> _dmlWriters
-            = new Dictionary<DMLType, Action<KiNPBinaryWriter, object>>()
+        private static readonly IReadOnlyDictionary<DMLType, Action<BitBuffer, object>> _dmlWriters
+            = new Dictionary<DMLType, Action<BitBuffer, object>>()
         {
-            { DMLType.BYT,   (r, v)   => r.WriteSBYT((sbyte)v)   },
-            { DMLType.UBYT,  (r, v)   => r.WriteBYT((byte)v)     },
-            { DMLType.SHRT,  (r, v)   => r.WriteSHRT((short)v)   },
-            { DMLType.USHRT, (r, v)   => r.WriteUSHRT((ushort)v) },
-            { DMLType.INT,   (r, v)   => r.WriteINT((int)v)      },
-            { DMLType.UINT,  (r, v)   => r.WriteUINT((uint)v)    },
-            { DMLType.STR,   (r, v)   => r.WriteSTR((string)v)   },
-            { DMLType.WSTR,  (r, v)   => r.WriteWSTR((string)v)  },
-            { DMLType.FLT,   (r, v)   => r.WriteFLT((float)v)    },
-            { DMLType.DBL,   (r, v)   => r.WriteDBL((double)v)   },
-            { DMLType.GID,   (r, v)   => r.WriteGID((ulong)v)    },
+            { DMLType.BYT,   (r, v)   => r.WriteInt8((sbyte)v)   },
+            { DMLType.UBYT,  (r, v)   => r.WriteUInt8((byte)v)     },
+            { DMLType.SHRT,  (r, v)   => r.WriteInt16((short)v)   },
+            { DMLType.USHRT, (r, v)   => r.WriteUInt16((ushort)v) },
+            { DMLType.INT,   (r, v)   => r.WriteInt32((int)v)      },
+            { DMLType.UINT,  (r, v)   => r.WriteUInt32((uint)v)    },
+            { DMLType.STR,   (r, v)   => r.WriteString((string)v)   },
+            { DMLType.WSTR,  (r, v)   => r.WriteString((string)v)  },
+            { DMLType.FLT,   (r, v)   => r.WriteFloat((float)v)    },
+            { DMLType.DBL,   (r, v)   => r.WriteDouble((double)v)   },
+            { DMLType.GID,   (r, v)   => r.WriteUInt64((ulong)v)    },
         };
 
         /// <summary>
@@ -70,7 +70,7 @@ namespace Imlight.IO
 
             var elements = message.GetType().GetFields()
                 .Where(f => f.IsDefined(typeof(DMLElementAttribute), false));
-            var writer = new KiNPBinaryWriter();
+            var writer = new BitBuffer();
 
             foreach (var element in elements)
             {
@@ -83,26 +83,26 @@ namespace Imlight.IO
             // Now that all the elements have been defined, we can craft the header.
             // Refer to docs: https://w101r.github.io/rewritten-docs/documentation/KINP/packet-framing/
 
-            var bytes = writer.GetBytes();
+            var bytes = writer.GetData();
 
             // Write first packet header.
-            using var headerWriter = new KiNPBinaryWriter();
-            headerWriter.WriteMagicHeader();
+            using var headerWriter = new BitBuffer();
+            headerWriter.WriteUInt16(0xF00D);
             // Write large header or small header, depending on the size of the payload.
             // The +9 comes from the body header itself, and the trailing null byte.
             bool isLongPacket = bytes.Length > 0x777F;
-            headerWriter.WriteUSHRT((ushort)(isLongPacket ? 0x8000 : bytes.Length + 9));
+            headerWriter.WriteUInt16((ushort)(isLongPacket ? 0x8000 : bytes.Length + 9));
             if (isLongPacket)
             {
-                headerWriter.WriteUINT((uint)bytes.Length);
+                headerWriter.WriteUInt32((uint)bytes.Length);
             }
 
             // Write body header
             var isControl = message.ServiceID == 0;
-            headerWriter.WriteBYT((byte)(isControl ? 1 : 0));                 // isControl
-            headerWriter.WriteBYT((byte)(isControl ? message.ServiceID : 0)); // opCode
-            headerWriter.WriteUSHRT(0);                                       // Padding
-            var headerBytes = headerWriter.GetBytes();
+            headerWriter.WriteUInt8((byte)(isControl ? 1 : 0));                 // isControl
+            headerWriter.WriteUInt8((byte)(isControl ? message.ServiceID : 0)); // opCode
+            headerWriter.WriteUInt16(0);                                       // Padding
+            var headerBytes = headerWriter.GetData();
             if (isControl)
             {
                 // If this is a control message, we can simply craft the whole packet and return;
@@ -115,12 +115,12 @@ namespace Imlight.IO
             else
             {
                 // However, DML messages require a secondary header to be built.
-                var dmlHeaderWriter = new KiNPBinaryWriter();
-                dmlHeaderWriter.WriteBYT(message.ServiceID);
-                dmlHeaderWriter.WriteBYT((byte)(message.MessageOrder - 1));
-                dmlHeaderWriter.WriteUSHRT((ushort)(bytes.Length));
+                var dmlHeaderWriter = new BitBuffer();
+                dmlHeaderWriter.WriteUInt8(message.ServiceID);
+                dmlHeaderWriter.WriteUInt8((byte)(message.MessageOrder - 1));
+                dmlHeaderWriter.WriteUInt16((ushort)(bytes.Length));
 
-                var dmlHeaderBytes = dmlHeaderWriter.GetBytes();
+                var dmlHeaderBytes = dmlHeaderWriter.GetData();
                 var packet = new byte[bytes.Length + dmlHeaderBytes.Length + headerBytes.Length + 1];
                 headerBytes.CopyTo(packet, 0);
                 dmlHeaderBytes.CopyTo(packet, headerBytes.Length);
@@ -145,17 +145,18 @@ namespace Imlight.IO
 
             // Create binary reader.
             var stream = new MemoryStream(binaryBuffer);
-            var reader = new KiNPBinaryReader(stream);
-            reader.SkipHeader();
+            var reader = new BitBuffer(stream);
+            reader.ReadUInt16(); // Skip Magic header
+            var length = reader.ReadUInt16();
 
-            var isControl = reader.ReadBoolean();
-            var opCode = reader.ReadByte();
+            var isControl = reader.ReadBool();
+            var opCode = reader.ReadUInt8();
             reader.ReadUInt16(); // Padding bytes.
 
             // If this is not a control message, it means it's a data message.
             // Data messages have a secondary header to indicate service ID and message ID.
-            var svcid = (isControl ? (byte)0 : reader.ReadByte());
-            var msgid = (isControl ? opCode : reader.ReadByte());
+            var svcid = (isControl ? (byte)0 : reader.ReadUInt8());
+            var msgid = (isControl ? opCode : reader.ReadUInt8());
             if (!isControl) reader.ReadUInt16(); // Read DML length
 
             // Dispatch to the corresponding protocol and find message record.
@@ -171,7 +172,7 @@ namespace Imlight.IO
             // First we'll check to see if the record we dispatched is valid.
             // Simply check how many fields there are in the record and compare them to the bytes we still have left.
             // The reason we don't use the DML payload length is to let this be ambigous between DML and control messages.
-            var bytesLeft = reader.BaseStream.Length - reader.BaseStream.Position;
+            var bytesLeft = reader.GetSize() - reader.GetCurrentStream().Position;
             if (!DoesRecordFitBounds(bytesLeft, message))
                 throw new InvalidOperationException("Incorrect record! Record fields does not fit in the bounds of the binary buffer.");
 
@@ -186,75 +187,16 @@ namespace Imlight.IO
             return message;
         }
 
-        public static uint HashString(string input)
-        {
-            int result = 0;
-
-            var shift1 = 0;
-            var shift2 = 32;
-            foreach (char c in input)
-            {
-                var cb = (byte)c;
-
-                result ^= (cb - 32) << shift1;
-
-                if (shift1 > 24)
-                {
-                    result ^= (cb - 32) >> shift2;
-                    if (shift1 >= 27)
-                    {
-                        shift1 -= 32;
-                        shift2 += 32;
-                    }
-                }
-                shift1 += 5;
-                shift2 -= 5;
-            }
-
-            if (result < 0)
-                result = -result;
-
-            return (uint)result;
-        }
-        
-        public static uint HashPropertyName(string name, string type)
-        {
-            uint typeHash = HashString(type);
-            var propHash = Djb2Hash(name) & 0x7FFF_FFFF;
-
-            // MSB drop
-            return (typeHash + propHash) & 0xFFFF_FFFF;
-        }
-        
-        public static uint Djb2Hash(string str)
-        {
-            uint hash = 5381;
-
-            for (int i = 0; i < str.Length; i++)
-            {
-                hash = ((hash << 5) + hash) + ((byte)str[(int)i]);
-            }
-
-            return hash;
-        }
-
         private static bool DoesRecordFitBounds(long byteCount, INetworkMessage message)
         {
             int currentCount = 0;
-            var messageFields = GetDmlElementsFromMessage(message);
+            var messageFields = Util.GetAttributesFromType<DMLElementAttribute>(message);
             foreach (var field in messageFields)
             {
                 currentCount += GetDmlTypeSize(field.SerializedType);
             }
 
             return currentCount <= byteCount;
-        }
-
-        private static IEnumerable<DMLElementAttribute> GetDmlElementsFromMessage(INetworkMessage message)
-        {
-            return message.GetType().GetFields()
-                .Where(f => f.IsDefined(typeof(DMLElementAttribute), false))
-                .Cast<DMLElementAttribute>();
         } 
 
         private static DMLType GetDmlTypeFromAttr(FieldInfo field)

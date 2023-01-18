@@ -15,5 +15,12 @@ namespace Imlight.IO
                 hex.AppendFormat("{0:x2}", b);
             return hex.ToString();
         }
+
+        public static IEnumerable<T> GetAttributesFromType<T>(object type) where T : Attribute
+        {
+            return type.GetType().GetProperties()
+                .Where(f => f.IsDefined(typeof(T), false))
+                .Cast<T>();
+        }
     }
 }
