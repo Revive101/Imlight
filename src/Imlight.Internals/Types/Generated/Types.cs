@@ -16,1838 +16,1838 @@ namespace Imlight.Internals
     
     public static partial class Types
     {
-
+        
         public static Imlight.Internals.PropertyClass Dispatch(uint hash)
         {
             switch (hash) {
-                case 340686453: return new DerbyLockLane();
-                case 339367112: return new PortraitWindow();
-                case 337071269: return new MatchTimerControl();
-                case 356718057: return new DeckTemplate();
-                case 356738224: return new ProvideSpellEffectInfo();
-                case 353153020: return new ExtraHousingZoneBehaviorTemplate();
-                case 376491128: return new CombatObserver();
-                case 372350817: return new AvatarTextureOption();
-                case 380766725: return new InfractionCategory();
-                case 386561281: return new BrowserWindowSettings();
-                case 272976841: return new LeashedPathMovementBehaviorTemplate();
-                case 270941241: return new SigilDynamicTriggerTemplate();
-                case 298908477: return new FlareBacklashEffectCinematicAction();
-                case 293803973: return new MatchActorUpdate();
-                case 316773684: return new ResAsyncScript();
-                case 321190809: return new ClientDerbyRemoveAction();
-                case 476450937: return new PetTomePetTotalList();
-                case 472932989: return new HousingPaletteBehavior();
-                case 479503637: return new ReqHasEntry();
-                case 492433140: return new ActCinematicStageTemplate();
-                case 488310528: return new EventCurrency1LootInfo();
-                case 505263125: return new Requirement();
-                case 516965608: return new TreasureBookBehavior();
-                case 513924477: return new CylinderGeomParams();
-                case 526420021: return new CastleBlockDoorBehavior();
-                case 526763896: return new AlternateTurnsCombatRule();
-                case 407602529: return new CinematicActorTemplate();
-                case 404985560: return new PreviewWindow();
-                case 1758773843: return new CSRPropertyEntry();
-                case 403105420: return new WhirlyBurlyKioskBehavior();
-                case 404089021: return new TimerControlCinematicAction();
-                case 404568121: return new DoodleMapMap();
-                case 427496100: return new ResourcePointerBase();
-                case 420965025: return new ClassProjectActiveList();
-                case 429616949: return new TeleportProximityBehavior();
-                case 82322929: return new SG_GameAction_DestroyBlock();
-                case 80688900: return new ClientDuelBehavior();
-                case 80728452: return new ClientDeckBehavior();
-                case 76071800: return new MoveCommandSleep();
-                case 80600377: return new MadlibArgT_int();
-                case 97652749: return new DebugWizardComponent();
-                case 96157712: return new Party();
-                case 101060568: return new LeashBehavior();
-                case 114907380: return new NodeObject();
-                case 109289096: return new WhirlyBurlyRoundDataAI();
-                case 109301400: return new WhirlyBurlyRoundData();
-                case 118117677: return new ScriptBehavior();
-                case 127741560: return new WinAnimScaleSymmetrical();
-                case 2306056: return new Hand();
-                case 2563716: return new Duel();
-                case 15176825: return new ClientAnimatePipsCinematicAction();
-                case 14972600: return new CrownServicesOption();
-                case 16458504: return new ClientDestroyActorCinematicAction();
-                case 9086024: return new WhirlyBurlyGameInfo();
-                case 24008073: return new ActorDialogEntry();
-                case 26248721: return new UntargetableCinematicStageTemplate();
-                case 49069525: return new StartHangingRotationCinematicAction();
-                case 45183104: return new ExpansionBehaviorTemplate();
-                case 57275092: return new BaseEffectCinematicAction();
-                case 55075120: return new MonsterMagicXPConfig();
-                case 55459776: return new ChaseCamController();
-                case 56520724: return new ClientFaceTargetActorCinematicAction();
-                case 51912680: return new PublicEquippedJewelInfo();
-                case 61143521: return new MoveActorCinematicAction();
-                case 61449152: return new BaseGameEffectBehavior();
-                case 205985348: return new AnimationBehaviorTemplate();
-                case 207387113: return new BasicChatPlayer();
-                case 207452740: return new ClientUpdatePipsCinematicAction();
-                case 216153725: return new WizStatisticEffectConfig();
-                case 226447796: return new ClientCinematic();
-                case 222441933: return new ItemDynamicBehaviorTemplate();
-                case 234880648: return new PartnerLogoData();
-                case 231314529: return new HatchmakingKioskBehaviorBase();
-                case 227144468: return new GardenSpellTemplate();
-                case 1808221935: return new MapInfoManager_MapInfo();
-                case 245334672: return new AddAuraCinematicAction();
-                case 256424865: return new HousingPetBehavior();
-                case 264877989: return new HatchmakingKioskBehavior();
-                case 264043400: return new ReqHatchAllEggs();
-                case 141321820: return new ObstacleCourseModifyTimeBehavior();
-                case 136325589: return new GetHitCinematicStageTemplate();
-                case 147667396: return new ClientRegisterActorCinematicAction();
-                case 154300016: return new BadgeFilter();
-                case 152350381: return new BracketTournamentGoldCostInfo();
-                case 169882261: return new BattlegroundTeamData();
-                case 171938840: return new ClientProvidePetPower();
-                case 191614064: return new MountSoundBehavior();
-                case 192091124: return new StringListObj();
-                case 185712392: return new CombatPetXPEffectTemplate();
-                case 186295252: return new SoundBehaviorTemplate();
-                case 199503764: return new MatchRequest();
-                case 200582253: return new ClientTimedItemBehavior();
-                case 879290292: return new HaltCinematicAction();
-                case 875511756: return new AddSpellLootInfo();
-                case 875912244: return new EquipmentSetList();
-                case 903889836: return new ClientDerbyStealMorale();
-                case 905622573: return new CombatAction();
-                case 907024196: return new HatchmakingPetGIDList();
-                case 920671981: return new BrightnessControlWindow();
-                case 930395781: return new RecipeLootInfo();
-                case 810456560: return new WizAvatarTextureOption();
-                case 821139644: return new CharacterRegistry();
-                case 818177233: return new NamedEffect();
-                case 816396124: return new RespecTieredSpellList();
-                case 827660933: return new PetDropFoodItem();
-                case 823007620: return new PromoPromotion();
-                case 831748013: return new WinAnimSizeSpeed();
-                case 842905356: return new ClientPetCameraActorCinematicAction();
-                case 855129237: return new MoveCommandTeleport();
-                case 851689157: return new ClientMinigameBehavior();
-                case 852801984: return new ComplexRotateTurnIndicatorCinematicAction();
-                case 849149712: return new DerbyModifySpeedBoost();
-                case 856669628: return new HousingLayout();
-                case 868033517: return new ClientActorRenameCinematicAction();
-                case 864888365: return new Ingredient();
-                case 1014157249: return new SummonCinematicStageTemplate();
-                case 1011358253: return new CreationNameSelectWindowSWF();
-                case 1012383560: return new CraftingSlot();
-                case 1007741848: return new DiegoPlayerStats();
-                case 1021766688: return new ClientHidePolymorphFloatyTextCinematicAction();
-                case 1017411609: return new TemplateManifest();
-                case 1015931828: return new CinematicDefTemplate();
-                case 1039909700: return new CinematicAction();
-                case 1033787969: return new CastleTourTeleportInfo();
-                case 1044502272: return new FishingXPLootInfo();
-                case 1055068016: return new PotionButton();
-                case 1050424445: return new SpawnCreatureCinematicAction();
-                case 1064004892: return new CameraCutCinematicAction();
-                case 1066318344: return new GoalCompleteLogic();
-                case 944808800: return new PestBehaviorTemplate();
-                case 945355636: return new DeedBehaviorTemplate();
-                case 945733600: return new PathBehaviorTemplate();
-                case 945775476: return new DeckBehaviorTemplate();
-                case 940905257: return new StopHangingRotationCinematicAction();
-                case 953005265: return new TipFrame();
-                case 953843317: return new AnimationSet();
-                case 948840993: return new ClientBGSigilProxyBehavior();
-                case 948993056: return new ObstacleCourseCatapultBehavior();
-                case 969550872: return new CombatSigilTemplate();
-                case 978874321: return new RemoveBacklashEffectCinematicAction();
-                case 988812673: return new WinAnimScaleSpeed();
-                case 984656632: return new QuestEffectInfo();
-                case 993961065: return new ObstacleCoursePendulumBehaviorClient();
-                case 1004493444: return new PromoPromotionList();
-                case 1002264988: return new ClientCinematicActor();
-                case 1000183645: return new ClientTagList();
-                case 610744532: return new WizItemPlantList();
-                case 611145357: return new SpawnObject();
-                case 609862381: return new ItemLocatorList();
-                case 606203528: return new StatePositionalSoundBehavior();
-                case 607518529: return new CriticalObjectList();
-                case 605266396: return new WizItemQuestList();
-                case 618578332: return new CastleMagicMovingObject();
-                case 615977848: return new TutorialZoneMod();
-                case 629036329: return new GameEffectTimerDisplayBehavior();
-                case 625165757: return new BaseClientHousingBlobStrategy();
-                case 623218429: return new MapInfoRequirementsRequest();
-                case 621505065: return new CSRAccessPassList();
-                case 1797054493: return new MadlibArgT_std_wstring();
-                case 634871301: return new MusicFileInfo();
-                case 645167817: return new NewListUpdate();
-                case 641164660: return new TestControlTableWindow();
-                case 641661109: return new ExpansionData();
-                case 639426732: return new ConfirmOption();
-                case 646460573: return new AnimationBehavior();
-                case 666970577: return new NameOverrideBehavior();
-                case 666875460: return new ClientObjectRemapBehavior();
-                case 664403929: return new PetCastEffectActorCinematicAction();
-                case 664595760: return new NotInActiveTournamentOrPvP();
-                case 544981709: return new HousingItemList();
-                case 545018052: return new MountRecord();
-                case 542898677: return new HousingNodeList();
-                case 537617217: return new BanishBacklashEffectCinematicAction();
-                case 538569800: return new ClientMountOwnerBehavior();
-                case 548509933: return new ReqNumeric();
-                case 546428105: return new CustomEmoteBehavior();
-                case 554404588: return new WizardAutobotQuestManagerGraphicalClient();
-                case 569173904: return new ReqClassicMode();
-                case 569970564: return new MatchResult();
-                case 568237521: return new CombatPetXPEffect();
-                case 562135265: return new ElixirBenefitEffectTemplate();
-                case 578740365: return new ShadowPipRule();
-                case 575055517: return new BlobDefinition();
-                case 572122725: return new StartBacklashRotationEffectCinematicAction();
-                case 586069757: return new ResTeleport();
-                case 592211100: return new ClientRenamePipActorsFromResult();
-                case 589342136: return new ClientClearHangingEffectsCinematicAction();
-                case 601921573: return new DerbyModifyPetStat();
-                case 741147324: return new TreasureCardVaultBehavior();
-                case 738917213: return new BurnAuraCinematicAction();
-                case 748721940: return new MatchTeam();
-                case 749587349: return new HatchmakingPetTypesList();
-                case 747748116: return new WizItemHouseList();
-                case 762322320: return new PositionalSoundBehavior();
-                case 760600469: return new MonsterMagicLevelInfo();
-                case 756237500: return new PetTomeBehaviorTemplate();
-                case 771409084: return new PetGameBehaviorTemplate();
-                case 771733069: return new WhirlyBurlyStartGame();
-                case 766446304: return new CreatePipCinematicActorsFromResult();
-                case 772992977: return new ClientDerbyImmunityEffect();
-                case 795264797: return new CritAndBlockValues();
-                case 793120104: return new BoosterPackSpaceHelper();
-                case 794349757: return new BGPlayerInfo();
-                case 679367257: return new ExpansionBehavior();
-                case 675331448: return new ActiveMusicLoop();
-                case 676985992: return new DeathParticleCinematicAction();
-                case 702627589: return new EffectsBehavior();
-                case 701973148: return new ReqMagicLevel();
-                case 711373345: return new MonsterMagicLevelControl();
-                case 711734365: return new WizardCharacterBehaviorTemplate();
-                case 712403961: return new PvPUpdateMessage();
-                case 713090437: return new PetTalentCountControl();
-                case 726039016: return new CrownsRewardsEventData();
-                case 737475528: return new AttachParticleActorCinematicAction();
-                case 737752717: return new ClientEventDrivenCinematic();
-                case 1409941408: return new VisualAttributeBehaviorTemplate();
-                case 1422560585: return new TakeCinematicStageTemplate();
-                case 1432481797: return new InteractiveMusicBehavior();
-                case 1428436897: return new ReqGlobalRegistryValue();
-                case 1428999913: return new Window();
-                case 1449479404: return new QuestTemplate();
-                case 1459528261: return new SpellSubEffectMetadata();
-                case 1466028993: return new InteractiveMusicBehaviorBase();
-                case 1463236977: return new HousingObjectTextureRemap();
-                case 1460290408: return new MoveCommandTime();
-                case 1470696293: return new BlobDirectory();
-                case 1470958192: return new MatchTemplate();
-                case 1357745924: return new PlayList();
-                case 1353381560: return new SpellNifSoundOverride();
-                case 1350586641: return new ProvidePetPowerInfo();
-                case 1352381177: return new ClientAddAuraCinematicAction();
-                case 302689723: return new MadlibArgT_double();
-                case 1364132524: return new DuelistBehaviorTemplate();
-                case 1373112865: return new WizardCharacterCreationInfo();
-                case 1369144169: return new WindowColorAnimation();
-                case 1376532193: return new DailyQuestRewardData();
-                case 1391008089: return new CountdownBehaviorTemplate();
-                case 1388906485: return new ObstacleCourseRevolvingDoorBehavior();
-                case 1386863880: return new AquariumBehaviorBase();
-                case 1398439464: return new UnderwayEntry();
-                case 1406495780: return new ClientMoveActorCinematicAction();
-                case 1547062892: return new DyeShopOption();
-                case 1557320373: return new WizardControlTable();
-                case 1842057223: return new MadlibArgT_unsigned_int();
-                case 1563727185: return new CombatPlanningPhaseWindow();
-                case 1574036932: return new ControlButton();
-                case 1568996116: return new AddGlobalCinematicStageTemplate();
-                case 1583765964: return new SpawnPointTemplate();
-                case 1580994129: return new CameraController();
-                case 1591295869: return new CinematicTemplate();
-                case 1600675689: return new SpellbookBehaviorTemplate();
-                case 1599095881: return new BGPenaltyMatchBanInfo();
-                case 1607144837: return new AreaBehavior();
-                case 1607031337: return new MoveBehavior();
-                case 1602845741: return new ClientComplexRotateTurnIndicatorCinematicAction();
-                case 1604021657: return new ClientDerbyModifySpeedBoost();
-                case 1482133733: return new ClientCreatePipCinematicActorsFromResult();
-                case 1479696261: return new PromoRewardList();
-                case 1495520660: return new HousingSignBehavior();
-                case 1503598517: return new TeleportProximityBehaviorBase();
-                case 1515932080: return new StatGlobe();
-                case 1511125800: return new IslandSpaceOption();
-                case 1523185317: return new ReqInventoryFull();
-                case 1523571252: return new ReqMatchesPlayed();
-                case 1534615644: return new CastleTourMyCastleDataList();
-                case 1531376288: return new TitleOption();
-                case 1531982849: return new ObstacleCourseModifyTimeBehaviorClient();
-                case 1529803949: return new SwapShadowMaterialActorCinematicAction();
-                case 1530825356: return new ClientBanishBacklashEffectCinematicAction();
-                case 1143984853: return new ShadowCreatureCameraCutCinematicAction();
-                case 1155659769: return new PetBoostPlayerStatEffect();
-                case 1164553169: return new SpringboardNodeDescriptor();
-                case 1165694621: return new SG_GameBlockType();
-                case 1161803388: return new InfractionConfig();
-                case 1172493856: return new ParticipantList();
-                case 1174167725: return new ScoreTrackingList();
-                case 1168367352: return new SeamstressOption();
-                case 1168829109: return new ScoreTracking();
-                case 1166411760: return new DerbyTeleport();
-                case 1176929477: return new BracketTemplate();
-                case 1188332381: return new GameObjectAnimData();
-                case 1195460857: return new PositionalStateSoundBehaviorTemplate();
-                case 1196725860: return new TreasureShopOffering();
-                case 1204241848: return new ClientObject();
-                case 1203158509: return new ControlTickedSlider();
-                case 388164603: return new MoveStateAnimation();
-                case 1089764365: return new SpellCardAttachmentBehaviorTemplate();
-                case 1085574745: return new CrownShopLayout();
-                case 1103557184: return new TieredSpellManager();
-                case 1098972281: return new BehaviorTemplate();
-                case 1114972680: return new FurnitureInfoBehaviorTemplate();
-                case 1113361888: return new SubscriberOnlyItemsList();
-                case 1113445281: return new ClientDerbyTeleport();
-                case 1118897596: return new PhysicsSim();
-                case 1124127793: return new DdWinAnimMoveZap();
-                case 1124875940: return new GameEffectInfoList();
-                case 1140030512: return new SpellSelectionWindow();
-                case 1280225452: return new BalloonWindow();
-                case 1299028301: return new HideShadowCreatureCinematicAction();
-                case 1295375549: return new ClientCountdownBehavior();
-                case 1307164904: return new PetFeedingRewardInfo();
-                case 1307723936: return new GraphicalPetSnack();
-                case 1308256468: return new NPCTrainingWindow();
-                case 1302213392: return new TrainingPointLootInfo();
-                case 1314229553: return new ClientSpellbookBehavior();
-                case 1311744465: return new KhanDancePlayer();
-                case 1312307081: return new StartingPipEffectTemplate();
-                case 1312628396: return new HousingShopOption();
-                case 1325114997: return new PetDerbyObstacleBehavior();
-                case 1320943881: return new ProvideSpellEffect();
-                case 1333373205: return new InteractiveMusicManager();
-                case 1329858141: return new LeashOffsetOverride();
-                case 1327689028: return new ElixirBehaviorTemplate();
-                case 1338050140: return new HousingGameKhanDanceTurnData();
-                case 1334273365: return new HouseZone();
-                case 1215139832: return new PlayDeck();
-                case 1223236289: return new MountItemBehaviorTemplate();
-                case 1220652725: return new BattlegroundPolymorphImprovementOption();
-                case 1218304141: return new AcousticAreaBehaviorTemplate();
-                case 1227569600: return new ShowcasedStoreItem();
-                case 1239465948: return new CombatGardeningXPEffectInfo();
-                case 1237848261: return new ReqSchoolOfFocus();
-                case 1239131513: return new CommonElementTable();
-                case 1239252388: return new GameEffectInfo();
-                case 1236031548: return new QuickChatEntry();
-                case 1247858392: return new ClientCantripsInvisibilityEffect();
-                case 1255602689: return new EmoteStateOverrideInfo();
-                case 1250964432: return new ClientReagentItem();
-                case 1251008285: return new GraphicalSpell();
-                case 1251357632: return new PetMatchInfo();
-                case 1251451296: return new PvPMatchInfo();
-                case 1952739516: return new MinigameConfig();
-                case 1951070136: return new UserCapabilitiesInfo();
-                case 1961472732: return new WizAvatarItemInfo();
-                case 1960525557: return new ClientMakeTargetableCinematicAction();
-                case 1986452013: return new GameEffectContainer();
-                case 1985899604: return new ReqHighestCharacterLevelOnAccount();
-                case 1996376100: return new UniverseMapOption();
-                case 1991928700: return new ClientPetAnimateActorCinematicAction();
-                case 2000949388: return new EnergyGlobe();
-                case 2011501072: return new SpellBookPrefsWindow();
-                case 2009348008: return new NewFriendsListWindow();
-                case 1884493097: return new BracketTeam();
-                case 1885077185: return new BracketInfo();
-                case 1883107632: return new HardwareStyle();
-                case 1893732504: return new GameEffectTimerDisplayBehaviorTemplate();
-                case 1895369821: return new CastleToursBehavior();
-                case 1896231356: return new GardenLevelControl();
-                case 1414270508: return new MadlibArgT_std_string_const();
-                case 1905151504: return new CharacterElement();
-                case 1919856469: return new CinematicActorBehavior();
-                case 1917173196: return new CastleTourLeaderboardUpdate();
-                case 1916173033: return new BountyGoalTemplate();
-                case 1761244949: return new QuestListPage_DialogDataCacheEntry();
-                case 1927030233: return new PersonaGoalTemplate();
-                case 1921175609: return new ActorCinematicAction();
-                case 1931117188: return new ObjectLocationList();
-                case 1938090073: return new SortedPot();
-                case 1938779005: return new CastleGamesBehaviorTemplate();
-                case 2096555613: return new HousingTextureBehavior();
-                case 2097818592: return new InfractionPenaltyInfo();
-                case 2110225624: return new CantripsSpellTemplate();
-                case 2131227337: return new CharMap();
-                case 2142692264: return new SavedCharacterLists();
-                case 2140949561: return new ZoneData();
-                case 2020400953: return new MadlibBlockList();
-                case 2015771520: return new CountdownBehavior();
-                case 2016205064: return new RidableBehaviorBase();
-                case 2015011713: return new PetActorResults();
-                case 2029798397: return new Camera();
-                case 2032899284: return new ShowcasedStoreItemList();
-                case 2045103041: return new ClientUntargetableCinematicAction();
-                case 2043396484: return new ObjectLocation();
-                case 2042057916: return new ClientUnPolymorphCinematicAction();
-                case 2042086256: return new ClientChangeActorStateCinematicAction();
-                case 2054345332: return new GoldLootInfo();
-                case 2061327320: return new SpellListControl();
-                case 2055300877: return new SG_GameAction_PlayEffect();
-                case 2071901228: return new ClientActivateHangingEffectCinematicAction();
-                case 2065757593: return new PetStatModificationSet();
-                case 2076264493: return new NullAction();
-                case 1693914448: return new StartingPipEffect();
-                case 1687276849: return new CastleMagicItem();
-                case 1688053277: return new NaturalSummonCinematicStageTemplate();
-                case 1701999121: return new CantripsInvisibilityEffect();
-                case 1702663524: return new ClientDynaModBehavior();
-                case 1697945144: return new RecreateNPCActorCinematicAction();
-                case 1695298257: return new QuestEffectTemplate();
-                case 1709716917: return new CantripsInvisibilityEffectInfo();
-                case 1708947461: return new ChatSpamHelper();
-                case 1711485272: return new ClientBattlegroundPlayerStatsManager();
-                case 1725250709: return new GardenPlant();
-                case 1722632613: return new StatisticEffectTemplate();
-                case 1730854596: return new WinAnimContainer();
-                case 1730980528: return new WizClientLeashedObject();
-                case 1731209269: return new LocaleMapping();
-                case 1728338385: return new DerbyPlayerContainer();
-                case 1741387000: return new ShadowSelfCinematicAction();
-                case 1738458725: return new CastleToursOption();
-                case 1617166848: return new JewelSocketBehaviorTemplate();
-                case 1618422933: return new MoveCommandEuler();
-                case 1623660936: return new ObstacleCoursePusherBehaviorTemplate();
-                case 1641637777: return new ClientSpellCardAttachmentBehavior();
-                case 1638550225: return new ReqHealthPercent();
-                case 1651262408: return new BreadCrumbBehaviorBase();
-                case 1646671896: return new MountItemBehavior();
-                case 1657370629: return new InteractableOption();
-                case 1658385012: return new SigilZoneInfo();
-                case 1655516085: return new HousingGameObjectReference();
-                case 1660976897: return new ClientAuctionHouseOption();
-                case 1676371372: return new PhysicsSimMassCylinder();
-                case 1673947965: return new OrderedWorlds();
-                case 1669515060: return new CollisionBehaviorClient();
-                case 1817208272: return new ReqAddHousingItemSlots();
-                case 1814657596: return new TreasureCardVaultBehaviorBase();
-                case 1827196260: return new HousingMusicPlayerBehaviorTemplate();
-                case 1823485709: return new ClientBGPolymorphSelectBehavior();
-                case 1835178936: return new ServerSyncCinematicAction();
-                case 1831426776: return new PlayerInteractiveMusicLoops();
-                case 1829648785: return new ObstacleCourseCatapultBehaviorTemplate();
-                case 1830209116: return new DamageEventCinematicAction();
-                case 1830230848: return new ClientPetSnackBehavior();
-                case 1848478792: return new WhirlyBurlyGameList();
-                case 1847392949: return new CompassSystem();
-                case 1857725728: return new ClientPlayGraphicOnSigilCinematicAction();
-                case 1854310713: return new BadgeFilterDescription();
-                case 1867753977: return new PetInfoControl();
-                case 1864620433: return new CinematicTemplateAnimationData();
-                case 1876708597: return new CinematicActorAnimationData();
-                case 1752577657: return new SG_GameScoreMultiplier();
-                case 1747133861: return new DerbyModifyRate();
-                case 1767121621: return new AquariumBehavior();
-                case 1767876312: return new LoginHistoryEntry();
-                case 1764126028: return new AuctionHouseEntry();
-                case 1765496116: return new MaxGoldLootInfo();
-                case 1761888944: return new CombatHealthListObj();
-                case 1763191837: return new LeaderboardEntryList();
-                case 1785515224: return new BreadCrumbBehavior();
-                case 1790452385: return new PetJewelBehaviorTemplate();
-                case 1798653160: return new ClientWizPlayerNameBehavior();
-                case 1798845728: return new GradientWidgetBackground();
-                case 1809464077: return new ClientTurnIndicatorCinematicAction();
-                case 1808567304: return new ActorDialogListBase();
-                case 1808722619: return new WindowStyle();
-                case 1810992875: return new ClientCombatParticipant();
-                case 1797848419: return new HousingLayoutObject();
-                case 1783457715: return new ResAddReagent();
-                case 1786077096: return new ControlDecalButton();
-                case 1772061272: return new PathActionDespawn();
-                case 1772965996: return new RegistrarOptions();
-                case 1773127788: return new RegistrarOption();
-                case 1772436224: return new ClientEquipmentBehavior();
-                case 1776753535: return new PetAnimateActorCinematicAction();
-                case 1755724404: return new WinAnimAlphaFade();
-                case 1760312039: return new CastleMagicTutorialWindow();
-                case 1749724180: return new HatchmakingPet();
-                case 1752924971: return new PlacementDisplayItem();
-                case 1838183940: return new PhysicsSimMassSphere();
-                case 1839935919: return new ReagentLootInfo();
-                case 1833801619: return new CrownsRewardsSchedule();
-                case 1833054711: return new CursorStyleManager();
-                case 1816039971: return new RotateActorCinematicAction();
-                case 1814157843: return new PetActor();
-                case 1814055027: return new PvPActor();
-                case 1819456087: return new FaceTargetTeamActorCinematicAction();
-                case 1662623647: return new BattlegroundPOIData();
-                case 1667827244: return new ControlTileMap();
-                case 1653961979: return new PolymorphCinematicAction();
-                case 1644990435: return new ReqHasGoal();
-                case 1647047503: return new EquivalentItemBehaviorTemplate();
-                case 1646516768: return new PriceModifiers();
-                case 1651848876: return new ControlComboBox();
-                case 1651925079: return new PromoGiftList();
-                case 1637645987: return new RemoveInterceptCinematicAction();
-                case 1640890243: return new WizPolymorphTemplate();
-                case 1640306991: return new CursorStyle();
-                case 1627648688: return new ReqGoldBagPercent();
-                case 1612316067: return new DailyQuestInfo();
-                case 1611499199: return new InvisibilityEffect();
-                case 1613978472: return new FishSellingOption();
-                case 1617965484: return new ControlCheckBox();
-                case 1617055072: return new MakeTargetableCinematicAction();
-                case 1740171367: return new ClientGameEffectTimerSoundTrigger();
-                case 1739321352: return new CastleTourHouseTemplateList();
-                case 1742055420: return new TransformationEffect();
-                case 1704220867: return new PvPMatchMakerStats();
-                case 1706867052: return new TransformationEffectInfo();
-                case 1705880328: return new ControlEdit();
-                case 1706003088: return new ControlText();
-                case 1705961040: return new ControlList();
-                case 1705555264: return new HousingSignBehaviorTemplate();
-                case 1705032976: return new ControlDraw();
-                case 1709785344: return new ControlZone();
-                case 1709786704: return new ControlLine();
-                case 1709718928: return new ControlTree();
-                case 1694755120: return new PathBehaviorClient();
-                case 1694693783: return new MonsterMagicWorldTotal();
-                case 1699116796: return new PipConversionValues();
-                case 1692016396: return new LeashedPathMovementBehavior();
-                case 1694289552: return new ControlTab();
-                case 1694420544: return new ControlBar();
-                case 1693464760: return new ControlSWF();
-                case 592407887: return new MadlibArgT_float();
-                case 1692797067: return new PetTomeBehavior();
-                case 1975537537: return new ClientPetGameBehavior();
-                case 1975611265: return new ClientPetNameBehavior();
-                case 1678184528: return new NamedEffectTemplate();
-                case 1680291080: return new ControlPopupButton();
-                case 1685698388: return new ReqBankPercent();
-                case 2073901804: return new AddInterceptCinematicAction();
-                case 2066767388: return new ClientFishBehavior();
-                case 2057129723: return new ClientAddBacklashEffectCinematicAction();
-                case 2063364791: return new BattlegroundPolymorphList();
-                case 2061687411: return new CollectedEssenceTrackingList();
-                case 2034384868: return new PlayerController();
-                case 2025228384: return new PauseAction();
-                case 2024660760: return new TempStartingPipEffectTemplate();
-                case 2015083351: return new DerbyModifyMorale();
-                case 2016130791: return new TeamHelpUpdateSigilInfoList();
-                case 2015439924: return new AnimateActorCinematicAction();
-                case 2145933924: return new ControlStretcher();
-                case 2131998924: return new JewelVaultBehavior();
-                case 2130815975: return new HatchmakingPremiumPetsList();
-                case 2126729027: return new TieredSpellGroup();
-                case 2117551403: return new ObstacleCourseObstacleBehavior();
-                case 2117279155: return new PetTalentControlBase();
-                case 2116307860: return new HousingTeleporterBehaviorBase();
-                case 2121364972: return new WindowLayout();
-                case 2110126448: return new GraphicalArenaBonusPoints();
-                case 2096502327: return new DerbyAddObstacle();
-                case 1940189299: return new RentalBehaviorTemplate();
-                case 1943050936: return new InfractionBehaviorTemplate();
-                case 1936174304: return new CharacterCreationInfo();
-                case 1925965488: return new ClientAnimateActorCinematicAction();
-                case 1916165271: return new DynamicURLDescriptor();
-                case 1916814004: return new PetDialogEntry();
-                case 1905936999: return new CharacterElementTable();
-                case 1908952904: return new ClientSpawnActorCinematicAction();
-                case 1910989220: return new ClientCloneActorCinematicAction();
-                case 1910976480: return new ClientScaleActorCinematicAction();
-                case 1889876151: return new ObstacleCourseFinishLineBehaviorClient();
-                case 1892727852: return new PetObstacleCourseGameInfo();
-                case 1880872712: return new PolymorphImprovementRatingInfo();
-                case 1880182476: return new RemoveProtectionEffectCinematicAction();
-                case 1882562795: return new SoftwareStyle();
-                case 1886903095: return new CreateAuraActorCinematicAction();
-                case 2005977159: return new ClientCrownsRewardsSchedule();
-                case 2009860395: return new ClientRotateActorCinematicAction();
-                case 1997748188: return new JewelVaultBehaviorBase();
-                case 2003670916: return new WhirlyBurlyMovementData();
-                case 1990038264: return new ReleaseCinematicStageTemplate();
-                case 1983826647: return new CustomNameOptions();
-                case 1985951976: return new UIScaleConfig();
-                case 1977776208: return new MaxPotionLootInfo();
-                case 1956500683: return new BoosterPackLootTypeMaxes();
-                case 1955803140: return new CloneActorCinematicAction();
-                case 1955727860: return new ScaleActorCinematicAction();
-                case 1956950539: return new ClientRemoveInterceptCinematicAction();
-                case 1949272980: return new SpawnActorCinematicAction();
-                case 1260445740: return new FriendNotificationInfo();
-                case 1237485324: return new HouseTransferResult();
-                case 1226715027: return new CrownShopGiftRedemption();
-                case 1226845951: return new PetXPLootInfo();
-                case 1217963196: return new PhotoInformation();
-                case 1222428800: return new WizardAutobotManager();
-                case 1215947724: return new ClientDamageEventCinematicAction();
-                case 1214462188: return new BGPlayerBehavior();
-                case 1335717831: return new BodyOfWater();
-                case 1337439348: return new ItemFinderBehaviorBase();
-                case 1336719896: return new ConicalSoundBehavior();
-                case 1339946747: return new PipFloatingTextCinematicAction();
-                case 1340928115: return new RenderBehaviorTemplate();
-                case 1325665239: return new CastleGamesBehavior();
-                case 1331721936: return new ClientRequirementFailInteraction();
-                case 1315011396: return new ProvideCombatTrigger();
-                case 1295515312: return new AddHangingCinematicStageTemplate();
-                case 2139774713: return new ClientCSRRegistryList();
-                case 1297822567: return new WizardStatTable();
-                case 1286758616: return new WizGameObjectTemplate();
-                case 1289862204: return new LevelUpElixirPropertyRegistryEntry();
-                case 1276782308: return new ProxyGeometry();
-                case 1275618772: return new ProvideCombatTriggerInfo();
-                case 1278484075: return new ActorResurrectCinematicAction();
-                case 1282567415: return new CastleToursBehaviorTemplate();
-                case 1139628519: return new FidgetBehaviorTemplate();
-                case 1120047388: return new SummonMinionCinematicAction();
-                case 1123917219: return new ReqGardeningLevel();
-                case 1122278268: return new ShoppingColorModifiers();
-                case 1115315604: return new CastleMagicTutorial();
-                case 1101610572: return new RealmInfoList();
-                case 1093446364: return new BadgeInfoList();
-                case 1098711139: return new CoreObjectInfo();
-                case 1080505359: return new ClientHideShadowCreatureCinematicAction();
-                case 1203190628: return new ItemFinderBehavior();
-                case 1202610175: return new FilterSetTemplate();
-                case 1187867951: return new PolymorphBattlegroundsBehavior();
-                case 729213485: return new WeightedEntryT_class_SplashCinematicInfo();
-                case 1181395372: return new MeshGeomParams();
-                case 1171186288: return new PetTalentControl();
-                case 1173876599: return new ClientSwapShadowMaterialActorCinematicAction();
-                case 1160786927: return new TeamGIDToBracketID();
-                case 1150421835: return new ActiveTimedPassEntry();
-                case 1142697996: return new MakeTargetableCinematicStageTemplate();
-                case 1142942863: return new CinematicStageRelationship();
-                case 1148284667: return new ShadowSpellTrackingData();
-                case 1148091404: return new WizMinigameOffering();
-                case 1538911535: return new ReqClearHatchingSlot();
-                case 1537810111: return new KioskOption();
-                case 1537458128: return new CSRSpellList();
-                case 1540708011: return new DeckListControl();
-                case 1542256628: return new WizItemQuestData();
-                case 1522231928: return new ClientConfirmOption();
-                case 1523268003: return new BattleCardShopOffering();
-                case 1518040416: return new HelpChatElement();
-                case 1516609567: return new PhysicsSimMassTube();
-                case 1503354699: return new ArenaMatchInfo();
-                case 1501678175: return new FishingInfo();
-                case 1494800268: return new BattleBookBehavior();
-                case 1494560392: return new ClassProjectUpdateList();
-                case 1497031151: return new BattlegroundMatchmakingChat();
-                case 1501269347: return new AddBacklashEffectCinematicAction();
-                case 1491756659: return new ClientBGPlayerInfo();
-                case 1480518795: return new ClientBurnAuraCinematicAction();
-                case 1482932719: return new CastleGamesOption();
-                case 1603069940: return new Ladder();
-                case 1608470471: return new SG_GameAction_PlaySound();
-                case 1607454436: return new FishBehavior();
-                case 1600493444: return new WhirlyBurlyMovementDataAI();
-                case 1593075263: return new ActivateHangingEffectCinematicAction();
-                case 1571330387: return new CastleBlocksBehaviorTemplate();
-                case 1571212651: return new AutobotMobAvoidance();
-                case 1574048828: return new GamebryoClientLeashBehavior();
-                case 1576349184: return new UpFirstData();
-                case 1562557708: return new WizClientObject();
-                case 1566576936: return new GoldAmountTemplate();
-                case 1553113036: return new EffectCinematicAction();
-                case 1558612252: return new ClientCameraCutCinematicAction();
-                case 1550716615: return new PolymorphEffectInfo();
-                case 1406506116: return new ObstacleCoursePendulumBehavior();
-                case 1400601728: return new TieredSpellConfig();
-                case 1384449311: return new PhysicsSimMass();
-                case 1390376351: return new PhysicsSimMassBox();
-                case 1390294371: return new GardeningShedBehaviorBase();
-                case 1378188236: return new WizDisableItemStatEffectTemplate();
-                case 1383456387: return new ControlMultiLineEdit();
-                case 1372359252: return new AmbientSoundBehavior();
-                case 1371865239: return new ChatHistory();
-                case 1365051659: return new DerbyTerrainEffect();
-                case 1353227387: return new ContainerEffectInfo();
-                case 1353120960: return new BattleCardShopOption();
-                case 1355558108: return new MatchCostAdjustment();
-                case 1350257867: return new ObstacleCourseCatapultBehaviorClient();
-                case 1464364179: return new ClientFlareBacklashEffectCinematicAction();
-                case 1467959935: return new BadgeTemplate();
-                case 1443466311: return new CombatResolver();
-                case 1435646328: return new PetStatBlockControl();
-                case 1435081855: return new ZoneGateOption();
-                case 1439808335: return new ChangeActorStateCinematicAction();
-                case 1439949951: return new UnPolymorphCinematicAction();
-                case 1429809267: return new ClientTimerControlCinematicAction();
-                case 1432886223: return new CastleGamesUpdate();
-                case 1419352464: return new UntargetableCinematicAction();
-                case 1422587996: return new GiveCinematicStageTemplate();
-                case 1425755043: return new WeightedEntry();
-                case 732496028: return new ObstacleCourseObstacleBehaviorTemplate();
-                case 736203751: return new EmojiWindow();
-                case 723414239: return new PlayerControllerClient();
-                case 722736551: return new DependentResourceContainer();
-                case 722324447: return new DespawnInfo();
-                case 721581039: return new BattlegroundPlayerStatsManager();
-                case 724653355: return new PetDerbyRacerState();
-                case 727106980: return new RemoveMatchUpdate();
-                case 729645752: return new ObjStateCategory();
-                case 717428816: return new PvPLobbyOption();
-                case 710850144: return new ConicalStateSoundBehavior();
-                case 697954064: return new SoundInfo();
-                case 697882024: return new PetSnackCheckBox();
-                case 697550428: return new MiniMapWindow();
-                case 697548515: return new BracketMatchActorResult();
-                case 703681835: return new PetDerbyRacerStats();
-                case 693545424: return new TutorialLogBehaviorBase();
-                case 684731068: return new DerbyEffectSprite();
-                case 686243712: return new ClassInfo();
-                case 672220772: return new WinAnimSize();
-                case 671435987: return new MagicMirrorShopOption();
-                case 678831487: return new HousingPetMovementCompressed();
-                case 805011463: return new AnimationSoundData();
-                case 789756475: return new SpawnObjectInfo();
-                case 794297748: return new StatisticEffect();
-                case 783957788: return new QuickSellItem();
-                case 785309536: return new TournamentUpdateFriendList();
-                case 787264772: return new QuickSellItemList();
-                case 773685096: return new WizTrainingOption();
-                case 779464164: return new MoveCommandYaw();
-                case 770512659: return new GameEffectTimerSoundTrigger();
-                case 756158779: return new KhanDanceComponent();
-                case 760061556: return new AdvancedPetsConfig();
-                case 746907959: return new DuelModifierTemplate();
-                case 753953416: return new OldWizardEquippedItemInfo();
-                case 739519544: return new LeaderboardEntry();
-                case 739501423: return new ObjectBag();
-                case 739180920: return new IdleAuraCinematicAction();
-                case 741921639: return new CombatRule();
-                case 745983159: return new BattlegroundPolymorphs();
-                case 597256940: return new ObstacleCourseFinishLineBehavior();
-                case 598465708: return new ClientRemoveAuraCinematicAction();
-                case 594376767: return new PlanningTimerControl();
-                case 579106595: return new WizShopOffering();
-                case 581834447: return new LinearStateSoundBehavior();
-                case 583606440: return new PositionalSoundEmitterInfo();
-                case 557797520: return new ConicalSoundBehaviorTemplate();
-                case 558139468: return new InitialPackageInfo();
-                case 552906196: return new ObstacleCourseSpringboardBehaviorClient();
-                case 552767964: return new ProvideCombatTriggerTemplate();
-                case 536990515: return new WizBugReport();
-                case 544820179: return new SoccerBall();
-                case 665471407: return new ClientRemoveBacklashEffectCinematicAciton();
-                case 657399215: return new ReqIsQuest();
-                case 656883584: return new Persona();
-                case 662208264: return new ReqMinion();
-                case 647686372: return new MoveCommandYawTime();
-                case 647113216: return new ClientAnnounceSpellTextCinematicAction();
-                case 654107423: return new DynaModBehavior();
-                case 642686415: return new ClientInfractionBehavior();
-                case 621517840: return new ClientAddHangingEffectCinematicAction();
-                case 618767536: return new FontGlyphis();
-                case 1004289888: return new SavedDebugCommandContainer();
-                case 1004815084: return new ClassProjectPlayer();
-                case 996954276: return new CombatPipListObj();
-                case 983028656: return new WizardAutobotQuestManager();
-                case 984549755: return new ReqHasMorphSlot();
-                case 983778691: return new ClientInventoryBehavior();
-                case 986715891: return new ScrollButton();
-                case 967243432: return new PrivateSocketJewelPair();
-                case 970180239: return new ElixirBenefitBehaviorTemplate();
-                case 962019608: return new CombatGardeningXPEffect();
-                case 960519092: return new FishTournamentUpdate();
-                case 682600041: return new Reco_RecoItemData();
-                case 953108048: return new QuestEffect2();
-                case 945355619: return new SeedBehaviorTemplate();
-                case 944077520: return new ClientBuffDebuffEventCinematicAction();
-                case 1072235552: return new ClientWizStorageBehavior();
-                case 1057966736: return new AuctionHouseOption();
-                case 1063215308: return new AmbientSoundBehaviorTemplate();
-                case 1062567851: return new EquipmentBehaviorTemplate();
-                case 1061626772: return new CinematicInteractInfo();
-                case 1048728075: return new ArenaItemsOption();
-                case 1042297620: return new HousingTeleporterBehavior();
-                case 1046806327: return new ClientDerbyModifyCheerCost();
-                case 1037790056: return new SigilSubCircle();
-                case 1932797849: return new FriendData();
-                case 1016526376: return new CastleMagicManager();
-                case 1018920056: return new Slot_Node_FXDef();
-                case 1017891272: return new ClientDerbyAffectEffects();
-                case 1013504288: return new TutorialServiceOption();
-                case 1013221963: return new TournamentTemplate();
-                case 865552804: return new IgnoreEntryData();
-                case 869584336: return new AutobotTiming();
-                case 859534283: return new CastleBlocksBehavior();
-                case 863098183: return new ClientSpellCardAttachmentCinematicAction();
-                case 842208124: return new RayGeomParams();
-                case 842208940: return new BoxGeomParams();
-                case 846485127: return new PlaneGeomParams();
-                case 846394032: return new ReagentItemTemplate();
-                case 845298559: return new ObstacleCourseRevolvingDoorBehaviorTemplate();
-                case 831627387: return new GraphicalGold();
-                case 835667536: return new QuestEffect();
-                case 817866696: return new CrownsConfirmWindow();
-                case 816553004: return new CastleMagicBehaviorBase();
-                case 816236063: return new ResSyncScript();
-                case 816029179: return new RemoveParticleActorCinematicAction();
-                case 819092356: return new NonCombatMayCastSpellTemplate();
-                case 807592119: return new BattlegroundMatchmaking();
-                case 812166008: return new AutobotConfig();
-                case 811726795: return new PotionShopOption();
-                case 936122567: return new ClientCreateActorCinematicAction();
-                case 926924611: return new WhirlyBurlyBehaviorBase();
-                case 920005971: return new SpawnManager();
-                case 911193648: return new ReqArenaSeasonScore();
-                case 913953091: return new ClientShowPipsCinematicAction();
-                case 898951152: return new ReqArenaSeasonTitle();
-                case 899141292: return new SupportedObjectReference();
-                case 898278391: return new ClassProjectPlayerProgressList();
-                case 892568472: return new RatingInfo();
-                case 891795399: return new ClassProjectPlayerProgress();
-                case 894654611: return new InteractiveMusicLoop();
-                case 895618059: return new MorphingException();
-                case 881555075: return new PermShopItemData();
-                case 884935732: return new TreasureShopModifiers();
-                case 884652336: return new CrownShopButtonNameBehaviorTemplate();
-                case 886072932: return new ClientRemoveHangingEffectCinematicAction();
-                case 872455804: return new BattlegroundGroupStatus();
-                case 880288732: return new PetDerbyResults();
-                case 880293660: return new PetDerbyResult();
-                case 879438032: return new SpellCardAttachmentBehavior();
-                case 198472331: return new LeashBehaviorTemplate();
-                case 197662620: return new EquipmentSet();
-                case 185868540: return new PetDyeToTexture();
-                case 184648548: return new DiegoCombatObserver();
-                case 187845824: return new MassShapeTemplate();
-                case 179711076: return new WinAnimScale();
-                case 170018612: return new ClientAlchemyBehavior();
-                case 173837684: return new LadderBehavior();
-                case 174402291: return new ReqIsGender();
-                case 159708028: return new ChatPopupButton();
-                case 167441052: return new WinAnimScaleSymmetricalSpeed();
-                case 165945871: return new PlayGraphicOnSigilCinematicAction();
-                case 155602276: return new TransformationEffectTemplate();
-                case 158020023: return new WindowBubble();
-                case 224816736: return new PointData();
-                case 264137039: return new HousingSignOperator();
-                case 265605295: return new ClientBurnInterceptCinematicAction();
-                case 252365959: return new ClientRecipe();
-                case 255480868: return new MobMonsterMagicBehaviorTemplate();
-                case 258994007: return new ResultSourceType();
-                case 242361952: return new MagicalSoccerGameComponent();
-                case 241749532: return new TutorialInfo();
-                case 231518492: return new WhirlyBurlyScoreUpdateData();
-                case 222084520: return new FXBySlotEffectTemplate();
-                case 212585243: return new ClassProjectGlobalLootPoint();
-                case 217209844: return new CastleMagicCameraInfo();
-                case 216489347: return new SpellData();
-                case 202602075: return new ActorDialog();
-                case 203479016: return new ReqCanSummonHenchman();
-                case 61124652: return new FadeActorCinematicAction();
-                case 65770091: return new SigilCamera();
-                case 55192955: return new PetGameKioskOption();
-                case 58326148: return new ObstacleCourseSpeedUpBehaviorTemplate();
-                case 57146084: return new FishingBehaviorBase();
-                case 42600292: return new ShoppingSellModifiers();
-                case 46756688: return new ClientCreateHangingEffectActorCinematicAction();
-                case 46724796: return new WizStatisticEffect();
-                case 48419299: return new ReqBaseMagicLevel();
-                case 36583768: return new PetSiegeGameManager();
-                case 38634184: return new BadgeFilterInfo();
-                case 30194471: return new TournamentConfig();
-                case 30280384: return new BGPolymorphSelectBehavior();
-                case 19766171: return new GeomParams();
-                case 19896592: return new HatchmakingCrownsPetList();
-                case 21180087: return new BadgeButton();
-                case 23988492: return new PermanentShop();
-                case 2062775: return new ActorDeathCinematicAction();
-                case 155295: return new AttenuatedFileList();
-                case 132377528: return new WizItemTemplate();
-                case 118148327: return new CombatResult();
-                case 122790531: return new SortedCaughtFish();
-                case 122870671: return new PetSnackBehavior();
-                case 125624435: return new ReqBaseHasMagicSchool();
-                case 113827463: return new SoundBehavior();
-                case 736220869: return new PathManager_NodeTemplateList();
-                case 874399014: return new PathManager_PathTemplateList();
-                case 106591956: return new InfractionEvent();
-                case 105632051: return new ObstacleCoursePendulumBehaviorTemplate();
-                case 96340399: return new CastleMagicItemDetector();
-                case 86750823: return new Group();
-                case 90393044: return new ClientAttachEffectToTurnIndicatorCinematicAction();
-                case 75729628: return new WinAnimDelay();
-                case 81721396: return new SavedDebugCommand();
-                case 83370212: return new BattlegroundTemplateChatList();
-                case 82255411: return new Spell();
-                case 69321172: return new PetTalentTemplate();
-                case 75027627: return new CameraReleaseCinematicAction();
-                case 455857251: return new DependentResourcesBehavior();
-                case 447154572: return new SoundDefTemplate();
-                case 437895412: return new SpellCheckBox();
-                case 437113475: return new ParalyzeScriptLink();
-                case 438788024: return new PhysicsBehaviorClient();
-                case 443305219: return new FriendSortByWindow();
-                case 428934979: return new CrownShopCategory();
-                case 427994631: return new TieredSpellTemplate();
-                case 420746960: return new BracketReportInfo();
-                case 419561704: return new MoraleModificationMap();
-                case 423412599: return new ShadowSpellEffect();
-                case 422985728: return new WizardSearchResultItem();
-                case 414177051: return new TreasureCardPosterBehaviorTemplate();
-                case 415877395: return new TagGameComponent();
-                case 417768832: return new ScavengeGoalTemplate();
-                case 532478368: return new HousingWaterManager();
-                case 534437812: return new ControlSprite();
-                case 521425252: return new TodaysQuestData();
-                case 525087912: return new ClientAnnounceTextCinematicAction();
-                case 526794296: return new TeamHelpUpdateInfo();
-                case 515753212: return new SpectatorWindow();
-                case 515472167: return new ClientRentalBehavior();
-                case 514684131: return new ObjStateOverrideInfo();
-                case 506983124: return new ItemSetBonusData();
-                case 510679932: return new TeleporterTemplate();
-                case 498773831: return new AvailableCompleteEntry();
-                case 487252043: return new ElixirBenefitEffect();
-                case 490120136: return new WizBangTemplateManager();
-                case 489046651: return new HubZoneMapping();
-                case 481689799: return new PlayGraphicOnActorAction();
-                case 482905379: return new CombatParticipant();
-                case 471512163: return new CustomEmoteBehaviorTemplate();
-                case 476469952: return new TurnIndicatorCinematicAction();
-                case 335329020: return new TipData();
-                case 324216992: return new PolymorphBattlegroundsBehaviorTemplate();
-                case 315795460: return new ReqAddIncreaseInventory();
-                case 305968516: return new PetFeedingRewardConfig();
-                case 297449768: return new ClientCameraFadeCinematicAction();
-                case 291148467: return new FriendSymbolWindow();
-                case 291517640: return new RecipeTemplate();
-                case 277778880: return new HousingSigilManager();
-                case 622559639: return new DyeShopWindow_DyeShopItem();
-                case 282965012: return new CastleMagicAction();
-                case 284581067: return new SG_GameActionClient_PlaySound();
-                case 274255088: return new DOTEffectTemplate();
-                case 273981843: return new ClientMountInteractableOption();
-                case 275715576: return new SG_GameInteraction();
-                case 401797275: return new StaticControlButtonState();
-                case 386665808: return new HousingMusicManager();
-                case 391975888: return new PathActionChangePath();
-                case 393520548: return new AutobotManager();
-                case 369218032: return new GroundContourBehavior();
-                case 371722435: return new ClientElixirBenefitBehavior();
-                case 374193372: return new ParticleEmitter2D();
-                case 368732588: return new HelpChatOperator();
-                case 353969115: return new InteractiveMusicButtonSample();
-                case 357970275: return new GardeningShedBehavior();
-                case 356798640: return new CoreTemplate();
-                case 356555948: return new GoalTemplate();
-                case 359795892: return new WizTrainingInteraction();
-                case 337331579: return new WizStatisticOverrideEffectTemplate();
-                case 338741468: return new RegisterPersonaCinematicAction();
-                case 350704574: return new TournamentUpdateList();
-                case 358789653: return new GhostHider();
-                case 356519878: return new ItemTemplate();
-                case 368838629: return new LootInfoListBase();
-                case 365328457: return new LikesDislikesEntry();
-                case 365701989: return new TutorialLogBehaviorTemplate();
-                case 373956210: return new AnimationPair();
-                case 369939989: return new PvPCombatSigilTemplate();
-                case 381879154: return new AuctionPriceMods();
-                case 391666189: return new ProvideSpellEffectTemplate();
-                case 389688218: return new CastleMagicSpellTemplate();
-                case 387352862: return new ReqCanAddExpansion();
-                case 397276986: return new BattleCardPurchaseInfo();
-                case 397745153: return new EquippedItemInfoList();
-                case 395998222: return new QuantityBehaviorTemplate();
-                case 279841009: return new WhirlyBurlySpellTemplate();
-                case 279820898: return new WizBGPolymorphStatisticOverrideEffect();
-                case 278030057: return new CrownShopOffering();
-                case 293277494: return new ObjectRemapBehaviorTemplate();
-                case 290560225: return new RootWindow();
-                case 299530282: return new StageBacklashEffectCinematicAction();
-                case 308372570: return new SG_GameAction_AddPowerMultiplier();
-                case 309007469: return new MinigameSigilOption();
-                case 304434417: return new HousingGamePlayerCollection();
-                case 305066670: return new WorldHubZoneMapper();
-                case 312958370: return new NPCDataList();
-                case 311591970: return new ClientAtticBehavior();
-                case 312009017: return new PetBoostPlayerStatEffectTemplate();
-                case 322298770: return new TalentInfo();
-                case 333713130: return new ClientCastEffectCinematicAction();
-                case 332758549: return new ClientHideActorCinematicAction();
-                case 328174486: return new WhirlyBurlyGameState();
-                case 473973266: return new GamebryoCamera();
-                case 484534734: return new ControlProgress();
-                case 485500265: return new TreasureCardVaultBehaviorTemplate();
-                case 480285898: return new ReqHasQuest();
-                case 495175225: return new BaseZone();
-                case 510754225: return new GameEffectBase();
-                case 505902454: return new PetPowerControl();
-                case 503821937: return new ActorMadlib();
-                case 515585957: return new LootInfo();
-                case 515425913: return new PassInfo();
-                case 512390534: return new PetJewelControl();
-                case 512558465: return new FishingXPConfig();
-                case 513688570: return new AlphaMaskTextureD3D();
-                case 524002762: return new MinigameInfo();
-                case 524087929: return new LeaveTeamUpdate();
-                case 535754490: return new WinAnimMoveToLocationTimeEaseApprox();
-                case 532511993: return new ProxyMesh();
-                case 529903773: return new TournamentInfoRequest();
-                case 408927737: return new SubscriberBenefitControl();
-                case 403481061: return new TempStartingPipEffectInfo();
-                case 404368369: return new FreeCamController();
-                case 404265777: return new PremiumContentOption();
-                case 419074197: return new PetGameActionList();
-                case 411218101: return new PetDerbyObstacleBehaviorTemplate();
-                case 411276498: return new ClientDerbyAddSpeedBoost();
-                case 412184066: return new TemplateLocation();
-                case 412649290: return new CombatResultListObj();
-                case 425276702: return new BracketReport();
-                case 422807418: return new ClassProjectReward();
-                case 432985286: return new BracketIDList();
-                case 430941725: return new WizardEquippedItemInfo();
-                case 448961369: return new WizItemGoldChestList();
-                case 450813013: return new ReqSpecificTemplate();
-                case 447532017: return new PremiumContentOptionList();
-                case 460640610: return new CreationNameInput();
-                case 467828505: return new BurnHangingEffectCinematicAction();
-                case 465655801: return new ClientDerbyForceLaneChange();
-                case 462556290: return new PCDialogEntry();
-                case 74679673: return new HousingSigilBehaviorTemplate();
-                case 68679730: return new BGPolymorphSelectOption();
-                case 86801381: return new AddTeamToMatchUpdate();
-                case 84725470: return new LeashedPathMovementBehaviorClient();
-                case 98667886: return new WhirlyBurlyPlanningData();
-                case 95150798: return new CharacterRaceTable();
-                case 95199121: return new ClientSetHangingEffectAlphaCinematicAction();
-                case 92904597: return new MobMonsterMagicBehavior();
-                case 94305977: return new ClientPlaySoundCinematicAction();
-                case 108435349: return new AggroBehavior();
-                case 106761338: return new FidgetBehavior();
-                case 106816710: return new BattlegroundGroupMemberStatus();
-                case 116465453: return new DeckConfigurationWindow();
-                case 116858830: return new PetSnackItemTemplate();
-                case 113443005: return new ClientInfractionMessageBox();
-                case 114244441: return new HousingGamePowerUpLocations();
-                case 114884857: return new CoreObject();
-                case 112941557: return new AtticBehavior();
-                case 121687885: return new ClientActorDialogCinematicAction();
-                case 122307282: return new PhysicsBehavior();
-                case 121222001: return new GraphicalReagent();
-                case 6465297: return new DerbyRemoveAction();
-                case 7595058: return new BlobRequestObject();
-                case 5639446: return new TreasureShopOption();
-                case 2231845: return new SplashCinematicInfo();
-                case 2567181: return new Mail();
-                case 14400033: return new ArenaBonusPointsLootInfo();
-                case 10916518: return new RatingBadgeInfo();
-                case 9336794: return new ReqCombatHealth();
-                case 9383621: return new DependentResourcesBehaviorTemplate();
-                case 19190593: return new SoundFilterParam();
-                case 27485449: return new GraphicalSpellWindow();
-                case 26424677: return new MadlibBlock();
-                case 36732986: return new PetSnackLootInfo();
-                case 37570698: return new WizClientPet();
-                case 34302858: return new ClientAnnounceRoundCinematicAction();
-                case 56718037: return new CastEffectCinematicAction();
-                case 55925733: return new FixedCamController();
-                case 51064253: return new TreasureCardPosterBehavior();
-                case 51963589: return new InteractiveMusicBehaviorTemplate();
-                case 66132361: return new HousingMusicBehaviorTemplate();
-                case 66674534: return new DdWinAnimMovePlayer();
-                case 61124902: return new HideActorCinematicAction();
-                case 59145586: return new PathObjectTemplate();
-                case 58998197: return new TreasureCardPosterBehaviorBase();
-                case 204545665: return new CastleMagicBehaviorTemplate();
-                case 215121434: return new ObstacleCoursePusherBehavior();
-                case 213153333: return new EmojiData();
-                case 224976161: return new QuestData();
-                case 219375545: return new ActorDialogBase();
-                case 219935658: return new DerbyMoraleByTerrainEffect();
-                case 228839230: return new MountInteractableOption();
-                case 229444009: return new LinearSoundEmitterInfo();
-                case 227052801: return new DdWinAnimMoveDiggingMob();
-                case 466194086: return new RecipeWindow_RecipeItem();
-                case 253815761: return new PlaySoundInfo();
-                case 264224733: return new WizStatisticOverrideEffect();
-                case 139235850: return new PlayComplexSoundCinematicAction();
-                case 137429557: return new CrownShopCategoryMenu();
-                case 135311934: return new MagicSchoolTemplate();
-                case 153447266: return new WizGameStats();
-                case 165816766: return new SG_GamePower();
-                case 173843950: return new RenderBehavior();
-                case 169586157: return new CameraFadeCinematicAction();
-                case 180478034: return new SoftEnumList();
-                case 181170198: return new SG_GameEvent();
-                case 177050917: return new CollisionWorld();
-                case 186685798: return new GameEffectTemplate();
-                case 200773606: return new GearVaultBehavior();
-                case 195378666: return new WhirlyBurlyBehaviorTemplate();
-                case 878689670: return new ClientBGPenaltyMatchBan();
-                case 876175253: return new CompassMarkerWindow();
-                case 882808894: return new DoodleMapPair();
-                case 905853861: return new LootInfoList();
-                case 905824889: return new PassInfoList();
-                case 901948773: return new ConicalSoundEmitterInfo();
-                case 906511574: return new ObstacleCoursePusherBehaviorClient();
-                case 916808969: return new LeaderboardOption();
-                case 2027897780: return new Reco_LevelData();
-                case 928838442: return new ControlRichEdit();
-                case 937960421: return new EmbeddedBrowserConfigEntry();
-                case 936879042: return new EquipmentShopOption();
-                case 933621218: return new BlobRequest();
-                case 812450313: return new DailyPvPOption();
-                case 809551598: return new SpellEffect();
-                case 818169582: return new SpeedEffect();
-                case 815534558: return new QuestEntry();
-                case 827029177: return new PetGeneticsControl();
-                case 834771949: return new AnnounceTextCinematicAction();
-                case 847910454: return new LocaleManager();
-                case 870615457: return new CombatGardeningXPEffectTemplate();
-                case 868706117: return new TallyCounterTemplate();
-                case 864589790: return new BreadCrumbBehaviorTemplate();
-                case 1006886629: return new ClassProjectFinalReward();
-                case 1022380558: return new PhysicsSimObject();
-                case 1031339041: return new ClientStopBacklashRotationEffectCinematicAction();
-                case 1031746981: return new LootInfoBase();
-                case 1028559565: return new WizCinematicActorTemplate();
-                case 1053546857: return new LeashedPathNodeDescriptor();
-                case 1054536722: return new ReqInSameDuel();
-                case 1054604113: return new AlchemyStationOption();
-                case 1058628549: return new RandomPerTargetSpellEffect();
-                case 484660975: return new CharacterChatStatsByText();
-                case 945453457: return new AreaBehaviorTemplate();
-                case 945305149: return new MoveBehaviorTemplate();
-                case 942061022: return new WizMountTemplate();
-                case 941120858: return new WeightedList();
-                case 953458066: return new GardeningShedBehaviorTemplate();
-                case 948718385: return new MonsterMagicBehaviorBase();
-                case 963092649: return new SavedCharacter();
-                case 963730557: return new GardeningXPConfig();
-                case 969177529: return new SG_GameActionClient_DestroyBlock();
-                case 968036470: return new FriendsListWindow();
-                case 968676305: return new ClientToggleInterfaceControlCinematicAction();
-                case 965744721: return new MonsterArenaBehaviorBase();
-                case 984615697: return new MonsterMagicBehavior();
-                case 996834741: return new ClassProjectLocation();
-                case 991966322: return new GameEffectTemplateList();
-                case 1004362081: return new PathActionEnterState();
-                case 1001150577: return new MonsterArenaBehavior();
-                case 998472989: return new GroundContourBehaviorTemplate();
-                case 999565057: return new BracketMatchInfo();
-                case 612169714: return new ClientTextureRemapBehavior();
-                case 615001557: return new QueuedCombatCinematicAction();
-                case 613689606: return new SpellEffectParamOverride();
-                case 636881617: return new ClientDestroyShadowCreatureCinematicAction();
-                case 643402246: return new JewelShopOption();
-                case 641489670: return new InventoryBehaviorBase();
-                case 639459034: return new WizZoneData();
-                case 649426794: return new DdBonusWinAnim();
-                case 661493590: return new ClientWizEquipmentBehavior();
-                case 654724630: return new GroupObserver();
-                case 666326969: return new ClientUnShadowSelfCinematicAction();
-                case 663857801: return new RecipeShopOption();
-                case 552625970: return new UnknownLootInfo();
-                case 549418521: return new BattlegroundMiniMapWindow();
-                case 557337749: return new ObstacleCourseClientSettings();
-                case 557362493: return new GearVaultBehaviorTemplate();
-                case 554961649: return new PolymorphEffectTemplate();
-                case 567129561: return new PromoReward();
-                case 564606237: return new AutobotQuestManager();
-                case 562305565: return new MagicXPConfig();
-                case 587704733: return new ResAddCharacterSlotResult();
-                case 603199126: return new DerbyForceLaneChange();
-                case 597001834: return new DerbyModifyMoraleChance();
-                case 739493037: return new PetLevelUpWindow();
-                case 751518165: return new ClientZone();
-                case 762229709: return new MountTable();
-                case 760648898: return new ItemBundleTemplate();
-                case 770280814: return new WhirlyBurlyPlanningDataAI();
-                case 768776269: return new ContainerEffectTemplate();
-                case 769545525: return new MaxManaLootInfo();
-                case 763466485: return new EquivalentItemBehavior();
-                case 778503062: return new ClientElixirBehavior();
-                case 772988257: return new MinigameSigilTemplate();
-                case 788470325: return new DerbyAddSpeedBoost();
-                case 785491938: return new ClientStopComplexSoundCinematicAction();
-                case 795914074: return new ReqHangingEffectType();
-                case 791194249: return new HousingTeleporterTargeting();
-                case 674943834: return new ClientObjectInfo();
-                case 687540325: return new CantripsItemTemplate();
-                case 692472034: return new TeleportProximityBehaviorTemplate();
-                case 689839542: return new BracketRewardsPlaceMapping();
-                case 721411698: return new NPCBehavior();
-                case 718947510: return new ParticipantParameter();
-                case 718882026: return new TeamHelpFailWindow();
-                case 725706737: return new WizardClientTutorial();
-                case 725899338: return new ClientPlayerAggroBehavior();
-                case 726937449: return new PositionalStateSoundBehavior();
-                case 724756405: return new WorldWindow();
-                case 732555210: return new WinAnimMoveToLocationTime();
-                case 732930761: return new FishTournamentOption();
-                case 1417347553: return new HealthGlobe();
-                case 1411637641: return new MonsterMagicBehaviorTemplate();
-                case 1412612745: return new MatchTeamResult();
-                case 1412824734: return new BattlegroundPlayerStats();
-                case 1410442314: return new PetJewelBehavior();
-                case 1420994262: return new FishingBehaviorTemplate();
-                case 1431247662: return new TournamentLevelModifiers();
-                case 1428297017: return new HousingGameManager();
-                case 1429173221: return new TempStartingPipEffect();
-                case 1428987054: return new WindowTip();
-                case 1430237929: return new MonsterArenaBehaviorTemplate();
-                case 1435784470: return new InfractionMessageBoxInfo();
-                case 1450374693: return new ClassProjectTemplate();
-                case 1447413170: return new WaypointGoalTemplate();
-                case 1445973953: return new ClientDerbyLockLane();
-                case 1456849634: return new CharacterSet();
-                case 1453771866: return new PetTalentBaseTemplate();
-                case 1454170277: return new HousingPetBehaviorTemplate();
-                case 2140895279: return new LockData();
-                case 1462331822: return new GameObjectAnimStateTracker();
-                case 1476217734: return new InfractionMessageBox();
-                case 1476240446: return new AquariumBehaviorTemplate();
-                case 1470900757: return new MagicSchoolInfo();
-                case 1349723505: return new NonCombatMayCastSpellInfo();
-                case 1347139517: return new TeamHelpUpdateSigilInfo();
-                case 1357328057: return new MailList();
-                case 1351086562: return new MountDyeToTexture();
-                case 1361945534: return new ObjectStateBehaviorTemplate();
-                case 1374843974: return new ActorDialogCinematicAction();
-                case 1373555061: return new WindowAnimation();
-                case 1381633189: return new BasicChatChannelInvite();
-                case 1378403489: return new PathActionEmote();
-                case 1396020734: return new ClientDuel();
-                case 1393834862: return new Result();
-                case 1401388329: return new ClientStartHangingRotationCinematicAction();
-                case 1402057090: return new PetDerbyTrackManager();
-                case 1550645453: return new InteractiveMusicPlayerList();
-                case 1545348410: return new InitialCombatSoundsList();
-                case 1579576242: return new ClientHaltCinematicAction();
-                case 1592841705: return new PathActionStop();
-                case 1606537078: return new PestBehavior();
-                case 1607047010: return new DeedBehavior();
-                case 1607339874: return new DeckBehavior();
-                case 1607308642: return new DuelBehavior();
-                case 1500557029: return new ClientQuantityBehavior();
-                case 1501326909: return new AttachEffectToTurnIndicatorCinematicAction();
-                case 1496463253: return new HousingSignBehaviorBase();
-                case 1508663026: return new LevelUpElixirSchoolSpecificData();
-                case 1506436109: return new CrownShopData();
-                case 1503925161: return new HousingNode();
-                case 1504747877: return new HatchmakingKioskBehaviorTemplate();
-                case 1505027205: return new PetDerbyTalentTemplate();
-                case 1505325257: return new HousingBlob();
-                case 1516786253: return new WizardAutobotMobAvoidance();
-                case 1514354486: return new SetHangingEffectAlphaCinematicAction();
-                case 1519039382: return new PlaySoundCinematicAction();
-                case 1519365053: return new ObstacleCourseFinishLineBehaviorTemplate();
-                case 1519378889: return new BoosterPackTemplate();
-                case 1539601493: return new ClientDerbyModifyPetStat();
-                case 1538927557: return new ClientStartBacklashRotationEffectCinematicAction();
-                case 1536596397: return new TeamHelpWindow();
-                case 1155327829: return new AnnounceRoundCinematicAction();
-                case 1151378330: return new ModifyPipsCinematicAction();
-                case 1173953278: return new TextComponent();
-                case 1179545722: return new PetTomePetTotal();
-                case 1175580382: return new ForcedStateInfo();
-                case 1175812861: return new ScrollWindowStyle();
-                case 1189093086: return new SG_GameLevelData();
-                case 1185836686: return new RemoveTeamFromMatchUpdate();
-                case 1199498841: return new ObstacleCourseSpringboardBehavior();
-                case 1205109837: return new CreateHangingEffectActorCinematicAction();
-                case 1076496389: return new TextTagPair();
-                case 1077573325: return new BadgeFilterDescriptionList();
-                case 1098226426: return new ExtraHousingZoneBehaviorBase();
-                case 1095569177: return new GameEffectTimerPopupTrigger();
-                case 1093177977: return new FXBySlotEffectInfo();
-                case 1105586386: return new PetGameEndData();
-                case 1099467042: return new FaceTargetActorCinematicAction();
-                case 1110943465: return new ClientShadowCreatureCameraCutCinematicAction();
-                case 1121093842: return new CastleGamesEntry();
-                case 1119368930: return new AddTeamUpdate();
-                case 1131788606: return new ExtraHousingZoneBehavior();
-                case 1126528881: return new AchieveRankGoalTemplate();
-                case 1277314837: return new PathMovementBehaviorTemplate();
-                case 1290671313: return new GraphicalArenaPoints();
-                case 1291388485: return new TeleportToNodeClient();
-                case 1303759694: return new TutorialQuestTemplate();
-                case 1317007438: return new WhirlyBurlyKioskBehaviorTemplate();
-                case 1311473593: return new TeamHelpWorldInfoList();
-                case 1332680849: return new AnimatePipsCinematicAction();
-                case 1333785186: return new PetDerbyTrackInfo();
-                case 1330171093: return new SphereGeomParams();
-                case 1325584625: return new WinAnimStatGlobeScaleTime();
-                case 1327351122: return new DestroyActorCinematicAction();
-                case 1340922093: return new LadderBehaviorTemplate();
-                case 1214665282: return new EmojiDefinition();
-                case 1216320670: return new FishTournamentLeaderboardOption();
-                case 1208677901: return new SoundFilterSetting();
-                case 1217194041: return new FXBySlotEffect();
-                case 1228184373: return new ClientDerbyModifyRate();
-                case 1239703202: return new PaidLootRollStationOption();
-                case 1240267290: return new TimedItemBehaviorTemplate();
-                case 1237532881: return new TeamUpWindow();
-                case 1238836622: return new HouseTransferResultList();
-                case 1233460586: return new SoundEmitterInfo();
-                case 1248002306: return new HousingObjectJewelWandContainer();
-                case 1273489473: return new InventoryPageWindow();
-                case 1273240489: return new PublicSocketJewelPair();
-                case 1268809670: return new ClientProcess();
-                case 1952903325: return new ClientPolymorphCinematicAction();
-                case 1948777802: return new StringTable();
-                case 1961647889: return new GamebryoClientDerbyTerrainEffect();
-                case 241856639: return new ClientPetItemBehavior();
-                case 1966523486: return new ClientTransformationEffect();
-                case 1978643142: return new AddAuraCinematicStageTemplate();
-                case 1975820202: return new CastleTourMyCastleData();
-                case 2001432182: return new BasePetItemBehavior();
-                case 2013237153: return new ArenaPointsLootInfo();
-                case 1885762774: return new ScavengerHuntComponent();
-                case 1892154898: return new ClientRemoveProtectionEffectCinematicAction();
-                case 1893366638: return new Recipe();
-                case 1893276341: return new HouseNameList();
-                case 1896394766: return new ReagentShopOption();
-                case 1904917534: return new ReqPvPCombat();
-                case 1916899342: return new NPCDialogEntry();
-                case 1915020058: return new ClientAddInterceptCinematicAction();
-                case 1945771894: return new InstanceSigilOption();
-                case 1942557489: return new SpellFavorites();
-                case 1942868778: return new WizardClientDuelBehavior();
-                case 1939999694: return new BurnInterceptCinematicAction();
-                case 1940406602: return new AuctionTemplateIDList();
-                case 1941897106: return new WizShoppingOption();
-                case 1938714222: return new SortedDirt();
-                case 1939273082: return new PetStatsControl();
-                case 2084157382: return new CombatTriggerDescription();
-                case 2096320773: return new BracketTournamentGoldCostInfoList();
-                case 2103588989: return new JewelSocketWrenchElements();
-                case 2100267822: return new UIScaleConfigEntry();
-                case 2105843810: return new UpdatePipsCinematicAction();
-                case 2106895546: return new TreasureShopCrownsOption();
-                case 2116743506: return new ObstacleCourseSpeedUpBehavior();
-                case 2115061166: return new FontMapping();
-                case 2130279566: return new ActorBody();
-                case 2128307098: return new ClientBGPlayerBehavior();
-                case 2124877226: return new BracketMatchResult();
-                case 2125115089: return new InstanceInfo();
-                case 2134306533: return new ReqCombatStatus();
-                case 2134167581: return new ClientPipFloatingTextCinematicAction();
-                case 2130720950: return new FontMapSWF();
-                case 2144054050: return new DeedBehaviorBase();
-                case 2144250425: return new ClientActorResurrectCinematicAction();
-                case 2144772025: return new FloatingTextCinematicAction();
-                case 2140051037: return new NonCombatMayCastSpellDescription();
-                case 2140729382: return new GoalData();
-                case 2029255373: return new ItemFinderOption();
-                case 2024234414: return new ObjState();
-                case 2023026657: return new ClientDerbyTerrainEffect();
-                case 2037853766: return new AttenuatedFileDescription();
-                case 2032246493: return new MatchStatusUpdate();
-                case 2031064590: return new WizardAutobotManagerGraphicalClient();
-                case 2030833570: return new Cinematic();
-                case 2031267689: return new ShadowCreatureIdleCinematicAction();
-                case 2046807726: return new ObjStateSet();
-                case 2043208861: return new CrownShopPatch();
-                case 2054208081: return new CritAndBlockLevelData();
-                case 2055575618: return new ClientBattleBookBehavior();
-                case 2065797245: return new AvailableQuestEntry();
-                case 2078739026: return new ClientEffectCinematicAction();
-                case 2079880458: return new ClientJewelSocketBehavior();
-                case 1685607869: return new AlchemyBehavior();
-                case 1682456577: return new BugReport();
-                case 1682715161: return new RespecOption();
-                case 1678711058: return new ProvidePetPower();
-                case 1679562450: return new PulseEffectTemplate();
-                case 1692567814: return new RecipeTypeList();
-                case 1693221429: return new ConditionalSpellEffect();
-                case 1695090917: return new ModifyPipRoundRateData();
-                case 1718737137: return new DeathCinematicStageTemplate();
-                case 1712113929: return new RidableBehavior();
-                case 1712567838: return new FidgetStateInfo();
-                case 1727915110: return new ClientTutorial();
-                case 1722460862: return new HousingGameHiScores();
-                case 1720745186: return new ReqClearCraftingSlots();
-                case 183540594: return new ClientPetOwnerBehavior();
-                case 1728512813: return new ClientSpawnObjectInfo();
-                case 1729046882: return new ReqHasShadowMagic();
-                case 1742888521: return new RequirementList();
-                case 1736755706: return new GardenData();
-                case 1626032861: return new ClientRemoveParticleActorCinematicAction();
-                case 1635361513: return new ActiveMapQuestsCommon();
-                case 1635878573: return new LinearSoundBehavior();
-                case 1636346302: return new GoalEntry();
-                case 1655772598: return new BracketRequest();
-                case 1814725034: return new ClientFadeActorCinematicAction();
-                case 1812364121: return new BehaviorInstance();
-                case 1812914737: return new TriviaWindow();
-                case 1825820618: return new WinAnimMoveToLocation();
-                case 1825904286: return new NodeDescriptor();
-                case 1835201297: return new HousingMusicBehavior();
-                case 1835678385: return new CinematicStageTemplate();
-                case 1841606589: return new NaturalActCinematicStageTemplate();
-                case 1843239049: return new ClientCameraReleaseCinematicAction();
-                case 1852799257: return new HousingBlobObject();
-                case 1875226210: return new RegisterActorCinematicAction();
-                case 1870944082: return new InfractionRecord();
-                case 1745866961: return new WizItemVendorDataList();
-                case 1775214486: return new ClientRegisterPersonaCinematicAction();
-                case 1773778513: return new ConditionalSpellElement();
-                case 1774144390: return new PetSnackShopOption();
-                case 1770957610: return new FoodFightGameComponent();
-                case 1793093601: return new HousingSigilBehavior();
-                case 1793122233: return new HidePipsCinematicAction();
-                case 1792830910: return new HousingNodeReference();
-                case 1798223177: return new ChatDiagnostics();
-                case 1797233134: return new MatchActorResult();
-                case 1803621809: return new ClientElixirBenefitEffect();
-                case 1810771346: return new ClientPlayGraphicOnActorAction();
-                case 1796329767: return new FlyThroughDataManager();
-                case 1797939678: return new MoveController();
-                case 1787762147: return new PolymorphRatingInfo();
-                case 1793717122: return new ShowPipsCinematicAction();
-                case 1774135715: return new IgnoreEntryDataList();
-                case 1773393838: return new CoreInfoTable();
-                case 1761417967: return new PetDropGameSettings();
-                case 1761032551: return new DdSprite();
-                case 1759594182: return new PolymorphEffect();
-                case 1878494971: return new FurnitureInfoBehavior();
-                case 1877184103: return new BalloonBaseWindow();
-                case 1868196162: return new GameEffectTimerTrigger();
-                case 1867093066: return new WizBangTemplate();
-                case 1860189171: return new CrownShopItem();
-                case 1841040434: return new CraftingSlotLootInfo();
-                case 1839645462: return new ObjectStateBehavior();
-                case 1842986910: return new BattlegroundPOI();
-                case 1821686826: return new PetGameEnergyCost();
-                case 1824814030: return new ClientActorDeathCinematicAction();
-                case 1816057234: return new CreateActorCinematicAction();
-                case 1661881579: return new DynaMod();
-                case 1664912158: return new ReqHasSpell();
-                case 1663404142: return new EquipSlot();
-                case 1655161874: return new AvatarAppearanceRule();
-                case 1649697931: return new DynaModList();
-                case 1651523739: return new BGPenaltyMatchBan();
-                case 1637825978: return new CompassMarker();
-                case 1636098283: return new PestEntry();
-                case 1636219403: return new PrepEntry();
-                case 1641321867: return new DynamicTriggerTemplate();
-                case 1641542923: return new WizClientObjectItem();
-                case 1642976994: return new BracketUpdateMessage();
-                case 1629963219: return new PetDerbyTrackDescriptor();
-                case 1615802115: return new RemoveHangingEffectCinematicAction();
-                case 1615071014: return new CombatCheatSettings();
-                case 1738337278: return new RequirementFailNotification();
-                case 1740664319: return new ClientIdleAuraCinematicAction();
-                case 1729811790: return new GoalCompilation();
-                case 1729559403: return new PipControl();
-                case 1730442299: return new ObjStateTransition();
-                case 1508193439: return new CharacterChatStatsByState();
-                case 1733530166: return new WinAnimConcurrentBounded();
-                case 1732595259: return new ControlBanner();
-                case 1735703583: return new HUDWindow();
-                case 1735238579: return new ControlSlider();
-                case 1712079914: return new AvatarOptionBase();
-                case 1705430167: return new ObstacleCourseSpringboardBehaviorTemplate();
-                case 1709698983: return new SoundAcousticsInfo();
-                case 1694851315: return new MoveBehaviorClient();
-                case 1701308166: return new TreasureTableLootInfo();
-                case 1687140414: return new DerbyStealMorale();
-                case 1679794931: return new StateEffectTemplate();
-                case 1678193267: return new SpeedEffectTemplate();
-                case 1680331898: return new ContainerEffect();
-                case 1682365830: return new SpellDataList();
-                case 2072799755: return new SG_GameAction_DetonateBlock();
-                case 2078127167: return new ClientMagicSchoolBehavior();
-                case 2079877822: return new PetCameraActorCinematicAction();
-                case 2078748266: return new ObstacleCourseRevolvingDoorBehaviorClient();
-                case 2059802762: return new PetTomeBehaviorBase();
-                case 2047255518: return new ActiveTimedAccessPassList();
-                case 2054583578: return new ItemLootInfo();
-                case 2054183870: return new ManaLootInfo();
-                case 2054089398: return new BoosterPackCrownsOption();
-                case 2032637510: return new GoalEntryFull();
-                case 2035624515: return new MatchActor();
-                case 2024220539: return new PetStat();
-                case 2014171646: return new AuctionHouseOffering();
-                case 2140760111: return new LogoData();
-                case 2123984523: return new TournamentInfo();
-                case 2127988919: return new CantripsInvisibilityEffectTemplate();
-                case 2127160210: return new SpellCardAttachmentCinematicAction();
-                case 2127039974: return new MagicMirrorShopBehaviorTemplate();
-                case 2117905135: return new NPCBehaviorTemplate();
-                case 2117326551: return new MagicXPLootInfo();
-                case 2119102275: return new SavedSettingContainer();
-                case 2122027590: return new SigilZoneInfoManager();
-                case 2113550655: return new ActorRenameCinematicAction();
-                case 2093138226: return new ActiveClassProject();
-                case 2081582766: return new TeleportToNode();
-                case 2085770007: return new ReqInCombat();
-                case 1941056647: return new MoveCommandSteered();
-                case 1940386279: return new IdleInterceptCinematicAction();
-                case 1946036270: return new ClientDerbyAddObstacle();
-                case 1945438927: return new ClassProjectLeaderboard();
-                case 1925530486: return new ClientDerbyModifyMorale();
-                case 1927467246: return new CollectedEssenceTrackingData();
-                case 1913349474: return new DebugCinematicsComponent();
-                case 1918697047: return new ElasticCamController();
-                case 1907036391: return new AccompanyNPCBehaviorTemplate();
-                case 1897644167: return new CurrentQuestCompilation();
-                case 1897168203: return new DoodleDoug();
-                case 1903863563: return new ObstacleCourseModifyTimeBehaviorTemplate();
-                case 1893620590: return new ClientCreateAuraActorCinematicAction();
-                case 1892634734: return new FishTournamentEntry();
-                case 2011103542: return new ClientFaceTargetTeamActorCinematicAction();
-                case 2009278410: return new HousingMusicPlayerBehaviorBase();
-                case 2002308619: return new BattlegroundSigilTemplate();
-                case 2001483714: return new HousingMusicPlayerBehavior();
-                case 1996019762: return new SchoolOfFocusOption();
-                case 1981510250: return new FishingLevelControl();
-                case 1699691874: return new WeightedEntryT_std_string();
-                case 1979173182: return new DailyQuestReward();
-                case 1978440711: return new ActorDialogList();
-                case 1956547067: return new GraphicalEventCurrency2();
-                case 1956530683: return new GraphicalEventCurrency1();
-                case 1960476023: return new ReqIsGoal();
-                case 1960247311: return new LinearStateSoundBehaviorTemplate();
-                case 1952138366: return new WizItemLocations();
-                case 1951555766: return new WinAnimMoveToLocationTimeEase();
-                case 1950905442: return new GearVaultBehaviorBase();
-                case 1953278307: return new PetGameConfig();
-                case 1270744675: return new MonsterMagicWorldTotalList();
-                case 1271628534: return new MobAggroBehavior();
-                case 1259701539: return new DuelModifier();
-                case 1264963243: return new ClientPetSnackItem();
-                case 1251822162: return new DerbyModifyCheerCost();
-                case 1250622779: return new InclusiveRange();
-                case 1253316531: return new WinAnimScaleTime();
-                case 1255051107: return new ClientShadowSelfCinematicAction();
-                case 1248950227: return new ClientRecreateNPCActorCinematicAction();
-                case 1209260726: return new WizItemBossList();
-                case 1208512931: return new LootDialogEntry();
-                case 1213366106: return new EffectListSpellEffect();
-                case 1214575795: return new ClientServerSyncCinematicAction();
-                case 1214764107: return new JewelSocketUnlockCostList();
-                case 1326085135: return new ReqInZone();
-                case 1325637230: return new DailyQuestOption();
-                case 1321144039: return new PhysicsBehaviorTemplate();
-                case 1320752675: return new CurrencyTemplate();
-                case 1304842374: return new ColorPickerSWF();
-                case 1284188850: return new CinematicEventInfo();
-                case 1282311123: return new TextureRemapBehaviorTemplate();
-                case 1124091807: return new DdWinAnimMoveMob();
-                case 1119486130: return new ScriptBehaviorTemplate();
-                case 1121421515: return new DynaModDelta();
-                case 1107570594: return new ClientPetBoostPlayerStatEffect();
-                case 1111228666: return new ObstacleCourseObstaclePathBase();
-                case 1102471055: return new BGSigilTimer();
-                case 1101851415: return new QuestDynaModInfo();
-                case 1101107603: return new DerbyAffectEffects();
-                case 1101058519: return new LocationTemplate();
-                case 1103265779: return new ThumbnailControl();
-                case 1096555259: return new EncounterTemplate();
-                case 1096279423: return new InstanceInfoList();
-                case 1083508238: return new HidePolymorphFloatyTextCinematicAction();
-                case 1076506418: return new InfractionPenalty();
-                case 1202585022: return new DailyQuestData();
-                case 1207733935: return new DynamicURLWhitelist();
-                case 1197205998: return new EmbeddedBrowserConfig();
-                case 1184798659: return new UnstitchOption();
-                case 1185005299: return new WinAnimFillGlobeTime();
-                case 1189955082: return new StopBacklashRotationEffectCinematicAction();
-                case 1175353450: return new AvatarOption();
-                case 1177230786: return new TerrainCheerCostMap();
-                case 1181511603: return new TubeGeomParams();
-                case 2015670642: return new MadlibArgT_std_string();
-                case 1173135582: return new CastleMagicTimer();
-                case 1142619583: return new CastleMagicPlayersInZone();
-                case 1143818086: return new UnSwapShadowMaterialActorCinematicAction();
-                case 1146854679: return new PetGameMorphPartner();
-                case 1538806582: return new MagicLevelInfo();
-                case 1529654718: return new WizStatisticEffectTemplate();
-                case 1524247978: return new ClientPetCastEffectActorCinematicAction();
-                case 1522868099: return new GraphicalItemCard();
-                case 1516182555: return new TrackedPlant();
-                case 1515321102: return new ManaGlobe();
-                case 1516488470: return new ClientGameEffectTimerDisplayBehavior();
-                case 1507266946: return new StartingPipEffectInfo();
-                case 1505848495: return new ClientAttachParticleActorCinematicAction();
-                case 1495936383: return new ClientDeathParticleCinematicAction();
-                case 1495625274: return new ProcessGlobalCinematicStageTemplate();
-                case 1495516874: return new ClientExpansionBehavior();
-                case 1476474583: return new TileMaterial();
-                case 1483281967: return new AvatarItemInfo();
-                case 1483072199: return new BadgeFilterInfoList();
-                case 1607047031: return new SeedBehavior();
-                case 1606616030: return new CinematicActorAnimationContainer();
-                case 1587606590: return new FishCatchOfTheDayOption();
-                case 1578239530: return new EquippedSlotInfo();
-                case 1572482098: return new TreasureCardLootInfo();
-                case 1576784126: return new CinematicActor();
-                case 1575921730: return new WinAnimSizeTime();
-                case 1560995335: return new LinearSoundBehaviorTemplate();
-                case 1564022422: return new ClientStopHangingRotationCinematicAction();
-                case 1564788915: return new TeleportTransitionTemplate();
-                case 1568409715: return new PermanentShopWindowPassThru();
-                case 1560182955: return new JewelSocketBehaviorBase();
-                case 1548010111: return new JewelSocket();
-                case 1402602439: return new HousingPaletteBehaviorTemplate();
-                case 1403607823: return new ServiceMementoBase();
-                case 1394534959: return new ResultList();
-                case 1397775502: return new ReqItemHasAdjective();
-                case 1388171691: return new ClientLeashBehavior();
-                case 1388215235: return new PCSButton();
-                case 1387863082: return new EquippedItemInfo();
-                case 1387812143: return new AvatarItemInfoList();
-                case 1377525171: return new BuffDebuffEventCinematicAction();
-                case 1372276914: return new FishHistory();
-                case 1374376855: return new TournamentUpdate();
-                case 1362501135: return new BGSigilProxyBehavior();
-                case 1352144559: return new AvatarItemInfoBase();
-                case 1355742798: return new ReqDerbyPlace();
-                case 1346614158: return new ZoneFish();
-                case 1470529210: return new SpellIDPair();
-                case 1472240266: return new AnimationSetManager();
-                case 1474840430: return new SigilTemplate();
-                case 1475005518: return new SpellTemplate();
-                case 1459873219: return new JoinTeamUpdate();
-                case 1464588362: return new ReqEntryValue();
-                case 1456501502: return new ComboItem();
-                case 1456128270: return new SpawnItem();
-                case 1435364515: return new DynaModShowObject();
-                case 1442707914: return new ToggleInterfaceControlCinematicAction();
-                case 1426588378: return new MoveCommandPitch();
-                case 1428682914: return new ControlButtonState();
-                case 1428586699: return new WindowHelp();
-                case 1419724330: return new WinAnimMoveToLocationSpeedEase();
-                case 1418216295: return new ClientTreasureBookBehavior();
-                case 1410356798: return new WinAnimMoveToLocationSpeed();
-                case 1413021767: return new GardeningLevelInfo();
-                case 723415470: return new RankStruct();
-                case 722322778: return new PvPRatingsConfig();
-                case 708100530: return new InfractionBehavior();
-                case 711524226: return new CombatActionListObj();
-                case 697117407: return new BadgeInfo();
-                case 704483698: return new ClientShadowCreatureLevelTransitionCinematicAction();
-                case 688438863: return new RealmInfo();
-                case 692538319: return new TutorialLogBehavior();
-                case 692457843: return new AnnounceSpellTextCinematicAction();
-                case 692173870: return new HousingGameInterface();
-                case 683072886: return new DyeShopModifiers();
-                case 687613315: return new Material();
-                case 671654079: return new CollisionBehavior();
-                case 804881726: return new RidableBehaviorTemplate();
-                case 796185019: return new HousingObjectStateContainer();
-                case 783848291: return new OldEquipmentBehavior();
-                case 764221834: return new AlchemyBehaviorTemplate();
-                case 768862314: return new UnShadowSelfCinematicAction();
-                case 768813162: return new ClientFXDef();
-                case 771380519: return new ProvidePetPowerTemplate();
-                case 770731934: return new ObjectRemapBehavior();
-                case 770204890: return new WhirlyBurlyAddGroup();
-                case 758971990: return new RandomSpellEffect();
-                case 749440322: return new CaughtFish();
-                case 600426102: return new WinAnimSpriteContrast();
-                case 588901010: return new ReqHasBadge();
-                case 584950019: return new WinAnimConcurrent();
-                case 587032907: return new TextureRemapBehavior();
-                case 575051559: return new FadeMusicSoundCinematicAction();
-                case 563369634: return new CastleMagicCinematicEffect();
-                case 561655354: return new ScrollablePopupButton();
-                case 551550186: return new WizardCharacterBehavior();
-                case 550086711: return new PetGameInfo();
-                case 540971630: return new TabDisplayPriorityList();
-                case 539936502: return new DelaySpellEffect();
-                case 541693818: return new WhirlyBurlyOption();
-                case 664189027: return new PartyObserver();
-                case 665096991: return new SG_GameAction_Interact();
-                case 668730179: return new MountShopOption();
-                case 667145511: return new PositionalSoundBehaviorTemplate();
-                case 669170747: return new PlaySpellData();
-                case 656459443: return new AddHangingEffectCinematicAction();
-                case 660918295: return new ReqBaseSchoolOfFocus();
-                case 648980327: return new InteractiveMusicNote();
-                case 653779918: return new JewelVaultBehaviorTemplate();
-                case 640056975: return new PrivateEquippedJewelInfo();
-                case 643705094: return new SG_GameActionClient_PlayEffect();
-                case 621855715: return new CSRAccessPassInfo();
-                case 626973039: return new CinematicSoundEmitterInfo();
-                case 627943639: return new ObstacleCourseSpeedUpBehaviorClient();
-                case 612409490: return new NamedCharacterElement();
-                case 615645727: return new AtticObject();
-                case 618044874: return new DestroyShadowCreatureCinematicAction();
-                case 609355883: return new ClientFadeMusicSoundCinematicAction();
-                case 999347823: return new DailyPvPData();
-                case 1002154586: return new SpeedEffectInfo();
-                case 997694599: return new MoveCommandSpeed();
-                case 996592426: return new PartyChatObserver();
-                case 989409442: return new WinAnimContainerBounded();
-                case 967082822: return new ItemSetBonusTemplate();
-                case 972774758: return new PetSnackBehaviorTemplate();
-                case 971627963: return new InvisibilityEffectTemplate();
-                case 939606659: return new ToolTipWindow();
-                case 939782826: return new GardeningBehaviorTemplate();
-                case 945726198: return new FishBehaviorTemplate();
-                case 947265711: return new PipConversionLevelData();
-                case 1066529630: return new PendingClassProjectFriendReward();
-                case 1066147950: return new ClearHangingEffectsCinematicAction();
-                case 1067840663: return new BGSigilProxyBehaviorTemplate();
-                case 1057804514: return new VariableSpellEffect();
-                case 1061724779: return new MadlibArg();
-                case 1044243239: return new CastleTourLeaderboardEntry();
-                case 1044317438: return new RenamePipActorsFromResult();
-                case 1043968282: return new AccousticAreaBehavior();
-                case 1043418398: return new ClientMobAggroBehavior();
-                case 1042953819: return new StateAssetInfo();
-                case 1034011683: return new RemoveAuraCinematicAction();
-                case 1037828102: return new PathActionChangeDirection();
-                case 1036582010: return new ClientUnSwapShadowMaterialActorCinematicAction();
-                case 1015861630: return new BasePetMorphManager();
-                case 1018021054: return new PetItemBehaviorTemplate();
-                case 1020869487: return new DailyPvPInfo();
-                case 869026770: return new BlobCacheInterface();
-                case 857464279: return new PolymorphImprovementRatingInfoList();
-                case 861702119: return new HousingTextureBehaviorTemplate();
-                case 839700803: return new WizPetTemplate();
-                case 841048599: return new MapInfoRequirementsPassedList();
-                case 846276275: return new TieredSpellGroupVisibility();
-                case 845513623: return new GamebryoBody();
-                case 845338835: return new HatchmakingPetsList();
-                case 837163919: return new HousingGameKhanDanceSequence();
-                case 823629915: return new DerbyEffect();
-                case 823340395: return new BGPolymorphSelectBehaviorTemplate();
-                case 824790047: return new PetLevelInfo();
-                case 828773283: return new ClientMountRiderBehavior();
-                case 817528363: return new CastleMagicBehavior();
-                case 817278490: return new WizBankingOption();
-                case 819946063: return new PulseEffect();
-                case 819184578: return new HousingObjectState();
-                case 808079835: return new ClientIdleInterceptCinematicAction();
-                case 809997775: return new BuddyEntry();
-                case 932052019: return new DOTEffect();
-                case 931754987: return new TextureRemap();
-                case 933761690: return new TutorialActionOption();
-                case 925785410: return new WhirlyBurlyBehavior();
-                case 921332947: return new ResSummonHenchman();
-                case 909675810: return new ReqIsHatched();
-                case 913320519: return new WizItemVendorData();
-                case 902720263: return new JewelSocketWrenchRules();
-                case 888732431: return new GardeningPatchData();
-                case 873087274: return new MoveCommandRoll();
-                case 875623035: return new AnimatedControlButtonState();
-                case 194671815: return new WidgetBackground();
-                case 194500454: return new ControlFreeChat();
-                case 200422854: return new MapInfoRequirementsList();
-                case 187053783: return new SkyboxInfo();
-                case 189073871: return new DerbyImmunityEffect();
-                case 191440038: return new AtticBehaviorTemplate();
-                case 181919826: return new PromoGift();
-                case 1930469917: return new Search_ResultList();
-                case 168119595: return new WorldTeleportOptions();
-                case 171661566: return new GardeningXPLootInfo();
-                case 172546455: return new BattlegroundTemplate();
-                case 160018206: return new CrownShopSettings();
-                case 159671731: return new ClientHidePipsCinematicAction();
-                case 1929975127: return new Search_ResultItem();
-                case 166299059: return new ConditionalSpellEffectRequirement();
-                case 150473639: return new BattlegroundTemplateChat();
-                case 136045143: return new ClientHousingBlobStrategy();
-                case 138946827: return new StopComplexSoundCinematicAction();
-                case 254132626: return new RecipeBag();
-                case 248850735: return new ToSendCheerModsList();
-                case 251466951: return new HousingTeleporterBehaviorTemplate();
-                case 250845118: return new ReqEnergy();
-                case 228437886: return new AddMatchUpdate();
-                case 226032007: return new ClientShadowCreatureIdleCinematicAction();
-                case 214562227: return new ClientFloatingTextCinematicAction();
-                case 202555987: return new TemplateCache();
-                case 203877502: return new ArenaMatchResults();
-                case 206341562: return new BoosterPackData();
-                case 58759527: return new GameObjectTemplate();
-                case 62809590: return new RemoveHangingCinematicStageTemplate();
-                case 57610651: return new ClientGameEffectTimerPopupTrigger();
-                case 46629478: return new CollisionBehaviorTemplate();
-                case 49380463: return new IngredientTracking();
-                case 34896570: return new ClientModifyPipsCinematicAction();
-                case 30854094: return new AuctionHouseConfig();
-                case 18835539: return new ClientFXBySlotEffect();
-                case 23636062: return new ComplexRotationInfo();
-                case 13805218: return new SavedSetting();
-                case 2988482: return new Body();
-                case 2830790: return new Font();
-                case 2110882: return new Blob();
-                case 5340074: return new RaceAnimationSoundData();
-                case 118441799: return new EquipmentTemplate();
-                case 124270694: return new ClassProjectActivity();
-                case 123828710: return new HousingObjectWandContainer();
-                case 123733651: return new ControlWidget();
-                case 110350054: return new ReqIsLimitExpandBackpackElixirs();
-                case 102298599: return new LeaderboardUpdateFriendsList();
-                case 100829899: return new ParticleSystem2D();
-                case 1095658705: return new Reco_CategoryData();
-                case 81765934: return new PetStatModification();
-                case 73166090: return new WizDisableItemStatEffect();
-                case 72555002: return new ServiceOptionBase();
-                case 71440166: return new FXDef();
-                case 461490350: return new ReqManaPercent();
-                case 467219398: return new ClientDerbyModifyMoraleChance();
-                case 467094931: return new StatisticEffectInfo();
-                case 444830091: return new ConicalStateSoundBehaviorTemplate();
-                case 425842107: return new BracketRewards();
-                case 414038734: return new SG_GameAction();
-                case 416530134: return new ClientWizInventoryBehavior();
-                case 404543643: return new FishingSpellTemplate();
-                case 409378255: return new RemoveTeamUpdate();
-                case 523827839: return new AccompanyNPCBehavior();
-                case 525237911: return new MaxHealthLootInfo();
-                case 512006011: return new Texture();
-                case 511706459: return new TextureD3D();
-                case 518900811: return new JewelSocketUnlockCost();
-                case 518796286: return new EnergyShopOption();
-                case 505403307: return new PlayerAggroBehavior();
-                case 508780646: return new ItemFinderBehaviorTemplate();
-                case 510658851: return new ClassProjectLeaderboardPlayer();
-                case 510350878: return new GroupMember();
-                case 488310534: return new EventCurrency2LootInfo();
-                case 489973310: return new ZoneInstanceFish();
-                case 489451587: return new QuestCompilation();
-                case 491252451: return new FishingBehavior();
-                case 493426650: return new WizClientMount();
-                case 481077419: return new QuestEffectDisplayInfo();
-                case 486447363: return new CombatPetXPEffectInfo();
-                case 472164326: return new ReqClassProjectActive();
-                case 335329251: return new MapData();
-                case 313039398: return new PetDerbyObstacleBehaviorClient();
-                case 315412595: return new GardeningBehavior();
-                case 318413166: return new ClassProjectProgressHistoryList();
-                case 305316151: return new ReqItemIsEgg();
-                case 307921894: return new BasicChatChannelInfo();
-                case 310050551: return new GamebryoInvisibilityEffect();
-                case 309702091: return new MoveCommandArc();
-                case 288323294: return new ClientPlayComplexSoundCinematicAction();
-                case 281741814: return new RevealHangingCinematicStageTemplate();
-                case 281202843: return new WinAnimScaleSymmetricalTime();
-                case 269060031: return new InitialCombatSound();
-                case 272514938: return new TabDisplayPriority();
-                case 274035859: return new NonCombatMayCastSpellGameEffect();
-                case 273974575: return new TeamHelpWorldInfo();
-                case 274093975: return new FishingLevelInfo();
-                case 276475574: return new ClientDerbyMoraleByTerrainEffect();
-                case 394369043: return new PipCinematicActor();
-                case 396510539: return new ObstacleCourseObstaclePathBaseTemplate();
-                case 399203682: return new PetMatchRequest();
-                case 399167234: return new PvPMatchRequest();
-                case 401914554: return new LevelUpElixirBehaviorTemplate();
-                case 392067510: return new QuestFinderNPCData();
-                case 390829567: return new PlayListEntry();
-                case 390777942: return new ClientStageBacklashEffectCinematicAction();
-                case 360947486: return new HousingBlobCustomObject();
-                case 366166146: return new CastleBlockDoorBehaviorTemplate();
-                case 365219227: return new ClientBurnHangingEffectCinematicAction();
-                case 357180054: return new HousingPetMovement();
-                case 347937651: return new HangingEffectProtectionRemovedStageTemplate();
-                case 351859526: return new ShadowCreatureLevelTransitionCinematicAction();
+                case 725087: return new DerbyLockLane();
+                case 1448177: return new PortraitWindow();
+                case 1924843: return new MatchTimerControl();
+                case 4737210: return new DeckTemplate();
+                case 4740335: return new ProvideSpellEffectInfo();
+                case 6006332: return new ExtraHousingZoneBehaviorTemplate();
+                case 8699613: return new CombatObserver();
+                case 9759260: return new AvatarTextureOption();
+                case 11800387: return new InfractionCategory();
+                case 14291076: return new BrowserWindowSettings();
+                case 17424178: return new LeashedPathMovementBehaviorTemplate();
+                case 17892046: return new SigilDynamicTriggerTemplate();
+                case 23900941: return new FlareBacklashEffectCinematicAction();
+                case 24660019: return new MatchActorUpdate();
+                case 27322510: return new ResAsyncScript();
+                case 30520102: return new ClientDerbyRemoveAction();
+                case 33622494: return new PetTomePetTotalList();
+                case 34903389: return new HousingPaletteBehavior();
+                case 37594247: return new ReqHasEntry();
+                case 38729342: return new ActCinematicStageTemplate();
+                case 39734275: return new EventCurrency1LootInfo();
+                case 44032199: return new Requirement();
+                case 44866809: return new TreasureBookBehavior();
+                case 45152925: return new CylinderGeomParams();
+                case 46182351: return new CastleBlockDoorBehavior();
+                case 46267421: return new AlternateTurnsCombatRule();
+                case 51014812: return new CinematicActorTemplate();
+                case 51406965: return new PreviewWindow();
+                case 550650537: return new CSRPropertyEntry();
+                case 51983456: return new WhirlyBurlyKioskBehavior();
+                case 52295661: return new TimerControlCinematicAction();
+                case 52413390: return new DoodleMapMap();
+                case 54937962: return new ResourcePointerBase();
+                case 56448876: return new ClassProjectActiveList();
+                case 58611215: return new TeleportProximityBehavior();
+                case 69371072: return new SG_GameAction_DestroyBlock();
+                case 69943298: return new ClientDuelBehavior();
+                case 69958050: return new ClientDeckBehavior();
+                case 70958365: return new MoveCommandSleep();
+                case 71424697: return new MadlibArgT_int();
+                case 74189249: return new DebugWizardComponent();
+                case 74866119: return new Party();
+                case 77139509: return new LeashBehavior();
+                case 78568446: return new NodeObject();
+                case 79194721: return new WhirlyBurlyRoundDataAI();
+                case 79199845: return new WhirlyBurlyRoundData();
+                case 81401993: return new ScriptBehavior();
+                case 83871325: return new WinAnimScaleSymmetrical();
+                case 84951489: return new Hand();
+                case 85019234: return new Duel();
+                case 86075614: return new ClientAnimatePipsCinematicAction();
+                case 86085741: return new CrownServicesOption();
+                case 86394113: return new ClientDestroyActorCinematicAction();
+                case 87696593: return new WhirlyBurlyGameInfo();
+                case 88283298: return new ActorDialogEntry();
+                case 92056648: return new UntargetableCinematicStageTemplate();
+                case 94610103: return new StartHangingRotationCinematicAction();
+                case 95736291: return new ExpansionBehaviorTemplate();
+                case 96661878: return new BaseEffectCinematicAction();
+                case 97162639: return new MonsterMagicXPConfig();
+                case 97190451: return new ChaseCamController();
+                case 97456582: return new ClientFaceTargetActorCinematicAction();
+                case 98470457: return new PublicEquippedJewelInfo();
+                case 99726268: return new MoveActorCinematicAction();
+                case 99804467: return new BaseGameEffectBehavior();
+                case 101271634: return new AnimationBehaviorTemplate();
+                case 101684154: return new BasicChatPlayer();
+                case 101700434: return new ClientUpdatePipsCinematicAction();
+                case 102761053: return new WizStatisticEffectConfig();
+                case 105339310: return new ClientCinematic();
+                case 105382321: return new ItemDynamicBehaviorTemplate();
+                case 107442785: return new PartnerLogoData();
+                case 107669724: return new HatchmakingKioskBehaviorBase();
+                case 108720390: return new GardenSpellTemplate();
+                case 108971925: return new MapInfoManager_MapInfo();
+                case 113208679: return new AddAuraCinematicAction();
+                case 113943340: return new HousingPetBehavior();
+                case 116056107: return new HatchmakingKioskBehavior();
+                case 116896545: return new ReqHatchAllEggs();
+                case 117675092: return new ObstacleCourseModifyTimeBehavior();
+                case 118523831: return new GetHitCinematicStageTemplate();
+                case 120308658: return new ClientRegisterActorCinematicAction();
+                case 122951263: return new BadgeFilter();
+                case 123577961: return new BracketTournamentGoldCostInfo();
+                case 126910823: return new BattlegroundTeamData();
+                case 127363269: return new ClientProvidePetPower();
+                case 130186975: return new MountSoundBehavior();
+                case 130304318: return new StringListObj();
+                case 131916289: return new CombatPetXPEffectTemplate();
+                case 131999030: return new SoundBehaviorTemplate();
+                case 132220454: return new MatchRequest();
+                case 132490457: return new ClientTimedItemBehavior();
+                case 134394926: return new HaltCinematicAction();
+                case 135479856: return new AddSpellLootInfo();
+                case 135649998: return new EquipmentSetList();
+                case 140549416: return new ClientDerbyStealMorale();
+                case 140910793: return new CombatAction();
+                case 144476178: return new HatchmakingPetGIDList();
+                case 144742521: return new BrightnessControlWindow();
+                case 147169379: return new RecipeLootInfo();
+                case 151726271: return new WizAvatarTextureOption();
+                case 153414636: return new CharacterRegistry();
+                case 153720056: return new NamedEffect();
+                case 154320916: return new RespecTieredSpellList();
+                case 156093283: return new PetDropFoodItem();
+                case 156961698: return new PromoPromotion();
+                case 159141929: return new WinAnimSizeSpeed();
+                case 160948224: return new ClientPetCameraActorCinematicAction();
+                case 161907431: return new MoveCommandTeleport();
+                case 162030195: return new ClientMinigameBehavior();
+                case 162374579: return new ComplexRotateTurnIndicatorCinematicAction();
+                case 163557895: return new DerbyModifySpeedBoost();
+                case 165372588: return new HousingLayout();
+                case 167232825: return new ClientActorRenameCinematicAction();
+                case 167494729: return new Ingredient();
+                case 168050228: return new SummonCinematicStageTemplate();
+                case 168463177: return new CreationNameSelectWindowSWF();
+                case 168649233: return new CraftingSlot();
+                case 169654053: return new DiegoPlayerStats();
+                case 169948875: return new ClientHidePolymorphFloatyTextCinematicAction();
+                case 171021254: return new TemplateManifest();
+                case 171701550: return new CinematicDefTemplate();
+                case 174488850: return new CinematicAction();
+                case 176102228: return new CastleTourTeleportInfo();
+                case 176748547: return new FishingXPLootInfo();
+                case 178277919: return new PotionButton();
+                case 180322525: return new SpawnCreatureCinematicAction();
+                case 180508292: return new CameraCutCinematicAction();
+                case 184230721: return new GoalCompleteLogic();
+                case 185378075: return new PestBehaviorTemplate();
+                case 185512734: return new DeedBehaviorTemplate();
+                case 185541179: return new PathBehaviorTemplate();
+                case 185554206: return new DeckBehaviorTemplate();
+                case 186501386: return new StopHangingRotationCinematicAction();
+                case 187425016: return new TipFrame();
+                case 187568735: return new AnimationSet();
+                case 188417868: return new ClientBGSigilProxyBehavior();
+                case 188519115: return new ObstacleCourseCatapultBehavior();
+                case 191497925: return new CombatSigilTemplate();
+                case 193893944: return new RemoveBacklashEffectCinematicAction();
+                case 195332260: return new WinAnimScaleSpeed();
+                case 196388733: return new QuestEffectInfo();
+                case 198649050: return new ObstacleCoursePendulumBehaviorClient();
+                case 200235874: return new PromoPromotionList();
+                case 200792996: return new ClientCinematicActor();
+                case 201320469: return new ClientTagList();
+                case 201409526: return new WizItemPlantList();
+                case 201578593: return new SpawnObject();
+                case 202308985: return new ItemLocatorList();
+                case 202438241: return new StatePositionalSoundBehavior();
+                case 202764820: return new CriticalObjectList();
+                case 203187636: return new WizItemQuestList();
+                case 204422564: return new CastleMagicMovingObject();
+                case 204818717: return new TutorialZoneMod();
+                case 205985930: return new GameEffectTimerDisplayBehavior();
+                case 206068909: return new BaseClientHousingBlobStrategy();
+                case 206696061: return new MapInfoRequirementsRequest();
+                case 207247178: return new CSRAccessPassList();
+                case 208186592: return new MadlibArgT_std_wstring();
+                case 208493123: return new MusicFileInfo();
+                case 210080626: return new NewListUpdate();
+                case 211113118: return new TestControlTableWindow();
+                case 211235823: return new ExpansionData();
+                case 211793384: return new ConfirmOption();
+                case 213549285: return new AnimationBehavior();
+                case 216582072: return new NameOverrideBehavior();
+                case 217538642: return new ClientObjectRemapBehavior();
+                case 218034742: return new PetCastEffectActorCinematicAction();
+                case 218085007: return new NotInActiveTournamentOrPvP();
+                case 218529137: return new HousingItemList();
+                case 218601970: return new MountRecord();
+                case 219050943: return new HousingNodeList();
+                case 219829524: return new BanishBacklashEffectCinematicAction();
+                case 220133073: return new ClientMountOwnerBehavior();
+                case 221572089: return new ReqNumeric();
+                case 222099698: return new CustomEmoteBehavior();
+                case 224030584: return new WizardAutobotQuestManagerGraphicalClient();
+                case 224637991: return new ReqClassicMode();
+                case 224841250: return new MatchResult();
+                case 225389240: return new CombatPetXPEffect();
+                case 226029052: return new ElixirBenefitEffectTemplate();
+                case 226964961: return new ShadowPipRule();
+                case 227091557: return new BlobDefinition();
+                case 228521051: return new StartBacklashRotationEffectCinematicAction();
+                case 228794493: return new ResTeleport();
+                case 231446244: return new ClientRenamePipActorsFromResult();
+                case 231777453: return new ClientClearHangingEffectsCinematicAction();
+                case 232827851: return new DerbyModifyPetStat();
+                case 236178796: return new TreasureCardVaultBehavior();
+                case 236598037: return new BurnAuraCinematicAction();
+                case 238069766: return new MatchTeam();
+                case 238288679: return new HatchmakingPetTypesList();
+                case 238871302: return new WizItemHouseList();
+                case 239372967: return new PositionalSoundBehavior();
+                case 239990823: return new MonsterMagicLevelInfo();
+                case 240934124: return new PetTomeBehaviorTemplate();
+                case 241581292: return new PetGameBehaviorTemplate();
+                case 241655889: return new WhirlyBurlyStartGame();
+                case 242438011: return new CreatePipCinematicActorsFromResult();
+                case 245118520: return new ClientDerbyImmunityEffect();
+                case 247544837: return new CritAndBlockValues();
+                case 248057497: return new BoosterPackSpaceHelper();
+                case 248429037: return new BGPlayerInfo();
+                case 252123478: return new ExpansionBehavior();
+                case 252224157: return new ActiveMusicLoop();
+                case 252637921: return new DeathParticleCinematicAction();
+                case 257999363: return new EffectsBehavior();
+                case 258825572: return new ReqMagicLevel();
+                case 260120908: return new MonsterMagicLevelControl();
+                case 260276437: return new WizardCharacterBehaviorTemplate();
+                case 260380478: return new PvPUpdateMessage();
+                case 263763107: return new PetTalentCountControl();
+                case 264836025: return new CrownsRewardsEventData();
+                case 266711857: return new AttachParticleActorCinematicAction();
+                case 266780769: return new ClientEventDrivenCinematic();
+                case 270201387: return new VisualAttributeBehaviorTemplate();
+                case 271199890: return new TakeCinematicStageTemplate();
+                case 272691651: return new InteractiveMusicBehavior();
+                case 273776684: return new ReqGlobalRegistryValue();
+                case 273923706: return new Window();
+                case 276946680: return new QuestTemplate();
+                case 279389523: return new SpellSubEffectMetadata();
+                case 281082164: return new InteractiveMusicBehaviorBase();
+                case 282411936: return new HousingObjectTextureRemap();
+                case 282729753: return new MoveCommandTime();
+                case 284348187: return new BlobDirectory();
+                case 284413791: return new MatchTemplate();
+                case 287567362: return new PlayList();
+                case 288501869: return new SpellNifSoundOverride();
+                case 288921992: return new ProvidePetPowerInfo();
+                case 289300862: return new ClientAddAuraCinematicAction();
+                case 289844667: return new MadlibArgT_double();
+                case 290147688: return new DuelistBehaviorTemplate();
+                case 292458316: return new WizardCharacterCreationInfo();
+                case 293491482: return new WindowColorAnimation();
+                case 295403644: return new DailyQuestRewardData();
+                case 295881622: return new CountdownBehaviorTemplate();
+                case 296406079: return new ObstacleCourseRevolvingDoorBehavior();
+                case 296942209: return new AquariumBehaviorBase();
+                case 298717769: return new UnderwayEntry();
+                case 300799690: return new ClientMoveActorCinematicAction();
+                case 303373912: return new DyeShopOption();
+                case 304888175: return new WizardControlTable();
+                case 306737126: return new MadlibArgT_unsigned_int();
+                case 307603608: return new CombatPlanningPhaseWindow();
+                case 309130418: return new ControlButton();
+                case 309965574: return new AddGlobalCinematicStageTemplate();
+                case 310451120: return new SpawnPointTemplate();
+                case 311922264: return new CameraController();
+                case 313442845: return new CinematicTemplate();
+                case 314743322: return new SpellbookBehaviorTemplate();
+                case 315399378: return new BGPenaltyMatchBanInfo();
+                case 317343907: return new AreaBehavior();
+                case 317381450: return new MoveBehavior();
+                case 318427849: return new ClientComplexRotateTurnIndicatorCinematicAction();
+                case 318658214: return new ClientDerbyModifySpeedBoost();
+                case 319646203: return new ClientCreatePipCinematicActorsFromResult();
+                case 320084515: return new PromoRewardList();
+                case 324040870: return new HousingSignBehavior();
+                case 327108655: return new TeleportProximityBehaviorBase();
+                case 328097711: return new StatGlobe();
+                case 329052425: return new IslandSpaceOption();
+                case 329969771: return new ReqInventoryFull();
+                case 330005326: return new ReqMatchesPlayed();
+                case 331781588: return new CastleTourMyCastleDataList();
+                case 331952491: return new TitleOption();
+                case 332169412: return new ObstacleCourseModifyTimeBehaviorClient();
+                case 332607721: return new SwapShadowMaterialActorCinematicAction();
+                case 332869472: return new ClientBanishBacklashEffectCinematicAction();
+                case 336820599: return new ShadowCreatureCameraCutCinematicAction();
+                case 337702974: return new PetBoostPlayerStatEffect();
+                case 339928888: return new SpringboardNodeDescriptor();
+                case 340150373: return new SG_GameBlockType();
+                case 341270620: return new InfractionConfig();
+                case 341850187: return new ParticipantList();
+                case 342332905: return new ScoreTrackingList();
+                case 342915709: return new SeamstressOption();
+                case 343029615: return new ScoreTracking();
+                case 343477311: return new DerbyTeleport();
+                case 345058547: return new BracketTemplate();
+                case 346926357: return new GameObjectAnimData();
+                case 348708862: return new PositionalStateSoundBehaviorTemplate();
+                case 349022298: return new TreasureShopOffering();
+                case 350837933: return new ClientObject();
+                case 351609529: return new ControlTickedSlider();
+                case 353148171: return new MoveStateAnimation();
+                case 354783937: return new SpellCardAttachmentBehaviorTemplate();
+                case 355839574: return new CrownShopLayout();
+                case 359215443: return new TieredSpellManager();
+                case 360231646: return new BehaviorTemplate();
+                case 361088321: return new FurnitureInfoBehaviorTemplate();
+                case 361737915: return new SubscriberOnlyItemsList();
+                case 361756972: return new ClientDerbyTeleport();
+                case 364170412: return new PhysicsSim();
+                case 366524624: return new DdWinAnimMoveZap();
+                case 366707306: return new GameEffectInfoList();
+                case 367284943: return new SpellSelectionWindow();
+                case 369828328: return new BalloonWindow();
+                case 373549969: return new HideShadowCreatureCinematicAction();
+                case 374733549: return new ClientCountdownBehavior();
+                case 375586297: return new PetFeedingRewardInfo();
+                case 375660523: return new GraphicalPetSnack();
+                case 375789558: return new NPCTrainingWindow();
+                case 377422087: return new TrainingPointLootInfo();
+                case 378400400: return new ClientSpellbookBehavior();
+                case 378758584: return new KhanDancePlayer();
+                case 378961954: return new StartingPipEffectTemplate();
+                case 379046504: return new HousingShopOption();
+                case 380003423: return new PetDerbyObstacleBehavior();
+                case 381128066: return new ProvideSpellEffect();
+                case 382134151: return new InteractiveMusicManager();
+                case 382307413: return new LeashOffsetOverride();
+                case 382744210: return new ElixirBehaviorTemplate();
+                case 384355412: return new HousingGameKhanDanceTurnData();
+                case 385438871: return new HouseZone();
+                case 386133565: return new PlayDeck();
+                case 388156276: return new MountItemBehaviorTemplate();
+                case 388556399: return new BattlegroundPolymorphImprovementOption();
+                case 390069217: return new AcousticAreaBehaviorTemplate();
+                case 391267251: return new ShowcasedStoreItem();
+                case 392208948: return new CombatGardeningXPEffectInfo();
+                case 392858099: return new ReqSchoolOfFocus();
+                case 393110686: return new CommonElementTable();
+                case 393204394: return new GameEffectInfo();
+                case 393452492: return new QuickChatEntry();
+                case 394313333: return new ClientCantripsInvisibilityEffect();
+                case 397226820: return new EmoteStateOverrideInfo();
+                case 398229815: return new ClientReagentItem();
+                case 398244357: return new GraphicalSpell();
+                case 398262579: return new PetMatchInfo();
+                case 398288299: return new PvPMatchInfo();
+                case 402756076: return new MinigameConfig();
+                case 403320877: return new UserCapabilitiesInfo();
+                case 404939124: return new WizAvatarItemInfo();
+                case 405684863: return new ClientMakeTargetableCinematicAction();
+                case 411122505: return new GameEffectContainer();
+                case 412030678: return new ReqHighestCharacterLevelOnAccount();
+                case 413605834: return new UniverseMapOption();
+                case 414586652: return new ClientPetAnimateActorCinematicAction();
+                case 415861216: return new EnergyGlobe();
+                case 417450311: return new SpellBookPrefsWindow();
+                case 417955881: return new NewFriendsListWindow();
+                case 420235402: return new BracketTeam();
+                case 420377204: return new BracketInfo();
+                case 420999567: return new HardwareStyle();
+                case 421562853: return new GameEffectTimerDisplayBehaviorTemplate();
+                case 421973717: return new CastleToursBehavior();
+                case 425263532: return new GardenLevelControl();
+                case 427079144: return new MadlibArgT_std_string_const();
+                case 427499079: return new CharacterElement();
+                case 428025367: return new CinematicActorBehavior();
+                case 428466864: return new CastleTourLeaderboardUpdate();
+                case 429200250: return new BountyGoalTemplate();
+                case 429406503: return new QuestListPage_DialogDataCacheEntry();
+                case 430933174: return new PersonaGoalTemplate();
+                case 431503822: return new ActorCinematicAction();
+                case 433991010: return new ObjectLocationList();
+                case 435795926: return new SortedPot();
+                case 435902237: return new CastleGamesBehaviorTemplate();
+                case 438645845: return new HousingTextureBehavior();
+                case 442107707: return new InfractionPenaltyInfo();
+                case 443110133: return new CantripsSpellTemplate();
+                case 450457970: return new CharMap();
+                case 452277545: return new SavedCharacterLists();
+                case 452959950: return new ZoneData();
+                case 453229070: return new MadlibBlockList();
+                case 454099747: return new CountdownBehavior();
+                case 454278017: return new RidableBehaviorBase();
+                case 454960420: return new PetActorResults();
+                case 455580989: return new Camera();
+                case 458385654: return new ShowcasedStoreItemList();
+                case 459407156: return new ClientUntargetableCinematicAction();
+                case 459963810: return new ObjectLocation();
+                case 460675308: return new ClientUnPolymorphCinematicAction();
+                case 460684575: return new ClientChangeActorStateCinematicAction();
+                case 461650270: return new GoldLootInfo();
+                case 464509749: return new SpellListControl();
+                case 465097729: return new SG_GameAction_PlayEffect();
+                case 466034888: return new ClientActivateHangingEffectCinematicAction();
+                case 466661542: return new PetStatModificationSet();
+                case 468246473: return new NullAction();
+                case 472205463: return new StartingPipEffect();
+                case 473759376: return new CastleMagicItem();
+                case 473949253: return new NaturalSummonCinematicStageTemplate();
+                case 474222920: return new CantripsInvisibilityEffect();
+                case 474458266: return new ClientDynaModBehavior();
+                case 475375693: return new RecreateNPCActorCinematicAction();
+                case 475758968: return new QuestEffectTemplate();
+                case 476217519: return new CantripsInvisibilityEffectInfo();
+                case 477074371: return new ChatSpamHelper();
+                case 479740309: return new ClientBattlegroundPlayerStatsManager();
+                case 481149671: return new GardenPlant();
+                case 481550251: return new StatisticEffectTemplate();
+                case 483533426: return new WinAnimContainer();
+                case 483633007: return new WizClientLeashedObject();
+                case 483690447: return new LocaleMapping();
+                case 484023224: return new DerbyPlayerContainer();
+                case 485118205: return new ShadowSelfCinematicAction();
+                case 486489179: return new CastleToursOption();
+                case 486640963: return new JewelSocketBehaviorTemplate();
+                case 486885095: return new MoveCommandEuler();
+                case 489245601: return new ObstacleCoursePusherBehaviorTemplate();
+                case 493802536: return new ClientSpellCardAttachmentBehavior();
+                case 494018424: return new ReqHealthPercent();
+                case 495164721: return new BreadCrumbBehaviorBase();
+                case 496042949: return new MountItemBehavior();
+                case 497734595: return new InteractableOption();
+                case 497987934: return new SigilZoneInfo();
+                case 498321199: return new HousingGameObjectReference();
+                case 500732420: return new ClientAuctionHouseOption();
+                case 501372072: return new PhysicsSimMassCylinder();
+                case 501815053: return new OrderedWorlds();
+                case 502807566: return new CollisionBehaviorClient();
+                case 504140983: return new ReqAddHousingItemSlots();
+                case 504550220: return new TreasureCardVaultBehaviorBase();
+                case 505593498: return new HousingMusicPlayerBehaviorTemplate();
+                case 506758657: return new ClientBGPolymorphSelectBehavior();
+                case 507521837: return new ServerSyncCinematicAction();
+                case 508746613: return new PlayerInteractiveMusicLoops();
+                case 509281192: return new ObstacleCourseCatapultBehaviorTemplate();
+                case 509426772: return new DamageEventCinematicAction();
+                case 509430547: return new ClientPetSnackBehavior();
+                case 513011409: return new WhirlyBurlyGameList();
+                case 513782639: return new CompassSystem();
+                case 515253387: return new ClientPlayGraphicOnSigilCinematicAction();
+                case 515452814: return new BadgeFilterDescription();
+                case 516712382: return new PetInfoControl();
+                case 516979624: return new CinematicTemplateAnimationData();
+                case 519020287: return new CinematicActorAnimationData();
+                case 520421470: return new SG_GameScoreMultiplier();
+                case 521159851: return new DerbyModifyRate();
+                case 525174135: return new AquariumBehavior();
+                case 525296757: return new LoginHistoryEntry();
+                case 525407888: return new AuctionHouseEntry();
+                case 525752462: return new MaxGoldLootInfo();
+                case 525967215: return new CombatHealthListObj();
+                case 526288581: return new LeaderboardEntryList();
+                case 528727797: return new BreadCrumbBehavior();
+                case 532055404: return new PetJewelBehaviorTemplate();
+                case 534109433: return new ClientWizPlayerNameBehavior();
+                case 534151307: return new GradientWidgetBackground();
+                case 535692033: return new ClientTurnIndicatorCinematicAction();
+                case 538202429: return new ActorDialogListBase();
+                case 538232979: return new WindowStyle();
+                case 538644871: return new ClientCombatParticipant();
+                case 539839845: return new HousingLayoutObject();
+                case 544484305: return new ResAddReagent();
+                case 544875989: return new ControlDecalButton();
+                case 545297065: return new PathActionDespawn();
+                case 546055718: return new RegistrarOptions();
+                case 546078758: return new RegistrarOption();
+                case 546192515: return new ClientEquipmentBehavior();
+                case 547271908: return new PetAnimateActorCinematicAction();
+                case 550436000: return new WinAnimAlphaFade();
+                case 551320710: return new CastleMagicTutorialWindow();
+                case 552982840: return new HatchmakingPet();
+                case 553226999: return new PlacementDisplayItem();
+                case 562261948: return new PhysicsSimMassSphere();
+                case 562937432: return new ReagentLootInfo();
+                case 565450713: return new CrownsRewardsSchedule();
+                case 565706306: return new CursorStyleManager();
+                case 568907445: return new RotateActorCinematicAction();
+                case 569312441: return new PetActor();
+                case 569335841: return new PvPActor();
+                case 570154666: return new FaceTargetTeamActorCinematicAction();
+                case 572593628: return new BattlegroundPOIData();
+                case 574436278: return new ControlTileMap();
+                case 574762755: return new PolymorphCinematicAction();
+                case 576999877: return new ReqHasGoal();
+                case 577605360: return new EquivalentItemBehaviorTemplate();
+                case 577733819: return new PriceModifiers();
+                case 578437014: return new ControlComboBox();
+                case 578480682: return new PromoGiftList();
+                case 578842005: return new RemoveInterceptCinematicAction();
+                case 580128221: return new WizPolymorphTemplate();
+                case 580269176: return new CursorStyle();
+                case 581406359: return new ReqGoldBagPercent();
+                case 585174357: return new DailyQuestInfo();
+                case 585372564: return new InvisibilityEffect();
+                case 585868517: return new FishSellingOption();
+                case 586907222: return new ControlCheckBox();
+                case 587194731: return new MakeTargetableCinematicAction();
+                case 587810854: return new ClientGameEffectTimerSoundTrigger();
+                case 588090941: return new CastleTourHouseTemplateList();
+                case 588389314: return new TransformationEffect();
+                case 595747853: return new PvPMatchMakerStats();
+                case 596139110: return new TransformationEffectInfo();
+                case 596383997: return new ControlEdit();
+                case 596414623: return new ControlText();
+                case 596429743: return new ControlList();
+                case 596467571: return new HousingSignBehaviorTemplate();
+                case 596598143: return new ControlDraw();
+                case 597500419: return new ControlZone();
+                case 597500847: return new ControlLine();
+                case 597523807: return new ControlTree();
+                case 598182007: return new PathBehaviorClient();
+                case 598199386: return new MonsterMagicWorldTotal();
+                case 599191426: return new PipConversionValues();
+                case 600962558: return new LeashedPathMovementBehavior();
+                case 601375135: return new ControlTab();
+                case 601407923: return new ControlBar();
+                case 601586705: return new ControlSWF();
+                case 601713999: return new MadlibArgT_float();
+                case 601813023: return new PetTomeBehavior();
+                case 1483251235: return new ClientPetGameBehavior();
+                case 1483265571: return new ClientPetNameBehavior();
+                case 602322479: return new NamedEffectTemplate();
+                case 602849149: return new ControlPopupButton();
+                case 603529192: return new ReqBankPercent();
+                case 603995270: return new AddInterceptCinematicAction();
+                case 606823866: return new ClientFishBehavior();
+                case 608182659: return new ClientAddBacklashEffectCinematicAction();
+                case 609775250: return new BattlegroundPolymorphList();
+                case 610256033: return new CollectedEssenceTrackingList();
+                case 616037828: return new PlayerController();
+                case 617271339: return new PauseAction();
+                case 617350649: return new TempStartingPipEffectTemplate();
+                case 618765546: return new DerbyModifyMorale();
+                case 619552646: return new TeamHelpUpdateSigilInfoList();
+                case 619657520: return new AnimateActorCinematicAction();
+                case 622683300: return new ControlStretcher();
+                case 623090702: return new JewelVaultBehavior();
+                case 623319238: return new HatchmakingPremiumPetsList();
+                case 626500077: return new TieredSpellGroup();
+                case 627745655: return new ObstacleCourseObstacleBehavior();
+                case 627815761: return new PetTalentControlBase();
+                case 627990744: return new HousingTeleporterBehaviorBase();
+                case 628830022: return new WindowLayout();
+                case 630590567: return new GraphicalArenaBonusPoints();
+                case 635107250: return new DerbyAddObstacle();
+                case 638471713: return new RentalBehaviorTemplate();
+                case 638801041: return new InfractionBehaviorTemplate();
+                case 641636619: return new CharacterCreationInfo();
+                case 643140503: return new ClientAnimateActorCinematicAction();
+                case 644539674: return new DynamicURLDescriptor();
+                case 645358224: return new PetDialogEntry();
+                case 646045862: return new CharacterElementTable();
+                case 647324141: return new ClientSpawnActorCinematicAction();
+                case 647932500: return new ClientCloneActorCinematicAction();
+                case 647936459: return new ClientScaleActorCinematicAction();
+                case 651050002: return new ObstacleCourseFinishLineBehaviorClient();
+                case 651386166: return new PetObstacleCourseGameInfo();
+                case 652314621: return new PolymorphImprovementRatingInfo();
+                case 652419470: return new RemoveProtectionEffectCinematicAction();
+                case 652876295: return new SoftwareStyle();
+                case 653952242: return new CreateAuraActorCinematicAction();
+                case 654524462: return new ClientCrownsRewardsSchedule();
+                case 655650935: return new ClientRotateActorCinematicAction();
+                case 656654282: return new JewelVaultBehaviorBase();
+                case 658249692: return new WhirlyBurlyMovementData();
+                case 658511489: return new ReleaseCinematicStageTemplate();
+                case 661176458: return new CustomNameOptions();
+                case 661699589: return new UIScaleConfig();
+                case 664792111: return new MaxPotionLootInfo();
+                case 666896143: return new BoosterPackLootTypeMaxes();
+                case 667139644: return new CloneActorCinematicAction();
+                case 667152448: return new ScaleActorCinematicAction();
+                case 667836095: return new ClientRemoveInterceptCinematicAction();
+                case 669815000: return new SpawnActorCinematicAction();
+                case 674187830: return new FriendNotificationInfo();
+                case 681038846: return new HouseTransferResult();
+                case 681638361: return new CrownShopGiftRedemption();
+                case 682588548: return new PetXPLootInfo();
+                case 683760402: return new PhotoInformation();
+                case 684736547: return new WizardAutobotManager();
+                case 687409870: return new ClientDamageEventCinematicAction();
+                case 687848454: return new BGPlayerBehavior();
+                case 687876558: return new BodyOfWater();
+                case 688561952: return new ItemFinderBehaviorBase();
+                case 688676025: return new ConicalSoundBehavior();
+                case 688918403: return new PipFloatingTextCinematicAction();
+                case 689720865: return new RenderBehaviorTemplate();
+                case 690385098: return new CastleGamesBehavior();
+                case 692023183: return new ClientRequirementFailInteraction();
+                case 696200428: return new ProvideCombatTrigger();
+                case 699043223: return new AddHangingCinematicStageTemplate();
+                case 1526340221: return new ClientCSRRegistryList();
+                case 699514598: return new WizardStatTable();
+                case 701229577: return new WizGameObjectTemplate();
+                case 702487858: return new LevelUpElixirPropertyRegistryEntry();
+                case 702675844: return new ProxyGeometry();
+                case 702901064: return new ProvideCombatTriggerInfo();
+                case 703231399: return new ActorResurrectCinematicAction();
+                case 704375042: return new CastleToursBehaviorTemplate();
+                case 706487366: return new FidgetBehaviorTemplate();
+                case 710399610: return new SummonMinionCinematicAction();
+                case 710415701: return new ReqGardeningLevel();
+                case 710825186: return new ShoppingColorModifiers();
+                case 712631640: return new CastleMagicTutorial();
+                case 713899438: return new RealmInfoList();
+                case 715937930: return new BadgeInfoList();
+                case 716714533: return new CoreObjectInfo();
+                case 721338176: return new ClientHideShadowCreatureCinematicAction();
+                case 722124004: return new ItemFinderBehavior();
+                case 722265540: return new FilterSetTemplate();
+                case 726935928: return new PolymorphBattlegroundsBehavior();
+                case 729218845: return new WeightedEntryT_class_SplashCinematicInfo();
+                case 729667670: return new MeshGeomParams();
+                case 731171495: return new PetTalentControl();
+                case 731548130: return new ClientSwapShadowMaterialActorCinematicAction();
+                case 732659400: return new TeamGIDToBracketID();
+                case 734261487: return new ActiveTimedPassEntry();
+                case 736132670: return new MakeTargetableCinematicStageTemplate();
+                case 736135456: return new CinematicStageRelationship();
+                case 737880451: return new ShadowSpellTrackingData();
+                case 737996094: return new WizMinigameOffering();
+                case 738789752: return new ReqClearHatchingSlot();
+                case 739063188: return new KioskOption();
+                case 739220943: return new CSRSpellList();
+                case 739387287: return new DeckListControl();
+                case 740052928: return new WizItemQuestData();
+                case 743024801: return new ClientConfirmOption();
+                case 743816277: return new BattleCardShopOffering();
+                case 746172267: return new HelpChatElement();
+                case 746461756: return new PhysicsSimMassTube();
+                case 746694127: return new ArenaMatchInfo();
+                case 747045036: return new FishingInfo();
+                case 748767198: return new BattleBookBehavior();
+                case 748829085: return new ClassProjectUpdateList();
+                case 749324872: return new BattlegroundMatchmakingChat();
+                case 750358885: return new AddBacklashEffectCinematicAction();
+                case 752741281: return new ClientBGPlayerInfo();
+                case 753453343: return new ClientBurnAuraCinematicAction();
+                case 754942536: return new CastleGamesOption();
+                case 755256256: return new Ladder();
+                case 756064718: return new SG_GameAction_PlaySound();
+                case 756318596: return new FishBehavior();
+                case 759044060: return new WhirlyBurlyMovementDataAI();
+                case 760900532: return new ActivateHangingEffectCinematicAction();
+                case 764236905: return new CastleBlocksBehaviorTemplate();
+                case 764330343: return new AutobotMobAvoidance();
+                case 764671794: return new GamebryoClientLeashBehavior();
+                case 765081923: return new UpFirstData();
+                case 766500222: return new WizClientObject();
+                case 767522421: return new GoldAmountTemplate();
+                case 767808974: return new EffectCinematicAction();
+                case 769577082: return new ClientCameraCutCinematicAction();
+                case 771551630: return new PolymorphEffectInfo();
+                case 772937500: return new ObstacleCoursePendulumBehavior();
+                case 775531811: return new TieredSpellConfig();
+                case 776352636: return new PhysicsSimMass();
+                case 777039708: return new PhysicsSimMassBox();
+                case 777060197: return new GardeningShedBehaviorBase();
+                case 778972366: return new WizDisableItemStatEffectTemplate();
+                case 779748765: return new ControlMultiLineEdit();
+                case 781471912: return new AmbientSoundBehavior();
+                case 781595162: return new ChatHistory();
+                case 783298687: return new DerbyTerrainEffect();
+                case 785208611: return new ContainerEffectInfo();
+                case 785304851: return new BattleCardShopOption();
+                case 785676554: return new MatchCostAdjustment();
+                case 788111631: return new ObstacleCourseCatapultBehaviorClient();
+                case 792029465: return new ClientFlareBacklashEffectCinematicAction();
+                case 792240292: return new BadgeTemplate();
+                case 795152686: return new CombatResolver();
+                case 797178977: return new PetStatBlockControl();
+                case 797250852: return new ZoneGateOption();
+                case 798170352: return new ChangeActorStateCinematicAction();
+                case 798198564: return new UnPolymorphCinematicAction();
+                case 799619105: return new ClientTimerControlCinematicAction();
+                case 800945360: return new CastleGamesUpdate();
+                case 801182815: return new UntargetableCinematicAction();
+                case 802540586: return new GiveCinematicStageTemplate();
+                case 802791637: return new WeightedEntry();
+                case 806171162: return new ObstacleCourseObstacleBehaviorTemplate();
+                case 807343814: return new EmojiWindow();
+                case 807463180: return new PlayerControllerClient();
+                case 807565142: return new DependentResourceContainer();
+                case 807665868: return new DespawnInfo();
+                case 807923400: return new BattlegroundPlayerStatsManager();
+                case 808134519: return new PetDerbyRacerState();
+                case 808633172: return new RemoveMatchUpdate();
+                case 808981137: return new ObjStateCategory();
+                case 811054127: return new PvPLobbyOption();
+                case 812703659: return new ConicalStateSoundBehavior();
+                case 813763071: return new SoundInfo();
+                case 813778773: return new PetSnackCheckBox();
+                case 813925290: return new MiniMapWindow();
+                case 813931909: return new BracketMatchActorResult();
+                case 815474551: return new PetDerbyRacerStats();
+                case 817027151: return new TutorialLogBehaviorBase();
+                case 819165330: return new DerbyEffectSprite();
+                case 819903971: return new ClassInfo();
+                case 820192164: return new WinAnimSize();
+                case 820388105: return new MagicMirrorShopOption();
+                case 821754724: return new HousingPetMovementCompressed();
+                case 823759422: return new AnimationSoundData();
+                case 824433843: return new SpawnObjectInfo();
+                case 825324376: return new StatisticEffect();
+                case 826932730: return new QuickSellItem();
+                case 827639275: return new TournamentUpdateFriendList();
+                case 828137340: return new QuickSellItemList();
+                case 828386789: return new WizTrainingOption();
+                case 830085444: return new MoveCommandYaw();
+                case 832321529: return new GameEffectTimerSoundTrigger();
+                case 832829043: return new KhanDanceComponent();
+                case 833885600: return new AdvancedPetsConfig();
+                case 835078258: return new DuelModifierTemplate();
+                case 836462749: return new OldWizardEquippedItemInfo();
+                case 836925745: return new LeaderboardEntry();
+                case 836995944: return new ObjectBag();
+                case 837071457: return new IdleAuraCinematicAction();
+                case 837371622: return new CombatRule();
+                case 838517010: return new BattlegroundPolymorphs();
+                case 838936710: return new ObstacleCourseFinishLineBehavior();
+                case 839746838: return new ClientRemoveAuraCinematicAction();
+                case 842804276: return new PlanningTimerControl();
+                case 843476981: return new WizShopOffering();
+                case 843904912: return new LinearStateSoundBehavior();
+                case 844446229: return new PositionalSoundEmitterInfo();
+                case 849913375: return new ConicalSoundBehaviorTemplate();
+                case 850808878: return new InitialPackageInfo();
+                case 853170504: return new ObstacleCourseSpringboardBehaviorClient();
+                case 853268042: return new ProvideCombatTriggerTemplate();
+                case 854001393: return new WizBugReport();
+                case 855187657: return new SoccerBall();
+                case 856547416: return new ClientRemoveBacklashEffectCinematicAciton();
+                case 858568024: return new ReqIsQuest();
+                case 858701283: return new Persona();
+                case 859401725: return new ReqMinion();
+                case 859949060: return new MoveCommandYawTime();
+                case 860092483: return new ClientAnnounceSpellTextCinematicAction();
+                case 861424380: return new DynaModBehavior();
+                case 863294800: return new ClientInfractionBehavior();
+                case 866489663: return new ClientAddHangingEffectCinematicAction();
+                case 870259479: return new FontGlyphis();
+                case 873496043: return new SavedDebugCommandContainer();
+                case 874406534: return new ClassProjectPlayer();
+                case 876373524: return new CombatPipListObj();
+                case 876775127: return new WizardAutobotQuestManager();
+                case 877441123: return new ReqHasMorphSlot();
+                case 877634397: return new ClientInventoryBehavior();
+                case 877885313: return new ScrollButton();
+                case 881774485: return new PrivateSocketJewelPair();
+                case 882082720: return new ElixirBenefitBehaviorTemplate();
+                case 884122233: return new CombatGardeningXPEffect();
+                case 884434128: return new FishTournamentUpdate();
+                case 886031561: return new Reco_RecoItemData();
+                case 886350767: return new QuestEffect2();
+                case 888229093: return new SeedBehaviorTemplate();
+                case 888548495: return new ClientBuffDebuffEventCinematicAction();
+                case 891106107: return new ClientWizStorageBehavior();
+                case 891592863: return new AuctionHouseOption();
+                case 892381710: return new AmbientSoundBehaviorTemplate();
+                case 892480983: return new EquipmentBehaviorTemplate();
+                case 892779224: return new CinematicInteractInfo();
+                case 893904575: return new ArenaItemsOption();
+                case 896499448: return new HousingTeleporterBehavior();
+                case 897469938: return new ClientDerbyModifyCheerCost();
+                case 898738405: return new SigilSubCircle();
+                case 901447185: return new FriendData();
+                case 901959605: return new CastleMagicManager();
+                case 902409505: return new Slot_Node_FXDef();
+                case 902660173: return new ClientDerbyAffectEffects();
+                case 905790587: return new TutorialServiceOption();
+                case 905859247: return new TournamentTemplate();
+                case 906141780: return new IgnoreEntryData();
+                case 907166031: return new AutobotTiming();
+                case 908701391: return new CastleBlocksBehavior();
+                case 909838190: return new ClientSpellCardAttachmentCinematicAction();
+                case 913028834: return new RayGeomParams();
+                case 913029014: return new BoxGeomParams();
+                case 913991582: return new PlaneGeomParams();
+                case 914083479: return new ReagentItemTemplate();
+                case 914357476: return new ObstacleCourseRevolvingDoorBehaviorTemplate();
+                case 914561571: return new GraphicalGold();
+                case 915710895: return new QuestEffect();
+                case 919116749: return new CrownsConfirmWindow();
+                case 919442742: return new CastleMagicBehaviorBase();
+                case 919520188: return new ResSyncScript();
+                case 919573827: return new RemoveParticleActorCinematicAction();
+                case 919856348: return new NonCombatMayCastSpellTemplate();
+                case 921684498: return new BattlegroundMatchmaking();
+                case 922573025: return new AutobotConfig();
+                case 922685391: return new PotionShopOption();
+                case 924087310: return new ClientCreateActorCinematicAction();
+                case 925408749: return new WhirlyBurlyBehaviorBase();
+                case 928184681: return new SpawnManager();
+                case 930389943: return new ReqArenaSeasonScore();
+                case 930678381: return new ClientShowPipsCinematicAction();
+                case 931285959: return new ReqArenaSeasonTitle();
+                case 931299734: return new SupportedObjectReference();
+                case 931519170: return new ClassProjectPlayerProgressList();
+                case 933991129: return new RatingInfo();
+                case 934191054: return new ClassProjectPlayerProgress();
+                case 934519833: return new InteractiveMusicLoop();
+                case 935326015: return new MorphingException();
+                case 935702429: return new PermShopItemData();
+                case 935899440: return new TreasureShopModifiers();
+                case 935976055: return new CrownShopButtonNameBehaviorTemplate();
+                case 936602532: return new ClientRemoveHangingEffectCinematicAction();
+                case 937907618: return new BattlegroundGroupStatus();
+                case 939096778: return new PetDerbyResults();
+                case 939098106: return new PetDerbyResult();
+                case 939374607: return new SpellCardAttachmentBehavior();
+                case 940732063: return new LeashBehaviorTemplate();
+                case 940931034: return new EquipmentSet();
+                case 941783554: return new PetDyeToTexture();
+                case 942084836: return new DiegoCombatObserver();
+                case 942399763: return new MassShapeTemplate();
+                case 944437540: return new WinAnimScale();
+                case 946856944: return new ClientAlchemyBehavior();
+                case 946884960: return new LadderBehavior();
+                case 947796097: return new ReqIsGender();
+                case 948326114: return new ChatPopupButton();
+                case 949603994: return new WinAnimScaleSymmetricalSpeed();
+                case 949910208: return new PlayGraphicOnSigilCinematicAction();
+                case 951509348: return new TransformationEffectTemplate();
+                case 951959122: return new WindowBubble();
+                case 953634349: return new PointData();
+                case 956885104: return new HousingSignOperator();
+                case 957498904: return new ClientBurnInterceptCinematicAction();
+                case 958775582: return new ClientRecipe();
+                case 959047476: return new MobMonsterMagicBehaviorTemplate();
+                case 960268778: return new ResultSourceType();
+                case 964426667: return new MagicalSoccerGameComponent();
+                case 964510138: return new TutorialInfo();
+                case 966024826: return new WhirlyBurlyScoreUpdateData();
+                case 967335253: return new FXBySlotEffectTemplate();
+                case 969769211: return new ClassProjectGlobalLootPoint();
+                case 970712256: return new CastleMagicCameraInfo();
+                case 970892637: return new SpellData();
+                case 971222955: return new ActorDialog();
+                case 971982789: return new ReqCanSummonHenchman();
+                case 974020150: return new FadeActorCinematicAction();
+                case 975017639: return new SigilCamera();
+                case 976615779: return new PetGameKioskOption();
+                case 976817436: return new ObstacleCourseSpeedUpBehaviorTemplate();
+                case 977177732: return new FishingBehaviorBase();
+                case 977662948: return new ShoppingSellModifiers();
+                case 978661103: return new ClientCreateHangingEffectActorCinematicAction();
+                case 978669458: return new WizStatisticEffect();
+                case 979355205: return new ReqBaseMagicLevel();
+                case 980221033: return new PetSiegeGameManager();
+                case 980685453: return new BadgeFilterInfo();
+                case 982801654: return new TournamentConfig();
+                case 982839443: return new BGPolymorphSelectBehavior();
+                case 984356059: return new GeomParams();
+                case 984388735: return new HatchmakingCrownsPetList();
+                case 985119122: return new BadgeButton();
+                case 985460862: return new PermanentShop();
+                case 987802706: return new ActorDeathCinematicAction();
+                case 988276124: return new AttenuatedFileList();
+                case 991922385: return new WizItemTemplate();
+                case 992329990: return new CombatResult();
+                case 993204893: return new SortedCaughtFish();
+                case 993248480: return new PetSnackBehavior();
+                case 993544737: return new ReqBaseHasMagicSchool();
+                case 995444126: return new SoundBehavior();
+                case 996754183: return new PathManager_NodeTemplateList();
+                case 996811752: return new PathManager_PathTemplateList();
+                case 997322632: return new InfractionEvent();
+                case 997557873: return new ObstacleCoursePendulumBehaviorTemplate();
+                case 998830168: return new CastleMagicItemDetector();
+                case 1001234342: return new Group();
+                case 1002414152: return new ClientAttachEffectToTurnIndicatorCinematicAction();
+                case 1002934410: return new WinAnimDelay();
+                case 1003539504: return new SavedDebugCommand();
+                case 1004108292: return new BattlegroundTemplateChatList();
+                case 1004451249: return new Spell();
+                case 1005519432: return new PetTalentTemplate();
+                case 1006192407: return new CameraReleaseCinematicAction();
+                case 1009616677: return new DependentResourcesBehavior();
+                case 1011789918: return new SoundDefTemplate();
+                case 1012990464: return new SpellCheckBox();
+                case 1013188253: return new ParalyzeScriptLink();
+                case 1013884369: return new PhysicsBehaviorClient();
+                case 1014784381: return new FriendSortByWindow();
+                case 1015231469: return new CrownShopCategory();
+                case 1015536062: return new TieredSpellTemplate();
+                case 1017280399: return new BracketReportInfo();
+                case 1017639429: return new MoraleModificationMap();
+                case 1017660130: return new ShadowSpellEffect();
+                case 1017839043: return new WizardSearchResultItem();
+                case 1020037115: return new TreasureCardPosterBehaviorTemplate();
+                case 1020592249: return new TagGameComponent();
+                case 1021238115: return new ScavengeGoalTemplate();
+                case 1023954011: return new HousingWaterManager();
+                case 1024574928: return new ControlSprite();
+                case 1025664612: return new TodaysQuestData();
+                case 1026850581: return new ClientAnnounceTextCinematicAction();
+                case 1027538353: return new TeamHelpUpdateInfo();
+                case 1028129538: return new SpectatorWindow();
+                case 1028205814: return new ClientRentalBehavior();
+                case 1028402949: return new ObjStateOverrideInfo();
+                case 1030393480: return new ItemSetBonusData();
+                case 1031496930: return new TeleporterTemplate();
+                case 1032444398: return new AvailableCompleteEntry();
+                case 1034275375: return new ElixirBenefitEffect();
+                case 1034607309: return new WizBangTemplateManager();
+                case 1034871459: return new HubZoneMapping();
+                case 1036710414: return new PlayGraphicOnActorAction();
+                case 1037390197: return new CombatParticipant();
+                case 1038212901: return new CustomEmoteBehaviorTemplate();
+                case 1040114835: return new TurnIndicatorCinematicAction();
+                case 1041784706: return new TipData();
+                case 1043576859: return new PolymorphBattlegroundsBehaviorTemplate();
+                case 1045682236: return new ReqAddIncreaseInventory();
+                case 1047027548: return new PetFeedingRewardConfig();
+                case 1049222261: return new ClientCameraFadeCinematicAction();
+                case 1051842193: return new FriendSymbolWindow();
+                case 1052737293: return new RecipeTemplate();
+                case 1053087315: return new HousingSigilManager();
+                case 1053587634: return new DyeShopWindow_DyeShopItem();
+                case 1053826872: return new CastleMagicAction();
+                case 1054532879: return new SG_GameActionClient_PlaySound();
+                case 1055998215: return new DOTEffectTemplate();
+                case 1056070233: return new ClientMountInteractableOption();
+                case 1056749377: return new SG_GameInteraction();
+                case 1058786843: return new StaticControlButtonState();
+                case 1059352943: return new HousingMusicManager();
+                case 1060124367: return new PathActionChangePath();
+                case 1060789076: return new AutobotManager();
+                case 1063716423: return new GroundContourBehavior();
+                case 1064136717: return new ClientElixirBenefitBehavior();
+                case 1064574218: return new ParticleEmitter2D();
+                case 1067051094: return new HelpChatOperator();
+                case 1067530955: return new InteractiveMusicButtonSample();
+                case 1068695141: return new GardeningShedBehavior();
+                case 1068918295: return new CoreTemplate();
+                case 1068979478: return new GoalTemplate();
+                case 1069281552: return new WizTrainingInteraction();
+                case 1071752035: return new WizStatisticOverrideEffectTemplate();
+                case 1072381962: return new RegisterPersonaCinematicAction();
+                case 1075927341: return new TournamentUpdateList();
+                case 1077944646: return new GhostHider();
+                case 1078496819: return new ItemTemplate();
+                case 1080527930: return new LootInfoListBase();
+                case 1080628177: return new LikesDislikesEntry();
+                case 1080788762: return new TutorialLogBehaviorTemplate();
+                case 1082788448: return new AnimationPair();
+                case 1083947078: return new PvPCombatSigilTemplate();
+                case 1084771616: return new AuctionPriceMods();
+                case 1087281984: return new ProvideSpellEffectTemplate();
+                case 1087768358: return new CastleMagicSpellTemplate();
+                case 1088237445: return new ReqCanAddExpansion();
+                case 1089728526: return new BattleCardPurchaseInfo();
+                case 1089850051: return new EquippedItemInfoList();
+                case 1090392257: return new QuantityBehaviorTemplate();
+                case 1093865471: return new WhirlyBurlySpellTemplate();
+                case 1093919580: return new WizBGPolymorphStatisticOverrideEffect();
+                case 1094456441: return new CrownShopOffering();
+                case 1095126543: return new ObjectRemapBehaviorTemplate();
+                case 1095560187: return new RootWindow();
+                case 1097733066: return new StageBacklashEffectCinematicAction();
+                case 1098962134: return new SG_GameAction_AddPowerMultiplier();
+                case 1099057368: return new MinigameSigilOption();
+                case 1100078847: return new HousingGamePlayerCollection();
+                case 1100165481: return new WorldHubZoneMapper();
+                case 1102142124: return new NPCDataList();
+                case 1102851276: return new ClientAtticBehavior();
+                case 1103017357: return new PetBoostPlayerStatEffectTemplate();
+                case 1104540968: return new TalentInfo();
+                case 1105301114: return new ClientCastEffectCinematicAction();
+                case 1106104902: return new ClientHideActorCinematicAction();
+                case 1106997031: return new WhirlyBurlyGameState();
+                case 1107860808: return new GamebryoCamera();
+                case 1109448625: return new ControlProgress();
+                case 1109689497: return new TreasureCardVaultBehaviorTemplate();
+                case 1110485234: return new ReqHasQuest();
+                case 1115192397: return new BaseZone();
+                case 1116000943: return new GameEffectBase();
+                case 1116819615: return new PetPowerControl();
+                case 1117347935: return new ActorMadlib();
+                case 1119240234: return new LootInfo();
+                case 1119272029: return new PassInfo();
+                case 1119490211: return new PetJewelControl();
+                case 1119603875: return new FishingXPConfig();
+                case 1119821118: return new AlphaMaskTextureD3D();
+                case 1121346738: return new MinigameInfo();
+                case 1121431901: return new LeaveTeamUpdate();
+                case 1122185342: return new WinAnimMoveToLocationTimeEaseApprox();
+                case 1123537661: return new ProxyMesh();
+                case 1123934692: return new TournamentInfoRequest();
+                case 1125081789: return new SubscriberBenefitControl();
+                case 1125885370: return new TempStartingPipEffectInfo();
+                case 1126041407: return new FreeCamController();
+                case 1126083343: return new PremiumContentOption();
+                case 1126574566: return new PetGameActionList();
+                case 1127752174: return new PetDerbyObstacleBehaviorTemplate();
+                case 1127770360: return new ClientDerbyAddSpeedBoost();
+                case 1128060484: return new TemplateLocation();
+                case 1128180754: return new CombatResultListObj();
+                case 1129234565: return new BracketReport();
+                case 1129606174: return new ClassProjectReward();
+                case 1131100403: return new BracketIDList();
+                case 1131635780: return new WizardEquippedItemInfo();
+                case 1135094549: return new WizItemGoldChestList();
+                case 1135557334: return new ReqSpecificTemplate();
+                case 1135853375: return new PremiumContentOptionList();
+                case 1137031580: return new CreationNameInput();
+                case 1138758149: return new BurnHangingEffectCinematicAction();
+                case 1139333181: return new ClientDerbyForceLaneChange();
+                case 1140592356: return new PCDialogEntry();
+                case 1141140637: return new HousingSigilBehaviorTemplate();
+                case 1142780880: return new BGPolymorphSelectOption();
+                case 1146327866: return new AddTeamToMatchUpdate();
+                case 1146863221: return new LeashedPathMovementBehaviorClient();
+                case 1147203225: return new WhirlyBurlyPlanningData();
+                case 1148351857: return new CharacterRaceTable();
+                case 1148430887: return new ClientSetHangingEffectAlphaCinematicAction();
+                case 1148906214: return new MobMonsterMagicBehavior();
+                case 1149186669: return new ClientPlaySoundCinematicAction();
+                case 1149577254: return new AggroBehavior();
+                case 1150275294: return new FidgetBehavior();
+                case 1150285043: return new BattlegroundGroupMemberStatus();
+                case 1151650312: return new DeckConfigurationWindow();
+                case 1151683121: return new PetSnackItemTemplate();
+                case 1151880684: return new ClientInfractionMessageBox();
+                case 1152074517: return new HousingGamePowerUpLocations();
+                case 1152306685: return new CoreObject();
+                case 1152801726: return new AtticBehavior();
+                case 1154006544: return new ClientActorDialogCinematicAction();
+                case 1154096504: return new PhysicsBehavior();
+                case 1154933023: return new GraphicalReagent();
+                case 1157637127: return new DerbyRemoveAction();
+                case 1157919952: return new BlobRequestObject();
+                case 1158483591: return new TreasureShopOption();
+                case 1158680138: return new SplashCinematicInfo();
+                case 1158760128: return new Mail();
+                case 1160667979: return new ArenaBonusPointsLootInfo();
+                case 1160849771: return new RatingBadgeInfo();
+                case 1161498678: return new ReqCombatHealth();
+                case 1161512562: return new DependentResourcesBehaviorTemplate();
+                case 1162983699: return new SoundFilterParam();
+                case 1164989569: return new GraphicalSpellWindow();
+                case 1165770906: return new MadlibBlock();
+                case 1167371726: return new PetSnackLootInfo();
+                case 1167581154: return new WizClientPet();
+                case 1167742754: return new ClientAnnounceRoundCinematicAction();
+                case 1170264438: return new CastEffectCinematicAction();
+                case 1171118906: return new FixedCamController();
+                case 1171932844: return new TreasureCardPosterBehavior();
+                case 1172223090: return new InteractiveMusicBehaviorTemplate();
+                case 1172622241: return new HousingMusicBehaviorTemplate();
+                case 1172757019: return new DdWinAnimMovePlayer();
+                case 1173463435: return new HideActorCinematicAction();
+                case 1173951136: return new PathObjectTemplate();
+                case 1173979822: return new TreasureCardPosterBehaviorBase();
+                case 1175767651: return new CastleMagicBehaviorTemplate();
+                case 1177293382: return new ObstacleCoursePusherBehavior();
+                case 1177915470: return new EmojiData();
+                case 1178778251: return new QuestData();
+                case 1180455981: return new ActorDialogBase();
+                case 1180594474: return new DerbyMoraleByTerrainEffect();
+                case 1181777421: return new MountInteractableOption();
+                case 1181994921: return new LinearSoundEmitterInfo();
+                case 1182445187: return new DdWinAnimMoveDiggingMob();
+                case 1186655351: return new RecipeWindow_RecipeItem();
+                case 1188083511: return new PlaySoundInfo();
+                case 1190617652: return new WizStatisticOverrideEffect();
+                case 1191946562: return new PlayComplexSoundCinematicAction();
+                case 1192545614: return new CrownShopCategoryMenu();
+                case 1193058637: return new MagicSchoolTemplate();
+                case 1196545820: return new WizGameStats();
+                case 1197475757: return new SG_GamePower();
+                case 1200596153: return new RenderBehavior();
+                case 1201563320: return new CameraFadeCinematicAction();
+                case 1202255320: return new SoftEnumList();
+                case 1202426311: return new SG_GameEvent();
+                case 1203497098: return new CollisionWorld();
+                case 1204857755: return new GameEffectTemplate();
+                case 1206218299: return new GearVaultBehavior();
+                case 1207026362: return new WhirlyBurlyBehaviorTemplate();
+                case 1208967843: return new ClientBGPenaltyMatchBan();
+                case 1209457190: return new CompassMarkerWindow();
+                case 1212099533: return new DoodleMapPair();
+                case 1214710570: return new LootInfoList();
+                case 1214775133: return new PassInfoList();
+                case 1214784666: return new ConicalSoundEmitterInfo();
+                case 1218092279: return new ObstacleCoursePusherBehaviorClient();
+                case 1219613825: return new LeaderboardOption();
+                case 1219958228: return new Reco_LevelData();
+                case 1221570826: return new ControlRichEdit();
+                case 1222804794: return new EmbeddedBrowserConfigEntry();
+                case 1223517492: return new EquipmentShopOption();
+                case 1223816892: return new BlobRequest();
+                case 1224985921: return new DailyPvPOption();
+                case 1225309305: return new SpellEffect();
+                case 1227463801: return new SpeedEffect();
+                case 1228900789: return new QuestEntry();
+                case 1229607021: return new PetGeneticsControl();
+                case 1231612728: return new AnnounceTextCinematicAction();
+                case 1236928591: return new LocaleManager();
+                case 1239527339: return new CombatGardeningXPEffectTemplate();
+                case 1240028178: return new TallyCounterTemplate();
+                case 1241163829: return new BreadCrumbBehaviorTemplate();
+                case 1243118202: return new ClassProjectFinalReward();
+                case 1243914049: return new PhysicsSimObject();
+                case 1246147275: return new ClientStopBacklashRotationEffectCinematicAction();
+                case 1246183594: return new LootInfoBase();
+                case 1246439792: return new WizCinematicActorTemplate();
+                case 1252686745: return new LeashedPathNodeDescriptor();
+                case 1252929736: return new ReqInSameDuel();
+                case 1252946711: return new AlchemyStationOption();
+                case 1256117554: return new RandomPerTargetSpellEffect();
+                case 1258386852: return new CharacterChatStatsByText();
+                case 1259213735: return new AreaBehaviorTemplate();
+                case 1259241548: return new MoveBehaviorTemplate();
+                case 1259413685: return new WizMountTemplate();
+                case 1260296854: return new WeightedList();
+                case 1261284008: return new GardeningShedBehaviorTemplate();
+                case 1262198543: return new MonsterMagicBehaviorBase();
+                case 1262577129: return new SavedCharacter();
+                case 1262803676: return new GardeningXPConfig();
+                case 1265210285: return new SG_GameActionClient_DestroyBlock();
+                case 1265912287: return new FriendsListWindow();
+                case 1266137399: return new ClientToggleInterfaceControlCinematicAction();
+                case 1266453463: return new MonsterArenaBehaviorBase();
+                case 1270124295: return new MonsterMagicBehavior();
+                case 1271009966: return new ClassProjectLocation();
+                case 1271955680: return new GameEffectTemplateList();
+                case 1274010523: return new PathActionEnterState();
+                case 1274256351: return new MonsterArenaBehavior();
+                case 1274565252: return new GroundContourBehaviorTemplate();
+                case 1274905603: return new BracketMatchInfo();
+                case 1275572288: return new ClientTextureRemapBehavior();
+                case 1278379702: return new QueuedCombatCinematicAction();
+                case 1279100803: return new SpellEffectParamOverride();
+                case 1281691511: return new ClientDestroyShadowCreatureCinematicAction();
+                case 1284435779: return new JewelShopOption();
+                case 1285004035: return new InventoryBehaviorBase();
+                case 1285544566: return new WizZoneData();
+                case 1286983706: return new DdBonusWinAnim();
+                case 1287907351: return new ClientWizEquipmentBehavior();
+                case 1289297479: return new GroupObserver();
+                case 1291147309: return new ClientUnShadowSelfCinematicAction();
+                case 1291642721: return new RecipeShopOption();
+                case 1294242832: return new UnknownLootInfo();
+                case 1295470661: return new BattlegroundMiniMapWindow();
+                case 1297522406: return new ObstacleCourseClientSettings();
+                case 1297524364: return new GearVaultBehaviorTemplate();
+                case 1297977215: return new PolymorphEffectTemplate();
+                case 1298915509: return new PromoReward();
+                case 1299267716: return new AutobotQuestManager();
+                case 1299811140: return new MagicXPConfig();
+                case 1306093476: return new ResAddCharacterSlotResult();
+                case 1306888295: return new DerbyForceLaneChange();
+                case 1308486746: return new DerbyModifyMoraleChance();
+                case 1310489832: return new PetLevelUpWindow();
+                case 1311399350: return new ClientZone();
+                case 1313022256: return new MountTable();
+                case 1313679604: return new ItemBundleTemplate();
+                case 1315106457: return new WhirlyBurlyPlanningDataAI();
+                case 1315711952: return new ContainerEffectTemplate();
+                case 1315903630: return new MaxManaLootInfo();
+                case 1316546942: return new EquivalentItemBehavior();
+                case 1317096743: return new ClientElixirBehavior();
+                case 1318861467: return new MinigameSigilTemplate();
+                case 1319586638: return new DerbyAddSpeedBoost();
+                case 1319953468: return new ClientStopComplexSoundCinematicAction();
+                case 1321510422: return new ReqHangingEffectType();
+                case 1322428257: return new HousingTeleporterTargeting();
+                case 1326856470: return new ClientObjectInfo();
+                case 1327910874: return new CantripsItemTemplate();
+                case 1330192380: return new TeleportProximityBehaviorTemplate();
+                case 1331628719: return new BracketRewardsPlaceMapping();
+                case 1336375904: return new NPCBehavior();
+                case 1336810735: return new ParticipantParameter();
+                case 1336859898: return new TeamHelpFailWindow();
+                case 1338561599: return new WizardClientTutorial();
+                case 1338612690: return new ClientPlayerAggroBehavior();
+                case 1338869273: return new PositionalStateSoundBehavior();
+                case 1339307054: return new WorldWindow();
+                case 1341322290: return new WinAnimMoveToLocationTime();
+                case 1341351281: return new FishTournamentOption();
+                case 1342590395: return new HealthGlobe();
+                case 1343255969: return new MonsterMagicBehaviorTemplate();
+                case 1343503713: return new MatchTeamResult();
+                case 1343615589: return new BattlegroundPlayerStats();
+                case 1344070866: return new PetJewelBehavior();
+                case 1345594487: return new FishingBehaviorTemplate();
+                case 1347111689: return new TournamentLevelModifiers();
+                case 1347422349: return new HousingGameManager();
+                case 1347637562: return new TempStartingPipEffect();
+                case 1347660521: return new WindowTip();
+                case 1347903865: return new MonsterArenaBehaviorTemplate();
+                case 1350408327: return new InfractionMessageBoxInfo();
+                case 1350840394: return new ClassProjectTemplate();
+                case 1351220400: return new WaypointGoalTemplate();
+                case 1351843379: return new ClientDerbyLockLane();
+                case 1353579900: return new CharacterSet();
+                case 1353793238: return new PetTalentBaseTemplate();
+                case 1353954794: return new HousingPetBehaviorTemplate();
+                case 1354761121: return new LockData();
+                case 1355995049: return new GameObjectAnimStateTracker();
+                case 1357373219: return new InfractionMessageBox();
+                case 1357374669: return new AquariumBehaviorTemplate();
+                case 1358137158: return new MagicSchoolInfo();
+                case 1359234207: return new NonCombatMayCastSpellInfo();
+                case 1359634476: return new TeamHelpUpdateSigilInfo();
+                case 1361135213: return new MailList();
+                case 1362719164: return new MountDyeToTexture();
+                case 1364452653: return new ObjectStateBehaviorTemplate();
+                case 1365512403: return new ActorDialogCinematicAction();
+                case 1366245278: return new WindowAnimation();
+                case 1368264426: return new BasicChatChannelInvite();
+                case 1368571115: return new PathActionEmote();
+                case 1372973245: return new ClientDuel();
+                case 1373471513: return new Result();
+                case 1375294089: return new ClientStartHangingRotationCinematicAction();
+                case 1375527332: return new PetDerbyTrackManager();
+                case 1375974384: return new InteractiveMusicPlayerList();
+                case 1377797262: return new InitialCombatSoundsList();
+                case 1385240368: return new ClientHaltCinematicAction();
+                case 1386526905: return new PathActionStop();
+                case 1391001119: return new PestBehavior();
+                case 1391126556: return new DeedBehavior();
+                case 1391136284: return new DeckBehavior();
+                case 1391192220: return new DuelBehavior();
+                case 1397007994: return new ClientQuantityBehavior();
+                case 1397200460: return new AttachEffectToTurnIndicatorCinematicAction();
+                case 1398013990: return new HousingSignBehaviorBase();
+                case 1399036544: return new LevelUpElixirSchoolSpecificData();
+                case 1399461056: return new CrownShopData();
+                case 1399949609: return new HousingNode();
+                case 1400153498: return new HatchmakingKioskBehaviorTemplate();
+                case 1400222946: return new PetDerbyTalentTemplate();
+                case 1400295921: return new HousingBlob();
+                case 1401067856: return new WizardAutobotMobAvoidance();
+                case 1401438223: return new SetHangingEffectAlphaCinematicAction();
+                case 1404707111: return new PlaySoundCinematicAction();
+                case 1404790572: return new ObstacleCourseFinishLineBehaviorTemplate();
+                case 1404794289: return new BoosterPackTemplate();
+                case 1407815894: return new ClientDerbyModifyPetStat();
+                case 1408632626: return new ClientStartBacklashRotationEffectCinematicAction();
+                case 1409100712: return new TeamHelpWindow();
+                case 1412412438: return new AnnounceRoundCinematicAction();
+                case 1412474150: return new ModifyPipsCinematicAction();
+                case 1416022909: return new TextComponent();
+                case 1418400222: return new PetTomePetTotal();
+                case 1419572853: return new ForcedStateInfo();
+                case 1419629436: return new ScrollWindowStyle();
+                case 1419807349: return new SG_GameLevelData();
+                case 1421022817: return new RemoveTeamFromMatchUpdate();
+                case 1422341205: return new ObstacleCourseSpringboardBehavior();
+                case 1424862416: return new CreateHangingEffectActorCinematicAction();
+                case 1427247042: return new TextTagPair();
+                case 1427509360: return new BadgeFilterDescriptionList();
+                case 1430645630: return new ExtraHousingZoneBehaviorBase();
+                case 1431031301: return new GameEffectTimerPopupTrigger();
+                case 1431480669: return new FXBySlotEffectInfo();
+                case 1432483832: return new PetGameEndData();
+                case 1434103692: return new FaceTargetActorCinematicAction();
+                case 1435853945: return new ClientShadowCreatureCameraCutCinematicAction();
+                case 1437347832: return new CastleGamesEntry();
+                case 1438023804: return new AddTeamUpdate();
+                case 1439032205: return new ExtraHousingZoneBehavior();
+                case 1439813663: return new AchieveRankGoalTemplate();
+                case 1443896326: return new PathMovementBehaviorTemplate();
+                case 1445136631: return new GraphicalArenaPoints();
+                case 1445383250: return new TeleportToNodeClient();
+                case 1450573585: return new TutorialQuestTemplate();
+                case 1451717073: return new WhirlyBurlyKioskBehaviorTemplate();
+                case 1452429869: return new TeamHelpWorldInfoList();
+                case 1455639527: return new AnimatePipsCinematicAction();
+                case 1455911260: return new PetDerbyTrackInfo();
+                case 1456127734: return new SphereGeomParams();
+                case 1457011199: return new WinAnimStatGlobeScaleTime();
+                case 1457519768: return new DestroyActorCinematicAction();
+                case 1457765368: return new LadderBehaviorTemplate();
+                case 1459689812: return new EmojiDefinition();
+                case 1460103397: return new FishTournamentLeaderboardOption();
+                case 1461334080: return new SoundFilterSetting();
+                case 1463531469: return new FXBySlotEffect();
+                case 1465232142: return new ClientDerbyModifyRate();
+                case 1466014316: return new PaidLootRollStationOption();
+                case 1466151750: return new TimedItemBehaviorTemplate();
+                case 1466457591: return new TeamUpWindow();
+                case 1466778785: return new HouseTransferResultList();
+                case 1467599514: return new SoundEmitterInfo();
+                case 1468026244: return new HousingObjectJewelWandContainer();
+                case 1474394067: return new InventoryPageWindow();
+                case 1474399017: return new PublicSocketJewelPair();
+                case 1475383859: return new ClientProcess();
+                case 1476473316: return new ClientPolymorphCinematicAction();
+                case 1477538450: return new StringTable();
+                case 1478728199: return new GamebryoClientDerbyTerrainEffect();
+                case 2038296099: return new ClientPetItemBehavior();
+                case 1481981141: return new ClientTransformationEffect();
+                case 1482908019: return new AddAuraCinematicStageTemplate();
+                case 1483319850: return new CastleTourMyCastleData();
+                case 1489655391: return new BasePetItemBehavior();
+                case 1491562027: return new ArenaPointsLootInfo();
+                case 1493242103: return new ScavengerHuntComponent();
+                case 1495888456: return new ClientRemoveProtectionEffectCinematicAction();
+                case 1496191769: return new Recipe();
+                case 1496238958: return new HouseNameList();
+                case 1499111873: return new ReagentShopOption();
+                case 1501176517: return new ReqPvPCombat();
+                case 1502144961: return new NPCDialogEntry();
+                case 1502721286: return new ClientAddInterceptCinematicAction();
+                case 1508248095: return new InstanceSigilOption();
+                case 1508559119: return new SpellFavorites();
+                case 1508636938: return new WizardClientDuelBehavior();
+                case 1508904753: return new BurnInterceptCinematicAction();
+                case 1509072274: return new AuctionTemplateIDList();
+                case 1509372456: return new WizShoppingOption();
+                case 1509627481: return new SortedDirt();
+                case 1509765278: return new PetStatsControl();
+                case 1511448627: return new CombatTriggerDescription();
+                case 1512331650: return new BracketTournamentGoldCostInfoList();
+                case 1514144732: return new JewelSocketWrenchElements();
+                case 1515417353: return new UIScaleConfigEntry();
+                case 1517921756: return new UpdatePipsCinematicAction();
+                case 1518184174: return new TreasureShopCrownsOption();
+                case 1519530392: return new ObstacleCourseSpeedUpBehavior();
+                case 1520229545: return new FontMapping();
+                case 1520882401: return new ActorBody();
+                case 1521374502: return new ClientBGPlayerBehavior();
+                case 1521569450: return new BracketMatchResult();
+                case 1521624695: return new InstanceInfo();
+                case 1523922554: return new ReqCombatStatus();
+                case 1523956164: return new ClientPipFloatingTextCinematicAction();
+                case 1524138991: return new FontMapSWF();
+                case 1525311244: return new DeedBehaviorBase();
+                case 1525360461: return new ClientActorResurrectCinematicAction();
+                case 1525492269: return new FloatingTextCinematicAction();
+                case 1526409300: return new NonCombatMayCastSpellDescription();
+                case 1526641099: return new GoalData();
+                case 1529115504: return new ItemFinderOption();
+                case 1529961129: return new ObjState();
+                case 1530771003: return new ClientDerbyTerrainEffect();
+                case 1531266643: return new AttenuatedFileDescription();
+                case 1532029556: return new MatchStatusUpdate();
+                case 1532717121: return new WizardAutobotManagerGraphicalClient();
+                case 1532726828: return new Cinematic();
+                case 1532765721: return new ShadowCreatureIdleCinematicAction();
+                case 1533509225: return new ObjStateSet();
+                case 1533719780: return new CrownShopPatch();
+                case 1535419223: return new CritAndBlockLevelData();
+                case 1538911188: return new ClientBattleBookBehavior();
+                case 1540418012: return new AvailableQuestEntry();
+                case 1541492568: return new ClientEffectCinematicAction();
+                case 1541836930: return new ClientJewelSocketBehavior();
+                case 1543936172: return new AlchemyBehavior();
+                case 1544199619: return new BugReport();
+                case 1544257861: return new RespecOption();
+                case 1545292680: return new ProvidePetPower();
+                case 1545570424: return new PulseEffectTemplate();
+                case 1545613187: return new RecipeTypeList();
+                case 1545841998: return new ConditionalSpellEffect();
+                case 1549455354: return new ModifyPipRoundRateData();
+                case 1552219135: return new DeathCinematicStageTemplate();
+                case 1553710977: return new RidableBehavior();
+                case 1553752133: return new FidgetStateInfo();
+                case 1554511067: return new ClientTutorial();
+                case 1555179373: return new HousingGameHiScores();
+                case 1555862268: return new ReqClearCraftingSlots();
+                case 2019251425: return new ClientPetOwnerBehavior();
+                case 1557744904: return new ClientSpawnObjectInfo();
+                case 1557874588: return new ReqHasShadowMagic();
+                case 1558190673: return new RequirementList();
+                case 1559871422: return new GardenData();
+                case 1562533748: return new ClientRemoveParticleActorCinematicAction();
+                case 1564927353: return new ActiveMapQuestsCommon();
+                case 1568205928: return new LinearSoundBehavior();
+                case 1568319405: return new GoalEntry();
+                case 1572128943: return new BracketRequest();
+                case 1578249642: return new ClientFadeActorCinematicAction();
+                case 1578701589: return new BehaviorInstance();
+                case 1578841423: return new TriviaWindow();
+                case 1579974194: return new WinAnimMoveToLocation();
+                case 1580058725: return new NodeDescriptor();
+                case 1581265159: return new HousingMusicBehavior();
+                case 1581384559: return new CinematicStageTemplate();
+                case 1583982124: return new NaturalActCinematicStageTemplate();
+                case 1584393185: return new ClientCameraReleaseCinematicAction();
+                case 1585664901: return new HousingBlobObject();
+                case 1592387164: return new RegisterActorCinematicAction();
+                case 1593415704: return new InfractionRecord();
+                case 1595636215: return new WizItemVendorDataList();
+                case 1600875047: return new ClientRegisterPersonaCinematicAction();
+                case 1601626199: return new ConditionalSpellElement();
+                case 1601658659: return new PetSnackShopOption();
+                case 1601906442: return new FoodFightGameComponent();
+                case 1604359739: return new HousingSigilBehavior();
+                case 1604368941: return new HidePipsCinematicAction();
+                case 1605342893: return new HousingNodeReference();
+                case 1607671953: return new ChatDiagnostics();
+                case 1608477625: return new MatchActorResult();
+                case 1610139823: return new ClientElixirBenefitEffect();
+                case 1612511577: return new ClientPlayGraphicOnActorAction();
+                case 1612908149: return new FlyThroughDataManager();
+                case 1613621836: return new MoveController();
+                case 1615116100: return new PolymorphRatingInfo();
+                case 1616711389: return new ShowPipsCinematicAction();
+                case 1619572820: return new IgnoreEntryDataList();
+                case 1619757016: return new CoreInfoTable();
+                case 1624781959: return new PetDropGameSettings();
+                case 1624947813: return new DdSprite();
+                case 1625236366: return new PolymorphEffect();
+                case 1629131138: return new FurnitureInfoBehavior();
+                case 1629458853: return new BalloonBaseWindow();
+                case 1630660717: return new GameEffectTimerTrigger();
+                case 1630869295: return new WizBangTemplate();
+                case 1633647808: return new CrownShopItem();
+                case 1636331825: return new CraftingSlotLootInfo();
+                case 1636745978: return new ObjectStateBehavior();
+                case 1636900316: return new BattlegroundPOI();
+                case 1640127799: return new PetGameEnergyCost();
+                case 1641443024: return new ClientActorDeathCinematicAction();
+                case 1642645337: return new CreateActorCinematicAction();
+                case 1646584070: return new DynaMod();
+                case 1646809340: return new ReqHasSpell();
+                case 1647185960: return new EquipSlot();
+                case 1649312569: return new AvatarAppearanceRule();
+                case 1651665694: return new DynaModList();
+                case 1652253210: return new BGPenaltyMatchBan();
+                case 1652604243: return new CompassMarker();
+                case 1652967942: return new PestEntry();
+                case 1653005502: return new PrepEntry();
+                case 1653757790: return new DynamicTriggerTemplate();
+                case 1653772158: return new WizClientObjectItem();
+                case 1654392709: return new BracketUpdateMessage();
+                case 1655612104: return new PetDerbyTrackDescriptor();
+                case 1660205564: return new RemoveHangingEffectCinematicAction();
+                case 1660318710: return new CombatCheatSettings();
+                case 1660963012: return new RequirementFailNotification();
+                case 1662478659: return new ClientIdleAuraCinematicAction();
+                case 1663158128: return new GoalCompilation();
+                case 1663225062: return new PipControl();
+                case 1663987506: return new ObjStateTransition();
+                case 1664247330: return new CharacterChatStatsByState();
+                case 1664325298: return new WinAnimConcurrentBounded();
+                case 1664491954: return new ControlBanner();
+                case 1664769339: return new HUDWindow();
+                case 1664883408: return new ControlSlider();
+                case 1667523383: return new AvatarOptionBase();
+                case 1670299929: return new ObstacleCourseSpringboardBehaviorTemplate();
+                case 1671334357: return new SoundAcousticsInfo();
+                case 1671834112: return new MoveBehaviorClient();
+                case 1673432062: return new TreasureTableLootInfo();
+                case 1673829428: return new DerbyStealMorale();
+                case 1675664000: return new StateEffectTemplate();
+                case 1676066464: return new SpeedEffectTemplate();
+                case 1676576547: return new ContainerEffect();
+                case 1677116766: return new SpellDataList();
+                case 1678010558: return new SG_GameAction_DetonateBlock();
+                case 1678778163: return new ClientMagicSchoolBehavior();
+                case 1679386772: return new PetCameraActorCinematicAction();
+                case 1679735207: return new ObstacleCourseRevolvingDoorBehaviorClient();
+                case 1683420191: return new PetTomeBehaviorBase();
+                case 1684462284: return new ActiveTimedAccessPassList();
+                case 1685778299: return new ItemLootInfo();
+                case 1685808340: return new ManaLootInfo();
+                case 1685899410: return new BoosterPackCrownsOption();
+                case 1689163694: return new GoalEntryFull();
+                case 1689401516: return new MatchActor();
+                case 1691270114: return new PetStat();
+                case 1692665412: return new AuctionHouseOffering();
+                case 1694574647: return new LogoData();
+                case 1698769310: return new TournamentInfo();
+                case 1699926033: return new CantripsInvisibilityEffectTemplate();
+                case 1700072153: return new SpellCardAttachmentCinematicAction();
+                case 1700098374: return new MagicMirrorShopBehaviorTemplate();
+                case 1701337223: return new NPCBehaviorTemplate();
+                case 1701545865: return new MagicXPLootInfo();
+                case 1702152684: return new SavedSettingContainer();
+                case 1702467246: return new SigilZoneInfoManager();
+                case 1704590451: return new ActorRenameCinematicAction();
+                case 1708638833: return new ActiveClassProject();
+                case 1709435288: return new TeleportToNode();
+                case 1710483193: return new ReqInCombat();
+                case 1712060701: return new MoveCommandSteered();
+                case 1712229957: return new IdleInterceptCinematicAction();
+                case 1712912440: return new ClientDerbyAddObstacle();
+                case 1712992399: return new ClassProjectLeaderboard();
+                case 1716921058: return new ClientDerbyModifyMorale();
+                case 1717552648: return new CollectedEssenceTrackingData();
+                case 1717939045: return new DebugCinematicsComponent();
+                case 1718635945: return new ElasticCamController();
+                case 1720563205: return new AccompanyNPCBehaviorTemplate();
+                case 1721860637: return new CurrentQuestCompilation();
+                case 1721920878: return new DoodleDoug();
+                case 1723456510: return new ObstacleCourseModifyTimeBehaviorTemplate();
+                case 1724966120: return new ClientCreateAuraActorCinematicAction();
+                case 1725212200: return new FishTournamentEntry();
+                case 1729147506: return new ClientFaceTargetTeamActorCinematicAction();
+                case 1729608655: return new HousingMusicPlayerBehaviorBase();
+                case 1731281342: return new BattlegroundSigilTemplate();
+                case 1731493837: return new HousingMusicPlayerBehavior();
+                case 1733903409: return new SchoolOfFocusOption();
+                case 1734454951: return new FishingLevelControl();
+                case 1737361018: return new WeightedEntryT_std_string();
+                case 1738178676: return new DailyQuestReward();
+                case 1738298685: return new ActorDialogList();
+                case 1740689474: return new GraphicalEventCurrency2();
+                case 1740693570: return new GraphicalEventCurrency1();
+                case 1741811041: return new ReqIsGoal();
+                case 1741861439: return new LinearStateSoundBehaviorTemplate();
+                case 1743889188: return new WizItemLocations();
+                case 1744038418: return new WinAnimMoveToLocationTimeEase();
+                case 1744138021: return new GearVaultBehaviorBase();
+                case 1744590948: return new PetGameConfig();
+                case 1745417124: return new MonsterMagicWorldTotalList();
+                case 1746244226: return new MobAggroBehavior();
+                case 1747063668: return new DuelModifier();
+                case 1748894102: return new ClientPetSnackItem();
+                case 1749033129: return new DerbyModifyCheerCost();
+                case 1749405042: return new InclusiveRange();
+                case 1749710800: return new WinAnimScaleTime();
+                case 1750389220: return new ClientShadowSelfCinematicAction();
+                case 1752903624: return new ClientRecreateNPCActorCinematicAction();
+                case 1759741074: return new WizItemBossList();
+                case 1759866452: return new LootDialogEntry();
+                case 1760816619: return new EffectListSpellEffect();
+                case 1761496848: return new ClientServerSyncCinematicAction();
+                case 1761511214: return new JewelSocketUnlockCostList();
+                case 1764093759: return new ReqInZone();
+                case 1764201896: return new DailyQuestOption();
+                case 1766371717: return new PhysicsBehaviorTemplate();
+                case 1766406068: return new CurrencyTemplate();
+                case 1771496990: return new ColorPickerSWF();
+                case 1774565521: return new CinematicEventInfo();
+                case 1778176712: return new TextureRemapBehaviorTemplate();
+                case 1780966363: return new DdWinAnimMoveMob();
+                case 1783230993: return new ScriptBehaviorTemplate();
+                case 1783795726: return new DynaModDelta();
+                case 1785100757: return new ClientPetBoostPlayerStatEffect();
+                case 1785229827: return new ObstacleCourseObstaclePathBase();
+                case 1787487711: return new BGSigilTimer();
+                case 1787578617: return new QuestDynaModInfo();
+                case 1787762264: return new DerbyAffectEffects();
+                case 1787774537: return new LocationTemplate();
+                case 1788341696: return new ThumbnailControl();
+                case 1789949058: return new EncounterTemplate();
+                case 1790085987: return new InstanceInfoList();
+                case 1791112128: return new HidePolymorphFloatyTextCinematicAction();
+                case 1793980913: return new InfractionPenalty();
+                case 1795951956: return new DailyQuestData();
+                case 1796755863: return new DynamicURLWhitelist();
+                case 1798408264: return new EmbeddedBrowserConfig();
+                case 1799411660: return new UnstitchOption();
+                case 1800347008: return new WinAnimFillGlobeTime();
+                case 1801200575: return new StopBacklashRotationEffectCinematicAction();
+                case 1801776167: return new AvatarOption();
+                case 1802351949: return new TerrainCheerCostMap();
+                case 1803315664: return new TubeGeomParams();
+                case 1804927325: return new MadlibArgT_std_string();
+                case 1805408780: return new CastleMagicTimer();
+                case 1809960275: return new CastleMagicPlayersInZone();
+                case 1810637798: return new UnSwapShadowMaterialActorCinematicAction();
+                case 1810994553: return new PetGameMorphPartner();
+                case 1812555506: return new MagicLevelInfo();
+                case 1814845780: return new WizStatisticEffectTemplate();
+                case 1817311575: return new ClientPetCastEffectActorCinematicAction();
+                case 1817589212: return new GraphicalItemCard();
+                case 1819325754: return new TrackedPlant();
+                case 1819480064: return new ManaGlobe();
+                case 1820296186: return new ClientGameEffectTimerDisplayBehavior();
+                case 1821554269: return new StartingPipEffectInfo();
+                case 1821845783: return new ClientAttachParticleActorCinematicAction();
+                case 1823340899: return new ClientDeathParticleCinematicAction();
+                case 1823353267: return new ProcessGlobalCinematicStageTemplate();
+                case 1823441807: return new ClientExpansionBehavior();
+                case 1827094409: return new TileMaterial();
+                case 1828534199: return new AvatarItemInfo();
+                case 1828588173: return new BadgeFilterInfoList();
+                case 1830098913: return new SeedBehavior();
+                case 1830269644: return new CinematicActorAnimationContainer();
+                case 1833914164: return new FishCatchOfTheDayOption();
+                case 1835266999: return new EquippedSlotInfo();
+                case 1837758769: return new TreasureCardLootInfo();
+                case 1838777860: return new CinematicActor();
+                case 1838995501: return new WinAnimSizeTime();
+                case 1839582141: return new LinearSoundBehaviorTemplate();
+                case 1839806362: return new ClientStopHangingRotationCinematicAction();
+                case 1840660496: return new TeleportTransitionTemplate();
+                case 1840803872: return new PermanentShopWindowPassThru();
+                case 1842926102: return new JewelSocketBehaviorBase();
+                case 1844855459: return new JewelSocket();
+                case 1845621453: return new HousingPaletteBehaviorTemplate();
+                case 1846355199: return new ServiceMementoBase();
+                case 1847642295: return new ResultList();
+                case 1848861984: return new ReqItemHasAdjective();
+                case 1850213974: return new ClientLeashBehavior();
+                case 1850272972: return new PCSButton();
+                case 1850291511: return new EquippedItemInfo();
+                case 1850304375: return new AvatarItemInfoList();
+                case 1851893072: return new BuffDebuffEventCinematicAction();
+                case 1855299601: return new FishHistory();
+                case 1855825625: return new TournamentUpdate();
+                case 1856697791: return new BGSigilProxyBehavior();
+                case 1858172823: return new AvatarItemInfoBase();
+                case 1859440048: return new ReqDerbyPlace();
+                case 1861721824: return new ZoneFish();
+                case 1863249299: return new SpellIDPair();
+                case 1863799967: return new AnimationSetManager();
+                case 1864197096: return new SigilTemplate();
+                case 1864220976: return new SpellTemplate();
+                case 1864862540: return new JoinTeamUpdate();
+                case 1865778223: return new ReqEntryValue();
+                case 1867738756: return new ComboItem();
+                case 1867891328: return new SpawnItem();
+                case 1870924052: return new DynaModShowObject();
+                case 1872235599: return new ToggleInterfaceControlCinematicAction();
+                case 1873113739: return new MoveCommandPitch();
+                case 1873710101: return new ControlButtonState();
+                case 1873728014: return new WindowHelp();
+                case 1874895799: return new WinAnimMoveToLocationSpeedEase();
+                case 1875206885: return new ClientTreasureBookBehavior();
+                case 1877174196: return new WinAnimMoveToLocationSpeed();
+                case 1877553709: return new GardeningLevelInfo();
+                case 1881206360: return new RankStruct();
+                case 1881408363: return new PvPRatingsConfig();
+                case 1886011985: return new InfractionBehavior();
+                case 1887260125: return new CombatActionListObj();
+                case 1887713419: return new BadgeInfo();
+                case 1889015393: return new ClientShadowCreatureLevelTransitionCinematicAction();
+                case 1889885615: return new RealmInfo();
+                case 1891016911: return new TutorialLogBehavior();
+                case 1891038816: return new AnnounceSpellTextCinematicAction();
+                case 1891048760: return new HousingGameInterface();
+                case 1892336994: return new DyeShopModifiers();
+                case 1893235548: return new Material();
+                case 1894078995: return new CollisionBehavior();
+                case 1897468788: return new RidableBehaviorTemplate();
+                case 1899644498: return new HousingObjectStateContainer();
+                case 1900631780: return new OldEquipmentBehavior();
+                case 1904489567: return new AlchemyBehaviorTemplate();
+                case 1905494055: return new UnShadowSelfCinematicAction();
+                case 1905506343: return new ClientFXDef();
+                case 1905911669: return new ProvidePetPowerTemplate();
+                case 1906010588: return new ObjectRemapBehavior();
+                case 1906141963: return new WhirlyBurlyAddGroup();
+                case 1906855338: return new RandomSpellEffect();
+                case 1909297517: return new CaughtFish();
+                case 1913979810: return new WinAnimSpriteContrast();
+                case 1914767513: return new ReqHasBadge();
+                case 1917852284: return new WinAnimConcurrent();
+                case 1918380142: return new TextureRemapBehavior();
+                case 1920391157: return new FadeMusicSoundCinematicAction();
+                case 1921148821: return new CastleMagicCinematicEffect();
+                case 1924790707: return new ScrollablePopupButton();
+                case 1926270215: return new WizardCharacterBehavior();
+                case 1926567985: return new PetGameInfo();
+                case 1927861928: return new TabDisplayPriorityList();
+                case 1928119170: return new DelaySpellEffect();
+                case 1928665059: return new WhirlyBurlyOption();
+                case 1929567268: return new PartyObserver();
+                case 1930319611: return new SG_GameAction_Interact();
+                case 1930457836: return new MountShopOption();
+                case 1930921845: return new PositionalSoundBehaviorTemplate();
+                case 1931468082: return new PlaySpellData();
+                case 1932477328: return new AddHangingEffectCinematicAction();
+                case 1933461049: return new ReqBaseSchoolOfFocus();
+                case 1934416869: return new InteractiveMusicNote();
+                case 1935313616: return new JewelVaultBehaviorTemplate();
+                case 1936649631: return new PrivateEquippedJewelInfo();
+                case 1936783486: return new SG_GameActionClient_PlayEffect();
+                case 1940079300: return new CSRAccessPassInfo();
+                case 1940964455: return new CinematicSoundEmitterInfo();
+                case 1941706761: return new ObstacleCourseSpeedUpBehaviorClient();
+                case 1942444569: return new NamedCharacterElement();
+                case 1942745787: return new AtticObject();
+                case 1943197007: return new DestroyShadowCreatureCinematicAction();
+                case 1945366566: return new ClientFadeMusicSoundCinematicAction();
+                case 1946372007: return new DailyPvPData();
+                case 1946785963: return new SpeedEffectInfo();
+                case 1949996317: return new MoveCommandSpeed();
+                case 1950269687: return new PartyChatObserver();
+                case 1952005653: return new WinAnimContainerBounded();
+                case 1955484398: return new ItemSetBonusTemplate();
+                case 1956226406: return new PetSnackBehaviorTemplate();
+                case 1956447570: return new InvisibilityEffectTemplate();
+                case 1961304732: return new ToolTipWindow();
+                case 1961332375: return new GardeningBehaviorTemplate();
+                case 1961941634: return new FishBehaviorTemplate();
+                case 1962605079: return new PipConversionLevelData();
+                case 1963134700: return new PendingClassProjectFriendReward();
+                case 1963227688: return new ClearHangingEffectsCinematicAction();
+                case 1963855641: return new BGSigilProxyBehaviorTemplate();
+                case 1965311493: return new VariableSpellEffect();
+                case 1966430886: return new MadlibArg();
+                case 1969752821: return new CastleTourLeaderboardEntry();
+                case 1969795844: return new RenamePipActorsFromResult();
+                case 1969823355: return new AccousticAreaBehavior();
+                case 1969955196: return new ClientMobAggroBehavior();
+                case 1970143146: return new StateAssetInfo();
+                case 1972306740: return new RemoveAuraCinematicAction();
+                case 1972400702: return new PathActionChangeDirection();
+                case 1972718883: return new ClientUnSwapShadowMaterialActorCinematicAction();
+                case 1975797348: return new BasePetMorphManager();
+                case 1976304404: return new PetItemBehaviorTemplate();
+                case 1976646887: return new DailyPvPInfo();
+                case 1981046985: return new BlobCacheInterface();
+                case 1981908297: return new PolymorphImprovementRatingInfoList();
+                case 1982878661: return new HousingTextureBehaviorTemplate();
+                case 1986283116: return new WizPetTemplate();
+                case 1986996921: return new MapInfoRequirementsPassedList();
+                case 1987787664: return new TieredSpellGroupVisibility();
+                case 1987973849: return new GamebryoBody();
+                case 1988084744: return new HatchmakingPetsList();
+                case 1990128863: return new HousingGameKhanDanceSequence();
+                case 1990366250: return new DerbyEffect();
+                case 1990441318: return new BGPolymorphSelectBehaviorTemplate();
+                case 1991057723: return new PetLevelInfo();
+                case 1992226516: return new ClientMountRiderBehavior();
+                case 1992945078: return new CastleMagicBehavior();
+                case 1993005499: return new WizBankingOption();
+                case 1993386671: return new PulseEffect();
+                case 1993573069: return new HousingObjectState();
+                case 1995302474: return new ClientIdleInterceptCinematicAction();
+                case 1995872079: return new BuddyEntry();
+                case 1996754224: return new DOTEffect();
+                case 1996828358: return new TextureRemap();
+                case 1997371035: return new TutorialActionOption();
+                case 1999431021: return new WhirlyBurlyBehavior();
+                case 2002643208: return new ResSummonHenchman();
+                case 2003390837: return new ReqIsHatched();
+                case 2004580525: return new WizItemVendorData();
+                case 2006247677: return new JewelSocketWrenchRules();
+                case 2010729727: return new GardeningPatchData();
+                case 2011554423: return new MoveCommandRoll();
+                case 2011909794: return new AnimatedControlButtonState();
+                case 2013392653: return new WidgetBackground();
+                case 2013431782: return new ControlFreeChat();
+                case 2015100750: return new MapInfoRequirementsList();
+                case 2016345993: return new SkyboxInfo();
+                case 2016817231: return new DerbyImmunityEffect();
+                case 2017278742: return new AtticBehaviorTemplate();
+                case 2018675241: return new PromoGift();
+                case 2019293881: return new Search_ResultList();
+                case 2019959158: return new WorldTeleportOptions();
+                case 2020189188: return new GardeningXPLootInfo();
+                case 2020951129: return new BattlegroundTemplate();
+                case 2021988860: return new CrownShopSettings();
+                case 2022075216: return new ClientHidePipsCinematicAction();
+                case 2023112937: return new Search_ResultItem();
+                case 2023560016: return new ConditionalSpellEffectRequirement();
+                case 2027516117: return new BattlegroundTemplateChat();
+                case 2028047017: return new ClientHousingBlobStrategy();
+                case 2029353086: return new StopComplexSoundCinematicAction();
+                case 2033058393: return new RecipeBag();
+                case 2035431543: return new ToSendCheerModsList();
+                case 2035824397: return new HousingTeleporterBehaviorTemplate();
+                case 2036045780: return new ReqEnergy();
+                case 2038438372: return new AddMatchUpdate();
+                case 2042186845: return new ClientShadowCreatureIdleCinematicAction();
+                case 2044006224: return new ClientFloatingTextCinematicAction();
+                case 2044969640: return new TemplateCache();
+                case 2045692196: return new ArenaMatchResults();
+                case 2046055251: return new BoosterPackData();
+                case 2047300709: return new GameObjectTemplate();
+                case 2047404866: return new RemoveHangingCinematicStageTemplate();
+                case 2050799194: return new ClientGameEffectTimerPopupTrigger();
+                case 2052493990: return new CollisionBehaviorTemplate();
+                case 2052795687: return new IngredientTracking();
+                case 2053270675: return new ClientModifyPipsCinematicAction();
+                case 2056437968: return new AuctionHouseConfig();
+                case 2057349160: return new ClientFXBySlotEffect();
+                case 2059229228: return new ComplexRotationInfo();
+                case 2060704661: return new SavedSetting();
+                case 2062292045: return new Body();
+                case 2062401102: return new Font();
+                case 2062516053: return new Blob();
+                case 2062757079: return new RaceAnimationSoundData();
+                case 2065998829: return new EquipmentTemplate();
+                case 2067627046: return new ClassProjectActivity();
+                case 2067737670: return new HousingObjectWandContainer();
+                case 2067755928: return new ControlWidget();
+                case 2068021638: return new ReqIsLimitExpandBackpackElixirs();
+                case 2069974725: return new LeaderboardUpdateFriendsList();
+                case 2070401166: return new ParticleSystem2D();
+                case 2076283146: return new Reco_CategoryData();
+                case 2077268920: return new PetStatModification();
+                case 2079353215: return new WizDisableItemStatEffect();
+                case 2079568963: return new ServiceOptionBase();
+                case 2079848438: return new FXDef();
+                case 2080833560: return new ReqManaPercent();
+                case 2081504974: return new ClientDerbyModifyMoraleChance();
+                case 2081595736: return new StatisticEffectInfo();
+                case 2085066334: return new ConicalStateSoundBehaviorTemplate();
+                case 2092894034: return new BracketRewards();
+                case 2093751440: return new SG_GameAction();
+                case 2094243210: return new ClientWizInventoryBehavior();
+                case 2095072282: return new FishingSpellTemplate();
+                case 2097075535: return new RemoveTeamUpdate();
+                case 2099858595: return new AccompanyNPCBehavior();
+                case 2100620697: return new MaxHealthLootInfo();
+                case 2101762018: return new Texture();
+                case 2101834602: return new TextureD3D();
+                case 2103181614: return new JewelSocketUnlockCost();
+                case 2103213764: return new EnergyShopOption();
+                case 2103478230: return new PlayerAggroBehavior();
+                case 2104732198: return new ItemFinderBehaviorTemplate();
+                case 2105241716: return new ClassProjectLeaderboardPlayer();
+                case 2105386940: return new GroupMember();
+                case 2107749374: return new EventCurrency2LootInfo();
+                case 2108320692: return new ZoneInstanceFish();
+                case 2108452396: return new QuestCompilation();
+                case 2109114500: return new FishingBehavior();
+                case 2109552587: return new WizClientMount();
+                case 2110543894: return new QuestEffectDisplayInfo();
+                case 2111362172: return new CombatPetXPEffectInfo();
+                case 2112773062: return new ReqClassProjectActive();
+                case 2115526596: return new MapData();
+                case 2118997174: return new PetDerbyObstacleBehaviorClient();
+                case 2119452192: return new GardeningBehavior();
+                case 2119816296: return new ClassProjectProgressHistoryList();
+                case 2120991345: return new ReqItemIsEgg();
+                case 2121388742: return new BasicChatChannelInfo();
+                case 2121911681: return new GamebryoInvisibilityEffect();
+                case 2121931086: return new MoveCommandArc();
+                case 2125246348: return new ClientPlayComplexSoundCinematicAction();
+                case 2127933506: return new RevealHangingCinematicStageTemplate();
+                case 2128070170: return new WinAnimScaleSymmetricalTime();
+                case 2128942035: return new InitialCombatSound();
+                case 2129198563: return new TabDisplayPriority();
+                case 2129800984: return new NonCombatMayCastSpellGameEffect();
+                case 2129810295: return new TeamHelpWorldInfo();
+                case 2129848281: return new FishingLevelInfo();
+                case 2130303378: return new ClientDerbyMoraleByTerrainEffect();
+                case 2131170360: return new PipCinematicActor();
+                case 2131747694: return new ObstacleCourseObstaclePathBaseTemplate();
+                case 2132125029: return new PetMatchRequest();
+                case 2132132349: return new PvPMatchRequest();
+                case 2132434067: return new LevelUpElixirBehaviorTemplate();
+                case 2133912658: return new QuestFinderNPCData();
+                case 2134218563: return new PlayListEntry();
+                case 2134229290: return new ClientStageBacklashEffectCinematicAction();
+                case 2139592188: return new HousingBlobCustomObject();
+                case 2140381725: return new CastleBlockDoorBehaviorTemplate();
+                case 2140553562: return new ClientBurnHangingEffectCinematicAction();
+                case 2142632602: return new HousingPetMovement();
+                case 2143827168: return new HangingEffectProtectionRemovedStageTemplate();
+                case 2144947950: return new ShadowCreatureLevelTransitionCinematicAction();
                 default: return null;
             };
         }
@@ -1855,13 +1855,13 @@ namespace Imlight.Internals
         public class DerbyLockLane : DerbyEffect
         {
             
-            public override uint GetHash() => 340686453;
+            public override uint GetHash() => 725087;
         }
         
         public class PortraitWindow : Window
         {
             
-            public override uint GetHash() => 339367112;
+            public override uint GetHash() => 1448177;
             [Property(3479277078, 7)] public Material m_pMaterial;
             [Property(2624275869, 7)] public Texture m_alphaMask;
         }
@@ -1869,7 +1869,7 @@ namespace Imlight.Internals
         public class MatchTimerControl : ControlText
         {
             
-            public override uint GetHash() => 337071269;
+            public override uint GetHash() => 1924843;
             [Property(2220095860, 7)] public UInt32 m_alertSeconds;
             [Property(395499571, 7)] public Single m_blinkRate;
         }
@@ -1877,7 +1877,7 @@ namespace Imlight.Internals
         public class DeckTemplate : CoreTemplate
         {
             
-            public override uint GetHash() => 356718057;
+            public override uint GetHash() => 4737210;
             [Property(1717359772, 134217735)] public String m_name;
             [Property(2848889656, 268435463)] public List<String> m_spellNameList;
         }
@@ -1885,7 +1885,7 @@ namespace Imlight.Internals
         public class ProvideSpellEffectInfo : GameEffectInfo
         {
             
-            public override uint GetHash() => 356738224;
+            public override uint GetHash() => 4740335;
             [Property(2688485244, 7)] public String m_spellName;
             [Property(1269498237, 7)] public Int32 m_numSpells;
             [Property(1764750607, 7)] public String m_vFX;
@@ -1896,20 +1896,20 @@ namespace Imlight.Internals
         public class ExtraHousingZoneBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 353153020;
+            public override uint GetHash() => 6006332;
             [Property(3026711022, 268435463)] public String m_lotWorldZone;
         }
         
         public class CombatObserver : PropertyClass
         {
             
-            public override uint GetHash() => 376491128;
+            public override uint GetHash() => 8699613;
         }
         
         public class AvatarTextureOption : AvatarOptionBase
         {
             
-            public override uint GetHash() => 372350817;
+            public override uint GetHash() => 9759260;
             [Property(1878140043, 7)] public String m_materialName;
             [Property(2391848735, 131079)] public List<String> m_textures;
             [Property(1853711975, 131079)] public List<String> m_decals;
@@ -1921,7 +1921,7 @@ namespace Imlight.Internals
         public class InfractionCategory : PropertyClass
         {
             
-            public override uint GetHash() => 380766725;
+            public override uint GetHash() => 11800387;
             [Property(2682050233, 7)] public String m_category;
             [Property(716105444, 7)] public List<InfractionEvent> m_events;
             [Property(1631054690, 7)] public List<InfractionPenaltyInfo> m_penalties;
@@ -1930,7 +1930,7 @@ namespace Imlight.Internals
         public class BrowserWindowSettings : PropertyClass
         {
             
-            public override uint GetHash() => 386561281;
+            public override uint GetHash() => 14291076;
             [Property(1384030174, 7)] public Int32 m_browserWidth;
             [Property(2128883223, 7)] public Int32 m_browserHeight;
             [Property(1557707410, 7)] public Int32 m_windowWidth;
@@ -1942,7 +1942,7 @@ namespace Imlight.Internals
         public class LeashedPathMovementBehaviorTemplate : PathMovementBehaviorTemplate
         {
             
-            public override uint GetHash() => 272976841;
+            public override uint GetHash() => 17424178;
             [Property(314980368, 7)] public Boolean m_canFly;
             [Property(169688980, 7)] public UInt64 m_mountTemplateID;
             [Property(821494322, 7)] public UInt64 m_pathID;
@@ -1951,26 +1951,26 @@ namespace Imlight.Internals
         public class SigilDynamicTriggerTemplate : DynamicTriggerTemplate
         {
             
-            public override uint GetHash() => 270941241;
+            public override uint GetHash() => 17892046;
         }
         
         public class FlareBacklashEffectCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 298908477;
+            public override uint GetHash() => 23900941;
         }
         
         public class MatchActorUpdate : TournamentUpdate
         {
             
-            public override uint GetHash() => 293803973;
+            public override uint GetHash() => 24660019;
             [Property(1115051967, 31)] public MatchActor m_pActor;
         }
         
         public class ResAsyncScript : Result
         {
             
-            public override uint GetHash() => 316773684;
+            public override uint GetHash() => 27322510;
             [Property(2438918928, 7)] public String m_script;
             [Property(2150353611, 7)] public String m_startEvent;
             [Property(3112700596, 7)] public String m_endEvent;
@@ -1979,13 +1979,13 @@ namespace Imlight.Internals
         public class ClientDerbyRemoveAction : DerbyRemoveAction
         {
             
-            public override uint GetHash() => 321190809;
+            public override uint GetHash() => 30520102;
         }
         
         public class PetTomePetTotalList : PropertyClass
         {
             
-            public override uint GetHash() => 476450937;
+            public override uint GetHash() => 33622494;
             [Property(449762511, 7)] public List<PetTomePetTotal> m_petTomePetTotalList;
             [Property(567776494, 7)] public List<UInt32> m_petTemplateList;
         }
@@ -1993,13 +1993,13 @@ namespace Imlight.Internals
         public class HousingPaletteBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 472932989;
+            public override uint GetHash() => 34903389;
         }
         
         public class ReqHasEntry : Requirement
         {
             
-            public override uint GetHash() => 479503637;
+            public override uint GetHash() => 37594247;
             [Property(2055270734, 7)] public String m_entryName;
             [Property(2446900370, 287)] public String m_displayName;
             [Property(1388902362, 7)] public Boolean m_isQuestRegistry;
@@ -2009,7 +2009,7 @@ namespace Imlight.Internals
         public class ActCinematicStageTemplate : CinematicStageTemplate
         {
             
-            public override uint GetHash() => 492433140;
+            public override uint GetHash() => 38729342;
             [Property(3217341687, 131079)] public List<String> m_cameras;
             [Property(1882980152, 131079)] public List<String> m_altcameras;
             [Property(2867163800, 7)] public String m_actAnim;
@@ -2032,14 +2032,14 @@ namespace Imlight.Internals
         public class EventCurrency1LootInfo : LootInfo
         {
             
-            public override uint GetHash() => 488310528;
+            public override uint GetHash() => 39734275;
             [Property(945914060, 31)] public Int32 m_eventCurrency1Amount;
         }
         
         public class Requirement : PropertyClass
         {
             
-            public override uint GetHash() => 505263125;
+            public override uint GetHash() => 44032199;
             [Property(1746328074, 31)] public Boolean m_applyNOT;
             [Property(2672792317, 2097183)] public Operator m_operator;
             
@@ -2055,14 +2055,14 @@ namespace Imlight.Internals
         public class TreasureBookBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 516965608;
+            public override uint GetHash() => 44866809;
             [Property(2181913740, 27)] public List<SpellData> m_spellList;
         }
         
         public class CylinderGeomParams : GeomParams
         {
             
-            public override uint GetHash() => 513924477;
+            public override uint GetHash() => 45152925;
             [Property(787972805, 7)] public Single m_fRadius;
             [Property(558261279, 7)] public Single m_fLength;
         }
@@ -2070,13 +2070,13 @@ namespace Imlight.Internals
         public class CastleBlockDoorBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 526420021;
+            public override uint GetHash() => 46182351;
         }
         
         public class AlternateTurnsCombatRule : CombatRule
         {
             
-            public override uint GetHash() => 526763896;
+            public override uint GetHash() => 46267421;
             [Property(1974126767, 31)] public Boolean m_alternateTurns;
             [Property(289530295, 31)] public Boolean m_pipsForBothTeamsAtOnce;
         }
@@ -2084,7 +2084,7 @@ namespace Imlight.Internals
         public class CinematicActorTemplate : CinematicDefTemplate
         {
             
-            public override uint GetHash() => 407602529;
+            public override uint GetHash() => 51014812;
             [Property(2945338320, 7)] public List<CinematicEventInfo> m_completeEvents;
             [Property(1874505374, 7)] public List<CinematicEventInfo> m_stateChangeEvents;
             [Property(1949887389, 7)] public List<CinematicInteractInfo> m_stateInteractions;
@@ -2096,13 +2096,13 @@ namespace Imlight.Internals
         public class PreviewWindow : PortraitWindow
         {
             
-            public override uint GetHash() => 404985560;
+            public override uint GetHash() => 51406965;
         }
         
         public class CSRPropertyEntry : PropertyClass
         {
             
-            public override uint GetHash() => 1758773843;
+            public override uint GetHash() => 550650537;
             [Property(812923009, 16)] public Int32 m_value;
             [Property(1883057791, 16)] public UInt32 m_propertyID;
         }
@@ -2110,13 +2110,13 @@ namespace Imlight.Internals
         public class WhirlyBurlyKioskBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 403105420;
+            public override uint GetHash() => 51983456;
         }
         
         public class TimerControlCinematicAction : CinematicAction
         {
             
-            public override uint GetHash() => 404089021;
+            public override uint GetHash() => 52295661;
             [Property(471535983, 7)] public Boolean m_bSetVisible;
             [Property(661189659, 7)] public Single m_fTimeToSet;
             [Property(3000196414, 8388615)] public String m_timerStrKey;
@@ -2136,78 +2136,78 @@ namespace Imlight.Internals
         public class DoodleMapMap : PropertyClass
         {
             
-            public override uint GetHash() => 404568121;
+            public override uint GetHash() => 52413390;
             [Property(2964081080, 7)] public List<DoodleMapPair> m_mapList;
         }
         
         public class ResourcePointerBase : PropertyClass
         {
             
-            public override uint GetHash() => 427496100;
+            public override uint GetHash() => 54937962;
             [Property(2503711247, 131103)] public String m_sAssetName;
         }
         
         public class ClassProjectActiveList : PropertyClass
         {
             
-            public override uint GetHash() => 420965025;
+            public override uint GetHash() => 56448876;
             [Property(534931707, 7)] public List<ActiveClassProject> m_activeProjectList;
         }
         
         public class TeleportProximityBehavior : TeleportProximityBehaviorBase
         {
             
-            public override uint GetHash() => 429616949;
+            public override uint GetHash() => 58611215;
         }
         
         public class SG_GameAction_DestroyBlock : SG_GameAction
         {
             
-            public override uint GetHash() => 82322929;
+            public override uint GetHash() => 69371072;
         }
         
         public class ClientDuelBehavior : DuelBehavior
         {
             
-            public override uint GetHash() => 80688900;
+            public override uint GetHash() => 69943298;
         }
         
         public class ClientDeckBehavior : DeckBehavior
         {
             
-            public override uint GetHash() => 80728452;
+            public override uint GetHash() => 69958050;
         }
         
         public class MoveCommandSleep : MoveController.MoveCommand
         {
             
-            public override uint GetHash() => 76071800;
+            public override uint GetHash() => 70958365;
             [Property(503465270, 31)] public Single m_fSleep;
         }
         
         public class MadlibArgT_int : MadlibArg
         {
             
-            public override uint GetHash() => 80600377;
+            public override uint GetHash() => 71424697;
             [Property(878492166, 31)] public Int32 m_madlibArgument;
         }
         
         public class DebugWizardComponent : PropertyClass
         {
             
-            public override uint GetHash() => 97652749;
+            public override uint GetHash() => 74189249;
         }
         
         public class Party : Group
         {
             
-            public override uint GetHash() => 96157712;
+            public override uint GetHash() => 74866119;
         }
         
         public class LeashBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 101060568;
+            public override uint GetHash() => 77139509;
             [Property(1765088663, 31)] public UInt64 m_ownerGid;
             [Property(989410271, 31)] public Single m_radius;
             [Property(878748702, 31)] public Single m_angle;
@@ -2218,7 +2218,7 @@ namespace Imlight.Internals
         public class NodeObject : PropertyClass
         {
             
-            public override uint GetHash() => 114907380;
+            public override uint GetHash() => 78568446;
             [Property(2239683611, 7)] public Vector3 m_location;
             [Property(787972805, 7)] public Single m_fRadius;
             [Property(2090569797, 7)] public UInt64 m_id;
@@ -2230,7 +2230,7 @@ namespace Imlight.Internals
         public class WhirlyBurlyRoundDataAI : PropertyClass
         {
             
-            public override uint GetHash() => 109289096;
+            public override uint GetHash() => 79194721;
             [Property(857479191, 7)] public Byte m_team;
             [Property(1362521513, 7)] public UInt32 m_passport;
             [Property(1650111716, 7)] public List<UInt32> m_handList;
@@ -2239,7 +2239,7 @@ namespace Imlight.Internals
         public class WhirlyBurlyRoundData : PropertyClass
         {
             
-            public override uint GetHash() => 109301400;
+            public override uint GetHash() => 79199845;
             [Property(1040180705, 7)] public Byte m_roundNumber;
             [Property(1709082345, 7)] public Byte m_maximumRounds;
             [Property(1183728479, 7)] public Byte m_planningTurnTime;
@@ -2256,27 +2256,27 @@ namespace Imlight.Internals
         public class ScriptBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 118117677;
+            public override uint GetHash() => 81401993;
         }
         
         public class WinAnimScaleSymmetrical : WindowAnimation
         {
             
-            public override uint GetHash() => 127741560;
+            public override uint GetHash() => 83871325;
             [Property(899693439, 135)] public Single m_scale;
         }
         
         public class Hand : PropertyClass
         {
             
-            public override uint GetHash() => 2306056;
+            public override uint GetHash() => 84951489;
             [Property(1541139342, 7)] public List<Spell> m_spellList;
         }
         
         public class Duel : PropertyClass
         {
             
-            public override uint GetHash() => 2563716;
+            public override uint GetHash() => 85019234;
             [Property(3375244498, 31)] public List<CombatParticipant> m_flatParticipantList;
             [Property(847791408, 31)] public UInt64 m_duelID;
             [Property(1142844143, 31)] public Single m_planningTimer;
@@ -2344,25 +2344,25 @@ namespace Imlight.Internals
         public class ClientAnimatePipsCinematicAction : AnimatePipsCinematicAction
         {
             
-            public override uint GetHash() => 15176825;
+            public override uint GetHash() => 86075614;
         }
         
         public class CrownServicesOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 14972600;
+            public override uint GetHash() => 86085741;
         }
         
         public class ClientDestroyActorCinematicAction : DestroyActorCinematicAction
         {
             
-            public override uint GetHash() => 16458504;
+            public override uint GetHash() => 86394113;
         }
         
         public class WhirlyBurlyGameInfo : PropertyClass
         {
             
-            public override uint GetHash() => 9086024;
+            public override uint GetHash() => 87696593;
             [Property(680439828, 7)] public UInt32 m_gameID;
             [Property(253380865, 7)] public UInt64 m_bluePlayerGID;
             [Property(1812461836, 7)] public String m_bluePackedName;
@@ -2375,7 +2375,7 @@ namespace Imlight.Internals
         public class ActorDialogEntry : PropertyClass
         {
             
-            public override uint GetHash() => 24008073;
+            public override uint GetHash() => 88283298;
             [Property(3043523229, 263)] public RequirementList m_requirements;
             [Property(1858395851, 8388639)] public String m_dialog;
             [Property(3128322903, 131103)] public String m_picture;
@@ -2461,27 +2461,27 @@ namespace Imlight.Internals
         public class UntargetableCinematicStageTemplate : CinematicStageTemplate
         {
             
-            public override uint GetHash() => 26248721;
+            public override uint GetHash() => 92056648;
         }
         
         public class StartHangingRotationCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 49069525;
+            public override uint GetHash() => 94610103;
             [Property(7349510, 7)] public Boolean m_cloaked;
         }
         
         public class ExpansionBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 45183104;
+            public override uint GetHash() => 95736291;
             [Property(3762221063, 7)] public List<ExpansionData> m_expansions;
         }
         
         public class BaseEffectCinematicAction : CinematicAction
         {
             
-            public override uint GetHash() => 57275092;
+            public override uint GetHash() => 96661878;
             [Property(2978921287, 2097159)] public kEffectRelative m_effectRel;
             
             public enum kEffectRelative
@@ -2498,7 +2498,7 @@ namespace Imlight.Internals
         public class MonsterMagicXPConfig : PropertyClass
         {
             
-            public override uint GetHash() => 55075120;
+            public override uint GetHash() => 97162639;
             [Property(2337455676, 7)] public List<MonsterMagicLevelInfo> m_levelInfo;
             [Property(783962734, 7)] public Byte m_maxLevel;
         }
@@ -2506,19 +2506,19 @@ namespace Imlight.Internals
         public class ChaseCamController : CameraController
         {
             
-            public override uint GetHash() => 55459776;
+            public override uint GetHash() => 97190451;
         }
         
         public class ClientFaceTargetActorCinematicAction : FaceTargetActorCinematicAction
         {
             
-            public override uint GetHash() => 56520724;
+            public override uint GetHash() => 97456582;
         }
         
         public class PublicEquippedJewelInfo : PropertyClass
         {
             
-            public override uint GetHash() => 51912680;
+            public override uint GetHash() => 98470457;
             [Property(1522101428, 31)] public List<PublicSocketJewelPair> m_infoPairs;
             [Property(1073026659, 31)] public Boolean m_bSocketsLocked;
         }
@@ -2526,7 +2526,7 @@ namespace Imlight.Internals
         public class MoveActorCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 61143521;
+            public override uint GetHash() => 99726268;
             [Property(1510240374, 7)] public String m_destinationActor;
             [Property(1458058437, 7)] public Single m_interpolationDuration;
             [Property(2140337898, 7)] public Boolean m_interpolateRotation;
@@ -2546,14 +2546,14 @@ namespace Imlight.Internals
         public class BaseGameEffectBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 61449152;
+            public override uint GetHash() => 99804467;
             [Property(1169674284, 31)] public GameEffectContainer m_gameEffects;
         }
         
         public class AnimationBehaviorTemplate : RenderBehaviorTemplate
         {
             
-            public override uint GetHash() => 205985348;
+            public override uint GetHash() => 101271634;
             [Property(1375865996, 7)] public Int32 m_skeletonID;
             [Property(1944770480, 131079)] public String m_dataLookupAssetName;
             [Property(2944957756, 131079)] public String m_animationAssetName;
@@ -2564,7 +2564,7 @@ namespace Imlight.Internals
         public class BasicChatPlayer : PropertyClass
         {
             
-            public override uint GetHash() => 207387113;
+            public override uint GetHash() => 101684154;
             [Property(210498386, 7)] public UInt64 m_characterID;
             [Property(3058206907, 7)] public String m_nameBlob;
             [Property(221776365, 7)] public UInt32 m_schoolLevel;
@@ -2574,13 +2574,13 @@ namespace Imlight.Internals
         public class ClientUpdatePipsCinematicAction : UpdatePipsCinematicAction
         {
             
-            public override uint GetHash() => 207452740;
+            public override uint GetHash() => 101700434;
         }
         
         public class WizStatisticEffectConfig : PropertyClass
         {
             
-            public override uint GetHash() => 216153725;
+            public override uint GetHash() => 102761053;
             [Property(1121339315, 7)] public Single m_accuracyScalarBase;
             [Property(137046174, 7)] public Single m_powerPipScalarBase;
             [Property(926091704, 7)] public Single m_damageResistanceScalarBase;
@@ -2604,34 +2604,34 @@ namespace Imlight.Internals
         public class ClientCinematic : Cinematic
         {
             
-            public override uint GetHash() => 226447796;
+            public override uint GetHash() => 105339310;
         }
         
         public class ItemDynamicBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 222441933;
+            public override uint GetHash() => 105382321;
             [Property(1993233019, 7)] public List<BehaviorTemplate> m_behaviorList;
         }
         
         public class PartnerLogoData : PropertyClass
         {
             
-            public override uint GetHash() => 234880648;
+            public override uint GetHash() => 107442785;
             [Property(906435731, 7)] public List<LogoData> m_logoList;
         }
         
         public class HatchmakingKioskBehaviorBase : BehaviorInstance
         {
             
-            public override uint GetHash() => 231314529;
+            public override uint GetHash() => 107669724;
             [Property(1354692695, 31)] public UInt32 m_hatchDayPetCode;
         }
         
         public class GardenSpellTemplate : SpellTemplate
         {
             
-            public override uint GetHash() => 227144468;
+            public override uint GetHash() => 108720390;
             [Property(3204656351, 2097159)] public GardenSpellType m_gardenSpellType;
             [Property(2466280761, 131079)] public String m_animationKFM;
             [Property(3393414044, 7)] public String m_animationName;
@@ -2682,7 +2682,7 @@ namespace Imlight.Internals
         public class MapInfoManager_MapInfo : PropertyClass
         {
             
-            public override uint GetHash() => 1808221935;
+            public override uint GetHash() => 108971925;
             [Property(2171167736, 8388615)] public String m_zoneName;
             [Property(3475170332, 131079)] public String m_mapImage;
             [Property(925407930, 7)] public Point m_imageSize;
@@ -2692,7 +2692,7 @@ namespace Imlight.Internals
             public class DoodleData : PropertyClass
             {
                 
-                public override uint GetHash() => 1978184117;
+                public override uint GetHash() => 750624139;
                 [Property(2295691902, 131079)] public String m_image;
                 [Property(1325069066, 7)] public Rectangle m_rect;
                 [Property(2294335367, 7)] public List<String> m_onTags;
@@ -2714,38 +2714,38 @@ namespace Imlight.Internals
         public class AddAuraCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 245334672;
+            public override uint GetHash() => 113208679;
             [Property(1894145160, 7)] public String m_effect;
         }
         
         public class HousingPetBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 256424865;
+            public override uint GetHash() => 113943340;
         }
         
         public class HatchmakingKioskBehavior : HatchmakingKioskBehaviorBase
         {
             
-            public override uint GetHash() => 264877989;
+            public override uint GetHash() => 116056107;
         }
         
         public class ReqHatchAllEggs : Requirement
         {
             
-            public override uint GetHash() => 264043400;
+            public override uint GetHash() => 116896545;
         }
         
         public class ObstacleCourseModifyTimeBehavior : ObstacleCourseObstaclePathBase
         {
             
-            public override uint GetHash() => 141321820;
+            public override uint GetHash() => 117675092;
         }
         
         public class GetHitCinematicStageTemplate : CinematicStageTemplate
         {
             
-            public override uint GetHash() => 136325589;
+            public override uint GetHash() => 118523831;
             [Property(3217341687, 131079)] public List<String> m_cameras;
             [Property(1882980152, 131079)] public List<String> m_altcameras;
             [Property(3431428731, 7)] public String m_animation;
@@ -2755,19 +2755,19 @@ namespace Imlight.Internals
         public class ClientRegisterActorCinematicAction : RegisterActorCinematicAction
         {
             
-            public override uint GetHash() => 147667396;
+            public override uint GetHash() => 120308658;
         }
         
         public class BadgeFilter : PropertyClass
         {
             
-            public override uint GetHash() => 154300016;
+            public override uint GetHash() => 122951263;
         }
         
         public class BracketTournamentGoldCostInfo : PropertyClass
         {
             
-            public override uint GetHash() => 152350381;
+            public override uint GetHash() => 123577961;
             [Property(1708220969, 31)] public UInt32 m_minLevel;
             [Property(357765739, 31)] public UInt32 m_maxLevel;
             [Property(2119335232, 31)] public UInt32 m_goldCostSubscriber;
@@ -2779,7 +2779,7 @@ namespace Imlight.Internals
         public class BattlegroundTeamData : PropertyClass
         {
             
-            public override uint GetHash() => 169882261;
+            public override uint GetHash() => 126910823;
             [Property(1263221425, 7)] public UInt32 m_projectID;
             [Property(1624915612, 7)] public List<UInt64> m_teamListA;
             [Property(1624915613, 7)] public List<UInt64> m_teamListB;
@@ -2788,33 +2788,33 @@ namespace Imlight.Internals
         public class ClientProvidePetPower : ProvidePetPower
         {
             
-            public override uint GetHash() => 171938840;
+            public override uint GetHash() => 127363269;
         }
         
         public class MountSoundBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 191614064;
+            public override uint GetHash() => 130186975;
         }
         
         public class StringListObj : PropertyClass
         {
             
-            public override uint GetHash() => 192091124;
+            public override uint GetHash() => 130304318;
             [Property(1880105486, 7)] public List<String> m_stringList;
         }
         
         public class CombatPetXPEffectTemplate : GameEffectTemplate
         {
             
-            public override uint GetHash() => 185712392;
+            public override uint GetHash() => 131916289;
             [Property(2333333378, 7)] public String m_lootTableName;
         }
         
         public class SoundBehaviorTemplate : AreaBehaviorTemplate
         {
             
-            public override uint GetHash() => 186295252;
+            public override uint GetHash() => 131999030;
             [Property(2531081709, 7)] public List<String> m_trackFilenameList;
             [Property(3907873161, 7)] public List<PlayListEntry> m_playList;
             [Property(1235205852, 7)] public Int32 m_priority;
@@ -2839,7 +2839,7 @@ namespace Imlight.Internals
         public class MatchRequest : PropertyClass
         {
             
-            public override uint GetHash() => 199503764;
+            public override uint GetHash() => 132220454;
             [Property(210498386, 31)] public UInt64 m_characterID;
             [Property(1799846440, 31)] public UInt32 m_tournamentNameID;
             [Property(1751361288, 31)] public UInt32 m_matchNameID;
@@ -2849,20 +2849,20 @@ namespace Imlight.Internals
         public class ClientTimedItemBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 200582253;
+            public override uint GetHash() => 132490457;
             [Property(1836304873, 59)] public UInt32 m_expireTime;
         }
         
         public class HaltCinematicAction : CinematicAction
         {
             
-            public override uint GetHash() => 879290292;
+            public override uint GetHash() => 134394926;
         }
         
         public class AddSpellLootInfo : LootInfo
         {
             
-            public override uint GetHash() => 875511756;
+            public override uint GetHash() => 135479856;
             [Property(2688485244, 268435487)] public String m_spellName;
             [Property(1924993817, 31)] public String m_internalName;
             [Property(1697483258, 31)] public UInt32 m_spellID;
@@ -2871,20 +2871,20 @@ namespace Imlight.Internals
         public class EquipmentSetList : PropertyClass
         {
             
-            public override uint GetHash() => 875912244;
+            public override uint GetHash() => 135649998;
             [Property(1788831224, 31)] public List<EquipmentSet> m_equipmentSetList;
         }
         
         public class ClientDerbyStealMorale : DerbyStealMorale
         {
             
-            public override uint GetHash() => 903889836;
+            public override uint GetHash() => 140549416;
         }
         
         public class CombatAction : PropertyClass
         {
             
-            public override uint GetHash() => 905622573;
+            public override uint GetHash() => 140910793;
             [Property(1306412924, 7)] public Int32 m_spellCaster;
             [Property(1160380498, 7)] public Spell m_spell;
             [Property(1193115340, 7)] public Char m_spellHits;
@@ -2917,7 +2917,7 @@ namespace Imlight.Internals
         public class HatchmakingPetGIDList : PropertyClass
         {
             
-            public override uint GetHash() => 907024196;
+            public override uint GetHash() => 144476178;
             [Property(431253060, 7)] public UInt32 m_skip;
             [Property(817215071, 7)] public UInt32 m_petTemplateID;
             [Property(109341840, 7)] public List<UInt64> m_hatchmakingPetGIDList;
@@ -2926,20 +2926,20 @@ namespace Imlight.Internals
         public class BrightnessControlWindow : Window
         {
             
-            public override uint GetHash() => 920671981;
+            public override uint GetHash() => 144742521;
         }
         
         public class RecipeLootInfo : LootInfo
         {
             
-            public override uint GetHash() => 930395781;
+            public override uint GetHash() => 147169379;
             [Property(3311832788, 268435487)] public String m_recipeName;
         }
         
         public class WizAvatarTextureOption : AvatarTextureOption
         {
             
-            public override uint GetHash() => 810456560;
+            public override uint GetHash() => 151726271;
             [Property(1720106604, 7)] public String m_texture;
             [Property(2289476788, 7)] public String m_decal;
             [Property(1853711910, 7)] public String m_decal2;
@@ -2950,7 +2950,7 @@ namespace Imlight.Internals
         public class CharacterRegistry : PropertyClass
         {
             
-            public override uint GetHash() => 821139644;
+            public override uint GetHash() => 153414636;
             [Property(1546509239, 7)] public List<UInt64> m_displayedTips;
             [Property(1286351938, 7)] public List<UInt64> m_finishedTips;
             [Property(3487355966, 7)] public List<CharacterChatStatsByState> m_chatStatsByState;
@@ -2967,14 +2967,14 @@ namespace Imlight.Internals
         public class NamedEffect : GameEffectBase
         {
             
-            public override uint GetHash() => 818177233;
+            public override uint GetHash() => 153720056;
             [Property(1990707228, 63)] public String m_overrideName;
         }
         
         public class RespecTieredSpellList : PropertyClass
         {
             
-            public override uint GetHash() => 816396124;
+            public override uint GetHash() => 154320916;
             [Property(1402125129, 31)] public List<UInt32> m_spellList;
             [Property(1475269301, 31)] public List<UInt32> m_upgradedSpellList;
         }
@@ -2982,7 +2982,7 @@ namespace Imlight.Internals
         public class PetDropFoodItem : PropertyClass
         {
             
-            public override uint GetHash() => 827660933;
+            public override uint GetHash() => 156093283;
             [Property(1943544747, 7)] public UInt32 m_uTemplateID;
             [Property(63971517, 7)] public Int32 m_nFoodGroup;
             [Property(701808397, 7)] public Single m_fFallSpeed;
@@ -2999,7 +2999,7 @@ namespace Imlight.Internals
         public class PromoPromotion : PropertyClass
         {
             
-            public override uint GetHash() => 823007620;
+            public override uint GetHash() => 156961698;
             [Property(3494513013, 31)] public String m_promoID;
             [Property(1797811434, 31)] public String m_promoTitle;
             [Property(2677655015, 31)] public String m_promoDesc;
@@ -3010,7 +3010,7 @@ namespace Imlight.Internals
         public class WinAnimSizeSpeed : WinAnimSize
         {
             
-            public override uint GetHash() => 831748013;
+            public override uint GetHash() => 159141929;
             [Property(503609006, 135)] public Single m_fSpeed;
             [Property(2914066496, 135)] public Vector3 m_currentSize;
         }
@@ -3018,53 +3018,53 @@ namespace Imlight.Internals
         public class ClientPetCameraActorCinematicAction : PetCameraActorCinematicAction
         {
             
-            public override uint GetHash() => 842905356;
+            public override uint GetHash() => 160948224;
         }
         
         public class MoveCommandTeleport : MoveController.MoveCommand
         {
             
-            public override uint GetHash() => 855129237;
+            public override uint GetHash() => 161907431;
             [Property(3770499167, 31)] public Vector3 m_vTarget;
         }
         
         public class ClientMinigameBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 851689157;
+            public override uint GetHash() => 162030195;
         }
         
         public class ComplexRotateTurnIndicatorCinematicAction : CinematicAction
         {
             
-            public override uint GetHash() => 852801984;
+            public override uint GetHash() => 162374579;
             [Property(2332010820, 7)] public ComplexRotationInfo m_rotationInfo;
         }
         
         public class DerbyModifySpeedBoost : DerbyEffect
         {
             
-            public override uint GetHash() => 849149712;
+            public override uint GetHash() => 163557895;
             [Property(636533855, 31)] public Int32 m_nSpeedChange;
         }
         
         public class HousingLayout : PropertyClass
         {
             
-            public override uint GetHash() => 856669628;
+            public override uint GetHash() => 165372588;
             [Property(2580715899, 7)] public List<HousingLayoutObject> m_housingLayoutObjectList;
         }
         
         public class ClientActorRenameCinematicAction : ActorRenameCinematicAction
         {
             
-            public override uint GetHash() => 868033517;
+            public override uint GetHash() => 167232825;
         }
         
         public class Ingredient : PropertyClass
         {
             
-            public override uint GetHash() => 864888365;
+            public override uint GetHash() => 167494729;
             [Property(569545460, 33554439)] public UInt64 m_itemID;
             [Property(3429518154, 7)] public String m_adjective;
             [Property(169215289, 7)] public Int32 m_quantity;
@@ -3085,7 +3085,7 @@ namespace Imlight.Internals
         public class SummonCinematicStageTemplate : CinematicStageTemplate
         {
             
-            public override uint GetHash() => 1014157249;
+            public override uint GetHash() => 168050228;
             [Property(2460090138, 131079)] public String m_summon;
             [Property(3217341687, 131079)] public List<String> m_cameras;
             [Property(1882980152, 131079)] public List<String> m_altcameras;
@@ -3125,13 +3125,13 @@ namespace Imlight.Internals
         public class CreationNameSelectWindowSWF : Window
         {
             
-            public override uint GetHash() => 1011358253;
+            public override uint GetHash() => 168463177;
         }
         
         public class CraftingSlot : CoreObject
         {
             
-            public override uint GetHash() => 1012383560;
+            public override uint GetHash() => 168649233;
             [Property(3311832788, 39)] public String m_recipeName;
             [Property(2129804822, 63)] public Int64 m_timeFinished;
         }
@@ -3139,7 +3139,7 @@ namespace Imlight.Internals
         public class DiegoPlayerStats : PropertyClass
         {
             
-            public override uint GetHash() => 1007741848;
+            public override uint GetHash() => 169654053;
             [Property(1556110724, 7)] public UInt64 m_participantID;
             [Property(982118638, 7)] public Int32 m_teamID;
             [Property(374902326, 7)] public Int32 m_maxHealth;
@@ -3160,20 +3160,20 @@ namespace Imlight.Internals
         public class ClientHidePolymorphFloatyTextCinematicAction : HidePolymorphFloatyTextCinematicAction
         {
             
-            public override uint GetHash() => 1021766688;
+            public override uint GetHash() => 169948875;
         }
         
         public class TemplateManifest : PropertyClass
         {
             
-            public override uint GetHash() => 1017411609;
+            public override uint GetHash() => 171021254;
             [Property(1656531664, 7)] public List<TemplateLocation> m_serializedTemplates;
         }
         
         public class CinematicDefTemplate : CoreTemplate
         {
             
-            public override uint GetHash() => 1015931828;
+            public override uint GetHash() => 171701550;
             [Property(2694762008, 131079)] public String m_nifFile;
             [Property(2689597116, 7)] public Double m_delay;
             [Property(2611527497, 134217735)] public String m_cinematicName;
@@ -3182,14 +3182,14 @@ namespace Imlight.Internals
         public class CinematicAction : PropertyClass
         {
             
-            public override uint GetHash() => 1039909700;
+            public override uint GetHash() => 174488850;
             [Property(2237098605, 7)] public Single m_timeOffset;
         }
         
         public class CastleTourTeleportInfo : PropertyClass
         {
             
-            public override uint GetHash() => 1033787969;
+            public override uint GetHash() => 176102228;
             [Property(2326023642, 7)] public UInt32 m_houseTemplateID;
             [Property(1037379271, 7)] public UInt32 m_structureTemplateID;
             [Property(2010711536, 7)] public UInt64 m_lotInstanceGID;
@@ -3200,26 +3200,26 @@ namespace Imlight.Internals
         public class FishingXPLootInfo : LootInfo
         {
             
-            public override uint GetHash() => 1044502272;
+            public override uint GetHash() => 176748547;
             [Property(759357570, 31)] public Int32 m_experience;
         }
         
         public class PotionButton : ControlButton
         {
             
-            public override uint GetHash() => 1055068016;
+            public override uint GetHash() => 178277919;
         }
         
         public class SpawnCreatureCinematicAction : QueuedCombatCinematicAction
         {
             
-            public override uint GetHash() => 1050424445;
+            public override uint GetHash() => 180322525;
         }
         
         public class CameraCutCinematicAction : CinematicAction
         {
             
-            public override uint GetHash() => 1064004892;
+            public override uint GetHash() => 180508292;
             [Property(3217341687, 131079)] public List<String> m_cameras;
             [Property(1882980152, 131079)] public List<String> m_altcameras;
             [Property(2526319343, 7)] public String m_initialCameraName;
@@ -3246,7 +3246,7 @@ namespace Imlight.Internals
         public class GoalCompleteLogic : PropertyClass
         {
             
-            public override uint GetHash() => 1066318344;
+            public override uint GetHash() => 184230721;
             [Property(1522921572, 7)] public List<String> m_goalsAND;
             [Property(2474679090, 7)] public List<String> m_goalsOR;
             [Property(3122082173, 7)] public List<String> m_goalsToAdd;
@@ -3256,7 +3256,7 @@ namespace Imlight.Internals
         public class PestBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 944808800;
+            public override uint GetHash() => 185378075;
             [Property(2022116066, 7)] public Int32 m_pestRank;
             [Property(3102833515, 7)] public String m_wiltMinRate;
             [Property(2801609581, 7)] public String m_wiltMaxRate;
@@ -3272,7 +3272,7 @@ namespace Imlight.Internals
         public class DeedBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 945355636;
+            public override uint GetHash() => 185512734;
             [Property(3026711022, 268435463)] public String m_lotWorldZone;
             [Property(1799746856, 7)] public Int32 m_itemLimit;
             [Property(1037379271, 33554439)] public UInt32 m_structureTemplateID;
@@ -3285,7 +3285,7 @@ namespace Imlight.Internals
         public class PathBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 945733600;
+            public override uint GetHash() => 185541179;
             [Property(2890959924, 2097159)] public PathType m_kPathType;
             [Property(821494322, 7)] public UInt64 m_pathID;
             [Property(2081830230, 7)] public Int32 m_nPathDirection;
@@ -3296,7 +3296,7 @@ namespace Imlight.Internals
             public class Action : PropertyClass
             {
                 
-                public override uint GetHash() => 1813103567;
+                public override uint GetHash() => 1451964126;
                 [Property(214382368, 7)] public UInt64 m_nPathID;
                 [Property(152152635, 7)] public Int32 m_nNodeID;
                 [Property(1515251530, 7)] public Int32 m_nPriority;
@@ -3315,7 +3315,7 @@ namespace Imlight.Internals
         public class DeckBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 945775476;
+            public override uint GetHash() => 185554206;
             [Property(2375433463, 268435463)] public String m_defaultDeck;
             [Property(3211370408, 7)] public String m_primarySchoolName;
             [Property(1490181353, 7)] public Int32 m_genericMaxRank;
@@ -3329,7 +3329,7 @@ namespace Imlight.Internals
         public class StopHangingRotationCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 940905257;
+            public override uint GetHash() => 186501386;
             [Property(7349510, 7)] public Boolean m_cloaked;
             [Property(2339468071, 2097159)] public kStopHangingTypes m_type;
             
@@ -3344,13 +3344,13 @@ namespace Imlight.Internals
         public class TipFrame : WindowLayout
         {
             
-            public override uint GetHash() => 953005265;
+            public override uint GetHash() => 187425016;
         }
         
         public class AnimationSet : PropertyClass
         {
             
-            public override uint GetHash() => 953843317;
+            public override uint GetHash() => 187568735;
             [Property(2569991048, 7)] public String m_setName;
             [Property(1888571563, 7)] public List<AnimationPair> m_pairs;
         }
@@ -3358,19 +3358,19 @@ namespace Imlight.Internals
         public class ClientBGSigilProxyBehavior : BGSigilProxyBehavior
         {
             
-            public override uint GetHash() => 948840993;
+            public override uint GetHash() => 188417868;
         }
         
         public class ObstacleCourseCatapultBehavior : ObstacleCourseObstacleBehavior
         {
             
-            public override uint GetHash() => 948993056;
+            public override uint GetHash() => 188519115;
         }
         
         public class CombatSigilTemplate : SigilTemplate
         {
             
-            public override uint GetHash() => 969550872;
+            public override uint GetHash() => 191497925;
             [Property(1429683718, 7)] public Single m_engageRadius;
             [Property(1245973515, 7)] public List<SpellEffect> m_battlefieldEffects;
             [Property(2684536069, 7)] public String m_playerVictoryCinematic;
@@ -3393,20 +3393,20 @@ namespace Imlight.Internals
         public class RemoveBacklashEffectCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 978874321;
+            public override uint GetHash() => 193893944;
         }
         
         public class WinAnimScaleSpeed : WinAnimScale
         {
             
-            public override uint GetHash() => 988812673;
+            public override uint GetHash() => 195332260;
             [Property(503609006, 135)] public Single m_fSpeed;
         }
         
         public class QuestEffectInfo : GameEffectInfo
         {
             
-            public override uint GetHash() => 984656632;
+            public override uint GetHash() => 196388733;
             [Property(3147529602, 7)] public RequirementList m_startReqs;
             [Property(2094517692, 7)] public ResultList m_startResults;
             [Property(2118364133, 7)] public ResultList m_endResults;
@@ -3415,40 +3415,40 @@ namespace Imlight.Internals
         public class ObstacleCoursePendulumBehaviorClient : ObstacleCoursePendulumBehavior
         {
             
-            public override uint GetHash() => 993961065;
+            public override uint GetHash() => 198649050;
         }
         
         public class PromoPromotionList : PropertyClass
         {
             
-            public override uint GetHash() => 1004493444;
+            public override uint GetHash() => 200235874;
             [Property(2231640821, 31)] public List<PromoPromotion> m_promoPromotions;
         }
         
         public class ClientCinematicActor : CinematicActor
         {
             
-            public override uint GetHash() => 1002264988;
+            public override uint GetHash() => 200792996;
         }
         
         public class ClientTagList : PropertyClass
         {
             
-            public override uint GetHash() => 1000183645;
+            public override uint GetHash() => 201320469;
             [Property(2319030025, 31)] public List<String> m_clientTags;
         }
         
         public class WizItemPlantList : WizItemLocations
         {
             
-            public override uint GetHash() => 610744532;
+            public override uint GetHash() => 201409526;
             [Property(1045283519, 31)] public List<UInt32> m_plants;
         }
         
         public class SpawnObject : PropertyClass
         {
             
-            public override uint GetHash() => 611145357;
+            public override uint GetHash() => 201578593;
             [Property(1717359772, 7)] public String m_name;
             [Property(2090569797, 7)] public UInt64 m_id;
             [Property(239335471, 7)] public Boolean m_active;
@@ -3469,7 +3469,7 @@ namespace Imlight.Internals
         public class ItemLocatorList : PropertyClass
         {
             
-            public override uint GetHash() => 609862381;
+            public override uint GetHash() => 202308985;
             [Property(2663343121, 31)] public List<WizItemLocations> m_locations;
             [Property(1122496566, 31)] public Boolean m_bIsMinigameLoot;
             [Property(1595567415, 31)] public Boolean m_bIsFishingLoot;
@@ -3480,33 +3480,33 @@ namespace Imlight.Internals
         public class StatePositionalSoundBehavior : PositionalSoundBehavior
         {
             
-            public override uint GetHash() => 606203528;
+            public override uint GetHash() => 202438241;
         }
         
         public class CriticalObjectList : PropertyClass
         {
             
-            public override uint GetHash() => 607518529;
+            public override uint GetHash() => 202764820;
             [Property(72042095, 31)] public List<UInt64> m_objList;
         }
         
         public class WizItemQuestList : WizItemLocations
         {
             
-            public override uint GetHash() => 605266396;
+            public override uint GetHash() => 203187636;
             [Property(2616788661, 31)] public List<WizItemQuestData> m_quests;
         }
         
         public class CastleMagicMovingObject : PropertyClass
         {
             
-            public override uint GetHash() => 618578332;
+            public override uint GetHash() => 204422564;
         }
         
         public class TutorialZoneMod : PropertyClass
         {
             
-            public override uint GetHash() => 615977848;
+            public override uint GetHash() => 204818717;
             [Property(353899634, 7)] public Int32 m_stageMin;
             [Property(353899380, 7)] public Int32 m_stageMax;
             [Property(2188728076, 7)] public List<String> m_zoneEvents;
@@ -3516,7 +3516,7 @@ namespace Imlight.Internals
         public class GameEffectTimerDisplayBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 629036329;
+            public override uint GetHash() => 205985930;
             [Property(2029161513, 31)] public String m_effectName;
             [Property(1720060457, 31)] public String m_textKey;
             [Property(602977104, 31)] public Single m_height;
@@ -3530,13 +3530,13 @@ namespace Imlight.Internals
         public class BaseClientHousingBlobStrategy : BlobCacheInterface
         {
             
-            public override uint GetHash() => 625165757;
+            public override uint GetHash() => 206068909;
         }
         
         public class MapInfoRequirementsRequest : PropertyClass
         {
             
-            public override uint GetHash() => 623218429;
+            public override uint GetHash() => 206696061;
             [Property(2301988666, 7)] public UInt32 m_id;
             [Property(1527408971, 7)] public String m_serializedRequirements;
         }
@@ -3544,21 +3544,21 @@ namespace Imlight.Internals
         public class CSRAccessPassList : PropertyClass
         {
             
-            public override uint GetHash() => 621505065;
+            public override uint GetHash() => 207247178;
             [Property(3089809672, 23)] public List<CSRAccessPassInfo> m_passList;
         }
         
         public class MadlibArgT_std_wstring : MadlibArg
         {
             
-            public override uint GetHash() => 1797054493;
+            public override uint GetHash() => 208186592;
             [Property(2172177124, 31)] public String m_madlibArgument;
         }
         
         public class MusicFileInfo : PropertyClass
         {
             
-            public override uint GetHash() => 634871301;
+            public override uint GetHash() => 208493123;
             [Property(2103410014, 7)] public String m_altMusicFileName;
             [Property(2840988582, 7)] public RequirementList m_requirements;
         }
@@ -3566,7 +3566,7 @@ namespace Imlight.Internals
         public class NewListUpdate : TournamentUpdate
         {
             
-            public override uint GetHash() => 645167817;
+            public override uint GetHash() => 210080626;
             [Property(695889746, 31)] public UInt64 m_tournamentID;
             [Property(3329241865, 31)] public String m_tournamentName;
             [Property(1799846440, 31)] public UInt32 m_tournamentNameID;
@@ -3580,13 +3580,13 @@ namespace Imlight.Internals
         public class TestControlTableWindow : Window
         {
             
-            public override uint GetHash() => 641164660;
+            public override uint GetHash() => 211113118;
         }
         
         public class ExpansionData : PropertyClass
         {
             
-            public override uint GetHash() => 641661109;
+            public override uint GetHash() => 211235823;
             [Property(2705349254, 2097159)] public Category m_category;
             [Property(944258472, 7)] public Int32 m_maxExpansions;
             [Property(186190666, 7)] public Int32 m_expansionSize;
@@ -3602,7 +3602,7 @@ namespace Imlight.Internals
         public class ConfirmOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 639426732;
+            public override uint GetHash() => 211793384;
             [Property(2088579351, 31)] public String m_confirmMessageKey;
             [Property(3178681510, 31)] public String m_promptSound;
             [Property(3325790708, 31)] public String m_acceptKey;
@@ -3614,45 +3614,45 @@ namespace Imlight.Internals
         public class AnimationBehavior : RenderBehavior
         {
             
-            public override uint GetHash() => 646460573;
+            public override uint GetHash() => 213549285;
         }
         
         public class NameOverrideBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 666970577;
+            public override uint GetHash() => 216582072;
             [Property(2131249091, 31)] public String m_wsNameOverride;
         }
         
         public class ClientObjectRemapBehavior : ObjectRemapBehavior
         {
             
-            public override uint GetHash() => 666875460;
+            public override uint GetHash() => 217538642;
         }
         
         public class PetCastEffectActorCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 664403929;
+            public override uint GetHash() => 218034742;
         }
         
         public class NotInActiveTournamentOrPvP : Requirement
         {
             
-            public override uint GetHash() => 664595760;
+            public override uint GetHash() => 218085007;
         }
         
         public class HousingItemList : PropertyClass
         {
             
-            public override uint GetHash() => 544981709;
+            public override uint GetHash() => 218529137;
             [Property(310124628, 7)] public List<UInt64> m_housingItemGIDList;
         }
         
         public class MountRecord : PropertyClass
         {
             
-            public override uint GetHash() => 545018052;
+            public override uint GetHash() => 218601970;
             [Property(2832170609, 2097159)] public VolumeTypes m_nVolumeType;
             [Property(1705643111, 7)] public String m_sOption;
             [Property(1515251530, 7)] public Int32 m_nPriority;
@@ -3671,20 +3671,20 @@ namespace Imlight.Internals
         public class HousingNodeList : PropertyClass
         {
             
-            public override uint GetHash() => 542898677;
+            public override uint GetHash() => 219050943;
             [Property(3486511051, 7)] public List<HousingNode> m_nodeList;
         }
         
         public class BanishBacklashEffectCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 537617217;
+            public override uint GetHash() => 219829524;
         }
         
         public class ClientMountOwnerBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 538569800;
+            public override uint GetHash() => 220133073;
             [Property(2121766730, 2097183)] public eGender m_gender;
             [Property(390582957, 2097183)] public eRace m_race;
             [Property(3097765662, 2097183)] public eMountType m_eMountType;
@@ -3699,7 +3699,7 @@ namespace Imlight.Internals
         public class ReqNumeric : Requirement
         {
             
-            public override uint GetHash() => 548509933;
+            public override uint GetHash() => 221572089;
             [Property(521915239, 31)] public Single m_numericValue;
             [Property(2228122961, 2097183)] public OPERATOR_TYPE m_operatorType;
             
@@ -3718,25 +3718,25 @@ namespace Imlight.Internals
         public class CustomEmoteBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 546428105;
+            public override uint GetHash() => 222099698;
         }
         
         public class WizardAutobotQuestManagerGraphicalClient : WizardAutobotQuestManager
         {
             
-            public override uint GetHash() => 554404588;
+            public override uint GetHash() => 224030584;
         }
         
         public class ReqClassicMode : Requirement
         {
             
-            public override uint GetHash() => 569173904;
+            public override uint GetHash() => 224637991;
         }
         
         public class MatchResult : Result
         {
             
-            public override uint GetHash() => 569970564;
+            public override uint GetHash() => 224841250;
             [Property(2840985510, 7)] public RequirementList m_requirements;
             [Property(3776744154, 7)] public ResultList m_results;
         }
@@ -3744,14 +3744,14 @@ namespace Imlight.Internals
         public class CombatPetXPEffect : GameEffectBase
         {
             
-            public override uint GetHash() => 568237521;
+            public override uint GetHash() => 225389240;
             [Property(2333333378, 31)] public String m_lootTableName;
         }
         
         public class ElixirBenefitEffectTemplate : GameEffectTemplate
         {
             
-            public override uint GetHash() => 562135265;
+            public override uint GetHash() => 226029052;
             [Property(1005801050, 1048583)] public Flags m_flags;
             
             [System.FlagsAttribute()]
@@ -3775,13 +3775,13 @@ namespace Imlight.Internals
         public class ShadowPipRule : PropertyClass
         {
             
-            public override uint GetHash() => 578740365;
+            public override uint GetHash() => 226964961;
             [Property(2566333441, 7)] public List<ShadowPipRule.RoundPercent> m_roundList;
             
             public class RoundPercent : PropertyClass
             {
                 
-                public override uint GetHash() => 137235372;
+                public override uint GetHash() => 1593863596;
                 [Property(1461215570, 7)] public Int32 m_roundNum;
                 [Property(982834938, 7)] public Int32 m_percentageChance;
             }
@@ -3790,7 +3790,7 @@ namespace Imlight.Internals
         public class BlobDefinition : PropertyClass
         {
             
-            public override uint GetHash() => 575055517;
+            public override uint GetHash() => 227091557;
             [Property(1717601629, 7)] public String m_type;
             [Property(3175052615, 7)] public String m_subType;
             [Property(1265259452, 7)] public UInt32 m_versionNumber;
@@ -3802,50 +3802,50 @@ namespace Imlight.Internals
         public class StartBacklashRotationEffectCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 572122725;
+            public override uint GetHash() => 228521051;
         }
         
         public class ResTeleport : Result
         {
             
-            public override uint GetHash() => 586069757;
+            public override uint GetHash() => 228794493;
         }
         
         public class ClientRenamePipActorsFromResult : RenamePipActorsFromResult
         {
             
-            public override uint GetHash() => 592211100;
+            public override uint GetHash() => 231446244;
         }
         
         public class ClientClearHangingEffectsCinematicAction : ClearHangingEffectsCinematicAction
         {
             
-            public override uint GetHash() => 589342136;
+            public override uint GetHash() => 231777453;
         }
         
         public class DerbyModifyPetStat : DerbyEffect
         {
             
-            public override uint GetHash() => 601921573;
+            public override uint GetHash() => 232827851;
             [Property(686212266, 31)] public PetStatModificationSet m_mods;
         }
         
         public class TreasureCardVaultBehavior : TreasureCardVaultBehaviorBase
         {
             
-            public override uint GetHash() => 741147324;
+            public override uint GetHash() => 236178796;
         }
         
         public class BurnAuraCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 738917213;
+            public override uint GetHash() => 236598037;
         }
         
         public class MatchTeam : PropertyClass
         {
             
-            public override uint GetHash() => 748721940;
+            public override uint GetHash() => 238069766;
             [Property(374990266, 31)] public UInt64 m_nTeamID;
             [Property(1757621330, 31)] public UInt64 m_matchId;
             [Property(1751361288, 31)] public UInt32 m_matchNameID;
@@ -3859,21 +3859,21 @@ namespace Imlight.Internals
         public class HatchmakingPetTypesList : PropertyClass
         {
             
-            public override uint GetHash() => 749587349;
+            public override uint GetHash() => 238288679;
             [Property(1843158182, 7)] public List<UInt32> m_hatchmakingPetTypesList;
         }
         
         public class WizItemHouseList : WizItemLocations
         {
             
-            public override uint GetHash() => 747748116;
+            public override uint GetHash() => 238871302;
             [Property(2902609843, 31)] public List<String> m_houseNames;
         }
         
         public class PositionalSoundBehavior : SoundBehavior
         {
             
-            public override uint GetHash() => 762322320;
+            public override uint GetHash() => 239372967;
             [Property(355697197, 7)] public Single m_minimumFalloff;
             [Property(2210192367, 7)] public Single m_maximumFalloff;
             [Property(398394720, 7)] public Boolean m_animDriven;
@@ -3883,7 +3883,7 @@ namespace Imlight.Internals
         public class MonsterMagicLevelInfo : PropertyClass
         {
             
-            public override uint GetHash() => 760600469;
+            public override uint GetHash() => 239990823;
             [Property(1438884808, 7)] public Byte m_level;
             [Property(1972600157, 7)] public Int32 m_xpToLevel;
             [Property(3595417396, 8388615)] public String m_levelName;
@@ -3892,20 +3892,20 @@ namespace Imlight.Internals
         public class PetTomeBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 756237500;
+            public override uint GetHash() => 240934124;
         }
         
         public class PetGameBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 771409084;
+            public override uint GetHash() => 241581292;
             [Property(3229752342, 7)] public String m_gameName;
         }
         
         public class WhirlyBurlyStartGame : PropertyClass
         {
             
-            public override uint GetHash() => 771733069;
+            public override uint GetHash() => 241655889;
             [Property(1909774945, 7)] public List<UInt64> m_playerList;
             [Property(351259772, 7)] public List<Int32> m_teamColorList;
             [Property(3513135712, 7)] public List<String> m_packedNameList;
@@ -3914,20 +3914,20 @@ namespace Imlight.Internals
         public class CreatePipCinematicActorsFromResult : ActorCinematicAction
         {
             
-            public override uint GetHash() => 766446304;
+            public override uint GetHash() => 242438011;
             [Property(2029131039, 7)] public String m_newActorName;
         }
         
         public class ClientDerbyImmunityEffect : DerbyImmunityEffect
         {
             
-            public override uint GetHash() => 772992977;
+            public override uint GetHash() => 245118520;
         }
         
         public class CritAndBlockValues : PropertyClass
         {
             
-            public override uint GetHash() => 795264797;
+            public override uint GetHash() => 247544837;
             [Property(1100002568, 7)] public Single m_capValue;
             [Property(448021976, 7)] public Single m_criticalHitScalarBase;
             [Property(322634343, 7)] public Single m_criticalHitScalingFactor;
@@ -3938,14 +3938,14 @@ namespace Imlight.Internals
         public class BoosterPackSpaceHelper : PropertyClass
         {
             
-            public override uint GetHash() => 793120104;
+            public override uint GetHash() => 248057497;
             [Property(1650503223, 7)] public List<BoosterPackData> m_allPacks;
         }
         
         public class BGPlayerInfo : PropertyClass
         {
             
-            public override uint GetHash() => 794349757;
+            public override uint GetHash() => 248429037;
             [Property(1774633426, 31)] public UInt64 m_playerID;
             [Property(1717579362, 31)] public String m_team;
         }
@@ -3953,7 +3953,7 @@ namespace Imlight.Internals
         public class ExpansionBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 679367257;
+            public override uint GetHash() => 252123478;
             [Property(1369075454, 63)] public Int32 m_bankExpansions;
             [Property(1057398198, 63)] public Int32 m_friendListExpansions;
         }
@@ -3961,37 +3961,37 @@ namespace Imlight.Internals
         public class ActiveMusicLoop : PropertyClass
         {
             
-            public override uint GetHash() => 675331448;
+            public override uint GetHash() => 252224157;
         }
         
         public class DeathParticleCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 676985992;
+            public override uint GetHash() => 252637921;
         }
         
         public class EffectsBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 702627589;
+            public override uint GetHash() => 257999363;
         }
         
         public class ReqMagicLevel : ReqBaseMagicLevel
         {
             
-            public override uint GetHash() => 701973148;
+            public override uint GetHash() => 258825572;
         }
         
         public class MonsterMagicLevelControl : Window
         {
             
-            public override uint GetHash() => 711373345;
+            public override uint GetHash() => 260120908;
         }
         
         public class WizardCharacterBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 711734365;
+            public override uint GetHash() => 260276437;
             [Property(998398489, 7)] public Int32 m_nHeadHandsModel;
             [Property(1415899069, 7)] public Int32 m_nHairModel;
             [Property(1927542998, 7)] public Int32 m_nHatModel;
@@ -4015,20 +4015,20 @@ namespace Imlight.Internals
         public class PvPUpdateMessage : PropertyClass
         {
             
-            public override uint GetHash() => 712403961;
+            public override uint GetHash() => 260380478;
             [Property(1531535105, 31)] public Int32 m_messageType;
         }
         
         public class PetTalentCountControl : Window
         {
             
-            public override uint GetHash() => 713090437;
+            public override uint GetHash() => 263763107;
         }
         
         public class CrownsRewardsEventData : PropertyClass
         {
             
-            public override uint GetHash() => 726039016;
+            public override uint GetHash() => 264836025;
             [Property(3493260286, 7)] public String m_eventName;
             [Property(1859690486, 7)] public UInt64 m_startTime;
             [Property(977798847, 7)] public UInt64 m_endTime;
@@ -4038,7 +4038,7 @@ namespace Imlight.Internals
         public class AttachParticleActorCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 737475528;
+            public override uint GetHash() => 266711857;
             [Property(2029161513, 7)] public String m_effectName;
             [Property(3607089954, 7)] public String m_nodeName;
             [Property(1513131580, 131079)] public String m_assetName;
@@ -4047,13 +4047,13 @@ namespace Imlight.Internals
         public class ClientEventDrivenCinematic : ClientCinematic
         {
             
-            public override uint GetHash() => 737752717;
+            public override uint GetHash() => 266780769;
         }
         
         public class VisualAttributeBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1409941408;
+            public override uint GetHash() => 270201387;
             [Property(2701225082, 2097159)] public VisualAttributeType m_visualAttributeType;
             [Property(2304987980, 131079)] public String m_sourceFile;
             [Property(1866483306, 131079)] public String m_referenceFile;
@@ -4086,7 +4086,7 @@ namespace Imlight.Internals
         public class TakeCinematicStageTemplate : CinematicStageTemplate
         {
             
-            public override uint GetHash() => 1422560585;
+            public override uint GetHash() => 271199890;
             [Property(3217341687, 131079)] public List<String> m_cameras;
             [Property(1882980152, 131079)] public List<String> m_altcameras;
             [Property(3431428731, 7)] public String m_animation;
@@ -4096,21 +4096,21 @@ namespace Imlight.Internals
         public class InteractiveMusicBehavior : InteractiveMusicBehaviorBase
         {
             
-            public override uint GetHash() => 1432481797;
+            public override uint GetHash() => 272691651;
             [Property(2963606294, 66087)] public String m_musicData;
         }
         
         public class ReqGlobalRegistryValue : ReqNumeric
         {
             
-            public override uint GetHash() => 1428436897;
+            public override uint GetHash() => 273776684;
             [Property(2055270734, 7)] public String m_entryName;
         }
         
         public class Window : PropertyClass
         {
             
-            public override uint GetHash() => 1428999913;
+            public override uint GetHash() => 273923706;
             [Property(2306437263, 135)] public String m_sName;
             [Property(2621225959, 65671)] public List<Window> m_Children;
             [Property(2678384258, 1048583)] public Style m_Style;
@@ -4175,7 +4175,7 @@ namespace Imlight.Internals
         public class QuestTemplate : CoreTemplate
         {
             
-            public override uint GetHash() => 1449479404;
+            public override uint GetHash() => 276946680;
             [Property(1702112846, 7)] public String m_questName;
             [Property(1530354349, 7)] public UInt32 m_questNameID;
             [Property(1805465583, 8388615)] public String m_questTitle;
@@ -4215,7 +4215,7 @@ namespace Imlight.Internals
         public class SpellSubEffectMetadata : PropertyClass
         {
             
-            public override uint GetHash() => 1459528261;
+            public override uint GetHash() => 279389523;
             [Property(350070655, 31)] public Int32 m_effectIndex;
             [Property(1555389905, 31)] public Int32 m_chosenSubEffect;
         }
@@ -4223,13 +4223,13 @@ namespace Imlight.Internals
         public class InteractiveMusicBehaviorBase : BehaviorInstance
         {
             
-            public override uint GetHash() => 1466028993;
+            public override uint GetHash() => 281082164;
         }
         
         public class HousingObjectTextureRemap : PropertyClass
         {
             
-            public override uint GetHash() => 1463236977;
+            public override uint GetHash() => 282411936;
             [Property(255719658, 27)] public UInt32 m_tagName;
             [Property(922351199, 27)] public UInt32 m_textureFilename;
         }
@@ -4237,7 +4237,7 @@ namespace Imlight.Internals
         public class MoveCommandTime : MoveController.MoveCommand
         {
             
-            public override uint GetHash() => 1460290408;
+            public override uint GetHash() => 282729753;
             [Property(3770499167, 31)] public Vector3 m_vTarget;
             [Property(883746156, 31)] public Single m_fTime;
         }
@@ -4245,14 +4245,14 @@ namespace Imlight.Internals
         public class BlobDirectory : PropertyClass
         {
             
-            public override uint GetHash() => 1470696293;
+            public override uint GetHash() => 284348187;
             [Property(2267613747, 7)] public List<BlobDefinition> m_blobDefinitionList;
         }
         
         public class MatchTemplate : CoreTemplate
         {
             
-            public override uint GetHash() => 1470958192;
+            public override uint GetHash() => 284413791;
             [Property(2061215721, 134217735)] public String m_matchName;
             [Property(3201906495, 7)] public String m_matchDisplayName;
             [Property(2918442218, 7)] public String m_matchTitle;
@@ -4285,7 +4285,7 @@ namespace Imlight.Internals
         public class PlayList : PropertyClass
         {
             
-            public override uint GetHash() => 1357745924;
+            public override uint GetHash() => 287567362;
             [Property(3279400238, 2097159)] public Progression m_progression;
             [Property(652542482, 7)] public Int32 m_currentTrack;
             [Property(3167512201, 7)] public List<PlayListEntry> m_trackFilenameList;
@@ -4303,7 +4303,7 @@ namespace Imlight.Internals
         public class SpellNifSoundOverride : PropertyClass
         {
             
-            public override uint GetHash() => 1353381560;
+            public override uint GetHash() => 288501869;
             [Property(2419867822, 31)] public String m_sSpell;
             [Property(1717518635, 31)] public String m_sNif;
             [Property(2419849367, 31)] public String m_sSound;
@@ -4313,7 +4313,7 @@ namespace Imlight.Internals
         public class ProvidePetPowerInfo : GameEffectInfo
         {
             
-            public override uint GetHash() => 1350586641;
+            public override uint GetHash() => 288921992;
             [Property(1107125310, 31)] public Int32 m_happinessCost;
             [Property(1897549823, 31)] public Int32 m_cooldown;
             [Property(1445312791, 31)] public Int32 m_usesPerCombat;
@@ -4343,27 +4343,27 @@ namespace Imlight.Internals
         public class ClientAddAuraCinematicAction : AddAuraCinematicAction
         {
             
-            public override uint GetHash() => 1352381177;
+            public override uint GetHash() => 289300862;
         }
         
         public class MadlibArgT_double : MadlibArg
         {
             
-            public override uint GetHash() => 302689723;
+            public override uint GetHash() => 289844667;
             [Property(2776302297, 31)] public Double m_madlibArgument;
         }
         
         public class DuelistBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1364132524;
+            public override uint GetHash() => 290147688;
             [Property(1306880973, 7)] public Single m_npcProximity;
         }
         
         public class WizardCharacterCreationInfo : CharacterCreationInfo
         {
             
-            public override uint GetHash() => 1373112865;
+            public override uint GetHash() => 292458316;
             [Property(2884063077, 31)] public WizardCharacterBehavior m_avatarBehavior;
             [Property(2373226440, 31)] public EquippedItemInfoList m_equipmentInfoList;
             [Property(2079561588, 31)] public String m_location;
@@ -4375,13 +4375,13 @@ namespace Imlight.Internals
         public class WindowColorAnimation : WindowAnimation
         {
             
-            public override uint GetHash() => 1369144169;
+            public override uint GetHash() => 293491482;
         }
         
         public class DailyQuestRewardData : PropertyClass
         {
             
-            public override uint GetHash() => 1376532193;
+            public override uint GetHash() => 295403644;
             [Property(1109520555, 7)] public List<DailyQuestReward> m_dailyQuestRewardList;
             [Property(952967791, 7)] public List<DailyQuestReward> m_dailyPvPRewardList;
             [Property(2265601986, 7)] public List<String> m_circleRegistryList;
@@ -4391,26 +4391,26 @@ namespace Imlight.Internals
         public class CountdownBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1391008089;
+            public override uint GetHash() => 295881622;
         }
         
         public class ObstacleCourseRevolvingDoorBehavior : ObstacleCourseObstacleBehavior
         {
             
-            public override uint GetHash() => 1388906485;
+            public override uint GetHash() => 296406079;
         }
         
         public class AquariumBehaviorBase : BehaviorInstance
         {
             
-            public override uint GetHash() => 1386863880;
+            public override uint GetHash() => 296942209;
             [Property(3393318815, 575)] public String m_fishData;
         }
         
         public class UnderwayEntry : ServiceOptionBase
         {
             
-            public override uint GetHash() => 1398439464;
+            public override uint GetHash() => 298717769;
             [Property(3006734255, 31)] public String m_underwayText;
             [Property(1246549335, 31)] public UInt64 m_questID;
         }
@@ -4418,38 +4418,38 @@ namespace Imlight.Internals
         public class ClientMoveActorCinematicAction : MoveActorCinematicAction
         {
             
-            public override uint GetHash() => 1406495780;
+            public override uint GetHash() => 300799690;
         }
         
         public class DyeShopOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 1547062892;
+            public override uint GetHash() => 303373912;
         }
         
         public class WizardControlTable : Window
         {
             
-            public override uint GetHash() => 1557320373;
+            public override uint GetHash() => 304888175;
         }
         
         public class MadlibArgT_unsigned_int : MadlibArg
         {
             
-            public override uint GetHash() => 1842057223;
+            public override uint GetHash() => 306737126;
             [Property(1089894617, 31)] public UInt32 m_madlibArgument;
         }
         
         public class CombatPlanningPhaseWindow : Window
         {
             
-            public override uint GetHash() => 1563727185;
+            public override uint GetHash() => 307603608;
         }
         
         public class ControlButton : Window
         {
             
-            public override uint GetHash() => 1574036932;
+            public override uint GetHash() => 309130418;
             [Property(2071810903, 135)] public Boolean m_bToggle;
             [Property(840041705, 135)] public Boolean m_bButtonDown;
             [Property(2207009163, 4194439)] public String m_sLabel;
@@ -4475,7 +4475,7 @@ namespace Imlight.Internals
         public class AddGlobalCinematicStageTemplate : CinematicStageTemplate
         {
             
-            public override uint GetHash() => 1568996116;
+            public override uint GetHash() => 309965574;
             [Property(1979851564, 131079)] public String m_global;
             [Property(2307644996, 131079)] public String m_sound;
         }
@@ -4483,7 +4483,7 @@ namespace Imlight.Internals
         public class SpawnPointTemplate : PropertyClass
         {
             
-            public override uint GetHash() => 1583765964;
+            public override uint GetHash() => 310451120;
             [Property(2239683611, 7)] public Vector3 m_location;
             [Property(2872763232, 7)] public Vector3 m_boxLengths;
             [Property(1548066082, 7)] public UInt64 m_templateID;
@@ -4496,13 +4496,13 @@ namespace Imlight.Internals
         public class CameraController : PropertyClass
         {
             
-            public override uint GetHash() => 1580994129;
+            public override uint GetHash() => 311922264;
         }
         
         public class CinematicTemplate : PropertyClass
         {
             
-            public override uint GetHash() => 1591295869;
+            public override uint GetHash() => 313442845;
             [Property(1717359772, 134217735)] public String m_name;
             [Property(2081530688, 7)] public List<CinematicStageTemplate> m_stages;
             [Property(2242419761, 7)] public List<CinematicActorAnimationContainer> m_actors;
@@ -4512,20 +4512,20 @@ namespace Imlight.Internals
         public class SpellbookBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1600675689;
+            public override uint GetHash() => 314743322;
             [Property(2689219302, 7)] public String m_spellbook;
         }
         
         public class BGPenaltyMatchBanInfo : InfractionPenaltyInfo
         {
             
-            public override uint GetHash() => 1599095881;
+            public override uint GetHash() => 315399378;
         }
         
         public class AreaBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 1607144837;
+            public override uint GetHash() => 317343907;
             [Property(989410271, 7)] public Single m_radius;
             [Property(2951251982, 2097159)] public AudioCategory m_category;
             [Property(824383403, 7)] public Boolean m_exclusive;
@@ -4534,14 +4534,14 @@ namespace Imlight.Internals
         public class MoveBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 1607031337;
+            public override uint GetHash() => 317381450;
             [Property(2617130380, 31)] public UInt64 m_nFlags;
             [Property(1430960270, 2097183)] public MoveState m_nMoveState;
             
             public class Controller : PropertyClass
             {
                 
-                public override uint GetHash() => 1983170742;
+                public override uint GetHash() => 889606066;
                 [Property(1732895577, 7)] public Boolean m_bCollisionDisabled;
                 [Property(1597295002, 7)] public Boolean m_bVehicleMode;
                 [Property(1173988321, 7)] public Single m_fForwardModifier;
@@ -4556,77 +4556,77 @@ namespace Imlight.Internals
         public class ClientComplexRotateTurnIndicatorCinematicAction : ComplexRotateTurnIndicatorCinematicAction
         {
             
-            public override uint GetHash() => 1602845741;
+            public override uint GetHash() => 318427849;
         }
         
         public class ClientDerbyModifySpeedBoost : DerbyModifySpeedBoost
         {
             
-            public override uint GetHash() => 1604021657;
+            public override uint GetHash() => 318658214;
         }
         
         public class ClientCreatePipCinematicActorsFromResult : CreatePipCinematicActorsFromResult
         {
             
-            public override uint GetHash() => 1482133733;
+            public override uint GetHash() => 319646203;
         }
         
         public class PromoRewardList : PropertyClass
         {
             
-            public override uint GetHash() => 1479696261;
+            public override uint GetHash() => 320084515;
             [Property(3146833727, 31)] public List<PromoReward> m_promoRewards;
         }
         
         public class HousingSignBehavior : HousingSignBehaviorBase
         {
             
-            public override uint GetHash() => 1495520660;
+            public override uint GetHash() => 324040870;
         }
         
         public class TeleportProximityBehaviorBase : BehaviorInstance
         {
             
-            public override uint GetHash() => 1503598517;
+            public override uint GetHash() => 327108655;
         }
         
         public class StatGlobe : ControlSprite
         {
             
-            public override uint GetHash() => 1515932080;
+            public override uint GetHash() => 328097711;
             [Property(248546638, 135)] public Int32 m_amount;
         }
         
         public class IslandSpaceOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 1511125800;
+            public override uint GetHash() => 329052425;
         }
         
         public class ReqInventoryFull : ReqNumeric
         {
             
-            public override uint GetHash() => 1523185317;
+            public override uint GetHash() => 329969771;
         }
         
         public class ReqMatchesPlayed : ReqNumeric
         {
             
-            public override uint GetHash() => 1523571252;
+            public override uint GetHash() => 330005326;
             [Property(2799932264, 31)] public String m_tournament;
         }
         
         public class CastleTourMyCastleDataList : PropertyClass
         {
             
-            public override uint GetHash() => 1534615644;
+            public override uint GetHash() => 331781588;
             [Property(1101912968, 7)] public List<CastleTourMyCastleData> m_entryList;
         }
         
         public class TitleOption : PropertyClass
         {
             
-            public override uint GetHash() => 1531376288;
+            public override uint GetHash() => 331952491;
             [Property(1751250333, 31)] public String m_titleStringKey;
             [Property(219280307, 31)] public Int32 m_cost;
         }
@@ -4634,31 +4634,31 @@ namespace Imlight.Internals
         public class ObstacleCourseModifyTimeBehaviorClient : ObstacleCourseModifyTimeBehavior
         {
             
-            public override uint GetHash() => 1531982849;
+            public override uint GetHash() => 332169412;
         }
         
         public class SwapShadowMaterialActorCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1529803949;
+            public override uint GetHash() => 332607721;
         }
         
         public class ClientBanishBacklashEffectCinematicAction : BanishBacklashEffectCinematicAction
         {
             
-            public override uint GetHash() => 1530825356;
+            public override uint GetHash() => 332869472;
         }
         
         public class ShadowCreatureCameraCutCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1143984853;
+            public override uint GetHash() => 336820599;
         }
         
         public class PetBoostPlayerStatEffect : WizStatisticEffect
         {
             
-            public override uint GetHash() => 1155659769;
+            public override uint GetHash() => 337702974;
             [Property(806009486, 24)] public UInt64 m_petID;
             [Property(2417808140, 24)] public String m_primaryStat1;
             [Property(2417808141, 24)] public String m_primaryStat2;
@@ -4669,7 +4669,7 @@ namespace Imlight.Internals
         public class SpringboardNodeDescriptor : NodeDescriptor
         {
             
-            public override uint GetHash() => 1164553169;
+            public override uint GetHash() => 339928888;
             [Property(1775415814, 2097159)] public AnimationState m_kAnimationState;
             
             public enum AnimationState
@@ -4686,7 +4686,7 @@ namespace Imlight.Internals
         public class SG_GameBlockType : PropertyClass
         {
             
-            public override uint GetHash() => 1165694621;
+            public override uint GetHash() => 340150373;
             [Property(3429518154, 7)] public String m_adjective;
             [Property(2463625808, 7)] public List<String> m_subTypePointPairs;
             [Property(1744394364, 7)] public List<String> m_pointsGainedList;
@@ -4695,14 +4695,14 @@ namespace Imlight.Internals
         public class InfractionConfig : PropertyClass
         {
             
-            public override uint GetHash() => 1161803388;
+            public override uint GetHash() => 341270620;
             [Property(2474674612, 7)] public List<InfractionCategory> m_categories;
         }
         
         public class ParticipantList : PropertyClass
         {
             
-            public override uint GetHash() => 1172493856;
+            public override uint GetHash() => 341850187;
             [Property(3068815683, 31)] public List<CombatParticipant> m_partList;
             [Property(1276516479, 31)] public List<UInt32> m_deckSize;
             [Property(2180827619, 31)] public List<UInt32> m_totalDeckSize;
@@ -4712,20 +4712,20 @@ namespace Imlight.Internals
         public class ScoreTrackingList : PropertyClass
         {
             
-            public override uint GetHash() => 1174167725;
+            public override uint GetHash() => 342332905;
             [Property(1447258579, 7)] public List<ScoreTracking> m_scores;
         }
         
         public class SeamstressOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 1168367352;
+            public override uint GetHash() => 342915709;
         }
         
         public class ScoreTracking : PropertyClass
         {
             
-            public override uint GetHash() => 1168829109;
+            public override uint GetHash() => 343029615;
             [Property(443045745, 7)] public UInt64 m_gamerID;
             [Property(2656017061, 7)] public String m_gamerName;
             [Property(267246197, 7)] public UInt32 m_gamerNameCode;
@@ -4737,14 +4737,14 @@ namespace Imlight.Internals
         public class DerbyTeleport : DerbyEffect
         {
             
-            public override uint GetHash() => 1166411760;
+            public override uint GetHash() => 343477311;
             [Property(3096289769, 2097183)] public DerbyTargetType m_kTeleportToTarget;
         }
         
         public class BracketTemplate : MatchTemplate
         {
             
-            public override uint GetHash() => 1176929477;
+            public override uint GetHash() => 345058547;
             [Property(2292833030, 31)] public UInt32 m_numberOfRounds;
             [Property(1934068926, 31)] public Boolean m_removeBracketWhenEmpty;
             [Property(2209979662, 31)] public UInt32 m_prepareForMatchTimeSeconds;
@@ -4755,7 +4755,7 @@ namespace Imlight.Internals
         public class GameObjectAnimData : PropertyClass
         {
             
-            public override uint GetHash() => 1188332381;
+            public override uint GetHash() => 346926357;
             [Property(3405382643, 31)] public String m_zoneTag;
             [Property(965291410, 31)] public UInt32 m_zoneTagID;
             [Property(3431428731, 31)] public String m_animation;
@@ -4767,13 +4767,13 @@ namespace Imlight.Internals
         public class PositionalStateSoundBehaviorTemplate : PositionalSoundBehaviorTemplate
         {
             
-            public override uint GetHash() => 1195460857;
+            public override uint GetHash() => 348708862;
         }
         
         public class TreasureShopOffering : PropertyClass
         {
             
-            public override uint GetHash() => 1196725860;
+            public override uint GetHash() => 349022298;
             [Property(3126438722, 31)] public String m_treasureShopTitle;
             [Property(3358741882, 31)] public List<String> m_treasureSpellNames;
             [Property(1936888726, 31)] public Boolean m_crownShop;
@@ -4782,21 +4782,21 @@ namespace Imlight.Internals
         public class ClientObject : CoreObject
         {
             
-            public override uint GetHash() => 1204241848;
+            public override uint GetHash() => 350837933;
             [Property(210498418, 31)] public UInt64 m_characterId;
         }
         
         public class ControlTickedSlider : ControlSlider
         {
             
-            public override uint GetHash() => 1203158509;
+            public override uint GetHash() => 351609529;
             [Property(1073178596, 135)] public Int32 m_nNumberOfTicks;
         }
         
         public class MoveStateAnimation : PropertyClass
         {
             
-            public override uint GetHash() => 388164603;
+            public override uint GetHash() => 353148171;
             [Property(1430960270, 2097159)] public MoveState m_nMoveState;
             [Property(3179560950, 2097159)] public MoveAnimation m_nMoveAnimation;
             [Property(1757815023, 7)] public String m_sAnimationName;
@@ -4818,7 +4818,7 @@ namespace Imlight.Internals
         public class SpellCardAttachmentBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1089764365;
+            public override uint GetHash() => 354783937;
             [Property(2136089135, 7)] public List<String> m_spellNames;
             [Property(2698500040, 7)] public String m_targetNode;
             [Property(2445636425, 7)] public Vector3 m_offset;
@@ -4831,7 +4831,7 @@ namespace Imlight.Internals
         public class CrownShopLayout : PropertyClass
         {
             
-            public override uint GetHash() => 1085574745;
+            public override uint GetHash() => 355839574;
             [Property(2811511766, 31)] public List<CrownShopCategory> m_categories;
             [Property(895280674, 31)] public List<CrownShopCategoryMenu> m_tabs;
         }
@@ -4839,21 +4839,21 @@ namespace Imlight.Internals
         public class TieredSpellManager : PropertyClass
         {
             
-            public override uint GetHash() => 1103557184;
+            public override uint GetHash() => 359215443;
             [Property(2945256819, 7)] public TieredSpellConfig m_tieredSpellConfig;
         }
         
         public class BehaviorTemplate : PropertyClass
         {
             
-            public override uint GetHash() => 1098972281;
+            public override uint GetHash() => 360231646;
             [Property(3130754092, 7)] public String m_behaviorName;
         }
         
         public class FurnitureInfoBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1114972680;
+            public override uint GetHash() => 361088321;
             [Property(357256328, 7)] public Single m_yaw;
             [Property(896371695, 7)] public Single m_pitch;
             [Property(310020272, 7)] public Single m_roll;
@@ -4869,63 +4869,63 @@ namespace Imlight.Internals
         public class SubscriberOnlyItemsList : PropertyClass
         {
             
-            public override uint GetHash() => 1113361888;
+            public override uint GetHash() => 361737915;
             [Property(1721964880, 31)] public List<UInt64> m_subscriberOnlyItems;
         }
         
         public class ClientDerbyTeleport : DerbyTeleport
         {
             
-            public override uint GetHash() => 1113445281;
+            public override uint GetHash() => 361756972;
         }
         
         public class PhysicsSim : BaseZone.BaseSimulation
         {
             
-            public override uint GetHash() => 1118897596;
+            public override uint GetHash() => 364170412;
         }
         
         public class DdWinAnimMoveZap : WinAnimMoveToLocationSpeed
         {
             
-            public override uint GetHash() => 1124127793;
+            public override uint GetHash() => 366524624;
         }
         
         public class GameEffectInfoList : PropertyClass
         {
             
-            public override uint GetHash() => 1124875940;
+            public override uint GetHash() => 366707306;
             [Property(1747948740, 31)] public List<GameEffectInfo> m_gameEffectInfoList;
         }
         
         public class SpellSelectionWindow : Window
         {
             
-            public override uint GetHash() => 1140030512;
+            public override uint GetHash() => 367284943;
         }
         
         public class BalloonWindow : WindowLayout
         {
             
-            public override uint GetHash() => 1280225452;
+            public override uint GetHash() => 369828328;
         }
         
         public class HideShadowCreatureCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1299028301;
+            public override uint GetHash() => 373549969;
         }
         
         public class ClientCountdownBehavior : CountdownBehavior
         {
             
-            public override uint GetHash() => 1295375549;
+            public override uint GetHash() => 374733549;
         }
         
         public class PetFeedingRewardInfo : PropertyClass
         {
             
-            public override uint GetHash() => 1307164904;
+            public override uint GetHash() => 375586297;
             [Property(1962770606, 7)] public Int32 m_minIntrinsicValue;
             [Property(1061466155, 7)] public Boolean m_bCostsEnergy;
             [Property(1514961588, 7)] public List<String> m_lootTables;
@@ -4934,40 +4934,40 @@ namespace Imlight.Internals
         public class GraphicalPetSnack : GraphicalSpell
         {
             
-            public override uint GetHash() => 1307723936;
+            public override uint GetHash() => 375660523;
         }
         
         public class NPCTrainingWindow : Window
         {
             
-            public override uint GetHash() => 1308256468;
+            public override uint GetHash() => 375789558;
             [Property(1983510297, 7)] public Boolean m_neverGoBackToTraining;
         }
         
         public class TrainingPointLootInfo : LootInfo
         {
             
-            public override uint GetHash() => 1302213392;
+            public override uint GetHash() => 377422087;
             [Property(1003892499, 31)] public Int32 m_trainingPoints;
         }
         
         public class ClientSpellbookBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 1314229553;
+            public override uint GetHash() => 378400400;
             [Property(3285696726, 27)] public List<SpellIDPair> m_spellIDList;
         }
         
         public class KhanDancePlayer : PropertyClass
         {
             
-            public override uint GetHash() => 1311744465;
+            public override uint GetHash() => 378758584;
         }
         
         public class StartingPipEffectTemplate : GameEffectTemplate
         {
             
-            public override uint GetHash() => 1312307081;
+            public override uint GetHash() => 378961954;
             [Property(1346249167, 7)] public Int32 m_pipsGiven;
             [Property(377908508, 7)] public Int32 m_powerPipsGiven;
         }
@@ -4975,13 +4975,13 @@ namespace Imlight.Internals
         public class HousingShopOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 1312628396;
+            public override uint GetHash() => 379046504;
         }
         
         public class PetDerbyObstacleBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 1325114997;
+            public override uint GetHash() => 380003423;
             [Property(650028867, 31)] public Int32 m_laneNumber;
             [Property(649349799, 31)] public Int32 m_distanceFromStart;
         }
@@ -4989,7 +4989,7 @@ namespace Imlight.Internals
         public class ProvideSpellEffect : GameEffectBase
         {
             
-            public override uint GetHash() => 1320943881;
+            public override uint GetHash() => 381128066;
             [Property(2688485244, 31)] public String m_spellName;
             [Property(1269498237, 31)] public Int32 m_numSpells;
             [Property(1764750607, 31)] public String m_vFX;
@@ -5000,13 +5000,13 @@ namespace Imlight.Internals
         public class InteractiveMusicManager : PropertyClass
         {
             
-            public override uint GetHash() => 1333373205;
+            public override uint GetHash() => 382134151;
         }
         
         public class LeashOffsetOverride : PropertyClass
         {
             
-            public override uint GetHash() => 1329858141;
+            public override uint GetHash() => 382307413;
             [Property(1559902382, 2097159)] public LeashOffsetType m_offsetType;
             
             public enum LeashOffsetType
@@ -5021,7 +5021,7 @@ namespace Imlight.Internals
         public class ElixirBehaviorTemplate : TimedItemBehaviorTemplate
         {
             
-            public override uint GetHash() => 1327689028;
+            public override uint GetHash() => 382744210;
             [Property(2119049625, 7)] public List<String> m_typeList;
             [Property(2222557491, 131079)] public String m_equipParticle;
             [Property(2215431638, 131079)] public String m_unequipParticle;
@@ -5036,7 +5036,7 @@ namespace Imlight.Internals
         public class HousingGameKhanDanceTurnData : PropertyClass
         {
             
-            public override uint GetHash() => 1338050140;
+            public override uint GetHash() => 384355412;
             [Property(534186837, 7)] public List<UInt64> m_playerGIDList;
             [Property(1795637418, 7)] public List<Byte> m_playerYawList;
         }
@@ -5044,7 +5044,7 @@ namespace Imlight.Internals
         public class HouseZone : PropertyClass
         {
             
-            public override uint GetHash() => 1334273365;
+            public override uint GetHash() => 385438871;
             [Property(2446900370, 7)] public String m_displayName;
             [Property(2171167736, 7)] public String m_zoneName;
         }
@@ -5052,7 +5052,7 @@ namespace Imlight.Internals
         public class PlayDeck : PropertyClass
         {
             
-            public override uint GetHash() => 1215139832;
+            public override uint GetHash() => 386133565;
             [Property(1977265360, 7)] public List<PlaySpellData> m_deckToSave;
             [Property(3785577598, 7)] public List<PlaySpellData> m_graveYardToSave;
         }
@@ -5060,7 +5060,7 @@ namespace Imlight.Internals
         public class MountItemBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1223236289;
+            public override uint GetHash() => 388156276;
             [Property(2776344943, 2097159)] public eGender m_eGender;
             [Property(963057554, 2097159)] public eRace m_eRace;
             [Property(3097765662, 2097159)] public eMountType m_eMountType;
@@ -5078,20 +5078,20 @@ namespace Imlight.Internals
         public class BattlegroundPolymorphImprovementOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 1220652725;
+            public override uint GetHash() => 388556399;
         }
         
         public class AcousticAreaBehaviorTemplate : AreaBehaviorTemplate
         {
             
-            public override uint GetHash() => 1218304141;
+            public override uint GetHash() => 390069217;
             [Property(1188263221, 2097159)] public AccousticSignature m_accousticSignature;
         }
         
         public class ShowcasedStoreItem : PropertyClass
         {
             
-            public override uint GetHash() => 1227569600;
+            public override uint GetHash() => 391267251;
             [Property(3103016389, 31)] public String m_iconFilename;
             [Property(1075328001, 31)] public UInt64 m_templateID;
         }
@@ -5099,35 +5099,35 @@ namespace Imlight.Internals
         public class CombatGardeningXPEffectInfo : GameEffectInfo
         {
             
-            public override uint GetHash() => 1239465948;
+            public override uint GetHash() => 392208948;
             [Property(755316563, 7)] public Int32 m_xpPercent;
         }
         
         public class ReqSchoolOfFocus : Requirement
         {
             
-            public override uint GetHash() => 1237848261;
+            public override uint GetHash() => 392858099;
             [Property(1597012900, 31)] public String m_magicSchool;
         }
         
         public class CommonElementTable : PropertyClass
         {
             
-            public override uint GetHash() => 1239131513;
+            public override uint GetHash() => 393110686;
             [Property(1900063063, 7)] public List<CharacterElement> m_hairColorList;
         }
         
         public class GameEffectInfo : PropertyClass
         {
             
-            public override uint GetHash() => 1239252388;
+            public override uint GetHash() => 393204394;
             [Property(2029161513, 7)] public String m_effectName;
         }
         
         public class QuickChatEntry : PropertyClass
         {
             
-            public override uint GetHash() => 1236031548;
+            public override uint GetHash() => 393452492;
             [Property(531784794, 7)] public UInt32 m_chatID;
             [Property(2298819451, 7)] public String m_label;
             [Property(1717580128, 7)] public String m_text;
@@ -5145,13 +5145,13 @@ namespace Imlight.Internals
         public class ClientCantripsInvisibilityEffect : CantripsInvisibilityEffect
         {
             
-            public override uint GetHash() => 1247858392;
+            public override uint GetHash() => 394313333;
         }
         
         public class EmoteStateOverrideInfo : ObjStateOverrideInfo
         {
             
-            public override uint GetHash() => 1255602689;
+            public override uint GetHash() => 397226820;
             [Property(2426164182, 31)] public String m_emoteName;
             [Property(2165004143, 31)] public String m_particleAsset;
             [Property(222084781, 31)] public Boolean m_loop;
@@ -5163,20 +5163,20 @@ namespace Imlight.Internals
         public class ClientReagentItem : WizClientObjectItem
         {
             
-            public override uint GetHash() => 1250964432;
+            public override uint GetHash() => 398229815;
             [Property(169215289, 27)] public Int32 m_quantity;
         }
         
         public class GraphicalSpell : Spell
         {
             
-            public override uint GetHash() => 1251008285;
+            public override uint GetHash() => 398244357;
         }
         
         public class PetMatchInfo : ArenaMatchInfo
         {
             
-            public override uint GetHash() => 1251357632;
+            public override uint GetHash() => 398262579;
             [Property(2062988042, 31)] public Int32 m_minRank;
             [Property(1761764108, 31)] public Int32 m_maxRank;
             [Property(1258472859, 31)] public Int32 m_trackRank;
@@ -5187,7 +5187,7 @@ namespace Imlight.Internals
         public class PvPMatchInfo : ArenaMatchInfo
         {
             
-            public override uint GetHash() => 1251451296;
+            public override uint GetHash() => 398288299;
             [Property(1496818518, 31)] public Int32 m_minLevel;
             [Property(146363288, 31)] public Int32 m_maxLevel;
             [Property(312519798, 31)] public UInt32 m_timeLimitSec;
@@ -5197,14 +5197,14 @@ namespace Imlight.Internals
         public class MinigameConfig : PropertyClass
         {
             
-            public override uint GetHash() => 1952739516;
+            public override uint GetHash() => 402756076;
             [Property(2928955645, 7)] public List<MinigameInfo> m_minigames;
         }
         
         public class UserCapabilitiesInfo : PropertyClass
         {
             
-            public override uint GetHash() => 1951070136;
+            public override uint GetHash() => 403320877;
             [Property(3156887154, 31)] public String m_macAddress;
             [Property(852349606, 31)] public UInt16 m_systemMemory;
             [Property(1250782497, 31)] public UInt16 m_freeDiskSpace;
@@ -5248,19 +5248,19 @@ namespace Imlight.Internals
         public class WizAvatarItemInfo : AvatarItemInfo
         {
             
-            public override uint GetHash() => 1961472732;
+            public override uint GetHash() => 404939124;
         }
         
         public class ClientMakeTargetableCinematicAction : MakeTargetableCinematicAction
         {
             
-            public override uint GetHash() => 1960525557;
+            public override uint GetHash() => 405684863;
         }
         
         public class GameEffectContainer : PropertyClass
         {
             
-            public override uint GetHash() => 1986452013;
+            public override uint GetHash() => 411122505;
             [Property(3233153287, 31)] public List<GameEffectBase> m_publicEffects;
             [Property(2650414414, 7)] public List<GameEffectBase> m_myEffects;
         }
@@ -5268,43 +5268,43 @@ namespace Imlight.Internals
         public class ReqHighestCharacterLevelOnAccount : ReqNumeric
         {
             
-            public override uint GetHash() => 1985899604;
+            public override uint GetHash() => 412030678;
         }
         
         public class UniverseMapOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 1996376100;
+            public override uint GetHash() => 413605834;
         }
         
         public class ClientPetAnimateActorCinematicAction : PetAnimateActorCinematicAction
         {
             
-            public override uint GetHash() => 1991928700;
+            public override uint GetHash() => 414586652;
         }
         
         public class EnergyGlobe : StatGlobe
         {
             
-            public override uint GetHash() => 2000949388;
+            public override uint GetHash() => 415861216;
         }
         
         public class SpellBookPrefsWindow : Window
         {
             
-            public override uint GetHash() => 2011501072;
+            public override uint GetHash() => 417450311;
         }
         
         public class NewFriendsListWindow : Window
         {
             
-            public override uint GetHash() => 2009348008;
+            public override uint GetHash() => 417955881;
         }
         
         public class BracketTeam : PropertyClass
         {
             
-            public override uint GetHash() => 1884493097;
+            public override uint GetHash() => 420235402;
             [Property(725139968, 31)] public UInt64 m_matchTeamGID;
             [Property(1737359170, 31)] public MatchTeam m_matchTeam;
             [Property(1049128778, 31)] public UInt32 m_points;
@@ -5319,7 +5319,7 @@ namespace Imlight.Internals
         public class BracketInfo : PropertyClass
         {
             
-            public override uint GetHash() => 1885077185;
+            public override uint GetHash() => 420377204;
             [Property(1674798632, 63)] public UInt64 m_bracketGID;
             [Property(1339404213, 63)] public UInt64 m_creatorActorGID;
             [Property(1005482776, 31)] public UInt64 m_creatorBracketGID;
@@ -5378,14 +5378,14 @@ namespace Imlight.Internals
         public class HardwareStyle : PropertyClass
         {
             
-            public override uint GetHash() => 1883107632;
+            public override uint GetHash() => 420999567;
             [Property(2831338361, 135)] public String m_cursorFile;
         }
         
         public class GameEffectTimerDisplayBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1893732504;
+            public override uint GetHash() => 421562853;
             [Property(2029161513, 7)] public String m_effectName;
             [Property(1720060457, 7)] public String m_textKey;
             [Property(602977104, 7)] public Single m_height;
@@ -5399,26 +5399,26 @@ namespace Imlight.Internals
         public class CastleToursBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 1895369821;
+            public override uint GetHash() => 421973717;
         }
         
         public class GardenLevelControl : Window
         {
             
-            public override uint GetHash() => 1896231356;
+            public override uint GetHash() => 425263532;
         }
         
         public class MadlibArgT_std_string_const : MadlibArg
         {
             
-            public override uint GetHash() => 1414270508;
+            public override uint GetHash() => 427079144;
             [Property(2376191783, 31)] public String m_madlibArgument;
         }
         
         public class CharacterElement : PropertyClass
         {
             
-            public override uint GetHash() => 1905151504;
+            public override uint GetHash() => 427499079;
             [Property(2195875046, 7)] public String m_elementName;
             [Property(2116426332, 131079)] public String m_assetFilename;
             [Property(1734031816, 7)] public String m_geometryName;
@@ -5438,7 +5438,7 @@ namespace Imlight.Internals
         public class CinematicActorBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 1919856469;
+            public override uint GetHash() => 428025367;
             [Property(1669140041, 31)] public Vector3 m_startLocation;
             [Property(2653859938, 31)] public Vector3 m_targetLocation;
             [Property(3506101791, 31)] public String m_rootAsset;
@@ -5447,7 +5447,7 @@ namespace Imlight.Internals
         public class CastleTourLeaderboardUpdate : PropertyClass
         {
             
-            public override uint GetHash() => 1917173196;
+            public override uint GetHash() => 428466864;
             [Property(818498005, 7)] public List<CastleTourLeaderboardEntry> m_entryList;
             [Property(683398282, 7)] public Int32 m_leaderboardSize;
         }
@@ -5455,7 +5455,7 @@ namespace Imlight.Internals
         public class BountyGoalTemplate : GoalTemplate
         {
             
-            public override uint GetHash() => 1916173033;
+            public override uint GetHash() => 429200250;
             [Property(3044559358, 7)] public List<String> m_npcAdjectives;
             [Property(1943105087, 7)] public Int32 m_bountyTotal;
             [Property(3703892338, 2097159)] public BOUNTY_TYPE m_bountyType;
@@ -5471,7 +5471,7 @@ namespace Imlight.Internals
         public class QuestListPage_DialogDataCacheEntry : PropertyClass
         {
             
-            public override uint GetHash() => 1761244949;
+            public override uint GetHash() => 429406503;
             [Property(440960800, 7)] public ActorDialog m_dialog;
             [Property(774266758, 7)] public Int32 m_goalCount;
         }
@@ -5479,7 +5479,7 @@ namespace Imlight.Internals
         public class PersonaGoalTemplate : GoalTemplate
         {
             
-            public override uint GetHash() => 1927030233;
+            public override uint GetHash() => 430933174;
             [Property(2514452244, 268435463)] public String m_personaName;
             [Property(853266164, 7)] public Boolean m_usePatron;
         }
@@ -5487,39 +5487,39 @@ namespace Imlight.Internals
         public class ActorCinematicAction : CinematicAction
         {
             
-            public override uint GetHash() => 1921175609;
+            public override uint GetHash() => 431503822;
             [Property(2285866132, 7)] public String m_actor;
         }
         
         public class ObjectLocationList : PropertyClass
         {
             
-            public override uint GetHash() => 1931117188;
+            public override uint GetHash() => 433991010;
             [Property(931236576, 7)] public List<ObjectLocation> m_objectList;
         }
         
         public class SortedPot : PropertyClass
         {
             
-            public override uint GetHash() => 1938090073;
+            public override uint GetHash() => 435795926;
         }
         
         public class CastleGamesBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1938779005;
+            public override uint GetHash() => 435902237;
         }
         
         public class HousingTextureBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 2096555613;
+            public override uint GetHash() => 438645845;
         }
         
         public class InfractionPenaltyInfo : PropertyClass
         {
             
-            public override uint GetHash() => 2097818592;
+            public override uint GetHash() => 442107707;
             [Property(1071217084, 7)] public Single m_addAtPointValue;
             [Property(2112196961, 7)] public Single m_removeAtPointValue;
             [Property(3042809453, 7)] public String m_lifespan;
@@ -5528,7 +5528,7 @@ namespace Imlight.Internals
         public class CantripsSpellTemplate : SpellTemplate
         {
             
-            public override uint GetHash() => 2110225624;
+            public override uint GetHash() => 443110133;
             [Property(3328314982, 2097159)] public CantripsSpellType m_cantripsSpellType;
             [Property(1236111677, 7)] public Int32 m_energyCost;
             [Property(3393275788, 131079)] public List<String> m_animationKFMs;
@@ -5552,7 +5552,7 @@ namespace Imlight.Internals
         public class CharMap : PropertyClass
         {
             
-            public override uint GetHash() => 2131227337;
+            public override uint GetHash() => 450457970;
             [Property(820631632, 7)] public UInt16 m_src;
             [Property(820615347, 7)] public UInt16 m_dst;
         }
@@ -5560,7 +5560,7 @@ namespace Imlight.Internals
         public class SavedCharacterLists : PropertyClass
         {
             
-            public override uint GetHash() => 2142692264;
+            public override uint GetHash() => 452277545;
             [Property(484937069, 7)] public List<SavedCharacter> m_boyCharacterList;
             [Property(2372941617, 7)] public List<SavedCharacter> m_girlCharacterList;
         }
@@ -5568,7 +5568,7 @@ namespace Imlight.Internals
         public class ZoneData : PropertyClass
         {
             
-            public override uint GetHash() => 2140949561;
+            public override uint GetHash() => 452959950;
             [Property(2656861130, 2097159)] public Type m_nType;
             [Property(2171167736, 134217735)] public String m_zoneName;
             [Property(1962339438, 8388615)] public String m_zoneDisplayName;
@@ -5620,28 +5620,28 @@ namespace Imlight.Internals
         public class MadlibBlockList : PropertyClass
         {
             
-            public override uint GetHash() => 2020400953;
+            public override uint GetHash() => 453229070;
             [Property(2554334098, 31)] public List<MadlibBlock> m_madlibBlocks;
         }
         
         public class CountdownBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 2015771520;
+            public override uint GetHash() => 454099747;
             [Property(310085638, 31)] public Single m_time;
         }
         
         public class RidableBehaviorBase : BehaviorInstance
         {
             
-            public override uint GetHash() => 2016205064;
+            public override uint GetHash() => 454278017;
             [Property(1913541510, 65543)] public List<UInt64> m_assignedPlayers;
         }
         
         public class PetActorResults : MatchActorResult
         {
             
-            public override uint GetHash() => 2015011713;
+            public override uint GetHash() => 454960420;
             [Property(1238925387, 31)] public UInt32 m_nFinishTime;
             [Property(925961299, 31)] public UInt32 m_nIndex;
         }
@@ -5649,7 +5649,7 @@ namespace Imlight.Internals
         public class Camera : PropertyClass
         {
             
-            public override uint GetHash() => 2029798397;
+            public override uint GetHash() => 455580989;
             [Property(2448785881, 7)] public Vector3 m_coord;
             [Property(2148807035, 7)] public Quaternion m_quat;
             [Property(1746928484, 7)] public Matrix m_mat;
@@ -5658,20 +5658,20 @@ namespace Imlight.Internals
         public class ShowcasedStoreItemList : PropertyClass
         {
             
-            public override uint GetHash() => 2032899284;
+            public override uint GetHash() => 458385654;
             [Property(1667746752, 31)] public List<ShowcasedStoreItem> m_items;
         }
         
         public class ClientUntargetableCinematicAction : UntargetableCinematicAction
         {
             
-            public override uint GetHash() => 2045103041;
+            public override uint GetHash() => 459407156;
         }
         
         public class ObjectLocation : PropertyClass
         {
             
-            public override uint GetHash() => 2043396484;
+            public override uint GetHash() => 459963810;
             [Property(1286746870, 7)] public UInt32 m_templateID;
             [Property(1962339438, 7)] public String m_zoneDisplayName;
             [Property(1846757476, 7)] public String m_worldName;
@@ -5681,26 +5681,26 @@ namespace Imlight.Internals
         public class ClientUnPolymorphCinematicAction : UnPolymorphCinematicAction
         {
             
-            public override uint GetHash() => 2042057916;
+            public override uint GetHash() => 460675308;
         }
         
         public class ClientChangeActorStateCinematicAction : ChangeActorStateCinematicAction
         {
             
-            public override uint GetHash() => 2042086256;
+            public override uint GetHash() => 460684575;
         }
         
         public class GoldLootInfo : LootInfo
         {
             
-            public override uint GetHash() => 2054345332;
+            public override uint GetHash() => 461650270;
             [Property(754429876, 31)] public Int32 m_goldAmount;
         }
         
         public class SpellListControl : Window
         {
             
-            public override uint GetHash() => 2061327320;
+            public override uint GetHash() => 464509749;
             [Property(1135567057, 7)] public Point m_cardSize;
             [Property(3187881255, 7)] public Point m_spacing;
             [Property(1902151287, 7)] public List<Rectangle> m_holes;
@@ -5709,7 +5709,7 @@ namespace Imlight.Internals
         public class SG_GameAction_PlayEffect : SG_GameAction
         {
             
-            public override uint GetHash() => 2055300877;
+            public override uint GetHash() => 465097729;
             [Property(1656480079, 7)] public List<String> m_graphicArguments;
             [Property(1516804616, 7)] public Single m_fMinimumTime;
             [Property(722455866, 7)] public Boolean m_bDisplaysScore;
@@ -5719,13 +5719,13 @@ namespace Imlight.Internals
         public class ClientActivateHangingEffectCinematicAction : ActivateHangingEffectCinematicAction
         {
             
-            public override uint GetHash() => 2071901228;
+            public override uint GetHash() => 466034888;
         }
         
         public class PetStatModificationSet : PropertyClass
         {
             
-            public override uint GetHash() => 2065757593;
+            public override uint GetHash() => 466661542;
             [Property(1717359772, 8388639)] public String m_name;
             [Property(2096386993, 31)] public List<PetStatModification> m_modifications;
             [Property(2307196329, 131103)] public String m_scene;
@@ -5735,13 +5735,13 @@ namespace Imlight.Internals
         public class NullAction : PathBehaviorTemplate.Action
         {
             
-            public override uint GetHash() => 2076264493;
+            public override uint GetHash() => 468246473;
         }
         
         public class StartingPipEffect : GameEffectBase
         {
             
-            public override uint GetHash() => 1693914448;
+            public override uint GetHash() => 472205463;
             [Property(1346249167, 31)] public Int32 m_pipsGiven;
             [Property(377908508, 31)] public Int32 m_powerPipsGiven;
         }
@@ -5749,7 +5749,7 @@ namespace Imlight.Internals
         public class CastleMagicItem : PropertyClass
         {
             
-            public override uint GetHash() => 1687276849;
+            public override uint GetHash() => 473759376;
             [Property(2301988666, 7)] public UInt32 m_id;
             [Property(1005801050, 7)] public UInt32 m_flags;
             [Property(3719762834, 7)] public Vector3 m_movedPosition;
@@ -5760,56 +5760,56 @@ namespace Imlight.Internals
         public class NaturalSummonCinematicStageTemplate : CinematicStageTemplate
         {
             
-            public override uint GetHash() => 1688053277;
+            public override uint GetHash() => 473949253;
             [Property(2307644996, 131079)] public String m_sound;
         }
         
         public class CantripsInvisibilityEffect : GameEffectBase
         {
             
-            public override uint GetHash() => 1701999121;
+            public override uint GetHash() => 474222920;
         }
         
         public class ClientDynaModBehavior : DynaModBehavior
         {
             
-            public override uint GetHash() => 1702663524;
+            public override uint GetHash() => 474458266;
         }
         
         public class RecreateNPCActorCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1697945144;
+            public override uint GetHash() => 475375693;
         }
         
         public class QuestEffectTemplate : ContainerEffectTemplate
         {
             
-            public override uint GetHash() => 1695298257;
+            public override uint GetHash() => 475758968;
         }
         
         public class CantripsInvisibilityEffectInfo : GameEffectInfo
         {
             
-            public override uint GetHash() => 1709716917;
+            public override uint GetHash() => 476217519;
         }
         
         public class ChatSpamHelper : PropertyClass
         {
             
-            public override uint GetHash() => 1708947461;
+            public override uint GetHash() => 477074371;
         }
         
         public class ClientBattlegroundPlayerStatsManager : BattlegroundPlayerStatsManager
         {
             
-            public override uint GetHash() => 1711485272;
+            public override uint GetHash() => 479740309;
         }
         
         public class GardenPlant : PropertyClass
         {
             
-            public override uint GetHash() => 1725250709;
+            public override uint GetHash() => 481149671;
             [Property(3697900983, 31)] public Vector3 m_position;
             [Property(1286746870, 31)] public UInt32 m_templateID;
             [Property(752026046, 31)] public UInt32 m_nextStageTimeSeconds;
@@ -5833,13 +5833,13 @@ namespace Imlight.Internals
         public class StatisticEffectTemplate : GameEffectTemplate
         {
             
-            public override uint GetHash() => 1722632613;
+            public override uint GetHash() => 481550251;
         }
         
         public class WinAnimContainer : WindowAnimation
         {
             
-            public override uint GetHash() => 1730854596;
+            public override uint GetHash() => 483533426;
             [Property(1941062728, 135)] public List<WindowAnimation> m_winAnimList;
             [Property(2131020845, 135)] public Boolean m_bLooping;
         }
@@ -5847,14 +5847,14 @@ namespace Imlight.Internals
         public class WizClientLeashedObject : WizClientObject
         {
             
-            public override uint GetHash() => 1730980528;
+            public override uint GetHash() => 483633007;
             [Property(603235945, 31)] public Boolean m_leashed;
         }
         
         public class LocaleMapping : PropertyClass
         {
             
-            public override uint GetHash() => 1731209269;
+            public override uint GetHash() => 483690447;
             [Property(3265100503, 7)] public String m_wadFile;
             [Property(1453969174, 7)] public Boolean m_fullReplacement;
         }
@@ -5862,7 +5862,7 @@ namespace Imlight.Internals
         public class DerbyPlayerContainer : PropertyClass
         {
             
-            public override uint GetHash() => 1728338385;
+            public override uint GetHash() => 484023224;
             [Property(1371870313, 31)] public List<PetDerbyRacerState> m_racerStates;
             [Property(2589589540, 31)] public List<PetDerbyRacerStats> m_racerStats;
             [Property(1354946171, 31)] public UInt32 m_numberOfLaps;
@@ -5871,52 +5871,52 @@ namespace Imlight.Internals
         public class ShadowSelfCinematicAction : CinematicAction
         {
             
-            public override uint GetHash() => 1741387000;
+            public override uint GetHash() => 485118205;
         }
         
         public class CastleToursOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 1738458725;
+            public override uint GetHash() => 486489179;
         }
         
         public class JewelSocketBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1617166848;
+            public override uint GetHash() => 486640963;
             [Property(2355333159, 31)] public List<JewelSocket> m_jewelSockets;
         }
         
         public class MoveCommandEuler : MoveController.MoveCommand
         {
             
-            public override uint GetHash() => 1618422933;
+            public override uint GetHash() => 486885095;
             [Property(3248981887, 31)] public Vector3 m_Orientation;
         }
         
         public class ObstacleCoursePusherBehaviorTemplate : ObstacleCourseObstaclePathBaseTemplate
         {
             
-            public override uint GetHash() => 1623660936;
+            public override uint GetHash() => 489245601;
             [Property(1487918739, 7)] public WeightedList m_changeDirectionSoundList;
         }
         
         public class ClientSpellCardAttachmentBehavior : SpellCardAttachmentBehavior
         {
             
-            public override uint GetHash() => 1641637777;
+            public override uint GetHash() => 493802536;
         }
         
         public class ReqHealthPercent : ReqNumeric
         {
             
-            public override uint GetHash() => 1638550225;
+            public override uint GetHash() => 494018424;
         }
         
         public class BreadCrumbBehaviorBase : BehaviorInstance
         {
             
-            public override uint GetHash() => 1651262408;
+            public override uint GetHash() => 495164721;
             [Property(2100995821, 65543)] public UInt32 m_breadCrumbNumber;
             [Property(1574152046, 65543)] public List<UInt64> m_equippedPetGIDList;
             [Property(592278117, 65543)] public List<UInt16> m_equippedBreadCrumbIDList;
@@ -5926,7 +5926,7 @@ namespace Imlight.Internals
         public class MountItemBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 1646671896;
+            public override uint GetHash() => 496042949;
             [Property(1220139473, 65536)] public UInt64 m_housingMountOriginalGID;
             [Property(525135139, 65536)] public Int32 m_housingPetPrimaryColor;
             [Property(165011646, 65536)] public Int32 m_housingPetPattern;
@@ -5936,14 +5936,14 @@ namespace Imlight.Internals
         public class InteractableOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 1657370629;
+            public override uint GetHash() => 497734595;
             [Property(276287019, 31)] public Int32 m_optionIndex;
         }
         
         public class SigilZoneInfo : PropertyClass
         {
             
-            public override uint GetHash() => 1658385012;
+            public override uint GetHash() => 497987934;
             [Property(2171167736, 7)] public String m_zoneName;
             [Property(285381904, 7)] public Int32 m_maximumLevel;
         }
@@ -5951,7 +5951,7 @@ namespace Imlight.Internals
         public class HousingGameObjectReference : PropertyClass
         {
             
-            public override uint GetHash() => 1655516085;
+            public override uint GetHash() => 498321199;
             [Property(1907651624, 7)] public UInt64 m_zoneGID;
             [Property(2037310403, 7)] public UInt64 m_objectGID;
         }
@@ -5959,72 +5959,72 @@ namespace Imlight.Internals
         public class ClientAuctionHouseOption : AuctionHouseOption
         {
             
-            public override uint GetHash() => 1660976897;
+            public override uint GetHash() => 500732420;
         }
         
         public class PhysicsSimMassCylinder : PhysicsSimMassSphere
         {
             
-            public override uint GetHash() => 1676371372;
+            public override uint GetHash() => 501372072;
         }
         
         public class OrderedWorlds : PropertyClass
         {
             
-            public override uint GetHash() => 1673947965;
+            public override uint GetHash() => 501815053;
             [Property(1846654431, 7)] public List<String> m_worldKeys;
         }
         
         public class CollisionBehaviorClient : CollisionBehavior
         {
             
-            public override uint GetHash() => 1669515060;
+            public override uint GetHash() => 502807566;
         }
         
         public class ReqAddHousingItemSlots : Requirement
         {
             
-            public override uint GetHash() => 1817208272;
+            public override uint GetHash() => 504140983;
         }
         
         public class TreasureCardVaultBehaviorBase : BehaviorInstance
         {
             
-            public override uint GetHash() => 1814657596;
+            public override uint GetHash() => 504550220;
             [Property(2688126101, 575)] public String m_spellData;
         }
         
         public class HousingMusicPlayerBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1827196260;
+            public override uint GetHash() => 505593498;
             [Property(492667575, 7)] public Boolean m_combatMusicPlayer;
         }
         
         public class ClientBGPolymorphSelectBehavior : BGPolymorphSelectBehavior
         {
             
-            public override uint GetHash() => 1823485709;
+            public override uint GetHash() => 506758657;
         }
         
         public class ServerSyncCinematicAction : CinematicAction
         {
             
-            public override uint GetHash() => 1835178936;
+            public override uint GetHash() => 507521837;
             [Property(1564059786, 7)] public String m_eventToSend;
         }
         
         public class PlayerInteractiveMusicLoops : PropertyClass
         {
             
-            public override uint GetHash() => 1831426776;
+            public override uint GetHash() => 508746613;
             [Property(2520861630, 65543)] public List<InteractiveMusicLoop> m_playerRecordedMusicLoopList;
         }
         
         public class ObstacleCourseCatapultBehaviorTemplate : ObstacleCourseObstacleBehaviorTemplate
         {
             
-            public override uint GetHash() => 1829648785;
+            public override uint GetHash() => 509281192;
             [Property(2117614265, 7)] public Double m_rate;
             [Property(2566917224, 7)] public Double m_initialYaw;
             [Property(3890998489, 7)] public Double m_penaltyTime;
@@ -6040,39 +6040,39 @@ namespace Imlight.Internals
         public class DamageEventCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1830209116;
+            public override uint GetHash() => 509426772;
         }
         
         public class ClientPetSnackBehavior : PetSnackBehavior
         {
             
-            public override uint GetHash() => 1830230848;
+            public override uint GetHash() => 509430547;
         }
         
         public class WhirlyBurlyGameList : PropertyClass
         {
             
-            public override uint GetHash() => 1848478792;
+            public override uint GetHash() => 513011409;
             [Property(1597138179, 7)] public List<WhirlyBurlyGameInfo> m_whirlyBurlyGameList;
         }
         
         public class CompassSystem : PropertyClass
         {
             
-            public override uint GetHash() => 1847392949;
+            public override uint GetHash() => 513782639;
             [Property(3408067289, 7)] public List<CompassMarker> m_markers;
         }
         
         public class ClientPlayGraphicOnSigilCinematicAction : PlayGraphicOnSigilCinematicAction
         {
             
-            public override uint GetHash() => 1857725728;
+            public override uint GetHash() => 515253387;
         }
         
         public class BadgeFilterDescription : PropertyClass
         {
             
-            public override uint GetHash() => 1854310713;
+            public override uint GetHash() => 515452814;
             [Property(1798118690, 7)] public String m_filterName;
             [Property(1797941258, 7)] public String m_filterIcon;
             [Property(3023276954, 7)] public String m_displayKey;
@@ -6082,13 +6082,13 @@ namespace Imlight.Internals
         public class PetInfoControl : Window
         {
             
-            public override uint GetHash() => 1867753977;
+            public override uint GetHash() => 516712382;
         }
         
         public class CinematicTemplateAnimationData : PropertyClass
         {
             
-            public override uint GetHash() => 1864620433;
+            public override uint GetHash() => 516979624;
             [Property(3393486152, 7)] public String m_animationPath;
             [Property(2307644996, 7)] public String m_sound;
             [Property(759698745, 7)] public Single m_length;
@@ -6098,7 +6098,7 @@ namespace Imlight.Internals
         public class CinematicActorAnimationData : PropertyClass
         {
             
-            public override uint GetHash() => 1876708597;
+            public override uint GetHash() => 519020287;
             [Property(3393414044, 7)] public String m_animationName;
             [Property(3393486152, 7)] public String m_animationPath;
             [Property(2307644996, 7)] public String m_sound;
@@ -6107,7 +6107,7 @@ namespace Imlight.Internals
         public class SG_GameScoreMultiplier : PropertyClass
         {
             
-            public override uint GetHash() => 1752577657;
+            public override uint GetHash() => 520421470;
             [Property(2446900370, 7)] public String m_displayName;
             [Property(157286404, 7)] public Single m_fMultiplier;
             [Property(1184350616, 7)] public Int32 m_category;
@@ -6117,20 +6117,20 @@ namespace Imlight.Internals
         public class DerbyModifyRate : DerbyEffect
         {
             
-            public override uint GetHash() => 1747133861;
+            public override uint GetHash() => 521159851;
             [Property(797681786, 31)] public Int32 m_nRateChange;
         }
         
         public class AquariumBehavior : AquariumBehaviorBase
         {
             
-            public override uint GetHash() => 1767121621;
+            public override uint GetHash() => 525174135;
         }
         
         public class LoginHistoryEntry : PropertyClass
         {
             
-            public override uint GetHash() => 1767876312;
+            public override uint GetHash() => 525296757;
             [Property(210498386, 7)] public UInt64 m_characterID;
             [Property(2010681975, 7)] public Int64 m_localTime;
         }
@@ -6138,7 +6138,7 @@ namespace Imlight.Internals
         public class AuctionHouseEntry : PropertyClass
         {
             
-            public override uint GetHash() => 1764126028;
+            public override uint GetHash() => 525407888;
             [Property(1075328001, 31)] public UInt64 m_templateID;
             [Property(1454578518, 31)] public Int32 m_numForSale;
             [Property(1746297085, 31)] public Int32 m_buyPrice;
@@ -6148,14 +6148,14 @@ namespace Imlight.Internals
         public class MaxGoldLootInfo : LootInfo
         {
             
-            public override uint GetHash() => 1765496116;
+            public override uint GetHash() => 525752462;
             [Property(667552370, 31)] public Int32 m_maxGoldToAdd;
         }
         
         public class CombatHealthListObj : PropertyClass
         {
             
-            public override uint GetHash() => 1761888944;
+            public override uint GetHash() => 525967215;
             [Property(2874774642, 7)] public List<ParticipantParameter> m_healthList;
             [Property(847791408, 7)] public UInt64 m_duelID;
         }
@@ -6163,20 +6163,20 @@ namespace Imlight.Internals
         public class LeaderboardEntryList : PropertyClass
         {
             
-            public override uint GetHash() => 1763191837;
+            public override uint GetHash() => 526288581;
             [Property(1753877873, 7)] public List<LeaderboardEntry> m_entryList;
         }
         
         public class BreadCrumbBehavior : BreadCrumbBehaviorBase
         {
             
-            public override uint GetHash() => 1785515224;
+            public override uint GetHash() => 528727797;
         }
         
         public class PetJewelBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1790452385;
+            public override uint GetHash() => 532055404;
             [Property(1985615789, 7)] public List<String> m_petTalentName;
             [Property(1317483893, 7)] public Byte m_minPetLevel;
         }
@@ -6184,7 +6184,7 @@ namespace Imlight.Internals
         public class ClientWizPlayerNameBehavior : NameOverrideBehavior
         {
             
-            public override uint GetHash() => 1798653160;
+            public override uint GetHash() => 534109433;
             [Property(1772225898, 31)] public UInt32 m_nameKeys;
             [Property(2040475372, 31)] public Boolean m_useRank;
             [Property(2776344943, 2097183)] public eGender m_eGender;
@@ -6198,7 +6198,7 @@ namespace Imlight.Internals
         public class GradientWidgetBackground : WidgetBackground
         {
             
-            public override uint GetHash() => 1798845728;
+            public override uint GetHash() => 534151307;
             [Property(2827413723, 262151)] public Color3 m_TopLeftColor;
             [Property(1853016654, 262151)] public Color3 m_TopRightColor;
             [Property(1172117245, 262151)] public Color3 m_BottomLeftColor;
@@ -6208,19 +6208,19 @@ namespace Imlight.Internals
         public class ClientTurnIndicatorCinematicAction : TurnIndicatorCinematicAction
         {
             
-            public override uint GetHash() => 1809464077;
+            public override uint GetHash() => 535692033;
         }
         
         public class ActorDialogListBase : PropertyClass
         {
             
-            public override uint GetHash() => 1808567304;
+            public override uint GetHash() => 538202429;
         }
         
         public class WindowStyle : PropertyClass
         {
             
-            public override uint GetHash() => 1808722619;
+            public override uint GetHash() => 538232979;
             [Property(1628562023, 135)] public Material m_pBackMaterial;
             [Property(1067686307, 135)] public Font m_pFont;
             [Property(1523900782, 135)] public Font m_pLargeFont;
@@ -6241,13 +6241,13 @@ namespace Imlight.Internals
         public class ClientCombatParticipant : CombatParticipant
         {
             
-            public override uint GetHash() => 1810992875;
+            public override uint GetHash() => 538644871;
         }
         
         public class HousingLayoutObject : PropertyClass
         {
             
-            public override uint GetHash() => 1797848419;
+            public override uint GetHash() => 539839845;
             [Property(1286746870, 7)] public UInt32 m_templateID;
             [Property(837995844, 7)] public Single m_positionX;
             [Property(837995845, 7)] public Single m_positionY;
@@ -6258,7 +6258,7 @@ namespace Imlight.Internals
         public class ResAddReagent : ResultSourceType
         {
             
-            public override uint GetHash() => 1783457715;
+            public override uint GetHash() => 544484305;
             [Property(1075328001, 33554439)] public UInt64 m_templateID;
             [Property(169215289, 7)] public Int32 m_quantity;
         }
@@ -6266,7 +6266,7 @@ namespace Imlight.Internals
         public class ControlDecalButton : ControlButton
         {
             
-            public override uint GetHash() => 1786077096;
+            public override uint GetHash() => 544875989;
             [Property(2204742880, 135)] public Material m_pDecal;
             [Property(2053465718, 262279)] public Color3 m_DecalColor;
             [Property(1942612892, 135)] public Rectangle m_DecalOffset;
@@ -6280,13 +6280,13 @@ namespace Imlight.Internals
         public class PathActionDespawn : PathBehaviorTemplate.Action
         {
             
-            public override uint GetHash() => 1772061272;
+            public override uint GetHash() => 545297065;
         }
         
         public class RegistrarOptions : PropertyClass
         {
             
-            public override uint GetHash() => 1772965996;
+            public override uint GetHash() => 546055718;
             [Property(1945607055, 31)] public List<SchoolOfFocusOption> m_focusOptions;
             [Property(755264106, 31)] public List<TitleOption> m_titleOptions;
             [Property(1800324389, 31)] public UInt32 m_currentSchoolID;
@@ -6296,13 +6296,13 @@ namespace Imlight.Internals
         public class RegistrarOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 1773127788;
+            public override uint GetHash() => 546078758;
         }
         
         public class ClientEquipmentBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 1772436224;
+            public override uint GetHash() => 546192515;
             [Property(1983655699, 27)] public List<CoreObject> m_itemList;
             [Property(3213026923, 27)] public List<EquippedSlotInfo> m_slotList;
             [Property(1693467991, 31)] public List<EquippedItemInfo> m_publicItemList;
@@ -6311,14 +6311,14 @@ namespace Imlight.Internals
         public class PetAnimateActorCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1776753535;
+            public override uint GetHash() => 547271908;
             [Property(3431428731, 7)] public String m_animation;
         }
         
         public class WinAnimAlphaFade : WindowAnimation
         {
             
-            public override uint GetHash() => 1755724404;
+            public override uint GetHash() => 550436000;
             [Property(1056288476, 135)] public Single m_fCycleTime;
             [Property(1862647402, 135)] public Single m_fElapsedTime;
             [Property(793791523, 135)] public Boolean m_cycle;
@@ -6328,13 +6328,13 @@ namespace Imlight.Internals
         public class CastleMagicTutorialWindow : PropertyClass
         {
             
-            public override uint GetHash() => 1760312039;
+            public override uint GetHash() => 551320710;
         }
         
         public class HatchmakingPet : PropertyClass
         {
             
-            public override uint GetHash() => 1749724180;
+            public override uint GetHash() => 552982840;
             [Property(826202069, 7)] public UInt64 m_petGID;
             [Property(819371137, 7)] public UInt32 m_ageOutTime;
             [Property(902182593, 7)] public UInt32 m_cooldownTime;
@@ -6347,31 +6347,31 @@ namespace Imlight.Internals
         public class PlacementDisplayItem : PropertyClass
         {
             
-            public override uint GetHash() => 1752924971;
+            public override uint GetHash() => 553226999;
         }
         
         public class PhysicsSimMassSphere : PhysicsSimMass
         {
             
-            public override uint GetHash() => 1838183940;
+            public override uint GetHash() => 562261948;
         }
         
         public class ReagentLootInfo : ItemLootInfo
         {
             
-            public override uint GetHash() => 1839935919;
+            public override uint GetHash() => 562937432;
         }
         
         public class CrownsRewardsSchedule : PropertyClass
         {
             
-            public override uint GetHash() => 1833801619;
+            public override uint GetHash() => 565450713;
         }
         
         public class CursorStyleManager : PropertyClass
         {
             
-            public override uint GetHash() => 1833054711;
+            public override uint GetHash() => 565706306;
             [Property(1643631551, 135)] public CursorStyle m_defaultStyle;
             [Property(1639869163, 135)] public List<CursorStyle> m_cursorStyles;
         }
@@ -6379,14 +6379,14 @@ namespace Imlight.Internals
         public class RotateActorCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1816039971;
+            public override uint GetHash() => 568907445;
             [Property(1518691890, 7)] public Single m_deltaYaw;
         }
         
         public class PetActor : MatchActor
         {
             
-            public override uint GetHash() => 1814157843;
+            public override uint GetHash() => 569312441;
             [Property(1575131408, 31)] public UInt64 m_nTemplateID;
             [Property(1440551274, 31)] public Byte m_nRank;
             [Property(806009486, 31)] public UInt64 m_petID;
@@ -6397,7 +6397,7 @@ namespace Imlight.Internals
         public class PvPActor : MatchActor
         {
             
-            public override uint GetHash() => 1814055027;
+            public override uint GetHash() => 569335841;
             [Property(773570858, 31)] public Byte m_pvpStatus;
             [Property(564443897, 31)] public Int16 m_gender;
             [Property(801285362, 31)] public Int32 m_level;
@@ -6408,14 +6408,14 @@ namespace Imlight.Internals
         public class FaceTargetTeamActorCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1819456087;
+            public override uint GetHash() => 570154666;
             [Property(1390351511, 7)] public Boolean m_bCaster;
         }
         
         public class BattlegroundPOIData : PropertyClass
         {
             
-            public override uint GetHash() => 1662623647;
+            public override uint GetHash() => 572593628;
             [Property(2082807927, 7)] public UInt32 m_poiType;
             [Property(1717182340, 7)] public String m_icon;
             [Property(257032380, 7)] public UInt64 m_objectID;
@@ -6426,7 +6426,7 @@ namespace Imlight.Internals
         public class ControlTileMap : Window
         {
             
-            public override uint GetHash() => 1667827244;
+            public override uint GetHash() => 574436278;
             [Property(2016376897, 135)] public Int32 m_nBorderSize;
             [Property(1169748581, 135)] public Point m_TileSize;
             [Property(1258934261, 135)] public Point m_MapSize;
@@ -6438,7 +6438,7 @@ namespace Imlight.Internals
             public class CellInfo : PropertyClass
             {
                 
-                public override uint GetHash() => 625060513;
+                public override uint GetHash() => 1610986034;
                 [Property(1956352654, 135)] public Int32 m_nTileIndex;
                 [Property(219900907, 135)] public Single m_fCurrentFrame;
                 [Property(627031807, 135)] public Boolean m_bIsFlippedHorizontal;
@@ -6449,7 +6449,7 @@ namespace Imlight.Internals
             public class Tile : PropertyClass
             {
                 
-                public override uint GetHash() => 2124522923;
+                public override uint GetHash() => 2146780822;
                 [Property(1753714077, 262279)] public Color3 m_Color;
                 [Property(3479277078, 135)] public Material m_pMaterial;
                 [Property(3810095225, 135)] public RectangleF m_UV;
@@ -6461,13 +6461,13 @@ namespace Imlight.Internals
         public class PolymorphCinematicAction : CinematicAction
         {
             
-            public override uint GetHash() => 1653961979;
+            public override uint GetHash() => 574762755;
         }
         
         public class ReqHasGoal : Requirement
         {
             
-            public override uint GetHash() => 1644990435;
+            public override uint GetHash() => 576999877;
             [Property(1702112846, 268435463)] public String m_questName;
             [Property(1521627807, 7)] public String m_goalName;
             [Property(1705123608, 2097159)] public GoalStatusRequirement m_requiredStatus;
@@ -6485,14 +6485,14 @@ namespace Imlight.Internals
         public class EquivalentItemBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1647047503;
+            public override uint GetHash() => 577605360;
             [Property(657877294, 7)] public UInt64 m_equivalentItemTemplateID;
         }
         
         public class PriceModifiers : PropertyClass
         {
             
-            public override uint GetHash() => 1646516768;
+            public override uint GetHash() => 577733819;
             [Property(646294186, 7)] public ShoppingColorModifiers m_shoppingColors;
             [Property(2565828981, 7)] public DyeShopModifiers m_dyeShopMods;
             [Property(789769746, 7)] public ShoppingSellModifiers m_sellMods;
@@ -6502,7 +6502,7 @@ namespace Imlight.Internals
         public class ControlComboBox : Window
         {
             
-            public override uint GetHash() => 1651848876;
+            public override uint GetHash() => 578437014;
             [Property(2627949239, 135)] public List<ComboItem> m_Items;
             [Property(1017366545, 135)] public Int32 m_nSelected;
             [Property(1542607084, 135)] public Int32 m_nExpandedSize;
@@ -6514,20 +6514,20 @@ namespace Imlight.Internals
         public class PromoGiftList : PropertyClass
         {
             
-            public override uint GetHash() => 1651925079;
+            public override uint GetHash() => 578480682;
             [Property(885904406, 31)] public List<PromoGift> m_promoGifts;
         }
         
         public class RemoveInterceptCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1637645987;
+            public override uint GetHash() => 578842005;
         }
         
         public class WizPolymorphTemplate : CoreTemplate
         {
             
-            public override uint GetHash() => 1640890243;
+            public override uint GetHash() => 580128221;
             [Property(1286746870, 7)] public UInt32 m_templateID;
             [Property(1268089108, 7)] public UInt32 m_mobTemplateID;
             [Property(588086299, 7)] public List<GameEffectInfo> m_effects;
@@ -6536,7 +6536,7 @@ namespace Imlight.Internals
         public class CursorStyle : PropertyClass
         {
             
-            public override uint GetHash() => 1640306991;
+            public override uint GetHash() => 580269176;
             [Property(1717359772, 135)] public String m_name;
             [Property(2665308791, 2097159)] public CursorState m_cursorState;
             [Property(1000738782, 135)] public Boolean m_moveable;
@@ -6563,13 +6563,13 @@ namespace Imlight.Internals
         public class ReqGoldBagPercent : ReqNumeric
         {
             
-            public override uint GetHash() => 1627648688;
+            public override uint GetHash() => 581406359;
         }
         
         public class DailyQuestInfo : PropertyClass
         {
             
-            public override uint GetHash() => 1612316067;
+            public override uint GetHash() => 585174357;
             [Property(2324347272, 7)] public UInt32 m_circleNumber;
             [Property(1286746870, 7)] public UInt32 m_templateID;
             [Property(2171239844, 7)] public String m_zonePath;
@@ -6583,19 +6583,19 @@ namespace Imlight.Internals
         public class InvisibilityEffect : GameEffectBase
         {
             
-            public override uint GetHash() => 1611499199;
+            public override uint GetHash() => 585372564;
         }
         
         public class FishSellingOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 1613978472;
+            public override uint GetHash() => 585868517;
         }
         
         public class ControlCheckBox : ControlButton
         {
             
-            public override uint GetHash() => 1617965484;
+            public override uint GetHash() => 586907222;
             [Property(403966850, 135)] public Int32 m_nGroupID;
             [Property(958955100, 135)] public Boolean m_bChecked;
             [Property(1210539694, 135)] public ControlButtonState m_pCheckedState;
@@ -6607,26 +6607,26 @@ namespace Imlight.Internals
         public class MakeTargetableCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1617055072;
+            public override uint GetHash() => 587194731;
         }
         
         public class ClientGameEffectTimerSoundTrigger : GameEffectTimerSoundTrigger
         {
             
-            public override uint GetHash() => 1740171367;
+            public override uint GetHash() => 587810854;
         }
         
         public class CastleTourHouseTemplateList : PropertyClass
         {
             
-            public override uint GetHash() => 1739321352;
+            public override uint GetHash() => 588090941;
             [Property(835319593, 7)] public List<UInt32> m_houseTemplateList;
         }
         
         public class TransformationEffect : GameEffectBase
         {
             
-            public override uint GetHash() => 1742055420;
+            public override uint GetHash() => 588389314;
             [Property(2306580681, 268435487)] public String m_sRace;
             [Property(2776344943, 31)] public eGender m_eGender;
             [Property(503137701, 31)] public Single m_fScale;
@@ -6640,7 +6640,7 @@ namespace Imlight.Internals
         public class PvPMatchMakerStats : PropertyClass
         {
             
-            public override uint GetHash() => 1704220867;
+            public override uint GetHash() => 595747853;
             [Property(463021265, 31)] public Int64 m_timeStamp;
             [Property(2132039331, 31)] public Int32 m_teamType;
             [Property(1019689674, 31)] public Int32 m_unmatchedActorQueueSizeAvg;
@@ -6673,7 +6673,7 @@ namespace Imlight.Internals
         public class TransformationEffectInfo : GameEffectInfo
         {
             
-            public override uint GetHash() => 1706867052;
+            public override uint GetHash() => 596139110;
             [Property(2306580681, 268435463)] public String m_sRace;
             [Property(2776344943, 2097159)] public eGender m_eGender;
             [Property(503137701, 7)] public Single m_fScale;
@@ -6687,7 +6687,7 @@ namespace Imlight.Internals
         public class ControlEdit : Window
         {
             
-            public override uint GetHash() => 1705880328;
+            public override uint GetHash() => 596383997;
             [Property(2102642960, 135)] public String m_sText;
             [Property(1183478416, 135)] public Int32 m_nMaxLength;
             [Property(1604468200, 135)] public Boolean m_bPassword;
@@ -6713,7 +6713,7 @@ namespace Imlight.Internals
         public class ControlText : Window
         {
             
-            public override uint GetHash() => 1706003088;
+            public override uint GetHash() => 596414623;
             [Property(2102642960, 4194439)] public String m_sText;
             [Property(93063037, 135)] public Boolean m_bUseDropShadow;
             [Property(430904562, 135)] public Boolean m_bEnableWordWrap;
@@ -6725,7 +6725,7 @@ namespace Imlight.Internals
         public class ControlList : ControlText
         {
             
-            public override uint GetHash() => 1705961040;
+            public override uint GetHash() => 596429743;
             [Property(2267136674, 135)] public Color3 m_TextColor;
             [Property(2792529213, 135)] public Color3 m_SelectColor;
             [Property(1047198101, 135)] public Color3 m_HighlightColor;
@@ -6746,14 +6746,14 @@ namespace Imlight.Internals
             public class ListWindowStyle : WindowStyle
             {
                 
-                public override uint GetHash() => 1209481682;
+                public override uint GetHash() => 486684510;
                 [Property(3020805615, 135)] public String m_sHighlightSound;
             }
             
             public class ListItemAnimState : ControlList.ListItemState
             {
                 
-                public override uint GetHash() => 1921255641;
+                public override uint GetHash() => 912539872;
                 [Property(1469531165, 135)] public Int32 m_nAnimBeginFrame;
                 [Property(1659451087, 135)] public Int32 m_nAnimEndFrame;
                 [Property(802385934, 135)] public Single m_fAnimRate;
@@ -6763,7 +6763,7 @@ namespace Imlight.Internals
             public class Item : PropertyClass
             {
                 
-                public override uint GetHash() => 223567962;
+                public override uint GetHash() => 924908293;
                 [Property(1662841794, 135)] public String m_sString;
                 [Property(1680475798, 135)] public String m_sTooltip;
             }
@@ -6771,7 +6771,7 @@ namespace Imlight.Internals
             public class Column : PropertyClass
             {
                 
-                public override uint GetHash() => 1528913364;
+                public override uint GetHash() => 1725394077;
                 [Property(730982536, 135)] public Int32 m_nWidth;
                 [Property(1753714077, 135)] public Color3 m_Color;
             }
@@ -6779,7 +6779,7 @@ namespace Imlight.Internals
             public class ListItemState : PropertyClass
             {
                 
-                public override uint GetHash() => 2075506953;
+                public override uint GetHash() => 2146029161;
                 [Property(3479277078, 135)] public Material m_pMaterial;
                 [Property(1641923970, 135)] public Int32 m_nMaterialFrame;
             }
@@ -6788,7 +6788,7 @@ namespace Imlight.Internals
         public class HousingSignBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1705555264;
+            public override uint GetHash() => 596467571;
             [Property(1878140043, 7)] public String m_materialName;
             [Property(357248818, 7)] public Single m_red;
             [Property(886005576, 7)] public Single m_green;
@@ -6801,7 +6801,7 @@ namespace Imlight.Internals
         public class ControlDraw : Window
         {
             
-            public override uint GetHash() => 1705032976;
+            public override uint GetHash() => 596598143;
             [Property(2001006042, 135)] public List<ControlDraw.GesturePoint> m_Markers;
             [Property(1442006431, 135)] public List<ControlDraw.GesturePoint> m_RefPoints;
             [Property(2941180014, 135)] public List<ControlDraw.Line> m_LineList;
@@ -6809,7 +6809,7 @@ namespace Imlight.Internals
             public class GesturePoint : PropertyClass
             {
                 
-                public override uint GetHash() => 235151279;
+                public override uint GetHash() => 770328692;
                 [Property(2475294668, 135)] public Point m_Point;
                 [Property(1753714077, 135)] public Color3 m_Color;
             }
@@ -6817,7 +6817,7 @@ namespace Imlight.Internals
             public class Line : PropertyClass
             {
                 
-                public override uint GetHash() => 1566407136;
+                public override uint GetHash() => 1222542841;
                 [Property(2358246150, 135)] public List<Point> m_PointData;
                 [Property(1753714077, 135)] public Color3 m_Color;
             }
@@ -6826,7 +6826,7 @@ namespace Imlight.Internals
         public class ControlZone : Window
         {
             
-            public override uint GetHash() => 1709785344;
+            public override uint GetHash() => 597500419;
             [Property(840041705, 135)] public Boolean m_bButtonDown;
             [Property(283981103, 135)] public Boolean m_bCursorOver;
             [Property(1803318978, 135)] public Boolean m_bSavedCursorOver;
@@ -6835,14 +6835,14 @@ namespace Imlight.Internals
         public class ControlLine : Window
         {
             
-            public override uint GetHash() => 1709786704;
+            public override uint GetHash() => 597500847;
             [Property(1753714077, 262279)] public Color3 m_Color;
         }
         
         public class ControlTree : Window
         {
             
-            public override uint GetHash() => 1709718928;
+            public override uint GetHash() => 597523807;
             [Property(2102774666, 135)] public Int32 m_nIndent;
             [Property(1289445775, 135)] public ControlTree.Item m_pRoot;
             [Property(2025071845, 135)] public ControlTree.Item m_pCursorOver;
@@ -6852,7 +6852,7 @@ namespace Imlight.Internals
             public class Item : PropertyClass
             {
                 
-                public override uint GetHash() => 219528090;
+                public override uint GetHash() => 383531978;
                 [Property(1753714077, 262279)] public Color3 m_Color;
                 [Property(2207009163, 135)] public String m_sLabel;
                 [Property(2662653502, 1048583)] public Flags m_Flags;
@@ -6871,13 +6871,13 @@ namespace Imlight.Internals
         public class PathBehaviorClient : BehaviorInstance
         {
             
-            public override uint GetHash() => 1694755120;
+            public override uint GetHash() => 598182007;
         }
         
         public class MonsterMagicWorldTotal : PropertyClass
         {
             
-            public override uint GetHash() => 1694693783;
+            public override uint GetHash() => 598199386;
             [Property(1846757476, 7)] public String m_worldName;
             [Property(2119592350, 7)] public UInt32 m_monsterCount;
         }
@@ -6885,7 +6885,7 @@ namespace Imlight.Internals
         public class PipConversionValues : PropertyClass
         {
             
-            public override uint GetHash() => 1699116796;
+            public override uint GetHash() => 599191426;
             [Property(1100002568, 7)] public Single m_capValue;
             [Property(2028329704, 7)] public Single m_scalarBase;
             [Property(1636384119, 7)] public Single m_scalingFactor;
@@ -6894,13 +6894,13 @@ namespace Imlight.Internals
         public class LeashedPathMovementBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 1692016396;
+            public override uint GetHash() => 600962558;
         }
         
         public class ControlTab : Window
         {
             
-            public override uint GetHash() => 1694289552;
+            public override uint GetHash() => 601375135;
             [Property(78023831, 135)] public Boolean m_bAutomaticFormatting;
             [Property(2885422823, 135)] public List<ControlTab.Page> m_tabPages;
             [Property(69974606, 135)] public Point m_tabSize;
@@ -6911,13 +6911,13 @@ namespace Imlight.Internals
             public class Button : ControlButton
             {
                 
-                public override uint GetHash() => 629711651;
+                public override uint GetHash() => 719400181;
             }
             
             public class Page : PropertyClass
             {
                 
-                public override uint GetHash() => 1824841542;
+                public override uint GetHash() => 1619185615;
                 [Property(1536087219, 7)] public String m_tabName;
                 [Property(2814298381, 7)] public Window m_tabWindow;
                 [Property(847778038, 7)] public ControlTab.Button m_tabButton;
@@ -6936,7 +6936,7 @@ namespace Imlight.Internals
         public class ControlBar : Window
         {
             
-            public override uint GetHash() => 1694420544;
+            public override uint GetHash() => 601407923;
             [Property(1808212114, 135)] public Single m_fPosition;
             [Property(2172251096, 262279)] public Color3 m_BaseColor;
             [Property(2259916498, 262279)] public Color3 m_BarColor;
@@ -6950,33 +6950,33 @@ namespace Imlight.Internals
         public class ControlSWF : Window
         {
             
-            public override uint GetHash() => 1693464760;
+            public override uint GetHash() => 601586705;
             [Property(1581619567, 7)] public String m_sMovieFilename;
         }
         
         public class MadlibArgT_float : MadlibArg
         {
             
-            public override uint GetHash() => 592407887;
+            public override uint GetHash() => 601713999;
             [Property(968693315, 31)] public Single m_madlibArgument;
         }
         
         public class PetTomeBehavior : PetTomeBehaviorBase
         {
             
-            public override uint GetHash() => 1692797067;
+            public override uint GetHash() => 601813023;
         }
         
         public class ClientPetGameBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 1975537537;
+            public override uint GetHash() => 1483251235;
         }
         
         public class ClientPetNameBehavior : ClientWizPlayerNameBehavior
         {
             
-            public override uint GetHash() => 1975611265;
+            public override uint GetHash() => 1483265571;
             [Property(462138631, 31)] public UInt32 m_overallRating;
             [Property(234391118, 31)] public UInt32 m_activeRating;
             [Property(2225922446, 31)] public UInt32 m_petLevel;
@@ -6987,26 +6987,26 @@ namespace Imlight.Internals
         public class NamedEffectTemplate : GameEffectTemplate
         {
             
-            public override uint GetHash() => 1678184528;
+            public override uint GetHash() => 602322479;
         }
         
         public class ControlPopupButton : ControlButton
         {
             
-            public override uint GetHash() => 1680291080;
+            public override uint GetHash() => 602849149;
             [Property(269510906, 135)] public Boolean m_bUp;
         }
         
         public class ReqBankPercent : ReqNumeric
         {
             
-            public override uint GetHash() => 1685698388;
+            public override uint GetHash() => 603529192;
         }
         
         public class AddInterceptCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 2073901804;
+            public override uint GetHash() => 603995270;
             [Property(1894145160, 7)] public String m_effect;
             [Property(612425235, 7)] public Boolean m_idleOnly;
         }
@@ -7014,19 +7014,19 @@ namespace Imlight.Internals
         public class ClientFishBehavior : FishBehavior
         {
             
-            public override uint GetHash() => 2066767388;
+            public override uint GetHash() => 606823866;
         }
         
         public class ClientAddBacklashEffectCinematicAction : AddBacklashEffectCinematicAction
         {
             
-            public override uint GetHash() => 2057129723;
+            public override uint GetHash() => 608182659;
         }
         
         public class BattlegroundPolymorphList : PropertyClass
         {
             
-            public override uint GetHash() => 2063364791;
+            public override uint GetHash() => 609775250;
             [Property(619826355, 7)] public List<UInt32> m_polymorphList;
             [Property(3076206595, 7)] public String m_polymorphCategory;
             [Property(1906345431, 7)] public String m_polymorphRole;
@@ -7036,7 +7036,7 @@ namespace Imlight.Internals
         public class CollectedEssenceTrackingList : PropertyClass
         {
             
-            public override uint GetHash() => 2061687411;
+            public override uint GetHash() => 610256033;
             [Property(2834468954, 31)] public List<CollectedEssenceTrackingData> m_essenceTrackingList;
             [Property(144807032, 31)] public Int32 m_collectedEssenceCount;
             [Property(160435248, 31)] public Int32 m_failedToCollectReason;
@@ -7045,13 +7045,13 @@ namespace Imlight.Internals
         public class PlayerController : MoveBehavior.Controller
         {
             
-            public override uint GetHash() => 2034384868;
+            public override uint GetHash() => 616037828;
         }
         
         public class PauseAction : PathBehaviorTemplate.Action
         {
             
-            public override uint GetHash() => 2025228384;
+            public override uint GetHash() => 617271339;
             [Property(388964206, 7)] public Single m_fMinPauseTime;
             [Property(347283632, 7)] public Single m_fMaxPauseTime;
         }
@@ -7059,7 +7059,7 @@ namespace Imlight.Internals
         public class TempStartingPipEffectTemplate : GameEffectTemplate
         {
             
-            public override uint GetHash() => 2024660760;
+            public override uint GetHash() => 617350649;
             [Property(1346249167, 7)] public Int32 m_pipsGiven;
             [Property(377908508, 7)] public Int32 m_powerPipsGiven;
         }
@@ -7067,21 +7067,21 @@ namespace Imlight.Internals
         public class DerbyModifyMorale : DerbyEffect
         {
             
-            public override uint GetHash() => 2015083351;
+            public override uint GetHash() => 618765546;
             [Property(1624723118, 31)] public Int32 m_nMoraleChange;
         }
         
         public class TeamHelpUpdateSigilInfoList : PropertyClass
         {
             
-            public override uint GetHash() => 2016130791;
+            public override uint GetHash() => 619552646;
             [Property(2125475193, 7)] public List<TeamHelpUpdateSigilInfo> m_sigilInfoList;
         }
         
         public class AnimateActorCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 2015439924;
+            public override uint GetHash() => 619657520;
             [Property(3431428731, 7)] public String m_animation;
             [Property(1661537937, 7)] public String m_backupAnimation;
             [Property(1014207576, 7)] public Boolean m_default;
@@ -7095,7 +7095,7 @@ namespace Imlight.Internals
         public class ControlStretcher : Window
         {
             
-            public override uint GetHash() => 2145933924;
+            public override uint GetHash() => 622683300;
             [Property(3248096916, 135)] public Material m_pTopLeftMaterial;
             [Property(1519560055, 135)] public Material m_pCenterMaterial;
             [Property(2932444745, 135)] public Material m_pBottomRightMaterial;
@@ -7106,14 +7106,14 @@ namespace Imlight.Internals
         public class JewelVaultBehavior : JewelVaultBehaviorBase
         {
             
-            public override uint GetHash() => 2131998924;
+            public override uint GetHash() => 623090702;
             [Property(3125384972, 551)] public String m_jewelData;
         }
         
         public class HatchmakingPremiumPetsList : PropertyClass
         {
             
-            public override uint GetHash() => 2130815975;
+            public override uint GetHash() => 623319238;
             [Property(2021117594, 7)] public List<UInt32> m_addedPremiumPets;
             [Property(636888858, 7)] public List<UInt32> m_removedPremiumPets;
         }
@@ -7121,7 +7121,7 @@ namespace Imlight.Internals
         public class TieredSpellGroup : PropertyClass
         {
             
-            public override uint GetHash() => 2126729027;
+            public override uint GetHash() => 626500077;
             [Property(1522049297, 7)] public String m_tierOneSpell;
             [Property(3195213318, 7)] public List<String> m_adjectiveList;
             [Property(1243911353, 7)] public UInt32 m_returnRate;
@@ -7137,19 +7137,19 @@ namespace Imlight.Internals
         public class ObstacleCourseObstacleBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 2117551403;
+            public override uint GetHash() => 627745655;
         }
         
         public class PetTalentControlBase : Window
         {
             
-            public override uint GetHash() => 2117279155;
+            public override uint GetHash() => 627815761;
         }
         
         public class HousingTeleporterBehaviorBase : BehaviorInstance
         {
             
-            public override uint GetHash() => 2116307860;
+            public override uint GetHash() => 627990744;
             [Property(2010711536, 65567)] public UInt64 m_lotInstanceGID;
             [Property(283788559, 65543)] public Single m_x;
             [Property(283788560, 65543)] public Single m_y;
@@ -7165,7 +7165,7 @@ namespace Imlight.Internals
         public class WindowLayout : Window
         {
             
-            public override uint GetHash() => 2121364972;
+            public override uint GetHash() => 628830022;
             [Property(893611957, 135)] public Int32 m_nHSpacing;
             [Property(551359491, 135)] public Int32 m_nVSpacing;
         }
@@ -7173,13 +7173,13 @@ namespace Imlight.Internals
         public class GraphicalArenaBonusPoints : GraphicalSpell
         {
             
-            public override uint GetHash() => 2110126448;
+            public override uint GetHash() => 630590567;
         }
         
         public class DerbyAddObstacle : DerbyEffect
         {
             
-            public override uint GetHash() => 2096502327;
+            public override uint GetHash() => 635107250;
             [Property(1075628144, 2097159)] public DerbyLaneEffect m_lane;
             [Property(2219764488, 33554439)] public UInt64 m_obstacleType;
             [Property(52937033, 7)] public Int32 m_nObstacleAmount;
@@ -7196,20 +7196,20 @@ namespace Imlight.Internals
         public class RentalBehaviorTemplate : TimedItemBehaviorTemplate
         {
             
-            public override uint GetHash() => 1940189299;
+            public override uint GetHash() => 638471713;
             [Property(2119049625, 7)] public List<String> m_typeList;
         }
         
         public class InfractionBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1943050936;
+            public override uint GetHash() => 638801041;
         }
         
         public class CharacterCreationInfo : PropertyClass
         {
             
-            public override uint GetHash() => 1936174304;
+            public override uint GetHash() => 641636619;
             [Property(1075344419, 31)] public Int32 m_templateID;
             [Property(1513345113, 31)] public String m_name;
             [Property(1741266202, 24)] public Boolean m_shouldRename;
@@ -7221,13 +7221,13 @@ namespace Imlight.Internals
         public class ClientAnimateActorCinematicAction : AnimateActorCinematicAction
         {
             
-            public override uint GetHash() => 1925965488;
+            public override uint GetHash() => 643140503;
         }
         
         public class DynamicURLDescriptor : PropertyClass
         {
             
-            public override uint GetHash() => 1916165271;
+            public override uint GetHash() => 644539674;
             [Property(1865930451, 7)] public String m_domain;
             [Property(1717431880, 7)] public String m_path;
         }
@@ -7235,13 +7235,13 @@ namespace Imlight.Internals
         public class PetDialogEntry : ActorDialogEntry
         {
             
-            public override uint GetHash() => 1916814004;
+            public override uint GetHash() => 645358224;
         }
         
         public class CharacterElementTable : PropertyClass
         {
             
-            public override uint GetHash() => 1905936999;
+            public override uint GetHash() => 646045862;
             [Property(3526777091, 7)] public String m_sGender;
             [Property(2802913933, 131079)] public String m_sBodySource;
             [Property(1545150788, 131079)] public String m_sSkeletonSource;
@@ -7276,31 +7276,31 @@ namespace Imlight.Internals
         public class ClientSpawnActorCinematicAction : SpawnActorCinematicAction
         {
             
-            public override uint GetHash() => 1908952904;
+            public override uint GetHash() => 647324141;
         }
         
         public class ClientCloneActorCinematicAction : CloneActorCinematicAction
         {
             
-            public override uint GetHash() => 1910989220;
+            public override uint GetHash() => 647932500;
         }
         
         public class ClientScaleActorCinematicAction : ScaleActorCinematicAction
         {
             
-            public override uint GetHash() => 1910976480;
+            public override uint GetHash() => 647936459;
         }
         
         public class ObstacleCourseFinishLineBehaviorClient : ObstacleCourseFinishLineBehavior
         {
             
-            public override uint GetHash() => 1889876151;
+            public override uint GetHash() => 651050002;
         }
         
         public class PetObstacleCourseGameInfo : PetGameInfo
         {
             
-            public override uint GetHash() => 1892727852;
+            public override uint GetHash() => 651386166;
             [Property(2027689763, 7)] public Int32 m_petWidth;
             [Property(1894813180, 7)] public Int32 m_petHeight;
             [Property(2005026584, 7)] public Int32 m_petDepth;
@@ -7314,7 +7314,7 @@ namespace Imlight.Internals
         public class PolymorphImprovementRatingInfo : PropertyClass
         {
             
-            public override uint GetHash() => 1880872712;
+            public override uint GetHash() => 652314621;
             [Property(1026295488, 31)] public UInt32 m_polymorphTemplateID;
             [Property(209790915, 31)] public Int32 m_personalRating;
             [Property(2120160417, 31)] public Int32 m_eventRating;
@@ -7323,13 +7323,13 @@ namespace Imlight.Internals
         public class RemoveProtectionEffectCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1880182476;
+            public override uint GetHash() => 652419470;
         }
         
         public class SoftwareStyle : PropertyClass
         {
             
-            public override uint GetHash() => 1882562795;
+            public override uint GetHash() => 652876295;
             [Property(1438090150, 135)] public Material m_material;
             [Property(251247159, 135)] public Point m_size;
             [Property(1849465267, 135)] public Point m_hotSpot;
@@ -7338,33 +7338,33 @@ namespace Imlight.Internals
         public class CreateAuraActorCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1886903095;
+            public override uint GetHash() => 653952242;
             [Property(2029131039, 7)] public String m_newActorName;
         }
         
         public class ClientCrownsRewardsSchedule : CrownsRewardsSchedule
         {
             
-            public override uint GetHash() => 2005977159;
+            public override uint GetHash() => 654524462;
         }
         
         public class ClientRotateActorCinematicAction : RotateActorCinematicAction
         {
             
-            public override uint GetHash() => 2009860395;
+            public override uint GetHash() => 655650935;
         }
         
         public class JewelVaultBehaviorBase : BehaviorInstance
         {
             
-            public override uint GetHash() => 1997748188;
+            public override uint GetHash() => 656654282;
             [Property(1839384000, 65543)] public List<UInt32> m_jewelList;
         }
         
         public class WhirlyBurlyMovementData : PropertyClass
         {
             
-            public override uint GetHash() => 2003670916;
+            public override uint GetHash() => 658249692;
             [Property(1498103218, 7)] public Byte m_unitType;
             [Property(1315653400, 7)] public UInt32 m_cardUsed;
             [Property(1100876371, 7)] public Byte m_movementTurnTime;
@@ -7377,14 +7377,14 @@ namespace Imlight.Internals
         public class ReleaseCinematicStageTemplate : CinematicStageTemplate
         {
             
-            public override uint GetHash() => 1990038264;
+            public override uint GetHash() => 658511489;
             [Property(2307644996, 131079)] public String m_sound;
         }
         
         public class CustomNameOptions : PropertyClass
         {
             
-            public override uint GetHash() => 1983826647;
+            public override uint GetHash() => 661176458;
             [Property(1680359153, 7)] public UInt32 m_customNameMaxLength;
             [Property(1148225135, 7)] public UInt32 m_customNameMinLength;
             [Property(2526168028, 7)] public List<String> m_subStringNameExceptions;
@@ -7396,21 +7396,21 @@ namespace Imlight.Internals
         public class UIScaleConfig : PropertyClass
         {
             
-            public override uint GetHash() => 1985951976;
+            public override uint GetHash() => 661699589;
             [Property(998597073, 7)] public List<UIScaleConfigEntry> m_entries;
         }
         
         public class MaxPotionLootInfo : LootInfo
         {
             
-            public override uint GetHash() => 1977776208;
+            public override uint GetHash() => 664792111;
             [Property(1268091461, 31)] public Int32 m_maxPotionToAdd;
         }
         
         public class BoosterPackLootTypeMaxes : PropertyClass
         {
             
-            public override uint GetHash() => 1956500683;
+            public override uint GetHash() => 666896143;
             [Property(1591891442, 2097183)] public LOOT_TYPE m_lootType;
             [Property(267042112, 7)] public Int32 m_max;
             
@@ -7447,7 +7447,7 @@ namespace Imlight.Internals
         public class CloneActorCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1955803140;
+            public override uint GetHash() => 667139644;
             [Property(3697900983, 7)] public Vector3 m_position;
             [Property(3349460132, 7)] public Vector3 m_yawPitchRoll;
             [Property(1369917873, 7)] public Boolean m_clonePlayer;
@@ -7456,7 +7456,7 @@ namespace Imlight.Internals
         public class ScaleActorCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1955727860;
+            public override uint GetHash() => 667152448;
             [Property(1764097637, 7)] public Single m_scaleDuration;
             [Property(1502791366, 7)] public Single m_scaleTarget;
         }
@@ -7464,13 +7464,13 @@ namespace Imlight.Internals
         public class ClientRemoveInterceptCinematicAction : RemoveInterceptCinematicAction
         {
             
-            public override uint GetHash() => 1956950539;
+            public override uint GetHash() => 667836095;
         }
         
         public class SpawnActorCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1949272980;
+            public override uint GetHash() => 669815000;
             [Property(1373700953, 7)] public CoreObjectInfo m_objectInfo;
             [Property(1939845615, 7)] public Boolean m_bStartHidden;
         }
@@ -7478,13 +7478,13 @@ namespace Imlight.Internals
         public class FriendNotificationInfo : PropertyClass
         {
             
-            public override uint GetHash() => 1260445740;
+            public override uint GetHash() => 674187830;
         }
         
         public class HouseTransferResult : PropertyClass
         {
             
-            public override uint GetHash() => 1237485324;
+            public override uint GetHash() => 681038846;
             [Property(1286746870, 7)] public UInt32 m_templateID;
             [Property(1273560413, 7)] public Int32 m_statusResult;
         }
@@ -7492,7 +7492,7 @@ namespace Imlight.Internals
         public class CrownShopGiftRedemption : PropertyClass
         {
             
-            public override uint GetHash() => 1226715027;
+            public override uint GetHash() => 681638361;
             [Property(3411261376, 31)] public String m_message;
             [Property(1042283573, 31)] public UInt64 m_itemId;
             [Property(1789298066, 31)] public Int32 m_itemCount;
@@ -7507,7 +7507,7 @@ namespace Imlight.Internals
         public class PetXPLootInfo : LootInfo
         {
             
-            public override uint GetHash() => 1226845951;
+            public override uint GetHash() => 682588548;
             [Property(2182942670, 31)] public PetStatModificationSet m_statModifierSet;
             [Property(2101027993, 31)] public Boolean m_leveledUp;
             [Property(2315681826, 31)] public UInt32 m_lastTalentGiven;
@@ -7518,32 +7518,32 @@ namespace Imlight.Internals
         public class PhotoInformation : PropertyClass
         {
             
-            public override uint GetHash() => 1217963196;
+            public override uint GetHash() => 683760402;
             [Property(1021725286, 7)] public List<UInt32> m_photoWorthyItems;
         }
         
         public class WizardAutobotManager : AutobotManager
         {
             
-            public override uint GetHash() => 1222428800;
+            public override uint GetHash() => 684736547;
         }
         
         public class ClientDamageEventCinematicAction : DamageEventCinematicAction
         {
             
-            public override uint GetHash() => 1215947724;
+            public override uint GetHash() => 687409870;
         }
         
         public class BGPlayerBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 1214462188;
+            public override uint GetHash() => 687848454;
         }
         
         public class BodyOfWater : PropertyClass
         {
             
-            public override uint GetHash() => 1335717831;
+            public override uint GetHash() => 687876558;
             [Property(1185657746, 7)] public Single m_waterX;
             [Property(1185657747, 7)] public Single m_waterY;
             [Property(1001169759, 7)] public UInt32 m_secondsToRespawn;
@@ -7555,13 +7555,13 @@ namespace Imlight.Internals
         public class ItemFinderBehaviorBase : BehaviorInstance
         {
             
-            public override uint GetHash() => 1337439348;
+            public override uint GetHash() => 688561952;
         }
         
         public class ConicalSoundBehavior : PositionalSoundBehavior
         {
             
-            public override uint GetHash() => 1336719896;
+            public override uint GetHash() => 688676025;
             [Property(1114383840, 7)] public Single m_fInsideAngle;
             [Property(1627152289, 7)] public Single m_fOutsideAngle;
             [Property(90369618, 7)] public Single m_fOutsideVolume;
@@ -7573,13 +7573,13 @@ namespace Imlight.Internals
         public class PipFloatingTextCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1339946747;
+            public override uint GetHash() => 688918403;
         }
         
         public class RenderBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1340928115;
+            public override uint GetHash() => 689720865;
             [Property(1513131580, 131079)] public String m_assetName;
             [Property(3120358366, 131079)] public String m_proxyName;
             [Property(602977104, 7)] public Single m_height;
@@ -7607,26 +7607,26 @@ namespace Imlight.Internals
         public class CastleGamesBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 1325665239;
+            public override uint GetHash() => 690385098;
         }
         
         public class ClientRequirementFailInteraction : RequirementFailNotification
         {
             
-            public override uint GetHash() => 1331721936;
+            public override uint GetHash() => 692023183;
         }
         
         public class ProvideCombatTrigger : GameEffectBase
         {
             
-            public override uint GetHash() => 1315011396;
+            public override uint GetHash() => 696200428;
             [Property(3100183568, 31)] public String m_triggerName;
         }
         
         public class AddHangingCinematicStageTemplate : CinematicStageTemplate
         {
             
-            public override uint GetHash() => 1295515312;
+            public override uint GetHash() => 699043223;
             [Property(3233478999, 131079)] public String m_hanging;
             [Property(2307644996, 131079)] public String m_sound;
             [Property(1827806971, 131079)] public String m_burnSound;
@@ -7640,14 +7640,14 @@ namespace Imlight.Internals
         public class ClientCSRRegistryList : PropertyClass
         {
             
-            public override uint GetHash() => 2139774713;
+            public override uint GetHash() => 1526340221;
             [Property(2832578002, 23)] public List<CSRPropertyEntry> m_propertyList;
         }
         
         public class WizardStatTable : PropertyClass
         {
             
-            public override uint GetHash() => 1297822567;
+            public override uint GetHash() => 699514598;
             [Property(3581058436, 7)] public String m_tableName;
             [Property(3385349572, 7)] public String m_schoolName;
             [Property(1269044724, 7)] public Boolean m_modifyAll;
@@ -7698,7 +7698,7 @@ namespace Imlight.Internals
         public class WizGameObjectTemplate : GameObjectTemplate
         {
             
-            public override uint GetHash() => 1286758616;
+            public override uint GetHash() => 701229577;
             [Property(2539512673, 268435463)] public List<String> m_lootTable;
             [Property(3201049672, 131079)] public String m_deathParticles;
             [Property(1865613610, 131079)] public String m_deathSound;
@@ -7713,7 +7713,7 @@ namespace Imlight.Internals
         public class LevelUpElixirPropertyRegistryEntry : PropertyClass
         {
             
-            public override uint GetHash() => 1289862204;
+            public override uint GetHash() => 702487858;
             [Property(1765562503, 7)] public String m_registryEntryName;
             [Property(812990455, 7)] public Int32 m_value;
             [Property(1043261502, 7)] public Boolean m_questRegistry;
@@ -7723,7 +7723,7 @@ namespace Imlight.Internals
         public class ProxyGeometry : PropertyClass
         {
             
-            public override uint GetHash() => 1276782308;
+            public override uint GetHash() => 702675844;
             [Property(2306437263, 7)] public String m_sName;
             [Property(1692424809, 7)] public Matrix m_baseOrientation;
             [Property(1912112658, 7)] public Vector3 m_basePosition;
@@ -7735,7 +7735,7 @@ namespace Imlight.Internals
         public class ProvideCombatTriggerInfo : GameEffectInfo
         {
             
-            public override uint GetHash() => 1275618772;
+            public override uint GetHash() => 702901064;
             [Property(3100183568, 268435463)] public String m_triggerName;
             [Property(2619655202, 31)] public CombatTriggerDescription m_triggerDescription;
         }
@@ -7743,38 +7743,38 @@ namespace Imlight.Internals
         public class ActorResurrectCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1278484075;
+            public override uint GetHash() => 703231399;
         }
         
         public class CastleToursBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1282567415;
+            public override uint GetHash() => 704375042;
         }
         
         public class FidgetBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1139628519;
+            public override uint GetHash() => 706487366;
             [Property(1986859062, 7)] public List<FidgetStateInfo> m_fidgetStateInfo;
         }
         
         public class SummonMinionCinematicAction : QueuedCombatCinematicAction
         {
             
-            public override uint GetHash() => 1120047388;
+            public override uint GetHash() => 710399610;
         }
         
         public class ReqGardeningLevel : ReqNumeric
         {
             
-            public override uint GetHash() => 1123917219;
+            public override uint GetHash() => 710415701;
         }
         
         public class ShoppingColorModifiers : PropertyClass
         {
             
-            public override uint GetHash() => 1122278268;
+            public override uint GetHash() => 710825186;
             [Property(300868202, 7)] public List<Single> m_boysPrimaryColors;
             [Property(2061028494, 7)] public List<Single> m_boysSecondaryColors;
             [Property(327992494, 7)] public List<Single> m_girlsPrimaryColors;
@@ -7784,27 +7784,27 @@ namespace Imlight.Internals
         public class CastleMagicTutorial : PropertyClass
         {
             
-            public override uint GetHash() => 1115315604;
+            public override uint GetHash() => 712631640;
         }
         
         public class RealmInfoList : PropertyClass
         {
             
-            public override uint GetHash() => 1101610572;
+            public override uint GetHash() => 713899438;
             [Property(1814698255, 31)] public List<RealmInfo> m_infoList;
         }
         
         public class BadgeInfoList : PropertyClass
         {
             
-            public override uint GetHash() => 1093446364;
+            public override uint GetHash() => 715937930;
             [Property(1636336781, 31)] public List<BadgeInfo> m_badges;
         }
         
         public class CoreObjectInfo : PropertyClass
         {
             
-            public override uint GetHash() => 1098711139;
+            public override uint GetHash() => 716714533;
             [Property(1548066082, 33554439)] public UInt64 m_templateID;
             [Property(748496927, 7)] public UInt32 m_nObjectID;
             [Property(2239683611, 7)] public Vector3 m_location;
@@ -7831,19 +7831,19 @@ namespace Imlight.Internals
         public class ClientHideShadowCreatureCinematicAction : HideShadowCreatureCinematicAction
         {
             
-            public override uint GetHash() => 1080505359;
+            public override uint GetHash() => 721338176;
         }
         
         public class ItemFinderBehavior : ItemFinderBehaviorBase
         {
             
-            public override uint GetHash() => 1203190628;
+            public override uint GetHash() => 722124004;
         }
         
         public class FilterSetTemplate : CoreTemplate
         {
             
-            public override uint GetHash() => 1202610175;
+            public override uint GetHash() => 722265540;
             [Property(1717359772, 7)] public String m_name;
             [Property(478453519, 16777223)] public UInt32 m_uid;
             [Property(2539658755, 7)] public List<SoundFilterSetting> m_filters;
@@ -7852,7 +7852,7 @@ namespace Imlight.Internals
         public class PolymorphBattlegroundsBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 1187867951;
+            public override uint GetHash() => 726935928;
             [Property(997576222, 7)] public Int32 m_maxTempStartingPips;
             [Property(31848011, 7)] public Int32 m_maxTempStartingPowerPips;
         }
@@ -7860,32 +7860,32 @@ namespace Imlight.Internals
         public class WeightedEntryT_class_SplashCinematicInfo : WeightedEntry
         {
             
-            public override uint GetHash() => 729213485;
+            public override uint GetHash() => 729218845;
             [Property(1951897293, 7)] public SplashCinematicInfo m_entry;
         }
         
         public class MeshGeomParams : GeomParams
         {
             
-            public override uint GetHash() => 1181395372;
+            public override uint GetHash() => 729667670;
         }
         
         public class PetTalentControl : PetTalentControlBase
         {
             
-            public override uint GetHash() => 1171186288;
+            public override uint GetHash() => 731171495;
         }
         
         public class ClientSwapShadowMaterialActorCinematicAction : SwapShadowMaterialActorCinematicAction
         {
             
-            public override uint GetHash() => 1173876599;
+            public override uint GetHash() => 731548130;
         }
         
         public class TeamGIDToBracketID : PropertyClass
         {
             
-            public override uint GetHash() => 1160786927;
+            public override uint GetHash() => 732659400;
             [Property(194811347, 31)] public UInt64 m_teamGID;
             [Property(2174957597, 31)] public UInt32 m_bracketTeamID;
         }
@@ -7893,7 +7893,7 @@ namespace Imlight.Internals
         public class ActiveTimedPassEntry : PropertyClass
         {
             
-            public override uint GetHash() => 1150421835;
+            public override uint GetHash() => 734261487;
             [Property(2268899601, 31)] public PassInfo m_passInfo;
             [Property(1627087673, 31)] public Int64 m_expireTime;
         }
@@ -7901,13 +7901,13 @@ namespace Imlight.Internals
         public class MakeTargetableCinematicStageTemplate : CinematicStageTemplate
         {
             
-            public override uint GetHash() => 1142697996;
+            public override uint GetHash() => 736132670;
         }
         
         public class CinematicStageRelationship : PropertyClass
         {
             
-            public override uint GetHash() => 1142942863;
+            public override uint GetHash() => 736135456;
             [Property(2285866132, 7)] public String m_actor;
             [Property(2133449134, 7)] public String m_stageToWaitFor;
         }
@@ -7915,7 +7915,7 @@ namespace Imlight.Internals
         public class ShadowSpellTrackingData : PropertyClass
         {
             
-            public override uint GetHash() => 1148284667;
+            public override uint GetHash() => 737880451;
             [Property(3446820733, 31)] public ShadowSpellEffect m_pSpellEffect;
             [Property(1100057776, 31)] public Int32 m_remainingTurns;
         }
@@ -7923,31 +7923,31 @@ namespace Imlight.Internals
         public class WizMinigameOffering : PropertyClass
         {
             
-            public override uint GetHash() => 1148091404;
+            public override uint GetHash() => 737996094;
         }
         
         public class ReqClearHatchingSlot : Requirement
         {
             
-            public override uint GetHash() => 1538911535;
+            public override uint GetHash() => 738789752;
         }
         
         public class KioskOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 1537810111;
+            public override uint GetHash() => 739063188;
         }
         
         public class CSRSpellList : Window
         {
             
-            public override uint GetHash() => 1537458128;
+            public override uint GetHash() => 739220943;
         }
         
         public class DeckListControl : Window
         {
             
-            public override uint GetHash() => 1540708011;
+            public override uint GetHash() => 739387287;
             [Property(1135567057, 7)] public Point m_cardSize;
             [Property(1481011679, 7)] public Int32 m_spacing;
             [Property(2069000644, 7)] public Int32 m_verticalSpacingAdjust;
@@ -7958,7 +7958,7 @@ namespace Imlight.Internals
         public class WizItemQuestData : PropertyClass
         {
             
-            public override uint GetHash() => 1542256628;
+            public override uint GetHash() => 740052928;
             [Property(2282339874, 31)] public String m_sQuestTitle;
             [Property(2049077170, 31)] public String m_sFirstGoalLocation;
             [Property(2205763286, 31)] public String m_sSchoolFocus;
@@ -7967,13 +7967,13 @@ namespace Imlight.Internals
         public class ClientConfirmOption : ConfirmOption
         {
             
-            public override uint GetHash() => 1522231928;
+            public override uint GetHash() => 743024801;
         }
         
         public class BattleCardShopOffering : PropertyClass
         {
             
-            public override uint GetHash() => 1523268003;
+            public override uint GetHash() => 743816277;
             [Property(2232728892, 31)] public List<BattleCardPurchaseInfo> m_battleCardsForSale;
             [Property(3004531772, 31)] public List<SpellData> m_givenSpells;
             [Property(142607341, 31)] public Int32 m_maxTotalBattleCards;
@@ -7983,7 +7983,7 @@ namespace Imlight.Internals
         public class HelpChatElement : PropertyClass
         {
             
-            public override uint GetHash() => 1518040416;
+            public override uint GetHash() => 746172267;
             [Property(3291650660, 8388615)] public String m_labelKey;
             [Property(810892562, 33554439)] public UInt64 m_tipID;
             [Property(1958485829, 7)] public List<HelpChatElement> m_children;
@@ -7992,13 +7992,13 @@ namespace Imlight.Internals
         public class PhysicsSimMassTube : PhysicsSimMassCylinder
         {
             
-            public override uint GetHash() => 1516609567;
+            public override uint GetHash() => 746461756;
         }
         
         public class ArenaMatchInfo : PropertyClass
         {
             
-            public override uint GetHash() => 1503354699;
+            public override uint GetHash() => 746694127;
             [Property(1757621298, 31)] public UInt64 m_matchID;
             [Property(1751361288, 31)] public UInt32 m_matchNameID;
             [Property(1984373608, 31)] public List<MatchTeam> m_teams;
@@ -8023,14 +8023,14 @@ namespace Imlight.Internals
         public class FishingInfo : PropertyClass
         {
             
-            public override uint GetHash() => 1501678175;
+            public override uint GetHash() => 747045036;
             [Property(457750787, 7)] public List<BodyOfWater> m_bodyOfWaterList;
         }
         
         public class BattleBookBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 1494800268;
+            public override uint GetHash() => 748767198;
             [Property(2181913740, 27)] public List<SpellData> m_spellList;
             [Property(2464459535, 27)] public PolymorphRatingInfo m_rating;
         }
@@ -8038,14 +8038,14 @@ namespace Imlight.Internals
         public class ClassProjectUpdateList : PropertyClass
         {
             
-            public override uint GetHash() => 1494560392;
+            public override uint GetHash() => 748829085;
             [Property(284210684, 7)] public List<UInt32> m_activeProjectList;
         }
         
         public class BattlegroundMatchmakingChat : PropertyClass
         {
             
-            public override uint GetHash() => 1497031151;
+            public override uint GetHash() => 749324872;
             [Property(563704930, 7)] public Int32 m_matchSize;
             [Property(606761671, 7)] public Int32 m_secondsWaited;
         }
@@ -8053,32 +8053,32 @@ namespace Imlight.Internals
         public class AddBacklashEffectCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1501269347;
+            public override uint GetHash() => 750358885;
             [Property(3051687009, 131079)] public String m_backlashEffect;
         }
         
         public class ClientBGPlayerInfo : BGPlayerInfo
         {
             
-            public override uint GetHash() => 1491756659;
+            public override uint GetHash() => 752741281;
         }
         
         public class ClientBurnAuraCinematicAction : BurnAuraCinematicAction
         {
             
-            public override uint GetHash() => 1480518795;
+            public override uint GetHash() => 753453343;
         }
         
         public class CastleGamesOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 1482932719;
+            public override uint GetHash() => 754942536;
         }
         
         public class Ladder : CoreObject
         {
             
-            public override uint GetHash() => 1603069940;
+            public override uint GetHash() => 755256256;
             [Property(210498386, 33554463)] public UInt64 m_characterID;
             [Property(469020959, 63)] public UInt64 m_gameID;
             [Property(829938293, 63)] public UInt32 m_gameNameID;
@@ -8092,21 +8092,21 @@ namespace Imlight.Internals
         public class SG_GameAction_PlaySound : SG_GameAction
         {
             
-            public override uint GetHash() => 1608470471;
+            public override uint GetHash() => 756064718;
             [Property(3351944033, 7)] public List<String> m_simpleSounds;
         }
         
         public class FishBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 1607454436;
+            public override uint GetHash() => 756318596;
             [Property(1986368316, 65536)] public Single m_fishSize;
         }
         
         public class WhirlyBurlyMovementDataAI : PropertyClass
         {
             
-            public override uint GetHash() => 1600493444;
+            public override uint GetHash() => 759044060;
             [Property(1498103218, 7)] public Byte m_unitType;
             [Property(1315653400, 7)] public UInt32 m_cardUsed;
             [Property(1362521513, 7)] public UInt32 m_passport;
@@ -8116,7 +8116,7 @@ namespace Imlight.Internals
         public class ActivateHangingEffectCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1593075263;
+            public override uint GetHash() => 760900532;
             [Property(142527940, 7)] public Boolean m_activate;
             [Property(7349510, 7)] public Boolean m_cloaked;
         }
@@ -8124,7 +8124,7 @@ namespace Imlight.Internals
         public class CastleBlocksBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1571330387;
+            public override uint GetHash() => 764236905;
             [Property(1381462216, 7)] public Int32 m_providesFloor;
             [Property(349311070, 33554439)] public UInt32 m_placedOnFloorTemplateID;
             [Property(1208761121, 33554439)] public UInt32 m_pickedupFromFloorTemplateID;
@@ -8135,19 +8135,19 @@ namespace Imlight.Internals
         public class AutobotMobAvoidance : PropertyClass
         {
             
-            public override uint GetHash() => 1571212651;
+            public override uint GetHash() => 764330343;
         }
         
         public class GamebryoClientLeashBehavior : ClientLeashBehavior
         {
             
-            public override uint GetHash() => 1574048828;
+            public override uint GetHash() => 764671794;
         }
         
         public class UpFirstData : PropertyClass
         {
             
-            public override uint GetHash() => 1576349184;
+            public override uint GetHash() => 765081923;
             [Property(1884669703, 31)] public Int32 m_upFirst;
             [Property(1461215570, 31)] public Int32 m_roundNum;
             [Property(1136139931, 31)] public Int32 m_resultType;
@@ -8156,14 +8156,14 @@ namespace Imlight.Internals
         public class WizClientObject : ClientObject
         {
             
-            public override uint GetHash() => 1562557708;
+            public override uint GetHash() => 766500222;
             [Property(3194480406, 27)] public WizGameStats m_gameStats;
         }
         
         public class GoldAmountTemplate : WizItemTemplate
         {
             
-            public override uint GetHash() => 1566576936;
+            public override uint GetHash() => 767522421;
             [Property(754429876, 7)] public Int32 m_goldAmount;
             [Property(1764743064, 131079)] public String m_nif;
         }
@@ -8171,7 +8171,7 @@ namespace Imlight.Internals
         public class EffectCinematicAction : BaseEffectCinematicAction
         {
             
-            public override uint GetHash() => 1553113036;
+            public override uint GetHash() => 767808974;
             [Property(2592217913, 131079)] public List<String> m_graphic;
             [Property(1088002894, 7)] public Boolean m_bUseOrientationOverride;
             [Property(3267199758, 7)] public Vector3 m_overrideOrientation;
@@ -8182,77 +8182,77 @@ namespace Imlight.Internals
         public class ClientCameraCutCinematicAction : CameraCutCinematicAction
         {
             
-            public override uint GetHash() => 1558612252;
+            public override uint GetHash() => 769577082;
         }
         
         public class PolymorphEffectInfo : GameEffectInfo
         {
             
-            public override uint GetHash() => 1550716615;
+            public override uint GetHash() => 771551630;
             [Property(1286746870, 7)] public UInt32 m_templateID;
         }
         
         public class ObstacleCoursePendulumBehavior : ObstacleCourseObstacleBehavior
         {
             
-            public override uint GetHash() => 1406506116;
+            public override uint GetHash() => 772937500;
         }
         
         public class TieredSpellConfig : PropertyClass
         {
             
-            public override uint GetHash() => 1400601728;
+            public override uint GetHash() => 775531811;
             [Property(1855207927, 7)] public List<TieredSpellGroup> m_tieredSpellGroupList;
         }
         
         public class PhysicsSimMass : PropertyClass
         {
             
-            public override uint GetHash() => 1384449311;
+            public override uint GetHash() => 776352636;
         }
         
         public class PhysicsSimMassBox : PhysicsSimMass
         {
             
-            public override uint GetHash() => 1390376351;
+            public override uint GetHash() => 777039708;
         }
         
         public class GardeningShedBehaviorBase : BehaviorInstance
         {
             
-            public override uint GetHash() => 1390294371;
+            public override uint GetHash() => 777060197;
             [Property(672751594, 65567)] public List<UInt32> m_seedList;
         }
         
         public class WizDisableItemStatEffectTemplate : StatisticEffectTemplate
         {
             
-            public override uint GetHash() => 1378188236;
+            public override uint GetHash() => 778972366;
             [Property(3305858271, 7)] public List<String> m_itemSlots;
         }
         
         public class ControlMultiLineEdit : ControlEdit
         {
             
-            public override uint GetHash() => 1383456387;
+            public override uint GetHash() => 779748765;
         }
         
         public class AmbientSoundBehavior : SoundBehavior
         {
             
-            public override uint GetHash() => 1372359252;
+            public override uint GetHash() => 781471912;
         }
         
         public class ChatHistory : PropertyClass
         {
             
-            public override uint GetHash() => 1371865239;
+            public override uint GetHash() => 781595162;
         }
         
         public class DerbyTerrainEffect : DerbyEffect
         {
             
-            public override uint GetHash() => 1365051659;
+            public override uint GetHash() => 783298687;
             [Property(2688629581, 2097183)] public PetDerbyTrackTerrain m_terrainType;
             [Property(1483497206, 31)] public Single m_fEffectReapplyTime;
             [Property(2042624288, 31)] public List<DerbyEffect> m_effectsToApply;
@@ -8262,19 +8262,19 @@ namespace Imlight.Internals
         public class ContainerEffectInfo : GameEffectInfo
         {
             
-            public override uint GetHash() => 1353227387;
+            public override uint GetHash() => 785208611;
         }
         
         public class BattleCardShopOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 1353120960;
+            public override uint GetHash() => 785304851;
         }
         
         public class MatchCostAdjustment : PropertyClass
         {
             
-            public override uint GetHash() => 1355558108;
+            public override uint GetHash() => 785676554;
             [Property(2305794521, 31)] public ADJUSTMENT_TYPE m_matchAdjustmentType;
             
             public enum ADJUSTMENT_TYPE
@@ -8289,19 +8289,19 @@ namespace Imlight.Internals
         public class ObstacleCourseCatapultBehaviorClient : ObstacleCourseCatapultBehavior
         {
             
-            public override uint GetHash() => 1350257867;
+            public override uint GetHash() => 788111631;
         }
         
         public class ClientFlareBacklashEffectCinematicAction : FlareBacklashEffectCinematicAction
         {
             
-            public override uint GetHash() => 1464364179;
+            public override uint GetHash() => 792029465;
         }
         
         public class BadgeTemplate : CoreTemplate
         {
             
-            public override uint GetHash() => 1467959935;
+            public override uint GetHash() => 792240292;
             [Property(3002948047, 134217735)] public String m_badgeName;
             [Property(1783354256, 8388615)] public String m_badgeTitle;
             [Property(3002782298, 8388615)] public String m_badgeInfo;
@@ -8325,7 +8325,7 @@ namespace Imlight.Internals
         public class CombatResolver : PropertyClass
         {
             
-            public override uint GetHash() => 1443466311;
+            public override uint GetHash() => 795152686;
             [Property(1403478355, 31)] public Boolean m_bGlobalEffect;
             [Property(967055913, 31)] public SpellEffect m_globalEffect;
             [Property(1245973515, 31)] public List<SpellEffect> m_battlefieldEffects;
@@ -8334,38 +8334,38 @@ namespace Imlight.Internals
         public class PetStatBlockControl : Window
         {
             
-            public override uint GetHash() => 1435646328;
+            public override uint GetHash() => 797178977;
         }
         
         public class ZoneGateOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 1435081855;
+            public override uint GetHash() => 797250852;
         }
         
         public class ChangeActorStateCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1439808335;
+            public override uint GetHash() => 798170352;
             [Property(2153420230, 7)] public String m_newState;
         }
         
         public class UnPolymorphCinematicAction : CinematicAction
         {
             
-            public override uint GetHash() => 1439949951;
+            public override uint GetHash() => 798198564;
         }
         
         public class ClientTimerControlCinematicAction : TimerControlCinematicAction
         {
             
-            public override uint GetHash() => 1429809267;
+            public override uint GetHash() => 799619105;
         }
         
         public class CastleGamesUpdate : PropertyClass
         {
             
-            public override uint GetHash() => 1432886223;
+            public override uint GetHash() => 800945360;
             [Property(619674006, 7)] public List<CastleGamesEntry> m_entryList;
             [Property(1220956901, 7)] public Int32 m_numberOfGames;
         }
@@ -8373,13 +8373,13 @@ namespace Imlight.Internals
         public class UntargetableCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1419352464;
+            public override uint GetHash() => 801182815;
         }
         
         public class GiveCinematicStageTemplate : CinematicStageTemplate
         {
             
-            public override uint GetHash() => 1422587996;
+            public override uint GetHash() => 802540586;
             [Property(3217341687, 131079)] public List<String> m_cameras;
             [Property(1882980152, 131079)] public List<String> m_altcameras;
             [Property(3431428731, 7)] public String m_animation;
@@ -8389,39 +8389,39 @@ namespace Imlight.Internals
         public class WeightedEntry : PropertyClass
         {
             
-            public override uint GetHash() => 1425755043;
+            public override uint GetHash() => 802791637;
             [Property(1311209301, 7)] public UInt32 m_weight;
         }
         
         public class ObstacleCourseObstacleBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 732496028;
+            public override uint GetHash() => 806171162;
         }
         
         public class EmojiWindow : Window
         {
             
-            public override uint GetHash() => 736203751;
+            public override uint GetHash() => 807343814;
         }
         
         public class PlayerControllerClient : PlayerController
         {
             
-            public override uint GetHash() => 723414239;
+            public override uint GetHash() => 807463180;
         }
         
         public class DependentResourceContainer : PropertyClass
         {
             
-            public override uint GetHash() => 722736551;
+            public override uint GetHash() => 807565142;
             [Property(2968493147, 131079)] public String m_dependentResourceFilename;
         }
         
         public class DespawnInfo : PropertyClass
         {
             
-            public override uint GetHash() => 722324447;
+            public override uint GetHash() => 807665868;
             [Property(635022555, 31)] public UInt64 m_killer;
             [Property(1477583404, 31)] public UInt32 m_despawnEffect;
         }
@@ -8429,7 +8429,7 @@ namespace Imlight.Internals
         public class BattlegroundPlayerStatsManager : PropertyClass
         {
             
-            public override uint GetHash() => 721581039;
+            public override uint GetHash() => 807923400;
             [Property(2999855587, 7)] public List<BattlegroundPlayerStats> m_statsList;
             [Property(1342603341, 7)] public BattlegroundPOI m_poi;
         }
@@ -8437,7 +8437,7 @@ namespace Imlight.Internals
         public class PetDerbyRacerState : PropertyClass
         {
             
-            public override uint GetHash() => 724653355;
+            public override uint GetHash() => 808134519;
             [Property(578546081, 31)] public UInt64 m_playerOID;
             [Property(3426350446, 2097183)] public PetDerbyTrackTerrain m_currentTerrain;
             [Property(1255984189, 31)] public Int32 m_currentLane;
@@ -8448,14 +8448,14 @@ namespace Imlight.Internals
         public class RemoveMatchUpdate : TournamentUpdate
         {
             
-            public override uint GetHash() => 727106980;
+            public override uint GetHash() => 808633172;
             [Property(1757621298, 31)] public UInt64 m_matchID;
         }
         
         public class ObjStateCategory : PropertyClass
         {
             
-            public override uint GetHash() => 729645752;
+            public override uint GetHash() => 808981137;
             [Property(3591157466, 7)] public String m_categoryName;
             [Property(2490652686, 7)] public List<ObjState> m_states;
             [Property(2166880458, 7)] public String m_startState;
@@ -8465,21 +8465,21 @@ namespace Imlight.Internals
         public class PvPLobbyOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 717428816;
+            public override uint GetHash() => 811054127;
             [Property(3329241865, 31)] public String m_tournamentName;
         }
         
         public class ConicalStateSoundBehavior : ConicalSoundBehavior
         {
             
-            public override uint GetHash() => 710850144;
+            public override uint GetHash() => 812703659;
             [Property(3393414044, 7)] public String m_animationName;
         }
         
         public class SoundInfo : ClientObjectInfo
         {
             
-            public override uint GetHash() => 697954064;
+            public override uint GetHash() => 813763071;
             [Property(989410271, 7)] public Single m_radius;
             [Property(824383403, 7)] public Boolean m_exclusive;
             [Property(2031339229, 7)] public Boolean m_startActive;
@@ -8507,46 +8507,46 @@ namespace Imlight.Internals
         public class PetSnackCheckBox : ControlCheckBox
         {
             
-            public override uint GetHash() => 697882024;
+            public override uint GetHash() => 813778773;
         }
         
         public class MiniMapWindow : Window
         {
             
-            public override uint GetHash() => 697550428;
+            public override uint GetHash() => 813925290;
         }
         
         public class BracketMatchActorResult : MatchActorResult
         {
             
-            public override uint GetHash() => 697548515;
+            public override uint GetHash() => 813931909;
         }
         
         public class PetDerbyRacerStats : PropertyClass
         {
             
-            public override uint GetHash() => 703681835;
+            public override uint GetHash() => 815474551;
             [Property(2249155308, 31)] public List<PetStat> m_initialStats;
         }
         
         public class TutorialLogBehaviorBase : BehaviorInstance
         {
             
-            public override uint GetHash() => 693545424;
+            public override uint GetHash() => 817027151;
             [Property(3119782422, 551)] public String m_tutorialTipData;
         }
         
         public class DerbyEffectSprite : ControlSprite
         {
             
-            public override uint GetHash() => 684731068;
+            public override uint GetHash() => 819165330;
             [Property(3633927605, 7)] public String m_effectID;
         }
         
         public class ClassInfo : PropertyClass
         {
             
-            public override uint GetHash() => 686243712;
+            public override uint GetHash() => 819903971;
             [Property(2220521682, 7)] public String m_className;
             [Property(3643333981, 7)] public List<MagicLevelInfo> m_classLevelInfo;
         }
@@ -8554,27 +8554,27 @@ namespace Imlight.Internals
         public class WinAnimSize : WindowAnimation
         {
             
-            public override uint GetHash() => 672220772;
+            public override uint GetHash() => 820192164;
             [Property(251247159, 135)] public Point m_size;
         }
         
         public class MagicMirrorShopOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 671435987;
+            public override uint GetHash() => 820388105;
         }
         
         public class HousingPetMovementCompressed : PropertyClass
         {
             
-            public override uint GetHash() => 678831487;
+            public override uint GetHash() => 821754724;
             [Property(324140950, 31)] public List<UInt32> m_compressedPetMovement;
         }
         
         public class AnimationSoundData : PropertyClass
         {
             
-            public override uint GetHash() => 805011463;
+            public override uint GetHash() => 823759422;
             [Property(3393414044, 7)] public String m_animationName;
             [Property(3058120805, 7)] public String m_soundFileName;
             [Property(2449081745, 7)] public String m_introSoundFileName;
@@ -8588,7 +8588,7 @@ namespace Imlight.Internals
         public class SpawnObjectInfo : CoreObjectInfo
         {
             
-            public override uint GetHash() => 789756475;
+            public override uint GetHash() => 824433843;
             [Property(1545814623, 2097159)] public StartNodeType m_kStartNodeType;
             [Property(1598161889, 7)] public UInt32 m_startNode;
             [Property(821494322, 7)] public UInt64 m_pathID;
@@ -8608,14 +8608,14 @@ namespace Imlight.Internals
         public class StatisticEffect : GameEffectBase
         {
             
-            public override uint GetHash() => 794297748;
+            public override uint GetHash() => 825324376;
             [Property(1626623948, 31)] public Int32 m_lookupIndex;
         }
         
         public class QuickSellItem : PropertyClass
         {
             
-            public override uint GetHash() => 783957788;
+            public override uint GetHash() => 826932730;
             [Property(1026273003, 7)] public UInt64 m_sellItemGID;
             [Property(380617740, 7)] public UInt32 m_quantity;
         }
@@ -8623,14 +8623,14 @@ namespace Imlight.Internals
         public class TournamentUpdateFriendList : PropertyClass
         {
             
-            public override uint GetHash() => 785309536;
+            public override uint GetHash() => 827639275;
             [Property(1993921452, 31)] public List<UInt64> m_friendList;
         }
         
         public class QuickSellItemList : PropertyClass
         {
             
-            public override uint GetHash() => 787264772;
+            public override uint GetHash() => 828137340;
             [Property(2797277851, 7)] public List<QuickSellItem> m_quickSellItemList;
             [Property(1096175527, 7)] public UInt64 m_sellingCharacterGID;
         }
@@ -8638,7 +8638,7 @@ namespace Imlight.Internals
         public class WizTrainingOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 773685096;
+            public override uint GetHash() => 828386789;
             [Property(217389422, 31)] public Int32 m_trainingIndex;
             [Property(982588239, 31)] public Int32 m_trainingCost;
             [Property(2688485244, 31)] public String m_spellName;
@@ -8651,27 +8651,27 @@ namespace Imlight.Internals
         public class MoveCommandYaw : MoveController.MoveCommand
         {
             
-            public override uint GetHash() => 779464164;
+            public override uint GetHash() => 830085444;
             [Property(309564718, 31)] public Single m_fYaw;
         }
         
         public class GameEffectTimerSoundTrigger : GameEffectTimerTrigger
         {
             
-            public override uint GetHash() => 770512659;
+            public override uint GetHash() => 832321529;
             [Property(3585199735, 31)] public List<String> m_soundFiles;
         }
         
         public class KhanDanceComponent : HousingGameInterface
         {
             
-            public override uint GetHash() => 756158779;
+            public override uint GetHash() => 832829043;
         }
         
         public class AdvancedPetsConfig : PropertyClass
         {
             
-            public override uint GetHash() => 760061556;
+            public override uint GetHash() => 833885600;
             [Property(1238900786, 7)] public Int64 m_energyTick;
             [Property(1631450758, 7)] public Byte m_minPetLevelForJewels;
             [Property(3286601420, 7)] public String m_petJewelTalentIcon;
@@ -8680,7 +8680,7 @@ namespace Imlight.Internals
         public class DuelModifierTemplate : CoreTemplate
         {
             
-            public override uint GetHash() => 746907959;
+            public override uint GetHash() => 835078258;
             [Property(1286746870, 33554463)] public UInt32 m_templateID;
             [Property(1717359772, 134217759)] public String m_name;
             [Property(1649374815, 8388639)] public String m_description;
@@ -8703,7 +8703,7 @@ namespace Imlight.Internals
         public class OldWizardEquippedItemInfo : EquippedItemInfo
         {
             
-            public override uint GetHash() => 753953416;
+            public override uint GetHash() => 836462749;
             [Property(1433198221, 31)] public Byte m_baseColor;
             [Property(1198446862, 31)] public Byte m_trimColor;
             [Property(1338360593, 31)] public Byte m_pattern;
@@ -8712,7 +8712,7 @@ namespace Imlight.Internals
         public class LeaderboardEntry : PropertyClass
         {
             
-            public override uint GetHash() => 739519544;
+            public override uint GetHash() => 836925745;
             [Property(210498386, 7)] public UInt64 m_characterID;
             [Property(431206393, 7)] public UInt32 m_rank;
             [Property(3058206907, 7)] public String m_nameBlob;
@@ -8728,7 +8728,7 @@ namespace Imlight.Internals
         public class ObjectBag : PropertyClass
         {
             
-            public override uint GetHash() => 739501423;
+            public override uint GetHash() => 836995944;
             [Property(1983655699, 27)] public List<CoreObject> m_itemList;
             [Property(673449637, 27)] public Int32 m_maxItemStack;
         }
@@ -8736,45 +8736,45 @@ namespace Imlight.Internals
         public class IdleAuraCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 739180920;
+            public override uint GetHash() => 837071457;
         }
         
         public class CombatRule : PropertyClass
         {
             
-            public override uint GetHash() => 741921639;
+            public override uint GetHash() => 837371622;
         }
         
         public class BattlegroundPolymorphs : PropertyClass
         {
             
-            public override uint GetHash() => 745983159;
+            public override uint GetHash() => 838517010;
             [Property(1494222584, 7)] public List<BattlegroundPolymorphList> m_polymorphTypeList;
         }
         
         public class ObstacleCourseFinishLineBehavior : ObstacleCourseObstacleBehavior
         {
             
-            public override uint GetHash() => 597256940;
+            public override uint GetHash() => 838936710;
         }
         
         public class ClientRemoveAuraCinematicAction : RemoveAuraCinematicAction
         {
             
-            public override uint GetHash() => 598465708;
+            public override uint GetHash() => 839746838;
         }
         
         public class PlanningTimerControl : Window
         {
             
-            public override uint GetHash() => 594376767;
+            public override uint GetHash() => 842804276;
             [Property(2008693409, 7)] public Int32 m_alertSeconds;
         }
         
         public class WizShopOffering : PropertyClass
         {
             
-            public override uint GetHash() => 579106595;
+            public override uint GetHash() => 843476981;
             [Property(446354318, 31)] public List<UInt64> m_shopList;
             [Property(3311769839, 31)] public List<String> m_recipeList;
             [Property(3349689687, 31)] public String m_shopTitle;
@@ -8788,14 +8788,14 @@ namespace Imlight.Internals
         public class LinearStateSoundBehavior : LinearSoundBehavior
         {
             
-            public override uint GetHash() => 581834447;
+            public override uint GetHash() => 843904912;
             [Property(3393414044, 7)] public String m_animationName;
         }
         
         public class PositionalSoundEmitterInfo : SoundEmitterInfo
         {
             
-            public override uint GetHash() => 583606440;
+            public override uint GetHash() => 844446229;
             [Property(686816091, 7)] public Single m_innerRadius;
             [Property(1513857812, 7)] public String m_nifObjName;
             [Property(2245834777, 7)] public String m_animNIFObjName;
@@ -8805,7 +8805,7 @@ namespace Imlight.Internals
         public class ConicalSoundBehaviorTemplate : PositionalSoundBehaviorTemplate
         {
             
-            public override uint GetHash() => 557797520;
+            public override uint GetHash() => 849913375;
             [Property(1114383840, 7)] public Single m_fInsideAngle;
             [Property(1627152289, 7)] public Single m_fOutsideAngle;
             [Property(90369618, 7)] public Single m_fOutsideVolume;
@@ -8817,27 +8817,27 @@ namespace Imlight.Internals
         public class InitialPackageInfo : PropertyClass
         {
             
-            public override uint GetHash() => 558139468;
+            public override uint GetHash() => 850808878;
             [Property(3309777205, 268435463)] public List<String> m_packageContents;
         }
         
         public class ObstacleCourseSpringboardBehaviorClient : ObstacleCourseSpringboardBehavior
         {
             
-            public override uint GetHash() => 552906196;
+            public override uint GetHash() => 853170504;
         }
         
         public class ProvideCombatTriggerTemplate : GameEffectTemplate
         {
             
-            public override uint GetHash() => 552767964;
+            public override uint GetHash() => 853268042;
             [Property(3100183568, 7)] public String m_triggerName;
         }
         
         public class WizBugReport : BugReport
         {
             
-            public override uint GetHash() => 536990515;
+            public override uint GetHash() => 854001393;
             [Property(1170942560, 31)] public SystemType m_systemType;
             [Property(1042875837, 31)] public IdeaType m_ideaType;
             [Property(1037989732, 31)] public UInt64 m_userId;
@@ -8879,26 +8879,26 @@ namespace Imlight.Internals
         public class SoccerBall : PropertyClass
         {
             
-            public override uint GetHash() => 544820179;
+            public override uint GetHash() => 855187657;
         }
         
         public class ClientRemoveBacklashEffectCinematicAciton : RemoveBacklashEffectCinematicAction
         {
             
-            public override uint GetHash() => 665471407;
+            public override uint GetHash() => 856547416;
         }
         
         public class ReqIsQuest : Requirement
         {
             
-            public override uint GetHash() => 657399215;
+            public override uint GetHash() => 858568024;
             [Property(1702112846, 268435463)] public String m_questName;
         }
         
         public class Persona : PropertyClass
         {
             
-            public override uint GetHash() => 656883584;
+            public override uint GetHash() => 858701283;
             [Property(2514452244, 7)] public String m_personaName;
             [Property(3116002948, 8388615)] public String m_firstName;
             [Property(1826203600, 8388615)] public String m_lastName;
@@ -8916,7 +8916,7 @@ namespace Imlight.Internals
         public class ReqMinion : ConditionalSpellEffectRequirement
         {
             
-            public override uint GetHash() => 662208264;
+            public override uint GetHash() => 859401725;
             [Property(2627992580, 2097159)] public MinionType m_minionType;
             
             public enum MinionType
@@ -8933,7 +8933,7 @@ namespace Imlight.Internals
         public class MoveCommandYawTime : MoveController.MoveCommand
         {
             
-            public override uint GetHash() => 647686372;
+            public override uint GetHash() => 859949060;
             [Property(309564718, 31)] public Single m_fYaw;
             [Property(2691355138, 31)] public Double m_fTime;
         }
@@ -8941,31 +8941,31 @@ namespace Imlight.Internals
         public class ClientAnnounceSpellTextCinematicAction : AnnounceSpellTextCinematicAction
         {
             
-            public override uint GetHash() => 647113216;
+            public override uint GetHash() => 860092483;
         }
         
         public class DynaModBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 654107423;
+            public override uint GetHash() => 861424380;
         }
         
         public class ClientInfractionBehavior : InfractionBehavior
         {
             
-            public override uint GetHash() => 642686415;
+            public override uint GetHash() => 863294800;
         }
         
         public class ClientAddHangingEffectCinematicAction : AddHangingEffectCinematicAction
         {
             
-            public override uint GetHash() => 621517840;
+            public override uint GetHash() => 866489663;
         }
         
         public class FontGlyphis : Font
         {
             
-            public override uint GetHash() => 618767536;
+            public override uint GetHash() => 870259479;
             [Property(2431512111, 131207)] public String m_sFilename;
             [Property(503137701, 135)] public Single m_fScale;
             [Property(287732353, 135)] public Int32 m_nKerningAdjust;
@@ -8974,7 +8974,7 @@ namespace Imlight.Internals
         public class SavedDebugCommandContainer : PropertyClass
         {
             
-            public override uint GetHash() => 1004289888;
+            public override uint GetHash() => 873496043;
             [Property(2197698884, 7)] public List<SavedDebugCommand> m_savedDebugCommandList;
             [Property(762028567, 7)] public Boolean m_saveToHistory;
         }
@@ -8982,7 +8982,7 @@ namespace Imlight.Internals
         public class ClassProjectPlayer : PropertyClass
         {
             
-            public override uint GetHash() => 1004815084;
+            public override uint GetHash() => 874406534;
             [Property(578537369, 7)] public UInt64 m_playerGID;
             [Property(770936385, 7)] public UInt16 m_totalProgress;
             [Property(1631929220, 7)] public Byte m_tokens;
@@ -9002,7 +9002,7 @@ namespace Imlight.Internals
         public class CombatPipListObj : PropertyClass
         {
             
-            public override uint GetHash() => 996954276;
+            public override uint GetHash() => 876373524;
             [Property(2981312037, 7)] public List<ParticipantParameter> m_pipList;
             [Property(847791408, 7)] public UInt64 m_duelID;
             [Property(3213312566, 7)] public List<ParticipantParameter> m_pipAquiredType;
@@ -9011,31 +9011,31 @@ namespace Imlight.Internals
         public class WizardAutobotQuestManager : AutobotQuestManager
         {
             
-            public override uint GetHash() => 983028656;
+            public override uint GetHash() => 876775127;
         }
         
         public class ReqHasMorphSlot : Requirement
         {
             
-            public override uint GetHash() => 984549755;
+            public override uint GetHash() => 877441123;
         }
         
         public class ClientInventoryBehavior : InventoryBehaviorBase
         {
             
-            public override uint GetHash() => 983778691;
+            public override uint GetHash() => 877634397;
         }
         
         public class ScrollButton : ControlPopupButton
         {
             
-            public override uint GetHash() => 986715891;
+            public override uint GetHash() => 877885313;
         }
         
         public class PrivateSocketJewelPair : PropertyClass
         {
             
-            public override uint GetHash() => 967243432;
+            public override uint GetHash() => 881774485;
             [Property(772707167, 7)] public UInt32 m_socketNumber;
             [Property(190876604, 7)] public UInt64 m_jewelID;
         }
@@ -9043,21 +9043,21 @@ namespace Imlight.Internals
         public class ElixirBenefitBehaviorTemplate : ElixirBehaviorTemplate
         {
             
-            public override uint GetHash() => 970180239;
+            public override uint GetHash() => 882082720;
             [Property(1714146665, 7)] public String m_classProjectName;
         }
         
         public class CombatGardeningXPEffect : GameEffectBase
         {
             
-            public override uint GetHash() => 962019608;
+            public override uint GetHash() => 884122233;
             [Property(755316563, 31)] public Int32 m_xpPercent;
         }
         
         public class FishTournamentUpdate : PropertyClass
         {
             
-            public override uint GetHash() => 960519092;
+            public override uint GetHash() => 884434128;
             [Property(315514866, 7)] public Int32 m_numberOfEntries;
             [Property(2050232416, 7)] public UInt32 m_fishTemplateID;
             [Property(1434386087, 7)] public List<FishTournamentEntry> m_entryList;
@@ -9066,7 +9066,7 @@ namespace Imlight.Internals
         public class Reco_RecoItemData : PropertyClass
         {
             
-            public override uint GetHash() => 682600041;
+            public override uint GetHash() => 886031561;
             [Property(1075344419, 31)] public Int32 m_templateID;
             [Property(219803942, 31)] public Int32 m_rank;
             [Property(2066929134, 31)] public Int32 m_secondaryRank;
@@ -9075,14 +9075,14 @@ namespace Imlight.Internals
         public class QuestEffect2 : ContainerEffect
         {
             
-            public override uint GetHash() => 953108048;
+            public override uint GetHash() => 886350767;
             [Property(2998612909, 31)] public List<QuestEffectDisplayInfo> m_displayInfo;
         }
         
         public class SeedBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 945355619;
+            public override uint GetHash() => 888229093;
             [Property(1171693694, 7)] public Boolean m_initialRandom;
             [Property(1320199517, 7)] public Boolean m_turnRandom;
             [Property(222941845, 7)] public Boolean m_trackPlayer;
@@ -9154,13 +9154,13 @@ namespace Imlight.Internals
         public class ClientBuffDebuffEventCinematicAction : BuffDebuffEventCinematicAction
         {
             
-            public override uint GetHash() => 944077520;
+            public override uint GetHash() => 888548495;
         }
         
         public class ClientWizStorageBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 1072235552;
+            public override uint GetHash() => 891106107;
             [Property(1983655699, 19)] public List<CoreObject> m_itemList;
             [Property(1662903029, 27)] public Int32 m_bankLimit;
             [Property(566146380, 27)] public Int32 m_sharedBankLimit;
@@ -9169,19 +9169,19 @@ namespace Imlight.Internals
         public class AuctionHouseOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 1057966736;
+            public override uint GetHash() => 891592863;
         }
         
         public class AmbientSoundBehaviorTemplate : SoundBehaviorTemplate
         {
             
-            public override uint GetHash() => 1063215308;
+            public override uint GetHash() => 892381710;
         }
         
         public class EquipmentBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1062567851;
+            public override uint GetHash() => 892480983;
             [Property(1892907768, 33554439)] public List<UInt32> m_itemList;
             [Property(2464606287, 7)] public String m_equipmentTemplate;
             [Property(1525681909, 7)] public List<EquippedItemInfo> m_infoList;
@@ -9190,7 +9190,7 @@ namespace Imlight.Internals
         public class CinematicInteractInfo : PropertyClass
         {
             
-            public override uint GetHash() => 1061626772;
+            public override uint GetHash() => 892779224;
             [Property(2574256277, 7)] public String m_actorState;
             [Property(3255674198, 7)] public String m_playerCinematicState;
             [Property(2232796226, 7)] public String m_playerEmote;
@@ -9199,26 +9199,26 @@ namespace Imlight.Internals
         public class ArenaItemsOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 1048728075;
+            public override uint GetHash() => 893904575;
         }
         
         public class HousingTeleporterBehavior : HousingTeleporterBehaviorBase
         {
             
-            public override uint GetHash() => 1042297620;
+            public override uint GetHash() => 896499448;
             [Property(3645160644, 551)] public String m_teleportData;
         }
         
         public class ClientDerbyModifyCheerCost : DerbyModifyCheerCost
         {
             
-            public override uint GetHash() => 1046806327;
+            public override uint GetHash() => 897469938;
         }
         
         public class SigilSubCircle : PropertyClass
         {
             
-            public override uint GetHash() => 1037790056;
+            public override uint GetHash() => 898738405;
             [Property(1824460246, 7)] public String m_locationType;
             [Property(2817699507, 7)] public String m_locationPreference;
             [Property(1497468551, 7)] public Single m_rotation;
@@ -9230,7 +9230,7 @@ namespace Imlight.Internals
         public class FriendData : PropertyClass
         {
             
-            public override uint GetHash() => 1932797849;
+            public override uint GetHash() => 901447185;
             [Property(267019404, 7)] public UInt64 m_gid;
             [Property(3385349572, 7)] public String m_schoolName;
             [Property(3181478700, 7)] public String m_schoolRank;
@@ -9241,7 +9241,7 @@ namespace Imlight.Internals
         public class CastleMagicManager : PropertyClass
         {
             
-            public override uint GetHash() => 1016526376;
+            public override uint GetHash() => 901959605;
             [Property(3812758310, 7)] public List<CastleMagicItem> m_castleMagicItemList;
             [Property(2420724439, 7)] public List<CastleMagicTimer> m_castleMagicTimerList;
             [Property(1824603147, 7)] public String m_randomNumberSetBuffer;
@@ -9251,7 +9251,7 @@ namespace Imlight.Internals
         public class Slot_Node_FXDef : PropertyClass
         {
             
-            public override uint GetHash() => 1018920056;
+            public override uint GetHash() => 902409505;
             [Property(2819781566, 7)] public String m_slotName;
             [Property(3607089954, 7)] public String m_nodeName;
             [Property(1171176403, 7)] public FXDef m_fxDef;
@@ -9260,19 +9260,19 @@ namespace Imlight.Internals
         public class ClientDerbyAffectEffects : DerbyAffectEffects
         {
             
-            public override uint GetHash() => 1017891272;
+            public override uint GetHash() => 902660173;
         }
         
         public class TutorialServiceOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 1013504288;
+            public override uint GetHash() => 905790587;
         }
         
         public class TournamentTemplate : CoreTemplate
         {
             
-            public override uint GetHash() => 1013221963;
+            public override uint GetHash() => 905859247;
             [Property(3329241865, 7)] public String m_tournamentName;
             [Property(2083366952, 7)] public List<String> m_allowedMatches;
             [Property(1327828834, 7)] public Boolean m_updateLadder;
@@ -9290,7 +9290,7 @@ namespace Imlight.Internals
         public class IgnoreEntryData : PropertyClass
         {
             
-            public override uint GetHash() => 865552804;
+            public override uint GetHash() => 906141780;
             [Property(2203859488, 31)] public String m_ignoreName;
             [Property(210498386, 31)] public UInt64 m_characterID;
             [Property(23229750, 31)] public UInt64 m_gameObjectID;
@@ -9299,25 +9299,25 @@ namespace Imlight.Internals
         public class AutobotTiming : PropertyClass
         {
             
-            public override uint GetHash() => 869584336;
+            public override uint GetHash() => 907166031;
         }
         
         public class CastleBlocksBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 859534283;
+            public override uint GetHash() => 908701391;
         }
         
         public class ClientSpellCardAttachmentCinematicAction : SpellCardAttachmentCinematicAction
         {
             
-            public override uint GetHash() => 863098183;
+            public override uint GetHash() => 909838190;
         }
         
         public class RayGeomParams : GeomParams
         {
             
-            public override uint GetHash() => 842208124;
+            public override uint GetHash() => 913028834;
             [Property(2432577069, 7)] public Vector3 m_vPosition;
             [Property(2142285753, 7)] public Vector3 m_vDirection;
             [Property(558261279, 7)] public Single m_fLength;
@@ -9326,7 +9326,7 @@ namespace Imlight.Internals
         public class BoxGeomParams : GeomParams
         {
             
-            public override uint GetHash() => 842208940;
+            public override uint GetHash() => 913029014;
             [Property(558261279, 7)] public Single m_fLength;
             [Property(508100541, 7)] public Single m_fWidth;
             [Property(485437362, 7)] public Single m_fDepth;
@@ -9335,7 +9335,7 @@ namespace Imlight.Internals
         public class PlaneGeomParams : GeomParams
         {
             
-            public override uint GetHash() => 846485127;
+            public override uint GetHash() => 913991582;
             [Property(3552296097, 7)] public Vector3 m_vNormal;
             [Property(194015112, 7)] public Single m_fDistance;
         }
@@ -9343,7 +9343,7 @@ namespace Imlight.Internals
         public class ReagentItemTemplate : WizItemTemplate
         {
             
-            public override uint GetHash() => 846394032;
+            public override uint GetHash() => 914083479;
             [Property(1053730811, 7)] public Int32 m_iconIndex;
             [Property(2391520543, 131079)] public String m_imageName;
         }
@@ -9351,7 +9351,7 @@ namespace Imlight.Internals
         public class ObstacleCourseRevolvingDoorBehaviorTemplate : ObstacleCourseObstacleBehaviorTemplate
         {
             
-            public override uint GetHash() => 845298559;
+            public override uint GetHash() => 914357476;
             [Property(737826060, 7)] public Single m_startAngle;
             [Property(412636784, 7)] public Single m_angularVelocity;
             [Property(989410271, 7)] public Single m_radius;
@@ -9364,13 +9364,13 @@ namespace Imlight.Internals
         public class GraphicalGold : GraphicalSpell
         {
             
-            public override uint GetHash() => 831627387;
+            public override uint GetHash() => 914561571;
         }
         
         public class QuestEffect : NamedEffect
         {
             
-            public override uint GetHash() => 835667536;
+            public override uint GetHash() => 915710895;
             [Property(3147529602, 7)] public RequirementList m_startReqs;
             [Property(2094517692, 7)] public ResultList m_startResults;
             [Property(2118364133, 7)] public ResultList m_endResults;
@@ -9379,20 +9379,20 @@ namespace Imlight.Internals
         public class CrownsConfirmWindow : Window
         {
             
-            public override uint GetHash() => 817866696;
+            public override uint GetHash() => 919116749;
         }
         
         public class CastleMagicBehaviorBase : BehaviorInstance
         {
             
-            public override uint GetHash() => 816553004;
+            public override uint GetHash() => 919442742;
             [Property(2874597138, 575)] public String m_castleMagicData;
         }
         
         public class ResSyncScript : Result
         {
             
-            public override uint GetHash() => 816236063;
+            public override uint GetHash() => 919520188;
             [Property(2438918928, 7)] public String m_script;
             [Property(1511192225, 7)] public String m_function;
         }
@@ -9400,7 +9400,7 @@ namespace Imlight.Internals
         public class RemoveParticleActorCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 816029179;
+            public override uint GetHash() => 919573827;
             [Property(2029161513, 7)] public String m_effectName;
             [Property(3607089954, 7)] public String m_nodeName;
         }
@@ -9408,14 +9408,14 @@ namespace Imlight.Internals
         public class NonCombatMayCastSpellTemplate : GameEffectTemplate
         {
             
-            public override uint GetHash() => 819092356;
+            public override uint GetHash() => 919856348;
             [Property(2688485244, 7)] public String m_spellName;
         }
         
         public class BattlegroundMatchmaking : PropertyClass
         {
             
-            public override uint GetHash() => 807592119;
+            public override uint GetHash() => 921684498;
             [Property(563704930, 7)] public Int32 m_matchSize;
             [Property(606761671, 7)] public Int32 m_secondsWaited;
         }
@@ -9423,7 +9423,7 @@ namespace Imlight.Internals
         public class AutobotConfig : PropertyClass
         {
             
-            public override uint GetHash() => 812166008;
+            public override uint GetHash() => 922573025;
             [Property(951754038, 7)] public Boolean m_displayPath;
             [Property(1456032030, 7)] public Boolean m_findSideQuests;
             [Property(950595970, 7)] public Boolean m_silent;
@@ -9434,45 +9434,45 @@ namespace Imlight.Internals
         public class PotionShopOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 811726795;
+            public override uint GetHash() => 922685391;
         }
         
         public class ClientCreateActorCinematicAction : CreateActorCinematicAction
         {
             
-            public override uint GetHash() => 936122567;
+            public override uint GetHash() => 924087310;
         }
         
         public class WhirlyBurlyBehaviorBase : BehaviorInstance
         {
             
-            public override uint GetHash() => 926924611;
+            public override uint GetHash() => 925408749;
         }
         
         public class SpawnManager : PropertyClass
         {
             
-            public override uint GetHash() => 920005971;
+            public override uint GetHash() => 928184681;
             [Property(3173126402, 7)] public List<SpawnObject> m_spawners;
         }
         
         public class ReqArenaSeasonScore : ReqNumeric
         {
             
-            public override uint GetHash() => 911193648;
+            public override uint GetHash() => 930389943;
             [Property(2799932264, 31)] public String m_tournament;
         }
         
         public class ClientShowPipsCinematicAction : ShowPipsCinematicAction
         {
             
-            public override uint GetHash() => 913953091;
+            public override uint GetHash() => 930678381;
         }
         
         public class ReqArenaSeasonTitle : Requirement
         {
             
-            public override uint GetHash() => 898951152;
+            public override uint GetHash() => 931285959;
             [Property(2308614141, 31)] public String m_title;
             [Property(2799932264, 268435487)] public String m_tournament;
         }
@@ -9480,20 +9480,20 @@ namespace Imlight.Internals
         public class SupportedObjectReference : PropertyClass
         {
             
-            public override uint GetHash() => 899141292;
+            public override uint GetHash() => 931299734;
         }
         
         public class ClassProjectPlayerProgressList : PropertyClass
         {
             
-            public override uint GetHash() => 898278391;
+            public override uint GetHash() => 931519170;
             [Property(1898798624, 7)] public List<ClassProjectPlayerProgress> m_playerProgressList;
         }
         
         public class RatingInfo : PropertyClass
         {
             
-            public override uint GetHash() => 892568472;
+            public override uint GetHash() => 933991129;
             [Property(1717359772, 7)] public String m_name;
             [Property(1505040890, 7)] public Int32 m_minScore;
             [Property(154585660, 7)] public Int32 m_maxScore;
@@ -9504,7 +9504,7 @@ namespace Imlight.Internals
         public class ClassProjectPlayerProgress : PropertyClass
         {
             
-            public override uint GetHash() => 891795399;
+            public override uint GetHash() => 934191054;
             [Property(1263221425, 7)] public UInt32 m_projectID;
             [Property(1748630410, 7)] public ClassProjectPlayer m_classProjectPlayer;
         }
@@ -9512,7 +9512,7 @@ namespace Imlight.Internals
         public class InteractiveMusicLoop : PropertyClass
         {
             
-            public override uint GetHash() => 894654611;
+            public override uint GetHash() => 934519833;
             [Property(1083131517, 65543)] public Int32 m_loopNumber;
             [Property(1558621676, 65536)] public String m_composerPackedName;
             [Property(538993812, 65536)] public UInt64 m_composerGID;
@@ -9525,7 +9525,7 @@ namespace Imlight.Internals
         public class MorphingException : PropertyClass
         {
             
-            public override uint GetHash() => 895618059;
+            public override uint GetHash() => 935326015;
             [Property(89171206, 33554439)] public UInt64 m_secondPetTemplateID;
             [Property(1463276884, 33554439)] public UInt64 m_eggTemplateID;
             [Property(396611384, 7)] public Single m_probability;
@@ -9534,7 +9534,7 @@ namespace Imlight.Internals
         public class PermShopItemData : PropertyClass
         {
             
-            public override uint GetHash() => 881555075;
+            public override uint GetHash() => 935702429;
             [Property(1075328001, 7)] public UInt64 m_templateID;
             [Property(2312609697, 7)] public String m_sortName;
             [Property(1592212719, 7)] public Int32 m_crownsCost;
@@ -9550,27 +9550,27 @@ namespace Imlight.Internals
         public class TreasureShopModifiers : PropertyClass
         {
             
-            public override uint GetHash() => 884935732;
+            public override uint GetHash() => 935899440;
             [Property(999902276, 7)] public Int32 m_buyPriceMultiplier;
         }
         
         public class CrownShopButtonNameBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 884652336;
+            public override uint GetHash() => 935976055;
             [Property(1916274798, 8388615)] public String m_buttonDisplayName;
         }
         
         public class ClientRemoveHangingEffectCinematicAction : RemoveHangingEffectCinematicAction
         {
             
-            public override uint GetHash() => 886072932;
+            public override uint GetHash() => 936602532;
         }
         
         public class BattlegroundGroupStatus : PropertyClass
         {
             
-            public override uint GetHash() => 872455804;
+            public override uint GetHash() => 937907618;
             [Property(1111292082, 7)] public UInt64 m_groupID;
             [Property(2190987938, 7)] public List<BattlegroundGroupMemberStatus> m_members;
         }
@@ -9578,14 +9578,14 @@ namespace Imlight.Internals
         public class PetDerbyResults : PropertyClass
         {
             
-            public override uint GetHash() => 880288732;
+            public override uint GetHash() => 939096778;
             [Property(1783304302, 31)] public List<PetDerbyResult> m_resultList;
         }
         
         public class PetDerbyResult : PropertyClass
         {
             
-            public override uint GetHash() => 880293660;
+            public override uint GetHash() => 939098106;
             [Property(1254828, 31)] public Int32 m_petNumber;
             [Property(1090658759, 31)] public Single m_finishTime;
             [Property(353703441, 31)] public Int32 m_tickets;
@@ -9595,7 +9595,7 @@ namespace Imlight.Internals
         public class SpellCardAttachmentBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 879438032;
+            public override uint GetHash() => 939374607;
             [Property(2136089135, 31)] public List<String> m_spellNames;
             [Property(2698500040, 31)] public String m_targetNode;
             [Property(2445636425, 31)] public Vector3 m_offset;
@@ -9608,7 +9608,7 @@ namespace Imlight.Internals
         public class LeashBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 198472331;
+            public override uint GetHash() => 940732063;
             [Property(989410271, 7)] public Single m_radius;
             [Property(878748702, 7)] public Single m_angle;
             [Property(2170708051, 2097159)] public LeashType m_leashType;
@@ -9619,7 +9619,7 @@ namespace Imlight.Internals
         public class EquipmentSet : PropertyClass
         {
             
-            public override uint GetHash() => 197662620;
+            public override uint GetHash() => 940931034;
             [Property(1828227529, 575)] public String m_serializedItems;
             [Property(518194738, 63)] public UInt32 m_equipmentSetName;
             [Property(1792437804, 63)] public Boolean m_isEquipped;
@@ -9628,7 +9628,7 @@ namespace Imlight.Internals
         public class PetDyeToTexture : PropertyClass
         {
             
-            public override uint GetHash() => 185868540;
+            public override uint GetHash() => 941783554;
             [Property(267033084, 7)] public Int32 m_dye;
             [Property(222406987, 7)] public Int32 m_texture;
         }
@@ -9636,14 +9636,14 @@ namespace Imlight.Internals
         public class DiegoCombatObserver : CombatObserver
         {
             
-            public override uint GetHash() => 184648548;
+            public override uint GetHash() => 942084836;
             [Property(873719258, 7)] public List<DiegoPlayerStats> m_playerStats;
         }
         
         public class MassShapeTemplate : PropertyClass
         {
             
-            public override uint GetHash() => 187845824;
+            public override uint GetHash() => 942399763;
             [Property(1084414079, 7)] public Single m_fCenterOfMassX;
             [Property(1084414080, 7)] public Single m_fCenterOfMassY;
             [Property(1084414081, 7)] public Single m_fCenterOfMassZ;
@@ -9679,47 +9679,47 @@ namespace Imlight.Internals
         public class WinAnimScale : WindowAnimation
         {
             
-            public override uint GetHash() => 179711076;
+            public override uint GetHash() => 944437540;
             [Property(899693439, 135)] public Single m_scale;
         }
         
         public class ClientAlchemyBehavior : AlchemyBehavior
         {
             
-            public override uint GetHash() => 170018612;
+            public override uint GetHash() => 946856944;
         }
         
         public class LadderBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 173837684;
+            public override uint GetHash() => 946884960;
             [Property(782107042, 7)] public UInt64 m_nLadderContainerID;
         }
         
         public class ReqIsGender : Requirement
         {
             
-            public override uint GetHash() => 174402291;
+            public override uint GetHash() => 947796097;
             [Property(2199467133, 31)] public String m_playerGender;
         }
         
         public class ChatPopupButton : ScrollablePopupButton
         {
             
-            public override uint GetHash() => 159708028;
+            public override uint GetHash() => 948326114;
         }
         
         public class WinAnimScaleSymmetricalSpeed : WinAnimScaleSymmetrical
         {
             
-            public override uint GetHash() => 167441052;
+            public override uint GetHash() => 949603994;
             [Property(503609006, 135)] public Single m_fSpeed;
         }
         
         public class PlayGraphicOnSigilCinematicAction : CinematicAction
         {
             
-            public override uint GetHash() => 165945871;
+            public override uint GetHash() => 949910208;
             [Property(1733171553, 7)] public Single m_minDuration;
             [Property(1513131580, 7)] public String m_assetName;
         }
@@ -9727,7 +9727,7 @@ namespace Imlight.Internals
         public class TransformationEffectTemplate : GameEffectTemplate
         {
             
-            public override uint GetHash() => 155602276;
+            public override uint GetHash() => 951509348;
             [Property(2306580681, 7)] public String m_sRace;
             [Property(503137701, 7)] public Single m_fScale;
             [Property(310334923, 7)] public Int32 m_nPrimaryColor;
@@ -9740,7 +9740,7 @@ namespace Imlight.Internals
         public class WindowBubble : PropertyClass
         {
             
-            public override uint GetHash() => 158020023;
+            public override uint GetHash() => 951959122;
             [Property(2431512111, 131079)] public String m_sFilename;
             [Property(2662653502, 1048583)] public Flags m_Flags;
             [Property(2353513904, 7)] public Point m_DockToPoint;
@@ -9759,7 +9759,7 @@ namespace Imlight.Internals
         public class PointData : PropertyClass
         {
             
-            public override uint GetHash() => 224816736;
+            public override uint GetHash() => 953634349;
             [Property(3697900983, 7)] public Vector3 m_position;
             [Property(896371695, 7)] public Single m_pitch;
             [Property(357256328, 7)] public Single m_yaw;
@@ -9769,25 +9769,25 @@ namespace Imlight.Internals
         public class HousingSignOperator : HelpChatOperator
         {
             
-            public override uint GetHash() => 264137039;
+            public override uint GetHash() => 956885104;
         }
         
         public class ClientBurnInterceptCinematicAction : BurnInterceptCinematicAction
         {
             
-            public override uint GetHash() => 265605295;
+            public override uint GetHash() => 957498904;
         }
         
         public class ClientRecipe : Recipe
         {
             
-            public override uint GetHash() => 252365959;
+            public override uint GetHash() => 958775582;
         }
         
         public class MobMonsterMagicBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 255480868;
+            public override uint GetHash() => 959047476;
             [Property(1846757476, 7)] public String m_worldName;
             [Property(717150423, 7)] public Int32 m_collectionResistance;
             [Property(569602950, 7)] public Boolean m_isBoss;
@@ -9804,7 +9804,7 @@ namespace Imlight.Internals
         public class ResultSourceType : Result
         {
             
-            public override uint GetHash() => 258994007;
+            public override uint GetHash() => 960268778;
             [Property(2305508654, 7)] public String m_sourceType;
             [Property(1028933895, 263)] public UInt32 m_zoneLevelMax;
             [Property(1028934149, 263)] public UInt32 m_zoneLevelMin;
@@ -9813,13 +9813,13 @@ namespace Imlight.Internals
         public class MagicalSoccerGameComponent : HousingGameInterface
         {
             
-            public override uint GetHash() => 242361952;
+            public override uint GetHash() => 964426667;
         }
         
         public class TutorialInfo : PropertyClass
         {
             
-            public override uint GetHash() => 241749532;
+            public override uint GetHash() => 964510138;
             [Property(2228828719, 31)] public UInt32 m_tutorialNameID;
             [Property(328120386, 31)] public Int32 m_tutorialStage;
         }
@@ -9827,7 +9827,7 @@ namespace Imlight.Internals
         public class WhirlyBurlyScoreUpdateData : PropertyClass
         {
             
-            public override uint GetHash() => 231518492;
+            public override uint GetHash() => 966024826;
             [Property(1519259416, 7)] public UInt32 m_blueTeamScore;
             [Property(988508012, 7)] public UInt32 m_orangeTeamScore;
             [Property(1672048811, 7)] public UInt32 m_redTeamScore;
@@ -9838,14 +9838,14 @@ namespace Imlight.Internals
         public class FXBySlotEffectTemplate : GameEffectTemplate
         {
             
-            public override uint GetHash() => 222084520;
+            public override uint GetHash() => 967335253;
             [Property(549626493, 7)] public List<Slot_Node_FXDef> m_fxList;
         }
         
         public class ClassProjectGlobalLootPoint : PropertyClass
         {
             
-            public override uint GetHash() => 212585243;
+            public override uint GetHash() => 969769211;
             [Property(1056567917, 7)] public Int32 m_globalPointLevel;
             [Property(3396736580, 7)] public String m_descriptionText;
         }
@@ -9853,13 +9853,13 @@ namespace Imlight.Internals
         public class CastleMagicCameraInfo : PropertyClass
         {
             
-            public override uint GetHash() => 217209844;
+            public override uint GetHash() => 970712256;
         }
         
         public class SpellData : PropertyClass
         {
             
-            public override uint GetHash() => 216489347;
+            public override uint GetHash() => 970892637;
             [Property(1286746870, 63)] public UInt32 m_templateID;
             [Property(2217886818, 63)] public UInt32 m_enchantment;
             [Property(380617740, 63)] public UInt32 m_quantity;
@@ -9868,7 +9868,7 @@ namespace Imlight.Internals
         public class ActorDialog : ActorDialogBase
         {
             
-            public override uint GetHash() => 202602075;
+            public override uint GetHash() => 971222955;
             [Property(2743232871, 31)] public String m_dialogTag;
             [Property(1260107933, 31)] public List<ActorDialogEntry> m_dialogEntries;
             [Property(2877219372, 31)] public List<ActorMadlib> m_madlibs;
@@ -9879,13 +9879,13 @@ namespace Imlight.Internals
         public class ReqCanSummonHenchman : Requirement
         {
             
-            public override uint GetHash() => 203479016;
+            public override uint GetHash() => 971982789;
         }
         
         public class FadeActorCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 61124652;
+            public override uint GetHash() => 974020150;
             [Property(1402536557, 7)] public Single m_fadeDuration;
             [Property(197622500, 7)] public Single m_alphaTarget;
         }
@@ -9893,7 +9893,7 @@ namespace Imlight.Internals
         public class SigilCamera : PropertyClass
         {
             
-            public override uint GetHash() => 65770091;
+            public override uint GetHash() => 975017639;
             [Property(3252786917, 131079)] public String m_cameraName;
             [Property(1990707228, 131079)] public String m_overrideName;
             [Property(2189896538, 7)] public Single m_fMinHeight;
@@ -9902,13 +9902,13 @@ namespace Imlight.Internals
         public class PetGameKioskOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 55192955;
+            public override uint GetHash() => 976615779;
         }
         
         public class ObstacleCourseSpeedUpBehaviorTemplate : ObstacleCourseObstaclePathBaseTemplate
         {
             
-            public override uint GetHash() => 58326148;
+            public override uint GetHash() => 976817436;
             [Property(3716841682, 7)] public Double m_speedAmount;
             [Property(2925547231, 7)] public Double m_buffTime;
             [Property(1540780784, 7)] public String m_effectWearingOff;
@@ -9926,7 +9926,7 @@ namespace Imlight.Internals
         public class FishingBehaviorBase : BehaviorInstance
         {
             
-            public override uint GetHash() => 57146084;
+            public override uint GetHash() => 977177732;
             [Property(2107365240, 1)] public List<CaughtFish> m_caughtFishList;
             [Property(3741999493, 1)] public List<FishHistory> m_fishHistoryList;
         }
@@ -9934,7 +9934,7 @@ namespace Imlight.Internals
         public class ShoppingSellModifiers : PropertyClass
         {
             
-            public override uint GetHash() => 42600292;
+            public override uint GetHash() => 977662948;
             [Property(1673304590, 7)] public Single m_sellMultiplier;
             [Property(776461780, 7)] public Int32 m_sellAdditive;
         }
@@ -9942,13 +9942,13 @@ namespace Imlight.Internals
         public class ClientCreateHangingEffectActorCinematicAction : CreateHangingEffectActorCinematicAction
         {
             
-            public override uint GetHash() => 46756688;
+            public override uint GetHash() => 978661103;
         }
         
         public class WizStatisticEffect : StatisticEffect
         {
             
-            public override uint GetHash() => 46724796;
+            public override uint GetHash() => 978669458;
             [Property(623230606, 63)] public Single m_damageBonusPercent;
             [Property(2212039108, 63)] public Single m_damageBonusFlat;
             [Property(1972336538, 63)] public Single m_accuracyBonusPercent;
@@ -9989,14 +9989,14 @@ namespace Imlight.Internals
         public class ReqBaseMagicLevel : ReqNumeric
         {
             
-            public override uint GetHash() => 48419299;
+            public override uint GetHash() => 979355205;
             [Property(1597012900, 7)] public String m_magicSchool;
         }
         
         public class PetSiegeGameManager : PropertyClass
         {
             
-            public override uint GetHash() => 36583768;
+            public override uint GetHash() => 980221033;
             [Property(1378034810, 7)] public Single m_fPetMass;
             [Property(179025177, 7)] public Single m_fBounce;
             [Property(1371486086, 7)] public Single m_fBounceThreshold;
@@ -10026,7 +10026,7 @@ namespace Imlight.Internals
         public class BadgeFilterInfo : PropertyClass
         {
             
-            public override uint GetHash() => 38634184;
+            public override uint GetHash() => 980685453;
             [Property(2064078516, 31)] public UInt32 m_badgeFilterNameID;
             [Property(1438042878, 31)] public Int32 m_numberOfBadges;
         }
@@ -10034,7 +10034,7 @@ namespace Imlight.Internals
         public class TournamentConfig : PropertyClass
         {
             
-            public override uint GetHash() => 30194471;
+            public override uint GetHash() => 982801654;
             [Property(3082525214, 268435463)] public List<String> m_principalTournamentNames;
             [Property(1792424127, 268435463)] public List<String> m_temporaryTournamentNames;
             [Property(564686028, 7)] public Int64 m_observerTimeout;
@@ -10051,7 +10051,7 @@ namespace Imlight.Internals
         public class BGPolymorphSelectBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 30280384;
+            public override uint GetHash() => 982839443;
             [Property(757020210, 31)] public List<UInt64> m_polyCategoryInactiveToRedTeamPlayers;
             [Property(1382977667, 31)] public List<UInt64> m_polyCategoryUnavailableToRedTeamPlayers;
             [Property(1877669599, 31)] public List<UInt64> m_polyCategoryInactiveToBlueTeamPlayers;
@@ -10061,7 +10061,7 @@ namespace Imlight.Internals
         public class GeomParams : PropertyClass
         {
             
-            public override uint GetHash() => 19766171;
+            public override uint GetHash() => 984356059;
             [Property(1656534066, 2097159)] public ProxyType m_eType;
             
             public enum ProxyType
@@ -10081,20 +10081,20 @@ namespace Imlight.Internals
         public class HatchmakingCrownsPetList : PropertyClass
         {
             
-            public override uint GetHash() => 19896592;
+            public override uint GetHash() => 984388735;
             [Property(567776494, 7)] public List<UInt32> m_petTemplateList;
         }
         
         public class BadgeButton : ControlCheckBox
         {
             
-            public override uint GetHash() => 21180087;
+            public override uint GetHash() => 985119122;
         }
         
         public class PermanentShop : Window
         {
             
-            public override uint GetHash() => 23988492;
+            public override uint GetHash() => 985460862;
             [Property(1795186676, 7)] public Int32 m_currentTab;
             [Property(2094555642, 7)] public Int32 m_totalCrowns;
             [Property(2295349946, 7)] public ClientWizInventoryBehavior m_pInventory;
@@ -10105,20 +10105,20 @@ namespace Imlight.Internals
         public class ActorDeathCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 2062775;
+            public override uint GetHash() => 987802706;
         }
         
         public class AttenuatedFileList : PropertyClass
         {
             
-            public override uint GetHash() => 155295;
+            public override uint GetHash() => 988276124;
             [Property(395748088, 7)] public List<AttenuatedFileDescription> m_attenuatedFileDescriptionList;
         }
         
         public class WizItemTemplate : ItemTemplate
         {
             
-            public override uint GetHash() => 132377528;
+            public override uint GetHash() => 991922385;
             [Property(981103872, 7)] public Int32 m_numPrimaryColors;
             [Property(1310416868, 7)] public Int32 m_numSecondaryColors;
             [Property(953162171, 7)] public Int32 m_numPatterns;
@@ -10144,7 +10144,7 @@ namespace Imlight.Internals
         public class CombatResult : PropertyClass
         {
             
-            public override uint GetHash() => 118148327;
+            public override uint GetHash() => 992329990;
             [Property(1482430415, 2097159)] public kResultType m_resultType;
             [Property(1360563125, 7)] public Int32 m_participantSubCircle;
             [Property(531703753, 7)] public Int32 m_effectType;
@@ -10265,27 +10265,27 @@ namespace Imlight.Internals
         public class SortedCaughtFish : PropertyClass
         {
             
-            public override uint GetHash() => 122790531;
+            public override uint GetHash() => 993204893;
         }
         
         public class PetSnackBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 122870671;
+            public override uint GetHash() => 993248480;
             [Property(2027393587, 27)] public ObjectBag m_snackBag;
         }
         
         public class ReqBaseHasMagicSchool : Requirement
         {
             
-            public override uint GetHash() => 125624435;
+            public override uint GetHash() => 993544737;
             [Property(1597012900, 31)] public String m_magicSchool;
         }
         
         public class SoundBehavior : AreaBehavior
         {
             
-            public override uint GetHash() => 113827463;
+            public override uint GetHash() => 995444126;
             [Property(2061221957, 7)] public PlayList m_playList;
             [Property(1162855023, 7)] public Single m_volume;
             [Property(865634717, 7)] public Int32 m_loopCount;
@@ -10294,21 +10294,21 @@ namespace Imlight.Internals
         public class PathManager_NodeTemplateList : PropertyClass
         {
             
-            public override uint GetHash() => 736220869;
+            public override uint GetHash() => 996754183;
             [Property(2187152017, 7)] public List<NodeObject> m_nodeList;
         }
         
         public class PathManager_PathTemplateList : PropertyClass
         {
             
-            public override uint GetHash() => 874399014;
+            public override uint GetHash() => 996811752;
             [Property(2517543930, 7)] public List<PathObjectTemplate> m_pathList;
         }
         
         public class InfractionEvent : PropertyClass
         {
             
-            public override uint GetHash() => 106591956;
+            public override uint GetHash() => 997322632;
             [Property(3493260286, 7)] public String m_eventName;
             [Property(624575055, 7)] public Single m_basePoints;
             [Property(322423826, 7)] public Single m_repeatScaler;
@@ -10319,7 +10319,7 @@ namespace Imlight.Internals
         public class ObstacleCoursePendulumBehaviorTemplate : ObstacleCourseObstacleBehaviorTemplate
         {
             
-            public override uint GetHash() => 105632051;
+            public override uint GetHash() => 997557873;
             [Property(2117614265, 7)] public Double m_rate;
             [Property(3890998489, 7)] public Double m_penaltyTime;
             [Property(2280680509, 7)] public Double m_boxAngle;
@@ -10335,13 +10335,13 @@ namespace Imlight.Internals
         public class CastleMagicItemDetector : PropertyClass
         {
             
-            public override uint GetHash() => 96340399;
+            public override uint GetHash() => 998830168;
         }
         
         public class Group : PropertyClass
         {
             
-            public override uint GetHash() => 86750823;
+            public override uint GetHash() => 1001234342;
             [Property(586506386, 31)] public UInt64 m_GroupID;
             [Property(1585983742, 31)] public UInt64 m_ChannelID;
             [Property(2864705424, 31)] public List<GroupMember> m_MemberList;
@@ -10351,13 +10351,13 @@ namespace Imlight.Internals
         public class ClientAttachEffectToTurnIndicatorCinematicAction : AttachEffectToTurnIndicatorCinematicAction
         {
             
-            public override uint GetHash() => 90393044;
+            public override uint GetHash() => 1002414152;
         }
         
         public class WinAnimDelay : WindowAnimation
         {
             
-            public override uint GetHash() => 75729628;
+            public override uint GetHash() => 1002934410;
             [Property(485432396, 135)] public Single m_fDelay;
             [Property(1862647402, 135)] public Single m_fElapsedTime;
         }
@@ -10365,7 +10365,7 @@ namespace Imlight.Internals
         public class SavedDebugCommand : PropertyClass
         {
             
-            public override uint GetHash() => 81721396;
+            public override uint GetHash() => 1003539504;
             [Property(1931590331, 7)] public String m_commandName;
             [Property(1618022938, 7)] public String m_command;
         }
@@ -10373,14 +10373,14 @@ namespace Imlight.Internals
         public class BattlegroundTemplateChatList : PropertyClass
         {
             
-            public override uint GetHash() => 83370212;
+            public override uint GetHash() => 1004108292;
             [Property(1496975562, 7)] public List<BattlegroundTemplateChat> m_templates;
         }
         
         public class Spell : PropertyClass
         {
             
-            public override uint GetHash() => 82255411;
+            public override uint GetHash() => 1004451249;
             [Property(1286746870, 31)] public UInt32 m_templateID;
             [Property(2217886818, 31)] public UInt32 m_enchantment;
             [Property(2100921845, 31)] public RankStruct m_rank;
@@ -10413,7 +10413,7 @@ namespace Imlight.Internals
         public class PetTalentTemplate : PetTalentBaseTemplate
         {
             
-            public override uint GetHash() => 69321172;
+            public override uint GetHash() => 1005519432;
             [Property(924514724, 7)] public List<GameEffectInfo> m_effectList;
             [Property(2545839409, 7)] public List<PetStat> m_maxStatList;
         }
@@ -10421,20 +10421,20 @@ namespace Imlight.Internals
         public class CameraReleaseCinematicAction : CinematicAction
         {
             
-            public override uint GetHash() => 75027627;
+            public override uint GetHash() => 1006192407;
             [Property(1807754278, 7)] public Single m_releaseInterpolationDuration;
         }
         
         public class DependentResourcesBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 455857251;
+            public override uint GetHash() => 1009616677;
         }
         
         public class SoundDefTemplate : CoreTemplate
         {
             
-            public override uint GetHash() => 447154572;
+            public override uint GetHash() => 1011789918;
             [Property(2277149669, 7)] public String m_soundName;
             [Property(2276870852, 131079)] public String m_soundFile;
             [Property(2689597116, 7)] public Double m_delay;
@@ -10443,31 +10443,31 @@ namespace Imlight.Internals
         public class SpellCheckBox : ControlCheckBox
         {
             
-            public override uint GetHash() => 437895412;
+            public override uint GetHash() => 1012990464;
         }
         
         public class ParalyzeScriptLink : PropertyClass
         {
             
-            public override uint GetHash() => 437113475;
+            public override uint GetHash() => 1013188253;
         }
         
         public class PhysicsBehaviorClient : PhysicsBehavior
         {
             
-            public override uint GetHash() => 438788024;
+            public override uint GetHash() => 1013884369;
         }
         
         public class FriendSortByWindow : Window
         {
             
-            public override uint GetHash() => 443305219;
+            public override uint GetHash() => 1014784381;
         }
         
         public class CrownShopCategory : PropertyClass
         {
             
-            public override uint GetHash() => 428934979;
+            public override uint GetHash() => 1015231469;
             [Property(1717359772, 31)] public String m_name;
             [Property(2090585127, 31)] public Int32 m_ID;
             [Property(1649374815, 31)] public String m_description;
@@ -10481,7 +10481,7 @@ namespace Imlight.Internals
         public class TieredSpellTemplate : SpellTemplate
         {
             
-            public override uint GetHash() => 427994631;
+            public override uint GetHash() => 1015536062;
             [Property(1047182405, 7)] public Int32 m_shardCost;
             [Property(2840985510, 7)] public RequirementList m_requirements;
             [Property(1762416321, 7)] public List<String> m_nextTierSpells;
@@ -10490,7 +10490,7 @@ namespace Imlight.Internals
         public class BracketReportInfo : PropertyClass
         {
             
-            public override uint GetHash() => 420746960;
+            public override uint GetHash() => 1017280399;
             [Property(1439120946, 31)] public UInt64 m_scheduleID;
             [Property(441272961, 31)] public UInt64 m_bracketID;
             [Property(790945386, 31)] public UInt32 m_bracketState;
@@ -10509,7 +10509,7 @@ namespace Imlight.Internals
         public class MoraleModificationMap : PropertyClass
         {
             
-            public override uint GetHash() => 419561704;
+            public override uint GetHash() => 1017639429;
             [Property(853293452, 31)] public Int32 m_nMoraleChanceAmt;
             [Property(3131470053, 2097183)] public DerbyActionTargetType m_kActionType;
         }
@@ -10517,14 +10517,14 @@ namespace Imlight.Internals
         public class ShadowSpellEffect : EffectListSpellEffect
         {
             
-            public override uint GetHash() => 423412599;
+            public override uint GetHash() => 1017660130;
             [Property(300794109, 7)] public Int32 m_initialBacklash;
         }
         
         public class WizardSearchResultItem : Search_ResultItem
         {
             
-            public override uint GetHash() => 422985728;
+            public override uint GetHash() => 1017839043;
             [Property(801285362, 31)] public Int32 m_level;
             [Property(1104764311, 31)] public UInt32 m_nameKey;
             [Property(2121766730, 2097183)] public eGender m_gender;
@@ -10534,7 +10534,7 @@ namespace Imlight.Internals
         public class TreasureCardPosterBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 414177051;
+            public override uint GetHash() => 1020037115;
             [Property(1878140043, 7)] public String m_materialName;
             [Property(2009140124, 7)] public String m_alternateAssetName;
         }
@@ -10542,13 +10542,13 @@ namespace Imlight.Internals
         public class TagGameComponent : HousingGameInterface
         {
             
-            public override uint GetHash() => 415877395;
+            public override uint GetHash() => 1020592249;
         }
         
         public class ScavengeGoalTemplate : GoalTemplate
         {
             
-            public override uint GetHash() => 417768832;
+            public override uint GetHash() => 1021238115;
             [Property(1723744652, 7)] public List<String> m_itemAdjectives;
             [Property(1809457197, 7)] public Int32 m_itemTotal;
         }
@@ -10556,13 +10556,13 @@ namespace Imlight.Internals
         public class HousingWaterManager : PropertyClass
         {
             
-            public override uint GetHash() => 532478368;
+            public override uint GetHash() => 1023954011;
         }
         
         public class ControlSprite : Window
         {
             
-            public override uint GetHash() => 534437812;
+            public override uint GetHash() => 1024574928;
             [Property(3479277078, 135)] public Material m_pMaterial;
             [Property(1175400173, 135)] public Single m_fRotation;
             [Property(1753714077, 262279)] public Color3 m_Color;
@@ -10573,46 +10573,46 @@ namespace Imlight.Internals
         public class TodaysQuestData : PropertyClass
         {
             
-            public override uint GetHash() => 521425252;
+            public override uint GetHash() => 1025664612;
             [Property(1866614959, 31)] public List<UInt32> m_todaysQuestList;
         }
         
         public class ClientAnnounceTextCinematicAction : AnnounceTextCinematicAction
         {
             
-            public override uint GetHash() => 525087912;
+            public override uint GetHash() => 1026850581;
         }
         
         public class TeamHelpUpdateInfo : PropertyClass
         {
             
-            public override uint GetHash() => 526794296;
+            public override uint GetHash() => 1027538353;
             [Property(560397361, 7)] public List<UInt32> m_worldList;
         }
         
         public class SpectatorWindow : Window
         {
             
-            public override uint GetHash() => 515753212;
+            public override uint GetHash() => 1028129538;
         }
         
         public class ClientRentalBehavior : ClientTimedItemBehavior
         {
             
-            public override uint GetHash() => 515472167;
+            public override uint GetHash() => 1028205814;
         }
         
         public class ObjStateOverrideInfo : PropertyClass
         {
             
-            public override uint GetHash() => 514684131;
+            public override uint GetHash() => 1028402949;
             [Property(2039264668, 31)] public UInt32 m_stateNameID;
         }
         
         public class ItemSetBonusData : PropertyClass
         {
             
-            public override uint GetHash() => 506983124;
+            public override uint GetHash() => 1030393480;
             [Property(243822227, 7)] public Int32 m_numItemsToEquip;
             [Property(1649374815, 8388615)] public String m_description;
             [Property(2841976527, 7)] public RequirementList m_equipEffectsGrantedRequirements;
@@ -10622,7 +10622,7 @@ namespace Imlight.Internals
         public class TeleporterTemplate : PropertyClass
         {
             
-            public override uint GetHash() => 510679932;
+            public override uint GetHash() => 1031496930;
             [Property(2698931614, 7)] public String m_targetZone;
             [Property(2493737915, 7)] public String m_targetLocation;
             [Property(2239683611, 7)] public Vector3 m_location;
@@ -10631,27 +10631,27 @@ namespace Imlight.Internals
         public class AvailableCompleteEntry : GoalEntry
         {
             
-            public override uint GetHash() => 498773831;
+            public override uint GetHash() => 1032444398;
         }
         
         public class ElixirBenefitEffect : GameEffectBase
         {
             
-            public override uint GetHash() => 487252043;
+            public override uint GetHash() => 1034275375;
             [Property(1005801050, 7)] public UInt32 m_flags;
         }
         
         public class WizBangTemplateManager : PropertyClass
         {
             
-            public override uint GetHash() => 490120136;
+            public override uint GetHash() => 1034607309;
             [Property(1728528111, 7)] public List<WizBangTemplate> m_templates;
         }
         
         public class HubZoneMapping : PropertyClass
         {
             
-            public override uint GetHash() => 489046651;
+            public override uint GetHash() => 1034871459;
             [Property(2312385347, 7)] public String m_world;
             [Property(1854011510, 268435463)] public String m_hubZone;
             [Property(2079561588, 7)] public String m_location;
@@ -10664,7 +10664,7 @@ namespace Imlight.Internals
         public class PlayGraphicOnActorAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 481689799;
+            public override uint GetHash() => 1036710414;
             [Property(1513131580, 7)] public String m_assetName;
             [Property(632297791, 7)] public Boolean m_bDontFlipActorYaw;
         }
@@ -10672,7 +10672,7 @@ namespace Imlight.Internals
         public class CombatParticipant : PropertyClass
         {
             
-            public override uint GetHash() => 482905379;
+            public override uint GetHash() => 1037390197;
             [Property(1372273905, 31)] public UInt64 m_ownerID;
             [Property(1548066082, 31)] public UInt64 m_templateID;
             [Property(1717744636, 31)] public Boolean m_isPlayer;
@@ -10765,7 +10765,7 @@ namespace Imlight.Internals
         public class CustomEmoteBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 471512163;
+            public override uint GetHash() => 1038212901;
             [Property(3030904012, 7)] public String m_animation1;
             [Property(3030904013, 7)] public String m_animation2;
             [Property(2453262773, 7)] public String m_sound1;
@@ -10786,13 +10786,13 @@ namespace Imlight.Internals
         public class TurnIndicatorCinematicAction : CinematicAction
         {
             
-            public override uint GetHash() => 476469952;
+            public override uint GetHash() => 1040114835;
         }
         
         public class TipData : PropertyClass
         {
             
-            public override uint GetHash() => 335329020;
+            public override uint GetHash() => 1041784706;
             [Property(2090569797, 7)] public UInt64 m_id;
             [Property(2840988582, 7)] public RequirementList m_requirements;
             [Property(2562145079, 131079)] public String m_actorImage;
@@ -10818,7 +10818,7 @@ namespace Imlight.Internals
         public class PolymorphBattlegroundsBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 324216992;
+            public override uint GetHash() => 1043576859;
             [Property(997576222, 7)] public Int32 m_maxTempStartingPips;
             [Property(31848011, 7)] public Int32 m_maxTempStartingPowerPips;
             [Property(1925169782, 7)] public Int32 m_maxHandSize;
@@ -10832,13 +10832,13 @@ namespace Imlight.Internals
         public class ReqAddIncreaseInventory : Requirement
         {
             
-            public override uint GetHash() => 315795460;
+            public override uint GetHash() => 1045682236;
         }
         
         public class PetFeedingRewardConfig : PropertyClass
         {
             
-            public override uint GetHash() => 305968516;
+            public override uint GetHash() => 1047027548;
             [Property(2366849484, 7)] public List<PetFeedingRewardInfo> m_standardItemFeedingRewards;
             [Property(1691121416, 7)] public List<PetFeedingRewardInfo> m_crownsFeedingRewards;
             [Property(2001693763, 7)] public Single m_fGoldScalingFactor;
@@ -10847,19 +10847,19 @@ namespace Imlight.Internals
         public class ClientCameraFadeCinematicAction : CameraFadeCinematicAction
         {
             
-            public override uint GetHash() => 297449768;
+            public override uint GetHash() => 1049222261;
         }
         
         public class FriendSymbolWindow : Window
         {
             
-            public override uint GetHash() => 291148467;
+            public override uint GetHash() => 1051842193;
         }
         
         public class RecipeTemplate : CoreTemplate
         {
             
-            public override uint GetHash() => 291517640;
+            public override uint GetHash() => 1052737293;
             [Property(3311832788, 134217735)] public String m_recipeName;
             [Property(1061809494, 7)] public List<Ingredient> m_ingredients;
             [Property(3023276954, 8388615)] public String m_displayKey;
@@ -10880,31 +10880,31 @@ namespace Imlight.Internals
         public class HousingSigilManager : PropertyClass
         {
             
-            public override uint GetHash() => 277778880;
+            public override uint GetHash() => 1053087315;
         }
         
         public class DyeShopWindow_DyeShopItem : InventoryPageWindow.InventoryItem
         {
             
-            public override uint GetHash() => 622559639;
+            public override uint GetHash() => 1053587634;
         }
         
         public class CastleMagicAction : PropertyClass
         {
             
-            public override uint GetHash() => 282965012;
+            public override uint GetHash() => 1053826872;
         }
         
         public class SG_GameActionClient_PlaySound : SG_GameAction_PlaySound
         {
             
-            public override uint GetHash() => 284581067;
+            public override uint GetHash() => 1054532879;
         }
         
         public class DOTEffectTemplate : PulseEffectTemplate
         {
             
-            public override uint GetHash() => 274255088;
+            public override uint GetHash() => 1055998215;
             [Property(1866211576, 7)] public String m_statName;
             [Property(3164833118, 7)] public String m_statMaxName;
             [Property(351627865, 7)] public Int32 m_damage;
@@ -10913,13 +10913,13 @@ namespace Imlight.Internals
         public class ClientMountInteractableOption : MountInteractableOption
         {
             
-            public override uint GetHash() => 273981843;
+            public override uint GetHash() => 1056070233;
         }
         
         public class SG_GameInteraction : PropertyClass
         {
             
-            public override uint GetHash() => 275715576;
+            public override uint GetHash() => 1056749377;
             [Property(3615982777, 7)] public String m_interactorOneName;
             [Property(1847465777, 7)] public String m_interactorTwoName;
             [Property(2412613351, 7)] public List<String> m_eventsRaisedOnOne;
@@ -10928,20 +10928,20 @@ namespace Imlight.Internals
         public class StaticControlButtonState : ControlButtonState
         {
             
-            public override uint GetHash() => 401797275;
+            public override uint GetHash() => 1058786843;
             [Property(1641923970, 135)] public Int32 m_nMaterialFrame;
         }
         
         public class HousingMusicManager : PropertyClass
         {
             
-            public override uint GetHash() => 386665808;
+            public override uint GetHash() => 1059352943;
         }
         
         public class PathActionChangePath : PathBehaviorTemplate.Action
         {
             
-            public override uint GetHash() => 391975888;
+            public override uint GetHash() => 1060124367;
             [Property(107013762, 7)] public UInt64 m_nDestinationPathID;
             [Property(44784029, 7)] public Int32 m_nDestinationNodeID;
         }
@@ -10949,38 +10949,38 @@ namespace Imlight.Internals
         public class AutobotManager : PropertyClass
         {
             
-            public override uint GetHash() => 393520548;
+            public override uint GetHash() => 1060789076;
         }
         
         public class GroundContourBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 369218032;
+            public override uint GetHash() => 1063716423;
         }
         
         public class ClientElixirBenefitBehavior : ClientElixirBehavior
         {
             
-            public override uint GetHash() => 371722435;
+            public override uint GetHash() => 1064136717;
         }
         
         public class ParticleEmitter2D : PropertyClass
         {
             
-            public override uint GetHash() => 374193372;
+            public override uint GetHash() => 1064574218;
         }
         
         public class HelpChatOperator : PropertyClass
         {
             
-            public override uint GetHash() => 368732588;
+            public override uint GetHash() => 1067051094;
             [Property(2242085258, 7)] public HelpChatElement m_rootElement;
         }
         
         public class InteractiveMusicButtonSample : PropertyClass
         {
             
-            public override uint GetHash() => 353969115;
+            public override uint GetHash() => 1067530955;
             [Property(3388080120, 7)] public String m_buttonName;
             [Property(2612990110, 7)] public String m_sampleFilename;
             [Property(2022699503, 7)] public String m_hotKey;
@@ -10992,21 +10992,21 @@ namespace Imlight.Internals
         public class GardeningShedBehavior : GardeningShedBehaviorBase
         {
             
-            public override uint GetHash() => 357970275;
+            public override uint GetHash() => 1068695141;
             [Property(1958752566, 551)] public String m_seedData;
         }
         
         public class CoreTemplate : PropertyClass
         {
             
-            public override uint GetHash() => 356798640;
+            public override uint GetHash() => 1068918295;
             [Property(1197808594, 7)] public List<BehaviorTemplate> m_behaviors;
         }
         
         public class GoalTemplate : CoreTemplate
         {
             
-            public override uint GetHash() => 356555948;
+            public override uint GetHash() => 1068979478;
             [Property(1521627807, 7)] public String m_goalName;
             [Property(403158846, 7)] public UInt32 m_goalNameID;
             [Property(2291910240, 8388615)] public String m_goalTitle;
@@ -11055,13 +11055,13 @@ namespace Imlight.Internals
         public class WizTrainingInteraction : ServiceOptionBase
         {
             
-            public override uint GetHash() => 359795892;
+            public override uint GetHash() => 1069281552;
         }
         
         public class WizStatisticOverrideEffectTemplate : StatisticEffectTemplate
         {
             
-            public override uint GetHash() => 337331579;
+            public override uint GetHash() => 1071752035;
             [Property(596105911, 7)] public Int32 m_baseHitpoints;
             [Property(1475495442, 7)] public Int32 m_baseMana;
             [Property(1051081338, 7)] public Single m_xpPercentIncrease;
@@ -11097,14 +11097,14 @@ namespace Imlight.Internals
         public class RegisterPersonaCinematicAction : CinematicAction
         {
             
-            public override uint GetHash() => 338741468;
+            public override uint GetHash() => 1072381962;
             [Property(2350440768, 7)] public Persona m_persona;
         }
         
         public class TournamentUpdateList : PropertyClass
         {
             
-            public override uint GetHash() => 350704574;
+            public override uint GetHash() => 1075927341;
             [Property(3250680338, 31)] public List<TournamentUpdate> m_updates;
             [Property(1400798736, 31)] public Int32 m_matchCount;
             [Property(1614476394, 31)] public Int32 m_teamCount;
@@ -11114,13 +11114,13 @@ namespace Imlight.Internals
         public class GhostHider : PropertyClass
         {
             
-            public override uint GetHash() => 358789653;
+            public override uint GetHash() => 1077944646;
         }
         
         public class ItemTemplate : GameObjectTemplate
         {
             
-            public override uint GetHash() => 356519878;
+            public override uint GetHash() => 1078496819;
             [Property(2762617226, 7)] public RequirementList m_equipRequirements;
             [Property(3174641793, 7)] public RequirementList m_purchaseRequirements;
             [Property(836628351, 7)] public List<GameEffectInfo> m_equipEffects;
@@ -11136,13 +11136,13 @@ namespace Imlight.Internals
         public class LootInfoListBase : PropertyClass
         {
             
-            public override uint GetHash() => 368838629;
+            public override uint GetHash() => 1080527930;
         }
         
         public class LikesDislikesEntry : PropertyClass
         {
             
-            public override uint GetHash() => 365328457;
+            public override uint GetHash() => 1080628177;
             [Property(3429518154, 7)] public String m_adjective;
             [Property(2902469923, 8388615)] public String m_stringTableKey;
             [Property(388952454, 7)] public Single m_modifier;
@@ -11152,13 +11152,13 @@ namespace Imlight.Internals
         public class TutorialLogBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 365701989;
+            public override uint GetHash() => 1080788762;
         }
         
         public class AnimationPair : PropertyClass
         {
             
-            public override uint GetHash() => 373956210;
+            public override uint GetHash() => 1082788448;
             [Property(1953606335, 7)] public String m_oldAnim;
             [Property(2558206762, 7)] public String m_newAnim;
         }
@@ -11166,7 +11166,7 @@ namespace Imlight.Internals
         public class PvPCombatSigilTemplate : CombatSigilTemplate
         {
             
-            public override uint GetHash() => 369939989;
+            public override uint GetHash() => 1083947078;
             [Property(179638776, 7)] public Int32 m_minimumOnSide;
             [Property(1816923809, 8388615)] public String m_minimumError;
         }
@@ -11174,7 +11174,7 @@ namespace Imlight.Internals
         public class AuctionPriceMods : PropertyClass
         {
             
-            public override uint GetHash() => 381879154;
+            public override uint GetHash() => 1084771616;
             [Property(837442809, 7)] public Int32 m_numTemplates;
             [Property(1154061607, 7)] public Single m_sellMod;
             [Property(387686375, 7)] public Single m_buyMod;
@@ -11183,7 +11183,7 @@ namespace Imlight.Internals
         public class ProvideSpellEffectTemplate : GameEffectTemplate
         {
             
-            public override uint GetHash() => 391666189;
+            public override uint GetHash() => 1087281984;
             [Property(2688485244, 268435463)] public String m_spellName;
             [Property(1269498237, 7)] public Int32 m_numSpells;
         }
@@ -11191,7 +11191,7 @@ namespace Imlight.Internals
         public class CastleMagicSpellTemplate : SpellTemplate
         {
             
-            public override uint GetHash() => 389688218;
+            public override uint GetHash() => 1087768358;
             [Property(1857887320, 2097159)] public CastleMagicSpellType m_castleMagicSpellType;
             [Property(1408413012, 2097159)] public CastleMagicSpellEffect m_castleMagicSpellEffect;
             [Property(2466280761, 131079)] public String m_animationKFM;
@@ -11249,7 +11249,7 @@ namespace Imlight.Internals
         public class ReqCanAddExpansion : Requirement
         {
             
-            public override uint GetHash() => 387352862;
+            public override uint GetHash() => 1088237445;
             [Property(2705349254, 2097159)] public Category m_category;
             
             public enum Category
@@ -11263,7 +11263,7 @@ namespace Imlight.Internals
         public class BattleCardPurchaseInfo : PropertyClass
         {
             
-            public override uint GetHash() => 397276986;
+            public override uint GetHash() => 1089728526;
             [Property(2688485244, 31)] public String m_spellName;
             [Property(191619875, 31)] public Int32 m_maxCopies;
         }
@@ -11271,21 +11271,21 @@ namespace Imlight.Internals
         public class EquippedItemInfoList : PropertyClass
         {
             
-            public override uint GetHash() => 397745153;
+            public override uint GetHash() => 1089850051;
             [Property(1525681909, 31)] public List<EquippedItemInfo> m_infoList;
         }
         
         public class QuantityBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 395998222;
+            public override uint GetHash() => 1090392257;
             [Property(1520461975, 7)] public Int32 m_maximumQuantity;
         }
         
         public class WhirlyBurlySpellTemplate : SpellTemplate
         {
             
-            public override uint GetHash() => 279841009;
+            public override uint GetHash() => 1093865471;
             [Property(3170961702, 7)] public String m_unitMovement;
             [Property(2725603631, 7)] public String m_specialUnits;
         }
@@ -11293,14 +11293,14 @@ namespace Imlight.Internals
         public class WizBGPolymorphStatisticOverrideEffect : StatisticEffect
         {
             
-            public override uint GetHash() => 279820898;
+            public override uint GetHash() => 1093919580;
             [Property(596105911, 31)] public Int32 m_baseHitpoints;
         }
         
         public class CrownShopOffering : PropertyClass
         {
             
-            public override uint GetHash() => 278030057;
+            public override uint GetHash() => 1094456441;
             [Property(1546992872, 31)] public List<UInt64> m_boosterPacks;
             [Property(446675542, 31)] public Int32 m_shopType;
         }
@@ -11308,7 +11308,7 @@ namespace Imlight.Internals
         public class ObjectRemapBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 293277494;
+            public override uint GetHash() => 1095126543;
             [Property(1873368397, 7)] public String m_floorMaterialName;
             [Property(1499966715, 7)] public String m_wallMaterialName;
         }
@@ -11316,26 +11316,26 @@ namespace Imlight.Internals
         public class RootWindow : Window
         {
             
-            public override uint GetHash() => 290560225;
+            public override uint GetHash() => 1095560187;
         }
         
         public class StageBacklashEffectCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 299530282;
+            public override uint GetHash() => 1097733066;
         }
         
         public class SG_GameAction_AddPowerMultiplier : SG_GameAction
         {
             
-            public override uint GetHash() => 308372570;
+            public override uint GetHash() => 1098962134;
             [Property(2956499913, 7)] public String m_powerName;
         }
         
         public class MinigameSigilOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 309007469;
+            public override uint GetHash() => 1099057368;
             [Property(1016118542, 31)] public Int32 m_teamUpAllowed;
             [Property(1516681392, 31)] public String m_successZone;
             [Property(1183074257, 31)] public Boolean m_isCluster;
@@ -11345,21 +11345,21 @@ namespace Imlight.Internals
         public class HousingGamePlayerCollection : PropertyClass
         {
             
-            public override uint GetHash() => 304434417;
+            public override uint GetHash() => 1100078847;
             [Property(1909774945, 7)] public List<UInt64> m_playerList;
         }
         
         public class WorldHubZoneMapper : PropertyClass
         {
             
-            public override uint GetHash() => 305066670;
+            public override uint GetHash() => 1100165481;
             [Property(1402898811, 7)] public List<HubZoneMapping> m_hubZoneMapping;
         }
         
         public class NPCDataList : PropertyClass
         {
             
-            public override uint GetHash() => 312958370;
+            public override uint GetHash() => 1102142124;
             [Property(2709214274, 31)] public List<QuestFinderNPCData> m_npcList;
             [Property(975028587, 2097183)] public ZONE_TYPE m_zoneType;
             
@@ -11375,13 +11375,13 @@ namespace Imlight.Internals
         public class ClientAtticBehavior : AtticBehavior
         {
             
-            public override uint GetHash() => 311591970;
+            public override uint GetHash() => 1102851276;
         }
         
         public class PetBoostPlayerStatEffectTemplate : WizStatisticEffectTemplate
         {
             
-            public override uint GetHash() => 312009017;
+            public override uint GetHash() => 1103017357;
             [Property(2417808140, 7)] public String m_primaryStat1;
             [Property(2417808141, 7)] public String m_primaryStat2;
             [Property(3564684959, 7)] public String m_secondaryStat;
@@ -11391,7 +11391,7 @@ namespace Imlight.Internals
         public class TalentInfo : PropertyClass
         {
             
-            public override uint GetHash() => 322298770;
+            public override uint GetHash() => 1104540968;
             [Property(1157727646, 7)] public List<UInt32> m_combatTalents;
             [Property(1072926942, 7)] public List<UInt32> m_derbyTalents;
         }
@@ -11399,19 +11399,19 @@ namespace Imlight.Internals
         public class ClientCastEffectCinematicAction : CastEffectCinematicAction
         {
             
-            public override uint GetHash() => 333713130;
+            public override uint GetHash() => 1105301114;
         }
         
         public class ClientHideActorCinematicAction : HideActorCinematicAction
         {
             
-            public override uint GetHash() => 332758549;
+            public override uint GetHash() => 1106104902;
         }
         
         public class WhirlyBurlyGameState : PropertyClass
         {
             
-            public override uint GetHash() => 328174486;
+            public override uint GetHash() => 1106997031;
             [Property(2327762042, 7)] public List<UInt32> m_boardKeyList;
             [Property(1770021678, 7)] public List<UInt32> m_boardValueList;
             [Property(1090726552, 7)] public List<UInt32> m_pieceKeyList;
@@ -11421,13 +11421,13 @@ namespace Imlight.Internals
         public class GamebryoCamera : Camera
         {
             
-            public override uint GetHash() => 473973266;
+            public override uint GetHash() => 1107860808;
         }
         
         public class ControlProgress : ControlBar
         {
             
-            public override uint GetHash() => 484534734;
+            public override uint GetHash() => 1109448625;
             [Property(260290536, 135)] public Boolean m_bTimed;
             [Property(1142609040, 135)] public Single m_fTotalTime;
             [Property(2112044047, 135)] public Single m_fCurrentTime;
@@ -11437,34 +11437,34 @@ namespace Imlight.Internals
         public class TreasureCardVaultBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 485500265;
+            public override uint GetHash() => 1109689497;
         }
         
         public class ReqHasQuest : Requirement
         {
             
-            public override uint GetHash() => 480285898;
+            public override uint GetHash() => 1110485234;
             [Property(1702112846, 268435463)] public String m_questName;
         }
         
         public class BaseZone : PropertyClass
         {
             
-            public override uint GetHash() => 495175225;
+            public override uint GetHash() => 1115192397;
             [Property(2090569797, 7)] public UInt64 m_id;
             [Property(1717359772, 7)] public String m_name;
             
             public class BaseSimulation : PropertyClass
             {
                 
-                public override uint GetHash() => 1757931680;
+                public override uint GetHash() => 396775930;
             }
         }
         
         public class GameEffectBase : PropertyClass
         {
             
-            public override uint GetHash() => 510754225;
+            public override uint GetHash() => 1116000943;
             [Property(2533274692, 63)] public Double m_currentTickCount;
             [Property(1204067144, 63)] public UInt32 m_effectNameID;
             [Property(522593303, 31)] public Boolean m_bIsOnPet;
@@ -11477,13 +11477,13 @@ namespace Imlight.Internals
         public class PetPowerControl : PetTalentControlBase
         {
             
-            public override uint GetHash() => 505902454;
+            public override uint GetHash() => 1116819615;
         }
         
         public class ActorMadlib : PropertyClass
         {
             
-            public override uint GetHash() => 503821937;
+            public override uint GetHash() => 1117347935;
             [Property(2391615468, 31)] public MadlibBlock m_madlibBlock;
             [Property(1009433893, 31)] public UInt32 m_index;
         }
@@ -11491,7 +11491,7 @@ namespace Imlight.Internals
         public class LootInfo : LootInfoBase
         {
             
-            public override uint GetHash() => 515585957;
+            public override uint GetHash() => 1119240234;
             [Property(1591891442, 2097183)] public LOOT_TYPE m_lootType;
             
             public enum LOOT_TYPE
@@ -11528,7 +11528,7 @@ namespace Imlight.Internals
         public class PassInfo : PropertyClass
         {
             
-            public override uint GetHash() => 515425913;
+            public override uint GetHash() => 1119272029;
             [Property(3398704837, 268435463)] public String m_accessPassName;
             [Property(1795597665, 8388615)] public List<String> m_zoneDisplayNames;
             [Property(1592212719, 7)] public Int32 m_crownsCost;
@@ -11560,13 +11560,13 @@ namespace Imlight.Internals
         public class PetJewelControl : PetTalentControlBase
         {
             
-            public override uint GetHash() => 512390534;
+            public override uint GetHash() => 1119490211;
         }
         
         public class FishingXPConfig : PropertyClass
         {
             
-            public override uint GetHash() => 512558465;
+            public override uint GetHash() => 1119603875;
             [Property(4227148014, 7)] public List<FishingLevelInfo> m_levelInfo;
             [Property(783962734, 7)] public Byte m_maxLevel;
         }
@@ -11574,13 +11574,13 @@ namespace Imlight.Internals
         public class AlphaMaskTextureD3D : TextureD3D
         {
             
-            public override uint GetHash() => 513688570;
+            public override uint GetHash() => 1119821118;
         }
         
         public class MinigameInfo : PropertyClass
         {
             
-            public override uint GetHash() => 524002762;
+            public override uint GetHash() => 1121346738;
             [Property(1717359772, 7)] public String m_name;
             [Property(1717806295, 268435463)] public String m_zone;
             [Property(2457128171, 131079)] public String m_iconArt;
@@ -11591,7 +11591,7 @@ namespace Imlight.Internals
         public class LeaveTeamUpdate : TournamentUpdate
         {
             
-            public override uint GetHash() => 524087929;
+            public override uint GetHash() => 1121431901;
             [Property(1371104126, 31)] public UInt64 m_actorID;
             [Property(982102220, 31)] public UInt64 m_teamID;
         }
@@ -11599,7 +11599,7 @@ namespace Imlight.Internals
         public class WinAnimMoveToLocationTimeEaseApprox : WinAnimMoveToLocationTime
         {
             
-            public override uint GetHash() => 535754490;
+            public override uint GetHash() => 1122185342;
             [Property(1693654127, 135)] public Single m_fEaseAmount;
             [Property(1894338732, 135)] public Single m_fTotalDistance;
             [Property(503609006, 135)] public Single m_fSpeed;
@@ -11609,7 +11609,7 @@ namespace Imlight.Internals
         public class ProxyMesh : ProxyGeometry
         {
             
-            public override uint GetHash() => 532511993;
+            public override uint GetHash() => 1123537661;
             [Property(1433503234, 7)] public List<String> m_verts;
             [Property(1413288912, 7)] public List<String> m_faces;
             [Property(2067861162, 7)] public List<String> m_normals;
@@ -11618,7 +11618,7 @@ namespace Imlight.Internals
         public class TournamentInfoRequest : PropertyClass
         {
             
-            public override uint GetHash() => 529903773;
+            public override uint GetHash() => 1123934692;
             [Property(1799846440, 31)] public UInt32 m_tournamentNameID;
             [Property(210498386, 31)] public UInt64 m_characterID;
             [Property(441272961, 31)] public UInt64 m_bracketID;
@@ -11635,13 +11635,13 @@ namespace Imlight.Internals
         public class SubscriberBenefitControl : Window
         {
             
-            public override uint GetHash() => 408927737;
+            public override uint GetHash() => 1125081789;
         }
         
         public class TempStartingPipEffectInfo : GameEffectInfo
         {
             
-            public override uint GetHash() => 403481061;
+            public override uint GetHash() => 1125885370;
             [Property(1346249167, 7)] public Int32 m_pipsGiven;
             [Property(377908508, 7)] public Int32 m_powerPipsGiven;
         }
@@ -11649,13 +11649,13 @@ namespace Imlight.Internals
         public class FreeCamController : CameraController
         {
             
-            public override uint GetHash() => 404368369;
+            public override uint GetHash() => 1126041407;
         }
         
         public class PremiumContentOption : PropertyClass
         {
             
-            public override uint GetHash() => 404265777;
+            public override uint GetHash() => 1126083343;
             [Property(1592212719, 7)] public Int32 m_crownsCost;
             [Property(1724602037, 7)] public Int32 m_msrpCost;
             [Property(2216277819, 7)] public String m_purchaseText;
@@ -11676,13 +11676,13 @@ namespace Imlight.Internals
         public class PetGameActionList : Window
         {
             
-            public override uint GetHash() => 419074197;
+            public override uint GetHash() => 1126574566;
         }
         
         public class PetDerbyObstacleBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 411218101;
+            public override uint GetHash() => 1127752174;
             [Property(2398162476, 2097159)] public PetDerbyActions m_actionType;
             [Property(1271539151, 7)] public Boolean m_canDestroy;
             [Property(104770413, 7)] public Single m_decisionRadius;
@@ -11706,13 +11706,13 @@ namespace Imlight.Internals
         public class ClientDerbyAddSpeedBoost : DerbyAddSpeedBoost
         {
             
-            public override uint GetHash() => 411276498;
+            public override uint GetHash() => 1127770360;
         }
         
         public class TemplateLocation : PropertyClass
         {
             
-            public override uint GetHash() => 412184066;
+            public override uint GetHash() => 1128060484;
             [Property(3117322428, 7)] public String m_filename;
             [Property(2301988666, 7)] public UInt32 m_id;
         }
@@ -11720,7 +11720,7 @@ namespace Imlight.Internals
         public class CombatResultListObj : PropertyClass
         {
             
-            public override uint GetHash() => 412649290;
+            public override uint GetHash() => 1128180754;
             [Property(2128076658, 7)] public List<CombatResult> m_resultList;
             [Property(847791408, 7)] public UInt64 m_duelID;
         }
@@ -11728,14 +11728,14 @@ namespace Imlight.Internals
         public class BracketReport : PropertyClass
         {
             
-            public override uint GetHash() => 425276702;
+            public override uint GetHash() => 1129234565;
             [Property(2579374715, 31)] public List<BracketReportInfo> m_report;
         }
         
         public class ClassProjectReward : PropertyClass
         {
             
-            public override uint GetHash() => 422807418;
+            public override uint GetHash() => 1129606174;
             [Property(985669209, 7)] public UInt32 m_goalCount;
             [Property(2539512673, 7)] public String m_lootTable;
             [Property(1717182340, 7)] public List<String> m_icon;
@@ -11756,14 +11756,14 @@ namespace Imlight.Internals
         public class BracketIDList : PropertyClass
         {
             
-            public override uint GetHash() => 432985286;
+            public override uint GetHash() => 1131100403;
             [Property(1493156413, 31)] public List<UInt64> m_bracketIDList;
         }
         
         public class WizardEquippedItemInfo : EquippedItemInfo
         {
             
-            public override uint GetHash() => 430941725;
+            public override uint GetHash() => 1131635780;
             [Property(1433198221, 31)] public Byte m_baseColor;
             [Property(1198446862, 31)] public Byte m_trimColor;
             [Property(1338360593, 31)] public Byte m_pattern;
@@ -11774,34 +11774,34 @@ namespace Imlight.Internals
         public class WizItemGoldChestList : WizItemLocations
         {
             
-            public override uint GetHash() => 448961369;
+            public override uint GetHash() => 1135094549;
             [Property(2718514023, 31)] public List<String> m_goldChestZones;
         }
         
         public class ReqSpecificTemplate : Requirement
         {
             
-            public override uint GetHash() => 450813013;
+            public override uint GetHash() => 1135557334;
             [Property(1075328001, 33554439)] public UInt64 m_templateID;
         }
         
         public class PremiumContentOptionList : PropertyClass
         {
             
-            public override uint GetHash() => 447532017;
+            public override uint GetHash() => 1135853375;
             [Property(1394856917, 7)] public List<PremiumContentOption> m_optionList;
         }
         
         public class CreationNameInput : ControlRichEdit
         {
             
-            public override uint GetHash() => 460640610;
+            public override uint GetHash() => 1137031580;
         }
         
         public class BurnHangingEffectCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 467828505;
+            public override uint GetHash() => 1138758149;
             [Property(7349510, 7)] public Boolean m_cloaked;
             [Property(1738601959, 7)] public Boolean m_detonate;
             [Property(1827806971, 131079)] public String m_burnSound;
@@ -11810,19 +11810,19 @@ namespace Imlight.Internals
         public class ClientDerbyForceLaneChange : DerbyForceLaneChange
         {
             
-            public override uint GetHash() => 465655801;
+            public override uint GetHash() => 1139333181;
         }
         
         public class PCDialogEntry : ActorDialogEntry
         {
             
-            public override uint GetHash() => 462556290;
+            public override uint GetHash() => 1140592356;
         }
         
         public class HousingSigilBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 74679673;
+            public override uint GetHash() => 1141140637;
             [Property(3999162041, 7)] public List<SigilZoneInfo> m_sigilZoneInfoList;
             [Property(828840861, 7)] public UInt32 m_usedDisposableDungeonTemplateID;
         }
@@ -11830,13 +11830,13 @@ namespace Imlight.Internals
         public class BGPolymorphSelectOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 68679730;
+            public override uint GetHash() => 1142780880;
         }
         
         public class AddTeamToMatchUpdate : TournamentUpdate
         {
             
-            public override uint GetHash() => 86801381;
+            public override uint GetHash() => 1146327866;
             [Property(982102220, 31)] public UInt64 m_teamID;
             [Property(1757621298, 31)] public UInt64 m_matchID;
         }
@@ -11844,13 +11844,13 @@ namespace Imlight.Internals
         public class LeashedPathMovementBehaviorClient : LeashedPathMovementBehavior
         {
             
-            public override uint GetHash() => 84725470;
+            public override uint GetHash() => 1146863221;
         }
         
         public class WhirlyBurlyPlanningData : PropertyClass
         {
             
-            public override uint GetHash() => 98667886;
+            public override uint GetHash() => 1147203225;
             [Property(2643134017, 7)] public List<Byte> m_unitTypesList;
             [Property(711045287, 7)] public List<UInt32> m_cardsUsedList;
             [Property(1939154233, 7)] public List<UInt32> m_discardedCardsList;
@@ -11859,7 +11859,7 @@ namespace Imlight.Internals
         public class CharacterRaceTable : PropertyClass
         {
             
-            public override uint GetHash() => 95150798;
+            public override uint GetHash() => 1148351857;
             [Property(963057554, 136314887)] public eRace m_eRace;
             [Property(1801114527, 7)] public List<CharacterElementTable> m_characterTables;
             [Property(1709886308, 7)] public CharacterElementTable m_defaultTable;
@@ -11870,37 +11870,37 @@ namespace Imlight.Internals
         public class ClientSetHangingEffectAlphaCinematicAction : SetHangingEffectAlphaCinematicAction
         {
             
-            public override uint GetHash() => 95199121;
+            public override uint GetHash() => 1148430887;
         }
         
         public class MobMonsterMagicBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 92904597;
+            public override uint GetHash() => 1148906214;
         }
         
         public class ClientPlaySoundCinematicAction : PlaySoundCinematicAction
         {
             
-            public override uint GetHash() => 94305977;
+            public override uint GetHash() => 1149186669;
         }
         
         public class AggroBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 108435349;
+            public override uint GetHash() => 1149577254;
         }
         
         public class FidgetBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 106761338;
+            public override uint GetHash() => 1150275294;
         }
         
         public class BattlegroundGroupMemberStatus : PropertyClass
         {
             
-            public override uint GetHash() => 106816710;
+            public override uint GetHash() => 1150285043;
             [Property(1774633426, 7)] public UInt64 m_playerID;
             [Property(3058206907, 7)] public String m_nameBlob;
             [Property(1016087325, 2097159)] public BGGroupStatusEnum m_status;
@@ -11925,13 +11925,13 @@ namespace Imlight.Internals
         public class DeckConfigurationWindow : Window
         {
             
-            public override uint GetHash() => 116465453;
+            public override uint GetHash() => 1151650312;
         }
         
         public class PetSnackItemTemplate : WizItemTemplate
         {
             
-            public override uint GetHash() => 116858830;
+            public override uint GetHash() => 1151683121;
             [Property(1053730811, 7)] public Int32 m_iconIndex;
             [Property(2391520543, 131079)] public String m_imageName;
             [Property(2182942670, 7)] public PetStatModificationSet m_statModifierSet;
@@ -11940,13 +11940,13 @@ namespace Imlight.Internals
         public class ClientInfractionMessageBox : InfractionMessageBox
         {
             
-            public override uint GetHash() => 113443005;
+            public override uint GetHash() => 1151880684;
         }
         
         public class HousingGamePowerUpLocations : PropertyClass
         {
             
-            public override uint GetHash() => 114244441;
+            public override uint GetHash() => 1152074517;
             [Property(3618004416, 7)] public List<Vector3> m_powerupLocations;
             [Property(1229751665, 7)] public Int32 m_numberOfNodes;
         }
@@ -11954,7 +11954,7 @@ namespace Imlight.Internals
         public class CoreObject : PropertyClass
         {
             
-            public override uint GetHash() => 114884857;
+            public override uint GetHash() => 1152306685;
             [Property(1850812559, 31)] public List<BehaviorInstance> m_inactiveBehaviors;
             [Property(1453943095, 16777247)] public UInt64 m_globalID;
             [Property(1298909658, 16777223)] public UInt64 m_permID;
@@ -11972,7 +11972,7 @@ namespace Imlight.Internals
         public class AtticBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 112941557;
+            public override uint GetHash() => 1152801726;
             [Property(550557519, 63)] public UInt64 m_containerGID;
             [Property(184605671, 63)] public Int32 m_atticItemCount;
         }
@@ -11980,13 +11980,13 @@ namespace Imlight.Internals
         public class ClientActorDialogCinematicAction : ActorDialogCinematicAction
         {
             
-            public override uint GetHash() => 121687885;
+            public override uint GetHash() => 1154006544;
         }
         
         public class PhysicsBehavior : CollisionBehavior
         {
             
-            public override uint GetHash() => 122307282;
+            public override uint GetHash() => 1154096504;
             [Property(133708664, 31)] public UInt64 m_nHolderGID;
             [Property(3766080710, 31)] public Vector3 m_vHoldOffset;
             [Property(1792175219, 31)] public Single m_fHoldForce;
@@ -11995,20 +11995,20 @@ namespace Imlight.Internals
         public class GraphicalReagent : GraphicalSpell
         {
             
-            public override uint GetHash() => 121222001;
+            public override uint GetHash() => 1154933023;
         }
         
         public class DerbyRemoveAction : DerbyEffect
         {
             
-            public override uint GetHash() => 6465297;
+            public override uint GetHash() => 1157637127;
             [Property(3401355432, 2097183)] public DerbyActionTargetType m_nActionType;
         }
         
         public class BlobRequestObject : PropertyClass
         {
             
-            public override uint GetHash() => 7595058;
+            public override uint GetHash() => 1157919952;
             [Property(3175052615, 7)] public String m_subType;
             [Property(1265259452, 7)] public UInt32 m_versionNumber;
             [Property(1934060719, 7)] public Int32 m_packageNumber;
@@ -12019,13 +12019,13 @@ namespace Imlight.Internals
         public class TreasureShopOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 5639446;
+            public override uint GetHash() => 1158483591;
         }
         
         public class SplashCinematicInfo : PropertyClass
         {
             
-            public override uint GetHash() => 2231845;
+            public override uint GetHash() => 1158680138;
             [Property(1513131580, 7)] public String m_assetName;
             [Property(1640179405, 7)] public Single m_assetPlaybackTime;
         }
@@ -12033,7 +12033,7 @@ namespace Imlight.Internals
         public class Mail : PropertyClass
         {
             
-            public override uint GetHash() => 2567181;
+            public override uint GetHash() => 1158760128;
             [Property(703697224, 31)] public UInt64 m_mailId;
             [Property(933557677, 31)] public UInt64 m_timeStamp;
             [Property(814458086, 31)] public UInt64 m_senderId;
@@ -12047,14 +12047,14 @@ namespace Imlight.Internals
         public class ArenaBonusPointsLootInfo : LootInfo
         {
             
-            public override uint GetHash() => 14400033;
+            public override uint GetHash() => 1160667979;
             [Property(774521529, 31)] public Int32 m_arenaBonusPointsAmount;
         }
         
         public class RatingBadgeInfo : PropertyClass
         {
             
-            public override uint GetHash() => 10916518;
+            public override uint GetHash() => 1160849771;
             [Property(3002948047, 7)] public String m_badgeName;
             [Property(219280307, 7)] public Int32 m_cost;
             [Property(1061809494, 7)] public List<Ingredient> m_ingredients;
@@ -12063,7 +12063,7 @@ namespace Imlight.Internals
         public class ReqCombatHealth : ConditionalSpellEffectRequirement
         {
             
-            public override uint GetHash() => 9336794;
+            public override uint GetHash() => 1161498678;
             [Property(262693330, 31)] public Single m_fMinPercent;
             [Property(643246740, 31)] public Single m_fMaxPercent;
         }
@@ -12071,14 +12071,14 @@ namespace Imlight.Internals
         public class DependentResourcesBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 9383621;
+            public override uint GetHash() => 1161512562;
             [Property(893254530, 7)] public List<DependentResourceContainer> m_dependentResourceList;
         }
         
         public class SoundFilterParam : PropertyClass
         {
             
-            public override uint GetHash() => 19190593;
+            public override uint GetHash() => 1162983699;
             [Property(1717359772, 7)] public String m_name;
             [Property(1358433825, 7)] public List<Single> m_distanceRatio;
             [Property(903191604, 7)] public List<Single> m_value;
@@ -12088,7 +12088,7 @@ namespace Imlight.Internals
         public class GraphicalSpellWindow : Window
         {
             
-            public override uint GetHash() => 27485449;
+            public override uint GetHash() => 1164989569;
             [Property(1393190292, 7)] public GraphicalSpell m_spell;
             [Property(2688485244, 7)] public String m_spellName;
             [Property(348289198, 7)] public Boolean m_grayscale;
@@ -12097,7 +12097,7 @@ namespace Imlight.Internals
         public class MadlibBlock : PropertyClass
         {
             
-            public override uint GetHash() => 26424677;
+            public override uint GetHash() => 1165770906;
             [Property(1912290195, 31)] public List<MadlibArg> m_madlibs;
             [Property(1821505575, 31)] public String m_blockToken;
         }
@@ -12105,44 +12105,44 @@ namespace Imlight.Internals
         public class PetSnackLootInfo : ItemLootInfo
         {
             
-            public override uint GetHash() => 36732986;
+            public override uint GetHash() => 1167371726;
         }
         
         public class WizClientPet : WizClientLeashedObject
         {
             
-            public override uint GetHash() => 37570698;
+            public override uint GetHash() => 1167581154;
         }
         
         public class ClientAnnounceRoundCinematicAction : AnnounceRoundCinematicAction
         {
             
-            public override uint GetHash() => 34302858;
+            public override uint GetHash() => 1167742754;
         }
         
         public class CastEffectCinematicAction : BaseEffectCinematicAction
         {
             
-            public override uint GetHash() => 56718037;
+            public override uint GetHash() => 1170264438;
             [Property(3413532537, 7)] public String m_namedActor;
         }
         
         public class FixedCamController : ChaseCamController
         {
             
-            public override uint GetHash() => 55925733;
+            public override uint GetHash() => 1171118906;
         }
         
         public class TreasureCardPosterBehavior : TreasureCardPosterBehaviorBase
         {
             
-            public override uint GetHash() => 51064253;
+            public override uint GetHash() => 1171932844;
         }
         
         public class InteractiveMusicBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 51963589;
+            public override uint GetHash() => 1172223090;
             [Property(2703025890, 7)] public String m_titleText;
             [Property(1548997465, 7)] public String m_instrumentGUI;
             [Property(275839645, 7)] public Int32 m_useAlternateHighlighting;
@@ -12153,7 +12153,7 @@ namespace Imlight.Internals
         public class HousingMusicBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 66132361;
+            public override uint GetHash() => 1172622241;
             [Property(2845362532, 131079)] public String m_staticMusicFile;
             [Property(3205780097, 131079)] public String m_dynamicMusicFile;
         }
@@ -12161,7 +12161,7 @@ namespace Imlight.Internals
         public class DdWinAnimMovePlayer : WindowAnimation
         {
             
-            public override uint GetHash() => 66674534;
+            public override uint GetHash() => 1172757019;
             [Property(591537519, 135)] public DdDirection m_facing;
             [Property(1599953256, 135)] public DdDirection m_direction;
             [Property(503609006, 135)] public Single m_fSpeed;
@@ -12177,7 +12177,7 @@ namespace Imlight.Internals
         public class HideActorCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 61124902;
+            public override uint GetHash() => 1173463435;
             [Property(790850959, 7)] public Boolean m_bHide;
             [Property(2100875368, 7)] public Boolean m_evenWhileDead;
             [Property(1821746440, 263)] public Boolean m_bMultiRound;
@@ -12186,7 +12186,7 @@ namespace Imlight.Internals
         public class PathObjectTemplate : PropertyClass
         {
             
-            public override uint GetHash() => 59145586;
+            public override uint GetHash() => 1173951136;
             [Property(2090569797, 7)] public UInt64 m_id;
             [Property(1717359772, 7)] public String m_name;
             [Property(1430564382, 7)] public List<UInt64> m_nodeIDs;
@@ -12195,14 +12195,14 @@ namespace Imlight.Internals
         public class TreasureCardPosterBehaviorBase : BehaviorInstance
         {
             
-            public override uint GetHash() => 58998197;
+            public override uint GetHash() => 1173979822;
             [Property(2688126101, 575)] public String m_spellData;
         }
         
         public class CastleMagicBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 204545665;
+            public override uint GetHash() => 1175767651;
             [Property(3772531839, 2097159)] public CastleMagicItemType m_castleMagicItemType;
             [Property(1161288009, 7)] public Int32 m_numberOfActions;
             [Property(2973138892, 7)] public List<String> m_actionStringKeys;
@@ -12238,13 +12238,13 @@ namespace Imlight.Internals
         public class ObstacleCoursePusherBehavior : ObstacleCourseObstaclePathBase
         {
             
-            public override uint GetHash() => 215121434;
+            public override uint GetHash() => 1177293382;
         }
         
         public class EmojiData : PropertyClass
         {
             
-            public override uint GetHash() => 213153333;
+            public override uint GetHash() => 1177915470;
             [Property(1717359772, 7)] public String m_name;
             [Property(1717182340, 7)] public String m_icon;
             [Property(3408488691, 7)] public List<String> m_shortcutList;
@@ -12253,32 +12253,32 @@ namespace Imlight.Internals
         public class QuestData : PropertyClass
         {
             
-            public override uint GetHash() => 224976161;
+            public override uint GetHash() => 1178778251;
             [Property(1717359772, 7)] public String m_name;
         }
         
         public class ActorDialogBase : PropertyClass
         {
             
-            public override uint GetHash() => 219375545;
+            public override uint GetHash() => 1180455981;
         }
         
         public class DerbyMoraleByTerrainEffect : DerbyEffect
         {
             
-            public override uint GetHash() => 219935658;
+            public override uint GetHash() => 1180594474;
         }
         
         public class MountInteractableOption : InteractableOption
         {
             
-            public override uint GetHash() => 228839230;
+            public override uint GetHash() => 1181777421;
         }
         
         public class LinearSoundEmitterInfo : PositionalSoundEmitterInfo
         {
             
-            public override uint GetHash() => 229444009;
+            public override uint GetHash() => 1181994921;
             [Property(1749294034, 7)] public Single m_fRangeScale;
             [Property(273292776, 7)] public Single m_fAttenuationFactor;
             [Property(2427193304, 2097159)] public PositionInfoAttenuationType m_eAttenuationType;
@@ -12288,19 +12288,19 @@ namespace Imlight.Internals
         public class DdWinAnimMoveDiggingMob : DdWinAnimMoveMob
         {
             
-            public override uint GetHash() => 227052801;
+            public override uint GetHash() => 1182445187;
         }
         
         public class RecipeWindow_RecipeItem : ControlCheckBox
         {
             
-            public override uint GetHash() => 466194086;
+            public override uint GetHash() => 1186655351;
         }
         
         public class PlaySoundInfo : PropertyClass
         {
             
-            public override uint GetHash() => 253815761;
+            public override uint GetHash() => 1188083511;
             [Property(1513131580, 7)] public String m_assetName;
             [Property(309609622, 7)] public Single m_gain;
             [Property(865634717, 7)] public Int32 m_loopCount;
@@ -12315,20 +12315,20 @@ namespace Imlight.Internals
         public class WizStatisticOverrideEffect : StatisticEffect
         {
             
-            public override uint GetHash() => 264224733;
+            public override uint GetHash() => 1190617652;
         }
         
         public class PlayComplexSoundCinematicAction : CinematicAction
         {
             
-            public override uint GetHash() => 139235850;
+            public override uint GetHash() => 1191946562;
             [Property(2303770088, 7)] public CinematicSoundEmitterInfo m_cinematicSoundEmitterInfo;
         }
         
         public class CrownShopCategoryMenu : PropertyClass
         {
             
-            public override uint GetHash() => 137429557;
+            public override uint GetHash() => 1192545614;
             [Property(1717359772, 31)] public String m_name;
             [Property(2090585127, 31)] public Int32 m_ID;
             [Property(1649374815, 31)] public String m_description;
@@ -12340,7 +12340,7 @@ namespace Imlight.Internals
         public class MagicSchoolTemplate : CoreTemplate
         {
             
-            public override uint GetHash() => 135311934;
+            public override uint GetHash() => 1193058637;
             [Property(3385349572, 7)] public String m_schoolName;
             [Property(1708220969, 7)] public UInt32 m_minLevel;
             [Property(7119994, 7)] public Int32 m_schoolIndex;
@@ -12349,7 +12349,7 @@ namespace Imlight.Internals
         public class WizGameStats : PropertyClass
         {
             
-            public override uint GetHash() => 153447266;
+            public override uint GetHash() => 1196545820;
             [Property(596105911, 31)] public Int32 m_baseHitpoints;
             [Property(1475495442, 31)] public Int32 m_baseMana;
             [Property(848889754, 31)] public Int32 m_baseGoldPouch;
@@ -12465,7 +12465,7 @@ namespace Imlight.Internals
         public class SG_GamePower : PropertyClass
         {
             
-            public override uint GetHash() => 165816766;
+            public override uint GetHash() => 1197475757;
             [Property(1717359772, 7)] public String m_name;
             [Property(1884044102, 7)] public String m_blockInteraction;
             [Property(3388691227, 7)] public String m_blockTypeDestroyed;
@@ -12479,13 +12479,13 @@ namespace Imlight.Internals
         public class RenderBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 173843950;
+            public override uint GetHash() => 1200596153;
         }
         
         public class CameraFadeCinematicAction : CinematicAction
         {
             
-            public override uint GetHash() => 169586157;
+            public override uint GetHash() => 1201563320;
             [Property(598255075, 7)] public Single m_fDuration;
             [Property(240694213, 7)] public Boolean m_bCycle;
             [Property(1507201372, 7)] public Boolean m_bFadeIn;
@@ -12494,14 +12494,14 @@ namespace Imlight.Internals
         public class SoftEnumList : PropertyClass
         {
             
-            public override uint GetHash() => 180478034;
+            public override uint GetHash() => 1202255320;
             [Property(2291006147, 7)] public List<String> m_enums;
         }
         
         public class SG_GameEvent : PropertyClass
         {
             
-            public override uint GetHash() => 181170198;
+            public override uint GetHash() => 1202426311;
             [Property(3493260286, 7)] public String m_eventName;
             [Property(3152419933, 7)] public List<SG_GameAction> m_actions;
         }
@@ -12509,14 +12509,14 @@ namespace Imlight.Internals
         public class CollisionWorld : PropertyClass
         {
             
-            public override uint GetHash() => 177050917;
+            public override uint GetHash() => 1203497098;
             [Property(1731856744, 7)] public List<ProxyGeometry> m_World;
         }
         
         public class GameEffectTemplate : PropertyClass
         {
             
-            public override uint GetHash() => 186685798;
+            public override uint GetHash() => 1204857755;
             [Property(2029161513, 7)] public String m_effectName;
             [Property(1852673222, 7)] public String m_effectCategory;
             [Property(1411218206, 7)] public Int32 m_sortOrder;
@@ -12543,32 +12543,32 @@ namespace Imlight.Internals
         public class GearVaultBehavior : GearVaultBehaviorBase
         {
             
-            public override uint GetHash() => 200773606;
+            public override uint GetHash() => 1206218299;
             [Property(1498606388, 551)] public String m_gearData;
         }
         
         public class WhirlyBurlyBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 195378666;
+            public override uint GetHash() => 1207026362;
         }
         
         public class ClientBGPenaltyMatchBan : BGPenaltyMatchBan
         {
             
-            public override uint GetHash() => 878689670;
+            public override uint GetHash() => 1208967843;
         }
         
         public class CompassMarkerWindow : Window
         {
             
-            public override uint GetHash() => 876175253;
+            public override uint GetHash() => 1209457190;
         }
         
         public class DoodleMapPair : PropertyClass
         {
             
-            public override uint GetHash() => 882808894;
+            public override uint GetHash() => 1212099533;
             [Property(3249832570, 131079)] public String m_mapName;
             [Property(2171167736, 7)] public String m_zoneName;
         }
@@ -12576,7 +12576,7 @@ namespace Imlight.Internals
         public class LootInfoList : PropertyClass
         {
             
-            public override uint GetHash() => 905853861;
+            public override uint GetHash() => 1214710570;
             [Property(2139157014, 31)] public List<LootInfo> m_loot;
             [Property(2077081000, 31)] public GoldLootInfo m_goldInfo;
         }
@@ -12584,14 +12584,14 @@ namespace Imlight.Internals
         public class PassInfoList : PropertyClass
         {
             
-            public override uint GetHash() => 905824889;
+            public override uint GetHash() => 1214775133;
             [Property(1338677978, 7)] public List<PassInfo> m_info;
         }
         
         public class ConicalSoundEmitterInfo : PositionalSoundEmitterInfo
         {
             
-            public override uint GetHash() => 901948773;
+            public override uint GetHash() => 1214784666;
             [Property(1114383840, 7)] public Single m_fInsideAngle;
             [Property(1627152289, 7)] public Single m_fOutsideAngle;
             [Property(90369618, 7)] public Single m_fOutsideVolume;
@@ -12603,20 +12603,20 @@ namespace Imlight.Internals
         public class ObstacleCoursePusherBehaviorClient : ObstacleCoursePusherBehavior
         {
             
-            public override uint GetHash() => 906511574;
+            public override uint GetHash() => 1218092279;
         }
         
         public class LeaderboardOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 916808969;
+            public override uint GetHash() => 1219613825;
             [Property(2181150930, 31)] public String m_leaderboardType;
         }
         
         public class Reco_LevelData : PropertyClass
         {
             
-            public override uint GetHash() => 2027897780;
+            public override uint GetHash() => 1219958228;
             [Property(801285362, 31)] public Int32 m_level;
             [Property(2178338894, 31)] public CategoryData m_categoryData;
             
@@ -12628,13 +12628,13 @@ namespace Imlight.Internals
         public class ControlRichEdit : ControlEdit
         {
             
-            public override uint GetHash() => 928838442;
+            public override uint GetHash() => 1221570826;
         }
         
         public class EmbeddedBrowserConfigEntry : PropertyClass
         {
             
-            public override uint GetHash() => 937960421;
+            public override uint GetHash() => 1222804794;
             [Property(2306437263, 7)] public String m_sName;
             [Property(1709213077, 7)] public String m_sEmbeddedPage;
             [Property(3459688718, 7)] public String m_sExternalPage;
@@ -12654,13 +12654,13 @@ namespace Imlight.Internals
         public class EquipmentShopOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 936879042;
+            public override uint GetHash() => 1223517492;
         }
         
         public class BlobRequest : PropertyClass
         {
             
-            public override uint GetHash() => 933621218;
+            public override uint GetHash() => 1223816892;
             [Property(1717601629, 7)] public String m_type;
             [Property(148404716, 7)] public UInt64 m_associatedGID;
             [Property(883864802, 7)] public List<BlobRequestObject> m_blobRequestObjectList;
@@ -12669,13 +12669,13 @@ namespace Imlight.Internals
         public class DailyPvPOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 812450313;
+            public override uint GetHash() => 1224985921;
         }
         
         public class SpellEffect : PropertyClass
         {
             
-            public override uint GetHash() => 809551598;
+            public override uint GetHash() => 1225309305;
             [Property(2578255295, 2097183)] public kSpellEffects m_effectType;
             [Property(357920024, 31)] public Int32 m_effectParam;
             [Property(2501054223, 7)] public String m_sDamageType;
@@ -12855,14 +12855,14 @@ namespace Imlight.Internals
         public class SpeedEffect : GameEffectBase
         {
             
-            public override uint GetHash() => 818169582;
+            public override uint GetHash() => 1227463801;
             [Property(32503058, 31)] public Int32 m_speedMultiplier;
         }
         
         public class QuestEntry : PropertyClass
         {
             
-            public override uint GetHash() => 815534558;
+            public override uint GetHash() => 1228900789;
             [Property(1702112846, 31)] public String m_questName;
             [Property(1530354349, 31)] public UInt32 m_questNameID;
             [Property(3351009655, 31)] public List<GoalEntryFull> m_goalEntries;
@@ -12871,13 +12871,13 @@ namespace Imlight.Internals
         public class PetGeneticsControl : Window
         {
             
-            public override uint GetHash() => 827029177;
+            public override uint GetHash() => 1229607021;
         }
         
         public class AnnounceTextCinematicAction : CinematicAction
         {
             
-            public override uint GetHash() => 834771949;
+            public override uint GetHash() => 1231612728;
             [Property(1717580128, 7)] public String m_text;
             [Property(249913353, 7)] public Boolean m_onlyForPlayer;
             [Property(3386025626, 7)] public String m_stringTable;
@@ -12887,21 +12887,21 @@ namespace Imlight.Internals
         public class LocaleManager : PropertyClass
         {
             
-            public override uint GetHash() => 847910454;
+            public override uint GetHash() => 1236928591;
             [Property(762464984, 7)] public List<LocaleMapping> m_localeMappingList;
         }
         
         public class CombatGardeningXPEffectTemplate : GameEffectTemplate
         {
             
-            public override uint GetHash() => 870615457;
+            public override uint GetHash() => 1239527339;
             [Property(755316563, 7)] public Int32 m_xpPercent;
         }
         
         public class TallyCounterTemplate : PropertyClass
         {
             
-            public override uint GetHash() => 868706117;
+            public override uint GetHash() => 1240028178;
             [Property(475863658, 7)] public Single m_percentChance;
             [Property(2283284954, 8388615)] public String m_descriptor;
             [Property(1649381388, 8388615)] public String m_descriptor2;
@@ -12912,13 +12912,13 @@ namespace Imlight.Internals
         public class BreadCrumbBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 864589790;
+            public override uint GetHash() => 1241163829;
         }
         
         public class ClassProjectFinalReward : PropertyClass
         {
             
-            public override uint GetHash() => 1006886629;
+            public override uint GetHash() => 1243118202;
             [Property(309125241, 7)] public Int32 m_finalPosition;
             [Property(2539512673, 7)] public String m_lootTable;
             [Property(687120258, 7)] public List<UInt32> m_featuredTemplateIDList;
@@ -12927,32 +12927,32 @@ namespace Imlight.Internals
         public class PhysicsSimObject : PropertyClass
         {
             
-            public override uint GetHash() => 1022380558;
+            public override uint GetHash() => 1243914049;
         }
         
         public class ClientStopBacklashRotationEffectCinematicAction : StopBacklashRotationEffectCinematicAction
         {
             
-            public override uint GetHash() => 1031339041;
+            public override uint GetHash() => 1246147275;
         }
         
         public class LootInfoBase : PropertyClass
         {
             
-            public override uint GetHash() => 1031746981;
+            public override uint GetHash() => 1246183594;
         }
         
         public class WizCinematicActorTemplate : CinematicActorTemplate
         {
             
-            public override uint GetHash() => 1028559565;
+            public override uint GetHash() => 1246439792;
             [Property(2035504282, 7)] public ActorDialogList m_dialogList;
         }
         
         public class LeashedPathNodeDescriptor : NodeDescriptor
         {
             
-            public override uint GetHash() => 1053546857;
+            public override uint GetHash() => 1252686745;
             [Property(3706891451, 2097159)] public LeashedPathNodeType m_nodeType;
             [Property(3393414044, 7)] public String m_animationName;
             [Property(2018677929, 7)] public String m_teleportToZone;
@@ -12972,25 +12972,25 @@ namespace Imlight.Internals
         public class ReqInSameDuel : Requirement
         {
             
-            public override uint GetHash() => 1054536722;
+            public override uint GetHash() => 1252929736;
         }
         
         public class AlchemyStationOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 1054604113;
+            public override uint GetHash() => 1252946711;
         }
         
         public class RandomPerTargetSpellEffect : RandomSpellEffect
         {
             
-            public override uint GetHash() => 1058628549;
+            public override uint GetHash() => 1256117554;
         }
         
         public class CharacterChatStatsByText : PropertyClass
         {
             
-            public override uint GetHash() => 484660975;
+            public override uint GetHash() => 1258386852;
             [Property(1717580128, 7)] public String m_text;
             [Property(531784794, 7)] public UInt32 m_chatID;
             [Property(1023841410, 7)] public UInt32 m_usage;
@@ -12999,7 +12999,7 @@ namespace Imlight.Internals
         public class AreaBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 945453457;
+            public override uint GetHash() => 1259213735;
             [Property(989410271, 7)] public Single m_radius;
             [Property(2951251982, 2097159)] public AudioCategory m_category;
             [Property(824383403, 7)] public Boolean m_exclusive;
@@ -13010,7 +13010,7 @@ namespace Imlight.Internals
         public class MoveBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 945305149;
+            public override uint GetHash() => 1259241548;
             [Property(1644159847, 7)] public Single m_fAcceleration;
             [Property(2140366348, 7)] public Single m_fDeceleration;
             [Property(441764242, 7)] public Single m_fVelocityDecay;
@@ -13028,33 +13028,33 @@ namespace Imlight.Internals
         public class WizMountTemplate : WizGameObjectTemplate
         {
             
-            public override uint GetHash() => 942061022;
+            public override uint GetHash() => 1259413685;
         }
         
         public class WeightedList : PropertyClass
         {
             
-            public override uint GetHash() => 941120858;
+            public override uint GetHash() => 1260296854;
             [Property(1753240061, 7)] public List<WeightedEntry> m_list;
         }
         
         public class GardeningShedBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 953458066;
+            public override uint GetHash() => 1261284008;
         }
         
         public class MonsterMagicBehaviorBase : BehaviorInstance
         {
             
-            public override uint GetHash() => 948718385;
+            public override uint GetHash() => 1262198543;
             [Property(3377737309, 551)] public String m_monsterData;
         }
         
         public class SavedCharacter : PropertyClass
         {
             
-            public override uint GetHash() => 963092649;
+            public override uint GetHash() => 1262577129;
             [Property(764326287, 7)] public Int32 m_hairModel;
             [Property(752476125, 7)] public Int32 m_hairColor;
             [Property(1601202478, 7)] public Int32 m_skinColor;
@@ -13077,7 +13077,7 @@ namespace Imlight.Internals
         public class GardeningXPConfig : PropertyClass
         {
             
-            public override uint GetHash() => 963730557;
+            public override uint GetHash() => 1262803676;
             [Property(3807245122, 7)] public List<GardeningLevelInfo> m_levelInfo;
             [Property(783962734, 7)] public Byte m_maxLevel;
         }
@@ -13085,25 +13085,25 @@ namespace Imlight.Internals
         public class SG_GameActionClient_DestroyBlock : SG_GameAction_DestroyBlock
         {
             
-            public override uint GetHash() => 969177529;
+            public override uint GetHash() => 1265210285;
         }
         
         public class FriendsListWindow : Window
         {
             
-            public override uint GetHash() => 968036470;
+            public override uint GetHash() => 1265912287;
         }
         
         public class ClientToggleInterfaceControlCinematicAction : ToggleInterfaceControlCinematicAction
         {
             
-            public override uint GetHash() => 968676305;
+            public override uint GetHash() => 1266137399;
         }
         
         public class MonsterArenaBehaviorBase : BehaviorInstance
         {
             
-            public override uint GetHash() => 965744721;
+            public override uint GetHash() => 1266453463;
             [Property(347281415, 65543)] public List<UInt32> m_mobList;
             [Property(1907651624, 65543)] public UInt64 m_zoneGID;
         }
@@ -13111,13 +13111,13 @@ namespace Imlight.Internals
         public class MonsterMagicBehavior : MonsterMagicBehaviorBase
         {
             
-            public override uint GetHash() => 984615697;
+            public override uint GetHash() => 1270124295;
         }
         
         public class ClassProjectLocation : PropertyClass
         {
             
-            public override uint GetHash() => 996834741;
+            public override uint GetHash() => 1271009966;
             [Property(236419514, 7)] public Int32 m_checkpointLevel;
             [Property(2605356153, 7)] public String m_destinationZone;
             [Property(1531335483, 7)] public String m_destinationLoc;
@@ -13127,35 +13127,35 @@ namespace Imlight.Internals
         public class GameEffectTemplateList : PropertyClass
         {
             
-            public override uint GetHash() => 991966322;
+            public override uint GetHash() => 1271955680;
             [Property(1951025928, 7)] public List<GameEffectTemplate> m_effectTemplates;
         }
         
         public class PathActionEnterState : PathBehaviorTemplate.Action
         {
             
-            public override uint GetHash() => 1004362081;
+            public override uint GetHash() => 1274010523;
             [Property(1788022096, 7)] public String m_sStateName;
         }
         
         public class MonsterArenaBehavior : MonsterArenaBehaviorBase
         {
             
-            public override uint GetHash() => 1001150577;
+            public override uint GetHash() => 1274256351;
             [Property(3377737309, 551)] public String m_monsterData;
         }
         
         public class GroundContourBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 998472989;
+            public override uint GetHash() => 1274565252;
             [Property(595695008, 7)] public Single m_maxDeviation;
         }
         
         public class BracketMatchInfo : PvPMatchInfo
         {
             
-            public override uint GetHash() => 999565057;
+            public override uint GetHash() => 1274905603;
             [Property(2062988042, 31)] public Int32 m_minRank;
             [Property(1761764108, 31)] public Int32 m_maxRank;
             [Property(1601148004, 31)] public Int32 m_numTeams;
@@ -13172,19 +13172,19 @@ namespace Imlight.Internals
         public class ClientTextureRemapBehavior : TextureRemapBehavior
         {
             
-            public override uint GetHash() => 612169714;
+            public override uint GetHash() => 1275572288;
         }
         
         public class QueuedCombatCinematicAction : CinematicAction
         {
             
-            public override uint GetHash() => 615001557;
+            public override uint GetHash() => 1278379702;
         }
         
         public class SpellEffectParamOverride : PropertyClass
         {
             
-            public override uint GetHash() => 613689606;
+            public override uint GetHash() => 1279100803;
             [Property(350070655, 31)] public Int32 m_effectIndex;
             [Property(2048907304, 31)] public Int32 m_paramValue;
         }
@@ -13192,26 +13192,26 @@ namespace Imlight.Internals
         public class ClientDestroyShadowCreatureCinematicAction : DestroyShadowCreatureCinematicAction
         {
             
-            public override uint GetHash() => 636881617;
+            public override uint GetHash() => 1281691511;
         }
         
         public class JewelShopOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 643402246;
+            public override uint GetHash() => 1284435779;
         }
         
         public class InventoryBehaviorBase : BehaviorInstance
         {
             
-            public override uint GetHash() => 641489670;
+            public override uint GetHash() => 1285004035;
             [Property(1983655699, 27)] public List<CoreObject> m_itemList;
         }
         
         public class WizZoneData : ZoneData
         {
             
-            public override uint GetHash() => 639459034;
+            public override uint GetHash() => 1285544566;
             [Property(3636593682, 131079)] public String m_combatMusic;
             [Property(2717603296, 7)] public String m_guiFile;
             [Property(1052055702, 7)] public Single m_bloomBrightnessThreshold;
@@ -13226,50 +13226,50 @@ namespace Imlight.Internals
         public class DdBonusWinAnim : WinAnimConcurrent
         {
             
-            public override uint GetHash() => 649426794;
+            public override uint GetHash() => 1286983706;
         }
         
         public class ClientWizEquipmentBehavior : ClientEquipmentBehavior
         {
             
-            public override uint GetHash() => 661493590;
+            public override uint GetHash() => 1287907351;
             [Property(1904799695, 27)] public List<EquipmentSet> m_equipmentSets;
         }
         
         public class GroupObserver : PropertyClass
         {
             
-            public override uint GetHash() => 654724630;
+            public override uint GetHash() => 1289297479;
         }
         
         public class ClientUnShadowSelfCinematicAction : UnShadowSelfCinematicAction
         {
             
-            public override uint GetHash() => 666326969;
+            public override uint GetHash() => 1291147309;
         }
         
         public class RecipeShopOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 663857801;
+            public override uint GetHash() => 1291642721;
         }
         
         public class UnknownLootInfo : LootInfo
         {
             
-            public override uint GetHash() => 552625970;
+            public override uint GetHash() => 1294242832;
         }
         
         public class BattlegroundMiniMapWindow : Window
         {
             
-            public override uint GetHash() => 549418521;
+            public override uint GetHash() => 1295470661;
         }
         
         public class ObstacleCourseClientSettings : PropertyClass
         {
             
-            public override uint GetHash() => 557337749;
+            public override uint GetHash() => 1297522406;
             [Property(1589507199, 7)] public String m_launchCameraAsset;
             [Property(3431958848, 7)] public String m_launchAltCameraAsset;
             [Property(2785496869, 7)] public String m_finishCameraAsset;
@@ -13320,20 +13320,20 @@ namespace Imlight.Internals
         public class GearVaultBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 557362493;
+            public override uint GetHash() => 1297524364;
         }
         
         public class PolymorphEffectTemplate : GameEffectTemplate
         {
             
-            public override uint GetHash() => 554961649;
+            public override uint GetHash() => 1297977215;
             [Property(1286746870, 7)] public UInt32 m_templateID;
         }
         
         public class PromoReward : PropertyClass
         {
             
-            public override uint GetHash() => 567129561;
+            public override uint GetHash() => 1298915509;
             [Property(1717004954, 31)] public String m_desc;
             [Property(1717601629, 31)] public String m_type;
         }
@@ -13341,13 +13341,13 @@ namespace Imlight.Internals
         public class AutobotQuestManager : PropertyClass
         {
             
-            public override uint GetHash() => 564606237;
+            public override uint GetHash() => 1299267716;
         }
         
         public class MagicXPConfig : PropertyClass
         {
             
-            public override uint GetHash() => 562305565;
+            public override uint GetHash() => 1299811140;
             [Property(1658121668, 7)] public List<Single> m_encounterXPFactors;
             [Property(3910018919, 7)] public List<MagicLevelInfo> m_levelInfo;
             [Property(1542484118, 7)] public List<ClassInfo> m_classInfo;
@@ -13359,46 +13359,46 @@ namespace Imlight.Internals
         public class ResAddCharacterSlotResult : Result
         {
             
-            public override uint GetHash() => 587704733;
+            public override uint GetHash() => 1306093476;
             [Property(57745273, 7)] public Int32 m_maximumPurchasedCharacterSlots;
         }
         
         public class DerbyForceLaneChange : DerbyEffect
         {
             
-            public override uint GetHash() => 603199126;
+            public override uint GetHash() => 1306888295;
         }
         
         public class DerbyModifyMoraleChance : DerbyEffect
         {
             
-            public override uint GetHash() => 597001834;
+            public override uint GetHash() => 1308486746;
             [Property(1654668404, 31)] public MoraleModificationMap m_moraleChanceActionMap;
         }
         
         public class PetLevelUpWindow : Window
         {
             
-            public override uint GetHash() => 739493037;
+            public override uint GetHash() => 1310489832;
         }
         
         public class ClientZone : BaseZone
         {
             
-            public override uint GetHash() => 751518165;
+            public override uint GetHash() => 1311399350;
         }
         
         public class MountTable : PropertyClass
         {
             
-            public override uint GetHash() => 762229709;
+            public override uint GetHash() => 1313022256;
             [Property(2866335988, 7)] public List<MountRecord> m_Mounts;
         }
         
         public class ItemBundleTemplate : WizItemTemplate
         {
             
-            public override uint GetHash() => 760648898;
+            public override uint GetHash() => 1313679604;
             [Property(182029460, 33554439)] public List<UInt64> m_bundleItems;
             [Property(2176833998, 2097159)] public AcquireConditionType m_acquireCondition;
             [Property(2541051988, 2097159)] public BundleContentsType m_bundleContentsType;
@@ -13423,7 +13423,7 @@ namespace Imlight.Internals
         public class WhirlyBurlyPlanningDataAI : PropertyClass
         {
             
-            public override uint GetHash() => 770280814;
+            public override uint GetHash() => 1315106457;
             [Property(857479191, 7)] public Byte m_team;
             [Property(1362521513, 7)] public UInt32 m_passport;
             [Property(2643134017, 7)] public List<Byte> m_unitTypesList;
@@ -13433,7 +13433,7 @@ namespace Imlight.Internals
         public class ContainerEffectTemplate : GameEffectTemplate
         {
             
-            public override uint GetHash() => 768776269;
+            public override uint GetHash() => 1315711952;
             [Property(3147529602, 7)] public RequirementList m_startReqs;
             [Property(957354392, 7)] public List<GameEffectInfo> m_containerEffects;
             [Property(1462123093, 7)] public UInt32 m_accompanyID;
@@ -13442,46 +13442,46 @@ namespace Imlight.Internals
         public class MaxManaLootInfo : LootInfo
         {
             
-            public override uint GetHash() => 769545525;
+            public override uint GetHash() => 1315903630;
             [Property(1303804451, 31)] public Int32 m_manaToAdd;
         }
         
         public class EquivalentItemBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 763466485;
+            public override uint GetHash() => 1316546942;
         }
         
         public class ClientElixirBehavior : ClientTimedItemBehavior
         {
             
-            public override uint GetHash() => 778503062;
+            public override uint GetHash() => 1317096743;
             [Property(828970945, 31)] public Boolean m_statsApplied;
         }
         
         public class MinigameSigilTemplate : SigilTemplate
         {
             
-            public override uint GetHash() => 772988257;
+            public override uint GetHash() => 1318861467;
         }
         
         public class DerbyAddSpeedBoost : DerbyEffect
         {
             
-            public override uint GetHash() => 788470325;
+            public override uint GetHash() => 1319586638;
             [Property(1414275638, 31)] public Int32 m_nTimesToAdd;
         }
         
         public class ClientStopComplexSoundCinematicAction : StopComplexSoundCinematicAction
         {
             
-            public override uint GetHash() => 785491938;
+            public override uint GetHash() => 1319953468;
         }
         
         public class ReqHangingEffectType : ConditionalSpellEffectRequirement
         {
             
-            public override uint GetHash() => 795914074;
+            public override uint GetHash() => 1321510422;
             [Property(2578255295, 2097159)] public kSpellEffects m_effectType;
             [Property(1624315676, 31)] public Int32 m_param_low;
             [Property(2059828426, 31)] public Int32 m_param_high;
@@ -13598,26 +13598,26 @@ namespace Imlight.Internals
         public class HousingTeleporterTargeting : PropertyClass
         {
             
-            public override uint GetHash() => 791194249;
+            public override uint GetHash() => 1322428257;
         }
         
         public class ClientObjectInfo : CoreObjectInfo
         {
             
-            public override uint GetHash() => 674943834;
+            public override uint GetHash() => 1326856470;
         }
         
         public class CantripsItemTemplate : WizItemTemplate
         {
             
-            public override uint GetHash() => 687540325;
+            public override uint GetHash() => 1327910874;
             [Property(3064230349, 33554439)] public String m_cantripName;
         }
         
         public class TeleportProximityBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 692472034;
+            public override uint GetHash() => 1330192380;
             [Property(989410271, 7)] public Single m_radius;
             [Property(315454742, 7)] public Single m_offsetX;
             [Property(315454743, 7)] public Single m_offsetY;
@@ -13628,7 +13628,7 @@ namespace Imlight.Internals
         public class BracketRewardsPlaceMapping : PropertyClass
         {
             
-            public override uint GetHash() => 689839542;
+            public override uint GetHash() => 1331628719;
             [Property(2164625196, 7)] public UInt32 m_numOfTeams;
             [Property(1626881929, 7)] public List<UInt32> m_mappedPlace;
         }
@@ -13636,7 +13636,7 @@ namespace Imlight.Internals
         public class NPCBehavior : NameOverrideBehavior
         {
             
-            public override uint GetHash() => 721411698;
+            public override uint GetHash() => 1336375904;
             [Property(3116002948, 31)] public String m_firstName;
             [Property(1826203600, 31)] public String m_lastName;
             [Property(2269863201, 31)] public String m_nickname;
@@ -13647,7 +13647,7 @@ namespace Imlight.Internals
         public class ParticipantParameter : PropertyClass
         {
             
-            public override uint GetHash() => 718947510;
+            public override uint GetHash() => 1336810735;
             [Property(821435516, 7)] public UInt64 m_partID;
             [Property(430703463, 7)] public UInt32 m_data;
         }
@@ -13655,38 +13655,38 @@ namespace Imlight.Internals
         public class TeamHelpFailWindow : Window
         {
             
-            public override uint GetHash() => 718882026;
+            public override uint GetHash() => 1336859898;
         }
         
         public class WizardClientTutorial : ClientTutorial
         {
             
-            public override uint GetHash() => 725706737;
+            public override uint GetHash() => 1338561599;
         }
         
         public class ClientPlayerAggroBehavior : PlayerAggroBehavior
         {
             
-            public override uint GetHash() => 725899338;
+            public override uint GetHash() => 1338612690;
         }
         
         public class PositionalStateSoundBehavior : PositionalSoundBehavior
         {
             
-            public override uint GetHash() => 726937449;
+            public override uint GetHash() => 1338869273;
             [Property(3393414044, 7)] public String m_animationName;
         }
         
         public class WorldWindow : Window
         {
             
-            public override uint GetHash() => 724756405;
+            public override uint GetHash() => 1339307054;
         }
         
         public class WinAnimMoveToLocationTime : WinAnimMoveToLocation
         {
             
-            public override uint GetHash() => 732555210;
+            public override uint GetHash() => 1341322290;
             [Property(1591443014, 135)] public Single m_fTimeRemaining;
             [Property(661225456, 135)] public Single m_fTimeTotal;
         }
@@ -13694,25 +13694,25 @@ namespace Imlight.Internals
         public class FishTournamentOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 732930761;
+            public override uint GetHash() => 1341351281;
         }
         
         public class HealthGlobe : StatGlobe
         {
             
-            public override uint GetHash() => 1417347553;
+            public override uint GetHash() => 1342590395;
         }
         
         public class MonsterMagicBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1411637641;
+            public override uint GetHash() => 1343255969;
         }
         
         public class MatchTeamResult : PropertyClass
         {
             
-            public override uint GetHash() => 1412612745;
+            public override uint GetHash() => 1343503713;
             [Property(982102220, 31)] public UInt64 m_teamID;
             [Property(1933240587, 31)] public Byte m_teamResolution;
         }
@@ -13720,7 +13720,7 @@ namespace Imlight.Internals
         public class BattlegroundPlayerStats : PropertyClass
         {
             
-            public override uint GetHash() => 1412824734;
+            public override uint GetHash() => 1343615589;
             [Property(1862714304, 2097159)] public PlayerStatusEnum m_status;
             [Property(1426706772, 2097159)] public PlayerTeamEnum m_team;
             [Property(1805208228, 7)] public String m_packedName;
@@ -13752,19 +13752,19 @@ namespace Imlight.Internals
         public class PetJewelBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 1410442314;
+            public override uint GetHash() => 1344070866;
         }
         
         public class FishingBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1420994262;
+            public override uint GetHash() => 1345594487;
         }
         
         public class TournamentLevelModifiers : CoreTemplate
         {
             
-            public override uint GetHash() => 1431247662;
+            public override uint GetHash() => 1347111689;
             [Property(3747681891, 7)] public List<Vector2> m_levelToRankMod;
             [Property(1286746870, 7)] public UInt32 m_templateID;
         }
@@ -13772,13 +13772,13 @@ namespace Imlight.Internals
         public class HousingGameManager : PropertyClass
         {
             
-            public override uint GetHash() => 1428297017;
+            public override uint GetHash() => 1347422349;
         }
         
         public class TempStartingPipEffect : GameEffectBase
         {
             
-            public override uint GetHash() => 1429173221;
+            public override uint GetHash() => 1347637562;
             [Property(1346249167, 31)] public Int32 m_pipsGiven;
             [Property(377908508, 31)] public Int32 m_powerPipsGiven;
         }
@@ -13786,19 +13786,19 @@ namespace Imlight.Internals
         public class WindowTip : ControlText
         {
             
-            public override uint GetHash() => 1428987054;
+            public override uint GetHash() => 1347660521;
         }
         
         public class MonsterArenaBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1430237929;
+            public override uint GetHash() => 1347903865;
         }
         
         public class InfractionMessageBoxInfo : InfractionPenaltyInfo
         {
             
-            public override uint GetHash() => 1435784470;
+            public override uint GetHash() => 1350408327;
             [Property(3096106918, 7)] public String m_titleKey;
             [Property(3561518217, 7)] public String m_messageKey;
         }
@@ -13806,7 +13806,7 @@ namespace Imlight.Internals
         public class ClassProjectTemplate : PropertyClass
         {
             
-            public override uint GetHash() => 1450374693;
+            public override uint GetHash() => 1350840394;
             [Property(2223751667, 7)] public String m_projectName;
             [Property(1839677492, 7)] public String m_projectTitle;
             [Property(3174112214, 7)] public String m_projectDescription;
@@ -13867,7 +13867,7 @@ namespace Imlight.Internals
         public class WaypointGoalTemplate : GoalTemplate
         {
             
-            public override uint GetHash() => 1447413170;
+            public override uint GetHash() => 1351220400;
             [Property(739064065, 7)] public Boolean m_zoneEntry;
             [Property(3405382643, 7)] public String m_zoneTag;
             [Property(1743105804, 7)] public String m_proximityTag;
@@ -13877,13 +13877,13 @@ namespace Imlight.Internals
         public class ClientDerbyLockLane : DerbyLockLane
         {
             
-            public override uint GetHash() => 1445973953;
+            public override uint GetHash() => 1351843379;
         }
         
         public class CharacterSet : PropertyClass
         {
             
-            public override uint GetHash() => 1456849634;
+            public override uint GetHash() => 1353579900;
             [Property(848667448, 7)] public List<InclusiveRange> m_set;
             [Property(430682758, 7)] public UInt32 m_cost;
         }
@@ -13891,7 +13891,7 @@ namespace Imlight.Internals
         public class PetTalentBaseTemplate : CoreTemplate
         {
             
-            public override uint GetHash() => 1453771866;
+            public override uint GetHash() => 1353793238;
             [Property(2455147588, 134217735)] public String m_talentName;
             [Property(2446900370, 8388615)] public String m_displayName;
             [Property(1649374815, 8388615)] public String m_description;
@@ -13906,13 +13906,13 @@ namespace Imlight.Internals
         public class HousingPetBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1454170277;
+            public override uint GetHash() => 1353954794;
         }
         
         public class LockData : PropertyClass
         {
             
-            public override uint GetHash() => 2140895279;
+            public override uint GetHash() => 1354761121;
             [Property(1764749335, 7)] public String m_tag;
             [Property(974984968, 7)] public Boolean m_unlocked;
         }
@@ -13920,14 +13920,14 @@ namespace Imlight.Internals
         public class GameObjectAnimStateTracker : PropertyClass
         {
             
-            public override uint GetHash() => 1462331822;
+            public override uint GetHash() => 1355995049;
             [Property(1685449834, 31)] public List<GameObjectAnimData> m_animDataList;
         }
         
         public class InfractionMessageBox : InfractionPenalty
         {
             
-            public override uint GetHash() => 1476217734;
+            public override uint GetHash() => 1357373219;
             [Property(3096106918, 31)] public String m_titleKey;
             [Property(3561518217, 31)] public String m_messageKey;
         }
@@ -13935,7 +13935,7 @@ namespace Imlight.Internals
         public class AquariumBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1476240446;
+            public override uint GetHash() => 1357374669;
             [Property(1397459629, 7)] public Int32 m_fishtankSize;
             [Property(1397512660, 7)] public Int32 m_fishtankType;
             [Property(1143336898, 7)] public Int32 m_numberOfFish;
@@ -13944,14 +13944,14 @@ namespace Imlight.Internals
         public class MagicSchoolInfo : PropertyClass
         {
             
-            public override uint GetHash() => 1470900757;
+            public override uint GetHash() => 1358137158;
             [Property(3385349572, 31)] public String m_schoolName;
         }
         
         public class NonCombatMayCastSpellInfo : GameEffectInfo
         {
             
-            public override uint GetHash() => 1349723505;
+            public override uint GetHash() => 1359234207;
             [Property(2688485244, 268435463)] public String m_spellName;
             [Property(385662509, 31)] public Int32 m_percentChance;
             [Property(790341621, 31)] public NonCombatMayCastSpellDescription m_spellDescription;
@@ -13960,7 +13960,7 @@ namespace Imlight.Internals
         public class TeamHelpUpdateSigilInfo : PropertyClass
         {
             
-            public override uint GetHash() => 1347139517;
+            public override uint GetHash() => 1359634476;
             [Property(1425799538, 7)] public UInt32 m_sigilID;
             [Property(3226477495, 7)] public String m_buttonStringKey;
             [Property(346919403, 7)] public List<UInt32> m_playerSchoolIDList;
@@ -13973,14 +13973,14 @@ namespace Imlight.Internals
         public class MailList : PropertyClass
         {
             
-            public override uint GetHash() => 1357328057;
+            public override uint GetHash() => 1361135213;
             [Property(1129442288, 31)] public List<Mail> m_messages;
         }
         
         public class MountDyeToTexture : PropertyClass
         {
             
-            public override uint GetHash() => 1351086562;
+            public override uint GetHash() => 1362719164;
             [Property(267033084, 7)] public Int32 m_dye;
             [Property(222406987, 7)] public Int32 m_texture;
         }
@@ -13988,14 +13988,14 @@ namespace Imlight.Internals
         public class ObjectStateBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1361945534;
+            public override uint GetHash() => 1364452653;
             [Property(1863712969, 268435463)] public String m_stateSetName;
         }
         
         public class ActorDialogCinematicAction : CinematicAction
         {
             
-            public override uint GetHash() => 1374843974;
+            public override uint GetHash() => 1365512403;
             [Property(1310859212, 7)] public ActorDialog m_dialog;
             [Property(1972573231, 7)] public String m_activePersona;
         }
@@ -14003,20 +14003,20 @@ namespace Imlight.Internals
         public class WindowAnimation : PropertyClass
         {
             
-            public override uint GetHash() => 1373555061;
+            public override uint GetHash() => 1366245278;
             [Property(433380635, 135)] public Boolean m_bUseDeepCopy;
         }
         
         public class BasicChatChannelInvite : PropertyClass
         {
             
-            public override uint GetHash() => 1381633189;
+            public override uint GetHash() => 1368264426;
         }
         
         public class PathActionEmote : PathBehaviorTemplate.Action
         {
             
-            public override uint GetHash() => 1378403489;
+            public override uint GetHash() => 1368571115;
             [Property(3416743849, 7)] public String m_sEmoteName;
             [Property(1948284304, 7)] public Single m_fMinTime;
             [Property(1647060370, 7)] public Single m_fMaxTime;
@@ -14025,25 +14025,25 @@ namespace Imlight.Internals
         public class ClientDuel : Duel
         {
             
-            public override uint GetHash() => 1396020734;
+            public override uint GetHash() => 1372973245;
         }
         
         public class Result : PropertyClass
         {
             
-            public override uint GetHash() => 1393834862;
+            public override uint GetHash() => 1373471513;
         }
         
         public class ClientStartHangingRotationCinematicAction : StartHangingRotationCinematicAction
         {
             
-            public override uint GetHash() => 1401388329;
+            public override uint GetHash() => 1375294089;
         }
         
         public class PetDerbyTrackManager : PropertyClass
         {
             
-            public override uint GetHash() => 1402057090;
+            public override uint GetHash() => 1375527332;
             [Property(1266117365, 7)] public Int32 m_moraleBase;
             [Property(509523265, 7)] public Int32 m_rateBase;
             [Property(1322305965, 7)] public Int32 m_speedBoostBase;
@@ -14071,45 +14071,45 @@ namespace Imlight.Internals
         public class InteractiveMusicPlayerList : PropertyClass
         {
             
-            public override uint GetHash() => 1550645453;
+            public override uint GetHash() => 1375974384;
             [Property(1909774945, 7)] public List<UInt64> m_playerList;
         }
         
         public class InitialCombatSoundsList : PropertyClass
         {
             
-            public override uint GetHash() => 1545348410;
+            public override uint GetHash() => 1377797262;
             [Property(1746599966, 7)] public List<InitialCombatSound> m_initialCombatSoundsList;
         }
         
         public class ClientHaltCinematicAction : HaltCinematicAction
         {
             
-            public override uint GetHash() => 1579576242;
+            public override uint GetHash() => 1385240368;
         }
         
         public class PathActionStop : PathBehaviorTemplate.Action
         {
             
-            public override uint GetHash() => 1592841705;
+            public override uint GetHash() => 1386526905;
         }
         
         public class PestBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 1606537078;
+            public override uint GetHash() => 1391001119;
         }
         
         public class DeedBehavior : DeedBehaviorBase
         {
             
-            public override uint GetHash() => 1607047010;
+            public override uint GetHash() => 1391126556;
         }
         
         public class DeckBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 1607339874;
+            public override uint GetHash() => 1391136284;
             [Property(2181913740, 27)] public List<SpellData> m_spellList;
             [Property(1502583517, 63)] public String m_serializedExclusionList;
         }
@@ -14117,7 +14117,7 @@ namespace Imlight.Internals
         public class DuelBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 1607308642;
+            public override uint GetHash() => 1391192220;
             [Property(1066616366, 31)] public Duel m_pDuel;
             [Property(269055310, 31)] public UInt32 m_sigilTemplateID;
         }
@@ -14125,14 +14125,14 @@ namespace Imlight.Internals
         public class ClientQuantityBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 1500557029;
+            public override uint GetHash() => 1397007994;
             [Property(169215289, 27)] public Int32 m_quantity;
         }
         
         public class AttachEffectToTurnIndicatorCinematicAction : CinematicAction
         {
             
-            public override uint GetHash() => 1501326909;
+            public override uint GetHash() => 1397200460;
             [Property(1733171553, 7)] public Single m_minDuration;
             [Property(1513131580, 7)] public String m_assetName;
         }
@@ -14140,7 +14140,7 @@ namespace Imlight.Internals
         public class HousingSignBehaviorBase : BehaviorInstance
         {
             
-            public override uint GetHash() => 1496463253;
+            public override uint GetHash() => 1398013990;
             [Property(1805208228, 65543)] public String m_packedName;
             [Property(2920366641, 65543)] public String m_signText;
         }
@@ -14148,7 +14148,7 @@ namespace Imlight.Internals
         public class LevelUpElixirSchoolSpecificData : PropertyClass
         {
             
-            public override uint GetHash() => 1508663026;
+            public override uint GetHash() => 1399036544;
             [Property(369010242, 7)] public UInt32 m_schoolID;
             [Property(3002626524, 7)] public List<String> m_spellsToGive;
             [Property(3386208316, 7)] public List<String> m_questsToComplete;
@@ -14165,7 +14165,7 @@ namespace Imlight.Internals
         public class CrownShopData : PropertyClass
         {
             
-            public override uint GetHash() => 1506436109;
+            public override uint GetHash() => 1399461056;
             [Property(2089538472, 31)] public List<CrownShopItem> m_items;
             [Property(2296174117, 31)] public CrownShopLayout m_crownShopLayout;
             [Property(971256066, 31)] public LevelData m_recomendedItems;
@@ -14178,7 +14178,7 @@ namespace Imlight.Internals
         public class HousingNode : PropertyClass
         {
             
-            public override uint GetHash() => 1503925161;
+            public override uint GetHash() => 1399949609;
             [Property(427658421, 2097159)] public ConnectionType m_connectionType;
             [Property(2232965004, 1048583)] public LocationType m_locationType;
             [Property(3137090195, 2097159)] public ExclusiveRestrictions m_exclusiveRestrictions;
@@ -14235,14 +14235,14 @@ namespace Imlight.Internals
         public class HatchmakingKioskBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1504747877;
+            public override uint GetHash() => 1400153498;
             [Property(1545253296, 7)] public Boolean m_isKiosk;
         }
         
         public class PetDerbyTalentTemplate : PetTalentBaseTemplate
         {
             
-            public override uint GetHash() => 1505027205;
+            public override uint GetHash() => 1400222946;
             [Property(688625224, 2097159)] public DerbyTalentBuffType m_isBuff;
             [Property(1665682594, 7)] public Single m_fCooldown;
             [Property(1259488141, 7)] public List<DerbyEffect> m_derbyEffects;
@@ -14251,20 +14251,20 @@ namespace Imlight.Internals
         public class HousingBlob : PropertyClass
         {
             
-            public override uint GetHash() => 1505325257;
+            public override uint GetHash() => 1400295921;
             [Property(2812881480, 7)] public List<HousingBlobObject> m_housingBlobObjectList;
         }
         
         public class WizardAutobotMobAvoidance : AutobotMobAvoidance
         {
             
-            public override uint GetHash() => 1516786253;
+            public override uint GetHash() => 1401067856;
         }
         
         public class SetHangingEffectAlphaCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1514354486;
+            public override uint GetHash() => 1401438223;
             [Property(7349510, 7)] public Boolean m_cloaked;
             [Property(878686493, 7)] public Single m_alpha;
         }
@@ -14272,7 +14272,7 @@ namespace Imlight.Internals
         public class PlaySoundCinematicAction : CinematicAction
         {
             
-            public override uint GetHash() => 1519039382;
+            public override uint GetHash() => 1404707111;
             [Property(2307644996, 131079)] public List<String> m_sound;
             [Property(98585784, 7)] public Boolean m_useClientLocation;
             [Property(868075053, 2097159)] public SoundType m_soundType;
@@ -14294,7 +14294,7 @@ namespace Imlight.Internals
         public class ObstacleCourseFinishLineBehaviorTemplate : ObstacleCourseObstacleBehaviorTemplate
         {
             
-            public override uint GetHash() => 1519365053;
+            public override uint GetHash() => 1404790572;
             [Property(2712265261, 7)] public Double m_width;
             [Property(2410586086, 7)] public Double m_height;
         }
@@ -14302,7 +14302,7 @@ namespace Imlight.Internals
         public class BoosterPackTemplate : WizItemTemplate
         {
             
-            public override uint GetHash() => 1519378889;
+            public override uint GetHash() => 1404794289;
             [Property(1514961588, 268435463)] public List<String> m_lootTables;
             [Property(1764743064, 131079)] public String m_nif;
             [Property(2575057189, 2097159)] public BoosterPackType m_boosterPackType;
@@ -14325,44 +14325,44 @@ namespace Imlight.Internals
         public class ClientDerbyModifyPetStat : DerbyModifyPetStat
         {
             
-            public override uint GetHash() => 1539601493;
+            public override uint GetHash() => 1407815894;
         }
         
         public class ClientStartBacklashRotationEffectCinematicAction : StartBacklashRotationEffectCinematicAction
         {
             
-            public override uint GetHash() => 1538927557;
+            public override uint GetHash() => 1408632626;
         }
         
         public class TeamHelpWindow : Window
         {
             
-            public override uint GetHash() => 1536596397;
+            public override uint GetHash() => 1409100712;
         }
         
         public class AnnounceRoundCinematicAction : CinematicAction
         {
             
-            public override uint GetHash() => 1155327829;
+            public override uint GetHash() => 1412412438;
         }
         
         public class ModifyPipsCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1151378330;
+            public override uint GetHash() => 1412474150;
         }
         
         public class TextComponent : PropertyClass
         {
             
-            public override uint GetHash() => 1173953278;
+            public override uint GetHash() => 1416022909;
             [Property(1447894491, 135)] public Boolean m_useDropShadow;
         }
         
         public class PetTomePetTotal : PropertyClass
         {
             
-            public override uint GetHash() => 1179545722;
+            public override uint GetHash() => 1418400222;
             [Property(2220521682, 7)] public String m_className;
             [Property(2215607743, 7)] public UInt32 m_petCount;
         }
@@ -14370,7 +14370,7 @@ namespace Imlight.Internals
         public class ForcedStateInfo : PropertyClass
         {
             
-            public override uint GetHash() => 1175580382;
+            public override uint GetHash() => 1419572853;
             [Property(2861191727, 7)] public String m_forcedState;
             [Property(2682050233, 7)] public String m_category;
             [Property(2430398224, 7)] public String m_fromState;
@@ -14379,7 +14379,7 @@ namespace Imlight.Internals
         public class ScrollWindowStyle : WindowStyle
         {
             
-            public override uint GetHash() => 1175812861;
+            public override uint GetHash() => 1419629436;
             [Property(1896076876, 135)] public Material m_pVMiddle;
             [Property(1590678131, 135)] public Material m_pVSliderTop;
             [Property(1981605647, 135)] public Material m_pVSliderMiddle;
@@ -14398,7 +14398,7 @@ namespace Imlight.Internals
         public class SG_GameLevelData : PropertyClass
         {
             
-            public override uint GetHash() => 1189093086;
+            public override uint GetHash() => 1419807349;
             [Property(3116244552, 131079)] public String m_filePath;
             [Property(1999036567, 7)] public Int32 m_shotLimit;
             [Property(708309693, 7)] public UInt32 m_levelIndex;
@@ -14409,7 +14409,7 @@ namespace Imlight.Internals
         public class RemoveTeamFromMatchUpdate : TournamentUpdate
         {
             
-            public override uint GetHash() => 1185836686;
+            public override uint GetHash() => 1421022817;
             [Property(982102220, 31)] public UInt64 m_teamID;
             [Property(1757621298, 31)] public UInt64 m_matchID;
         }
@@ -14417,13 +14417,13 @@ namespace Imlight.Internals
         public class ObstacleCourseSpringboardBehavior : ObstacleCourseObstacleBehavior
         {
             
-            public override uint GetHash() => 1199498841;
+            public override uint GetHash() => 1422341205;
         }
         
         public class CreateHangingEffectActorCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1205109837;
+            public override uint GetHash() => 1424862416;
             [Property(7349510, 7)] public Boolean m_cloaked;
             [Property(2029131039, 7)] public String m_newActorName;
         }
@@ -14431,7 +14431,7 @@ namespace Imlight.Internals
         public class TextTagPair : PropertyClass
         {
             
-            public override uint GetHash() => 1076496389;
+            public override uint GetHash() => 1427247042;
             [Property(1764749335, 7)] public String m_tag;
             [Property(310085638, 7)] public Single m_time;
         }
@@ -14439,34 +14439,34 @@ namespace Imlight.Internals
         public class BadgeFilterDescriptionList : PropertyClass
         {
             
-            public override uint GetHash() => 1077573325;
+            public override uint GetHash() => 1427509360;
             [Property(3252782039, 7)] public List<BadgeFilterDescription> m_badgeFilterDescriptionList;
         }
         
         public class ExtraHousingZoneBehaviorBase : BehaviorInstance
         {
             
-            public override uint GetHash() => 1098226426;
+            public override uint GetHash() => 1430645630;
         }
         
         public class GameEffectTimerPopupTrigger : GameEffectTimerTrigger
         {
             
-            public override uint GetHash() => 1095569177;
+            public override uint GetHash() => 1431031301;
             [Property(3434427096, 31)] public String m_popupKey;
         }
         
         public class FXBySlotEffectInfo : GameEffectInfo
         {
             
-            public override uint GetHash() => 1093177977;
+            public override uint GetHash() => 1431480669;
             [Property(522593303, 263)] public Boolean m_bIsOnPet;
         }
         
         public class PetGameEndData : PropertyClass
         {
             
-            public override uint GetHash() => 1105586386;
+            public override uint GetHash() => 1432483832;
             [Property(861759411, 7)] public Single m_Score;
             [Property(836453997, 7)] public PetStatModificationSet m_statMods;
             [Property(1362161460, 7)] public UInt32 m_xpGain;
@@ -14476,20 +14476,20 @@ namespace Imlight.Internals
         public class FaceTargetActorCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1099467042;
+            public override uint GetHash() => 1434103692;
             [Property(1390351511, 7)] public Boolean m_bCaster;
         }
         
         public class ClientShadowCreatureCameraCutCinematicAction : ShadowCreatureCameraCutCinematicAction
         {
             
-            public override uint GetHash() => 1110943465;
+            public override uint GetHash() => 1435853945;
         }
         
         public class CastleGamesEntry : CastleTourTeleportInfo
         {
             
-            public override uint GetHash() => 1121093842;
+            public override uint GetHash() => 1437347832;
             [Property(1805208228, 7)] public String m_packedName;
             [Property(2369894028, 7)] public Byte m_gameType;
             [Property(2559216502, 7)] public Byte m_subGameType;
@@ -14498,27 +14498,27 @@ namespace Imlight.Internals
         public class AddTeamUpdate : TournamentUpdate
         {
             
-            public override uint GetHash() => 1119368930;
+            public override uint GetHash() => 1438023804;
             [Property(1393503221, 31)] public MatchTeam m_team;
         }
         
         public class ExtraHousingZoneBehavior : ExtraHousingZoneBehaviorBase
         {
             
-            public override uint GetHash() => 1131788606;
+            public override uint GetHash() => 1439032205;
         }
         
         public class AchieveRankGoalTemplate : GoalTemplate
         {
             
-            public override uint GetHash() => 1126528881;
+            public override uint GetHash() => 1439813663;
             [Property(219803942, 7)] public Int32 m_rank;
         }
         
         public class PathMovementBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1277314837;
+            public override uint GetHash() => 1443896326;
             [Property(769135219, 7)] public Single m_movementSpeed;
             [Property(768663914, 7)] public Single m_movementScale;
         }
@@ -14526,19 +14526,19 @@ namespace Imlight.Internals
         public class GraphicalArenaPoints : GraphicalSpell
         {
             
-            public override uint GetHash() => 1290671313;
+            public override uint GetHash() => 1445136631;
         }
         
         public class TeleportToNodeClient : TeleportToNode
         {
             
-            public override uint GetHash() => 1291388485;
+            public override uint GetHash() => 1445383250;
         }
         
         public class TutorialQuestTemplate : QuestTemplate
         {
             
-            public override uint GetHash() => 1303759694;
+            public override uint GetHash() => 1450573585;
             [Property(1695271656, 268435463)] public List<String> m_allowedQuests;
             [Property(1503555828, 7)] public List<String> m_allowedZoneEvents;
             [Property(1962792925, 7)] public List<String> m_allowedMinigames;
@@ -14552,20 +14552,20 @@ namespace Imlight.Internals
         public class WhirlyBurlyKioskBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1317007438;
+            public override uint GetHash() => 1451717073;
         }
         
         public class TeamHelpWorldInfoList : PropertyClass
         {
             
-            public override uint GetHash() => 1311473593;
+            public override uint GetHash() => 1452429869;
             [Property(2354245339, 7)] public List<TeamHelpWorldInfo> m_teamHelpWorldInfoList;
         }
         
         public class AnimatePipsCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1332680849;
+            public override uint GetHash() => 1455639527;
             [Property(3246317205, 7)] public String m_sActorPrefix;
             [Property(1466507836, 7)] public Single m_fPerPipDelay;
             [Property(883665801, 7)] public Single m_fRate;
@@ -14574,7 +14574,7 @@ namespace Imlight.Internals
         public class PetDerbyTrackInfo : PropertyClass
         {
             
-            public override uint GetHash() => 1333785186;
+            public override uint GetHash() => 1455911260;
             [Property(703251290, 31)] public UInt64 m_trackID;
             [Property(1717806295, 31)] public String m_zone;
             [Property(1764739684, 8388639)] public String m_key;
@@ -14585,45 +14585,45 @@ namespace Imlight.Internals
         public class SphereGeomParams : GeomParams
         {
             
-            public override uint GetHash() => 1330171093;
+            public override uint GetHash() => 1456127734;
             [Property(787972805, 7)] public Single m_fRadius;
         }
         
         public class WinAnimStatGlobeScaleTime : WinAnimScaleTime
         {
             
-            public override uint GetHash() => 1325584625;
+            public override uint GetHash() => 1457011199;
         }
         
         public class DestroyActorCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1327351122;
+            public override uint GetHash() => 1457519768;
         }
         
         public class LadderBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1340922093;
+            public override uint GetHash() => 1457765368;
         }
         
         public class EmojiDefinition : PropertyClass
         {
             
-            public override uint GetHash() => 1214665282;
+            public override uint GetHash() => 1459689812;
             [Property(1180872578, 7)] public List<EmojiData> m_emojiDataList;
         }
         
         public class FishTournamentLeaderboardOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 1216320670;
+            public override uint GetHash() => 1460103397;
         }
         
         public class SoundFilterSetting : PropertyClass
         {
             
-            public override uint GetHash() => 1208677901;
+            public override uint GetHash() => 1461334080;
             [Property(1717359772, 7)] public String m_name;
             [Property(1984426024, 7)] public List<SoundFilterParam> m_params;
             [Property(1787634021, 7)] public Boolean m_needsUpdate;
@@ -14632,25 +14632,25 @@ namespace Imlight.Internals
         public class FXBySlotEffect : GameEffectBase
         {
             
-            public override uint GetHash() => 1217194041;
+            public override uint GetHash() => 1463531469;
         }
         
         public class ClientDerbyModifyRate : DerbyModifyRate
         {
             
-            public override uint GetHash() => 1228184373;
+            public override uint GetHash() => 1465232142;
         }
         
         public class PaidLootRollStationOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 1239703202;
+            public override uint GetHash() => 1466014316;
         }
         
         public class TimedItemBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1240267290;
+            public override uint GetHash() => 1466151750;
             [Property(3122602039, 7)] public String m_expireTime;
             [Property(571744132, 2097159)] public TimerType m_timerType;
             
@@ -14665,13 +14665,13 @@ namespace Imlight.Internals
         public class TeamUpWindow : Window
         {
             
-            public override uint GetHash() => 1237532881;
+            public override uint GetHash() => 1466457591;
         }
         
         public class HouseTransferResultList : PropertyClass
         {
             
-            public override uint GetHash() => 1238836622;
+            public override uint GetHash() => 1466778785;
             [Property(1794426680, 7)] public List<HouseTransferResult> m_houseTransferResultList;
             [Property(501688601, 7)] public UInt64 m_characterGID;
         }
@@ -14679,7 +14679,7 @@ namespace Imlight.Internals
         public class SoundEmitterInfo : SoundInfo
         {
             
-            public override uint GetHash() => 1233460586;
+            public override uint GetHash() => 1467599514;
             [Property(1162855023, 7)] public Single m_volume;
             [Property(865634717, 7)] public Int32 m_loopCount;
             [Property(2531081709, 131079)] public List<String> m_trackFilenameList;
@@ -14704,19 +14704,19 @@ namespace Imlight.Internals
         public class HousingObjectJewelWandContainer : HousingObjectWandContainer
         {
             
-            public override uint GetHash() => 1248002306;
+            public override uint GetHash() => 1468026244;
             [Property(2221753804, 65543)] public String m_jewelBuffer;
         }
         
         public class InventoryPageWindow : Window
         {
             
-            public override uint GetHash() => 1273489473;
+            public override uint GetHash() => 1474394067;
             
             public class InventoryItem : ControlCheckBox
             {
                 
-                public override uint GetHash() => 1165144401;
+                public override uint GetHash() => 1665908489;
                 [Property(1322058516, 7)] public ControlButtonState m_pEquipNormalState;
                 [Property(3019605144, 7)] public ControlButtonState m_pEquipPressState;
                 [Property(2559056739, 7)] public ControlButtonState m_pEquipHighlightState;
@@ -14729,7 +14729,7 @@ namespace Imlight.Internals
         public class PublicSocketJewelPair : PropertyClass
         {
             
-            public override uint GetHash() => 1273240489;
+            public override uint GetHash() => 1474399017;
             [Property(772707167, 31)] public UInt32 m_socketNumber;
             [Property(396940685, 31)] public UInt32 m_jewelTemplateID;
         }
@@ -14737,19 +14737,19 @@ namespace Imlight.Internals
         public class ClientProcess : PropertyClass
         {
             
-            public override uint GetHash() => 1268809670;
+            public override uint GetHash() => 1475383859;
         }
         
         public class ClientPolymorphCinematicAction : PolymorphCinematicAction
         {
             
-            public override uint GetHash() => 1952903325;
+            public override uint GetHash() => 1476473316;
         }
         
         public class StringTable : PropertyClass
         {
             
-            public override uint GetHash() => 1948777802;
+            public override uint GetHash() => 1477538450;
             [Property(3735116682, 7)] public Char m_thousandSeparator;
             [Property(2802322863, 7)] public Char m_decimalCharacter;
             [Property(3126898340, 7)] public Char m_defaultSpace;
@@ -14769,13 +14769,13 @@ namespace Imlight.Internals
         public class GamebryoClientDerbyTerrainEffect : ClientDerbyTerrainEffect
         {
             
-            public override uint GetHash() => 1961647889;
+            public override uint GetHash() => 1478728199;
         }
         
         public class ClientPetItemBehavior : BasePetItemBehavior
         {
             
-            public override uint GetHash() => 241856639;
+            public override uint GetHash() => 2038296099;
             [Property(1053182849, 7)] public List<UInt32> m_allTalents;
             [Property(1165978519, 7)] public List<UInt32> m_allDerbyTalents;
             [Property(2078753551, 65536)] public String m_sSerializedMaxStats;
@@ -14788,13 +14788,13 @@ namespace Imlight.Internals
         public class ClientTransformationEffect : TransformationEffect
         {
             
-            public override uint GetHash() => 1966523486;
+            public override uint GetHash() => 1481981141;
         }
         
         public class AddAuraCinematicStageTemplate : CinematicStageTemplate
         {
             
-            public override uint GetHash() => 1978643142;
+            public override uint GetHash() => 1482908019;
             [Property(2307644996, 131079)] public String m_sound;
             [Property(1894145160, 131079)] public String m_effect;
             [Property(2688705600, 8388615)] public String m_spellText;
@@ -14804,7 +14804,7 @@ namespace Imlight.Internals
         public class CastleTourMyCastleData : PropertyClass
         {
             
-            public override uint GetHash() => 1975820202;
+            public override uint GetHash() => 1483319850;
             [Property(2326023642, 7)] public UInt32 m_houseTemplateID;
             [Property(773386388, 7)] public UInt16 m_rank;
             [Property(978951904, 7)] public UInt16 m_visitCount;
@@ -14814,7 +14814,7 @@ namespace Imlight.Internals
         public class BasePetItemBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 2001432182;
+            public override uint GetHash() => 1489655391;
             [Property(1438884808, 65727)] public Byte m_level;
             [Property(2301988085, 65727)] public UInt32 m_XP;
             [Property(1618303331, 65703)] public Int32 m_firstName;
@@ -14844,52 +14844,52 @@ namespace Imlight.Internals
         public class ArenaPointsLootInfo : LootInfo
         {
             
-            public override uint GetHash() => 2013237153;
+            public override uint GetHash() => 1491562027;
             [Property(2041106034, 31)] public Int32 m_arenaPointsAmount;
         }
         
         public class ScavengerHuntComponent : HousingGameInterface
         {
             
-            public override uint GetHash() => 1885762774;
+            public override uint GetHash() => 1493242103;
         }
         
         public class ClientRemoveProtectionEffectCinematicAction : RemoveProtectionEffectCinematicAction
         {
             
-            public override uint GetHash() => 1892154898;
+            public override uint GetHash() => 1495888456;
         }
         
         public class Recipe : CoreObject
         {
             
-            public override uint GetHash() => 1893366638;
+            public override uint GetHash() => 1496191769;
             [Property(2168714419, 63)] public UInt32 m_recipeNameID;
         }
         
         public class HouseNameList : PropertyClass
         {
             
-            public override uint GetHash() => 1893276341;
+            public override uint GetHash() => 1496238958;
             [Property(2061331472, 7)] public List<HouseZone> m_houseZoneList;
         }
         
         public class ReagentShopOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 1896394766;
+            public override uint GetHash() => 1499111873;
         }
         
         public class ReqPvPCombat : ConditionalSpellEffectRequirement
         {
             
-            public override uint GetHash() => 1904917534;
+            public override uint GetHash() => 1501176517;
         }
         
         public class NPCDialogEntry : ActorDialogEntry
         {
             
-            public override uint GetHash() => 1916899342;
+            public override uint GetHash() => 1502144961;
             [Property(2514452244, 268435487)] public String m_personaName;
             [Property(2854590748, 8388639)] public String m_nameOverride;
             [Property(3618744844, 31)] public String m_nameSTKey;
@@ -14901,19 +14901,19 @@ namespace Imlight.Internals
         public class ClientAddInterceptCinematicAction : AddInterceptCinematicAction
         {
             
-            public override uint GetHash() => 1915020058;
+            public override uint GetHash() => 1502721286;
         }
         
         public class InstanceSigilOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 1945771894;
+            public override uint GetHash() => 1508248095;
         }
         
         public class SpellFavorites : PropertyClass
         {
             
-            public override uint GetHash() => 1942557489;
+            public override uint GetHash() => 1508559119;
             [Property(1265259452, 7)] public UInt32 m_versionNumber;
             [Property(372036018, 7)] public List<UInt32> m_favoriteTemplateIDList;
             [Property(2042557329, 7)] public List<UInt32> m_playerAddedTemplateIDList;
@@ -14922,44 +14922,44 @@ namespace Imlight.Internals
         public class WizardClientDuelBehavior : ClientDuelBehavior
         {
             
-            public override uint GetHash() => 1942868778;
+            public override uint GetHash() => 1508636938;
         }
         
         public class BurnInterceptCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1939999694;
+            public override uint GetHash() => 1508904753;
         }
         
         public class AuctionTemplateIDList : PropertyClass
         {
             
-            public override uint GetHash() => 1940406602;
+            public override uint GetHash() => 1509072274;
             [Property(1466334173, 31)] public List<UInt64> m_templateIdList;
         }
         
         public class WizShoppingOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 1941897106;
+            public override uint GetHash() => 1509372456;
         }
         
         public class SortedDirt : PropertyClass
         {
             
-            public override uint GetHash() => 1938714222;
+            public override uint GetHash() => 1509627481;
         }
         
         public class PetStatsControl : Window
         {
             
-            public override uint GetHash() => 1939273082;
+            public override uint GetHash() => 1509765278;
         }
         
         public class CombatTriggerDescription : PropertyClass
         {
             
-            public override uint GetHash() => 2084157382;
+            public override uint GetHash() => 1511448627;
             [Property(1649374815, 8388615)] public String m_description;
             [Property(3323484466, 268435463)] public String m_displaySpellName;
         }
@@ -14967,14 +14967,14 @@ namespace Imlight.Internals
         public class BracketTournamentGoldCostInfoList : PropertyClass
         {
             
-            public override uint GetHash() => 2096320773;
+            public override uint GetHash() => 1512331650;
             [Property(960161071, 31)] public List<BracketTournamentGoldCostInfo> m_list;
         }
         
         public class JewelSocketWrenchElements : PropertyClass
         {
             
-            public override uint GetHash() => 2103588989;
+            public override uint GetHash() => 1514144732;
             [Property(1148289553, 7)] public UInt64 m_socketWrenchTemplateID;
             [Property(1282442502, 7)] public Int32 m_lowestEquipLevelInclusive;
             [Property(1111256264, 7)] public Int32 m_hightestEquipLevelInclusive;
@@ -14983,7 +14983,7 @@ namespace Imlight.Internals
         public class UIScaleConfigEntry : PropertyClass
         {
             
-            public override uint GetHash() => 2100267822;
+            public override uint GetHash() => 1515417353;
             [Property(267047684, 7)] public Int32 m_res;
             [Property(1618708793, 7)] public Single m_microScale;
             [Property(477118371, 7)] public Single m_tinyScale;
@@ -14996,25 +14996,25 @@ namespace Imlight.Internals
         public class UpdatePipsCinematicAction : CinematicAction
         {
             
-            public override uint GetHash() => 2105843810;
+            public override uint GetHash() => 1517921756;
         }
         
         public class TreasureShopCrownsOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 2106895546;
+            public override uint GetHash() => 1518184174;
         }
         
         public class ObstacleCourseSpeedUpBehavior : ObstacleCourseObstaclePathBase
         {
             
-            public override uint GetHash() => 2116743506;
+            public override uint GetHash() => 1519530392;
         }
         
         public class FontMapping : PropertyClass
         {
             
-            public override uint GetHash() => 2115061166;
+            public override uint GetHash() => 1520229545;
             [Property(2464821841, 7)] public String m_symbol;
             [Property(1717071946, 7)] public String m_face;
             [Property(571899305, 7)] public Boolean m_italic;
@@ -15024,19 +15024,19 @@ namespace Imlight.Internals
         public class ActorBody : GamebryoBody
         {
             
-            public override uint GetHash() => 2130279566;
+            public override uint GetHash() => 1520882401;
         }
         
         public class ClientBGPlayerBehavior : BGPlayerBehavior
         {
             
-            public override uint GetHash() => 2128307098;
+            public override uint GetHash() => 1521374502;
         }
         
         public class BracketMatchResult : PropertyClass
         {
             
-            public override uint GetHash() => 2124877226;
+            public override uint GetHash() => 1521569450;
             [Property(1257835102, 31)] public List<UInt64> m_opponents;
             [Property(1049128778, 31)] public UInt32 m_points;
             [Property(1912880793, 31)] public UInt32 m_matchResult;
@@ -15046,7 +15046,7 @@ namespace Imlight.Internals
         public class InstanceInfo : PropertyClass
         {
             
-            public override uint GetHash() => 2125115089;
+            public override uint GetHash() => 1521624695;
             [Property(3632841067, 31)] public String m_sZoneName;
             [Property(1380862506, 31)] public Int32 m_nInstanceID;
             [Property(622120303, 31)] public UInt64 m_nZoneID;
@@ -15055,7 +15055,7 @@ namespace Imlight.Internals
         public class ReqCombatStatus : ConditionalSpellEffectRequirement
         {
             
-            public override uint GetHash() => 2134306533;
+            public override uint GetHash() => 1523922554;
             [Property(2594569198, 2097159)] public kStatusEffect m_status;
             
             public enum kStatusEffect
@@ -15069,13 +15069,13 @@ namespace Imlight.Internals
         public class ClientPipFloatingTextCinematicAction : PipFloatingTextCinematicAction
         {
             
-            public override uint GetHash() => 2134167581;
+            public override uint GetHash() => 1523956164;
         }
         
         public class FontMapSWF : PropertyClass
         {
             
-            public override uint GetHash() => 2130720950;
+            public override uint GetHash() => 1524138991;
             [Property(3543733145, 7)] public List<FontMapping> m_mappings;
             [Property(2375516599, 7)] public String m_defaultFont;
         }
@@ -15083,7 +15083,7 @@ namespace Imlight.Internals
         public class DeedBehaviorBase : BehaviorInstance
         {
             
-            public override uint GetHash() => 2144054050;
+            public override uint GetHash() => 1525311244;
             [Property(2010711536, 33554495)] public UInt64 m_lotInstanceGID;
             [Property(1809670519, 63)] public Int32 m_streetAddress;
             [Property(1616830022, 63)] public UInt32 m_transferCoolDownTime;
@@ -15092,20 +15092,20 @@ namespace Imlight.Internals
         public class ClientActorResurrectCinematicAction : ActorResurrectCinematicAction
         {
             
-            public override uint GetHash() => 2144250425;
+            public override uint GetHash() => 1525360461;
         }
         
         public class FloatingTextCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 2144772025;
+            public override uint GetHash() => 1525492269;
             [Property(2181170604, 7)] public String m_stringTableEntry;
         }
         
         public class NonCombatMayCastSpellDescription : PropertyClass
         {
             
-            public override uint GetHash() => 2140051037;
+            public override uint GetHash() => 1526409300;
             [Property(1649374815, 8388615)] public String m_description;
             [Property(3323484466, 268435463)] public String m_displaySpellName;
         }
@@ -15113,20 +15113,20 @@ namespace Imlight.Internals
         public class GoalData : PropertyClass
         {
             
-            public override uint GetHash() => 2140729382;
+            public override uint GetHash() => 1526641099;
             [Property(1717359772, 7)] public String m_name;
         }
         
         public class ItemFinderOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 2029255373;
+            public override uint GetHash() => 1529115504;
         }
         
         public class ObjState : PropertyClass
         {
             
-            public override uint GetHash() => 2024234414;
+            public override uint GetHash() => 1529961129;
             [Property(2945167934, 7)] public String m_stateType;
             [Property(2944926077, 7)] public String m_stateName;
             [Property(3218935105, 7)] public List<ObjStateTransition> m_transitions;
@@ -15156,13 +15156,13 @@ namespace Imlight.Internals
         public class ClientDerbyTerrainEffect : DerbyTerrainEffect
         {
             
-            public override uint GetHash() => 2023026657;
+            public override uint GetHash() => 1530771003;
         }
         
         public class AttenuatedFileDescription : PropertyClass
         {
             
-            public override uint GetHash() => 2037853766;
+            public override uint GetHash() => 1531266643;
             [Property(3116172444, 7)] public String m_fileName;
             [Property(1412579028, 7)] public Single m_attenuationPercent;
         }
@@ -15170,7 +15170,7 @@ namespace Imlight.Internals
         public class MatchStatusUpdate : TournamentUpdate
         {
             
-            public override uint GetHash() => 2032246493;
+            public override uint GetHash() => 1532029556;
             [Property(1757621298, 31)] public UInt64 m_matchID;
             [Property(960781182, 31)] public Int32 m_status;
         }
@@ -15178,25 +15178,25 @@ namespace Imlight.Internals
         public class WizardAutobotManagerGraphicalClient : WizardAutobotManager
         {
             
-            public override uint GetHash() => 2031064590;
+            public override uint GetHash() => 1532717121;
         }
         
         public class Cinematic : PropertyClass
         {
             
-            public override uint GetHash() => 2030833570;
+            public override uint GetHash() => 1532726828;
         }
         
         public class ShadowCreatureIdleCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 2031267689;
+            public override uint GetHash() => 1532765721;
         }
         
         public class ObjStateSet : PropertyClass
         {
             
-            public override uint GetHash() => 2046807726;
+            public override uint GetHash() => 1533509225;
             [Property(1980433352, 7)] public List<ObjStateCategory> m_categories;
             [Property(1863712969, 7)] public String m_stateSetName;
         }
@@ -15204,14 +15204,14 @@ namespace Imlight.Internals
         public class CrownShopPatch : PropertyClass
         {
             
-            public override uint GetHash() => 2043208861;
+            public override uint GetHash() => 1533719780;
             [Property(2834774915, 31)] public List<String> m_patches;
         }
         
         public class CritAndBlockLevelData : PropertyClass
         {
             
-            public override uint GetHash() => 2054208081;
+            public override uint GetHash() => 1535419223;
             [Property(1496818518, 7)] public Int32 m_minLevel;
             [Property(3047956180, 7)] public List<CritAndBlockValues> m_critAndBlockValues;
         }
@@ -15219,13 +15219,13 @@ namespace Imlight.Internals
         public class ClientBattleBookBehavior : BattleBookBehavior
         {
             
-            public override uint GetHash() => 2055575618;
+            public override uint GetHash() => 1538911188;
         }
         
         public class AvailableQuestEntry : ServiceOptionBase
         {
             
-            public override uint GetHash() => 2065797245;
+            public override uint GetHash() => 1540418012;
             [Property(1805465583, 31)] public String m_questTitle;
             [Property(1702112846, 31)] public String m_questName;
             [Property(1637584380, 31)] public Boolean m_isMainline;
@@ -15234,20 +15234,20 @@ namespace Imlight.Internals
         public class ClientEffectCinematicAction : EffectCinematicAction
         {
             
-            public override uint GetHash() => 2078739026;
+            public override uint GetHash() => 1541492568;
         }
         
         public class ClientJewelSocketBehavior : JewelSocketBehaviorBase
         {
             
-            public override uint GetHash() => 2079880458;
+            public override uint GetHash() => 1541836930;
             [Property(2051956582, 31)] public PublicEquippedJewelInfo m_publicJewelInfo;
         }
         
         public class AlchemyBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 1685607869;
+            public override uint GetHash() => 1543936172;
             [Property(2218166892, 27)] public RecipeBag m_recipeBag;
             [Property(2324986502, 27)] public ObjectBag m_craftingSlotsBag;
             [Property(2459563753, 27)] public ObjectBag m_reagentBag;
@@ -15261,7 +15261,7 @@ namespace Imlight.Internals
         public class BugReport : PropertyClass
         {
             
-            public override uint GetHash() => 1682456577;
+            public override uint GetHash() => 1544199619;
             [Property(2207163808, 31)] public String m_clientVersion;
             [Property(889643611, 31)] public BugType m_type;
             [Property(859813390, 31)] public Boolean m_canReproduce;
@@ -15282,13 +15282,13 @@ namespace Imlight.Internals
         public class RespecOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 1682715161;
+            public override uint GetHash() => 1544257861;
         }
         
         public class ProvidePetPower : GameEffectBase
         {
             
-            public override uint GetHash() => 1678711058;
+            public override uint GetHash() => 1545292680;
             [Property(1107125310, 31)] public Int32 m_happinessCost;
             [Property(1897549823, 31)] public Int32 m_cooldown;
             [Property(1445312791, 31)] public Int32 m_usesPerCombat;
@@ -15308,7 +15308,7 @@ namespace Imlight.Internals
         public class PulseEffectTemplate : GameEffectTemplate
         {
             
-            public override uint GetHash() => 1679562450;
+            public override uint GetHash() => 1545570424;
             [Property(3960618585, 7)] public Double m_pulsePeriod;
             [Property(1858926599, 7)] public String m_pulseEventName;
         }
@@ -15316,7 +15316,7 @@ namespace Imlight.Internals
         public class RecipeTypeList : PropertyClass
         {
             
-            public override uint GetHash() => 1692567814;
+            public override uint GetHash() => 1545613187;
             [Property(3134367000, 31)] public List<String> m_allowedTypes;
             [Property(3311769839, 31)] public List<String> m_recipeList;
             [Property(751967189, 31)] public Boolean m_noCooldown;
@@ -15326,14 +15326,14 @@ namespace Imlight.Internals
         public class ConditionalSpellEffect : SpellEffect
         {
             
-            public override uint GetHash() => 1693221429;
+            public override uint GetHash() => 1545841998;
             [Property(2647383318, 31)] public List<ConditionalSpellElement> m_elements;
         }
         
         public class ModifyPipRoundRateData : PropertyClass
         {
             
-            public override uint GetHash() => 1695090917;
+            public override uint GetHash() => 1549455354;
             [Property(791787588, 31)] public Int32 m_delta;
             [Property(916427829, 31)] public Int32 m_rounds;
         }
@@ -15341,7 +15341,7 @@ namespace Imlight.Internals
         public class DeathCinematicStageTemplate : CinematicStageTemplate
         {
             
-            public override uint GetHash() => 1718737137;
+            public override uint GetHash() => 1552219135;
             [Property(3217341687, 131079)] public List<String> m_cameras;
             [Property(1882980152, 131079)] public List<String> m_altcameras;
             [Property(2068996589, 7)] public Boolean m_bShowDefeatedText;
@@ -15352,13 +15352,13 @@ namespace Imlight.Internals
         public class RidableBehavior : RidableBehaviorBase
         {
             
-            public override uint GetHash() => 1712113929;
+            public override uint GetHash() => 1553710977;
         }
         
         public class FidgetStateInfo : PropertyClass
         {
             
-            public override uint GetHash() => 1712567838;
+            public override uint GetHash() => 1553752133;
             [Property(2107593594, 7)] public String m_idleName;
             [Property(2693632335, 7)] public String m_fidgetName;
             [Property(1517617078, 7)] public Single m_fidgetsPerMinute;
@@ -15367,14 +15367,14 @@ namespace Imlight.Internals
         public class ClientTutorial : PropertyClass
         {
             
-            public override uint GetHash() => 1727915110;
+            public override uint GetHash() => 1554511067;
             [Property(1363685500, 7)] public UInt16 m_stage;
         }
         
         public class HousingGameHiScores : PropertyClass
         {
             
-            public override uint GetHash() => 1722460862;
+            public override uint GetHash() => 1555179373;
             [Property(2243035545, 7)] public String m_playerName0;
             [Property(1494703316, 7)] public UInt16 m_score0;
             [Property(2243035546, 7)] public String m_playerName1;
@@ -15386,13 +15386,13 @@ namespace Imlight.Internals
         public class ReqClearCraftingSlots : Requirement
         {
             
-            public override uint GetHash() => 1720745186;
+            public override uint GetHash() => 1555862268;
         }
         
         public class ClientPetOwnerBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 183540594;
+            public override uint GetHash() => 2019251425;
             [Property(792508619, 63)] public Byte m_maxSlots;
             [Property(2241134624, 31)] public List<CraftingSlot> m_morphingSlots;
             [Property(1255384991, 63)] public UInt32 m_energyTickTimeSecs;
@@ -15403,39 +15403,39 @@ namespace Imlight.Internals
         public class ClientSpawnObjectInfo : SpawnObjectInfo
         {
             
-            public override uint GetHash() => 1728512813;
+            public override uint GetHash() => 1557744904;
         }
         
         public class ReqHasShadowMagic : Requirement
         {
             
-            public override uint GetHash() => 1729046882;
+            public override uint GetHash() => 1557874588;
         }
         
         public class RequirementList : Requirement
         {
             
-            public override uint GetHash() => 1742888521;
+            public override uint GetHash() => 1558190673;
             [Property(1347801628, 31)] public List<Requirement> m_requirements;
         }
         
         public class GardenData : PropertyClass
         {
             
-            public override uint GetHash() => 1736755706;
+            public override uint GetHash() => 1559871422;
             [Property(645587347, 31)] public List<GardenPlant> m_plantList;
         }
         
         public class ClientRemoveParticleActorCinematicAction : RemoveParticleActorCinematicAction
         {
             
-            public override uint GetHash() => 1626032861;
+            public override uint GetHash() => 1562533748;
         }
         
         public class ActiveMapQuestsCommon : PropertyClass
         {
             
-            public override uint GetHash() => 1635361513;
+            public override uint GetHash() => 1564927353;
             [Property(1229232257, 7)] public UInt64 m_zoneID;
             [Property(394073349, 7)] public List<UInt32> m_newQuestList;
             [Property(426641112, 7)] public List<UInt32> m_completedQuestList;
@@ -15444,7 +15444,7 @@ namespace Imlight.Internals
         public class LinearSoundBehavior : PositionalSoundBehavior
         {
             
-            public override uint GetHash() => 1635878573;
+            public override uint GetHash() => 1568205928;
             [Property(1749294034, 7)] public Single m_fRangeScale;
             [Property(273292776, 7)] public Single m_fAttenuationFactor;
             [Property(2427193304, 2097159)] public PositionInfoAttenuationType m_eAttenuationType;
@@ -15454,7 +15454,7 @@ namespace Imlight.Internals
         public class GoalEntry : ServiceOptionBase
         {
             
-            public override uint GetHash() => 1636346302;
+            public override uint GetHash() => 1568319405;
             [Property(1246549335, 31)] public UInt64 m_questID;
             [Property(485200232, 31)] public UInt64 m_goalID;
             [Property(2291910240, 31)] public String m_goalTitle;
@@ -15465,7 +15465,7 @@ namespace Imlight.Internals
         public class BracketRequest : PvPMatchRequest
         {
             
-            public override uint GetHash() => 1655772598;
+            public override uint GetHash() => 1572128943;
             [Property(1761764108, 31)] public Int32 m_maxRank;
             [Property(2062988042, 31)] public Int32 m_minRank;
             [Property(1656964203, 31)] public UInt32 m_maxNumberOfTeams;
@@ -15498,45 +15498,45 @@ namespace Imlight.Internals
         public class ClientFadeActorCinematicAction : FadeActorCinematicAction
         {
             
-            public override uint GetHash() => 1814725034;
+            public override uint GetHash() => 1578249642;
         }
         
         public class BehaviorInstance : PropertyClass
         {
             
-            public override uint GetHash() => 1812364121;
+            public override uint GetHash() => 1578701589;
             [Property(223437287, 39)] public UInt32 m_behaviorTemplateNameID;
         }
         
         public class TriviaWindow : Window
         {
             
-            public override uint GetHash() => 1812914737;
+            public override uint GetHash() => 1578841423;
         }
         
         public class WinAnimMoveToLocation : WindowAnimation
         {
             
-            public override uint GetHash() => 1825820618;
+            public override uint GetHash() => 1579974194;
             [Property(2653859938, 135)] public Vector3 m_targetLocation;
         }
         
         public class NodeDescriptor : PropertyClass
         {
             
-            public override uint GetHash() => 1825904286;
+            public override uint GetHash() => 1580058725;
         }
         
         public class HousingMusicBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 1835201297;
+            public override uint GetHash() => 1581265159;
         }
         
         public class CinematicStageTemplate : PropertyClass
         {
             
-            public override uint GetHash() => 1835678385;
+            public override uint GetHash() => 1581384559;
             [Property(1717359772, 7)] public String m_name;
             [Property(920323453, 7)] public Single m_duration;
             [Property(1380578687, 7)] public List<CinematicAction> m_actions;
@@ -15546,7 +15546,7 @@ namespace Imlight.Internals
         public class NaturalActCinematicStageTemplate : CinematicStageTemplate
         {
             
-            public override uint GetHash() => 1841606589;
+            public override uint GetHash() => 1583982124;
             [Property(2307644996, 131079)] public String m_sound;
             [Property(3431428731, 7)] public String m_animation;
         }
@@ -15554,13 +15554,13 @@ namespace Imlight.Internals
         public class ClientCameraReleaseCinematicAction : CameraReleaseCinematicAction
         {
             
-            public override uint GetHash() => 1843239049;
+            public override uint GetHash() => 1584393185;
         }
         
         public class HousingBlobObject : PropertyClass
         {
             
-            public override uint GetHash() => 1852799257;
+            public override uint GetHash() => 1585664901;
             [Property(1154586887, 7)] public UInt32 m_gameObjectTemplateID;
             [Property(1263476723, 7)] public UInt32 m_positionXY;
             [Property(837995846, 7)] public Single m_positionZ;
@@ -15570,7 +15570,7 @@ namespace Imlight.Internals
         public class RegisterActorCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1875226210;
+            public override uint GetHash() => 1592387164;
             [Property(3405382643, 7)] public String m_zoneTag;
             [Property(1939845615, 7)] public Boolean m_bStartHidden;
         }
@@ -15578,7 +15578,7 @@ namespace Imlight.Internals
         public class InfractionRecord : PropertyClass
         {
             
-            public override uint GetHash() => 1870944082;
+            public override uint GetHash() => 1593415704;
             [Property(1382795736, 55)] public UInt32 m_categoryID;
             [Property(1031693820, 55)] public UInt32 m_eventID;
             [Property(1625031576, 55)] public UInt32 m_eventCount;
@@ -15590,20 +15590,20 @@ namespace Imlight.Internals
         public class WizItemVendorDataList : WizItemLocations
         {
             
-            public override uint GetHash() => 1745866961;
+            public override uint GetHash() => 1595636215;
             [Property(1211076136, 31)] public List<WizItemVendorData> m_vendors;
         }
         
         public class ClientRegisterPersonaCinematicAction : RegisterPersonaCinematicAction
         {
             
-            public override uint GetHash() => 1775214486;
+            public override uint GetHash() => 1600875047;
         }
         
         public class ConditionalSpellElement : PropertyClass
         {
             
-            public override uint GetHash() => 1773778513;
+            public override uint GetHash() => 1601626199;
             [Property(2565964996, 31)] public RequirementList m_pReqs;
             [Property(400541736, 31)] public SpellEffect m_pEffect;
         }
@@ -15611,45 +15611,45 @@ namespace Imlight.Internals
         public class PetSnackShopOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 1774144390;
+            public override uint GetHash() => 1601658659;
         }
         
         public class FoodFightGameComponent : HousingGameInterface
         {
             
-            public override uint GetHash() => 1770957610;
+            public override uint GetHash() => 1601906442;
         }
         
         public class HousingSigilBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 1793093601;
+            public override uint GetHash() => 1604359739;
         }
         
         public class HidePipsCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1793122233;
+            public override uint GetHash() => 1604368941;
             [Property(2029131039, 7)] public String m_newActorName;
         }
         
         public class HousingNodeReference : PropertyClass
         {
             
-            public override uint GetHash() => 1792830910;
+            public override uint GetHash() => 1605342893;
         }
         
         public class ChatDiagnostics : PropertyClass
         {
             
-            public override uint GetHash() => 1798223177;
+            public override uint GetHash() => 1607671953;
             [Property(2390069786, 31)] public List<String> m_textData;
         }
         
         public class MatchActorResult : PropertyClass
         {
             
-            public override uint GetHash() => 1797233134;
+            public override uint GetHash() => 1608477625;
             [Property(1115051967, 31)] public MatchActor m_pActor;
             [Property(806257663, 31)] public Int32 m_place;
             [Property(1426436071, 31)] public Int32 m_ratingGained;
@@ -15661,19 +15661,19 @@ namespace Imlight.Internals
         public class ClientElixirBenefitEffect : ElixirBenefitEffect
         {
             
-            public override uint GetHash() => 1803621809;
+            public override uint GetHash() => 1610139823;
         }
         
         public class ClientPlayGraphicOnActorAction : PlayGraphicOnActorAction
         {
             
-            public override uint GetHash() => 1810771346;
+            public override uint GetHash() => 1612511577;
         }
         
         public class FlyThroughDataManager : PropertyClass
         {
             
-            public override uint GetHash() => 1796329767;
+            public override uint GetHash() => 1612908149;
             [Property(1791272219, 7)] public List<PointData> m_points;
             [Property(2177136625, 7)] public Single m_cameraSpeed;
             [Property(2171167736, 7)] public String m_zoneName;
@@ -15682,7 +15682,7 @@ namespace Imlight.Internals
         public class MoveController : MoveBehavior.Controller
         {
             
-            public override uint GetHash() => 1797939678;
+            public override uint GetHash() => 1613621836;
             [Property(1899182391, 31)] public Boolean m_bPaused;
             [Property(636010160, 31)] public MoveController.MoveCommand m_spCommand;
             [Property(1055578835, 31)] public List<MoveController.MoveCommand> m_Queue;
@@ -15690,35 +15690,35 @@ namespace Imlight.Internals
             public class MoveCommand : PropertyClass
             {
                 
-                public override uint GetHash() => 968873142;
+                public override uint GetHash() => 192911190;
             }
         }
         
         public class PolymorphRatingInfo : PropertyClass
         {
             
-            public override uint GetHash() => 1787762147;
+            public override uint GetHash() => 1615116100;
             [Property(1906062665, 31)] public Int32 m_maxBattleCards;
         }
         
         public class ShowPipsCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1793717122;
+            public override uint GetHash() => 1616711389;
             [Property(2029131039, 7)] public String m_newActorName;
         }
         
         public class IgnoreEntryDataList : PropertyClass
         {
             
-            public override uint GetHash() => 1774135715;
+            public override uint GetHash() => 1619572820;
             [Property(2636534189, 31)] public List<IgnoreEntryData> m_ignoreDataList;
         }
         
         public class CoreInfoTable : PropertyClass
         {
             
-            public override uint GetHash() => 1773393838;
+            public override uint GetHash() => 1619757016;
             [Property(3587174096, 7)] public String Name;
             [Property(1533522313, 7)] public String Value;
             [Property(1601731202, 7)] public List<CoreInfoTable> Nodes;
@@ -15727,7 +15727,7 @@ namespace Imlight.Internals
         public class PetDropGameSettings : PropertyClass
         {
             
-            public override uint GetHash() => 1761417967;
+            public override uint GetHash() => 1624781959;
             [Property(876142428, 7)] public UInt32 m_uPathID;
             [Property(293633463, 7)] public Int32 m_nFullnessScoreTarget;
             [Property(1125165468, 7)] public Int32 m_nTimeLimitInSeconds;
@@ -15752,32 +15752,32 @@ namespace Imlight.Internals
         public class DdSprite : ControlSprite
         {
             
-            public override uint GetHash() => 1761032551;
+            public override uint GetHash() => 1624947813;
         }
         
         public class PolymorphEffect : GameEffectBase
         {
             
-            public override uint GetHash() => 1759594182;
+            public override uint GetHash() => 1625236366;
             [Property(1286746870, 31)] public UInt32 m_templateID;
         }
         
         public class FurnitureInfoBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 1878494971;
+            public override uint GetHash() => 1629131138;
         }
         
         public class BalloonBaseWindow : Window
         {
             
-            public override uint GetHash() => 1877184103;
+            public override uint GetHash() => 1629458853;
         }
         
         public class GameEffectTimerTrigger : PropertyClass
         {
             
-            public override uint GetHash() => 1868196162;
+            public override uint GetHash() => 1630660717;
             [Property(989410271, 31)] public Single m_radius;
             [Property(2138083583, 31)] public Single m_triggerT;
         }
@@ -15785,7 +15785,7 @@ namespace Imlight.Internals
         public class WizBangTemplate : PropertyClass
         {
             
-            public override uint GetHash() => 1867093066;
+            public override uint GetHash() => 1630869295;
             [Property(1717359772, 7)] public String m_name;
             [Property(2453267148, 131079)] public String m_source;
         }
@@ -15793,7 +15793,7 @@ namespace Imlight.Internals
         public class CrownShopItem : PropertyClass
         {
             
-            public override uint GetHash() => 1860189171;
+            public override uint GetHash() => 1633647808;
             [Property(1978701296, 31)] public UInt64 m_itemTemplateId;
             [Property(1792726006, 31)] public Int32 m_itemFlags;
             [Property(444550297, 31)] public Int32 m_goldCost;
@@ -15810,14 +15810,14 @@ namespace Imlight.Internals
         public class CraftingSlotLootInfo : LootInfo
         {
             
-            public override uint GetHash() => 1841040434;
+            public override uint GetHash() => 1636331825;
             [Property(791787588, 31)] public Int32 m_delta;
         }
         
         public class ObjectStateBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 1839645462;
+            public override uint GetHash() => 1636745978;
             [Property(1658565962, 31)] public List<UInt32> m_stateList;
             [Property(3188396456, 31)] public String m_stateSetOverride;
         }
@@ -15825,14 +15825,14 @@ namespace Imlight.Internals
         public class BattlegroundPOI : PropertyClass
         {
             
-            public override uint GetHash() => 1842986910;
+            public override uint GetHash() => 1636900316;
             [Property(3936595873, 7)] public List<BattlegroundPOIData> m_poiList;
         }
         
         public class PetGameEnergyCost : PropertyClass
         {
             
-            public override uint GetHash() => 1821686826;
+            public override uint GetHash() => 1640127799;
             [Property(857403388, 7)] public Byte m_rank;
             [Property(856879753, 7)] public Byte m_cost;
         }
@@ -15840,13 +15840,13 @@ namespace Imlight.Internals
         public class ClientActorDeathCinematicAction : ActorDeathCinematicAction
         {
             
-            public override uint GetHash() => 1824814030;
+            public override uint GetHash() => 1641443024;
         }
         
         public class CreateActorCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1816057234;
+            public override uint GetHash() => 1642645337;
             [Property(3030904078, 131079)] public String m_animations;
             [Property(2300510668, 131079)] public String m_model;
             [Property(3562324429, 2097159)] public kCreateOrientation m_createOrientation;
@@ -15870,7 +15870,7 @@ namespace Imlight.Internals
         public class DynaMod : PropertyClass
         {
             
-            public override uint GetHash() => 1661881579;
+            public override uint GetHash() => 1646584070;
             [Property(3409856790, 63)] public String m_clientTag;
             [Property(2171167736, 39)] public String m_zoneName;
             [Property(449538121, 39)] public UInt64 m_zoneInstance;
@@ -15882,14 +15882,14 @@ namespace Imlight.Internals
         public class ReqHasSpell : Requirement
         {
             
-            public override uint GetHash() => 1664912158;
+            public override uint GetHash() => 1646809340;
             [Property(2688485244, 268435487)] public String m_spellName;
         }
         
         public class EquipSlot : PropertyClass
         {
             
-            public override uint GetHash() => 1663404142;
+            public override uint GetHash() => 1647185960;
             [Property(2462163144, 7)] public RequirementList m_slotRequirements;
             [Property(3196570032, 7)] public List<String> m_adjectivesAND;
             [Property(2525395710, 7)] public List<String> m_adjectivesOR;
@@ -15902,27 +15902,27 @@ namespace Imlight.Internals
         public class AvatarAppearanceRule : AvatarItemInfo
         {
             
-            public override uint GetHash() => 1655161874;
+            public override uint GetHash() => 1649312569;
         }
         
         public class DynaModList : PropertyClass
         {
             
-            public override uint GetHash() => 1649697931;
+            public override uint GetHash() => 1651665694;
             [Property(3780396482, 27)] public List<DynaMod> m_allMods;
         }
         
         public class BGPenaltyMatchBan : InfractionPenalty
         {
             
-            public override uint GetHash() => 1651523739;
+            public override uint GetHash() => 1652253210;
             [Property(1041524755, 31)] public UInt32 m_duration;
         }
         
         public class CompassMarker : PropertyClass
         {
             
-            public override uint GetHash() => 1637825978;
+            public override uint GetHash() => 1652604243;
             [Property(1720060457, 8388615)] public String m_textKey;
             [Property(2239683611, 7)] public Vector3 m_location;
             [Property(2172826233, 7)] public Point m_mapLocation;
@@ -15933,7 +15933,7 @@ namespace Imlight.Internals
         public class PestEntry : PropertyClass
         {
             
-            public override uint GetHash() => 1636098283;
+            public override uint GetHash() => 1652967942;
             [Property(1587432077, 7)] public Single m_percentPerHour;
             [Property(1301457330, 33554439)] public UInt32 m_pestTemplateID;
         }
@@ -15941,20 +15941,20 @@ namespace Imlight.Internals
         public class PrepEntry : ServiceOptionBase
         {
             
-            public override uint GetHash() => 1636219403;
+            public override uint GetHash() => 1653005502;
             [Property(2576467479, 31)] public String m_prepText;
         }
         
         public class DynamicTriggerTemplate : GameObjectTemplate
         {
             
-            public override uint GetHash() => 1641321867;
+            public override uint GetHash() => 1653757790;
         }
         
         public class WizClientObjectItem : ClientObject
         {
             
-            public override uint GetHash() => 1641542923;
+            public override uint GetHash() => 1653772158;
             [Property(900965981, 31)] public Int32 m_primaryColor;
             [Property(1337683384, 31)] public Int32 m_pattern;
             [Property(1616550081, 63)] public Int32 m_secondaryColor;
@@ -15965,13 +15965,13 @@ namespace Imlight.Internals
         public class BracketUpdateMessage : PvPUpdateMessage
         {
             
-            public override uint GetHash() => 1642976994;
+            public override uint GetHash() => 1654392709;
         }
         
         public class PetDerbyTrackDescriptor : NodeDescriptor
         {
             
-            public override uint GetHash() => 1629963219;
+            public override uint GetHash() => 1655612104;
             [Property(2688629581, 2097159)] public PetDerbyTrackTerrain m_terrainType;
             [Property(2094800111, 2097159)] public PetDerbyLaneSwitch m_laneSwitch;
             
@@ -15988,47 +15988,47 @@ namespace Imlight.Internals
         public class RemoveHangingEffectCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1615802115;
+            public override uint GetHash() => 1660205564;
             [Property(7349510, 7)] public Boolean m_cloaked;
         }
         
         public class CombatCheatSettings : PropertyClass
         {
             
-            public override uint GetHash() => 1615071014;
+            public override uint GetHash() => 1660318710;
             [Property(1279804446, 31)] public UInt32 m_settings;
         }
         
         public class RequirementFailNotification : ServiceOptionBase
         {
             
-            public override uint GetHash() => 1738337278;
+            public override uint GetHash() => 1660963012;
             [Property(1882376712, 31)] public String m_failureMessage;
         }
         
         public class ClientIdleAuraCinematicAction : IdleAuraCinematicAction
         {
             
-            public override uint GetHash() => 1740664319;
+            public override uint GetHash() => 1662478659;
         }
         
         public class GoalCompilation : PropertyClass
         {
             
-            public override uint GetHash() => 1729811790;
+            public override uint GetHash() => 1663158128;
             [Property(2484767728, 31)] public List<GoalEntryFull> m_goals;
         }
         
         public class PipControl : Window
         {
             
-            public override uint GetHash() => 1729559403;
+            public override uint GetHash() => 1663225062;
         }
         
         public class ObjStateTransition : PropertyClass
         {
             
-            public override uint GetHash() => 1730442299;
+            public override uint GetHash() => 1663987506;
             [Property(2472683907, 7)] public String m_targetState;
             [Property(2166469639, 7)] public String m_transitionState;
         }
@@ -16036,7 +16036,7 @@ namespace Imlight.Internals
         public class CharacterChatStatsByState : PropertyClass
         {
             
-            public override uint GetHash() => 1508193439;
+            public override uint GetHash() => 1664247330;
             [Property(1021505934, 7)] public UInt32 m_state;
             [Property(531784794, 7)] public UInt32 m_chatID;
             [Property(1023841410, 7)] public UInt32 m_usage;
@@ -16045,26 +16045,26 @@ namespace Imlight.Internals
         public class WinAnimConcurrentBounded : WinAnimConcurrent
         {
             
-            public override uint GetHash() => 1733530166;
+            public override uint GetHash() => 1664325298;
             [Property(1423726080, 135)] public Rectangle m_boundary;
         }
         
         public class ControlBanner : ControlSprite
         {
             
-            public override uint GetHash() => 1732595259;
+            public override uint GetHash() => 1664491954;
         }
         
         public class HUDWindow : Window
         {
             
-            public override uint GetHash() => 1735703583;
+            public override uint GetHash() => 1664769339;
         }
         
         public class ControlSlider : ControlBar
         {
             
-            public override uint GetHash() => 1735238579;
+            public override uint GetHash() => 1664883408;
             [Property(309551905, 135)] public Single m_fMin;
             [Property(309551651, 135)] public Single m_fMax;
             [Property(1554957503, 135)] public Int32 m_nTabWidth;
@@ -16073,14 +16073,14 @@ namespace Imlight.Internals
         public class AvatarOptionBase : PropertyClass
         {
             
-            public override uint GetHash() => 1712079914;
+            public override uint GetHash() => 1667523383;
             [Property(2483653903, 7)] public List<String> m_conditionFlags;
         }
         
         public class ObstacleCourseSpringboardBehaviorTemplate : ObstacleCourseObstacleBehaviorTemplate
         {
             
-            public override uint GetHash() => 1705430167;
+            public override uint GetHash() => 1670299929;
             [Property(2083389507, 7)] public Single m_penaltyTime;
             [Property(310005283, 7)] public Single m_rate;
             [Property(1881375988, 7)] public Single m_springboardLength;
@@ -16092,33 +16092,33 @@ namespace Imlight.Internals
         public class SoundAcousticsInfo : SoundInfo
         {
             
-            public override uint GetHash() => 1709698983;
+            public override uint GetHash() => 1671334357;
             [Property(1284866962, 2097159)] public AccousticSignature m_effect;
         }
         
         public class MoveBehaviorClient : MoveBehavior
         {
             
-            public override uint GetHash() => 1694851315;
+            public override uint GetHash() => 1671834112;
         }
         
         public class TreasureTableLootInfo : LootInfo
         {
             
-            public override uint GetHash() => 1701308166;
+            public override uint GetHash() => 1673432062;
         }
         
         public class DerbyStealMorale : DerbyEffect
         {
             
-            public override uint GetHash() => 1687140414;
+            public override uint GetHash() => 1673829428;
             [Property(247752792, 31)] public Int32 m_nAmountToSteal;
         }
         
         public class StateEffectTemplate : GameEffectTemplate
         {
             
-            public override uint GetHash() => 1679794931;
+            public override uint GetHash() => 1675664000;
             [Property(2307803100, 7)] public String m_state;
             [Property(3431428731, 7)] public String m_animation;
             [Property(139353587, 7)] public Boolean m_override;
@@ -16127,27 +16127,27 @@ namespace Imlight.Internals
         public class SpeedEffectTemplate : GameEffectTemplate
         {
             
-            public override uint GetHash() => 1678193267;
+            public override uint GetHash() => 1676066464;
             [Property(32503058, 7)] public Int32 m_speedMultiplier;
         }
         
         public class ContainerEffect : GameEffectBase
         {
             
-            public override uint GetHash() => 1680331898;
+            public override uint GetHash() => 1676576547;
         }
         
         public class SpellDataList : PropertyClass
         {
             
-            public override uint GetHash() => 1682365830;
+            public override uint GetHash() => 1677116766;
             [Property(1628917702, 31)] public List<SpellData> m_spellDataList;
         }
         
         public class SG_GameAction_DetonateBlock : SG_GameAction
         {
             
-            public override uint GetHash() => 2072799755;
+            public override uint GetHash() => 1678010558;
             [Property(3623009561, 7)] public String m_impactInteraction;
             [Property(1506193859, 7)] public Single m_fExplosionForceScalar;
             [Property(658772124, 7)] public Single m_fExplosionRadiusScalar;
@@ -16156,7 +16156,7 @@ namespace Imlight.Internals
         public class ClientMagicSchoolBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 2078127167;
+            public override uint GetHash() => 1678778163;
             [Property(236936682, 31)] public UInt32 m_schoolOfFocus;
             [Property(2011512991, 31)] public Int32 m_experiencePoints;
             [Property(801285362, 31)] public Int32 m_level;
@@ -16167,33 +16167,33 @@ namespace Imlight.Internals
         public class PetCameraActorCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 2079877822;
+            public override uint GetHash() => 1679386772;
         }
         
         public class ObstacleCourseRevolvingDoorBehaviorClient : ObstacleCourseRevolvingDoorBehavior
         {
             
-            public override uint GetHash() => 2078748266;
+            public override uint GetHash() => 1679735207;
         }
         
         public class PetTomeBehaviorBase : BehaviorInstance
         {
             
-            public override uint GetHash() => 2059802762;
+            public override uint GetHash() => 1683420191;
             [Property(2990195294, 551)] public String m_petData;
         }
         
         public class ActiveTimedAccessPassList : PropertyClass
         {
             
-            public override uint GetHash() => 2047255518;
+            public override uint GetHash() => 1684462284;
             [Property(1599562628, 31)] public List<ActiveTimedPassEntry> m_passList;
         }
         
         public class ItemLootInfo : LootInfo
         {
             
-            public override uint GetHash() => 2054583578;
+            public override uint GetHash() => 1685778299;
             [Property(569545460, 33554463)] public UInt64 m_itemID;
             [Property(1588646284, 31)] public Int32 m_numItems;
         }
@@ -16201,20 +16201,20 @@ namespace Imlight.Internals
         public class ManaLootInfo : LootInfo
         {
             
-            public override uint GetHash() => 2054183870;
+            public override uint GetHash() => 1685808340;
             [Property(1476254699, 31)] public Int32 m_manaAmount;
         }
         
         public class BoosterPackCrownsOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 2054089398;
+            public override uint GetHash() => 1685899410;
         }
         
         public class GoalEntryFull : GoalEntry
         {
             
-            public override uint GetHash() => 2032637510;
+            public override uint GetHash() => 1689163694;
             [Property(2514452244, 31)] public String m_personaName;
             [Property(24170047, 31)] public Int32 m_goalType;
             [Property(409552449, 31)] public Int32 m_goalStatus;
@@ -16233,7 +16233,7 @@ namespace Imlight.Internals
         public class MatchActor : PropertyClass
         {
             
-            public override uint GetHash() => 2035624515;
+            public override uint GetHash() => 1689401516;
             [Property(663762476, 31)] public UInt64 m_nActorID;
             [Property(782107042, 31)] public UInt64 m_nLadderContainerID;
             [Property(471412886, 31)] public UInt32 m_nTournamentNameID;
@@ -16256,7 +16256,7 @@ namespace Imlight.Internals
         public class PetStat : PropertyClass
         {
             
-            public override uint GetHash() => 2024220539;
+            public override uint GetHash() => 1691270114;
             [Property(1717359772, 7)] public String m_name;
             [Property(1172182134, 31)] public UInt32 m_statID;
             [Property(812990455, 31)] public Int32 m_value;
@@ -16265,14 +16265,14 @@ namespace Imlight.Internals
         public class AuctionHouseOffering : PropertyClass
         {
             
-            public override uint GetHash() => 2014171646;
+            public override uint GetHash() => 1692665412;
             [Property(3624813468, 31)] public List<AuctionHouseEntry> m_auctionList;
         }
         
         public class LogoData : PropertyClass
         {
             
-            public override uint GetHash() => 2140760111;
+            public override uint GetHash() => 1694574647;
             [Property(2251052844, 7)] public String m_logoFile;
             [Property(1039626236, 7)] public Single m_displayTime;
             [Property(1717580128, 7)] public String m_text;
@@ -16281,7 +16281,7 @@ namespace Imlight.Internals
         public class TournamentInfo : PropertyClass
         {
             
-            public override uint GetHash() => 2123984523;
+            public override uint GetHash() => 1698769310;
             [Property(695889746, 31)] public UInt64 m_tournamentID;
             [Property(3329241865, 31)] public String m_tournamentName;
             [Property(1799846440, 31)] public UInt32 m_tournamentNameID;
@@ -16290,13 +16290,13 @@ namespace Imlight.Internals
         public class CantripsInvisibilityEffectTemplate : GameEffectTemplate
         {
             
-            public override uint GetHash() => 2127988919;
+            public override uint GetHash() => 1699926033;
         }
         
         public class SpellCardAttachmentCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 2127160210;
+            public override uint GetHash() => 1700072153;
             [Property(3607089954, 7)] public String m_nodeName;
             [Property(2445636425, 7)] public Vector3 m_offset;
             [Property(3065089042, 7)] public Vector3 m_rotation;
@@ -16305,14 +16305,14 @@ namespace Imlight.Internals
         public class MagicMirrorShopBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 2127039974;
+            public override uint GetHash() => 1700098374;
             [Property(704167667, 7)] public List<UInt32> m_shopOptions;
         }
         
         public class NPCBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 2117905135;
+            public override uint GetHash() => 1701337223;
             [Property(317221834, 7)] public Int32 m_nStartingHealth;
             [Property(31360456, 263)] public Boolean m_HideCurrentHP;
             [Property(717812768, 7)] public Int32 m_nLevel;
@@ -16344,7 +16344,7 @@ namespace Imlight.Internals
         public class MagicXPLootInfo : LootInfo
         {
             
-            public override uint GetHash() => 2117326551;
+            public override uint GetHash() => 1701545865;
             [Property(1597012900, 31)] public String m_magicSchool;
             [Property(759357570, 31)] public Int32 m_experience;
         }
@@ -16352,20 +16352,20 @@ namespace Imlight.Internals
         public class SavedSettingContainer : PropertyClass
         {
             
-            public override uint GetHash() => 2119102275;
+            public override uint GetHash() => 1702152684;
             [Property(2421895488, 7)] public List<SavedSetting> m_savedSettingList;
         }
         
         public class SigilZoneInfoManager : PropertyClass
         {
             
-            public override uint GetHash() => 2122027590;
+            public override uint GetHash() => 1702467246;
         }
         
         public class ActorRenameCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 2113550655;
+            public override uint GetHash() => 1704590451;
             [Property(1519245892, 7)] public String m_newNamePattern;
             [Property(2050856077, 7)] public Boolean m_bActOnlyOnFirstActor;
         }
@@ -16373,7 +16373,7 @@ namespace Imlight.Internals
         public class ActiveClassProject : PropertyClass
         {
             
-            public override uint GetHash() => 2093138226;
+            public override uint GetHash() => 1708638833;
             [Property(774266758, 7)] public Int32 m_goalCount;
             [Property(1263221425, 7)] public UInt32 m_projectID;
             [Property(239852119, 7)] public Int32 m_displayMultiplier;
@@ -16386,20 +16386,20 @@ namespace Imlight.Internals
         public class TeleportToNode : PathBehaviorTemplate.Action
         {
             
-            public override uint GetHash() => 2081582766;
+            public override uint GetHash() => 1709435288;
             [Property(44784029, 7)] public Int32 m_nDestinationNodeID;
         }
         
         public class ReqInCombat : Requirement
         {
             
-            public override uint GetHash() => 2085770007;
+            public override uint GetHash() => 1710483193;
         }
         
         public class MoveCommandSteered : MoveController.MoveCommand
         {
             
-            public override uint GetHash() => 1941056647;
+            public override uint GetHash() => 1712060701;
             [Property(3770499167, 31)] public Vector3 m_vTarget;
             [Property(677163988, 2097183)] public MoveState m_kState;
         }
@@ -16407,19 +16407,19 @@ namespace Imlight.Internals
         public class IdleInterceptCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1940386279;
+            public override uint GetHash() => 1712229957;
         }
         
         public class ClientDerbyAddObstacle : DerbyAddObstacle
         {
             
-            public override uint GetHash() => 1946036270;
+            public override uint GetHash() => 1712912440;
         }
         
         public class ClassProjectLeaderboard : PropertyClass
         {
             
-            public override uint GetHash() => 1945438927;
+            public override uint GetHash() => 1712992399;
             [Property(683398282, 7)] public Int32 m_leaderboardSize;
             [Property(2590936732, 7)] public List<ClassProjectLeaderboardPlayer> m_leaderboardList;
             [Property(554856543, 7)] public Int32 m_topEntry;
@@ -16428,13 +16428,13 @@ namespace Imlight.Internals
         public class ClientDerbyModifyMorale : DerbyModifyMorale
         {
             
-            public override uint GetHash() => 1925530486;
+            public override uint GetHash() => 1716921058;
         }
         
         public class CollectedEssenceTrackingData : PropertyClass
         {
             
-            public override uint GetHash() => 1927467246;
+            public override uint GetHash() => 1717552648;
             [Property(1765087575, 31)] public UInt64 m_ownerGID;
             [Property(1632116450, 31)] public Int32 m_essencesCollected;
             [Property(1286746870, 7)] public UInt32 m_templateID;
@@ -16443,19 +16443,19 @@ namespace Imlight.Internals
         public class DebugCinematicsComponent : PropertyClass
         {
             
-            public override uint GetHash() => 1913349474;
+            public override uint GetHash() => 1717939045;
         }
         
         public class ElasticCamController : CameraController
         {
             
-            public override uint GetHash() => 1918697047;
+            public override uint GetHash() => 1718635945;
         }
         
         public class AccompanyNPCBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1907036391;
+            public override uint GetHash() => 1720563205;
             [Property(2077986357, 7)] public Boolean m_autoAdd;
             [Property(665701306, 7)] public Boolean m_autoRemove;
             [Property(1695271656, 7)] public List<String> m_allowedQuests;
@@ -16469,20 +16469,20 @@ namespace Imlight.Internals
         public class CurrentQuestCompilation : PropertyClass
         {
             
-            public override uint GetHash() => 1897644167;
+            public override uint GetHash() => 1721860637;
             [Property(1432837330, 31)] public List<QuestEntry> m_questEntries;
         }
         
         public class DoodleDoug : PropertyClass
         {
             
-            public override uint GetHash() => 1897168203;
+            public override uint GetHash() => 1721920878;
         }
         
         public class ObstacleCourseModifyTimeBehaviorTemplate : ObstacleCourseObstaclePathBaseTemplate
         {
             
-            public override uint GetHash() => 1903863563;
+            public override uint GetHash() => 1723456510;
             [Property(723546552, 7)] public Int32 m_timeModifier;
             [Property(1838368078, 7)] public String m_effectApply;
             [Property(3579526282, 7)] public String m_soundApply;
@@ -16493,13 +16493,13 @@ namespace Imlight.Internals
         public class ClientCreateAuraActorCinematicAction : CreateAuraActorCinematicAction
         {
             
-            public override uint GetHash() => 1893620590;
+            public override uint GetHash() => 1724966120;
         }
         
         public class FishTournamentEntry : PropertyClass
         {
             
-            public override uint GetHash() => 1892634734;
+            public override uint GetHash() => 1725212200;
             [Property(501688601, 7)] public UInt64 m_characterGID;
             [Property(1986368316, 7)] public Single m_fishSize;
             [Property(1805208228, 7)] public String m_packedName;
@@ -16508,13 +16508,13 @@ namespace Imlight.Internals
         public class ClientFaceTargetTeamActorCinematicAction : FaceTargetTeamActorCinematicAction
         {
             
-            public override uint GetHash() => 2011103542;
+            public override uint GetHash() => 1729147506;
         }
         
         public class HousingMusicPlayerBehaviorBase : BehaviorInstance
         {
             
-            public override uint GetHash() => 2009278410;
+            public override uint GetHash() => 1729608655;
             [Property(1986295487, 65567)] public List<UInt32> m_playlist;
             [Property(906571734, 65567)] public UInt32 m_currentSelection;
             [Property(768737172, 65567)] public UInt32 m_playStyle;
@@ -16523,7 +16523,7 @@ namespace Imlight.Internals
         public class BattlegroundSigilTemplate : CombatSigilTemplate
         {
             
-            public override uint GetHash() => 2002308619;
+            public override uint GetHash() => 1731281342;
             [Property(646469284, 7)] public UInt32 m_tickRateMS;
             [Property(1776075073, 7)] public Single m_playerAggroRange;
             [Property(2339494958, 7)] public String m_deathEffect;
@@ -16537,34 +16537,34 @@ namespace Imlight.Internals
         public class HousingMusicPlayerBehavior : HousingMusicPlayerBehaviorBase
         {
             
-            public override uint GetHash() => 2001483714;
+            public override uint GetHash() => 1731493837;
             [Property(2963606294, 551)] public String m_musicData;
         }
         
         public class SchoolOfFocusOption : PropertyClass
         {
             
-            public override uint GetHash() => 1996019762;
+            public override uint GetHash() => 1733903409;
             [Property(624113571, 31)] public UInt32 m_schoolNameID;
         }
         
         public class FishingLevelControl : Window
         {
             
-            public override uint GetHash() => 1981510250;
+            public override uint GetHash() => 1734454951;
         }
         
         public class WeightedEntryT_std_string : WeightedEntry
         {
             
-            public override uint GetHash() => 1699691874;
+            public override uint GetHash() => 1737361018;
             [Property(2291005229, 7)] public String m_entry;
         }
         
         public class DailyQuestReward : PropertyClass
         {
             
-            public override uint GetHash() => 1979173182;
+            public override uint GetHash() => 1738178676;
             [Property(169215289, 7)] public Int32 m_quantity;
             [Property(3431311734, 2097159)] public RewardTypes m_rewardType;
             [Property(2539512673, 7)] public String m_lootTable;
@@ -16587,26 +16587,26 @@ namespace Imlight.Internals
         public class ActorDialogList : ActorDialogListBase
         {
             
-            public override uint GetHash() => 1978440711;
+            public override uint GetHash() => 1738298685;
             [Property(2112889951, 7)] public List<ActorDialog> m_dialogs;
         }
         
         public class GraphicalEventCurrency2 : GraphicalSpell
         {
             
-            public override uint GetHash() => 1956547067;
+            public override uint GetHash() => 1740689474;
         }
         
         public class GraphicalEventCurrency1 : GraphicalSpell
         {
             
-            public override uint GetHash() => 1956530683;
+            public override uint GetHash() => 1740693570;
         }
         
         public class ReqIsGoal : Requirement
         {
             
-            public override uint GetHash() => 1960476023;
+            public override uint GetHash() => 1741811041;
             [Property(1702112846, 268435463)] public String m_questName;
             [Property(1521627807, 7)] public String m_goalName;
         }
@@ -16614,13 +16614,13 @@ namespace Imlight.Internals
         public class LinearStateSoundBehaviorTemplate : LinearSoundBehaviorTemplate
         {
             
-            public override uint GetHash() => 1960247311;
+            public override uint GetHash() => 1741861439;
         }
         
         public class WizItemLocations : PropertyClass
         {
             
-            public override uint GetHash() => 1952138366;
+            public override uint GetHash() => 1743889188;
             [Property(3482173907, 2097183)] public eItemType m_itemType;
             
             public enum eItemType
@@ -16637,7 +16637,7 @@ namespace Imlight.Internals
         public class WinAnimMoveToLocationTimeEase : WinAnimMoveToLocationTime
         {
             
-            public override uint GetHash() => 1951555766;
+            public override uint GetHash() => 1744038418;
             [Property(1482967843, 135)] public Single m_fEaseInPercent;
             [Property(1272154212, 135)] public Single m_fEaseOutPercent;
             [Property(1894338732, 135)] public Single m_fTotalDistance;
@@ -16646,34 +16646,34 @@ namespace Imlight.Internals
         public class GearVaultBehaviorBase : BehaviorInstance
         {
             
-            public override uint GetHash() => 1950905442;
+            public override uint GetHash() => 1744138021;
             [Property(1498902582, 65567)] public List<String> m_gearList;
         }
         
         public class PetGameConfig : PropertyClass
         {
             
-            public override uint GetHash() => 1953278307;
+            public override uint GetHash() => 1744590948;
             [Property(2009270740, 7)] public List<PetGameInfo> m_games;
         }
         
         public class MonsterMagicWorldTotalList : PropertyClass
         {
             
-            public override uint GetHash() => 1270744675;
+            public override uint GetHash() => 1745417124;
             [Property(3735585298, 7)] public List<MonsterMagicWorldTotal> m_monsterMagicWorldTotalList;
         }
         
         public class MobAggroBehavior : AggroBehavior
         {
             
-            public override uint GetHash() => 1271628534;
+            public override uint GetHash() => 1746244226;
         }
         
         public class DuelModifier : PropertyClass
         {
             
-            public override uint GetHash() => 1259701539;
+            public override uint GetHash() => 1747063668;
             [Property(3023646200, 31)] public List<String> m_combatTriggers;
             [Property(1653008424, 31)] public Boolean m_noTreasureCards;
             [Property(1245973515, 31)] public List<SpellEffect> m_battlefieldEffects;
@@ -16684,21 +16684,21 @@ namespace Imlight.Internals
         public class ClientPetSnackItem : WizClientObjectItem
         {
             
-            public override uint GetHash() => 1264963243;
+            public override uint GetHash() => 1748894102;
             [Property(169215289, 27)] public Int32 m_quantity;
         }
         
         public class DerbyModifyCheerCost : DerbyEffect
         {
             
-            public override uint GetHash() => 1251822162;
+            public override uint GetHash() => 1749033129;
             [Property(1929931701, 31)] public TerrainCheerCostMap m_costMap;
         }
         
         public class InclusiveRange : PropertyClass
         {
             
-            public override uint GetHash() => 1250622779;
+            public override uint GetHash() => 1749405042;
             [Property(1021505883, 7)] public UInt32 m_start;
             [Property(431263059, 7)] public UInt32 m_stop;
         }
@@ -16706,7 +16706,7 @@ namespace Imlight.Internals
         public class WinAnimScaleTime : WinAnimScale
         {
             
-            public override uint GetHash() => 1253316531;
+            public override uint GetHash() => 1749710800;
             [Property(661225456, 135)] public Single m_fTimeTotal;
             [Property(1591443014, 135)] public Single m_fTimeRemaining;
         }
@@ -16714,65 +16714,65 @@ namespace Imlight.Internals
         public class ClientShadowSelfCinematicAction : ShadowSelfCinematicAction
         {
             
-            public override uint GetHash() => 1255051107;
+            public override uint GetHash() => 1750389220;
         }
         
         public class ClientRecreateNPCActorCinematicAction : RecreateNPCActorCinematicAction
         {
             
-            public override uint GetHash() => 1248950227;
+            public override uint GetHash() => 1752903624;
         }
         
         public class WizItemBossList : WizItemLocations
         {
             
-            public override uint GetHash() => 1209260726;
+            public override uint GetHash() => 1759741074;
             [Property(501597596, 31)] public List<UInt32> m_bosses;
         }
         
         public class LootDialogEntry : ActorDialogEntry
         {
             
-            public override uint GetHash() => 1208512931;
+            public override uint GetHash() => 1759866452;
         }
         
         public class EffectListSpellEffect : SpellEffect
         {
             
-            public override uint GetHash() => 1213366106;
+            public override uint GetHash() => 1760816619;
             [Property(707154804, 7)] public List<SpellEffect> m_effectList;
         }
         
         public class ClientServerSyncCinematicAction : ServerSyncCinematicAction
         {
             
-            public override uint GetHash() => 1214575795;
+            public override uint GetHash() => 1761496848;
         }
         
         public class JewelSocketUnlockCostList : PropertyClass
         {
             
-            public override uint GetHash() => 1214764107;
+            public override uint GetHash() => 1761511214;
             [Property(2753944903, 31)] public List<JewelSocketUnlockCost> m_jewelSocketUnlockList;
         }
         
         public class ReqInZone : Requirement
         {
             
-            public override uint GetHash() => 1326085135;
+            public override uint GetHash() => 1764093759;
             [Property(2171167736, 268435463)] public String m_zoneName;
         }
         
         public class DailyQuestOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 1325637230;
+            public override uint GetHash() => 1764201896;
         }
         
         public class PhysicsBehaviorTemplate : CollisionBehaviorTemplate
         {
             
-            public override uint GetHash() => 1321144039;
+            public override uint GetHash() => 1766371717;
             [Property(1994289470, 2097159)] public SimulationMethod m_nSimulationMethod;
             [Property(2096165250, 7)] public Boolean m_bEnableGravity;
             [Property(1865442172, 7)] public Boolean m_bEnableDamping;
@@ -16800,7 +16800,7 @@ namespace Imlight.Internals
         public class CurrencyTemplate : WizItemTemplate
         {
             
-            public override uint GetHash() => 1320752675;
+            public override uint GetHash() => 1766406068;
             [Property(461057706, 2097183)] public CurrencyTypes m_currencyType;
             
             public enum CurrencyTypes
@@ -16817,13 +16817,13 @@ namespace Imlight.Internals
         public class ColorPickerSWF : Window
         {
             
-            public override uint GetHash() => 1304842374;
+            public override uint GetHash() => 1771496990;
         }
         
         public class CinematicEventInfo : PropertyClass
         {
             
-            public override uint GetHash() => 1284188850;
+            public override uint GetHash() => 1774565521;
             [Property(2291276253, 7)] public String m_event;
             [Property(2153420230, 7)] public String m_newState;
             [Property(2654559709, 7)] public String m_requiredState;
@@ -16832,13 +16832,13 @@ namespace Imlight.Internals
         public class TextureRemapBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1282311123;
+            public override uint GetHash() => 1778176712;
         }
         
         public class DdWinAnimMoveMob : WinAnimMoveToLocationSpeed
         {
             
-            public override uint GetHash() => 1124091807;
+            public override uint GetHash() => 1780966363;
             [Property(591537519, 135)] public DdDirection m_facing;
             [Property(1071209393, 135)] public DdDirection m_cameFrom;
             [Property(2346187452, 135)] public Point m_nextWaypoint;
@@ -16852,7 +16852,7 @@ namespace Imlight.Internals
         public class ScriptBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1119486130;
+            public override uint GetHash() => 1783230993;
             [Property(1831462225, 131079)] public String m_scriptFilename;
             [Property(815844583, 7)] public Boolean m_bDisableAutoRestart;
             [Property(2499494128, 131079)] public String m_clientScriptFilename;
@@ -16861,7 +16861,7 @@ namespace Imlight.Internals
         public class DynaModDelta : DynaMod
         {
             
-            public override uint GetHash() => 1121421515;
+            public override uint GetHash() => 1783795726;
             [Property(906763969, 63)] public Boolean m_remove;
             [Property(2307803100, 39)] public String m_state;
             [Property(1849561019, 31)] public UInt32 m_stateID;
@@ -16870,19 +16870,19 @@ namespace Imlight.Internals
         public class ClientPetBoostPlayerStatEffect : PetBoostPlayerStatEffect
         {
             
-            public override uint GetHash() => 1107570594;
+            public override uint GetHash() => 1785100757;
         }
         
         public class ObstacleCourseObstaclePathBase : ObstacleCourseObstacleBehavior
         {
             
-            public override uint GetHash() => 1111228666;
+            public override uint GetHash() => 1785229827;
         }
         
         public class BGSigilTimer : PropertyClass
         {
             
-            public override uint GetHash() => 1102471055;
+            public override uint GetHash() => 1787487711;
             [Property(1021505934, 31)] public UInt32 m_state;
             [Property(843207562, 31)] public UInt32 m_startTimeMS;
             [Property(1238335003, 31)] public Single m_snapshotT;
@@ -16895,7 +16895,7 @@ namespace Imlight.Internals
         public class QuestDynaModInfo : PropertyClass
         {
             
-            public override uint GetHash() => 1101851415;
+            public override uint GetHash() => 1787578617;
             [Property(487002423, 7)] public Boolean m_hideObjects;
             [Property(1458202892, 7)] public Boolean m_alterState;
             [Property(3405382643, 7)] public String m_zoneTag;
@@ -16906,7 +16906,7 @@ namespace Imlight.Internals
         public class DerbyAffectEffects : DerbyEffect
         {
             
-            public override uint GetHash() => 1101107603;
+            public override uint GetHash() => 1787762264;
             [Property(1860427310, 31)] public Int32 m_nNumBuffs;
             [Property(637090007, 31)] public Int32 m_nNumDebuffs;
         }
@@ -16914,7 +16914,7 @@ namespace Imlight.Internals
         public class LocationTemplate : PropertyClass
         {
             
-            public override uint GetHash() => 1101058519;
+            public override uint GetHash() => 1787774537;
             [Property(2490843130, 7)] public String m_locName;
             [Property(2239683611, 7)] public Vector3 m_location;
             [Property(1528165112, 7)] public Single m_direction;
@@ -16923,33 +16923,33 @@ namespace Imlight.Internals
         public class ThumbnailControl : Window
         {
             
-            public override uint GetHash() => 1103265779;
+            public override uint GetHash() => 1788341696;
             [Property(3125725509, 7)] public Material m_frameImage;
         }
         
         public class EncounterTemplate : QuestTemplate
         {
             
-            public override uint GetHash() => 1096555259;
+            public override uint GetHash() => 1789949058;
         }
         
         public class InstanceInfoList : PropertyClass
         {
             
-            public override uint GetHash() => 1096279423;
+            public override uint GetHash() => 1790085987;
             [Property(2930750483, 31)] public List<InstanceInfo> m_instanceList;
         }
         
         public class HidePolymorphFloatyTextCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1083508238;
+            public override uint GetHash() => 1791112128;
         }
         
         public class InfractionPenalty : PropertyClass
         {
             
-            public override uint GetHash() => 1076506418;
+            public override uint GetHash() => 1793980913;
             [Property(1854540375, 31)] public UInt32 m_internalID;
             [Property(1382795736, 31)] public UInt32 m_categoryID;
             [Property(2112196961, 31)] public Single m_removeAtPointValue;
@@ -16959,21 +16959,21 @@ namespace Imlight.Internals
         public class DailyQuestData : PropertyClass
         {
             
-            public override uint GetHash() => 1202585022;
+            public override uint GetHash() => 1795951956;
             [Property(3219359410, 7)] public List<DailyQuestInfo> m_dailyQuestList;
         }
         
         public class DynamicURLWhitelist : PropertyClass
         {
             
-            public override uint GetHash() => 1207733935;
+            public override uint GetHash() => 1796755863;
             [Property(2741681576, 7)] public List<DynamicURLDescriptor> m_whitelist;
         }
         
         public class EmbeddedBrowserConfig : PropertyClass
         {
             
-            public override uint GetHash() => 1197205998;
+            public override uint GetHash() => 1798408264;
             [Property(1789796475, 7)] public String m_sFallbackPage;
             [Property(1210334404, 7)] public List<EmbeddedBrowserConfigEntry> m_entries;
         }
@@ -16981,13 +16981,13 @@ namespace Imlight.Internals
         public class UnstitchOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 1184798659;
+            public override uint GetHash() => 1799411660;
         }
         
         public class WinAnimFillGlobeTime : WindowAnimation
         {
             
-            public override uint GetHash() => 1185005299;
+            public override uint GetHash() => 1800347008;
             [Property(1788918332, 135)] public Int32 m_nAmount;
             [Property(883746156, 135)] public Single m_fTime;
             [Property(1591443014, 135)] public Single m_fTimeRemaining;
@@ -16997,13 +16997,13 @@ namespace Imlight.Internals
         public class StopBacklashRotationEffectCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1189955082;
+            public override uint GetHash() => 1801200575;
         }
         
         public class AvatarOption : AvatarOptionBase
         {
             
-            public override uint GetHash() => 1175353450;
+            public override uint GetHash() => 1801776167;
             [Property(1717328392, 131079)] public String m_mesh;
             [Property(760920637, 7)] public Boolean m_noMesh;
             [Property(2041778855, 7)] public String m_geometry;
@@ -17012,7 +17012,7 @@ namespace Imlight.Internals
         public class TerrainCheerCostMap : PropertyClass
         {
             
-            public override uint GetHash() => 1177230786;
+            public override uint GetHash() => 1802351949;
             [Property(1687521865, 31)] public Int32 m_nCostChangeAmt;
             [Property(2546445910, 2097183)] public DerbyTerrainTargetType m_kTerrainType;
             
@@ -17029,7 +17029,7 @@ namespace Imlight.Internals
         public class TubeGeomParams : GeomParams
         {
             
-            public override uint GetHash() => 1181511603;
+            public override uint GetHash() => 1803315664;
             [Property(787972805, 7)] public Single m_fRadius;
             [Property(558261279, 7)] public Single m_fLength;
         }
@@ -17037,14 +17037,14 @@ namespace Imlight.Internals
         public class MadlibArgT_std_string : MadlibArg
         {
             
-            public override uint GetHash() => 2015670642;
+            public override uint GetHash() => 1804927325;
             [Property(2376191783, 31)] public String m_madlibArgument;
         }
         
         public class CastleMagicTimer : PropertyClass
         {
             
-            public override uint GetHash() => 1173135582;
+            public override uint GetHash() => 1805408780;
             [Property(1316603533, 7)] public UInt64 m_timerGID;
             [Property(782324633, 7)] public UInt32 m_onSeconds;
             [Property(1856084727, 7)] public UInt32 m_offSeconds;
@@ -17057,20 +17057,20 @@ namespace Imlight.Internals
         public class CastleMagicPlayersInZone : PropertyClass
         {
             
-            public override uint GetHash() => 1142619583;
+            public override uint GetHash() => 1809960275;
             [Property(1367168135, 7)] public List<UInt64> m_playersInZoneList;
         }
         
         public class UnSwapShadowMaterialActorCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1143818086;
+            public override uint GetHash() => 1810637798;
         }
         
         public class PetGameMorphPartner : PropertyClass
         {
             
-            public override uint GetHash() => 1146854679;
+            public override uint GetHash() => 1810994553;
             [Property(210498418, 31)] public UInt64 m_characterId;
             [Property(521887012, 31)] public List<CoreObject> m_pets;
         }
@@ -17078,7 +17078,7 @@ namespace Imlight.Internals
         public class MagicLevelInfo : PropertyClass
         {
             
-            public override uint GetHash() => 1538806582;
+            public override uint GetHash() => 1812555506;
             [Property(801285362, 7)] public Int32 m_level;
             [Property(1972600157, 7)] public Int32 m_xpToLevel;
             [Property(1545062140, 7)] public Int32 m_hitpoints;
@@ -17103,7 +17103,7 @@ namespace Imlight.Internals
         public class WizStatisticEffectTemplate : StatisticEffectTemplate
         {
             
-            public override uint GetHash() => 1529654718;
+            public override uint GetHash() => 1814845780;
             [Property(1205044623, 7)] public Boolean m_buffAll;
             [Property(2438566051, 7)] public String m_school;
             [Property(623230606, 7)] public Single m_damageBonusPercent;
@@ -17148,37 +17148,37 @@ namespace Imlight.Internals
         public class ClientPetCastEffectActorCinematicAction : PetCastEffectActorCinematicAction
         {
             
-            public override uint GetHash() => 1524247978;
+            public override uint GetHash() => 1817311575;
         }
         
         public class GraphicalItemCard : GraphicalSpell
         {
             
-            public override uint GetHash() => 1522868099;
+            public override uint GetHash() => 1817589212;
         }
         
         public class TrackedPlant : PropertyClass
         {
             
-            public override uint GetHash() => 1516182555;
+            public override uint GetHash() => 1819325754;
         }
         
         public class ManaGlobe : StatGlobe
         {
             
-            public override uint GetHash() => 1515321102;
+            public override uint GetHash() => 1819480064;
         }
         
         public class ClientGameEffectTimerDisplayBehavior : GameEffectTimerDisplayBehavior
         {
             
-            public override uint GetHash() => 1516488470;
+            public override uint GetHash() => 1820296186;
         }
         
         public class StartingPipEffectInfo : GameEffectInfo
         {
             
-            public override uint GetHash() => 1507266946;
+            public override uint GetHash() => 1821554269;
             [Property(1346249167, 7)] public Int32 m_pipsGiven;
             [Property(377908508, 7)] public Int32 m_powerPipsGiven;
         }
@@ -17186,32 +17186,32 @@ namespace Imlight.Internals
         public class ClientAttachParticleActorCinematicAction : AttachParticleActorCinematicAction
         {
             
-            public override uint GetHash() => 1505848495;
+            public override uint GetHash() => 1821845783;
         }
         
         public class ClientDeathParticleCinematicAction : DeathParticleCinematicAction
         {
             
-            public override uint GetHash() => 1495936383;
+            public override uint GetHash() => 1823340899;
         }
         
         public class ProcessGlobalCinematicStageTemplate : CinematicStageTemplate
         {
             
-            public override uint GetHash() => 1495625274;
+            public override uint GetHash() => 1823353267;
             [Property(2307644996, 131079)] public String m_sound;
         }
         
         public class ClientExpansionBehavior : ExpansionBehavior
         {
             
-            public override uint GetHash() => 1495516874;
+            public override uint GetHash() => 1823441807;
         }
         
         public class TileMaterial : Material
         {
             
-            public override uint GetHash() => 1476474583;
+            public override uint GetHash() => 1827094409;
             [Property(1882401395, 135)] public Int32 m_TilesX;
             [Property(1882401396, 135)] public Int32 m_TilesY;
         }
@@ -17219,7 +17219,7 @@ namespace Imlight.Internals
         public class AvatarItemInfo : AvatarItemInfoBase
         {
             
-            public override uint GetHash() => 1483281967;
+            public override uint GetHash() => 1828534199;
             [Property(2609631923, 7)] public String m_partName;
             [Property(2819781566, 7)] public String m_slotName;
             [Property(2292098216, 7)] public List<String> m_flags;
@@ -17232,20 +17232,20 @@ namespace Imlight.Internals
         public class BadgeFilterInfoList : PropertyClass
         {
             
-            public override uint GetHash() => 1483072199;
+            public override uint GetHash() => 1828588173;
             [Property(2012631232, 31)] public List<BadgeFilterInfo> m_badgeFilterInfoList;
         }
         
         public class SeedBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 1607047031;
+            public override uint GetHash() => 1830098913;
         }
         
         public class CinematicActorAnimationContainer : PropertyClass
         {
             
-            public override uint GetHash() => 1606616030;
+            public override uint GetHash() => 1830269644;
             [Property(1286746870, 71)] public UInt32 m_templateID;
             [Property(2050810421, 7)] public String m_actorName;
             [Property(2741681697, 7)] public List<CinematicActorAnimationData> m_animations;
@@ -17255,13 +17255,13 @@ namespace Imlight.Internals
         public class FishCatchOfTheDayOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 1587606590;
+            public override uint GetHash() => 1833914164;
         }
         
         public class EquippedSlotInfo : PropertyClass
         {
             
-            public override uint GetHash() => 1578239530;
+            public override uint GetHash() => 1835266999;
             [Property(569545460, 31)] public UInt64 m_itemID;
             [Property(1951735276, 31)] public UInt32 m_itemSlotNameID;
         }
@@ -17269,20 +17269,20 @@ namespace Imlight.Internals
         public class TreasureCardLootInfo : LootInfo
         {
             
-            public override uint GetHash() => 1572482098;
+            public override uint GetHash() => 1837758769;
             [Property(1697483258, 31)] public UInt32 m_spellID;
         }
         
         public class CinematicActor : PropertyClass
         {
             
-            public override uint GetHash() => 1576784126;
+            public override uint GetHash() => 1838777860;
         }
         
         public class WinAnimSizeTime : WinAnimSize
         {
             
-            public override uint GetHash() => 1575921730;
+            public override uint GetHash() => 1838995501;
             [Property(661225456, 135)] public Single m_fTimeTotal;
             [Property(1591443014, 135)] public Single m_fTimeRemaining;
             [Property(2914066496, 135)] public Vector3 m_currentSize;
@@ -17291,7 +17291,7 @@ namespace Imlight.Internals
         public class LinearSoundBehaviorTemplate : PositionalSoundBehaviorTemplate
         {
             
-            public override uint GetHash() => 1560995335;
+            public override uint GetHash() => 1839582141;
             [Property(1749294034, 7)] public Single m_fRangeScale;
             [Property(273292776, 7)] public Single m_fAttenuationFactor;
             [Property(2427193304, 2097159)] public PositionInfoAttenuationType m_eAttenuationType;
@@ -17301,13 +17301,13 @@ namespace Imlight.Internals
         public class ClientStopHangingRotationCinematicAction : StopHangingRotationCinematicAction
         {
             
-            public override uint GetHash() => 1564022422;
+            public override uint GetHash() => 1839806362;
         }
         
         public class TeleportTransitionTemplate : PropertyClass
         {
             
-            public override uint GetHash() => 1564788915;
+            public override uint GetHash() => 1840660496;
             [Property(1717359772, 7)] public String m_name;
             [Property(1633906299, 7)] public List<String> m_loadScreenOverride;
             [Property(2697765027, 131079)] public String m_transInSoundOverride;
@@ -17318,19 +17318,19 @@ namespace Imlight.Internals
         public class PermanentShopWindowPassThru : Window
         {
             
-            public override uint GetHash() => 1568409715;
+            public override uint GetHash() => 1840803872;
         }
         
         public class JewelSocketBehaviorBase : BehaviorInstance
         {
             
-            public override uint GetHash() => 1560182955;
+            public override uint GetHash() => 1842926102;
         }
         
         public class JewelSocket : PropertyClass
         {
             
-            public override uint GetHash() => 1548010111;
+            public override uint GetHash() => 1844855459;
             [Property(3989417709, 2097159)] public JewelSocketType m_socketType;
             [Property(1046128242, 31)] public Boolean m_bLockable;
             
@@ -17348,7 +17348,7 @@ namespace Imlight.Internals
         public class HousingPaletteBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1402602439;
+            public override uint GetHash() => 1845621453;
             [Property(658067464, 7)] public Int32 m_housingPaletteType;
             [Property(2885436919, 7)] public List<Vector3> m_primaryTintColors;
             [Property(3624818395, 7)] public List<Vector3> m_secondaryTintColors;
@@ -17357,7 +17357,7 @@ namespace Imlight.Internals
         public class ServiceMementoBase : PropertyClass
         {
             
-            public override uint GetHash() => 1403607823;
+            public override uint GetHash() => 1846355199;
             [Property(2340755721, 31)] public List<ServiceOptionBase> m_serviceOptions;
             [Property(2418856780, 31)] public MadlibBlock m_personaMadlibs;
             [Property(1976589766, 31)] public String m_npcNameKey;
@@ -17372,27 +17372,27 @@ namespace Imlight.Internals
         public class ResultList : PropertyClass
         {
             
-            public override uint GetHash() => 1394534959;
+            public override uint GetHash() => 1847642295;
             [Property(3083396188, 7)] public List<Result> m_results;
         }
         
         public class ReqItemHasAdjective : Requirement
         {
             
-            public override uint GetHash() => 1397775502;
+            public override uint GetHash() => 1848861984;
             [Property(3429518154, 7)] public String m_adjective;
         }
         
         public class ClientLeashBehavior : LeashBehavior
         {
             
-            public override uint GetHash() => 1388171691;
+            public override uint GetHash() => 1850213974;
         }
         
         public class PCSButton : ControlButton
         {
             
-            public override uint GetHash() => 1388215235;
+            public override uint GetHash() => 1850272972;
             [Property(569545460, 7)] public UInt64 m_itemID;
             [Property(405352622, 2097159)] public CurrencyTab m_currencyType;
             
@@ -17404,27 +17404,27 @@ namespace Imlight.Internals
         public class EquippedItemInfo : PropertyClass
         {
             
-            public override uint GetHash() => 1387863082;
+            public override uint GetHash() => 1850291511;
             [Property(780964329, 31)] public UInt32 m_itemID;
         }
         
         public class AvatarItemInfoList : PropertyClass
         {
             
-            public override uint GetHash() => 1387812143;
+            public override uint GetHash() => 1850304375;
             [Property(3137169759, 7)] public List<AvatarItemInfoBase> m_itemInfoList;
         }
         
         public class BuffDebuffEventCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1377525171;
+            public override uint GetHash() => 1851893072;
         }
         
         public class FishHistory : PropertyClass
         {
             
-            public override uint GetHash() => 1372276914;
+            public override uint GetHash() => 1855299601;
             [Property(1286746870, 33554471)] public UInt32 m_templateID;
             [Property(880871538, 39)] public UInt32 m_numberCaught;
             [Property(1372912951, 39)] public Single m_smallestSize;
@@ -17436,13 +17436,13 @@ namespace Imlight.Internals
         public class TournamentUpdate : PropertyClass
         {
             
-            public override uint GetHash() => 1374376855;
+            public override uint GetHash() => 1855825625;
         }
         
         public class BGSigilProxyBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 1362501135;
+            public override uint GetHash() => 1856697791;
             [Property(2270881950, 31)] public BGSigilTimer m_autoCapTimer;
             [Property(1994153155, 31)] public String m_timerTeam;
             [Property(3126686637, 31)] public String m_teamOwner;
@@ -17464,19 +17464,19 @@ namespace Imlight.Internals
         public class AvatarItemInfoBase : PropertyClass
         {
             
-            public override uint GetHash() => 1352144559;
+            public override uint GetHash() => 1858172823;
         }
         
         public class ReqDerbyPlace : ReqNumeric
         {
             
-            public override uint GetHash() => 1355742798;
+            public override uint GetHash() => 1859440048;
         }
         
         public class ZoneFish : PropertyClass
         {
             
-            public override uint GetHash() => 1346614158;
+            public override uint GetHash() => 1861721824;
             [Property(2050232416, 33554439)] public UInt32 m_fishTemplateID;
             [Property(1801275150, 7)] public Single m_creationChance;
             [Property(786325463, 7)] public Single m_alternateLootChance;
@@ -17486,7 +17486,7 @@ namespace Imlight.Internals
         public class SpellIDPair : PropertyClass
         {
             
-            public override uint GetHash() => 1470529210;
+            public override uint GetHash() => 1863249299;
             [Property(1697483258, 31)] public UInt32 m_spellID;
             [Property(859458588, 31)] public Int32 m_tieredSpellGroupIndex;
         }
@@ -17494,14 +17494,14 @@ namespace Imlight.Internals
         public class AnimationSetManager : PropertyClass
         {
             
-            public override uint GetHash() => 1472240266;
+            public override uint GetHash() => 1863799967;
             [Property(809977903, 7)] public List<AnimationSet> m_sets;
         }
         
         public class SigilTemplate : CoreTemplate
         {
             
-            public override uint GetHash() => 1474840430;
+            public override uint GetHash() => 1864197096;
             [Property(3177657588, 7)] public String m_sigilName;
             [Property(3177899445, 7)] public String m_sigilType;
             [Property(3262956108, 7)] public ResultList m_entryResults;
@@ -17516,7 +17516,7 @@ namespace Imlight.Internals
         public class SpellTemplate : CoreTemplate
         {
             
-            public override uint GetHash() => 1475005518;
+            public override uint GetHash() => 1864220976;
             [Property(1717359772, 7)] public String m_name;
             [Property(1649374815, 8388615)] public String m_description;
             [Property(2446900370, 8388615)] public String m_displayName;
@@ -17577,14 +17577,14 @@ namespace Imlight.Internals
         public class JoinTeamUpdate : TournamentUpdate
         {
             
-            public override uint GetHash() => 1459873219;
+            public override uint GetHash() => 1864862540;
             [Property(1120253775, 31)] public MatchActor m_actor;
         }
         
         public class ReqEntryValue : ReqNumeric
         {
             
-            public override uint GetHash() => 1464588362;
+            public override uint GetHash() => 1865778223;
             [Property(2055270734, 7)] public String m_entryName;
             [Property(2446900370, 287)] public String m_displayName;
             [Property(1388902362, 7)] public Boolean m_isQuestRegistry;
@@ -17594,7 +17594,7 @@ namespace Imlight.Internals
         public class ComboItem : PropertyClass
         {
             
-            public override uint GetHash() => 1456501502;
+            public override uint GetHash() => 1867738756;
             [Property(1567439332, 135)] public String sText;
             [Property(2716109453, 135)] public UInt64 dwFlags;
         }
@@ -17602,7 +17602,7 @@ namespace Imlight.Internals
         public class SpawnItem : PropertyClass
         {
             
-            public override uint GetHash() => 1456128270;
+            public override uint GetHash() => 1867891328;
             [Property(1023261955, 7)] public Byte m_percentChance;
             [Property(1481415047, 7)] public SpawnObjectInfo m_objectInfo;
         }
@@ -17610,13 +17610,13 @@ namespace Imlight.Internals
         public class DynaModShowObject : DynaMod
         {
             
-            public override uint GetHash() => 1435364515;
+            public override uint GetHash() => 1870924052;
         }
         
         public class ToggleInterfaceControlCinematicAction : CinematicAction
         {
             
-            public override uint GetHash() => 1442707914;
+            public override uint GetHash() => 1872235599;
             [Property(1457214913, 7)] public Single m_maximumDurationInSeconds;
             [Property(519818283, 7)] public Boolean m_hideUI;
             [Property(1752496036, 7)] public Boolean m_stopMovement;
@@ -17625,26 +17625,26 @@ namespace Imlight.Internals
         public class MoveCommandPitch : MoveController.MoveCommand
         {
             
-            public override uint GetHash() => 1426588378;
+            public override uint GetHash() => 1873113739;
             [Property(499815957, 31)] public Single m_fPitch;
         }
         
         public class ControlButtonState : PropertyClass
         {
             
-            public override uint GetHash() => 1428682914;
+            public override uint GetHash() => 1873710101;
         }
         
         public class WindowHelp : ControlText
         {
             
-            public override uint GetHash() => 1428586699;
+            public override uint GetHash() => 1873728014;
         }
         
         public class WinAnimMoveToLocationSpeedEase : WinAnimMoveToLocationSpeed
         {
             
-            public override uint GetHash() => 1419724330;
+            public override uint GetHash() => 1874895799;
             [Property(1482967843, 135)] public Single m_fEaseInPercent;
             [Property(1272154212, 135)] public Single m_fEaseOutPercent;
             [Property(1894338732, 135)] public Single m_fTotalDistance;
@@ -17653,20 +17653,20 @@ namespace Imlight.Internals
         public class ClientTreasureBookBehavior : TreasureBookBehavior
         {
             
-            public override uint GetHash() => 1418216295;
+            public override uint GetHash() => 1875206885;
         }
         
         public class WinAnimMoveToLocationSpeed : WinAnimMoveToLocation
         {
             
-            public override uint GetHash() => 1410356798;
+            public override uint GetHash() => 1877174196;
             [Property(503609006, 135)] public Single m_fSpeed;
         }
         
         public class GardeningLevelInfo : PropertyClass
         {
             
-            public override uint GetHash() => 1413021767;
+            public override uint GetHash() => 1877553709;
             [Property(1438884808, 7)] public Byte m_level;
             [Property(1972600157, 7)] public Int32 m_xpToLevel;
             [Property(3595417396, 8388615)] public String m_levelName;
@@ -17675,7 +17675,7 @@ namespace Imlight.Internals
         public class RankStruct : PropertyClass
         {
             
-            public override uint GetHash() => 723415470;
+            public override uint GetHash() => 1881206360;
             [Property(1081322958, 31)] public Byte m_regularRank;
             [Property(2569946434, 31)] public Byte m_shadowRank;
         }
@@ -17683,14 +17683,14 @@ namespace Imlight.Internals
         public class PvPRatingsConfig : PropertyClass
         {
             
-            public override uint GetHash() => 722322778;
+            public override uint GetHash() => 1881408363;
             [Property(2728721304, 7)] public List<RatingInfo> m_ratingsConfig;
         }
         
         public class InfractionBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 708100530;
+            public override uint GetHash() => 1886011985;
             [Property(1696001746, 31)] public List<InfractionPenalty> m_penalties;
             [Property(2129713657, 16)] public List<InfractionRecord> m_record;
         }
@@ -17698,14 +17698,14 @@ namespace Imlight.Internals
         public class CombatActionListObj : PropertyClass
         {
             
-            public override uint GetHash() => 711524226;
+            public override uint GetHash() => 1887260125;
             [Property(1971690676, 31)] public List<CombatAction> m_actionList;
         }
         
         public class BadgeInfo : PropertyClass
         {
             
-            public override uint GetHash() => 697117407;
+            public override uint GetHash() => 1887713419;
             [Property(800680558, 31)] public UInt32 m_badgeNameID;
             [Property(1783354256, 31)] public String m_badgeTitle;
             [Property(3002782298, 31)] public String m_badgeInfo;
@@ -17724,13 +17724,13 @@ namespace Imlight.Internals
         public class ClientShadowCreatureLevelTransitionCinematicAction : ShadowCreatureLevelTransitionCinematicAction
         {
             
-            public override uint GetHash() => 704483698;
+            public override uint GetHash() => 1889015393;
         }
         
         public class RealmInfo : PropertyClass
         {
             
-            public override uint GetHash() => 688438863;
+            public override uint GetHash() => 1889885615;
             [Property(3507983949, 31)] public String m_realmName;
             [Property(2242885711, 31)] public String m_displayName;
             [Property(1904140438, 31)] public Int32 m_realmPopulation;
@@ -17739,26 +17739,26 @@ namespace Imlight.Internals
         public class TutorialLogBehavior : TutorialLogBehaviorBase
         {
             
-            public override uint GetHash() => 692538319;
+            public override uint GetHash() => 1891016911;
         }
         
         public class AnnounceSpellTextCinematicAction : CinematicAction
         {
             
-            public override uint GetHash() => 692457843;
+            public override uint GetHash() => 1891038816;
             [Property(2688705600, 7)] public String m_spellText;
         }
         
         public class HousingGameInterface : PropertyClass
         {
             
-            public override uint GetHash() => 692173870;
+            public override uint GetHash() => 1891048760;
         }
         
         public class DyeShopModifiers : PropertyClass
         {
             
-            public override uint GetHash() => 683072886;
+            public override uint GetHash() => 1892336994;
             [Property(1871158175, 7)] public Int32 m_costFloorAdditive;
             [Property(1851711699, 7)] public Single m_multiplierTemplateCost;
             [Property(1310969758, 7)] public Single m_multiplierIfDropList;
@@ -17769,7 +17769,7 @@ namespace Imlight.Internals
         public class Material : PropertyClass
         {
             
-            public override uint GetHash() => 687613315;
+            public override uint GetHash() => 1893235548;
             [Property(1299185467, 135)] public String m_sMaterialName;
             [Property(3003693822, 2097159)] public Blending m_Blending;
             [Property(3302018843, 2097159)] public Repeating m_eRepeat;
@@ -17811,13 +17811,13 @@ namespace Imlight.Internals
         public class CollisionBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 671654079;
+            public override uint GetHash() => 1894078995;
         }
         
         public class RidableBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 804881726;
+            public override uint GetHash() => 1897468788;
             [Property(1717182340, 7)] public String m_icon;
             [Property(2308614141, 7)] public String m_title;
             [Property(1874125698, 7)] public String m_promptText;
@@ -17829,7 +17829,7 @@ namespace Imlight.Internals
         public class HousingObjectStateContainer : PropertyClass
         {
             
-            public override uint GetHash() => 796185019;
+            public override uint GetHash() => 1899644498;
             [Property(1251844958, 7)] public List<HousingObjectState> m_housingObjectStateList;
             [Property(1907651624, 7)] public UInt64 m_zoneGID;
         }
@@ -17837,59 +17837,59 @@ namespace Imlight.Internals
         public class OldEquipmentBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 783848291;
+            public override uint GetHash() => 1900631780;
             [Property(2226122424, 31)] public List<OldWizardEquippedItemInfo> m_publicItemList;
         }
         
         public class AlchemyBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 764221834;
+            public override uint GetHash() => 1904489567;
             [Property(1052405942, 7)] public Int32 m_maxReagentsPerStack;
         }
         
         public class UnShadowSelfCinematicAction : CinematicAction
         {
             
-            public override uint GetHash() => 768862314;
+            public override uint GetHash() => 1905494055;
         }
         
         public class ClientFXDef : FXDef
         {
             
-            public override uint GetHash() => 768813162;
+            public override uint GetHash() => 1905506343;
         }
         
         public class ProvidePetPowerTemplate : GameEffectTemplate
         {
             
-            public override uint GetHash() => 771380519;
+            public override uint GetHash() => 1905911669;
         }
         
         public class ObjectRemapBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 770731934;
+            public override uint GetHash() => 1906010588;
         }
         
         public class WhirlyBurlyAddGroup : PropertyClass
         {
             
-            public override uint GetHash() => 770204890;
+            public override uint GetHash() => 1906141963;
             [Property(1909774945, 7)] public List<UInt64> m_playerList;
         }
         
         public class RandomSpellEffect : SpellEffect
         {
             
-            public override uint GetHash() => 758971990;
+            public override uint GetHash() => 1906855338;
             [Property(707154804, 7)] public List<SpellEffect> m_effectList;
         }
         
         public class CaughtFish : PropertyClass
         {
             
-            public override uint GetHash() => 749440322;
+            public override uint GetHash() => 1909297517;
             [Property(1286746870, 33554471)] public UInt32 m_templateID;
             [Property(310050130, 39)] public Single m_size;
         }
@@ -17897,7 +17897,7 @@ namespace Imlight.Internals
         public class WinAnimSpriteContrast : WindowAnimation
         {
             
-            public override uint GetHash() => 600426102;
+            public override uint GetHash() => 1913979810;
             [Property(1056288476, 135)] public Single m_fCycleTime;
             [Property(1862647402, 135)] public Single m_fElapsedTime;
             [Property(915848113, 135)] public Single m_fContrastMax;
@@ -17906,28 +17906,28 @@ namespace Imlight.Internals
         public class ReqHasBadge : Requirement
         {
             
-            public override uint GetHash() => 588901010;
+            public override uint GetHash() => 1914767513;
             [Property(3002948047, 268435487)] public String m_badgeName;
         }
         
         public class WinAnimConcurrent : WinAnimContainer
         {
             
-            public override uint GetHash() => 584950019;
+            public override uint GetHash() => 1917852284;
             [Property(3066650884, 135)] public List<WindowAnimation> m_finishedAnimList;
         }
         
         public class TextureRemapBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 587032907;
+            public override uint GetHash() => 1918380142;
             [Property(3580415920, 31)] public List<TextureRemap> m_textureRemapList;
         }
         
         public class FadeMusicSoundCinematicAction : CinematicAction
         {
             
-            public override uint GetHash() => 575051559;
+            public override uint GetHash() => 1920391157;
             [Property(1402536557, 7)] public Single m_fadeDuration;
             [Property(1724568201, 7)] public Single m_fadeToGain;
         }
@@ -17935,19 +17935,19 @@ namespace Imlight.Internals
         public class CastleMagicCinematicEffect : PropertyClass
         {
             
-            public override uint GetHash() => 563369634;
+            public override uint GetHash() => 1921148821;
         }
         
         public class ScrollablePopupButton : ControlPopupButton
         {
             
-            public override uint GetHash() => 561655354;
+            public override uint GetHash() => 1924790707;
         }
         
         public class WizardCharacterBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 551550186;
+            public override uint GetHash() => 1926270215;
             [Property(998846322, 63)] public Byte m_nHeadHandsModel;
             [Property(1416543510, 63)] public Byte m_nHairModel;
             [Property(1927990831, 63)] public Byte m_nHatModel;
@@ -17977,7 +17977,7 @@ namespace Imlight.Internals
         public class PetGameInfo : PropertyClass
         {
             
-            public override uint GetHash() => 550086711;
+            public override uint GetHash() => 1926567985;
             [Property(944547943, 7)] public Boolean m_isWebGame;
             [Property(1717359772, 7)] public String m_name;
             [Property(3378376555, 7)] public List<PetGameEnergyCost> m_energyCosts;
@@ -17990,14 +17990,14 @@ namespace Imlight.Internals
         public class TabDisplayPriorityList : PropertyClass
         {
             
-            public override uint GetHash() => 540971630;
+            public override uint GetHash() => 1927861928;
             [Property(3043784178, 31)] public List<TabDisplayPriority> m_tabPriList;
         }
         
         public class DelaySpellEffect : SpellEffect
         {
             
-            public override uint GetHash() => 539936502;
+            public override uint GetHash() => 1928119170;
             [Property(351627865, 31)] public Int32 m_damage;
             [Property(916427829, 31)] public Int32 m_rounds;
             [Property(2227549390, 31)] public UInt32 m_spellDelayedTemplateID;
@@ -18011,32 +18011,32 @@ namespace Imlight.Internals
         public class WhirlyBurlyOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 541693818;
+            public override uint GetHash() => 1928665059;
         }
         
         public class PartyObserver : GroupObserver
         {
             
-            public override uint GetHash() => 664189027;
+            public override uint GetHash() => 1929567268;
         }
         
         public class SG_GameAction_Interact : SG_GameAction
         {
             
-            public override uint GetHash() => 665096991;
+            public override uint GetHash() => 1930319611;
             [Property(3125502454, 7)] public String m_interactor;
         }
         
         public class MountShopOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 668730179;
+            public override uint GetHash() => 1930457836;
         }
         
         public class PositionalSoundBehaviorTemplate : SoundBehaviorTemplate
         {
             
-            public override uint GetHash() => 667145511;
+            public override uint GetHash() => 1930921845;
             [Property(686816091, 7)] public Single m_innerRadius;
             [Property(1034821044, 7)] public Boolean m_inverted;
         }
@@ -18044,7 +18044,7 @@ namespace Imlight.Internals
         public class PlaySpellData : PropertyClass
         {
             
-            public override uint GetHash() => 669170747;
+            public override uint GetHash() => 1931468082;
             [Property(1286746870, 7)] public UInt32 m_templateID;
             [Property(2217886818, 7)] public UInt32 m_enchantment;
         }
@@ -18052,7 +18052,7 @@ namespace Imlight.Internals
         public class AddHangingEffectCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 656459443;
+            public override uint GetHash() => 1932477328;
             [Property(1894145160, 131079)] public String m_effect;
             [Property(1618772408, 7)] public Boolean m_revealsCloaked;
         }
@@ -18060,14 +18060,14 @@ namespace Imlight.Internals
         public class ReqBaseSchoolOfFocus : Requirement
         {
             
-            public override uint GetHash() => 660918295;
+            public override uint GetHash() => 1933461049;
             [Property(1597012900, 31)] public String m_magicSchool;
         }
         
         public class InteractiveMusicNote : PropertyClass
         {
             
-            public override uint GetHash() => 648980327;
+            public override uint GetHash() => 1934416869;
             [Property(2085772594, 65543)] public String m_noteName;
             [Property(920323453, 65543)] public Single m_duration;
         }
@@ -18075,26 +18075,26 @@ namespace Imlight.Internals
         public class JewelVaultBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 653779918;
+            public override uint GetHash() => 1935313616;
         }
         
         public class PrivateEquippedJewelInfo : PropertyClass
         {
             
-            public override uint GetHash() => 640056975;
+            public override uint GetHash() => 1936649631;
             [Property(1168115310, 7)] public List<PrivateSocketJewelPair> m_infoPairs;
         }
         
         public class SG_GameActionClient_PlayEffect : SG_GameAction_PlayEffect
         {
             
-            public override uint GetHash() => 643705094;
+            public override uint GetHash() => 1936783486;
         }
         
         public class CSRAccessPassInfo : PropertyClass
         {
             
-            public override uint GetHash() => 621855715;
+            public override uint GetHash() => 1940079300;
             [Property(2647581395, 23)] public String m_passName;
             [Property(1743355078, 23)] public Boolean m_hasPass;
             [Property(498060849, 23)] public Boolean m_grantedByRight;
@@ -18103,7 +18103,7 @@ namespace Imlight.Internals
         public class CinematicSoundEmitterInfo : PropertyClass
         {
             
-            public override uint GetHash() => 626973039;
+            public override uint GetHash() => 1940964455;
             [Property(1162855023, 7)] public Single m_volume;
             [Property(865634717, 7)] public Int32 m_loopCount;
             [Property(1235205852, 7)] public Int32 m_priority;
@@ -18146,13 +18146,13 @@ namespace Imlight.Internals
         public class ObstacleCourseSpeedUpBehaviorClient : ObstacleCourseSpeedUpBehavior
         {
             
-            public override uint GetHash() => 627943639;
+            public override uint GetHash() => 1941706761;
         }
         
         public class NamedCharacterElement : PropertyClass
         {
             
-            public override uint GetHash() => 612409490;
+            public override uint GetHash() => 1942444569;
             [Property(1717359772, 7)] public String m_name;
             [Property(646909524, 7)] public List<CharacterElement> m_list;
         }
@@ -18160,39 +18160,39 @@ namespace Imlight.Internals
         public class AtticObject : PropertyClass
         {
             
-            public override uint GetHash() => 615645727;
+            public override uint GetHash() => 1942745787;
         }
         
         public class DestroyShadowCreatureCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 618044874;
+            public override uint GetHash() => 1943197007;
         }
         
         public class ClientFadeMusicSoundCinematicAction : FadeMusicSoundCinematicAction
         {
             
-            public override uint GetHash() => 609355883;
+            public override uint GetHash() => 1945366566;
         }
         
         public class DailyPvPData : PropertyClass
         {
             
-            public override uint GetHash() => 999347823;
+            public override uint GetHash() => 1946372007;
             [Property(2102460099, 7)] public List<DailyPvPInfo> m_dailyPvPList;
         }
         
         public class SpeedEffectInfo : GameEffectInfo
         {
             
-            public override uint GetHash() => 1002154586;
+            public override uint GetHash() => 1946785963;
             [Property(32503058, 7)] public Int32 m_speedMultiplier;
         }
         
         public class MoveCommandSpeed : MoveController.MoveCommand
         {
             
-            public override uint GetHash() => 997694599;
+            public override uint GetHash() => 1949996317;
             [Property(3770499167, 31)] public Vector3 m_vTarget;
             [Property(503609006, 31)] public Single m_fSpeed;
         }
@@ -18200,20 +18200,20 @@ namespace Imlight.Internals
         public class PartyChatObserver : GroupObserver
         {
             
-            public override uint GetHash() => 996592426;
+            public override uint GetHash() => 1950269687;
         }
         
         public class WinAnimContainerBounded : WinAnimContainer
         {
             
-            public override uint GetHash() => 989409442;
+            public override uint GetHash() => 1952005653;
             [Property(1423726080, 135)] public Rectangle m_boundary;
         }
         
         public class ItemSetBonusTemplate : CoreTemplate
         {
             
-            public override uint GetHash() => 967082822;
+            public override uint GetHash() => 1955484398;
             [Property(2154940147, 7)] public String m_objectName;
             [Property(1286746870, 16777223)] public UInt32 m_templateID;
             [Property(2446900370, 8388615)] public String m_displayName;
@@ -18224,33 +18224,33 @@ namespace Imlight.Internals
         public class PetSnackBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 972774758;
+            public override uint GetHash() => 1956226406;
             [Property(1052405942, 7)] public Int32 m_maxReagentsPerStack;
         }
         
         public class InvisibilityEffectTemplate : GameEffectTemplate
         {
             
-            public override uint GetHash() => 971627963;
+            public override uint GetHash() => 1956447570;
             [Property(2488151665, 7)] public Byte m_invisLevel;
         }
         
         public class ToolTipWindow : Window
         {
             
-            public override uint GetHash() => 939606659;
+            public override uint GetHash() => 1961304732;
         }
         
         public class GardeningBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 939782826;
+            public override uint GetHash() => 1961332375;
         }
         
         public class FishBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 945726198;
+            public override uint GetHash() => 1961941634;
             [Property(900164744, 7)] public Single m_speed;
             [Property(3385349572, 7)] public String m_schoolName;
             [Property(219803942, 7)] public Int32 m_rank;
@@ -18276,7 +18276,7 @@ namespace Imlight.Internals
         public class PipConversionLevelData : PropertyClass
         {
             
-            public override uint GetHash() => 947265711;
+            public override uint GetHash() => 1962605079;
             [Property(1496818518, 7)] public Int32 m_minLevel;
             [Property(3506866422, 7)] public List<PipConversionValues> m_levelValues;
         }
@@ -18284,39 +18284,39 @@ namespace Imlight.Internals
         public class PendingClassProjectFriendReward : PropertyClass
         {
             
-            public override uint GetHash() => 1066529630;
+            public override uint GetHash() => 1963134700;
         }
         
         public class ClearHangingEffectsCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1066147950;
+            public override uint GetHash() => 1963227688;
         }
         
         public class BGSigilProxyBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1067840663;
+            public override uint GetHash() => 1963855641;
         }
         
         public class VariableSpellEffect : SpellEffect
         {
             
-            public override uint GetHash() => 1057804514;
+            public override uint GetHash() => 1965311493;
             [Property(707154804, 7)] public List<SpellEffect> m_effectList;
         }
         
         public class MadlibArg : PropertyClass
         {
             
-            public override uint GetHash() => 1061724779;
+            public override uint GetHash() => 1966430886;
             [Property(3058682373, 31)] public String m_madlibToken;
         }
         
         public class CastleTourLeaderboardEntry : CastleTourTeleportInfo
         {
             
-            public override uint GetHash() => 1044243239;
+            public override uint GetHash() => 1969752821;
             [Property(857501458, 7)] public Byte m_type;
             [Property(1805208228, 7)] public String m_packedName;
             [Property(773386388, 7)] public UInt16 m_rank;
@@ -18325,7 +18325,7 @@ namespace Imlight.Internals
         public class RenamePipActorsFromResult : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1044317438;
+            public override uint GetHash() => 1969795844;
             [Property(2029131039, 7)] public String m_newActorName;
             [Property(1852236785, 7)] public String m_newActorName2;
             [Property(2191892948, 7)] public String m_oldActorName;
@@ -18334,20 +18334,20 @@ namespace Imlight.Internals
         public class AccousticAreaBehavior : AreaBehavior
         {
             
-            public override uint GetHash() => 1043968282;
+            public override uint GetHash() => 1969823355;
             [Property(1188263221, 2097159)] public AccousticSignature m_accousticSignature;
         }
         
         public class ClientMobAggroBehavior : MobAggroBehavior
         {
             
-            public override uint GetHash() => 1043418398;
+            public override uint GetHash() => 1969955196;
         }
         
         public class StateAssetInfo : PropertyClass
         {
             
-            public override uint GetHash() => 1042953819;
+            public override uint GetHash() => 1970143146;
             [Property(1513131580, 131079)] public String m_assetName;
             [Property(1683933674, 7)] public String m_attachmentNode;
             [Property(611925458, 33554439)] public UInt32 m_soundTemplate;
@@ -18358,25 +18358,25 @@ namespace Imlight.Internals
         public class RemoveAuraCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 1034011683;
+            public override uint GetHash() => 1972306740;
         }
         
         public class PathActionChangeDirection : PathBehaviorTemplate.Action
         {
             
-            public override uint GetHash() => 1037828102;
+            public override uint GetHash() => 1972400702;
         }
         
         public class ClientUnSwapShadowMaterialActorCinematicAction : UnSwapShadowMaterialActorCinematicAction
         {
             
-            public override uint GetHash() => 1036582010;
+            public override uint GetHash() => 1972718883;
         }
         
         public class BasePetMorphManager : PropertyClass
         {
             
-            public override uint GetHash() => 1015861630;
+            public override uint GetHash() => 1975797348;
             [Property(496624814, 7)] public UInt32 m_totalCostMin;
             [Property(496624560, 7)] public UInt32 m_totalCostMax;
             [Property(1549157264, 7)] public UInt32 m_totalRarityMin;
@@ -18413,7 +18413,7 @@ namespace Imlight.Internals
         public class PetItemBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 1018021054;
+            public override uint GetHash() => 1976304404;
             [Property(1981853869, 7)] public List<PetDyeToTexture> m_primaryDyeToTexture;
             [Property(1861913233, 7)] public List<PetDyeToTexture> m_secondaryDyeToTexture;
             [Property(1245062405, 7)] public List<PetDyeToTexture> m_patternToTexture;
@@ -18452,7 +18452,7 @@ namespace Imlight.Internals
         public class DailyPvPInfo : PropertyClass
         {
             
-            public override uint GetHash() => 1020869487;
+            public override uint GetHash() => 1976646887;
             [Property(2289964291, 7)] public UInt32 m_numMatchesRequired;
             [Property(876371151, 2097159)] public DailyPvPTypes m_pvpType;
             [Property(850879554, 7)] public Boolean m_winRequired;
@@ -18467,20 +18467,20 @@ namespace Imlight.Internals
         public class BlobCacheInterface : PropertyClass
         {
             
-            public override uint GetHash() => 869026770;
+            public override uint GetHash() => 1981046985;
         }
         
         public class PolymorphImprovementRatingInfoList : PropertyClass
         {
             
-            public override uint GetHash() => 857464279;
+            public override uint GetHash() => 1981908297;
             [Property(908909694, 31)] public List<PolymorphImprovementRatingInfo> m_list;
         }
         
         public class HousingTextureBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 861702119;
+            public override uint GetHash() => 1982878661;
             [Property(1680179944, 2097159)] public HousingTextureType m_textureType;
             [Property(2208648365, 131079)] public String m_textureFilename;
             
@@ -18495,20 +18495,20 @@ namespace Imlight.Internals
         public class WizPetTemplate : WizGameObjectTemplate
         {
             
-            public override uint GetHash() => 839700803;
+            public override uint GetHash() => 1986283116;
         }
         
         public class MapInfoRequirementsPassedList : PropertyClass
         {
             
-            public override uint GetHash() => 841048599;
+            public override uint GetHash() => 1986996921;
             [Property(761088246, 7)] public List<UInt32> m_idList;
         }
         
         public class TieredSpellGroupVisibility : PropertyClass
         {
             
-            public override uint GetHash() => 846276275;
+            public override uint GetHash() => 1987787664;
             [Property(2550959800, 31)] public List<Byte> m_visibility;
             [Property(17860820, 31)] public List<Int32> m_canUpgrade;
         }
@@ -18516,13 +18516,13 @@ namespace Imlight.Internals
         public class GamebryoBody : Body
         {
             
-            public override uint GetHash() => 845513623;
+            public override uint GetHash() => 1987973849;
         }
         
         public class HatchmakingPetsList : PropertyClass
         {
             
-            public override uint GetHash() => 845338835;
+            public override uint GetHash() => 1988084744;
             [Property(2100166473, 7)] public List<HatchmakingPet> m_hatchmakingPetsList;
             [Property(1561191592, 7)] public Boolean m_disableKiosk;
             [Property(1565817209, 7)] public Boolean m_disableOffer;
@@ -18532,14 +18532,14 @@ namespace Imlight.Internals
         public class HousingGameKhanDanceSequence : PropertyClass
         {
             
-            public override uint GetHash() => 837163919;
+            public override uint GetHash() => 1990128863;
             [Property(2597302176, 7)] public List<Byte> m_danceSequenceList;
         }
         
         public class DerbyEffect : PropertyClass
         {
             
-            public override uint GetHash() => 823629915;
+            public override uint GetHash() => 1990366250;
             [Property(1149251982, 2097183)] public DerbyTalentBuffType m_buffType;
             [Property(1807803351, 2097159)] public DerbyTargetType m_kTarget;
             [Property(1110167982, 31)] public Int32 m_nDuration;
@@ -18556,14 +18556,14 @@ namespace Imlight.Internals
         public class BGPolymorphSelectBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 823340395;
+            public override uint GetHash() => 1990441318;
             [Property(3076206595, 31)] public String m_polymorphCategory;
         }
         
         public class PetLevelInfo : PropertyClass
         {
             
-            public override uint GetHash() => 824790047;
+            public override uint GetHash() => 1991057723;
             [Property(1438884808, 7)] public Byte m_level;
             [Property(669977097, 7)] public UInt32 m_template;
             [Property(1890811574, 7)] public UInt32 m_requiredXP;
@@ -18577,32 +18577,32 @@ namespace Imlight.Internals
         public class ClientMountRiderBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 828773283;
+            public override uint GetHash() => 1992226516;
         }
         
         public class CastleMagicBehavior : CastleMagicBehaviorBase
         {
             
-            public override uint GetHash() => 817528363;
+            public override uint GetHash() => 1992945078;
         }
         
         public class WizBankingOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 817278490;
+            public override uint GetHash() => 1993005499;
         }
         
         public class PulseEffect : GameEffectBase
         {
             
-            public override uint GetHash() => 819946063;
+            public override uint GetHash() => 1993386671;
             [Property(3507157375, 63)] public Double m_pulseCount;
         }
         
         public class HousingObjectState : PropertyClass
         {
             
-            public override uint GetHash() => 819184578;
+            public override uint GetHash() => 1993573069;
             [Property(2301988666, 7)] public UInt32 m_id;
             [Property(1849561019, 7)] public UInt32 m_stateID;
         }
@@ -18610,13 +18610,13 @@ namespace Imlight.Internals
         public class ClientIdleInterceptCinematicAction : IdleInterceptCinematicAction
         {
             
-            public override uint GetHash() => 808079835;
+            public override uint GetHash() => 1995302474;
         }
         
         public class BuddyEntry : PropertyClass
         {
             
-            public override uint GetHash() => 809997775;
+            public override uint GetHash() => 1995872079;
             [Property(1717359772, 7)] public String m_name;
             [Property(210498386, 7)] public UInt64 m_characterID;
             [Property(23229750, 7)] public UInt64 m_gameObjectID;
@@ -18638,14 +18638,14 @@ namespace Imlight.Internals
         public class DOTEffect : PulseEffect
         {
             
-            public override uint GetHash() => 932052019;
+            public override uint GetHash() => 1996754224;
             [Property(213003481, 63)] public Int32 m_damageOverride;
         }
         
         public class TextureRemap : PropertyClass
         {
             
-            public override uint GetHash() => 931754987;
+            public override uint GetHash() => 1996828358;
             [Property(1234341146, 31)] public UInt32 m_remapIndex;
             [Property(1730653991, 31)] public UInt32 m_textureTemplateID;
         }
@@ -18653,33 +18653,33 @@ namespace Imlight.Internals
         public class TutorialActionOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 933761690;
+            public override uint GetHash() => 1997371035;
             [Property(2989527539, 31)] public String m_persona;
         }
         
         public class WhirlyBurlyBehavior : WhirlyBurlyBehaviorBase
         {
             
-            public override uint GetHash() => 925785410;
+            public override uint GetHash() => 1999431021;
         }
         
         public class ResSummonHenchman : Result
         {
             
-            public override uint GetHash() => 921332947;
+            public override uint GetHash() => 2002643208;
             [Property(1075328001, 33554439)] public UInt64 m_templateID;
         }
         
         public class ReqIsHatched : Requirement
         {
             
-            public override uint GetHash() => 909675810;
+            public override uint GetHash() => 2003390837;
         }
         
         public class WizItemVendorData : PropertyClass
         {
             
-            public override uint GetHash() => 913320519;
+            public override uint GetHash() => 2004580525;
             [Property(862026800, 31)] public UInt32 m_shopKeeperID;
             [Property(658077993, 31)] public UInt32 m_shopType;
         }
@@ -18687,27 +18687,27 @@ namespace Imlight.Internals
         public class JewelSocketWrenchRules : PropertyClass
         {
             
-            public override uint GetHash() => 902720263;
+            public override uint GetHash() => 2006247677;
             [Property(2323021272, 7)] public List<JewelSocketWrenchElements> m_rules;
         }
         
         public class GardeningPatchData : PropertyClass
         {
             
-            public override uint GetHash() => 888732431;
+            public override uint GetHash() => 2010729727;
         }
         
         public class MoveCommandRoll : MoveController.MoveCommand
         {
             
-            public override uint GetHash() => 873087274;
+            public override uint GetHash() => 2011554423;
             [Property(883680790, 31)] public Single m_fRoll;
         }
         
         public class AnimatedControlButtonState : ControlButtonState
         {
             
-            public override uint GetHash() => 875623035;
+            public override uint GetHash() => 2011909794;
             [Property(1469531165, 135)] public Int32 m_nAnimBeginFrame;
             [Property(1659451087, 135)] public Int32 m_nAnimEndFrame;
             [Property(802385934, 135)] public Single m_fAnimRate;
@@ -18718,7 +18718,7 @@ namespace Imlight.Internals
         public class WidgetBackground : PropertyClass
         {
             
-            public override uint GetHash() => 194671815;
+            public override uint GetHash() => 2013392653;
             [Property(1164086307, 7)] public Single m_fBackgroundAlpha;
             [Property(2652729643, 7)] public Texture m_pTopLeftBackgroundAlphaMask;
             [Property(2236264926, 7)] public Texture m_pTopRightBackgroundAlphaMask;
@@ -18734,20 +18734,20 @@ namespace Imlight.Internals
         public class ControlFreeChat : ControlRichEdit
         {
             
-            public override uint GetHash() => 194500454;
+            public override uint GetHash() => 2013431782;
         }
         
         public class MapInfoRequirementsList : PropertyClass
         {
             
-            public override uint GetHash() => 200422854;
+            public override uint GetHash() => 2015100750;
             [Property(1745192089, 7)] public List<MapInfoRequirementsRequest> m_mapInfoRequirementsList;
         }
         
         public class SkyboxInfo : PropertyClass
         {
             
-            public override uint GetHash() => 187053783;
+            public override uint GetHash() => 2016345993;
             [Property(816414615, 7)] public Int32 m_skyLayerCount;
             [Property(2824410256, 7)] public List<String> m_skyLayerName;
             [Property(3409856790, 7)] public String m_clientTag;
@@ -18756,20 +18756,20 @@ namespace Imlight.Internals
         public class DerbyImmunityEffect : DerbyEffect
         {
             
-            public override uint GetHash() => 189073871;
+            public override uint GetHash() => 2016817231;
             [Property(1216111639, 31)] public Boolean m_bToDebuffs;
         }
         
         public class AtticBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 191440038;
+            public override uint GetHash() => 2017278742;
         }
         
         public class PromoGift : PropertyClass
         {
             
-            public override uint GetHash() => 181919826;
+            public override uint GetHash() => 2018675241;
             [Property(1967538827, 31)] public UInt64 m_rewardID;
             [Property(1325279053, 31)] public UInt64 m_rewardModifier;
             [Property(1975989138, 31)] public String m_giftID;
@@ -18778,7 +18778,7 @@ namespace Imlight.Internals
         public class Search_ResultList : PropertyClass
         {
             
-            public override uint GetHash() => 1930469917;
+            public override uint GetHash() => 2019293881;
             [Property(1610486152, 7)] public ResultItem m_items;
             [Property(563564461, 7)] public UInt64 m_requestHandle;
             
@@ -18790,7 +18790,7 @@ namespace Imlight.Internals
         public class WorldTeleportOptions : PropertyClass
         {
             
-            public override uint GetHash() => 168119595;
+            public override uint GetHash() => 2019959158;
             [Property(1846694527, 31)] public List<String> m_worldList;
             [Property(2391457594, 31)] public List<String> m_imageList;
             [Property(2043562056, 31)] public String m_initialImage;
@@ -18799,14 +18799,14 @@ namespace Imlight.Internals
         public class GardeningXPLootInfo : LootInfo
         {
             
-            public override uint GetHash() => 171661566;
+            public override uint GetHash() => 2020189188;
             [Property(759357570, 31)] public Int32 m_experience;
         }
         
         public class BattlegroundTemplate : PropertyClass
         {
             
-            public override uint GetHash() => 172546455;
+            public override uint GetHash() => 2020951129;
             [Property(1534120775, 7)] public String m_battlegroundName;
             [Property(255072071, 7)] public Single m_countdownSeconds;
             [Property(563704930, 7)] public Int32 m_matchSize;
@@ -18830,7 +18830,7 @@ namespace Imlight.Internals
         public class CrownShopSettings : PropertyClass
         {
             
-            public override uint GetHash() => 160018206;
+            public override uint GetHash() => 2021988860;
             [Property(1462249118, 7)] public Boolean m_saleFilter;
             [Property(1923088319, 7)] public Boolean m_newUsableFilter;
             [Property(1893157642, 7)] public Boolean m_buttonView;
@@ -18839,13 +18839,13 @@ namespace Imlight.Internals
         public class ClientHidePipsCinematicAction : HidePipsCinematicAction
         {
             
-            public override uint GetHash() => 159671731;
+            public override uint GetHash() => 2022075216;
         }
         
         public class Search_ResultItem : PropertyClass
         {
             
-            public override uint GetHash() => 1929975127;
+            public override uint GetHash() => 2023112937;
             [Property(1037989700, 7)] public UInt64 m_userID;
             [Property(2213937019, 7)] public String m_userName;
             [Property(210498386, 7)] public UInt64 m_characterID;
@@ -18857,7 +18857,7 @@ namespace Imlight.Internals
         public class ConditionalSpellEffectRequirement : Requirement
         {
             
-            public override uint GetHash() => 166299059;
+            public override uint GetHash() => 2023560016;
             [Property(2547737902, 2097159)] public RequirementTarget m_targetType;
             
             public enum RequirementTarget
@@ -18871,7 +18871,7 @@ namespace Imlight.Internals
         public class BattlegroundTemplateChat : PropertyClass
         {
             
-            public override uint GetHash() => 150473639;
+            public override uint GetHash() => 2027516117;
             [Property(1263221425, 7)] public UInt32 m_projectID;
             [Property(255072071, 7)] public Single m_countdownSeconds;
             [Property(563704930, 7)] public Int32 m_matchSize;
@@ -18883,13 +18883,13 @@ namespace Imlight.Internals
         public class ClientHousingBlobStrategy : BaseClientHousingBlobStrategy
         {
             
-            public override uint GetHash() => 136045143;
+            public override uint GetHash() => 2028047017;
         }
         
         public class StopComplexSoundCinematicAction : CinematicAction
         {
             
-            public override uint GetHash() => 138946827;
+            public override uint GetHash() => 2029353086;
             [Property(2307644996, 7)] public String m_sound;
             [Property(1944220294, 7)] public Boolean m_stopAllLoopingSounds;
             [Property(1402536557, 7)] public Single m_fadeDuration;
@@ -18898,60 +18898,60 @@ namespace Imlight.Internals
         public class RecipeBag : ObjectBag
         {
             
-            public override uint GetHash() => 254132626;
+            public override uint GetHash() => 2033058393;
         }
         
         public class ToSendCheerModsList : PropertyClass
         {
             
-            public override uint GetHash() => 248850735;
+            public override uint GetHash() => 2035431543;
             [Property(2021860698, 7)] public List<TerrainCheerCostMap> m_list;
         }
         
         public class HousingTeleporterBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 251466951;
+            public override uint GetHash() => 2035824397;
             [Property(137008766, 7)] public Boolean m_isPetTeleporter;
         }
         
         public class ReqEnergy : ReqNumeric
         {
             
-            public override uint GetHash() => 250845118;
+            public override uint GetHash() => 2036045780;
             [Property(514192128, 31)] public Boolean m_isPercent;
         }
         
         public class AddMatchUpdate : TournamentUpdate
         {
             
-            public override uint GetHash() => 228437886;
+            public override uint GetHash() => 2038438372;
             [Property(2424135306, 31)] public ArenaMatchInfo m_matchInfo;
         }
         
         public class ClientShadowCreatureIdleCinematicAction : ShadowCreatureIdleCinematicAction
         {
             
-            public override uint GetHash() => 226032007;
+            public override uint GetHash() => 2042186845;
         }
         
         public class ClientFloatingTextCinematicAction : FloatingTextCinematicAction
         {
             
-            public override uint GetHash() => 214562227;
+            public override uint GetHash() => 2044006224;
         }
         
         public class TemplateCache : PropertyClass
         {
             
-            public override uint GetHash() => 202555987;
+            public override uint GetHash() => 2044969640;
             [Property(2302239105, 7)] public UInt32 m_nVersion;
             [Property(3187138089, 7)] public String m_sSerializedCache;
             
             public class Entry : PropertyClass
             {
                 
-                public override uint GetHash() => 1644477200;
+                public override uint GetHash() => 156240142;
                 [Property(1953360040, 7)] public UInt64 m_FileTime;
                 [Property(3458458254, 7)] public String m_sBinary;
             }
@@ -18960,7 +18960,7 @@ namespace Imlight.Internals
         public class ArenaMatchResults : PropertyClass
         {
             
-            public override uint GetHash() => 203877502;
+            public override uint GetHash() => 2045692196;
             [Property(1757621298, 31)] public UInt64 m_matchID;
             [Property(1751361288, 31)] public UInt32 m_matchNameID;
             [Property(1481862043, 31)] public Int32 m_matchResolution;
@@ -18971,7 +18971,7 @@ namespace Imlight.Internals
         public class BoosterPackData : PropertyClass
         {
             
-            public override uint GetHash() => 206341562;
+            public override uint GetHash() => 2046055251;
             [Property(3636229967, 7)] public List<BoosterPackLootTypeMaxes> m_lootTypeMaxes;
             [Property(1286746870, 7)] public UInt32 m_templateID;
         }
@@ -18979,7 +18979,7 @@ namespace Imlight.Internals
         public class GameObjectTemplate : CoreTemplate
         {
             
-            public override uint GetHash() => 58759527;
+            public override uint GetHash() => 2047300709;
             [Property(2154940147, 7)] public String m_objectName;
             [Property(1286746870, 16777223)] public UInt32 m_templateID;
             [Property(1118778894, 7)] public UInt32 m_visualID;
@@ -19029,7 +19029,7 @@ namespace Imlight.Internals
         public class RemoveHangingCinematicStageTemplate : CinematicStageTemplate
         {
             
-            public override uint GetHash() => 62809590;
+            public override uint GetHash() => 2047404866;
             [Property(1114462681, 7)] public Single m_burnHangingTime;
             [Property(13587553, 7)] public Boolean m_stopRotating;
             [Property(839204969, 7)] public Boolean m_startRotating;
@@ -19055,13 +19055,13 @@ namespace Imlight.Internals
         public class ClientGameEffectTimerPopupTrigger : GameEffectTimerPopupTrigger
         {
             
-            public override uint GetHash() => 57610651;
+            public override uint GetHash() => 2050799194;
         }
         
         public class CollisionBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 46629478;
+            public override uint GetHash() => 2052493990;
             [Property(2223282859, 131079)] public String m_walkableCollisionFilename;
             [Property(3292753187, 131079)] public String m_solidCollisionFilename;
             [Property(1964485570, 131335)] public String m_clickableCollisionFilename;
@@ -19073,7 +19073,7 @@ namespace Imlight.Internals
         public class IngredientTracking : PropertyClass
         {
             
-            public override uint GetHash() => 49380463;
+            public override uint GetHash() => 2052795687;
             [Property(1616797422, 7)] public UInt64 m_ingredientID;
             [Property(169215289, 7)] public Int32 m_quantity;
             [Property(92688739, 7)] public Boolean m_sufficient;
@@ -19082,13 +19082,13 @@ namespace Imlight.Internals
         public class ClientModifyPipsCinematicAction : ModifyPipsCinematicAction
         {
             
-            public override uint GetHash() => 34896570;
+            public override uint GetHash() => 2053270675;
         }
         
         public class AuctionHouseConfig : PropertyClass
         {
             
-            public override uint GetHash() => 30854094;
+            public override uint GetHash() => 2056437968;
             [Property(482850544, 7)] public Int32 m_maxCopiesEachTemplate;
             [Property(500224183, 7)] public Single m_itemDegradationTime;
             [Property(2703049879, 7)] public List<AuctionPriceMods> m_priceMods;
@@ -19101,13 +19101,13 @@ namespace Imlight.Internals
         public class ClientFXBySlotEffect : FXBySlotEffect
         {
             
-            public override uint GetHash() => 18835539;
+            public override uint GetHash() => 2057349160;
         }
         
         public class ComplexRotationInfo : PropertyClass
         {
             
-            public override uint GetHash() => 23636062;
+            public override uint GetHash() => 2059229228;
             [Property(834528109, 7)] public Single m_startWeight;
             [Property(1016481710, 7)] public Single m_middleWeight;
             [Property(379723894, 7)] public Single m_endWeight;
@@ -19118,7 +19118,7 @@ namespace Imlight.Internals
         public class SavedSetting : PropertyClass
         {
             
-            public override uint GetHash() => 13805218;
+            public override uint GetHash() => 2060704661;
             [Property(2915007546, 7)] public String m_settingName;
             [Property(3178360950, 7)] public String m_settingValue;
         }
@@ -19126,7 +19126,7 @@ namespace Imlight.Internals
         public class Body : PropertyClass
         {
             
-            public override uint GetHash() => 2988482;
+            public override uint GetHash() => 2062292045;
             [Property(3697900983, 7)] public Vector3 m_position;
             [Property(896371695, 7)] public Single m_pitch;
             [Property(310020272, 7)] public Single m_roll;
@@ -19138,27 +19138,27 @@ namespace Imlight.Internals
         public class Font : PropertyClass
         {
             
-            public override uint GetHash() => 2830790;
+            public override uint GetHash() => 2062401102;
         }
         
         public class Blob : BlobDefinition
         {
             
-            public override uint GetHash() => 2110882;
+            public override uint GetHash() => 2062516053;
             [Property(565926218, 7)] public PropertyClass m_data;
         }
         
         public class RaceAnimationSoundData : PropertyClass
         {
             
-            public override uint GetHash() => 5340074;
+            public override uint GetHash() => 2062757079;
             [Property(2646511094, 7)] public List<AnimationSoundData> m_allAnimationSounds;
         }
         
         public class EquipmentTemplate : CoreTemplate
         {
             
-            public override uint GetHash() => 118441799;
+            public override uint GetHash() => 2065998829;
             [Property(3098501161, 7)] public List<EquipSlot> m_baseSlots;
             [Property(1920213140, 7)] public String m_equipmentName;
         }
@@ -19166,7 +19166,7 @@ namespace Imlight.Internals
         public class ClassProjectActivity : PropertyClass
         {
             
-            public override uint GetHash() => 124270694;
+            public override uint GetHash() => 2067627046;
             [Property(1382301495, 2097159)] public ClassProjectActivityType m_activityType;
             [Property(103864010, 7)] public Int32 m_activityGoal;
             [Property(1294496132, 7)] public Int32 m_activityValue;
@@ -19200,14 +19200,14 @@ namespace Imlight.Internals
         public class HousingObjectWandContainer : PropertyClass
         {
             
-            public override uint GetHash() => 123828710;
+            public override uint GetHash() => 2067737670;
             [Property(1022427803, 65543)] public UInt64 m_displayID;
         }
         
         public class ControlWidget : Window
         {
             
-            public override uint GetHash() => 123733651;
+            public override uint GetHash() => 2067755928;
             [Property(1642222607, 135)] public WidgetBackground m_pWidgetBackground;
             [Property(2210830717, 135)] public Material m_pTopLeftCornerMaterial;
             [Property(2025381456, 135)] public Material m_pTopRightCornerMaterial;
@@ -19225,26 +19225,26 @@ namespace Imlight.Internals
         public class ReqIsLimitExpandBackpackElixirs : Requirement
         {
             
-            public override uint GetHash() => 110350054;
+            public override uint GetHash() => 2068021638;
         }
         
         public class LeaderboardUpdateFriendsList : PropertyClass
         {
             
-            public override uint GetHash() => 102298599;
+            public override uint GetHash() => 2069974725;
             [Property(142730388, 7)] public List<UInt64> m_leaderboardFriendsList;
         }
         
         public class ParticleSystem2D : Window
         {
             
-            public override uint GetHash() => 100829899;
+            public override uint GetHash() => 2070401166;
         }
         
         public class Reco_CategoryData : PropertyClass
         {
             
-            public override uint GetHash() => 1095658705;
+            public override uint GetHash() => 2076283146;
             [Property(2090586215, 31)] public Int32 m_id;
             [Property(966759714, 31)] public RecoItemData m_items;
             
@@ -19256,7 +19256,7 @@ namespace Imlight.Internals
         public class PetStatModification : PropertyClass
         {
             
-            public override uint GetHash() => 81765934;
+            public override uint GetHash() => 2077268920;
             [Property(1717359772, 31)] public String m_name;
             [Property(320376832, 31)] public Int32 m_change;
             [Property(448133229, 31)] public UInt32 m_actualChange;
@@ -19265,13 +19265,13 @@ namespace Imlight.Internals
         public class WizDisableItemStatEffect : StatisticEffect
         {
             
-            public override uint GetHash() => 73166090;
+            public override uint GetHash() => 2079353215;
         }
         
         public class ServiceOptionBase : PropertyClass
         {
             
-            public override uint GetHash() => 72555002;
+            public override uint GetHash() => 2079568963;
             [Property(2206028813, 31)] public String m_serviceName;
             [Property(3023276954, 31)] public String m_displayKey;
             [Property(2103126710, 31)] public UInt32 m_serviceIndex;
@@ -19281,7 +19281,7 @@ namespace Imlight.Internals
         public class FXDef : PropertyClass
         {
             
-            public override uint GetHash() => 71440166;
+            public override uint GetHash() => 2079848438;
             [Property(2810683385, 131079)] public String m_FXFile;
             [Property(2363740365, 7)] public String m_stackingCategory;
             [Property(453389511, 7)] public Single m_repeatTime;
@@ -19290,32 +19290,32 @@ namespace Imlight.Internals
         public class ReqManaPercent : ReqNumeric
         {
             
-            public override uint GetHash() => 461490350;
+            public override uint GetHash() => 2080833560;
         }
         
         public class ClientDerbyModifyMoraleChance : DerbyModifyMoraleChance
         {
             
-            public override uint GetHash() => 467219398;
+            public override uint GetHash() => 2081504974;
         }
         
         public class StatisticEffectInfo : GameEffectInfo
         {
             
-            public override uint GetHash() => 467094931;
+            public override uint GetHash() => 2081595736;
             [Property(1626623948, 7)] public Int32 m_lookupIndex;
         }
         
         public class ConicalStateSoundBehaviorTemplate : ConicalSoundBehaviorTemplate
         {
             
-            public override uint GetHash() => 444830091;
+            public override uint GetHash() => 2085066334;
         }
         
         public class BracketRewards : PropertyClass
         {
             
-            public override uint GetHash() => 425842107;
+            public override uint GetHash() => 2092894034;
             [Property(806257663, 63)] public Int32 m_place;
             [Property(2465726014, 7)] public List<String> m_lootTableNameList;
             [Property(2465369761, 551)] public String m_lootTableNameBlob;
@@ -19327,7 +19327,7 @@ namespace Imlight.Internals
         public class SG_GameAction : PropertyClass
         {
             
-            public override uint GetHash() => 414038734;
+            public override uint GetHash() => 2093751440;
             [Property(1166870973, 2097159)] public SG_Target m_target;
             
             public enum SG_Target
@@ -19343,7 +19343,7 @@ namespace Imlight.Internals
         public class ClientWizInventoryBehavior : ClientInventoryBehavior
         {
             
-            public override uint GetHash() => 416530134;
+            public override uint GetHash() => 2094243210;
             [Property(1404509492, 27)] public Int32 m_numItemsAllowed;
             [Property(49168892, 27)] public Int32 m_numJewelsAllowed;
         }
@@ -19351,7 +19351,7 @@ namespace Imlight.Internals
         public class FishingSpellTemplate : SpellTemplate
         {
             
-            public override uint GetHash() => 404543643;
+            public override uint GetHash() => 2095072282;
             [Property(3230697370, 2097159)] public FishingSpellType m_fishingSpellType;
             [Property(1236111677, 7)] public Int32 m_energyCost;
             [Property(2466280761, 131079)] public String m_animationKFM;
@@ -19375,27 +19375,27 @@ namespace Imlight.Internals
         public class RemoveTeamUpdate : TournamentUpdate
         {
             
-            public override uint GetHash() => 409378255;
+            public override uint GetHash() => 2097075535;
             [Property(982102220, 31)] public UInt64 m_teamID;
         }
         
         public class AccompanyNPCBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 523827839;
+            public override uint GetHash() => 2099858595;
         }
         
         public class MaxHealthLootInfo : LootInfo
         {
             
-            public override uint GetHash() => 525237911;
+            public override uint GetHash() => 2100620697;
             [Property(1370421596, 31)] public Int32 m_healthToAdd;
         }
         
         public class Texture : PropertyClass
         {
             
-            public override uint GetHash() => 512006011;
+            public override uint GetHash() => 2101762018;
             [Property(2431512111, 131207)] public String m_sFilename;
             [Property(1780697684, 135)] public Boolean m_bAlphaChannel;
             [Property(1054874233, 135)] public Boolean m_bDoubleSided;
@@ -19405,13 +19405,13 @@ namespace Imlight.Internals
         public class TextureD3D : Texture
         {
             
-            public override uint GetHash() => 511706459;
+            public override uint GetHash() => 2101834602;
         }
         
         public class JewelSocketUnlockCost : PropertyClass
         {
             
-            public override uint GetHash() => 518900811;
+            public override uint GetHash() => 2103181614;
             [Property(1803615170, 7)] public UInt32 m_crownsCost;
             [Property(1282442502, 7)] public Int32 m_lowestEquipLevelInclusive;
             [Property(1771734836, 7)] public Int32 m_highestEquipLevelInclusive;
@@ -19420,25 +19420,25 @@ namespace Imlight.Internals
         public class EnergyShopOption : ServiceOptionBase
         {
             
-            public override uint GetHash() => 518796286;
+            public override uint GetHash() => 2103213764;
         }
         
         public class PlayerAggroBehavior : AggroBehavior
         {
             
-            public override uint GetHash() => 505403307;
+            public override uint GetHash() => 2103478230;
         }
         
         public class ItemFinderBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 508780646;
+            public override uint GetHash() => 2104732198;
         }
         
         public class ClassProjectLeaderboardPlayer : PropertyClass
         {
             
-            public override uint GetHash() => 510658851;
+            public override uint GetHash() => 2105241716;
             [Property(578537369, 7)] public UInt64 m_playerGID;
             [Property(518911062, 7)] public UInt32 m_packedName;
             [Property(1049128778, 7)] public UInt32 m_points;
@@ -19447,7 +19447,7 @@ namespace Imlight.Internals
         public class GroupMember : PropertyClass
         {
             
-            public override uint GetHash() => 510350878;
+            public override uint GetHash() => 2105386940;
             [Property(843146230, 31)] public UInt64 m_GlobalID;
             [Property(1626688306, 31)] public UInt64 m_CharacterID;
             [Property(2372396590, 31)] public String m_sNameBlob;
@@ -19456,14 +19456,14 @@ namespace Imlight.Internals
         public class EventCurrency2LootInfo : LootInfo
         {
             
-            public override uint GetHash() => 488310534;
+            public override uint GetHash() => 2107749374;
             [Property(89898381, 31)] public Int32 m_eventCurrency2Amount;
         }
         
         public class ZoneInstanceFish : PropertyClass
         {
             
-            public override uint GetHash() => 489973310;
+            public override uint GetHash() => 2108320692;
             [Property(1230021335, 39)] public UInt32 m_zoneNameID;
             [Property(431286940, 39)] public UInt32 m_time;
             [Property(1794528949, 551)] public String m_buffer;
@@ -19472,7 +19472,7 @@ namespace Imlight.Internals
         public class QuestCompilation : PropertyClass
         {
             
-            public override uint GetHash() => 489451587;
+            public override uint GetHash() => 2108452396;
             [Property(2230286528, 31)] public List<PrepEntry> m_prepEntries;
             [Property(1490882790, 31)] public List<UnderwayEntry> m_underwayEntries;
             [Property(2930050163, 31)] public List<AvailableCompleteEntry> m_availableCompleteEntries;
@@ -19482,19 +19482,19 @@ namespace Imlight.Internals
         public class FishingBehavior : FishingBehaviorBase
         {
             
-            public override uint GetHash() => 491252451;
+            public override uint GetHash() => 2109114500;
         }
         
         public class WizClientMount : WizClientLeashedObject
         {
             
-            public override uint GetHash() => 493426650;
+            public override uint GetHash() => 2109552587;
         }
         
         public class QuestEffectDisplayInfo : PropertyClass
         {
             
-            public override uint GetHash() => 481077419;
+            public override uint GetHash() => 2110543894;
             [Property(1594812875, 31)] public Int32 m_companionID;
             [Property(3446153863, 31)] public String m_serializedEffects;
         }
@@ -19502,7 +19502,7 @@ namespace Imlight.Internals
         public class CombatPetXPEffectInfo : GameEffectInfo
         {
             
-            public override uint GetHash() => 486447363;
+            public override uint GetHash() => 2111362172;
             [Property(2333333378, 31)] public String m_lootTableName;
             [Property(1649374815, 31)] public String m_description;
         }
@@ -19510,14 +19510,14 @@ namespace Imlight.Internals
         public class ReqClassProjectActive : Requirement
         {
             
-            public override uint GetHash() => 472164326;
+            public override uint GetHash() => 2112773062;
             [Property(1714146665, 7)] public String m_classProjectName;
         }
         
         public class MapData : PropertyClass
         {
             
-            public override uint GetHash() => 335329251;
+            public override uint GetHash() => 2115526596;
             [Property(3476195193, 7)] public String m_mapStringKey;
             [Property(2861333660, 131079)] public String m_mapImageFile;
             [Property(3606975340, 131079)] public String m_playerGlyphFile;
@@ -19532,33 +19532,33 @@ namespace Imlight.Internals
         public class PetDerbyObstacleBehaviorClient : PetDerbyObstacleBehavior
         {
             
-            public override uint GetHash() => 313039398;
+            public override uint GetHash() => 2118997174;
         }
         
         public class GardeningBehavior : BehaviorInstance
         {
             
-            public override uint GetHash() => 315412595;
+            public override uint GetHash() => 2119452192;
             [Property(2329363555, 31)] public GardenData m_gardeningData;
         }
         
         public class ClassProjectProgressHistoryList : PropertyClass
         {
             
-            public override uint GetHash() => 318413166;
+            public override uint GetHash() => 2119816296;
             [Property(1514478333, 7)] public List<Int32> m_progressHistoryList;
         }
         
         public class ReqItemIsEgg : Requirement
         {
             
-            public override uint GetHash() => 305316151;
+            public override uint GetHash() => 2120991345;
         }
         
         public class BasicChatChannelInfo : PropertyClass
         {
             
-            public override uint GetHash() => 307921894;
+            public override uint GetHash() => 2121388742;
             [Property(2128119645, 7)] public UInt64 m_ownerCharacterID;
             [Property(2446827686, 7)] public String m_ownerNameBlob;
             [Property(1728439822, 7)] public Boolean m_isPublic;
@@ -19569,13 +19569,13 @@ namespace Imlight.Internals
         public class GamebryoInvisibilityEffect : InvisibilityEffect
         {
             
-            public override uint GetHash() => 310050551;
+            public override uint GetHash() => 2121911681;
         }
         
         public class MoveCommandArc : MoveController.MoveCommand
         {
             
-            public override uint GetHash() => 309702091;
+            public override uint GetHash() => 2121931086;
             [Property(2295460039, 31)] public Vector3 m_vVelocity;
             [Property(3690342814, 31)] public Vector3 m_vGravity;
             [Property(1668426734, 31)] public Single m_fUpdateFreq;
@@ -19585,13 +19585,13 @@ namespace Imlight.Internals
         public class ClientPlayComplexSoundCinematicAction : PlayComplexSoundCinematicAction
         {
             
-            public override uint GetHash() => 288323294;
+            public override uint GetHash() => 2125246348;
         }
         
         public class RevealHangingCinematicStageTemplate : CinematicStageTemplate
         {
             
-            public override uint GetHash() => 281741814;
+            public override uint GetHash() => 2127933506;
             [Property(13587553, 7)] public Boolean m_stopRotating;
             [Property(839204969, 7)] public Boolean m_startRotating;
             [Property(2011500383, 7)] public String m_revealText;
@@ -19601,7 +19601,7 @@ namespace Imlight.Internals
         public class WinAnimScaleSymmetricalTime : WinAnimScaleSymmetrical
         {
             
-            public override uint GetHash() => 281202843;
+            public override uint GetHash() => 2128070170;
             [Property(661225456, 135)] public Single m_fTimeTotal;
             [Property(1591443014, 135)] public Single m_fTimeRemaining;
         }
@@ -19609,7 +19609,7 @@ namespace Imlight.Internals
         public class InitialCombatSound : PropertyClass
         {
             
-            public override uint GetHash() => 269060031;
+            public override uint GetHash() => 2128942035;
             [Property(2739174336, 7)] public String m_worldZoneName;
             [Property(2277086720, 7)] public List<String> m_soundList;
         }
@@ -19617,7 +19617,7 @@ namespace Imlight.Internals
         public class TabDisplayPriority : PropertyClass
         {
             
-            public override uint GetHash() => 272514938;
+            public override uint GetHash() => 2129198563;
             [Property(431299609, 31)] public UInt32 m_uTab;
             [Property(374455588, 31)] public UInt32 m_uPriority;
         }
@@ -19625,7 +19625,7 @@ namespace Imlight.Internals
         public class NonCombatMayCastSpellGameEffect : GameEffectBase
         {
             
-            public override uint GetHash() => 274035859;
+            public override uint GetHash() => 2129800984;
             [Property(2688485244, 31)] public String m_spellName;
             [Property(385662509, 31)] public Int32 m_percentChance;
         }
@@ -19633,7 +19633,7 @@ namespace Imlight.Internals
         public class TeamHelpWorldInfo : PropertyClass
         {
             
-            public override uint GetHash() => 273974575;
+            public override uint GetHash() => 2129810295;
             [Property(3388080120, 7)] public String m_buttonName;
             [Property(3226477495, 7)] public String m_buttonStringKey;
             [Property(1250551048, 7)] public Int32 m_displayIndex;
@@ -19646,7 +19646,7 @@ namespace Imlight.Internals
         public class FishingLevelInfo : PropertyClass
         {
             
-            public override uint GetHash() => 274093975;
+            public override uint GetHash() => 2129848281;
             [Property(1438884808, 7)] public Byte m_level;
             [Property(1972600157, 7)] public Int32 m_xpToLevel;
             [Property(3595417396, 8388615)] public String m_levelName;
@@ -19655,19 +19655,19 @@ namespace Imlight.Internals
         public class ClientDerbyMoraleByTerrainEffect : DerbyMoraleByTerrainEffect
         {
             
-            public override uint GetHash() => 276475574;
+            public override uint GetHash() => 2130303378;
         }
         
         public class PipCinematicActor : CinematicActor
         {
             
-            public override uint GetHash() => 394369043;
+            public override uint GetHash() => 2131170360;
         }
         
         public class ObstacleCourseObstaclePathBaseTemplate : ObstacleCourseObstacleBehaviorTemplate
         {
             
-            public override uint GetHash() => 396510539;
+            public override uint GetHash() => 2131747694;
             [Property(310005283, 7)] public Single m_rate;
             [Property(2083389507, 7)] public Single m_penaltyTime;
             [Property(2379878414, 7)] public Vector3 m_totalObstacleSize;
@@ -19680,7 +19680,7 @@ namespace Imlight.Internals
         public class PetMatchRequest : MatchRequest
         {
             
-            public override uint GetHash() => 399203682;
+            public override uint GetHash() => 2132125029;
             [Property(2062988042, 31)] public Int32 m_minRank;
             [Property(1761764108, 31)] public Int32 m_maxRank;
             [Property(3026194809, 31)] public PetDerbyTrackInfo m_pTrackInfo;
@@ -19689,7 +19689,7 @@ namespace Imlight.Internals
         public class PvPMatchRequest : MatchRequest
         {
             
-            public override uint GetHash() => 399167234;
+            public override uint GetHash() => 2132132349;
             [Property(1496818518, 31)] public Int32 m_minLevel;
             [Property(146363288, 31)] public Int32 m_maxLevel;
         }
@@ -19697,7 +19697,7 @@ namespace Imlight.Internals
         public class LevelUpElixirBehaviorTemplate : ElixirBehaviorTemplate
         {
             
-            public override uint GetHash() => 401914554;
+            public override uint GetHash() => 2132434067;
             [Property(1268456078, 7)] public Int32 m_setCharacterToLevel;
             [Property(1710285808, 7)] public Int32 m_resultingTrainingPoints;
             [Property(2609926725, 7)] public List<LevelUpElixirSchoolSpecificData> m_schoolSpecificData;
@@ -19714,7 +19714,7 @@ namespace Imlight.Internals
         public class QuestFinderNPCData : PropertyClass
         {
             
-            public override uint GetHash() => 392067510;
+            public override uint GetHash() => 2133912658;
             [Property(2171167736, 31)] public String m_zoneName;
             [Property(2239683611, 31)] public Vector3 m_location;
             [Property(3116002948, 31)] public String m_firstName;
@@ -19725,7 +19725,7 @@ namespace Imlight.Internals
         public class PlayListEntry : PropertyClass
         {
             
-            public override uint GetHash() => 390829567;
+            public override uint GetHash() => 2134218563;
             [Property(2957416369, 131079)] public String m_trackFilename;
             [Property(2001937222, 7)] public Boolean m_bIsStreamed;
             [Property(1878658286, 7)] public Single m_animPos;
@@ -19735,38 +19735,38 @@ namespace Imlight.Internals
         public class ClientStageBacklashEffectCinematicAction : StageBacklashEffectCinematicAction
         {
             
-            public override uint GetHash() => 390777942;
+            public override uint GetHash() => 2134229290;
         }
         
         public class HousingBlobCustomObject : HousingBlobObject
         {
             
-            public override uint GetHash() => 360947486;
+            public override uint GetHash() => 2139592188;
             [Property(1638082768, 7)] public String m_customData;
         }
         
         public class CastleBlockDoorBehaviorTemplate : BehaviorTemplate
         {
             
-            public override uint GetHash() => 366166146;
+            public override uint GetHash() => 2140381725;
         }
         
         public class ClientBurnHangingEffectCinematicAction : BurnHangingEffectCinematicAction
         {
             
-            public override uint GetHash() => 365219227;
+            public override uint GetHash() => 2140553562;
         }
         
         public class HousingPetMovement : PropertyClass
         {
             
-            public override uint GetHash() => 357180054;
+            public override uint GetHash() => 2142632602;
         }
         
         public class HangingEffectProtectionRemovedStageTemplate : CinematicStageTemplate
         {
             
-            public override uint GetHash() => 347937651;
+            public override uint GetHash() => 2143827168;
             [Property(13587553, 7)] public Boolean m_stopRotating;
             [Property(839204969, 7)] public Boolean m_startRotating;
             [Property(1011449124, 7)] public Single m_startRotationTime;
@@ -19788,7 +19788,7 @@ namespace Imlight.Internals
         public class ShadowCreatureLevelTransitionCinematicAction : ActorCinematicAction
         {
             
-            public override uint GetHash() => 351859526;
+            public override uint GetHash() => 2144947950;
         }
         
         public enum LeashType

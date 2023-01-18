@@ -230,7 +230,7 @@ namespace Imlight.Generator.ObjectProperty
             }
 
             // Create hash field. This is to implement the PropertyClass interface.
-            var classHash = Serializer.HashString(name);
+            var classHash = Crypto.HashString(name);
             var hashField = CreateGenericPropertySnippet($"{PropertyTabs}public override uint GetHash() => 0x{classHash};");
             codeClass.Members.Add(hashField);
             // Add whitespace buffer
@@ -321,7 +321,7 @@ namespace Imlight.Generator.ObjectProperty
         {
             var propName = node.Attributes?["Name"]?.Value ?? throw new NullReferenceException("propNode.Attributes[\"Name\"].Value");
             var strType = node.Attributes["Type"]?.Value ?? throw new NullReferenceException("propNode.Attributes[\"Type\"].Value");
-            var propHash = Serializer.HashPropertyName(propName, strType);
+            var propHash = Crypto.HashPropertyName(propName, strType);
 
             return propHash;
         }
