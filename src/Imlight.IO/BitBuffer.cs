@@ -163,16 +163,16 @@ namespace Imlight.IO
                 _readStream.ReadSingle());
         }
 
-        public Matrix ReadMatrix()
+        public Matrix3x3 ReadMatrix()
         {
             ResetBitPos();
-            var m = new float[16];
-            for (int i = 0; i < 16; i++)
+            var m = new float[12];
+            for (int i = 0; i < 12; i++)
             {
                 m[i] = _readStream.ReadSingle();
             }
 
-            return new Matrix(m);
+            return new Matrix3x3(m);
         }
 
         public Color ReadColor()
@@ -239,6 +239,28 @@ namespace Imlight.IO
         }
 
         public byte CurrentByteBitPos => _bitPosition;
+
+        public unsafe T ReadBits<T>(int bitCount) where T : unmanaged
+        {
+            Debug.Assert(sizeof(T) * 8 >= bitCount);
+
+            var obj = new T();
+            var ptr = (byte*)&obj;
+
+            for (int i = 0; i < bitCount; i++)
+            {
+                if (i % 8 == 0 && i != 0)
+                {
+                    ptr++;
+                }
+
+                if (ReadBit())
+                {
+                    *ptr |= (byte)(1 << (i % 8));
+                }
+            }
+            return obj;
+        }
 
         #endregion
 
@@ -396,28 +418,6 @@ namespace Imlight.IO
                 BitValue |= (byte)(1 << _bitPosition);
 
             if (_bitPosition == 0) FlushBits();
-        }
-
-        public unsafe T ReadBits<T>(int bitCount) where T : unmanaged
-        {
-            Debug.Assert(sizeof(T) * 8 >= bitCount);
-
-            var obj = new T();
-            var ptr = (byte*)&obj;
-
-            for (int i = 0; i < bitCount; i++)
-            {
-                if (i % 8 == 0 && i != 0)
-                {
-                    ptr++;
-                }
-
-                if (ReadBit())
-                {
-                    *ptr |= (byte)(1 << (i % 8));
-                }
-            }
-            return obj;
         }
 
         #endregion

@@ -10,16 +10,32 @@ namespace Imlight.IO
     {
         public static uint HashString(string input)
         {
-            uint result = 0;
+            int result = 0;
+
             var shift1 = 0;
-            for (int i = 0; i < input.Length; i++)
+            var shift2 = 32;
+            foreach (char c in input)
             {
-                var cb = BitConverter.ToUInt32(BitConverter.GetBytes(input[i]), 0);
+                var cb = (byte)c;
+
                 result ^= (cb - 32) << shift1;
-                if (shift1 >= 27)
-                    shift1 -= 32;
+
+                if (shift1 > 24)
+                {
+                    result ^= (cb - 32) >> shift2;
+                    if (shift1 >= 27)
+                    {
+                        shift1 -= 32;
+                        shift2 += 32;
+                    }
+                }
                 shift1 += 5;
+                shift2 -= 5;
             }
+
+            if (result < 0)
+                result = -result;
+
             return (uint)result;
         }
 
