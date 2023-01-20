@@ -14,7 +14,7 @@ namespace Imlight.Internals
     using System.Collections.Generic;
     
     
-    public static partial class Types
+    public static partial class TypeCache
     {
         
         public static Imlight.Internals.PropertyClass Dispatch(uint hash)
@@ -1944,8 +1944,8 @@ namespace Imlight.Internals
             
             public override uint GetHash() => 17424178;
             [Property(314980368, 7)] public Boolean m_canFly;
-            [Property(169688980, 7)] public UInt64 m_mountTemplateID;
-            [Property(821494322, 7)] public UInt64 m_pathID;
+            [Property(169688980, 7)] public GID m_mountTemplateID;
+            [Property(821494322, 7)] public GID m_pathID;
         }
         
         public class SigilDynamicTriggerTemplate : DynamicTriggerTemplate
@@ -2103,7 +2103,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 550650537;
-            [Property(812923009, 16)] public Int32 m_value;
+            [Property(812923009, 16)] public LongWord m_value;
             [Property(1883057791, 16)] public UInt32 m_propertyID;
         }
         
@@ -2208,7 +2208,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 77139509;
-            [Property(1765088663, 31)] public UInt64 m_ownerGid;
+            [Property(1765088663, 31)] public GID m_ownerGid;
             [Property(989410271, 31)] public Single m_radius;
             [Property(878748702, 31)] public Single m_angle;
             [Property(2170708051, 31)] public LeashType m_leashType;
@@ -2221,7 +2221,7 @@ namespace Imlight.Internals
             public override uint GetHash() => 78568446;
             [Property(2239683611, 7)] public Vector3 m_location;
             [Property(787972805, 7)] public Single m_fRadius;
-            [Property(2090569797, 7)] public UInt64 m_id;
+            [Property(2090569797, 7)] public GID m_id;
             [Property(1528165112, 7)] public Single m_direction;
             [Property(310020272, 7)] public Single m_roll;
             [Property(1929260873, 7)] public NodeDescriptor m_descriptor;
@@ -2364,11 +2364,11 @@ namespace Imlight.Internals
             
             public override uint GetHash() => 87696593;
             [Property(680439828, 7)] public UInt32 m_gameID;
-            [Property(253380865, 7)] public UInt64 m_bluePlayerGID;
+            [Property(253380865, 7)] public GID m_bluePlayerGID;
             [Property(1812461836, 7)] public String m_bluePackedName;
-            [Property(1870113109, 7)] public UInt64 m_orangePlayerGID;
+            [Property(1870113109, 7)] public GID m_orangePlayerGID;
             [Property(3625018336, 7)] public String m_orangePackedName;
-            [Property(406170260, 7)] public UInt64 m_redPlayerGID;
+            [Property(406170260, 7)] public GID m_redPlayerGID;
             [Property(2559544575, 7)] public String m_redPackedName;
         }
         
@@ -2399,7 +2399,7 @@ namespace Imlight.Internals
             [Property(920323453, 31)] public Single m_duration;
             [Property(881988134, 287)] public Single m_delay;
             [Property(28533149, 287)] public Int32 m_cameraHidePlayers;
-            [Property(942697507, 33554719)] public UInt64 m_walkAwayNpcTemplateID;
+            [Property(942697507, 33554719)] public GID m_walkAwayNpcTemplateID;
             [Property(396419785, 287)] public Single m_walkAwayExitDirectionInDegrees;
             [Property(822405687, 287)] public Single m_walkAwayFadeTime;
             [Property(1464855436, 287)] public Boolean m_walkAwayUseCurrentFacing;
@@ -2565,10 +2565,10 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 101684154;
-            [Property(210498386, 7)] public UInt64 m_characterID;
+            [Property(210498386, 7)] public GID m_characterID;
             [Property(3058206907, 7)] public String m_nameBlob;
             [Property(221776365, 7)] public UInt32 m_schoolLevel;
-            [Property(257032380, 7)] public UInt64 m_objectID;
+            [Property(257032380, 7)] public GID m_objectID;
         }
         
         public class ClientUpdatePipsCinematicAction : UpdatePipsCinematicAction
@@ -2781,8 +2781,8 @@ namespace Imlight.Internals
             
             public override uint GetHash() => 126910823;
             [Property(1263221425, 7)] public UInt32 m_projectID;
-            [Property(1624915612, 7)] public List<UInt64> m_teamListA;
-            [Property(1624915613, 7)] public List<UInt64> m_teamListB;
+            [Property(1624915612, 7)] public List<GID> m_teamListA;
+            [Property(1624915613, 7)] public List<GID> m_teamListB;
         }
         
         public class ClientProvidePetPower : ProvidePetPower
@@ -2840,7 +2840,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 132220454;
-            [Property(210498386, 31)] public UInt64 m_characterID;
+            [Property(210498386, 31)] public GID m_characterID;
             [Property(1799846440, 31)] public UInt32 m_tournamentNameID;
             [Property(1751361288, 31)] public UInt32 m_matchNameID;
             [Property(1984373608, 31)] public List<MatchTeam> m_teams;
@@ -2920,7 +2920,7 @@ namespace Imlight.Internals
             public override uint GetHash() => 144476178;
             [Property(431253060, 7)] public UInt32 m_skip;
             [Property(817215071, 7)] public UInt32 m_petTemplateID;
-            [Property(109341840, 7)] public List<UInt64> m_hatchmakingPetGIDList;
+            [Property(109341840, 7)] public List<GID> m_hatchmakingPetGIDList;
         }
         
         public class BrightnessControlWindow : Window
@@ -2951,13 +2951,13 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 153414636;
-            [Property(1546509239, 7)] public List<UInt64> m_displayedTips;
-            [Property(1286351938, 7)] public List<UInt64> m_finishedTips;
+            [Property(1546509239, 7)] public List<GID> m_displayedTips;
+            [Property(1286351938, 7)] public List<GID> m_finishedTips;
             [Property(3487355966, 7)] public List<CharacterChatStatsByState> m_chatStatsByState;
             [Property(3265910788, 7)] public List<CharacterChatStatsByText> m_chatStatsByText;
             [Property(1946956503, 7)] public List<LockData> m_lockList;
             [Property(2895296598, 7)] public List<FriendData> m_friendList;
-            [Property(229595059, 7)] public UInt64 m_activeQuestId;
+            [Property(229595059, 7)] public GID m_activeQuestId;
             [Property(1967307577, 7)] public UInt32 m_activeGoalId;
             [Property(1365712422, 7)] public Boolean m_activeGoalSetByPlayer;
             [Property(2058124240, 7)] public CrownShopSettings m_crownShopSettings;
@@ -3065,7 +3065,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 167494729;
-            [Property(569545460, 33554439)] public UInt64 m_itemID;
+            [Property(569545460, 33554439)] public GID m_itemID;
             [Property(3429518154, 7)] public String m_adjective;
             [Property(169215289, 7)] public Int32 m_quantity;
             [Property(1746600759, 268435463)] public String m_spellTemplate;
@@ -3140,7 +3140,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 169654053;
-            [Property(1556110724, 7)] public UInt64 m_participantID;
+            [Property(1556110724, 7)] public GID m_participantID;
             [Property(982118638, 7)] public Int32 m_teamID;
             [Property(374902326, 7)] public Int32 m_maxHealth;
             [Property(1360713568, 7)] public Int32 m_pipsSpent;
@@ -3192,9 +3192,9 @@ namespace Imlight.Internals
             public override uint GetHash() => 176102228;
             [Property(2326023642, 7)] public UInt32 m_houseTemplateID;
             [Property(1037379271, 7)] public UInt32 m_structureTemplateID;
-            [Property(2010711536, 7)] public UInt64 m_lotInstanceGID;
-            [Property(2083588818, 7)] public UInt64 m_structureInstanceGID;
-            [Property(316234091, 7)] public UInt64 m_owningCharacterGID;
+            [Property(2010711536, 7)] public GID m_lotInstanceGID;
+            [Property(2083588818, 7)] public GID m_structureInstanceGID;
+            [Property(316234091, 7)] public GID m_owningCharacterGID;
         }
         
         public class FishingXPLootInfo : LootInfo
@@ -3287,7 +3287,7 @@ namespace Imlight.Internals
             
             public override uint GetHash() => 185541179;
             [Property(2890959924, 2097159)] public PathType m_kPathType;
-            [Property(821494322, 7)] public UInt64 m_pathID;
+            [Property(821494322, 7)] public GID m_pathID;
             [Property(2081830230, 7)] public Int32 m_nPathDirection;
             [Property(2665183795, 7)] public List<PathBehaviorTemplate.Action> m_actionList;
             [Property(821317997, 7)] public UInt32 m_pauseChance;
@@ -3297,7 +3297,7 @@ namespace Imlight.Internals
             {
                 
                 public override uint GetHash() => 1451964126;
-                [Property(214382368, 7)] public UInt64 m_nPathID;
+                [Property(214382368, 7)] public GID m_nPathID;
                 [Property(152152635, 7)] public Int32 m_nNodeID;
                 [Property(1515251530, 7)] public Int32 m_nPriority;
                 [Property(1860748394, 7)] public Int32 m_nChance;
@@ -3450,7 +3450,7 @@ namespace Imlight.Internals
             
             public override uint GetHash() => 201578593;
             [Property(1717359772, 7)] public String m_name;
-            [Property(2090569797, 7)] public UInt64 m_id;
+            [Property(2090569797, 7)] public GID m_id;
             [Property(239335471, 7)] public Boolean m_active;
             [Property(1597743708, 7)] public Boolean m_popSensitive;
             [Property(641389965, 7)] public UInt32 m_maxNumberOfSpawns;
@@ -3487,7 +3487,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 202764820;
-            [Property(72042095, 31)] public List<UInt64> m_objList;
+            [Property(72042095, 31)] public List<GID> m_objList;
         }
         
         public class WizItemQuestList : WizItemLocations
@@ -3567,7 +3567,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 210080626;
-            [Property(695889746, 31)] public UInt64 m_tournamentID;
+            [Property(695889746, 31)] public GID m_tournamentID;
             [Property(3329241865, 31)] public String m_tournamentName;
             [Property(1799846440, 31)] public UInt32 m_tournamentNameID;
             [Property(890225684, 31)] public Boolean m_clearData;
@@ -3646,7 +3646,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 218529137;
-            [Property(310124628, 7)] public List<UInt64> m_housingItemGIDList;
+            [Property(310124628, 7)] public List<GID> m_housingItemGIDList;
         }
         
         public class MountRecord : PropertyClass
@@ -3693,7 +3693,7 @@ namespace Imlight.Internals
             [Property(1304790295, 31)] public Int32 m_patternColor;
             [Property(698897022, 31)] public Boolean m_adjustableAnimationRate;
             [Property(1776153279, 31)] public Int32 m_geometryOption;
-            [Property(1112551276, 33554491)] public UInt64 m_lastMountID;
+            [Property(1112551276, 33554491)] public GID m_lastMountID;
         }
         
         public class ReqNumeric : Requirement
@@ -3795,7 +3795,7 @@ namespace Imlight.Internals
             [Property(3175052615, 7)] public String m_subType;
             [Property(1265259452, 7)] public UInt32 m_versionNumber;
             [Property(1934060719, 7)] public Int32 m_packageNumber;
-            [Property(148404716, 7)] public UInt64 m_associatedGID;
+            [Property(148404716, 7)] public GID m_associatedGID;
             [Property(1631557837, 7)] public UInt32 m_epochDays;
         }
         
@@ -3846,13 +3846,13 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 238069766;
-            [Property(374990266, 31)] public UInt64 m_nTeamID;
-            [Property(1757621330, 31)] public UInt64 m_matchId;
+            [Property(374990266, 31)] public GID m_nTeamID;
+            [Property(1757621330, 31)] public GID m_matchId;
             [Property(1751361288, 31)] public UInt32 m_matchNameID;
-            [Property(1051766069, 31)] public UInt64 m_creatorId;
+            [Property(1051766069, 31)] public GID m_creatorId;
             [Property(1420401792, 31)] public Boolean m_friendsOnly;
             [Property(568947970, 31)] public List<MatchActor> m_actors;
-            [Property(441272961, 31)] public UInt64 m_bracketID;
+            [Property(441272961, 31)] public GID m_bracketID;
             [Property(120597521, 31)] public Int32 m_maxActorLevel;
         }
         
@@ -3906,7 +3906,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 241655889;
-            [Property(1909774945, 7)] public List<UInt64> m_playerList;
+            [Property(1909774945, 7)] public List<GID> m_playerList;
             [Property(351259772, 7)] public List<Int32> m_teamColorList;
             [Property(3513135712, 7)] public List<String> m_packedNameList;
         }
@@ -3946,7 +3946,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 248429037;
-            [Property(1774633426, 31)] public UInt64 m_playerID;
+            [Property(1774633426, 31)] public GID m_playerID;
             [Property(1717579362, 31)] public String m_team;
         }
         
@@ -4272,7 +4272,7 @@ namespace Imlight.Internals
             [Property(499165488, 7)] public Single m_actorQueueGrowth;
             [Property(1500499518, 7)] public Single m_teamQueueGrowth;
             [Property(838900890, 7)] public Single m_matchMakingLevelMultiplier;
-            [Property(383459035, 7)] public UInt64 m_levelModifiersListID;
+            [Property(383459035, 7)] public GID m_levelModifiersListID;
             [Property(1580576011, 7)] public UInt32 m_incompleteTeamTimeout;
             [Property(2167303729, 7)] public UInt32 m_incompleteMatchTimeout;
             [Property(1403927011, 7)] public UInt32 m_shortMatchDurationForPenaltySeconds;
@@ -4412,7 +4412,7 @@ namespace Imlight.Internals
             
             public override uint GetHash() => 298717769;
             [Property(3006734255, 31)] public String m_underwayText;
-            [Property(1246549335, 31)] public UInt64 m_questID;
+            [Property(1246549335, 31)] public GID m_questID;
         }
         
         public class ClientMoveActorCinematicAction : MoveActorCinematicAction
@@ -4659,7 +4659,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 337702974;
-            [Property(806009486, 24)] public UInt64 m_petID;
+            [Property(806009486, 24)] public GID m_petID;
             [Property(2417808140, 24)] public String m_primaryStat1;
             [Property(2417808141, 24)] public String m_primaryStat2;
             [Property(3564684959, 24)] public String m_secondaryStat;
@@ -4726,7 +4726,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 343029615;
-            [Property(443045745, 7)] public UInt64 m_gamerID;
+            [Property(443045745, 7)] public GID m_gamerID;
             [Property(2656017061, 7)] public String m_gamerName;
             [Property(267246197, 7)] public UInt32 m_gamerNameCode;
             [Property(1416539789, 7)] public Single m_gameScore;
@@ -4783,7 +4783,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 350837933;
-            [Property(210498418, 31)] public UInt64 m_characterId;
+            [Property(210498418, 31)] public GID m_characterId;
         }
         
         public class ControlTickedSlider : ControlSlider
@@ -4870,7 +4870,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 361737915;
-            [Property(1721964880, 31)] public List<UInt64> m_subscriberOnlyItems;
+            [Property(1721964880, 31)] public List<GID> m_subscriberOnlyItems;
         }
         
         public class ClientDerbyTeleport : DerbyTeleport
@@ -5037,7 +5037,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 384355412;
-            [Property(534186837, 7)] public List<UInt64> m_playerGIDList;
+            [Property(534186837, 7)] public List<GID> m_playerGIDList;
             [Property(1795637418, 7)] public List<Byte> m_playerYawList;
         }
         
@@ -5093,7 +5093,7 @@ namespace Imlight.Internals
             
             public override uint GetHash() => 391267251;
             [Property(3103016389, 31)] public String m_iconFilename;
-            [Property(1075328001, 31)] public UInt64 m_templateID;
+            [Property(1075328001, 31)] public GID m_templateID;
         }
         
         public class CombatGardeningXPEffectInfo : GameEffectInfo
@@ -5305,7 +5305,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 420235402;
-            [Property(725139968, 31)] public UInt64 m_matchTeamGID;
+            [Property(725139968, 31)] public GID m_matchTeamGID;
             [Property(1737359170, 31)] public MatchTeam m_matchTeam;
             [Property(1049128778, 31)] public UInt32 m_points;
             [Property(615114630, 31)] public List<BracketMatchResult> m_matchResults;
@@ -5320,9 +5320,9 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 420377204;
-            [Property(1674798632, 63)] public UInt64 m_bracketGID;
-            [Property(1339404213, 63)] public UInt64 m_creatorActorGID;
-            [Property(1005482776, 31)] public UInt64 m_creatorBracketGID;
+            [Property(1674798632, 63)] public GID m_bracketGID;
+            [Property(1339404213, 63)] public GID m_creatorActorGID;
+            [Property(1005482776, 31)] public GID m_creatorBracketGID;
             [Property(981867512, 31)] public List<BracketTeam> m_teams;
             [Property(2343388751, 63)] public UInt32 m_teamSize;
             [Property(885135115, 6)] public List<MatchActor> m_actorList;
@@ -5336,7 +5336,7 @@ namespace Imlight.Internals
             [Property(346233980, 63)] public UInt32 m_roundStartsInSeconds;
             [Property(1420401792, 63)] public Boolean m_friendsOnly;
             [Property(1964849971, 63)] public UInt32 m_roundTimeSeconds;
-            [Property(1439120946, 63)] public UInt64 m_scheduleID;
+            [Property(1439120946, 63)] public GID m_scheduleID;
             [Property(1245818841, 63)] public UInt32 m_visibleTimeSeconds;
             [Property(1521577685, 63)] public Int64 m_startTimeSec;
             [Property(2064854776, 63)] public UInt32 m_registrationOpenTimeSeconds;
@@ -5635,7 +5635,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 454278017;
-            [Property(1913541510, 65543)] public List<UInt64> m_assignedPlayers;
+            [Property(1913541510, 65543)] public List<GID> m_assignedPlayers;
         }
         
         public class PetActorResults : MatchActorResult
@@ -5826,7 +5826,7 @@ namespace Imlight.Internals
             [Property(1440479886, 31)] public UInt32 m_pestProtectionTimeSeconds;
             [Property(1075432461, 31)] public UInt32 m_stageStartTimeSeconds;
             [Property(840714742, 31)] public Single m_likesDislikesModifier;
-            [Property(450491014, 31)] public UInt64 m_plantIdentifierForETL;
+            [Property(450491014, 31)] public GID m_plantIdentifierForETL;
             [Property(245460819, 31)] public UInt32 m_harvestCount;
         }
         
@@ -5918,7 +5918,7 @@ namespace Imlight.Internals
             
             public override uint GetHash() => 495164721;
             [Property(2100995821, 65543)] public UInt32 m_breadCrumbNumber;
-            [Property(1574152046, 65543)] public List<UInt64> m_equippedPetGIDList;
+            [Property(1574152046, 65543)] public List<GID> m_equippedPetGIDList;
             [Property(592278117, 65543)] public List<UInt16> m_equippedBreadCrumbIDList;
             [Property(1005801050, 65543)] public UInt32 m_flags;
         }
@@ -5927,7 +5927,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 496042949;
-            [Property(1220139473, 65536)] public UInt64 m_housingMountOriginalGID;
+            [Property(1220139473, 65536)] public GID m_housingMountOriginalGID;
             [Property(525135139, 65536)] public Int32 m_housingPetPrimaryColor;
             [Property(165011646, 65536)] public Int32 m_housingPetPattern;
             [Property(358656263, 65536)] public Int32 m_housingPetSecondaryColor;
@@ -5952,8 +5952,8 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 498321199;
-            [Property(1907651624, 7)] public UInt64 m_zoneGID;
-            [Property(2037310403, 7)] public UInt64 m_objectGID;
+            [Property(1907651624, 7)] public GID m_zoneGID;
+            [Property(2037310403, 7)] public GID m_objectGID;
         }
         
         public class ClientAuctionHouseOption : AuctionHouseOption
@@ -6131,7 +6131,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 525296757;
-            [Property(210498386, 7)] public UInt64 m_characterID;
+            [Property(210498386, 7)] public GID m_characterID;
             [Property(2010681975, 7)] public Int64 m_localTime;
         }
         
@@ -6139,7 +6139,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 525407888;
-            [Property(1075328001, 31)] public UInt64 m_templateID;
+            [Property(1075328001, 31)] public GID m_templateID;
             [Property(1454578518, 31)] public Int32 m_numForSale;
             [Property(1746297085, 31)] public Int32 m_buyPrice;
             [Property(957785661, 31)] public Int32 m_sellPrice;
@@ -6259,7 +6259,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 544484305;
-            [Property(1075328001, 33554439)] public UInt64 m_templateID;
+            [Property(1075328001, 33554439)] public GID m_templateID;
             [Property(169215289, 7)] public Int32 m_quantity;
         }
         
@@ -6335,13 +6335,13 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 552982840;
-            [Property(826202069, 7)] public UInt64 m_petGID;
+            [Property(826202069, 7)] public GID m_petGID;
             [Property(819371137, 7)] public UInt32 m_ageOutTime;
             [Property(902182593, 7)] public UInt32 m_cooldownTime;
             [Property(817215071, 7)] public UInt32 m_petTemplateID;
             [Property(1273194302, 7)] public UInt32 m_hatchCount;
             [Property(1104764311, 7)] public UInt32 m_nameKey;
-            [Property(2122895620, 7)] public UInt64 m_petItemGID;
+            [Property(2122895620, 7)] public GID m_petItemGID;
         }
         
         public class PlacementDisplayItem : PropertyClass
@@ -6389,8 +6389,8 @@ namespace Imlight.Internals
             public override uint GetHash() => 569312441;
             [Property(1575131408, 31)] public UInt64 m_nTemplateID;
             [Property(1440551274, 31)] public Byte m_nRank;
-            [Property(806009486, 31)] public UInt64 m_petID;
-            [Property(1647183032, 31)] public UInt64 m_petPermanentID;
+            [Property(806009486, 31)] public GID m_petID;
+            [Property(1647183032, 31)] public GID m_petPermanentID;
             [Property(3058206907, 31)] public String m_nameBlob;
         }
         
@@ -6418,7 +6418,7 @@ namespace Imlight.Internals
             public override uint GetHash() => 572593628;
             [Property(2082807927, 7)] public UInt32 m_poiType;
             [Property(1717182340, 7)] public String m_icon;
-            [Property(257032380, 7)] public UInt64 m_objectID;
+            [Property(257032380, 7)] public GID m_objectID;
             [Property(3697900983, 7)] public Vector3 m_position;
             [Property(357256328, 7)] public Single m_yaw;
         }
@@ -6486,7 +6486,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 577605360;
-            [Property(657877294, 7)] public UInt64 m_equivalentItemTemplateID;
+            [Property(657877294, 7)] public GID m_equivalentItemTemplateID;
         }
         
         public class PriceModifiers : PropertyClass
@@ -7126,7 +7126,7 @@ namespace Imlight.Internals
             [Property(3195213318, 7)] public List<String> m_adjectiveList;
             [Property(1243911353, 7)] public UInt32 m_returnRate;
             [Property(1858952922, 7)] public RequirementList m_unhideReqs;
-            [Property(1047787692, 7)] public UInt64 m_shardType;
+            [Property(1047787692, 7)] public GID m_shardType;
             [Property(2854831694, 7)] public String m_overrideStringNotEnoughShards;
             [Property(1405160851, 7)] public UInt32 m_crownsResetSubscribers;
             [Property(2047077437, 7)] public UInt32 m_goldResetSubscribers;
@@ -7150,15 +7150,15 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 627990744;
-            [Property(2010711536, 65567)] public UInt64 m_lotInstanceGID;
+            [Property(2010711536, 65567)] public GID m_lotInstanceGID;
             [Property(283788559, 65543)] public Single m_x;
             [Property(283788560, 65543)] public Single m_y;
             [Property(283788561, 65543)] public Single m_z;
             [Property(357256328, 65543)] public Single m_yaw;
-            [Property(1344354096, 65543)] public UInt64 m_lotTemplateID;
-            [Property(112792526, 65543)] public UInt64 m_clusterGID;
-            [Property(2083588818, 65543)] public UInt64 m_structureInstanceGID;
-            [Property(825960402, 65543)] public UInt64 m_structureTemplateID;
+            [Property(1344354096, 65543)] public GID m_lotTemplateID;
+            [Property(112792526, 65543)] public GID m_clusterGID;
+            [Property(2083588818, 65543)] public GID m_structureInstanceGID;
+            [Property(825960402, 65543)] public GID m_structureTemplateID;
             [Property(1999324940, 65543)] public Boolean m_isOutside;
         }
         
@@ -7213,8 +7213,8 @@ namespace Imlight.Internals
             [Property(1075344419, 31)] public Int32 m_templateID;
             [Property(1513345113, 31)] public String m_name;
             [Property(1741266202, 24)] public Boolean m_shouldRename;
-            [Property(981205014, 31)] public UInt64 m_globalID;
-            [Property(1037989700, 31)] public UInt64 m_userID;
+            [Property(981205014, 31)] public GID m_globalID;
+            [Property(1037989700, 31)] public GID m_userID;
             [Property(637025007, 24)] public Boolean m_quarantined;
         }
         
@@ -7500,7 +7500,7 @@ namespace Imlight.Internals
             [Property(222406987, 31)] public Int32 m_texture;
             [Property(791777171, 31)] public Int32 m_decal;
             [Property(1492854820, 31)] public Int32 m_petName;
-            [Property(679105551, 31)] public UInt64 m_giverAccountID;
+            [Property(679105551, 31)] public GID m_giverAccountID;
             [Property(1830751453, 31)] public String m_itemTransactionId;
         }
         
@@ -7886,7 +7886,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 732659400;
-            [Property(194811347, 31)] public UInt64 m_teamGID;
+            [Property(194811347, 31)] public GID m_teamGID;
             [Property(2174957597, 31)] public UInt32 m_bracketTeamID;
         }
         
@@ -7985,7 +7985,7 @@ namespace Imlight.Internals
             
             public override uint GetHash() => 746172267;
             [Property(3291650660, 8388615)] public String m_labelKey;
-            [Property(810892562, 33554439)] public UInt64 m_tipID;
+            [Property(810892562, 33554439)] public GID m_tipID;
             [Property(1958485829, 7)] public List<HelpChatElement> m_children;
         }
         
@@ -7999,13 +7999,13 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 746694127;
-            [Property(1757621298, 31)] public UInt64 m_matchID;
+            [Property(1757621298, 31)] public GID m_matchID;
             [Property(1751361288, 31)] public UInt32 m_matchNameID;
             [Property(1984373608, 31)] public List<MatchTeam> m_teams;
             [Property(2061215721, 31)] public String m_matchName;
             [Property(2918442218, 31)] public String m_matchTitle;
-            [Property(2026205966, 31)] public UInt64 m_matchZoneID;
-            [Property(1051766037, 31)] public UInt64 m_creatorID;
+            [Property(2026205966, 31)] public GID m_matchZoneID;
+            [Property(1051766037, 31)] public GID m_creatorID;
             [Property(2061662244, 31)] public String m_matchZone;
             [Property(1389154074, 31)] public Int64 m_startTime;
             [Property(960781182, 31)] public Int32 m_status;
@@ -8079,8 +8079,8 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 755256256;
-            [Property(210498386, 33554463)] public UInt64 m_characterID;
-            [Property(469020959, 63)] public UInt64 m_gameID;
+            [Property(210498386, 33554463)] public GID m_characterID;
+            [Property(469020959, 63)] public GID m_gameID;
             [Property(829938293, 63)] public UInt32 m_gameNameID;
             [Property(1733371579, 63)] public Int32 m_gamesWon;
             [Property(1363461609, 63)] public Int32 m_gamesLost;
@@ -8422,7 +8422,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 807665868;
-            [Property(635022555, 31)] public UInt64 m_killer;
+            [Property(635022555, 31)] public GID m_killer;
             [Property(1477583404, 31)] public UInt32 m_despawnEffect;
         }
         
@@ -8438,7 +8438,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 808134519;
-            [Property(578546081, 31)] public UInt64 m_playerOID;
+            [Property(578546081, 31)] public GID m_playerOID;
             [Property(3426350446, 2097183)] public PetDerbyTrackTerrain m_currentTerrain;
             [Property(1255984189, 31)] public Int32 m_currentLane;
             [Property(2006580429, 31)] public UInt32 m_currentLap;
@@ -8449,7 +8449,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 808633172;
-            [Property(1757621298, 31)] public UInt64 m_matchID;
+            [Property(1757621298, 31)] public GID m_matchID;
         }
         
         public class ObjStateCategory : PropertyClass
@@ -8591,7 +8591,7 @@ namespace Imlight.Internals
             public override uint GetHash() => 824433843;
             [Property(1545814623, 2097159)] public StartNodeType m_kStartNodeType;
             [Property(1598161889, 7)] public UInt32 m_startNode;
-            [Property(821494322, 7)] public UInt64 m_pathID;
+            [Property(821494322, 7)] public GID m_pathID;
             [Property(400014505, 7)] public Char m_uniqueLoc;
             
             public enum StartNodeType
@@ -8616,7 +8616,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 826932730;
-            [Property(1026273003, 7)] public UInt64 m_sellItemGID;
+            [Property(1026273003, 7)] public GID m_sellItemGID;
             [Property(380617740, 7)] public UInt32 m_quantity;
         }
         
@@ -8624,7 +8624,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 827639275;
-            [Property(1993921452, 31)] public List<UInt64> m_friendList;
+            [Property(1993921452, 31)] public List<GID> m_friendList;
         }
         
         public class QuickSellItemList : PropertyClass
@@ -8632,7 +8632,7 @@ namespace Imlight.Internals
             
             public override uint GetHash() => 828137340;
             [Property(2797277851, 7)] public List<QuickSellItem> m_quickSellItemList;
-            [Property(1096175527, 7)] public UInt64 m_sellingCharacterGID;
+            [Property(1096175527, 7)] public GID m_sellingCharacterGID;
         }
         
         public class WizTrainingOption : ServiceOptionBase
@@ -8704,16 +8704,16 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 836462749;
-            [Property(1433198221, 31)] public Byte m_baseColor;
-            [Property(1198446862, 31)] public Byte m_trimColor;
-            [Property(1338360593, 31)] public Byte m_pattern;
+            [Property(1433198221, 31)] public FiveBitByte m_baseColor;
+            [Property(1198446862, 31)] public FiveBitByte m_trimColor;
+            [Property(1338360593, 31)] public FiveBitByte m_pattern;
         }
         
         public class LeaderboardEntry : PropertyClass
         {
             
             public override uint GetHash() => 836925745;
-            [Property(210498386, 7)] public UInt64 m_characterID;
+            [Property(210498386, 7)] public GID m_characterID;
             [Property(431206393, 7)] public UInt32 m_rank;
             [Property(3058206907, 7)] public String m_nameBlob;
             [Property(1018074066, 7)] public UInt32 m_characterLevel;
@@ -8775,7 +8775,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 843476981;
-            [Property(446354318, 31)] public List<UInt64> m_shopList;
+            [Property(446354318, 31)] public List<GID> m_shopList;
             [Property(3311769839, 31)] public List<String> m_recipeList;
             [Property(3349689687, 31)] public String m_shopTitle;
             [Property(360128886, 31)] public Single m_sellModifier;
@@ -8840,7 +8840,7 @@ namespace Imlight.Internals
             public override uint GetHash() => 854001393;
             [Property(1170942560, 31)] public SystemType m_systemType;
             [Property(1042875837, 31)] public IdeaType m_ideaType;
-            [Property(1037989732, 31)] public UInt64 m_userId;
+            [Property(1037989732, 31)] public GID m_userId;
             [Property(625694774, 31)] public UserGender m_gender;
             [Property(904628669, 31)] public Byte m_age;
             [Property(2213937019, 31)] public String m_userName;
@@ -8983,7 +8983,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 874406534;
-            [Property(578537369, 7)] public UInt64 m_playerGID;
+            [Property(578537369, 7)] public GID m_playerGID;
             [Property(770936385, 7)] public UInt16 m_totalProgress;
             [Property(1631929220, 7)] public Byte m_tokens;
             [Property(1347981045, 7)] public UInt16 m_flags;
@@ -8995,7 +8995,7 @@ namespace Imlight.Internals
             [Property(518911062, 7)] public UInt32 m_packedName;
             [Property(2467704067, 7)] public Byte m_purchasedTokens;
             [Property(1438884808, 7)] public Byte m_level;
-            [Property(50378240, 7)] public UInt64 m_buddyListGID;
+            [Property(50378240, 7)] public GID m_buddyListGID;
             [Property(2268810331, 7)] public List<Byte> m_extendedData;
         }
         
@@ -9037,7 +9037,7 @@ namespace Imlight.Internals
             
             public override uint GetHash() => 881774485;
             [Property(772707167, 7)] public UInt32 m_socketNumber;
-            [Property(190876604, 7)] public UInt64 m_jewelID;
+            [Property(190876604, 7)] public GID m_jewelID;
         }
         
         public class ElixirBenefitBehaviorTemplate : ElixirBehaviorTemplate
@@ -9231,7 +9231,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 901447185;
-            [Property(267019404, 7)] public UInt64 m_gid;
+            [Property(267019404, 7)] public GID m_gid;
             [Property(3385349572, 7)] public String m_schoolName;
             [Property(3181478700, 7)] public String m_schoolRank;
             [Property(10373914, 7)] public Int32 m_schoolLevel;
@@ -9245,7 +9245,7 @@ namespace Imlight.Internals
             [Property(3812758310, 7)] public List<CastleMagicItem> m_castleMagicItemList;
             [Property(2420724439, 7)] public List<CastleMagicTimer> m_castleMagicTimerList;
             [Property(1824603147, 7)] public String m_randomNumberSetBuffer;
-            [Property(678388482, 7)] public List<UInt64> m_randomNumberSetIndexList;
+            [Property(678388482, 7)] public List<GID> m_randomNumberSetIndexList;
         }
         
         public class Slot_Node_FXDef : PropertyClass
@@ -9292,8 +9292,8 @@ namespace Imlight.Internals
             
             public override uint GetHash() => 906141780;
             [Property(2203859488, 31)] public String m_ignoreName;
-            [Property(210498386, 31)] public UInt64 m_characterID;
-            [Property(23229750, 31)] public UInt64 m_gameObjectID;
+            [Property(210498386, 31)] public GID m_characterID;
+            [Property(23229750, 31)] public GID m_gameObjectID;
         }
         
         public class AutobotTiming : PropertyClass
@@ -9515,7 +9515,7 @@ namespace Imlight.Internals
             public override uint GetHash() => 934519833;
             [Property(1083131517, 65543)] public Int32 m_loopNumber;
             [Property(1558621676, 65536)] public String m_composerPackedName;
-            [Property(538993812, 65536)] public UInt64 m_composerGID;
+            [Property(538993812, 65536)] public GID m_composerGID;
             [Property(547183282, 65543)] public Single m_metronomeTempo;
             [Property(830925908, 65543)] public Single m_firstNodeDelay;
             [Property(3278314746, 7)] public List<InteractiveMusicNote> m_musicNoteList;
@@ -9526,8 +9526,8 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 935326015;
-            [Property(89171206, 33554439)] public UInt64 m_secondPetTemplateID;
-            [Property(1463276884, 33554439)] public UInt64 m_eggTemplateID;
+            [Property(89171206, 33554439)] public GID m_secondPetTemplateID;
+            [Property(1463276884, 33554439)] public GID m_eggTemplateID;
             [Property(396611384, 7)] public Single m_probability;
         }
         
@@ -9535,7 +9535,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 935702429;
-            [Property(1075328001, 7)] public UInt64 m_templateID;
+            [Property(1075328001, 7)] public GID m_templateID;
             [Property(2312609697, 7)] public String m_sortName;
             [Property(1592212719, 7)] public Int32 m_crownsCost;
             [Property(444550297, 7)] public Int32 m_goldCost;
@@ -9571,7 +9571,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 937907618;
-            [Property(1111292082, 7)] public UInt64 m_groupID;
+            [Property(1111292082, 7)] public GID m_groupID;
             [Property(2190987938, 7)] public List<BattlegroundGroupMemberStatus> m_members;
         }
         
@@ -9693,7 +9693,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 946884960;
-            [Property(782107042, 7)] public UInt64 m_nLadderContainerID;
+            [Property(782107042, 7)] public GID m_nLadderContainerID;
         }
         
         public class ReqIsGender : Requirement
@@ -10052,10 +10052,10 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 982839443;
-            [Property(757020210, 31)] public List<UInt64> m_polyCategoryInactiveToRedTeamPlayers;
-            [Property(1382977667, 31)] public List<UInt64> m_polyCategoryUnavailableToRedTeamPlayers;
-            [Property(1877669599, 31)] public List<UInt64> m_polyCategoryInactiveToBlueTeamPlayers;
-            [Property(1059429200, 31)] public List<UInt64> m_polyCategoryUnavailableToBlueTeamPlayers;
+            [Property(757020210, 31)] public List<GID> m_polyCategoryInactiveToRedTeamPlayers;
+            [Property(1382977667, 31)] public List<GID> m_polyCategoryUnavailableToRedTeamPlayers;
+            [Property(1877669599, 31)] public List<GID> m_polyCategoryInactiveToBlueTeamPlayers;
+            [Property(1059429200, 31)] public List<GID> m_polyCategoryUnavailableToBlueTeamPlayers;
         }
         
         public class GeomParams : PropertyClass
@@ -10342,8 +10342,8 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1001234342;
-            [Property(586506386, 31)] public UInt64 m_GroupID;
-            [Property(1585983742, 31)] public UInt64 m_ChannelID;
+            [Property(586506386, 31)] public GID m_GroupID;
+            [Property(1585983742, 31)] public GID m_ChannelID;
             [Property(2864705424, 31)] public List<GroupMember> m_MemberList;
             [Property(1265869948, 31)] public UInt32 m_nMaxSize;
         }
@@ -10491,8 +10491,8 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1017280399;
-            [Property(1439120946, 31)] public UInt64 m_scheduleID;
-            [Property(441272961, 31)] public UInt64 m_bracketID;
+            [Property(1439120946, 31)] public GID m_scheduleID;
+            [Property(441272961, 31)] public GID m_bracketID;
             [Property(790945386, 31)] public UInt32 m_bracketState;
             [Property(1933051393, 31)] public Int64 m_creationTime;
             [Property(315793817, 31)] public Int64 m_registrationOpenTime;
@@ -10793,7 +10793,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1041784706;
-            [Property(2090569797, 7)] public UInt64 m_id;
+            [Property(2090569797, 7)] public GID m_id;
             [Property(2840988582, 7)] public RequirementList m_requirements;
             [Property(2562145079, 131079)] public String m_actorImage;
             [Property(2050810421, 8388615)] public String m_actorName;
@@ -10863,7 +10863,7 @@ namespace Imlight.Internals
             [Property(3311832788, 134217735)] public String m_recipeName;
             [Property(1061809494, 7)] public List<Ingredient> m_ingredients;
             [Property(3023276954, 8388615)] public String m_displayKey;
-            [Property(569545460, 33554439)] public UInt64 m_itemID;
+            [Property(569545460, 33554439)] public GID m_itemID;
             [Property(2688485244, 268435463)] public String m_spellName;
             [Property(2967855037, 7)] public List<String> m_adjectives;
             [Property(1895782037, 7)] public Int32 m_cookTime;
@@ -10942,7 +10942,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1060124367;
-            [Property(107013762, 7)] public UInt64 m_nDestinationPathID;
+            [Property(107013762, 7)] public GID m_nDestinationPathID;
             [Property(44784029, 7)] public Int32 m_nDestinationNodeID;
         }
         
@@ -11301,7 +11301,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1094456441;
-            [Property(1546992872, 31)] public List<UInt64> m_boosterPacks;
+            [Property(1546992872, 31)] public List<GID> m_boosterPacks;
             [Property(446675542, 31)] public Int32 m_shopType;
         }
         
@@ -11346,7 +11346,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1100078847;
-            [Property(1909774945, 7)] public List<UInt64> m_playerList;
+            [Property(1909774945, 7)] public List<GID> m_playerList;
         }
         
         public class WorldHubZoneMapper : PropertyClass
@@ -11451,7 +11451,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1115192397;
-            [Property(2090569797, 7)] public UInt64 m_id;
+            [Property(2090569797, 7)] public GID m_id;
             [Property(1717359772, 7)] public String m_name;
             
             public class BaseSimulation : PropertyClass
@@ -11468,7 +11468,7 @@ namespace Imlight.Internals
             [Property(2533274692, 63)] public Double m_currentTickCount;
             [Property(1204067144, 63)] public UInt32 m_effectNameID;
             [Property(522593303, 31)] public Boolean m_bIsOnPet;
-            [Property(1131810019, 39)] public UInt64 m_originatorID;
+            [Property(1131810019, 39)] public GID m_originatorID;
             [Property(1895747595, 63)] public UInt32 m_itemSlotID;
             [Property(1643137924, 63)] public Int32 m_internalID;
             [Property(716479635, 31)] public UInt32 m_endTime;
@@ -11592,8 +11592,8 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1121431901;
-            [Property(1371104126, 31)] public UInt64 m_actorID;
-            [Property(982102220, 31)] public UInt64 m_teamID;
+            [Property(1371104126, 31)] public GID m_actorID;
+            [Property(982102220, 31)] public GID m_teamID;
         }
         
         public class WinAnimMoveToLocationTimeEaseApprox : WinAnimMoveToLocationTime
@@ -11620,8 +11620,8 @@ namespace Imlight.Internals
             
             public override uint GetHash() => 1123934692;
             [Property(1799846440, 31)] public UInt32 m_tournamentNameID;
-            [Property(210498386, 31)] public UInt64 m_characterID;
-            [Property(441272961, 31)] public UInt64 m_bracketID;
+            [Property(210498386, 31)] public GID m_characterID;
+            [Property(441272961, 31)] public GID m_bracketID;
             [Property(3367716172, 31)] public BracketIDList m_bracketIDList;
             [Property(874052549, 31)] public UInt32 m_tournamentRequestType;
             [Property(2126940894, 31)] public Int32 m_startingIndex;
@@ -11757,16 +11757,16 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1131100403;
-            [Property(1493156413, 31)] public List<UInt64> m_bracketIDList;
+            [Property(1493156413, 31)] public List<GID> m_bracketIDList;
         }
         
         public class WizardEquippedItemInfo : EquippedItemInfo
         {
             
             public override uint GetHash() => 1131635780;
-            [Property(1433198221, 31)] public Byte m_baseColor;
-            [Property(1198446862, 31)] public Byte m_trimColor;
-            [Property(1338360593, 31)] public Byte m_pattern;
+            [Property(1433198221, 31)] public FiveBitByte m_baseColor;
+            [Property(1198446862, 31)] public FiveBitByte m_trimColor;
+            [Property(1338360593, 31)] public FiveBitByte m_pattern;
             [Property(1233846672, 31)] public UInt32 m_displayID;
             [Property(387523703, 31)] public PublicEquippedJewelInfo m_pJewelInfo;
         }
@@ -11782,7 +11782,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1135557334;
-            [Property(1075328001, 33554439)] public UInt64 m_templateID;
+            [Property(1075328001, 33554439)] public GID m_templateID;
         }
         
         public class PremiumContentOptionList : PropertyClass
@@ -11837,8 +11837,8 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1146327866;
-            [Property(982102220, 31)] public UInt64 m_teamID;
-            [Property(1757621298, 31)] public UInt64 m_matchID;
+            [Property(982102220, 31)] public GID m_teamID;
+            [Property(1757621298, 31)] public GID m_matchID;
         }
         
         public class LeashedPathMovementBehaviorClient : LeashedPathMovementBehavior
@@ -11901,7 +11901,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1150285043;
-            [Property(1774633426, 7)] public UInt64 m_playerID;
+            [Property(1774633426, 7)] public GID m_playerID;
             [Property(3058206907, 7)] public String m_nameBlob;
             [Property(1016087325, 2097159)] public BGGroupStatusEnum m_status;
             
@@ -11973,7 +11973,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1152801726;
-            [Property(550557519, 63)] public UInt64 m_containerGID;
+            [Property(550557519, 63)] public GID m_containerGID;
             [Property(184605671, 63)] public Int32 m_atticItemCount;
         }
         
@@ -11987,7 +11987,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1154096504;
-            [Property(133708664, 31)] public UInt64 m_nHolderGID;
+            [Property(133708664, 31)] public GID m_nHolderGID;
             [Property(3766080710, 31)] public Vector3 m_vHoldOffset;
             [Property(1792175219, 31)] public Single m_fHoldForce;
         }
@@ -12034,10 +12034,10 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1158760128;
-            [Property(703697224, 31)] public UInt64 m_mailId;
+            [Property(703697224, 31)] public GID m_mailId;
             [Property(933557677, 31)] public UInt64 m_timeStamp;
-            [Property(814458086, 31)] public UInt64 m_senderId;
-            [Property(2065780840, 31)] public UInt64 m_recipientId;
+            [Property(814458086, 31)] public GID m_senderId;
+            [Property(2065780840, 31)] public GID m_recipientId;
             [Property(1531535105, 31)] public Int32 m_messageType;
             [Property(3028633722, 31)] public String m_messageData;
             [Property(1128617708, 31)] public Int32 m_messageFlags;
@@ -12187,9 +12187,9 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1173951136;
-            [Property(2090569797, 7)] public UInt64 m_id;
+            [Property(2090569797, 7)] public GID m_id;
             [Property(1717359772, 7)] public String m_name;
-            [Property(1430564382, 7)] public List<UInt64> m_nodeIDs;
+            [Property(1430564382, 7)] public List<GID> m_nodeIDs;
         }
         
         public class TreasureCardPosterBehaviorBase : BehaviorInstance
@@ -12662,7 +12662,7 @@ namespace Imlight.Internals
             
             public override uint GetHash() => 1223816892;
             [Property(1717601629, 7)] public String m_type;
-            [Property(148404716, 7)] public UInt64 m_associatedGID;
+            [Property(148404716, 7)] public GID m_associatedGID;
             [Property(883864802, 7)] public List<BlobRequestObject> m_blobRequestObjectList;
         }
         
@@ -13105,7 +13105,7 @@ namespace Imlight.Internals
             
             public override uint GetHash() => 1266453463;
             [Property(347281415, 65543)] public List<UInt32> m_mobList;
-            [Property(1907651624, 65543)] public UInt64 m_zoneGID;
+            [Property(1907651624, 65543)] public GID m_zoneGID;
         }
         
         public class MonsterMagicBehavior : MonsterMagicBehaviorBase
@@ -13399,7 +13399,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1313679604;
-            [Property(182029460, 33554439)] public List<UInt64> m_bundleItems;
+            [Property(182029460, 33554439)] public List<GID> m_bundleItems;
             [Property(2176833998, 2097159)] public AcquireConditionType m_acquireCondition;
             [Property(2541051988, 2097159)] public BundleContentsType m_bundleContentsType;
             
@@ -13648,7 +13648,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1336810735;
-            [Property(821435516, 7)] public UInt64 m_partID;
+            [Property(821435516, 7)] public GID m_partID;
             [Property(430703463, 7)] public UInt32 m_data;
         }
         
@@ -13713,7 +13713,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1343503713;
-            [Property(982102220, 31)] public UInt64 m_teamID;
+            [Property(982102220, 31)] public GID m_teamID;
             [Property(1933240587, 31)] public Byte m_teamResolution;
         }
         
@@ -13724,7 +13724,7 @@ namespace Imlight.Internals
             [Property(1862714304, 2097159)] public PlayerStatusEnum m_status;
             [Property(1426706772, 2097159)] public PlayerTeamEnum m_team;
             [Property(1805208228, 7)] public String m_packedName;
-            [Property(1774633426, 7)] public UInt64 m_playerID;
+            [Property(1774633426, 7)] public GID m_playerID;
             [Property(702888164, 7)] public UInt32 m_polymorphID;
             [Property(899783871, 7)] public Int32 m_rating;
             [Property(742064870, 7)] public Int32 m_playerKills;
@@ -14072,7 +14072,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1375974384;
-            [Property(1909774945, 7)] public List<UInt64> m_playerList;
+            [Property(1909774945, 7)] public List<GID> m_playerList;
         }
         
         public class InitialCombatSoundsList : PropertyClass
@@ -14410,8 +14410,8 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1421022817;
-            [Property(982102220, 31)] public UInt64 m_teamID;
-            [Property(1757621298, 31)] public UInt64 m_matchID;
+            [Property(982102220, 31)] public GID m_teamID;
+            [Property(1757621298, 31)] public GID m_matchID;
         }
         
         public class ObstacleCourseSpringboardBehavior : ObstacleCourseObstacleBehavior
@@ -14575,7 +14575,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1455911260;
-            [Property(703251290, 31)] public UInt64 m_trackID;
+            [Property(703251290, 31)] public GID m_trackID;
             [Property(1717806295, 31)] public String m_zone;
             [Property(1764739684, 8388639)] public String m_key;
             [Property(857403388, 31)] public Byte m_rank;
@@ -14673,7 +14673,7 @@ namespace Imlight.Internals
             
             public override uint GetHash() => 1466778785;
             [Property(1794426680, 7)] public List<HouseTransferResult> m_houseTransferResultList;
-            [Property(501688601, 7)] public UInt64 m_characterGID;
+            [Property(501688601, 7)] public GID m_characterGID;
         }
         
         public class SoundEmitterInfo : SoundInfo
@@ -14835,7 +14835,7 @@ namespace Imlight.Internals
             [Property(525135139, 65664)] public Int32 m_housingPetPrimaryColor;
             [Property(165011646, 65664)] public Int32 m_housingPetPattern;
             [Property(358656263, 65695)] public Int32 m_housingPetSecondaryColor;
-            [Property(1259075879, 65664)] public UInt64 m_housingPetOriginalGID;
+            [Property(1259075879, 65664)] public GID m_housingPetOriginalGID;
             [Property(1836117651, 65664)] public UInt32 m_housingPetJewelTemplateID;
             [Property(1380970552, 65727)] public UInt32 m_happiness;
             [Property(874954582, 31)] public UInt32 m_maximumHappiness;
@@ -14935,7 +14935,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1509072274;
-            [Property(1466334173, 31)] public List<UInt64> m_templateIdList;
+            [Property(1466334173, 31)] public List<GID> m_templateIdList;
         }
         
         public class WizShoppingOption : ServiceOptionBase
@@ -14975,7 +14975,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1514144732;
-            [Property(1148289553, 7)] public UInt64 m_socketWrenchTemplateID;
+            [Property(1148289553, 7)] public GID m_socketWrenchTemplateID;
             [Property(1282442502, 7)] public Int32 m_lowestEquipLevelInclusive;
             [Property(1111256264, 7)] public Int32 m_hightestEquipLevelInclusive;
         }
@@ -15037,7 +15037,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1521569450;
-            [Property(1257835102, 31)] public List<UInt64> m_opponents;
+            [Property(1257835102, 31)] public List<GID> m_opponents;
             [Property(1049128778, 31)] public UInt32 m_points;
             [Property(1912880793, 31)] public UInt32 m_matchResult;
             [Property(1156208831, 31)] public UInt32 m_competingForPlace;
@@ -15049,7 +15049,7 @@ namespace Imlight.Internals
             public override uint GetHash() => 1521624695;
             [Property(3632841067, 31)] public String m_sZoneName;
             [Property(1380862506, 31)] public Int32 m_nInstanceID;
-            [Property(622120303, 31)] public UInt64 m_nZoneID;
+            [Property(622120303, 31)] public GID m_nZoneID;
         }
         
         public class ReqCombatStatus : ConditionalSpellEffectRequirement
@@ -15084,7 +15084,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1525311244;
-            [Property(2010711536, 33554495)] public UInt64 m_lotInstanceGID;
+            [Property(2010711536, 33554495)] public GID m_lotInstanceGID;
             [Property(1809670519, 63)] public Int32 m_streetAddress;
             [Property(1616830022, 63)] public UInt32 m_transferCoolDownTime;
         }
@@ -15171,7 +15171,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1532029556;
-            [Property(1757621298, 31)] public UInt64 m_matchID;
+            [Property(1757621298, 31)] public GID m_matchID;
             [Property(960781182, 31)] public Int32 m_status;
         }
         
@@ -15436,7 +15436,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1564927353;
-            [Property(1229232257, 7)] public UInt64 m_zoneID;
+            [Property(1229232257, 7)] public GID m_zoneID;
             [Property(394073349, 7)] public List<UInt32> m_newQuestList;
             [Property(426641112, 7)] public List<UInt32> m_completedQuestList;
         }
@@ -15455,8 +15455,8 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1568319405;
-            [Property(1246549335, 31)] public UInt64 m_questID;
-            [Property(485200232, 31)] public UInt64 m_goalID;
+            [Property(1246549335, 31)] public GID m_questID;
+            [Property(485200232, 31)] public GID m_goalID;
             [Property(2291910240, 31)] public String m_goalTitle;
             [Property(1805465583, 31)] public String m_questTitle;
             [Property(403158846, 31)] public UInt32 m_goalNameID;
@@ -15472,7 +15472,7 @@ namespace Imlight.Internals
             [Property(746353193, 31)] public UInt32 m_minNumberOfTeams;
             [Property(312519798, 31)] public UInt32 m_timeLimitSec;
             [Property(1420401792, 31)] public Boolean m_friendsOnly;
-            [Property(1439120946, 31)] public UInt64 m_scheduleID;
+            [Property(1439120946, 31)] public GID m_scheduleID;
             [Property(1245818841, 31)] public UInt32 m_visibleTimeSeconds;
             [Property(2064854776, 31)] public UInt32 m_registrationOpenTimeSeconds;
             [Property(1121720544, 31)] public UInt32 m_tournamentPreparingTimeSeconds;
@@ -15794,7 +15794,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1633647808;
-            [Property(1978701296, 31)] public UInt64 m_itemTemplateId;
+            [Property(1978701296, 31)] public GID m_itemTemplateId;
             [Property(1792726006, 31)] public Int32 m_itemFlags;
             [Property(444550297, 31)] public Int32 m_goldCost;
             [Property(1592212719, 31)] public Int32 m_crownsCost;
@@ -15873,8 +15873,8 @@ namespace Imlight.Internals
             public override uint GetHash() => 1646584070;
             [Property(3409856790, 63)] public String m_clientTag;
             [Property(2171167736, 39)] public String m_zoneName;
-            [Property(449538121, 39)] public UInt64 m_zoneInstance;
-            [Property(709051254, 63)] public UInt64 m_originator;
+            [Property(449538121, 39)] public GID m_zoneInstance;
+            [Property(709051254, 63)] public GID m_originator;
             [Property(798031442, 30)] public Int32 m_index;
             [Property(1440651126, 16)] public UInt32 m_zoneID;
         }
@@ -15926,7 +15926,7 @@ namespace Imlight.Internals
             [Property(1720060457, 8388615)] public String m_textKey;
             [Property(2239683611, 7)] public Vector3 m_location;
             [Property(2172826233, 7)] public Point m_mapLocation;
-            [Property(537078058, 7)] public UInt64 m_nObjectID;
+            [Property(537078058, 7)] public GID m_nObjectID;
             [Property(810536225, 7)] public Boolean m_visible;
         }
         
@@ -15958,7 +15958,7 @@ namespace Imlight.Internals
             [Property(900965981, 31)] public Int32 m_primaryColor;
             [Property(1337683384, 31)] public Int32 m_pattern;
             [Property(1616550081, 63)] public Int32 m_secondaryColor;
-            [Property(1022427803, 63)] public UInt64 m_displayID;
+            [Property(1022427803, 63)] public GID m_displayID;
             [Property(2004128457, 31)] public UInt32 m_itemFlags;
         }
         
@@ -16194,7 +16194,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1685778299;
-            [Property(569545460, 33554463)] public UInt64 m_itemID;
+            [Property(569545460, 33554463)] public GID m_itemID;
             [Property(1588646284, 31)] public Int32 m_numItems;
         }
         
@@ -16234,19 +16234,19 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1689401516;
-            [Property(663762476, 31)] public UInt64 m_nActorID;
-            [Property(782107042, 31)] public UInt64 m_nLadderContainerID;
+            [Property(663762476, 31)] public GID m_nActorID;
+            [Property(782107042, 31)] public GID m_nLadderContainerID;
             [Property(471412886, 31)] public UInt32 m_nTournamentNameID;
-            [Property(105258688, 31)] public UInt64 m_nTournamentID;
+            [Property(105258688, 31)] public GID m_nTournamentID;
             [Property(497033398, 31)] public UInt32 m_nMatchNameID;
-            [Property(1050279648, 31)] public UInt64 m_nMatchID;
-            [Property(374990266, 31)] public UInt64 m_nTeamID;
+            [Property(1050279648, 31)] public GID m_nMatchID;
+            [Property(374990266, 31)] public GID m_nTeamID;
             [Property(960781182, 31)] public Int32 m_status;
             [Property(913243331, 31)] public MatchCostAdjustment m_costAdj;
             [Property(2484171182, 31)] public Ladder m_pLadder;
-            [Property(441272961, 31)] public UInt64 m_bracketID;
+            [Property(441272961, 31)] public GID m_bracketID;
             [Property(1428697363, 31)] public Int32 m_overridingELO;
-            [Property(1037989700, 31)] public UInt64 m_userID;
+            [Property(1037989700, 31)] public GID m_userID;
             [Property(1193045098, 31)] public UInt32 m_matchMakingRangeForMatches;
             [Property(1279540944, 31)] public UInt32 m_maxMatchMakingRangeForMatches;
             [Property(1260448226, 31)] public Boolean m_allowRangeToExceedMaxForMatches;
@@ -16282,7 +16282,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1698769310;
-            [Property(695889746, 31)] public UInt64 m_tournamentID;
+            [Property(695889746, 31)] public GID m_tournamentID;
             [Property(3329241865, 31)] public String m_tournamentName;
             [Property(1799846440, 31)] public UInt32 m_tournamentNameID;
         }
@@ -16435,7 +16435,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1717552648;
-            [Property(1765087575, 31)] public UInt64 m_ownerGID;
+            [Property(1765087575, 31)] public GID m_ownerGID;
             [Property(1632116450, 31)] public Int32 m_essencesCollected;
             [Property(1286746870, 7)] public UInt32 m_templateID;
         }
@@ -16500,7 +16500,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1725212200;
-            [Property(501688601, 7)] public UInt64 m_characterGID;
+            [Property(501688601, 7)] public GID m_characterGID;
             [Property(1986368316, 7)] public Single m_fishSize;
             [Property(1805208228, 7)] public String m_packedName;
         }
@@ -17045,7 +17045,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1805408780;
-            [Property(1316603533, 7)] public UInt64 m_timerGID;
+            [Property(1316603533, 7)] public GID m_timerGID;
             [Property(782324633, 7)] public UInt32 m_onSeconds;
             [Property(1856084727, 7)] public UInt32 m_offSeconds;
             [Property(1984044184, 7)] public Boolean m_timerRunsContinuously;
@@ -17058,7 +17058,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1809960275;
-            [Property(1367168135, 7)] public List<UInt64> m_playersInZoneList;
+            [Property(1367168135, 7)] public List<GID> m_playersInZoneList;
         }
         
         public class UnSwapShadowMaterialActorCinematicAction : ActorCinematicAction
@@ -17071,7 +17071,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1810994553;
-            [Property(210498418, 31)] public UInt64 m_characterId;
+            [Property(210498418, 31)] public GID m_characterId;
             [Property(521887012, 31)] public List<CoreObject> m_pets;
         }
         
@@ -17262,7 +17262,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1835266999;
-            [Property(569545460, 31)] public UInt64 m_itemID;
+            [Property(569545460, 31)] public GID m_itemID;
             [Property(1951735276, 31)] public UInt32 m_itemSlotNameID;
         }
         
@@ -17393,7 +17393,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1850272972;
-            [Property(569545460, 7)] public UInt64 m_itemID;
+            [Property(569545460, 7)] public GID m_itemID;
             [Property(405352622, 2097159)] public CurrencyTab m_currencyType;
             
             public enum CurrencyTab
@@ -17831,7 +17831,7 @@ namespace Imlight.Internals
             
             public override uint GetHash() => 1899644498;
             [Property(1251844958, 7)] public List<HousingObjectState> m_housingObjectStateList;
-            [Property(1907651624, 7)] public UInt64 m_zoneGID;
+            [Property(1907651624, 7)] public GID m_zoneGID;
         }
         
         public class OldEquipmentBehavior : BehaviorInstance
@@ -17876,7 +17876,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1906141963;
-            [Property(1909774945, 7)] public List<UInt64> m_playerList;
+            [Property(1909774945, 7)] public List<GID> m_playerList;
         }
         
         public class RandomSpellEffect : SpellEffect
@@ -17948,22 +17948,22 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 1926270215;
-            [Property(998846322, 63)] public Byte m_nHeadHandsModel;
-            [Property(1416543510, 63)] public Byte m_nHairModel;
-            [Property(1927990831, 63)] public Byte m_nHatModel;
-            [Property(1482907529, 63)] public Byte m_nTorsoModel;
-            [Property(1832619222, 63)] public Byte m_nFeetModel;
-            [Property(133255964, 63)] public Byte m_nWandModel;
-            [Property(105936053, 63)] public Byte m_nSkinColor;
-            [Property(106752335, 63)] public Byte m_nSkinDecal;
-            [Property(1404660580, 63)] public Byte m_nHairColor;
-            [Property(1916370045, 63)] public Byte m_nHatColor;
-            [Property(1917186327, 63)] public Byte m_nHatDecal;
-            [Property(1471286743, 63)] public Byte m_nTorsoColor;
-            [Property(1472103025, 63)] public Byte m_nTorsoDecal;
-            [Property(1310258307, 63)] public Byte m_nTorsoDecal2;
-            [Property(1820998436, 63)] public Byte m_nFeetColor;
-            [Property(1821814718, 63)] public Byte m_nFeetDecal;
+            [Property(998846322, 63)] public TwoBitByte m_nHeadHandsModel;
+            [Property(1416543510, 63)] public FourBitByte m_nHairModel;
+            [Property(1927990831, 63)] public TwoBitByte m_nHatModel;
+            [Property(1482907529, 63)] public TwoBitByte m_nTorsoModel;
+            [Property(1832619222, 63)] public TwoBitByte m_nFeetModel;
+            [Property(133255964, 63)] public TwoBitByte m_nWandModel;
+            [Property(105936053, 63)] public FourBitByte m_nSkinColor;
+            [Property(106752335, 63)] public FourBitByte m_nSkinDecal;
+            [Property(1404660580, 63)] public SevenBitByte m_nHairColor;
+            [Property(1916370045, 63)] public FiveBitByte m_nHatColor;
+            [Property(1917186327, 63)] public FiveBitByte m_nHatDecal;
+            [Property(1471286743, 63)] public FiveBitByte m_nTorsoColor;
+            [Property(1472103025, 63)] public FiveBitByte m_nTorsoDecal;
+            [Property(1310258307, 63)] public FiveBitByte m_nTorsoDecal2;
+            [Property(1820998436, 63)] public FiveBitByte m_nFeetColor;
+            [Property(1821814718, 63)] public FiveBitByte m_nFeetDecal;
             [Property(2776344943, 2097215)] public eGender m_eGender;
             [Property(963057554, 2097215)] public eRace m_eRace;
             [Property(2012714323, 63)] public Byte m_afterCombatDance;
@@ -18438,7 +18438,7 @@ namespace Imlight.Internals
             [Property(2493302912, 131079)] public String m_jumpSound;
             [Property(3426875339, 131079)] public String m_duckSound;
             [Property(2719456886, 7)] public List<MorphingException> m_morphingExceptions;
-            [Property(2010028089, 33554439)] public UInt64 m_hatchesAsID;
+            [Property(2010028089, 33554439)] public GID m_hatchesAsID;
             [Property(2876819510, 268435463)] public List<String> m_guaranteedTalents;
             [Property(1658650796, 268435463)] public List<String> m_guaranteedDerbyTalents;
             [Property(645410894, 7)] public Boolean m_hideName;
@@ -18618,8 +18618,8 @@ namespace Imlight.Internals
             
             public override uint GetHash() => 1995872079;
             [Property(1717359772, 7)] public String m_name;
-            [Property(210498386, 7)] public UInt64 m_characterID;
-            [Property(23229750, 7)] public UInt64 m_gameObjectID;
+            [Property(210498386, 7)] public GID m_characterID;
+            [Property(23229750, 7)] public GID m_gameObjectID;
             [Property(2866985557, 1048583)] public Status m_status;
             
             [System.FlagsAttribute()]
@@ -18667,7 +18667,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 2002643208;
-            [Property(1075328001, 33554439)] public UInt64 m_templateID;
+            [Property(1075328001, 33554439)] public GID m_templateID;
         }
         
         public class ReqIsHatched : Requirement
@@ -18780,7 +18780,7 @@ namespace Imlight.Internals
             
             public override uint GetHash() => 2019293881;
             [Property(1610486152, 7)] public ResultItem m_items;
-            [Property(563564461, 7)] public UInt64 m_requestHandle;
+            [Property(563564461, 7)] public GID m_requestHandle;
             
             public enum ResultItem
             {
@@ -18846,9 +18846,9 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 2023112937;
-            [Property(1037989700, 7)] public UInt64 m_userID;
+            [Property(1037989700, 7)] public GID m_userID;
             [Property(2213937019, 7)] public String m_userName;
-            [Property(210498386, 7)] public UInt64 m_characterID;
+            [Property(210498386, 7)] public GID m_characterID;
             [Property(2815013574, 7)] public String m_characterName;
             [Property(2171167736, 7)] public String m_zoneName;
             [Property(3507983949, 7)] public String m_realmName;
@@ -18961,7 +18961,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 2045692196;
-            [Property(1757621298, 31)] public UInt64 m_matchID;
+            [Property(1757621298, 31)] public GID m_matchID;
             [Property(1751361288, 31)] public UInt32 m_matchNameID;
             [Property(1481862043, 31)] public Int32 m_matchResolution;
             [Property(2087966079, 31)] public List<MatchActorResult> m_actorList;
@@ -19074,7 +19074,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 2052795687;
-            [Property(1616797422, 7)] public UInt64 m_ingredientID;
+            [Property(1616797422, 7)] public GID m_ingredientID;
             [Property(169215289, 7)] public Int32 m_quantity;
             [Property(92688739, 7)] public Boolean m_sufficient;
         }
@@ -19201,7 +19201,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 2067737670;
-            [Property(1022427803, 65543)] public UInt64 m_displayID;
+            [Property(1022427803, 65543)] public GID m_displayID;
         }
         
         public class ControlWidget : Window
@@ -19232,7 +19232,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 2069974725;
-            [Property(142730388, 7)] public List<UInt64> m_leaderboardFriendsList;
+            [Property(142730388, 7)] public List<GID> m_leaderboardFriendsList;
         }
         
         public class ParticleSystem2D : Window
@@ -19376,7 +19376,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 2097075535;
-            [Property(982102220, 31)] public UInt64 m_teamID;
+            [Property(982102220, 31)] public GID m_teamID;
         }
         
         public class AccompanyNPCBehavior : BehaviorInstance
@@ -19439,7 +19439,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 2105241716;
-            [Property(578537369, 7)] public UInt64 m_playerGID;
+            [Property(578537369, 7)] public GID m_playerGID;
             [Property(518911062, 7)] public UInt32 m_packedName;
             [Property(1049128778, 7)] public UInt32 m_points;
         }
@@ -19448,8 +19448,8 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 2105386940;
-            [Property(843146230, 31)] public UInt64 m_GlobalID;
-            [Property(1626688306, 31)] public UInt64 m_CharacterID;
+            [Property(843146230, 31)] public GID m_GlobalID;
+            [Property(1626688306, 31)] public GID m_CharacterID;
             [Property(2372396590, 31)] public String m_sNameBlob;
         }
         
@@ -19559,7 +19559,7 @@ namespace Imlight.Internals
         {
             
             public override uint GetHash() => 2121388742;
-            [Property(2128119645, 7)] public UInt64 m_ownerCharacterID;
+            [Property(2128119645, 7)] public GID m_ownerCharacterID;
             [Property(2446827686, 7)] public String m_ownerNameBlob;
             [Property(1728439822, 7)] public Boolean m_isPublic;
             [Property(1019161494, 7)] public Int32 m_inviteAllCooldownTime;
@@ -19707,7 +19707,7 @@ namespace Imlight.Internals
             [Property(2956825884, 7)] public List<String> m_accessPasses;
             [Property(219423808, 7)] public Int32 m_gold;
             [Property(2795041819, 7)] public List<String> m_tutorialEventsToTrigger;
-            [Property(1424884996, 33554439)] public List<UInt64> m_tipIDsToDismiss;
+            [Property(1424884996, 33554439)] public List<GID> m_tipIDsToDismiss;
             [Property(1639626892, 7)] public Int32 m_maxPotions;
         }
         

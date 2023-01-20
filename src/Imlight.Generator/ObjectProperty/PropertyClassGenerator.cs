@@ -23,7 +23,7 @@ namespace Imlight.Generator.ObjectProperty
         // The `csr.wad` *must* be present for proper authority.
 
         private const string NamespaceName = "Imlight.Internals";
-        private const string TypesClassName = "Types";
+        private const string TypesClassName = "TypeCache";
         private const string DispatchTabs = "                ";
         private const string PropertyTabs = "            ";
 

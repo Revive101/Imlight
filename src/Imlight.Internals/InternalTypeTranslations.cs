@@ -29,7 +29,7 @@ namespace Imlight.Internals
             { "unsigned __int64", typeof(ulong)         },
 
             // Internal
-            { "gid",              typeof(ulong)         },
+            { "gid",              typeof(GID)           },
             { "Vector3D",         typeof(Vector3)       },
             { "Euler",            typeof(Vector3)       },
             { "Quaternion",       typeof(Quaternion)    },
@@ -44,12 +44,12 @@ namespace Imlight.Internals
             { "SimpleVert",       typeof(string)        }, //@TODO: Find out what this is internally
             { "SimpleFace",       typeof(string)        }, //@TODO: Find out what this is internally
 
-            // Unknown
-            { "bui2",             typeof(byte)          },
-            { "bui4",             typeof(byte)          },
-            { "bui5",             typeof(byte)          },
-            { "bui7",             typeof(byte)          },
-            { "s24",              typeof(int)           }, // Has some relation to the CSR. 4 byte size so I'm reading it as int.
+            { "bui2",             typeof(TwoBitByte)    }, // 2-bit byte
+            { "bui4",             typeof(FourBitByte)   }, // 4-bit byte
+            { "bui5",             typeof(FiveBitByte)   }, // 5-bit byte
+            { "bui7",             typeof(SevenBitByte)  }, // 7-bit byte
+            { "s24",              typeof(LongWord)      }, // 24-bit signed integer
+            { "u24",              typeof(ULongWord)     }, // 24-bit signed integer
         };
 
         public static bool TryGetType(string internalTypeName, out Type type)
