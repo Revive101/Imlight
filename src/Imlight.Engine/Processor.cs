@@ -4,8 +4,8 @@ using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Collections.Specialized;
 using Imlight.Common;
-using Imlight.Internals;
-using Imlight.IO;
+using WizUnraveler.DML;
+using WizUnraveler;
 
 namespace Imlight.Engine
 {

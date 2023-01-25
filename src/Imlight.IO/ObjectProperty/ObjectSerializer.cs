@@ -110,6 +110,12 @@ namespace Imlight.IO.ObjectProperty
             this.PropertyMask = propertyFlagMask;
         }
 
+        public PropertyClass Deserialize(byte[] buffer)
+        {
+            var reader = new BitBuffer(buffer);
+            return Deserialize(reader);
+        }
+
         public PropertyClass Deserialize(BitBuffer buffer)
         {
             SetSerializerData(buffer);
@@ -137,7 +143,7 @@ namespace Imlight.IO.ObjectProperty
             // In shallow mode, the serializer will pass through properties in order under a certain bit mask.
             // Lengths and property hashes are not included.
 
-            var fields = GetFields(propertyClass);
+            var fields = GetPropertyClassFields(propertyClass);
 
             var filteredFields = fields
                 .Where(x => (x.GetCustomAttribute<PropertyAttribute>().Flags & (uint)PropertyMask) != 0);
@@ -153,7 +159,7 @@ namespace Imlight.IO.ObjectProperty
         {
             // In deep mode, the serializer allows for empty values as dictated by property hashes and sizes.
 
-            var fields = GetFields(propertyClass);
+            var fields = GetPropertyClassFields(propertyClass);
             var fieldDictionary = fields.ToDictionary(x => x.GetCustomAttribute<PropertyAttribute>().Hash, x => x);
 
             var objectStart = bufReader.TellBitPos();
@@ -285,18 +291,17 @@ namespace Imlight.IO.ObjectProperty
             }
         }
 
-
-        private static IEnumerable<FieldInfo> GetFields(PropertyClass propClass)
+        private static IEnumerable<FieldInfo> GetPropertyClassFields(PropertyClass propClass)
         {
             if (propClass == null) throw new NullReferenceException(nameof(propClass));
 
             return propClass.GetType()
                 .GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy)
                 .Where(x => Attribute.IsDefined(x, typeof(PropertyAttribute)))
-                .OrderBy(x => x, new FieldComparer());
+                .OrderBy(x => x, new PropertyClassFieldComparer());
         }
 
-        public class FieldComparer : IComparer<FieldInfo>
+        public class PropertyClassFieldComparer : IComparer<FieldInfo>
         {
             public int Compare(FieldInfo x, FieldInfo y)
             {
