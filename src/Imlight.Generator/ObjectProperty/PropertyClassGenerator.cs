@@ -23,7 +23,7 @@ namespace Imlight.Generator.ObjectProperty
         // The `csr.wad` *must* be present for proper authority.
 
         private const string NamespaceName = "Imlight.Internals";
-        private const string TypesClassName = "Types";
+        private const string TypesClassName = "TypeCache";
         private const string DispatchTabs = "                ";
         private const string PropertyTabs = "            ";
 
@@ -231,22 +231,11 @@ namespace Imlight.Generator.ObjectProperty
             // Some classes will be named to their parent class. They must be declared inside their parent class definition.
             // For example: `MapInformationManager.MapInformation`
 
-            var nestDefs = new Dictionary<int, List<Definitions.ClassDef>>();
             var renameCollection = new List<Definitions.ClassDef>();
             foreach (var classDef in classDefs
                          .Where(classDef => classDef.Name.Contains('.'))
                          .ToList())
             {
-                // If the class is a double or more nest, save it to another list to perform later, as the previous
-                // class may not yet be generated.
-                // For example: `MapInformationManager.MapInformation.DoodleData`
-                var nestCount = classDef.Name.Count(x => x == '.');
-                if (nestCount > 1)
-                {
-                    var key = nestDefs.GetOrCreate(nestCount);
-                    key.Add(classDef);
-                }
-
                 // Get the parent class name.
                 var idx = classDef.Name.LastIndexOf('.');
                 var parentName = classDef.Name[..idx];
@@ -321,9 +310,18 @@ namespace Imlight.Generator.ObjectProperty
                     .Select(x => x.First())
                     .ToList())
                 {
-                    var idx = prop.Type.LastIndexOf(".");
-                    var typeName = prop.Type[(idx + 1)..];
-                    var scopedTypeName = prop.Type[..idx];
+                    var workingTypeName = prop.Type;
+                    var isList = prop.Type.Contains("List<");
+                    if (isList)
+                    {
+                        var idx1 = workingTypeName.IndexOf('<');
+                        var idx2 = workingTypeName.IndexOf('>');
+                        workingTypeName = workingTypeName[(idx1 + 1)..idx2];
+                    }
+
+                    var idx = workingTypeName.LastIndexOf(".");
+                    var typeName = workingTypeName[(idx + 1)..];
+                    var scopedTypeName = workingTypeName[..idx];
                     var scopedTypeDef = _classes.FirstOrDefault(y => y.Name == scopedTypeName);
 
                     // Failsafe; if a class is not found, replace '.' with '_'.
@@ -338,7 +336,7 @@ namespace Imlight.Generator.ObjectProperty
                             if (scopedTypeDef != null)
                             {
                                 found = true;
-                                prop.Type = t;
+                                prop.Type = isList ? $"List<{typeName}>" : typeName;
                                 break;
                             }
                         }
@@ -346,7 +344,8 @@ namespace Imlight.Generator.ObjectProperty
                         // to match our naming conentions.
                         if (!found)
                         {
-                            prop.Type = prop.Type.Replace('.', '_');
+                            workingTypeName = workingTypeName.Replace('.', '_');
+                            prop.Type = isList ? $"List<{workingTypeName}>" : workingTypeName;
                             prop.Options = new Definitions.EnumDef(typeName);
                             continue;
                         }
@@ -425,8 +424,10 @@ namespace Imlight.Generator.ObjectProperty
             // Add imports to the namespace.
             CodeNamespaceImport codeClassSystemImport = new("System");
             CodeNamespaceImport codeClassSharpDxImport = new("SharpDX");
+            CodeNamespaceImport codeClassCollectionsImport = new("System.Collections.Generic");
             codeNamespace.Imports.Add(codeClassSystemImport);
             codeNamespace.Imports.Add(codeClassSharpDxImport);
+            codeNamespace.Imports.Add(codeClassCollectionsImport);
 
             // Add CodeDom together.
             codeCompileUnit.Namespaces.Add(codeNamespace);

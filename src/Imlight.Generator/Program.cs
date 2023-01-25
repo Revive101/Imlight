@@ -10,9 +10,9 @@ namespace Imlight.Generator
         {
             var options = new PropertyClassGeneratorOptions()
             {
-                InputName = "PropertyClassDump.xml"
+                InputName = "test.xml"
             };
-            var gen = new NetworkMessagesGenerator(options);
+            var gen = new PropertyClassGenerator(options);
             gen.Generate();
         }
     }

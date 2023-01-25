@@ -20,7 +20,7 @@ namespace Imlight.Engine
          * Tasks could potentially take more than one server tick to calculate.
          * To solve this, each processor contains an internal, small workload.
          */
-        public ObservableQueue<WizardMessageContext> InternalWorkload { get; private set; }  = new ObservableQueue<WizardMessageContext>();
+        public ObservableQueue<WizardMessageContext> InternalWorkload { get; private set; } = new ObservableQueue<WizardMessageContext>();
 
         // ctor
         public Processor()
@@ -62,7 +62,7 @@ namespace Imlight.Engine
             // @TODO: Change this to process all new items rather than just the first.
             var workingItem = (WizardMessageContext)e.NewItems[0];
             var buffer = workingItem.KIPacketBuffer;
-            INetworkMessage message = Serializer.DeserializeMessageBinary(buffer);
+            INetworkMessage message = MessageSerializer.DeserializeMessageBinary(buffer);
 
             // Log
             Log.Logger.Debug($"Processor [{_name}] picked up packet [{message.GetType()}]");

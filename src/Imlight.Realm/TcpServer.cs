@@ -10,16 +10,6 @@ using Imlight.Common;
 using System.Runtime.InteropServices;
 using Imlight.Engine;
 
-/*
-Realm
-Realms are the bread and butter of this server structure. 
-They hold current players, worlds, and zones. 
-They are the primary communicator with clients.
-
-For better elaboration, see the RealmManager diagram:
-https://app.diagrams.net/#G17utqstWzrlxPp8cVjTZX4e_Hhy8ThKSn
-*/
-
 namespace Imlight.Realm
 {
     internal class TcpServer : IDisposable
@@ -27,13 +17,12 @@ namespace Imlight.Realm
 
         internal const ushort DEFAULT_PORT = 12000;
 
+        private readonly TcpListener _listener;
+        private readonly CancellationTokenSource _tokenSource;
+        private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1);
+        private bool _listening;
         internal List<KISocket> Sockets { get; private set; }
         internal readonly Realm Realm;
-
-        private readonly TcpListener r_listener;
-        private readonly CancellationTokenSource r_tokenSource;
-        private bool _listening;
-        private CancellationToken _token;
 
         // Constructor
         internal TcpServer(Realm realm, Int32 port = DEFAULT_PORT, bool doAutoStart = true)
@@ -42,8 +31,8 @@ namespace Imlight.Realm
 
             // Listen to all IPs
             var ip = IPAddress.Parse("0.0.0.0");
-            this.r_listener = new TcpListener(ip, port);
-            this.r_tokenSource = CancellationTokenSource.CreateLinkedTokenSource(new CancellationToken());
+            this._listener = new TcpListener(ip, port);
+            this._tokenSource = CancellationTokenSource.CreateLinkedTokenSource(new CancellationToken());
             this.Sockets = new List<KISocket>();
 
             if (doAutoStart) Start();
@@ -57,12 +46,10 @@ namespace Imlight.Realm
         /// <returns></returns>
         internal async void Start()
         {
-            this.r_listener.Start();
-            this._token = this.r_tokenSource.Token;
             this._listening = true;
-
-            // Begin listen.
-            await ListenAsync();
+            this._listener.Start();
+            var token = this._tokenSource.Token;
+            await ListenAsync(token);
         }
 
         /// <summary>
@@ -70,39 +57,49 @@ namespace Imlight.Realm
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns></returns>
-        private async Task ListenAsync()
+        private async Task ListenAsync(CancellationToken token)
         {
             // Listen for any incoming sockets and accept data they send.
-            while (!_token.IsCancellationRequested)
+            while (!token.IsCancellationRequested)
             {
                 if (!this._listening) continue;
 
                 // Accept socket.
-                var client = await r_listener.AcceptTcpClientAsync().ConfigureAwait(false);
+                var client = await _listener.AcceptTcpClientAsync().ConfigureAwait(false);
                 Log.Logger.Information($"New connection recieved from {client.Client.RemoteEndPoint}.");
 
                 // Create a socket object for the connection, and add it to the connections list.
-                KISocket socket = new KISocket(this, client);
-                Task.Run(() => socket.OpenListen());
-                Sockets.Add(socket);
+                var socket = new KISocket(this, client);
+                await _semaphore.WaitAsync();
+                try
+                {
+                    Sockets.Add(socket);
+                }
+                finally
+                {
+                    _semaphore.Release();
+                }
+
+                Task.Run(() => socket.OpenListenAsync(), token);
             }
         }
 
-        /// <summary>
-        /// Stops the server.
-        /// </summary>
         internal void Stop()
         {
-            this.r_tokenSource?.Cancel();
+            this._listening = false;
+            this._tokenSource.Cancel();
+            _listener.Stop();
+
+            foreach (var client in Sockets)
+            {
+                client.Close();
+            }
         }
 
         public void Dispose()
         {
-            this.Stop();
-            foreach (var client in Sockets)
-            {
-                client.Dispose();
-            }
+            Stop();
+            _tokenSource.Dispose();
         }
 
     }

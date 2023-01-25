@@ -21,5 +21,8 @@ namespace Imlight.Common
             return val;
         }
 
+        public static bool IsList(this Type type)
+            => type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>);
+
     }
 }

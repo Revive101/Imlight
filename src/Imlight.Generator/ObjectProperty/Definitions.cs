@@ -12,49 +12,6 @@ namespace Imlight.Generator.ObjectProperty
 {
     internal class Definitions
     {
-        private static readonly IReadOnlyDictionary<string, Type> _internalTypeTranslationDict = new Dictionary<string, Type>()
-        {
-            // Primitive
-            { "int",              typeof(int)           },
-            { "unsigned int",     typeof(int)           },
-            { "short",            typeof(short)         },
-            { "unsigned short",   typeof(ushort)        },
-            { "std::string",      typeof(string)        },
-            { "std::wstring",     typeof(string)        },
-            { "long",             typeof(long)          },
-            { "unsigned long",    typeof(ulong)         },
-            { "float",            typeof(float)         },
-            { "bool",             typeof(bool)          },
-            { "double",           typeof(double)        },
-            { "char",             typeof(char)          },
-            { "wchar_t",          typeof(char)          },
-            { "unsigned char",    typeof(byte)          },
-            { "unsigned __int64", typeof(ulong)         },
-
-            // Internal
-            { "gid",              typeof(ulong)         },
-            { "Vector3D",         typeof(Vector3)    },
-            { "Euler",            typeof(Vector3)    },
-            { "Quaternion",       typeof(Quaternion) },
-            { "Matrix3x3",        typeof(Matrix)     },
-            { "Color",            typeof(Color3)     },
-            { "Rect<float>",      typeof(RectangleF) },
-            { "Rect<int>",        typeof(Rectangle)  },
-            { "Point<float>",     typeof(Vector2)    },
-            { "Point<int>",       typeof(Point)      },
-            { "Size<int>",        typeof(Point)      },
-            { "SerializedBuffer", typeof(string)     },
-            { "SimpleVert",       typeof(string)     }, //@TODO: Find out what this is internally
-            { "SimpleFace",       typeof(string)     }, //@TODO: Find out what this is internally
-
-            // Unknown
-            { "bui2",             typeof(byte)          },
-            { "bui4",             typeof(byte)          },
-            { "bui5",             typeof(byte)          },
-            { "bui7",             typeof(byte)          },
-            { "s24",              typeof(int)           }, // Has some relation to the CSR. 4 byte size so I'm reading it as int.
-        };
-
         internal class ClassDef
         {
             internal string Name { get; set; }
@@ -73,6 +30,8 @@ namespace Imlight.Generator.ObjectProperty
                 this.SubClasses = new List<ClassDef>();
                 var rawName = node.Attributes["Name"].Value;
                 var rawBaseName = node.Attributes?["Base"]?.Value;
+
+                this.Hash = Crypto.HashString(rawName);
 
                 // Cleanup the raw name to fit csharp standards.
                 rawName = FixMadlibName(rawName);
@@ -95,8 +54,6 @@ namespace Imlight.Generator.ObjectProperty
 
                 this.PropertyCount = propCount;
                 this.ByteSize = size;
-
-                this.Hash = Serializer.HashString(this.Name);
 
                 // Iterate through the Xml child nodes and create a propertyDef.
                 // Then, add that PropertyDef to this ClassDef.
@@ -152,7 +109,7 @@ namespace Imlight.Generator.ObjectProperty
 
                     var unparsedType = node.Attributes["Type"].Value;
                     var container = node.Attributes["Container"].Value;
-                    this.Hash = Serializer.HashPropertyName(Name, unparsedType);
+                    this.Hash = Crypto.HashPropertyName(Name, unparsedType);
 
                     if (!TryParseType(unparsedType, container, out var parsedType))
                         throw new Exception();
@@ -205,7 +162,7 @@ namespace Imlight.Generator.ObjectProperty
                     strType = DefinitionUtil.RefactorName(formattedName);
 
                     // Check to see if the type is an accepted type.
-                    if (_internalTypeTranslationDict.TryGetValue(strType, out var type))
+                    if (Internals.InternalTypeTranslations.TryGetType(strType, out var type))
                     {
                         strType = type.ToString();
                         strType = DefinitionUtil.ParseScopeName(strType);
@@ -214,14 +171,14 @@ namespace Imlight.Generator.ObjectProperty
                 else
                 {
                     // Check to see if the type is an accepted type.
-                    if (!_internalTypeTranslationDict.TryGetValue(strType, out var type))
+                    if (!Internals.InternalTypeTranslations.TryGetType(strType, out var type))
                         throw new InvalidOperationException($"Type attribute [{strType}] could not be translated!");
                     strType = DefinitionUtil.ParseScopeName(type.ToString());
                 }
 
                 // Finally, craft the return string.
                 // @TODO: LinkedList support
-                var isList = strContainer is "vector" or "list";
+                var isList = strContainer is "Vector" or "List";
                 parsedType = (isList) ? $"List<{strType}>" : strType;
                 return true;
             }

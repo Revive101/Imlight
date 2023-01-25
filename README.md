@@ -27,10 +27,12 @@ This list is updated sparingly. For more recent updates, use the Trello board fo
     - [ ] Zones 
     - [ ] Worlds
   - [ ] Engine
-    - [ ] Message deserialization
-    - [ ] Message serialization
-    - [ ] Deserializing types
-    - [ ] Serializing types 
+    - [x] Message deserialization
+    - [x] Message serialization
+    - [x] Deserializing types
+    - [x] Serializing types 
+    - [ ] Deserializing CoreObject
+    - [ ] Serializing CoreObject 
   - [ ] Processor
     - [ ] Message handlers 
 - [ ] Common

@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Types\Generated\" />
+    <Folder Include="Types\Cache\" />
   </ItemGroup>
 
 </Project>
