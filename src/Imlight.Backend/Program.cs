@@ -1,27 +1,44 @@
 ﻿using System;
 using Imlight.Realm;
-using Imlight.Engine;
 using Imlight.Common;
 using System.Diagnostics;
 using System.Collections.Generic;
+using Akka;
+using Akka.Actor;
 
 namespace Imlight.Backend
 {
     internal class Program
     {
 
-        internal static RealmManager RealmManager { get; private set; }
+        private const string VERSION = "0.0.1";
+        private static ActorSystem _mainActorSystem;
 
         static void Main(string[] args)
         {
-            // Processor test
-            ProcessorManager.StartNewProcessor();
-
-            // Realm test
-            RealmManager = new RealmManager();
-            RealmManager.CreateRealm("test realm");
+            //PrintTitle();
+            _mainActorSystem = ActorSystem.Create("ImlightSystem");
+            var realmActor = _mainActorSystem.ActorOf(RealmActor.Props("Developer", 0), "Developer");
 
             Console.ReadKey();
+        }
+
+        private static void PrintTitle()
+        {
+            // I just like having fun.
+            Log.Logger.Information(@"==============================================================================================");
+            Log.Logger.Information(@"  ______ __       __ __         ______   ______   __    __  ________");
+            Log.Logger.Information(@" /      |/ \     /  |/  |      /      | /      \ /  |  /  |/       |");
+            Log.Logger.Information(@"$$$$$$/ $$  \   /$$ |$$ |      $$$$$$/ /$$$$$$  |$$ |  $$ |$$$$$$$$/");
+            Log.Logger.Information(@"  $$ |  $$$  \ /$$$ |$$ |        $$ |  $$ | _$$/ $$ |__$$ |   $$ |");
+            Log.Logger.Information(@"  $$ |  $$$$  /$$$$ |$$ |        $$ |  $$ |/    |$$    $$ |   $$ |");
+            Log.Logger.Information(@"  $$ |  $$ $$ $$/$$ |$$ |        $$ |  $$ |$$$$ |$$$$$$$$ |   $$ |");
+            Log.Logger.Information(@" _$$ |_ $$ |$$$/ $$ |$$ |_____  _$$ |_ $$ \__$$ |$$ |  $$ |   $$ |");
+            Log.Logger.Information(@"/ $$   |$$ | $/  $$ |$$       |/ $$   |$$    $$/ $$ |  $$ |   $$ |");
+            Log.Logger.Information(@"$$$$$$/ $$/      $$/ $$$$$$$$/ $$$$$$/  $$$$$$/  $$/   $$/    $$/");
+            Log.Logger.Information(@"==============================================================================================");
+            Log.Logger.Information($"Imlight v{VERSION} -- Developed and maintained by Wizard101Rewritten.");
+            Log.Logger.Information(@"==============================================================================================");
         }
     }
 }
