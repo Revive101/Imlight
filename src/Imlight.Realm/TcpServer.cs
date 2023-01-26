@@ -1,31 +1,26 @@
-﻿using System.Diagnostics;
-using System.Threading.Tasks;
-using System.Net.WebSockets;
-using System.Threading;
-using System.Net.Sockets;
-using System;
-using System.Net;
-using System.Collections.Generic;
+﻿using Akka.Actor;
 using Imlight.Common;
-using System.Runtime.InteropServices;
-using Imlight.Engine;
+using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Net.Sockets;
+using System.Threading;
+using System.Threading.Tasks;
+using Imlight.Realm.Messages;
 
 namespace Imlight.Realm
 {
     internal class TcpServer : IDisposable
     {
-
         internal const ushort DEFAULT_PORT = 12000;
 
         private readonly TcpListener _listener;
         private readonly CancellationTokenSource _tokenSource;
-        private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1);
         private bool _listening;
-        internal List<KISocket> Sockets { get; private set; }
-        internal readonly Realm Realm;
+        internal readonly IActorRef Realm;
 
         // Constructor
-        internal TcpServer(Realm realm, Int32 port = DEFAULT_PORT, bool doAutoStart = true)
+        internal TcpServer(IActorRef realm, int port = DEFAULT_PORT)
         {
             this.Realm = realm;
 
@@ -33,9 +28,8 @@ namespace Imlight.Realm
             var ip = IPAddress.Parse("0.0.0.0");
             this._listener = new TcpListener(ip, port);
             this._tokenSource = CancellationTokenSource.CreateLinkedTokenSource(new CancellationToken());
-            this.Sockets = new List<KISocket>();
 
-            if (doAutoStart) Start();
+            Start();
         }
 
         internal bool Listening() => this._listening;
@@ -49,6 +43,7 @@ namespace Imlight.Realm
             this._listening = true;
             this._listener.Start();
             var token = this._tokenSource.Token;
+
             await ListenAsync(token);
         }
 
@@ -65,22 +60,8 @@ namespace Imlight.Realm
                 if (!this._listening) continue;
 
                 // Accept socket.
-                var client = await _listener.AcceptTcpClientAsync().ConfigureAwait(false);
-                Log.Logger.Information($"New connection recieved from {client.Client.RemoteEndPoint}.");
-
-                // Create a socket object for the connection, and add it to the connections list.
-                var socket = new KISocket(this, client);
-                await _semaphore.WaitAsync();
-                try
-                {
-                    Sockets.Add(socket);
-                }
-                finally
-                {
-                    _semaphore.Release();
-                }
-
-                Task.Run(() => socket.OpenListenAsync(), token);
+                var socket = await _listener.AcceptSocketAsync();
+                Realm.Tell(new RegisterCommunicationActor(socket));
             }
         }
 
@@ -89,11 +70,6 @@ namespace Imlight.Realm
             this._listening = false;
             this._tokenSource.Cancel();
             _listener.Stop();
-
-            foreach (var client in Sockets)
-            {
-                client.Close();
-            }
         }
 
         public void Dispose()
@@ -101,6 +77,5 @@ namespace Imlight.Realm
             Stop();
             _tokenSource.Dispose();
         }
-
     }
 }

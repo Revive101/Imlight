@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Akka" Version="1.4.48" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Imlight.Common\Imlight.Common.csproj" />
+  </ItemGroup>
+
+</Project>
