@@ -5,23 +5,17 @@ VisualStudioVersion = 17.0.32112.339
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.Common", "Imlight.Common\Imlight.Common.csproj", "{314D6BF8-787D-4A08-AD12-E0BC073E6CC8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.Generator", "Imlight.Generator\Imlight.Generator.csproj", "{AB7D502A-0728-4793-B4DB-F9E9DDEEA156}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.Internals", "Imlight.Internals\Imlight.Internals.csproj", "{9FE46342-DBBF-4B7F-956D-00AA53A432FF}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.IO", "Imlight.IO\Imlight.IO.csproj", "{4EDF0055-418F-4E71-919F-1CFCD02BA023}"
-EndProject
-<<<<<<< Updated upstream
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.Backend", "Imlight.Backend\Imlight.Backend.csproj", "{3D9B7827-D908-4061-BA11-101611C648EC}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.Engine", "Imlight.Engine\Imlight.Engine.csproj", "{10F1D7A8-2693-41F2-95D1-512C2EEEADA4}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.Realm", "Imlight.Realm\Imlight.Realm.csproj", "{13F3917F-2B3D-468D-9FFB-42EAC84C1C35}"
-=======
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.Patch", "Imlight.Patch\Imlight.Patch.csproj", "{3FA9BAB5-EC35-4C8B-97B4-B203E7EA32BE}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.Net", "Imlight.Net\Imlight.Net.csproj", "{FA3E8F3C-9C24-4100-ABAA-EC76CF735EC5}"
->>>>>>> Stashed changes
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.Login", "Imlight.Login\Imlight.Login.csproj", "{3761D851-BD26-441F-851F-39C753590ADB}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WizUnraveler", "..\..\WizUnraveler\src\WizUnraveler\WizUnraveler.csproj", "{60ECCF77-E61E-419A-AB1E-4C15145E9862}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Imlight.Patch", "Imlight.Patch\Imlight.Patch.csproj", "{3FA9BAB5-EC35-4C8B-97B4-B203E7EA32BE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Imlight.Net", "Imlight.Net\Imlight.Net.csproj", "{FA3E8F3C-9C24-4100-ABAA-EC76CF735EC5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,36 +27,22 @@ Global
 		{314D6BF8-787D-4A08-AD12-E0BC073E6CC8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{314D6BF8-787D-4A08-AD12-E0BC073E6CC8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{314D6BF8-787D-4A08-AD12-E0BC073E6CC8}.Release|Any CPU.Build.0 = Release|Any CPU
-		{AB7D502A-0728-4793-B4DB-F9E9DDEEA156}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{AB7D502A-0728-4793-B4DB-F9E9DDEEA156}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{AB7D502A-0728-4793-B4DB-F9E9DDEEA156}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{AB7D502A-0728-4793-B4DB-F9E9DDEEA156}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9FE46342-DBBF-4B7F-956D-00AA53A432FF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9FE46342-DBBF-4B7F-956D-00AA53A432FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9FE46342-DBBF-4B7F-956D-00AA53A432FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9FE46342-DBBF-4B7F-956D-00AA53A432FF}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4EDF0055-418F-4E71-919F-1CFCD02BA023}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4EDF0055-418F-4E71-919F-1CFCD02BA023}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4EDF0055-418F-4E71-919F-1CFCD02BA023}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4EDF0055-418F-4E71-919F-1CFCD02BA023}.Release|Any CPU.Build.0 = Release|Any CPU
 		{3D9B7827-D908-4061-BA11-101611C648EC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3D9B7827-D908-4061-BA11-101611C648EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3D9B7827-D908-4061-BA11-101611C648EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3D9B7827-D908-4061-BA11-101611C648EC}.Release|Any CPU.Build.0 = Release|Any CPU
-		{10F1D7A8-2693-41F2-95D1-512C2EEEADA4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{10F1D7A8-2693-41F2-95D1-512C2EEEADA4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{10F1D7A8-2693-41F2-95D1-512C2EEEADA4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{10F1D7A8-2693-41F2-95D1-512C2EEEADA4}.Release|Any CPU.Build.0 = Release|Any CPU
 		{13F3917F-2B3D-468D-9FFB-42EAC84C1C35}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{13F3917F-2B3D-468D-9FFB-42EAC84C1C35}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{13F3917F-2B3D-468D-9FFB-42EAC84C1C35}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{13F3917F-2B3D-468D-9FFB-42EAC84C1C35}.Release|Any CPU.Build.0 = Release|Any CPU
-<<<<<<< Updated upstream
-=======
 		{3761D851-BD26-441F-851F-39C753590ADB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3761D851-BD26-441F-851F-39C753590ADB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3761D851-BD26-441F-851F-39C753590ADB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3761D851-BD26-441F-851F-39C753590ADB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{60ECCF77-E61E-419A-AB1E-4C15145E9862}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{60ECCF77-E61E-419A-AB1E-4C15145E9862}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{60ECCF77-E61E-419A-AB1E-4C15145E9862}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{60ECCF77-E61E-419A-AB1E-4C15145E9862}.Release|Any CPU.Build.0 = Release|Any CPU
 		{3FA9BAB5-EC35-4C8B-97B4-B203E7EA32BE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3FA9BAB5-EC35-4C8B-97B4-B203E7EA32BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3FA9BAB5-EC35-4C8B-97B4-B203E7EA32BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -71,7 +51,6 @@ Global
 		{FA3E8F3C-9C24-4100-ABAA-EC76CF735EC5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FA3E8F3C-9C24-4100-ABAA-EC76CF735EC5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FA3E8F3C-9C24-4100-ABAA-EC76CF735EC5}.Release|Any CPU.Build.0 = Release|Any CPU
->>>>>>> Stashed changes
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
