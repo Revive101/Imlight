@@ -2,19 +2,16 @@
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Serilog" Version="2.12.0" />
-    <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
+    <PackageReference Include="Akka" Version="1.4.48" />
     <PackageReference Include="WizUnraveler" Version="1.1.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Imlight.Common\Imlight.Common.csproj" />
-    <ProjectReference Include="..\Imlight.Engine\Imlight.Engine.csproj" />
-    <ProjectReference Include="..\Imlight.IO\Imlight.IO.csproj" />
+    <ProjectReference Include="..\Imlight.Net\Imlight.Net.csproj" />
   </ItemGroup>
 
 </Project>
