@@ -25,6 +25,7 @@ namespace Imlight.Net
         public Socket Socket { get; init; }
         public ushort SessionID { get; init; }
         public bool IsSessionValid { get; private set; }
+        public DateTime SessionStartTime { get; private set; }
 
         private IActorRef _prevSelf; // Weak solution.
         private bool _isSending;
@@ -232,6 +233,9 @@ namespace Imlight.Net
         {
             IsSessionValid = true;
 
+            long unixTime = ((long)message.TimestampUpper << 32) | (uint)message.TimestampLower;
+            SessionStartTime = DateTimeOffset.FromUnixTimeSeconds(unixTime).UtcDateTime;
+
             // Once the session is created, we need to send a heartbeat to keep it active.
             var heartbeatInterval = TimeSpan.FromSeconds(KEEP_ALIVE_INTERVAL);
             Context.System.Scheduler.ScheduleTellRepeatedly(
@@ -256,7 +260,12 @@ namespace Imlight.Net
                 return;
             }
 
-            var keepAliveRsp = new ControlMessages.KeepAliveResponse();
+            var keepAliveRsp = new ControlMessages.KeepAliveResponse()
+            {
+                SessionID = SessionID, 
+                Milliseconds = message.Milliseconds,
+                ElapsedSessionTime = message.ElapsedSessionTime
+            };
             Send(keepAliveRsp);
         }
 
