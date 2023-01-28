@@ -15,12 +15,11 @@ namespace Imlight.Net
     /// </summary>
     public abstract class ServerReceiverActor : ReceiveActor
     {
-        protected const byte SESSION_TIMEOUT_TIME = 10;
-
         public string Name { get; init; }
         public sbyte ID { get; init; }
         protected TcpServer Server { get; init; }
         protected Dictionary<Session, IActorRef> CommunicationActors { get; init; }
+        private long _serverStartTime;
 
         public ServerReceiverActor(string Name, sbyte ID, ushort port)
         {
@@ -28,6 +27,7 @@ namespace Imlight.Net
             this.ID = ID;
             this.Server = new TcpServer(Self, port);
             this.CommunicationActors = new Dictionary<Session, IActorRef>();
+            this._serverStartTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
             ConfigureReceivers();
 
@@ -58,13 +58,22 @@ namespace Imlight.Net
         }
 
         /// <summary>
+        /// Gets the time in milliseconds the server has elapsed.
+        /// </summary>
+        /// <returns></returns>
+        public long ServerElapsed()
+        {
+            return DateTimeOffset.Now.ToUnixTimeMilliseconds() - _serverStartTime;
+        }
+
+        /// <summary>
         /// Configures all Server receivers. If overridden, highly recommended as to keep `base.ConfigureRecivers()`, otherwise 
         /// CommunicationActors may not be registered.
         /// </summary>
         protected virtual void ConfigureReceivers()
         {
             Receive<RegisterCommunicationActor>(x => ReceiveRegisterCommunicationActor(x));
-            Receive<ControlMessages.SessionAccept>(x => ReceiveSessionAccept(x));
+
             Receive<GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT>(x => ReceiveClientDisconnect(x));
         }
 
@@ -79,36 +88,21 @@ namespace Imlight.Net
             var session = new Session(id);
 
             // Create a new CommunicationActor, and as a name we'll just use the session ID.
-            var actorProps = CommunicationActor.Props(message.Socket, id);
+            var actorProps = CommunicationActor.Props(message.Socket, id, this);
             var actor = Context.ActorOf(actorProps, id.ToString());
             CommunicationActors.Add(session, actor);
 
             // This is just for debugging purposes and can be removed for release builds.
             Context.Watch(actor);
 
-            Log.Logger.Verbose($"ServerReceiverActor [{Name}] accepts new CommunicationActor:" +
+            Log.Logger.Verbose($"ServerReceiverActor [{Name}] accepted new CommunicationActor:" +
                 $"\n\t\tIP: {message.Socket.RemoteEndPoint}" +
                 $"\n\t\tID: {id}");
         }
 
-        private void ReceiveSessionAccept(ControlMessages.SessionAccept message)
-        {
-            var session = GetActorSession(Context.Sender);
-            if (session is null)
-            {
-                Log.Logger.Error($"ServerReceiverActor [{Name}] received SessionAccept" +
-                    $" for session ID [{message.SessionID}], but no session was found.");
-                return;
-            }
-
-            session.SetHandshakeValid();
-
-            Log.Logger.Debug($"CommunicationActor [{message.SessionID}] session made.");
-        }
-
         private void ReceiveClientDisconnect(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT message)
         {
-
+            Context.Sender.GracefulStop(TimeSpan.FromSeconds(1));
         }
 
         /// <summary>
