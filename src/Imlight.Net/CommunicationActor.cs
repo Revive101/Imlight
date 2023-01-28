@@ -5,73 +5,48 @@ using System.Buffers;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 using WizUnraveler;
 using WizUnraveler.DML;
-using WizUnraveler.Cache;
-using Imlight.Realm.Messages;
 
-namespace Imlight.Realm
+namespace Imlight.Net
 {
     /// <summary>
     /// The CommunicationActor is resposible for managing a socket connection and communication.
     /// </summary>
-    internal class CommunicationActor : ReceiveActor
+    public class CommunicationActor : ReceiveActor
     {
         private const bool DISPOSE_ON_UNHANDLED_EXCEPTION = true;
         private const int BUFFER_SIZE = 4096;
 
         public Socket Socket { get; init; }
         public ushort SessionID { get; init; }
-        // Set-once properties.
-        public bool SessionAgreed 
-        { 
-            get 
-            { 
-                return _sessionAgreed; 
-            } 
-            set 
-            { 
-                if (!_sessionAgreed) _sessionAgreed = true; 
-            } 
-        }
-        public bool WaitingForSessionAgreement 
-        { 
-            get 
-            { 
-                return _waitingForSessionAgreement;  
-            } 
-            set 
-            { 
-                if (!_waitingForSessionAgreement) _waitingForSessionAgreement = value; 
-            } 
-        }
 
         //@todo: Add PlayerActor or LoginUserActor.
 
         private bool _isOpen;
-        private bool _sessionAgreed;
-        private bool _waitingForSessionAgreement;
-        private IActorRef _realmActor;
+        private bool _sessionValid;
+        private IActorRef _serverActor;
         private IActorRef _prevSelf; // Weak solution.
         private bool _isSending;
         private readonly SocketAsyncEventArgs _sendEventArgs = new SocketAsyncEventArgs();
+        private readonly CancellationTokenSource _cts = new CancellationTokenSource();
 
-        public CommunicationActor(Socket Socket, ushort SessionID, IActorRef realmActor)
+        public CommunicationActor(Socket Socket, ushort SessionID)
         {
             this.Socket = Socket;
             this.SessionID = SessionID;
-            this._realmActor = realmActor;
+            this._serverActor = Context.Parent;
             this._isOpen = true;
 
-            Log.Logger.Information($"CommunicationActor [{SessionID}] created for connection [{Socket.RemoteEndPoint}]");
-
+            SendSessionOffer();
             Become(ListenAndProcess);
         }
 
-        public static Props Props(Socket Socket, ushort SessionID, IActorRef realmActor)
+        public static Props Props(Socket Socket, ushort SessionID)
         {
-            return Akka.Actor.Props.Create(() => new CommunicationActor(Socket, SessionID, realmActor));
+            return Akka.Actor.Props.Create(() => new CommunicationActor(Socket, SessionID));
         }
 
         private void ListenAndProcess()
@@ -79,51 +54,37 @@ namespace Imlight.Realm
             this._prevSelf = Self;
             ConfigureReceivers();
 
-            while (_isOpen && Socket.Connected)
+            while (!_cts.Token.IsCancellationRequested)
             {
-                var buffer = ArrayPool<byte>.Shared.Rent(BUFFER_SIZE);
+                var buffer = new byte[BUFFER_SIZE];
 
                 try
                 {
-                    using (var socketEventArgs = new SocketAsyncEventArgs())
-                    {
-                        socketEventArgs.SetBuffer(buffer, 0, buffer.Length);
-                        socketEventArgs.UserToken = Socket;
-                        socketEventArgs.SocketFlags = SocketFlags.None;
-                        socketEventArgs.Completed += ProcessReceive;
+                    using var socketEventArgs = new SocketAsyncEventArgs();
+                    socketEventArgs.SetBuffer(buffer, 0, buffer.Length);
+                    socketEventArgs.UserToken = Socket;
+                    socketEventArgs.SocketFlags = SocketFlags.None;
+                    socketEventArgs.Completed += ProcessReceive;
 
-                        if (!Socket.ReceiveAsync(socketEventArgs))
-                        {
-                            ProcessReceive(null, socketEventArgs);
-                        }
+                    if (!Socket.ReceiveAsync(socketEventArgs))
+                    {
+                        ProcessReceive(null, socketEventArgs);
                     }
-                }
-                catch (IOException)
-                {
-                    Log.Logger.Warning($"CommunicationActor [{SessionID}] connection forcibly closed by remote host. Dropping client.");
-                    break;
                 }
                 catch (Exception ex)
                 {
-                    Log.Logger.Error($"CommunicationActor [{SessionID}] unhandled listen error: {ex.Message}");
-                    if (DISPOSE_ON_UNHANDLED_EXCEPTION) break;
-                }
-                finally
-                {
-                    _isOpen = false;
-                    ArrayPool<byte>.Shared.Return(buffer);
+                    HandleError(ex);
                 }
             }
+
+            Log.Logger.Warning($"CommunicationActor [{SessionID}] closed and listen loop stopped.");
         }
 
         private void ProcessReceive(object sender, SocketAsyncEventArgs e)
         {
             if (e.BytesTransferred > 0 && e.SocketError == SocketError.Success)
             {
-                var buffer = e.Buffer;
-                var receivedBytes = e.BytesTransferred;
-
-                // Process the received data.
+                var buffer = new ReadOnlySpan<byte>(e.Buffer, 0, e.BytesTransferred).ToArray();
                 if (!IsKIPacket(buffer) || !TryDeserializePacket(buffer, out var record))
                 {
                     Log.Logger.Error($"CommunicationActor [{SessionID}] received non-KINP packet.");
@@ -135,31 +96,49 @@ namespace Imlight.Realm
                     .GetType()
                     .ToString()
                     .Split('.')[^1];
-                Log.Logger.Debug($"CommunicationActor [{SessionID}] received message [{scopedMessageName}]");
+                Log.Logger.Verbose($"CommunicationActor [{SessionID}] received message [{scopedMessageName}]");
 
-                // If this session still is not set, ignore the first message and do handshake.
-                if (!SessionAgreed)
-                {
-                    SendHandshake();
-                    return;
-                }
-
-                _realmActor.Tell(record, _prevSelf);
+                // Return the decoded data to the ServerReceiverActor.
+                _serverActor.Tell(record, _prevSelf);
             }
             else if (e.SocketError != SocketError.Success)
             {
-                Log.Logger.Warning($"CommunicationActor [{SessionID}] error: {e.SocketError}");
+                HandleError(e.SocketError);
+            }
+        }
+
+        private void HandleError(Exception ex)
+        {
+            Log.Logger.Error($"CommunicationActor [{SessionID}] unhandled listen error: {ex.Message}");
+            if (DISPOSE_ON_UNHANDLED_EXCEPTION)
+            {
                 _isOpen = false;
+                _cts.Cancel();
                 _prevSelf.GracefulStop(TimeSpan.FromSeconds(1));
             }
         }
 
-        public async Task SendAsync(INetworkMessage message)
+        private void HandleError(SocketError error)
         {
+            Log.Logger.Warning($"CommunicationActor [{SessionID}] socket error: {error}");
+            _isOpen = false;
+            _cts.Cancel();
+            _prevSelf.GracefulStop(TimeSpan.FromSeconds(1));
+        }
+
+        public void Send(INetworkMessage message)
+        {
+            if (!Socket.Connected)
+            {
+                Log.Logger.Error($"CommunicationActor [{SessionID}] send failure: " +
+                    $"Socket is not connected!");
+                return;
+            }
             if (_isSending)
             {
                 Log.Logger.Error($"CommunicationActor [{SessionID}] send failure: " +
                     $"Asynchronous send operation already in progress.");
+                return;
             }
 
             var data = MessageSerializer.SerializeMessageBinary(message);
@@ -178,7 +157,7 @@ namespace Imlight.Realm
                 .GetType()
                 .ToString()
                 .Split('.')[^1];
-            Log.Logger.Debug($"CommunicationActor [{SessionID}] send message [{scopedMessageName}]");
+            Log.Logger.Verbose($"CommunicationActor [{SessionID}] send message [{scopedMessageName}]");
         }
 
         private void SendEventArgs_Completed(object sender, SocketAsyncEventArgs e)
@@ -191,20 +170,19 @@ namespace Imlight.Realm
             }
         }
 
-        private void ConfigureReceivers()
+        private void SendSessionOffer()
         {
-            Receive<INetworkMessage>(x => Task.Run(() => SendAsync(x)));
-        }
-
-        private async void SendHandshake()
-        {
-            var offer = new ControlMessages.SessionOffer()
+            var sessionOffer = new ControlMessages.SessionOffer()
             {
                 SessionID = SessionID,
-                Unknown1 = 0,
             };
-            await SendAsync(offer);
-            SessionAgreed = true;
+
+            Send(sessionOffer);
+        }
+
+        private void ConfigureReceivers()
+        {
+            Receive<INetworkMessage>(x => Task.Run(() => Send(x)));
         }
 
         protected override void Unhandled(object message)

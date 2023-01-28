@@ -1,6 +1,8 @@
 ﻿using System;
 using Imlight.Realm;
 using Imlight.Common;
+using Imlight.Patch;
+using Imlight.Net;
 using System.Diagnostics;
 using System.Collections.Generic;
 using Akka;
@@ -16,9 +18,10 @@ namespace Imlight.Backend
 
         static void Main(string[] args)
         {
-            //PrintTitle();
+            PrintTitle();
             _mainActorSystem = ActorSystem.Create("ImlightSystem");
-            var realmActor = _mainActorSystem.ActorOf(RealmActor.Props("Developer", 0), "Developer");
+            var realmManagerActor = _mainActorSystem.ActorOf(RealmManagerActor.Props("DeveloperRealm", 0, 12000), "DeveloperRealm");
+            //var patchManagerActor = _mainActorSystem.ActorOf(PatchManagerActor.Props("DeveloperPatch", 1, 12600), "DeveloperPatch");
 
             Console.ReadKey();
         }

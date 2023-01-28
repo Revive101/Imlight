@@ -6,23 +6,22 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using Imlight.Realm.Messages;
 
-namespace Imlight.Realm
+namespace Imlight.Net
 {
-    internal class TcpServer : IDisposable
+    public class TcpServer : IDisposable
     {
-        internal const ushort DEFAULT_PORT = 12000;
+        public const ushort DEFAULT_PORT = 12000;
 
         private readonly TcpListener _listener;
         private readonly CancellationTokenSource _tokenSource;
         private bool _listening;
-        internal readonly IActorRef Realm;
+        internal readonly IActorRef ActorManager;
 
         // Constructor
-        internal TcpServer(IActorRef realm, int port = DEFAULT_PORT)
+        public TcpServer(IActorRef realm, int port = DEFAULT_PORT)
         {
-            this.Realm = realm;
+            this.ActorManager = realm;
 
             // Listen to all IPs
             var ip = IPAddress.Parse("0.0.0.0");
@@ -38,7 +37,7 @@ namespace Imlight.Realm
         /// Starts the TCP server.
         /// </summary>
         /// <returns></returns>
-        internal async void Start()
+        public async void Start()
         {
             this._listening = true;
             this._listener.Start();
@@ -61,11 +60,11 @@ namespace Imlight.Realm
 
                 // Accept socket.
                 var socket = await _listener.AcceptSocketAsync();
-                Realm.Tell(new RegisterCommunicationActor(socket));
+                ActorManager.Tell(new RegisterCommunicationActor(socket));
             }
         }
 
-        internal void Stop()
+        public void Stop()
         {
             this._listening = false;
             this._tokenSource.Cancel();

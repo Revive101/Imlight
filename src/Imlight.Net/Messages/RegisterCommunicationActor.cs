@@ -5,13 +5,12 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
-using WizUnraveler.DML;
 
-namespace Imlight.Realm.Messages
+namespace Imlight.Net
 {
-    internal class RegisterCommunicationActor
+    public class RegisterCommunicationActor
     {
-        internal Socket Socket { get; init; }
+        public Socket Socket { get; init; }
 
         public RegisterCommunicationActor(Socket Socket)
         {
