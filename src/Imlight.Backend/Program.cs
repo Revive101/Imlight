@@ -30,8 +30,8 @@ namespace Imlight.Backend
         {
             // I just like having fun.
             Log.Logger.Information(@"==============================================================================================");
-            Log.Logger.Information(@"  ______ __       __ __         ______   ______   __    __  ________");
-            Log.Logger.Information(@" /      |/ \     /  |/  |      /      | /      \ /  |  /  |/       |");
+            Log.Logger.Information(@" ______  __       __  __        ______   ______   __    __  ________");
+            Log.Logger.Information(@"/      |/  \     /  |/  |      /      | /      \ /  |  /  |/       |");
             Log.Logger.Information(@"$$$$$$/ $$  \   /$$ |$$ |      $$$$$$/ /$$$$$$  |$$ |  $$ |$$$$$$$$/");
             Log.Logger.Information(@"  $$ |  $$$  \ /$$$ |$$ |        $$ |  $$ | _$$/ $$ |__$$ |   $$ |");
             Log.Logger.Information(@"  $$ |  $$$$  /$$$$ |$$ |        $$ |  $$ |/    |$$    $$ |   $$ |");

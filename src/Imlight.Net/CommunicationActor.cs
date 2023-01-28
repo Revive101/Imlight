@@ -8,6 +8,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using WizUnraveler;
+using WizUnraveler.Cache;
 using WizUnraveler.DML;
 
 namespace Imlight.Net
@@ -19,7 +20,7 @@ namespace Imlight.Net
     {
         private const bool DISPOSE_ON_UNHANDLED_EXCEPTION = true;
         private const int BUFFER_SIZE = 4096;
-        private const byte KEEP_ALIVE_INTERVAL = 10;     // In seconds
+        private const byte KEEP_ALIVE_INTERVAL = 60;     // In seconds
         private const byte KEEP_ALIVE_RSP_WAIT_TIME = 5; // In seconds
 
         public Socket Socket { get; init; }
@@ -27,7 +28,6 @@ namespace Imlight.Net
         public bool IsSessionValid { get; private set; }
         public DateTime SessionStartTime { get; private set; }
 
-        private IActorRef _prevSelf; // Weak solution.
         private bool _isSending;
         private bool _isWaitingForHeartbeatResponse;
         private readonly ServerReceiverActor _server;
@@ -42,11 +42,12 @@ namespace Imlight.Net
             this._server = server;
             this._serverActor = Context.Parent;
 
-            _prevSelf = Self;
+            var self = Context;
 
             ConfigureReceivers();
             SendSessionOffer();
-            ListenAndProcess();
+
+            Task.Factory.StartNew(() => ListenAndProcess(self));
         }
 
         public static Props Props(Socket Socket, ushort SessionID, ServerReceiverActor server)
@@ -90,8 +91,9 @@ namespace Imlight.Net
 
         public void Close()
         {
+            Socket.Close();
             _cts.Cancel();
-            _prevSelf.GracefulStop(TimeSpan.FromSeconds(1));
+            Context.Stop(Self);
         }
 
         protected override void Unhandled(object message)
@@ -102,14 +104,14 @@ namespace Imlight.Net
 
         private void ConfigureReceivers()
         {
-            // If we don't receive a KeepAliveRsp by now, drop this connection.
             Receive<string>(s => s == "KeepAliveHeartbeat", x => SendHeartbeat());
             Receive<string>(s => s == "KeepAliveEndTimes" && _isWaitingForHeartbeatResponse, x => Close());
+            Receive<string>(s => s == "Close", x => Close());
 
             Receive<INetworkMessage>(x => Send(x));
         }
 
-        private void ListenAndProcess()
+        private void ListenAndProcess(IUntypedActorContext context)
         {
             while (!_cts.Token.IsCancellationRequested)
             {
@@ -137,19 +139,24 @@ namespace Imlight.Net
 
                     // If the message received is a control message, the CommunicationActor can handle it.
                     if (record.ServiceID == 0)
-                        HandleControlMessage(record);
+                        HandleControlMessage(record, context);
+                    else if (record.GetType() == typeof(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT))
+                        break;
                     else
-                        _serverActor.Tell(record, _prevSelf);
-                }
-                catch (SocketException ex)
-                {
-                    HandleError(ex);
+                        _serverActor.Tell(record, context.Self);
                 }
                 catch (Exception ex)
                 {
-                    HandleError(ex);
+                    Log.Logger.Error($"CommunicationActor [{SessionID}] socket error: {ex.Message}");
+
+                    if (DISPOSE_ON_UNHANDLED_EXCEPTION)
+                    {
+                        break;
+                    }
                 }
             }
+
+            context.Self.Tell("Close");
         }
 
         private void SendEventArgs_Completed(object sender, SocketAsyncEventArgs e)
@@ -162,33 +169,18 @@ namespace Imlight.Net
             }
         }
 
-        private void HandleError(Exception ex)
-        {
-            Log.Logger.Error($"CommunicationActor [{SessionID}] unhandled listen error: {ex.Message}");
-            if (DISPOSE_ON_UNHANDLED_EXCEPTION)
-            {
-                Close();
-            }
-        }
-
-        private void HandleError(SocketError error)
-        {
-            Log.Logger.Warning($"CommunicationActor [{SessionID}] socket error: {error}");
-            Close();
-        }
-
-        private void HandleControlMessage(INetworkMessage message)
+        private void HandleControlMessage(INetworkMessage message, IUntypedActorContext context)
         {
             switch (message.MessageOrder)
             {
                 case 3:
-                    ReceiveKeepAlive((ControlMessages.KeepAlive)message);
+                    ReceiveKeepAlive((ControlMessages.KeepAlive)message, context);
                     break;
                 case 4:
-                    ReceiveKeepAliveRsp((ControlMessages.KeepAliveResponse)message);
+                    ReceiveKeepAliveRsp((ControlMessages.KeepAliveResponse)message, context);
                     break;
                 case 5:
-                    ReceiveSessionAccept((ControlMessages.SessionAccept)message);
+                    ReceiveSessionAccept((ControlMessages.SessionAccept)message, context);
                     break;
             }
         }
@@ -212,7 +204,7 @@ namespace Imlight.Net
             }
 
             // We're going to send a heartbeat to our connected session.
-            // If we don't receive a response for `KEEP_ALIVE_RSP_WAIT_TIME`, we'll drop the session.
+            // If we don't receive a response for `KEEP_ALIVE_RSP_WAIT_TIME` time, we'll drop the session.
             _isWaitingForHeartbeatResponse = true;
 
             var keepAlive = new ControlMessages.KeepAliveServer()
@@ -226,11 +218,12 @@ namespace Imlight.Net
             // Send message to self after x seconds to remind CommunicationActor to check
             // the status of that KeepAlive.
             var reminderTime = TimeSpan.FromSeconds(KEEP_ALIVE_RSP_WAIT_TIME);
-            Context.System.Scheduler.ScheduleTellOnce(reminderTime, _prevSelf, "KeepAliveEndTimes", _prevSelf);
+            Context.System.Scheduler.ScheduleTellOnce(reminderTime, Self, "KeepAliveEndTimes", Self);
         }
 
-        private void ReceiveSessionAccept(ControlMessages.SessionAccept message)
+        private void ReceiveSessionAccept(ControlMessages.SessionAccept message, IUntypedActorContext context)
         {
+            if (IsSessionValid) return;
             IsSessionValid = true;
 
             long unixTime = ((long)message.TimestampUpper << 32) | (uint)message.TimestampLower;
@@ -238,25 +231,25 @@ namespace Imlight.Net
 
             // Once the session is created, we need to send a heartbeat to keep it active.
             var heartbeatInterval = TimeSpan.FromSeconds(KEEP_ALIVE_INTERVAL);
-            Context.System.Scheduler.ScheduleTellRepeatedly(
+            context.System.Scheduler.ScheduleTellRepeatedly(
                 heartbeatInterval, 
                 heartbeatInterval,
-                Self, 
+                context.Self,
                 "KeepAliveHeartbeat",
-                ActorRefs.NoSender);
+                context.Self);
 
             // Log
-            Log.Logger.Information($"CommunicationActor [{SessionID}] session created.");
+            Log.Logger.Debug($"CommunicationActor [{SessionID}] session created.");
         }
 
-        private void ReceiveKeepAlive(ControlMessages.KeepAlive message)
+        private void ReceiveKeepAlive(ControlMessages.KeepAlive message, IUntypedActorContext context)
         {
             if (message.SessionID != SessionID)
             {
                 Log.Logger.Error($"CommunicationActor [{SessionID}] received misaligned Session ID. The connection will be dropped." +
                     $"\n\t\tReceived: {message.SessionID}");
 
-                _prevSelf.GracefulStop(TimeSpan.FromSeconds(1));
+                Close();
                 return;
             }
 
@@ -269,7 +262,7 @@ namespace Imlight.Net
             Send(keepAliveRsp);
         }
 
-        private void ReceiveKeepAliveRsp(ControlMessages.KeepAliveResponse message)
+        private void ReceiveKeepAliveRsp(ControlMessages.KeepAliveResponse message, IUntypedActorContext context)
         {
             _isWaitingForHeartbeatResponse = false;
         }
