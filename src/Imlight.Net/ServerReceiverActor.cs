@@ -47,6 +47,12 @@ namespace Imlight.Net
         protected virtual void ConfigureReceivers()
         {
             Receive<RegisterCommunicationActor>(x => ReceiveRegisterCommunicationActor(x));
+            Receive<Terminated>(t => Log.Logger.Debug($"Actor [{t.ActorRef.Path}] terminated."));
+            // Respond to generic ping messages.
+            Receive<SYSTEM_1_PROTOCOL.MSG_PING>(x =>
+            {
+                Sender.Tell(new SYSTEM_1_PROTOCOL.MSG_PING_RSP());
+            });
         }
 
         /// <summary>

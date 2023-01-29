@@ -2,6 +2,7 @@
 using Imlight.Common;
 using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
@@ -20,16 +21,20 @@ namespace Imlight.Net
     {
         private const bool DISPOSE_ON_UNHANDLED_EXCEPTION = true;
         private const int BUFFER_SIZE = 4096;
-        private const byte KEEP_ALIVE_INTERVAL = 60;     // In seconds
-        private const byte KEEP_ALIVE_RSP_WAIT_TIME = 5; // In seconds
+        private const byte KEEP_ALIVE_INTERVAL = 60;       // In seconds
+        private const byte KEEP_ALIVE_RSP_WAIT_TIME = 10;  // In seconds
+        private const byte KEEP_ALIVE_REVIVE_ATTEMPTS = 3; // The amount of times the server will try to revive a connection.
 
         public Socket Socket { get; init; }
         public ushort SessionID { get; init; }
-        public bool IsSessionValid { get; private set; }
+        public bool SessionValid { get; private set; }
         public DateTime SessionStartTime { get; private set; }
+        public uint SessionMilliseconds { get; private set; }
 
         private bool _isSending;
         private bool _isWaitingForHeartbeatResponse;
+        private byte _currentKeepAliveReviveAttempts;
+        private List<INetworkMessage> _preliminaryMessages;
         private readonly ServerReceiverActor _server;
         private readonly IActorRef _serverActor;
         private readonly SocketAsyncEventArgs _sendEventArgs = new SocketAsyncEventArgs();
@@ -41,6 +46,8 @@ namespace Imlight.Net
             this.SessionID = SessionID;
             this._server = server;
             this._serverActor = Context.Parent;
+            this.SessionValid = false;
+            this._preliminaryMessages = new List<INetworkMessage>();
 
             var self = Context;
 
@@ -83,9 +90,7 @@ namespace Imlight.Net
             }
 
             var scopedMessageName = message
-                .GetType()
-                .ToString()
-                .Split('.')[^1];
+                .GetType().ToString().Split('.')[^1];
             Log.Logger.Verbose($"CommunicationActor [{SessionID}] send message [{scopedMessageName}]");
         }
 
@@ -105,7 +110,7 @@ namespace Imlight.Net
         private void ConfigureReceivers()
         {
             Receive<string>(s => s == "KeepAliveHeartbeat", x => SendHeartbeat());
-            Receive<string>(s => s == "KeepAliveEndTimes" && _isWaitingForHeartbeatResponse, x => Close());
+            Receive<string>(s => s == "KeepAliveEndTimes", x => ReceiveKeepAliveEndTimes());
             Receive<string>(s => s == "Close", x => Close());
 
             Receive<INetworkMessage>(x => Send(x));
@@ -132,9 +137,7 @@ namespace Imlight.Net
 
                     // Log
                     var scopedMessageName = record
-                        .GetType()
-                        .ToString()
-                        .Split('.')[^1];
+                        .GetType().ToString().Split('.')[^1];
                     Log.Logger.Verbose($"CommunicationActor [{SessionID}] received message [{scopedMessageName}]");
 
                     // If the message received is a control message, the CommunicationActor can handle it.
@@ -142,8 +145,12 @@ namespace Imlight.Net
                         HandleControlMessage(record, context);
                     else if (record.GetType() == typeof(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT))
                         break;
-                    else
+                    else if (SessionValid)
                         _serverActor.Tell(record, context.Self);
+                    else
+                        // If we receive a message before the session is created,
+                        // we'll save it and respond once the handshake is complete.
+                        _preliminaryMessages.Add(record);
                 }
                 catch (Exception ex)
                 {
@@ -197,7 +204,7 @@ namespace Imlight.Net
 
         private void SendHeartbeat()
         {
-            if (!IsSessionValid)
+            if (!SessionValid)
             {
                 Log.Logger.Error($"CommunicationActor [{SessionID}] tried to send heartbeat to an invalid session.");
                 return;
@@ -219,27 +226,6 @@ namespace Imlight.Net
             // the status of that KeepAlive.
             var reminderTime = TimeSpan.FromSeconds(KEEP_ALIVE_RSP_WAIT_TIME);
             Context.System.Scheduler.ScheduleTellOnce(reminderTime, Self, "KeepAliveEndTimes", Self);
-        }
-
-        private void ReceiveSessionAccept(ControlMessages.SessionAccept message, IUntypedActorContext context)
-        {
-            if (IsSessionValid) return;
-            IsSessionValid = true;
-
-            long unixTime = ((long)message.TimestampUpper << 32) | (uint)message.TimestampLower;
-            SessionStartTime = DateTimeOffset.FromUnixTimeSeconds(unixTime).UtcDateTime;
-
-            // Once the session is created, we need to send a heartbeat to keep it active.
-            var heartbeatInterval = TimeSpan.FromSeconds(KEEP_ALIVE_INTERVAL);
-            context.System.Scheduler.ScheduleTellRepeatedly(
-                heartbeatInterval, 
-                heartbeatInterval,
-                context.Self,
-                "KeepAliveHeartbeat",
-                context.Self);
-
-            // Log
-            Log.Logger.Debug($"CommunicationActor [{SessionID}] session created.");
         }
 
         private void ReceiveKeepAlive(ControlMessages.KeepAlive message, IUntypedActorContext context)
@@ -265,6 +251,53 @@ namespace Imlight.Net
         private void ReceiveKeepAliveRsp(ControlMessages.KeepAliveResponse message, IUntypedActorContext context)
         {
             _isWaitingForHeartbeatResponse = false;
+            _currentKeepAliveReviveAttempts = 0;
+        }
+
+        private void ReceiveSessionAccept(ControlMessages.SessionAccept message, IUntypedActorContext context)
+        {
+            _isWaitingForHeartbeatResponse = false;
+            _currentKeepAliveReviveAttempts = 0;
+            SessionValid = true;
+
+            long unixTime = ((long)message.TimestampUpper << 32) | (uint)message.TimestampLower;
+            SessionStartTime = DateTimeOffset.FromUnixTimeSeconds(unixTime).UtcDateTime;
+            SessionMilliseconds = message.Milliseconds;
+
+            // Log
+            Log.Logger.Debug($"CommunicationActor [{SessionID}] session created.");
+
+            // Repsond to any preliminary messages.
+            foreach (var prelimMessage in _preliminaryMessages)
+            {
+                _serverActor.Tell(prelimMessage, context.Self);
+            }
+            _preliminaryMessages.Clear();
+
+            // Once the session is created, we need to send a heartbeat to keep it active.
+            var heartbeatInterval = TimeSpan.FromSeconds(KEEP_ALIVE_INTERVAL);
+            context.System.Scheduler.ScheduleTellRepeatedly(
+                heartbeatInterval,
+                heartbeatInterval,
+                context.Self,
+                "KeepAliveHeartbeat",
+                context.Self);
+        }
+
+        private void ReceiveKeepAliveEndTimes()
+        {
+            if (_isWaitingForHeartbeatResponse)
+            {
+                if (_currentKeepAliveReviveAttempts == KEEP_ALIVE_REVIVE_ATTEMPTS)
+                {
+                    Close();
+                }
+                else
+                {
+                    SendSessionOffer();
+                    _currentKeepAliveReviveAttempts++;
+                }
+            }
         }
 
         private bool TryDeserializePacket(byte[] buffer, out INetworkMessage message)
