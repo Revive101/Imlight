@@ -24,21 +24,24 @@ namespace Imlight.Patch
         {
             base.ConfigureReceivers();
 
-            Receive<PATCH_8_PROTOCOL.MSG_LATEST_FILE_LIST_V2>(x =>
+            Receive<CommunicationDMLContext>(x => x.Is(typeof(PATCH_8_PROTOCOL.MSG_LATEST_FILE_LIST_V2)), x => ReceiveLatestFileList(x));
+        }
+
+        private void ReceiveLatestFileList(CommunicationDMLContext message)
+        {
+            var msg = (PATCH_8_PROTOCOL.MSG_LATEST_FILE_LIST_V2)message.Message;
+            Sender.Tell(new PATCH_8_PROTOCOL.MSG_LATEST_FILE_LIST_V2()
             {
-                Sender.Tell(new PATCH_8_PROTOCOL.MSG_LATEST_FILE_LIST_V2()
-                {
-                    // Test.
-                    ListFileType = 2,
-                    LatestVersion = 1,
-                    ListFileSize = 867048,
-                    ListFileCRC = 0x53f5404c,
-                    ListFileName = "LatestFileList.bin",
-                    ListFileURL = @"C:\ProgramData\KingsIsle Entertainment\Wizard101(IT)\PatchInfo\LatestFileList_English.bin",
-                    URLPrefix = "http://dlcl.gfsrv.net/wizard101en/patch/LatestBuild",
-                    URLSuffix = "",
-                    ListFileTime = 0
-                });
+                // Test.
+                ListFileType = 2,
+                LatestVersion = 1,
+                ListFileSize = 39528,
+                ListFileCRC = 0x9ceb63d7,
+                ListFileName = "LatestFileList.bin",
+                ListFileURL = "https://fastupload.io/download/1k0emb0gyzVb4/4QGd0qhSJITfgmZ/LatestFileList.bin",
+                URLPrefix = @"D:\Wizard101(EN)",
+                URLSuffix = "",
+                ListFileTime = 0
             });
         }
     }
