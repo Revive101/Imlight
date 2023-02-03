@@ -1,5 +1,6 @@
 ﻿using Akka.Actor;
 using Imlight.Common;
+using Imlight.Net.Messages;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -47,9 +48,11 @@ namespace Imlight.Net
         protected virtual void ConfigureReceivers()
         {
             Receive<RegisterCommunicationActor>(x => ReceiveRegisterCommunicationActor(x));
+            Receive<ClientConnected>(x => ReceiveClientConnected(x));
             Receive<Terminated>(t => Log.Logger.Debug($"Actor [{t.ActorRef.Path}] terminated."));
+
             // Respond to generic ping messages.
-            Receive<SYSTEM_1_PROTOCOL.MSG_PING>(x =>
+            Receive<CommunicationDMLContext>(x => x.Is(typeof(SYSTEM_1_PROTOCOL.MSG_PING)), x =>
             {
                 Sender.Tell(new SYSTEM_1_PROTOCOL.MSG_PING_RSP());
             });
@@ -73,6 +76,17 @@ namespace Imlight.Net
             Log.Logger.Verbose($"ServerReceiverActor [{Name}] accepted new CommunicationActor:" +
                 $"\n\t\tIP: {message.Socket.RemoteEndPoint}" +
                 $"\n\t\tID: {id}");
+        }
+
+        /// <summary>
+        /// Message handler for ClientConnected, which is received when a CommunicationActor successfully initializes a session.
+        /// </summary>
+        /// <param name="message"></param>
+        protected virtual void ReceiveClientConnected(ClientConnected message)
+        {
+            // Log
+            var ip = message.Socket.RemoteEndPoint.ToString();
+            Log.Logger.Information($"ServerReceiverActor [{Name}] client connected from [{ip}]");
         }
 
         /// <summary>

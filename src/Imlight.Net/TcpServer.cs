@@ -1,5 +1,6 @@
 ﻿using Akka.Actor;
 using Imlight.Common;
+using Imlight.Net.Messages;
 using System;
 using System.Collections.Generic;
 using System.Net;

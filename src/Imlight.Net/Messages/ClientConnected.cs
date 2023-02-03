@@ -1,5 +1,4 @@
-﻿using Akka.Actor;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
@@ -8,13 +7,13 @@ using System.Threading.Tasks;
 
 namespace Imlight.Net.Messages
 {
-    public class RegisterCommunicationActor
+    public class ClientConnected
     {
         public Socket Socket { get; init; }
 
-        public RegisterCommunicationActor(Socket Socket)
+        public ClientConnected(Socket socket)
         {
-            this.Socket = Socket;
+            Socket = socket;
         }
     }
 }
