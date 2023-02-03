@@ -1,9 +1,8 @@
 ﻿using Akka.Actor;
 using Imlight.Common;
+using Imlight.Net.Messages;
 using System;
-using System.Buffers;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
@@ -28,13 +27,12 @@ namespace Imlight.Net
         public Socket Socket { get; init; }
         public ushort SessionID { get; init; }
         public bool SessionValid { get; private set; }
-        public DateTime SessionStartTime { get; private set; }
+        public uint SessionStartTime { get; private set; }
         public uint SessionMilliseconds { get; private set; }
 
         private bool _isSending;
         private bool _isWaitingForHeartbeatResponse;
         private byte _currentKeepAliveReviveAttempts;
-        private List<INetworkMessage> _preliminaryMessages;
         private readonly ServerReceiverActor _server;
         private readonly IActorRef _serverActor;
         private readonly SocketAsyncEventArgs _sendEventArgs = new SocketAsyncEventArgs();
@@ -47,7 +45,6 @@ namespace Imlight.Net
             this._server = server;
             this._serverActor = Context.Parent;
             this.SessionValid = false;
-            this._preliminaryMessages = new List<INetworkMessage>();
 
             var self = Context;
 
@@ -120,50 +117,55 @@ namespace Imlight.Net
         {
             while (!_cts.Token.IsCancellationRequested)
             {
-                var buffer = new byte[BUFFER_SIZE];
-
                 try
                 {
+                    var buffer = new byte[BUFFER_SIZE];
                     var bytesReceived = Socket.Receive(buffer);
-                    if (bytesReceived <= 0)
-                        continue;
+                    if (bytesReceived <= 0) continue;
 
-                    var bufferSpan = new ReadOnlySpan<byte>(buffer, 0, bytesReceived).ToArray();
-                    if (!IsKIPacket(bufferSpan) || !TryDeserializePacket(bufferSpan, out var record))
-                    {
-                        Log.Logger.Error($"CommunicationActor [{SessionID}] received non-KINP packet.");
-                        continue;
-                    }
+                    var packet = GetPacketFromBuffer(buffer, bytesReceived);
+                    if (packet == null) continue;
 
-                    // Log
-                    var scopedMessageName = record
-                        .GetType().ToString().Split('.')[^1];
-                    Log.Logger.Verbose($"CommunicationActor [{SessionID}] received message [{scopedMessageName}]");
-
-                    // If the message received is a control message, the CommunicationActor can handle it.
-                    if (record.ServiceID == 0)
-                        HandleControlMessage(record, context);
-                    else if (record.GetType() == typeof(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT))
-                        break;
-                    else if (SessionValid)
-                        _serverActor.Tell(record, context.Self);
-                    else
-                        // If we receive a message before the session is created,
-                        // we'll save it and respond once the handshake is complete.
-                        _preliminaryMessages.Add(record);
+                    HandlePacket(packet, context);
                 }
-                catch (Exception ex)
+                catch (SocketException ex)
                 {
                     Log.Logger.Error($"CommunicationActor [{SessionID}] socket error: {ex.Message}");
-
-                    if (DISPOSE_ON_UNHANDLED_EXCEPTION)
-                    {
-                        break;
-                    }
+                    break;
                 }
             }
 
             context.Self.Tell("Close");
+        }
+
+        private void HandlePacket(INetworkMessage packet, IUntypedActorContext context)
+        {
+            // Log the incoming packet.
+            var scopedMessageName = packet.GetType().ToString().Split('.')[^1];
+            Log.Logger.Verbose($"CommunicationActor [{SessionID}] received message [{scopedMessageName}]");
+
+            if (packet.ServiceID == 0)
+                HandleControlMessage(packet, context);
+            else if (packet.GetType() == typeof(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT))
+                _cts.Cancel();
+            else
+            {
+                // Craft context & send to server.
+                var msgContext = new CommunicationDMLContext(this, packet);
+                _serverActor.Tell(msgContext, context.Self);
+            }
+        }
+
+        private INetworkMessage GetPacketFromBuffer(byte[] buffer, int bytesReceived)
+        {
+            var bufferSpan = new ReadOnlySpan<byte>(buffer, 0, bytesReceived).ToArray();
+            if (!IsKIPacket(bufferSpan) || !TryDeserializePacket(bufferSpan, out var record))
+            {
+                Log.Logger.Error($"CommunicationActor [{SessionID}] received non-KINP packet.");
+                return null;
+            }
+
+            return record;
         }
 
         private void SendEventArgs_Completed(object sender, SocketAsyncEventArgs e)
@@ -194,11 +196,21 @@ namespace Imlight.Net
 
         private void SendSessionOffer()
         {
-            var sessionOffer = new ControlMessages.SessionOffer()
-            {
-                SessionID = SessionID,
-            };
+            uint currentUnixTimestamp = (uint)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            int timestampUpper = (int)(currentUnixTimestamp >> 32);
+            int timestampLower = (int)(currentUnixTimestamp & uint.MaxValue);
+            uint millisecondsIntoCurrentSecond = (uint)(DateTime.UtcNow.TimeOfDay.TotalMilliseconds % 1000);
 
+            SessionStartTime = currentUnixTimestamp;
+            SessionMilliseconds = millisecondsIntoCurrentSecond;
+
+            var sessionOffer = new ControlMessages.SessionOffer() 
+            { 
+                SessionID = SessionID,
+                TimestampUpper = timestampUpper,
+                TimestampLower = timestampLower,
+                Milliseconds = millisecondsIntoCurrentSecond,
+            };
             Send(sessionOffer);
         }
 
@@ -260,19 +272,10 @@ namespace Imlight.Net
             _currentKeepAliveReviveAttempts = 0;
             SessionValid = true;
 
-            long unixTime = ((long)message.TimestampUpper << 32) | (uint)message.TimestampLower;
-            SessionStartTime = DateTimeOffset.FromUnixTimeSeconds(unixTime).UtcDateTime;
-            SessionMilliseconds = message.Milliseconds;
+            // @TODO: Add this to message `ClientConnected` to get RTT.
+            //uint unixTime = ((uint)message.TimestampUpper << 32) | (uint)message.TimestampLower;
 
-            // Log
-            Log.Logger.Debug($"CommunicationActor [{SessionID}] session created.");
-
-            // Repsond to any preliminary messages.
-            foreach (var prelimMessage in _preliminaryMessages)
-            {
-                _serverActor.Tell(prelimMessage, context.Self);
-            }
-            _preliminaryMessages.Clear();
+            _serverActor.Tell(new ClientConnected(Socket));
 
             // Once the session is created, we need to send a heartbeat to keep it active.
             var heartbeatInterval = TimeSpan.FromSeconds(KEEP_ALIVE_INTERVAL);
