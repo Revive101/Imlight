@@ -32,22 +32,36 @@ namespace Imlight.Login
         {
             base.ConfigureReceivers();
 
-            Receive<CommunicationDMLContext>(x => x.Is(typeof(LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_V3)), x => ReceiveUserAuthenV3(x));
-            Receive<CommunicationDMLContext>(x => x.Is(typeof(LOGIN_7_PROTOCOL.MSG_USER_VALIDATE)), x => ReceiveUserValidate(x));
-            Receive<CommunicationDMLContext>(x => x.Is(typeof(LOGIN_7_PROTOCOL.MSG_CREATECHARACTER)), x => ReceiveCreateCharacter(x));
+            Receive<LOGIN_7_PROTOCOL.MSG_LOGIN_NOT_AFK>(x => ReceiveLoginNotAFK(x));
+            Receive<LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_V3>(x => ReceiveUserAuthenV3(x));
+            Receive<LOGIN_7_PROTOCOL.MSG_USER_VALIDATE>(x => ReceiveUserValidate(x));
+            Receive<LOGIN_7_PROTOCOL.MSG_REQUESTCHARACTERLIST>(x => ReceiveRequestCharacterList(x));
+            Receive<LOGIN_7_PROTOCOL.MSG_CREATECHARACTER>(x => ReceiveCreateCharacter(x));
         }
 
-        private void ReceiveUserAuthenV3(CommunicationDMLContext message)
+        private void ReceiveLoginNotAFK(LOGIN_7_PROTOCOL.MSG_LOGIN_NOT_AFK message)
+        {
+            // @TODO
+        }
+
+        private void ReceiveUserAuthenV3(LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_V3 message)
         {
             // @FIXME: This is under major testing.
-            var msg = (LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_V3)message.Message;
-            var sessionID = message.Actor.SessionID;
-            var epoch = message.Actor.SessionStartTime;
-            var milli = message.Actor.SessionMilliseconds;
+
+            // Get the current session and set some details.
+            if (!TryGetSession(Sender, out var session))
+            {
+                Log.Logger.Error($"ServerManagerActor [{Name}] could not get session for sender [{Sender.Path}].");
+                return;
+            }
+
+            var sessionID = session.SessionID;
+            var epoch = session.SessionStartTime;
+            var milli = session.SessionMilliseconds;
 
             // This part, for now, is just debugging. When Imlight can speak to WizAPI, then we can
             // start *really* doing authentication.
-            var record = Rec1.Decode(msg.Rec1, sessionID, epoch, milli)
+            var record = Rec1.Decode(message.Rec1, sessionID, epoch, milli)
                 .ToString()
                 .Split(' ');
             var username = record[1];
@@ -76,19 +90,60 @@ namespace Imlight.Login
             Context.Sender.Tell(rsp);
         }
 
-        private void ReceiveUserValidate(CommunicationDMLContext message)
+        private void ReceiveUserValidate(LOGIN_7_PROTOCOL.MSG_USER_VALIDATE message)
         {
-            var msg = (LOGIN_7_PROTOCOL.MSG_USER_VALIDATE)message.Message;
+            // @TODO: User authentication here !
 
-            Context.Sender.Tell(new LOGIN_7_PROTOCOL.MSG_USER_VALIDATE_RSP());
+            /*
+             * Writing notes here for later:
+             * 
+             * `MSG_USER_AUTHEN_RSP` will send back another `Rec1` field. It's encoded exactly as before,
+             * except the `CK1` field will instead be replaced by a `CK2` field. This is `ClientKey2`. It's a session
+             * key responsible for authenticating a game client once the launcher closes.
+             * 
+             * When the game client starts, it will send `MSG_USER_VALIDATE`. This message contains a field labeled `PassKey3`.
+             * `PassKey3` uses the same hashing algorithm as `ClientKey1`, and the original input will be the `ClientKey2` we
+             * gave to the client earlier.
+             * 
+             * Using the cached information, we can hash and compare this request to see if any valid game sessions exist.
+             * 
+             * In all cases, we return `MSG_USER_VALIDATE_RSP`, which contains a potential error code.
+             * The error code is a string hash of the error.
+             * ""                <-- No error, or successful.
+             * "AccountBanned"
+             * "MachineBanned"
+             * "ValidateFailed"
+             * "Timeout"
+             * (There is more flags here, but it's difficult to tell what they mean.)
+             */
+
+            // For now, we'll always except any user.
+            Context.Sender.Tell(new LOGIN_7_PROTOCOL.MSG_USER_VALIDATE_RSP()
+            {
+                UserID = message.UserID,
+                PayingUser = 1,
+                Error = (int)UserValidateError.NoError,
+                Reason = "", // Unclear as to what this field means, but it's most likely an elaboration of an error.
+            });
+        }
+
+        private void ReceiveCreateCharacter(LOGIN_7_PROTOCOL.MSG_CREATECHARACTER message)
+        {
+            var data = message.CreationInfo;
+
+            Context.Sender.Tell(new LOGIN_7_PROTOCOL.MSG_CREATECHARACTERRESPONSE());
             Context.Sender.Tell(new LOGIN_7_PROTOCOL.MSG_STARTCHARACTERLIST());
+            Context.Sender.Tell(new LOGIN_7_PROTOCOL.MSG_CHARACTERINFO()
+            {
+                CharacterInfo = data
+            });
             Context.Sender.Tell(new LOGIN_7_PROTOCOL.MSG_CHARACTERLIST());
         }
 
-        private void ReceiveCreateCharacter(CommunicationDMLContext message)
+        private void ReceiveRequestCharacterList(LOGIN_7_PROTOCOL.MSG_REQUESTCHARACTERLIST message)
         {
-            var msg = (LOGIN_7_PROTOCOL.MSG_CREATECHARACTER)message.Message;
-            var data = msg.CreationInfo;
+            Context.Sender.Tell(new LOGIN_7_PROTOCOL.MSG_STARTCHARACTERLIST());
+            Context.Sender.Tell(new LOGIN_7_PROTOCOL.MSG_CHARACTERLIST());
         }
     }
 }

@@ -24,12 +24,11 @@ namespace Imlight.Patch
         {
             base.ConfigureReceivers();
 
-            Receive<CommunicationDMLContext>(x => x.Is(typeof(PATCH_8_PROTOCOL.MSG_LATEST_FILE_LIST_V2)), x => ReceiveLatestFileList(x));
+            Receive<PATCH_8_PROTOCOL.MSG_LATEST_FILE_LIST_V2>(x => ReceiveLatestFileList(x));
         }
 
-        private void ReceiveLatestFileList(CommunicationDMLContext message)
+        private void ReceiveLatestFileList(PATCH_8_PROTOCOL.MSG_LATEST_FILE_LIST_V2 message)
         {
-            var msg = (PATCH_8_PROTOCOL.MSG_LATEST_FILE_LIST_V2)message.Message;
             Sender.Tell(new PATCH_8_PROTOCOL.MSG_LATEST_FILE_LIST_V2()
             {
                 // Test.

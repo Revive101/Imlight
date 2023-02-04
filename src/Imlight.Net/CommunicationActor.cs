@@ -24,11 +24,7 @@ namespace Imlight.Net
         private const byte KEEP_ALIVE_RSP_WAIT_TIME = 10;  // In seconds
         private const byte KEEP_ALIVE_REVIVE_ATTEMPTS = 3; // The amount of times the server will try to revive a connection.
 
-        public Socket Socket { get; init; }
-        public ushort SessionID { get; init; }
-        public bool SessionValid { get; private set; }
-        public uint SessionStartTime { get; private set; }
-        public uint SessionMilliseconds { get; private set; }
+        public Session Session { get; private set; }
 
         private bool _isSending;
         private bool _isWaitingForHeartbeatResponse;
@@ -38,13 +34,12 @@ namespace Imlight.Net
         private readonly SocketAsyncEventArgs _sendEventArgs = new SocketAsyncEventArgs();
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
 
-        public CommunicationActor(Socket Socket, ushort SessionID, ServerReceiverActor server)
+        public CommunicationActor(Session session, ServerReceiverActor server)
         {
-            this.Socket = Socket;
-            this.SessionID = SessionID;
+            this.Session = session;
+            this.Session.Valid = false;
             this._server = server;
             this._serverActor = Context.Parent;
-            this.SessionValid = false;
 
             var self = Context;
 
@@ -54,22 +49,22 @@ namespace Imlight.Net
             Task.Factory.StartNew(() => ListenAndProcess(self));
         }
 
-        public static Props Props(Socket Socket, ushort SessionID, ServerReceiverActor server)
+        public static Props Props(Session session, ServerReceiverActor server)
         {
-            return Akka.Actor.Props.Create(() => new CommunicationActor(Socket, SessionID, server));
+            return Akka.Actor.Props.Create(() => new CommunicationActor(session, server));
         }
 
         public void Send(INetworkMessage message)
         {
-            if (!Socket.Connected)
+            if (!Session.Socket.Connected)
             {
-                Log.Logger.Error($"CommunicationActor [{SessionID}] send failure: " +
+                Log.Logger.Error($"CommunicationActor [{Session.SessionID}] send failure: " +
                     $"Socket is not connected!");
                 return;
             }
             if (_isSending)
             {
-                Log.Logger.Error($"CommunicationActor [{SessionID}] send failure: " +
+                Log.Logger.Error($"CommunicationActor [{Session.SessionID}] send failure: " +
                     $"Asynchronous send operation already in progress.");
                 return;
             }
@@ -77,10 +72,10 @@ namespace Imlight.Net
             var data = MessageSerializer.SerializeMessageBinary(message);
             _isSending = true;
             _sendEventArgs.SetBuffer(data, 0, data.Length);
-            _sendEventArgs.UserToken = Socket;
+            _sendEventArgs.UserToken = Session.Socket;
             _sendEventArgs.Completed += SendEventArgs_Completed;
 
-            var willRaiseEvent = Socket.SendAsync(_sendEventArgs);
+            var willRaiseEvent = Session.Socket.SendAsync(_sendEventArgs);
             if (!willRaiseEvent)
             {
                 SendEventArgs_Completed(this, _sendEventArgs);
@@ -88,19 +83,19 @@ namespace Imlight.Net
 
             var scopedMessageName = message
                 .GetType().ToString().Split('.')[^1];
-            Log.Logger.Verbose($"CommunicationActor [{SessionID}] send message [{scopedMessageName}]");
+            Log.Logger.Verbose($"CommunicationActor [{Session.SessionID}] send message [{scopedMessageName}]");
         }
 
         public void Close()
         {
-            Socket.Close();
+            Session.Socket.Close();
             _cts.Cancel();
             Context.Stop(Self);
         }
 
         protected override void Unhandled(object message)
         {
-            Log.Logger.Error($"CommunicationActor [{SessionID}] " +
+            Log.Logger.Error($"CommunicationActor [{Session.SessionID}] " +
                 $"received unhandled message of type [{message.GetType()}].");
         }
 
@@ -120,7 +115,7 @@ namespace Imlight.Net
                 try
                 {
                     var buffer = new byte[BUFFER_SIZE];
-                    var bytesReceived = Socket.Receive(buffer);
+                    var bytesReceived = Session.Socket.Receive(buffer);
                     if (bytesReceived <= 0) continue;
 
                     var packet = GetPacketFromBuffer(buffer, bytesReceived);
@@ -130,7 +125,7 @@ namespace Imlight.Net
                 }
                 catch (SocketException ex)
                 {
-                    Log.Logger.Error($"CommunicationActor [{SessionID}] socket error: {ex.Message}");
+                    Log.Logger.Error($"CommunicationActor [{Session.SessionID}] socket error: {ex.Message}");
                     break;
                 }
             }
@@ -142,7 +137,7 @@ namespace Imlight.Net
         {
             // Log the incoming packet.
             var scopedMessageName = packet.GetType().ToString().Split('.')[^1];
-            Log.Logger.Verbose($"CommunicationActor [{SessionID}] received message [{scopedMessageName}]");
+            Log.Logger.Verbose($"CommunicationActor [{Session.SessionID}] received message [{scopedMessageName}]");
 
             if (packet.ServiceID == 0)
                 HandleControlMessage(packet, context);
@@ -151,8 +146,7 @@ namespace Imlight.Net
             else
             {
                 // Craft context & send to server.
-                var msgContext = new CommunicationDMLContext(this, packet);
-                _serverActor.Tell(msgContext, context.Self);
+                _serverActor.Tell(packet, context.Self);
             }
         }
 
@@ -161,7 +155,7 @@ namespace Imlight.Net
             var bufferSpan = new ReadOnlySpan<byte>(buffer, 0, bytesReceived).ToArray();
             if (!IsKIPacket(bufferSpan) || !TryDeserializePacket(bufferSpan, out var record))
             {
-                Log.Logger.Error($"CommunicationActor [{SessionID}] received non-KINP packet.");
+                Log.Logger.Error($"CommunicationActor [{Session.SessionID}] received non-KINP packet.");
                 return null;
             }
 
@@ -173,7 +167,7 @@ namespace Imlight.Net
             _isSending = false;
             if (e.SocketError != SocketError.Success)
             {
-                Log.Logger.Error($"CommunicationActor [{SessionID}] send failure: {e.SocketError}");
+                Log.Logger.Error($"CommunicationActor [{Session.SessionID}] send failure: {e.SocketError}");
                 return;
             }
         }
@@ -201,12 +195,12 @@ namespace Imlight.Net
             int timestampLower = (int)(currentUnixTimestamp & uint.MaxValue);
             uint millisecondsIntoCurrentSecond = (uint)(DateTime.UtcNow.TimeOfDay.TotalMilliseconds % 1000);
 
-            SessionStartTime = currentUnixTimestamp;
-            SessionMilliseconds = millisecondsIntoCurrentSecond;
+            Session.SessionStartTime = currentUnixTimestamp;
+            Session.SessionMilliseconds = millisecondsIntoCurrentSecond;
 
             var sessionOffer = new ControlMessages.SessionOffer() 
             { 
-                SessionID = SessionID,
+                SessionID = Session.SessionID,
                 TimestampUpper = timestampUpper,
                 TimestampLower = timestampLower,
                 Milliseconds = millisecondsIntoCurrentSecond,
@@ -216,9 +210,9 @@ namespace Imlight.Net
 
         private void SendHeartbeat()
         {
-            if (!SessionValid)
+            if (!Session.Valid)
             {
-                Log.Logger.Error($"CommunicationActor [{SessionID}] tried to send heartbeat to an invalid session.");
+                Log.Logger.Error($"CommunicationActor [{Session.SessionID}] tried to send heartbeat to an invalid session.");
                 return;
             }
 
@@ -228,7 +222,7 @@ namespace Imlight.Net
 
             var keepAlive = new ControlMessages.KeepAliveServer()
             {
-                SessionID = SessionID,
+                SessionID = Session.SessionID,
                 Milliseconds = (uint)_server.ServerElapsed(),
             };
 
@@ -242,9 +236,9 @@ namespace Imlight.Net
 
         private void ReceiveKeepAlive(ControlMessages.KeepAlive message, IUntypedActorContext context)
         {
-            if (message.SessionID != SessionID)
+            if (message.SessionID != Session.SessionID)
             {
-                Log.Logger.Error($"CommunicationActor [{SessionID}] received misaligned Session ID. The connection will be dropped." +
+                Log.Logger.Error($"CommunicationActor [{Session.SessionID}] received misaligned Session ID. The connection will be dropped." +
                     $"\n\t\tReceived: {message.SessionID}");
 
                 Close();
@@ -253,7 +247,7 @@ namespace Imlight.Net
 
             var keepAliveRsp = new ControlMessages.KeepAliveResponse()
             {
-                SessionID = SessionID, 
+                SessionID = Session.SessionID, 
                 Milliseconds = message.Milliseconds,
                 ElapsedSessionTime = message.ElapsedSessionTime
             };
@@ -270,12 +264,12 @@ namespace Imlight.Net
         {
             _isWaitingForHeartbeatResponse = false;
             _currentKeepAliveReviveAttempts = 0;
-            SessionValid = true;
+            Session.Valid = true;
 
             // @TODO: Add this to message `ClientConnected` to get RTT.
             //uint unixTime = ((uint)message.TimestampUpper << 32) | (uint)message.TimestampLower;
 
-            _serverActor.Tell(new ClientConnected(Socket));
+            _serverActor.Tell(new ClientConnected(Session.Socket));
 
             // Once the session is created, we need to send a heartbeat to keep it active.
             var heartbeatInterval = TimeSpan.FromSeconds(KEEP_ALIVE_INTERVAL);
