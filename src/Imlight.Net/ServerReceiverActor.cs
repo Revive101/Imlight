@@ -2,9 +2,12 @@
 using Imlight.Common;
 using Imlight.Net.Messages;
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using WizUnraveler.Cache;
+using WizUnraveler.DML;
 
 namespace Imlight.Net
 {
@@ -13,23 +16,44 @@ namespace Imlight.Net
     /// </summary>
     public abstract class ServerReceiverActor : ReceiveActor
     {
+        public const int AFK_TIMEOUT = 300;       // In seconds.
+        public const int AFK_CHECK_INTERVAL = 30; // In seconds.
+
         public string Name { get; init; }
         public sbyte ID { get; init; }
         protected TcpServer Server { get; init; }
-        protected Dictionary<ushort, IActorRef> CommunicationActors { get; init; }
+        protected ConcurrentDictionary<IActorRef, Session> CommunicationActors { get; init; }
+
         private long _serverStartTime;
+        private CancellationTokenSource _afkCancelToken;
 
         public ServerReceiverActor(string Name, sbyte ID, ushort port)
         {
             this.Name = Name;
             this.ID = ID;
             this.Server = new TcpServer(Self, port);
-            this.CommunicationActors = new Dictionary<ushort, IActorRef>();
+            this.CommunicationActors = new ConcurrentDictionary<IActorRef, Session>();
             this._serverStartTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+
+            // Start the AFK detection task
+            _afkCancelToken = new CancellationTokenSource();
+            Task.Factory.StartNew(CheckAFK);
 
             ConfigureReceivers();
 
             Log.Logger.Information($"ServerReceiverActor [{Name}] with ID [{ID}] created under port [{port}].");
+        }
+
+        protected override void Unhandled(object message)
+        {
+            Log.Logger.Error($"ServerReceiverActor [{Name}] cannot handle message of type [{message.GetType()}]");
+        }
+
+        protected override void PostStop()
+        {
+            _afkCancelToken.Cancel();
+
+            base.PostStop();
         }
 
         /// <summary>
@@ -47,12 +71,13 @@ namespace Imlight.Net
         /// </summary>
         protected virtual void ConfigureReceivers()
         {
+            Receive<INetworkMessage>(x => ConfigureSessionActivity());
             Receive<RegisterCommunicationActor>(x => ReceiveRegisterCommunicationActor(x));
             Receive<ClientConnected>(x => ReceiveClientConnected(x));
             Receive<Terminated>(t => Log.Logger.Debug($"Actor [{t.ActorRef.Path}] terminated."));
 
             // Respond to generic ping messages.
-            Receive<CommunicationDMLContext>(x => x.Is(typeof(SYSTEM_1_PROTOCOL.MSG_PING)), x =>
+            Receive<SYSTEM_1_PROTOCOL.MSG_PING>(x =>
             {
                 Sender.Tell(new SYSTEM_1_PROTOCOL.MSG_PING_RSP());
             });
@@ -64,11 +89,16 @@ namespace Imlight.Net
         /// <param name="message"></param>
         protected virtual void ReceiveRegisterCommunicationActor(RegisterCommunicationActor message)
         {
-            // Create a new CommunicationActor, and as a name we'll just use the session ID.
+            // Create a new CommunicationActor.
             var id = GetRandomID();
-            var actorProps = CommunicationActor.Props(message.Socket, id, this);
+            var session = new Session(message.Socket, id);
+            var actorProps = CommunicationActor.Props(session, this);
             var actor = Context.ActorOf(actorProps, id.ToString());
-            CommunicationActors.Add(id, actor);
+            if (!CommunicationActors.TryAdd(actor, session))
+            {
+                Log.Logger.Error($"ServerReceiverActor [{Name}] could not add new CommunicationActor.");
+                return;
+            }
 
             // This is just for debugging purposes and can be removed for release builds.
             Context.Watch(actor);
@@ -99,7 +129,7 @@ namespace Imlight.Net
             while (true)
             {
                 var temp = rand.Next(1, ushort.MaxValue);
-                if (!CommunicationActors.Keys.Any(x => x == temp))
+                if (!CommunicationActors.Values.Any(x => x.SessionID == temp))
                 {
                     return (ushort)temp;
                 }
@@ -107,11 +137,42 @@ namespace Imlight.Net
             }
         }
 
-        protected override void Unhandled(object message)
+        protected bool TryGetSession(IActorRef actorRef, out Session session)
         {
-            base.Unhandled(message);
+            return CommunicationActors.TryGetValue(actorRef, out session);
+        }
 
-            Log.Logger.Error($"ServerReceiverActor [{Name}] cannot handle message of type [{message.GetType()}]");
+        private bool ConfigureSessionActivity()
+        {
+            // If any message is received, restart our AFK timer for the session.
+
+            if (!TryGetSession(Context.Sender, out var session))
+            {
+                Log.Logger.Error($"ServerReceiverActor [{Name}] could not configure latest session activity, " +
+                    $"because the session was not found!");
+                return false;
+            }
+
+            session.LastActivity = DateTime.Now;
+
+            return false;
+        }
+
+        private async Task CheckAFK()
+        {
+            while (!_afkCancelToken.IsCancellationRequested)
+            {
+                foreach (var actor in CommunicationActors)
+                {
+                    if (DateTime.Now - actor.Value.LastActivity <= TimeSpan.FromSeconds(AFK_CHECK_INTERVAL))
+                        continue;
+
+                    actor.Key.Tell("Close");
+                    CommunicationActors.TryRemove(actor);
+                }
+
+                await Task.Delay(TimeSpan.FromSeconds(AFK_CHECK_INTERVAL), _afkCancelToken.Token);
+            }
         }
     }
 }
