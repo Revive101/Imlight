@@ -19,14 +19,13 @@ namespace Imlight.Net.Services
 
         public bool Valid;
 
-        private SessionActor _parentActor;
         private Stopwatch _sessionOfferTime;
         private bool _isWaitingForHeartbeatResponse;
         private byte _currentKeepAliveReviveAttempts;
 
         public ControlServiceActor(SessionActor parentActor) : base()
         {
-            this._parentActor = parentActor;
+            this.SessionActor = parentActor;
             this._sessionOfferTime = new Stopwatch();
             SendSessionOffer();
         }
@@ -54,7 +53,7 @@ namespace Imlight.Net.Services
 
             var offer = new ControlMessages.SessionOffer()
             {
-                SessionID = _parentActor.SessionID,
+                SessionID = SessionActor.SessionID,
                 TimestampUpper = timestampUpper,
                 TimestampLower = timestampLower,
                 Milliseconds = millisecondsIntoCurrentSecond,
@@ -70,10 +69,10 @@ namespace Imlight.Net.Services
         private void ReceiveSessionAccept(ControlMessages.SessionAccept message)
         {
             _sessionOfferTime.Stop();
-            if (message.SessionID != _parentActor.SessionID)
+            if (message.SessionID != SessionActor.SessionID)
             {
-                Log.Logger.Error($"SessionActor [{_parentActor.SessionID}] misaligned Session ID.");
-                _parentActor.Close();
+                Log.Logger.Error($"SessionActor [{SessionActor.SessionID}] misaligned Session ID.");
+                SessionActor.Close();
                 return;
             }
 
@@ -85,7 +84,7 @@ namespace Imlight.Net.Services
             // The session is now valid. For optimization purposes, our parent SessionActor doesn't load
             // all the services on creation. Instead, we wait for the session to be valid.
             // We need to now tell our SessionActor that the session is created, and to grab the rest of its services.
-            _parentActor.FullInitialize(_sessionOfferTime.ElapsedMilliseconds);
+            SessionActor.FullInitialize(_sessionOfferTime.ElapsedMilliseconds);
 
             // Once the session is created, we need to send a heartbeat to keep it active.
             // To do that. we'll have this class send a message to itself on interval to check on the heartbeat.
@@ -101,17 +100,17 @@ namespace Imlight.Net.Services
         [MessageHandler(typeof(ControlMessages.KeepAlive))]
         private void ReceiveKeepAlive(ControlMessages.KeepAlive message)
         {
-            if (message.SessionID != _parentActor.SessionID)
+            if (message.SessionID != SessionActor.SessionID)
             {
-                Log.Logger.Error($"SessionActor [{_parentActor.SessionID}] misaligned Session ID.");
-                _parentActor.Close();
+                Log.Logger.Error($"SessionActor [{SessionActor.SessionID}] misaligned Session ID.");
+                SessionActor.Close();
                 return;
             }
 
             ushort millisecondsIntoCurrentSecond = (ushort)(DateTime.UtcNow.TimeOfDay.TotalMilliseconds % 1000);
             var rsp = new ControlMessages.KeepAliveResponse()
             {
-                SessionID = _parentActor.SessionID,
+                SessionID = SessionActor.SessionID,
                 Milliseconds = millisecondsIntoCurrentSecond,
                 ElapsedSessionTime = message.ElapsedSessionTime,
             };
@@ -130,8 +129,8 @@ namespace Imlight.Net.Services
         {
             if (!Valid)
             {
-                Log.Logger.Error($"CommunicationActor [{_parentActor.SessionID}] tried to send heartbeat to an invalid session.");
-                _parentActor.Close();
+                Log.Logger.Error($"CommunicationActor [{SessionActor.SessionID}] tried to send heartbeat to an invalid session.");
+                SessionActor.Close();
                 return;
             }
 
@@ -141,7 +140,7 @@ namespace Imlight.Net.Services
 
             var keepAlive = new ControlMessages.KeepAliveServer()
             {
-                SessionID = _parentActor.SessionID,
+                SessionID = SessionActor.SessionID,
                 Milliseconds = (uint)0,
             };
 
@@ -159,7 +158,7 @@ namespace Imlight.Net.Services
             {
                 if (_currentKeepAliveReviveAttempts == KEEP_ALIVE_REVIVE_ATTEMPTS)
                 {
-                    _parentActor.Close();
+                    SessionActor.Close();
                 }
                 else
                 {
@@ -167,17 +166,6 @@ namespace Imlight.Net.Services
                     _currentKeepAliveReviveAttempts++;
                 }
             }
-        }
-
-        private void SendToParent(INetworkMessage message)
-        {
-            if (_parentActor is null)
-            {
-                Log.Logger.Error($"ControlServiceActor attempted to send message to undefined SessionActor.");
-                return;
-            }
-
-            _parentActor.Send(message);
         }
     }
 }

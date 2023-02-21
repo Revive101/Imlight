@@ -1,4 +1,5 @@
 ﻿using Akka.Actor;
+using Imlight.Common;
 using Imlight.Net.Messages;
 using System;
 using System.Collections.Generic;
@@ -17,8 +18,8 @@ namespace Imlight.Net
         /// <summary>
         /// A HashSet of the messages this service is capable of handling.
         /// </summary>
-        protected SessionActor SessionActor { get; private set; }
-        protected IActorRef SessionActorRef { get; private set; }
+        protected SessionActor SessionActor { get; set; }
+        protected IActorRef SessionActorRef { get; set; }
         public virtual Dictionary<Type, MethodInfo> MessageHandlers { get; private set; }
 
         public MessageService()
@@ -44,6 +45,17 @@ namespace Imlight.Net
                     Unhandled(message);
                 }
             });
+        }
+
+        protected void SendToParent(INetworkMessage message)
+        {
+            if (SessionActor is null)
+            {
+                Log.Logger.Error($"ControlServiceActor attempted to send message to undefined SessionActor.");
+                return;
+            }
+
+            SessionActor.Send(message);
         }
 
         private void SetMessageHandlers()
