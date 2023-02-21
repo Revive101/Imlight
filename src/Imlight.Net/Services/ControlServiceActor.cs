@@ -17,16 +17,16 @@ namespace Imlight.Net.Services
         private const byte KEEP_ALIVE_RSP_WAIT_TIME = 2;   // In seconds
         private const byte KEEP_ALIVE_REVIVE_ATTEMPTS = 3; // The amount of times the server will try to revive a connection.
 
-        public bool Valid;
+        public bool SessionValid;
 
         private Stopwatch _sessionOfferTime;
         private bool _isWaitingForHeartbeatResponse;
         private byte _currentKeepAliveReviveAttempts;
 
-        public ControlServiceActor(SessionActor parentActor) : base()
+        public ControlServiceActor(SessionActor parentActor) : base(parentActor)
         {
-            this.SessionActor = parentActor;
             this._sessionOfferTime = new Stopwatch();
+
             SendSessionOffer();
         }
 
@@ -59,7 +59,7 @@ namespace Imlight.Net.Services
                 Milliseconds = millisecondsIntoCurrentSecond,
             };
 
-            SendToParent(offer);
+            SendToSocket(offer);
 
             // Start the stopwatch so we can later get RTT (ping).
             _sessionOfferTime.Restart();
@@ -77,7 +77,7 @@ namespace Imlight.Net.Services
             }
 
             // Set local variables.
-            Valid = true;
+            SessionValid = true;
             _isWaitingForHeartbeatResponse = false;
             _currentKeepAliveReviveAttempts = 0;
 
@@ -115,7 +115,7 @@ namespace Imlight.Net.Services
                 ElapsedSessionTime = message.ElapsedSessionTime,
             };
 
-            SendToParent(rsp);
+            SendToSocket(rsp);
         }
 
         [MessageHandler(typeof(ControlMessages.KeepAliveResponse))]
@@ -127,7 +127,7 @@ namespace Imlight.Net.Services
 
         private void SendHeartbeat()
         {
-            if (!Valid)
+            if (!SessionValid)
             {
                 Log.Logger.Error($"CommunicationActor [{SessionActor.SessionID}] tried to send heartbeat to an invalid session.");
                 SessionActor.Close();
@@ -144,7 +144,7 @@ namespace Imlight.Net.Services
                 Milliseconds = (uint)0,
             };
 
-            SendToParent(keepAlive);
+            SendToSocket(keepAlive);
 
             // Send message to self after x seconds to remind CommunicationActor to check
             // the status of that KeepAlive.

@@ -106,7 +106,7 @@ namespace Imlight.Net
 
             SetServices(services);
 
-            Log.Logger.Debug($"SessionActor {SessionID} PreStart completed.");
+            Log.Logger.Debug($"SessionActor [{SessionID}] PreStart completed.");
 
             base.PreStart();
         }
@@ -164,8 +164,8 @@ namespace Imlight.Net
                 var actorRef = service.Key;
                 var type = service.Value;
 
-                var handler = type.MessageHandlers.Keys.First(x => x == packet.GetType());
-                if (handler == null) continue;
+                if (!type.MessageHandlers.Any(x => x.Key == packet.GetType())) 
+                    continue;
 
                 actorRef.Tell(packet);
                 return;
@@ -201,7 +201,7 @@ namespace Imlight.Net
             foreach (var service in services)
             {
                 var props = Akka.Actor.Props.Create(service, this);
-                var childRef = Context.ActorOf(props, nameof(service));
+                var childRef = Context.ActorOf(props);
 
                 // We've created the service as a child actor. Problem is, we need to know the actual class
                 // identity to use it later. To do that, we'll ask the actor to identify itself.

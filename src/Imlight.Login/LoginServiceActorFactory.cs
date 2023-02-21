@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Akka.Actor;
 using Imlight.Net;
 using Imlight.Net.Services;
+using Imlight.Login.Services;
 
 namespace Imlight.Login
 {
@@ -41,7 +42,7 @@ namespace Imlight.Login
         {
             var set = new HashSet<Type>()
             {
-
+                typeof(AuthenticatorServiceActor),
             };
 
             Sender.Tell(set);

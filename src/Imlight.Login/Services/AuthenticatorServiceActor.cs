@@ -7,11 +7,19 @@ using Imlight.Net;
 using Imlight.Net.Messages;
 using WizUnraveler.DML;
 using WizUnraveler.Cache;
+using Akka.Actor;
 
 namespace Imlight.Login.Services
 {
     internal class AuthenticatorServiceActor : MessageService
     {
+        public AuthenticatorServiceActor(SessionActor parentActor) : base(parentActor) { }
+
+        protected static Props Props(SessionActor parentActor)
+        {
+            return Akka.Actor.Props.Create(() => new AuthenticatorServiceActor(parentActor));
+        }
+
         [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_USER_VALIDATE))]
         private void ReceiveUserValidate(LOGIN_7_PROTOCOL.MSG_USER_VALIDATE message)
         {
@@ -29,25 +37,16 @@ namespace Imlight.Login.Services
              * gave to the client earlier.
              * 
              * Using the cached information, we can hash and compare this request to see if any valid game sessions exist.
-             * 
-             * In all cases, we return `MSG_USER_VALIDATE_RSP`, which contains a potential error code.
-             * The error code is a string hash of the error.
-             * ""                <-- No error, or successful.
-             * "AccountBanned"
-             * "MachineBanned"
-             * "ValidateFailed"
-             * "Timeout"
-             * (There is more flags here, but it's difficult to tell what they mean.)
              */
 
             // For now, we'll always except any user.
-            Context.Sender.Tell(new LOGIN_7_PROTOCOL.MSG_USER_VALIDATE_RSP()
+            SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_VALIDATE_RSP()
             {
                 UserID = message.UserID,
                 PayingUser = 1,
                 Error = (int)UserValidateError.NoError,
                 Reason = "", // Unclear as to what this field means, but it's most likely an elaboration of an error.
-            }, Context.Self);
+            });
         }
     }
 }

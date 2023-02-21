@@ -22,16 +22,18 @@ namespace Imlight.Net
         protected IActorRef SessionActorRef { get; set; }
         public virtual Dictionary<Type, MethodInfo> MessageHandlers { get; private set; }
 
-        public MessageService()
+        public MessageService(SessionActor sessionActor)
         {
+            this.SessionActor = sessionActor;
+
             SetMessageHandlers();
             ConfigureReceivers();
         }
-
+         
         protected virtual void ConfigureReceivers()
         {
             Receive<string>(x => x == ASK_IDENTIFY, x => Sender.Tell(new ServiceIdentityReply(this), Context.Self));
-            Receive<object>(message =>
+            Receive<INetworkMessage>(message =>
             {
                 // Find the method that handles this message type
                 if (MessageHandlers.TryGetValue(message.GetType(), out var method))
@@ -47,7 +49,7 @@ namespace Imlight.Net
             });
         }
 
-        protected void SendToParent(INetworkMessage message)
+        protected void SendToSocket(INetworkMessage message)
         {
             if (SessionActor is null)
             {
