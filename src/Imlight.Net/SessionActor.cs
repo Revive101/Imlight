@@ -22,7 +22,7 @@ namespace Imlight.Net
 
         private readonly Socket _socket;
         private readonly IActorRef _actorFactoryRef;
-        private readonly Dictionary<IActorRef, ActorMessageService> _services;
+        private readonly Dictionary<IActorRef, MessageService> _services;
         private readonly SocketAsyncEventArgs _sendEventArgs = new SocketAsyncEventArgs();
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
         private bool _isSending;
@@ -32,7 +32,7 @@ namespace Imlight.Net
             this._socket = socket;
             this.SessionID = sessionId;
             this._actorFactoryRef = actorFactoryRef;
-            this._services = new Dictionary<IActorRef, ActorMessageService>();
+            this._services = new Dictionary<IActorRef, MessageService>();
 
             var self = Context.Self;
 
@@ -89,7 +89,7 @@ namespace Imlight.Net
         {
             // Ask the ActorFactory for this actor's message services.
             var services = _actorFactoryRef
-                .Ask<HashSet<Type>>(ActorServiceFactory.LOADED_SERVICES_ASK)
+                .Ask<HashSet<Type>>(ServiceFactory.LOADED_SERVICES_ASK)
                 .Result;
 
             SetServices(services);
@@ -101,7 +101,7 @@ namespace Imlight.Net
         {
             // Ask the ActorFactory for this actor's message services.
             var services = _actorFactoryRef
-                .Ask<HashSet<Type>>(ActorServiceFactory.UNLOADED_SERVICES_ASK)
+                .Ask<HashSet<Type>>(ServiceFactory.UNLOADED_SERVICES_ASK)
                 .Result;
 
             SetServices(services);
@@ -161,10 +161,13 @@ namespace Imlight.Net
             // to the appropriate ActorMessageService.
             foreach (var service in _services)
             {
-                var handler = service.Value.Messages.First(x => x == packet.GetType());
+                var actorRef = service.Key;
+                var type = service.Value;
+
+                var handler = type.MessageHandlers.Keys.First(x => x == packet.GetType());
                 if (handler == null) continue;
 
-                service.Key.Tell(packet);
+                actorRef.Tell(packet);
                 return;
             }
 
@@ -202,7 +205,7 @@ namespace Imlight.Net
 
                 // We've created the service as a child actor. Problem is, we need to know the actual class
                 // identity to use it later. To do that, we'll ask the actor to identify itself.
-                var identity = childRef.Ask<ServiceIdentityReply>(ActorMessageService.ASK_IDENTIFY)
+                var identity = childRef.Ask<ServiceIdentityReply>(MessageService.ASK_IDENTIFY)
                     .Result
                     .Identity;
                 _services.Add(childRef, identity);

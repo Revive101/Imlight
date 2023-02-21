@@ -8,7 +8,7 @@ using Imlight.Common;
 
 namespace Imlight.Net
 {
-    public abstract class ActorServiceFactory : ReceiveActor
+    public abstract class ServiceFactory : ReceiveActor
     {
         public const string UNLOADED_SERVICES_ASK = "AskForUnloadedMessageServices";
         public const string LOADED_SERVICES_ASK = "AskForLoadedMessageServices";

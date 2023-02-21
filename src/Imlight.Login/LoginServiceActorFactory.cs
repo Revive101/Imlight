@@ -5,10 +5,11 @@ using System.Text;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Imlight.Net;
+using Imlight.Net.Services;
 
 namespace Imlight.Login
 {
-    public class LoginServiceActorFactory : ActorServiceFactory
+    public class LoginServiceActorFactory : ServiceFactory
     {
         public LoginServiceActorFactory()
         {
@@ -38,7 +39,10 @@ namespace Imlight.Login
 
         protected override void GetLoadedActorMessageServices()
         {
-            var set = new HashSet<Type>();
+            var set = new HashSet<Type>()
+            {
+
+            };
 
             Sender.Tell(set);
         }

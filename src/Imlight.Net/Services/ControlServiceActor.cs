@@ -9,15 +9,14 @@ using WizUnraveler.DML;
 using Imlight.Common;
 using System.Diagnostics;
 
-namespace Imlight.Net
+namespace Imlight.Net.Services
 {
-    public class ControlServiceActor : ActorMessageService
+    public class ControlServiceActor : MessageService
     {
         private const byte KEEP_ALIVE_INTERVAL = 60;       // In seconds
         private const byte KEEP_ALIVE_RSP_WAIT_TIME = 2;   // In seconds
         private const byte KEEP_ALIVE_REVIVE_ATTEMPTS = 3; // The amount of times the server will try to revive a connection.
 
-        public override HashSet<Type> Messages { get; init; }
         public bool Valid;
 
         private SessionActor _parentActor;
@@ -29,14 +28,6 @@ namespace Imlight.Net
         {
             this._parentActor = parentActor;
             this._sessionOfferTime = new Stopwatch();
-            this.Messages = new HashSet<Type>()
-            {
-                typeof(ControlMessages.SessionOffer),
-                typeof(ControlMessages.SessionAccept),
-                typeof(ControlMessages.KeepAlive),
-                typeof(ControlMessages.KeepAliveResponse),
-            };
-
             SendSessionOffer();
         }
 
@@ -47,14 +38,11 @@ namespace Imlight.Net
 
         protected override void ConfigureReceivers()
         {
-            Receive<string>(x => x == ASK_IDENTIFY, x => Sender.Tell(new ServiceIdentityReply(this)));
-
-            Receive<ControlMessages.SessionAccept>(x => ReceiveSessionAccept(x));
-            Receive<ControlMessages.KeepAlive>(x => ReceiveKeepAlive(x));
-            Receive<ControlMessages.KeepAliveResponse>(x => ReceiveKeepAliveRsp(x));
-
+            // These are sent from self on interval to remind the actor of the session heartbeat.
             Receive<string>(s => s == "KeepAliveHeartbeat", x => SendHeartbeat());
             Receive<string>(s => s == "KeepAliveEndTimes", x => ReceiveKeepAliveEndTimes());
+
+            base.ConfigureReceivers();
         }
 
         private void SendSessionOffer()
@@ -78,6 +66,7 @@ namespace Imlight.Net
             _sessionOfferTime.Restart();
         }
 
+        [MessageHandler(typeof(ControlMessages.SessionAccept))]
         private void ReceiveSessionAccept(ControlMessages.SessionAccept message)
         {
             _sessionOfferTime.Stop();
@@ -109,6 +98,7 @@ namespace Imlight.Net
                 Context.Self);
         }
 
+        [MessageHandler(typeof(ControlMessages.KeepAlive))]
         private void ReceiveKeepAlive(ControlMessages.KeepAlive message)
         {
             if (message.SessionID != _parentActor.SessionID)
@@ -129,6 +119,7 @@ namespace Imlight.Net
             SendToParent(rsp);
         }
 
+        [MessageHandler(typeof(ControlMessages.KeepAliveResponse))]
         private void ReceiveKeepAliveRsp(ControlMessages.KeepAliveResponse message)
         {
             _isWaitingForHeartbeatResponse = false;
