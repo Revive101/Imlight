@@ -88,11 +88,18 @@ namespace Imlight.Net
                 return;
             }
 
+            // Set local variables.
             Valid = true;
             _isWaitingForHeartbeatResponse = false;
             _currentKeepAliveReviveAttempts = 0;
 
+            // The session is now valid. For optimization purposes, our parent SessionActor doesn't load
+            // all the services on creation. Instead, we wait for the session to be valid.
+            // We need to now tell our SessionActor that the session is created, and to grab the rest of its services.
+            _parentActor.FullInitialize(_sessionOfferTime.ElapsedMilliseconds);
+
             // Once the session is created, we need to send a heartbeat to keep it active.
+            // To do that. we'll have this class send a message to itself on interval to check on the heartbeat.
             var heartbeatInterval = TimeSpan.FromSeconds(KEEP_ALIVE_INTERVAL);
             Context.System.Scheduler.ScheduleTellRepeatedly(
                 heartbeatInterval,
@@ -100,8 +107,6 @@ namespace Imlight.Net
                 Context.Self,
                 "KeepAliveHeartbeat",
                 Context.Self);
-
-            Log.Logger.Information($"Session created with ID [{_parentActor.SessionID}] PING: [{_sessionOfferTime.ElapsedMilliseconds}]");
         }
 
         private void ReceiveKeepAlive(ControlMessages.KeepAlive message)

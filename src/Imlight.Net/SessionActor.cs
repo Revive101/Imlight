@@ -84,15 +84,27 @@ namespace Imlight.Net
             _cts.Cancel();
             Context.Stop(Self);
         }
+        
+        public void FullInitialize(long ping)
+        {
+            // Ask the ActorFactory for this actor's message services.
+            var services = _actorFactoryRef
+                .Ask<HashSet<Type>>(ActorServiceFactory.LOADED_SERVICES_ASK)
+                .Result;
+
+            SetServices(services);
+
+            Log.Logger.Information($"Session created with ID [{SessionID}] PING: [{ping}]");
+        }
 
         protected override void PreStart()
         {
             // Ask the ActorFactory for this actor's message services.
-            var result = _actorFactoryRef
+            var services = _actorFactoryRef
                 .Ask<HashSet<Type>>(ActorServiceFactory.UNLOADED_SERVICES_ASK)
                 .Result;
 
-            SetChildActorServices(result);
+            SetServices(services);
 
             Log.Logger.Debug($"SessionActor {SessionID} PreStart completed.");
 
@@ -181,7 +193,7 @@ namespace Imlight.Net
             }
         }
 
-        private void SetChildActorServices(HashSet<Type> services)
+        private void SetServices(HashSet<Type> services)
         {
             foreach (var service in services)
             {
