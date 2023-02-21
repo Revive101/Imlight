@@ -75,7 +75,7 @@ namespace Imlight.Net
 
             var scopedMessageName = message
                 .GetType().ToString().Split('.')[^1];
-            Log.Logger.Verbose($"SessionActor [{SessionID}] sent message [{scopedMessageName}]");
+            Log.Logger.Debug($"SessionActor [{SessionID}] sent message [{scopedMessageName}]");
         }
         
         public void Close()
@@ -139,8 +139,11 @@ namespace Imlight.Net
         private void HandlePacket(INetworkMessage packet)
         {
             // Log the incoming packet.
-            var scopedMessageName = packet.GetType().ToString().Split('.')[^1];
-            Log.Logger.Verbose($"SessionActor [{SessionID}] received message [{scopedMessageName}]");
+            var scopedMessageName = packet
+                .GetType()
+                .ToString()
+                .Split('.')[^1];
+            Log.Logger.Debug($"SessionActor [{SessionID}] received message [{scopedMessageName}]");
 
             // The SessionActor doesn't compute packets. Instead, it needs to dispatch the NetworkMessage
             // to the appropriate ActorMessageService.
@@ -150,6 +153,7 @@ namespace Imlight.Net
                 if (handler == null) continue;
 
                 service.Key.Tell(packet);
+                return;
             }
 
             Log.Logger.Warning($"SessionActor [{SessionID}] INetworkMessage of type [{packet.GetType()}] was left unhandled.");
