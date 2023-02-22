@@ -7,7 +7,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\WizUnraveler\src\WizUnraveler\WizUnraveler.csproj" />
     <ProjectReference Include="..\Imlight.Common\Imlight.Common.csproj" />
-    <ProjectReference Include="..\Imlight.Data\Imlight.Data.csproj" />
   </ItemGroup>
 
 </Project>
