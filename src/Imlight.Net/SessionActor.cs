@@ -157,18 +157,17 @@ namespace Imlight.Net
                 .Split('.')[^1];
             Log.Logger.Debug($"SessionActor [{SessionID}] received message [{scopedMessageName}]");
 
-            // The SessionActor doesn't compute packets. Instead, it needs to dispatch the NetworkMessage
-            // to the appropriate ActorMessageService.
+            // Iterate our services and see if any of them can handle this message.
             foreach (var service in _services)
             {
                 var actorRef = service.Key;
                 var type = service.Value;
 
-                if (!type.MessageHandlers.Any(x => x.Key == packet.GetType())) 
-                    continue;
-
-                actorRef.Tell(packet);
-                return;
+                if (type.MessageHandlers.Any(x => x.Key == packet.GetType()))
+                {
+                    actorRef.Tell(packet);
+                    return;
+                }
             }
 
             Log.Logger.Warning($"SessionActor [{SessionID}] INetworkMessage of type [{packet.GetType()}] was left unhandled.");

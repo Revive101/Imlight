@@ -43,6 +43,7 @@ namespace Imlight.Login
             var set = new HashSet<Type>()
             {
                 typeof(AuthenticatorServiceActor),
+                typeof(CharacterServiceActor),
             };
 
             Sender.Tell(set);
