@@ -15,9 +15,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.Patch", "Imlight.Pa
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.Net", "Imlight.Net\Imlight.Net.csproj", "{FA3E8F3C-9C24-4100-ABAA-EC76CF735EC5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Imlight.Data", "Imlight.Data\Imlight.Data.csproj", "{EC002E47-A121-4C61-867A-78621814B359}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WizUnraveler", "..\..\WizUnraveler\src\WizUnraveler\WizUnraveler.csproj", "{126DC0D3-B992-441A-94E9-5436D35ABC9E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.Data", "Imlight.Data\Imlight.Data.csproj", "{EC002E47-A121-4C61-867A-78621814B359}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -53,10 +51,6 @@ Global
 		{EC002E47-A121-4C61-867A-78621814B359}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EC002E47-A121-4C61-867A-78621814B359}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EC002E47-A121-4C61-867A-78621814B359}.Release|Any CPU.Build.0 = Release|Any CPU
-		{126DC0D3-B992-441A-94E9-5436D35ABC9E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{126DC0D3-B992-441A-94E9-5436D35ABC9E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{126DC0D3-B992-441A-94E9-5436D35ABC9E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{126DC0D3-B992-441A-94E9-5436D35ABC9E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

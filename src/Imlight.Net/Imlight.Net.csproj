@@ -5,9 +5,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\WizUnraveler\src\WizUnraveler\WizUnraveler.csproj" />
+    <PackageReference Include="WizUnraveler" Version="1.2.5.2" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Imlight.Common\Imlight.Common.csproj" />
-    <ProjectReference Include="..\Imlight.Data\Imlight.Data.csproj" />
   </ItemGroup>
 
 </Project>
