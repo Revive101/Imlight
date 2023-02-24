@@ -12,6 +12,8 @@ namespace Imlight.Login.Services
 {
     internal class CharacterServiceActor : MessageService
     {
+        private ByteString _characterRaw;
+
         public CharacterServiceActor(SessionActor parentActor) : base(parentActor) { }
 
         protected static Props Props(SessionActor parentActor)
@@ -22,21 +24,18 @@ namespace Imlight.Login.Services
         [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_CREATECHARACTER))]
         private void ReceiveCreateCharacter(LOGIN_7_PROTOCOL.MSG_CREATECHARACTER message)
         {
-            var data = message.CreationInfo;
+            _characterRaw = message.CreationInfo;
 
             SendToSocket(new LOGIN_7_PROTOCOL.MSG_CREATECHARACTERRESPONSE());
-            SendToSocket(new LOGIN_7_PROTOCOL.MSG_STARTCHARACTERLIST());
-            SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERINFO()
-            {
-                CharacterInfo = data
-            });
-            SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERLIST());
         }
 
         [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_REQUESTCHARACTERLIST))]
         private void ReceiveRequestCharacterList(LOGIN_7_PROTOCOL.MSG_REQUESTCHARACTERLIST message)
         {
             SendToSocket(new LOGIN_7_PROTOCOL.MSG_STARTCHARACTERLIST());
+            if (_characterRaw.Length != 0) {
+                SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERINFO() { CharacterInfo = _characterRaw });
+            }
             SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERLIST());
         }
 
