@@ -86,6 +86,11 @@ namespace Imlight.Net
             SessionActor.GetActorRef().Tell(msg);
         }
 
+        protected void SendCloseSession()
+        {
+            SessionActor.GetActorRef().Tell("Close");
+        }
+
         protected T AskInternal<T>(IInternalMessage msg)
             where T : IInternalMessage
         {
