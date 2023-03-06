@@ -19,7 +19,6 @@ namespace Imlight.Net
         /// A HashSet of the messages this service is capable of handling.
         /// </summary>
         protected SessionActor SessionActor { get; set; }
-        protected IActorRef SessionActorRef { get; set; }
         public virtual Dictionary<Type, MethodInfo> MessageHandlers { get; private set; }
 
         public MessageService(SessionActor sessionActor)
@@ -32,7 +31,11 @@ namespace Imlight.Net
          
         protected virtual void ConfigureReceivers()
         {
-            Receive<string>(x => x == ASK_IDENTIFY, x => Sender.Tell(new ServiceIdentityReply(this), Context.Self));
+            Receive<string>(x => x == ASK_IDENTIFY, x => 
+            {
+                Sender.Tell(new ServiceIdentityReply(this), Context.Self);
+            });
+
             Receive<INetworkMessage>(message =>
             {
                 // Find the method that handles this message type
@@ -47,6 +50,23 @@ namespace Imlight.Net
                     Unhandled(message);
                 }
             });
+
+            // Any other object is considered an internal message.
+            // @fixme: Instead of object, let's use type 'InternalMessage'.
+            Receive<object>(internalMessage =>
+            {
+                // Find the method that handles this message type
+                if (MessageHandlers.TryGetValue(internalMessage.GetType(), out var method))
+                {
+                    // Invoke the method with the message
+                    method.Invoke(this, new object[] { internalMessage });
+                }
+                else
+                {
+                    // No handler for this message type
+                    Unhandled(internalMessage);
+                }
+            });
         }
 
         protected void SendToSocket(INetworkMessage message)
@@ -58,6 +78,17 @@ namespace Imlight.Net
             }
 
             SessionActor.Send(message);
+        }
+
+        protected void SendInternal(object msg)
+        {
+            if (SessionActor is null)
+            {
+                Log.Logger.Error($"ControlServiceActor attempted to send message to undefined SessionActor.");
+                return;
+            }
+
+            SessionActor.GetActorRef().Tell(msg);
         }
 
         private void SetMessageHandlers()
