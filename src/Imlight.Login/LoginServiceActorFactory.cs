@@ -12,41 +12,21 @@ namespace Imlight.Login
 {
     public class LoginServiceActorFactory : ServiceFactory
     {
-        public LoginServiceActorFactory()
+        protected override HashSet<Type> UnloadedServiceTypes { get; set; } = new HashSet<Type>()
         {
-            ConfigureReceivers();
-        }
+            typeof(ControlService),
+        };
+        protected override HashSet<Type> LoadedServiceTypes { get; set; } = new HashSet<Type>()
+        {
+            typeof(AccountService),
+            typeof(AuthenticatorService),
+            typeof(CharacterService),
+            typeof(GameTransitionService),
+        };
 
         public static Props Props()
         {
             return Akka.Actor.Props.Create(() => new LoginServiceActorFactory());
-        }
-
-        protected override void ConfigureReceivers()
-        {
-            Receive<string>(x => x == UNLOADED_SERVICES_ASK, x => GetUnloadedActorMessageServices());
-            Receive<string>(x => x == LOADED_SERVICES_ASK, x => GetLoadedActorMessageServices());
-        }
-
-        protected override void GetUnloadedActorMessageServices()
-        {
-            var set = new HashSet<Type>()
-            {
-                typeof(ControlServiceActor),
-            };
-
-            Sender.Tell(set);
-        }
-
-        protected override void GetLoadedActorMessageServices()
-        {
-            var set = new HashSet<Type>()
-            {
-                typeof(AuthenticatorServiceActor),
-                typeof(CharacterServiceActor),
-            };
-
-            Sender.Tell(set);
         }
     }
 }

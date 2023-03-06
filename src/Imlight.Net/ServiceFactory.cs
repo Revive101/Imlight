@@ -13,21 +13,33 @@ namespace Imlight.Net
         public const string UNLOADED_SERVICES_ASK = "AskForUnloadedMessageServices";
         public const string LOADED_SERVICES_ASK = "AskForLoadedMessageServices";
 
+        protected abstract HashSet<Type> UnloadedServiceTypes { get; set; }
+        protected abstract HashSet<Type> LoadedServiceTypes { get; set; }
+
+        public ServiceFactory()
+        {
+            ConfigureReceivers();
+        }
+
         /// <summary>
         /// Configures the available actor receivers.
         /// </summary>
-        protected abstract void ConfigureReceivers();
+        protected void ConfigureReceivers()
+        {
+            Receive<string>(x => x == UNLOADED_SERVICES_ASK, x => GetUnloadedActorMessageServices());
+            Receive<string>(x => x == LOADED_SERVICES_ASK, x => GetLoadedActorMessageServices());
+        }
 
         /// <summary>
         /// Returns a HashSet of ActorMessageServices to give to a SessionActor before the session is loaded.
         /// </summary>
         /// <returns></returns>
-        protected abstract void GetUnloadedActorMessageServices();
+        protected void GetUnloadedActorMessageServices() => Sender.Tell(UnloadedServiceTypes);
 
         /// <summary>
         /// Returns a HashSet of ActorMessageServices to give to a SessionActor after the session is loaded.
         /// </summary>
         /// <returns></returns>
-        protected abstract void GetLoadedActorMessageServices();
+        protected void GetLoadedActorMessageServices() => Sender.Tell(LoadedServiceTypes);
     }
 }
