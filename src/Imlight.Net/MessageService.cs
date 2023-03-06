@@ -33,7 +33,7 @@ namespace Imlight.Net
         {
             Receive<string>(x => x == ASK_IDENTIFY, x => 
             {
-                Sender.Tell(new ServiceIdentityReply(this), Context.Self);
+                Sender.Tell(new INTMSG_SERVICE_IDENTITY(this), Context.Self);
             });
 
             Receive<INetworkMessage>(message =>
@@ -51,9 +51,7 @@ namespace Imlight.Net
                 }
             });
 
-            // Any other object is considered an internal message.
-            // @fixme: Instead of object, let's use type 'InternalMessage'.
-            Receive<object>(internalMessage =>
+            Receive<IInternalMessage>(internalMessage =>
             {
                 // Find the method that handles this message type
                 if (MessageHandlers.TryGetValue(internalMessage.GetType(), out var method))

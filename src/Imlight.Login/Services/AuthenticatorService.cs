@@ -40,7 +40,7 @@ namespace Imlight.Login.Services
              */
 
             // For now, we'll always except any user.
-            SendInternal(new SessionAccountAuthentication(Data.Util.GetDebugAccount(), 0));
+            SendInternal(new INTMSG_SETACCOUNT(Data.Util.GetDebugAccount(), 0));
             SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_VALIDATE_RSP()
             {
                 UserID = message.UserID,

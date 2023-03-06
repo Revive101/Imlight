@@ -151,7 +151,7 @@ namespace Imlight.Net
 
             // Anything else is an internal message. Usually for one service to send a message
             // to another service.
-            Receive<object>(x => HandleInternalMessage(x));
+            Receive<IInternalMessage>(x => HandleInternalMessage(x));
         }
 
         private void ListenAndProcess(IActorRef context)
@@ -262,7 +262,7 @@ namespace Imlight.Net
 
                 // We've created the service as a child actor. Problem is, we need to know the actual class
                 // identity to use it later. To do that, we'll ask the actor to identify itself.
-                var identity = childRef.Ask<ServiceIdentityReply>(MessageService.ASK_IDENTIFY)
+                var identity = childRef.Ask<INTMSG_SERVICE_IDENTITY>(MessageService.ASK_IDENTIFY)
                     .Result
                     .Identity;
                 _services.Add(childRef, identity);

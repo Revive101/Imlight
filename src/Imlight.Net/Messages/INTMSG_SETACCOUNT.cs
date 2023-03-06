@@ -7,12 +7,12 @@ using Imlight.Data;
 
 namespace Imlight.Net.Messages
 {
-    public class SessionAccountAuthentication
+    public class INTMSG_SETACCOUNT : IInternalMessage
     {
         public Account Account { get; init; }
         public ushort SessionID { get; init; }
 
-        public SessionAccountAuthentication(Account account, ushort sessionID)
+        public INTMSG_SETACCOUNT(Account account, ushort sessionID)
         {
             Account = account;
             SessionID = sessionID;

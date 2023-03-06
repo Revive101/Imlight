@@ -21,8 +21,8 @@ namespace Imlight.Net.Services
             return Akka.Actor.Props.Create(() => new AccountService(parentActor));
         }
 
-        [InternalMessageHandler(typeof(SessionAccountAuthentication))]
-        private void InternalReceiveSetAccount(SessionAccountAuthentication message)
+        [InternalMessageHandler(typeof(INTMSG_SETACCOUNT))]
+        private void InternalReceiveSetAccount(INTMSG_SETACCOUNT message)
         {
             this.Account = message.Account;
         }
