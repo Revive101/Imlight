@@ -125,7 +125,7 @@ namespace Imlight.Net
         {
             var id = GetRandomID();
             var actorProps = SessionActor.Props(socket, id, _actorFactoryRef);
-            var actor = context.ActorOf(actorProps, id.ToString());
+            var actor = context.ActorOf(actorProps, $"SessionActor.{id}");
 
             if (!CommunicationActors.TryAdd(id, actor))
             {
