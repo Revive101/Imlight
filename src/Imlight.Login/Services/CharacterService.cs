@@ -43,7 +43,11 @@ namespace Imlight.Login.Services
             if (account is not null && charData is not null)
             {
                 var newCharacter = new Character(charData);
-                account.AddCharacter(newCharacter);
+                var result = account.AddCharacter(newCharacter);
+
+                // @TODO: Figure out what each of these error codes means.
+                if (result == false)
+                    errorCode = 2;
             }
             else
             {
@@ -85,6 +89,25 @@ namespace Imlight.Login.Services
 
             // Tell the client we've finished sending the character list.
             SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERLIST());
+        }
+
+        [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_DELETECHARACTER))]
+        private void ReceiveDeleteCharacter(LOGIN_7_PROTOCOL.MSG_DELETECHARACTER message)
+        {
+            int errorCode = 0;
+            var account = GetSocketAccount();
+            if (account is null)
+                errorCode = 1;
+
+            // The DeleteCharacter method will do the character searching for us.
+            // Returns false if no character by that ID is found.
+            if (!account.DeleteCharacter(message.CharID))
+                errorCode = 2;
+
+            SendToSocket(new LOGIN_7_PROTOCOL.MSG_DELETECHARACTERRESPONSE()
+            {
+                ErrorCode = errorCode
+            });
         }
 
         [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_LOGIN_NOT_AFK))]
