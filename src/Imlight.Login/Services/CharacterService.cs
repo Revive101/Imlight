@@ -7,24 +7,30 @@ using System.Text;
 using System.Threading.Tasks;
 using WizUnraveler;
 using WizUnraveler.Cache;
+using WizUnraveler.ObjectProperty;
 
 namespace Imlight.Login.Services
 {
-    internal class CharacterServiceActor : MessageService
+    internal class CharacterService : MessageService
     {
-        private ByteString _characterRaw;
+        private ByteString _localChar;
+        private TypeCache.WizardCharacterCreationInfo _info;
 
-        public CharacterServiceActor(SessionActor parentActor) : base(parentActor) { }
+        public CharacterService(SessionActor parentActor) : base(parentActor) { }
 
         protected static Props Props(SessionActor parentActor)
         {
-            return Akka.Actor.Props.Create(() => new CharacterServiceActor(parentActor));
+            return Akka.Actor.Props.Create(() => new CharacterService(parentActor));
         }
 
         [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_CREATECHARACTER))]
         private void ReceiveCreateCharacter(LOGIN_7_PROTOCOL.MSG_CREATECHARACTER message)
         {
-            _characterRaw = message.CreationInfo;
+            _localChar = message.CreationInfo;
+
+            // deserialization test
+            var deserializer = new ObjectSerializer();
+            _info = (TypeCache.WizardCharacterCreationInfo)deserializer.Deserialize(message.CreationInfo);
 
             SendToSocket(new LOGIN_7_PROTOCOL.MSG_CREATECHARACTERRESPONSE());
         }
@@ -33,8 +39,17 @@ namespace Imlight.Login.Services
         private void ReceiveRequestCharacterList(LOGIN_7_PROTOCOL.MSG_REQUESTCHARACTERLIST message)
         {
             SendToSocket(new LOGIN_7_PROTOCOL.MSG_STARTCHARACTERLIST());
-            if (_characterRaw.Length != 0) {
-                SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERINFO() { CharacterInfo = _characterRaw });
+
+            if (_localChar.Length != 0)
+            {
+                // Serialization test
+                var serializer = new ObjectSerializer();
+                var data = serializer.Serialize(_info);
+
+                SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERINFO()
+                {
+                    CharacterInfo = data
+                });
             }
             SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERLIST());
         }

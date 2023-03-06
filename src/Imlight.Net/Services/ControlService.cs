@@ -11,7 +11,7 @@ using System.Diagnostics;
 
 namespace Imlight.Net.Services
 {
-    public class ControlServiceActor : MessageService
+    public class ControlService : MessageService
     {
         private const byte KEEP_ALIVE_INTERVAL = 60;       // In seconds
         private const byte KEEP_ALIVE_RSP_WAIT_TIME = 2;   // In seconds
@@ -23,7 +23,7 @@ namespace Imlight.Net.Services
         private bool _isWaitingForHeartbeatResponse;
         private byte _currentKeepAliveReviveAttempts;
 
-        public ControlServiceActor(SessionActor parentActor) : base(parentActor)
+        public ControlService(SessionActor parentActor) : base(parentActor)
         {
             this._sessionOfferTime = new Stopwatch();
 
@@ -32,7 +32,7 @@ namespace Imlight.Net.Services
 
         protected static Props Props(SessionActor parentActor)
         {
-            return Akka.Actor.Props.Create(() => new ControlServiceActor(parentActor));
+            return Akka.Actor.Props.Create(() => new ControlService(parentActor));
         }
 
         protected override void ConfigureReceivers()
@@ -87,7 +87,7 @@ namespace Imlight.Net.Services
             SessionActor.FullInitialize(_sessionOfferTime.ElapsedMilliseconds);
 
             // Once the session is created, we need to send a heartbeat to keep it active.
-            // To do that. we'll have this class send a message to itself on interval to check on the heartbeat.
+            // To do that. we'll have this actor send a message to itself on interval to check on the heartbeat.
             var heartbeatInterval = TimeSpan.FromSeconds(KEEP_ALIVE_INTERVAL);
             Context.System.Scheduler.ScheduleTellRepeatedly(
                 heartbeatInterval,
@@ -104,6 +104,7 @@ namespace Imlight.Net.Services
             {
                 Log.Logger.Error($"SessionActor [{SessionActor.SessionID}] misaligned Session ID.");
                 SessionActor.Close();
+
                 return;
             }
 
