@@ -8,6 +8,7 @@ using Imlight.Net.Messages;
 using WizUnraveler.DML;
 using WizUnraveler.Cache;
 using Akka.Actor;
+using Imlight.Net.Services;
 
 namespace Imlight.Login.Services
 {
@@ -40,7 +41,10 @@ namespace Imlight.Login.Services
              */
 
             // For now, we'll always except any user.
-            SendInternal(new INTMSG_SETACCOUNT(Data.Util.GetDebugAccount(), 0));
+            SendInternal(new INTERN_ACCOUNT_PROTOCOL.INTMSG_SET_ACCOUNT()
+            {
+                Account = Data.Util.GetDebugAccount()
+            });
             SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_VALIDATE_RSP()
             {
                 UserID = message.UserID,

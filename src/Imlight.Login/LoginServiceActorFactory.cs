@@ -15,10 +15,10 @@ namespace Imlight.Login
         protected override HashSet<Type> UnloadedServiceTypes { get; set; } = new HashSet<Type>()
         {
             typeof(ControlService),
+            typeof(AccountService),
         };
         protected override HashSet<Type> LoadedServiceTypes { get; set; } = new HashSet<Type>()
         {
-            typeof(AccountService),
             typeof(AuthenticatorService),
             typeof(CharacterService),
             typeof(GameTransitionService),

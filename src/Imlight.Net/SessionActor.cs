@@ -140,7 +140,7 @@ namespace Imlight.Net
 
         protected override void Unhandled(object message)
         {
-            Log.Logger.Error($"CommunicationActor [{SessionID}] " +
+            Log.Logger.Error($"SessionActor [{SessionID}] " +
                 $"received unhandled message of type [{message.GetType()}].");
         }
 
@@ -151,7 +151,7 @@ namespace Imlight.Net
 
             // Anything else is an internal message. Usually for one service to send a message
             // to another service.
-            Receive<IInternalMessage>(x => HandleInternalMessage(x));
+            Receive<IInternalMessage>(x => HandleInternalTell(x));
         }
 
         private void ListenAndProcess(IActorRef context)
@@ -194,7 +194,7 @@ namespace Imlight.Net
                 .GetType()
                 .ToString()
                 .Split('.')[^1];
-            Log.Logger.Debug($"SessionActor [{SessionID}] received KiNP packet [{scopedMessageName}]");
+            Log.Logger.Verbose($"SessionActor [{SessionID}] received KiNP packet [{scopedMessageName}]");
 
             // Iterate our services and see if any of them can handle this message.
             foreach (var service in _services)
@@ -209,10 +209,10 @@ namespace Imlight.Net
                 }
             }
 
-            Log.Logger.Warning($"SessionActor [{SessionID}] KiNP packet of type [{packet.GetType()}] was left unhandled.");
+            Unhandled(packet);
         }
 
-        private void HandleInternalMessage(object msg)
+        private void HandleInternalTell(IInternalMessage msg)
         {
             // Iterate our services and see if any of them can handle this message.
             foreach (var service in _services)
@@ -222,12 +222,35 @@ namespace Imlight.Net
 
                 if (type.MessageHandlers.Any(x => x.Key == msg.GetType()))
                 {
-                    actorRef.Tell(msg);
+                    actorRef.Forward(msg);
                     return;
                 }
             }
 
-            Log.Logger.Warning($"SessionActor [{SessionID}] internal packet of type [{msg.GetType()}] was left unhandled.");
+            Unhandled(msg);
+        }
+
+        public T HandleInternalAsk<T>(IInternalMessage msg) 
+            where T : IInternalMessage
+        {
+            // @fixme: Use actor mailbox to handle internal messages.
+
+            // Iterate our services and see if any of them can handle this message.
+            foreach (var service in _services)
+            {
+                var actorRef = service.Key;
+                var type = service.Value;
+
+                if (type.MessageHandlers.Any(x => x.Key == msg.GetType()))
+                {
+                    //Sender.Forward(actorRef.Ask<T>(msg));
+                    var result = actorRef.Ask<T>(msg).Result;
+                    return result;
+                }
+            }
+
+            Unhandled(msg);
+            return default(T);
         }
 
         private INetworkMessage GetPacketFromBuffer(byte[] buffer, int bytesReceived)
