@@ -16,6 +16,9 @@ namespace Imlight.Login.Services
 {
     internal class CharacterService : MessageService
     {
+        private uint _characterCreationStage;
+        private uint _characterCreationParameter;
+
         public CharacterService(SessionActor parentActor) : base(parentActor) { }
 
         protected static Props Props(SessionActor parentActor)
@@ -110,16 +113,11 @@ namespace Imlight.Login.Services
             });
         }
 
-        [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_LOGIN_NOT_AFK))]
-        private void ReceiveLoginNotAfk(LOGIN_7_PROTOCOL.MSG_LOGIN_NOT_AFK message)
-        {
-            // @TODO
-        }
-
         [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_LOGINLOGCHARACTERCREATION))]
         private void ReceiveLoginLogCharacterCreation(LOGIN_7_PROTOCOL.MSG_LOGINLOGCHARACTERCREATION message)
         {
-            // @TODO
+            this._characterCreationParameter = message.Parameter;
+            this._characterCreationStage = message.Stage;
         }
 
         private Account GetSocketAccount()
