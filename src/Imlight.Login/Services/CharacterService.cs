@@ -1,5 +1,8 @@
 ﻿using Akka.Actor;
+using Imlight.Common;
+using Imlight.Data;
 using Imlight.Net;
+using Imlight.Net.Messages;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,9 +16,6 @@ namespace Imlight.Login.Services
 {
     internal class CharacterService : MessageService
     {
-        private ByteString _localChar;
-        private TypeCache.WizardCharacterCreationInfo _info;
-
         public CharacterService(SessionActor parentActor) : base(parentActor) { }
 
         protected static Props Props(SessionActor parentActor)
@@ -26,31 +26,64 @@ namespace Imlight.Login.Services
         [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_CREATECHARACTER))]
         private void ReceiveCreateCharacter(LOGIN_7_PROTOCOL.MSG_CREATECHARACTER message)
         {
-            _localChar = message.CreationInfo;
+            // The client has sent us serialized WizardCharacterCreationData. We need to
+            // deserialize it to add it to our account database.
+            var serializer = new ObjectSerializer();
+            var charData = (TypeCache.WizardCharacterCreationInfo)serializer.Deserialize(message.CreationInfo);
 
-            // deserialization test
-            var deserializer = new ObjectSerializer();
-            _info = (TypeCache.WizardCharacterCreationInfo)deserializer.Deserialize(message.CreationInfo);
+            int errorCode = 0;
+            if (charData is null)
+            {
+                Log.Logger.Error("Could not successfully deserialize WizardCharacterCreationData!");
+                errorCode = 1;
+            }
 
-            SendToSocket(new LOGIN_7_PROTOCOL.MSG_CREATECHARACTERRESPONSE());
+            // Add the new character to the player's account.
+            var account = GetSocketAccount();
+            if (account is not null && charData is not null)
+            {
+                var newCharacter = new Character(charData);
+                account.AddCharacter(newCharacter);
+            }
+            else
+            {
+                errorCode = 1;
+            }
+
+            SendToSocket(new LOGIN_7_PROTOCOL.MSG_CREATECHARACTERRESPONSE()
+            {
+                ErrorCode = errorCode,
+            });
         }
 
         [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_REQUESTCHARACTERLIST))]
         private void ReceiveRequestCharacterList(LOGIN_7_PROTOCOL.MSG_REQUESTCHARACTERLIST message)
         {
+            var account = GetSocketAccount();
+            if (account is null) 
+                return;
+
+            // Tell the client we're going to start sending the character list.
             SendToSocket(new LOGIN_7_PROTOCOL.MSG_STARTCHARACTERLIST());
 
-            if (_localChar.Length != 0)
+            // For every character, we're going to serialize the document and send to the client.
+            if (account.Characters.Count > 0)
             {
-                // Serialization test
                 var serializer = new ObjectSerializer();
-                var data = serializer.Serialize(_info);
-
-                SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERINFO()
+                for (int i = 0; i < account.Characters.Count; i++)
                 {
-                    CharacterInfo = data
-                });
+                    var character = account.Characters[i];
+
+                    // Remember, WizAPI saves the object. We need to serialize it here.
+                    var data = serializer.Serialize(character.CreationData);
+                    SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERINFO()
+                    {
+                        CharacterInfo = data,
+                    });
+                }
             }
+
+            // Tell the client we've finished sending the character list.
             SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERLIST());
         }
 
@@ -64,6 +97,20 @@ namespace Imlight.Login.Services
         private void ReceiveLoginLogCharacterCreation(LOGIN_7_PROTOCOL.MSG_LOGINLOGCHARACTERCREATION message)
         {
             // @TODO
+        }
+
+        private Account GetSocketAccount()
+        {
+            // Get the account from the AccountService.
+            var internalMessage = new INTERN_ACCOUNT_PROTOCOL.INTMSG_GET_ACCOUNT();
+            var account = AskInternal<INTERN_ACCOUNT_PROTOCOL.INTMSG_ACCOUNT>(internalMessage).Account;
+            
+            if (account is null)
+            {
+                Log.Logger.Error($"{this.GetType()} could not get account from AccountService.");
+            }
+
+            return account;
         }
     }
 }
