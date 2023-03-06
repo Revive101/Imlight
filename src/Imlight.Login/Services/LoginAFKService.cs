@@ -39,8 +39,6 @@ namespace Imlight.Login.Services
         protected override void ConfigureReceivers()
         {
             base.ConfigureReceivers();
-
-            Receive<string>(x => x == "AFKHeartbeat", x => ReceiveAfkHeartbeat());
         }
 
         [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_LOGIN_NOT_AFK))]

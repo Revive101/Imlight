@@ -22,6 +22,7 @@ namespace Imlight.Login
             typeof(AuthenticatorService),
             typeof(CharacterService),
             typeof(GameTransitionService),
+            typeof(LoginAFKService),
         };
 
         public static Props Props()
