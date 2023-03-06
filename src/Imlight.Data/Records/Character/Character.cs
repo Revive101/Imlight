@@ -26,7 +26,7 @@ namespace Imlight.Data
         /// <summary>
         /// The character creation data. Shown in the charater selection screen.
         /// </summary>
-        public TypeCache.WizardCharacterCreationInfo CreationData { get; private set; }
+        public WizardCharacterCreationInfo CreationData { get; private set; }
 
         /// <summary>
         /// This is a custom name field. It does not use name indicates and can be any string.
@@ -34,7 +34,7 @@ namespace Imlight.Data
         /// </summary>
         public string Name { get; private set; }
 
-        public Character(TypeCache.WizardCharacterCreationInfo creationData)
+        public Character(WizardCharacterCreationInfo creationData)
         {
             this.ID = RandomGen.GenerateId();
 

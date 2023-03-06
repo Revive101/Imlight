@@ -129,11 +129,11 @@ namespace Imlight.Net
 
             if (!CommunicationActors.TryAdd(id, actor))
             {
-                Log.Logger.Error($"TcpListenerActor [{Name}] could not add new CommunicationActor for IP: {socket.RemoteEndPoint}.");
+                Log.Logger.Error($"TcpListenerActor [{Name}] could not add new SessionActor for IP: {socket.RemoteEndPoint}.");
                 return;
             }
 
-            Log.Logger.Verbose($"TcpListenerActor [{Name}] accepted new CommunicationActor:" +
+            Log.Logger.Verbose($"TcpListenerActor [{Name}] accepted new SessionActor:" +
                 $"\n\t\tIP: {socket.RemoteEndPoint}" +
                 $"\n\t\tID: {id}");
         }

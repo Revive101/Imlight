@@ -15,9 +15,6 @@ namespace Imlight.Net
     {
         public static readonly string ASK_IDENTIFY = "IDENTIFY_YOURSELF";
 
-        /// <summary>
-        /// A HashSet of the messages this service is capable of handling.
-        /// </summary>
         protected SessionActor SessionActor { get; set; }
         public virtual Dictionary<Type, MethodInfo> MessageHandlers { get; private set; }
 
@@ -71,22 +68,36 @@ namespace Imlight.Net
         {
             if (SessionActor is null)
             {
-                Log.Logger.Error($"ControlServiceActor attempted to send message to undefined SessionActor.");
+                Log.Logger.Error($"{this.GetType()} attempted to send message to undefined SessionActor.");
                 return;
             }
 
             SessionActor.Send(message);
         }
 
-        protected void SendInternal(object msg)
+        protected void SendInternal(IInternalMessage msg)
         {
             if (SessionActor is null)
             {
-                Log.Logger.Error($"ControlServiceActor attempted to send message to undefined SessionActor.");
+                Log.Logger.Error($"{this.GetType()} attempted to send message to undefined SessionActor.");
                 return;
             }
 
             SessionActor.GetActorRef().Tell(msg);
+        }
+
+        protected T AskInternal<T>(IInternalMessage msg)
+            where T : IInternalMessage
+        {
+            if (SessionActor is null)
+            {
+                Log.Logger.Error($"{this.GetType()} attempted to send message to undefined SessionActor.");
+                return default(T);
+            }
+
+            var task = SessionActor.HandleInternalAsk<T>(msg);
+
+            return task;
         }
 
         private void SetMessageHandlers()
@@ -98,6 +109,14 @@ namespace Imlight.Net
                 .GetType()
                 .GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
                 .Where(method => method.GetCustomAttribute<MessageHandlerAttribute>() != null);
+
+            if (methods.Count() <= 0)
+            {
+                Log.Logger.Warning($"{this.GetType()} does not have any methods with attribute {nameof(MessageHandlerAttribute)}." +
+                    $"Is this intended behavior?");
+
+                return;
+            }
 
             foreach (var method in methods)
             {
