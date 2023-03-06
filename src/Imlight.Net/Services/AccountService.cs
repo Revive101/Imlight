@@ -21,10 +21,19 @@ namespace Imlight.Net.Services
             return Akka.Actor.Props.Create(() => new AccountService(parentActor));
         }
 
-        [InternalMessageHandler(typeof(INTMSG_SETACCOUNT))]
-        private void InternalReceiveSetAccount(INTMSG_SETACCOUNT message)
+        [InternalMessageHandler(typeof(INTERN_ACCOUNT_PROTOCOL.INTMSG_SETACCOUNT))]
+        private void InternalReceiveSetAccount(INTERN_ACCOUNT_PROTOCOL.INTMSG_SETACCOUNT message)
         {
             this.Account = message.Account;
+        }
+
+        [InternalMessageHandler(typeof(INTERN_ACCOUNT_PROTOCOL.INTMSG_GETACCOUNT))]
+        private void InternalReceiveGetAccount(INTERN_ACCOUNT_PROTOCOL.INTMSG_GETACCOUNT message)
+        {
+            Sender.Tell(new INTERN_ACCOUNT_PROTOCOL.INTMSG_ACCOUNT()
+            {
+                Account = this.Account
+            });
         }
     }
 }
