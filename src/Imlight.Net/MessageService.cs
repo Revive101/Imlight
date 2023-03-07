@@ -15,11 +15,7 @@ namespace Imlight.Net
     {
         public static readonly string ASK_IDENTIFY = "IDENTIFY_YOURSELF";
 
-        /// <summary>
-        /// A HashSet of the messages this service is capable of handling.
-        /// </summary>
         protected SessionActor SessionActor { get; set; }
-        protected IActorRef SessionActorRef { get; set; }
         public virtual Dictionary<Type, MethodInfo> MessageHandlers { get; private set; }
 
         public MessageService(SessionActor sessionActor)
@@ -32,7 +28,11 @@ namespace Imlight.Net
          
         protected virtual void ConfigureReceivers()
         {
-            Receive<string>(x => x == ASK_IDENTIFY, x => Sender.Tell(new ServiceIdentityReply(this), Context.Self));
+            Receive<string>(x => x == ASK_IDENTIFY, x => 
+            {
+                Sender.Tell(new INTMSG_SERVICE_IDENTITY(this), Context.Self);
+            });
+
             Receive<INetworkMessage>(message =>
             {
                 // Find the method that handles this message type
@@ -47,17 +47,62 @@ namespace Imlight.Net
                     Unhandled(message);
                 }
             });
+
+            Receive<IInternalMessage>(internalMessage =>
+            {
+                // Find the method that handles this message type
+                if (MessageHandlers.TryGetValue(internalMessage.GetType(), out var method))
+                {
+                    // Invoke the method with the message
+                    method.Invoke(this, new object[] { internalMessage });
+                }
+                else
+                {
+                    // No handler for this message type
+                    Unhandled(internalMessage);
+                }
+            });
         }
 
         protected void SendToSocket(INetworkMessage message)
         {
             if (SessionActor is null)
             {
-                Log.Logger.Error($"ControlServiceActor attempted to send message to undefined SessionActor.");
+                Log.Logger.Error($"{this.GetType()} attempted to send message to undefined SessionActor.");
                 return;
             }
 
             SessionActor.Send(message);
+        }
+
+        protected void SendInternal(IInternalMessage msg)
+        {
+            if (SessionActor is null)
+            {
+                Log.Logger.Error($"{this.GetType()} attempted to send message to undefined SessionActor.");
+                return;
+            }
+
+            SessionActor.GetActorRef().Tell(msg);
+        }
+
+        protected void SendCloseSession()
+        {
+            SessionActor.GetActorRef().Tell("Close");
+        }
+
+        protected T AskInternal<T>(IInternalMessage msg)
+            where T : IInternalMessage
+        {
+            if (SessionActor is null)
+            {
+                Log.Logger.Error($"{this.GetType()} attempted to send message to undefined SessionActor.");
+                return default(T);
+            }
+
+            var task = SessionActor.HandleInternalAsk<T>(msg);
+
+            return task;
         }
 
         private void SetMessageHandlers()
@@ -69,6 +114,14 @@ namespace Imlight.Net
                 .GetType()
                 .GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
                 .Where(method => method.GetCustomAttribute<MessageHandlerAttribute>() != null);
+
+            if (methods.Count() <= 0)
+            {
+                Log.Logger.Warning($"{this.GetType()} does not have any methods with attribute {nameof(MessageHandlerAttribute)}." +
+                    $"Is this intended behavior?");
+
+                return;
+            }
 
             foreach (var method in methods)
             {

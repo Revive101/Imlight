@@ -10,6 +10,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Imlight.Common\Imlight.Common.csproj" />
+    <ProjectReference Include="..\Imlight.Data\Imlight.Data.csproj" />
+    <ProjectReference Include="..\Imlight.Net\Imlight.Net.csproj" />
   </ItemGroup>
 
 </Project>

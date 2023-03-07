@@ -11,14 +11,14 @@
     <PackageReference Include="Serilog" Version="2.12.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
     <PackageReference Include="System.CodeDom" Version="7.0.0" />
-    <PackageReference Include="WizUnraveler" Version="1.2.5.2" />
+    <PackageReference Include="WizUnraveler" Version="1.2.8.3" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Imlight.Common\Imlight.Common.csproj" />
+    <ProjectReference Include="..\Imlight.Game\Imlight.Game.csproj" />
     <ProjectReference Include="..\Imlight.Login\Imlight.Login.csproj" />
     <ProjectReference Include="..\Imlight.Patch\Imlight.Patch.csproj" />
-    <ProjectReference Include="..\Imlight.Realm\Imlight.Realm.csproj" />
   </ItemGroup>
 
 </Project>

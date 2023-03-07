@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 
 namespace Imlight.Net.Messages
 {
-    public class ServiceIdentityReply
+    public class INTMSG_SERVICE_IDENTITY : IInternalMessage
     {
         public MessageService Identity { get; init; }
 
-        public ServiceIdentityReply(MessageService identity)
+        public INTMSG_SERVICE_IDENTITY(MessageService identity)
         {
             this.Identity = identity;
         }

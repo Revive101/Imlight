@@ -64,5 +64,23 @@ namespace Imlight.Data
 
             return true;
         }
+
+        /// <summary>
+        /// Deletes a character from this account.
+        /// </summary>
+        /// <param name="charId"></param>
+        /// <returns>False, if no character by ID is found. Otherwise, true.</returns>
+        public bool DeleteCharacter(ulong charId)
+        {
+            if (Characters.Any(x => x.ID == charId))
+            {
+                var character = Characters.First(x => x.ID == charId);
+                Characters.Remove(character);
+
+                return true;
+            }
+
+            return false;
+        }
     }
 }

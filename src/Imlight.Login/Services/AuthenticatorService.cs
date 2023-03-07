@@ -8,16 +8,17 @@ using Imlight.Net.Messages;
 using WizUnraveler.DML;
 using WizUnraveler.Cache;
 using Akka.Actor;
+using Imlight.Net.Services;
 
 namespace Imlight.Login.Services
 {
-    internal class AuthenticatorServiceActor : MessageService
+    internal class AuthenticatorService : MessageService
     {
-        public AuthenticatorServiceActor(SessionActor parentActor) : base(parentActor) { }
+        public AuthenticatorService(SessionActor parentActor) : base(parentActor) { }
 
         protected static Props Props(SessionActor parentActor)
         {
-            return Akka.Actor.Props.Create(() => new AuthenticatorServiceActor(parentActor));
+            return Akka.Actor.Props.Create(() => new AuthenticatorService(parentActor));
         }
 
         [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_USER_VALIDATE))]
@@ -40,12 +41,21 @@ namespace Imlight.Login.Services
              */
 
             // For now, we'll always except any user.
+            SendInternal(new INTERN_ACCOUNT_PROTOCOL.INTMSG_SET_ACCOUNT()
+            {
+                Account = Data.Util.GetDebugAccount()
+            });
             SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_VALIDATE_RSP()
             {
                 UserID = message.UserID,
                 PayingUser = 1,
                 Error = (int)UserValidateError.NoError,
                 Reason = "", // Unclear as to what this field means, but it's most likely an elaboration of an error.
+            });
+            SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_ADMIT_IND()
+            {
+                PositionInQueue = 0,
+                Status = 1,
             });
         }
     }
