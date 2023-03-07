@@ -45,50 +45,42 @@ namespace Imlight.Data
 
         public WizClientObject GetWizClientObject()
         {
-            var clientObject = CoreObjectFactory.InitializeCoreObject(new WizClientObject(), (uint)CreationData.m_templateID);
+            //var clientObject = CoreObjectFactory.InitializeCoreObject(new WizClientObject(), (uint)CreationData.m_templateID);
 
-            SetWizClientBehaviors(ref clientObject);
+            //SetWizClientBehaviors(ref clientObject);
 
             // get this from database instead
-            clientObject.m_gameStats = new WizGameStats()
-            {
-                m_baseMana = 15,
-                m_currentMana = 15,
-                m_baseGoldPouch = 1000000,
-                m_baseHitpoints = 500,
-                m_currentHitpoints = 500
-            };
-            clientObject.m_fScale = 1f;
-            clientObject.m_globalID = RandomGen.GenerateId();
-            clientObject.m_characterId = new GID(RandomGen.GenerateId());
-            clientObject.m_permID = 0; // What is this?
-            clientObject.m_location = new SharpDX.Vector3(0, 0, 0);
+            //clientObject.m_gameStats = new WizGameStats()
+            //{
+            //    m_baseMana = 15,
+            //    m_currentMana = 15,
+            //    m_baseGoldPouch = 1000000,
+            //    m_baseHitpoints = 500,
+            //    m_currentHitpoints = 500
+            //};
+            //clientObject.m_fScale = 1f;
+            //clientObject.m_globalID = RandomGen.GenerateId();
+            //clientObject.m_characterId = new GID(RandomGen.GenerateId());
+            //clientObject.m_permID = 0; // What is this?
+            //clientObject.m_location = new SharpDX.Vector3(0, 0, 0);
 
-            return clientObject;
+            //return clientObject;
+            return new WizClientObject();
         }
 
         private void SetWizClientBehaviors(ref WizClientObject clientObject)
         {
-            // Very lazy setup. Debugging purposes only.
-            if (CoreObjectFactory.FindBehaviorInstance<ClientWizPlayerNameBehavior>(clientObject, out var nameBehavior))
+            if (CoreObjectFactory.FindBehaviorInstance<WizardCharacterBehavior>(clientObject, out var avatarBehavior))
             {
-                var nameObj = new ClientWizPlayerNameBehavior()
-                {
-                    m_eGender = CreationData.m_avatarBehavior.m_eGender,
-                    m_eRace = CreationData.m_avatarBehavior.m_eRace,
-                    m_nameKeys = CreationData.m_nameIndices,
-                    m_useRank = true,
-                    m_pvpIconID = 0,
-                    m_badgeTitle = "Test",
-                    m_chatPermissions = 0,
-                };
-
-                var idx = clientObject.m_inactiveBehaviors.IndexOf(nameBehavior);
-                clientObject.m_inactiveBehaviors[idx] = nameObj;
+                var idx = clientObject.m_inactiveBehaviors.IndexOf(avatarBehavior);
+                clientObject.m_inactiveBehaviors[idx] = CreationData.m_avatarBehavior;
             }
             else
-                throw new Exception("Behavior ClientWizPlayerNameBehavior not found!");
+                throw new Exception($"Behavior WizardCharacterBehavior was not found!");
 
+            // =========================================================
+            // ClientWizEquipmentBehavior creation
+            // =========================================================
             if (CoreObjectFactory.FindBehaviorInstance<ClientWizEquipmentBehavior>(clientObject, out var equipmentBehavior))
             {
                 var esi = new List<EquippedSlotInfo>();
@@ -101,50 +93,55 @@ namespace Imlight.Data
                     });
                 }
 
-                var equipObj = new ClientWizEquipmentBehavior()
-                {
-                    m_publicItemList = CreationData.m_equipmentInfoList?.m_infoList,
-                    m_slotList = esi,
-                    m_itemList = new List<CoreObject>()
-                };
+                equipmentBehavior.m_publicItemList = CreationData.m_equipmentInfoList?.m_infoList;
+                equipmentBehavior.m_equipmentSets = new List<EquipmentSet>();
+                equipmentBehavior.m_slotList = esi;
+                equipmentBehavior.m_itemList = new List<CoreObject>();
+            }
+            else
+                throw new Exception("Behavior ClientWizEquipmentBehavior not found!");
 
-                var index = clientObject.m_inactiveBehaviors.IndexOf(equipmentBehavior);
-                clientObject.m_inactiveBehaviors[index] = (ClientWizEquipmentBehavior)equipObj;
+            // =========================================================
+            // ClientWizPlayerNameBehavior creation
+            // =========================================================
+            if (CoreObjectFactory.FindBehaviorInstance<ClientWizPlayerNameBehavior>(clientObject, out var nameBehavior))
+            {
+                nameBehavior.m_eGender = CreationData.m_avatarBehavior.m_eGender;
+                nameBehavior.m_eRace = CreationData.m_avatarBehavior.m_eRace;
+                nameBehavior.m_nameKeys = CreationData.m_nameIndices;
+                nameBehavior.m_useRank = true;
+                nameBehavior.m_pvpIconID = 0;
+                nameBehavior.m_badgeTitle = "Test";
+                nameBehavior.m_chatPermissions = 0;
             }
             else
                 throw new Exception("Behavior ClientWizPlayerNameBehavior not found!");
 
+            // =========================================================
+            // ClientWizInventoryBehavior creation
+            // =========================================================
             if (CoreObjectFactory.FindBehaviorInstance<ClientWizInventoryBehavior>(clientObject, out var inventoryBehavior))
             {
-                var inventoryObj = new ClientWizInventoryBehavior()
-                {
-                    m_numItemsAllowed = 75,
-                    m_numJewelsAllowed = 100,
-                    m_itemList = new List<CoreObject>()
-                };
-
-                var index = clientObject.m_inactiveBehaviors.IndexOf(inventoryBehavior);
-                clientObject.m_inactiveBehaviors[index] = (ClientWizInventoryBehavior)inventoryObj;
+                inventoryBehavior.m_numItemsAllowed = 75;
+                inventoryBehavior.m_numJewelsAllowed = 100;
+                inventoryBehavior.m_itemList = new List<CoreObject>();
             }
             else
-                throw new Exception("Behavior ClientWizPlayerNameBehavior not found!");
+                throw new Exception("Behavior ClientWizInventoryBehavior not found!");
 
+            // =========================================================
+            // ClientMagicSchoolBehavior creation
+            // =========================================================
             if (CoreObjectFactory.FindBehaviorInstance<ClientMagicSchoolBehavior>(clientObject, out var schoolBehavior))
             {
-                var magicObj = new ClientMagicSchoolBehavior()
-                {
-                    m_equippedTeleportEffect = 0,
-                    m_experiencePoints = 0,
-                    m_level = 1,
-                    m_trainingPoints = 0,
-                    m_schoolOfFocus = CreationData.m_schoolOfFocus
-                };
-
-                var index = clientObject.m_inactiveBehaviors.IndexOf(schoolBehavior);
-                clientObject.m_inactiveBehaviors[index] = (ClientMagicSchoolBehavior)magicObj;
+                schoolBehavior.m_equippedTeleportEffect = 0;
+                schoolBehavior.m_experiencePoints = 0;
+                schoolBehavior.m_level = 1;
+                schoolBehavior.m_trainingPoints = 0;
+                schoolBehavior.m_schoolOfFocus = CreationData.m_schoolOfFocus;
             }
             else
-                throw new Exception("Behavior ClientWizPlayerNameBehavior not found!");
+                throw new Exception("Behavior ClientMagicSchoolBehavior not found!");
         }
     }
 }

@@ -29,7 +29,7 @@ namespace Imlight.Game.Services
 
             var loginCompleteMsg = new GAME_5_PROTOCOL.MSG_LOGINCOMPLETE()
             {
-                Data = GetCharacterData(0),
+                Data = data,
                 ZoneName = "WizardCity/WC_Ravenwood",
                 DynamicZoneID = 4288020480,
                 DynamicServerProcID = 57781,
@@ -47,9 +47,13 @@ namespace Imlight.Game.Services
             // =============================================================
             // THIS IS ENTIRELY DEBUG ONLY AND MUST BE REMOVED LATER
             // =============================================================
-            var character = Data.Util.GetDebugAccount();
+            var account = Data.Util.GetDebugAccount();
+            var character = account.Characters[0].GetWizClientObject();
 
-            return new ByteString();
+            var serializer = new CoreObjectSerializer();
+            var charData = serializer.SerializeCoreObject(character);
+
+            return charData;
         }
     }
 }
