@@ -82,5 +82,25 @@ namespace Imlight.Data
 
             return false;
         }
+
+        /// <summary>
+        /// Attempts to get a character from this account.
+        /// </summary>
+        /// <param name="charId"></param>
+        /// <param name="character"></param>
+        /// <returns>True, if the character is found; otherwise, false.</returns>
+        public bool GetCharacter(ulong charId, out Character character)
+        {
+            character = null;
+
+            if (Characters.Any(x => x.ID == charId))
+            {
+                character = Characters.First(x => x.ID == charId);
+
+                return true;
+            }
+
+            return false;
+        }
     }
 }

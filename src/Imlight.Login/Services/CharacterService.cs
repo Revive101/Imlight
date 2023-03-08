@@ -41,15 +41,13 @@ namespace Imlight.Login.Services
                 errorCode = 1;
             }
 
-            charData.m_level = 1;
-            charData.m_globalID = new GID(RandomGen.GenerateId());
-            charData.m_userID = new GID(RandomGen.GenerateId());
-
             // Add the new character to the player's account.
             var account = GetSocketAccount();
             if (account is not null && charData is not null)
             {
                 var newCharacter = new Character(charData);
+                newCharacter.CreationData.m_userID = (GID)account.ID;
+
                 var result = account.AddCharacter(newCharacter);
 
                 // @TODO: Figure out what each of these error codes means.

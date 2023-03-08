@@ -16,7 +16,15 @@ namespace Imlight.Data
         /// <summary>
         /// The ID of the character.
         /// </summary>
-        public ulong ID { get; private set; }
+        public ulong ID 
+        { 
+            get
+            {
+                if (CreationData is null)
+                    return 0;
+                return CreationData.m_globalID;
+            }
+        }
 
         /// <summary>
         /// The Template ID of a character. This is the ID of the model.
@@ -36,20 +44,22 @@ namespace Imlight.Data
 
         public Character(WizardCharacterCreationInfo creationData)
         {
-            this.ID = RandomGen.GenerateId();
-
             this.CreationData = creationData;
             this.CreationData.m_level = 1;
-            this.CreationData.m_userID = new GID(RandomGen.GenerateId());
+            this.CreationData.m_globalID = new GID(RandomGen.GenerateId());
+            this.CreationData.m_equipmentInfoList = new EquippedItemInfoList()
+            {
+                m_infoList = new List<EquippedItemInfo>()
+            };
         }
 
         public WizClientObject GetWizClientObject()
         {
+            // @fixme: this is failing
             //var clientObject = CoreObjectFactory.InitializeCoreObject(new WizClientObject(), (uint)CreationData.m_templateID);
 
             //SetWizClientBehaviors(ref clientObject);
 
-            // get this from database instead
             //clientObject.m_gameStats = new WizGameStats()
             //{
             //    m_baseMana = 15,
