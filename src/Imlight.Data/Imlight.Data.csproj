@@ -5,10 +5,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="WizUnraveler" Version="1.2.8.3" />
+    <PackageReference Include="Akka" Version="1.5.0" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\WizUnraveler\src\WizUnraveler\WizUnraveler.csproj" />
     <ProjectReference Include="..\Imlight.Common\Imlight.Common.csproj" />
   </ItemGroup>
 
