@@ -150,7 +150,7 @@ namespace Imlight.Net.Services
             // Send message to self after x seconds to remind CommunicationActor to check
             // the status of that KeepAlive.
             var reminderTime = TimeSpan.FromSeconds(KEEP_ALIVE_RSP_WAIT_TIME);
-            Context.System.Scheduler.ScheduleTellOnce(reminderTime, Self, "KeepAliveEndTimes", Self);
+            Context.System.Scheduler.ScheduleTellOnce(reminderTime, Context.Self, "KeepAliveEndTimes", Context.Self);
         }
 
         private void ReceiveKeepAliveEndTimes()
