@@ -15,12 +15,12 @@ namespace Imlight.Net
     public class TcpListenerActor : ReceiveActor
     {
         public string Name { get; init; }
+        public int Port { get; init; }
         public bool Listening { get; private set; }
 
-        protected ConcurrentDictionary<ushort, IActorRef> CommunicationActors { get; init; }
+        protected ConcurrentDictionary<ushort, IActorRef> SessionActors { get; init; }
 
         private readonly long _serverStartTime;
-        private int _port;
         private readonly TcpListener _listener;
         private readonly CancellationTokenSource _tokenSource;
         private readonly Props _actorFactoryProps;
@@ -29,11 +29,11 @@ namespace Imlight.Net
         public TcpListenerActor(string name, int port, Props actorFactoryProps)
         {
             this.Name = name;
-            this._port = port;
+            this.Port = port;
             this._serverStartTime = DateTimeOffset.Now.ToUnixTimeSeconds();
             this._listener = new TcpListener(IPAddress.Parse("0.0.0.0"), port);
             this._tokenSource = CancellationTokenSource.CreateLinkedTokenSource(new CancellationToken());
-            this.CommunicationActors = new ConcurrentDictionary<ushort, IActorRef>();
+            this.SessionActors = new ConcurrentDictionary<ushort, IActorRef>();
             this._actorFactoryProps = actorFactoryProps;
 
             Start();
@@ -46,7 +46,7 @@ namespace Imlight.Net
 
         protected override void PreStart()
         {
-            _actorFactoryRef = Context.ActorOf(_actorFactoryProps, "LoginServiceFactory");
+            _actorFactoryRef = Context.ActorOf(_actorFactoryProps, $"{Name}ServiceFactory");
 
             Log.Logger.Debug($"TcpListenerActor {Name} PreStart complete.");
 
@@ -62,7 +62,7 @@ namespace Imlight.Net
 
             var token = this._tokenSource.Token;
 
-            Log.Logger.Information($"TcpListenerActor {Name} started at {_serverStartTime}! Beginning listen on port {_port}.");
+            Log.Logger.Information($"TcpListenerActor {Name} started at {_serverStartTime}! Beginning listen on port {Port}.");
 
             await ListenAsync(token, Context);
         }
@@ -113,7 +113,7 @@ namespace Imlight.Net
             while (true)
             {
                 var temp = rand.Next(1, ushort.MaxValue);
-                if (!CommunicationActors.Keys.Any(x => x == temp))
+                if (!SessionActors.Keys.Any(x => x == temp))
                 {
                     return (ushort)temp;
                 }
@@ -127,7 +127,7 @@ namespace Imlight.Net
             var actorProps = SessionActor.Props(socket, id, _actorFactoryRef);
             var actor = context.ActorOf(actorProps, $"SessionActor.{id}");
 
-            if (!CommunicationActors.TryAdd(id, actor))
+            if (!SessionActors.TryAdd(id, actor))
             {
                 Log.Logger.Error($"TcpListenerActor [{Name}] could not add new SessionActor for IP: {socket.RemoteEndPoint}.");
                 return;
