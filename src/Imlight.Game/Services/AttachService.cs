@@ -25,35 +25,58 @@ namespace Imlight.Game.Services
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ATTACH))]
         private void ReceiveAttach(GAME_5_PROTOCOL.MSG_ATTACH message)
         {
-            var data = GetCharacterData(message.CharID);
+            if (!GetCharacter(message.CharID, out var character))
+            {
+                Log.Logger.Error($"Could not get character by ID on MSG_ATTACH!");
+
+                SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED()
+                {
+                    Error = 1,
+                    NoDisconnect = 1, // @todo: find out what these error codes mean.
+                    Rejected = 1,
+                });
+
+                return;
+            }
+
+            var data = GetCharacterData(character);
 
             var loginCompleteMsg = new GAME_5_PROTOCOL.MSG_LOGINCOMPLETE()
             {
                 Data = data,
-                ZoneName = "WizardCity/WC_Ravenwood",
+                ZoneName = character.CreationData.m_location,
                 DynamicZoneID = 4288020480,
                 DynamicServerProcID = 57781,
                 IsCSR = 1,
                 Permissions = 31679,
                 RealmName = "Imlight",
                 ZoneID = new GID(4288020480),
+                //CriticalObjects = null,
             };
 
             SendToSocket(loginCompleteMsg);
         }
 
-        private ByteString GetCharacterData(ulong charId)
+        private ByteString GetCharacterData(Character character)
         {
             // =============================================================
             // THIS IS ENTIRELY DEBUG ONLY AND MUST BE REMOVED LATER
             // =============================================================
-            var account = Data.Util.GetDebugAccount();
-            var character = account.Characters[0].GetWizClientObject();
-
             var serializer = new CoreObjectSerializer();
-            var charData = serializer.SerializeCoreObject(character);
+            var charClientObject = character.GetWizClientObject();
+            var charData = serializer.SerializeCoreObject(charClientObject);
 
             return charData;
+        }
+
+        private bool GetCharacter(ulong charId, out Character character)
+        {
+            var account = Data.Util.GetDebugAccount();
+
+            var result = account.GetCharacter(charId, out var accChar);
+            character = accChar;
+
+            return result;
         }
     }
 }
