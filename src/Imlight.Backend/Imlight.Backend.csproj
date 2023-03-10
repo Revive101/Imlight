@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <PackageReference Include="Akka" Version="1.5.0" />
+    <PackageReference Include="Akka.Remote" Version="1.5.0" />
     <PackageReference Include="BouncyCastle.Cryptography" Version="2.0.0" />
     <PackageReference Include="Microsoft.VisualStudio.VsixColorCompiler" Version="17.0.31709.430" />
     <PackageReference Include="Serilog" Version="2.12.0" />
@@ -29,6 +30,7 @@
     <ProjectReference Include="..\Imlight.Common\Imlight.Common.csproj" />
     <ProjectReference Include="..\Imlight.Game\Imlight.Game.csproj" />
     <ProjectReference Include="..\Imlight.Login\Imlight.Login.csproj" />
+    <ProjectReference Include="..\Imlight.Resources\Imlight.Resources.csproj" />
   </ItemGroup>
 
 </Project>

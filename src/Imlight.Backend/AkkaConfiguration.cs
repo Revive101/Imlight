@@ -19,8 +19,6 @@ namespace Imlight.Backend
         {
             system = null;
 
-            Log.Logger.Information("Getting Akka.NET configuration..");
-
             if (!GetAkkaConfiguration(out var config))
                 return false;
 

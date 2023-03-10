@@ -8,6 +8,7 @@ using Imlight.Net;
 using WizUnraveler;
 using WizUnraveler.Cache;
 using Imlight.Game;
+using Imlight.Resources;
 
 namespace Imlight.Backend
 {
@@ -26,10 +27,15 @@ namespace Imlight.Backend
 
         static void Main(string[] args)
         {
+            // =============================================================
+            // TIDBITS
+            // =============================================================
             PrintTitle();
 
-            // @todo: change this to a resource manager
-            CoreObjectFactory.SetRoot($"{Directory.GetCurrentDirectory()}/Input/Root.wad");
+            // =============================================================
+            // AKKA.NET CONFIGURATION
+            // =============================================================
+            Log.Logger.Information("Getting Akka.NET configuration..");
 
             if (!AkkaConfiguration.CreateActorSystem(ACTOR_SYSTEM_NAME, out var system))
             {
@@ -39,19 +45,35 @@ namespace Imlight.Backend
                 return;
             }
 
+            Log.Logger.Information("Akka.NET configuration complete.");
+
             _imlightSystem = system;
 
-            // Otherwise, we've had a successful Akka.NET initialization and we're ready to start
-            // the servers.
+            // =============================================================
+            // RESOURCES
+            // =============================================================
+            Log.Logger.Information("Gathering appropriate resources..");
+
+            CoreObjectFactory.SetRoot($"{Directory.GetCurrentDirectory()}/Input/Root.wad");
+
+            Log.Logger.Information("Resources successfully allocated.");
+
+            // =============================================================
+            // SERVERS
+            // =============================================================
+            Log.Logger.Information("Starting servers..");
+
             StartLoginServer();
             StartGameServer();
+
+            Log.Logger.Information("All servers started.");
 
             Console.ReadKey();
         }
 
         private static void StartLoginServer()
         {
-            var actorFactoryProps = LoginServiceActorFactory.Props();
+            var actorFactoryProps = LoginServiceFactory.Props();
 
             // Create the TcpServer on the system we just created.
             var tcpListenerProps = TcpListenerActor.Props(LOGIN_SERVER_NAME, LOGIN_SERVER_PORT, actorFactoryProps);
@@ -62,7 +84,7 @@ namespace Imlight.Backend
 
         private static void StartGameServer()
         {
-            var actorFactoryProps = GameServiceActorFactory.Props();
+            var actorFactoryProps = GameServiceFactory.Props();
 
             // Create the TcpServer on the system we just created.
             var tcpListenerProps = TcpListenerActor.Props(GAME_SERVER_NAME, GAME_SERVER_PORT, actorFactoryProps);
