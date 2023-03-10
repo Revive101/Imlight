@@ -8,6 +8,7 @@ using WizUnraveler.ObjectProperty;
 using static WizUnraveler.Cache.TypeCache;
 using Imlight.Common;
 using WizUnraveler;
+using Imlight.Resources;
 
 namespace Imlight.Data
 {
@@ -46,6 +47,7 @@ namespace Imlight.Data
         {
             this.CreationData = creationData;
             this.CreationData.m_level = 1;
+            this.CreationData.m_location = "WizardCity/WC_Hub";
             this.CreationData.m_globalID = new GID(RandomGen.GenerateId());
             this.CreationData.m_equipmentInfoList = new EquippedItemInfoList()
             {
@@ -56,29 +58,29 @@ namespace Imlight.Data
         public WizClientObject GetWizClientObject()
         {
             // @fixme: this is failing
-            //var clientObject = CoreObjectFactory.InitializeCoreObject(new WizClientObject(), (uint)CreationData.m_templateID);
+            var clientObject = CoreObjectFactory.InitializeCoreObject(new WizClientObject(), (uint)CreationData.m_templateID);
 
-            //SetWizClientBehaviors(ref clientObject);
+            ReplaceWizAvatarWithCreationData(clientObject);
+            SetWizClientBehaviors(ref clientObject);
 
-            //clientObject.m_gameStats = new WizGameStats()
-            //{
-            //    m_baseMana = 15,
-            //    m_currentMana = 15,
-            //    m_baseGoldPouch = 1000000,
-            //    m_baseHitpoints = 500,
-            //    m_currentHitpoints = 500
-            //};
-            //clientObject.m_fScale = 1f;
-            //clientObject.m_globalID = RandomGen.GenerateId();
-            //clientObject.m_characterId = new GID(RandomGen.GenerateId());
-            //clientObject.m_permID = 0; // What is this?
-            //clientObject.m_location = new SharpDX.Vector3(0, 0, 0);
+            clientObject.m_gameStats = new WizGameStats()
+            {
+                m_baseMana = 15,
+                m_currentMana = 15,
+                m_baseGoldPouch = 1000000,
+                m_baseHitpoints = 500,
+                m_currentHitpoints = 500,
+            };
+            clientObject.m_fScale = 1f;
+            clientObject.m_globalID = RandomGen.GenerateId();
+            clientObject.m_characterId = (GID)1;
+            clientObject.m_permID = 0; // What is this?
+            clientObject.m_location = new SharpDX.Vector3(0, 0, 0);
 
-            //return clientObject;
-            return new WizClientObject();
+            return clientObject;
         }
 
-        private void SetWizClientBehaviors(ref WizClientObject clientObject)
+        private void ReplaceWizAvatarWithCreationData(WizClientObject clientObject)
         {
             if (CoreObjectFactory.FindBehaviorInstance<WizardCharacterBehavior>(clientObject, out var avatarBehavior))
             {
@@ -87,9 +89,12 @@ namespace Imlight.Data
             }
             else
                 throw new Exception($"Behavior WizardCharacterBehavior was not found!");
+        }
 
+        private void SetWizClientBehaviors(ref WizClientObject clientObject)
+        {
             // =========================================================
-            // ClientWizEquipmentBehavior creation
+            // EQUIPMENT
             // =========================================================
             if (CoreObjectFactory.FindBehaviorInstance<ClientWizEquipmentBehavior>(clientObject, out var equipmentBehavior))
             {
@@ -112,7 +117,7 @@ namespace Imlight.Data
                 throw new Exception("Behavior ClientWizEquipmentBehavior not found!");
 
             // =========================================================
-            // ClientWizPlayerNameBehavior creation
+            // PLAYER NAME
             // =========================================================
             if (CoreObjectFactory.FindBehaviorInstance<ClientWizPlayerNameBehavior>(clientObject, out var nameBehavior))
             {
@@ -128,7 +133,7 @@ namespace Imlight.Data
                 throw new Exception("Behavior ClientWizPlayerNameBehavior not found!");
 
             // =========================================================
-            // ClientWizInventoryBehavior creation
+            // INVENTORY
             // =========================================================
             if (CoreObjectFactory.FindBehaviorInstance<ClientWizInventoryBehavior>(clientObject, out var inventoryBehavior))
             {
@@ -140,13 +145,13 @@ namespace Imlight.Data
                 throw new Exception("Behavior ClientWizInventoryBehavior not found!");
 
             // =========================================================
-            // ClientMagicSchoolBehavior creation
+            // MAGIC SCHOOL
             // =========================================================
             if (CoreObjectFactory.FindBehaviorInstance<ClientMagicSchoolBehavior>(clientObject, out var schoolBehavior))
             {
                 schoolBehavior.m_equippedTeleportEffect = 0;
                 schoolBehavior.m_experiencePoints = 0;
-                schoolBehavior.m_level = 1;
+                schoolBehavior.m_level = CreationData.m_level;
                 schoolBehavior.m_trainingPoints = 0;
                 schoolBehavior.m_schoolOfFocus = CreationData.m_schoolOfFocus;
             }

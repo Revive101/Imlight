@@ -6,11 +6,13 @@
 
   <ItemGroup>
     <PackageReference Include="Akka" Version="1.5.0" />
+    <PackageReference Include="Akka.Remote" Version="1.5.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\WizUnraveler\src\WizUnraveler\WizUnraveler.csproj" />
     <ProjectReference Include="..\Imlight.Common\Imlight.Common.csproj" />
+    <ProjectReference Include="..\Imlight.Resources\Imlight.Resources.csproj" />
   </ItemGroup>
 
 </Project>
