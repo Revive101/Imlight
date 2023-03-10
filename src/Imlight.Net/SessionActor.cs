@@ -256,9 +256,14 @@ namespace Imlight.Net
         private INetworkMessage GetPacketFromBuffer(byte[] buffer, int bytesReceived)
         {
             var bufferSpan = new ReadOnlySpan<byte>(buffer, 0, bytesReceived).ToArray();
-            if (!IsKIPacket(bufferSpan) || !TryDeserializePacket(bufferSpan, out var record))
+            if (!IsKIPacket(bufferSpan))
             {
                 Log.Logger.Error($"SessionActor [{SessionID}] received non-KINP packet.");
+                return null;
+            }
+            if (!TryDeserializePacket(bufferSpan, out var record))
+            {
+                Log.Logger.Error($"SessionActor [{SessionID}] packet failed to deserialize.");
                 return null;
             }
 
@@ -299,8 +304,10 @@ namespace Imlight.Net
                 message = MessageSerializer.DeserializeMessageBinary(buffer);
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                Log.Logger.Error($"SessionActor [{SessionID}] packet deserialize failed: {ex.Message}");
+
                 message = null;
                 return false;
             }

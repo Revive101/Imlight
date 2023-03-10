@@ -46,6 +46,8 @@ namespace Imlight.Login.Services
             if (account is not null && charData is not null)
             {
                 var newCharacter = new Character(charData);
+
+                // @todo: have the account object set this information instead.
                 newCharacter.CreationData.m_userID = (GID)account.ID;
 
                 var result = account.AddCharacter(newCharacter);
@@ -83,7 +85,7 @@ namespace Imlight.Login.Services
                 {
                     var character = account.Characters[i];
 
-                    // Remember, WizAPI saves the object. We need to serialize it here.
+                    // WizAPI saves the object. We need to serialize it here.
                     var data = serializer.Serialize(character.CreationData);
                     SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERINFO()
                     {
