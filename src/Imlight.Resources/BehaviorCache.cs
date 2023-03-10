@@ -14,41 +14,47 @@ namespace Imlight.Resources
         {
             switch (hash)
             {
+                // This list is updated as we go down and learn what each behavior does.
+
+                // ======================================================================
+                // PLAYER BEHAVIORS
+                // ======================================================================
+                case 0x20DFFCEA: return new WizardCharacterBehavior();     // Avatar details, such as skin tone, eye color, etc.
+                case 0x1FDBA52F: return new ClientWizPlayerNameBehavior(); // The name above their head.
+                case 0x065D0C7A: return new FidgetBehavior();              // How often this character uses an idle animation.
+                case 0x2688349D: return new AnimationBehavior();           // Self explanatory.
+
                 // ======================================================================
                 // Below are the list of behaviors we know works.
                 // ======================================================================
-                case 0x10393720: return new AdvPvPEloBehavior();
-                case 0x2688349D: return new AnimationBehavior();
-                case 0x0C46067D: return new BaseGameEffectBehavior();
-                case 0x70F90C5D: return new CastleToursBehavior();
-                case 0x647855BD: return new ClientAlchemyBehavior();
-                case 0x06BB59F5: return new ClientAtticBehavior();
-                case 0x26FCE31F: return new ClientDynaModBehavior();
-                case 0x1DC10F47: return new ClientEquipmentBehavior();
-                case 0x287E5259: return new ClientExpansionBehavior();
-                case 0x00A6C343: return new ClientInventoryBehavior();
-                case 0x1552CB31: return new ClientMagicSchoolBehavior();
-                case 0x1301F271: return new ClientMinigameBehavior();
-                case 0x336907AE: return new ClientMountOwnerBehavior();
-                case 0x7696F807: return new ClientMountRiderBehavior();
-                case 0x0752DB8F: return new ClientPetSnackBehavior();
-                case 0x64FE8AF9: return new ClientSpellbookBehavior();
-                case 0x2BD79B75: return new ClientTreasureBookBehavior();
-                case 0x1FDBA52F: return new ClientWizPlayerNameBehavior();
-                case 0x2808A0BF: return new CollisionBehaviorClient();
-                case 0x29E13F05: return new EffectsBehavior();
-                case 0x065D0C7A: return new FidgetBehavior();
-                case 0x1D47EAE3: return new FishingBehavior();
-                case 0x1A22DBF4: return new HiddenQuestsBehavior();
-                case 0x0A5C8D74: return new LadderBehavior();
-                case 0x3AB00B11: return new MonsterMagicBehavior();
-                case 0x28CE8984: return new ObjectStateBehavior();
-                case 0x64E6088B: return new PetTomeBehavior();
-                case 0x29474BCF: return new TutorialLogBehavior();
-                case 0x174F46F4: return new WishlistBehavior();
-                case 0x20DFFCEA: return new WizardCharacterBehavior();
-                case 0x4867764C: return new ClientWizEquipmentBehavior();
-                case 0x1B610937: return new ClientWizInventoryBehavior();
+                //case 0x10393720: return new AdvPvPEloBehavior();
+                //case 0x0C46067D: return new BaseGameEffectBehavior();
+                //case 0x70F90C5D: return new CastleToursBehavior();
+                //case 0x647855BD: return new ClientAlchemyBehavior();
+                //case 0x06BB59F5: return new ClientAtticBehavior();
+                //case 0x26FCE31F: return new ClientDynaModBehavior();
+                //case 0x1DC10F47: return new ClientEquipmentBehavior();
+                //case 0x287E5259: return new ClientExpansionBehavior();
+                //case 0x00A6C343: return new ClientInventoryBehavior();
+                //case 0x1552CB31: return new ClientMagicSchoolBehavior();
+                //case 0x1301F271: return new ClientMinigameBehavior();
+                //case 0x336907AE: return new ClientMountOwnerBehavior();
+                //case 0x7696F807: return new ClientMountRiderBehavior();
+                //case 0x0752DB8F: return new ClientPetSnackBehavior();
+                //case 0x64FE8AF9: return new ClientSpellbookBehavior();
+                //case 0x2BD79B75: return new ClientTreasureBookBehavior();
+                //case 0x2808A0BF: return new CollisionBehaviorClient();
+                //case 0x29E13F05: return new EffectsBehavior();
+                //case 0x1D47EAE3: return new FishingBehavior();
+                //case 0x1A22DBF4: return new HiddenQuestsBehavior();
+                //case 0x0A5C8D74: return new LadderBehavior();
+                //case 0x3AB00B11: return new MonsterMagicBehavior();
+                //case 0x28CE8984: return new ObjectStateBehavior();
+                //case 0x64E6088B: return new PetTomeBehavior();
+                //case 0x29474BCF: return new TutorialLogBehavior();
+                //case 0x174F46F4: return new WishlistBehavior();
+                //case 0x4867764C: return new ClientWizEquipmentBehavior();
+                //case 0x1B610937: return new ClientWizInventoryBehavior();
 
                 // Client also has PathMovementBehaviorTemplate, but doesn't appear to use the actual behavior.
                 //case 0x22B1AD8D: return new PathMovementBehavior();

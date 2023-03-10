@@ -96,25 +96,25 @@ namespace Imlight.Data
             // =========================================================
             // EQUIPMENT
             // =========================================================
-            if (CoreObjectFactory.FindBehaviorInstance<ClientWizEquipmentBehavior>(clientObject, out var equipmentBehavior))
-            {
-                var esi = new List<EquippedSlotInfo>();
-                foreach (var slot in (EquipmentSlot[])Enum.GetValues(typeof(EquipmentSlot)))
-                {
-                    esi.Add(new EquippedSlotInfo()
-                    {
-                        m_itemID = (GID)0,
-                        m_itemSlotNameID = (uint)slot
-                    });
-                }
+            //if (CoreObjectFactory.FindBehaviorInstance<ClientWizEquipmentBehavior>(clientObject, out var equipmentBehavior))
+            //{
+            //    var esi = new List<EquippedSlotInfo>();
+            //    foreach (var slot in (EquipmentSlot[])Enum.GetValues(typeof(EquipmentSlot)))
+            //    {
+            //        esi.Add(new EquippedSlotInfo()
+            //        {
+            //            m_itemID = (GID)0,
+            //            m_itemSlotNameID = (uint)slot
+            //        });
+            //    }
 
-                equipmentBehavior.m_publicItemList = CreationData.m_equipmentInfoList?.m_infoList;
-                equipmentBehavior.m_equipmentSets = new List<EquipmentSet>();
-                equipmentBehavior.m_slotList = esi;
-                equipmentBehavior.m_itemList = new List<CoreObject>();
-            }
-            else
-                throw new Exception("Behavior ClientWizEquipmentBehavior not found!");
+            //    equipmentBehavior.m_publicItemList = CreationData.m_equipmentInfoList?.m_infoList;
+            //    equipmentBehavior.m_equipmentSets = new List<EquipmentSet>();
+            //    equipmentBehavior.m_slotList = esi;
+            //    equipmentBehavior.m_itemList = new List<CoreObject>();
+            //}
+            //else
+            //    throw new Exception("Behavior ClientWizEquipmentBehavior not found!");
 
             // =========================================================
             // PLAYER NAME
@@ -124,10 +124,6 @@ namespace Imlight.Data
                 nameBehavior.m_eGender = CreationData.m_avatarBehavior.m_eGender;
                 nameBehavior.m_eRace = CreationData.m_avatarBehavior.m_eRace;
                 nameBehavior.m_nameKeys = CreationData.m_nameIndices;
-                nameBehavior.m_useRank = true;
-                nameBehavior.m_pvpIconID = 0;
-                nameBehavior.m_badgeTitle = "Test";
-                nameBehavior.m_chatPermissions = 0;
             }
             else
                 throw new Exception("Behavior ClientWizPlayerNameBehavior not found!");
@@ -135,28 +131,28 @@ namespace Imlight.Data
             // =========================================================
             // INVENTORY
             // =========================================================
-            if (CoreObjectFactory.FindBehaviorInstance<ClientWizInventoryBehavior>(clientObject, out var inventoryBehavior))
-            {
-                inventoryBehavior.m_numItemsAllowed = 75;
-                inventoryBehavior.m_numJewelsAllowed = 100;
-                inventoryBehavior.m_itemList = new List<CoreObject>();
-            }
-            else
-                throw new Exception("Behavior ClientWizInventoryBehavior not found!");
+            //if (CoreObjectFactory.FindBehaviorInstance<ClientWizInventoryBehavior>(clientObject, out var inventoryBehavior))
+            //{
+            //    inventoryBehavior.m_numItemsAllowed = 75;
+            //    inventoryBehavior.m_numJewelsAllowed = 100;
+            //    inventoryBehavior.m_itemList = new List<CoreObject>();
+            //}
+            //else
+            //    throw new Exception("Behavior ClientWizInventoryBehavior not found!");
 
             // =========================================================
             // MAGIC SCHOOL
             // =========================================================
-            if (CoreObjectFactory.FindBehaviorInstance<ClientMagicSchoolBehavior>(clientObject, out var schoolBehavior))
-            {
-                schoolBehavior.m_equippedTeleportEffect = 0;
-                schoolBehavior.m_experiencePoints = 0;
-                schoolBehavior.m_level = CreationData.m_level;
-                schoolBehavior.m_trainingPoints = 0;
-                schoolBehavior.m_schoolOfFocus = CreationData.m_schoolOfFocus;
-            }
-            else
-                throw new Exception("Behavior ClientMagicSchoolBehavior not found!");
+            //if (CoreObjectFactory.FindBehaviorInstance<ClientMagicSchoolBehavior>(clientObject, out var schoolBehavior))
+            //{
+            //    schoolBehavior.m_equippedTeleportEffect = 0;
+            //    schoolBehavior.m_experiencePoints = 0;
+            //    schoolBehavior.m_level = CreationData.m_level;
+            //    schoolBehavior.m_trainingPoints = 0;
+            //    schoolBehavior.m_schoolOfFocus = CreationData.m_schoolOfFocus;
+            //}
+            //else
+            //    throw new Exception("Behavior ClientMagicSchoolBehavior not found!");
         }
     }
 }
