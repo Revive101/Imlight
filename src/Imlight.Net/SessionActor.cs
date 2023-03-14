@@ -24,6 +24,7 @@ namespace Imlight.Net
         public ushort SessionID { get; init; }
         public bool SessionValid { get; private set; }
 
+        private readonly IActorRef _serverRef;
         private readonly Socket _socket;
         private readonly IActorRef _oldSelf;
         private readonly IActorRef _actorFactoryRef;
@@ -33,13 +34,19 @@ namespace Imlight.Net
         private bool _isSending;
         private List<INetworkMessage> _preInitMessages;
 
-        public SessionActor(Socket socket, ushort sessionId, IActorRef actorFactoryRef)
+        public SessionActor(Socket socket, ushort sessionId, IActorRef server)
         {
             this._socket = socket;
             this.SessionID = sessionId;
-            this._actorFactoryRef = actorFactoryRef;
             this._services = new Dictionary<IActorRef, MessageService>();
             this._preInitMessages = new List<INetworkMessage>();
+            this._serverRef = server;
+
+            // To get the actor factory reference, we'll ask the server.
+            var query = new SERVER_100_PROTOCOL.MSG_QUERYACTORFACTORY();
+            this._actorFactoryRef = server.Ask<SERVER_100_PROTOCOL.MSG_QUERIEDACTORFACTORY>(query)
+                .Result
+                .Reference;
 
             _oldSelf = Context.Self;
 
@@ -48,9 +55,9 @@ namespace Imlight.Net
             Task.Factory.StartNew(() => ListenAndProcess(_oldSelf));
         }
 
-        public static Props Props(Socket socket, ushort sessionId, IActorRef actorFactoryRef)
+        public static Props Props(Socket socket, ushort sessionId, IActorRef server)
         {
-            return Akka.Actor.Props.Create(() => new SessionActor(socket, sessionId, actorFactoryRef));
+            return Akka.Actor.Props.Create(() => new SessionActor(socket, sessionId, server));
         }
 
         /// <summary>
@@ -96,6 +103,14 @@ namespace Imlight.Net
         {
             _socket.Close();
             _cts.Cancel();
+            
+            // Send a message to the server to deallocate this SessionActor.
+            var msg = new SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET()
+            {
+                ID = SessionID
+            };
+            _serverRef.Tell(msg);
+            
             Context.Stop(Self);
         }
         
@@ -151,6 +166,7 @@ namespace Imlight.Net
 
             // Anything else is an internal message. Usually for one service to send a message
             // to another service.
+            // @todo: deprecate this
             Receive<IInternalMessage>(x => HandleInternalTell(x));
         }
 
@@ -253,6 +269,18 @@ namespace Imlight.Net
             return default(T);
         }
 
+        public T AskServer<T>(INetworkMessage msg)
+            where T : INetworkMessage
+        {
+            if (_serverRef is null)
+            {
+                Log.Logger.Fatal($"SessionActor [{SessionID}] contained a null server reference!");
+                return default;
+            }
+            
+            return _serverRef.Ask<T>(msg).Result;
+        }
+        
         private INetworkMessage GetPacketFromBuffer(byte[] buffer, int bytesReceived)
         {
             var bufferSpan = new ReadOnlySpan<byte>(buffer, 0, bytesReceived).ToArray();

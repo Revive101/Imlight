@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Imlight.Net.Messages
 {
-    public class INTERN_ACCOUNT_PROTOCOL
+    public class ACCOUNT_104_PROTOCOL
     {
         /// <summary>
         /// Sets the account for a service.
