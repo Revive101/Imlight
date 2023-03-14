@@ -11,8 +11,6 @@ namespace Imlight.Net
 {
     public class Server : ReceiveProtocolDispatcher
     {
-        public const ushort MAX_PLAYER_COUNT = 20;
-        
         public string Name { get; }
         public string IP { get; }
         public int Port { get; }
