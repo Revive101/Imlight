@@ -65,7 +65,7 @@ namespace Imlight.Login
             gameServers.Sort((s1, s2) => s2.PlayerCount.CompareTo(s1.PlayerCount));
 
             // Find the first non-full server or choose a random one if all servers are full
-            var chosenServer = gameServers.FirstOrDefault(server => server.PlayerCount < GameServer.MAX_PLAYER_COUNT)
+            var chosenServer = gameServers.FirstOrDefault(server => server.PlayerCount < Server.PlayerLimit)
                                ?? gameServers[new Random().Next(0, gameServers.Count)];
 
             // Send the chosen server details back to the session actor

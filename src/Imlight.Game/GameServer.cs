@@ -17,7 +17,6 @@ namespace Imlight.Game
     {
         public const string DEFAULT_GAME_SERVER_NAME = "Imlight.Game";
         public const ushort DEFAULT_GAME_SERVER_PORT = 12333;
-        public const ushort MAX_PLAYER_COUNT = 20;
         public const string SESSION_KEY_HASH_INPUT = "MAGIC_HATTER";
         public const ushort SESSION_KEY_VALIDITY_TIME = 120;
 

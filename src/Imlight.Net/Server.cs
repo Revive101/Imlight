@@ -9,8 +9,10 @@ using Imlight.Net.Messages;
 
 namespace Imlight.Net
 {
-    public class Server : ReceiveProtocolDispatcher
+    public abstract class Server : ReceiveProtocolDispatcher
     {
+        public static ushort PlayerLimit = 40;
+        
         public string Name { get; }
         public string IP { get; }
         public int Port { get; }
@@ -34,12 +36,7 @@ namespace Imlight.Net
             TcpListenerActorRef = CreateTcpListener();
             ActorFactoryRef = CreateActorFactory();
         }
-        
-        public static Props Props(string name, int port, Props factoryProps)
-        {
-            return Akka.Actor.Props.Create(() => new Server(name, port, factoryProps));
-        }
-        
+
         /// <summary>
         /// Gets the time in seconds the server has elapsed.
         /// </summary>

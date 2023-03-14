@@ -28,20 +28,6 @@ namespace Imlight.Login.Services
         {
             // @TODO: User authentication here !
 
-            /*
-             * Writing notes here for later:
-             * 
-             * `MSG_USER_AUTHEN_RSP` will send back another `Rec1` field. It's encoded exactly as before,
-             * except the `CK1` field will instead be replaced by a `CK2` field. This is `ClientKey2`. It's a session
-             * key responsible for authenticating a game client once the launcher closes.
-             * 
-             * When the game client starts, it will send `MSG_USER_VALIDATE`. This message contains a field labeled `PassKey3`.
-             * `PassKey3` uses the same hashing algorithm as `ClientKey1`, and the original input will be the `ClientKey2` we
-             * gave to the client earlier.
-             * 
-             * Using the cached information, we can hash and compare this request to see if any valid game sessions exist.
-             */
-
             // For now, we'll always except any user.
             SendInternal(new ACCOUNT_104_PROTOCOL.INTMSG_SET_ACCOUNT()
             {
