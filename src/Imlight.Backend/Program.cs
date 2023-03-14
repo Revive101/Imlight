@@ -16,12 +16,6 @@ namespace Imlight.Backend
     {
         private const string VERSION = "0.0.1";
         private const string ACTOR_SYSTEM_NAME = "Imlight";
-        private const string LOGIN_SERVER_NAME = "Imlight-Login";
-        private const string GAME_SERVER_NAME  = "Imlight-Game";
-        private const string PATCH_SERVER_NAME = "Imlight-Patch";
-        private const int    LOGIN_SERVER_PORT = 12000;
-        private const int    GAME_SERVER_PORT  = 12600;
-        private const int    PATCHSERVER_PORT  = 12300;
 
         private static ActorSystem _imlightSystem;
 
@@ -64,7 +58,6 @@ namespace Imlight.Backend
             Log.Logger.Information("Starting servers..");
 
             StartLoginServer();
-            StartGameServer();
 
             Log.Logger.Information("All servers started.");
 
@@ -73,24 +66,8 @@ namespace Imlight.Backend
 
         private static void StartLoginServer()
         {
-            var actorFactoryProps = LoginServiceFactory.Props();
-
-            // Create the TcpServer on the system we just created.
-            var tcpListenerProps = TcpListenerActor.Props(LOGIN_SERVER_NAME, LOGIN_SERVER_PORT, actorFactoryProps);
-            var tcpActor = _imlightSystem.ActorOf(tcpListenerProps, $"{LOGIN_SERVER_NAME}_{LOGIN_SERVER_PORT}");
-
-            Log.Logger.Information($"Login server created with name {LOGIN_SERVER_NAME} under port {LOGIN_SERVER_PORT}.");
-        }
-
-        private static void StartGameServer()
-        {
-            var actorFactoryProps = GameServiceFactory.Props();
-
-            // Create the TcpServer on the system we just created.
-            var tcpListenerProps = TcpListenerActor.Props(GAME_SERVER_NAME, GAME_SERVER_PORT, actorFactoryProps);
-            var tcpActor = _imlightSystem.ActorOf(tcpListenerProps, $"{GAME_SERVER_NAME}_{GAME_SERVER_PORT}");
-
-            Log.Logger.Information($"Game server created with name {GAME_SERVER_NAME} under port {GAME_SERVER_PORT}.");
+            var loginProps = LoginServer.Props();
+            _imlightSystem.ActorOf(loginProps, "Imlight.LoginServer");
         }
 
         private static void PrintTitle()

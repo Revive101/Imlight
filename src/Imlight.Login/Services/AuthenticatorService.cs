@@ -42,7 +42,7 @@ namespace Imlight.Login.Services
              */
 
             // For now, we'll always except any user.
-            SendInternal(new INTERN_ACCOUNT_PROTOCOL.INTMSG_SET_ACCOUNT()
+            SendInternal(new ACCOUNT_104_PROTOCOL.INTMSG_SET_ACCOUNT()
             {
                 Account = Data.Util.GetDebugAccount()
             });
