@@ -11,7 +11,7 @@
 
   <ItemGroup>
     <Content Include="config\akka.conf">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
 

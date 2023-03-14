@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using System.Reflection;
 using Akka;
 using Akka.Actor;
 using Akka.Configuration;
@@ -13,12 +14,18 @@ namespace Imlight.Backend
 {
     internal static class AkkaConfiguration
     {
-        internal static readonly string _configFileLocation = @$"{Directory.GetCurrentDirectory()}\config\akka.conf";
+        private const string CONFIGURATION_FILE_NAME = "akka.conf";
+        
+        private static readonly string ConfigLocation = Path.Combine(
+            Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? string.Empty,
+            $@"config/{CONFIGURATION_FILE_NAME}");
 
         internal static bool CreateActorSystem(string name, out ActorSystem system)
         {
             system = null;
 
+            Log.Logger.Information($"Searching for Akka.NET configuration file [{ConfigLocation}]");
+            
             if (!GetAkkaConfiguration(out var config))
                 return false;
 
@@ -26,16 +33,16 @@ namespace Imlight.Backend
             return true;
         }
 
-        internal static bool GetAkkaConfiguration(out Config config)
+        private static bool GetAkkaConfiguration(out Config config)
         {
             config = default;
 
             try
             {
-                if (!File.Exists(_configFileLocation))
+                if (!File.Exists(ConfigLocation))
                     return false;
 
-                var configContents = File.ReadAllText(_configFileLocation);
+                var configContents = File.ReadAllText(ConfigLocation);
 
                 config = ConfigurationFactory.ParseString(configContents);
                 return true;
