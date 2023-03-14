@@ -16,6 +16,20 @@ namespace Imlight.Login.Services
 {
     internal class GameTransitionService : MessageService
     {
+        private class ServerDetails
+        {
+            public string IP { get; }
+            public int Port { get; }
+            public ByteString AllocatedKey { get; }
+            
+            public ServerDetails(string ip, int port, ByteString allocatedKey)
+            {
+                IP = ip;
+                Port = port;
+                AllocatedKey = allocatedKey;
+            }
+        }
+        
         public GameTransitionService(SessionActor sessionActor) : base(sessionActor) { }
 
         protected static Props Props(SessionActor parentActor)
@@ -47,24 +61,31 @@ namespace Imlight.Login.Services
                 return;
             }
 
+            var serverDetails = GetBestServerDetails();
+            
+            Log.Logger.Debug($"SessionActor [{SessionActor.SessionID}]" +
+                               $" given key {serverDetails.AllocatedKey}.");
+
             // Otherwise, we've validated everything propertly. Retreive character
             // specific information and send the client the `MSG_CHARACTERSELECTED`.
             // This begins client transition to the game server.
             var charSelectedMsg = new LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED()
             {
-                IP = "127.0.0.1",                     // @FIXME: This should be sourced from elsewhere.
-                TCPPort = 12600,                      // @FIXME: This should be sourced from elsewhere.
-                UDPPort = 12600,                      // @FIXME: This should be sourced from elsewhere.
-                Key = new ByteString(),               // Login server -> game server session key.
+                // Set details about the game server.
+                IP = serverDetails.IP,
+                TCPPort = serverDetails.Port,
+                UDPPort = serverDetails.Port,
+                Key = serverDetails.AllocatedKey,    // Login server -> game server session key.
+                PrepPhase = 0,                       // (0|1): Player is in queue
+                Slot = 0,                            // The player's position in said queue
+                LoginServer = "Imlight.Login",       // @FIXME: This should be sourced from elsewhere.
+                
+                // Set details about the character.
                 UserID = account.ID,
                 CharID = character.ID,
-                ZoneID = new GID(123004564835992122), // Client doesn't actually use this ID.
-                ZoneName = "WizardCity/WC_Ravenwood", // Client uses this name to load a zonelocally.
+                ZoneID = new GID((ulong)serverDetails.Port),
+                ZoneName = "WizardCity/WC_Ravenwood", // Client uses this name to load a zone locally.
                 Location = "Start",                   // Most zones use "Start" on player login.
-                PrepPhase = 0,                        // (0|1): Player is in queue
-                Slot = 0,                             // The player's position in said queue
-                Error = 0,                            // String ID of an error code.
-                LoginServer = "Imlight.Login"         // @FIXME: This should be sourced from elsewhere.
             };
 
             SendToSocket(charSelectedMsg);
@@ -73,8 +94,8 @@ namespace Imlight.Login.Services
         private Account GetSocketAccount()
         {
             // Get the account from the AccountService.
-            var internalMessage = new INTERN_ACCOUNT_PROTOCOL.INTMSG_GET_ACCOUNT();
-            var account = AskInternal<INTERN_ACCOUNT_PROTOCOL.INTMSG_ACCOUNT>(internalMessage).Account;
+            var internalMessage = new ACCOUNT_104_PROTOCOL.INTMSG_GET_ACCOUNT();
+            var account = AskInternal<ACCOUNT_104_PROTOCOL.INTMSG_ACCOUNT>(internalMessage).Account;
 
             if (account is null)
             {
@@ -82,6 +103,18 @@ namespace Imlight.Login.Services
             }
 
             return account;
+        }
+
+        private ServerDetails GetBestServerDetails()
+        {
+            var msg = new SERVER_100_PROTOCOL.MSG_QUERYGAMESERVER()
+            {
+                SessionActor = base.SessionActor
+            };
+            var server = AskServer<SERVER_100_PROTOCOL.MSG_QUERYGAMESERVERRSP>(msg);
+
+            var details = new ServerDetails(server.IP, server.Port, server.Key);
+            return details;
         }
     }
 }

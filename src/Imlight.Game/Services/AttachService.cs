@@ -7,6 +7,7 @@ using Akka.Actor;
 using Imlight.Common;
 using Imlight.Net;
 using Imlight.Data;
+using Imlight.Net.Messages;
 using WizUnraveler;
 using WizUnraveler.Cache;
 using WizUnraveler.ObjectProperty;
@@ -25,6 +26,22 @@ namespace Imlight.Game.Services
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ATTACH))]
         private void ReceiveAttach(GAME_5_PROTOCOL.MSG_ATTACH message)
         {
+            Log.Logger.Debug($"Attach received key {message.LoginKey}");
+            
+            if (!ValidateLoginKey(message.LoginKey))
+            {
+                Log.Logger.Warning($"User [{message.UserID}] failed to validate login key: {message.LoginKey}.");
+
+                var attachFailedMsg = new GAME_5_PROTOCOL.MSG_ATTACHFAILED()
+                {
+                    Error = 1,
+                    Rejected = 1,
+                };
+                SendToSocket(attachFailedMsg);
+                
+                return;
+            }
+
             if (!GetCharacter(message.CharID, out var character))
             {
                 Log.Logger.Error($"Could not get character by ID on MSG_ATTACH!");
@@ -77,6 +94,19 @@ namespace Imlight.Game.Services
             character = accChar;
 
             return result;
+        }
+
+        private bool ValidateLoginKey(ByteString key)
+        {
+            var msg = new SERVER_100_PROTOCOL.MSG_VALIDATESESSIONKEY()
+            {
+                Key = key,
+                SessionID = SessionActor.SessionID
+            };
+
+            var rsp = AskServer<SERVER_100_PROTOCOL.MSG_VALIDATESESSIONKEYRSP>(msg);
+            
+            return rsp.ErrorCode == 0;
         }
     }
 }
