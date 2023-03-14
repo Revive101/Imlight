@@ -51,53 +51,27 @@ namespace Imlight.Login
         [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_QUERYGAMESERVER))]
         private void ReceiveQueryGameServer(SERVER_100_PROTOCOL.MSG_QUERYGAMESERVER message)
         {
-            // A login SessionActor has queried the pool looking for the best possible game server to connect to.
-            // Ask each game server for it's details.
-            var gameServers = new List<SERVER_100_PROTOCOL.MSG_GAMESERVER>();
-            foreach (var gameServer in _gameServers.Values)
-            {
-                var msg = new SERVER_100_PROTOCOL.MSG_GAMESERVERDETAILS();
-                var rsp = gameServer.Ask<SERVER_100_PROTOCOL.MSG_GAMESERVER>(msg)
-                    .Result;
+            // Create a list of game servers and query each server for its details
+            var gameServers = _gameServers.Values
+                .Select(gameServer =>
+                {
+                    var msg = new SERVER_100_PROTOCOL.MSG_QUERYGAMESERVER();
+                    var rsp = gameServer.Ask<SERVER_100_PROTOCOL.MSG_GAMESERVER>(msg).Result;
+                    return rsp;
+                })
+                .ToList();
 
-                gameServers.Add(rsp);
-            }
+            // Sort the servers by player count in descending order
+            gameServers.Sort((s1, s2) => s2.PlayerCount.CompareTo(s1.PlayerCount));
 
-            // Sort the servers by popularity, removing any servers that are full.
-            gameServers
-                .Where(s => s.PlayerCount < Server.MAX_PLAYER_COUNT)
-                .ToList()
-                .Sort((s1, s2) => s2.PlayerCount.CompareTo(s1.PlayerCount));
-            
-            // If each server is full, place the login actor into the queue of a random one.
-            if (gameServers.Count <= 0)
-            {
-                // @todo: place in queue
-            }
-            
-            // The best server will simply be the one with the most players, that isn't full.
-            var chosenServer = gameServers[0];
-            
-            // Now that we have our best game server, send another message to the game server to create a session key.
-            // The game server will save that key for a limited amount of time. When the client attaches to the
-            // game server again, the game server will check their key to make sure they didn't skip the login server.
-            var keyMsg = new SERVER_100_PROTOCOL.MSG_CREATEKEY()
-            {
-                SessionID = message.SessionActor.SessionID
-            };
-            var keyRsp = chosenServer.ActorRef.Ask<SERVER_100_PROTOCOL.MSG_CREATEKEYRSP>(keyMsg)
-                .Result;
+            // Find the first non-full server or choose a random one if all servers are full
+            var chosenServer = gameServers.FirstOrDefault(server => server.PlayerCount < GameServer.MAX_PLAYER_COUNT)
+                               ?? gameServers[new Random().Next(0, gameServers.Count)];
 
-            var responseMsg = new SERVER_100_PROTOCOL.MSG_QUERYGAMESERVERRSP()
-            {
-                IP = chosenServer.IP,
-                Port = chosenServer.Port,
-                Key = keyRsp.Key
-            };
-            
-            Sender.Tell(responseMsg);
+            // Send the chosen server details back to the session actor
+            Sender.Tell(chosenServer);
         }
-        
+
         private ushort GetUnusedPort()
         {
             var rand = new Random();

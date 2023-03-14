@@ -9,6 +9,7 @@ using Imlight.Net.Messages;
 using WizUnraveler.DML;
 using WizUnraveler.Cache;
 using Akka.Actor;
+using Imlight.Common;
 using Imlight.Net.Services;
 
 namespace Imlight.Login.Services

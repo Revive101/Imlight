@@ -7,6 +7,7 @@ using Imlight.Common;
 using Akka.Actor;
 using Imlight.Net;
 using Imlight.Net.Messages;
+using WizUnraveler.DML;
 
 namespace Imlight.Login
 {
@@ -14,6 +15,7 @@ namespace Imlight.Login
     {
         private const string DEFAULT_LOGIN_SERVER_NAME = "Imlight.Login";
         private const ushort DEFAULT_LOGIN_SERVER_PORT = 12000;
+        public const ushort MAX_PLAYER_COUNT = 100;
         private const string DEFAULT_LOCAL_GAME_SERVER_NAME = "Imlight.Game";
         private const ushort DEFAULT_LOCAL_GAME_SERVER_PORT = 12333;
         

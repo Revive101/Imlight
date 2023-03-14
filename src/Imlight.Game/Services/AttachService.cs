@@ -26,9 +26,8 @@ namespace Imlight.Game.Services
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ATTACH))]
         private void ReceiveAttach(GAME_5_PROTOCOL.MSG_ATTACH message)
         {
-            Log.Logger.Debug($"Attach received key {message.LoginKey}");
-            
-            if (!ValidateLoginKey(message.LoginKey))
+            // Use the session key given in the message to ensure that the user didn't bypass our login server.
+            if (!ValidateLoginKey(message.LoginKey, message.UserID, out var account))
             {
                 Log.Logger.Warning($"User [{message.UserID}] failed to validate login key: {message.LoginKey}.");
 
@@ -41,6 +40,10 @@ namespace Imlight.Game.Services
                 
                 return;
             }
+            
+            // This is the first authentication action the user will send on the game server. Using the session key
+            // given, we'll set the AccountService account to what the key is mapped to.
+            SetAccountInternally(account);
 
             if (!GetCharacter(message.CharID, out var character))
             {
@@ -55,19 +58,18 @@ namespace Imlight.Game.Services
 
                 return;
             }
-
-            var data = GetCharacterData(character);
-
+            
             var loginCompleteMsg = new GAME_5_PROTOCOL.MSG_LOGINCOMPLETE()
             {
-                Data = data,
-                ZoneName = character.CreationData.m_location,
-                DynamicZoneID = 4288020480,
-                DynamicServerProcID = 57781,
+                ZoneName = message.ZoneName,
+                ZoneID = message.ZoneID,
+                Data = GetCharacterData(character),
+                DynamicZoneID = 0,
+                DynamicServerProcID = 0,
                 IsCSR = 1,
                 Permissions = 31679,
                 RealmName = "Imlight",
-                ZoneID = new GID(4288020480),
+                //ZoneID = new GID(4288020480),
                 //CriticalObjects = null,
             };
 
@@ -96,17 +98,28 @@ namespace Imlight.Game.Services
             return result;
         }
 
-        private bool ValidateLoginKey(ByteString key)
+        private bool ValidateLoginKey(ByteString key, ulong userId, out Account account)
         {
+            account = null;
+            
             var msg = new SERVER_100_PROTOCOL.MSG_VALIDATESESSIONKEY()
             {
                 Key = key,
-                SessionID = SessionActor.SessionID
+                UserID = userId
             };
-
             var rsp = AskServer<SERVER_100_PROTOCOL.MSG_VALIDATESESSIONKEYRSP>(msg);
-            
+
+            account = rsp.Account;
             return rsp.ErrorCode == 0;
+        }
+
+        private void SetAccountInternally(Account account)
+        {
+            // Tell the SessionActor to set the account.
+            SendInternal(new ACCOUNT_104_PROTOCOL.INTMSG_SET_ACCOUNT()
+            {
+                Account = account
+            });
         }
     }
 }

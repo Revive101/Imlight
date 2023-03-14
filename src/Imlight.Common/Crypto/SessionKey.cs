@@ -6,7 +6,7 @@ namespace Imlight.Common.Crypto
 {
     public static class SessionKey
     {
-        public static string GenerateHash(string input, ushort salt)
+        public static string GenerateHash(string input, ulong salt)
         {
             byte[] saltBytes = BitConverter.GetBytes(salt);
             byte[] inputBytes = Encoding.UTF8.GetBytes(input);
@@ -22,7 +22,7 @@ namespace Imlight.Common.Crypto
             }
         }
         
-        public static bool ValidateHash(string input, ushort salt, string expectedHash)
+        public static bool ValidateHash(string input, ulong salt, string expectedHash)
         {
             string generatedHash = GenerateHash(input, salt);
             return generatedHash.Equals(expectedHash);

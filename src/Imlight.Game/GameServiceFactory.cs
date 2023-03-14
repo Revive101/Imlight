@@ -17,11 +17,11 @@ namespace Imlight.Game
         protected override HashSet<Type> UnloadedServiceTypes { get; set; } = new HashSet<Type>()
         {
             typeof(ControlService),
-            typeof(AccountService),
         };
         protected override HashSet<Type> LoadedServiceTypes { get; set; } = new HashSet<Type>()
         {
             typeof(AttachService),
+            typeof(AccountService),
         };
 
         public static Props Props()

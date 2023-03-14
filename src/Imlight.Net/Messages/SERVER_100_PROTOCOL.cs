@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Net.Sockets;
 using Akka.Actor;
+using Imlight.Data;
 using WizUnraveler;
 using WizUnraveler.DML;
 
@@ -23,8 +24,6 @@ namespace Imlight.Net.Messages
                 case (4): return new MSG_QUERYACTORFACTORY();
                 case (5): return new MSG_QUERIEDACTORFACTORY();
                 case (6): return new MSG_QUERYGAMESERVER();
-                case (7): return new MSG_QUERYGAMESERVERRSP();
-                case (8): return new MSG_GAMESERVERDETAILS();
                 case (9): return new MSG_GAMESERVER();
                 case (10): return new MSG_CREATEKEY();
                 case (11): return new MSG_CREATEKEYRSP();
@@ -77,26 +76,16 @@ namespace Imlight.Net.Messages
         {
             public byte MessageOrder { get; } = 6;
             public byte ServiceID { get; } = 100;
-
-            public SessionActor SessionActor;
         }
         
-        public class MSG_QUERYGAMESERVERRSP : INetworkMessage
+        public class MSG_QUERYSTUFF : INetworkMessage
         {
-            public byte MessageOrder { get; } = 7;
+            public byte MessageOrder { get; } = 6;
             public byte ServiceID { get; } = 100;
 
-            public ByteString IP;
-            public int Port;
-            public ByteString Key;
+            public int Slot;
         }
 
-        public class MSG_GAMESERVERDETAILS : INetworkMessage
-        {
-            public byte MessageOrder { get; } = 8;
-            public byte ServiceID { get; } = 100;
-        }
-        
         public class MSG_GAMESERVER : INetworkMessage
         {
             public byte MessageOrder { get; } = 9;
@@ -113,8 +102,8 @@ namespace Imlight.Net.Messages
         {
             public byte MessageOrder { get; } = 10;
             public byte ServiceID { get; } = 100;
-
-            public ushort SessionID;
+            
+            public Account Account;
         }
         
         public class MSG_CREATEKEYRSP : INetworkMessage
@@ -131,7 +120,7 @@ namespace Imlight.Net.Messages
             public byte ServiceID { get; } = 100;
 
             public ByteString Key;
-            public ushort SessionID;
+            public ulong UserID;
         }
         
         public class MSG_VALIDATESESSIONKEYRSP : INetworkMessage
@@ -143,6 +132,7 @@ namespace Imlight.Net.Messages
             // 1: Failed
             // @todo: make these string IDs instead.
             public int ErrorCode;
+            public Account Account;
         }
     }
 }

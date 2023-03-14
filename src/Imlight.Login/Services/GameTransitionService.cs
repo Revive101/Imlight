@@ -11,25 +11,12 @@ using WizUnraveler.Cache;
 using WizUnraveler.ObjectProperty;
 using Imlight.Net.Messages;
 using Imlight.Common;
+using Imlight.Game;
 
 namespace Imlight.Login.Services
 {
     internal class GameTransitionService : MessageService
     {
-        private class ServerDetails
-        {
-            public string IP { get; }
-            public int Port { get; }
-            public ByteString AllocatedKey { get; }
-            
-            public ServerDetails(string ip, int port, ByteString allocatedKey)
-            {
-                IP = ip;
-                Port = port;
-                AllocatedKey = allocatedKey;
-            }
-        }
-        
         public GameTransitionService(SessionActor sessionActor) : base(sessionActor) { }
 
         protected static Props Props(SessionActor parentActor)
@@ -61,29 +48,38 @@ namespace Imlight.Login.Services
                 return;
             }
 
-            var serverDetails = GetBestServerDetails();
+            var gameserver = GetGameServer(account);
             
-            Log.Logger.Debug($"SessionActor [{SessionActor.SessionID}]" +
-                               $" given key {serverDetails.AllocatedKey}.");
+            // If the server is full, place the SessionActor into the server's queue.
+            if (gameserver.PlayerCount >= GameServer.MAX_PLAYER_COUNT)
+            {
+                // @todo: do queue stuff
 
-            // Otherwise, we've validated everything propertly. Retreive character
+                return;
+            }
+            
+            // If our game server has a slot for us, tell the game server to craft a key for us.
+            // We'll use this key later once we connect to the game server.
+            var allocatedKey = CreateSessionKey(gameserver.ActorRef, account);
+
+            // Otherwise, we've validated everything properly. Retrieve character
             // specific information and send the client the `MSG_CHARACTERSELECTED`.
             // This begins client transition to the game server.
             var charSelectedMsg = new LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED()
             {
                 // Set details about the game server.
-                IP = serverDetails.IP,
-                TCPPort = serverDetails.Port,
-                UDPPort = serverDetails.Port,
-                Key = serverDetails.AllocatedKey,    // Login server -> game server session key.
-                PrepPhase = 0,                       // (0|1): Player is in queue
-                Slot = 0,                            // The player's position in said queue
-                LoginServer = "Imlight.Login",       // @FIXME: This should be sourced from elsewhere.
+                IP = gameserver.IP,
+                TCPPort = gameserver.Port,
+                UDPPort = gameserver.Port,
+                Key = allocatedKey,                   // Login server -> game server session key.
+                PrepPhase = 0,                        // (0|1): Player is in queue.
+                Slot = 0,                             // The player's position in said queue.
+                LoginServer = "Imlight.Login",        // @FIXME: This should be sourced from elsewhere.
                 
                 // Set details about the character.
                 UserID = account.ID,
                 CharID = character.ID,
-                ZoneID = new GID((ulong)serverDetails.Port),
+                ZoneID = new GID((ulong)gameserver.Port),
                 ZoneName = "WizardCity/WC_Ravenwood", // Client uses this name to load a zone locally.
                 Location = "Start",                   // Most zones use "Start" on player login.
             };
@@ -105,16 +101,22 @@ namespace Imlight.Login.Services
             return account;
         }
 
-        private ServerDetails GetBestServerDetails()
+        private SERVER_100_PROTOCOL.MSG_GAMESERVER GetGameServer(Account account)
         {
-            var msg = new SERVER_100_PROTOCOL.MSG_QUERYGAMESERVER()
-            {
-                SessionActor = base.SessionActor
-            };
-            var server = AskServer<SERVER_100_PROTOCOL.MSG_QUERYGAMESERVERRSP>(msg);
+            var msg = new SERVER_100_PROTOCOL.MSG_QUERYGAMESERVER();
+            return AskServer<SERVER_100_PROTOCOL.MSG_GAMESERVER>(msg);
+        }
 
-            var details = new ServerDetails(server.IP, server.Port, server.Key);
-            return details;
+        private ByteString CreateSessionKey(ICanTell gameServerRef, Account account)
+        {
+            var msg = new SERVER_100_PROTOCOL.MSG_CREATEKEY()
+            {
+                Account = account
+            };
+
+            return gameServerRef.Ask<SERVER_100_PROTOCOL.MSG_CREATEKEYRSP>(msg)
+                .Result
+                .Key;
         }
     }
 }
