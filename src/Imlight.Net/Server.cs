@@ -19,7 +19,7 @@ namespace Imlight.Net
         public int Port { get; }
         public IActorRef TcpListenerActorRef { get; }
         
-        protected readonly Dictionary<ushort, IActorRef> ActiveSessions;
+        protected readonly Dictionary<Session, IActorRef> ActiveSessions;
         protected readonly IActorRef ActorFactoryRef;
 
         private readonly long _serverStartTime;
@@ -30,7 +30,7 @@ namespace Imlight.Net
             this.Name = name;
             this.IP = NetUtil.GetLocalIPAddress();
             this.Port = port;
-            this.ActiveSessions = new Dictionary<ushort, IActorRef>();
+            this.ActiveSessions = new Dictionary<Session, IActorRef>();
             this._serverStartTime = DateTimeOffset.Now.ToUnixTimeSeconds();
             this._factoryProps = factoryProps;
 
@@ -54,11 +54,15 @@ namespace Imlight.Net
         [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_ALLOCATESOCKET))]
         public void ReceiveAllocateSocket(SERVER_100_PROTOCOL.MSG_ALLOCATESOCKET message)
         {
-            var id = RandomGen.GenerateUniqueID<ushort>(ActiveSessions.Keys.ToList());
+            // Create the Session object as a key.
+            var id = GetNewUniqueID();
+            var session = new Session(id);
+            
+            // Create the IActorRef as the value.
             var sessionProps = SessionActor.Props(message.Socket, id, Context.Self);
             var actor = Context.ActorOf(sessionProps);
 
-            if (!ActiveSessions.TryAdd(id, actor))
+            if (!ActiveSessions.TryAdd(session, actor))
             {
                 Log.Logger.Error($"Server [{Name}] could not " +
                                  $"add new SessionActor for IP: {message.Socket.RemoteEndPoint}.");
@@ -80,8 +84,13 @@ namespace Imlight.Net
         [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET))]
         public void ReceiveDeallocateSocket(SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET message)
         {
-            if (ActiveSessions.Remove(message.ID)) 
-                return;
+            foreach (var session in ActiveSessions.Keys)
+            {
+                if (session.SessionID != message.ID)
+                    continue;
+
+                ActiveSessions.Remove(session);
+            }
             
             Log.Logger.Error($"Server [{Name}] attempted to remove socket by ID [{message.ID}]," +
                              $" but no socket was found.");
@@ -130,5 +139,18 @@ namespace Imlight.Net
         {
             return Context.ActorOf(_factoryProps);
         }
+
+        public ushort GetNewUniqueID()
+        {
+            ushort maxID = 0;
+            foreach (var session in ActiveSessions
+                         .Keys
+                         .Where(session => session.SessionID > maxID))
+            {
+                maxID = session.SessionID;
+            }
+            return (ushort)(maxID + 1);
+        }
+
     }
 }
