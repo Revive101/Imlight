@@ -103,7 +103,7 @@ namespace Imlight.Login.Services
 
         private SERVER_100_PROTOCOL.MSG_SERVERINFO GetGameServer(Account account)
         {
-            var msg = new SERVER_100_PROTOCOL.MSG_QUERYGAMESERVER();
+            var msg = new SERVER_100_PROTOCOL.MSG_QUERYSERVER();
             return AskServer<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg);
         }
 
