@@ -82,6 +82,15 @@ namespace Imlight.Net.Messages
             public byte MessageOrder { get; } = 7;
             public byte ServiceID { get; } = 100;
         }
+        
+        public class MSG_PLAYERENQUEUED : INetworkMessage
+        {
+            public byte MessageOrder { get; } = 8;
+            public byte ServiceID { get; } = 100;
+
+            public SessionActor SessionActor;
+            public bool VIPEntry;
+        }
 
         public class MSG_SERVERINFO : INetworkMessage
         {

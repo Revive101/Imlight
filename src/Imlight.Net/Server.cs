@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Net;
@@ -12,14 +13,15 @@ namespace Imlight.Net
 {
     public abstract class Server : ReceiveProtocolDispatcher
     {
-        public const ushort PLAYER_LIMIT = 40;
+        public const ushort PLAYER_LIMIT = 1;
 
         public string Name { get; }
         public string IP { get; }
         public int Port { get; }
         public IActorRef TcpListenerActorRef { get; }
         
-        protected readonly Dictionary<Session, IActorRef> ActiveSessions;
+        protected readonly ObservableHashSet<SessionActor> ActiveSessions;
+        protected readonly ListQueue<SessionActor> PlayerQueue;
         protected readonly IActorRef ActorFactoryRef;
 
         private readonly long _serverStartTime;
@@ -30,9 +32,13 @@ namespace Imlight.Net
             this.Name = name;
             this.IP = NetUtil.GetLocalIPAddress();
             this.Port = port;
-            this.ActiveSessions = new Dictionary<Session, IActorRef>();
+            this.ActiveSessions = new ObservableHashSet<SessionActor>();
+            this.PlayerQueue = new ListQueue<SessionActor>();
             this._serverStartTime = DateTimeOffset.Now.ToUnixTimeSeconds();
             this._factoryProps = factoryProps;
+            
+            // Create events.
+            this.ActiveSessions.CollectionChanged += ActiveSessionsChangedEvent;
 
             TcpListenerActorRef = CreateTcpListener();
             ActorFactoryRef = CreateActorFactory();
@@ -54,27 +60,10 @@ namespace Imlight.Net
         [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_ALLOCATESOCKET))]
         public void ReceiveAllocateSocket(SERVER_100_PROTOCOL.MSG_ALLOCATESOCKET message)
         {
-            // Create the Session object as a key.
-            var id = GetNewUniqueID();
-            var session = new Session(id);
-            
-            // Create the IActorRef as the value.
+            // Create a new child actor, which represents the active socket connection.
+            var id = GetNewUniqueId();
             var sessionProps = SessionActor.Props(message.Socket, id, Context.Self);
             var actor = Context.ActorOf(sessionProps);
-
-            if (!ActiveSessions.TryAdd(session, actor))
-            {
-                Log.Logger.Error($"Server [{Name}] could not " +
-                                 $"add new SessionActor for IP: {message.Socket.RemoteEndPoint}.");
-                
-                message.Socket.Disconnect(true);
-                
-                return;
-            }
-            
-            Log.Logger.Verbose($"Server [{Name}] accepted new SessionActor:" +
-                               $"\n\t\tIP: {message.Socket.RemoteEndPoint}" +
-                               $"\n\t\tID: {id}");
         }
 
         /// <summary>
@@ -84,12 +73,21 @@ namespace Imlight.Net
         [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET))]
         public void ReceiveDeallocateSocket(SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET message)
         {
-            foreach (var session in ActiveSessions.Keys)
+            foreach (var session in ActiveSessions.ToList())
             {
                 if (session.SessionID != message.ID)
                     continue;
 
                 ActiveSessions.Remove(session);
+            }
+            
+            // If we couldn't find them in the active sessions, it might be possible they're in the queue.
+            foreach (var session in PlayerQueue.ToList())
+            {
+                if (session.SessionID != message.ID)
+                    continue;
+
+                PlayerQueue.Remove(session);
             }
             
             Log.Logger.Error($"Server [{Name}] attempted to remove socket by ID [{message.ID}]," +
@@ -129,6 +127,8 @@ namespace Imlight.Net
             Sender.Tell(msg);
         }
 
+        protected abstract void ActiveSessionsChangedEvent(object obj, NotifyCollectionChangedEventArgs args);
+        
         private IActorRef CreateTcpListener()
         {
             var tcpProps = TcpListenerActor.Props(Name, Port, Context.Self);
@@ -140,16 +140,24 @@ namespace Imlight.Net
             return Context.ActorOf(_factoryProps);
         }
 
-        public ushort GetNewUniqueID()
+        private ushort GetNewUniqueId()
         {
-            ushort maxID = 0;
-            foreach (var session in ActiveSessions
-                         .Keys
-                         .Where(session => session.SessionID > maxID))
+            ushort newId = 0;
+            var isUniqueId = false;
+            var random = new Random();
+
+            while (!isUniqueId)
             {
-                maxID = session.SessionID;
+                newId = (ushort)random.Next(ushort.MaxValue);
+
+                if (!ActiveSessions.Any(s => s.SessionID == newId) 
+                    && !PlayerQueue.Any(s => s.SessionID == newId))
+                {
+                    isUniqueId = true;
+                }
             }
-            return (ushort)(maxID + 1);
+
+            return newId;
         }
 
     }

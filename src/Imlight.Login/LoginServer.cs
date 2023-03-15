@@ -47,6 +47,55 @@ namespace Imlight.Login
             _gamePoolServer.Forward(message);
         }
 
+        [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_PLAYERENQUEUED))]
+        private void ReceivePlayerEnqueued(SERVER_100_PROTOCOL.MSG_PLAYERENQUEUED message)
+        {
+            // The login server does not have a queue. For now. >:(
+            ActiveSessions.Add(message.SessionActor);
+            
+            // Inform the client they've been added to the server.
+            var rsp = new LOGIN_7_PROTOCOL.MSG_USER_ADMIT_IND()
+            {
+                PositionInQueue = 0,
+                Status = 1
+            };
+                
+            Sender.Tell(rsp);
+        }
+        
+        protected override void ActiveSessionsChangedEvent(object obj, NotifyCollectionChangedEventArgs args)
+        {
+            // Anytime a player has left, we'll check to see if a queue is active. If so, we'll grab the next player
+            // and finally allocate their slot.
+            if (args.OldItems == null || PlayerQueue.Count <= 0)
+                return;
+
+            // Add the first in line for each new slot available.
+            for (int i = 0; i < args.OldItems.Count; i++)
+            {
+                if (PlayerQueue.Count <= 0)
+                    return;
+
+                var newPlayer = PlayerQueue.Dequeue();
+                ActiveSessions.Add(newPlayer);
+                
+                // Inform the SessionActor that it's finally outside of queue.
+                newPlayer.Dequeue();;
+            }
+            
+            // Inform each enqueued player of their new position.
+            for (uint i = 0; i < PlayerQueue.Count; i++)
+            {
+                var msg = new LOGIN_7_PROTOCOL.MSG_USER_ADMIT_IND()
+                {
+                    Status = 1,
+                    PositionInQueue = i
+                };
+                
+                PlayerQueue[(int)i].Send(msg);
+            }
+        }
+
         private void CreateLocalServer()
         {
             var msg = new SERVER_100_PROTOCOL.MSG_CREATEGAMESERVER()

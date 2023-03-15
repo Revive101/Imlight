@@ -84,7 +84,7 @@ namespace Imlight.Net.Services
             // The session is now valid. For optimization purposes, our parent SessionActor doesn't load
             // all the services on creation. Instead, we wait for the session to be valid.
             // We need to now tell our SessionActor that the session is created, and to grab the rest of its services.
-            SessionActor.FullInitialize(_sessionOfferTime.ElapsedMilliseconds);
+            SessionActor.InitializeActiveSession();
 
             // Once the session is created, we need to send a heartbeat to keep it active.
             // To do that. we'll have this actor send a message to itself on interval to check on the heartbeat.

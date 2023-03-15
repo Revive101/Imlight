@@ -44,6 +44,9 @@ namespace Imlight.Game.Services
             // This is the first authentication action the user will send on the game server. Using the session key
             // given, we'll set the AccountService account to what the key is mapped to.
             SetAccountInternally(account);
+            
+            // We also need to add this session actor to the ActiveSessions list of the server.
+            SessionActor.ForceToServer();
 
             if (!GetCharacter(message.CharID, out var character))
             {

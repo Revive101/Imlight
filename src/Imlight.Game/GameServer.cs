@@ -20,7 +20,7 @@ namespace Imlight.Game
         public const string DEFAULT_GAME_SERVER_NAME = "Imlight.Game";
         public const ushort DEFAULT_GAME_SERVER_PORT = 12333;
         public const string SESSION_KEY_HASH_INPUT = "MAGIC_HATTER";
-        public const ushort SESSION_KEY_VALIDITY_TIME = 120;
+        public const ushort SESSION_KEY_VALIDITY_TIME = 7200; // 2 hours
 
         private IActorRef _serverPoolRef;
         private Cache<ByteString, Account> _sessionKeys;
@@ -90,6 +90,74 @@ namespace Imlight.Game
             {
                 ErrorCode = 1
             });
+        }
+        
+        [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_PLAYERENQUEUED))]
+        private void ReceivePlayerEnqueued(SERVER_100_PROTOCOL.MSG_PLAYERENQUEUED message)
+        {
+            // If this is a VIP enqueue, we do no sort of preemptive measures. Add them to our active sessions.
+            if (message.VIPEntry)
+            {
+                ActiveSessions.Add(message.SessionActor);
+                
+                return;
+            }
+            
+            // A player has requested to join this server.
+            // If the server is full, add them to the queue and inform them of such.
+            var rsp = new LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED()
+            {
+                PrepPhase = 0,
+                Slot = 0
+            };
+            
+            if (ActiveSessions.Count >= PLAYER_LIMIT)
+            {
+                PlayerQueue.Enqueue(message.SessionActor);
+                var queuePos = PlayerQueue.Count;
+                
+                message.SessionActor.PlaceInQueue((ushort)queuePos);
+                
+                rsp.PrepPhase = 1;
+                rsp.Slot = queuePos;
+            }
+            
+            // Only a session that exists on the login server will even bother trying to enqueue itself.
+            // Meaning that we don't actually want to add it to the active sessions here.
+            Sender.Tell(rsp);
+        }
+        
+        protected override void ActiveSessionsChangedEvent(object obj, NotifyCollectionChangedEventArgs args)
+        {
+            // Anytime a player has left, we'll check to see if a queue is active. If so, we'll grab the next player
+            // and finally allocate their slot.
+            if (args.OldItems == null || PlayerQueue.Count <= 0)
+                return;
+
+            // Add the first in line for each new slot available.
+            for (int i = 0; i < args.OldItems.Count; i++)
+            {
+                if (PlayerQueue.Count <= 0)
+                    return;
+
+                var newPlayer = PlayerQueue.Dequeue();
+                ActiveSessions.Add(newPlayer);
+                
+                // Inform the SessionActor that it's finally outside of queue.
+                newPlayer.Dequeue();;
+            }
+            
+            // Inform each enqueued player of their new position.
+            for (int i = 0; i < PlayerQueue.Count; i++)
+            {
+                var msg = new LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED()
+                {
+                    PrepPhase = 1,
+                    Slot = i
+                };
+                
+                PlayerQueue[i].Send(msg);
+            }
         }
     }
 }

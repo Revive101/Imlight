@@ -28,10 +28,14 @@ namespace Imlight.Login.Services
         {
             // @TODO: User authentication here !
             // For now, we'll always except any user.
+            
+            // Inform the SessionActor of the account.
             SendInternal(new ACCOUNT_104_PROTOCOL.INTMSG_SET_ACCOUNT()
             {
                 Account = Data.Util.GetDebugAccount()
             });
+            
+            // Inform the player that they've been authenticated.
             SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_VALIDATE_RSP()
             {
                 UserID = message.UserID,
@@ -39,11 +43,12 @@ namespace Imlight.Login.Services
                 Error = (int)UserValidateError.NoError,
                 Reason = "", // Unclear as to what this field means, but it's most likely an elaboration of an error.
             });
-            SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_ADMIT_IND()
-            {
-                PositionInQueue = 0,
-                Status = 1,
-            });
+            
+            // Enqueue ourselves to the connected server. Inform the socket if its been placed into a queue and
+            // what position it could potentially be in.
+            var serverEnqueueResult = 
+                (LOGIN_7_PROTOCOL.MSG_USER_ADMIT_IND)SessionActor.EnqueueToServer();
+            SendToSocket(serverEnqueueResult);
         }
     }
 }

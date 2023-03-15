@@ -66,7 +66,7 @@ namespace Imlight.Net
                 return;
             }
 
-            SessionActor.GetActorRef().Tell(msg);
+            SessionActor.ActorRef.Tell(msg);
         }
 
         protected T AskInternal<T>(IInternalMessage msg)
@@ -99,7 +99,7 @@ namespace Imlight.Net
         
         protected void SendCloseSession()
         {
-            SessionActor.GetActorRef().Tell("Close");
+            SessionActor.ActorRef.Tell("Close");
         }
     }
 }

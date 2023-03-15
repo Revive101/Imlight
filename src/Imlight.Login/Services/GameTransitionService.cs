@@ -48,23 +48,16 @@ namespace Imlight.Login.Services
                 return;
             }
 
-            var gameserver = GetGameServer(account);
+            var gameserver = GetGameServer();
             
-            // If the server is full, place the SessionActor into the server's queue.
-            if (gameserver.PlayerCount >= Server.PLAYER_LIMIT)
-            {
-                // @todo: do queue stuff
-
-                return;
-            }
+            // Enqueue ourselves onto the game server.
+            var serverEnqueueResult = 
+                (LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED)SessionActor.EnqueueToServer(gameserver.ActorRef);
             
-            // If our game server has a slot for us, tell the game server to craft a key for us.
-            // We'll use this key later once we connect to the game server.
+            // Tell the game server to craft a key for us. We'll use this key later once we connect to the game server.
             var allocatedKey = CreateSessionKey(gameserver.ActorRef, account);
-
-            // Otherwise, we've validated everything properly. Retrieve character
-            // specific information and send the client the `MSG_CHARACTERSELECTED`.
-            // This begins client transition to the game server.
+            
+            // Craft a successful message. This will instead be cached if the server is full.
             var charSelectedMsg = new LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED()
             {
                 // Set details about the game server.
@@ -83,6 +76,17 @@ namespace Imlight.Login.Services
                 ZoneName = "WizardCity/WC_Ravenwood", // Client uses this name to load a zone locally.
                 Location = "Start",                   // Most zones use "Start" on player login.
             };
+            
+            // If the player has been queued, cache the successful message.
+            if (serverEnqueueResult.PrepPhase > 0)
+            {
+                // Cache the successful message.
+                SessionActor.CachedDequeueMessage = charSelectedMsg;
+                
+                SendToSocket(serverEnqueueResult);
+
+                return;
+            }
 
             SendToSocket(charSelectedMsg);
         }
@@ -101,9 +105,9 @@ namespace Imlight.Login.Services
             return account;
         }
 
-        private SERVER_100_PROTOCOL.MSG_SERVERINFO GetGameServer(Account account)
+        private SERVER_100_PROTOCOL.MSG_SERVERINFO GetGameServer()
         {
-            var msg = new SERVER_100_PROTOCOL.MSG_QUERYSERVER();
+            var msg = new SERVER_100_PROTOCOL.MSG_QUERYGAMESERVERS();
             return AskServer<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg);
         }
 
