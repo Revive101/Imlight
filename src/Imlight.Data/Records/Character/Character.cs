@@ -48,7 +48,7 @@ namespace Imlight.Data
             this.CreationData = creationData;
             this.CreationData.m_level = 1;
             this.CreationData.m_location = "WizardCity/WC_Hub";
-            this.CreationData.m_globalID = new GID(RandomGen.GenerateId());
+            this.CreationData.m_globalID = RandomGen.GenerateGUID();
             this.CreationData.m_equipmentInfoList = new EquippedItemInfoList()
             {
                 m_infoList = new List<EquippedItemInfo>()
@@ -72,7 +72,7 @@ namespace Imlight.Data
                 m_currentHitpoints = 500,
             };
             clientObject.m_fScale = 1f;
-            clientObject.m_globalID = RandomGen.GenerateId();
+            clientObject.m_globalID = RandomGen.GenerateGUID();
             clientObject.m_characterId = (GID)1;
             clientObject.m_permID = 0; // What is this?
             clientObject.m_location = new SharpDX.Vector3(0, 0, 0);

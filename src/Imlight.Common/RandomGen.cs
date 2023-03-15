@@ -3,15 +3,45 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using WizUnraveler.ObjectProperty;
 
 namespace Imlight.Common
 {
     public static class RandomGen
     {
-        public static ulong GenerateId()
+        public static T GenerateUniqueID<T>(List<T> list) 
+            where T : struct, IComparable, IConvertible, IEquatable<T>
         {
-            byte[] buffer = Guid.NewGuid().ToByteArray();
-            return BitConverter.ToUInt64(buffer, 0);
+            // Check that T is a numerical type
+            if (!typeof(T).IsPrimitive || typeof(T) == typeof(bool) || typeof(T) == typeof(char) || typeof(T) == typeof(IntPtr) || typeof(T) == typeof(UIntPtr))
+            {
+                throw new ArgumentException("Type parameter must be a numerical type.");
+            }
+
+            // Generate a new unique ID
+            T newId;
+            do
+            {
+                dynamic max = default(T);
+                foreach (T element in list)
+                {
+                    if (element.CompareTo(max) > 0)
+                    {
+                        max = element;
+                    }
+                }
+                newId = max + (dynamic)1;
+            } while (list.Contains(newId));
+
+            return newId;
+        }
+        
+        public static GID GenerateGUID()
+        {
+            var buffer = Guid.NewGuid().ToByteArray(); // generate a new GUID
+            var ulongType = BitConverter.ToUInt64(buffer, 0);
+            
+            return new GID(ulongType);
         }
     }
 }

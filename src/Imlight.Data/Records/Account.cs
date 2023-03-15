@@ -43,7 +43,7 @@ namespace Imlight.Data
 
         public Account(string Username, string Email, string Password)
         {
-            this.ID = RandomGen.GenerateId();
+            this.ID = RandomGen.GenerateGUID();
             this.Username = Username;
             this.Email = Email;
             this.PasswordHash = Password;

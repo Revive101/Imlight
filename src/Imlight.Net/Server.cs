@@ -18,7 +18,7 @@ namespace Imlight.Net
         public string IP { get; }
         public int Port { get; }
         public IActorRef TcpListenerActorRef { get; }
-
+        
         protected readonly Dictionary<ushort, IActorRef> ActiveSessions;
         protected readonly IActorRef ActorFactoryRef;
 
@@ -28,7 +28,7 @@ namespace Imlight.Net
         public Server(string name, int port, Props factoryProps)
         {
             this.Name = name;
-            this.IP = GetLocalIPAddress();
+            this.IP = NetUtil.GetLocalIPAddress();
             this.Port = port;
             this.ActiveSessions = new Dictionary<ushort, IActorRef>();
             this._serverStartTime = DateTimeOffset.Now.ToUnixTimeSeconds();
@@ -54,7 +54,7 @@ namespace Imlight.Net
         [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_ALLOCATESOCKET))]
         public void ReceiveAllocateSocket(SERVER_100_PROTOCOL.MSG_ALLOCATESOCKET message)
         {
-            var id = GetRandomId();
+            var id = RandomGen.GenerateUniqueID<ushort>(ActiveSessions.Keys.ToList());
             var sessionProps = SessionActor.Props(message.Socket, id, Context.Self);
             var actor = Context.ActorOf(sessionProps);
 
@@ -129,34 +129,6 @@ namespace Imlight.Net
         private IActorRef CreateActorFactory()
         {
             return Context.ActorOf(_factoryProps);
-        }
-        
-        //@todo: move this function to a common library
-        private ushort GetRandomId()
-        {
-            var rand = new Random();
-            while (true)
-            {
-                var temp = rand.Next(1, ushort.MaxValue);
-                if (ActiveSessions.Keys.All(x => x != temp))
-                {
-                    return (ushort)temp;
-                }
-            }
-        }
-        
-        //@todo: move this function to a common library
-        private static string GetLocalIPAddress()
-        {
-            var host = Dns.GetHostEntry(Dns.GetHostName());
-            foreach (var ip in host.AddressList)
-            {
-                if (ip.AddressFamily == AddressFamily.InterNetwork)
-                {
-                    return ip.ToString();
-                }
-            }
-            throw new Exception("No network adapters with an IPv4 address in the system!");
         }
     }
 }

@@ -312,7 +312,7 @@ namespace Imlight.Net
         {
             foreach (var service in services)
             {
-                var serviceName = $"{service}.{RandomGen.GenerateId()}";
+                var serviceName = $"{service}.{RandomGen.GenerateGUID()}";
                 var props = Akka.Actor.Props.Create(service, this);
                 var childRef = Context.ActorOf(props, serviceName);
 
