@@ -27,7 +27,6 @@ namespace Imlight.Login.Services
         private void ReceiveUserValidate(LOGIN_7_PROTOCOL.MSG_USER_VALIDATE message)
         {
             // @TODO: User authentication here !
-
             // For now, we'll always except any user.
             SendInternal(new ACCOUNT_104_PROTOCOL.INTMSG_SET_ACCOUNT()
             {

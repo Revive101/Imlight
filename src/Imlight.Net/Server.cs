@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -11,15 +12,15 @@ namespace Imlight.Net
 {
     public abstract class Server : ReceiveProtocolDispatcher
     {
-        public static ushort PlayerLimit = 40;
-        
+        public const ushort PLAYER_LIMIT = 40;
+
         public string Name { get; }
         public string IP { get; }
         public int Port { get; }
         public IActorRef TcpListenerActorRef { get; }
 
-        protected Dictionary<ushort, Socket> ConnectedPlayers;
-        protected IActorRef ActorFactoryRef;
+        protected readonly Dictionary<ushort, IActorRef> ActiveSessions;
+        protected readonly IActorRef ActorFactoryRef;
 
         private readonly long _serverStartTime;
         private readonly Props _factoryProps;
@@ -29,7 +30,7 @@ namespace Imlight.Net
             this.Name = name;
             this.IP = GetLocalIPAddress();
             this.Port = port;
-            this.ConnectedPlayers = new Dictionary<ushort, Socket>();
+            this.ActiveSessions = new Dictionary<ushort, IActorRef>();
             this._serverStartTime = DateTimeOffset.Now.ToUnixTimeSeconds();
             this._factoryProps = factoryProps;
 
@@ -46,6 +47,79 @@ namespace Imlight.Net
             return DateTimeOffset.Now.ToUnixTimeSeconds() - _serverStartTime;
         }
 
+        /// <summary>
+        /// Process and allocate a new incoming socket connection.
+        /// </summary>
+        /// <param name="message"></param>
+        [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_ALLOCATESOCKET))]
+        public void ReceiveAllocateSocket(SERVER_100_PROTOCOL.MSG_ALLOCATESOCKET message)
+        {
+            var id = GetRandomId();
+            var sessionProps = SessionActor.Props(message.Socket, id, Context.Self);
+            var actor = Context.ActorOf(sessionProps);
+
+            if (!ActiveSessions.TryAdd(id, actor))
+            {
+                Log.Logger.Error($"Server [{Name}] could not " +
+                                 $"add new SessionActor for IP: {message.Socket.RemoteEndPoint}.");
+                
+                message.Socket.Disconnect(true);
+                
+                return;
+            }
+            
+            Log.Logger.Verbose($"Server [{Name}] accepted new SessionActor:" +
+                               $"\n\t\tIP: {message.Socket.RemoteEndPoint}" +
+                               $"\n\t\tID: {id}");
+        }
+
+        /// <summary>
+        /// Deallocate and disconnect and active socket.
+        /// </summary>
+        /// <param name="message"></param>
+        [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET))]
+        public void ReceiveDeallocateSocket(SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET message)
+        {
+            if (ActiveSessions.Remove(message.ID)) 
+                return;
+            
+            Log.Logger.Error($"Server [{Name}] attempted to remove socket by ID [{message.ID}]," +
+                             $" but no socket was found.");
+        }
+
+        /// <summary>
+        /// Query the ActorFactory of message services for a SessionActor.
+        /// </summary>
+        /// <param name="message"></param>
+        [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_QUERYACTORFACTORY))]
+        public void ReceiveQueryActorFactory(SERVER_100_PROTOCOL.MSG_QUERYACTORFACTORY message)
+        {
+            var reply = new SERVER_100_PROTOCOL.MSG_ACTORFACTORYINFO()
+            {
+                Reference = ActorFactoryRef
+            };
+            
+            Sender.Tell(reply);
+        }
+
+        /// <summary>
+        /// Query information about this server.
+        /// </summary>
+        /// <param name="message"></param>
+        [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_QUERYSERVER))]
+        public void ReceiveQueryServer(SERVER_100_PROTOCOL.MSG_QUERYSERVER message)
+        {
+            var msg = new SERVER_100_PROTOCOL.MSG_SERVERINFO()
+            {
+                IP = IP,
+                Port = Port,
+                PlayerCount = (ushort)ActiveSessions.Count,
+                ActorRef = Context.Self,
+            };
+            
+            Sender.Tell(msg);
+        }
+
         private IActorRef CreateTcpListener()
         {
             var tcpProps = TcpListenerActor.Props(Name, Port, Context.Self);
@@ -56,63 +130,22 @@ namespace Imlight.Net
         {
             return Context.ActorOf(_factoryProps);
         }
-
-        [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_ALLOCATESOCKET))]
-        public void ReceiveAllocateSocket(SERVER_100_PROTOCOL.MSG_ALLOCATESOCKET message)
-        {
-            var id = GetRandomId();
-            var sessionProps = SessionActor.Props(message.Socket, id, Context.Self);
-            var actor = Context.ActorOf(sessionProps);
-
-            if (!ConnectedPlayers.TryAdd(id, message.Socket))
-            {
-                Log.Logger.Error($"Server [{Name}] could not " +
-                                 $"add new SessionActor for IP: {message.Socket.RemoteEndPoint}.");
-                return;
-            }
-            
-            Log.Logger.Verbose($"Server [{Name}] accepted new SessionActor:" +
-                               $"\n\t\tIP: {message.Socket.RemoteEndPoint}" +
-                               $"\n\t\tID: {id}");
-        }
-
-        [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET))]
-        public void ReceiveDeallocateSocket(SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET message)
-        {
-            if (ConnectedPlayers.Remove(message.ID)) return;
-            
-            Log.Logger.Error($"Server [{Name}] attempted to remove socket by ID [{message.ID}]," +
-                             $" but no socket was found.");
-        }
-
-        [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_QUERYACTORFACTORY))]
-        public void ReceiveQueryActorFactory(SERVER_100_PROTOCOL.MSG_QUERYACTORFACTORY message)
-        {
-            var reply = new SERVER_100_PROTOCOL.MSG_QUERIEDACTORFACTORY()
-            {
-                Reference = ActorFactoryRef
-            };
-            
-            Sender.Tell(reply);
-        }
         
-        /// <summary>
-        /// Generates a unique 2-byte ID.
-        /// </summary>
-        /// <returns></returns>
+        //@todo: move this function to a common library
         private ushort GetRandomId()
         {
             var rand = new Random();
             while (true)
             {
                 var temp = rand.Next(1, ushort.MaxValue);
-                if (ConnectedPlayers.Keys.All(x => x != temp))
+                if (ActiveSessions.Keys.All(x => x != temp))
                 {
                     return (ushort)temp;
                 }
             }
         }
         
+        //@todo: move this function to a common library
         private static string GetLocalIPAddress()
         {
             var host = Dns.GetHostEntry(Dns.GetHostName());

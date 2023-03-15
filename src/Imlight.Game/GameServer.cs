@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using Akka.Actor;
 using Akka.Actor.Dsl;
@@ -10,6 +11,7 @@ using Imlight.Data;
 using Imlight.Net;
 using Imlight.Net.Messages;
 using WizUnraveler;
+using WizUnraveler.Cache;
 
 namespace Imlight.Game
 {
@@ -43,20 +45,6 @@ namespace Imlight.Game
                                   ushort serverPort = DEFAULT_GAME_SERVER_PORT)
         {
             return Akka.Actor.Props.Create(() => new GameServer(serverPoolRef, serverName, serverPort));
-        }
-
-        [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_QUERYGAMESERVER))]
-        private void ReceiveGameServerDetails(SERVER_100_PROTOCOL.MSG_QUERYGAMESERVER message)
-        {
-            var msg = new SERVER_100_PROTOCOL.MSG_GAMESERVER()
-            {
-                IP = IP,
-                Port = Port,
-                PlayerCount = (ushort)ConnectedPlayers.Count,
-                ActorRef = Context.Self,
-            };
-            
-            Sender.Tell(msg);
         }
 
         [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_CREATEKEY))]

@@ -51,7 +51,7 @@ namespace Imlight.Login.Services
             var gameserver = GetGameServer(account);
             
             // If the server is full, place the SessionActor into the server's queue.
-            if (gameserver.PlayerCount >= Server.PlayerLimit)
+            if (gameserver.PlayerCount >= Server.PLAYER_LIMIT)
             {
                 // @todo: do queue stuff
 
