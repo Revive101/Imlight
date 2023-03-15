@@ -101,10 +101,10 @@ namespace Imlight.Login.Services
             return account;
         }
 
-        private SERVER_100_PROTOCOL.MSG_GAMESERVER GetGameServer(Account account)
+        private SERVER_100_PROTOCOL.MSG_SERVERINFO GetGameServer(Account account)
         {
             var msg = new SERVER_100_PROTOCOL.MSG_QUERYGAMESERVER();
-            return AskServer<SERVER_100_PROTOCOL.MSG_GAMESERVER>(msg);
+            return AskServer<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg);
         }
 
         private ByteString CreateSessionKey(ICanTell gameServerRef, Account account)

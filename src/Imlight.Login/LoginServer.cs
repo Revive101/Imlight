@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -7,6 +8,7 @@ using Imlight.Common;
 using Akka.Actor;
 using Imlight.Net;
 using Imlight.Net.Messages;
+using WizUnraveler.Cache;
 using WizUnraveler.DML;
 
 namespace Imlight.Login
@@ -39,8 +41,8 @@ namespace Imlight.Login
             return Akka.Actor.Props.Create(() => new LoginServer(serverName, serverPort));
         }
 
-        [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_QUERYGAMESERVER))]
-        private void ReceiveQueryGameServer(SERVER_100_PROTOCOL.MSG_QUERYGAMESERVER message)
+        [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_QUERYGAMESERVERS))]
+        private void ReceiveQueryGameServer(SERVER_100_PROTOCOL.MSG_QUERYGAMESERVERS message)
         {
             _gamePoolServer.Forward(message);
         }

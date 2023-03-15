@@ -44,7 +44,7 @@ namespace Imlight.Net
 
             // To get the actor factory reference, we'll ask the server.
             var query = new SERVER_100_PROTOCOL.MSG_QUERYACTORFACTORY();
-            this._actorFactoryRef = server.Ask<SERVER_100_PROTOCOL.MSG_QUERIEDACTORFACTORY>(query)
+            this._actorFactoryRef = server.Ask<SERVER_100_PROTOCOL.MSG_ACTORFACTORYINFO>(query)
                 .Result
                 .Reference;
 

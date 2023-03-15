@@ -48,15 +48,15 @@ namespace Imlight.Login
             _gameServers.Add(message.Port, gameServerRef);
         }
 
-        [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_QUERYGAMESERVER))]
-        private void ReceiveQueryGameServer(SERVER_100_PROTOCOL.MSG_QUERYGAMESERVER message)
+        [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_QUERYGAMESERVERS))]
+        private void ReceiveQueryGameServer(SERVER_100_PROTOCOL.MSG_QUERYGAMESERVERS message)
         {
             // Create a list of game servers and query each server for its details
             var gameServers = _gameServers.Values
                 .Select(gameServer =>
                 {
-                    var msg = new SERVER_100_PROTOCOL.MSG_QUERYGAMESERVER();
-                    var rsp = gameServer.Ask<SERVER_100_PROTOCOL.MSG_GAMESERVER>(msg).Result;
+                    var msg = new SERVER_100_PROTOCOL.MSG_QUERYSERVER();
+                    var rsp = gameServer.Ask<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg).Result;
                     return rsp;
                 })
                 .ToList();

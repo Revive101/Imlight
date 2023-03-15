@@ -22,9 +22,8 @@ namespace Imlight.Net.Messages
                 case (2): return new MSG_ALLOCATESOCKET();
                 case (3): return new MSG_DEALLOCATESOCKET();
                 case (4): return new MSG_QUERYACTORFACTORY();
-                case (5): return new MSG_QUERIEDACTORFACTORY();
-                case (6): return new MSG_QUERYGAMESERVER();
-                case (9): return new MSG_GAMESERVER();
+                case (5): return new MSG_ACTORFACTORYINFO();
+                case (9): return new MSG_SERVERINFO();
                 case (10): return new MSG_CREATEKEY();
                 case (11): return new MSG_CREATEKEYRSP();
                 case (12): return new MSG_VALIDATESESSIONKEY();
@@ -64,7 +63,7 @@ namespace Imlight.Net.Messages
             public byte ServiceID { get; } = 100;
         }
         
-        public class MSG_QUERIEDACTORFACTORY : INetworkMessage
+        public class MSG_ACTORFACTORYINFO : INetworkMessage
         {
             public byte MessageOrder { get; } = 5;
             public byte ServiceID { get; } = 100;
@@ -72,21 +71,19 @@ namespace Imlight.Net.Messages
             public IActorRef Reference;
         }
 
-        public class MSG_QUERYGAMESERVER : INetworkMessage
+        public class MSG_QUERYSERVER : INetworkMessage
         {
             public byte MessageOrder { get; } = 6;
             public byte ServiceID { get; } = 100;
         }
-        
-        public class MSG_QUERYSTUFF : INetworkMessage
-        {
-            public byte MessageOrder { get; } = 6;
-            public byte ServiceID { get; } = 100;
 
-            public int Slot;
+        public class MSG_QUERYGAMESERVERS : INetworkMessage
+        {
+            public byte MessageOrder { get; } = 7;
+            public byte ServiceID { get; } = 100;
         }
 
-        public class MSG_GAMESERVER : INetworkMessage
+        public class MSG_SERVERINFO : INetworkMessage
         {
             public byte MessageOrder { get; } = 9;
             public byte ServiceID { get; } = 100;
