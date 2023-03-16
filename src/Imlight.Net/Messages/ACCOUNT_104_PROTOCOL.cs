@@ -4,40 +4,28 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using WizUnraveler.DML;
 
 namespace Imlight.Net.Messages
 {
-    public class ACCOUNT_104_PROTOCOL
+    public sealed class ACCOUNT_104_PROTOCOL : IServerProtocol
     {
-        /// <summary>
-        /// Sets the account for a service.
-        /// </summary>
-        public class INTMSG_SET_ACCOUNT : IInternalMessage
+        public byte ServiceID { get; } = 104;
+        public string ProtocolType { get; } = "ACCOUNT";
+        public int ProtocolVersion { get; } = 1;
+        public string ProtocolDescription { get; } = "Internal Server Account Messages.";
+
+        public class MSG_QUERYACCOUNT : IServerMessage
         {
-            public Account Account;
+            public byte MessageOrder { get; } = 1;
+            public byte ServiceID { get; } = 104;
         }
-
-        /// <summary>
-        /// Gets the account from database.
-        /// </summary>
-        public class INTMSG_GET_ACCOUNT_FROM_DATABASE : IInternalMessage
+        
+        public class MSG_ACCOUNT : IServerMessage
         {
-            public ulong AccountID;
-        }
-
-        /// <summary>
-        /// Gets the local account from a service.
-        /// </summary>
-        public class INTMSG_GET_ACCOUNT : IInternalMessage
-        {
-
-        }
-
-        /// <summary>
-        /// An account object.
-        /// </summary>
-        public class INTMSG_ACCOUNT : IInternalMessage
-        {
+            public byte MessageOrder { get; } = 1;
+            public byte ServiceID { get; } = 104;
+            
             public Account Account;
         }
     }

@@ -94,8 +94,8 @@ namespace Imlight.Login.Services
         private Account GetSocketAccount()
         {
             // Get the account from the AccountService.
-            var internalMessage = new ACCOUNT_104_PROTOCOL.INTMSG_GET_ACCOUNT();
-            var account = AskInternal<ACCOUNT_104_PROTOCOL.INTMSG_ACCOUNT>(internalMessage).Account;
+            var internalMessage = new ACCOUNT_104_PROTOCOL.MSG_QUERYACCOUNT();
+            var account = AskInternal<ACCOUNT_104_PROTOCOL.MSG_ACCOUNT>(internalMessage).Account;
 
             if (account is null)
             {

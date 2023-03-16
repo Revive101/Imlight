@@ -13,40 +13,28 @@ namespace Imlight.Net
 {
     public abstract class MessageService : ReceiveProtocolDispatcher
     {
-        public static readonly string ASK_IDENTIFY = "IDENTIFY_YOURSELF";
-
         protected SessionActor SessionActor { get; set; }
 
         public MessageService(SessionActor sessionActor)
         {
             this.SessionActor = sessionActor;
         }
-         
-        protected override void ConfigureReceivers()
-        {
-            base.ConfigureReceivers();
-            
-            Receive<string>(x => x == ASK_IDENTIFY, x => 
-            {
-                Sender.Tell(new INTMSG_SERVICE_IDENTITY(this), Context.Self);
-            });
 
-            Receive<IInternalMessage>(internalMessage =>
+        [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_QUERYMESSAGESERVICEIDENTITY))]
+        public void ReceiveMessageServiceIdentify(SERVICE_101_PROTOCOL.MSG_QUERYMESSAGESERVICEIDENTITY message)
+        {
+            var rsp = new SERVICE_101_PROTOCOL.MSG_MESSAGESERVICEIDENTITY()
             {
-                // Find the method that handles this message type
-                if (MessageHandlers.TryGetValue(internalMessage.GetType(), out var method))
-                {
-                    // Invoke the method with the message
-                    method.Invoke(this, new object[] { internalMessage });
-                }
-                else
-                {
-                    // No handler for this message type
-                    Unhandled(internalMessage);
-                }
-            });
+                Service = this
+            };
+            
+            Sender.Tell(rsp);
         }
 
+        /// <summary>
+        /// Sends a message directly to the socket.
+        /// </summary>
+        /// <param name="message"></param>
         protected void SendToSocket(INetworkMessage message)
         {
             if (SessionActor is null)
@@ -55,36 +43,52 @@ namespace Imlight.Net
                 return;
             }
 
-            SessionActor.Send(message);
+            SessionActor.ActorRef.Tell(message);
         }
 
-        protected void SendInternal(IInternalMessage msg)
+        /// <summary>
+        /// Sends the SessionActor a message. Used to send data to another service of the SessionActor.
+        /// </summary>
+        /// <param name="message"></param>
+        protected void SendInternal(IServerMessage message)
         {
-            if (SessionActor is null)
-            {
-                Log.Logger.Error($"{this.GetType()} attempted to send message to undefined SessionActor.");
-                return;
-            }
-
-            SessionActor.ActorRef.Tell(msg);
+            SessionActor.ActorRef.Tell(message);
         }
 
-        protected T AskInternal<T>(IInternalMessage msg)
-            where T : IInternalMessage
+        /// <summary>
+        /// Asks the SessionActor for a return. Used to get data from another service of the SessionActor.
+        /// </summary>
+        /// <param name="message"></param>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        protected T AskInternal<T>(IServerMessage message)
+            where T : IServerMessage
         {
             if (SessionActor is null)
             {
                 Log.Logger.Error($"{this.GetType()} attempted to send message to undefined SessionActor.");
                 return default(T);
             }
+            
+            if (message.ServiceID < 100)
+            {
+                throw new Exception($"You are sending a non-server message using {nameof(AskInternal)}! " +
+                                    $"Do not do this. Use {nameof(SendToSocket)} instead.");
+            }
 
-            var task = SessionActor.HandleInternalAsk<T>(msg);
+            var task = SessionActor.HandleInternalAsk<T>(message);
 
             return task;
         }
         
-        protected T AskServer<T>(INetworkMessage msg)
-            where T : INetworkMessage
+        /// <summary>
+        /// Asks the server the SessionActor is connected to.
+        /// </summary>
+        /// <param name="msg"></param>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        protected T AskServer<T>(IServerMessage msg)
+            where T : IServerMessage
         {
             if (SessionActor is null)
             {

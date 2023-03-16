@@ -64,42 +64,6 @@ namespace Imlight.Net
         }
 
         /// <summary>
-        /// Send an INetworkMessage record to the connected socket.
-        /// </summary>
-        /// <param name="message"></param>
-        public void Send(INetworkMessage message)
-        {
-            if (!Socket.Connected)
-            {
-                Log.Logger.Error($"SessionActor [{SessionID}] send failure: " +
-                    $"Socket is not connected!");
-                return;
-            }
-            if (_isSending)
-            {
-                Log.Logger.Error($"SessionActor [{SessionID}] send failure: " +
-                    $"Asynchronous send operation already in progress.");
-                return;
-            }
-
-            var data = MessageSerializer.SerializeMessageBinary(message);
-            _isSending = true;
-            _sendEventArgs.SetBuffer(data, 0, data.Length);
-            _sendEventArgs.UserToken = Socket;
-            _sendEventArgs.Completed += SendEventArgs_Completed;
-
-            var willRaiseEvent = Socket.SendAsync(_sendEventArgs);
-            if (!willRaiseEvent)
-            {
-                SendEventArgs_Completed(this, _sendEventArgs);
-            }
-
-            var scopedMessageName = message
-                .GetType().ToString().Split('.')[^1];
-            Log.Logger.Debug($"SessionActor [{SessionID}] sent message [{scopedMessageName}]");
-        }
-        
-        /// <summary>
         /// Closes this active session and socket.
         /// </summary>
         public void Close()
@@ -123,17 +87,21 @@ namespace Imlight.Net
         public void InitializeActiveSession()
         {
             // Ask the ActorFactory for this actor's message services.
+            var msg = new SERVICE_101_PROTOCOL.MSG_QUERYLOADEDSERVICES();
             var services = _actorFactoryRef
-                .Ask<HashSet<Type>>(ServiceFactory.LOADED_SERVICES_ASK)
-                .Result;
+                .Ask<SERVICE_101_PROTOCOL.MSG_SERVICESLIST>(msg)
+                .Result
+                .Services;
 
             SetServices(services);
             SessionValid = true;
 
             // Finally handle cached messages.
-            foreach (var msg in _preInitMessages)
+            if (_preInitMessages is null)
+                return;
+            foreach (var preInitMessage in _preInitMessages)
             {
-                HandlePacket(msg);
+                HandlePacket(preInitMessage);
             }
             _preInitMessages = null;
         }
@@ -147,7 +115,7 @@ namespace Imlight.Net
         public void Dequeue()
         {
             // Send the dequeue message to the socket.
-            Send(CachedDequeueMessage);
+            SendToSocket(CachedDequeueMessage);
         }
 
         /// <summary>
@@ -203,10 +171,50 @@ namespace Imlight.Net
             
             serverRef.Tell(msg);
         }
+        
+        public T HandleInternalAsk<T>(IServerMessage msg) 
+            where T : IServerMessage
+        {
+            // Iterate our services and see if any of them can handle this message.
+            foreach (var service in _services)
+            {
+                var actorRef = service.Key;
+                var type = service.Value;
+
+                if (type.MessageHandlers.Any(x => x.Key == msg.GetType()))
+                {
+                    //Sender.Forward(actorRef.Ask<T>(msg));
+                    var result = actorRef.Ask<T>(msg).Result;
+                    return result;
+                }
+            }
+
+            Unhandled(msg);
+            return default(T);
+        }
+
+        public T AskServer<T>(IServerMessage msg)
+            where T : IServerMessage
+        {
+            if (ServerRef is null)
+            {
+                Log.Logger.Fatal($"SessionActor [{SessionID}] contained a null server reference!");
+                return default;
+            }
+            
+            return ServerRef.Ask<T>(msg).Result;
+        }
 
         protected override void PreStart()
         {
-            InitializePreemptiveServices();
+            // Ask the ActorFactory for this actor's message services.
+            var msg = new SERVICE_101_PROTOCOL.MSG_QUERYUNLOADEDSERVICES();
+            var services = _actorFactoryRef
+                .Ask<SERVICE_101_PROTOCOL.MSG_SERVICESLIST>(msg)
+                .Result
+                .Services;
+
+            SetServices(services);
 
             Log.Logger.Debug($"SessionActor [{SessionID}] PreStart completed.");
 
@@ -219,26 +227,12 @@ namespace Imlight.Net
                 $"received unhandled message of type [{message.GetType()}].");
         }
 
-        private void InitializePreemptiveServices()
-        {
-            // Ask the ActorFactory for this actor's message services.
-            var services = _actorFactoryRef
-                .Ask<HashSet<Type>>(ServiceFactory.UNLOADED_SERVICES_ASK)
-                .Result;
-
-            SetServices(services);
-        }
-
         private void ConfigureReceivers()
         {
-            Receive<INetworkMessage>(x => Send(x));
+            Receive<IServerMessage>(HandleInternalTell);
+            Receive<INetworkMessage>(x => x.ServiceID < 100, SendToSocket);
             Receive<string>(x => x == "Close", x => Close());
             Receive<string>(x => x == "Identify", x=> Sender.Tell(this));
-
-            // Anything else is an internal message. Usually for one service to send a message
-            // to another service.
-            // @todo: deprecate this
-            Receive<IInternalMessage>(x => HandleInternalTell(x));
         }
 
         private void ListenAndProcess(IActorRef context)
@@ -280,7 +274,8 @@ namespace Imlight.Net
             var scopedMessageName = packet
                 .GetType()
                 .ToString()
-                .Split('.')[^1];
+                .Split('.')[^1]
+                .Replace('+', '.');
             Log.Logger.Verbose($"SessionActor [{SessionID}] received KiNP packet [{scopedMessageName}]");
 
             // Iterate our services and see if any of them can handle this message.
@@ -299,7 +294,7 @@ namespace Imlight.Net
             Unhandled(packet);
         }
 
-        private void HandleInternalTell(IInternalMessage msg)
+        private void HandleInternalTell(IServerMessage msg)
         {
             // Iterate our services and see if any of them can handle this message.
             foreach (var service in _services)
@@ -317,41 +312,6 @@ namespace Imlight.Net
             Unhandled(msg);
         }
 
-        public T HandleInternalAsk<T>(IInternalMessage msg) 
-            where T : IInternalMessage
-        {
-            // @fixme: Use actor mailbox to handle internal messages.
-
-            // Iterate our services and see if any of them can handle this message.
-            foreach (var service in _services)
-            {
-                var actorRef = service.Key;
-                var type = service.Value;
-
-                if (type.MessageHandlers.Any(x => x.Key == msg.GetType()))
-                {
-                    //Sender.Forward(actorRef.Ask<T>(msg));
-                    var result = actorRef.Ask<T>(msg).Result;
-                    return result;
-                }
-            }
-
-            Unhandled(msg);
-            return default(T);
-        }
-
-        public T AskServer<T>(INetworkMessage msg)
-            where T : INetworkMessage
-        {
-            if (ServerRef is null)
-            {
-                Log.Logger.Fatal($"SessionActor [{SessionID}] contained a null server reference!");
-                return default;
-            }
-            
-            return ServerRef.Ask<T>(msg).Result;
-        }
-        
         private INetworkMessage GetPacketFromBuffer(byte[] buffer, int bytesReceived)
         {
             var bufferSpan = new ReadOnlySpan<byte>(buffer, 0, bytesReceived).ToArray();
@@ -368,6 +328,41 @@ namespace Imlight.Net
 
             return record;
         }
+        
+        private void SendToSocket(INetworkMessage message)
+        {
+            if (!Socket.Connected)
+            {
+                Log.Logger.Error($"SessionActor [{SessionID}] send failure: " +
+                                 $"Socket is not connected!");
+                return;
+            }
+            if (_isSending)
+            {
+                Log.Logger.Error($"SessionActor [{SessionID}] send failure: " +
+                                 $"Asynchronous send operation already in progress.");
+                return;
+            }
+
+            var data = MessageSerializer.SerializeMessageBinary(message);
+            _isSending = true;
+            _sendEventArgs.SetBuffer(data, 0, data.Length);
+            _sendEventArgs.UserToken = Socket;
+            _sendEventArgs.Completed += SendEventArgs_Completed;
+
+            var willRaiseEvent = Socket.SendAsync(_sendEventArgs);
+            if (!willRaiseEvent)
+            {
+                SendEventArgs_Completed(this, _sendEventArgs);
+            }
+
+            var scopedMessageName = message
+                .GetType()
+                .ToString()
+                .Split('.')[^1]
+                .Replace('+', '.');
+            Log.Logger.Debug($"SessionActor [{SessionID}] sent message [{scopedMessageName}]");
+        }
 
         private void SendEventArgs_Completed(object sender, SocketAsyncEventArgs e)
         {
@@ -379,19 +374,20 @@ namespace Imlight.Net
             }
         }
 
-        private void SetServices(HashSet<Type> services)
+        private void SetServices(List<Type> services)
         {
             foreach (var service in services)
             {
-                var serviceName = $"{service}.{RandomGen.GenerateGUID()}";
+                var serviceName = $"{service}.{RandomGen.GenerateGUID().Value}";
                 var props = Akka.Actor.Props.Create(service, this);
                 var childRef = Context.ActorOf(props, serviceName);
 
                 // We've created the service as a child actor. Problem is, we need to know the actual class
                 // identity to use it later. To do that, we'll ask the actor to identify itself.
-                var identity = childRef.Ask<INTMSG_SERVICE_IDENTITY>(MessageService.ASK_IDENTIFY)
+                var msg = new SERVICE_101_PROTOCOL.MSG_QUERYMESSAGESERVICEIDENTITY();
+                var identity = childRef.Ask<SERVICE_101_PROTOCOL.MSG_MESSAGESERVICEIDENTITY>(msg)
                     .Result
-                    .Identity;
+                    .Service;
                 _services.Add(childRef, identity);
             }
         }

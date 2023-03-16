@@ -119,7 +119,7 @@ namespace Imlight.Game.Services
         private void SetAccountInternally(Account account)
         {
             // Tell the SessionActor to set the account.
-            SendInternal(new ACCOUNT_104_PROTOCOL.INTMSG_SET_ACCOUNT()
+            SendInternal(new ACCOUNT_104_PROTOCOL.MSG_ACCOUNT()
             {
                 Account = account
             });

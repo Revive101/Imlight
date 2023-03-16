@@ -3,6 +3,7 @@ using System.Linq;
 using System.Reflection;
 using Akka.Actor;
 using Imlight.Common;
+using Imlight.Net.Messages;
 using WizUnraveler.DML;
 
 namespace Imlight.Net
@@ -23,6 +24,20 @@ namespace Imlight.Net
         protected virtual void ConfigureReceivers()
         {
             Receive<INetworkMessage>(message =>
+            {
+                // Find the method that handles this message type
+                if (MessageHandlers.TryGetValue(message.GetType(), out var method))
+                {
+                    // Invoke the method with the message
+                    method.Invoke(this, new object[] { message });
+                }
+                else
+                {
+                    // No handler for this message type
+                    Unhandled(message);
+                }
+            });
+            Receive<IServerMessage>(message =>
             {
                 // Find the method that handles this message type
                 if (MessageHandlers.TryGetValue(message.GetType(), out var method))
