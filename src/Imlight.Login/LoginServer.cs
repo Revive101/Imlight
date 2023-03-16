@@ -59,7 +59,7 @@ namespace Imlight.Login
                 PositionInQueue = 0,
                 Status = 1
             };
-                
+
             Sender.Tell(rsp);
         }
         

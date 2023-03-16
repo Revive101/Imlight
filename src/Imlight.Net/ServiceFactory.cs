@@ -30,13 +30,12 @@ namespace Imlight.Net
                 =>GetLoadedActorMessageServices());
         }
 
-        /// <summary>211using 
+        /// <summary> 
         /// Returns a HashSet of ActorMessageServices to give to a SessionActor before the session is loaded.
         /// </summary>
         /// <returns></returns>
         private void GetUnloadedActorMessageServices()
         {
-            
             var rsp = new SERVICE_101_PROTOCOL.MSG_SERVICESLIST()
             {
                 Services = UnloadedServiceTypes.ToList()

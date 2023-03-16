@@ -37,6 +37,7 @@ namespace Imlight.Net.Messages
             public byte ServiceID { get; } = 100;
 
             public ushort ID;
+            public Socket Socket;
         }
 
         public class MSG_QUERYACTORFACTORY : IServerMessage
@@ -121,6 +122,14 @@ namespace Imlight.Net.Messages
             // @todo: make these string IDs instead.
             public int ErrorCode;
             public Account Account;
+        }
+
+        public class MSG_PING : IServerMessage
+        {
+            public byte MessageOrder { get; } = 14;
+            public byte ServiceID { get; } = 100;
+
+            public long Ping;
         }
     }
 }

@@ -33,15 +33,17 @@ namespace Imlight.Login
         {
             if (_gameServers.Count >= ALLOWED_GAME_SERVER_COUNT)
             {
-                Log.Logger.Error($"GameServerPoolActor attempted to create a new game server, but the " +
+                Log.Logger.Error($"{this.GetType()} attempted to create a new game server, but the " +
                                  $"internal limit has already been reached. Server has not been created.");
                 return;
             }
+            if (_gameServers.Keys.Any(x => x == message.Port))
+            {
+                Log.Logger.Error($"{this.GetType()} attempted to create a new game server, but the port" +
+                                 $" {message.Port} was already in use.");
+                return;
+            }
             
-            //var port = GetUnusedPort();
-            // The props method of the GameServer will return both the instance of the object as well as the
-            // props for it. We're keeping the instance allocated here, that way we dont need to send so many
-            // messages for each player connection.
             var gameProps = GameServer.Props(Context.Self, message.Name, message.Port);
             var gameServerRef = Context.ActorOf(gameProps, $"{message.Name}_{message.Port}");
 
@@ -70,20 +72,6 @@ namespace Imlight.Login
 
             // Send the chosen server details back to the session actor
             Sender.Tell(chosenServer);
-        }
-
-        private ushort GetUnusedPort()
-        {
-            var rand = new Random();
-            while (true)
-            {
-                var maxClamp = GameServer.DEFAULT_GAME_SERVER_PORT + ALLOWED_GAME_SERVER_COUNT;
-                var temp = rand.Next(GameServer.DEFAULT_GAME_SERVER_PORT, maxClamp);
-                if (_gameServers.Keys.All(x => x != temp))
-                {
-                    return (ushort)temp;
-                }
-            }
         }
     }
 }

@@ -17,7 +17,7 @@ namespace Imlight.Net
     /// <summary>
     /// Represents a connected socket as a ReceiveActor.
     /// </summary>
-    public class SessionActor : ReceiveActor
+    public class SessionActor : ReceiveActor, IDisposable
     {
         private const int BUFFER_SIZE = 4096;
 
@@ -29,6 +29,7 @@ namespace Imlight.Net
         public bool IsInQueue                       { get; private set; }
         public ushort QueuePosition                 { get; private set; }
         public INetworkMessage CachedDequeueMessage { get; set; }
+        public long Ping                            { get; private set; }
         
         private readonly IActorRef _actorFactoryRef;
         private readonly Dictionary<IActorRef, MessageService> _services;
@@ -63,24 +64,6 @@ namespace Imlight.Net
             return Akka.Actor.Props.Create(() => new SessionActor(socket, sessionId, server));
         }
 
-        /// <summary>
-        /// Closes this active session and socket.
-        /// </summary>
-        public void Close()
-        {
-            Socket.Close();
-            _cts.Cancel();
-            
-            // Send a message to the server to deallocate this SessionActor.
-            var msg = new SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET()
-            {
-                ID = SessionID
-            };
-            ServerRef.Tell(msg);
-            
-            Context.Stop(Self);
-        }
-        
         /// <summary>
         /// Fully initializes this SessionActor by allocating its active services.
         /// </summary>
@@ -204,6 +187,29 @@ namespace Imlight.Net
             
             return ServerRef.Ask<T>(msg).Result;
         }
+        
+        /// <summary>
+        /// Closes the active connection and frees resources.
+        /// </summary>
+        public void Dispose()
+        {
+            Socket.Close();
+            _cts.Cancel();
+            
+            // Send a message to the server to deallocate this SessionActor.
+            var msg = new SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET()
+            {
+                ID = SessionID,
+                Socket = this.Socket
+            };
+            ServerRef.Tell(msg);
+            
+            Context.Stop(Self);
+            
+            _sendEventArgs?.Dispose();
+            _cts?.Dispose();
+            Socket?.Dispose();
+        }
 
         protected override void PreStart()
         {
@@ -229,9 +235,10 @@ namespace Imlight.Net
 
         private void ConfigureReceivers()
         {
+            Receive<SERVER_100_PROTOCOL.MSG_PING>(x => this.Ping = x.Ping);
             Receive<IServerMessage>(HandleInternalTell);
             Receive<INetworkMessage>(x => x.ServiceID < 100, SendToSocket);
-            Receive<string>(x => x == "Close", x => Close());
+            Receive<string>(x => x == "Close", x => Dispose());
             Receive<string>(x => x == "Identify", x=> Sender.Tell(this));
         }
 

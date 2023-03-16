@@ -16,7 +16,7 @@ namespace Imlight.Game.Services
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT))]
         private void ReceiveClientDisconnect(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT message)
         {
-            SessionActor.Close();
+            SessionActor.Dispose();
         }
     }
 }

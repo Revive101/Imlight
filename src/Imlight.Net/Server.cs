@@ -64,6 +64,10 @@ namespace Imlight.Net
             var id = GetNewUniqueId();
             var sessionProps = SessionActor.Props(message.Socket, id, Context.Self);
             var actor = Context.ActorOf(sessionProps);
+
+            // Log
+            Log.Logger.Information($"{this.GetType()} new connection " +
+                                   $"from {message.Socket.RemoteEndPoint} ");
         }
 
         /// <summary>
@@ -73,6 +77,10 @@ namespace Imlight.Net
         [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET))]
         public void ReceiveDeallocateSocket(SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET message)
         {
+            // Log
+            Log.Logger.Information($"{this.GetType()} connection dropped " +
+                                   $"from {message.Socket.RemoteEndPoint} ");
+            
             foreach (var session in ActiveSessions.ToList())
             {
                 if (session.SessionID != message.ID)

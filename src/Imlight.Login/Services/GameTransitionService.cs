@@ -32,9 +32,7 @@ namespace Imlight.Login.Services
             if (account is null)
             {
                 Log.Logger.Error($"Service [{this.GetType()}] socket account could not be retreived!");
-
-                SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED() { Error = 1 });
-
+                SendErrorToSocket();
                 return;
             }
 
@@ -42,28 +40,22 @@ namespace Imlight.Login.Services
             if (!account.GetCharacter(message.CharID, out var character))
             {
                 Log.Logger.Warning($"Account [{account.ID}] attempted to get a character it didn't have.");
-
-                SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED() { Error = 1 });
-
+                SendErrorToSocket();
                 return;
             }
 
-            var gameserver = GetGameServer();
-            
-            // Enqueue ourselves onto the game server.
-            var serverEnqueueResult = 
-                (LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED)SessionActor.EnqueueToServer(gameserver.ActorRef);
-            
-            // Tell the game server to craft a key for us. We'll use this key later once we connect to the game server.
-            var allocatedKey = CreateSessionKey(gameserver.ActorRef, account);
+            // Enqueue the session actor onto the game server and create a session key.
+            var gameServer = GetGameServer();
+            var serverEnqueueResult = (LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED)SessionActor.EnqueueToServer(gameServer.ActorRef);
+            var allocatedKey = CreateSessionKey(gameServer.ActorRef, account);
             
             // Craft a successful message. This will instead be cached if the server is full.
             var charSelectedMsg = new LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED()
             {
                 // Set details about the game server.
-                IP = gameserver.IP,
-                TCPPort = gameserver.Port,
-                UDPPort = gameserver.Port,
+                IP = gameServer.IP,
+                TCPPort = gameServer.Port,
+                UDPPort = gameServer.Port,
                 Key = allocatedKey,                   // Login server -> game server session key.
                 PrepPhase = 0,                        // (0|1): Player is in queue.
                 Slot = 0,                             // The player's position in said queue.
@@ -72,23 +64,21 @@ namespace Imlight.Login.Services
                 // Set details about the character.
                 UserID = account.ID,
                 CharID = character.ID,
-                ZoneID = new GID((ulong)gameserver.Port),
-                ZoneName = "WizardCity/WC_Ravenwood", // Client uses this name to load a zone locally.
+                ZoneID = new GID((ulong)gameServer.Port),
+                ZoneName = "WizardCity/WC_Hub", // Client uses this name to load a zone locally.
                 Location = "Start",                   // Most zones use "Start" on player login.
             };
             
-            // If the player has been queued, cache the successful message.
+            // Cache the message if the player is queued.
             if (serverEnqueueResult.PrepPhase > 0)
             {
-                // Cache the successful message.
                 SessionActor.CachedDequeueMessage = charSelectedMsg;
-                
                 SendToSocket(serverEnqueueResult);
-
-                return;
             }
-
-            SendToSocket(charSelectedMsg);
+            else
+            {
+                SendToSocket(charSelectedMsg);
+            }
         }
 
         private Account GetSocketAccount()
@@ -121,6 +111,12 @@ namespace Imlight.Login.Services
             return gameServerRef.Ask<SERVER_100_PROTOCOL.MSG_CREATEKEYRSP>(msg)
                 .Result
                 .Key;
+        }
+
+        private void SendErrorToSocket(int errorCode = 1)
+        {
+            var msg = new LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED() { Error = errorCode };
+            SendToSocket(msg);
         }
     }
 }
