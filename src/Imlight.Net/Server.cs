@@ -16,32 +16,26 @@ namespace Imlight.Net
         public const ushort PLAYER_LIMIT = 1;
 
         public string Name { get; }
-        public string IP { get; }
+        public string Ip { get; }
         public int Port { get; }
-        public IActorRef TcpListenerActorRef { get; }
-        
-        protected readonly ObservableHashSet<SessionActor> ActiveSessions;
-        protected readonly ListQueue<SessionActor> PlayerQueue;
-        protected readonly IActorRef ActorFactoryRef;
 
+        protected readonly ObservableHashSet<SessionActor> ActiveSessions;
+
+        private readonly IActorRef _actorFactoryRef;
         private readonly long _serverStartTime;
         private readonly Props _factoryProps;
 
         public Server(string name, int port, Props factoryProps)
         {
             this.Name = name;
-            this.IP = NetUtil.GetLocalIPAddress();
+            this.Ip = NetUtil.GetLocalIPAddress();
             this.Port = port;
             this.ActiveSessions = new ObservableHashSet<SessionActor>();
-            this.PlayerQueue = new ListQueue<SessionActor>();
             this._serverStartTime = DateTimeOffset.Now.ToUnixTimeSeconds();
             this._factoryProps = factoryProps;
-            
-            // Create events.
-            this.ActiveSessions.CollectionChanged += ActiveSessionsChangedEvent;
 
-            TcpListenerActorRef = CreateTcpListener();
-            ActorFactoryRef = CreateActorFactory();
+            CreateTcpListener();
+            _actorFactoryRef = CreateActorFactory();
         }
 
         /// <summary>
@@ -51,6 +45,11 @@ namespace Imlight.Net
         public long ServerElapsed()
         {
             return DateTimeOffset.Now.ToUnixTimeSeconds() - _serverStartTime;
+        }
+        
+        public ushort GetPlayerCount()
+        {
+            return (ushort)ActiveSessions.Count;
         }
 
         /// <summary>
@@ -79,26 +78,17 @@ namespace Imlight.Net
         {
             // Log
             Log.Logger.Information($"{this.GetType()} connection dropped " +
-                                   $"from {message.Socket.RemoteEndPoint} ");
+                                   $"from {message.Ip} ");
             
             foreach (var session in ActiveSessions.ToList())
             {
-                if (session.SessionID != message.ID)
+                if (session.SessionID != message.Id)
                     continue;
 
                 ActiveSessions.Remove(session);
             }
-            
-            // If we couldn't find them in the active sessions, it might be possible they're in the queue.
-            foreach (var session in PlayerQueue.ToList())
-            {
-                if (session.SessionID != message.ID)
-                    continue;
 
-                PlayerQueue.Remove(session);
-            }
-            
-            Log.Logger.Error($"Server [{Name}] attempted to remove socket by ID [{message.ID}]," +
+            Log.Logger.Error($"Server [{Name}] attempted to remove socket by ID [{message.Id}]," +
                              $" but no socket was found.");
         }
 
@@ -111,7 +101,7 @@ namespace Imlight.Net
         {
             var reply = new SERVER_100_PROTOCOL.MSG_ACTORFACTORYINFO()
             {
-                Reference = ActorFactoryRef
+                Reference = _actorFactoryRef
             };
             
             Sender.Tell(reply);
@@ -126,7 +116,7 @@ namespace Imlight.Net
         {
             var msg = new SERVER_100_PROTOCOL.MSG_SERVERINFO()
             {
-                IP = IP,
+                IP = Ip,
                 Port = Port,
                 PlayerCount = (ushort)ActiveSessions.Count,
                 ActorRef = Context.Self,
@@ -135,20 +125,7 @@ namespace Imlight.Net
             Sender.Tell(msg);
         }
 
-        protected abstract void ActiveSessionsChangedEvent(object obj, NotifyCollectionChangedEventArgs args);
-        
-        private IActorRef CreateTcpListener()
-        {
-            var tcpProps = TcpListenerActor.Props(Name, Port, Context.Self);
-            return Context.ActorOf(tcpProps, $"{Name}_{Port}");
-        }
-
-        private IActorRef CreateActorFactory()
-        {
-            return Context.ActorOf(_factoryProps);
-        }
-
-        private ushort GetNewUniqueId()
+        protected virtual ushort GetNewUniqueId()
         {
             ushort newId = 0;
             var isUniqueId = false;
@@ -158,8 +135,7 @@ namespace Imlight.Net
             {
                 newId = (ushort)random.Next(ushort.MaxValue);
 
-                if (!ActiveSessions.Any(s => s.SessionID == newId) 
-                    && !PlayerQueue.Any(s => s.SessionID == newId))
+                if (!ActiveSessions.Any(s => s.SessionID == newId))
                 {
                     isUniqueId = true;
                 }
@@ -167,6 +143,16 @@ namespace Imlight.Net
 
             return newId;
         }
+        
+        private void CreateTcpListener()
+        {
+            var tcpProps = TcpListenerActor.Props(Name, Port, Context.Self);
+            Context.ActorOf(tcpProps, $"{Name}_{Port}");
+        }
 
+        private IActorRef CreateActorFactory()
+        {
+            return Context.ActorOf(_factoryProps);
+        }
     }
 }

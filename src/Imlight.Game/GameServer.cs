@@ -24,6 +24,7 @@ namespace Imlight.Game
 
         private IActorRef _serverPoolRef;
         private Cache<ByteString, Account> _sessionKeys;
+        private readonly ListQueue<SessionActor> _playerQueue;
 
         public GameServer(IActorRef serverPoolRef,
                           string serverName = DEFAULT_GAME_SERVER_NAME,
@@ -31,10 +32,14 @@ namespace Imlight.Game
                           : base(serverName, serverPort, GameServiceFactory.Props())
         {
             this._serverPoolRef = serverPoolRef;
+            this._playerQueue = new ListQueue<SessionActor>();
             
+            // Create events.
+            this.ActiveSessions.CollectionChanged += ActiveSessionsChangedEvent;
+
             // Session keys are valid for x seconds.
             this._sessionKeys = new Cache<ByteString, Account>();
-            
+
             Log.Logger.Information($"Game server created with " +
                                    $"name {serverName} " +
                                    $"under port {serverPort}.");
@@ -95,26 +100,30 @@ namespace Imlight.Game
         [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_PLAYERENQUEUED))]
         private void ReceivePlayerEnqueued(SERVER_100_PROTOCOL.MSG_PLAYERENQUEUED message)
         {
-            // If this is a VIP enqueue, we do no sort of preemptive measures. Add them to our active sessions.
-            if (message.VIPEntry)
-            {
-                ActiveSessions.Add(message.SessionActor);
-                
-                return;
-            }
+            // The game server doesn't let users join the game server directly. Instead, a session key
+            // must exist prior to the user being able to join the game server. This is to prevent
+            // users from joining the game server without going through the login server.
             
             // A player has requested to join this server.
-            // If the server is full, add them to the queue and inform them of such.
             var rsp = new LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED()
             {
                 PrepPhase = 0,
                 Slot = 0
             };
             
+            // If this is a VIP enqueue, we do no sort of preemptive measures. Add them to our active sessions.
+            if (message.VIPEntry)
+            {
+                ActiveSessions.Add(message.SessionActor);
+                Sender.Tell(rsp);
+                return;
+            }
+
+            // If the server is full, add them to the queue and inform the client.
             if (ActiveSessions.Count >= PLAYER_LIMIT)
             {
-                PlayerQueue.Enqueue(message.SessionActor);
-                var queuePos = PlayerQueue.Count;
+                _playerQueue.Enqueue(message.SessionActor);
+                var queuePos = _playerQueue.Count;
                 
                 message.SessionActor.PlaceInQueue((ushort)queuePos);
                 
@@ -126,21 +135,41 @@ namespace Imlight.Game
             // Meaning that we don't actually want to add it to the active sessions here.
             Sender.Tell(rsp);
         }
+
+        protected override ushort GetNewUniqueId()
+        {
+            ushort newId = 0;
+            var isUniqueId = false;
+            var random = new Random();
+
+            while (!isUniqueId)
+            {
+                newId = (ushort)random.Next(ushort.MaxValue);
+
+                if (!ActiveSessions.Any(s => s.SessionID == newId) 
+                    && !_playerQueue.Any(s => s.SessionID == newId))
+                {
+                    isUniqueId = true;
+                }
+            }
+
+            return newId;
+        }
         
-        protected override void ActiveSessionsChangedEvent(object obj, NotifyCollectionChangedEventArgs args)
+        private void ActiveSessionsChangedEvent(object obj, NotifyCollectionChangedEventArgs args)
         {
             // Anytime a player has left, we'll check to see if a queue is active. If so, we'll grab the next player
             // and finally allocate their slot.
-            if (args.OldItems == null || PlayerQueue.Count <= 0)
+            if (args.OldItems == null || _playerQueue.Count <= 0)
                 return;
 
             // Add the first in line for each new slot available.
             for (int i = 0; i < args.OldItems.Count; i++)
             {
-                if (PlayerQueue.Count <= 0)
+                if (_playerQueue.Count <= 0)
                     return;
 
-                var newPlayer = PlayerQueue.Dequeue();
+                var newPlayer = _playerQueue.Dequeue();
                 ActiveSessions.Add(newPlayer);
                 
                 // Inform the SessionActor that it's finally outside of queue.
@@ -148,7 +177,7 @@ namespace Imlight.Game
             }
             
             // Inform each enqueued player of their new position.
-            for (int i = 0; i < PlayerQueue.Count; i++)
+            for (int i = 0; i < _playerQueue.Count; i++)
             {
                 var msg = new LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED()
                 {
@@ -156,7 +185,7 @@ namespace Imlight.Game
                     Slot = i
                 };
                 
-                PlayerQueue[i].ActorRef.Tell(msg);
+                _playerQueue[i].ActorRef.Tell(msg);
             }
         }
     }

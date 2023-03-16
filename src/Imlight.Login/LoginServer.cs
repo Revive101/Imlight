@@ -62,39 +62,6 @@ namespace Imlight.Login
 
             Sender.Tell(rsp);
         }
-        
-        protected override void ActiveSessionsChangedEvent(object obj, NotifyCollectionChangedEventArgs args)
-        {
-            // Anytime a player has left, we'll check to see if a queue is active. If so, we'll grab the next player
-            // and finally allocate their slot.
-            if (args.OldItems == null || PlayerQueue.Count <= 0)
-                return;
-
-            // Add the first in line for each new slot available.
-            for (int i = 0; i < args.OldItems.Count; i++)
-            {
-                if (PlayerQueue.Count <= 0)
-                    return;
-
-                var newPlayer = PlayerQueue.Dequeue();
-                ActiveSessions.Add(newPlayer);
-                
-                // Inform the SessionActor that it's finally outside of queue.
-                newPlayer.Dequeue();;
-            }
-            
-            // Inform each enqueued player of their new position.
-            for (uint i = 0; i < PlayerQueue.Count; i++)
-            {
-                var msg = new LOGIN_7_PROTOCOL.MSG_USER_ADMIT_IND()
-                {
-                    Status = 1,
-                    PositionInQueue = i
-                };
-                
-                PlayerQueue[(int)i].ActorRef.Tell(msg);
-            }
-        }
 
         private void CreateLocalServer()
         {

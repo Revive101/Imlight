@@ -36,8 +36,9 @@ namespace Imlight.Net.Messages
             public byte MessageOrder { get; } = 3;
             public byte ServiceID { get; } = 100;
 
-            public ushort ID;
+            public ushort Id;
             public Socket Socket;
+            public string Ip;
         }
 
         public class MSG_QUERYACTORFACTORY : IServerMessage
@@ -72,6 +73,7 @@ namespace Imlight.Net.Messages
             public byte ServiceID { get; } = 100;
 
             public SessionActor SessionActor;
+            public ByteString Key;
             public bool VIPEntry;
         }
 

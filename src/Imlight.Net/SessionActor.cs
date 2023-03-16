@@ -193,18 +193,19 @@ namespace Imlight.Net
         /// </summary>
         public void Dispose()
         {
-            Socket.Close();
-            _cts.Cancel();
-            
             // Send a message to the server to deallocate this SessionActor.
             var msg = new SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET()
             {
-                ID = SessionID,
-                Socket = this.Socket
+                Id = SessionID,
+                Socket = this.Socket,
+                Ip = this.Socket.RemoteEndPoint?.ToString()
+                
             };
             ServerRef.Tell(msg);
             
             Context.Stop(Self);
+            Socket.Close();
+            _cts.Cancel();
             
             _sendEventArgs?.Dispose();
             _cts?.Dispose();
