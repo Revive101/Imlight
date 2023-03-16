@@ -92,7 +92,7 @@ namespace Imlight.Login
                     PositionInQueue = i
                 };
                 
-                PlayerQueue[(int)i].Send(msg);
+                PlayerQueue[(int)i].ActorRef.Tell(msg);
             }
         }
 

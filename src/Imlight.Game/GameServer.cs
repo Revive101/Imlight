@@ -156,7 +156,7 @@ namespace Imlight.Game
                     Slot = i
                 };
                 
-                PlayerQueue[i].Send(msg);
+                PlayerQueue[i].ActorRef.Tell(msg);
             }
         }
     }
