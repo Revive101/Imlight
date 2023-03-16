@@ -9,13 +9,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.Backend", "Imlight.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.Login", "Imlight.Login\Imlight.Login.csproj", "{3761D851-BD26-441F-851F-39C753590ADB}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.Patch", "Imlight.Patch\Imlight.Patch.csproj", "{3FA9BAB5-EC35-4C8B-97B4-B203E7EA32BE}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.Net", "Imlight.Net\Imlight.Net.csproj", "{FA3E8F3C-9C24-4100-ABAA-EC76CF735EC5}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.Data", "Imlight.Data\Imlight.Data.csproj", "{EC002E47-A121-4C61-867A-78621814B359}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.Game", "Imlight.Game\Imlight.Game.csproj", "{E6C720AD-1FA5-4A63-AD9F-466A22E96EDE}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.Resources", "Imlight.Resources\Imlight.Resources.csproj", "{23094CAE-DE1C-4457-8C27-F56209B561EF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -35,10 +35,6 @@ Global
 		{3761D851-BD26-441F-851F-39C753590ADB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3761D851-BD26-441F-851F-39C753590ADB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3761D851-BD26-441F-851F-39C753590ADB}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3FA9BAB5-EC35-4C8B-97B4-B203E7EA32BE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3FA9BAB5-EC35-4C8B-97B4-B203E7EA32BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3FA9BAB5-EC35-4C8B-97B4-B203E7EA32BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3FA9BAB5-EC35-4C8B-97B4-B203E7EA32BE}.Release|Any CPU.Build.0 = Release|Any CPU
 		{FA3E8F3C-9C24-4100-ABAA-EC76CF735EC5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{FA3E8F3C-9C24-4100-ABAA-EC76CF735EC5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FA3E8F3C-9C24-4100-ABAA-EC76CF735EC5}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -51,6 +47,10 @@ Global
 		{E6C720AD-1FA5-4A63-AD9F-466A22E96EDE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E6C720AD-1FA5-4A63-AD9F-466A22E96EDE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E6C720AD-1FA5-4A63-AD9F-466A22E96EDE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{23094CAE-DE1C-4457-8C27-F56209B561EF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{23094CAE-DE1C-4457-8C27-F56209B561EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{23094CAE-DE1C-4457-8C27-F56209B561EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{23094CAE-DE1C-4457-8C27-F56209B561EF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

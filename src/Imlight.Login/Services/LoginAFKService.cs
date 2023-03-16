@@ -26,7 +26,7 @@ namespace Imlight.Login.Services
         public LoginAFKService(SessionActor parentActor) : base (parentActor)
         {
             _timer = new Timer(AFK_CHECK_INTERVAL * 1000);
-            _timer.Elapsed += CheckAFK;
+            _timer.Elapsed += CheckAfk;
             _timer.AutoReset = true;
             _timer.Enabled = true;
         }
@@ -36,18 +36,13 @@ namespace Imlight.Login.Services
             return Akka.Actor.Props.Create(() => new LoginAFKService(parentActor));
         }
 
-        protected override void ConfigureReceivers()
-        {
-            base.ConfigureReceivers();
-        }
-
         [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_LOGIN_NOT_AFK))]
         private void ReceiveLoginNotAFK(LOGIN_7_PROTOCOL.MSG_LOGIN_NOT_AFK message)
         {
             _lastReceivedSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         }
 
-        private void CheckAFK(object sender, ElapsedEventArgs e)
+        private void CheckAfk(object sender, ElapsedEventArgs e)
         {
             var currentTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 

@@ -19,13 +19,13 @@ namespace Imlight.Net.Services
 
         public bool SessionValid;
 
-        private Stopwatch _sessionOfferTime;
+        private Stopwatch _responseStopwatch;
         private bool _isWaitingForHeartbeatResponse;
         private byte _currentKeepAliveReviveAttempts;
 
         public ControlService(SessionActor parentActor) : base(parentActor)
         {
-            this._sessionOfferTime = new Stopwatch();
+            this._responseStopwatch = new Stopwatch();
 
             SendSessionOffer();
         }
@@ -46,10 +46,10 @@ namespace Imlight.Net.Services
 
         private void SendSessionOffer()
         {
-            uint currentUnixTimestamp = (uint)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
-            int timestampUpper = (int)(currentUnixTimestamp >> 32);
-            int timestampLower = (int)(currentUnixTimestamp & uint.MaxValue);
-            uint millisecondsIntoCurrentSecond = (uint)(DateTime.UtcNow.TimeOfDay.TotalMilliseconds % 1000);
+            var currentUnixTimestamp = (uint)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            var timestampUpper = (int)(currentUnixTimestamp >> 32);
+            var timestampLower = (int)(currentUnixTimestamp & uint.MaxValue);
+            var millisecondsIntoCurrentSecond = (uint)(DateTime.UtcNow.TimeOfDay.TotalMilliseconds % 1000);
 
             var offer = new ControlMessages.SessionOffer()
             {
@@ -62,17 +62,17 @@ namespace Imlight.Net.Services
             SendToSocket(offer);
 
             // Start the stopwatch so we can later get RTT (ping).
-            _sessionOfferTime.Restart();
+            _responseStopwatch.Restart();
         }
 
         [MessageHandler(typeof(ControlMessages.SessionAccept))]
         private void ReceiveSessionAccept(ControlMessages.SessionAccept message)
         {
-            _sessionOfferTime.Stop();
+            _responseStopwatch.Stop();
             if (message.SessionID != SessionActor.SessionID)
             {
                 Log.Logger.Error($"SessionActor [{SessionActor.SessionID}] misaligned Session ID.");
-                SessionActor.Close();
+                SessionActor.Dispose();
                 return;
             }
 
@@ -84,7 +84,10 @@ namespace Imlight.Net.Services
             // The session is now valid. For optimization purposes, our parent SessionActor doesn't load
             // all the services on creation. Instead, we wait for the session to be valid.
             // We need to now tell our SessionActor that the session is created, and to grab the rest of its services.
-            SessionActor.FullInitialize(_sessionOfferTime.ElapsedMilliseconds);
+            SessionActor.InitializeActiveSession();
+            SessionActor
+                .ActorRef
+                .Tell(new SERVER_100_PROTOCOL.MSG_PING() {Ping = _responseStopwatch.ElapsedMilliseconds});
 
             // Once the session is created, we need to send a heartbeat to keep it active.
             // To do that. we'll have this actor send a message to itself on interval to check on the heartbeat.
@@ -95,6 +98,8 @@ namespace Imlight.Net.Services
                 Context.Self,
                 "KeepAliveHeartbeat",
                 Context.Self);
+            
+            _responseStopwatch.Reset();
         }
 
         [MessageHandler(typeof(ControlMessages.KeepAlive))]
@@ -103,7 +108,7 @@ namespace Imlight.Net.Services
             if (message.SessionID != SessionActor.SessionID)
             {
                 Log.Logger.Error($"SessionActor [{SessionActor.SessionID}] misaligned Session ID.");
-                SessionActor.Close();
+                SessionActor.Dispose();
 
                 return;
             }
@@ -122,8 +127,13 @@ namespace Imlight.Net.Services
         [MessageHandler(typeof(ControlMessages.KeepAliveResponse))]
         private void ReceiveKeepAliveRsp(ControlMessages.KeepAliveResponse message)
         {
+            _responseStopwatch.Reset();
             _isWaitingForHeartbeatResponse = false;
             _currentKeepAliveReviveAttempts = 0;
+            
+            SessionActor
+                .ActorRef
+                .Tell(new SERVER_100_PROTOCOL.MSG_PING() {Ping = _responseStopwatch.ElapsedMilliseconds});
         }
 
         private void SendHeartbeat()
@@ -131,7 +141,7 @@ namespace Imlight.Net.Services
             if (!SessionValid)
             {
                 Log.Logger.Error($"CommunicationActor [{SessionActor.SessionID}] tried to send heartbeat to an invalid session.");
-                SessionActor.Close();
+                SessionActor.Dispose();
                 return;
             }
 
@@ -148,9 +158,15 @@ namespace Imlight.Net.Services
             SendToSocket(keepAlive);
 
             // Send message to self after x seconds to remind CommunicationActor to check
-            // the status of that KeepAlive.
+            // the status of the KeepAlive.
             var reminderTime = TimeSpan.FromSeconds(KEEP_ALIVE_RSP_WAIT_TIME);
-            Context.System.Scheduler.ScheduleTellOnce(reminderTime, Self, "KeepAliveEndTimes", Self);
+            Context.System.Scheduler.ScheduleTellOnce(
+                reminderTime, 
+                Context.Self, 
+                "KeepAliveEndTimes", 
+                Context.Self);
+            
+            _responseStopwatch.Start();
         }
 
         private void ReceiveKeepAliveEndTimes()
@@ -159,7 +175,7 @@ namespace Imlight.Net.Services
             {
                 if (_currentKeepAliveReviveAttempts == KEEP_ALIVE_REVIVE_ATTEMPTS)
                 {
-                    SessionActor.Close();
+                    SessionActor.Dispose();
                 }
                 else
                 {

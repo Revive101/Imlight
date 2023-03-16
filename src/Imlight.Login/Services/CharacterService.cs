@@ -41,15 +41,15 @@ namespace Imlight.Login.Services
                 errorCode = 1;
             }
 
-            charData.m_level = 1;
-            charData.m_globalID = new GID(RandomGen.GenerateId());
-            charData.m_userID = new GID(RandomGen.GenerateId());
-
             // Add the new character to the player's account.
             var account = GetSocketAccount();
             if (account is not null && charData is not null)
             {
                 var newCharacter = new Character(charData);
+
+                // @todo: have the account object set this information instead.
+                newCharacter.CreationData.m_userID = (GID)account.ID;
+
                 var result = account.AddCharacter(newCharacter);
 
                 // @TODO: Figure out what each of these error codes means.
@@ -85,7 +85,7 @@ namespace Imlight.Login.Services
                 {
                     var character = account.Characters[i];
 
-                    // Remember, WizAPI saves the object. We need to serialize it here.
+                    // WizAPI saves the object. We need to serialize it here.
                     var data = serializer.Serialize(character.CreationData);
                     SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERINFO()
                     {
@@ -127,8 +127,8 @@ namespace Imlight.Login.Services
         private Account GetSocketAccount()
         {
             // Get the account from the AccountService.
-            var internalMessage = new INTERN_ACCOUNT_PROTOCOL.INTMSG_GET_ACCOUNT();
-            var account = AskInternal<INTERN_ACCOUNT_PROTOCOL.INTMSG_ACCOUNT>(internalMessage).Account;
+            var internalMessage = new ACCOUNT_104_PROTOCOL.MSG_QUERYACCOUNT();
+            var account = AskInternal<ACCOUNT_104_PROTOCOL.MSG_ACCOUNT>(internalMessage).Account;
             
             if (account is null)
             {

@@ -11,59 +11,30 @@ using WizUnraveler.DML;
 
 namespace Imlight.Net
 {
-    public abstract class MessageService : ReceiveActor
+    public abstract class MessageService : ReceiveProtocolDispatcher
     {
-        public static readonly string ASK_IDENTIFY = "IDENTIFY_YOURSELF";
-
         protected SessionActor SessionActor { get; set; }
-        public virtual Dictionary<Type, MethodInfo> MessageHandlers { get; private set; }
 
         public MessageService(SessionActor sessionActor)
         {
             this.SessionActor = sessionActor;
-
-            SetMessageHandlers();
-            ConfigureReceivers();
         }
-         
-        protected virtual void ConfigureReceivers()
+
+        [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_QUERYMESSAGESERVICEIDENTITY))]
+        public void ReceiveMessageServiceIdentify(SERVICE_101_PROTOCOL.MSG_QUERYMESSAGESERVICEIDENTITY message)
         {
-            Receive<string>(x => x == ASK_IDENTIFY, x => 
+            var rsp = new SERVICE_101_PROTOCOL.MSG_MESSAGESERVICEIDENTITY()
             {
-                Sender.Tell(new INTMSG_SERVICE_IDENTITY(this), Context.Self);
-            });
-
-            Receive<INetworkMessage>(message =>
-            {
-                // Find the method that handles this message type
-                if (MessageHandlers.TryGetValue(message.GetType(), out var method))
-                {
-                    // Invoke the method with the message
-                    method.Invoke(this, new object[] { message });
-                }
-                else
-                {
-                    // No handler for this message type
-                    Unhandled(message);
-                }
-            });
-
-            Receive<IInternalMessage>(internalMessage =>
-            {
-                // Find the method that handles this message type
-                if (MessageHandlers.TryGetValue(internalMessage.GetType(), out var method))
-                {
-                    // Invoke the method with the message
-                    method.Invoke(this, new object[] { internalMessage });
-                }
-                else
-                {
-                    // No handler for this message type
-                    Unhandled(internalMessage);
-                }
-            });
+                Service = this
+            };
+            
+            Sender.Tell(rsp);
         }
 
+        /// <summary>
+        /// Sends a message directly to the socket.
+        /// </summary>
+        /// <param name="message"></param>
         protected void SendToSocket(INetworkMessage message)
         {
             if (SessionActor is null)
@@ -72,27 +43,52 @@ namespace Imlight.Net
                 return;
             }
 
-            SessionActor.Send(message);
+            SessionActor.ActorRef.Tell(message);
         }
 
-        protected void SendInternal(IInternalMessage msg)
+        /// <summary>
+        /// Sends the SessionActor a message. Used to send data to another service of the SessionActor.
+        /// </summary>
+        /// <param name="message"></param>
+        protected void SendInternal(IServerMessage message)
+        {
+            SessionActor.ActorRef.Tell(message);
+        }
+
+        /// <summary>
+        /// Asks the SessionActor for a return. Used to get data from another service of the SessionActor.
+        /// </summary>
+        /// <param name="message"></param>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        protected T AskInternal<T>(IServerMessage message)
+            where T : IServerMessage
         {
             if (SessionActor is null)
             {
                 Log.Logger.Error($"{this.GetType()} attempted to send message to undefined SessionActor.");
-                return;
+                return default(T);
+            }
+            
+            if (message.ServiceID < 100)
+            {
+                throw new Exception($"You are sending a non-server message using {nameof(AskInternal)}! " +
+                                    $"Do not do this. Use {nameof(SendToSocket)} instead.");
             }
 
-            SessionActor.GetActorRef().Tell(msg);
-        }
+            var task = SessionActor.HandleInternalAsk<T>(message);
 
-        protected void SendCloseSession()
-        {
-            SessionActor.GetActorRef().Tell("Close");
+            return task;
         }
-
-        protected T AskInternal<T>(IInternalMessage msg)
-            where T : IInternalMessage
+        
+        /// <summary>
+        /// Asks the server the SessionActor is connected to.
+        /// </summary>
+        /// <param name="msg"></param>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        protected T AskServer<T>(IServerMessage msg)
+            where T : IServerMessage
         {
             if (SessionActor is null)
             {
@@ -100,34 +96,14 @@ namespace Imlight.Net
                 return default(T);
             }
 
-            var task = SessionActor.HandleInternalAsk<T>(msg);
+            var task = SessionActor.AskServer<T>(msg);
 
             return task;
         }
-
-        private void SetMessageHandlers()
+        
+        protected void SendCloseSession()
         {
-            MessageHandlers = new Dictionary<Type, MethodInfo>();
-
-            // Get all methods in this actor with a message handling attribute
-            var methods = this
-                .GetType()
-                .GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-                .Where(method => method.GetCustomAttribute<MessageHandlerAttribute>() != null);
-
-            if (methods.Count() <= 0)
-            {
-                Log.Logger.Warning($"{this.GetType()} does not have any methods with attribute {nameof(MessageHandlerAttribute)}." +
-                    $"Is this intended behavior?");
-
-                return;
-            }
-
-            foreach (var method in methods)
-            {
-                var paramType = method.GetParameters()[0].ParameterType;
-                MessageHandlers.Add(paramType, method);
-            }
+            SessionActor.ActorRef.Tell("Close");
         }
     }
 }

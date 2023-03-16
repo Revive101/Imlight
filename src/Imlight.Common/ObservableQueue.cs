@@ -57,6 +57,19 @@ namespace Imlight.Common
                 this,
                 new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, lastItem));
         }
+        
+        public T this[int index]
+        {
+            get
+            {
+                if (index < 0 || index >= Count)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(index));
+                }
+
+                return this.ElementAt(index);
+            }
+        }
 
         ~ObservableQueue()
         {

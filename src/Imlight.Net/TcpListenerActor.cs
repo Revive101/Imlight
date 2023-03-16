@@ -9,48 +9,34 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Collections.Concurrent;
 using Imlight.Common;
+using Imlight.Net.Messages;
 
 namespace Imlight.Net
 {
     public class TcpListenerActor : ReceiveActor
     {
-        public string Name { get; init; }
+        public string Name { get; }
+        public int Port { get; }
         public bool Listening { get; private set; }
-
-        protected ConcurrentDictionary<ushort, IActorRef> CommunicationActors { get; init; }
-
-        private readonly long _serverStartTime;
-        private int _port;
-        private readonly TcpListener _listener;
+        public TcpListener Listener { get; }
+        
         private readonly CancellationTokenSource _tokenSource;
-        private readonly Props _actorFactoryProps;
-        private IActorRef _actorFactoryRef;
+        private readonly IActorRef _serverRef;
 
-        public TcpListenerActor(string name, int port, Props actorFactoryProps)
+        public TcpListenerActor(string name, int port, IActorRef serverRef)
         {
             this.Name = name;
-            this._port = port;
-            this._serverStartTime = DateTimeOffset.Now.ToUnixTimeSeconds();
-            this._listener = new TcpListener(IPAddress.Parse("0.0.0.0"), port);
+            this.Port = port;
+            this.Listener = new TcpListener(IPAddress.Parse("0.0.0.0"), port);
             this._tokenSource = CancellationTokenSource.CreateLinkedTokenSource(new CancellationToken());
-            this.CommunicationActors = new ConcurrentDictionary<ushort, IActorRef>();
-            this._actorFactoryProps = actorFactoryProps;
+            this._serverRef = serverRef;
 
             Start();
         }
 
-        public static Props Props(string name, int port, Props actorFactoryProps)
+        public static Props Props(string name, int port, IActorRef serverRef)
         {
-            return Akka.Actor.Props.Create(() => new TcpListenerActor(name, port, actorFactoryProps));
-        }
-
-        protected override void PreStart()
-        {
-            _actorFactoryRef = Context.ActorOf(_actorFactoryProps, "LoginServiceFactory");
-
-            Log.Logger.Debug($"TcpListenerActor {Name} PreStart complete.");
-
-            base.PreStart();
+            return Akka.Actor.Props.Create(() => new TcpListenerActor(name, port, serverRef));
         }
 
         public async void Start()
@@ -58,11 +44,11 @@ namespace Imlight.Net
             Log.Logger.Information($"TcpListenerActor {Name} starting..");
 
             this.Listening = true;
-            this._listener.Start();
+            this.Listener.Start();
 
             var token = this._tokenSource.Token;
 
-            Log.Logger.Information($"TcpListenerActor {Name} started at {_serverStartTime}! Beginning listen on port {_port}.");
+            Log.Logger.Information($"TcpListenerActor {Name} beginning listen on port {Port}.");
 
             await ListenAsync(token, Context);
         }
@@ -71,18 +57,9 @@ namespace Imlight.Net
         {
             this.Listening = false;
             this._tokenSource.Cancel();
-            _listener.Stop();
+            Listener.Stop();
 
             Log.Logger.Information($"TcpListenerActor {Name} stopped.");
-        }
-
-        /// <summary>
-        /// Gets the time in seconds the server has elapsed.
-        /// </summary>
-        /// <returns></returns>
-        public long ServerElapsed()
-        {
-            return DateTimeOffset.Now.ToUnixTimeSeconds() - _serverStartTime;
         }
 
         /// <summary>
@@ -98,44 +75,19 @@ namespace Imlight.Net
                 if (!this.Listening) continue;
 
                 // Accept socket and create a new SessionActor for them.
-                var socket = await _listener.AcceptSocketAsync();
-                CreateSessionActor(socket, context);
+                var socket = await Listener.AcceptSocketAsync();
+                AllocateNewSocket(socket, context);
             }
         }
 
-        /// <summary>
-        /// Generates a unique CommunicationActor ID.
-        /// </summary>
-        /// <returns></returns>
-        protected ushort GetRandomID()
+        private void AllocateNewSocket(Socket socket, IUntypedActorContext context)
         {
-            var rand = new Random();
-            while (true)
+            var msg = new SERVER_100_PROTOCOL.MSG_ALLOCATESOCKET()
             {
-                var temp = rand.Next(1, ushort.MaxValue);
-                if (!CommunicationActors.Keys.Any(x => x == temp))
-                {
-                    return (ushort)temp;
-                }
-                else continue;
-            }
-        }
-
-        private void CreateSessionActor(Socket socket, IUntypedActorContext context)
-        {
-            var id = GetRandomID();
-            var actorProps = SessionActor.Props(socket, id, _actorFactoryRef);
-            var actor = context.ActorOf(actorProps, $"SessionActor.{id}");
-
-            if (!CommunicationActors.TryAdd(id, actor))
-            {
-                Log.Logger.Error($"TcpListenerActor [{Name}] could not add new SessionActor for IP: {socket.RemoteEndPoint}.");
-                return;
-            }
-
-            Log.Logger.Verbose($"TcpListenerActor [{Name}] accepted new SessionActor:" +
-                $"\n\t\tIP: {socket.RemoteEndPoint}" +
-                $"\n\t\tID: {id}");
+                Socket = socket
+            };
+            
+            _serverRef.Tell(msg);
         }
     }
 }

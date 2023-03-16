@@ -6,19 +6,31 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Akka" Version="1.4.48" />
+    <None Remove="config\akka.conf" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="config\akka.conf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Akka" Version="1.5.0" />
+    <PackageReference Include="Akka.Remote" Version="1.5.0" />
     <PackageReference Include="BouncyCastle.Cryptography" Version="2.0.0" />
+    <PackageReference Include="Microsoft.VisualStudio.VsixColorCompiler" Version="17.0.31709.430" />
     <PackageReference Include="Serilog" Version="2.12.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
     <PackageReference Include="System.CodeDom" Version="7.0.0" />
-    <PackageReference Include="WizUnraveler" Version="1.2.8.3" />
+    <PackageReference Include="WizUnraveler" Version="1.3.8.5" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Imlight.Common\Imlight.Common.csproj" />
     <ProjectReference Include="..\Imlight.Game\Imlight.Game.csproj" />
     <ProjectReference Include="..\Imlight.Login\Imlight.Login.csproj" />
-    <ProjectReference Include="..\Imlight.Patch\Imlight.Patch.csproj" />
+    <ProjectReference Include="..\Imlight.Resources\Imlight.Resources.csproj" />
   </ItemGroup>
 
 </Project>
