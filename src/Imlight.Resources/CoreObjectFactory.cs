@@ -14,27 +14,13 @@ namespace Imlight.Resources
 {
     public static class CoreObjectFactory
     {
-        private static Wad _rootWad;
         private static TemplateManifest _templateManifest;
 
-        public static void SetRoot(string path)
+        public static bool Load()
         {
-            if (!File.Exists(path))
-                throw new Exception($"Root.wad not found at [{path}]");
-
-            _rootWad = new Wad(path);
-
-            Log.Logger.Information("CoreObjectFactory [Root.wad] loaded.");
-
-            if (_templateManifest is null)
-            {
-                Log.Logger.Information("CoreObjectFactory loading [TemplateManifest.xml]..");
-
-                var serializer = new FileSerializer();
-                _templateManifest = serializer.OpenClass<TemplateManifest>(_rootWad, "TemplateManifest.xml");
-
-                Log.Logger.Information("CoreObjectFactory [TemplateManifest.xml] loaded.");
-            }
+            // If we already loaded the TemplateManifest, we don't need to do it again.
+            return _templateManifest is not null 
+                   || ResourceManager.LoadFile("TemplateManifest.xml", out _templateManifest);
         }
 
         /// <summary>
@@ -108,24 +94,14 @@ namespace Imlight.Resources
 
         private static CoreTemplate GetCoreTemplate(ulong id)
         {
-            if (_templateManifest is null || _rootWad is null)
-                return null;
-
-            var loc = _templateManifest.GetLocation((uint)(id & 0xFFFFFFFF));
+            var loc = _templateManifest?.GetLocation((uint)(id & 0xFFFFFFFF));
             
             if (loc is null)
-            {
                 return null;
-            }
+            
+            ResourceManager.LoadFile<CoreTemplate>(loc.m_filename, out var coreTemplate);
 
-            var fileName = loc.m_filename;
-            var serializer = new FileSerializer();
-            var coreTemplate = serializer.OpenClass<CoreTemplate>(_rootWad, $"{fileName}");
-
-            if (coreTemplate is null)
-                return null;
-
-            return coreTemplate;
+            return coreTemplate ?? null;
         }
     }
 }
