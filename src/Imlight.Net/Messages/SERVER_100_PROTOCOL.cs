@@ -94,7 +94,7 @@ namespace Imlight.Net.Messages
             public byte MessageOrder { get; } = 10;
             public byte ServiceID { get; } = 100;
             
-            public Account Account;
+            public Account Account; 
         }
         
         public class MSG_CREATEKEYRSP : IServerMessage
@@ -112,6 +112,7 @@ namespace Imlight.Net.Messages
 
             public ByteString Key;
             public ulong UserID;
+            public SessionActor SessionActor;
         }
         
         public class MSG_VALIDATESESSIONKEYRSP : IServerMessage

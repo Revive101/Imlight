@@ -65,8 +65,8 @@ namespace Imlight.Login.Services
                 UserID = account.ID,
                 CharID = character.ID,
                 ZoneID = new GID((ulong)gameServer.Port),
-                ZoneName = "WizardCity/WC_Hub", // Client uses this name to load a zone locally.
-                Location = "Start",                   // Most zones use "Start" on player login.
+                ZoneName = character.CreationData.m_location, // Client uses this name to load a zone locally.
+                Location = "Start",                           // Most zones use "Start" on player login.
             };
             
             // Cache the message if the player is queued.

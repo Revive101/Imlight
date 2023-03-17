@@ -73,14 +73,18 @@ namespace Imlight.Game
         [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_VALIDATESESSIONKEY))]
         private void ReceiveValidateSessionKey(SERVER_100_PROTOCOL.MSG_VALIDATESESSIONKEY message)
         {
-            // A transitioning game client has given us a session key. We're going to create a key from the 
-            // session details it gave us and see if any of our keys match.
+            // A user has requested to join this server. We're going to check if the session key is valid.
+            // If it is, we'll return the account associated with it. If not, we'll return an error code.
             var keyTest = SessionKey.GenerateHash(SESSION_KEY_HASH_INPUT, message.UserID);
 
             foreach (var cachedKey in _sessionKeys)
             {
                 if (keyTest != cachedKey.Key) continue;
                 
+                ActiveSessions.Add(message.SessionActor);
+                _sessionKeys.Remove(cachedKey.Key);
+                
+                // Inform the client that the session key is valid. We'll also send the account associated with it.
                 Sender.Tell(new SERVER_100_PROTOCOL.MSG_VALIDATESESSIONKEYRSP()
                 {
                     ErrorCode = 0,
@@ -100,10 +104,6 @@ namespace Imlight.Game
         [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_PLAYERENQUEUED))]
         private void ReceivePlayerEnqueued(SERVER_100_PROTOCOL.MSG_PLAYERENQUEUED message)
         {
-            // The game server doesn't let users join the game server directly. Instead, a session key
-            // must exist prior to the user being able to join the game server. This is to prevent
-            // users from joining the game server without going through the login server.
-            
             // A player has requested to join this server.
             var rsp = new LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED()
             {
@@ -111,10 +111,9 @@ namespace Imlight.Game
                 Slot = 0
             };
             
-            // If this is a VIP enqueue, we do no sort of preemptive measures. Add them to our active sessions.
+            // If this is a VIP, we'll let them in immediately.
             if (message.VIPEntry)
             {
-                ActiveSessions.Add(message.SessionActor);
                 Sender.Tell(rsp);
                 return;
             }

@@ -37,6 +37,15 @@ namespace Imlight.Common
         {
             return _cache.Select(kvp => new KeyValuePair<TKey, TValue>(kvp.Key, kvp.Value.Value)).GetEnumerator();
         }
+        
+        /// <summary>
+        /// Remove a CacheItem from the cache.
+        /// </summary>
+        /// <returns></returns>
+        public bool Remove(TKey key)
+        {
+            return _cache.Remove(key);
+        }
 
         IEnumerator IEnumerable.GetEnumerator()
         {

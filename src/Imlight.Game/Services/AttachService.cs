@@ -108,7 +108,8 @@ namespace Imlight.Game.Services
             var msg = new SERVER_100_PROTOCOL.MSG_VALIDATESESSIONKEY()
             {
                 Key = key,
-                UserID = userId
+                UserID = userId,
+                SessionActor = SessionActor
             };
             var rsp = AskServer<SERVER_100_PROTOCOL.MSG_VALIDATESESSIONKEYRSP>(msg);
 
