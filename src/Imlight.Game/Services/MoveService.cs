@@ -32,7 +32,7 @@ namespace Imlight.Game.Services
             // If the socket account cannot be found, send the client an error.
             if (account is null)
             {
-                Log.Logger.Error($"Service [{this.GetType()}] socket account could not be retreived!");
+                Log.Logger.Error($"Service [{this.GetType()}] socket account could not be retrieved!");
                 return;
             }
 
@@ -48,20 +48,6 @@ namespace Imlight.Game.Services
         private void ReceiveClientMoveState(GAME_5_PROTOCOL.MSG_CLIENTMOVESTATE message)
         {
             // @todo: update move state for a character
-        }
-
-        private Account GetSocketAccount()
-        {
-            // Get the account from the AccountService.
-            var internalMessage = new ACCOUNT_104_PROTOCOL.MSG_ACCOUNT();
-            var account = AskInternal<ACCOUNT_104_PROTOCOL.MSG_ACCOUNT>(internalMessage).Account;
-
-            if (account is null)
-            {
-                Log.Logger.Error($"{this.GetType()} could not get account from AccountService.");
-            }
-
-            return account;
         }
 
         // Assuming (for now) that no two zones are on top of each other, and collision can be checked by determining if player's position is within some (X, Y) area
