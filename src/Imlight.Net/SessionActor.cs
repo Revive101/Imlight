@@ -132,29 +132,7 @@ namespace Imlight.Net
 
             return rsp;
         }
-        
-        public void ForceToServer()
-        {
-            var msg = new SERVER_100_PROTOCOL.MSG_PLAYERENQUEUED()
-            {
-                SessionActor = this,
-                VIPEntry = true
-            };
-            
-            ServerRef.Tell(msg);
-        }
 
-        public void ForceToServer(IActorRef serverRef)
-        {
-            var msg = new SERVER_100_PROTOCOL.MSG_PLAYERENQUEUED()
-            {
-                SessionActor = this,
-                VIPEntry = true
-            };
-            
-            serverRef.Tell(msg);
-        }
-        
         public T HandleInternalAsk<T>(IServerMessage msg) 
             where T : IServerMessage
         {

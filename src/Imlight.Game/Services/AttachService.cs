@@ -44,9 +44,6 @@ namespace Imlight.Game.Services
             // This is the first authentication action the user will send on the game server. Using the session key
             // given, we'll set the AccountService account to what the key is mapped to.
             SetAccountInternally(account);
-            
-            // We also need to add this session actor to the ActiveSessions list of the server.
-            SessionActor.ForceToServer();
 
             if (!GetCharacter(message.CharID, out var character))
             {
@@ -64,16 +61,19 @@ namespace Imlight.Game.Services
             
             var loginCompleteMsg = new GAME_5_PROTOCOL.MSG_LOGINCOMPLETE()
             {
-                ZoneName = message.ZoneName,
-                ZoneID = message.ZoneID,
+                RealmName = "Imlight",
+                
+                // Set character data.
                 Data = GetCharacterData(character),
-                DynamicZoneID = 0,
-                DynamicServerProcID = 0,
                 IsCSR = 1,
                 Permissions = 31679,
-                RealmName = "Imlight",
-                //ZoneID = new GID(4288020480),
-                //CriticalObjects = null,
+
+                // Set zone data.
+                ZoneName = message.ZoneName,
+                ZoneID = message.ZoneID,
+                DynamicZoneID = 0,
+                DynamicServerProcID = 0,
+                //CriticalObjects = null,    // CriticalObjects are CoreObjects that already exist in the zone.
             };
 
             SendToSocket(loginCompleteMsg);
