@@ -18,5 +18,13 @@ namespace Imlight.Game.Services
         {
             SessionActor.Dispose();
         }
+        
+        [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT))]
+        private void ReceiveQueryLogout(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT message)
+        {
+            SendToSocket(new GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT());
+            
+            SessionActor.Dispose();
+        }
     }
 }
