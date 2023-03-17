@@ -134,7 +134,7 @@ namespace Imlight.Game
             // Meaning that we don't actually want to add it to the active sessions here.
             Sender.Tell(rsp);
         }
-
+        
         protected override ushort GetNewUniqueId()
         {
             ushort newId = 0;

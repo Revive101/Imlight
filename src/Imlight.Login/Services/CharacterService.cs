@@ -34,7 +34,7 @@ namespace Imlight.Login.Services
             var serializer = new ObjectSerializer();
             var charData = (TypeCache.WizardCharacterCreationInfo)serializer.Deserialize(message.CreationInfo);
 
-            int errorCode = 0;
+            var errorCode = 0;
             if (charData is null)
             {
                 Log.Logger.Error("Could not successfully deserialize WizardCharacterCreationData!");
@@ -45,10 +45,14 @@ namespace Imlight.Login.Services
             var account = GetSocketAccount();
             if (account is not null && charData is not null)
             {
-                var newCharacter = new Character(charData);
-
-                // @todo: have the account object set this information instead.
-                newCharacter.CreationData.m_userID = (GID)account.ID;
+                var newCharacter = new Character(charData)
+                {
+                    CreationData =
+                    {
+                        // @todo: have the account object set this information instead.
+                        m_userID = (GID)account.ID
+                    }
+                };
 
                 var result = account.AddCharacter(newCharacter);
 
@@ -101,14 +105,14 @@ namespace Imlight.Login.Services
         [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_DELETECHARACTER))]
         private void ReceiveDeleteCharacter(LOGIN_7_PROTOCOL.MSG_DELETECHARACTER message)
         {
-            int errorCode = 0;
+            var errorCode = 0;
             var account = GetSocketAccount();
             if (account is null)
                 errorCode = 1;
 
             // The DeleteCharacter method will do the character searching for us.
             // Returns false if no character by that ID is found.
-            if (!account.DeleteCharacter(message.CharID))
+            if (account != null && !account.DeleteCharacter(message.CharID))
                 errorCode = 2;
 
             SendToSocket(new LOGIN_7_PROTOCOL.MSG_DELETECHARACTERRESPONSE()
@@ -122,20 +126,6 @@ namespace Imlight.Login.Services
         {
             this._characterCreationParameter = message.Parameter;
             this._characterCreationStage = message.Stage;
-        }
-
-        private Account GetSocketAccount()
-        {
-            // Get the account from the AccountService.
-            var internalMessage = new ACCOUNT_104_PROTOCOL.MSG_QUERYACCOUNT();
-            var account = AskInternal<ACCOUNT_104_PROTOCOL.MSG_ACCOUNT>(internalMessage).Account;
-            
-            if (account is null)
-            {
-                Log.Logger.Error($"{this.GetType()} could not get account from AccountService.");
-            }
-
-            return account;
         }
     }
 }

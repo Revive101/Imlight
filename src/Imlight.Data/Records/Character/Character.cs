@@ -47,7 +47,7 @@ namespace Imlight.Data
         {
             this.CreationData = creationData;
             this.CreationData.m_level = 1;
-            this.CreationData.m_location = "DragonSpire/DS_Hub_Cathedral";
+            this.CreationData.m_location = "WizardCity/WC_Hub";
             this.CreationData.m_globalID = RandomGen.GenerateGUID();
             this.CreationData.m_equipmentInfoList = new EquippedItemInfoList()
             {
@@ -57,7 +57,6 @@ namespace Imlight.Data
 
         public WizClientObject GetWizClientObject()
         {
-            // @fixme: this is failing
             var clientObject = CoreObjectFactory.InitializeCoreObject(new WizClientObject(), (uint)CreationData.m_templateID);
 
             ReplaceWizAvatarWithCreationData(clientObject);

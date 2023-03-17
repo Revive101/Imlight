@@ -81,20 +81,6 @@ namespace Imlight.Login.Services
             }
         }
 
-        private Account GetSocketAccount()
-        {
-            // Get the account from the AccountService.
-            var internalMessage = new ACCOUNT_104_PROTOCOL.MSG_QUERYACCOUNT();
-            var account = AskInternal<ACCOUNT_104_PROTOCOL.MSG_ACCOUNT>(internalMessage).Account;
-
-            if (account is null)
-            {
-                Log.Logger.Error($"{this.GetType()} could not get account from AccountService.");
-            }
-
-            return account;
-        }
-
         private SERVER_100_PROTOCOL.MSG_SERVERINFO GetGameServer()
         {
             var msg = new SERVER_100_PROTOCOL.MSG_QUERYGAMESERVERS();

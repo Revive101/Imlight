@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Imlight.Data;
 using WizUnraveler.DML;
 
 namespace Imlight.Net
@@ -53,6 +54,20 @@ namespace Imlight.Net
         protected void SendInternal(IServerMessage message)
         {
             SessionActor.ActorRef.Tell(message);
+        }
+        
+        protected Account GetSocketAccount()
+        {
+            // Get the account from the AccountService.
+            var internalMessage = new ACCOUNT_104_PROTOCOL.MSG_QUERYACCOUNT();
+            var account = AskInternal<ACCOUNT_104_PROTOCOL.MSG_ACCOUNT>(internalMessage).Account;
+
+            if (account is null)
+            {
+                Log.Logger.Error($"{this.GetType()} could not get account from AccountService.");
+            }
+
+            return account;
         }
 
         /// <summary>
