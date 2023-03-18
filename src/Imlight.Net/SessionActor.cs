@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using WizUnraveler;
+using WizUnraveler.Cache;
 using WizUnraveler.DML;
 
 namespace Imlight.Net
@@ -176,13 +177,12 @@ namespace Imlight.Net
             {
                 Id = SessionID,
                 Socket = this.Socket,
-                Ip = this.Socket.RemoteEndPoint?.ToString()
-                
+                Ip = this.Socket?.RemoteEndPoint?.ToString()
             };
             ServerRef.Tell(msg);
             
             Context.Stop(Self);
-            Socket.Close();
+            Socket?.Close();
             _cts.Cancel();
             
             _sendEventArgs?.Dispose();
@@ -208,13 +208,16 @@ namespace Imlight.Net
 
         protected override void Unhandled(object message)
         {
-            Log.Logger.Error($"SessionActor [{SessionID}] " +
+            Log.Logger.Warning($"SessionActor [{SessionID}] " +
                 $"received unhandled message of type [{message.GetType()}].");
         }
 
         private void ConfigureReceivers()
         {
+            // Specific message handlers.
             Receive<SERVER_100_PROTOCOL.MSG_PING>(x => this.Ping = x.Ping);
+            
+            // Generic message handlers.
             Receive<IServerMessage>(HandleInternalTell);
             Receive<INetworkMessage>(x => x.ServiceID < 100, SendToSocket);
             Receive<string>(x => x == "Close", x => Dispose());
@@ -264,38 +267,40 @@ namespace Imlight.Net
                 .Replace('+', '.');
             Log.Logger.Verbose($"SessionActor [{SessionID}] received KiNP packet [{scopedMessageName}]");
 
-            // Iterate our services and see if any of them can handle this message.
+            // Iterate through services and forward the message to any service that can handle the message.
+            var wasDispatched = false;
             foreach (var service in _services)
             {
                 var actorRef = service.Key;
                 var type = service.Value;
 
-                if (type.MessageHandlers.Any(x => x.Key == packet.GetType()))
-                {
-                    actorRef.Tell(packet);
-                    return;
-                }
+                if (!type.MessageHandlers.Any(x => x.Key == packet.GetType())) continue;
+                
+                actorRef.Forward(packet);
+                wasDispatched = true;
             }
 
-            Unhandled(packet);
+            if (!wasDispatched)
+                Unhandled(packet);
         }
 
         private void HandleInternalTell(IServerMessage msg)
         {
-            // Iterate our services and see if any of them can handle this message.
+            // Iterate through services and forward the message to any service that can handle the message.
+            var wasDispatched = false;
             foreach (var service in _services)
             {
                 var actorRef = service.Key;
                 var type = service.Value;
 
-                if (type.MessageHandlers.Any(x => x.Key == msg.GetType()))
-                {
-                    actorRef.Forward(msg);
-                    return;
-                }
+                if (!type.MessageHandlers.Any(x => x.Key == msg.GetType())) continue;
+                
+                actorRef.Forward(msg);
+                wasDispatched = true;
             }
 
-            Unhandled(msg);
+            if (!wasDispatched)
+                Unhandled(msg);
         }
 
         private INetworkMessage GetPacketFromBuffer(byte[] buffer, int bytesReceived)
@@ -319,7 +324,8 @@ namespace Imlight.Net
         {
             if (!Socket.Connected)
             {
-                Log.Logger.Error($"SessionActor [{SessionID}] send failure: " +
+                Log.Logger.Error($"SessionActor [{SessionID}] cannot send message [{message.GetType()}] " +
+                                 $"send failure: " +
                                  $"Socket is not connected!");
                 return;
             }
