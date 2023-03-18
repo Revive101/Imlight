@@ -27,7 +27,7 @@ namespace Imlight.Game.Services
         private void ReceiveAttach(GAME_5_PROTOCOL.MSG_ATTACH message)
         {
             // Use the session key given in the message to ensure that the user didn't bypass our login server.
-            if (!ValidateLoginKey(message.LoginKey, message.UserID, out var account))
+             if (!ValidateLoginKey(message.LoginKey, message.UserID, out var account))
             {
                 Log.Logger.Warning($"User [{message.UserID}] failed to validate login key: {message.LoginKey}.");
 
@@ -60,18 +60,15 @@ namespace Imlight.Game.Services
             
             // Tell the game server that the user has attached, and now needs a zone process to be spawned.
             var zoneMsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFERREQUEST() { ZoneName = message.ZoneName };
-            var zoneAsk = AskServer<ZONE_102_PROTOCOL.MSG_ZONETRANSFERREQUESTRSP>(zoneMsg);
-            if (zoneAsk.ErrorCode != 0)
+            var zoneDetails = AskServer<ZONE_102_PROTOCOL.MSG_ZONETRANSFERREQUESTRSP>(zoneMsg);
+            if (zoneDetails.ErrorCode != 0)
             {
-                SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED() { Error = zoneAsk.ErrorCode });
+                SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED() { Error = zoneDetails.ErrorCode });
                 return;
             }
-
-            // Inform the zone we're in to create a new object.
-            var characterData = GetCharacterData(character);
-            var msg = new GAME_5_PROTOCOL.MSG_NEWOBJECT() { Data = characterData };
-            zoneAsk.NewZone.Tell(msg);
             
+            var characterData = GetCharacterData(character);
+
             // If everything went well, send the login complete message.
             var loginCompleteMsg = new GAME_5_PROTOCOL.MSG_LOGINCOMPLETE()
             {
@@ -85,10 +82,14 @@ namespace Imlight.Game.Services
                 // Set zone data.
                 ZoneName            = message.ZoneName,
                 ZoneID              = message.ZoneID,
-                DynamicZoneID       = zoneAsk.DynamicZoneId,
-                DynamicServerProcID = zoneAsk.DynamicZoneId,
-                CriticalObjects     = zoneAsk.CriticalObjects,
+                DynamicZoneID       = zoneDetails.DynamicZoneId,
+                DynamicServerProcID = zoneDetails.DynamicZoneId,
+                CriticalObjects     = zoneDetails.CriticalObjects,
             };
+            
+            // Inform the zone we're in to create a new object.
+            var msg = new GAME_5_PROTOCOL.MSG_NEWOBJECT() { Data = characterData };
+            zoneDetails.NewZone.Tell(msg);
 
             SendToSocket(loginCompleteMsg);
         }

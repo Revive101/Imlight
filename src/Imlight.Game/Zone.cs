@@ -21,6 +21,7 @@ namespace Imlight.Game
         public Zone(string zoneName)
         {
             this.ZoneName = zoneName;
+            this.DynamicZoneId = GenerateDynamicZoneId();
             this.Players = new List<IActorRef>();
             this.CoreObjects = new List<TypeCache.CoreObject>();
         }
@@ -56,6 +57,8 @@ namespace Imlight.Game
                 throw new Exception("Player actor already exists on this server!");
 
             Players.Add(message.Player);
+
+            Log.Logger.Debug($"Player {message.Player.Path.Name} added to zone {ZoneName}.");
         }
         
         [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER))]
@@ -95,7 +98,6 @@ namespace Imlight.Game
         {
             // Create a new BitIterator and prefix it with a count of the CoreObjects in this zone.
             var buffer = new BitIterator();
-            buffer.WriteUInt32((uint)CoreObjects.Count);
 
             var serializer = new CoreObjectSerializer();
             foreach (var t in CoreObjects)
@@ -113,6 +115,12 @@ namespace Imlight.Game
         {
             obj = CoreObjects.First(x => x.m_globalID == gameObjectId);
             return obj is not null;
+        }
+        
+        private static uint GenerateDynamicZoneId()
+        {
+            var random = new Random();
+            return (uint) random.Next(0, int.MaxValue);
         }
     }
 }

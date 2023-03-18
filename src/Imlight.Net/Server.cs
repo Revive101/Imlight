@@ -13,7 +13,7 @@ namespace Imlight.Net
 {
     public abstract class Server : ReceiveProtocolDispatcher
     {
-        public const ushort PLAYER_LIMIT = 1;
+        public const ushort PLAYER_LIMIT = 10;
 
         public string Name { get; }
         public string Ip { get; }
@@ -86,6 +86,7 @@ namespace Imlight.Net
                     continue;
 
                 ActiveSessions.Remove(session);
+                return;
             }
 
             Log.Logger.Error($"Server [{Name}] attempted to remove socket by ID [{message.Id}]," +
