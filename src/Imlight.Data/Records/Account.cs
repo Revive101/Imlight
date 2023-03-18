@@ -34,7 +34,7 @@ namespace Imlight.Data
         /// <summary>
         /// The authentication level of the account.
         /// </summary>
-        public AuthLevel AuthLevel { get; private set; }
+        public AuthLevel AuthLevel { get; set; }
 
         /// <summary>
         /// An array of this account's character data.

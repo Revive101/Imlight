@@ -23,6 +23,7 @@ namespace Imlight.Data
 
             // Create a new debug account.
             _debugAccount = new Account("Chi", "Chi2Chomp@mail.com", "Password");
+            _debugAccount.AuthLevel = AuthLevel.Administrator;
 
             return _debugAccount;
         }
