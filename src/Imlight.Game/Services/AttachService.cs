@@ -40,11 +40,6 @@ namespace Imlight.Game.Services
                 
                 return;
             }
-            
-            // This is the first authentication action the user will send on the game server. Using the session key
-            // given, we'll set the AccountService account to what the key is mapped to.
-            SetAccountInternally(account);
-
             if (!GetCharacter(message.CharID, out var character))
             {
                 Log.Logger.Error($"Could not get character by ID on MSG_ATTACH!");
@@ -59,21 +54,35 @@ namespace Imlight.Game.Services
                 return;
             }
             
+            // This is the first authentication action the user will send on the game server. Using the session key
+            // given, we'll set the AccountService account to what the key is mapped to.
+            SetAccountInternally(account);
+            
+            // Tell the game server that the user has attached, and now needs a zone process to be spawned.
+            var zoneMsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFERREQUEST() { ZoneName = message.ZoneName };
+            var zoneAsk = AskServer<ZONE_102_PROTOCOL.MSG_ZONETRANSFERREQUESTRSP>(zoneMsg);
+            if (zoneAsk.ErrorCode != 0)
+            {
+                SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED() { Error = zoneAsk.ErrorCode });
+                return;
+            }
+            
+            // If everything went well, send the login complete message.
             var loginCompleteMsg = new GAME_5_PROTOCOL.MSG_LOGINCOMPLETE()
             {
                 RealmName = "Imlight",
                 
                 // Set character data.
-                Data = GetCharacterData(character),
-                IsCSR = 1,
-                Permissions = 31679,
+                Data                = GetCharacterData(character),
+                IsCSR               = (int)account.AuthLevel >= 3 ? 1 : 0,
+                Permissions         = 31679, // @todo: these permissions look like bitflags. Find out what they mean.
 
                 // Set zone data.
-                ZoneName = message.ZoneName,
-                ZoneID = message.ZoneID,
-                DynamicZoneID = 0,
-                DynamicServerProcID = 0,
-                //CriticalObjects = null,    // CriticalObjects are CoreObjects that already exist in the zone.
+                ZoneName            = message.ZoneName,
+                ZoneID              = message.ZoneID,
+                DynamicZoneID       = zoneAsk.DynamicZoneId,
+                DynamicServerProcID = zoneAsk.DynamicZoneId,
+                CriticalObjects     = zoneAsk.CriticalObjects,
             };
 
             SendToSocket(loginCompleteMsg);
@@ -120,7 +129,7 @@ namespace Imlight.Game.Services
         private void SetAccountInternally(Account account)
         {
             // Tell the SessionActor to set the account.
-            SendInternal(new ACCOUNT_104_PROTOCOL.MSG_ACCOUNT()
+            SendToSessionServices(new ACCOUNT_104_PROTOCOL.MSG_ACCOUNT()
             {
                 Account = account
             });

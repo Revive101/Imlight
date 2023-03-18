@@ -30,7 +30,7 @@ namespace Imlight.Login.Services
             // For now, we'll always except any user.
             
             // Inform the SessionActor of the account.
-            SendInternal(new ACCOUNT_104_PROTOCOL.MSG_ACCOUNT()
+            SendToSessionServices(new ACCOUNT_104_PROTOCOL.MSG_ACCOUNT()
             {
                 Account = Data.Util.GetDebugAccount()
             });

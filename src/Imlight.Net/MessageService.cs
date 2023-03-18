@@ -51,7 +51,7 @@ namespace Imlight.Net
         /// Sends the SessionActor a message. Used to send data to another service of the SessionActor.
         /// </summary>
         /// <param name="message"></param>
-        protected void SendInternal(IServerMessage message)
+        protected void SendToSessionServices(IServerMessage message)
         {
             SessionActor.ActorRef.Tell(message);
         }
@@ -60,7 +60,7 @@ namespace Imlight.Net
         {
             // Get the account from the AccountService.
             var internalMessage = new ACCOUNT_104_PROTOCOL.MSG_QUERYACCOUNT();
-            var account = AskInternal<ACCOUNT_104_PROTOCOL.MSG_ACCOUNT>(internalMessage).Account;
+            var account = AskSessionServices<ACCOUNT_104_PROTOCOL.MSG_ACCOUNT>(internalMessage).Account;
 
             if (account is null)
             {
@@ -76,7 +76,7 @@ namespace Imlight.Net
         /// <param name="message"></param>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
-        protected T AskInternal<T>(IServerMessage message)
+        protected T AskSessionServices<T>(IServerMessage message)
             where T : IServerMessage
         {
             if (SessionActor is null)
@@ -87,7 +87,7 @@ namespace Imlight.Net
             
             if (message.ServiceID < 100)
             {
-                throw new Exception($"You are sending a non-server message using {nameof(AskInternal)}! " +
+                throw new Exception($"You are sending a non-server message using {nameof(AskSessionServices)}! " +
                                     $"Do not do this. Use {nameof(SendToSocket)} instead.");
             }
 

@@ -17,12 +17,13 @@ namespace Imlight.Game
 {
     public class GameServer : Server
     {
-        public const string DEFAULT_GAME_SERVER_NAME = "Imlight.Game";
-        public const ushort DEFAULT_GAME_SERVER_PORT = 12333;
-        public const string SESSION_KEY_HASH_INPUT = "MAGIC_HATTER";
-        public const ushort SESSION_KEY_VALIDITY_TIME = 7200; // 2 hours
+        private const string DEFAULT_GAME_SERVER_NAME = "Imlight.Game";
+        private const ushort DEFAULT_GAME_SERVER_PORT = 12333;
+        private const string SESSION_KEY_HASH_INPUT = "MAGIC_HATTER";
+        private const ushort SESSION_KEY_VALIDITY_TIME = 7200; // In seconds; 2 hours
 
         private IActorRef _serverPoolRef;
+        private IActorRef _gameWorldRef;
         private Cache<ByteString, Account> _sessionKeys;
         private readonly ListQueue<SessionActor> _playerQueue;
 
@@ -33,12 +34,13 @@ namespace Imlight.Game
         {
             this._serverPoolRef = serverPoolRef;
             this._playerQueue = new ListQueue<SessionActor>();
+            this._sessionKeys = new Cache<ByteString, Account>();
             
             // Create events.
             this.ActiveSessions.CollectionChanged += ActiveSessionsChangedEvent;
-
-            // Session keys are valid for x seconds.
-            this._sessionKeys = new Cache<ByteString, Account>();
+            
+            // Create actor children.
+            _gameWorldRef = Context.ActorOf(GameWorld.Props(this), "GameWorld");
 
             Log.Logger.Information($"Game server created with " +
                                    $"name {serverName} " +
@@ -133,6 +135,12 @@ namespace Imlight.Game
             // Only a session that exists on the login server will even bother trying to enqueue itself.
             // Meaning that we don't actually want to add it to the active sessions here.
             Sender.Tell(rsp);
+        }
+        
+        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFERREQUEST))]
+        private void ReceiveZoneTransferRequest(ZONE_102_PROTOCOL.MSG_ZONETRANSFERREQUEST message)
+        {
+            _gameWorldRef.Forward(message);
         }
         
         protected override ushort GetNewUniqueId()
