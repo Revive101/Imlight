@@ -36,10 +36,30 @@ namespace Imlight.Game.Services
                 return;
             }
 
-            var character = account.Characters[0]; //Bad
+            var character = account.Characters[0]; // @todo: get active character
             var zone = character.CreationData.m_location;
 
-            // @todo: check for zone transfer trigger locations
+            // Restore actual location information, as it is compressed by a factor of 4 and unsigned.
+            // Yaw is represented in radians in the client, but transmitted to the server as degrees.
+            var position = new SharpDX.Vector4((short)message.LocationX * 4, (short)message.LocationY * 4, (short)message.LocationZ * 4, (short)message.Direction);
+            var position2D = new SharpDX.Vector2(position.X, position.Y);
+
+            if (zone == "WizardCity/WC_Hub") // TESTING ONLY
+            {
+                SharpDX.Vector2[] ravenwoodTrigger = {
+                    new SharpDX.Vector2(-315.6f, 1663.56f),
+                    new SharpDX.Vector2(147.6f, 1661.47f),
+                    new SharpDX.Vector2(-208f, 1906.7f),
+                    new SharpDX.Vector2(17.37f, 1906.7f),
+                };
+                var inTrigger = InsideOfPolygon(ravenwoodTrigger, ravenwoodTrigger.Length, position2D);
+
+                if (inTrigger) // Player is inside of trigger, transfer to new zone
+                {
+                    var zoneMsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFERREQUEST() { ZoneName = "WizardCity/WC_Ravenwood" };
+                    var zoneAsk = AskServer<ZONE_102_PROTOCOL.MSG_ZONETRANSFERREQUESTRSP>(zoneMsg);
+                }
+            }
 
             // @todo: update character position for server
         }
@@ -51,10 +71,36 @@ namespace Imlight.Game.Services
         }
 
         // Assuming (for now) that no two zones are on top of each other, and collision can be checked by determining if player's position is within some (X, Y) area
-        private static bool InsideOfSquare(SharpDX.Vector2 p1, SharpDX.Vector2 p2, SharpDX.Vector2 p3, SharpDX.Vector2 p4, SharpDX.Vector2 pos)
+        private static bool InsideOfPolygon(SharpDX.Vector2[] p, int n, SharpDX.Vector2 pos)
         {
-            // @todo: matrix magic
-            return false;
+            double angle = 0;
+            SharpDX.Vector2 p1, p2;
+
+            for (int i = 0; i < n; i++)
+            {
+                p1.X = p[i].X - pos.X;
+                p1.Y = p[i].Y - pos.Y;
+                p2.X = p[(i + 1) % n].X - pos.X;
+                p2.Y = p[(i + 1) % n].Y - pos.Y;
+
+                angle += Angle2D(p1.X, p1.Y, p2.X, p2.Y);
+            }
+            return (Math.Abs(Math.Abs(angle) - (Math.PI * 2)) < 0.01); //Some tolerance for rounding errors
+        }
+
+        private static double Angle2D(float x1, float y1, float x2, float y2)
+        {
+            double diff, theta1, theta2;
+
+            theta1 = Math.Atan2(y1, x1);
+            theta2 = Math.Atan2(y2, x2);
+            diff = theta2 - theta1;
+            while (diff > Math.PI)
+                diff -= Math.PI * 2;
+            while (diff < -Math.PI)
+                diff += Math.PI * 2;
+
+            return diff;
         }
     }
 }
