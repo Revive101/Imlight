@@ -66,6 +66,11 @@ namespace Imlight.Game.Services
                 SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED() { Error = zoneAsk.ErrorCode });
                 return;
             }
+
+            // Inform the zone we're in to create a new object.
+            var characterData = GetCharacterData(character);
+            var msg = new GAME_5_PROTOCOL.MSG_NEWOBJECT() { Data = characterData };
+            zoneAsk.NewZone.Tell(msg);
             
             // If everything went well, send the login complete message.
             var loginCompleteMsg = new GAME_5_PROTOCOL.MSG_LOGINCOMPLETE()
@@ -73,7 +78,7 @@ namespace Imlight.Game.Services
                 RealmName = "Imlight",
                 
                 // Set character data.
-                Data                = GetCharacterData(character),
+                Data                = characterData,
                 IsCSR               = (int)account.AuthLevel >= 3 ? 1 : 0,
                 Permissions         = 31679, // @todo: these permissions look like bitflags. Find out what they mean.
 

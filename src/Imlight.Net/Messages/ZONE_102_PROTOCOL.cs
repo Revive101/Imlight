@@ -1,5 +1,6 @@
 using Akka.Actor;
 using WizUnraveler;
+using WizUnraveler.Cache;
 
 namespace Imlight.Net.Messages
 {
