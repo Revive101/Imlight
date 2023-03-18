@@ -43,5 +43,17 @@ namespace Imlight.Net.Messages
 
             public List<System.Type> Services;
         }
+        
+        public class MSG_OPCODE_HALT : IServerMessage
+        {
+            public byte MessageOrder { get; } = 6;
+            public byte ServiceID { get; } = 101;
+        }
+        
+        public class MSG_OPCODE_RESUME : IServerMessage
+        {
+            public byte MessageOrder { get; } = 7;
+            public byte ServiceID { get; } = 101;
+        }
     }
 }

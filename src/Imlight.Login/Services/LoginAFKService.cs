@@ -20,6 +20,7 @@ namespace Imlight.Login.Services
         private const ushort AFK_TIMEOUT = 360;       // In seconds
         private const ushort AFK_CHECK_INTERVAL = 60; // In seconds
 
+        private bool _halted;
         private long _lastReceivedSeconds;
         private readonly Timer _timer;
 
@@ -42,8 +43,22 @@ namespace Imlight.Login.Services
             _lastReceivedSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         }
 
+        [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_OPCODE_HALT))]
+        private void ReceiveHalt(SERVICE_101_PROTOCOL.MSG_OPCODE_HALT message)
+        {
+            _halted = true;
+        }
+        
+        [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_OPCODE_RESUME))]
+        private void ReceiveResume(SERVICE_101_PROTOCOL.MSG_OPCODE_RESUME message)
+        {
+            _halted = false;
+        }
+
         private void CheckAfk(object sender, ElapsedEventArgs e)
         {
+            if (_halted) return;
+            
             var currentTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
             if (currentTime - _lastReceivedSeconds >= AFK_TIMEOUT)

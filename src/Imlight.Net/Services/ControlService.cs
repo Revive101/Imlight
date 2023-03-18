@@ -17,11 +17,11 @@ namespace Imlight.Net.Services
         private const byte KEEP_ALIVE_RSP_WAIT_TIME = 2;   // In seconds
         private const byte KEEP_ALIVE_REVIVE_ATTEMPTS = 3; // The amount of times the server will try to revive a connection.
 
-        public bool SessionValid;
-
-        private Stopwatch _responseStopwatch;
+        private bool _sessionValid;
+        private readonly Stopwatch _responseStopwatch;
         private bool _isWaitingForHeartbeatResponse;
         private byte _currentKeepAliveReviveAttempts;
+        private bool _halted;
 
         public ControlService(SessionActor parentActor) : base(parentActor)
         {
@@ -77,7 +77,7 @@ namespace Imlight.Net.Services
             }
 
             // Set local variables.
-            SessionValid = true;
+            _sessionValid = true;
             _isWaitingForHeartbeatResponse = false;
             _currentKeepAliveReviveAttempts = 0;
 
@@ -113,7 +113,7 @@ namespace Imlight.Net.Services
                 return;
             }
 
-            ushort millisecondsIntoCurrentSecond = (ushort)(DateTime.UtcNow.TimeOfDay.TotalMilliseconds % 1000);
+            var millisecondsIntoCurrentSecond = (ushort)(DateTime.UtcNow.TimeOfDay.TotalMilliseconds % 1000);
             var rsp = new ControlMessages.KeepAliveResponse()
             {
                 SessionID = SessionActor.SessionID,
@@ -136,11 +136,21 @@ namespace Imlight.Net.Services
                 .Tell(new SERVER_100_PROTOCOL.MSG_PING() {Ping = _responseStopwatch.ElapsedMilliseconds});
         }
 
+        [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_OPCODE_HALT))]
+        private void ReceiveHalt(SERVICE_101_PROTOCOL.MSG_OPCODE_HALT message) => _halted = true;
+
+        [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_OPCODE_RESUME))]
+        private void ReceiveResume(SERVICE_101_PROTOCOL.MSG_OPCODE_RESUME message) => _halted = false;
+
         private void SendHeartbeat()
         {
-            if (!SessionValid)
+            // If this service is halted, it means the session has moved onto the game server.
+            // The login socket is now closed, and we don't need to send heartbeats anymore.
+            if (_halted) return;
+            if (!_sessionValid)
             {
-                Log.Logger.Error($"CommunicationActor [{SessionActor.SessionID}] tried to send heartbeat to an invalid session.");
+                Log.Logger.Error($"CommunicationActor [{SessionActor.SessionID}] " +
+                                 $"tried to send heartbeat to an invalid session.");
                 SessionActor.Dispose();
                 return;
             }
@@ -171,17 +181,15 @@ namespace Imlight.Net.Services
 
         private void ReceiveKeepAliveEndTimes()
         {
-            if (_isWaitingForHeartbeatResponse)
+            if (!_isWaitingForHeartbeatResponse || _halted) return;
+            if (_currentKeepAliveReviveAttempts == KEEP_ALIVE_REVIVE_ATTEMPTS)
             {
-                if (_currentKeepAliveReviveAttempts == KEEP_ALIVE_REVIVE_ATTEMPTS)
-                {
-                    SessionActor.Dispose();
-                }
-                else
-                {
-                    SendSessionOffer();
-                    _currentKeepAliveReviveAttempts++;
-                }
+                SessionActor.Dispose();
+            }
+            else
+            {
+                SendSessionOffer();
+                _currentKeepAliveReviveAttempts++;
             }
         }
     }

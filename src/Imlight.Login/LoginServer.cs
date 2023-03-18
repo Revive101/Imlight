@@ -61,6 +61,10 @@ namespace Imlight.Login
             };
 
             Sender.Tell(rsp);
+            
+            // The client will close the socket after being placed into the game server. This message is sent
+            // to all the SessionActor services to inform them to halt their operations.
+            message.SessionActor.ActorRef.Tell(new SERVICE_101_PROTOCOL.MSG_OPCODE_HALT());
         }
 
         private void CreateLocalServer()
