@@ -76,7 +76,7 @@ namespace Imlight.Data
             clientObject.m_permID = 0; // What is this?
             clientObject.m_location = new SharpDX.Vector3(0, 0, 0);
 
-            return clientObject;
+            return new WizClientObject();
         }
 
         private void ReplaceWizAvatarWithCreationData(WizClientObject clientObject)

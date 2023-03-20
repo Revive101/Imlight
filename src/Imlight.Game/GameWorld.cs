@@ -67,10 +67,7 @@ namespace Imlight.Game
             var zoneQueryResponse = zone
                 .Ask<ZONE_102_PROTOCOL.MSG_QUERYZONERSP>(zoneQueryMessage)
                 .Result;
-            
-            // Add the player to the zone.
-            zone.Tell(new ZONE_102_PROTOCOL.MSG_ADDPLAYER { Player = Sender });
-            
+
             // If the player is already in a zone, remove them from it.
             message.OldZone?.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER { Player = Sender });
 
@@ -80,6 +77,9 @@ namespace Imlight.Game
             response.DynamicZoneId = zoneQueryResponse.DynamicZoneId;
             response.ErrorCode = 0;
             Sender.Tell(response);
+            
+            // Add the player to the zone. Do this down here so the player doesn't load their own critical object.
+            zone.Tell(new ZONE_102_PROTOCOL.MSG_ADDPLAYER { Player = message.SessionActor.ActorRef });
         }
     }
 }
