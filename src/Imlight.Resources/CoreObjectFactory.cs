@@ -60,10 +60,8 @@ namespace Imlight.Resources
 
                 if (behaviorInstance is null)
                 {
-                    Log.Logger.Warning($"Could not find behavior instance [{behavior.m_behaviorName}] for CoreObject [{typeof(T)}]");
-
+                    //Log.Logger.Warning($"Could not find behavior instance [{behavior.m_behaviorName}] for CoreObject [{typeof(T)}]");
                     coreObject.m_inactiveBehaviors.Add(null);
-
                     continue;
                 }
 
