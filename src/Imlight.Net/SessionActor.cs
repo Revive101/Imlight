@@ -172,6 +172,12 @@ namespace Imlight.Net
         /// </summary>
         public void Dispose()
         {
+            // Avoid duplicate Dispose calls.
+            if (!Socket.Connected)
+                return;
+
+            Context.Stop(Self);
+
             // Send a message to the server to deallocate this SessionActor.
             var msg = new SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET()
             {
@@ -180,8 +186,7 @@ namespace Imlight.Net
                 Ip = this.Socket?.RemoteEndPoint?.ToString()
             };
             ServerRef.Tell(msg);
-            
-            Context.Stop(Self);
+
             Socket?.Close();
             _cts.Cancel();
             

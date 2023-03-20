@@ -72,7 +72,7 @@ namespace Imlight.Net.Services
             if (message.SessionID != SessionActor.SessionID)
             {
                 Log.Logger.Error($"SessionActor [{SessionActor.SessionID}] misaligned Session ID.");
-                SessionActor.Dispose();
+                SendCloseSession();
                 return;
             }
 
@@ -108,7 +108,7 @@ namespace Imlight.Net.Services
             if (message.SessionID != SessionActor.SessionID)
             {
                 Log.Logger.Error($"SessionActor [{SessionActor.SessionID}] misaligned Session ID.");
-                SessionActor.Dispose();
+                SendCloseSession();
 
                 return;
             }
@@ -151,7 +151,7 @@ namespace Imlight.Net.Services
             {
                 Log.Logger.Error($"CommunicationActor [{SessionActor.SessionID}] " +
                                  $"tried to send heartbeat to an invalid session.");
-                SessionActor.Dispose();
+                SendCloseSession();
                 return;
             }
 
