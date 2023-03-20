@@ -11,11 +11,17 @@ using Imlight.Net.Messages;
 using WizUnraveler;
 using WizUnraveler.Cache;
 using WizUnraveler.ObjectProperty;
+using static WizUnraveler.Cache.TypeCache;
+using static WizUnraveler.ObjectSerializer;
 
 namespace Imlight.Game.Services
 {
     internal class AttachService : MessageService
     {
+        private ulong globalId;
+        private ulong permId;
+        private ushort mobileId;
+
         public AttachService(SessionActor sessionActor) : base(sessionActor) { }
 
         protected static Props Props(SessionActor parentActor)
@@ -27,7 +33,7 @@ namespace Imlight.Game.Services
         private void ReceiveAttach(GAME_5_PROTOCOL.MSG_ATTACH message)
         {
             // Use the session key given in the message to ensure that the user didn't bypass our login server.
-             if (!ValidateLoginKey(message.LoginKey, message.UserID, out var account))
+            if (!ValidateLoginKey(message.LoginKey, message.UserID, out var account))
             {
                 Log.Logger.Warning($"User [{message.UserID}] failed to validate login key: {message.LoginKey}.");
 
@@ -58,27 +64,27 @@ namespace Imlight.Game.Services
             // given, we'll set the AccountService account to what the key is mapped to.
             SetAccountInternally(account);
             
-            // Tell the game server that the user has attached, and now needs a zone process to be spawned.
-            var zoneMsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFERREQUEST() { ZoneName = message.ZoneName };
-            var zoneDetails = AskServer<ZONE_102_PROTOCOL.MSG_ZONETRANSFERREQUESTRSP>(zoneMsg);
+            // Tell the game server that the user has attached, and now we need to find a zone process for their
+            // zone, or create a new one.
+            var zoneDetails = GetZoneDetails(message.ZoneName);
             if (zoneDetails.ErrorCode != 0)
             {
                 SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED() { Error = zoneDetails.ErrorCode });
                 return;
             }
-            
-            var characterData = GetCharacterData(character);
 
-            // If everything went well, send the login complete message.
+            // Serialize the character's game object and send login complete.
+            var charGameObject = character.GetWizClientObject();
+            var localGameObjectData = new CoreObjectSerializer().Serialize(charGameObject);
             var loginCompleteMsg = new GAME_5_PROTOCOL.MSG_LOGINCOMPLETE()
             {
                 RealmName = "Imlight",
                 
                 // Set character data.
-                Data                = characterData,
+                Data                = localGameObjectData,
                 IsCSR               = (int)account.AuthLevel >= 3 ? 1 : 0,
                 Permissions         = 31679, // @todo: these permissions look like bitflags. Find out what they mean.
-
+       
                 // Set zone data.
                 ZoneName            = message.ZoneName,
                 ZoneID              = message.ZoneID,
@@ -87,23 +93,77 @@ namespace Imlight.Game.Services
                 CriticalObjects     = zoneDetails.CriticalObjects,
             };
             
-            // Inform the zone we're in to create a new object.
-            var msg = new GAME_5_PROTOCOL.MSG_NEWOBJECT() { Data = characterData };
-            zoneDetails.NewZone.Tell(msg);
-
             SendToSocket(loginCompleteMsg);
+
+            // Now, we need the newly connected player to see all the objects that exist in their zone.
+            var zoneObjects = GetZoneObjects(message.ZoneName);
+            SendZoneObjectsToClient(zoneObjects);
+
+            // Now, broadcast to the zone of the new object, which is this player.
+            BroadcastNewObjectCreation(charGameObject);
         }
 
-        private ByteString GetCharacterData(Character character)
+        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYLOCALGAMEOBJECT))]
+        private void ReceiveQueryLocalGameObject(ZONE_102_PROTOCOL.MSG_QUERYLOCALGAMEOBJECT message)
         {
-            // =============================================================
-            // THIS IS ENTIRELY DEBUG ONLY AND MUST BE REMOVED LATER
-            // =============================================================
-            var serializer = new CoreObjectSerializer();
-            var charClientObject = character.GetWizClientObject();
-            var charData = serializer.SerializeCoreObject(charClientObject);
+            Sender.Tell(new ZONE_102_PROTOCOL.MSG_QUERYLOCALGAMEOBJECTRSP 
+            { 
+                GlobalID = globalId,
+                PermID = permId,
+                MobileId = mobileId 
+            });
+        }
 
-            return charData;
+        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_CREATENETWORKOBJECTRSP))]
+        private void ReceiveCreateNetworkObjectRsp(ZONE_102_PROTOCOL.MSG_CREATENETWORKOBJECTRSP message)
+        {
+            this.globalId = message.GlobalID;
+            this.permId = message.PermID;
+            this.mobileId = message.MobileId;
+        }
+
+        private ZONE_102_PROTOCOL.MSG_ZONETRANSFERREQUESTRSP GetZoneDetails(string zoneName)
+        {
+            // When we send a zone transfer request, it will also add the player to that zone.
+            var zoneMsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFERREQUEST()
+            {
+                ZoneName = zoneName,
+                SessionActor = SessionActor
+            };
+            return AskSessionServices<ZONE_102_PROTOCOL.MSG_ZONETRANSFERREQUESTRSP>(zoneMsg);
+        }
+        
+        private List<CoreObject> GetZoneObjects(string zoneName)
+        {
+            var zoneMsg = new ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECTS();
+            return AskSessionServices<ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECTSRSP>(zoneMsg)?.CoreObjects;
+        }
+
+        private void SendZoneObjectsToClient(List<CoreObject> objects)
+        {
+            var serializer = new CoreObjectSerializer()
+                .WithSerializerFlags(SerializerFlags.None)
+                .WithPropertyFlags(PropertyFlags.Public | PropertyFlags.Transmit | PropertyFlags.AuthorityTransmit);
+            foreach (var obj in objects)
+            {
+                var msg = new GAME_5_PROTOCOL.MSG_NEWOBJECT()
+                {
+                    Data = serializer.Serialize(obj)
+                };
+                
+                SendToSocket(msg);
+            }
+        }
+
+        private void BroadcastNewObjectCreation(CoreObject obj)
+        {
+            var createObjectMsg = new ZONE_102_PROTOCOL.MSG_CREATENETWORKOBJECT()
+            {
+                Sender = SessionActor.ActorRef,
+                CoreObject = obj,
+                Selfless = true
+            };
+            SendToSessionServices(createObjectMsg);
         }
 
         private bool GetCharacter(ulong charId, out Character character)

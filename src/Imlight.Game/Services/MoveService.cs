@@ -61,13 +61,29 @@ namespace Imlight.Game.Services
                 }
             }
 
-            // @todo: update character position for server
+            // Broadcast the move to all other players in the zone.
+            BroadcastClientMove(message);
         }
 
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVESTATE))]
         private void ReceiveClientMoveState(GAME_5_PROTOCOL.MSG_CLIENTMOVESTATE message)
         {
-            // @todo: update move state for a character
+            // Query the global ID from the attach server.
+            // @todo: avoid message query?
+            var msg = new ZONE_102_PROTOCOL.MSG_QUERYLOCALGAMEOBJECT();
+            var globalId = AskSessionServices<ZONE_102_PROTOCOL.MSG_QUERYLOCALGAMEOBJECTRSP>(msg).GlobalID;
+
+            var stateMsg = new GAME_5_PROTOCOL.MSG_MOVESTATE()
+            {
+                NewState = message.NewState,
+                GlobalID = globalId
+            };
+            SendToSessionServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
+            {
+                Sender = SessionActor.ActorRef,
+                Message = stateMsg,
+                Selfless = true
+            });
         }
 
         // Assuming (for now) that no two zones are on top of each other, and collision can be checked by determining if player's position is within some (X, Y) area
@@ -101,6 +117,30 @@ namespace Imlight.Game.Services
                 diff += Math.PI * 2;
 
             return diff;
+        }
+
+        private void BroadcastClientMove(GAME_5_PROTOCOL.MSG_CLIENTMOVE message)
+        {
+            // Query the mobile ID from the attach server.
+            // @todo: avoid message query?
+            var msg = new ZONE_102_PROTOCOL.MSG_QUERYLOCALGAMEOBJECT();
+            var mobileId = AskSessionServices<ZONE_102_PROTOCOL.MSG_QUERYLOCALGAMEOBJECTRSP>(msg).MobileId;
+
+            var serverMoveMsg = new GAME_5_PROTOCOL.MSG_SERVERMOVE
+            {
+                LocationX = message.LocationX,
+                LocationY = message.LocationY,
+                LocationZ = message.LocationZ,
+                Direction = message.Direction,
+                MobileID = mobileId,
+            };
+            var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
+            {
+                Sender = SessionActor.ActorRef,
+                Message = serverMoveMsg,
+                Selfless = true,
+            };
+            SendToSessionServices(broadcastMsg);
         }
     }
 }
