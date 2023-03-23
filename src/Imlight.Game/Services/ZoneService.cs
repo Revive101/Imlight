@@ -17,10 +17,10 @@ namespace Imlight.Game.Services
             return Akka.Actor.Props.Create(() => new ZoneService(parentActor));
         }
 
-        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFERREQUEST))]
-        private void ReceiveZoneTransferRequest(ZONE_102_PROTOCOL.MSG_ZONETRANSFERREQUEST message)
+        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONE))]
+        private void ReceiveZoneTransferRequest(ZONE_102_PROTOCOL.MSG_QUERYZONE message)
         {
-            var result = AskServer<ZONE_102_PROTOCOL.MSG_ZONETRANSFERREQUESTRSP>(message);
+            var result = AskServer<ZONE_102_PROTOCOL.MSG_QUERYZONERSP>(message);
             
             // If the zone transfer request was successful, we'll set the zone reference.
             if (result.ErrorCode == 0)
@@ -30,13 +30,13 @@ namespace Imlight.Game.Services
             
             Sender.Tell(result);
         }
-
-        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_CREATENETWORKOBJECT))]
-        private void ReceiveCreateNetworkObject(ZONE_102_PROTOCOL.MSG_CREATENETWORKOBJECT message)
+        
+        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
+        private void ReceiveAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message)
         {
-            if (_zoneRef is null) throw new Exception("Zone Reference was null.");
+            if (_zoneRef is null) throw new NullReferenceException(nameof(_zoneRef));
             
-            _zoneRef.Tell(message);
+            _zoneRef.Forward(message);
         }
 
         [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
@@ -45,15 +45,6 @@ namespace Imlight.Game.Services
             if (_zoneRef is null) throw new Exception("Zone Reference was null.");
             
             _zoneRef.Tell(message);
-        }
-
-        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECTS))]
-        private void ReceiveQueryObjects(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECTS message)
-        {
-            if (_zoneRef is null) throw new Exception("Zone Reference was null.");
-            
-            var result = _zoneRef.Ask(message).Result;
-            Sender.Tell(result);
         }
     }
 }

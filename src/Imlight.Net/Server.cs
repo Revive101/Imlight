@@ -66,7 +66,8 @@ namespace Imlight.Net
 
             // Log
             Log.Logger.Information($"{this.GetType()} new connection " +
-                                   $"from {message.Socket.RemoteEndPoint} ");
+                                   $"from {message.Socket.RemoteEndPoint}, " +
+                                   $"given session ID [{id}]");
         }
 
         /// <summary>
@@ -86,11 +87,7 @@ namespace Imlight.Net
                     continue;
 
                 ActiveSessions.Remove(session);
-                return;
             }
-
-            Log.Logger.Error($"Server [{Name}] attempted to remove socket by ID [{message.Id}]," +
-                             $" but no socket was found.");
         }
 
         /// <summary>

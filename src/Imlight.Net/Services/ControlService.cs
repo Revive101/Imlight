@@ -15,12 +15,10 @@ namespace Imlight.Net.Services
     {
         private const byte KEEP_ALIVE_INTERVAL = 60;       // In seconds
         private const byte KEEP_ALIVE_RSP_WAIT_TIME = 2;   // In seconds
-        private const byte KEEP_ALIVE_REVIVE_ATTEMPTS = 3; // The amount of times the server will try to revive a connection.
 
         private bool _sessionValid;
         private readonly Stopwatch _responseStopwatch;
         private bool _isWaitingForHeartbeatResponse;
-        private byte _currentKeepAliveReviveAttempts;
         private bool _halted;
 
         public ControlService(SessionActor parentActor) : base(parentActor)
@@ -79,7 +77,6 @@ namespace Imlight.Net.Services
             // Set local variables.
             _sessionValid = true;
             _isWaitingForHeartbeatResponse = false;
-            _currentKeepAliveReviveAttempts = 0;
 
             // The session is now valid. For optimization purposes, our parent SessionActor doesn't load
             // all the services on creation. Instead, we wait for the session to be valid.
@@ -129,7 +126,6 @@ namespace Imlight.Net.Services
         {
             _responseStopwatch.Reset();
             _isWaitingForHeartbeatResponse = false;
-            _currentKeepAliveReviveAttempts = 0;
             
             SessionActor
                 .ActorRef
@@ -182,15 +178,8 @@ namespace Imlight.Net.Services
         private void ReceiveKeepAliveEndTimes()
         {
             if (!_isWaitingForHeartbeatResponse || _halted) return;
-            if (_currentKeepAliveReviveAttempts == KEEP_ALIVE_REVIVE_ATTEMPTS)
-            {
-                SessionActor.Dispose();
-            }
-            else
-            {
-                SendSessionOffer();
-                _currentKeepAliveReviveAttempts++;
-            }
+
+            SendCloseSession();
         }
     }
 }

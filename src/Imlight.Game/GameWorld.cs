@@ -26,10 +26,10 @@ namespace Imlight.Game
             return Akka.Actor.Props.Create(() => new GameWorld(server));
         }
         
-        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFERREQUEST))]
-        private void ReceiveZoneTransferRequest(ZONE_102_PROTOCOL.MSG_ZONETRANSFERREQUEST message)
+        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONE))]
+        private void ReceiveZoneTransferRequest(ZONE_102_PROTOCOL.MSG_QUERYZONE message)
         {
-            var response = new ZONE_102_PROTOCOL.MSG_ZONETRANSFERREQUESTRSP();
+            var response = new ZONE_102_PROTOCOL.MSG_QUERYZONERSP();
             
             // First, make sure this zone is valid by checking the AccessPassManager.
             if (!AccessPassManager.IsZone(message.ZoneName))
@@ -63,23 +63,18 @@ namespace Imlight.Game
             }
             
             // Query the zone for it's details.
-            var zoneQueryMessage = new ZONE_102_PROTOCOL.MSG_QUERYZONE();
+            var zoneQueryMessage = new ZONE_102_PROTOCOL.MSG_QUERYZONEDETAILS();
             var zoneQueryResponse = zone
-                .Ask<ZONE_102_PROTOCOL.MSG_QUERYZONERSP>(zoneQueryMessage)
+                .Ask<ZONE_102_PROTOCOL.MSG_QUERYZONEDETAILSRSP>(zoneQueryMessage)
                 .Result;
-
-            // If the player is already in a zone, remove them from it.
-            message.OldZone?.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER { Player = Sender });
 
             // Send the response back to the client.
             response.NewZone = zone;
             response.CriticalObjects = zoneQueryResponse.CriticalObjects;
+            response.PlayerObjects = zoneQueryResponse.PlayerObjects;
             response.DynamicZoneId = zoneQueryResponse.DynamicZoneId;
             response.ErrorCode = 0;
             Sender.Tell(response);
-            
-            // Add the player to the zone. Do this down here so the player doesn't load their own critical object.
-            zone.Tell(new ZONE_102_PROTOCOL.MSG_ADDPLAYER { Player = message.SessionActor.ActorRef });
         }
     }
 }

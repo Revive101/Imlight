@@ -137,8 +137,8 @@ namespace Imlight.Game
             Sender.Tell(rsp);
         }
         
-        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFERREQUEST))]
-        private void ReceiveZoneTransferRequest(ZONE_102_PROTOCOL.MSG_ZONETRANSFERREQUEST message)
+        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONE))]
+        private void ReceiveZoneTransferRequest(ZONE_102_PROTOCOL.MSG_QUERYZONE message)
         {
             _gameWorldRef.Forward(message);
         }

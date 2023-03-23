@@ -41,7 +41,11 @@ namespace Imlight.Game.Services
 
             // Restore actual location information, as it is compressed by a factor of 4 and unsigned.
             // Yaw is represented in radians in the client, but transmitted to the server as degrees.
-            var position = new SharpDX.Vector4((short)message.LocationX * 4, (short)message.LocationY * 4, (short)message.LocationZ * 4, (short)message.Direction);
+            var position = new SharpDX.Vector4(
+                unchecked((short)message.LocationX * 4), 
+                unchecked((short)message.LocationY * 4), 
+                unchecked((short)message.LocationZ * 4), 
+                message.Direction);
             var position2D = new SharpDX.Vector2(position.X, position.Y);
 
             if (zone == "WizardCity/WC_Hub") // TESTING ONLY
@@ -56,8 +60,8 @@ namespace Imlight.Game.Services
 
                 if (inTrigger) // Player is inside of trigger, transfer to new zone
                 {
-                    var zoneMsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFERREQUEST() { ZoneName = "WizardCity/WC_Ravenwood" };
-                    var zoneAsk = AskServer<ZONE_102_PROTOCOL.MSG_ZONETRANSFERREQUESTRSP>(zoneMsg);
+                    var zoneMsg = new ZONE_102_PROTOCOL.MSG_QUERYZONE() { ZoneName = "WizardCity/WC_Ravenwood" };
+                    var zoneAsk = AskServer<ZONE_102_PROTOCOL.MSG_QUERYZONERSP>(zoneMsg);
                 }
             }
 
@@ -68,11 +72,8 @@ namespace Imlight.Game.Services
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVESTATE))]
         private void ReceiveClientMoveState(GAME_5_PROTOCOL.MSG_CLIENTMOVESTATE message)
         {
-            // Query the global ID from the attach server.
-            // @todo: avoid message query?
-            var msg = new ZONE_102_PROTOCOL.MSG_QUERYLOCALGAMEOBJECT();
-            var globalId = AskSessionServices<ZONE_102_PROTOCOL.MSG_QUERYLOCALGAMEOBJECTRSP>(msg).GlobalID;
-
+            var globalId = GetActiveCoreObject().m_globalID;
+            
             var stateMsg = new GAME_5_PROTOCOL.MSG_MOVESTATE()
             {
                 NewState = message.NewState,
@@ -121,10 +122,8 @@ namespace Imlight.Game.Services
 
         private void BroadcastClientMove(GAME_5_PROTOCOL.MSG_CLIENTMOVE message)
         {
-            // Query the mobile ID from the attach server.
-            // @todo: avoid message query?
-            var msg = new ZONE_102_PROTOCOL.MSG_QUERYLOCALGAMEOBJECT();
-            var mobileId = AskSessionServices<ZONE_102_PROTOCOL.MSG_QUERYLOCALGAMEOBJECTRSP>(msg).MobileId;
+            // Query the mobile ID from the CharacterService
+            var mobileId = GetActiveCoreObject().m_nMobileID;
 
             var serverMoveMsg = new GAME_5_PROTOCOL.MSG_SERVERMOVE
             {
@@ -141,6 +140,21 @@ namespace Imlight.Game.Services
                 Selfless = true,
             };
             SendToSessionServices(broadcastMsg);
+        }
+
+        private TypeCache.CoreObject GetActiveCoreObject()
+        {
+            var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
+            var response = AskSessionServices<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
+
+            return response.CharacterObject;
+        }
+        
+        private ZONE_102_PROTOCOL.MSG_QUERYZONERSP GetZoneDetails(string zoneName)
+        {
+            // When we send a zone transfer request, it will also add the player to that zone.
+            var zoneMsg = new ZONE_102_PROTOCOL.MSG_QUERYZONE { ZoneName = zoneName, };
+            return AskSessionServices<ZONE_102_PROTOCOL.MSG_QUERYZONERSP>(zoneMsg);
         }
     }
 }

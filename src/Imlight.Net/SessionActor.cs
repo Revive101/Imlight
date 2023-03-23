@@ -37,6 +37,7 @@ namespace Imlight.Net
         private readonly SocketAsyncEventArgs _sendEventArgs = new SocketAsyncEventArgs();
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
         private bool _isSending;
+        private bool _isDisposed;
         private List<INetworkMessage> _preInitMessages;
 
         public SessionActor(Socket socket, ushort sessionId, IActorRef server)
@@ -173,9 +174,10 @@ namespace Imlight.Net
         public void Dispose()
         {
             // Avoid duplicate Dispose calls.
-            if (!Socket.Connected)
+            if (_isDisposed)
                 return;
 
+            _isDisposed = true;
             Context.Stop(Self);
 
             // Send a message to the server to deallocate this SessionActor.
@@ -254,7 +256,7 @@ namespace Imlight.Net
                 }
                 catch (SocketException ex)
                 {
-                    Log.Logger.Error($"SessionActor [{SessionID}] socket error: {ex.Message}");
+                    //Log.Logger.Error($"SessionActor [{SessionID}] socket error: {ex.Message}");
                     break;
                 }
             }
