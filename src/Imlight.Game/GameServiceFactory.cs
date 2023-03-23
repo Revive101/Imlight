@@ -25,6 +25,7 @@ namespace Imlight.Game
             typeof(ClientService),
             typeof(MoveService),
             typeof(ZoneService),
+            typeof(CharacterService),
         };
 
         public static Props Props()
