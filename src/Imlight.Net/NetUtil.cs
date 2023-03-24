@@ -2,23 +2,19 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 
 namespace Imlight.Net
 {
     public static class NetUtil
     {
-        public static string GetLocalIPAddress()
+        public static async Task<IPAddress> GetExternalIpAddress()
         {
-            var host = Dns.GetHostEntry(Dns.GetHostName());
-            foreach (var ip in host.AddressList)
-            {
-                if (ip.AddressFamily == AddressFamily.InterNetwork)
-                {
-                    return ip.ToString();
-                }
-            }
-            throw new Exception("No network adapters with an IPv4 address in the system!");
+            var externalIpString = (await new HttpClient().GetStringAsync("http://icanhazip.com"))
+                .Replace("\\r\\n", "").Replace("\\n", "").Trim();
+            return !IPAddress.TryParse(externalIpString, out var ipAddress) ? null : ipAddress;
         }
     }
 }

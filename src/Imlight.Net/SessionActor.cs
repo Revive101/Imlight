@@ -176,8 +176,13 @@ namespace Imlight.Net
             // Avoid duplicate Dispose calls.
             if (_isDisposed)
                 return;
-
             _isDisposed = true;
+
+            foreach (var service in _services.Keys)
+            {
+                Context.Stop(service);
+            }
+            
             Context.Stop(Self);
 
             // Send a message to the server to deallocate this SessionActor.

@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Net.Sockets;
 using Akka.Actor;
 using Imlight.Common;
@@ -28,7 +29,8 @@ namespace Imlight.Net
         public Server(string name, int port, Props factoryProps)
         {
             this.Name = name;
-            this.Ip = NetUtil.GetLocalIPAddress();
+            //this.Ip = new HttpClient().GetStringAsync("https://api.ipify.org/").Result;
+            this.Ip = "127.0.0.1";
             this.Port = port;
             this.ActiveSessions = new ObservableHashSet<SessionActor>();
             this._serverStartTime = DateTimeOffset.Now.ToUnixTimeSeconds();

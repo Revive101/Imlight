@@ -1,8 +1,10 @@
 using System;
 using Akka.Actor;
+using Imlight.Common;
 using Imlight.Data;
 using Imlight.Net;
 using Imlight.Net.Messages;
+using SharpDX;
 using WizUnraveler.Cache;
 
 namespace Imlight.Game.Services
@@ -46,7 +48,11 @@ namespace Imlight.Game.Services
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVE))]
         private void ReceiveClientMove(GAME_5_PROTOCOL.MSG_CLIENTMOVE message)
         {
-            if (_activeCharacterObject is null) throw new NullReferenceException(nameof(_activeCharacterObject));
+            if (_activeCharacterObject is null)
+            {
+                Log.Logger.Error("Character was null!");
+                return;
+            }
             
             // Normalize differentiating message values
             var x = unchecked((short)message.LocationX) * 4.0f;
@@ -54,7 +60,8 @@ namespace Imlight.Game.Services
             var z = unchecked((short)message.LocationZ) * 4.0f;
             var direction = (float)(message.Direction * Math.PI * 2 / 250);
             
-            _activeCharacterObject.m_location = new SharpDX.Vector3(x, y, z);
+            _activeCharacterObject.m_location = new Vector3(x, y, z);
+            _activeCharacterObject.m_orientation = new Vector3(0, 0, direction);
         }
     }
 }

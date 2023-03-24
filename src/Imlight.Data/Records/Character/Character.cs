@@ -57,27 +57,29 @@ namespace Imlight.Data
 
         public WizClientObject GetWizClientObject()
         {
-            var clientObject = CoreObjectFactory.InitializeCoreObject(new WizClientObject(), (uint)CreationData.m_templateID);
+            var clientObject = CoreObjectFactory.InitializeCoreObject(
+                new WizClientObject(), 
+                (uint)CreationData.m_templateID);
 
             ReplaceWizAvatarWithCreationData(clientObject);
-            //SetWizClientBehaviors(ref clientObject);
+            SetWizClientBehaviors(ref clientObject);
 
-            //clientObject.m_gameStats = new WizGameStats()
-            //{
-            //    m_baseMana = 15,
-            //    m_currentMana = 15,
-            //    m_baseGoldPouch = 1000000,
-            //    m_baseHitpoints = 500,
-            //    m_currentHitpoints = 500,
-            //};
-            //clientObject.m_fScale = 1f;
-            //clientObject.m_globalID = RandomGen.GenerateGUID();
-            //clientObject.m_characterId = (GID)1;
-            //clientObject.m_permID = 0; // What is this?
-            //clientObject.m_location = new SharpDX.Vector3(0, 0, 0);
+            clientObject.m_gameStats = new WizGameStats()
+            {
+                m_baseMana = 15,
+                m_currentMana = 15,
+                m_baseGoldPouch = 1000000,
+                m_baseHitpoints = 500,
+                m_currentHitpoints = 500,
+            };
+            clientObject.m_fScale = 1f;
+            clientObject.m_globalID = RandomGen.GenerateGUID();
+            clientObject.m_characterId = (GID)1;
+            clientObject.m_permID = 0; // What is this?
+            clientObject.m_location = new SharpDX.Vector3(0, 0, 0);
 
-            return new WizClientObject();
-        }
+            return clientObject;
+        } 
 
         private void ReplaceWizAvatarWithCreationData(WizClientObject clientObject)
         {
