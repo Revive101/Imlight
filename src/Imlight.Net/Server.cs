@@ -9,6 +9,7 @@ using System.Net.Sockets;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Net.Messages;
+using WizUnraveler.Cache;
 
 namespace Imlight.Net
 {
@@ -29,12 +30,13 @@ namespace Imlight.Net
         public Server(string name, int port, Props factoryProps)
         {
             this.Name = name;
-            //this.Ip = new HttpClient().GetStringAsync("https://api.ipify.org/").Result;
-            this.Ip = "127.0.0.1";
             this.Port = port;
             this.ActiveSessions = new ObservableHashSet<SessionActor>();
             this._serverStartTime = DateTimeOffset.Now.ToUnixTimeSeconds();
             this._factoryProps = factoryProps;
+            
+            // Get outside IP.
+            this.Ip = new HttpClient().GetStringAsync("https://api.ipify.org/").Result;
 
             CreateTcpListener();
             _actorFactoryRef = CreateActorFactory();
@@ -59,14 +61,15 @@ namespace Imlight.Net
         /// </summary>
         /// <param name="message"></param>
         [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_ALLOCATESOCKET))]
-        public void ReceiveAllocateSocket(SERVER_100_PROTOCOL.MSG_ALLOCATESOCKET message)
+        public virtual void ReceiveAllocateSocket(SERVER_100_PROTOCOL.MSG_ALLOCATESOCKET message)
         {
             // Create a new child actor, which represents the active socket connection.
             var id = GetNewUniqueId();
             var sessionProps = SessionActor.Props(message.Socket, id, Context.Self);
-            var actor = Context.ActorOf(sessionProps);
+            var actor = Context.ActorOf(sessionProps, $"SessionActor.{id}");
 
             // Log
+            Log.Logger.Debug($"New actor created under {Context.Self.Path}: SessionActor.{id}");
             Log.Logger.Information($"{this.GetType()} new connection " +
                                    $"from {message.Socket.RemoteEndPoint}, " +
                                    $"given session ID [{id}]");
@@ -77,19 +80,19 @@ namespace Imlight.Net
         /// </summary>
         /// <param name="message"></param>
         [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET))]
-        public void ReceiveDeallocateSocket(SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET message)
+        public virtual void ReceiveDeallocateSocket(SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET message)
         {
-            // Log
-            Log.Logger.Information($"{this.GetType()} connection dropped " +
-                                   $"from {message.Ip} ");
+            Log.Logger.Information($"{Name}.{Port} connection dropped from {message.Ip}.");
             
             foreach (var session in ActiveSessions.ToList())
             {
-                if (session.SessionID != message.Id)
-                    continue;
+                if (session.SessionID != message.Id) continue;
 
                 ActiveSessions.Remove(session);
+                return;
             }
+            
+            Log.Logger.Error($"{Name}.{Port} Could not find active session with ID [{message.Id}]");
         }
 
         /// <summary>
@@ -116,7 +119,7 @@ namespace Imlight.Net
         {
             var msg = new SERVER_100_PROTOCOL.MSG_SERVERINFO()
             {
-                IP = Ip,
+                IP = message.IsLocal ? "127.0.0.1" : this.Ip,
                 Port = Port,
                 PlayerCount = (ushort)ActiveSessions.Count,
                 ActorRef = Context.Self,
@@ -146,13 +149,20 @@ namespace Imlight.Net
         
         private void CreateTcpListener()
         {
+            var actorName = $"{Name}.TcpListener.{Port}";
             var tcpProps = TcpListenerActor.Props(Name, Port, Context.Self);
-            Context.ActorOf(tcpProps, $"{Name}_{Port}");
+            Context.ActorOf(tcpProps, actorName);
+            
+            Log.Logger.Debug($"New actor created under {Context.Self.Path}: {actorName}");
         }
 
         private IActorRef CreateActorFactory()
         {
-            return Context.ActorOf(_factoryProps);
+            var actorName = $"{Name}.ActorFactory";
+            
+            Log.Logger.Debug($"New actor created under {Context.Self.Path}: {actorName}");
+            
+            return Context.ActorOf(_factoryProps, actorName);
         }
     }
 }

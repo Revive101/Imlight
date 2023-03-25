@@ -31,7 +31,7 @@ namespace Imlight.Login.Services
             var account = GetSocketAccount();
             if (account is null)
             {
-                Log.Logger.Error($"Service [{this.GetType()}] socket account could not be retreived!");
+                Log.Logger.Error($"Service [{this.GetType()}] socket account could not be retrieved!");
                 SendErrorToSocket();
                 return;
             }
@@ -83,7 +83,10 @@ namespace Imlight.Login.Services
 
         private SERVER_100_PROTOCOL.MSG_SERVERINFO GetGameServer()
         {
-            var msg = new SERVER_100_PROTOCOL.MSG_QUERYGAMESERVERS();
+            var isLocal = SessionActor.Socket.RemoteEndPoint
+                .ToString()!
+                .Contains("127.0.0.1");
+            var msg = new SERVER_100_PROTOCOL.MSG_QUERYGAMESERVERS() { IsLocal = isLocal };
             return AskServer<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg);
         }
 

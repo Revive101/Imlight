@@ -45,9 +45,11 @@ namespace Imlight.Login
             }
             
             var gameProps = GameServer.Props(Context.Self, message.Name, message.Port);
-            var gameServerRef = Context.ActorOf(gameProps, $"{message.Name}_{message.Port}");
+            var gameServerRef = Context.ActorOf(gameProps, $"{message.Name}.{message.Port}");
 
             _gameServers.Add(message.Port, gameServerRef);
+            
+            Log.Logger.Debug($"New actor created under {Context.Self.Path}: {message.Name}.{message.Port}");
         }
 
         [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_QUERYGAMESERVERS))]
@@ -57,7 +59,7 @@ namespace Imlight.Login
             var gameServers = _gameServers.Values
                 .Select(gameServer =>
                 {
-                    var msg = new SERVER_100_PROTOCOL.MSG_QUERYSERVER();
+                    var msg = new SERVER_100_PROTOCOL.MSG_QUERYSERVER() { IsLocal = message.IsLocal };
                     var rsp = gameServer.Ask<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg).Result;
                     return rsp;
                 })
