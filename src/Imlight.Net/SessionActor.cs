@@ -174,16 +174,8 @@ namespace Imlight.Net
         public void Dispose()
         {
             // Avoid duplicate Dispose calls.
-            if (_isDisposed)
-                return;
+            if (_isDisposed) return;
             _isDisposed = true;
-
-            foreach (var service in _services.Keys)
-            {
-                Context.Stop(service);
-            }
-            
-            Context.Stop(Self);
 
             // Send a message to the server to deallocate this SessionActor.
             var msg = new SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET()
@@ -193,7 +185,8 @@ namespace Imlight.Net
                 Ip = this.Socket?.RemoteEndPoint?.ToString()
             };
             ServerRef.Tell(msg);
-
+            
+            Context.Stop(Self);
             Socket?.Close();
             _cts.Cancel();
             
@@ -231,7 +224,7 @@ namespace Imlight.Net
             
             // Generic message handlers.
             Receive<IServerMessage>(HandleInternalTell);
-            Receive<INetworkMessage>(x => x.ServiceID < 100, SendToSocket);
+            Receive<INetworkMessage>(SendToSocket);
             Receive<string>(x => x == "Close", x => Dispose());
             Receive<string>(x => x == "Identify", x=> Sender.Tell(this));
         }

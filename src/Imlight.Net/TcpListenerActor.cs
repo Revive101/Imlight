@@ -8,6 +8,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Collections.Concurrent;
+using System.Runtime.InteropServices;
 using Imlight.Common;
 using Imlight.Net.Messages;
 
@@ -41,14 +42,10 @@ namespace Imlight.Net
 
         public async void Start()
         {
-            Log.Logger.Information($"TcpListenerActor {Name} starting..");
-
             this.Listening = true;
             this.Listener.Start();
 
             var token = this._tokenSource.Token;
-
-            Log.Logger.Information($"TcpListenerActor {Name} beginning listen on port {Port}.");
 
             await ListenAsync(token, Context);
         }
@@ -82,11 +79,7 @@ namespace Imlight.Net
 
         private void AllocateNewSocket(Socket socket, IUntypedActorContext context)
         {
-            var msg = new SERVER_100_PROTOCOL.MSG_ALLOCATESOCKET()
-            {
-                Socket = socket
-            };
-            
+            var msg = new SERVER_100_PROTOCOL.MSG_ALLOCATESOCKET() { Socket = socket };
             _serverRef.Tell(msg);
         }
     }
