@@ -46,8 +46,7 @@ namespace Imlight.Login.Services
             
             // Enqueue ourselves to the connected server. Inform the socket if its been placed into a queue and
             // what position it could potentially be in.
-            var serverEnqueueResult = 
-                (LOGIN_7_PROTOCOL.MSG_USER_ADMIT_IND)SessionActor.EnqueueToServer();
+            var serverEnqueueResult = (LOGIN_7_PROTOCOL.MSG_USER_ADMIT_IND)SessionActor.EnqueueToServer();
             SendToSocket(serverEnqueueResult);
         }
     }

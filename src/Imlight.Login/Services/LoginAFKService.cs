@@ -69,7 +69,7 @@ namespace Imlight.Login.Services
                     Warning = 1 // ???
                 });
 
-                SendCloseSession();
+                CloseSession();
             }
         }
     }

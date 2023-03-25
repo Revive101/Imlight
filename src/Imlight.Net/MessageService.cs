@@ -116,7 +116,10 @@ namespace Imlight.Net
             return task;
         }
         
-        protected void SendCloseSession()
+        /// <summary>
+        /// Sends the SessionActor a close message.
+        /// </summary>
+        protected void CloseSession()
         {
             SessionActor.ActorRef.Tell("Close");
         }

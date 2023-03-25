@@ -22,10 +22,8 @@ namespace Imlight.Game.Services
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT))]
         private void ReceiveQueryLogout(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT message)
         {
-            // @todo: this is failing
             SendToSocket(new GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT());
-            
-            SessionActor.Dispose();
+            CloseSession();
         }
     }
 }

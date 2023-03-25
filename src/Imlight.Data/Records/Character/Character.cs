@@ -42,13 +42,14 @@ namespace Imlight.Data
         /// Will overwrite any other name.
         /// </summary>
         public string Name { get; private set; }
-
-        public Character(WizardCharacterCreationInfo creationData)
+  
+        public Character(WizardCharacterCreationInfo creationData, GID accountId)
         {
             this.CreationData = creationData;
-            this.CreationData.m_level = 1;
+            this.CreationData.m_level = 1;  
             this.CreationData.m_location = "WizardCity/WC_Hub";
             this.CreationData.m_globalID = RandomGen.GenerateGUID();
+            this.CreationData.m_userID = accountId;
             this.CreationData.m_equipmentInfoList = new EquippedItemInfoList()
             {
                 m_infoList = new List<EquippedItemInfo>()

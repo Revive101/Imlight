@@ -43,17 +43,9 @@ namespace Imlight.Login.Services
 
             // Add the new character to the player's account.
             var account = GetSocketAccount();
-            if (account is not null && charData is not null)
+            if (account is not null)
             {
-                var newCharacter = new Character(charData)
-                {
-                    CreationData =
-                    {
-                        // @todo: have the account object set this information instead.
-                        m_userID = (GID)account.ID
-                    }
-                };
-
+                var newCharacter = new Character(charData, new GID(account.ID));
                 var result = account.AddCharacter(newCharacter);
 
                 // @TODO: Figure out what each of these error codes means.
@@ -75,8 +67,11 @@ namespace Imlight.Login.Services
         private void ReceiveRequestCharacterList(LOGIN_7_PROTOCOL.MSG_REQUESTCHARACTERLIST message)
         {
             var account = GetSocketAccount();
-            if (account is null) 
+            if (account is null)
+            {
+                SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERLIST() { Error = 1 });
                 return;
+            }
 
             // Tell the client we're going to start sending the character list.
             SendToSocket(new LOGIN_7_PROTOCOL.MSG_STARTCHARACTERLIST());
@@ -89,12 +84,9 @@ namespace Imlight.Login.Services
                 {
                     var character = account.Characters[i];
 
-                    // WizAPI saves the object. We need to serialize it here.
+                    // WizApi saves the object. We need to serialize it here.
                     var data = serializer.Serialize(character.CreationData);
-                    SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERINFO()
-                    {
-                        CharacterInfo = data,
-                    });
+                    SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERINFO() { CharacterInfo = data });
                 }
             }
 
@@ -109,9 +101,7 @@ namespace Imlight.Login.Services
             var account = GetSocketAccount();
             if (account is null)
                 errorCode = 1;
-
-            // The DeleteCharacter method will do the character searching for us.
-            // Returns false if no character by that ID is found.
+            
             if (account != null && !account.DeleteCharacter(message.CharID))
                 errorCode = 2;
 

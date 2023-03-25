@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using WizUnraveler;
 using WizUnraveler.Cache;
+using WizUnraveler.ObjectProperty;
 
 namespace Imlight.Data
 {
@@ -33,10 +34,20 @@ namespace Imlight.Data
             var rawBytes = StringToByteArray(rawData);
             var serializer = new ObjectSerializer();
             var creationData = (TypeCache.WizardCharacterCreationInfo)serializer.Deserialize(rawBytes);
-            var debugCharacter = new Character(creationData);
+            var debugCharacter = new Character(creationData, new GID(_debugAccount.ID));
             _debugAccount.AddCharacter(debugCharacter);
 
             return _debugAccount;
+        }
+
+        // Creates a new account with a random username, password, and email.
+        public static Account GetEmptyAccount()
+        {
+            var username = Guid.NewGuid().ToString();
+            var password = Guid.NewGuid().ToString();
+            var email = Guid.NewGuid().ToString();
+
+            return new Account(username, email, password);
         }
 
         public static byte[] StringToByteArray(string hex)

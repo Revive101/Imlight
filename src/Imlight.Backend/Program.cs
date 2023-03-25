@@ -40,7 +40,7 @@ namespace Imlight.Backend
                 return;
             }
 
-            Log.Logger.Information("Akka.NET configuration complete.");
+            Log.Logger.Information("Akka.NET system created.");
 
             _imlightSystem = system;
 
@@ -75,7 +75,9 @@ namespace Imlight.Backend
         private static void StartLoginServer()
         {
             var loginProps = LoginServer.Props();
-            _imlightSystem.ActorOf(loginProps, "Imlight.LoginServer");
+            _imlightSystem.ActorOf(loginProps, LoginServer.DEFAULT_LOGIN_SERVER_NAME);
+            
+            Log.Logger.Debug($"New actor created under {_imlightSystem.Name}: {LoginServer.DEFAULT_LOGIN_SERVER_NAME}");
         }
 
         private static void PrintTitle()

@@ -42,7 +42,7 @@ namespace Imlight.Game.Services
                 
                 return;
             }
-            if (!GetCharacter(message.CharID, out var character))
+            if (!GetCharacter(account, message.CharID, out var character))
             {
                 Log.Logger.Error($"Could not get character by ID on MSG_ATTACH!");
 
@@ -117,10 +117,8 @@ namespace Imlight.Game.Services
             SendToSessionServices(msg);
         }
 
-        private bool GetCharacter(ulong charId, out Character character)
+        private bool GetCharacter(Account account, ulong charId, out Character character)
         {
-            var account = Data.Util.GetDebugAccount();
-
             var result = account.GetCharacter(charId, out var accChar);
             character = accChar;
 

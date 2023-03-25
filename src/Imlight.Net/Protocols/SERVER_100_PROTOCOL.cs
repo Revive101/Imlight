@@ -59,12 +59,16 @@ namespace Imlight.Net.Messages
         {
             public byte MessageOrder { get; } = 6;
             public byte ServiceID { get; } = 100;
+
+            public bool IsLocal;
         }
 
         public class MSG_QUERYGAMESERVERS : IServerMessage
         {
             public byte MessageOrder { get; } = 7;
             public byte ServiceID { get; } = 100;
+            
+            public bool IsLocal;
         }
         
         public class MSG_PLAYERENQUEUED : IServerMessage

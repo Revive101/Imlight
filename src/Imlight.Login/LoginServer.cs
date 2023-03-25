@@ -15,10 +15,11 @@ namespace Imlight.Login
 {
     public class LoginServer : Server
     {
-        private const string DEFAULT_LOGIN_SERVER_NAME = "Imlight.Login";
+        public const string DEFAULT_LOGIN_SERVER_NAME = "Imlight.Login";
         private const ushort DEFAULT_LOGIN_SERVER_PORT = 12000;
         private const string DEFAULT_LOCAL_GAME_SERVER_NAME = "Imlight.Game";
         private const ushort DEFAULT_LOCAL_GAME_SERVER_PORT = 12333;
+        private const string GAME_SERVER_POOL_NAME = "GameServerPool";
 
         private IActorRef _gamePoolServer;
 
@@ -27,12 +28,14 @@ namespace Imlight.Login
                            : base(serverName, serverPort, LoginServiceFactory.Props())
         {
             this._gamePoolServer = CreateGameServerPool();
+
+            CreateLocalServer();
+            Log.Logger.Debug($"New actor created under {Context.Self.Path}:" +
+                             $" {DEFAULT_LOGIN_SERVER_NAME}.{GAME_SERVER_POOL_NAME}");
             
             Log.Logger.Information($"Login server created with " +
                                    $"name {serverName} " +
                                    $"under port {serverPort}.");
-            
-            CreateLocalServer();
         }
         
         public static Props Props(string serverName = DEFAULT_LOGIN_SERVER_NAME,
@@ -82,7 +85,7 @@ namespace Imlight.Login
         {
             var poolProps = GameServerPool.Props();
 
-            return Context.ActorOf(poolProps, "GameServerPool");
+            return Context.ActorOf(poolProps, $"{Name}.{GAME_SERVER_POOL_NAME}");
         }
     }
 }
