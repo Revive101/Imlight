@@ -61,5 +61,11 @@ namespace Imlight.Net.Messages
             public byte MessageOrder { get; } = 8;
             public byte ServiceID { get; } = 101;
         }
+        
+        public class MSG_GETALLSERVICES : IServerMessage
+        {
+            public byte MessageOrder { get; } = 9;
+            public byte ServiceID { get; } = 101;
+        }
     }
 }

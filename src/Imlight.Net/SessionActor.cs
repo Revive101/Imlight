@@ -58,37 +58,12 @@ namespace Imlight.Net
 
             ConfigureReceivers();
 
-            Task.Factory.StartNew(() => ListenAndProcess(ActorRef));
+            Task.Run(() => ListenAndProcessAsync(ActorRef));
         }
 
         public static Props Props(Socket socket, ushort sessionId, IActorRef server)
         {
             return Akka.Actor.Props.Create(() => new SessionActor(socket, sessionId, server));
-        }
-
-        /// <summary>
-        /// Fully initializes this SessionActor by allocating its active services.
-        /// </summary>
-        public void InitializeActiveSession()
-        {
-            // Ask the ActorFactory for this actor's message services.
-            var msg = new SERVICE_101_PROTOCOL.MSG_QUERYLOADEDSERVICES();
-            var services = _actorFactoryRef
-                .Ask<SERVICE_101_PROTOCOL.MSG_SERVICESLIST>(msg)
-                .Result
-                .Services;
-
-            SetServices(services);
-            SessionValid = true;
-
-            // Finally handle cached messages.
-            if (_preInitMessages is null)
-                return;
-            foreach (var preInitMessage in _preInitMessages)
-            {
-                HandlePacket(preInitMessage);
-            }
-            _preInitMessages = null;
         }
 
         public void PlaceInQueue(ushort pos)
@@ -232,6 +207,7 @@ namespace Imlight.Net
         private void ConfigureReceivers()
         {
             // Specific message handlers.
+            Receive<SERVICE_101_PROTOCOL.MSG_GETALLSERVICES>(InitializeActiveSession);
             Receive<SERVER_100_PROTOCOL.MSG_PING>(x => this.Ping = x.Ping);
             
             // Generic message handlers.
@@ -241,21 +217,20 @@ namespace Imlight.Net
             Receive<string>(x => x == "Identify", x=> Sender.Tell(this));
         }
 
-        private void ListenAndProcess(IActorRef context)
+        private async Task ListenAndProcessAsync(IActorRef context)
         {
             while (!_cts.Token.IsCancellationRequested)
             {
                 try
                 {
                     var buffer = new byte[BUFFER_SIZE];
-                    var bytesReceived = Socket.Receive(buffer);
+                    var bytesReceived = await Socket.ReceiveAsync(new ArraySegment<byte>(buffer), SocketFlags.None);
+
                     if (bytesReceived <= 0) continue;
 
                     var packet = GetPacketFromBuffer(buffer, bytesReceived);
                     if (packet == null) continue;
 
-                    // If the session has not been created yet, bank all non-control messages and process them
-                    // after the session is valid.
                     if (!SessionValid && packet.ServiceID != 0)
                     {
                         _preInitMessages.Add(packet);
@@ -273,7 +248,7 @@ namespace Imlight.Net
 
             context.Tell("Close");
         }
-
+        
         private void HandlePacket(INetworkMessage packet)
         {
             // Log the incoming packet.
@@ -382,14 +357,37 @@ namespace Imlight.Net
                 return;
             }
         }
+        
+        private void InitializeActiveSession(SERVICE_101_PROTOCOL.MSG_GETALLSERVICES message)
+        {
+            // Ask the ActorFactory for this actor's message services.
+            var msg = new SERVICE_101_PROTOCOL.MSG_QUERYLOADEDSERVICES();
+            var services = _actorFactoryRef
+                .Ask<SERVICE_101_PROTOCOL.MSG_SERVICESLIST>(msg)
+                .Result
+                .Services;
+
+            SetServices(services);
+            SessionValid = true;
+
+            // Finally handle cached messages.
+            if (_preInitMessages is null) return;
+            foreach (var preInitMessage in _preInitMessages)
+            {
+                HandlePacket(preInitMessage);
+            }
+            _preInitMessages = null;
+        }
 
         private void SetServices(List<Type> services)
         {
             foreach (var service in services)
             {
-                var serviceName = $"{service}.{RandomGen.GenerateGUID().Value}";
+                var serviceName = $"{service}";
                 var props = Akka.Actor.Props.Create(service, this);
                 var childRef = Context.ActorOf(props, serviceName);
+                
+                Log.Logger.Debug($"New actor created under {Context.Self.Path}: {serviceName}");
 
                 // We've created the service as a child actor. Problem is, we need to know the actual class
                 // identity to use it later. To do that, we'll ask the actor to identify itself.

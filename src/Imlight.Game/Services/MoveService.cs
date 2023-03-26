@@ -87,6 +87,17 @@ namespace Imlight.Game.Services
             });
         }
 
+        [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_JUMP))]
+        private void ReceiveClientJump(GAME_5_PROTOCOL.MSG_JUMP message)
+        {
+            SendToSessionServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
+            {
+                Sender = SessionActor.ActorRef,
+                Message = message,
+                Selfless = false,
+            });
+        }
+
         // Assuming (for now) that no two zones are on top of each other, and collision can be checked by determining if player's position is within some (X, Y) area
         private static bool InsideOfPolygon(SharpDX.Vector2[] p, int n, SharpDX.Vector2 pos)
         {
@@ -124,7 +135,7 @@ namespace Imlight.Game.Services
         {
             // Query the mobile ID from the CharacterService
             var mobileId = GetActiveCoreObject().m_nMobileID;
-
+            
             var serverMoveMsg = new GAME_5_PROTOCOL.MSG_SERVERMOVE
             {
                 LocationX = message.LocationX,

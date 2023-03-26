@@ -89,7 +89,8 @@ namespace Imlight.Net.Services
             // The session is now valid. For optimization purposes, our parent SessionActor doesn't load
             // all the services on creation. Instead, we wait for the session to be valid.
             // We need to now tell our SessionActor that the session is created, and to grab the rest of its services.
-            SessionActor.InitializeActiveSession();
+            var msg = new SERVICE_101_PROTOCOL.MSG_GETALLSERVICES();
+            SessionActor.ActorRef.Tell(msg);
             SessionActor
                 .ActorRef
                 .Tell(new SERVER_100_PROTOCOL.MSG_PING() {Ping = _responseStopwatch.ElapsedMilliseconds});
