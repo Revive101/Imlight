@@ -36,12 +36,14 @@ namespace Imlight.Game
             this._playerQueue = new ListQueue<SessionActor>();
             this._sessionKeys = new Cache<ByteString, Account>();
             
-            // Create events.
             this.ActiveSessions.CollectionChanged += ActiveSessionsChangedEvent;
             
             // Create actor children.
-            _gameWorldRef = Context.ActorOf(GameWorld.Props(this), "GameWorld");
+            var gameWorldActorName = $"{Name}.GameWorld";
+            _gameWorldRef = Context.ActorOf(GameWorld.Props(this), gameWorldActorName);
+            Log.Logger.Debug($"New actor created under {Context.Self.Path}: {gameWorldActorName}");
 
+            // Log
             Log.Logger.Information($"Game server created with " +
                                    $"name {serverName} " +
                                    $"under port {serverPort}.");

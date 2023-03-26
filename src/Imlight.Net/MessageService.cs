@@ -31,6 +31,12 @@ namespace Imlight.Net
             
             Sender.Tell(rsp);
         }
+        
+        [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_DISPOSE))]
+        public virtual void ReceiveDispose(SERVICE_101_PROTOCOL.MSG_DISPOSE message)
+        {
+            GC.SuppressFinalize(this);
+        }
 
         /// <summary>
         /// Sends a message directly to the socket.

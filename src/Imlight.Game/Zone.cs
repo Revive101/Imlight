@@ -117,7 +117,7 @@ namespace Imlight.Game
         
         private void BroadcastDeleteObject(IActorRef sender, ulong objId)
         {
-            BroadcastSelfless(sender, new GAME_5_PROTOCOL.MSG_DELETEOBJECT { GameObjectID = objId });
+            BroadcastSelfless(sender, new GAME_5_PROTOCOL.MSG_REMOVEOBJECT() { GameObjectID = objId });
         }
 
         private void SpawnPlayerObjectsForClient(IActorRef newClient)

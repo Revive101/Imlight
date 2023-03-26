@@ -14,7 +14,7 @@ namespace Imlight.Net.Services
     public class ControlService : MessageService
     {
         private const byte KEEP_ALIVE_INTERVAL = 60;       // In seconds
-        private const byte KEEP_ALIVE_RSP_WAIT_TIME = 2;   // In seconds
+        private const byte KEEP_ALIVE_RSP_WAIT_TIME = 4;   // In seconds
 
         private bool _sessionValid;
         private readonly Stopwatch _responseStopwatch;
@@ -38,6 +38,7 @@ namespace Imlight.Net.Services
             // These are sent from self on interval to remind the actor of the session heartbeat.
             Receive<string>(s => s == "KeepAliveHeartbeat", x => SendHeartbeat());
             Receive<string>(s => s == "KeepAliveEndTimes", x => ReceiveKeepAliveEndTimes());
+            Receive<string>(s => s == "SessionAcceptTimer", s => SessionAcceptTimer());
 
             base.ConfigureReceivers();
         }
@@ -61,6 +62,13 @@ namespace Imlight.Net.Services
 
             // Start the stopwatch so we can later get RTT (ping).
             _responseStopwatch.Restart();
+            
+            // Send a message to ourselves to check if we've received a response.
+            Context.System.Scheduler.ScheduleTellOnce(
+                TimeSpan.FromSeconds(KEEP_ALIVE_RSP_WAIT_TIME), 
+                Self, 
+                "SessionAcceptTimer", 
+                Self);
         }
 
         [MessageHandler(typeof(ControlMessages.SessionAccept))]
@@ -70,7 +78,7 @@ namespace Imlight.Net.Services
             if (message.SessionID != SessionActor.SessionID)
             {
                 Log.Logger.Error($"SessionActor [{SessionActor.SessionID}] misaligned Session ID.");
-                SendCloseSession();
+                CloseSession();
                 return;
             }
 
@@ -105,7 +113,7 @@ namespace Imlight.Net.Services
             if (message.SessionID != SessionActor.SessionID)
             {
                 Log.Logger.Error($"SessionActor [{SessionActor.SessionID}] misaligned Session ID.");
-                SendCloseSession();
+                CloseSession();
 
                 return;
             }
@@ -147,7 +155,7 @@ namespace Imlight.Net.Services
             {
                 Log.Logger.Error($"CommunicationActor [{SessionActor.SessionID}] " +
                                  $"tried to send heartbeat to an invalid session.");
-                SendCloseSession();
+                CloseSession();
                 return;
             }
 
@@ -179,7 +187,18 @@ namespace Imlight.Net.Services
         {
             if (!_isWaitingForHeartbeatResponse || _halted) return;
 
-            SendCloseSession();
+            CloseSession();
+        }
+        
+        private void SessionAcceptTimer()
+        {
+            if (!_sessionValid)
+            {
+                Log.Logger.Debug($"SessionActor [{SessionActor.SessionID}] " +
+                                 $"did not return a SessionAccept message in time.");
+                CloseSession();
+                return;
+            }
         }
     }
 }

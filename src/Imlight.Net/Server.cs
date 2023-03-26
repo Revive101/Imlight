@@ -82,7 +82,7 @@ namespace Imlight.Net
         [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET))]
         public virtual void ReceiveDeallocateSocket(SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET message)
         {
-            Log.Logger.Information($"{Name}.{Port} connection dropped from {message.Ip}.");
+            Log.Logger.Information($"{Name}.{Port} connection dropped from {message.Ip} ID: {message.Id}");
             
             foreach (var session in ActiveSessions.ToList())
             {

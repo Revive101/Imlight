@@ -186,6 +186,18 @@ namespace Imlight.Net
             };
             ServerRef.Tell(msg);
             
+            // Iterate through our services and send them a dispose message.
+            foreach (var service in _services)
+            {
+                var actorRef = service.Key;
+                var type = service.Value;
+
+                if (type.MessageHandlers.Any(x => x.Key == typeof(SERVICE_101_PROTOCOL.MSG_DISPOSE)))
+                {
+                    actorRef.Tell(new SERVICE_101_PROTOCOL.MSG_DISPOSE());
+                }
+            }
+            
             Context.Stop(Self);
             Socket?.Close();
             _cts.Cancel();

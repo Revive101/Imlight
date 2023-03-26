@@ -46,5 +46,17 @@ namespace Imlight.Game.Services
             
             _zoneRef.Tell(message);
         }
+        
+        [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_DISPOSE))]
+        public override void ReceiveDispose(SERVICE_101_PROTOCOL.MSG_DISPOSE message)
+        {
+            base.ReceiveDispose(message);
+
+            // If the zone reference is not null, we'll tell the zone to remove the player.
+            if (_zoneRef is not null)
+                _zoneRef.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER() { Player = SessionActor.ActorRef });
+
+            _zoneRef = null;
+        }
     }
 }

@@ -17,8 +17,6 @@ namespace Imlight.Game
         {
             this.Zones = new Dictionary<string, IActorRef>();
             this._server = server;
-            
-            Log.Logger.Information("Game world created.");
         }
         
         public static Props Props(GameServer server)

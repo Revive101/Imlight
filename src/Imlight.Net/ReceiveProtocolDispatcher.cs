@@ -60,18 +60,16 @@ namespace Imlight.Net
             // Get all methods in this actor with a message handling attribute
             var methods = this
                 .GetType()
-                .GetMethods(
-                    BindingFlags.Instance 
-                            | BindingFlags.Public 
-                            | BindingFlags.NonPublic
-                            | BindingFlags.FlattenHierarchy)
+                .GetMethods(BindingFlags.Instance 
+                          | BindingFlags.Public 
+                          | BindingFlags.NonPublic
+                          | BindingFlags.FlattenHierarchy)
                 .Where(method => method.GetCustomAttribute<MessageHandlerAttribute>() != null);
 
             if (methods.Count() <= 0)
             {
                 Log.Logger.Warning($"{this.GetType()} does not have any methods with attribute {nameof(MessageHandlerAttribute)}." +
                                    $" Is this intended behavior?");
-
                 return;
             }
 
