@@ -12,6 +12,7 @@ using WizUnraveler.ObjectProperty;
 using Imlight.Net.Messages;
 using Imlight.Common;
 using Imlight.Game;
+using System.Net;
 
 namespace Imlight.Login.Services
 {
@@ -83,9 +84,10 @@ namespace Imlight.Login.Services
 
         private SERVER_100_PROTOCOL.MSG_SERVERINFO GetGameServer()
         {
-            var isLocal = SessionActor.Socket.RemoteEndPoint
-                .ToString()!
-                .Contains("127.0.0.1");
+            var localEndPoint = (IPEndPoint)SessionActor.Socket.LocalEndPoint;
+            var remoteEndPoint = (IPEndPoint)SessionActor.Socket.RemoteEndPoint;
+            var isLocal = localEndPoint.Address.Equals(remoteEndPoint.Address);
+
             var msg = new SERVER_100_PROTOCOL.MSG_QUERYGAMESERVERS() { IsLocal = isLocal };
             return AskServer<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg);
         }

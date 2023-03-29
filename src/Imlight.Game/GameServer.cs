@@ -20,7 +20,7 @@ namespace Imlight.Game
         private const string DEFAULT_GAME_SERVER_NAME = "Imlight.Game";
         private const ushort DEFAULT_GAME_SERVER_PORT = 12333;
         private const string SESSION_KEY_HASH_INPUT = "MAGIC_HATTER";
-        private const ushort SESSION_KEY_VALIDITY_TIME = 7200; // In seconds; 2 hours
+        private const ushort SESSION_KEY_VALIDITY_TIME = 28800; // In seconds; 8 hours
 
         private IActorRef _serverPoolRef;
         private IActorRef _gameWorldRef;
@@ -59,18 +59,9 @@ namespace Imlight.Game
         [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_CREATEKEY))]
         private void ReceiveCreateKey(SERVER_100_PROTOCOL.MSG_CREATEKEY message)
         {
-            var key = SessionKey.GenerateHash(SESSION_KEY_HASH_INPUT, message.Account.ID);
-
-            // Add this key to the local server. We're going to map the key to an account, that way when a game
-            // client finds its corresponding key, it will get it's account as well.
-            var timeSpan = TimeSpan.FromSeconds(SESSION_KEY_VALIDITY_TIME);
-            _sessionKeys.Store(key, message.Account, timeSpan);
+            var key = CreateKey(message.Account);
             
-            var rsp = new SERVER_100_PROTOCOL.MSG_CREATEKEYRSP()
-            {
-                Key = key,
-            };
-            
+            var rsp = new SERVER_100_PROTOCOL.MSG_CREATEKEYRSP() { Key = key };
             Sender.Tell(rsp);
         }
 
@@ -86,7 +77,7 @@ namespace Imlight.Game
                 if (keyTest != cachedKey.Key) continue;
                 
                 ActiveSessions.Add(message.SessionActor);
-                _sessionKeys.Remove(cachedKey.Key);
+                //_sessionKeys.Remove(cachedKey.Key);
                 
                 // Inform the client that the session key is valid. We'll also send the account associated with it.
                 Sender.Tell(new SERVER_100_PROTOCOL.MSG_VALIDATESESSIONKEYRSP()
@@ -99,10 +90,7 @@ namespace Imlight.Game
             }
             
             // The session key was not found in the cache. Return an error code.
-            Sender.Tell(new SERVER_100_PROTOCOL.MSG_VALIDATESESSIONKEYRSP()
-            {
-                ErrorCode = 1
-            });
+            Sender.Tell(new SERVER_100_PROTOCOL.MSG_VALIDATESESSIONKEYRSP() { ErrorCode = 1 });
         }
         
         [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_PLAYERENQUEUED))]
@@ -164,7 +152,7 @@ namespace Imlight.Game
 
             return newId;
         }
-        
+
         private void ActiveSessionsChangedEvent(object obj, NotifyCollectionChangedEventArgs args)
         {
             // Anytime a player has left, we'll check to see if a queue is active. If so, we'll grab the next player
@@ -196,6 +184,18 @@ namespace Imlight.Game
                 
                 _playerQueue[i].ActorRef.Tell(msg);
             }
+        }
+
+        private ByteString CreateKey(Account account)
+        {
+            var key = SessionKey.GenerateHash(SESSION_KEY_HASH_INPUT, account.ID);
+            
+            // Add this key to the local server. We're going to map the key to an account, that way when a game
+            // client finds its corresponding key, it will get it's account as well.
+            var timeSpan = TimeSpan.FromSeconds(SESSION_KEY_VALIDITY_TIME);
+            _sessionKeys.Store(key, account, timeSpan);
+
+            return key;
         }
     }
 }

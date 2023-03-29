@@ -87,7 +87,6 @@ namespace Imlight.Game.Services
                 ZoneID              = message.ZoneID,
                 DynamicZoneID       = zoneDetails.DynamicZoneId,
                 DynamicServerProcID = zoneDetails.DynamicZoneId,
-                CriticalObjects     = SerializeCriticalObjects(zoneDetails.CriticalObjects),
             };
             
             SendToSocket(loginCompleteMsg);
@@ -99,12 +98,6 @@ namespace Imlight.Game.Services
             // When we send a zone transfer request, it will also add the player to that zone.
             var zoneMsg = new ZONE_102_PROTOCOL.MSG_QUERYZONE { ZoneName = zoneName, };
             return AskSessionServices<ZONE_102_PROTOCOL.MSG_QUERYZONERSP>(zoneMsg);
-        }
-
-        private ByteString SerializeCriticalObjects(List<CoreObject> criticalObjects)
-        {
-            // @todo: serialize critical objects.
-            return new ByteString();
         }
 
         private void AddPlayerToZone(WizClientObject charObj)

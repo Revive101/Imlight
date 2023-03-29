@@ -20,7 +20,9 @@ namespace Imlight.Net
     /// </summary>
     public class SessionActor : ReceiveActor, IDisposable
     {
-        private const int BUFFER_SIZE = 4096;
+        private const int  BUFFER_SIZE = 4096;
+        private const byte ASYNC_SEND_POOL_COUNT = 3;
+        private const byte ASYNC_RECEIVE_POOL_COUNT = 3;
         private const bool CLOSE_ON_SOCKET_EXCEPTION = true;
 
         public ushort SessionID                     { get; }
@@ -36,11 +38,12 @@ namespace Imlight.Net
         private readonly IActorRef _actorFactoryRef;
         private readonly Dictionary<IActorRef, MessageService> _services;
         private readonly SocketAsyncEventArgs _socketSendArgs = new SocketAsyncEventArgs();
-        private readonly SocketAsyncEventArgs _socketReceiveArgs = new SocketAsyncEventArgs();
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
         private bool _isSending;
         private bool _isDisposed;
         private List<INetworkMessage> _preInitMessages;
+
+        private readonly Stack<SocketAsyncEventArgs> _receiveEventArgPool = new();
 
         public SessionActor(Socket socket, ushort sessionId, IActorRef server)
         {
@@ -56,14 +59,10 @@ namespace Imlight.Net
                 .Result
                 .Reference;
 
-            //_socketSendArgs.Completed += OnSendCompleted;
-            //_socketReceiveArgs.Completed += OnReceiveCompleted;
-
             ActorRef = Context.Self;
 
             ConfigureReceivers();
-
-            Task.Run(() => ListenAndProcessAsync(ActorRef));
+            ProcessReceive(GetReceiveEventArgsFromPool());
         }
 
         public static Props Props(Socket socket, ushort sessionId, IActorRef server)
@@ -83,9 +82,6 @@ namespace Imlight.Net
             SendToSocket(CachedDequeueMessage);
         }
 
-        /// <summary>
-        /// Asks the currently connected server if it can join it.
-        /// </summary>
         public INetworkMessage EnqueueToServer()
         {
             var msg = new SERVER_100_PROTOCOL.MSG_PLAYERENQUEUED()
@@ -99,9 +95,6 @@ namespace Imlight.Net
             return rsp;
         }
         
-        /// <summary>
-        /// Asks a server actor reference if it can join it.
-        /// </summary>
         public INetworkMessage EnqueueToServer(IActorRef serverRef)
         {
             var msg = new SERVER_100_PROTOCOL.MSG_PLAYERENQUEUED()
@@ -148,9 +141,6 @@ namespace Imlight.Net
             return ServerRef.Ask<T>(msg).Result;
         }
         
-        /// <summary>
-        /// Closes the active connection and frees resources.
-        /// </summary>
         public void Dispose()
         {
             // Avoid duplicate Dispose calls.
@@ -214,133 +204,12 @@ namespace Imlight.Net
             // Specific message handlers.
             Receive<SERVICE_101_PROTOCOL.MSG_GETALLSERVICES>(InitializeActiveSession);
             Receive<SERVER_100_PROTOCOL.MSG_PING>(x => this.Ping = x.Ping);
-            
+
             // Generic message handlers.
             Receive<IServerMessage>(HandleInternalTell);
             Receive<INetworkMessage>(SendToSocket);
             Receive<string>(x => x == "Close", x => Dispose());
-            Receive<string>(x => x == "Identify", x=> Sender.Tell(this));
-        }
-
-        private async Task ListenAndProcessAsync(IActorRef context)
-        {
-            var buffer = new byte[BUFFER_SIZE];
-            _socketReceiveArgs.SetBuffer(buffer, 0, BUFFER_SIZE);
-            _socketReceiveArgs.Completed += OnReceiveCompleted;
-
-            while (!_cts.Token.IsCancellationRequested && Socket.Connected)
-            {
-                try
-                {
-                    if (!Socket.ReceiveAsync(_socketReceiveArgs))
-                    {
-                        OnReceiveCompleted(Socket, _socketReceiveArgs);
-                    }
-                }
-                catch (SocketException ex)
-                {
-                    //Log.Logger.Error($"SessionActor [{SessionID}] socket error: {ex.Message}");
-                    if (CLOSE_ON_SOCKET_EXCEPTION) break;
-                }
-
-                await Task.Delay(1000);
-            }
-
-            context.Tell("Close");
-        }
-
-        private void SendToSocket(INetworkMessage message)
-        {
-            if (!Socket.Connected)
-            {
-                Log.Logger.Error($"SessionActor [{SessionID}] cannot send message [{message.GetType()}] " +
-                                 $"send failure: " +
-                                 $"Socket is not connected!");
-                return;
-            }
-            if (_isSending)
-            {
-                Log.Logger.Error($"SessionActor [{SessionID}] send failure: " +
-                                 $"Asynchronous send operation already in progress.");
-                return;
-            }
-
-            var data = MessageSerializer.SerializeMessageBinary(message);
-            _isSending = true;
-            _socketSendArgs.SetBuffer(data, 0, data.Length);
-            _socketSendArgs.UserToken = Socket;
-            _socketSendArgs.Completed += OnSendCompleted;
-
-            var willRaiseEvent = Socket.SendAsync(_socketSendArgs);
-            if (!willRaiseEvent) OnSendCompleted(this, _socketSendArgs);
-
-            var scopedMessageName = message
-                .GetType()
-                .ToString()
-                .Split('.')[^1]
-                .Replace('+', '.');
-            Log.Logger.Debug($"SessionActor [{SessionID}] sent message [{scopedMessageName}]");
-        }
-
-        private void OnSendCompleted(object sender, SocketAsyncEventArgs e)
-        {
-            _isSending = false;
-            if (e.SocketError != SocketError.Success)
-            {
-                Log.Logger.Error($"SessionActor [{SessionID}] send failure: {e.SocketError}");
-                return;
-            }
-        }
-
-        private void OnReceiveCompleted(object sender, SocketAsyncEventArgs e)
-        {
-            if (e.SocketError != SocketError.Success)
-            {
-                Log.Logger.Error($"SessionActor receive error: {e.SocketError}");
-                return;
-            }
-            else if (e.BytesTransferred <= 0) return;
-
-            var buffer = e.Buffer;
-            var bytesReceived = e.BytesTransferred;
-
-            var packet = GetPacketFromBuffer(buffer, bytesReceived);
-            if (packet == null) return;
-
-            if (!SessionValid && packet.ServiceID != 0)
-            {
-                _preInitMessages.Add(packet);
-                return;
-            }
-
-            HandlePacket(packet);
-        }
-
-        private void HandlePacket(INetworkMessage packet)
-        {
-            // Log the incoming packet.
-            var scopedMessageName = packet
-                .GetType()
-                .ToString()
-                .Split('.')[^1]
-                .Replace('+', '.');
-            Log.Logger.Verbose($"SessionActor [{SessionID}] received KiNP packet [{scopedMessageName}]");
-
-            // Iterate through services and forward the message to any service that can handle the message.
-            var wasDispatched = false;
-            foreach (var service in _services)
-            {
-                var actorRef = service.Key;
-                var type = service.Value;
-
-                if (!type.MessageHandlers.Any(x => x.Key == packet.GetType())) continue;
-                
-                actorRef.Forward(packet);
-                wasDispatched = true;
-            }
-
-            if (!wasDispatched)
-                Unhandled(packet);
+            Receive<string>(x => x == "Identify", x => Sender.Tell(this));
         }
 
         private void HandleInternalTell(IServerMessage msg)
@@ -353,7 +222,7 @@ namespace Imlight.Net
                 var type = service.Value;
 
                 if (!type.MessageHandlers.Any(x => x.Key == msg.GetType())) continue;
-                
+
                 actorRef.Forward(msg);
                 wasDispatched = true;
             }
@@ -362,23 +231,6 @@ namespace Imlight.Net
                 Unhandled(msg);
         }
 
-        private INetworkMessage GetPacketFromBuffer(byte[] buffer, int bytesReceived)
-        {
-            var bufferSpan = new ReadOnlySpan<byte>(buffer, 0, bytesReceived).ToArray();
-            if (!IsKIPacket(bufferSpan))
-            {
-                Log.Logger.Error($"SessionActor [{SessionID}] received non-KINP packet.");
-                return null;
-            }
-            if (!TryDeserializePacket(bufferSpan, out var record))
-            {
-                Log.Logger.Error($"SessionActor [{SessionID}] packet failed to deserialize.");
-                return null;
-            }
-
-            return record;
-        }
-        
         private void InitializeActiveSession(SERVICE_101_PROTOCOL.MSG_GETALLSERVICES message)
         {
             // Ask the ActorFactory for this actor's message services.
@@ -407,7 +259,7 @@ namespace Imlight.Net
                 var serviceName = $"{service}";
                 var props = Akka.Actor.Props.Create(service, this);
                 var childRef = Context.ActorOf(props, serviceName);
-                
+
                 Log.Logger.Debug($"New actor created under {Context.Self.Path}: {serviceName}");
 
                 // We've created the service as a child actor. Problem is, we need to know the actual class
@@ -418,6 +270,131 @@ namespace Imlight.Net
                     .Service;
                 _services.Add(childRef, identity);
             }
+        }
+
+        #region Socket Operations
+
+        private void ProcessReceive(SocketAsyncEventArgs eventArgs)
+        {
+            if (!Socket.ReceiveAsync(eventArgs))
+                OnReceiveCompleted(eventArgs);
+        }
+
+        private void OnReceiveCompleted(SocketAsyncEventArgs e)
+        {
+            if (e.SocketError != SocketError.Success)
+            {
+                Log.Logger.Error($"SessionActor receive error: {e.SocketError}");
+                return;
+            }
+            else if (e.BytesTransferred <= 0) return;
+
+            var packet = GetPacketFromBuffer(e.Buffer, e.BytesTransferred);
+
+            if (packet != null && (SessionValid || packet.ServiceID == 0))
+            {
+                HandlePacket(packet);
+            }
+            else if (packet != null && !SessionValid)
+            {
+                // If the session still isn't created, cache all non-control messages for later processing.
+                _preInitMessages.Add(packet);
+            }
+
+            // Reset the buffer before putting it back into the pool.
+            e.SetBuffer(null, 0, 0);
+            _receiveEventArgPool.Push(e);
+
+            var newArgs = new SocketAsyncEventArgs();
+            newArgs.Completed += (_, e) => OnReceiveCompleted(e);
+            newArgs.SetBuffer(new byte[BUFFER_SIZE], 0, BUFFER_SIZE);
+            newArgs.AcceptSocket = this.Socket;
+            ProcessReceive(newArgs);
+        }
+
+        private void SendToSocket(INetworkMessage message)
+        {
+            if (!Socket.Connected)
+            {
+                Log.Logger.Error($"SessionActor [{SessionID}] cannot send message [{message.GetType()}] " +
+                                 $"send failure: " +
+                                 $"Socket is not connected!");
+                return;
+            }
+            if (_isSending)
+            {
+                Log.Logger.Error($"SessionActor [{SessionID}] send failure: " +
+                                 $"Asynchronous send operation already in progress.");
+                return;
+            }
+
+            var data = MessageSerializer.SerializeMessageBinary(message);
+            _isSending = true;
+            _socketSendArgs.SetBuffer(data, 0, data.Length);
+            _socketSendArgs.UserToken = Socket;
+
+            var willRaiseEvent = Socket.SendAsync(_socketSendArgs);
+            if (!willRaiseEvent) OnSendCompleted(_socketSendArgs);
+
+            var scopedMessageName = message
+                .GetType()
+                .ToString()
+                .Split('.')[^1]
+                .Replace('+', '.');
+            Log.Logger.Debug($"SessionActor [{SessionID}] sent message [{scopedMessageName}]");
+        }
+
+        private void OnSendCompleted(SocketAsyncEventArgs e)
+        {
+            _isSending = false;
+            if (e.SocketError != SocketError.Success)
+            {
+                Log.Logger.Error($"SessionActor [{SessionID}] send failure: {e.SocketError}");
+                return;
+            }
+        }
+
+        private void HandlePacket(INetworkMessage packet)
+        {
+            // Log the incoming packet.
+            var scopedMessageName = packet
+                .GetType()
+                .ToString()
+                .Split('.')[^1]
+                .Replace('+', '.');
+            Log.Logger.Verbose($"SessionActor [{SessionID}] received KiNP packet [{scopedMessageName}]");
+
+            // Iterate through services and forward the message to any service that can handle the message.
+            var wasDispatched = false;
+            foreach (var service in _services)
+            {
+                var actorRef = service.Key;
+                var type = service.Value;
+
+                if (!type.MessageHandlers.Any(x => x.Key == packet.GetType())) continue;
+
+                actorRef.Forward(packet);
+                wasDispatched = true;
+            }
+
+            if (!wasDispatched) Unhandled(packet);
+        }
+
+        private INetworkMessage GetPacketFromBuffer(byte[] buffer, int bytesReceived)
+        {
+            var bufferSpan = new ReadOnlySpan<byte>(buffer, 0, bytesReceived).ToArray();
+            if (!IsKIPacket(bufferSpan))
+            {
+                Log.Logger.Error($"SessionActor [{SessionID}] received non-KINP packet.");
+                return null;
+            }
+            if (!TryDeserializePacket(bufferSpan, out var record))
+            {
+                Log.Logger.Error($"SessionActor [{SessionID}] packet failed to deserialize.");
+                return null;
+            }
+
+            return record;
         }
 
         private bool TryDeserializePacket(byte[] buffer, out INetworkMessage message)
@@ -438,5 +415,31 @@ namespace Imlight.Net
 
         private bool IsKIPacket(byte[] buffer)
             => (buffer.AsSpan()[0..2].SequenceEqual(stackalloc byte[2] { 0x0D, 0xF0 }));
+
+        private SocketAsyncEventArgs GetReceiveEventArgsFromPool()
+        {
+            lock (_receiveEventArgPool)
+            {
+                if (_receiveEventArgPool.Count > 0)
+                {
+                    return _receiveEventArgPool.Pop();
+                }
+                else if (_receiveEventArgPool.Count < 5)
+                {
+                    // Create a new SocketAsyncEventArgs if the pool is empty and the pool limit has not been reached.
+                    var receiveEventArgs = new SocketAsyncEventArgs();
+                    receiveEventArgs.Completed += (_, e) => OnReceiveCompleted(e);
+                    receiveEventArgs.AcceptSocket = Socket;
+                    receiveEventArgs.SetBuffer(new byte[BUFFER_SIZE], 0, BUFFER_SIZE);
+
+                    return receiveEventArgs;
+                }
+            }
+
+            throw new InvalidOperationException($"SessionActor [{SessionID}] receive argument " +
+                $"pool over maximum allowed count of {ASYNC_RECEIVE_POOL_COUNT}.");
+        }
+
+        #endregion
     }
 }

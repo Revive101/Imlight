@@ -34,7 +34,7 @@ namespace Imlight.Net
             this.ActiveSessions = new ObservableHashSet<SessionActor>();
             this._serverStartTime = DateTimeOffset.Now.ToUnixTimeSeconds();
             this._factoryProps = factoryProps;
-            
+
             // Get outside IP.
             this.Ip = new HttpClient().GetStringAsync("https://api.ipify.org/").Result;
 
