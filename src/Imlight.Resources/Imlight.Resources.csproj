@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="WizUnraveler" Version="1.3.9.5" />
+    <PackageReference Include="WizUnraveler" Version="1.3.9.6" />
   </ItemGroup>
 
   <ItemGroup>
