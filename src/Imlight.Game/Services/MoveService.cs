@@ -56,12 +56,19 @@ namespace Imlight.Game.Services
                     new SharpDX.Vector2(-208f, 1906.7f),
                     new SharpDX.Vector2(17.37f, 1906.7f),
                 };
-                var inTrigger = InsideOfPolygon(ravenwoodTrigger, ravenwoodTrigger.Length, position2D);
+                var inTrigger = IMath.InsideOfPolygon(ravenwoodTrigger, ravenwoodTrigger.Length, position2D);
 
                 if (inTrigger) // Player is inside of trigger, transfer to new zone
                 {
                     var zoneMsg = new ZONE_102_PROTOCOL.MSG_QUERYZONE() { ZoneName = "WizardCity/WC_Ravenwood" };
                     var zoneAsk = AskServer<ZONE_102_PROTOCOL.MSG_QUERYZONERSP>(zoneMsg);
+
+                    var transferRequest = new GAME_5_PROTOCOL.MSG_ZONETRANSFERREQUEST() // Ask client if it's OK to transfer zone
+                    {
+                        SendAck = 0,
+                        ZoneName = "WizardCity/WC_Ravenwood"
+                    };
+                    SendToSocket(transferRequest);
                 }
             }
 
@@ -96,39 +103,6 @@ namespace Imlight.Game.Services
                 Message = message,
                 Selfless = false,
             });
-        }
-
-        // Assuming (for now) that no two zones are on top of each other, and collision can be checked by determining if player's position is within some (X, Y) area
-        private static bool InsideOfPolygon(SharpDX.Vector2[] p, int n, SharpDX.Vector2 pos)
-        {
-            double angle = 0;
-            SharpDX.Vector2 p1, p2;
-
-            for (int i = 0; i < n; i++)
-            {
-                p1.X = p[i].X - pos.X;
-                p1.Y = p[i].Y - pos.Y;
-                p2.X = p[(i + 1) % n].X - pos.X;
-                p2.Y = p[(i + 1) % n].Y - pos.Y;
-
-                angle += Angle2D(p1.X, p1.Y, p2.X, p2.Y);
-            }
-            return (Math.Abs(Math.Abs(angle) - (Math.PI * 2)) < 0.01); //Some tolerance for rounding errors
-        }
-
-        private static double Angle2D(float x1, float y1, float x2, float y2)
-        {
-            double diff, theta1, theta2;
-
-            theta1 = Math.Atan2(y1, x1);
-            theta2 = Math.Atan2(y2, x2);
-            diff = theta2 - theta1;
-            while (diff > Math.PI)
-                diff -= Math.PI * 2;
-            while (diff < -Math.PI)
-                diff += Math.PI * 2;
-
-            return diff;
         }
 
         private void BroadcastClientMove(GAME_5_PROTOCOL.MSG_CLIENTMOVE message)

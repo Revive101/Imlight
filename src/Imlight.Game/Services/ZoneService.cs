@@ -58,5 +58,30 @@ namespace Imlight.Game.Services
 
             _zoneRef = null;
         }
+
+        [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK))]
+        private void ReceiveZoneTransferAck(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK message)
+        {
+            // TESTING PURPOSES ONLY, is this method in the appropriate class?
+            var account = GetSocketAccount();
+            var character = account.Characters[0];
+
+            var serverTransfer = new GAME_5_PROTOCOL.MSG_ZONETRANSFER()
+            {
+                //IP = "127.0.0.1",
+                //TCPPort = 12333,
+                //UDPPort = 12333,
+                //UserID = account.ID,
+                //CharID = character.ID,
+                ZoneName = "WizardCity/WC_Ravenwood",
+                //Location = "Start",
+                Slot = 0,
+                SessionSlot = 0,
+                SessionID = 0,
+                //TargetPlayerID = character.ID,
+                TransitionID = 1
+            };
+            SendToSocket(serverTransfer);
+        }
     }
 }
