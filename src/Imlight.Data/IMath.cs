@@ -8,7 +8,13 @@ namespace Imlight.Data
 {
     public static class IMath
     {
-        // Assuming (for now) that no two zones are on top of each other, and collision can be checked by determining if player's position is within some (X, Y) area
+        /// <summary>
+        ///     Determines if a 2D point is within a convex polygon.
+        /// </summary>
+        /// <param name="p">An array of 2D points to describe a polygon.</param>
+        /// <param name="n">The number of points the polygon has.</param>
+        /// <param name="pos">The position to be checked.</param>
+        /// <returns>If the position is inside of the polygon or not.</returns>
         public static bool InsideOfPolygon(SharpDX.Vector2[] p, int n, SharpDX.Vector2 pos)
         {
             double angle = 0;
@@ -39,6 +45,22 @@ namespace Imlight.Data
                 diff += Math.PI * 2;
 
             return diff;
+        }
+
+        /// <summary>
+        ///     Determines if a 2D point is within a circle around another 2D point.
+        /// </summary>
+        /// <param name="p">The origin of the circle.</param>
+        /// <param name="n">The radius of the circle.</param>
+        /// <param name="pos">The position to be checked.</param>
+        /// <returns>If the position is inside of the circle or not.</returns>
+        public static bool InsideOfCircle(SharpDX.Vector2 p, float radius, SharpDX.Vector2 pos)
+        {
+            double y = Math.Abs(pos.Y - p.Y);
+            double x = Math.Abs(pos.X - p.X);
+            double distance = Math.Sqrt(Math.Pow(y, 2) + Math.Pow(x, 2));
+
+            return distance < radius;
         }
     }
 }
