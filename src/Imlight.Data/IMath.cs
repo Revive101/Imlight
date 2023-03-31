@@ -56,11 +56,7 @@ namespace Imlight.Data
         /// <returns>If the position is inside of the circle or not.</returns>
         public static bool InsideOfCircle(SharpDX.Vector2 p, float radius, SharpDX.Vector2 pos)
         {
-            double y = Math.Abs(pos.Y - p.Y);
-            double x = Math.Abs(pos.X - p.X);
-            double distance = Math.Sqrt(Math.Pow(y, 2) + Math.Pow(x, 2));
-
-            return distance < radius;
+            return Math.Abs(SharpDX.Vector2.Distance(p, pos)) < radius;
         }
     }
 }
