@@ -43,7 +43,7 @@ namespace Imlight.Game.Services
             {
                 Sender = SessionActor.ActorRef,
                 Message = msg,
-                Selfless = false
+                Selfless = true
             });
         }
 
