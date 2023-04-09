@@ -25,17 +25,33 @@ namespace Imlight.Data
             // Create a new debug account.
             _debugAccount = new Account("Chi", "Chi2Chomp@mail.com", "Password");
             _debugAccount.AuthLevel = AuthLevel.Administrator;
+            
+            // Create characters.
+            var serializer = new ObjectSerializer();
 
-            var rawData = "4C8F6E110100000000007200000000000" +
+            // Destiny
+            var destinyRawData = "4C8F6E110100000000007200000000000" +
                 "00000000000000000000052078DD072100" +
                 "000CA186380310000000088BEC104000B0" +
                 "0000000610001000300000000000000000" +
                 "00000000000000000840CAB0400002300";
-            var rawBytes = StringToByteArray(rawData);
-            var serializer = new ObjectSerializer();
-            var creationData = (TypeCache.WizardCharacterCreationInfo)serializer.Deserialize(rawBytes);
-            var debugCharacter = new Character(creationData, new GID(_debugAccount.ID));
-            _debugAccount.AddCharacter(debugCharacter);
+            var destinyRawBytes = StringToByteArray(destinyRawData);
+            var destinyCreationData = (TypeCache.WizardCharacterCreationInfo)serializer.Deserialize(destinyRawBytes);
+            var destiny = new Character(destinyCreationData, new GID(_debugAccount.ID));
+            _debugAccount.AddCharacter(destiny);
+            
+            // Kevin
+            var kevinRawData =
+                "4C8F6E1101000000000072000000" +
+                "0000000000000000000000000052" +
+                "078DD072200000B5882240110100" +
+                "000088BEC1040000000000001B0A" +
+                "C079000000000000000000000000" +
+                "000000000000B336F80400005D00";
+            var kevinRawBytes = StringToByteArray(kevinRawData);
+            var kevinCreationData = (TypeCache.WizardCharacterCreationInfo)serializer.Deserialize(kevinRawBytes);
+            var kevin = new Character(kevinCreationData, new GID(_debugAccount.ID));
+            _debugAccount.AddCharacter(kevin);
 
             return _debugAccount;
         }
