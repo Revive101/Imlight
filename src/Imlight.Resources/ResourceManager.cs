@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using Imlight.Common;
 using WizUnraveler;
 using WizUnraveler.Data;
@@ -11,32 +12,81 @@ namespace Imlight.Resources
     public static class ResourceManager
     {
         private static Wad _rootWad;
-        
-        /// <summary>
-        /// Loads all of the needed resources from a Root.wad file.
-        /// </summary>
-        /// <param name="path">The absolute path of the Root.wad</param>
-        /// <returns>True, on successful load; otherwise, false.</returns>
-        public static bool Load(string path)
+        private static readonly string GameDataPath = Path.Combine(
+            Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? string.Empty,
+            $@"gamedata");
+
+        public static bool InitRoot()
         {
-            if (!File.Exists(path))
+            if (!Directory.Exists(GameDataPath))
             {
-                Log.Logger.Fatal("ResourceManager Root.wad not found.");
+                Log.Logger.Fatal($"ResourceManager GameData directory not found: {GameDataPath}");
                 return false;
             }
-
-            _rootWad = new Wad(path);
-
-            Log.Logger.Information("ResourceManager Root.wad loaded.");
+            
+            // Load the Root.wad file.
+            var rootWadPath = Path.Combine(GameDataPath, "Root.wad");
+            _rootWad = new Wad(rootWadPath);
+            if (_rootWad is null)
+            {
+                Log.Logger.Fatal($"ResourceManager Root.wad not found: {rootWadPath}");
+                return false;
+            }
             
             // Load submodules.
-            var subModuleCoreObjectFactory = LoadSubCoreObjectFactory();
-            var subModuleAccessPass = LoadSubAccessPassManager();
+            var subModuleCoreObjectFactory = LoadSubCoreObjectFactory(_rootWad);
+            var subModuleAccessPass = LoadSubAccessPassManager(_rootWad);
 
             return subModuleCoreObjectFactory && subModuleAccessPass;
         }
         
-        public static bool LoadFile<T>(string path, out T obj)
+        public static bool LoadWad(string wadName, out Wad wad)
+        {
+            wad = default;
+
+            var redoWadName = wadName.Replace('/', '-');
+            var wadPath = Path.Combine(GameDataPath, redoWadName);
+            wad = new Wad($"{wadPath}.wad");
+
+            return wad != null;
+        }
+
+        public static bool LoadFile<T>(Wad wad, string path, out T obj)
+            where T : PropertyClass
+        {
+            obj = default;
+            try
+            {
+                var serializer = new FileSerializer();
+                obj = serializer.OpenClass<T>(wad, path);
+            }
+            catch (Exception ex)
+            {
+                Log.Logger.Error($"ResourceManager could not load file in wad [{wad.Name}]: {ex.Message}");
+                return false;
+            }
+            
+            //var serializer = new FileSerializer();
+            //obj = serializer.OpenClass<T>(wad, path);
+
+            return true;
+        } 
+
+        public static bool LoadFileStream(Wad wad, string path, out Stream fileStream)
+        {
+            fileStream = default;
+            
+            if (wad is null)
+            {
+                Log.Logger.Fatal("ResourceManager Root.wad not loaded.");
+                return false;
+            }
+
+            fileStream = wad.OpenFile(path);
+            return true;
+        }
+        
+        public static bool LoadRootFile<T>(string path, out T obj)
             where T : PropertyClass
         {
             obj = default;
@@ -47,30 +97,24 @@ namespace Imlight.Resources
                 return false;
             }
 
-            var serializer = new FileSerializer();
-            obj = serializer.OpenClass<T>(_rootWad, path);
-
-            return true;
-        }
-
-        public static bool LoadFileStream(string path, out Stream fileStream)
-        {
-            fileStream = default;
-            
-            if (_rootWad is null)
+            try
             {
-                Log.Logger.Fatal("ResourceManager Root.wad not loaded.");
+                var serializer = new FileSerializer();
+                obj = serializer.OpenClass<T>(_rootWad, path);
+            }
+            catch (Exception ex)
+            {
+                Log.Logger.Error($"ResourceManager could not load file in wad [{_rootWad.Name}]: {ex.Message}");
                 return false;
             }
 
-            fileStream = _rootWad.OpenFile(path);
             return true;
-        }
+        } 
 
-        private static bool LoadSubCoreObjectFactory()
+        private static bool LoadSubCoreObjectFactory(Wad rootWad)
         {
             Log.Logger.Information("CoreObjectFactory loading [TemplateManifest.xml]..");
-            if (!CoreObjectFactory.Load())
+            if (!CoreObjectFactory.Load(rootWad))
             {
                 Log.Logger.Fatal("CoreObjectFactory could not be loaded.");
                 return false;
@@ -80,10 +124,10 @@ namespace Imlight.Resources
             return true;
         }
 
-        private static bool LoadSubAccessPassManager()
+        private static bool LoadSubAccessPassManager(Wad rootWad)
         {
             Log.Logger.Information("AccessPassManager loading [AccessPass.xml]..");
-            if (!AccessPassManager.Load())
+            if (!AccessPassManager.Load(rootWad))
             {
                 Log.Logger.Fatal("AccessPassManager could not be loaded.");
                 return false;

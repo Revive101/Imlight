@@ -23,19 +23,31 @@ namespace Imlight.Resources
                 case 0x1FDBA52F: return new ClientWizPlayerNameBehavior(); // The name above their head.
                 case 0x065D0C7A: return new FidgetBehavior();              // How often this character uses an idle animation.
                 case 0x2688349D: return new AnimationBehavior();           // Self explanatory.
+                
+                // Surprisingly, this has no relation to core emotes.
+                //case 0x2091D4C9: return new CustomEmoteBehavior();
+                
+                // ======================================================================
+                // WIP. Dealing with NPC behaviors at the moment.
+                // ======================================================================
+                case 0x28CE8984: return new ObjectStateBehavior();
+                case 0x29E13F05: return new EffectsBehavior();
+                case 0x2AFFDE72: return new NPCBehavior();
+                case 0x0A5CA5EE: return new RenderBehavior();
+                case 0x605C502C: return new BasicMobileBehavior();
+                case 0x0C46067D: return new BaseGameEffectBehavior();
+                case 0x00A6C343: return new ClientInventoryBehavior();
+                case 0x1DC10F47: return new ClientEquipmentBehavior();
 
                 // ======================================================================
                 // Below are the list of behaviors we know works.
                 // ======================================================================
                 //case 0x10393720: return new AdvPvPEloBehavior();
-                //case 0x0C46067D: return new BaseGameEffectBehavior();
                 //case 0x70F90C5D: return new CastleToursBehavior();
                 //case 0x647855BD: return new ClientAlchemyBehavior();
                 //case 0x06BB59F5: return new ClientAtticBehavior();
                 //case 0x26FCE31F: return new ClientDynaModBehavior();
-                //case 0x1DC10F47: return new ClientEquipmentBehavior();
                 //case 0x287E5259: return new ClientExpansionBehavior();
-                //case 0x00A6C343: return new ClientInventoryBehavior();
                 //case 0x1552CB31: return new ClientMagicSchoolBehavior();
                 //case 0x1301F271: return new ClientMinigameBehavior();
                 //case 0x336907AE: return new ClientMountOwnerBehavior();
@@ -44,12 +56,10 @@ namespace Imlight.Resources
                 //case 0x64FE8AF9: return new ClientSpellbookBehavior();
                 //case 0x2BD79B75: return new ClientTreasureBookBehavior();
                 //case 0x2808A0BF: return new CollisionBehaviorClient();
-                //case 0x29E13F05: return new EffectsBehavior();
                 //case 0x1D47EAE3: return new FishingBehavior();
                 //case 0x1A22DBF4: return new HiddenQuestsBehavior();
                 //case 0x0A5C8D74: return new LadderBehavior();
                 //case 0x3AB00B11: return new MonsterMagicBehavior();
-                //case 0x28CE8984: return new ObjectStateBehavior();
                 //case 0x64E6088B: return new PetTomeBehavior();
                 //case 0x29474BCF: return new TutorialLogBehavior();
                 //case 0x174F46F4: return new WishlistBehavior();
@@ -58,7 +68,6 @@ namespace Imlight.Resources
 
                 // Client also has PathMovementBehaviorTemplate, but doesn't appear to use the actual behavior.
                 //case 0x22B1AD8D: return new PathMovementBehavior();
-                //case 0x605C502C: return new BasicMobileBehavior();
 
                 // ======================================================================
                 // Below are behaviors the client fails on. Unsure as to why.
@@ -101,7 +110,6 @@ namespace Imlight.Resources
                 //case 0x6323D8C1: return new ClientTimedItemBehavior();
                 //case 0x6EF34743: return new ClientWizStorageBehavior();
                 //case 0x4FACBA18: return new ConicalSoundBehavior();
-                //case 0x2091D4C9: return new CustomEmoteBehavior();
                 //case 0x5FC99762: return new DeedBehavior();
                 //case 0x2D8192F5: return new EquivalentItemBehavior();
                 //case 0x4375B93E: return new ExtraHousingZoneBehavior();
@@ -129,7 +137,6 @@ namespace Imlight.Resources
                 //case 0x62263818: return new MountItemBehavior();
                 //case 0x0B6BCC70: return new MountSoundBehavior();
                 //case 0x52EA8495: return new MoveBehaviorClient();
-                //case 0x2AFFDE72: return new NPCBehavior();
                 //case 0x38907C20: return new ObstacleCourseCatapultBehaviorClient();
                 //case 0x23996AEC: return new ObstacleCourseFinishLineBehaviorClient();
                 //case 0x086C665C: return new ObstacleCourseModifyTimeBehaviorClient();
@@ -144,7 +151,6 @@ namespace Imlight.Resources
                 //case 0x074A42D2: return new PhysicsBehaviorClient();
                 //case 0x2D701D90: return new PositionalSoundBehavior();
                 //case 0x2B542F69: return new PositionalStateSoundBehavior();
-                //case 0x0A5CA5EE: return new RenderBehavior();
                 //case 0x660CC909: return new RidableBehavior();
                 //case 0x070A552D: return new ScriptBehavior();
                 //case 0x5FC99777: return new SeedBehavior();

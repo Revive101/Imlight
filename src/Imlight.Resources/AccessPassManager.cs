@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Xml;
 using Imlight.Common;
+using WizUnraveler.Data;
 
 namespace Imlight.Resources
 {
@@ -10,12 +11,12 @@ namespace Imlight.Resources
     {
         private static string[] _zones;
         
-        public static bool Load()
+        public static bool Load(Wad rootWad)
         {
-            var workingZoneList = new List<string>();
+            var zoneList = new List<string>();
             
             // Load the AccessPass.xml from resources.
-            if (!ResourceManager.LoadFileStream("AccessPass.xml", out var fileStream))
+            if (!ResourceManager.LoadFileStream(rootWad, "AccessPass.xml", out var fileStream))
             {
                 Log.Logger.Fatal("AccessPassManager could not load AccessPass.xml.");
                 return false;
@@ -30,19 +31,19 @@ namespace Imlight.Resources
             foreach (XmlNode zoneNode in doc.GetElementsByTagName("Zone"))
             {
                 var zoneName = zoneNode.InnerText;
-                workingZoneList.Add(zoneName);
+                zoneList.Add(zoneName);
                 zoneCounter++;
             }
             
             // Log
             Log.Logger.Information($"AccessPassManager loaded {zoneCounter} zones.");
 
-            _zones = workingZoneList.ToArray();
+            _zones = zoneList.ToArray();
 
             return true;
         }
         
-        public static bool IsZone(string zoneName)
+        public static bool DoesZoneExist(string zoneName)
         {
             return _zones.Any(zone => zone == zoneName);
         }

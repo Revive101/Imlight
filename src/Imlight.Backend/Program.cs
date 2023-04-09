@@ -16,7 +16,6 @@ namespace Imlight.Backend
     {
         private const string VERSION = "0.0.1";
         private const string ACTOR_SYSTEM_NAME = "Imlight";
-        private static readonly string RootPath = $"{Directory.GetCurrentDirectory()}/Input/Root.wad";
 
         private static ActorSystem _imlightSystem;
 
@@ -49,10 +48,10 @@ namespace Imlight.Backend
             // =============================================================
             Log.Logger.Information("Gathering appropriate resources..");
             
-            var resourceLoadResult = ResourceManager.Load(RootPath);
+            var resourceLoadResult = ResourceManager.InitRoot();
             if (!resourceLoadResult)
             {
-                Log.Logger.Fatal($"Could not load resources from {RootPath}!");
+                Log.Logger.Fatal($"Could not load resources!");
 
                 Console.ReadKey();
                 return;

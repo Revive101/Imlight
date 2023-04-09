@@ -30,7 +30,7 @@ namespace Imlight.Game
             var response = new ZONE_102_PROTOCOL.MSG_QUERYZONERSP();
             
             // First, make sure this zone is valid by checking the AccessPassManager.
-            if (!AccessPassManager.IsZone(message.ZoneName))
+            if (!AccessPassManager.DoesZoneExist(message.ZoneName))
             {
                 Log.Logger.Error(
                     $"GameWorld received invalid zone transfer request from {Sender.Path.Name}.");
