@@ -87,6 +87,10 @@ namespace Imlight.Game.Services
                 ZoneID              = message.ZoneID,
                 DynamicZoneID       = zoneDetails.DynamicZoneId,
                 DynamicServerProcID = zoneDetails.DynamicZoneId,
+                
+                // Misc
+                ShowSubscriberIcon = 0,
+                TestServer = 0
             };
             
             SendToSocket(loginCompleteMsg);

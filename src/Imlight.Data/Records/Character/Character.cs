@@ -14,40 +14,28 @@ namespace Imlight.Data
 {
     public class Character
     {
-        /// <summary>
-        /// The ID of the character.
-        /// </summary>
-        public ulong ID 
+        private const int    STARTING_LEVEL = 1;
+        private const string STARTING_LOCATION = "WizardCity/WC_Golem_Tower";
+        private const int    STARTING_BASE_MANA = 15;
+        private const int    STARTING_BASE_HEALTH = 500;
+        private const int    STARTING_BASE_GOLD = 1000000;
+        
+        public ulong Id 
         { 
             get
             {
-                if (CreationData is null)
-                    return 0;
+                if (CreationData is null) return 0;
                 return CreationData.m_globalID;
             }
         }
-
-        /// <summary>
-        /// The Template ID of a character. This is the ID of the model.
-        /// </summary>
-        public ulong TemplateID { get; private set; }
-
-        /// <summary>
-        /// The character creation data. Shown in the charater selection screen.
-        /// </summary>
+        public ulong TemplateId { get; private set; }
         public WizardCharacterCreationInfo CreationData { get; private set; }
 
-        /// <summary>
-        /// This is a custom name field. It does not use name indicates and can be any string.
-        /// Will overwrite any other name.
-        /// </summary>
-        public string Name { get; private set; }
-  
         public Character(WizardCharacterCreationInfo creationData, GID accountId)
         {
             this.CreationData = creationData;
-            this.CreationData.m_level = 1;  
-            this.CreationData.m_location = "WizardCity/WC_Hub";
+            this.CreationData.m_level = STARTING_LEVEL;  
+            this.CreationData.m_location = STARTING_LOCATION;
             this.CreationData.m_globalID = RandomGen.GenerateGUID();
             this.CreationData.m_userID = accountId;
             this.CreationData.m_equipmentInfoList = new EquippedItemInfoList()
@@ -65,19 +53,21 @@ namespace Imlight.Data
             ReplaceWizAvatarWithCreationData(clientObject);
             SetWizClientBehaviors(ref clientObject);
 
-            clientObject.m_gameStats = new WizGameStats()
-            {
-                m_baseMana = 15,
-                m_currentMana = 15,
-                m_baseGoldPouch = 1000000,
-                m_baseHitpoints = 500,
-                m_currentHitpoints = 500,
-            };
             clientObject.m_fScale = 1f;
-            clientObject.m_globalID = RandomGen.GenerateGUID();
-            clientObject.m_characterId = (GID)1;
+            clientObject.m_globalID = CreationData.m_globalID;
+            clientObject.m_characterId = (GID)Id;
             clientObject.m_permID = 0; // What is this?
             clientObject.m_location = new SharpDX.Vector3(0, 0, 0);
+            
+            // @todo: source these stats from the API, probably
+            clientObject.m_gameStats = new WizGameStats()
+            {
+                m_baseMana = STARTING_BASE_MANA,
+                m_currentMana = STARTING_BASE_MANA,
+                m_baseGoldPouch = STARTING_BASE_GOLD,
+                m_baseHitpoints = STARTING_BASE_HEALTH,
+                m_currentHitpoints = STARTING_BASE_HEALTH,
+            };
 
             return clientObject;
         } 

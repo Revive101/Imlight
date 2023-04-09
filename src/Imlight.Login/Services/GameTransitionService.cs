@@ -64,7 +64,7 @@ namespace Imlight.Login.Services
                 
                 // Set details about the character.
                 UserID = account.ID,
-                CharID = character.ID,
+                CharID = character.Id,
                 ZoneID = new GID((ulong)gameServer.Port),
                 ZoneName = character.CreationData.m_location, // Client uses this name to load a zone locally.
                 Location = "Start",                           // Most zones use "Start" on player login.

@@ -72,9 +72,9 @@ namespace Imlight.Data
         /// <returns>False, if no character by ID is found. Otherwise, true.</returns>
         public bool DeleteCharacter(ulong charId)
         {
-            if (Characters.Any(x => x.ID == charId))
+            if (Characters.Any(x => x.Id == charId))
             {
-                var character = Characters.First(x => x.ID == charId);
+                var character = Characters.First(x => x.Id == charId);
                 Characters.Remove(character);
 
                 return true;
@@ -93,9 +93,9 @@ namespace Imlight.Data
         {
             character = null;
 
-            if (Characters.Any(x => x.ID == charId))
+            if (Characters.Any(x => x.Id == charId))
             {
-                character = Characters.First(x => x.ID == charId);
+                character = Characters.First(x => x.Id == charId);
 
                 return true;
             }
