@@ -1,0 +1,26 @@
+=====================================
+spawnData.xml:
+=====================================
+ObjectProperty. Type is `SpawnManager`. `SpawnManager` contains a single vector of `SpawnObject`.
+There is currently nothing to indicate where a spawner is. Need to figure that out, first and foremost.
+`SpawnObject`:
+    - `m_id`:               - A pre-determined GID.
+    - `m_activeAtMax`       - Does this spawner keep spawning even if at max?
+    - `m_active`            - Determines whether this spawner is active.
+    - `m_atLeastOneSpawn`   - Self explanatory.
+    - `m_globalDynamic`     - Not sure.
+    - `m_globalDynamicReqs` - A `RequirementList`.
+    - `m_maxNumberOfSpawns` - Obvious.
+    - `m_name`              - The name of the spawner.
+    - `m_popSensitive`      - True/false activity based on zome population?
+    - `m_respawnRate`       - an unsigned integer
+    - `m_spawnList`         - A vector of `SpawnItem`. See below.
+    - `m_spawnTime`         - The minimum wait time between spawns?
+    - `m_waitForTimer`      - Unsure.
+    - `m_zoneLevelMax`      -
+    - `m_zoneLevelMin`      -
+
+In some cases, the `m_spawnList` of a zone will contain a single `SpawnItem`, with no details. This might indicate that it's a player spawn position.
+`SpawnItem`:
+    - `m_objectInfo`    - Contains information about the object spawned at this spawner.
+    - `m_percentChance` - The percent chance the object has of spawning.
