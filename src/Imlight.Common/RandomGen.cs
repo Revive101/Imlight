@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using WizUnraveler.ObjectProperty;
@@ -42,6 +43,16 @@ namespace Imlight.Common
             var ulongType = BitConverter.ToUInt64(buffer, 0);
             
             return new GID(ulongType);
+        }
+        
+        public static ulong GenerateHash(string input)
+        {
+            using (SHA256 sha256 = SHA256.Create())
+            {
+                byte[] hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(input));
+                ulong hash = BitConverter.ToUInt64(hashBytes, 0);
+                return hash;
+            }
         }
     }
 }
