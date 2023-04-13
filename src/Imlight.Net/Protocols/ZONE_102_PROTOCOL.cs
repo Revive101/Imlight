@@ -73,6 +73,8 @@ namespace Imlight.Net.Messages
             public byte ServiceID { get; } = 102;
             
             public IActorRef Player;
+            public ulong GlobalId;
+            public bool IsZoneTransfer;
         }
 
         public class MSG_ZONEBROADCAST : IServerMessage

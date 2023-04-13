@@ -55,19 +55,9 @@ namespace Imlight.Resources
             where T : PropertyClass
         {
             obj = default;
-            try
-            {
-                var serializer = new FileSerializer();
-                obj = serializer.OpenClass<T>(wad, path);
-            }
-            catch (Exception ex)
-            {
-                Log.Logger.Error($"ResourceManager could not load file in wad [{wad.Name}]: {ex.Message}");
-                return false;
-            }
-            
-            //var serializer = new FileSerializer();
-            //obj = serializer.OpenClass<T>(wad, path);
+
+            var serializer = new FileSerializer();
+            obj = serializer.OpenClass<T>(wad, path);
 
             return true;
         } 

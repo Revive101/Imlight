@@ -84,9 +84,10 @@ namespace Imlight.Login.Services
 
         private SERVER_100_PROTOCOL.MSG_SERVERINFO GetGameServer()
         {
+            // PROBABLY SHOULDN'T DO THIS
+            //@todo: fix this
             var localEndPoint = (IPEndPoint)SessionActor.Socket.LocalEndPoint;
-            var remoteEndPoint = (IPEndPoint)SessionActor.Socket.RemoteEndPoint;
-            var isLocal = localEndPoint.Address.Equals(remoteEndPoint.Address);
+            var isLocal = localEndPoint.Address.ToString().Contains("127.0.");
 
             var msg = new SERVER_100_PROTOCOL.MSG_QUERYGAMESERVERS() { IsLocal = isLocal };
             return AskServer<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg);
