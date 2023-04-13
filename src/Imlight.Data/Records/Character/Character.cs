@@ -15,7 +15,7 @@ namespace Imlight.Data
     public class Character
     {
         private const int    STARTING_LEVEL = 1;
-        private const string STARTING_LOCATION = "WizardCity/WC_Golem_Tower";
+        private const string STARTING_LOCATION = "WizardCity/WC_Hub";
         private const int    STARTING_BASE_MANA = 15;
         private const int    STARTING_BASE_HEALTH = 500;
         private const int    STARTING_BASE_GOLD = 1000000;
@@ -33,6 +33,10 @@ namespace Imlight.Data
 
         public Character(WizardCharacterCreationInfo creationData, GID accountId)
         {
+            // Check to see if the starting location exists in the access pass.
+            if (!AccessPassManager.DoesZoneExist(STARTING_LOCATION))
+                throw new Exception($"Starting location {STARTING_LOCATION} does not exist in the access pass!");
+            
             this.CreationData = creationData;
             this.CreationData.m_level = STARTING_LEVEL;  
             this.CreationData.m_location = STARTING_LOCATION;
@@ -46,13 +50,14 @@ namespace Imlight.Data
 
         public WizClientObject GetWizClientObject()
         {
-            var clientObject = CoreObjectFactory.InitializeCoreObject(
+            var clientObject = CoreObjectFactory.InitializeCoreObjectBehaviors(
                 new WizClientObject(), 
-                (uint)CreationData.m_templateID);
+                (ulong)CreationData.m_templateID);
 
             ReplaceWizAvatarWithCreationData(clientObject);
             SetWizClientBehaviors(ref clientObject);
 
+            clientObject.m_templateID = (ulong)CreationData.m_templateID;
             clientObject.m_fScale = 1f;
             clientObject.m_globalID = CreationData.m_globalID;
             clientObject.m_characterId = (GID)Id;
