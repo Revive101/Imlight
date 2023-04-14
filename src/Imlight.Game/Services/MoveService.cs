@@ -70,6 +70,8 @@ namespace Imlight.Game.Services
                     if (isInside)  // Player is inside of trigger, transfer to new zone
                     {
                         character.nextZone = p.Value;
+                        character.CreationData.m_location = p.Value; // Should there be an overall character location variable?
+
                         var zoneMsg = new ZONE_102_PROTOCOL.MSG_QUERYZONE() { ZoneName = p.Value };
                         AskServer<ZONE_102_PROTOCOL.MSG_QUERYZONERSP>(zoneMsg);
 
