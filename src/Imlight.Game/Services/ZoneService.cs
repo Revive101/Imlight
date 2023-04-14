@@ -46,23 +46,6 @@ namespace Imlight.Game.Services
             
             _zoneRef.Tell(message);
         }
-        
-        [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_DISPOSE))]
-        public override void ReceiveDispose(SERVICE_101_PROTOCOL.MSG_DISPOSE message)
-        {
-            base.ReceiveDispose(message);
-            var globalId = GetActiveCoreObject().m_globalID;
-
-            // If the zone reference is not null, we'll tell the zone to remove the player.
-            if (_zoneRef is not null)
-                _zoneRef.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER()
-                {
-                    Player = SessionActor.ActorRef,
-                    GlobalId = globalId
-                });
-
-            _zoneRef = null;
-        }
 
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK))]
         private void ReceiveZoneTransferAck(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK message)
@@ -71,6 +54,18 @@ namespace Imlight.Game.Services
             var account = GetSocketAccount();
             var character = account.Characters[0];
 
+            // Remove the player from their current zone.
+            var removePlayerMsg = new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER()
+            {
+                Player = SessionActor.ActorRef,
+                GlobalId = GetActiveCoreObject().m_globalID,
+                IsZoneTransfer = true
+            };
+            _zoneRef.Tell(removePlayerMsg);
+
+            character.CreationData.m_location = character.nextZone;
+
+            // We don't need to add the player to the new zone, as the zone will do that for us.
             var serverTransfer = new GAME_5_PROTOCOL.MSG_SERVERTRANSFER()
             {
                 IP = "127.0.0.1",
@@ -87,6 +82,23 @@ namespace Imlight.Game.Services
                 TransitionID = 1
             };
             SendToSocket(serverTransfer);
+        }
+        
+        [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_DISPOSE))]
+        public override void ReceiveDispose(SERVICE_101_PROTOCOL.MSG_DISPOSE message)
+        {
+            base.ReceiveDispose(message);
+            var globalId = GetActiveCoreObject().m_globalID;
+
+            // If the zone reference is not null, we'll tell the zone to remove the player.
+            if (_zoneRef is not null)
+                _zoneRef.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER()
+                {
+                    Player = SessionActor.ActorRef,
+                    GlobalId = globalId
+                });
+
+            _zoneRef = null;
         }
         
         private TypeCache.CoreObject GetActiveCoreObject()
