@@ -50,25 +50,36 @@ namespace Imlight.Game.Services
 
             if (zone == "WizardCity/WC_Hub") // TESTING ONLY
             {
-                SharpDX.Vector2[] ravenwoodTrigger = {
-                    new SharpDX.Vector2(-315.6f, 1663.56f),
-                    new SharpDX.Vector2(147.6f, 1661.47f),
-                    new SharpDX.Vector2(-208f, 1906.7f),
-                    new SharpDX.Vector2(17.37f, 1906.7f),
-                };
-                var inTrigger = IMath.InsideOfPolygon(ravenwoodTrigger, ravenwoodTrigger.Length, position2D);
-
-                if (inTrigger) // Player is inside of trigger, transfer to new zone
+                var circleTriggers = new Dictionary<SharpDX.Vector2, string>()
                 {
-                    var zoneMsg = new ZONE_102_PROTOCOL.MSG_QUERYZONE() { ZoneName = "WizardCity/WC_Ravenwood" };
-                    var zoneAsk = AskServer<ZONE_102_PROTOCOL.MSG_QUERYZONERSP>(zoneMsg);
+                    { new SharpDX.Vector2(-80, 1815),           "WizardCity/WC_Ravenwood" },
+                    { new SharpDX.Vector2(1370.5f, -3622.6f),   "WizardCity/WC_Shop_Area" },
+                    { new SharpDX.Vector2(-961.6f, -2495.6f),   "WizardCity/Interiors/WC_Headmistress_House" },
+                    { new SharpDX.Vector2(-1559.8f, -11.9f),    "WizardCity/Interiors/WC_Headmaster_Tower" },
+                    { new SharpDX.Vector2(-6308f, 2649.3f),     "WizardCity/WC_Golem_Tower" },
+                    { new SharpDX.Vector2(2649.5f, 5013.1f),    "WizardCity/WC_NightSide" },
+                    { new SharpDX.Vector2(6256.8f, 5473.5f),    "WizardCity/WC_Streets/WC_Unicorn" },
+                    { new SharpDX.Vector2(9722.9f, 2184.2f),    "WizardCity/Interiors/WC_Library" },
+                    { new SharpDX.Vector2(8380.9f, -2126.3f),   "WizardCity/WC_Streets/Interiors/WC_PET_Park" },
+                };
 
-                    var transferRequest = new GAME_5_PROTOCOL.MSG_ZONETRANSFERREQUEST() // Ask client if it's OK to transfer zone
+                foreach (var p in circleTriggers)
+                {
+                    var isInside = IMath.InsideOfCircle(p.Key, 175, position2D);
+
+                    if (isInside)  // Player is inside of trigger, transfer to new zone
                     {
-                        SendAck = 0,
-                        ZoneName = "WizardCity/WC_Ravenwood"
-                    };
-                    SendToSocket(transferRequest);
+                        character.nextZone = p.Value;
+                        var zoneMsg = new ZONE_102_PROTOCOL.MSG_QUERYZONE() { ZoneName = p.Value };
+                        AskServer<ZONE_102_PROTOCOL.MSG_QUERYZONERSP>(zoneMsg);
+
+                        var transferRequest = new GAME_5_PROTOCOL.MSG_ZONETRANSFERREQUEST() // Ask client if it's OK to transfer zone
+                        {
+                            SendAck = 0,
+                            ZoneName = p.Value
+                        };
+                        SendToSocket(transferRequest);
+                    }
                 }
             }
 

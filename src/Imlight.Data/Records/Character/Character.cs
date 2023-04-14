@@ -19,6 +19,8 @@ namespace Imlight.Data
         private const int    STARTING_BASE_MANA = 15;
         private const int    STARTING_BASE_HEALTH = 500;
         private const int    STARTING_BASE_GOLD = 1000000;
+
+        public string nextZone = ""; // TESTING ONLY
         
         public ulong Id 
         { 

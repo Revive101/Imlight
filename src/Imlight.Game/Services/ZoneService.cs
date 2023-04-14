@@ -71,19 +71,19 @@ namespace Imlight.Game.Services
             var account = GetSocketAccount();
             var character = account.Characters[0];
 
-            var serverTransfer = new GAME_5_PROTOCOL.MSG_ZONETRANSFER()
+            var serverTransfer = new GAME_5_PROTOCOL.MSG_SERVERTRANSFER()
             {
-                //IP = "127.0.0.1",
-                //TCPPort = 12333,
-                //UDPPort = 12333,
-                //UserID = account.ID,
-                //CharID = character.ID,
-                ZoneName = "WizardCity/WC_Ravenwood",
-                //Location = "Start",
+                IP = "127.0.0.1",
+                TCPPort = 12333,
+                UDPPort = 12333,
+                UserID = account.ID,
+                CharID = character.Id,
+                ZoneName = character.nextZone,
+                Location = "Start",
                 Slot = 0,
                 SessionSlot = 0,
                 SessionID = 0,
-                //TargetPlayerID = character.ID,
+                TargetPlayerID = character.Id,
                 TransitionID = 1
             };
             SendToSocket(serverTransfer);
