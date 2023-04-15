@@ -12,13 +12,13 @@ namespace Imlight.Data
         ///     Determines if a 2D point is within a convex polygon.
         /// </summary>
         /// <param name="p">An array of 2D points to describe a polygon.</param>
-        /// <param name="n">The number of points the polygon has.</param>
         /// <param name="pos">The position to be checked.</param>
         /// <returns>If the position is inside of the polygon or not.</returns>
-        public static bool InsideOfPolygon(SharpDX.Vector2[] p, int n, SharpDX.Vector2 pos)
+        public static bool InsideOfPolygon(SharpDX.Vector2[] p, SharpDX.Vector2 pos)
         {
             double angle = 0;
             SharpDX.Vector2 p1, p2;
+            int n = p.Length;
 
             for (int i = 0; i < n; i++)
             {
@@ -51,7 +51,7 @@ namespace Imlight.Data
         ///     Determines if a 2D point is within a circle around another 2D point.
         /// </summary>
         /// <param name="p">The origin of the circle.</param>
-        /// <param name="n">The radius of the circle.</param>
+        /// <param name="radius">The radius of the circle.</param>
         /// <param name="pos">The position to be checked.</param>
         /// <returns>If the position is inside of the circle or not.</returns>
         public static bool InsideOfCircle(SharpDX.Vector2 p, float radius, SharpDX.Vector2 pos)

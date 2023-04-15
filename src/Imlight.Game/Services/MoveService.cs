@@ -182,7 +182,7 @@ namespace Imlight.Game.Services
         {
             foreach (var p in dict)
             {
-                var isInside = IMath.InsideOfPolygon(p.Key, p.Key.Length, pos);
+                var isInside = IMath.InsideOfPolygon(p.Key, pos);
 
                 if (isInside)  // Player is inside of trigger, transfer to new zone
                 {
