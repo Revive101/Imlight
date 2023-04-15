@@ -58,5 +58,26 @@ namespace Imlight.Data
         {
             return Math.Abs(SharpDX.Vector2.Distance(p, pos)) < radius;
         }
+
+        /// <summary>
+        ///     Determines if a 3D point is within a 6-sided prism.
+        ///     Assumes that the first 4 points are on the "bottom", last 4 are the "top", and are iterated clockwise.
+        ///     Prisms do not have to be perfect rectangle, but must be defined by 8 points.
+        /// </summary>
+        /// <param name="p">An array of 3D points to describe a prism.</param>
+        /// <param name="pos">The position to be checked.</param>
+        /// <returns>If the position is inside of the circle or not.</returns>
+        public static bool InsideOfPrism(SharpDX.Vector3[] p, SharpDX.Vector3 pos) // Untested, but *should* work
+        {
+            var u = (p[0] - p[3]) * (p[0] - p[4]);
+            var v = (p[0] - p[1]) * (p[0] - p[4]);
+            var w = (p[0] - p[1]) * (p[0] - p[3]);
+
+            var ux = SharpDX.Vector3.Dot(u, p[0]) <= SharpDX.Vector3.Dot(u, pos) && SharpDX.Vector3.Dot(u, pos) <= SharpDX.Vector3.Dot(u, p[1]);
+            var vx = SharpDX.Vector3.Dot(v, p[0]) <= SharpDX.Vector3.Dot(v, pos) && SharpDX.Vector3.Dot(v, pos) <= SharpDX.Vector3.Dot(v, p[3]);
+            var wx = SharpDX.Vector3.Dot(w, p[0]) <= SharpDX.Vector3.Dot(w, pos) && SharpDX.Vector3.Dot(w, pos) <= SharpDX.Vector3.Dot(w, p[4]);
+
+            return ux && vx && wx;
+        }
     }
 }
