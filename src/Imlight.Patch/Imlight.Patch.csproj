@@ -1,16 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net5.0</TargetFramework>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Akka" Version="1.4.48" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="WizUnraveler" Version="1.3.9.8" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Imlight.Common\Imlight.Common.csproj" />
-    <ProjectReference Include="..\Imlight.Net\Imlight.Net.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\..\..\WizUnraveler\src\WizUnraveler\WizUnraveler.csproj" />
+        <ProjectReference Include="..\Imlight.Common\Imlight.Common.csproj" />
+        <ProjectReference Include="..\Imlight.Net\Imlight.Net.csproj" />
+    </ItemGroup>
 
 </Project>

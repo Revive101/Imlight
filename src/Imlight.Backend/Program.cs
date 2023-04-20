@@ -8,6 +8,7 @@ using Imlight.Net;
 using WizUnraveler;
 using WizUnraveler.Cache;
 using Imlight.Game;
+using Imlight.Patch;
 using Imlight.Resources;
 
 namespace Imlight.Backend
@@ -65,8 +66,7 @@ namespace Imlight.Backend
             Log.Logger.Information("Starting servers..");
 
             StartLoginServer();
-
-            Log.Logger.Information("All servers started.");
+            StartPatchServer();
 
             Console.ReadKey();
         }
@@ -75,6 +75,14 @@ namespace Imlight.Backend
         {
             var loginProps = LoginServer.Props();
             _imlightSystem.ActorOf(loginProps, LoginServer.DEFAULT_LOGIN_SERVER_NAME);
+            
+            Log.Logger.Debug($"New actor created under {_imlightSystem.Name}: {LoginServer.DEFAULT_LOGIN_SERVER_NAME}");
+        }
+
+        private static void StartPatchServer() 
+        {
+            var patchProps = PatchServer.Props();
+            _imlightSystem.ActorOf(patchProps, PatchServer.DEFAULT_PATCH_SERVER_NAME);
             
             Log.Logger.Debug($"New actor created under {_imlightSystem.Name}: {LoginServer.DEFAULT_LOGIN_SERVER_NAME}");
         }
