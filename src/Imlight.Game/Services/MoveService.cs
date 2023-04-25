@@ -157,23 +157,12 @@ namespace Imlight.Game.Services
         {
             foreach (var p in dict)
             {
-                var isInside = IMath.InsideOfCircle(p.Key, 175, pos);
+                var isInside = IMath.InsideOfCircle(p.Key, 175, pos); // fixme: a fixed radius will be too small or too large for some triggers
 
-                if (isInside)  // Player is inside of trigger, transfer to new zone
-                {
-                    character.nextZone = p.Value;
-
-                    var zoneMsg = new ZONE_102_PROTOCOL.MSG_QUERYZONE() { ZoneName = p.Value };
-                    AskServer<ZONE_102_PROTOCOL.MSG_QUERYZONERSP>(zoneMsg);
-
-                    _isZoneTransferQueued = true;
-
-                    var transferRequest = new GAME_5_PROTOCOL.MSG_ZONETRANSFERREQUEST() // Ask client if it's OK to transfer zone
-                    {
-                        SendAck = 0,
-                        ZoneName = p.Value
-                    };
-                    SendToSocket(transferRequest);
+                if (isInside) // Player is inside of trigger, transfer to new zone
+                {  
+                    SendZoneTransferSequence(character, p.Value);
+                    return;
                 }
             }
         }
@@ -184,23 +173,43 @@ namespace Imlight.Game.Services
             {
                 var isInside = IMath.InsideOfPolygon(p.Key, pos);
 
-                if (isInside)  // Player is inside of trigger, transfer to new zone
+                if (isInside) // Player is inside of trigger, transfer to new zone
                 {
-                    character.nextZone = p.Value;
-
-                    var zoneMsg = new ZONE_102_PROTOCOL.MSG_QUERYZONE() { ZoneName = p.Value };
-                    AskServer<ZONE_102_PROTOCOL.MSG_QUERYZONERSP>(zoneMsg);
-
-                    _isZoneTransferQueued = true;
-
-                    var transferRequest = new GAME_5_PROTOCOL.MSG_ZONETRANSFERREQUEST() // Ask client if it's OK to transfer zone
-                    {
-                        SendAck = 0,
-                        ZoneName = p.Value
-                    };
-                    SendToSocket(transferRequest);
+                    SendZoneTransferSequence(character, p.Value);
+                    return;
                 }
             }
+        }
+
+        private void CheckTransferPrisms(Character character, SharpDX.Vector3 pos, Dictionary<SharpDX.Vector3[], string> dict)
+        {
+            foreach (var p in dict)
+            {
+                var isInside = IMath.InsideOfPrism(p.Key, pos);
+
+                if (isInside) // Player is inside of trigger, transfer to new zone
+                {
+                    SendZoneTransferSequence(character, p.Value);
+                    return;
+                }
+            }
+        }
+
+        private void SendZoneTransferSequence(Character character, string zoneName)
+        {
+            character.nextZone = zoneName;
+
+            var zoneMsg = new ZONE_102_PROTOCOL.MSG_QUERYZONE() { ZoneName = zoneName };
+            AskServer<ZONE_102_PROTOCOL.MSG_QUERYZONERSP>(zoneMsg);
+
+            _isZoneTransferQueued = true;
+
+            var transferRequest = new GAME_5_PROTOCOL.MSG_ZONETRANSFERREQUEST() // Ask client if it's OK to transfer zone
+            {
+                SendAck = 0,
+                ZoneName = zoneName
+            };
+            SendToSocket(transferRequest);
         }
     }
 }
