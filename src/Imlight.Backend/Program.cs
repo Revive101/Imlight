@@ -85,7 +85,7 @@ namespace Imlight.Backend
             var patchProps = PatchServer.Props();
             _imlightSystem.ActorOf(patchProps, PatchServer.DEFAULT_PATCH_SERVER_NAME);
             
-            Log.Logger.Debug($"New actor created under {_imlightSystem.Name}: {LoginServer.DEFAULT_LOGIN_SERVER_NAME}");
+            Log.Logger.Debug($"New actor created under {_imlightSystem.Name}: {PatchServer.DEFAULT_PATCH_SERVER_NAME}");
         }
 
         private static void PrintTitle()
