@@ -1,0 +1,49 @@
+For each zone, Imlight must have a corresponding `.wad` file to load the proper zone data.
+
+Currently (as of 22 Apr 2023), we've been using a local `gamedata` directory which must be manually updated. This is obviously insufficient.
+Instead, we're going to have Imlight source from the same patch server as the client.
+
+There is a problem with doing so, however. Some data should not be shipped with the client, such as zone transfer data.
+There's no reason to overengineer this part. We'll simply keep a specially formatted file (maybe `.ztd`?) alongside it's respective `.wad` counterpart.
+This file is encrypted exclusively by Imlight, so if an alien manages to get the zone tranfer data, they won't be able to know what it is.
+
+There is another problem, of which I haven't quite solved yet: how does Imlight cache these files?
+In total, there are close to 3,100 `.wad` files.
+
+The logistics are still a WIP, but generally we'll be lazy loading the zone files.
+
+==============================
+Cache
+==============================
+
+
+
+==============================
+Startup
+==============================
+
+1. On startup, Imlight downloads the `LatestFileList.bin` from the patch server.
+    a. If Imlight cannot download the file, we'll inform the developer that the patch server is offline, and will run in debug mode only. The following steps no longer occur.
+    b. If Imlight does download the file, we can run as a release build.
+2. Embedded database is loaded. If a persistent database file isn't found, the following steps no longer occur.
+3. The CRC for each zone file contained in the database is matched against the CRC found in the `LatestFileList.bin` downloaded earlier.
+    a. If the CRC matches, nothing needs to occur.
+    b. If the CRC doesn't match, the file is removed from the database.
+
+==============================
+Zone Data Steps
+==============================
+
+1. A player loads into a zone that Imlight does not have loaded.
+2. Imlight requests the binary data from the embedded database. If the database contains the zone, we grab the binary data. End scene.
+3. If Imlight does not contain the zone data, Imlight will source a few files from the patch server:
+    I. The `.wad` for the zone.
+    II. The `.ztd` for the zone, which is an encrypted file containing the zone transfer data.
+    III. Expand here when more server side files are needed.
+
+The next few steps happen simultaneously.
+
+I. I haven't really decided this next part, so this is split into two separate steps.
+    1. Path 1 (direct): Imlight stores the raw binary data into the embedded database, attached with the zone name key.
+    2. Path 2 (deffered): Imlight first trims the unnecessary data, such as the collision data. Afterwards, it's stored into embedded database.
+II. Imlight loads the zone using the data.  
