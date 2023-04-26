@@ -4,6 +4,7 @@ using Imlight.Common.Crypto;
 using Imlight.Login;
 using System;
 using System.IO;
+using Imlight.Data;
 using Imlight.Net;
 using WizUnraveler;
 using WizUnraveler.Cache;
@@ -48,7 +49,7 @@ namespace Imlight.Backend
             // RESOURCES
             // =============================================================
             Log.Logger.Information("Gathering appropriate resources..");
-            
+
             var resourceLoadResult = ResourceManager.InitRoot();
             if (!resourceLoadResult)
             {

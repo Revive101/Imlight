@@ -36,8 +36,8 @@ namespace Imlight.Net
             this._factoryProps = factoryProps;
 
             // Get outside IP.
-            this.Ip = new HttpClient().GetStringAsync("https://api.ipify.org/").Result;
-            //this.Ip = "127.0.0.1";
+            //this.Ip = new HttpClient().GetStringAsync("https://api.ipify.org/").Result;
+            this.Ip = "127.0.0.1";
 
             CreateTcpListener();
             _actorFactoryRef = CreateActorFactory();
@@ -159,6 +159,8 @@ namespace Imlight.Net
 
         private IActorRef CreateActorFactory()
         {
+            if (_factoryProps is null) return null;
+            
             var actorName = $"{Name}.ActorFactory";
             
             Log.Logger.Debug($"New actor created under {Context.Self.Path}: {actorName}");

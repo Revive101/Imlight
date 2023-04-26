@@ -202,14 +202,14 @@ namespace Imlight.Net
         private void ConfigureReceivers()
         {
             // Specific message handlers.
+            Receive<string>(x => x == "Close", x => Dispose());
+            Receive<string>(x => x == "Identify", x => Sender.Tell(this));
             Receive<SERVICE_101_PROTOCOL.MSG_GETALLSERVICES>(InitializeActiveSession);
             Receive<SERVER_100_PROTOCOL.MSG_PING>(x => this.Ping = x.Ping);
 
             // Generic message handlers.
             Receive<IServerMessage>(HandleInternalTell);
             Receive<INetworkMessage>(SendToSocket);
-            Receive<string>(x => x == "Close", x => Dispose());
-            Receive<string>(x => x == "Identify", x => Sender.Tell(this));
         }
 
         private void HandleInternalTell(IServerMessage msg)
