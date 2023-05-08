@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Xml;
 using Akka.Actor;
 using Imlight.Common;
+using Imlight.Common.Crypto;
 using Imlight.Net;
 
 namespace Imlight.Patch
@@ -31,13 +33,19 @@ namespace Imlight.Patch
             Log.Logger.Information($"Patch server created with " +
                                    $"name {name} " +
                                    $"under port {port}.");
-            
+
             Instance = this.Self;
             _diagnosticStopwatch = new Stopwatch();
             
             SetPatchServerStatus();
 
-            if (_patchServerOk) SetLatestFileList();
+            // Only perform the following if the patch server is available.
+            if (!_patchServerOk) return;
+            SetLatestFileList();
+
+            // We have the latest file list. Now, we'll check the file cache to see if we have the latest files.
+            // If we don't, we'll remove them from the cache.
+            //CheckCacheForLatestFiles();
         }
         
         public static Props Props(
@@ -160,7 +168,7 @@ namespace Imlight.Patch
         private bool DownloadLatestFileList(out XmlDocument xmlDocument)
         {
             xmlDocument = null;
-            var url = $"{_patchServerWorkingUrl}LatestFileList.xml";
+            var url = $"{_patchServerWorkingUrl}LatestFileList.bin";
             Log.Logger.Information($"Downloading latest file list from patch server at URL {url}.");
             
             // Download the file list.
@@ -171,7 +179,25 @@ namespace Imlight.Patch
                 response.EnsureSuccessStatusCode();
             
                 using var content = response.Content.ReadAsStreamAsync().Result;
-            
+                
+                // TODO: this is not working. I cannot get the CRC to match.
+                // should be 3060332817
+                var path = $"{Directory.GetCurrentDirectory()}/gamedata/WizardCity-WC_Hub.wad";
+                // read the file into a byte array
+                var fileBytes = File.ReadAllBytes(path);
+                var fileCrc = CRC32.Compute(fileBytes);
+
+                using(var memoryStream = new MemoryStream())
+                {
+                    content.CopyTo(memoryStream);
+                    var arr = memoryStream.ToArray();
+                    var revArr = arr.Reverse().ToArray();
+
+                    var size = arr.Length;
+                    var crcTest = CRC32.Compute(arr).ToString("x8");
+                    var crcTestRev = CRC32.Compute(revArr).ToString("x8");
+                }
+
                 // Convert the contents to an XmlDocument.
                 xmlDocument = new XmlDocument();
                 using var reader = new System.IO.StreamReader(content);
@@ -233,6 +259,11 @@ namespace Imlight.Patch
             Log.Logger.Debug($"Parsed LatestFileList.xml in {_diagnosticStopwatch.ElapsedMilliseconds} ms.");
 
             return true;
+        }
+
+        private void CheckCacheForLatestFiles()
+        {
+            if (_latestFileList is null) throw new Exception("LatestFileList is null!");
         }
 
         private uint TryParseUInt(string value)
