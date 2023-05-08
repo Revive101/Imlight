@@ -3,7 +3,7 @@ using Akka.Actor;
 using Imlight.Common;
 using Imlight.Net;
 using Imlight.Net.Messages;
-using Imlight.Resources;
+using Imlight.Data;
 
 namespace Imlight.Game
 {

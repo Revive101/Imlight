@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using WizUnraveler.ObjectProperty;
 using static WizUnraveler.Cache.TypeCache;
 
-namespace Imlight.Resources
+namespace Imlight.Data
 {
     public static class BehaviorCache
     {

@@ -5,7 +5,7 @@ using System.Xml;
 using Imlight.Common;
 using WizUnraveler.Data;
 
-namespace Imlight.Resources
+namespace Imlight.Data
 {
     public static class AccessPassManager
     {

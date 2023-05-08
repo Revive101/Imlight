@@ -3,21 +3,24 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using Imlight.Common;
+using Imlight.Data;
 using WizUnraveler;
 using WizUnraveler.Data;
 using WizUnraveler.ObjectProperty;
 
-namespace Imlight.Resources
+namespace Imlight.Data
 {
     public static class ResourceManager
     {
         private static Wad _rootWad;
         private static readonly string GameDataPath = Path.Combine(
-            Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? string.Empty,
-            $@"gamedata");
+            Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) 
+            ?? string.Empty, $@"gamedata");
 
-        public static bool InitRoot()
+        public static bool Initialize()
         {
+            // The Root.wad is integral to the server. If we do not have one, or cannot install one
+            // the server cannot run properly.
             if (!Directory.Exists(GameDataPath))
             {
                 Log.Logger.Fatal($"ResourceManager GameData directory not found: {GameDataPath}");
@@ -125,6 +128,21 @@ namespace Imlight.Resources
             Log.Logger.Information("AccessPassManager [AccessPass.xml] loaded.");
             
             return true;
+        }
+
+        private static bool GetRootWad()
+        {
+            byte[] file;
+            try 
+            {
+                file = LocalCache.GetCachedFile("Root.wad");
+            }
+            catch (Exception ex)
+            {
+                Log.Logger.Warning("Root.wad not found in local cache. Downloading..");
+            }
+
+            return false;
         }
     }
 }

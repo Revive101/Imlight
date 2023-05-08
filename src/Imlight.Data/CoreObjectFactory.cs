@@ -10,7 +10,7 @@ using Imlight.Common;
 using static WizUnraveler.Cache.TypeCache;
 using WizUnraveler;
 
-namespace Imlight.Resources
+namespace Imlight.Data
 {
     public static class CoreObjectFactory
     {
@@ -104,16 +104,11 @@ namespace Imlight.Resources
 
         public static CoreObject CreateObjectFromInfo(CoreObjectInfo objInfo)
         {
-            if (objInfo.m_templateID == 0)
-            {
-                Log.Logger.Error($"Object Info template ID was 0.");
-                return null;
-            };
-            
-            var template = GetCoreTemplate(objInfo.m_templateID);
+            var templateId = GetTemplateId(objInfo);
+            var template = GetCoreTemplate(templateId);
             if (template is null)
             {
-                Log.Logger.Error($"Could not find template for object info [{objInfo.m_templateID}]");
+                Log.Logger.Error($"Could not find template for object info [{templateId}]");
                 return null;
             }
             
@@ -143,7 +138,7 @@ namespace Imlight.Resources
             //obj = InitializeCoreObjectBehaviors(obj, objInfo.m_templateID);
             
             // Set the object properties.
-            obj.m_templateID = objInfo.m_templateID;
+            obj.m_templateID = templateId;
             obj.m_location = objInfo.m_location;
             obj.m_orientation = objInfo.m_orientation;
             obj.m_fScale = objInfo.m_fScale;
@@ -154,6 +149,37 @@ namespace Imlight.Resources
 
             return obj;
         }
+        
+        private static ulong GetTemplateId(CoreObjectInfo objInfo)
+        {
+            var templateId = objInfo.m_templateID;
+
+            // Fuck you, KingsIsle. Volume template IDs are serialized with a different hash.
+            /*
+            Volume volume = null;
+            var isVolume = objInfo is Volume;
+            if (isVolume)
+            {
+                volume = (Volume)objInfo;
+            }
+
+            if (templateId == 0 && (!isVolume || volume.m_templateID == 0))
+            {
+                Log.Logger.Error($"Object Info template ID was 0.");
+                return 0;
+            }
+
+            if (isVolume)
+            {
+                templateId = volume.m_templateID;
+            }
+
+            */
+
+            return templateId;
+        }
+
+        
         
         private static CoreTemplate GetCoreTemplate(ulong id)
         {

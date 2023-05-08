@@ -8,7 +8,6 @@ using WizUnraveler.ObjectProperty;
 using static WizUnraveler.Cache.TypeCache;
 using Imlight.Common;
 using WizUnraveler;
-using Imlight.Resources;
 
 namespace Imlight.Data
 {

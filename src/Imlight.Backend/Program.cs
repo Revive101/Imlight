@@ -3,14 +3,17 @@ using Imlight.Common;
 using Imlight.Common.Crypto;
 using Imlight.Login;
 using System;
+using System.Diagnostics;
 using System.IO;
+using System.Text;
 using Imlight.Data;
 using Imlight.Net;
 using WizUnraveler;
 using WizUnraveler.Cache;
 using Imlight.Game;
 using Imlight.Patch;
-using Imlight.Resources;
+using Imlight.Data;
+using WizUnraveler.ObjectProperty;
 
 namespace Imlight.Backend
 {
@@ -48,9 +51,10 @@ namespace Imlight.Backend
             // =============================================================
             // RESOURCES
             // =============================================================
+            // TODO: Move this until after out patch server begins.
             Log.Logger.Information("Gathering appropriate resources..");
 
-            var resourceLoadResult = ResourceManager.InitRoot();
+            var resourceLoadResult = ResourceManager.Initialize();
             if (!resourceLoadResult)
             {
                 Log.Logger.Fatal($"Could not load resources!");
@@ -69,7 +73,7 @@ namespace Imlight.Backend
             StartLoginServer();
             StartPatchServer();
 
-            Console.ReadKey();
+            Console.Read();
         }
 
         private static void StartLoginServer()
@@ -105,5 +109,6 @@ namespace Imlight.Backend
             Log.Logger.Information($"Imlight v{VERSION} -- Developed and maintained by Wizard101Rewritten.");
             Log.Logger.Information(@"==============================================================================================");
         }
+        
     }
 }

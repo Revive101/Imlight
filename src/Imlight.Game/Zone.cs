@@ -5,12 +5,10 @@ using Akka.Actor;
 using Imlight.Common;
 using Imlight.Net;
 using Imlight.Net.Messages;
-using Imlight.Resources;
+using Imlight.Data;
 using WizUnraveler;
 using WizUnraveler.Cache;
-using WizUnraveler.Data;
 using WizUnraveler.DML;
-using WizUnraveler.ObjectProperty;
 using static WizUnraveler.Cache.TypeCache;
 using static WizUnraveler.ObjectSerializer;
 
@@ -18,10 +16,12 @@ namespace Imlight.Game
 {
     public class Zone : ReceiveProtocolDispatcher
     {
-        public const string ZONE_DATA_FILE_NAME = "gamedata.bin";
+        private const string ZONE_DATA_FILE_NAME = "gamedata.bin";
         private const string SPAWN_DATA_FILE_NAME = "spawnData.xml";
         private const string PATH_DATA_FILE_NAME = "pathData.xml";
         private const string NODE_DATA_FILE_NAME = "pathNodeData.bin";
+        private const string VOLUME_DATA_FILE_NAME = "volumes.xml";
+        private const string TRIGGER_DATA_FILE_NAME = "triggers.xml";
         
         public string ZoneName { get; }
         public uint DynamicZoneId { get; }
@@ -30,7 +30,6 @@ namespace Imlight.Game
 
         // Zone data fields.
         // @todo: avoid allocation of all this data.
-        private WizZoneData _zoneData;
         private List<SpawnObject> _spawners = new();
         private List<PathObjectTemplate> _pathObjects = new();
         private List<NodeObject> _nodeObjects = new();
@@ -41,6 +40,8 @@ namespace Imlight.Game
             this.DynamicZoneId = GenerateDynamicZoneId();
 
             SetZoneData(zoneName);
+            
+            Log.Logger.Debug($"Zone [{ZoneName}] created.");
         }
         
         public static Props Props(string zoneName)
@@ -163,60 +164,7 @@ namespace Imlight.Game
                 client.Tell(msg);
             }
         }
-
-        private void SetZoneData(string name)
-        {
-            if (!ResourceManager.LoadWad(name, out var wad))
-            {
-                Log.Logger.Error($"Zone {name} loaded, but no wad was found in the gamedata directory.");
-                return;
-            }
-
-            // Load the zone data.
-            var zoneLoadResult = ResourceManager.LoadFile<WizZoneData>(wad, ZONE_DATA_FILE_NAME, out var zoneData);
-            if (zoneLoadResult) _zoneData = zoneData;
-            else Log.Logger.Error($"Zone {name} loaded, but zone data was missing or invalid.");
-            
-            // Load the spawn data.
-            var spawnDataLoadResult = ResourceManager.LoadFile<SpawnManager>(wad, SPAWN_DATA_FILE_NAME, out var spawnData);
-            if (spawnDataLoadResult) _spawners = spawnData.m_spawners;
-            else Log.Logger.Error($"Zone {name} loaded, but spawn data was missing or invalid.");
-            
-            // Load the path template data.
-            var pathListLoadResult = ResourceManager.LoadFile<PathManager_PathTemplateList>(wad, PATH_DATA_FILE_NAME, out var pathData);
-            if (pathListLoadResult) _pathObjects = pathData.m_pathList;
-            else Log.Logger.Error($"Zone {name} loaded, but path data was missing or invalid.");
-
-            // Load the node template data.
-            var nodeListLoadResult = ResourceManager.LoadFile<PathManager_NodeTemplateList>(wad, NODE_DATA_FILE_NAME, out var nodeData);
-            if (nodeListLoadResult) _nodeObjects = nodeData.m_nodeList;
-            else Log.Logger.Error($"Zone {name} loaded, but node data was missing or invalid.");
-            
-            if (zoneLoadResult) SetGameObjects();
-            if (spawnDataLoadResult && pathListLoadResult && nodeListLoadResult) SetPathData();
-        }
-
-        private void SetGameObjects()
-        {
-            foreach (var obj in _zoneData.m_objectList
-                         .Where(x => x is not null))
-            {
-                var newObj = CoreObjectFactory.CreateObjectFromInfo(obj);
-                if (newObj is null) continue;
-
-                // Create new instance agnostic ID for the object.
-                var id = GenerateMobileId();
-                newObj.m_nMobileID = id;
-
-                ZoneObjects.Add(id, newObj);
-            }
-        }
-
-        private void SetPathData()
-        {
-            //@todo: Implement path data.
-        }
-
+        
         private static uint GenerateDynamicZoneId()
         {
             var random = new Random();
@@ -239,5 +187,54 @@ namespace Imlight.Game
 
             return test;
         }
+        
+        #region Zone Data
+
+        private void SetZoneData(string name)
+        {
+            if (!ResourceManager.LoadWad(name, out var wad))
+            {
+                Log.Logger.Error($"Zone {name} loaded, but no wad was found in the gamedata directory.");
+                return;
+            }
+
+            // Load the zone data.
+            var zoneLoadResult = ResourceManager.LoadFile<WizZoneData>(wad, ZONE_DATA_FILE_NAME, out var zoneData);
+            if (zoneLoadResult) SetGameObjects(zoneData);
+            else Log.Logger.Error($"Zone {name} loaded, but zone data was missing or invalid.");
+
+            // Load the spawn data.
+            var spawnDataLoadResult = ResourceManager.LoadFile<SpawnManager>(wad, SPAWN_DATA_FILE_NAME, out var spawnData);
+            if (spawnDataLoadResult) _spawners = spawnData.m_spawners;
+            else Log.Logger.Error($"Zone {name} loaded, but spawn data was missing or invalid.");
+            
+            // Load the path template data.
+            var pathListLoadResult = ResourceManager.LoadFile<PathManager_PathTemplateList>(wad, PATH_DATA_FILE_NAME, out var pathData);
+            if (pathListLoadResult) _pathObjects = pathData.m_pathList;
+            else Log.Logger.Error($"Zone {name} loaded, but path data was missing or invalid.");
+
+            // Load the node template data.
+            var nodeListLoadResult = ResourceManager.LoadFile<PathManager_NodeTemplateList>(wad, NODE_DATA_FILE_NAME, out var nodeData);
+            if (nodeListLoadResult) _nodeObjects = nodeData.m_nodeList;
+            else Log.Logger.Error($"Zone {name} loaded, but node data was missing or invalid.");
+        }
+
+        private void SetGameObjects(WizZoneData zoneData)
+        {
+            foreach (var obj in zoneData.m_objectList
+                         .Where(x => x is not null))
+            {
+                var newObj = CoreObjectFactory.CreateObjectFromInfo(obj);
+                if (newObj is null) continue;
+
+                // Create new instance agnostic ID for the object.
+                var id = GenerateMobileId();
+                newObj.m_nMobileID = id;
+
+                ZoneObjects.Add(id, newObj);
+            }
+        }
+        
+        #endregion
     }
 }
