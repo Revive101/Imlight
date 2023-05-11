@@ -179,24 +179,6 @@ namespace Imlight.Patch
                 response.EnsureSuccessStatusCode();
             
                 using var content = response.Content.ReadAsStreamAsync().Result;
-                
-                // TODO: this is not working. I cannot get the CRC to match.
-                // should be 3060332817
-                var path = $"{Directory.GetCurrentDirectory()}/gamedata/WizardCity-WC_Hub.wad";
-                // read the file into a byte array
-                var fileBytes = File.ReadAllBytes(path);
-                var fileCrc = CRC32.Compute(fileBytes);
-
-                using(var memoryStream = new MemoryStream())
-                {
-                    content.CopyTo(memoryStream);
-                    var arr = memoryStream.ToArray();
-                    var revArr = arr.Reverse().ToArray();
-
-                    var size = arr.Length;
-                    var crcTest = CRC32.Compute(arr).ToString("x8");
-                    var crcTestRev = CRC32.Compute(revArr).ToString("x8");
-                }
 
                 // Convert the contents to an XmlDocument.
                 xmlDocument = new XmlDocument();
