@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Imlight.Data
+namespace Imlight.Common.Utilities
 {
-    public static class IMath
+    public static class Math
     {
         /// <summary>
         ///     Determines if a 2D point is within a convex polygon.
@@ -29,20 +29,20 @@ namespace Imlight.Data
 
                 angle += Angle2D(p1.X, p1.Y, p2.X, p2.Y);
             }
-            return (Math.Abs(Math.Abs(angle) - (Math.PI * 2)) < 0.01); //Some tolerance for rounding errors
+            return (System.Math.Abs(System.Math.Abs(angle) - (System.Math.PI * 2)) < 0.01); //Some tolerance for rounding errors
         }
 
         private static double Angle2D(float x1, float y1, float x2, float y2)
         {
             double diff, theta1, theta2;
 
-            theta1 = Math.Atan2(y1, x1);
-            theta2 = Math.Atan2(y2, x2);
+            theta1 = System.Math.Atan2(y1, x1);
+            theta2 = System.Math.Atan2(y2, x2);
             diff = theta2 - theta1;
-            while (diff > Math.PI)
-                diff -= Math.PI * 2;
-            while (diff < -Math.PI)
-                diff += Math.PI * 2;
+            while (diff > System.Math.PI)
+                diff -= System.Math.PI * 2;
+            while (diff < -System.Math.PI)
+                diff += System.Math.PI * 2;
 
             return diff;
         }
@@ -56,7 +56,7 @@ namespace Imlight.Data
         /// <returns>If the position is inside of the circle or not.</returns>
         public static bool InsideOfCircle(SharpDX.Vector2 p, float radius, SharpDX.Vector2 pos)
         {
-            return Math.Abs(SharpDX.Vector2.Distance(p, pos)) < radius;
+            return System.Math.Abs(SharpDX.Vector2.Distance(p, pos)) < radius;
         }
 
         /// <summary>
