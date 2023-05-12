@@ -1,5 +1,5 @@
 using NUnit.Framework;
-using Imlight.Common.Crypto;
+using Imlight.Common.Cryptography;
 using static Nito.HashAlgorithms.CRC32;
 
 namespace Imlight.Common.Test

@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/Imlight.Common/Imlight.Common.csproj" />
+    <ProjectReference Include="../../src/Common/Imlight.Common.csproj" />
   </ItemGroup>
 
 </Project>

@@ -10,9 +10,9 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/src/Imlight.Backend/bin/Debug/net5.0/Imlight.Backend.dll",
+            "program": "${workspaceFolder}/src/Backend/bin/Debug/net5.0/Imlight.Backend.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/src/Imlight.Backend",
+            "cwd": "${workspaceFolder}/src/Backend",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
             "console": "internalConsole",
             "stopAtEntry": false
