@@ -12,7 +12,6 @@ namespace Imlight.Common.Structures
     {
 
         public event NotifyCollectionChangedEventHandler CollectionChanged;
-        public event PropertyChangedEventHandler PropertyChanged;
 
         public ObservableQueue()
         {

@@ -48,17 +48,16 @@ namespace Imlight.Common.Cryptography
         /// <returns></returns>
         public static string EncodeCK2(ushort sessionID, uint timeSecs, uint timeMillis)
         {
-            var sessionHash = "";
-            using (RandomNumberGenerator rng = new RNGCryptoServiceProvider())
+            using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
             {
                 byte[] tokenData = new byte[32];
                 rng.GetBytes(tokenData);
 
-                sessionHash = Convert.ToBase64String(tokenData);
-            }
+                string sessionHash = Convert.ToBase64String(tokenData);
+                string salt = $"{timeMillis}{timeSecs}{sessionID}";
 
-            var salt = $"{timeMillis}{timeSecs}{sessionID}";
-            return SecondaryEncrypt(sessionHash, salt);
+                return SecondaryEncrypt(sessionHash, salt);
+            }
         }
 
         private static string HashPassword(string password)

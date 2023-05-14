@@ -20,8 +20,8 @@ namespace Imlight.Server.Login
                            ushort serverPort = DEFAULT_LOGIN_SERVER_PORT)
                            : base(serverName, serverPort, LoginServiceFactory.Props())
         {
+            // TODO: Move this game server creation out of this class.
             this._gamePoolServer = CreateGameServerPool();
-
             CreateLocalServer();
             Log.Logger.Debug($"New actor created under {Context.Self.Path}:" +
                              $" {DEFAULT_LOGIN_SERVER_NAME}.{GAME_SERVER_POOL_NAME}");

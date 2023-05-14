@@ -15,15 +15,17 @@ namespace Imlight.Common.Cryptography
             var encoding = Encoding.UTF8;
             var inputBytes = encoding.GetBytes(input);
 
-            var sha512 = new SHA512Managed();
-            var firstHash = sha512.ComputeHash(inputBytes);
+            using (var sha512 = SHA512.Create())
+            {
+                var firstHash = sha512.ComputeHash(inputBytes);
 
-            // Add salt to our soup!
-            var salt = encoding.GetBytes($"{sessionID}{timeSecs}{timeMillis}");
-            var state = sha512.ComputeHash(firstHash.Concat(salt).ToArray());
+                // Add salt to our soup!
+                var salt = encoding.GetBytes($"{sessionID}{timeSecs}{timeMillis}");
+                var state = sha512.ComputeHash(firstHash.Concat(salt).ToArray());
 
-            // Convert to 64 again and return.
-            return Convert.ToBase64String(state);
+                // Convert to 64 again and return.
+                return Convert.ToBase64String(state);
+            }
         }
 
         public static bool VerifyPK3(string input, ushort sessionID, uint timeSecs, uint timeMillis, string encodedString)
