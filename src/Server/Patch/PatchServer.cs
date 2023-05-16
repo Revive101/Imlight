@@ -6,53 +6,66 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Xml;
+using System.Threading.Tasks;
 using Akka.Actor;
+using WizUnraveler;
 using Imlight.Common.Utilities;
+using Imlight.Common.Cryptography;
 
 namespace Imlight.Server.Patch
 {
     public class PatchServer : Shared.Networking.Server
     {
-        public static IActorRef Instance { get; private set; }
-        
         public const string DEFAULT_PATCH_SERVER_NAME = "Imlight.Patch";
         private const ushort DEFAULT_PATCH_SERVER_PORT = 12300;
         private const string PATCH_SERVER_URL = "http://versionec.us.wizard101.com/WizPatcher/";
         private const string REVISION = "735422";
-        private const int PATCH_SERVER_TIMEOUT = 15000;
+        private const int PATCH_SERVER_TIMEOUT = 5; // In seconds.
+        private const string LATEST_FILE_LIST_NAME_BIN = "LatestFileList.bin";
+        private const string LATEST_FILE_LIST_NAME_XML = "LatestFileList.xml";
+        private const int LATEST_FILE_LIST_PARSE_TIMEOUT = 5;
 
-        private bool _patchEndpointAlive;
+        public static bool EndpointReached { get; private set; }
+        public static uint LatestVersion { get; private set; }
+        public static ByteString ListFileName { get; private set; }
+        public static uint ListFileSize { get; private set; }
+        public static uint ListFileCRC { get; private set; }
+        public static ByteString ListFileURL { get; private set; }
+        public static ByteString URLPrefix { get; private set; }
+        public static ByteString URLSuffix { get; private set; }
+
+        private static IActorRef _instance;
         private string _patchServerWorkingUrl;
         private LatestFileList _latestFileList;
         private readonly Stopwatch _diagnosticStopwatch;
-        
+
         public PatchServer(string name, int port, Props factoryProps) : base(name, port, factoryProps)
         {
+            if (_instance is not null)
+                throw new Exception("Attempted to create more than one patch server! This is not possible!");
+
             Log.Logger.Information($"Patch server created with " +
                                    $"name {name} " +
                                    $"under port {port}.");
-            Instance = this.Self;
-
-            // Check patch server status and record the diagnostics.
+            _instance = this.Self;
             _diagnosticStopwatch = new Stopwatch();
+
+            // Check patch server endpoint status and record the diagnostics.
             _diagnosticStopwatch.Restart();
-            _patchEndpointAlive = GetPatchServerStatus();
+            EndpointReached = GetPatchServerStatus();
             _diagnosticStopwatch.Stop();
             Log.Logger.Debug($"Patch server status check took {_diagnosticStopwatch.ElapsedMilliseconds} ms.");
 
             // Only perform the following if the patch server is available.
-            if (!_patchEndpointAlive) return;
+            if (!EndpointReached) return;
 
-            // Set the latest file list and record the diagnostics.
+            // Download and parse the latest file list and record the diagnostics.
             _diagnosticStopwatch.Restart();
-            if (!TryGetLatestFileList(out var _latestFileList)) 
-            {
-                Log.Logger.Error("Trouble getting LatestFileList.xml from the patch server!");
-            }
+            SetLatestFileList();
             _diagnosticStopwatch.Stop();
-            Log.Logger.Debug($"Parsed LatestFileList.xml in {_diagnosticStopwatch.ElapsedMilliseconds} ms.");
+            Log.Logger.Debug($"Downloaded and parsed LatestFileList in {_diagnosticStopwatch.ElapsedMilliseconds} ms.");
         }
-        
+
         public static Props Props(
             string serverName = DEFAULT_PATCH_SERVER_NAME,
             ushort serverPort = DEFAULT_PATCH_SERVER_PORT)
@@ -60,132 +73,169 @@ namespace Imlight.Server.Patch
             return Akka.Actor.Props.Create(() => new PatchServer(serverName, serverPort, null));
         }
 
+        /// <summary>
+        /// Attempts to download a file from the patch server endpoint.
+        /// </summary>
+        /// <param name="fileName">The name of the file to download.</param>
+        /// <param name="content">The outgoing file stream</param>
+        /// <returns>True, on operation success; false otherwise.</returns>
+        public async Task<byte[]> DownloadFileStream(string fileName)
+        {
+            if (_patchServerWorkingUrl == string.Empty)
+                throw new Exception("By this point, the patch server endpoint has not yet been reached!");
+
+            var url = $"{_patchServerWorkingUrl}{fileName}";
+            Log.Logger.Information($"Attempting to download file from patch server endpoint at url {url}.");
+
+            try
+            {
+                using var client = new HttpClient();
+                using var response = await client.GetAsync(url);
+                response.EnsureSuccessStatusCode();
+
+                var content = await response.Content.ReadAsByteArrayAsync();
+                if (content.Length <= 0)
+                {
+                    Log.Logger.Error($"Trouble on patch server download: File was successfully downloaded, but size was 0?");
+                    return null;
+                }
+
+                Log.Logger.Information($"File successfully downloaded from {url}. Content size: {content.Length}");
+                return content;
+            }
+            catch (Exception webException)
+            {
+                Log.Logger.Error($"Error while downloading file from patch server endpoint: {webException.Message}");
+                return null;
+            }
+        }
+
         private bool GetPatchServerStatus()
         {
             var patchServerUrl = PATCH_SERVER_URL;
-            var revisionUrl = $"{patchServerUrl}V_r{REVISION}.Wizard_1_510_Live/Windows/";
+            var revisionUrl = $"{patchServerUrl}V_r{REVISION}.Wizard_1_510/Windows/";
 
-            Log.Logger.Information($"Checking patch server at URL {patchServerUrl}. Timeout: {PATCH_SERVER_TIMEOUT} ms.");
-            if (!GetPatchServerStatus(patchServerUrl))
+            // Check to see if the patch server URL is available at all.
+            Log.Logger.Information($"Checking patch server at URL {patchServerUrl}. Timeout: {PATCH_SERVER_TIMEOUT} s.");
+            if (!GetServerURLStatus(patchServerUrl))
             {
                 Log.Logger.Error($"Patch server at URL {patchServerUrl} is not available.");
                 return false;
             }
 
-            Log.Logger.Information($"Checking patch server revision at URL {revisionUrl}. Timeout: {PATCH_SERVER_TIMEOUT} ms.");
-            if (!GetPatchServerDirectoryStatus(revisionUrl))
+            // Now, check to see if the revision the server is trying to run is available.
+            Log.Logger.Information($"Checking patch server revision at URL {revisionUrl}. Timeout: {PATCH_SERVER_TIMEOUT} s.");
+            if (!GetServerURLDirectoryStatus(revisionUrl))
             {
                 Log.Logger.Error($"Patch server is available, but revision {REVISION} is not available.");
                 return false;
             }
-        
+
+            Log.Logger.Information($"Patch server at URL {patchServerUrl} found and set.");
+            _patchServerWorkingUrl = revisionUrl;
+
             return true;
         }
 
-        private bool GetPatchServerStatus(string url)
+        private bool GetServerURLStatus(string url)
         {
-            var request = (HttpWebRequest) WebRequest.Create(url);
-            request.Timeout = PATCH_SERVER_TIMEOUT;
-            request.Method = "HEAD";
+            using var client = new HttpClient();
+            client.Timeout = TimeSpan.FromSeconds(PATCH_SERVER_TIMEOUT);
+
             try
             {
-                using var response = (HttpWebResponse) request.GetResponse();
+                using var response = client.SendAsync(new HttpRequestMessage(HttpMethod.Head, url)).Result;
                 // Any response returned means the server is up.
                 return true;
             }
-            catch (WebException ex)
+            catch (HttpRequestException ex) when (ex.StatusCode >= HttpStatusCode.InternalServerError)
             {
-                // Check if a response was received.
-                if (ex.Response != null)
-                {
-                    // Any response other than a 5xx error means the server is up.
-                    var response = (HttpWebResponse)ex.Response;
-                    return (int)response.StatusCode < 500;
-                }
-                else
-                {
-                    Log.Logger.Error($"Error while checking patch server at URL {url}. " +
-                                     $"Exception: {ex.Message}");
-                    return false;
-                }
+                // Any response other than a 5xx error means the server is up.
+                return ex.StatusCode < HttpStatusCode.InternalServerError;
             }
-        }
-
-        private bool GetPatchServerDirectoryStatus(string url)
-        {
-            var request = (HttpWebRequest) WebRequest.Create(url);
-            request.Timeout = PATCH_SERVER_TIMEOUT;
-            request.Method = "HEAD";
-
-            try
+            catch (Exception ex)
             {
-                using var response = (HttpWebResponse) request.GetResponse();
-                return true;
-            }
-            catch (WebException ex)
-            {
-                // Return true if we get a 403. Forbidden means the directory exists.
-                if (ex.Response != null)
-                {
-                    var response = (HttpWebResponse)ex.Response;
-                    return response.StatusCode == HttpStatusCode.Forbidden;
-                }
-                
                 Log.Logger.Error($"Error while checking patch server at URL {url}. " +
                                  $"Exception: {ex.Message}");
                 return false;
             }
         }
 
-        private bool TryGetLatestFileList(out LatestFileList latestFileList)
+        private bool GetServerURLDirectoryStatus(string url)
         {
-            latestFileList = default;
+            using var client = new HttpClient();
+            client.Timeout = TimeSpan.FromSeconds(PATCH_SERVER_TIMEOUT);
 
-            if (!DownloadLatestFileList(out var xmlDocument)
-             || !ParseLatestFileList(xmlDocument, out latestFileList))
-            {
-                return false;
-            }
-            
-            return true;
-        }
-
-        private bool DownloadLatestFileList(out XmlDocument xmlDocument)
-        {
-            xmlDocument = null;
-            var url = $"{_patchServerWorkingUrl}LatestFileList.bin";
-            Log.Logger.Information($"Downloading latest file list from patch server at URL {url}.");
-            
-            // Download the file list.
             try
             {
-                using var client = new HttpClient();
-                using var response = client.GetAsync(url).Result;
-                response.EnsureSuccessStatusCode();
-            
-                using var content = response.Content.ReadAsStreamAsync().Result;
-
-                // Convert the contents to an XmlDocument.
-                xmlDocument = new XmlDocument();
-                using var reader = new System.IO.StreamReader(content);
-                var xmlContent = reader.ReadToEnd();
-                xmlDocument.LoadXml(xmlContent);
-
+                using var response = client.SendAsync(new HttpRequestMessage(HttpMethod.Head, url)).Result;
+                return true;
+            }
+            catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Forbidden)
+            {
+                // Forbidden means the directory exists.
                 return true;
             }
             catch (Exception ex)
             {
-                Log.Logger.Error($"Error while downloading latest file list from patch server at URL {url}. " +
+                Log.Logger.Error($"Error while checking patch server at URL {url}. " +
                                  $"Exception: {ex.Message}");
-
                 return false;
             }
         }
-        
-        private bool ParseLatestFileList(XmlDocument xmlDocument, out LatestFileList latestFileList)
+
+        private void SetLatestFileList()
+        {
+            // We need both versions of the LatestFileList (for now).
+            // The first interpretation is xml, and is for the server to parse and cache.
+            // We'll be using it to check the integrity of the server's files.
+            var latestXml = DownloadFileStream(LATEST_FILE_LIST_NAME_XML).Result;
+            if (latestXml is null)
+            {
+                Log.Logger.Error($"Had trouble downloading {LATEST_FILE_LIST_NAME_XML}.");
+            }
+            else
+            {
+                if (!ParseLatestFileList(latestXml, out var latestXmlObj))
+                {
+                    Log.Logger.Error($"Could not successfully parse {LATEST_FILE_LIST_NAME_XML}.");
+                }
+                else
+                {
+                    _latestFileList = latestXmlObj;
+                }
+            }
+
+            // The second interpretation is the `.bin`, which is what the Wizard101 client uses.
+            // Download the `.bin` interpreation and cache the file stats.
+            // This is so we can easily return the statistics when the client requests it.
+            var latestBin = DownloadFileStream(LATEST_FILE_LIST_NAME_BIN).Result;
+            if (latestBin is null)
+            {
+                Log.Logger.Error($"Had trouble downloading the {LATEST_FILE_LIST_NAME_BIN}.");
+            }
+            else
+            {
+                // Cache the `.bin` file properties.
+                LatestVersion = Convert.ToUInt32(REVISION);
+                ListFileName = LATEST_FILE_LIST_NAME_BIN;
+                ListFileSize = Convert.ToUInt32(latestBin.Length);
+                ListFileCRC = crc32.Compute(latestBin);
+                ListFileURL = $"{PATCH_SERVER_URL}{LATEST_FILE_LIST_NAME_BIN}";
+            }
+        }
+
+        private bool ParseLatestFileList(byte[] content, out LatestFileList latestFileList)
         {
             latestFileList = null;
-            var rootNode = xmlDocument.GetElementsByTagName("LatestFileList").Cast<XmlElement>().FirstOrDefault();
+
+            // Convert the contents to an XmlDocument.
+            var xml = StreamToXmlDoc(content);
+
+            var rootNode = xml
+                .GetElementsByTagName("LatestFileList")
+                .Cast<XmlElement>()
+                .FirstOrDefault();
             if (rootNode == null)
             {
                 Log.Logger.Error("XmlDocument does not contain a LatestFileList node.");
@@ -193,7 +243,6 @@ namespace Imlight.Server.Patch
             }
 
             latestFileList = new LatestFileList() { Files = new List<LatestFile>() };
-
             foreach (var wadNode in rootNode.ChildNodes.Cast<XmlElement>())
             {
                 if (wadNode.Name == "_TableList" || wadNode.Name == "About") continue;
@@ -204,7 +253,7 @@ namespace Imlight.Server.Patch
                     Log.Logger.Error("WAD record does not contain a valid internal record.");
                     continue;
                 }
-                
+
                 var wadRecord = new LatestFile()
                 {
                     SourceFileName = internalRecord.SelectSingleNode("SrcFileName")?.InnerText,
@@ -221,6 +270,26 @@ namespace Imlight.Server.Patch
             }
 
             return true;
+        }
+
+        private XmlDocument StreamToXmlDoc(byte[] content)
+        {
+            // XmlDocument will not break on exception, for whatever god forsaken reason.
+            // Fuck you, Microsoft.
+            // This is our own catch to continue willingly even on exception.
+            try 
+            {
+                var xmlDoc = new XmlDocument();
+                var ms = new MemoryStream(content);
+                xmlDoc.Load(ms);
+                return xmlDoc;
+            }
+            catch (Exception ex) 
+            {
+                Log.Logger.Error($"Error parsing Stream to XmlDocument: {ex.Message}");
+                return null;
+            }
+
         }
 
         private uint TryParseUInt(string value)
