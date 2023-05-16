@@ -31,7 +31,6 @@ namespace Imlight.Backend
             // AKKA.NET CONFIGURATION
             // =============================================================
             Log.Logger.Information("Getting Akka.NET configuration..");
-
             if (!AkkaConfiguration.CreateActorSystem(ACTOR_SYSTEM_NAME, out var system))
             {
                 Log.Logger.Fatal($"Could not find Akka.NET config file!");
@@ -39,35 +38,31 @@ namespace Imlight.Backend
                 Console.ReadKey();
                 return;
             }
-
             Log.Logger.Information("Akka.NET system created.");
-
             _imlightSystem = system;
 
             // =============================================================
             // RESOURCES
             // =============================================================
-            // TODO: Move this until after out patch server begins.
-            Log.Logger.Information("Gathering appropriate resources..");
+            // The patch server must start prior to any resources. This is to ensure that any
+            // missing resources may be downloaded from the patch server as needed.
+            StartPatchServer();
 
+            Log.Logger.Information("Gathering appropriate resources..");
             var resourceLoadResult = ResourceManager.Initialize();
             if (!resourceLoadResult)
             {
                 Log.Logger.Fatal($"Could not load resources!");
 
-                Console.ReadKey();
+                Console.Read();
                 return;
             }
-
             Log.Logger.Information("Resources successfully allocated.");
 
             // =============================================================
             // SERVERS
             // =============================================================
-            Log.Logger.Information("Starting servers..");
-
             StartLoginServer();
-            StartPatchServer();
 
             Console.Read();
         }

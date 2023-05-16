@@ -30,8 +30,9 @@ namespace Imlight.Server.Database
             return col;
         }
 
-        public static byte[] GetCachedFile(string fileName)
+        public static bool TryGetCachedFile(string fileName, out byte[] fileRaw)
         {
+            fileRaw = default;
             using var db = new LiteDatabase(_path);
             var fs = db.GetStorage<_files>();
 
@@ -39,12 +40,13 @@ namespace Imlight.Server.Database
                 .FirstOrDefault();
 
             if (file is null)
-                throw new Exception($"No file by {fileName} was found!");
+                return false;
 
             var memStream = new MemoryStream();
             file.CopyTo(memStream);
+            fileRaw = memStream.ToArray();
 
-            return memStream.ToArray();
+            return true;
         }
     }
 }
