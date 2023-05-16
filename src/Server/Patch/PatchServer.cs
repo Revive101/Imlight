@@ -11,6 +11,8 @@ using Akka.Actor;
 using WizUnraveler;
 using Imlight.Common.Utilities;
 using Imlight.Common.Cryptography;
+using Imlight.Server.Shared.Networking;
+using Imlight.Server.Shared.Packets;
 
 namespace Imlight.Server.Patch
 {
@@ -70,7 +72,7 @@ namespace Imlight.Server.Patch
             string serverName = DEFAULT_PATCH_SERVER_NAME,
             ushort serverPort = DEFAULT_PATCH_SERVER_PORT)
         {
-            return Akka.Actor.Props.Create(() => new PatchServer(serverName, serverPort, null));
+            return Akka.Actor.Props.Create(() => new PatchServer(serverName, serverPort, PatchServiceFactory.Props()));
         }
 
         /// <summary>
@@ -108,6 +110,23 @@ namespace Imlight.Server.Patch
                 Log.Logger.Error($"Error while downloading file from patch server endpoint: {webException.Message}");
                 return null;
             }
+        }
+
+        [MessageHandler(typeof(PATCH_105_PROTCOL.MSG_LATEST_CACHE_PROPERTIES))]
+        public void ReceiveLatestFileCacheProperties(PATCH_105_PROTCOL.MSG_LATEST_CACHE_PROPERTIES message)
+        {
+            var rsp = new PATCH_105_PROTCOL.MSG_LATEST_CACHE_PROPERTIES()
+            {
+                Name = ListFileName,
+                URL = ListFileURL,
+                URLPrefix = _patchServerWorkingUrl,
+                URLSuffix = "",
+                Version = LatestVersion,
+                CRC = ListFileCRC,
+                Size = ListFileSize,
+            };
+
+            Sender.Tell(rsp);
         }
 
         private bool GetPatchServerStatus()
