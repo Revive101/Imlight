@@ -20,13 +20,16 @@ namespace Imlight.Server.Patch
     {
         public const string DEFAULT_PATCH_SERVER_NAME = "Imlight.Patch";
         private const ushort DEFAULT_PATCH_SERVER_PORT = 12300;
-        private const string PATCH_SERVER_URL = "http://versionec.us.wizard101.com/WizPatcher/";
-        private const string REVISION = "735422";
+        private const string PATCH_SERVER_URL = "http://phill030.de:12369/repatcher/";
         private const int PATCH_SERVER_TIMEOUT = 5; // In seconds.
         private const string LATEST_FILE_LIST_NAME_BIN = "LatestFileList.bin";
         private const string LATEST_FILE_LIST_NAME_XML = "LatestFileList.xml";
         private const int LATEST_FILE_LIST_PARSE_TIMEOUT = 5;
+        private const uint REVISION = 735422;
+        private const string USER_AGENT_VALUE = "KingsIsle Patcher";
+        private const ushort DOWNLOAD_BUFFER_SIZE = 4096;
 
+        public static IActorRef Instance { get; private set; }
         public static bool EndpointReached { get; private set; }
         public static uint LatestVersion { get; private set; }
         public static ByteString ListFileName { get; private set; }
@@ -36,20 +39,30 @@ namespace Imlight.Server.Patch
         public static ByteString URLPrefix { get; private set; }
         public static ByteString URLSuffix { get; private set; }
 
-        private static IActorRef _instance;
-        private string _patchServerWorkingUrl;
         private LatestFileList _latestFileList;
-        private readonly Stopwatch _diagnosticStopwatch;
+        private Stopwatch _diagnosticStopwatch;
 
         public PatchServer(string name, int port, Props factoryProps) : base(name, port, factoryProps)
         {
-            if (_instance is not null)
+            if (Instance is not null)
                 throw new Exception("Attempted to create more than one patch server! This is not possible!");
 
             Log.Logger.Information($"Patch server created with " +
                                    $"name {name} " +
                                    $"under port {port}.");
-            _instance = this.Self;
+            Instance = this.Self;
+        }
+
+        public static Props Props(
+            string serverName = DEFAULT_PATCH_SERVER_NAME,
+            ushort serverPort = DEFAULT_PATCH_SERVER_PORT)
+        {
+            return Akka.Actor.Props.Create(() => new PatchServer(serverName, serverPort, PatchServiceFactory.Props()));
+        }
+
+        [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_INITIALIZE))]
+        private void InitializeServer(SERVER_100_PROTOCOL.MSG_INITIALIZE message)
+        {
             _diagnosticStopwatch = new Stopwatch();
 
             // Check patch server endpoint status and record the diagnostics.
@@ -63,53 +76,21 @@ namespace Imlight.Server.Patch
 
             // Download and parse the latest file list and record the diagnostics.
             _diagnosticStopwatch.Restart();
-            SetLatestFileList();
+            //SetLatestFileList();
             _diagnosticStopwatch.Stop();
             Log.Logger.Debug($"Downloaded and parsed LatestFileList in {_diagnosticStopwatch.ElapsedMilliseconds} ms.");
+
+            // Let whomever sender know that we're finished initializing!
+            Sender.Tell(new SERVER_100_PROTOCOL.MSG_INITIALIZE_COMPLETE());
         }
 
-        public static Props Props(
-            string serverName = DEFAULT_PATCH_SERVER_NAME,
-            ushort serverPort = DEFAULT_PATCH_SERVER_PORT)
+        [MessageHandler(typeof(PATCH_105_PROTCOL.MSG_DOWNLOAD_FILE_REQUEST))]
+        public void ReceiveDownloadRequest(PATCH_105_PROTCOL.MSG_DOWNLOAD_FILE_REQUEST message)
         {
-            return Akka.Actor.Props.Create(() => new PatchServer(serverName, serverPort, PatchServiceFactory.Props()));
-        }
+            var rsp = new PATCH_105_PROTCOL.MSG_DOWNLOAD_FILE_TASK();
+            rsp.DownloadTask = DownloadFileStream(message.FileName);
 
-        /// <summary>
-        /// Attempts to download a file from the patch server endpoint.
-        /// </summary>
-        /// <param name="fileName">The name of the file to download.</param>
-        /// <param name="content">The outgoing file stream</param>
-        /// <returns>True, on operation success; false otherwise.</returns>
-        public async Task<byte[]> DownloadFileStream(string fileName)
-        {
-            if (_patchServerWorkingUrl == string.Empty)
-                throw new Exception("By this point, the patch server endpoint has not yet been reached!");
-
-            var url = $"{_patchServerWorkingUrl}{fileName}";
-            Log.Logger.Information($"Attempting to download file from patch server endpoint at url {url}.");
-
-            try
-            {
-                using var client = new HttpClient();
-                using var response = await client.GetAsync(url);
-                response.EnsureSuccessStatusCode();
-
-                var content = await response.Content.ReadAsByteArrayAsync();
-                if (content.Length <= 0)
-                {
-                    Log.Logger.Error($"Trouble on patch server download: File was successfully downloaded, but size was 0?");
-                    return null;
-                }
-
-                Log.Logger.Information($"File successfully downloaded from {url}. Content size: {content.Length}");
-                return content;
-            }
-            catch (Exception webException)
-            {
-                Log.Logger.Error($"Error while downloading file from patch server endpoint: {webException.Message}");
-                return null;
-            }
+            Sender.Tell(rsp);
         }
 
         [MessageHandler(typeof(PATCH_105_PROTCOL.MSG_LATEST_CACHE_PROPERTIES))]
@@ -119,7 +100,7 @@ namespace Imlight.Server.Patch
             {
                 Name = ListFileName,
                 URL = ListFileURL,
-                URLPrefix = _patchServerWorkingUrl,
+                URLPrefix = PATCH_SERVER_URL,
                 URLSuffix = "",
                 Version = LatestVersion,
                 CRC = ListFileCRC,
@@ -129,29 +110,68 @@ namespace Imlight.Server.Patch
             Sender.Tell(rsp);
         }
 
+        private async Task<byte[]> DownloadFileStream(string fileName)
+        {
+            if (!EndpointReached)
+                throw new Exception("By this point, the patch server endpoint has not yet been reached!");
+
+            var url = $"{PATCH_SERVER_URL}{fileName}";
+            Log.Logger.Debug(url);
+
+            try
+            {
+                // Create a new HttpClient with the magic user agent values.
+                using var client = new HttpClient();
+                client.DefaultRequestHeaders.UserAgent.ParseAdd(USER_AGENT_VALUE);
+                using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+                response.EnsureSuccessStatusCode();
+
+                long? totalBytes = response.Content.Headers.ContentLength;
+                //var progressBar = new ConsoleProgressBar();
+
+                Log.Logger.Information($"Attempting to download file from patch server endpoint at url {url}. Content size: {totalBytes}");
+
+                // Download the file from web using the HttpClient.
+                await using Stream contentStream = await response.Content.ReadAsStreamAsync();
+                MemoryStream memoryStream = new MemoryStream();
+
+                var buffer = new byte[DOWNLOAD_BUFFER_SIZE];
+                int bytesRead;
+                long bytesDownloaded = 0;
+
+                while ((bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                {
+                    await memoryStream.WriteAsync(buffer, 0, bytesRead);
+                    bytesDownloaded += bytesRead;
+
+                    // Update the progress bar.
+                    // TODO: I want a progress bar here, but it currently doesn't play nice with Serilog.
+                    //var downloadedPercent = (double)(bytesDownloaded / totalBytes);
+                    //progressBar.Report(downloadedPercent * 1);
+                }
+
+                Log.Logger.Information($"File successfully downloaded from {url}. Content size: {memoryStream.Length}");
+
+                return memoryStream.ToArray();
+            }
+            catch (Exception webException)
+            {
+                Log.Logger.Error($"Error while downloading file from patch server endpoint: {webException.Message}");
+                return null;
+            }
+        }
+
         private bool GetPatchServerStatus()
         {
-            var patchServerUrl = PATCH_SERVER_URL;
-            var revisionUrl = $"{patchServerUrl}V_r{REVISION}.Wizard_1_510/Windows/";
-
             // Check to see if the patch server URL is available at all.
-            Log.Logger.Information($"Checking patch server at URL {patchServerUrl}. Timeout: {PATCH_SERVER_TIMEOUT} s.");
-            if (!GetServerURLStatus(patchServerUrl))
+            Log.Logger.Information($"Checking patch server at URL {PATCH_SERVER_URL}. Timeout: {PATCH_SERVER_TIMEOUT} s.");
+            if (!GetServerURLStatus(PATCH_SERVER_URL))
             {
-                Log.Logger.Error($"Patch server at URL {patchServerUrl} is not available.");
+                Log.Logger.Error($"Patch server at URL {PATCH_SERVER_URL} is not available.");
                 return false;
             }
 
-            // Now, check to see if the revision the server is trying to run is available.
-            Log.Logger.Information($"Checking patch server revision at URL {revisionUrl}. Timeout: {PATCH_SERVER_TIMEOUT} s.");
-            if (!GetServerURLDirectoryStatus(revisionUrl))
-            {
-                Log.Logger.Error($"Patch server is available, but revision {REVISION} is not available.");
-                return false;
-            }
-
-            Log.Logger.Information($"Patch server at URL {patchServerUrl} found and set.");
-            _patchServerWorkingUrl = revisionUrl;
+            Log.Logger.Information($"Patch server at URL {PATCH_SERVER_URL} found and set.");
 
             return true;
         }
@@ -171,29 +191,6 @@ namespace Imlight.Server.Patch
             {
                 // Any response other than a 5xx error means the server is up.
                 return ex.StatusCode < HttpStatusCode.InternalServerError;
-            }
-            catch (Exception ex)
-            {
-                Log.Logger.Error($"Error while checking patch server at URL {url}. " +
-                                 $"Exception: {ex.Message}");
-                return false;
-            }
-        }
-
-        private bool GetServerURLDirectoryStatus(string url)
-        {
-            using var client = new HttpClient();
-            client.Timeout = TimeSpan.FromSeconds(PATCH_SERVER_TIMEOUT);
-
-            try
-            {
-                using var response = client.SendAsync(new HttpRequestMessage(HttpMethod.Head, url)).Result;
-                return true;
-            }
-            catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Forbidden)
-            {
-                // Forbidden means the directory exists.
-                return true;
             }
             catch (Exception ex)
             {
