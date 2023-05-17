@@ -138,5 +138,17 @@ namespace Imlight.Server.Shared.Packets
 
             public long Ping;
         }
+
+        public class MSG_INITIALIZE : IServerMessage
+        {
+            public byte MessageOrder { get; } = 15;
+            public byte ServiceID { get; } = 100;
+        }
+
+        public class MSG_INITIALIZE_COMPLETE : IServerMessage
+        {
+            public byte MessageOrder { get; } = 16;
+            public byte ServiceID { get; } = 100;
+        }
     }
 }

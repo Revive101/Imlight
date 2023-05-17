@@ -1,15 +1,11 @@
 ﻿using System;
-using System.Diagnostics;
-using System.IO;
-using System.Text;
+using System.Threading.Tasks;
 using Akka.Actor;
-using WizUnraveler;
-using WizUnraveler.Cache;
-using WizUnraveler.ObjectProperty;
 using Imlight.Common.Utilities;
 using Imlight.Server.Login;
 using Imlight.Server.Database;
 using Imlight.Server.Patch;
+using Imlight.Server.Shared.Packets;
 
 namespace Imlight.Backend
 {
@@ -46,7 +42,7 @@ namespace Imlight.Backend
             // =============================================================
             // The patch server must start prior to any resources. This is to ensure that any
             // missing resources may be downloaded from the patch server as needed.
-            StartPatchServer();
+            Task.Run(() => StartPatchServer());
 
             Log.Logger.Information("Gathering appropriate resources..");
             var resourceLoadResult = ResourceManager.Initialize();
@@ -63,6 +59,7 @@ namespace Imlight.Backend
             // SERVERS
             // =============================================================
             StartLoginServer();
+            // TODO: The game server should also start here.
 
             Console.Read();
         }
@@ -75,12 +72,15 @@ namespace Imlight.Backend
             Log.Logger.Debug($"New actor created under {_imlightSystem.Name}: {LoginServer.DEFAULT_LOGIN_SERVER_NAME}");
         }
 
-        private static void StartPatchServer() 
+        private static async Task StartPatchServer() 
         {
             var patchProps = PatchServer.Props();
-            _imlightSystem.ActorOf(patchProps, PatchServer.DEFAULT_PATCH_SERVER_NAME);
+            var actor = _imlightSystem.ActorOf(patchProps, PatchServer.DEFAULT_PATCH_SERVER_NAME);
             
             Log.Logger.Debug($"New actor created under {_imlightSystem.Name}: {PatchServer.DEFAULT_PATCH_SERVER_NAME}");
+
+            // Await initialization of the patch server.
+            await actor.Ask<SERVER_100_PROTOCOL.MSG_INITIALIZE_COMPLETE>(new SERVER_100_PROTOCOL.MSG_INITIALIZE());
         }
 
         private static void PrintTitle()
