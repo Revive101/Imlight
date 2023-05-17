@@ -11,7 +11,6 @@ namespace Imlight.Common.Cryptography
 
         public static uint Compute(byte[] input)
         {
-            var bytes = System.Text.Encoding.ASCII.GetBytes(@"KIWAD");
             var definition = new Definition
             {
                 Initializer                 = SEED,
@@ -22,7 +21,7 @@ namespace Imlight.Common.Cryptography
             };
 
             var crcengine = new Nito.HashAlgorithms.CRC32(definition);
-            var crc32 = crcengine.ComputeHash(bytes);
+            var crc32 = crcengine.ComputeHash(input);
             Array.Reverse(crc32);
 
             return Convert.ToUInt32(crc32);
