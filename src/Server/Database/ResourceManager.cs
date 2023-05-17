@@ -1,36 +1,30 @@
 using System;
 using System.IO;
 using System.Reflection;
+using Akka.Actor;
 using WizUnraveler;
 using WizUnraveler.Data;
 using WizUnraveler.ObjectProperty;
 using Imlight.Common.Utilities;
+using Imlight.Server.Patch;
+using Imlight.Server.Shared.Packets;
 
 namespace Imlight.Server.Database
 {
     public static class ResourceManager
     {
+        private const string ROOT_WAD_NAME = "Root.wad";
+        private const uint PATCH_SERVER_DOWNLOAD_TIMEOUT = 5;
+
         private static Wad _rootWad;
-        private static readonly string GameDataPath = Path.Combine(
-            Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) 
-            ?? string.Empty, $@"gamedata");
 
         public static bool Initialize()
         {
             // The Root.wad is integral to the server. If we do not have one, or cannot install one
             // the server cannot run properly.
-            if (!Directory.Exists(GameDataPath))
+            if (!TryLoadWad(ROOT_WAD_NAME, out _rootWad))
             {
-                Log.Logger.Fatal($"ResourceManager GameData directory not found: {GameDataPath}");
-                return false;
-            }
-            
-            // Load the Root.wad file.
-            var rootWadPath = Path.Combine(GameDataPath, "Root.wad");
-            _rootWad = new Wad(rootWadPath);
-            if (_rootWad is null)
-            {
-                Log.Logger.Fatal($"ResourceManager Root.wad not found: {rootWadPath}");
+                Log.Logger.Fatal($"Unable to download integral wad! {ROOT_WAD_NAME} was not found in the local cache nor able to download!");
                 return false;
             }
             
@@ -40,16 +34,60 @@ namespace Imlight.Server.Database
 
             return subModuleCoreObjectFactory && subModuleAccessPass;
         }
-        
-        public static bool LoadWad(string wadName, out Wad wad)
+
+        /// <summary>
+        /// Gets a WAD file from storage. If it's not found in the local cache, it will instead
+        /// download it from the available patch server endpoint.
+        /// </summary>
+        public static bool TryLoadWad(string wadName, out Wad wad)
         {
             wad = default;
 
-            var redoWadName = wadName.Replace('/', '-');
-            var wadPath = Path.Combine(GameDataPath, redoWadName);
-            wad = new Wad($"{wadPath}.wad");
+            // The root wad is cached in memory due to it's severe usages.
+            if (wadName == ROOT_WAD_NAME && _rootWad is not null)
+            {
+                wad = _rootWad;
+                return true;
+            }
 
-            return wad != null;
+            // There is a name inconsistency for wad files.
+            var betterWadName = wadName.Replace('/', '-');
+
+            // First, check to see if we can get this file from our local cache.
+            if (LocalCache.TryGetCachedFile(betterWadName, out var contentDataRaw))
+            {
+                // If the cached file is available, we can simply transmute the data into a Wad
+                // type and return.
+                wad = new Wad(contentDataRaw);
+                return true;
+            }
+
+            // It's not in the local cache. Instead, download it from the patch server endpoint.
+            try 
+            {
+                var patchServer = PatchServer.Instance;
+                var askMsg = new PATCH_105_PROTCOL.MSG_DOWNLOAD_FILE_REQUEST();
+                askMsg.FileName = betterWadName;
+                var timeout = TimeSpan.FromSeconds(PATCH_SERVER_DOWNLOAD_TIMEOUT);
+                var data = patchServer.Ask<PATCH_105_PROTCOL.MSG_DOWNLOAD_FILE_TASK>(askMsg, timeout)
+                        .Result
+                        .DownloadTask
+                        .Result;
+
+                // The file is now downloaded. Upload it to the cache.
+                var ms = new MemoryStream(data);
+                LocalCache.CacheFile(wadName, ms);
+
+                Log.Logger.Information($"Wad file {wadName} was put into the local cache. Content size: {data.Length}");
+
+                wad = new Wad(data);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Logger.Error($"Could not download wad \"{wadName}\". Exception: {ex.Message}");
+                return false;
+            }
         }
 
         public static bool LoadFile<T>(Wad wad, string path, out T obj)
@@ -126,21 +164,6 @@ namespace Imlight.Server.Database
             Log.Logger.Information("AccessPassManager [AccessPass.xml] loaded.");
             
             return true;
-        }
-
-        private static bool GetRootWad()
-        {
-            byte[] file;
-            try 
-            {
-                file = LocalCache.GetCachedFile("Root.wad");
-            }
-            catch (Exception)
-            {
-                Log.Logger.Warning("Root.wad not found in local cache. Downloading..");
-            }
-
-            return false;
         }
     }
 }

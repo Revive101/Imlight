@@ -192,7 +192,7 @@ namespace Imlight.Server.Game
 
         private void SetZoneData(string name)
         {
-            if (!ResourceManager.LoadWad(name, out var wad))
+            if (!ResourceManager.TryLoadWad(name, out var wad))
             {
                 Log.Logger.Error($"Zone {name} loaded, but no wad was found in the gamedata directory.");
                 return;
