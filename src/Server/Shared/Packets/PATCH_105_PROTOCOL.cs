@@ -33,12 +33,12 @@ namespace Imlight.Server.Shared.Packets
             public string FileName;
         }
 
-        public class MSG_DOWNLOAD_FILE_TASK : IServerMessage
+        public class MSG_DOWNLOAD_FILE_RESULT : IServerMessage
         {
             public byte MessageOrder { get; } = 3;
             public byte ServiceID { get; } = 105;
 
-            public Task<byte[]> DownloadTask;
+            public Stream FileStream;
         }
     }
 }

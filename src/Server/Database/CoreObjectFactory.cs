@@ -1,38 +1,43 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using static WizUnraveler.Cache.TypeCache;
 using WizUnraveler;
 using WizUnraveler.Data;
 using Imlight.Common.Utilities;
 using Imlight.Common.Cryptography;
 using Imlight.Server.Shared.Secrets;
+using WizUnraveler.Cache;
 
 namespace Imlight.Server.Database
 {
     public static class CoreObjectFactory
     {
+        private const string ROOT_WAD_NAME = "Root.wad";
         private const string TEMPLATE_MANIFEST_NAME = "TemplateManifest.xml";
         
-        private static TemplateManifest _templateManifest;
         private static readonly Dictionary<ulong, ByteString> _coreTemplates = new();
 
-        public static bool Load(Wad rootWad)
+        public static bool Load()
         {
-            var loadResult = ResourceManager.LoadFile(rootWad, TEMPLATE_MANIFEST_NAME, out _templateManifest);
-
-            if (loadResult)
+            var manifest = ResourceManager.LoadDeserializedFile<TemplateManifest>(ROOT_WAD_NAME, TEMPLATE_MANIFEST_NAME);
+            if (manifest is null)
+                return false;
+            
+            foreach (var templateLocation in manifest.m_serializedTemplates)
             {
-                foreach (var templateLocation in _templateManifest.m_serializedTemplates)
-                {
-                    var id = templateLocation.m_id;
-                    var loc = templateLocation.m_filename;
+                if (templateLocation is null) continue;
 
-                    // Drop the MSB from the id.
-                    id &= 0xFFFFFFFF;
-                    _coreTemplates.Add(id, loc);
-                }
+                var id = templateLocation.m_id;
+                var loc = templateLocation.m_filename;
+
+                // Drop the MSB from the id.
+                id &= 0xFFFFFFFF;
+                _coreTemplates.Add(id, loc);
             }
 
-            return loadResult;
+            return true;
         }
 
         /// <summary>
@@ -85,13 +90,10 @@ namespace Imlight.Server.Database
         public static bool FindBehaviorInstance<T>(CoreObject coreObj, out T behaviorInstance)
             where T : BehaviorInstance
         {
-            foreach (var behavior in coreObj.m_inactiveBehaviors)
+            foreach (var behavior in coreObj.m_inactiveBehaviors.OfType<T>())
             {
-                if (behavior is T)
-                {
-                    behaviorInstance = (T)behavior;
-                    return true;
-                }
+                behaviorInstance = behavior;
+                return true;
             }
 
             behaviorInstance = default;
@@ -178,8 +180,11 @@ namespace Imlight.Server.Database
         private static CoreTemplate GetCoreTemplate(ulong id)
         {
             if (!_coreTemplates.TryGetValue(id, out var loc)) return null;
-            
-            ResourceManager.LoadRootFile(loc, out CoreTemplate template);
+
+            var template = ResourceManager.LoadDeserializedFile<CoreTemplate>("Root.wad", loc);
+            if (template is null)
+                throw new NullReferenceException($"Template by ID {id} was not found!");
+
             return template ?? null;
         }
     }

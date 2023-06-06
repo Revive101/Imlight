@@ -21,7 +21,9 @@ namespace Imlight.Server.Patch
         public const string DEFAULT_PATCH_SERVER_NAME = "Imlight.Patch";
         private const ushort DEFAULT_PATCH_SERVER_PORT = 12300;
         private const string PATCH_SERVER_URL = "http://phill030.de:12369/repatcher/";
-        private const int PATCH_SERVER_TIMEOUT = 5; // In seconds.
+        private const string PATCH_SERVER_WAD_URL_PREFIX = "wad";
+        private const string PATCH_SERVER_UTILS_URL_PREFIX = "utils";
+        private const int PATCH_SERVER_TIMEOUT = 10; // In seconds.
         private const string LATEST_FILE_LIST_NAME_BIN = "LatestFileList.bin";
         private const string LATEST_FILE_LIST_NAME_XML = "LatestFileList.xml";
         private const int LATEST_FILE_LIST_PARSE_TIMEOUT = 5;
@@ -41,6 +43,7 @@ namespace Imlight.Server.Patch
 
         private LatestFileList _latestFileList;
         private Stopwatch _diagnosticStopwatch;
+        private string _patchServerWorkingUrl;
 
         public PatchServer(string name, int port, Props factoryProps) : base(name, port, factoryProps)
         {
@@ -87,8 +90,8 @@ namespace Imlight.Server.Patch
         [MessageHandler(typeof(PATCH_105_PROTCOL.MSG_DOWNLOAD_FILE_REQUEST))]
         public void ReceiveDownloadRequest(PATCH_105_PROTCOL.MSG_DOWNLOAD_FILE_REQUEST message)
         {
-            var rsp = new PATCH_105_PROTCOL.MSG_DOWNLOAD_FILE_TASK();
-            rsp.DownloadTask = DownloadFileStream(message.FileName);
+            var rsp = new PATCH_105_PROTCOL.MSG_DOWNLOAD_FILE_RESULT();
+            rsp.FileStream = DownloadFileStream(message.FileName).Result;
 
             Sender.Tell(rsp);
         }
@@ -110,13 +113,13 @@ namespace Imlight.Server.Patch
             Sender.Tell(rsp);
         }
 
-        private async Task<byte[]> DownloadFileStream(string fileName)
+        private async Task<Stream> DownloadFileStream(string fileName)
         {
             if (!EndpointReached)
                 throw new Exception("By this point, the patch server endpoint has not yet been reached!");
 
-            var url = $"{PATCH_SERVER_URL}{fileName}";
-            Log.Logger.Debug(url);
+            // TODO: Revamp this to accept more than just KIWADs.
+            var url = $"{_patchServerWorkingUrl}/{PATCH_SERVER_WAD_URL_PREFIX}/{fileName}";
 
             try
             {
@@ -152,7 +155,7 @@ namespace Imlight.Server.Patch
 
                 Log.Logger.Information($"File successfully downloaded from {url}. Content size: {memoryStream.Length}");
 
-                return memoryStream.ToArray();
+                return memoryStream;
             }
             catch (Exception webException)
             {
@@ -163,15 +166,18 @@ namespace Imlight.Server.Patch
 
         private bool GetPatchServerStatus()
         {
+            var workingUrl = $"{PATCH_SERVER_URL}V_r{REVISION}.Wizard_1_510";
+
             // Check to see if the patch server URL is available at all.
-            Log.Logger.Information($"Checking patch server at URL {PATCH_SERVER_URL}. Timeout: {PATCH_SERVER_TIMEOUT} s.");
-            if (!GetServerURLStatus(PATCH_SERVER_URL))
+            Log.Logger.Information($"Checking patch server at URL {workingUrl}. Timeout: {PATCH_SERVER_TIMEOUT} s.");
+            if (!GetServerURLStatus(workingUrl))
             {
-                Log.Logger.Error($"Patch server at URL {PATCH_SERVER_URL} is not available.");
+                Log.Logger.Error($"Patch server at URL {workingUrl} is not available.");
                 return false;
             }
 
-            Log.Logger.Information($"Patch server at URL {PATCH_SERVER_URL} found and set.");
+            _patchServerWorkingUrl = workingUrl;
+            Log.Logger.Information($"Patch server at URL {workingUrl} found and set.");
 
             return true;
         }
@@ -179,6 +185,7 @@ namespace Imlight.Server.Patch
         private bool GetServerURLStatus(string url)
         {
             using var client = new HttpClient();
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(USER_AGENT_VALUE);
             client.Timeout = TimeSpan.FromSeconds(PATCH_SERVER_TIMEOUT);
 
             try
@@ -236,12 +243,17 @@ namespace Imlight.Server.Patch
                 LatestVersion = Convert.ToUInt32(REVISION);
                 ListFileName = LATEST_FILE_LIST_NAME_BIN;
                 ListFileSize = Convert.ToUInt32(latestBin.Length);
-                ListFileCRC = crc32.Compute(latestBin);
+
+                // Convert the stream to a byte array to compute the crc32 hash.
+                var ms = new MemoryStream();
+                latestBin.CopyTo(ms);
+                ListFileCRC = crc32.Compute(ms.ToArray());
+
                 ListFileURL = $"{PATCH_SERVER_URL}{LATEST_FILE_LIST_NAME_BIN}";
             }
         }
 
-        private bool ParseLatestFileList(byte[] content, out LatestFileList latestFileList)
+        private bool ParseLatestFileList(Stream content, out LatestFileList latestFileList)
         {
             latestFileList = null;
 
@@ -288,7 +300,7 @@ namespace Imlight.Server.Patch
             return true;
         }
 
-        private XmlDocument StreamToXmlDoc(byte[] content)
+        private XmlDocument StreamToXmlDoc(Stream content)
         {
             // XmlDocument will not break on exception, for whatever god forsaken reason.
             // Fuck you, Microsoft.
@@ -296,8 +308,7 @@ namespace Imlight.Server.Patch
             try 
             {
                 var xmlDoc = new XmlDocument();
-                var ms = new MemoryStream(content);
-                xmlDoc.Load(ms);
+                xmlDoc.Load(content);
                 return xmlDoc;
             }
             catch (Exception ex) 

@@ -42,7 +42,8 @@ namespace Imlight.Backend
             // =============================================================
             // The patch server must start prior to any resources. This is to ensure that any
             // missing resources may be downloaded from the patch server as needed.
-            Task.Run(() => StartPatchServer());
+            var task = StartPatchServer();
+            task.Wait();
 
             Log.Logger.Information("Gathering appropriate resources..");
             var resourceLoadResult = ResourceManager.Initialize();

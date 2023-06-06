@@ -192,30 +192,30 @@ namespace Imlight.Server.Game
 
         private void SetZoneData(string name)
         {
-            if (!ResourceManager.TryLoadWad(name, out var wad))
+            if (!ResourceManager.TryLoadFile(name, out var wad))
             {
                 Log.Logger.Error($"Zone {name} loaded, but no wad was found in the gamedata directory.");
                 return;
             }
 
             // Load the zone data.
-            var zoneLoadResult = ResourceManager.LoadFile<WizZoneData>(wad, ZONE_DATA_FILE_NAME, out var zoneData);
-            if (zoneLoadResult) SetGameObjects(zoneData);
+            var zoneData = ResourceManager.LoadDeserializedFile<WizZoneData>(name, ZONE_DATA_FILE_NAME);
+            if (zoneData is not null) SetGameObjects(zoneData);
             else Log.Logger.Error($"Zone {name} loaded, but zone data was missing or invalid.");
 
             // Load the spawn data.
-            var spawnDataLoadResult = ResourceManager.LoadFile<SpawnManager>(wad, SPAWN_DATA_FILE_NAME, out var spawnData);
-            if (spawnDataLoadResult) _spawners = spawnData.m_spawners;
+            var spawnData = ResourceManager.LoadDeserializedFile<SpawnManager>(name, SPAWN_DATA_FILE_NAME);
+            if (spawnData is not null) _spawners = spawnData.m_spawners;
             else Log.Logger.Error($"Zone {name} loaded, but spawn data was missing or invalid.");
             
             // Load the path template data.
-            var pathListLoadResult = ResourceManager.LoadFile<PathManager_PathTemplateList>(wad, PATH_DATA_FILE_NAME, out var pathData);
-            if (pathListLoadResult) _pathObjects = pathData.m_pathList;
+            var pathData = ResourceManager.LoadDeserializedFile<PathManager_PathTemplateList>(name, PATH_DATA_FILE_NAME);
+            if (pathData is not null) _pathObjects = pathData.m_pathList;
             else Log.Logger.Error($"Zone {name} loaded, but path data was missing or invalid.");
 
             // Load the node template data.
-            var nodeListLoadResult = ResourceManager.LoadFile<PathManager_NodeTemplateList>(wad, NODE_DATA_FILE_NAME, out var nodeData);
-            if (nodeListLoadResult) _nodeObjects = nodeData.m_nodeList;
+            var nodeData = ResourceManager.LoadDeserializedFile<PathManager_NodeTemplateList>(name, NODE_DATA_FILE_NAME);
+            if (nodeData is not null) _nodeObjects = nodeData.m_nodeList;
             else Log.Logger.Error($"Zone {name} loaded, but node data was missing or invalid.");
         }
 

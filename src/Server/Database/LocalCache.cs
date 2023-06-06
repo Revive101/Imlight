@@ -4,7 +4,9 @@ using System.Linq;
 using System.IO;
 using LiteDB;
 using Imlight.Common.Utilities;
-using Imlight.Common.Cryptography;
+using WizUnraveler.Data;
+using WizUnraveler.IO;
+using Math = System.Math;
 
 namespace Imlight.Server.Database
 {
@@ -32,25 +34,28 @@ namespace Imlight.Server.Database
             return col;
         }
 
-        public static bool TryGetCachedFile(string fileName, out byte[] fileRaw)
+        public static Wad GetCachedWad(string wadName)
         {
-            fileRaw = default;
             using var db = new LiteDatabase(_path);
             var fs = db.GetStorage<FileDefinition>();
 
-            var file = fs.Find(f => f.Filename == fileName)
+            var file = fs.Find(f => f.Filename == wadName)
                 .FirstOrDefault();
 
             if (file is null)
-                return false;
+                return null;
+            
+            var stream = file.OpenRead();
+            var wad = new Wad(stream);
 
-            var memStream = new MemoryStream();
-            file.CopyTo(memStream);
-            fileRaw = memStream.ToArray();
-
-            return true;
+            return wad;
         }
 
+        /// <summary>
+        /// Caches a file into the local database.
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <param name="contentStream"></param>
         public static void CacheFile(string fileName, Stream contentStream)
         {
             using var db = new LiteDatabase(_path);
@@ -73,7 +78,13 @@ namespace Imlight.Server.Database
                 //crc = crc32.Compute(ms.ToArray()), 
             };
 
-            fs.Upload(def, fileName, contentStream);
+            // Create a new MemoryStream of the content stream so we don't consume the parameter.
+            contentStream.Position = 0;
+            var ms = new MemoryStream();
+            contentStream.CopyTo(ms);
+            ms.Position = 0;
+            contentStream.Position = 0;
+            fs.Upload(def, fileName, ms);
         }
     }
 }
