@@ -98,7 +98,7 @@ namespace Imlight.Backend
             Log.Logger.Information(@"/ $$   |$$ | $/  $$ |$$       |/ $$   |$$    $$/ $$ |  $$ |   $$ |");
             Log.Logger.Information(@"$$$$$$/ $$/      $$/ $$$$$$$$/ $$$$$$/  $$$$$$/  $$/   $$/    $$/");
             Log.Logger.Information(@"==============================================================================================");
-            Log.Logger.Information($"Imlight v{VERSION} -- Developed and maintained by Wizard101Rewritten.");
+            Log.Logger.Information($"Imlight v{VERSION} -- Developed and maintained by Revive101.");
             Log.Logger.Information(@"==============================================================================================");
         }
         
