@@ -11,6 +11,7 @@ using Imlight.Common.Cryptography;
 using Imlight.Server.Database;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
+using WizUnraveler.IO;
 
 namespace Imlight.Server.Game
 {

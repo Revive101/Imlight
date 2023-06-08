@@ -4,7 +4,7 @@ using System.Linq;
 using System.IO;
 using LiteDB;
 using Imlight.Common.Utilities;
-using WizUnraveler.Data;
+using WizUnraveler.Formats;
 using WizUnraveler.IO;
 using Math = System.Math;
 
@@ -13,9 +13,15 @@ namespace Imlight.Server.Database
     public class FileDefinition
     {
         public string Filename { get; set; }
+        
+        // TODO: Crc32 is unused, for now. It will inevitably be used to verify a file's version.
         public uint crc { get; set; }
     }
 
+    /// <summary>
+    /// Abstractions for Imlight's local cache. It's safe it assume that the FileStorage of this cache will only
+    /// ever contain KIWADs.
+    /// </summary>
     public static class LocalCache
     {
         private static readonly string _path = Path.Combine(
@@ -34,6 +40,11 @@ namespace Imlight.Server.Database
             return col;
         }
 
+        /// <summary>
+        /// Gets a KIWAD cached in the FileStorage.
+        /// </summary>
+        /// <param name="wadName"></param>
+        /// <returns></returns>
         public static Wad GetCachedWad(string wadName)
         {
             using var db = new LiteDatabase(_path);
@@ -45,10 +56,13 @@ namespace Imlight.Server.Database
             if (file is null)
                 return null;
             
-            var stream = file.OpenRead();
-            var wad = new Wad(stream);
+            // LiteDB's stream is pretty bare and doesn't offer a lot of methods. Convert the file to a MemoryStream
+            // so we have more control over it.
+            var ms = new MemoryStream();
+            file.OpenRead().CopyTo(ms);
+            ms.Seek(0, SeekOrigin.Begin);
 
-            return wad;
+            return new Wad(ms);
         }
 
         /// <summary>
@@ -56,7 +70,7 @@ namespace Imlight.Server.Database
         /// </summary>
         /// <param name="fileName"></param>
         /// <param name="contentStream"></param>
-        public static void CacheFile(string fileName, Stream contentStream)
+        public static void CacheWad(string fileName, Stream contentStream)
         {
             using var db = new LiteDatabase(_path);
             var fs = db.GetStorage<FileDefinition>();
@@ -79,11 +93,10 @@ namespace Imlight.Server.Database
             };
 
             // Create a new MemoryStream of the content stream so we don't consume the parameter.
-            contentStream.Position = 0;
             var ms = new MemoryStream();
+            contentStream.Position = 0;
             contentStream.CopyTo(ms);
             ms.Position = 0;
-            contentStream.Position = 0;
             fs.Upload(def, fileName, ms);
         }
     }

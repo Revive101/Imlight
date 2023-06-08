@@ -53,7 +53,7 @@ namespace Imlight.Server.Shared.Services
 
             var offer = new ControlMessages.SessionOffer()
             {
-                SessionID = SessionActor.SessionID,
+                SessionId = SessionActor.SessionID,
                 TimestampUpper = timestampUpper,
                 TimestampLower = timestampLower,
                 Milliseconds = millisecondsIntoCurrentSecond,
@@ -76,7 +76,7 @@ namespace Imlight.Server.Shared.Services
         private void ReceiveSessionAccept(ControlMessages.SessionAccept message)
         {
             _responseStopwatch.Stop();
-            if (message.SessionID != SessionActor.SessionID)
+            if (message.SessionId != SessionActor.SessionID)
             {
                 Log.Logger.Error($"SessionActor [{SessionActor.SessionID}] misaligned Session ID.");
                 CloseSession();
@@ -112,7 +112,7 @@ namespace Imlight.Server.Shared.Services
         [MessageHandler(typeof(ControlMessages.KeepAlive))]
         private void ReceiveKeepAlive(ControlMessages.KeepAlive message)
         {
-            if (message.SessionID != SessionActor.SessionID)
+            if (message.SessionId != SessionActor.SessionID)
             {
                 Log.Logger.Error($"SessionActor [{SessionActor.SessionID}] misaligned Session ID.");
                 CloseSession();
@@ -123,7 +123,7 @@ namespace Imlight.Server.Shared.Services
             var millisecondsIntoCurrentSecond = (ushort)(DateTime.UtcNow.TimeOfDay.TotalMilliseconds % 1000);
             var rsp = new ControlMessages.KeepAliveResponse()
             {
-                SessionID = SessionActor.SessionID,
+                SessionId = SessionActor.SessionID,
                 Milliseconds = millisecondsIntoCurrentSecond,
                 ElapsedSessionTime = message.ElapsedSessionTime,
             };
@@ -167,7 +167,7 @@ namespace Imlight.Server.Shared.Services
 
             var keepAlive = new ControlMessages.KeepAliveServer()
             {
-                SessionID = SessionActor.SessionID,
+                SessionId = SessionActor.SessionID,
                 Milliseconds = (uint)0,
             };
 

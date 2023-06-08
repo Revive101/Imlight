@@ -6,7 +6,7 @@ using WizUnraveler;
 using WizUnraveler.Cache;
 using WizUnraveler.DML;
 using static WizUnraveler.Cache.TypeCache;
-using static WizUnraveler.ObjectSerializer;
+using static WizUnraveler.ObjectProperty.ObjectSerializer;
 using Imlight.Common.Utilities;
 using Imlight.Server.Database;
 using Imlight.Server.Shared.Networking;

@@ -287,7 +287,7 @@ namespace Imlight.Server.Shared.Networking
 
             var packet = GetPacketFromBuffer(e.Buffer, e.BytesTransferred);
 
-            if (packet != null && (SessionValid || packet.ServiceID == 0))
+            if (packet != null && (SessionValid || packet.ServiceId == 0))
             {
                 HandlePacket(packet);
             }

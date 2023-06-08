@@ -4,6 +4,7 @@ using WizUnraveler;
 using WizUnraveler.DML;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Database;
+using WizUnraveler.IO;
 
 namespace Imlight.Server.Shared.Packets
 {

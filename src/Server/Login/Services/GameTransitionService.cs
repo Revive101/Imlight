@@ -7,6 +7,7 @@ using Imlight.Common.Utilities;
 using Imlight.Server.Database;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
+using WizUnraveler.IO;
 
 namespace Imlight.Server.Login.Services
 {

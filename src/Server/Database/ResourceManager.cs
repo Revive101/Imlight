@@ -3,12 +3,13 @@ using System.IO;
 using System.Reflection;
 using Akka.Actor;
 using WizUnraveler;
-using WizUnraveler.Data;
 using WizUnraveler.ObjectProperty;
 using Imlight.Common.Utilities;
 using Imlight.Server.Patch;
 using Imlight.Server.Shared.Packets;
 using WizUnraveler.Cache;
+using WizUnraveler.Formats;
+using WizUnraveler.IO;
 
 namespace Imlight.Server.Database
 {
@@ -16,13 +17,21 @@ namespace Imlight.Server.Database
     {
         const uint PATCH_SERVER_DOWNLOAD_TIMEOUT_SECONDS = 360;
 
+        /// <summary>
+        /// Initializes the ResourceManager. It will instantiate
+        /// <see cref="CoreObjectFactory"/> and
+        /// <see cref="AccessPassManager"/>
+        /// alongside itself. These are considered the most vital resouces needed
+        /// for the server to run.
+        /// </summary>
+        /// <returns></returns>
         public static bool Initialize()
         {
             // Load submodules.
-            //var subModuleCoreObjectFactory = LoadSubCoreObjectFactory();
+            var subModuleCoreObjectFactory = LoadSubCoreObjectFactory();
             var subModuleAccessPass = LoadSubAccessPassManager();
 
-            return false && subModuleAccessPass;
+            return subModuleCoreObjectFactory && subModuleAccessPass;
         }
 
         /// <summary>
@@ -48,7 +57,7 @@ namespace Imlight.Server.Database
             if (!DownloadFromPatchServer(betterWadName, out var stream))
                 return false;
             
-            LocalCache.CacheFile(betterWadName, stream);
+            LocalCache.CacheWad(betterWadName, stream);
             wad = new Wad(stream);
 
             return true;

@@ -3,6 +3,7 @@ using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Security;
 using System.Text;
 using WizUnraveler;
+using WizUnraveler.IO;
 
 namespace Imlight.Common.Cryptography
 {
