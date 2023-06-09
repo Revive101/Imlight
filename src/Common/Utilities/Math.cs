@@ -66,7 +66,7 @@ namespace Imlight.Common.Utilities
         /// </summary>
         /// <param name="p">An array of 3D points to describe a prism.</param>
         /// <param name="pos">The position to be checked.</param>
-        /// <returns>If the position is inside of the circle or not.</returns>
+        /// <returns>If the position is inside of the prism or not.</returns>
         public static bool InsideOfPrism(SharpDX.Vector3[] p, SharpDX.Vector3 pos) // Untested, but *should* work
         {
             var u = (p[0] - p[3]) * (p[0] - p[4]);
