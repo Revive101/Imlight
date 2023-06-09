@@ -2,20 +2,17 @@ using System;
 using System.Reflection;
 using System.Linq;
 using System.IO;
+using Imlight.Common.Cryptography;
 using LiteDB;
 using Imlight.Common.Utilities;
 using WizUnraveler.Formats;
-using WizUnraveler.IO;
-using Math = System.Math;
 
 namespace Imlight.Server.Database
 {
     public class FileDefinition
     {
         public string Filename { get; set; }
-        
-        // TODO: Crc32 is unused, for now. It will inevitably be used to verify a file's version.
-        public uint crc { get; set; }
+        public uint Crc { get; set; }
     }
 
     /// <summary>
@@ -82,21 +79,24 @@ namespace Imlight.Server.Database
 
             if (file is not null)
             {
-                Log.Logger.Warning($"LocalCache already contains a file definition for \"{fileName}\"! File will be overwritten.");
+                Log.Logger.Warning($"LocalCache already contains a file definition for \"{fileName}\"! " +
+                                   $"File will be overwritten.");
             }
-
-            // Create a new FileDefinition. Create a new byte array from the content stream.
-            var def = new FileDefinition()
-            {
-                Filename = fileName,
-                //crc = crc32.Compute(ms.ToArray()), 
-            };
-
+            
             // Create a new MemoryStream of the content stream so we don't consume the parameter.
             var ms = new MemoryStream();
             contentStream.Position = 0;
             contentStream.CopyTo(ms);
+            contentStream.Position = 0;
             ms.Position = 0;
+
+            // Create a new FileDefinition. Create a new byte array from the content stream.
+            var def = new FileDefinition
+            {
+                Filename = fileName,
+                Crc = crc32.Compute(ms.ToArray())
+            };
+            
             fs.Upload(def, fileName, ms);
         }
     }

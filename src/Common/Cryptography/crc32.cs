@@ -24,7 +24,7 @@ namespace Imlight.Common.Cryptography
             var crc32 = crcengine.ComputeHash(input);
             Array.Reverse(crc32);
 
-            return Convert.ToUInt32(crc32);
+            return BitConverter.ToUInt32(crc32);
         }
     }
 }
