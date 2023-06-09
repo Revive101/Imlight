@@ -21,7 +21,7 @@ namespace Imlight.Server.Patch
     {
         // @todo: move this to config
         public const string DEFAULT_PATCH_SERVER_NAME = "Imlight.Patch";
-        private const ushort DEFAULT_PATCH_SERVER_PORT = 12300;
+        private const ushort DEFAULT_PATCH_SERVER_PORT = 12500;
         private const string PATCH_SERVER_URL = "http://phill030.de:12369/repatcher/";
         private const string PATCH_SERVER_WAD_URL_PREFIX = "wad";
         private const int PATCH_SERVER_TIMEOUT = 10; // In seconds.
@@ -124,11 +124,16 @@ namespace Imlight.Server.Patch
         {
             if (!EndpointReached)
                 throw new Exception("By this point, the patch server endpoint has not yet been reached!");
-            
-            var url = $"{_patchServerWorkingUrl}/{PATCH_SERVER_WAD_URL_PREFIX}/{wadName}";
+
+            // Remove the `.wad` extension if one exists.
+            if (wadName.EndsWith(".wad", StringComparison.OrdinalIgnoreCase))
+                wadName = wadName[..^4];
+
+            var url = $"{_patchServerWorkingUrl}/{PATCH_SERVER_WAD_URL_PREFIX}/{wadName}.wad";
 
             return await DownloadFileStream(url);
         }
+
         
         private async Task<Stream> DownloadUtilityStream(string fileName)
         {
@@ -272,6 +277,7 @@ namespace Imlight.Server.Patch
                 // Convert the stream to a byte array to compute the crc32 hash.
                 var ms = new MemoryStream();
                 latestBin.CopyTo(ms);
+                ms.Seek(0, SeekOrigin.Begin);
                 _listFileCrc = crc32.Compute(ms.ToArray());
             }
         }
