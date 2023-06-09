@@ -19,28 +19,29 @@ namespace Imlight.Server.Patch
 {
     public class PatchServer : Shared.Networking.Server
     {
+        // @todo: move this to config
         public const string DEFAULT_PATCH_SERVER_NAME = "Imlight.Patch";
         private const ushort DEFAULT_PATCH_SERVER_PORT = 12300;
         private const string PATCH_SERVER_URL = "http://phill030.de:12369/repatcher/";
         private const string PATCH_SERVER_WAD_URL_PREFIX = "wad";
-        private const string PATCH_SERVER_UTILS_URL_PREFIX = "utils";
         private const int PATCH_SERVER_TIMEOUT = 10; // In seconds.
         private const string LATEST_FILE_LIST_NAME_BIN = "LatestFileList.bin";
         private const string LATEST_FILE_LIST_NAME_XML = "LatestFileList.xml";
-        private const int LATEST_FILE_LIST_PARSE_TIMEOUT = 5;
-        private const uint REVISION = 735422;
+        private const uint REVISION = 736675;
         private const string USER_AGENT_VALUE = "KingsIsle Patcher";
         private const ushort DOWNLOAD_BUFFER_SIZE = 4096;
 
         public static IActorRef Instance { get; private set; }
-        public static bool EndpointReached { get; private set; }
-        public static uint LatestVersion { get; private set; }
-        public static ByteString ListFileName { get; private set; }
-        public static uint ListFileSize { get; private set; }
-        public static uint ListFileCRC { get; private set; }
-        public static ByteString ListFileURL { get; private set; }
-        public static ByteString URLPrefix { get; private set; }
-        public static ByteString URLSuffix { get; private set; }
+        private static bool EndpointReached { get; set; }
+        
+        // LatestFileList cached information.
+        private static uint _latestVersion;
+        private static ByteString _listFileName;
+        private static uint _listFileSize;
+        private static uint _listFileCrc;
+        private static ByteString _listFileUrl;
+        private static ByteString _urlPrefix;
+        private static ByteString _urlSuffix;
 
         private LatestFileList _latestFileList;
         private Stopwatch _diagnosticStopwatch;
@@ -67,6 +68,9 @@ namespace Imlight.Server.Patch
         [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_INITIALIZE))]
         private void InitializeServer(SERVER_100_PROTOCOL.MSG_INITIALIZE message)
         {
+            // InitializeServer must be managed through the actor's mailbox. This is so we can return the Patch Server
+            // status pseudo-synchronously as to block the main thread for following services that may depend on
+            // the patch server. This function also has a stopwatch to diagnose any issues.
             _diagnosticStopwatch = new Stopwatch();
 
             // Check patch server endpoint status and record the diagnostics.
@@ -80,7 +84,7 @@ namespace Imlight.Server.Patch
 
             // Download and parse the latest file list and record the diagnostics.
             _diagnosticStopwatch.Restart();
-            //SetLatestFileList();
+            SetLatestFileList();
             _diagnosticStopwatch.Stop();
             Log.Logger.Debug($"Downloaded and parsed LatestFileList in {_diagnosticStopwatch.ElapsedMilliseconds} ms.");
 
@@ -88,11 +92,13 @@ namespace Imlight.Server.Patch
             Sender.Tell(new SERVER_100_PROTOCOL.MSG_INITIALIZE_COMPLETE());
         }
 
-        [MessageHandler(typeof(PATCH_105_PROTCOL.MSG_DOWNLOAD_FILE_REQUEST))]
-        public void ReceiveDownloadRequest(PATCH_105_PROTCOL.MSG_DOWNLOAD_FILE_REQUEST message)
+        [MessageHandler(typeof(PATCH_105_PROTCOL.MSG_DOWNLOAD_WAD_REQUEST))]
+        public void ReceiveDownloadRequest(PATCH_105_PROTCOL.MSG_DOWNLOAD_WAD_REQUEST message)
         {
-            var rsp = new PATCH_105_PROTCOL.MSG_DOWNLOAD_FILE_RESULT();
-            rsp.FileStream = DownloadFileStream(message.FileName).Result;
+            var rsp = new PATCH_105_PROTCOL.MSG_DOWNLOAD_FILE_RESULT
+            {
+                FileStream = DownloadWadStream(message.WadName).Result
+            };
 
             Sender.Tell(rsp);
         }
@@ -102,26 +108,40 @@ namespace Imlight.Server.Patch
         {
             var rsp = new PATCH_105_PROTCOL.MSG_LATEST_CACHE_PROPERTIES()
             {
-                Name = ListFileName,
-                URL = ListFileURL,
+                Name = _listFileName,
+                URL = _listFileUrl,
                 URLPrefix = PATCH_SERVER_URL,
                 URLSuffix = "",
-                Version = LatestVersion,
-                CRC = ListFileCRC,
-                Size = ListFileSize,
+                Version = _latestVersion,
+                CRC = _listFileCrc,
+                Size = _listFileSize,
             };
 
             Sender.Tell(rsp);
         }
 
-        private async Task<Stream> DownloadFileStream(string fileName)
+        private async Task<Stream> DownloadWadStream(string wadName)
         {
             if (!EndpointReached)
                 throw new Exception("By this point, the patch server endpoint has not yet been reached!");
+            
+            var url = $"{_patchServerWorkingUrl}/{PATCH_SERVER_WAD_URL_PREFIX}/{wadName}";
 
-            // TODO: Revamp this to accept more than just KIWADs.
-            var url = $"{_patchServerWorkingUrl}/{PATCH_SERVER_WAD_URL_PREFIX}/{fileName}";
+            return await DownloadFileStream(url);
+        }
+        
+        private async Task<Stream> DownloadUtilityStream(string fileName)
+        {
+            if (!EndpointReached)
+                throw new Exception("By this point, the patch server endpoint has not yet been reached!");
+            
+            var url = $"{_patchServerWorkingUrl}/{fileName}";
 
+            return await DownloadFileStream(url);
+        }
+
+        private static async Task<Stream> DownloadFileStream(string url)
+        {
             try
             {
                 // Create a new HttpClient with the magic user agent values.
@@ -130,23 +150,23 @@ namespace Imlight.Server.Patch
                 using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
                 response.EnsureSuccessStatusCode();
 
-                long? totalBytes = response.Content.Headers.ContentLength;
+                var totalBytes = response.Content.Headers.ContentLength;
                 //var progressBar = new ConsoleProgressBar();
 
-                Log.Logger.Information($"Attempting to download file from patch server endpoint at url {url}. Content size: {totalBytes}");
+                Log.Logger.Information($"Attempting to download file from patch server endpoint at " +
+                                       $"url {url}. " +
+                                       $"Content size: {totalBytes}");
 
                 // Download the file from web using the HttpClient.
-                await using Stream contentStream = await response.Content.ReadAsStreamAsync();
-                MemoryStream memoryStream = new MemoryStream();
+                await using var contentStream = await response.Content.ReadAsStreamAsync();
+                var memoryStream = new MemoryStream();
 
                 var buffer = new byte[DOWNLOAD_BUFFER_SIZE];
                 int bytesRead;
-                long bytesDownloaded = 0;
 
                 while ((bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
                 {
                     await memoryStream.WriteAsync(buffer, 0, bytesRead);
-                    bytesDownloaded += bytesRead;
 
                     // Update the progress bar.
                     // TODO: I want a progress bar here, but it currently doesn't play nice with Serilog.
@@ -171,7 +191,7 @@ namespace Imlight.Server.Patch
 
             // Check to see if the patch server URL is available at all.
             Log.Logger.Information($"Checking patch server at URL {workingUrl}. Timeout: {PATCH_SERVER_TIMEOUT} s.");
-            if (!GetServerURLStatus(workingUrl))
+            if (!GetServerUrlStatus(workingUrl))
             {
                 Log.Logger.Error($"Patch server at URL {workingUrl} is not available.");
                 return false;
@@ -183,7 +203,7 @@ namespace Imlight.Server.Patch
             return true;
         }
 
-        private bool GetServerURLStatus(string url)
+        private static bool GetServerUrlStatus(string url)
         {
             using var client = new HttpClient();
             client.DefaultRequestHeaders.UserAgent.ParseAdd(USER_AGENT_VALUE);
@@ -212,14 +232,18 @@ namespace Imlight.Server.Patch
         {
             // We need both versions of the LatestFileList (for now).
             // The first interpretation is xml, and is for the server to parse and cache.
-            // We'll be using it to check the integrity of the server's files.
-            var latestXml = DownloadFileStream(LATEST_FILE_LIST_NAME_XML).Result;
+            // We'll be using it to check the integrity of Imlight's cached files.
+            var latestXml = DownloadUtilityStream(LATEST_FILE_LIST_NAME_XML).Result;
             if (latestXml is null)
             {
                 Log.Logger.Error($"Had trouble downloading {LATEST_FILE_LIST_NAME_XML}.");
             }
             else
             {
+                //var fs = File.Create($"{Directory.GetCurrentDirectory()}/latest.xml");
+                latestXml.Seek(0, SeekOrigin.Begin);
+                //latestXml.CopyTo(fs);
+                //latestXml.Seek(0, SeekOrigin.Begin);
                 if (!ParseLatestFileList(latestXml, out var latestXmlObj))
                 {
                     Log.Logger.Error($"Could not successfully parse {LATEST_FILE_LIST_NAME_XML}.");
@@ -231,9 +255,8 @@ namespace Imlight.Server.Patch
             }
 
             // The second interpretation is the `.bin`, which is what the Wizard101 client uses.
-            // Download the `.bin` interpreation and cache the file stats.
-            // This is so we can easily return the statistics when the client requests it.
-            var latestBin = DownloadFileStream(LATEST_FILE_LIST_NAME_BIN).Result;
+            // Download the `.bin` interpretation and cache the file stats.
+            var latestBin = DownloadUtilityStream(LATEST_FILE_LIST_NAME_BIN).Result;
             if (latestBin is null)
             {
                 Log.Logger.Error($"Had trouble downloading the {LATEST_FILE_LIST_NAME_BIN}.");
@@ -241,20 +264,19 @@ namespace Imlight.Server.Patch
             else
             {
                 // Cache the `.bin` file properties.
-                LatestVersion = Convert.ToUInt32(REVISION);
-                ListFileName = LATEST_FILE_LIST_NAME_BIN;
-                ListFileSize = Convert.ToUInt32(latestBin.Length);
+                _latestVersion = Convert.ToUInt32(REVISION);
+                _listFileName = LATEST_FILE_LIST_NAME_BIN;
+                _listFileUrl = $"{_patchServerWorkingUrl}/{LATEST_FILE_LIST_NAME_BIN}";
+                _listFileSize = Convert.ToUInt32(latestBin.Length);
 
                 // Convert the stream to a byte array to compute the crc32 hash.
                 var ms = new MemoryStream();
                 latestBin.CopyTo(ms);
-                ListFileCRC = crc32.Compute(ms.ToArray());
-
-                ListFileURL = $"{PATCH_SERVER_URL}{LATEST_FILE_LIST_NAME_BIN}";
+                _listFileCrc = crc32.Compute(ms.ToArray());
             }
         }
 
-        private bool ParseLatestFileList(Stream content, out LatestFileList latestFileList)
+        private static bool ParseLatestFileList(Stream content, out LatestFileList latestFileList)
         {
             latestFileList = null;
 
@@ -274,7 +296,7 @@ namespace Imlight.Server.Patch
             latestFileList = new LatestFileList() { Files = new List<LatestFile>() };
             foreach (var wadNode in rootNode.ChildNodes.Cast<XmlElement>())
             {
-                if (wadNode.Name == "_TableList" || wadNode.Name == "About") continue;
+                if (wadNode.Name is "_TableList" or "About") continue;
 
                 var internalRecord = wadNode.ChildNodes.Cast<XmlElement>().FirstOrDefault();
                 if (internalRecord == null)
@@ -301,10 +323,9 @@ namespace Imlight.Server.Patch
             return true;
         }
 
-        private XmlDocument StreamToXmlDoc(Stream content)
+        private static XmlDocument StreamToXmlDoc(Stream content)
         {
-            // XmlDocument will not break on exception, for whatever god forsaken reason.
-            // Fuck you, Microsoft.
+            // XmlDocument will not break on exception, for whatever god forsaken reason. Fuck you, Microsoft.
             // This is our own catch to continue willingly even on exception.
             try 
             {
@@ -317,10 +338,9 @@ namespace Imlight.Server.Patch
                 Log.Logger.Error($"Error parsing Stream to XmlDocument: {ex.Message}");
                 return null;
             }
-
         }
 
-        private uint TryParseUInt(string value)
+        private static uint TryParseUInt(string value)
         {
             uint.TryParse(value, out var result);
             return result;
