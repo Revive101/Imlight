@@ -194,7 +194,7 @@ namespace Imlight.Server.Game
         {
             if (!ResourceManager.TryLoadFile(name, out var wad))
             {
-                Log.Logger.Error($"Zone {name} loaded, but no wad was found in the gamedata directory.");
+                Log.Logger.Error($"Could not gather WAD by name: {name}.");
                 return;
             }
 

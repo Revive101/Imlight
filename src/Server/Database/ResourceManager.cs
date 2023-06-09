@@ -106,9 +106,9 @@ namespace Imlight.Server.Database
             try 
             {
                 var patchServer = PatchServer.Instance;
-                var askMsg = new PATCH_105_PROTCOL.MSG_DOWNLOAD_FILE_REQUEST
+                var askMsg = new PATCH_105_PROTCOL.MSG_DOWNLOAD_WAD_REQUEST
                 {
-                    FileName = wadName
+                    WadName = wadName
                 };
                 var timeout = TimeSpan.FromSeconds(PATCH_SERVER_DOWNLOAD_TIMEOUT_SECONDS);
                 fileStream = patchServer.Ask<PATCH_105_PROTCOL.MSG_DOWNLOAD_FILE_RESULT>(askMsg, timeout)

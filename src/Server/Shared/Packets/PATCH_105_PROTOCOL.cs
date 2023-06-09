@@ -25,12 +25,12 @@ namespace Imlight.Server.Shared.Packets
             public uint Size;
         }
 
-        public class MSG_DOWNLOAD_FILE_REQUEST : IServerMessage
+        public class MSG_DOWNLOAD_WAD_REQUEST : IServerMessage
         {
             public byte MessageOrder { get; } = 2;
             public byte ServiceID { get; } = 105;
 
-            public string FileName;
+            public string WadName;
         }
 
         public class MSG_DOWNLOAD_FILE_RESULT : IServerMessage
