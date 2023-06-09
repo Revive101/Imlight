@@ -199,6 +199,7 @@ namespace Imlight.Server.Game
             }
 
             // Load the zone data.
+            /*
             var zoneData = ResourceManager.LoadDeserializedFile<WizZoneData>(name, ZONE_DATA_FILE_NAME);
             if (zoneData is not null) SetGameObjects(zoneData);
             else Log.Logger.Error($"Zone {name} loaded, but zone data was missing or invalid.");
@@ -217,6 +218,7 @@ namespace Imlight.Server.Game
             var nodeData = ResourceManager.LoadDeserializedFile<PathManager_NodeTemplateList>(name, NODE_DATA_FILE_NAME);
             if (nodeData is not null) _nodeObjects = nodeData.m_nodeList;
             else Log.Logger.Error($"Zone {name} loaded, but node data was missing or invalid.");
+            */
         }
 
         private void SetGameObjects(WizZoneData zoneData)
