@@ -129,6 +129,22 @@ namespace Imlight.Server.Database
                 inventoryBehavior.m_numItemsAllowed = 75;
                 inventoryBehavior.m_numJewelsAllowed = 100;
                 inventoryBehavior.m_itemList = new List<CoreObject>();
+
+                
+                ulong templateId = 4740;
+
+                CoreTemplate template = CoreObjectFactory.GetCoreTemplate(templateId);
+                var coreObject = template switch
+                {
+                    ItemTemplate => new WizClientObjectItem(),
+                    _ => new ClientObject()
+                };
+
+                coreObject.m_globalID = RandomGen.GenerateGUID();
+                coreObject.m_templateID = (GID)templateId;
+
+
+                inventoryBehavior.m_itemList.Add(coreObject);
             }
             else
                 throw new Exception("Behavior ClientWizInventoryBehavior not found!");
@@ -143,6 +159,17 @@ namespace Imlight.Server.Database
                 schoolBehavior.m_level = CreationData.m_level;
                 schoolBehavior.m_trainingPoints = 0;
                 schoolBehavior.m_schoolOfFocus = CreationData.m_schoolOfFocus;
+            }
+            else
+                throw new Exception("Behavior ClientMagicSchoolBehavior not found!");
+
+            // =========================================================
+            // SPELLS
+            // =========================================================
+            if (CoreObjectFactory.FindBehaviorInstance<ClientSpellbookBehavior>(clientObject, out var spellbookBehavior))
+            {
+                spellbookBehavior.m_behaviorTemplateNameID = 0;
+                spellbookBehavior.m_spellIDList = new();
             }
             else
                 throw new Exception("Behavior ClientMagicSchoolBehavior not found!");
