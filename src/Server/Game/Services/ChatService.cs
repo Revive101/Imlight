@@ -56,6 +56,17 @@ namespace Imlight.Server.Game.Services
             {
                 SpellID = 2066
             });
+
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTOBOOK()
+            {
+                SpellID = 949570680
+            });
+
+
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTOBOOK()
+            {
+                SpellID = 2537945
+            });
         }
 
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_REQASKSERVER))]
