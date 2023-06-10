@@ -10,6 +10,7 @@ using Imlight.Server.Shared.Secrets;
 using WizUnraveler.Cache;
 using WizUnraveler.Common;
 using WizUnraveler.IO;
+using System.Text.RegularExpressions;
 
 namespace Imlight.Server.Database
 {
@@ -178,7 +179,7 @@ namespace Imlight.Server.Database
             return templateId;
         }      
         
-        private static CoreTemplate GetCoreTemplate(ulong id)
+        public static CoreTemplate GetCoreTemplate(ulong id)
         {
             if (!_coreTemplates.TryGetValue(id, out var loc)) return null;
 
