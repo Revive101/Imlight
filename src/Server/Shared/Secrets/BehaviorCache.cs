@@ -51,7 +51,7 @@ namespace Imlight.Server.Shared.Secrets
                 //case 0x06BB59F5: return new ClientAtticBehavior();
                 //case 0x26FCE31F: return new ClientDynaModBehavior();
                 //case 0x287E5259: return new ClientExpansionBehavior();
-                //case 0x1552CB31: return new ClientMagicSchoolBehavior();
+                case 0x1552CB31: return new ClientMagicSchoolBehavior();
                 //case 0x1301F271: return new ClientMinigameBehavior();
                 //case 0x336907AE: return new ClientMountOwnerBehavior();
                 //case 0x7696F807: return new ClientMountRiderBehavior();
@@ -65,8 +65,8 @@ namespace Imlight.Server.Shared.Secrets
                 //case 0x64E6088B: return new PetTomeBehavior();
                 //case 0x29474BCF: return new TutorialLogBehavior();
                 //case 0x174F46F4: return new WishlistBehavior();
-                //case 0x4867764C: return new ClientWizEquipmentBehavior();
-                //case 0x1B610937: return new ClientWizInventoryBehavior();
+                case 0x4867764C: return new ClientWizEquipmentBehavior();
+                case 0x1B610937: return new ClientWizInventoryBehavior();
 
                 // Client also has PathMovementBehaviorTemplate, but doesn't appear to use the actual behavior.
                 //case 0x22B1AD8D: return new PathMovementBehavior();
