@@ -24,6 +24,24 @@ namespace Imlight.Server.Game.Services
         private void ReceiveAddSpellToDeck(WIZARD_12_PROTOCOL.MSG_ADDSPELLTODECK message)
         {
             Log.Logger.Debug("SpellID: "+ message.SpellID+ ", DeckID: "+message.DeckID+", Success: "+message.Success);
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTODECK()
+            {
+                SpellID = message.SpellID,
+                DeckID = message.DeckID,
+                Success = 1
+            });
+        }
+
+        [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_REMOVESPELLFROMDECK))]
+        private void ReceiveRemoveSpellFromDeck(WIZARD_12_PROTOCOL.MSG_REMOVESPELLFROMDECK message)
+        {
+            Log.Logger.Debug("SpellID: " + message.SpellID + ", DeckID: " + message.DeckID + ", Success: " + message.Success);
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_REMOVESPELLFROMDECK()
+            {
+                SpellID = message.SpellID,
+                DeckID = message.DeckID,
+                Success = 1
+            });
         }
 
     }
