@@ -172,7 +172,7 @@ namespace Imlight.Server.Database
                 spellbookBehavior.m_spellIDList = new();
             }
             else
-                throw new Exception("Behavior ClientMagicSchoolBehavior not found!");
+                throw new Exception("Behavior ClientSpellbookBehavior not found!");
         }
     }
 }
