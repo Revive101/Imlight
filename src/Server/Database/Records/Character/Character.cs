@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using WizUnraveler.ObjectProperty;
 using static WizUnraveler.Cache.TypeCache;
 using Imlight.Common.Utilities;
+using Akka.IO;
+using WizUnraveler.IO;
+using System.Linq;
 
 namespace Imlight.Server.Database
 {
@@ -130,21 +133,22 @@ namespace Imlight.Server.Database
                 inventoryBehavior.m_numJewelsAllowed = 100;
                 inventoryBehavior.m_itemList = new List<CoreObject>();
 
-                
-                ulong templateId = 4740;
 
-                CoreTemplate template = CoreObjectFactory.GetCoreTemplate(templateId);
-                var coreObject = template switch
+                new List<ulong>() { 4740, 4705, 5030, 39068, 532670 }.ForEach(templateId =>
                 {
-                    ItemTemplate => new WizClientObjectItem(),
-                    _ => new ClientObject()
-                };
+                    CoreTemplate template = CoreObjectFactory.GetTemplate<CoreTemplate>(templateId);
+                    var coreObject = template switch
+                    {
+                        ItemTemplate => new WizClientObjectItem(),
+                        _ => new ClientObject()
+                    };
 
-                coreObject.m_globalID = RandomGen.GenerateGUID();
-                coreObject.m_templateID = (GID)templateId;
+                    coreObject.m_globalID = RandomGen.GenerateGUID();
+                    coreObject.m_templateID = (GID)templateId;
 
 
-                inventoryBehavior.m_itemList.Add(coreObject);
+                    inventoryBehavior.m_itemList.Add(coreObject);
+                });
             }
             else
                 throw new Exception("Behavior ClientWizInventoryBehavior not found!");

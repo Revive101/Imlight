@@ -43,6 +43,5 @@ namespace Imlight.Server.Game.Services
                 Success = 1
             });
         }
-
     }
 }
