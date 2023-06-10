@@ -10,7 +10,6 @@ using Imlight.Server.Shared.Secrets;
 using WizUnraveler.Cache;
 using WizUnraveler.Common;
 using WizUnraveler.IO;
-using System.Text.RegularExpressions;
 
 namespace Imlight.Server.Database
 {
