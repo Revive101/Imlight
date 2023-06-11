@@ -14,7 +14,7 @@ namespace Imlight.Server.Game.Services
         {
             return Akka.Actor.Props.Create(() => new ChatService(parentActor));
         }
-        
+
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_REQUESTRADIALCHAT))]
         private void ReceiveRequestRadialChat(GAME_5_PROTOCOL.MSG_REQUESTRADIALCHAT message)
         {
@@ -84,7 +84,7 @@ namespace Imlight.Server.Game.Services
                 Selfless = true,
             });
         }
-        
+
         private TypeCache.CoreObject GetActiveCoreObject()
         {
             var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
