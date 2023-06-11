@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFramework>net7.0</TargetFramework>
@@ -12,7 +12,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Common\Imlight.Common.csproj" />
-        <ProjectReference Include="E:\W101r\WizUnraveler\src\WizUnraveler\WizUnraveler.csproj" />
+        <ProjectReference Include="\home\jay\Projects\\WizUnraveler\src\WizUnraveler\WizUnraveler.csproj" />
     </ItemGroup>
 
 </Project>

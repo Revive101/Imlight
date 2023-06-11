@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -25,7 +25,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Common\Imlight.Common.csproj" />
     <ProjectReference Include="..\Server\Imlight.Server.csproj" />
-    <ProjectReference Include="E:\W101r\WizUnraveler\src\WizUnraveler\WizUnraveler.csproj" />
+    <ProjectReference Include="\home\jay\Projects\WizUnraveler\src\WizUnraveler\WizUnraveler.csproj" />
   </ItemGroup>
 
 </Project>

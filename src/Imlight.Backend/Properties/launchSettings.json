@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "Imlight.Backend": {
-      "commandName": "Executable",
-      "executablePath": "E:\\W101r\\Imlight\\src\\Imlight.Backend\\bin\\Debug\\net5.0\\Imlight.Backend.exe"
-    }
-  }
-}
