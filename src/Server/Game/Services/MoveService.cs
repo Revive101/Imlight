@@ -48,9 +48,23 @@ namespace Imlight.Server.Game.Services
 
             if (zone == "WizardCity/WC_Hub") // TESTING ONLY
             {
+                var ravenwoodBox = new Dictionary<SharpDX.Vector3[], string>()
+                {
+                    { new SharpDX.Vector3[] { 
+                        new SharpDX.Vector3(-319, 1476, -100),
+                        new SharpDX.Vector3(-315, 1663, -100),
+                        new SharpDX.Vector3(163, 1660, -100),
+                        new SharpDX.Vector3(165, 1468, -100),
+                        new SharpDX.Vector3(-319, 1476, 100),
+                        new SharpDX.Vector3(-315, 1663, 100),
+                        new SharpDX.Vector3(163, 1660, 100),
+                        new SharpDX.Vector3(165, 1468, 100)
+                    }, "WizardCity/WC_Ravenwood" }
+                };
+
                 var circleTriggers = new Dictionary<SharpDX.Vector2, string>()
                 {
-                    { new SharpDX.Vector2(-80, 1815),           "WizardCity/WC_Ravenwood" },
+                    //{ new SharpDX.Vector2(-80, 1815),           "WizardCity/WC_Ravenwood" },
                     { new SharpDX.Vector2(1370.5f, -3622.6f),   "WizardCity/WC_Shop_Area" },
                     { new SharpDX.Vector2(-961.6f, -2495.6f),   "WizardCity/Interiors/WC_Headmistress_House" },
                     { new SharpDX.Vector2(-1559.8f, -11.9f),    "WizardCity/Interiors/WC_Headmaster_Tower" },
@@ -61,6 +75,7 @@ namespace Imlight.Server.Game.Services
                     { new SharpDX.Vector2(8380.9f, -2126.3f),   "WizardCity/WC_Streets/Interiors/WC_PET_Park" },
                 };
 
+                CheckTransferPrisms(character, new SharpDX.Vector3(position.X, position.Y, position.Z), ravenwoodBox); 
                 CheckTransferPoints(character, position2D, circleTriggers);
 
             } 

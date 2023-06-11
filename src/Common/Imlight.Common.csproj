@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="\home\jay\Projects\WizUnraveler\src\WizUnraveler\WizUnraveler.csproj" />
+    <ProjectReference Include="E:\W101r\WizUnraveler\src\WizUnraveler\WizUnraveler.csproj" />
   </ItemGroup>
 
 </Project>
