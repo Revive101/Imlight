@@ -64,7 +64,6 @@ namespace Imlight.Server.Game.Services
 
                 var circleTriggers = new Dictionary<SharpDX.Vector2, string>()
                 {
-                    //{ new SharpDX.Vector2(-80, 1815),           "WizardCity/WC_Ravenwood" },
                     { new SharpDX.Vector2(1370.5f, -3622.6f),   "WizardCity/WC_Shop_Area" },
                     { new SharpDX.Vector2(-961.6f, -2495.6f),   "WizardCity/Interiors/WC_Headmistress_House" },
                     { new SharpDX.Vector2(-1559.8f, -11.9f),    "WizardCity/Interiors/WC_Headmaster_Tower" },
@@ -165,7 +164,7 @@ namespace Imlight.Server.Game.Services
         {
             foreach (var p in dict)
             {
-                var isInside = Math.InsideOfCircle(p.Key, 175, pos);
+                var isInside = Math.InsideOfCircle(p.Key, 175, pos); // This radius needs to be sourced elsewhere
 
                 if (isInside) // Player is inside of trigger, transfer to new zone
                 {  
