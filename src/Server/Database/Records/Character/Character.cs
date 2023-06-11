@@ -135,7 +135,7 @@ namespace Imlight.Server.Database
                 inventoryBehavior.m_itemList = new List<CoreObject>();
 
 
-                new List<ulong>() { 4740, 4705, 5030, 39068, 1363076, 1363075, 4750, 1475149, 1472644, 4873 }.ForEach(templateId =>
+                new List<ulong>() { 4740, 4705, 5030, 39068, 1363076, 1475149, 1472644, 1317133, 1317126, 1317234, 1359455, 1392077, 1352341 }.ForEach(templateId =>
                 {
                     CoreTemplate template = CoreObjectFactory.GetCoreTemplate(templateId);
                     Log.Logger.Debug("Template is: "+template.GetType());
