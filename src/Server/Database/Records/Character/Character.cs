@@ -175,7 +175,6 @@ namespace Imlight.Server.Database
             // =========================================================
             if (CoreObjectFactory.FindBehaviorInstance<ClientSpellbookBehavior>(clientObject, out var spellbookBehavior))
             {
-                spellbookBehavior.m_behaviorTemplateNameID = 0;
                 spellbookBehavior.m_spellIDList = new();
             }
             else
