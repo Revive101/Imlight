@@ -9,6 +9,11 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using WizUnraveler.Cache;
+using static WizUnraveler.ObjectProperty.ObjectSerializer;
+using WizUnraveler.ObjectProperty;
+using Imlight.Server.Database;
+using static WizUnraveler.Cache.TypeCache;
+using WizUnraveler;
 
 namespace Imlight.Server.Game.Services
 {
@@ -24,6 +29,10 @@ namespace Imlight.Server.Game.Services
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_EQUIPITEM))]
         private void ReceiveEquipItem(GAME_5_PROTOCOL.MSG_EQUIPITEM message)
         {
+            var serializer = new ObjectSerializer()
+            .WithSerializerFlags(SerializerFlags.None)
+            .WithPropertyFlags(PropertyFlags.Public | PropertyFlags.Transmit | PropertyFlags.AuthorityTransmit);
+
             var coreObject = GetActiveCoreObject();
 
             SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPITEM()
@@ -33,6 +42,53 @@ namespace Imlight.Server.Game.Services
                 IsEquip = message.IsEquip
             });
 
+
+
+            if (CoreObjectFactory.FindBehaviorInstance<ClientWizInventoryBehavior>(coreObject, out var inventoryBehavior))
+            {
+                Log.Logger.Debug("BehaviorInstance is not null, yeeeeeeeeeeeeeee");
+                var itemObj = inventoryBehavior.m_itemList.First(item => item.m_globalID == message.ItemID);
+
+                if (itemObj == null)
+                {
+                    Log.Logger.Error("Item cannot be changed when global_ID is not found!");
+                    return;
+                }
+
+                if (message.IsEquip == 1)
+                {
+                    var templateId = itemObj.m_templateID;
+                    WizItemTemplate template = CoreObjectFactory.GetTemplate<WizItemTemplate>(templateId);
+                    Log.Logger.Debug("Equippping item is not null, Name: " + template.m_objectName);
+
+                    var item = new WizardEquippedItemInfo()
+                    {
+                        m_itemID = (uint)message.ItemID,
+                        m_pattern = (FiveBitByte)template.m_numPatterns,
+                        m_baseColor = (FiveBitByte)template.m_numPrimaryColors,
+                        m_trimColor = (FiveBitByte)template.m_numSecondaryColors,
+                    };
+
+                    try
+                    {
+                        SendToSessionServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
+                        {
+                            Selfless = false,
+                            Sender = SessionActor.ActorRef,
+                            Message = new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM()
+                            {
+                                GlobalID = coreObject.m_globalID,
+                                SerializedInfo = serializer.Serialize(item)
+                            }
+                        });
+                    }
+                    catch(Exception e)
+                    {
+                        Log.Logger.Error("WizItemTemplate could not be serialized!");
+                        Log.Logger.Error(e.Message);
+                    }
+                }
+            }
             //@TODO: PUBLICEQUIPITEM & PUBLICUNEQUIPITEM (Behavior_XX ??)
         }
 
