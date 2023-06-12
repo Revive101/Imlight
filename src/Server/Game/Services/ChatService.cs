@@ -51,27 +51,6 @@ namespace Imlight.Server.Game.Services
                 Message = msg,
                 Selfless = true
             });
-
-            SendToSocket(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTOBOOK()
-            {
-                SpellID = 2066
-            });
-
-            SendToSocket(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTOBOOK()
-            {
-                SpellID = 860841451
-            });
-
-
-            SendToSocket(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTOBOOK()
-            {
-                SpellID = 2537945
-            });
-
-            SendToSocket(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTOBOOK()
-            {
-                SpellID = 203556948
-            });
         }
 
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_REQASKSERVER))]
