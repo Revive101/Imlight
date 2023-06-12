@@ -16,8 +16,10 @@ namespace Imlight.Server.Database
     public static class ResourceManager
     {
         const uint PATCH_SERVER_DOWNLOAD_TIMEOUT_SECONDS = 360;
+        private const string ROOT_WAD_NAME = "Root.wad";
+        private static Wad _rootWad;
 
-        /// <summary>
+        /// <summary>   
         /// Initializes the ResourceManager. It will instantiate
         /// <see cref="CoreObjectFactory"/> and
         /// <see cref="AccessPassManager"/>
@@ -42,24 +44,30 @@ namespace Imlight.Server.Database
         {
             wad = default;
 
-            // There is a name inconsistency for wad files.
-            var betterWadName = wadName.Replace('/', '-');
-
-            // First, check to see if we can get this file from our local cache.
-            var cachedWad = LocalCache.GetCachedWad(betterWadName);
-            if (cachedWad is not null)
+            // The Root.wad is accessed a LOT, so it's cached in memory.
+            if (wadName == ROOT_WAD_NAME)
             {
-                wad = cachedWad;
+                if (_rootWad is null)
+                {
+                    var rootCache = LoadWadFromCacheOrDownload(ROOT_WAD_NAME);
+                    if (rootCache is null)
+                    {
+                        Log.Logger.Error($"Could not load vital {ROOT_WAD_NAME} into memory!");
+                        return false;
+                    }
+                    _rootWad = rootCache;
+                }
+
+                wad = _rootWad;
                 return true;
             }
 
-            // It's not in the local cache. Instead, download it from the patch server endpoint.
-            if (!DownloadFromPatchServer(betterWadName, out var stream))
+            var betterWadName = wadName.Replace('/', '-');
+            var cachedWad = LoadWadFromCacheOrDownload(betterWadName);
+            if (cachedWad is null)
                 return false;
-            
-            LocalCache.CacheWad(betterWadName, stream);
-            wad = new Wad(stream);
 
+            wad = cachedWad;
             return true;
         }
 
@@ -71,7 +79,7 @@ namespace Imlight.Server.Database
         /// <param name="fileName">The name of the file record inside the KIWAD.</param>
         /// <param name="fileStream">The output file stream that will return if the file record is found.</param>
         /// <returns>True, if the file was found or downloaded; otherwise, false.</returns>
-        public static bool TryLoadFile(string wadName, string fileName, out Stream fileStream)
+        public static bool TryLoadFile(string wadName, string fileName, out MemoryStream fileStream)
         {
             fileStream = default;
 
@@ -98,6 +106,19 @@ namespace Imlight.Server.Database
                 return null;
             var serializer = new FileSerializer();
             return serializer.OpenClass<T>(wad, fileName);
+        }
+
+        private static Wad LoadWadFromCacheOrDownload(string wadName)
+        {
+            var cachedWad = LocalCache.GetCachedWad(wadName);
+            if (cachedWad is not null)
+                return cachedWad;
+
+            if (!DownloadFromPatchServer(wadName, out var stream))
+                return null;
+
+            LocalCache.CacheWad(wadName, stream);
+            return new Wad(stream);
         }
 
         private static bool DownloadFromPatchServer(string wadName, out Stream fileStream)
