@@ -45,6 +45,7 @@ namespace Imlight.Server.Game.Services
             var serializer = new ObjectSerializer()
                 .WithSerializerFlags(SerializerFlags.None)
                 .WithPropertyFlags(PropertyFlags.Public | PropertyFlags.Transmit | PropertyFlags.AuthorityTransmit);
+
             var coreObject = GetActiveCoreObject();
 
             // Confirm to the player that we've equipped their item server side.
@@ -58,7 +59,7 @@ namespace Imlight.Server.Game.Services
                 IsEquip = message.IsEquip
             });
 
-            // @todo: Remove this and gather from potential player behavior cache instead.
+            // @TODO: Remove this and gather from potential player behavior cache instead.
             if (!CoreObjectFactory.FindBehaviorInstance<ClientWizInventoryBehavior>(coreObject,
                     out var inventoryBehavior)) return;
 
