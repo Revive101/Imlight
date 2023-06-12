@@ -6,12 +6,13 @@ using Imlight.Common.Utilities;
 using Akka.IO;
 using WizUnraveler.IO;
 using System.Linq;
+using System.Text.Json;
 
 namespace Imlight.Server.Database
 {
     public class Character
     {
-        private const int    STARTING_LEVEL = 1;
+        private const int    STARTING_LEVEL = 15;
         private const string STARTING_LOCATION = "WizardCity/WC_Hub";
         private const int    STARTING_BASE_MANA = 15;
         private const int    STARTING_BASE_HEALTH = 500;
@@ -134,9 +135,11 @@ namespace Imlight.Server.Database
                 inventoryBehavior.m_itemList = new List<CoreObject>();
 
 
-                new List<ulong>() { 4740, 4705, 5030, 39068, 532670 }.ForEach(templateId =>
+                new List<ulong>() { 4740, 4705, 5030, 39068, 1363076, 1475149, 1472644, 1317133, 1317126, 1317234, 1359455, 1392077, 1352341 }.ForEach(templateId =>
                 {
-                    CoreTemplate template = CoreObjectFactory.GetTemplate<CoreTemplate>(templateId);
+                    CoreTemplate template = CoreObjectFactory.GetCoreTemplate(templateId);
+                    Log.Logger.Debug("Template is: "+template.GetType());
+
                     var coreObject = template switch
                     {
                         ItemTemplate => new WizClientObjectItem(),
@@ -172,7 +175,6 @@ namespace Imlight.Server.Database
             // =========================================================
             if (CoreObjectFactory.FindBehaviorInstance<ClientSpellbookBehavior>(clientObject, out var spellbookBehavior))
             {
-                spellbookBehavior.m_behaviorTemplateNameID = 0;
                 spellbookBehavior.m_spellIDList = new();
             }
             else

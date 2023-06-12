@@ -14,7 +14,7 @@ namespace Imlight.Server.Game.Services
         {
             return Akka.Actor.Props.Create(() => new ChatService(parentActor));
         }
-        
+
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_REQUESTRADIALCHAT))]
         private void ReceiveRequestRadialChat(GAME_5_PROTOCOL.MSG_REQUESTRADIALCHAT message)
         {
@@ -59,13 +59,18 @@ namespace Imlight.Server.Game.Services
 
             SendToSocket(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTOBOOK()
             {
-                SpellID = 949570680
+                SpellID = 860841451
             });
 
 
             SendToSocket(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTOBOOK()
             {
                 SpellID = 2537945
+            });
+
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTOBOOK()
+            {
+                SpellID = 203556948
             });
         }
 
@@ -84,7 +89,7 @@ namespace Imlight.Server.Game.Services
                 Selfless = true,
             });
         }
-        
+
         private TypeCache.CoreObject GetActiveCoreObject()
         {
             var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
