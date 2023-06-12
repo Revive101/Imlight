@@ -14,6 +14,7 @@ using WizUnraveler.ObjectProperty;
 using Imlight.Server.Database;
 using static WizUnraveler.Cache.TypeCache;
 using WizUnraveler;
+using Akka.Util.Internal;
 
 namespace Imlight.Server.Game.Services
 {
@@ -25,29 +26,16 @@ namespace Imlight.Server.Game.Services
         {
             return Akka.Actor.Props.Create(() => new InventoryService(parentActor));
         }
-        
+
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_REQUESTRADIALQUICKCHAT))]
         private void ReceiveRequestRadialQuickChat(GAME_5_PROTOCOL.MSG_REQUESTRADIALQUICKCHAT message)
         {
-            SendToSocket(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTOBOOK()
+            new int[] { 2066, 860841451, 2537945, 203556948 }.ForEach(spellId =>
             {
-                SpellID = 2066
-            });
-
-            SendToSocket(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTOBOOK()
-            {
-                SpellID = 860841451
-            });
-
-
-            SendToSocket(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTOBOOK()
-            {
-                SpellID = 2537945
-            });
-
-            SendToSocket(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTOBOOK()
-            {
-                SpellID = 203556948
+                SendToSocket(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTOBOOK()
+                {
+                    SpellID = spellId
+                });
             });
         }
 
@@ -60,8 +48,9 @@ namespace Imlight.Server.Game.Services
             var coreObject = GetActiveCoreObject();
 
             // Confirm to the player that we've equipped their item server side.
-            // @todo: There should be some "AntiAmbrose" logic here. Double check that the player meets the requirements
+            // @TODO: There should be some "AntiAmbrose" logic here. Double check that the player meets the requirements
             // to equip this item.
+
             SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPITEM()
             {
                 ItemID = message.ItemID,
@@ -72,7 +61,7 @@ namespace Imlight.Server.Game.Services
             // @todo: Remove this and gather from potential player behavior cache instead.
             if (!CoreObjectFactory.FindBehaviorInstance<ClientWizInventoryBehavior>(coreObject,
                     out var inventoryBehavior)) return;
-            
+
             Log.Logger.Debug("BehaviorInstance is not null, yeeeeeeeeeeeeeee");
             var itemObj = inventoryBehavior.m_itemList.First(item => item.m_globalID == message.ItemID);
 
@@ -96,24 +85,32 @@ namespace Imlight.Server.Game.Services
                     m_trimColor = (FiveBitByte)template.m_numSecondaryColors,
                 };
 
-                try
+                /*SendToSessionServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
                 {
-                    SendToSessionServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
+                    Selfless = false,
+                    Sender = SessionActor.ActorRef,
+                    Message = new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM()
                     {
-                        Selfless = false,
-                        Sender = SessionActor.ActorRef,
-                        Message = new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM()
-                        {
-                            GlobalID = coreObject.m_globalID,
-                            SerializedInfo = serializer.Serialize(item)
-                        }
-                    });
-                }
-                catch(Exception e)
+                        GlobalID = coreObject.m_globalID,
+                        SerializedInfo = serializer.Serialize(item)
+                    }
+                });*/
+                SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM()
                 {
-                    Log.Logger.Error("WizItemTemplate could not be serialized!");
-                    Log.Logger.Error(e.Message);
-                }
+                    GlobalID = coreObject.m_globalID,
+                    SerializedInfo = serializer.Serialize(item)
+                });
+
+                /*
+                    SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_EQUIPITEM()
+                    {
+                        GlobalID = coreObject.m_globalID,
+                        IsValid = 1,
+                        SerializedItem = serializer.Serialize(item),
+                        SlotName = "2",
+                    });
+                 */
+
             }
             //@TODO: PUBLICEQUIPITEM & PUBLICUNEQUIPITEM (Behavior_XX ??)
         }
