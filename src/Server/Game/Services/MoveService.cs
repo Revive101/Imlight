@@ -31,7 +31,7 @@ namespace Imlight.Server.Game.Services
                 return;
             }
 
-            var character = account.Characters[0]; // @todo: get active character
+            var character = GetActiveCharacter();
             var zone = character.CreationData.m_location;
 
             // Restore actual location information, as it is compressed by a factor of 4 and unsigned.
@@ -152,7 +152,15 @@ namespace Imlight.Server.Game.Services
 
             return response.CharacterObject;
         }
-        
+
+        private Character GetActiveCharacter()
+        {
+            var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
+            var response = AskSessionServices<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
+
+            return response.Character;
+        }
+
         private ZONE_102_PROTOCOL.MSG_QUERYZONERSP GetZoneDetails(string zoneName)
         {
             // When we send a zone transfer request, it will also add the player to that zone.

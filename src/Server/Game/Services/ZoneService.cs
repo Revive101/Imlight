@@ -2,6 +2,7 @@ using System;
 using Akka.Actor;
 using WizUnraveler.Cache;
 using Imlight.Common.Utilities;
+using Imlight.Server.Database;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
 
@@ -53,7 +54,7 @@ namespace Imlight.Server.Game.Services
         {
             // TESTING PURPOSES ONLY, is this method in the appropriate class?
             var account = GetSocketAccount();
-            var character = account.Characters[0];
+            var character = GetActiveCharacter();
 
             // Remove the player from their current zone.
             var removePlayerMsg = new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER()
@@ -108,6 +109,14 @@ namespace Imlight.Server.Game.Services
             var response = AskSessionServices<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
 
             return response.CharacterObject;
+        }
+
+        private Character GetActiveCharacter()
+        {
+            var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
+            var response = AskSessionServices<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
+
+            return response.Character;
         }
     }
 }
