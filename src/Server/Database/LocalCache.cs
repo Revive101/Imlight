@@ -50,16 +50,7 @@ namespace Imlight.Server.Database
             var file = fs.Find(f => f.Filename == wadName)
                 .FirstOrDefault();
 
-            if (file is null)
-                return null;
-            
-            // LiteDB's stream is pretty bare and doesn't offer a lot of methods. Convert the file to a MemoryStream
-            // so we have more control over it.
-            var ms = new MemoryStream();
-            file.OpenRead().CopyTo(ms);
-            ms.Seek(0, SeekOrigin.Begin);
-
-            return new Wad(ms);
+            return file is null ? null : new Wad(file.OpenRead());
         }
 
         /// <summary>
