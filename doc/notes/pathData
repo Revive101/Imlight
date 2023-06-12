@@ -1,0 +1,28 @@
+=====================================
+pathData.xml:
+=====================================
+
+ObjectProperty. Type is `PathManager_PathTemplateList`, which contains only one element: a vector of `PathObjectTemplate`.
+
+This file serves to group each `NodeObject` into a path.
+
+`PathObjectTemplate`:
+    - `m_id`      - A global id, not random.
+    - `m_name`    - The name of the path.
+    - `m_nodeIDs` - A vector of GID.
+
+=====================================
+pathNodeData.xml:
+=====================================
+
+ObjectProperty. Type is `PathManager_NodeTemplateList`, which contains only one elemment: a vector of `NodeObject`.
+
+This is an unorganized vector of `NodeObject` of all the nodes that exist in the zone. `pathData.xml` is externally used to group them into a path.
+
+`NodeObject`:
+    - `m_descriptor` - Another PropertyClass, almost always null.
+    - `m_direction`  - The direction of this node. Usually always 0.
+    - `m_fRadius`    - The radius of this node. Usually always 0.
+    - `m_id`         - The ID for this node. This node matches to a path in the `pathData.xml`.
+    - `m_location`   - A vector3 location of this node.
+    - `m_roll`       - The rotation of this object.

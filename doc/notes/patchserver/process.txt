@@ -1,0 +1,10 @@
+[] 1. Imlight starts.
+[] 2. The patch server starts.
+   [] 1. The patch server attempts to reach our website.
+   [] 2. The patch server sets a status on the singleton denoting status.
+[] 3. The resource manager must now start and source relevant data.
+    [] 1. Validate if we can source the needed files.
+        [] - If the patch server is not online, check to see if we have the file cached. If we don't, panic!
+        [] - If we don't have the files and the patch server is online, download them.
+        [] - If we have the files and the patch server is online, check their CRC to see if they match the CRC in the latest file list. If they don't, delete the file.
+    [] 2. Use the cached (or downloaded) data.
