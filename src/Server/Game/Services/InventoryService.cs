@@ -25,16 +25,43 @@ namespace Imlight.Server.Game.Services
         {
             return Akka.Actor.Props.Create(() => new InventoryService(parentActor));
         }
+        
+        [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_REQUESTRADIALQUICKCHAT))]
+        private void ReceiveRequestRadialQuickChat(GAME_5_PROTOCOL.MSG_REQUESTRADIALQUICKCHAT message)
+        {
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTOBOOK()
+            {
+                SpellID = 2066
+            });
+
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTOBOOK()
+            {
+                SpellID = 860841451
+            });
+
+
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTOBOOK()
+            {
+                SpellID = 2537945
+            });
+
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTOBOOK()
+            {
+                SpellID = 203556948
+            });
+        }
 
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_EQUIPITEM))]
         private void ReceiveEquipItem(GAME_5_PROTOCOL.MSG_EQUIPITEM message)
         {
             var serializer = new ObjectSerializer()
-            .WithSerializerFlags(SerializerFlags.None)
-            .WithPropertyFlags(PropertyFlags.Public | PropertyFlags.Transmit | PropertyFlags.AuthorityTransmit);
-
+                .WithSerializerFlags(SerializerFlags.None)
+                .WithPropertyFlags(PropertyFlags.Public | PropertyFlags.Transmit | PropertyFlags.AuthorityTransmit);
             var coreObject = GetActiveCoreObject();
 
+            // Confirm to the player that we've equipped their item server side.
+            // @todo: There should be some "AntiAmbrose" logic here. Double check that the player meets the requirements
+            // to equip this item.
             SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPITEM()
             {
                 ItemID = message.ItemID,
@@ -42,51 +69,50 @@ namespace Imlight.Server.Game.Services
                 IsEquip = message.IsEquip
             });
 
+            // @todo: Remove this and gather from potential player behavior cache instead.
+            if (!CoreObjectFactory.FindBehaviorInstance<ClientWizInventoryBehavior>(coreObject,
+                    out var inventoryBehavior)) return;
+            
+            Log.Logger.Debug("BehaviorInstance is not null, yeeeeeeeeeeeeeee");
+            var itemObj = inventoryBehavior.m_itemList.First(item => item.m_globalID == message.ItemID);
 
-
-            if (CoreObjectFactory.FindBehaviorInstance<ClientWizInventoryBehavior>(coreObject, out var inventoryBehavior))
+            if (itemObj == null)
             {
-                Log.Logger.Debug("BehaviorInstance is not null, yeeeeeeeeeeeeeee");
-                var itemObj = inventoryBehavior.m_itemList.First(item => item.m_globalID == message.ItemID);
+                Log.Logger.Error("Item cannot be changed when global_ID is not found!");
+                return;
+            }
 
-                if (itemObj == null)
+            if (message.IsEquip == 1)
+            {
+                var templateId = itemObj.m_templateID;
+                var template = CoreObjectFactory.GetTemplate<WizItemTemplate>(templateId);
+                Log.Logger.Debug("Equippping item is not null, Name: " + template.m_objectName);
+
+                var item = new WizardEquippedItemInfo()
                 {
-                    Log.Logger.Error("Item cannot be changed when global_ID is not found!");
-                    return;
-                }
+                    m_itemID = (uint)message.ItemID,
+                    m_pattern = (FiveBitByte)template.m_numPatterns,
+                    m_baseColor = (FiveBitByte)template.m_numPrimaryColors,
+                    m_trimColor = (FiveBitByte)template.m_numSecondaryColors,
+                };
 
-                if (message.IsEquip == 1)
+                try
                 {
-                    var templateId = itemObj.m_templateID;
-                    WizItemTemplate template = CoreObjectFactory.GetTemplate<WizItemTemplate>(templateId);
-                    Log.Logger.Debug("Equippping item is not null, Name: " + template.m_objectName);
-
-                    var item = new WizardEquippedItemInfo()
+                    SendToSessionServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
                     {
-                        m_itemID = (uint)message.ItemID,
-                        m_pattern = (FiveBitByte)template.m_numPatterns,
-                        m_baseColor = (FiveBitByte)template.m_numPrimaryColors,
-                        m_trimColor = (FiveBitByte)template.m_numSecondaryColors,
-                    };
-
-                    try
-                    {
-                        SendToSessionServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
+                        Selfless = false,
+                        Sender = SessionActor.ActorRef,
+                        Message = new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM()
                         {
-                            Selfless = false,
-                            Sender = SessionActor.ActorRef,
-                            Message = new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM()
-                            {
-                                GlobalID = coreObject.m_globalID,
-                                SerializedInfo = serializer.Serialize(item)
-                            }
-                        });
-                    }
-                    catch(Exception e)
-                    {
-                        Log.Logger.Error("WizItemTemplate could not be serialized!");
-                        Log.Logger.Error(e.Message);
-                    }
+                            GlobalID = coreObject.m_globalID,
+                            SerializedInfo = serializer.Serialize(item)
+                        }
+                    });
+                }
+                catch(Exception e)
+                {
+                    Log.Logger.Error("WizItemTemplate could not be serialized!");
+                    Log.Logger.Error(e.Message);
                 }
             }
             //@TODO: PUBLICEQUIPITEM & PUBLICUNEQUIPITEM (Behavior_XX ??)
