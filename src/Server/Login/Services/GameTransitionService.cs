@@ -78,7 +78,7 @@ namespace Imlight.Server.Login.Services
 
             SendToSocket(new EXTENDEDBASE_2_PROTOCOL.MSG_SERVERMESSAGE()
             {
-                Message = (WideByteString)"<center><color;FFFFFF><ITALICS>Revive101 Community</ITALICS></color><br><color;1C1EC4>discord.gg/revive101</color></center>",
+                Message = "<center><color;FFFFFF><ITALICS>Revive101 Community</ITALICS></color><br><color;1C1EC4>discord.gg/revive101</color></center>",
                 Modal = 0
             });
         }
