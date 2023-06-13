@@ -103,7 +103,7 @@ namespace Imlight.Server.Game
         private void ReceiveRemovePlayer(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message)
         {
             if (!Players.Contains(message.Player))
-                throw new Exception("Player actor does not exist on this server!");
+                Log.Logger.Warning($"Duplicate removal of player in zone: {this.ZoneName}.");
             
             RemoveObject(message.GlobalId);
             
