@@ -110,8 +110,8 @@ namespace Imlight.Server.Patch
             {
                 Name = _listFileName,
                 URL = _listFileUrl,
-                URLPrefix = PATCH_SERVER_URL,
-                URLSuffix = "",
+                URLPrefix = _urlPrefix,
+                URLSuffix = _urlSuffix,
                 Version = _latestVersion,
                 CRC = _listFileCrc,
                 Size = _listFileSize,
@@ -124,7 +124,7 @@ namespace Imlight.Server.Patch
         {
             if (!EndpointReached)
                 throw new Exception("By this point, the patch server endpoint has not yet been reached!");
-
+            
             // Remove the `.wad` extension if one exists.
             if (wadName.EndsWith(".wad", StringComparison.OrdinalIgnoreCase))
                 wadName = wadName[..^4];
@@ -133,7 +133,6 @@ namespace Imlight.Server.Patch
 
             return await DownloadFileStream(url);
         }
-
         
         private async Task<Stream> DownloadUtilityStream(string fileName)
         {
@@ -273,9 +272,12 @@ namespace Imlight.Server.Patch
                 _listFileName = LATEST_FILE_LIST_NAME_BIN;
                 _listFileUrl = $"{_patchServerWorkingUrl}/{LATEST_FILE_LIST_NAME_BIN}";
                 _listFileSize = Convert.ToUInt32(latestBin.Length);
+                _urlPrefix = _patchServerWorkingUrl;
+                _urlSuffix = "";
 
                 // Convert the stream to a byte array to compute the crc32 hash.
                 var ms = new MemoryStream();
+                latestBin.Seek(0, SeekOrigin.Begin);
                 latestBin.CopyTo(ms);
                 ms.Seek(0, SeekOrigin.Begin);
                 _listFileCrc = crc32.Compute(ms.ToArray());
