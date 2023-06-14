@@ -1,8 +1,14 @@
-﻿using System;
+﻿/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
+using System;
 using System.Collections.Generic;
 using WizUnraveler.ObjectProperty;
 using static WizUnraveler.Cache.TypeCache;
 using Imlight.Common.Utilities;
+using Imlight.Server.Database.Records.Character;
 
 namespace Imlight.Server.Database
 {

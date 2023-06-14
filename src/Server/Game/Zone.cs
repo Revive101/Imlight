@@ -1,7 +1,13 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
+using Imlight.Common.Serializable;
 using WizUnraveler;
 using WizUnraveler.Cache;
 using WizUnraveler.DML;
@@ -103,7 +109,7 @@ namespace Imlight.Server.Game
         private void ReceiveRemovePlayer(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message)
         {
             if (!Players.Contains(message.Player))
-                throw new Exception("Player actor does not exist on this server!");
+                Log.Logger.Warning($"Duplicate removal of player in zone: {this.ZoneName}.");
             
             RemoveObject(message.GlobalId);
             

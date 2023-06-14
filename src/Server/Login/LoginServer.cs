@@ -1,4 +1,9 @@
-﻿using Akka.Actor;
+﻿/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
+using Akka.Actor;
 using WizUnraveler.Cache;
 using Imlight.Common.Utilities;
 using Imlight.Server.Shared.Networking;
@@ -20,12 +25,7 @@ namespace Imlight.Server.Login
                            ushort serverPort = DEFAULT_LOGIN_SERVER_PORT)
                            : base(serverName, serverPort, LoginServiceFactory.Props())
         {
-            // TODO: Move this game server creation out of this class.
             this._gamePoolServer = CreateGameServerPool();
-            CreateLocalServer();
-            Log.Logger.Debug($"New actor created under {Context.Self.Path}:" +
-                             $" {DEFAULT_LOGIN_SERVER_NAME}.{GAME_SERVER_POOL_NAME}");
-            
             Log.Logger.Information($"Login server created with " +
                                    $"name {serverName} " +
                                    $"under port {serverPort}.");
@@ -63,21 +63,24 @@ namespace Imlight.Server.Login
             message.SessionActor.ActorRef.Tell(new SERVICE_101_PROTOCOL.MSG_OPCODE_HALT());
         }
 
-        private void CreateLocalServer()
+        [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_CREATEGAMESERVER))]
+        private void ReceiveCreateGameServer(SERVER_100_PROTOCOL.MSG_CREATEGAMESERVER message)
         {
-            var msg = new SERVER_100_PROTOCOL.MSG_CREATEGAMESERVER()
-            {
-                Name = DEFAULT_LOCAL_GAME_SERVER_NAME,
-                Port = DEFAULT_LOCAL_GAME_SERVER_PORT
-            };
+            if (message.Name is "" or null)
+                message.Name = DEFAULT_LOCAL_GAME_SERVER_NAME;
+            if (message.Port == 0)
+                message.Port = DEFAULT_LOCAL_GAME_SERVER_PORT;
             
-            _gamePoolServer.Tell(msg);
+            _gamePoolServer.Tell(message);
         }
 
         private IActorRef CreateGameServerPool()
         {
             var poolProps = GameServerPool.Props();
 
+            Log.Logger.Debug($"New actor created under {Context.Self.Path}:" +
+                             $" {this.Name}.{GAME_SERVER_POOL_NAME}");
+            
             return Context.ActorOf(poolProps, $"{Name}.{GAME_SERVER_POOL_NAME}");
         }
     }
