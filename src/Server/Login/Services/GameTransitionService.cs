@@ -84,12 +84,17 @@ namespace Imlight.Server.Login.Services
 
         private SERVER_100_PROTOCOL.MSG_SERVERINFO GetGameServer()
         {
-            // PROBABLY SHOULDN'T DO THIS
-            //@todo: fix this
+            var msg = new SERVER_100_PROTOCOL.MSG_QUERYGAMESERVERS();
+            
+            #if DEBUG
             var localEndPoint = (IPEndPoint)SessionActor.Socket.LocalEndPoint;
             var isLocal = localEndPoint.Address.ToString().Contains("127.0.");
-
-            var msg = new SERVER_100_PROTOCOL.MSG_QUERYGAMESERVERS() { IsLocal = isLocal };
+            msg = new SERVER_100_PROTOCOL.MSG_QUERYGAMESERVERS() { IsLocal = isLocal };
+            #else
+            // Release builds should never be able to connect to their own local server.
+            msg = new SERVER_100_PROTOCOL.MSG_QUERYGAMESERVERS() { IsLocal = false };
+            #endif
+            
             return AskServer<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg);
         }
 
