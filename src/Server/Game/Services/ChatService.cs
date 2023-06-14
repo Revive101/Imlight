@@ -79,7 +79,7 @@ namespace Imlight.Server.Game.Services
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_REQASKSERVER))]
         private void ReceiveRequest(GAME_5_PROTOCOL.MSG_REQASKSERVER message)
         {
-
+            
         }
 
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CORE_EMOTE))]
@@ -92,7 +92,7 @@ namespace Imlight.Server.Game.Services
                 Selfless = true,
             });
         }
-
+        
         private ByteString GetMessagePayload(byte[] input)
         {
             // The message is a wide string.
@@ -134,7 +134,7 @@ namespace Imlight.Server.Game.Services
 
             return HexStringToBytes(tail);
         }
-
+        
         private TypeCache.CoreObject GetActiveCoreObject()
         {
             var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();

@@ -15,6 +15,7 @@ using Imlight.Server.Shared.Secrets;
 using WizUnraveler.Cache;
 using WizUnraveler.Common;
 using WizUnraveler.IO;
+using WizUnraveler.ObjectProperty;
 
 namespace Imlight.Server.Database
 {
@@ -183,11 +184,23 @@ namespace Imlight.Server.Database
             return templateId;
         }      
         
-        private static CoreTemplate GetCoreTemplate(ulong id)
+        public static CoreTemplate GetCoreTemplate(ulong id)
         {
             if (!_coreTemplates.TryGetValue(id, out var loc)) return null;
 
             var template = ResourceManager.LoadDeserializedFile<CoreTemplate>("Root.wad", loc);
+            if (template is null)
+                throw new NullReferenceException($"Template by ID {id} was not found!");
+
+            return template ?? null;
+        }
+
+        public static T GetTemplate<T>(ulong id) 
+            where T : PropertyClass
+        {
+            if (!_coreTemplates.TryGetValue(id, out var loc)) return null;
+
+            var template = ResourceManager.LoadDeserializedFile<T>("Root.wad", loc);
             if (template is null)
                 throw new NullReferenceException($"Template by ID {id} was not found!");
 

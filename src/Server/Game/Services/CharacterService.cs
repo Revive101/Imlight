@@ -68,5 +68,31 @@ namespace Imlight.Server.Game.Services
             _activeCharacterObject.m_location = new Vector3(x, y, z);
             _activeCharacterObject.m_orientation = new Vector3(0, 0, direction);
         }
+
+        // Experimental - Sets the Crowns to 12,345,678
+        [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_CROWNBALANCE))]
+        private void ReceiveCrownBalance(WIZARD_12_PROTOCOL.MSG_CROWNBALANCE message)
+        {
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_CROWNBALANCE()
+            {
+                CharacterID = message.CharacterID,
+                Failure = 0,
+                TotalCrowns = 12345678,
+                CacheBalanceForCSSegmentation = 1
+            });
+        }
+
+        // Experimental - ??? should be something with stats
+        [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_GETLADDER))]
+        private void ReceiveGetLadder(GAME_5_PROTOCOL.MSG_GETLADDER message)
+        {
+            SendToSocket(new GAME_5_PROTOCOL.MSG_GETLADDER()
+            {
+                CharacterID = message.CharacterID,
+                NameBlob = message.NameBlob,
+                TournamentNameID = message.TournamentNameID,
+            });
+        }
+
     }
 }

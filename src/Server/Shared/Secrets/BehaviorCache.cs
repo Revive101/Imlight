@@ -61,7 +61,7 @@ namespace Imlight.Server.Shared.Secrets
                 //case 0x336907AE: return new ClientMountOwnerBehavior();
                 //case 0x7696F807: return new ClientMountRiderBehavior();
                 //case 0x0752DB8F: return new ClientPetSnackBehavior();
-                //case 0x64FE8AF9: return new ClientSpellbookBehavior();
+                case 0x64FE8AF9: return new ClientSpellbookBehavior();
                 //case 0x2BD79B75: return new ClientTreasureBookBehavior();
                 //case 0x1D47EAE3: return new FishingBehavior();
                 //case 0x1A22DBF4: return new HiddenQuestsBehavior();

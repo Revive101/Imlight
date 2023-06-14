@@ -115,7 +115,6 @@ namespace Imlight.Server.Shared.Networking
             }
 
             var task = SessionActor.AskServer<T>(message);
-
             return task;
         }
 
