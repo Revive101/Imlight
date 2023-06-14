@@ -2,7 +2,7 @@
 using WizUnraveler.IO;
 using WizUnraveler.ObjectProperty;
 
-namespace Imlight.Server.Shared.Networking
+namespace Imlight.Common.Serializable
 {
     public class CoreObjectSerializer : ObjectSerializer
     {
