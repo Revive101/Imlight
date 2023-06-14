@@ -120,7 +120,14 @@ namespace Imlight.Server.Patch
             Sender.Tell(rsp);
         }
 
-        private async Task<Stream> DownloadWadStream(string wadName)
+        [MessageHandler(typeof(PATCH_105_PROTCOL.MSG_LATESTFILELIST))]
+        public void ReceiveLatestFileList(PATCH_105_PROTCOL.MSG_LATESTFILELIST message)
+        {
+            var rsp = new PATCH_105_PROTCOL.MSG_LATESTFILELIST() { LatestFileList = this._latestFileList };
+            Sender.Tell(rsp);
+        }
+
+        private async Task<MemoryStream> DownloadWadStream(string wadName)
         {
             if (!EndpointReached)
                 throw new Exception("By this point, the patch server endpoint has not yet been reached!");
@@ -134,7 +141,7 @@ namespace Imlight.Server.Patch
             return await DownloadFileStream(url);
         }
         
-        private async Task<Stream> DownloadUtilityStream(string fileName)
+        private async Task<MemoryStream> DownloadUtilityStream(string fileName)
         {
             if (!EndpointReached)
                 throw new Exception("By this point, the patch server endpoint has not yet been reached!");
@@ -144,7 +151,7 @@ namespace Imlight.Server.Patch
             return await DownloadFileStream(url);
         }
 
-        private static async Task<Stream> DownloadFileStream(string url)
+        private static async Task<MemoryStream> DownloadFileStream(string url)
         {
             try
             {
@@ -287,8 +294,6 @@ namespace Imlight.Server.Patch
         private static bool ParseLatestFileList(Stream content, out LatestFileList latestFileList)
         {
             latestFileList = null;
-
-            // Convert the contents to an XmlDocument.
             var xml = StreamToXmlDoc(content);
 
             var rootNode = xml
@@ -301,34 +306,64 @@ namespace Imlight.Server.Patch
                 return false;
             }
 
-            latestFileList = new LatestFileList() { Files = new List<LatestFile>() };
-            foreach (var wadNode in rootNode.ChildNodes.Cast<XmlElement>())
+            latestFileList = new LatestFileList { Files = new List<LatestFile>() };
+            if (!ParseChildNodes(rootNode, latestFileList))
+                return false;
+
+            var baseNode = xml
+                .GetElementsByTagName("Base")
+                .Cast<XmlElement>()
+                .FirstOrDefault();
+            if (baseNode != null) 
+                return ParseChildNodes(baseNode, latestFileList);
+            
+            Log.Logger.Error("XmlDocument does not contain a Base node.");
+            return false;
+        }
+
+        private static bool ParseChildNodes(XmlNode parentNode, LatestFileList latestFileList)
+        {
+            foreach (var latestFileNode in parentNode.ChildNodes.Cast<XmlElement>())
             {
-                if (wadNode.Name is "_TableList" or "About") continue;
-
-                var internalRecord = wadNode.ChildNodes.Cast<XmlElement>().FirstOrDefault();
-                if (internalRecord == null)
-                {
-                    Log.Logger.Error("WAD record does not contain a valid internal record.");
+                if (latestFileNode.Name is "_TableList" or "About")
                     continue;
-                }
 
-                var wadRecord = new LatestFile()
-                {
-                    SourceFileName = internalRecord.SelectSingleNode("SrcFileName")?.InnerText,
-                    TargetFileName = internalRecord.SelectSingleNode("TarFileName")?.InnerText,
-                    FileType = TryParseUInt(internalRecord.SelectSingleNode("FileType")?.InnerText),
-                    Size = TryParseUInt(internalRecord.SelectSingleNode("Size")?.InnerText),
-                    HeaderSize = TryParseUInt(internalRecord.SelectSingleNode("HeaderSize")?.InnerText),
-                    CompressedHeaderSize = TryParseUInt(internalRecord.SelectSingleNode("CompressedHeaderSize")?.InnerText),
-                    Crc = TryParseUInt(internalRecord.SelectSingleNode("CRC")?.InnerText),
-                    HeaderCrc = TryParseUInt(internalRecord.SelectSingleNode("HeaderCRC")?.InnerText),
-                };
-
-                latestFileList.Files.Add(wadRecord);
+                var isRecord = latestFileNode.Name == "RECORD";
+                var def = ParseLatestFileXmlNode(latestFileNode, isRecord);
+                latestFileList.Files.Add(def);
             }
 
             return true;
+        }
+
+        private static LatestFile ParseLatestFileXmlNode(XmlNode latestFileNode, bool isRecord = false)
+        {
+            // The needed data will be in a single nested node called RECORD.
+            var internalRecord = latestFileNode;
+            if (!isRecord)
+                internalRecord = latestFileNode.ChildNodes
+                    .Cast<XmlElement>()
+                    .FirstOrDefault();
+            if (internalRecord == null)
+            {
+                Log.Logger.Error("LatestFile xml node did not contain a child RECORD.");
+                return null;
+            }
+            
+            // Create a LatestFile definition by parsing the given nodes.
+            var wadRecord = new LatestFile()
+            {
+                SourceFileName       = internalRecord.SelectSingleNode("SrcFileName")?.InnerText,
+                TargetFileName       = internalRecord.SelectSingleNode("TarFileName")?.InnerText,
+                FileType             = TryParseUInt(internalRecord.SelectSingleNode("FileType")?.InnerText),
+                Size                 = TryParseUInt(internalRecord.SelectSingleNode("Size")?.InnerText),
+                HeaderSize           = TryParseUInt(internalRecord.SelectSingleNode("HeaderSize")?.InnerText),
+                CompressedHeaderSize = TryParseUInt(internalRecord.SelectSingleNode("CompressedHeaderSize")?.InnerText),
+                Crc                  = TryParseUInt(internalRecord.SelectSingleNode("CRC")?.InnerText),
+                HeaderCrc            = TryParseUInt(internalRecord.SelectSingleNode("HeaderCRC")?.InnerText),
+            };
+
+            return wadRecord;
         }
 
         private static XmlDocument StreamToXmlDoc(Stream content)

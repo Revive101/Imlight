@@ -1,5 +1,6 @@
 using System.IO;
 using System.Threading.Tasks;
+using Imlight.Server.Patch;
 using Imlight.Server.Shared.Networking;
 
 namespace Imlight.Server.Shared.Packets
@@ -38,7 +39,15 @@ namespace Imlight.Server.Shared.Packets
             public byte MessageOrder { get; } = 3;
             public byte ServiceID { get; } = 105;
 
-            public Stream FileStream;
+            public MemoryStream FileStream;
         }
+        
+        public class MSG_LATESTFILELIST : IServerMessage
+        {
+            public byte MessageOrder { get; } = 4;
+            public byte ServiceID { get; } = 105;
+
+            public LatestFileList LatestFileList;
+        } 
     }
 }
