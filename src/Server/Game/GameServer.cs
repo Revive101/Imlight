@@ -1,3 +1,8 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
 using System;
 using System.Collections.Specialized;
 using System.Linq;
@@ -21,18 +26,15 @@ namespace Imlight.Server.Game
         private const ushort DEFAULT_GAME_SERVER_PORT = 12333;
         private const string SESSION_KEY_HASH_INPUT = "MAGIC_HATTER";
         private const ushort SESSION_KEY_VALIDITY_TIME = 28800; // In seconds; 8 hours
-
-        private IActorRef _serverPoolRef;
+        
         private IActorRef _gameWorldRef;
         private Cache<ByteString, Account> _sessionKeys;
         private readonly ListQueue<SessionActor> _playerQueue;
 
-        public GameServer(IActorRef serverPoolRef,
-                          string serverName = DEFAULT_GAME_SERVER_NAME,
+        public GameServer(string serverName = DEFAULT_GAME_SERVER_NAME,
                           ushort serverPort = DEFAULT_GAME_SERVER_PORT)
                           : base(serverName, serverPort, GameServiceFactory.Props())
         {
-            this._serverPoolRef = serverPoolRef;
             this._playerQueue = new ListQueue<SessionActor>();
             this._sessionKeys = new Cache<ByteString, Account>();
             
@@ -49,11 +51,10 @@ namespace Imlight.Server.Game
                                    $"under port {serverPort}.");
         }
         
-        public static Props Props(IActorRef serverPoolRef,
-                                  string serverName = DEFAULT_GAME_SERVER_NAME,
+        public static Props Props(string serverName = DEFAULT_GAME_SERVER_NAME,
                                   ushort serverPort = DEFAULT_GAME_SERVER_PORT)
         {
-            return Akka.Actor.Props.Create(() => new GameServer(serverPoolRef, serverName, serverPort));
+            return Akka.Actor.Props.Create(() => new GameServer(serverName, serverPort));
         }
 
         [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_CREATEKEY))]

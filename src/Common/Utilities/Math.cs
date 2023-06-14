@@ -1,4 +1,9 @@
-﻿using System;
+﻿/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -67,17 +72,26 @@ namespace Imlight.Common.Utilities
         /// <param name="p">An array of 3D points to describe a prism.</param>
         /// <param name="pos">The position to be checked.</param>
         /// <returns>If the position is inside of the prism or not.</returns>
-        public static bool InsideOfPrism(SharpDX.Vector3[] p, SharpDX.Vector3 pos) // Untested, but *should* work
+        public static bool InsideOfPrism(SharpDX.Vector3[] p, SharpDX.Vector3 pos)
         {
-            var u = (p[0] - p[3]) * (p[0] - p[4]);
-            var v = (p[0] - p[1]) * (p[0] - p[4]);
-            var w = (p[0] - p[1]) * (p[0] - p[3]);
+            var i = p[1] - p[0];
+            var j = p[3] - p[0];
+            var k = p[4] - p[0];
+            var v = pos - p[0];
 
-            var ux = SharpDX.Vector3.Dot(u, p[0]) <= SharpDX.Vector3.Dot(u, pos) && SharpDX.Vector3.Dot(u, pos) <= SharpDX.Vector3.Dot(u, p[1]);
-            var vx = SharpDX.Vector3.Dot(v, p[0]) <= SharpDX.Vector3.Dot(v, pos) && SharpDX.Vector3.Dot(v, pos) <= SharpDX.Vector3.Dot(v, p[3]);
-            var wx = SharpDX.Vector3.Dot(w, p[0]) <= SharpDX.Vector3.Dot(w, pos) && SharpDX.Vector3.Dot(w, pos) <= SharpDX.Vector3.Dot(w, p[4]);
+            var idot = SharpDX.Vector3.Dot(i, i);
+            var jdot = SharpDX.Vector3.Dot(j, j);
+            var kdot = SharpDX.Vector3.Dot(k, k);
+            
+            var vidot = SharpDX.Vector3.Dot(v, i);
+            var vjdot = SharpDX.Vector3.Dot(v, j);
+            var vkdot = SharpDX.Vector3.Dot(v, k);
 
-            return ux && vx && wx;
+            var vi = 0 <= vidot && vidot <= idot;
+            var vj = 0 <= vjdot && vjdot <= jdot;
+            var vk = 0 <= vkdot && vkdot <= kdot;
+
+            return vi && vj && vk;
         }
     }
 }

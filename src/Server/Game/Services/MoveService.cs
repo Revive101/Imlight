@@ -1,4 +1,9 @@
-﻿using System.Collections.Generic;
+﻿/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
+using System.Collections.Generic;
 using Akka.Actor;
 using WizUnraveler.Cache;
 using Imlight.Common.Utilities;
@@ -31,7 +36,7 @@ namespace Imlight.Server.Game.Services
                 return;
             }
 
-            var character = account.Characters[0]; // @todo: get active character
+            var character = GetActiveCharacter();
             var zone = character.CreationData.m_location;
 
             // Restore actual location information, as it is compressed by a factor of 4 and unsigned.
@@ -48,9 +53,22 @@ namespace Imlight.Server.Game.Services
 
             if (zone == "WizardCity/WC_Hub") // TESTING ONLY
             {
+                var ravenwoodBox = new Dictionary<SharpDX.Vector3[], string>()
+                {
+                    { new SharpDX.Vector3[] { 
+                        new SharpDX.Vector3(-319, 1476, -100),
+                        new SharpDX.Vector3(-315, 1663, -100),
+                        new SharpDX.Vector3(163, 1660, -100),
+                        new SharpDX.Vector3(165, 1468, -100),
+                        new SharpDX.Vector3(-319, 1476, 100),
+                        new SharpDX.Vector3(-315, 1663, 100),
+                        new SharpDX.Vector3(163, 1660, 100),
+                        new SharpDX.Vector3(165, 1468, 100)
+                    }, "WizardCity/WC_Ravenwood" }
+                };
+
                 var circleTriggers = new Dictionary<SharpDX.Vector2, string>()
                 {
-                    { new SharpDX.Vector2(-80, 1815),           "WizardCity/WC_Ravenwood" },
                     { new SharpDX.Vector2(1370.5f, -3622.6f),   "WizardCity/WC_Shop_Area" },
                     { new SharpDX.Vector2(-961.6f, -2495.6f),   "WizardCity/Interiors/WC_Headmistress_House" },
                     { new SharpDX.Vector2(-1559.8f, -11.9f),    "WizardCity/Interiors/WC_Headmaster_Tower" },
@@ -61,6 +79,7 @@ namespace Imlight.Server.Game.Services
                     { new SharpDX.Vector2(8380.9f, -2126.3f),   "WizardCity/WC_Streets/Interiors/WC_PET_Park" },
                 };
 
+                CheckTransferPrisms(character, new SharpDX.Vector3(position.X, position.Y, position.Z), ravenwoodBox); 
                 CheckTransferPoints(character, position2D, circleTriggers);
 
             } 
@@ -138,7 +157,15 @@ namespace Imlight.Server.Game.Services
 
             return response.CharacterObject;
         }
-        
+
+        private Character GetActiveCharacter()
+        {
+            var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
+            var response = AskSessionServices<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
+
+            return response.Character;
+        }
+
         private ZONE_102_PROTOCOL.MSG_QUERYZONERSP GetZoneDetails(string zoneName)
         {
             // When we send a zone transfer request, it will also add the player to that zone.
@@ -150,7 +177,7 @@ namespace Imlight.Server.Game.Services
         {
             foreach (var p in dict)
             {
-                var isInside = Math.InsideOfCircle(p.Key, 175, pos);
+                var isInside = Math.InsideOfCircle(p.Key, 175, pos); // This radius needs to be sourced elsewhere
 
                 if (isInside) // Player is inside of trigger, transfer to new zone
                 {  

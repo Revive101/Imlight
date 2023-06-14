@@ -1,11 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
+using System;
 using System.IO;
 using System.Reflection;
-using Akka;
 using Akka.Actor;
 using Akka.Configuration;
 using Imlight.Common.Utilities;
