@@ -49,7 +49,7 @@ namespace Imlight.Server.Login
                 return;
             }
             
-            var gameProps = GameServer.Props(Context.Self, message.Name, message.Port);
+            var gameProps = GameServer.Props(message.Name, message.Port);
             var gameServerRef = Context.ActorOf(gameProps, $"{message.Name}.{message.Port}");
 
             _gameServers.Add(message.Port, gameServerRef);

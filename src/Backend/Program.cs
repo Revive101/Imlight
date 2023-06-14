@@ -9,6 +9,7 @@ using Akka.Actor;
 using Imlight.Common.Utilities;
 using Imlight.Server.Login;
 using Imlight.Server.Database;
+using Imlight.Server.Game;
 using Imlight.Server.Patch;
 using Imlight.Server.Shared.Packets;
 
@@ -64,18 +65,26 @@ namespace Imlight.Backend
             // =============================================================
             // SERVERS
             // =============================================================
-            StartLoginServer();
-            // TODO: The game server should also start here.
+            var loginServer = StartLoginServer();
+            StartGameServer(loginServer);
 
             Console.Read();
         }
 
-        private static void StartLoginServer()
+        private static IActorRef StartLoginServer()
         {
             var loginProps = LoginServer.Props();
-            _imlightSystem.ActorOf(loginProps, LoginServer.DEFAULT_LOGIN_SERVER_NAME);
+            var loginServer = _imlightSystem.ActorOf(loginProps, LoginServer.DEFAULT_LOGIN_SERVER_NAME);
             
             Log.Logger.Debug($"New actor created under {_imlightSystem.Name}: {LoginServer.DEFAULT_LOGIN_SERVER_NAME}");
+            
+            return loginServer;
+        }
+
+        private static void StartGameServer(IActorRef loginActorRef)
+        {
+            var msg = new SERVER_100_PROTOCOL.MSG_CREATEGAMESERVER();
+            loginActorRef.Tell(msg);
         }
 
         private static async Task StartPatchServer() 
