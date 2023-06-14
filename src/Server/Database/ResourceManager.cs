@@ -16,6 +16,7 @@ namespace Imlight.Server.Database
     public static class ResourceManager
     {
         const uint PATCH_SERVER_DOWNLOAD_TIMEOUT_SECONDS = 360;
+        private const bool UPSERT_OUTDATED_CACHE = true;
         private const string ROOT_WAD_NAME = "Root.wad";
         private static Wad _rootWad;
 
@@ -29,10 +30,13 @@ namespace Imlight.Server.Database
         /// <returns></returns>
         public static bool Initialize()
         {
+            Log.Logger.Information("Updating local cache..");
+            UpdateCache();
+            Log.Logger.Information("Local cache updated!");
+
             // Load submodules.
             var subModuleCoreObjectFactory = LoadSubCoreObjectFactory();
             var subModuleAccessPass = LoadSubAccessPassManager();
-
             return subModuleCoreObjectFactory && subModuleAccessPass;
         }
 
@@ -43,8 +47,6 @@ namespace Imlight.Server.Database
         public static bool TryLoadFile(string wadName, out Wad wad)
         {
             wad = default;
-
-            // The Root.wad is accessed a LOT, so it's cached in memory.
             if (wadName == ROOT_WAD_NAME)
             {
                 if (_rootWad is null)
@@ -59,15 +61,16 @@ namespace Imlight.Server.Database
                 }
 
                 wad = _rootWad;
-                return true;
+            }
+            else
+            {
+                var cachedWad = LoadWadFromCacheOrDownload(wadName);
+                if (cachedWad is null)
+                    return false;
+
+                wad = cachedWad;
             }
 
-            var betterWadName = wadName.Replace('/', '-');
-            var cachedWad = LoadWadFromCacheOrDownload(betterWadName);
-            if (cachedWad is null)
-                return false;
-
-            wad = cachedWad;
             return true;
         }
 
@@ -92,7 +95,10 @@ namespace Imlight.Server.Database
         }
 
         /// <summary>
-        /// Loads a file from the cache, or downloads it from the patch server as needed. Deserializes the file.
+        /// Loads a file from the cache, or downloads it from the patch server as needed, and deserializes the file.
+        /// Any file from root is safe, as root is always loaded into memory.
+        /// Otherwise, load the entire KIWAD using <see cref="TryLoadFile(string,out WizUnraveler.Formats.Wad)"/>
+        /// and use <see cref="FileSerializer"/> to open individual files from it.
         /// </summary>
         /// <param name="wadName">The name of the wad.</param>
         /// <param name="fileName">The name of the file record.</param>
@@ -108,20 +114,88 @@ namespace Imlight.Server.Database
             return serializer.OpenClass<T>(wad, fileName);
         }
 
+        private static void UpdateCache()
+        {
+            // To check for new files, Imlight will always download the LatestFileList from the patch server. It will
+            // use the CRC32 hashes to determine which cached files are outdated. 
+            // Start by asking the patch server for the latest file list.
+            var msg = new PATCH_105_PROTCOL.MSG_LATESTFILELIST();
+            var rsp = PatchServer.Instance.Ask<PATCH_105_PROTCOL.MSG_LATESTFILELIST>(msg).Result;
+            var latestFileList = rsp.LatestFileList;
+            
+            // Iterate through every cached file and check to see if its CRC32 hash matches the latest.
+            var cachedFiles = LocalCache.GetAllCachedFiles();
+            foreach (var file in cachedFiles)
+            {
+                // Imlight's cache removes the '/' character to match zone transfer data. There's also a naming
+                // in consistency. Wizard101 uses a path while Imlight does not.
+                var betterFileName = file.Filename.Replace('/', '-');
+                betterFileName = $"Data/GameData/{betterFileName}.wad";
+                
+                // Search for this file in the LatestFileList.
+                var latestFile = latestFileList.Files
+                    .Find(f => f.SourceFileName == betterFileName);
+                if (latestFile is null)
+                {
+                    Log.Logger.Warning($"Cached file {betterFileName} does not exist in the LatestFileList!");
+                    continue;
+                }
+                
+                // TODO: This needs to be updated for the CRC32 hash instead of the size. I, at this current moment,
+                // do not understand how the KIWAD CRC32 is calculated. Here's to hoping future me can do it better.
+                if (latestFile.Size == file.Size)
+                {
+                    Log.Logger.Debug($"Cached file {latestFile.SourceFileName} did not require update.");
+                    continue;
+                }
+                
+                // We'll either delete or upsert the cached file, depending on the developer.
+                // TODO: Move this boolean to config.
+                if (UPSERT_OUTDATED_CACHE)
+                {
+                    Log.Logger.Debug($"Cached file {latestFile.SourceFileName} needed update.");
+                    
+                    if (TryLoadFile(betterFileName, out _))
+                    {
+                        Log.Logger.Debug($"Cached file {latestFile.SourceFileName} was updated.");
+                        continue;
+                    }
+                    
+                    Log.Logger.Error($"Could not upsert cached file {betterFileName}.");
+                }
+                else
+                {
+                    Log.Logger.Warning($"Cached file {latestFile.SourceFileName} was deleted.");
+                    LocalCache.DeleteWad(betterFileName);
+                }
+            }
+        }
+
         private static Wad LoadWadFromCacheOrDownload(string wadName)
         {
-            var cachedWad = LocalCache.GetCachedWad(wadName);
+            var betterWadName = FormatWadName(wadName);
+            
+            // Check if the file is already cached. If it is, just return that.
+            var cachedWad = LocalCache.GetCachedWad(betterWadName);
             if (cachedWad is not null)
                 return cachedWad;
 
-            if (!DownloadFromPatchServer(wadName, out var stream))
+            // Otherwise, download it from the patch server.
+            if (!DownloadWadFromPatchServer(betterWadName, out var stream))
+            {
+                Log.Logger.Error($"Failed to download wad \"{wadName}\" from patch server.");
                 return null;
+            }
 
-            LocalCache.CacheWad(wadName, stream);
-            return new Wad(stream);
+            // If we successfully downloaded it, we'll also cache it so we don't have to do that again.
+            stream.Seek(0, SeekOrigin.Begin);
+            var wad = new Wad(stream);
+            LocalCache.CacheWad(betterWadName, wad);
+            
+            return wad;
         }
 
-        private static bool DownloadFromPatchServer(string wadName, out Stream fileStream)
+        private static bool DownloadWadFromPatchServer(string wadName, out MemoryStream fileStream)
         {
             fileStream = default;
             try 
@@ -169,6 +243,18 @@ namespace Imlight.Server.Database
             Log.Logger.Information("AccessPassManager [AccessPass.xml] loaded.");
             
             return true;
+        }
+
+        private static string FormatWadName(string originalName)
+        {
+            var betterWadName = originalName.Replace('/', '-');
+            // Remove the `.wad` extension if one exists.
+            if (originalName.EndsWith(".wad", StringComparison.OrdinalIgnoreCase))
+                betterWadName = originalName[..^4];
+            // Scope down to the wad name.
+            betterWadName = betterWadName.Split('/')[^1];
+
+            return betterWadName;
         }
     }
 }
