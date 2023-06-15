@@ -145,10 +145,21 @@ namespace Imlight.Server.Game
         private void RemoveObject(ulong objId)
         {
             Broadcast(new GAME_5_PROTOCOL.MSG_REMOVEOBJECT() { GameObjectID = objId });
-            
-            var obj = ZoneObjects.First(x => x.Value.m_globalID == objId).Value;
-            ZoneObjects.Remove(obj.m_nMobileID);
+    
+            var obj = ZoneObjects
+                .FirstOrDefault(x => x.Value.m_globalID == objId)
+                .Value;
+
+            if (obj != null)
+            {
+                ZoneObjects.Remove(obj.m_nMobileID);
+            }
+            else
+            {
+                Log.Logger.Warning($"Zone {ZoneName} tried to remove null object.");
+            }
         }
+
 
         private void SpawnZoneObjectsForClient(IActorRef newClient)
         {
