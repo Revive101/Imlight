@@ -15,6 +15,7 @@ using Imlight.Server.Database;
 using static WizUnraveler.Cache.TypeCache;
 using WizUnraveler;
 using Akka.Util.Internal;
+using Imlight.Common.Serializable;
 
 namespace Imlight.Server.Game.Services
 {
@@ -42,10 +43,9 @@ namespace Imlight.Server.Game.Services
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_EQUIPITEM))]
         private void ReceiveEquipItem(GAME_5_PROTOCOL.MSG_EQUIPITEM message)
         {
-            var serializer = new ObjectSerializer()
+            var serializer = new CoreObjectSerializer()
                 .WithSerializerFlags(SerializerFlags.None)
-                .WithPropertyFlags(PropertyFlags.Public | PropertyFlags.Transmit | PropertyFlags.AuthorityTransmit);
-
+                .WithPropertyFlags((PropertyFlags)1);
             var coreObject = GetActiveCoreObject();
 
             // Confirm to the player that we've equipped their item server side.
@@ -86,7 +86,11 @@ namespace Imlight.Server.Game.Services
                     m_trimColor = (FiveBitByte)template.m_numSecondaryColors,
                 };
 
-                /*SendToSessionServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
+                var data = serializer.Serialize(item);
+                var hex = Convert.ToHexString(data);
+                Log.Logger.Information(hex);
+
+                SendToSessionServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
                 {
                     Selfless = false,
                     Sender = SessionActor.ActorRef,
@@ -95,23 +99,7 @@ namespace Imlight.Server.Game.Services
                         GlobalID = coreObject.m_globalID,
                         SerializedInfo = serializer.Serialize(item)
                     }
-                });*/
-                SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM()
-                {
-                    GlobalID = coreObject.m_globalID,
-                    SerializedInfo = serializer.Serialize(item)
                 });
-
-                /*
-                    SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_EQUIPITEM()
-                    {
-                        GlobalID = coreObject.m_globalID,
-                        IsValid = 1,
-                        SerializedItem = serializer.Serialize(item),
-                        SlotName = "2",
-                    });
-                 */
-
             }
             //@TODO: PUBLICEQUIPITEM & PUBLICUNEQUIPITEM (Behavior_XX ??)
         }
