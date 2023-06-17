@@ -57,7 +57,6 @@ namespace Imlight.Server.Game.Services
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK))]
         private void ReceiveZoneTransferAck(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK message)
         {
-            // TESTING PURPOSES ONLY, is this method in the appropriate class?
             var account = GetSocketAccount();
             var character = GetActiveCharacter();
 
@@ -75,7 +74,7 @@ namespace Imlight.Server.Game.Services
             // We don't need to add the player to the new zone, as the zone will do that for us.
             var serverTransfer = new GAME_5_PROTOCOL.MSG_SERVERTRANSFER()
             {
-                IP = "127.0.0.1",
+                IP = character.LastGameServerIp,
                 TCPPort = 12333,
                 UDPPort = 12333,
                 UserID = account.ID,
