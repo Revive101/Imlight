@@ -22,6 +22,7 @@ namespace Imlight.Server.Database
 
         public string nextZone = ""; // TESTING ONLY
         public string LastGameServerIp = "";
+        public ushort LastGameServerPort;
         
         public ulong Id 
         { 

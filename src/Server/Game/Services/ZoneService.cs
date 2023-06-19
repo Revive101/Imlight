@@ -71,12 +71,12 @@ namespace Imlight.Server.Game.Services
 
             character.CreationData.m_location = character.nextZone;
 
-            // We don't need to add the player to the new zone, as the zone will do that for us.
+            // We don't need to add the player to the new zone, as the zone will do that for us on MSG_ATTACH.
             var serverTransfer = new GAME_5_PROTOCOL.MSG_SERVERTRANSFER()
             {
                 IP = character.LastGameServerIp,
-                TCPPort = 12333,
-                UDPPort = 12333,
+                TCPPort = character.LastGameServerPort,
+                UDPPort = character.LastGameServerPort,
                 UserID = account.ID,
                 CharID = character.Id,
                 ZoneName = character.nextZone,
@@ -97,12 +97,11 @@ namespace Imlight.Server.Game.Services
             var globalId = GetActiveCoreObject().m_globalID;
 
             // If the zone reference is not null, we'll tell the zone to remove the player.
-            if (_zoneRef is not null)
-                _zoneRef.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER()
-                {
-                    Player = SessionActor.ActorRef,
-                    GlobalId = globalId
-                });
+            _zoneRef?.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER()
+            {
+                Player = SessionActor.ActorRef,
+                GlobalId = globalId
+            });
 
             _zoneRef = null;
         }
