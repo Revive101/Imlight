@@ -32,7 +32,7 @@ namespace Imlight.Server.Game.Services
             // If the zone transfer request was successful, we'll set the zone reference.
             if (result.ErrorCode == 0)
             {
-                _zoneRef = result.NewZone;
+                _zoneRef = result.ZoneActorRef;
             }
             
             Sender.Tell(result);

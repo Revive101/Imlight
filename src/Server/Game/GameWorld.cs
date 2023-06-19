@@ -65,19 +65,8 @@ namespace Imlight.Server.Game
                 zone = Zones[message.ZoneName];
             }
             
-            // Query the zone for it's details.
-            var zoneQueryMessage = new ZONE_102_PROTOCOL.MSG_QUERYZONEDETAILS();
-            var zoneQueryResponse = zone
-                .Ask<ZONE_102_PROTOCOL.MSG_QUERYZONEDETAILSRSP>(zoneQueryMessage)
-                .Result;
-
-            // Send the response back to the client.
-            response.NewZone = zone;
-            response.CriticalObjects = zoneQueryResponse.CriticalObjects;
-            response.PlayerObjects = zoneQueryResponse.PlayerObjects;
-            response.DynamicZoneId = zoneQueryResponse.DynamicZoneId;
-            response.ErrorCode = 0;
-            Sender.Tell(response);
+            // Forward the message to the zone actor we just created.
+            zone.Forward(message);
         }
     }
 }

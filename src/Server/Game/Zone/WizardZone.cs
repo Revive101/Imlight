@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using Akka.Actor;
 using Imlight.Common.Serializable;
@@ -73,13 +74,15 @@ namespace Imlight.Server.Game.Zone
         
         #region Handlers
         
-        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEDETAILS))]
-        private void ReceiveQueryZone(ZONE_102_PROTOCOL.MSG_QUERYZONEDETAILS message)
+        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONE))]
+        private void ReceiveQueryZone(ZONE_102_PROTOCOL.MSG_QUERYZONE message)
         {
-            Sender.Tell(new ZONE_102_PROTOCOL.MSG_QUERYZONEDETAILSRSP
+            Sender.Tell(new ZONE_102_PROTOCOL.MSG_QUERYZONERSP
             {
-                PlayerCount = (uint)Players.Count,
-                DynamicZoneId = DynamicZoneId
+                ZoneActorRef = Self,
+                ZoneObjects = this.ZoneObjects.Values.ToArray(),
+                DynamicZoneId = this.DynamicZoneId,
+                ErrorCode = 0
             });
         }
 

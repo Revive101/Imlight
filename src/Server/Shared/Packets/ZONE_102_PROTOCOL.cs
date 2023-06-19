@@ -31,33 +31,15 @@ namespace Imlight.Server.Shared.Packets
             public byte MessageOrder { get; } = 2;
             public byte ServiceID { get; } = 102;
 
-            public IActorRef NewZone;
-            public List<TypeCache.CoreObject> CriticalObjects;
-            public List<TypeCache.CoreObject> PlayerObjects;
+            public IActorRef ZoneActorRef;
+            public TypeCache.CoreObject[] ZoneObjects;
             public uint DynamicZoneId;
             public uint ErrorCode;
         }
 
-        public class MSG_QUERYZONEDETAILS : IServerMessage
-        {
-            public byte MessageOrder { get; } = 3;
-            public byte ServiceID { get; } = 102;
-        }
-
-        public class MSG_QUERYZONEDETAILSRSP : IServerMessage
-        {
-            public byte MessageOrder { get; } = 4;
-            public byte ServiceID { get; } = 102;
-
-            public uint PlayerCount;
-            public List<TypeCache.CoreObject> CriticalObjects;
-            public List<TypeCache.CoreObject> PlayerObjects;
-            public uint DynamicZoneId;
-        }
-        
         public class MSG_ADDPLAYER : IServerMessage
         {
-            public byte MessageOrder { get; } = 5;
+            public byte MessageOrder { get; } = 3;
             public byte ServiceID { get; } = 102;
             
             public IActorRef Player;
@@ -66,7 +48,7 @@ namespace Imlight.Server.Shared.Packets
         
         public class MSG_ADDPLAYERRSP : IServerMessage
         {
-            public byte MessageOrder { get; } = 6;
+            public byte MessageOrder { get; } = 4;
             public byte ServiceID { get; } = 102;
 
             public TypeCache.CoreObject PlayerObject;
@@ -74,7 +56,7 @@ namespace Imlight.Server.Shared.Packets
         
         public class MSG_REMOVEPLAYER : IServerMessage
         {
-            public byte MessageOrder { get; } = 7;
+            public byte MessageOrder { get; } = 5;
             public byte ServiceID { get; } = 102;
             
             public IActorRef Player;
@@ -84,7 +66,7 @@ namespace Imlight.Server.Shared.Packets
 
         public class MSG_ZONEBROADCAST : IServerMessage
         {
-            public byte MessageOrder { get; } = 8;
+            public byte MessageOrder { get; } = 6;
             public byte ServiceID { get; } = 102;
 
             public IActorRef Sender;
