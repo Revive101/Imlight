@@ -54,7 +54,7 @@ namespace Imlight.Server.Game
                 var zoneActorName = message.ZoneName
                     .Replace('/', '@');
                 
-                zone = Context.ActorOf(Zone.Props(message.ZoneName), zoneActorName);
+                zone = Context.ActorOf(Zone.WizardZone.Props(message.ZoneName), zoneActorName);
                 Zones.Add(message.ZoneName, zone);
                 
                 // Log the new zone creation.
