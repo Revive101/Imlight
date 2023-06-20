@@ -24,37 +24,36 @@ namespace Imlight.Server.Game.Zone
 {
     public class WizardZone : ReceiveProtocolDispatcher
     {
-        private const string ZONE_DATA_FILE_NAME = "gamedata.bin";
-        private const string SPAWN_DATA_FILE_NAME = "spawnData.xml";
-        private const string PATH_DATA_FILE_NAME = "pathData.xml";
-        private const string NODE_DATA_FILE_NAME = "pathNodeData.bin";
-        private const string VOLUME_DATA_FILE_NAME = "volumes.xml";
-        private const string TRIGGER_DATA_FILE_NAME = "triggers.xml";
-        
         public string ZoneName { get; }
         public uint DynamicZoneId { get; }
         public List<IActorRef> Players { get; } = new();
         public Dictionary<ushort, CoreObject> ZoneObjects { get; } = new();
 
         // Zone data fields.
-        private List<SpawnObject> _spawners = new();
-        private List<WizardZonePath> _paths = new();
+        private List<IActorRef> _pathActorRefs = new();
 
+        // ctor
         public WizardZone(string zoneName)
         {
             this.ZoneName = zoneName;
             this.DynamicZoneId = GenerateDynamicZoneId();
 
-            SetZoneData(zoneName);
-            
+            // Load and initialize this zone.
+            WizardZoneLoader.LoadZoneData(this, Self, Context);
+
             Log.Logger.Debug($"Zone [{ZoneName}] created.");
         }
         
+        // Akka.NET ctor
         public static Props Props(string zoneName)
         {
             return Akka.Actor.Props.Create(() => new WizardZone(zoneName));
         }
 
+        /// <summary>
+        /// Broadcast a message to all the players in the zone.
+        /// </summary>
+        /// <param name="message">The <see cref="INetworkMessage"/> that will be broadcast.</param>
         private void Broadcast(INetworkMessage message)
         {
             foreach (var player in Players)
@@ -63,6 +62,11 @@ namespace Imlight.Server.Game.Zone
             }
         }
 
+        /// <summary>
+        /// Broadcast a message to all the players in this zone, except to the player that broadcast it.
+        /// </summary>
+        /// <param name="sender">The <see cref="IActorRef"/> that this broadcast will ignore.</param>
+        /// <param name="message">The <see cref="INetworkMessage"/> that will be broadcast.</param>
         private void BroadcastSelfless(IActorRef sender, INetworkMessage message)
         {
             foreach (var player in Players
@@ -135,117 +139,28 @@ namespace Imlight.Server.Game.Zone
             else
                 Broadcast(message.Message);
         }
-        
-        #endregion
 
-        #region Zone Data
-
-        private void SetZoneData(string name)
+        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDOBJECT))]
+        private void ReceiveNewObject(ZONE_102_PROTOCOL.MSG_ADDOBJECT message)
         {
-            if (!ResourceManager.TryLoadFile(name, out var wad))
-            {
-                Log.Logger.Error($"Zone [{ZoneName}] tried to load its own data, but none was found " +
-                                 $"in the {nameof(ResourceManager)}. This is fine, but the zone will not contain any " +
-                                 $"objects or volumes.");
-                return;
-            }
-
-            LoadZoneData(wad);
-            LoadSpawnData(wad);
-            LoadPathData(wad);
-        }
-
-        private void LoadZoneData(Wad wad)
-        {
-            var deSer = new FileSerializer();
-            var zoneData = deSer.OpenClass<WizZoneData>(wad, ZONE_DATA_FILE_NAME);
-    
-            if (zoneData is not null)
-                CreateZoneGameObjects(zoneData);
-            else
-                Log.Logger.Error($"Zone {ZoneName} could not load {ZONE_DATA_FILE_NAME} was missing or invalid.");
-        }
-
-        private void LoadSpawnData(Wad wad)
-        {
-            var deSer = new FileSerializer();
-            var spawnData = deSer.OpenClass<SpawnManager>(wad, SPAWN_DATA_FILE_NAME);
-
-            if (spawnData is not null)
-                _spawners = spawnData.m_spawners;
-            else
-                Log.Logger.Error($"Zone {ZoneName} could not load {SPAWN_DATA_FILE_NAME} was missing or invalid.");
-        }
-
-        private void LoadPathData(Wad wad)
-        {
-            var deSer = new FileSerializer();
-            
-            // Load the zone paths.
-            var pathData = deSer.OpenClass<PathManager_PathTemplateList>(wad, PATH_DATA_FILE_NAME);
-            if (pathData is null)
-                Log.Logger.Error($"Zone {ZoneName} could not load {PATH_DATA_FILE_NAME} was missing or invalid.");
-            
-            // Load each of the zone nodes.
-            var nodeData = deSer.OpenClass<PathManager_NodeTemplateList>(wad, NODE_DATA_FILE_NAME);
-            if (nodeData is null)
-                Log.Logger.Error($"Zone {ZoneName} could not load {NODE_DATA_FILE_NAME} was missing or invalid.");
-            
-            if (pathData is not null && nodeData is not null)
-                CreateZonePaths(pathData, nodeData);
-        }
-
-
-        private void CreateZoneGameObjects(WizZoneData zoneData)
-        {
-            foreach (var obj in zoneData.m_objectList
-                         .Where(x => x is not null))
-            {
-                var newObj = CoreObjectFactory.CreateObjectFromInfo(obj);
-                if (newObj is null) 
-                    continue;
-
-                // Create new instance agnostic ID for the object.
-                var id = GenerateMobileId();
-                newObj.m_nMobileID = id;
-                ZoneObjects.Add(id, newObj);
-            }
-        }
-
-        private void CreateZonePaths(PathManager_PathTemplateList paths, PathManager_NodeTemplateList nodes)
-        {
-            _paths = new List<WizardZonePath>();
-
-            // Iterate through each path and create our own proprietary WizardZonePath type.
-            foreach (var path in paths.m_pathList)
-            {
-                var wizPath = new WizardZonePath(path.m_id, path.m_name);
-                _paths.Add(wizPath);
-            
-                // Iterate through all the given IDs of this path and search for them in the NodeTemplateList.
-                foreach (var id in path.m_nodeIDs)
-                {
-                    // If a node is found, add it to the path.
-                    var node = nodes.m_nodeList.Find(n => n.m_id == id);
-                    if (node is not null)
-                    {
-                        wizPath.Nodes.Add(node);
-                    }
-                }
-            }
+            AddObject(message.CoreObject);
         }
         
         #endregion
-        
+
         private void AddObject(CoreObject obj)
         {
+            // Generate a new zone ID for the object.
+            var id = GenerateMobileId();
+            obj.m_nMobileID = id;
+            
             // Broadcast the new object to each player in the zone.
             var serializer = new CoreObjectSerializer()
                 .WithSerializerFlags(SerializerFlags.None)
                 .WithPropertyFlags(PropertyFlags.Public | PropertyFlags.Transmit | PropertyFlags.AuthorityTransmit);
             Broadcast(new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = serializer.Serialize(obj) });
             
-            ZoneObjects.Add(obj.m_nMobileID, obj);
+            ZoneObjects.Add(id, obj);
         }
         
         private void RemoveObject(ulong objId)

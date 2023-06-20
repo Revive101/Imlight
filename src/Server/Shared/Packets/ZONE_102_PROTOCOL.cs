@@ -73,5 +73,13 @@ namespace Imlight.Server.Shared.Packets
             public INetworkMessage Message;
             public bool Selfless;
         }
+        
+        public class MSG_ADDOBJECT : IServerMessage
+        {
+            public byte MessageOrder { get; } = 6;
+            public byte ServiceID { get; } = 102;
+
+            public TypeCache.CoreObject CoreObject;
+        }
     }
 }
