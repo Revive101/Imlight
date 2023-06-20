@@ -1,3 +1,8 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,6 +13,7 @@ using Imlight.Server.Shared.Packets;
 using WizUnraveler.Formats;
 using WizUnraveler.IO;
 using static WizUnraveler.Cache.TypeCache;
+using static WizUnraveler.ObjectProperty.ObjectSerializer;
 
 namespace Imlight.Server.Game.Zone;
 
@@ -87,7 +93,8 @@ public static class WizardZoneLoader
 
     private static void LoadSpawnData()
     {
-        var serializer = new FileSerializer();
+        var serializer = new FileSerializer()
+            .WithSerializerFlags(SerializerFlags.UseFlags | SerializerFlags.CompactLength | SerializerFlags.StringEnums);
         _spawnData = serializer.OpenClass<SpawnManager>(_wad, SpawnDataFileName);
         if (_spawnData is null)
             Log.Logger.Error($"Zone {_zone.ZoneName} could not load {SpawnDataFileName} was missing or invalid.");
@@ -117,6 +124,7 @@ public static class WizardZoneLoader
             if (newObj is null)
                 continue;
 
+            // Tell the zone about the object we just created.
             var msg = new ZONE_102_PROTOCOL.MSG_ADDOBJECT { CoreObject = newObj };
             _zoneActorRef.Tell(msg);
         }
@@ -132,9 +140,15 @@ public static class WizardZoneLoader
             var nodeList = GetNodesForPath(path);
             var creatureList = GetCreaturesForPath(path);
 
-            // Create the WizardZonePath actor as a child of the zone actor.
-            var wizPathProps = WizardZonePath.Props(path.m_id, path.m_name, nodeList, creatureList);
-            CreateChildActor(wizPathProps, path.m_name.ToString().Replace(' ', '_'));
+            // Send the path data back to the WizardZone.
+            var msg = new ZONE_102_PROTOCOL.MSG_ADDPATH()
+            {
+                Id = path.m_id,
+                Name = path.m_name,
+                Nodes = nodeList,
+                Creatures = creatureList
+            };
+            _zoneActorRef.Tell(msg);
         }
     }
 

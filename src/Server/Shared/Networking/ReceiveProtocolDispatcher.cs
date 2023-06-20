@@ -70,13 +70,6 @@ namespace Imlight.Server.Shared.Networking
                           | BindingFlags.FlattenHierarchy)
                 .Where(method => method.GetCustomAttribute<MessageHandlerAttribute>() != null);
 
-            if (methods.Count() <= 0)
-            {
-                Log.Logger.Warning($"{this.GetType()} does not have any methods with attribute {nameof(MessageHandlerAttribute)}." +
-                                   $" Is this intended behavior?");
-                return;
-            }
-
             foreach (var method in methods)
             {
                 var paramType = method.GetParameters()[0].ParameterType;

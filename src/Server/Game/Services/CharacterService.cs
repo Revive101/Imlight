@@ -55,7 +55,7 @@ namespace Imlight.Server.Game.Services
         {
             if (_activeCharacterObject is null)
             {
-                Log.Logger.Error("Character was null!");
+                Log.Logger.Error($"[{nameof(CharacterService)}]: Character was null!");
                 return;
             }
             

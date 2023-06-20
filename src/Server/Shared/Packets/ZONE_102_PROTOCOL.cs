@@ -8,6 +8,8 @@ using Akka.Actor;
 using WizUnraveler.Cache;
 using WizUnraveler.DML;
 using Imlight.Server.Shared.Networking;
+using WizUnraveler.IO;
+using WizUnraveler.ObjectProperty;
 
 namespace Imlight.Server.Shared.Packets
 {
@@ -79,6 +81,35 @@ namespace Imlight.Server.Shared.Packets
             public byte MessageOrder { get; } = 6;
             public byte ServiceID { get; } = 102;
 
+            public TypeCache.CoreObject CoreObject;
+        }
+        
+        public class MSG_ADDOBJECTRSP : IServerMessage
+        {
+            public byte MessageOrder { get; } = 7;
+            public byte ServiceID { get; } = 102;
+
+            public IActorRef ActorRef;
+            public ushort MobileId;
+        }
+        
+        public class MSG_ADDPATH : IServerMessage
+        {
+            public byte MessageOrder { get; } = 8;
+            public byte ServiceID { get; } = 102;
+            
+            public GID Id;
+            public ByteString Name;
+            public List<TypeCache.NodeObject> Nodes;
+            public List<TypeCache.SpawnObject> Creatures;
+        }
+        
+        public class MSG_ADDCREATURE : IServerMessage
+        {
+            public byte MessageOrder { get; } = 9;
+            public byte ServiceID { get; } = 102;
+
+            public IActorRef ObjectIdentity;
             public TypeCache.CoreObject CoreObject;
         }
     }
