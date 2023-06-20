@@ -94,13 +94,13 @@ namespace Imlight.Server.Game.Services
         public override void ReceiveDispose(SERVICE_101_PROTOCOL.MSG_DISPOSE message)
         {
             base.ReceiveDispose(message);
-            var globalId = GetActiveCoreObject().m_globalID;
+            var globalId = GetActiveCoreObject()?.m_globalID;
 
             // If the zone reference is not null, we'll tell the zone to remove the player.
             _zoneRef?.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER()
             {
                 Player = SessionActor.ActorRef,
-                GlobalId = globalId
+                GlobalId = globalId ?? 0
             });
 
             _zoneRef = null;
