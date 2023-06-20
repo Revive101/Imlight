@@ -29,7 +29,7 @@ namespace Imlight.Server.Game.Services
         {
             var result = AskServer<ZONE_102_PROTOCOL.MSG_QUERYZONERSP>(message);
             
-            // If the zone transfer request was successful, we'll set the zone reference.
+            // If the zone request was successful, we'll set the zone reference.
             if (result.ErrorCode == 0)
             {
                 _zoneRef = result.ZoneActorRef;
