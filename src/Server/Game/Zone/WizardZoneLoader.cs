@@ -13,6 +13,7 @@ using Imlight.Server.Shared.Packets;
 using WizUnraveler.Formats;
 using WizUnraveler.IO;
 using static WizUnraveler.Cache.TypeCache;
+using static WizUnraveler.ObjectProperty.ObjectSerializer;
 
 namespace Imlight.Server.Game.Zone;
 
@@ -92,7 +93,8 @@ public static class WizardZoneLoader
 
     private static void LoadSpawnData()
     {
-        var serializer = new FileSerializer();
+        var serializer = new FileSerializer()
+            .WithSerializerFlags(SerializerFlags.UseFlags | SerializerFlags.CompactLength | SerializerFlags.StringEnums);
         _spawnData = serializer.OpenClass<SpawnManager>(_wad, SpawnDataFileName);
         if (_spawnData is null)
             Log.Logger.Error($"Zone {_zone.ZoneName} could not load {SpawnDataFileName} was missing or invalid.");
