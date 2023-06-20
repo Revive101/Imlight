@@ -33,7 +33,7 @@ public class WizardZonePathSupervisor : ReceiveProtocolDispatcher
     private void ReceiveAddPath(ZONE_102_PROTOCOL.MSG_ADDPATH message)
     {
         // Create a new WizardZonePath actor as a child object of this one.
-        var props = WizardZonePath.Props(message.Id, message.Name, message.Nodes, message.Creatures);
+        var props = WizardZonePath.Props(message.Id, message.Name, message.Nodes, message.Creatures, _wizardZoneRef);
         var actorRef = Context.ActorOf(props);
         _paths.Add(actorRef);
     }
