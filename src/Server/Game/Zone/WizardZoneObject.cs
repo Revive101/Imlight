@@ -6,17 +6,19 @@ namespace Imlight.Server.Game.Zone;
 
 public class WizardZoneObject : ReceiveProtocolDispatcher
 {
-    private CoreObject _activeGameObject;
+    protected CoreObject ActiveGameObject;
+    protected IActorRef WizardZoneRef;
     
     // ctor
-    public WizardZoneObject(CoreObject activeGameObject)
+    public WizardZoneObject(CoreObject activeGameObject, IActorRef wizardZoneRef)
     {
-        this._activeGameObject = activeGameObject;
+        this.ActiveGameObject = activeGameObject;
+        this.WizardZoneRef = wizardZoneRef;
     }
     
     // Akka.NET ctor
-    public static Props Props(CoreObject activeGameObject)
+    public static Props Props(CoreObject activeGameObject, IActorRef wizardZoneRef)
     {
-        return Akka.Actor.Props.Create(() => new WizardZoneObject(activeGameObject));
+        return Akka.Actor.Props.Create(() => new WizardZoneObject(activeGameObject, wizardZoneRef));
     }
 }

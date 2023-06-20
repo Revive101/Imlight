@@ -30,7 +30,7 @@ public class WizardZoneObjectSupervisor : ReceiveProtocolDispatcher
     private void ReceiveAddObject(ZONE_102_PROTOCOL.MSG_ADDOBJECT message)
     {
         // Create the object as a child actor of this supervisor.
-        var props = WizardZoneObject.Props(message.CoreObject);
+        var props = WizardZoneObject.Props(message.CoreObject, _wizardZoneRef);
         var actorRef = Context.ActorOf(props);
         
         // Formulate response. Don't worry about not giving the mobile id; the WizardZone handles that part.

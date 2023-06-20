@@ -52,7 +52,7 @@ namespace Imlight.Server.Game
             {
                 // '/' is an illegal character in Akka.NET actor names, so we replace it with '@'.
                 var zoneActorName = message.ZoneName
-                    .Replace('/', '@');
+                    .Replace('/', '-');
                 
                 zone = Context.ActorOf(Zone.WizardZone.Props(message.ZoneName), zoneActorName);
                 Zones.Add(message.ZoneName, zone);

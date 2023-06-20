@@ -35,7 +35,11 @@ public class WizardZonePath : ReceiveActor
     private readonly Dictionary<GID, byte> _creatureCount;
 
     // ctor
-    public WizardZonePath(GID id, ByteString name, List<NodeObject> nodes, List<SpawnObject> creatures,
+    public WizardZonePath(
+        GID id, 
+        ByteString name, 
+        List<NodeObject> nodes, 
+        List<SpawnObject> creatures,
         IActorRef zoneActorRef)
     {
         this.Id = id;
@@ -50,7 +54,11 @@ public class WizardZonePath : ReceiveActor
     }
     
     // Akka.NET ctor
-    public static Props Props(GID id, ByteString name, List<NodeObject> nodes, List<SpawnObject> creatures, 
+    public static Props Props(
+        GID id, 
+        ByteString name, 
+        List<NodeObject> nodes, 
+        List<SpawnObject> creatures, 
         IActorRef zoneActorRef)
     {
         return Akka.Actor.Props.Create(() => new WizardZonePath(id, name, nodes, creatures, zoneActorRef));
@@ -69,22 +77,26 @@ public class WizardZonePath : ReceiveActor
     {
         // Add the creature to the counter dictionary.
         _creatureCount.Add(spawnObject.m_id, 0);
-        
-        if (spawnObject.m_activateAtMax && CanSpawn(spawnObject))
-            SpawnAllCreatures(spawnObject);
+
+        // When the path is just created, spawn all creatures.
+        SpawnAllCreatures(spawnObject);
             
         var hasRun = false;
         while (!_cancelToken.IsCancellationRequested)
         {
-            if (!CanSpawn(spawnObject) && hasRun) 
+            var delay = TimeSpan.FromSeconds(spawnObject.m_spawnTime);
+            if (!CanSpawn(spawnObject) && hasRun)
+            {
+                var tinyDelay = TimeSpan.FromSeconds(spawnObject.m_respawnRate);
+                await Task.Delay(tinyDelay);
                 continue;
-
+            }
+            
             var rngSpawn = PickRandomSpawnObject(spawnObject.m_spawnList);
             SpawnCreature(rngSpawn.m_objectInfo);
             IncrementCreatureCount(spawnObject);
 
             hasRun = true;
-            var delay = TimeSpan.FromSeconds(spawnObject.m_spawnTime);
             await Task.Delay(delay);
         }
     }
@@ -124,15 +136,25 @@ public class WizardZonePath : ReceiveActor
     private void SpawnCreature(SpawnObjectInfo spawnInfo)
     {
         var spawnNode = GetRelevantNode(spawnInfo);
+        var nodeIndex = _nodes.Keys.ToList().IndexOf(spawnNode);
         _nodes[spawnNode] = false;
         
         var newObj = CoreObjectFactory.CreateObjectFromInfo(spawnInfo);
         if (newObj is null)
             throw new NullReferenceException();
         newObj.m_location = spawnNode.m_location;
+
+        // Create the creature as a child actor of this actor.
+        var nodes = _nodes.Keys.ToArray();
+        var props = WizardZonePathNavigator.Props(newObj, nodes, (byte)nodeIndex, _zoneActorRef);
+        var actorRef = Context.ActorOf(props);
         
-        // Tell the server about the object we just created.
-        var msg = new ZONE_102_PROTOCOL.MSG_ADDOBJECT { CoreObject = newObj };
+        // Tell the server about the creature we just created. This will also give the creature it's own mobile ID.
+        var msg = new ZONE_102_PROTOCOL.MSG_ADDCREATURE
+        {
+            ObjectIdentity = actorRef,
+            CoreObject = newObj
+        };
         _zoneActorRef.Tell(msg);
     }
 
