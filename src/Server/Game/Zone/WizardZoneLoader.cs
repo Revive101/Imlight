@@ -1,3 +1,8 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -117,6 +122,7 @@ public static class WizardZoneLoader
             if (newObj is null)
                 continue;
 
+            // Tell the zone about the object we just created.
             var msg = new ZONE_102_PROTOCOL.MSG_ADDOBJECT { CoreObject = newObj };
             _zoneActorRef.Tell(msg);
         }
@@ -132,9 +138,15 @@ public static class WizardZoneLoader
             var nodeList = GetNodesForPath(path);
             var creatureList = GetCreaturesForPath(path);
 
-            // Create the WizardZonePath actor as a child of the zone actor.
-            var wizPathProps = WizardZonePath.Props(path.m_id, path.m_name, nodeList, creatureList);
-            CreateChildActor(wizPathProps, path.m_name.ToString().Replace(' ', '_'));
+            // Send the path data back to the WizardZone.
+            var msg = new ZONE_102_PROTOCOL.MSG_ADDPATH()
+            {
+                Id = path.m_id,
+                Name = path.m_name,
+                Nodes = nodeList,
+                Creatures = creatureList
+            };
+            _zoneActorRef.Tell(msg);
         }
     }
 
