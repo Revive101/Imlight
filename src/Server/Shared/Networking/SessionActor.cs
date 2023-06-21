@@ -58,7 +58,8 @@ namespace Imlight.Server.Shared.Networking
             this._suppressedPackets = new()
                 {
                     typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVE),
-                    typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVESTATE)
+                    typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVESTATE),
+                    typeof(GAME_5_PROTOCOL.MSG_SERVERMOVE)
                 };
 
             // To get the actor factory reference, we'll ask the server.
@@ -349,7 +350,8 @@ namespace Imlight.Server.Shared.Networking
                 .ToString()
                 .Split('.')[^1]
                 .Replace('+', '.');
-            Log.Logger.Debug($"SessionActor [{SessionID}] sent message [{scopedMessageName}]");
+            if (!_suppressedPackets.Contains(message.GetType()))
+                Log.Logger.Debug($"SessionActor [{SessionID}] sent message [{scopedMessageName}]");
         }
 
         private void OnSendCompleted(SocketAsyncEventArgs e)
