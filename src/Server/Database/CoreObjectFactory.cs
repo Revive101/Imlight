@@ -5,8 +5,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Timers;
 using static WizUnraveler.Cache.TypeCache;
 using WizUnraveler;
 using Imlight.Common.Utilities;
@@ -28,9 +30,14 @@ namespace Imlight.Server.Database
 
         public static bool Load()
         {
+            // Load the TemplateManifest.xml and record the amount of time it takes.
+            var timer = new Stopwatch();
+            timer.Start();
             var manifest = ResourceManager.LoadDeserializedFile<TemplateManifest>(ROOT_WAD_NAME, TEMPLATE_MANIFEST_NAME);
             if (manifest is null)
                 return false;
+            timer.Stop();
+            Log.Logger.Information($"TemplateManifest deserialize took {timer.ElapsedMilliseconds}ms.");
             
             foreach (var templateLocation in manifest.m_serializedTemplates)
             {
@@ -154,7 +161,7 @@ namespace Imlight.Server.Database
 
             return obj;
         }
-        
+
         private static ulong GetTemplateId(CoreObjectInfo objInfo)
         {
             var templateId = objInfo.m_templateID;
