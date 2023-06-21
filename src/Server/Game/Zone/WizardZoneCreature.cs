@@ -15,7 +15,7 @@ using static WizUnraveler.Cache.TypeCache;
 
 namespace Imlight.Server.Game.Zone;
 
-public class WizardZonePathNavigator : WizardZoneObject
+public class WizardZoneCreature : WizardZoneObject
 {
     private const float MovementIntervalPerSecond = 0.433f;
 
@@ -25,7 +25,7 @@ public class WizardZonePathNavigator : WizardZoneObject
     private CancellationTokenSource _canceltoken;
     
     // ctor
-    public WizardZonePathNavigator(
+    public WizardZoneCreature(
         CoreObject activeGameObject, 
         NodeObject[] nodes, 
         byte startingNodeIndex,
@@ -50,7 +50,7 @@ public class WizardZonePathNavigator : WizardZoneObject
         IActorRef wizardZoneRef)
     {
         return Akka.Actor.Props.Create(() 
-            => new WizardZonePathNavigator(activeGameObject, nodes, startingNodeIndex, wizardZoneRef));
+            => new WizardZoneCreature(activeGameObject, nodes, startingNodeIndex, wizardZoneRef));
     }
 
     private async Task StartMovementInterval()

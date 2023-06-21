@@ -146,7 +146,7 @@ public class WizardZonePath : ReceiveActor
 
         // Create the creature as a child actor of this actor.
         var nodes = _nodes.Keys.ToArray();
-        var props = WizardZonePathNavigator.Props(newObj, nodes, (byte)nodeIndex, _zoneActorRef);
+        var props = WizardZoneCreature.Props(newObj, nodes, (byte)nodeIndex, _zoneActorRef);
         var actorRef = Context.ActorOf(props);
         
         // Tell the server about the creature we just created. This will also give the creature it's own mobile ID.
