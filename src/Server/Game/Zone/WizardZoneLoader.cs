@@ -18,7 +18,7 @@ using static WizUnraveler.ObjectProperty.ObjectSerializer;
 namespace Imlight.Server.Game.Zone;
 
 /// <summary>
-///     A static, thread-safe class for loading zone data from the <see cref="ResourceManager" />.
+/// A static, thread-safe class for loading zone data from the <see cref="ResourceManager" />.
 /// </summary>
 public static class WizardZoneLoader
 {
@@ -30,10 +30,8 @@ public static class WizardZoneLoader
     private const string TriggerDataFileName = "triggers.xml";
     private static readonly object LockObject = new();
 
-    // Unmanaged data of our current working WizardZone. This should be properly disposed of when not working.
     private static WizardZone _zone;
     private static IActorRef _zoneActorRef;
-    private static IActorContext _zoneActorContext;
     private static Wad _wad;
     private static WizZoneData _zoneData;
     private static SpawnManager _spawnData;
@@ -41,12 +39,11 @@ public static class WizardZoneLoader
     private static PathManager_NodeTemplateList _nodeData;
 
     /// <summary>
-    /// Loads the <see cref="WizardZone" /> from the <see cref="ResourceManager" />. The name of the zone will be used.
+    /// Loads the <see cref="WizardZone" /> data from the <see cref="ResourceManager" />.
     /// </summary>
     /// <param name="zone">The zone object.</param>
-    /// <param name="zoneActorRef">The Akka.NET actor reference of the zone. This is used to spawn zone objects.</param>
-    /// <param name="zoneActorContext">The Akka.NET actor of the zone. This is used to spawn child actors.</param>
-    public static void LoadZoneData(WizardZone zone, IActorRef zoneActorRef, IActorContext zoneActorContext)
+    /// <param name="zoneActorRef">The Akka.NET actor reference of the zone.</param>
+    public static void LoadZoneData(WizardZone zone, IActorRef zoneActorRef)
     {
         lock (LockObject)
         {
@@ -54,7 +51,6 @@ public static class WizardZoneLoader
             {
                 _zone = zone;
                 _zoneActorRef = zoneActorRef;
-                _zoneActorContext = zoneActorContext;
 
                 if (!ResourceManager.TryLoadFile(zone.ZoneName, out _wad))
                 {
@@ -83,39 +79,59 @@ public static class WizardZoneLoader
         }
     }
 
+    /// <summary>
+    /// Loads the zone data from the KIWAD file.
+    /// </summary>
     private static void LoadZoneData()
     {
         var serializer = new FileSerializer();
         _zoneData = serializer.OpenClass<WizZoneData>(_wad, ZoneDataFileName);
         if (_zoneData is null)
-            Log.Logger.Error($"Zone {_zone.ZoneName} could not load {ZoneDataFileName} was missing or invalid.");
+            Log.Logger.Error(
+                $"Zone {_zone.ZoneName} could not load {ZoneDataFileName} as it was missing or invalid.");
     }
 
+    /// <summary>
+    /// Loads the spawn data from the KIWAD file.
+    /// </summary>
     private static void LoadSpawnData()
     {
         var serializer = new FileSerializer()
-            .WithSerializerFlags(SerializerFlags.UseFlags | SerializerFlags.CompactLength | SerializerFlags.StringEnums);
+            .WithSerializerFlags(SerializerFlags.UseFlags | SerializerFlags.CompactLength |
+                                 SerializerFlags.StringEnums);
         _spawnData = serializer.OpenClass<SpawnManager>(_wad, SpawnDataFileName);
         if (_spawnData is null)
-            Log.Logger.Error($"Zone {_zone.ZoneName} could not load {SpawnDataFileName} was missing or invalid.");
+            Log.Logger.Error(
+                $"Zone {_zone.ZoneName} could not load {SpawnDataFileName} as it was missing or invalid.");
     }
 
+    /// <summary>
+    /// Loads the path data from the KIWAD file.
+    /// </summary>
     private static void LoadPathData()
     {
         var serializer = new FileSerializer();
         _pathData = serializer.OpenClass<PathManager_PathTemplateList>(_wad, PathDataFileName);
         if (_pathData is null)
-            Log.Logger.Error($"Zone {_zone.ZoneName} could not load {PathDataFileName} was missing or invalid.");
+            Log.Logger.Error(
+                $"Zone {_zone.ZoneName} could not load {PathDataFileName} as it was missing or invalid.");
     }
 
+    /// <summary>
+    /// Loads the node data from the KIWAD file.
+    /// </summary>
     private static void LoadNodeData()
     {
         var serializer = new FileSerializer();
         _nodeData = serializer.OpenClass<PathManager_NodeTemplateList>(_wad, NodeDataFileName);
         if (_nodeData is null)
-            Log.Logger.Error($"Zone {_zone.ZoneName} could not load {NodeDataFileName} was missing or invalid.");
+            Log.Logger.Error(
+                $"Zone {_zone.ZoneName} could not load {NodeDataFileName} as it was missing or invalid.");
     }
 
+    /// <summary>
+    /// Creates game objects for the zone based on the loaded zone data.
+    /// </summary>
     private static void CreateZoneGameObjects()
     {
         foreach (var obj in _zoneData.m_objectList.Where(x => x is not null))
@@ -124,24 +140,22 @@ public static class WizardZoneLoader
             if (newObj is null)
                 continue;
 
-            // Tell the zone about the object we just created.
             var msg = new ZONE_102_PROTOCOL.MSG_ADDOBJECT { CoreObject = newObj };
             _zoneActorRef.Tell(msg);
         }
     }
 
+    /// <summary>
+    /// Creates paths for the zone based on the loaded path data.
+    /// </summary>
     private static void CreateZonePaths()
     {
-        // Iterate through each path and create our own proprietary WizardZonePath type. Create each path as a
-        // child actor for this zone.
         foreach (var path in _pathData.m_pathList)
         {
-            // Create the path in its entirety; add nodes to the path, then add the creature data to the path.
             var nodeList = GetNodesForPath(path);
             var creatureList = GetCreaturesForPath(path);
 
-            // Send the path data back to the WizardZone.
-            var msg = new ZONE_102_PROTOCOL.MSG_ADDPATH()
+            var msg = new ZONE_102_PROTOCOL.MSG_ADDPATH
             {
                 Id = path.m_id,
                 Name = path.m_name,
@@ -152,6 +166,11 @@ public static class WizardZoneLoader
         }
     }
 
+    /// <summary>
+    /// Retrieves a list of node objects for a given path.
+    /// </summary>
+    /// <param name="path">The path object template.</param>
+    /// <returns>A list of node objects.</returns>
     private static List<NodeObject> GetNodesForPath(PathObjectTemplate path)
     {
         var nodeList = new List<NodeObject>();
@@ -168,6 +187,11 @@ public static class WizardZoneLoader
         return nodeList;
     }
 
+    /// <summary>
+    /// Retrieves a list of creature objects for a given path.
+    /// </summary>
+    /// <param name="path">The path object template.</param>
+    /// <returns>A list of creature objects.</returns>
     private static List<SpawnObject> GetCreaturesForPath(PathObjectTemplate path)
     {
         var creatureList = new List<SpawnObject>();
@@ -189,15 +213,24 @@ public static class WizardZoneLoader
 
         return creatureList;
     }
-
+    
+    /// <summary>
+    /// Checks to see if all creates in a <see cref="SpawnItem"/> contain the same path ID.
+    /// </summary>
+    /// <param name="spawnList">The list of spawns.</param>
+    /// <returns>True, if all the creatures are on the same path; false otherwise.</returns>
     private static bool AllObjectsContainSamePath(IReadOnlyList<SpawnItem> spawnList)
     {
         var firstPathId = spawnList[0].m_objectInfo.m_pathID;
         return spawnList.All(x => x.m_objectInfo.m_pathID == firstPathId);
     }
 
+    /// <summary>
+    /// Clears any unmanaged memory and resources.
+    /// </summary>
     private static void ClearUnmanagedMemory()
     {
+        _wad = null;
         _zone = null;
         _zoneActorRef = null;
         _wad = null;

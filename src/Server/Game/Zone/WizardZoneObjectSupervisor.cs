@@ -9,6 +9,9 @@ using Imlight.Server.Shared.Packets;
 
 namespace Imlight.Server.Game.Zone;
 
+/// <summary>
+/// Supervises a bunch of child <see cref="WizardZoneObject"/> actors.
+/// </summary>
 public class WizardZoneObjectSupervisor : ReceiveProtocolDispatcher
 {
     // TODO: Implement supervisor strategy: if a path fails, remove all the mobs and restart the WizardZonePath.

@@ -5,11 +5,14 @@ using static WizUnraveler.Cache.TypeCache;
 
 namespace Imlight.Server.Game.Zone;
 
+/// <summary>
+/// This is a zone object which manages itself as an actor.
+/// </summary>
 public class WizardZoneObject : ReceiveProtocolDispatcher
 {
     protected readonly CoreObject ActiveGameObject;
     protected readonly CoreTemplate Template;
-    protected IActorRef WizardZoneRef;
+    protected readonly IActorRef WizardZoneRef;
     
     // ctor
     public WizardZoneObject(CoreObject activeGameObject, IActorRef wizardZoneRef)

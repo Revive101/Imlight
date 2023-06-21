@@ -5,279 +5,291 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using Akka.Actor;
 using Imlight.Common.Serializable;
 using Imlight.Common.Utilities;
-using Imlight.Server.Database;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
 using WizUnraveler.Cache;
 using WizUnraveler.DML;
-using WizUnraveler.Formats;
-using WizUnraveler.IO;
 using static WizUnraveler.Cache.TypeCache;
 using static WizUnraveler.ObjectProperty.ObjectSerializer;
 
-namespace Imlight.Server.Game.Zone
+namespace Imlight.Server.Game.Zone;
+
+public class WizardZone : ReceiveProtocolDispatcher
 {
-    public class WizardZone : ReceiveProtocolDispatcher
+    public string ZoneName { get; }
+    
+    private readonly uint _dynamicZoneId;
+    private readonly IActorRef _objectSupervisorRef;
+    private readonly IActorRef _pathSupervisorRef;
+    
+    // TODO: I don't want to be saving CoreObjects here.
+    private readonly Dictionary<IActorRef, CoreObject> _zoneCreatures;
+    private readonly Dictionary<IActorRef, CoreObject> _zoneObjects;
+    private readonly Dictionary<IActorRef, CoreObject> _zonePlayers;
+
+    // ctor
+    public WizardZone(string zoneName)
     {
-        public string ZoneName { get; }
-        
-        private readonly uint _dynamicZoneId;
-        private readonly IActorRef _pathSupervisorRef;
-        private readonly IActorRef _objectSupervisorRef;
-        private readonly Dictionary<IActorRef, CoreObject> _zonePlayers;
-        private readonly Dictionary<IActorRef, CoreObject> _zoneCreatures;
-        private readonly Dictionary<IActorRef, CoreObject> _zoneObjects;
+        ZoneName = zoneName;
+        _dynamicZoneId = GenerateDynamicZoneId();
+        _zonePlayers = new Dictionary<IActorRef, CoreObject>();
+        _zoneCreatures = new Dictionary<IActorRef, CoreObject>();
+        _zoneObjects = new Dictionary<IActorRef, CoreObject>();
 
-        // ctor
-        public WizardZone(string zoneName)
+        _pathSupervisorRef = CreatePathSupervisor();
+        _objectSupervisorRef = CreateObjectSupervisor();
+        // We don't need to create a PlayerSupervisor, as the GameServer manages that for us.
+
+        // Load and initialize this zone.
+        WizardZoneLoader.LoadZoneData(this, Self);
+
+        Log.Logger.Debug($"Zone [{ZoneName}] created.");
+    }
+
+    // Akka.NET ctor
+    public static Props Props(string zoneName)
+    {
+        return Akka.Actor.Props.Create(() => new WizardZone(zoneName));
+    }
+
+    /// <summary>
+    /// Broadcast a message to all the players in the zone.
+    /// </summary>
+    /// <param name="message">The <see cref="INetworkMessage" /> that will be broadcast.</param>
+    private void Broadcast(INetworkMessage message)
+    {
+        foreach (var player in _zonePlayers.Keys) player.Tell(message);
+    }
+
+    /// <summary>
+    /// Broadcast a message to all the players in this zone, except to the player that broadcast it.
+    /// </summary>
+    /// <param name="sender">The <see cref="IActorRef" /> that this broadcast will ignore.</param>
+    /// <param name="message">The <see cref="INetworkMessage" /> that will be broadcast.</param>
+    private void BroadcastSelfless(IActorRef sender, INetworkMessage message)
+    {
+        foreach (var player in _zonePlayers.Keys
+                     .Where(player => !player.Equals(sender)))
+            player.Tell(message);
+    }
+
+    /// <summary>
+    /// Creates a <see cref="WizardZonePathSupervisor"/> as a child of this WizardZone.
+    /// </summary>
+    /// <returns>The actor reference pointing to the newly created actor.</returns>
+    private IActorRef CreatePathSupervisor()
+    {
+        var props = WizardZonePathSupervisor.Props(Self);
+        return Context.ActorOf(props);
+    }
+
+    /// <summary>
+    /// Creates a <see cref="WizardZoneObjectSupervisor"/> as a child of this WizardZone.
+    /// </summary>
+    /// <returns>The actor reference pointing to the newly created actor.</returns>
+    private IActorRef CreateObjectSupervisor()
+    {
+        var props = WizardZoneObjectSupervisor.Props(Self);
+        return Context.ActorOf(props);
+    }
+
+    /// <summary>
+    /// Broadcasts the creation of a new <see cref="CoreObject"/> to each player in the zone.
+    /// </summary>
+    /// <param name="obj"></param>
+    private void BroadcastObjectCreation(CoreObject obj)
+    {
+        var serializer = new CoreObjectSerializer()
+            .WithSerializerFlags(SerializerFlags.None)
+            .WithPropertyFlags(PropertyFlags.Public | PropertyFlags.Transmit | PropertyFlags.AuthorityTransmit);
+        Broadcast(new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = serializer.Serialize(obj) });
+    }
+
+    private void SpawnZoneObjectsForClient(IActorRef newClient)
+    {
+        SerializeAndSendObjects(newClient, _zoneObjects.Values);
+        SerializeAndSendObjects(newClient, _zonePlayers.Values);
+        SerializeAndSendObjects(newClient, _zoneCreatures.Values);
+    }
+
+    private void RemoveZoneObjectsForClient(IActorRef client)
+    {
+        RemoveObjects(client, _zoneObjects.Values);
+        RemoveObjects(client, _zonePlayers.Values);
+        RemoveObjects(client, _zoneCreatures.Values);
+    }
+
+    private void SerializeAndSendObjects(IActorRef client, IEnumerable<CoreObject> objects)
+    {
+        var serializer = new CoreObjectSerializer()
+            .WithSerializerFlags(SerializerFlags.None)
+            .WithPropertyFlags(PropertyFlags.Public | PropertyFlags.Transmit | PropertyFlags.AuthorityTransmit);
+        foreach (var obj in objects)
         {
-            this.ZoneName       = zoneName;
-            this._dynamicZoneId = GenerateDynamicZoneId();
-            this._zonePlayers   = new Dictionary<IActorRef, CoreObject>();
-            this._zoneCreatures = new Dictionary<IActorRef, CoreObject>();
-            this._zoneObjects   = new Dictionary<IActorRef, CoreObject>();
-            
-            _pathSupervisorRef = CreatePathSupervisor();
-            _objectSupervisorRef = CreateObjectSupervisor();
-            // We don't need to create a PlayerSupervisor, as the GameServer manages that for us.
-
-            // Load and initialize this zone.
-            WizardZoneLoader.LoadZoneData(this, Self, Context);
-
-            Log.Logger.Debug($"Zone [{ZoneName}] created.");
-        }
-        
-        // Akka.NET ctor
-        public static Props Props(string zoneName)
-        {
-            return Akka.Actor.Props.Create(() => new WizardZone(zoneName));
-        }
-
-        /// <summary>
-        /// Broadcast a message to all the players in the zone.
-        /// </summary>
-        /// <param name="message">The <see cref="INetworkMessage"/> that will be broadcast.</param>
-        private void Broadcast(INetworkMessage message)
-        {
-            foreach (var player in _zonePlayers.Keys)
-            {
-                player.Tell(message);
-            }
-        }
-
-        /// <summary>
-        /// Broadcast a message to all the players in this zone, except to the player that broadcast it.
-        /// </summary>
-        /// <param name="sender">The <see cref="IActorRef"/> that this broadcast will ignore.</param>
-        /// <param name="message">The <see cref="INetworkMessage"/> that will be broadcast.</param>
-        private void BroadcastSelfless(IActorRef sender, INetworkMessage message)
-        {
-            foreach (var player in _zonePlayers.Keys
-                         .Where(player => !player.Equals(sender)))
-            {
-                player.Tell(message);
-            }
-        }
-        
-        #region Handlers
-        
-        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONE))]
-        private void ReceiveQueryZone(ZONE_102_PROTOCOL.MSG_QUERYZONE message)
-        {
-            Sender.Tell(new ZONE_102_PROTOCOL.MSG_QUERYZONERSP
-            {
-                ZoneActorRef = Self,
-                DynamicZoneId = _dynamicZoneId,
-                ErrorCode = 0
-            });
-        }
-
-        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
-        private void ReceiveAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message)
-        {
-            if (_zonePlayers.Keys.Contains(message.Player))
-                throw new Exception("Player actor already exists in this zone!");
-
-            // Mobile ID is an instance agnostic ID that is used to identify a player.
-            message.PlayerObject.m_nMobileID = GenerateMobileId();
-
-            SpawnZoneObjectsForClient(message.Player);
-
-            _zonePlayers.Add(message.Player, message.PlayerObject);
-            
-            // Broadcast the new object to each player in the zone.
-            BroadcastObjectCreation(message.PlayerObject);
-
-            // Inform the player that they've been successfully added to the zone.
-            var response = new ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP { PlayerObject = message.PlayerObject };
-            message.Player.Tell(response);
-
-            Log.Logger.Debug($"Player {message.Player.Path.Name} added to zone {ZoneName}.");
-        }
-        
-        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER))]
-        private void ReceiveRemovePlayer(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message)
-        {
-            if (!_zonePlayers.TryGetValue(message.Player, out var obj))
-            {
-                Log.Logger.Error($"Zone [{ZoneName}] tried to remove player it did not have.");
-                return;
-            }
-            
-            // Inform every Wizard101 client that this object has been removed.
-            Broadcast(new GAME_5_PROTOCOL.MSG_REMOVEOBJECT { GameObjectID = obj.m_globalID });
-            
-            // Now, *actually* remove it from the zone.
-            _zonePlayers.Remove(message.Player);
-            
-            // We only want to remove instanced objects for the client if they're transferring zones.
-            // Otherwise, we'll just be sending a torrent of messages to a disconnected socket.
-            if (message.IsZoneTransfer) 
-                RemoveZoneObjectsForClient(message.Player);
-
-            _zonePlayers.Remove(message.Player);
-        }
-
-        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
-        private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message)
-        {
-            if (message.Selfless)
-                BroadcastSelfless(message.Sender, message.Message);
-            else
-                Broadcast(message.Message);
-        }
-        
-        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPATH))]
-        private void ReceiveAddPath(ZONE_102_PROTOCOL.MSG_ADDPATH message)
-        {
-            _pathSupervisorRef.Forward(message);
-        }
-        
-        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDCREATURE))]
-        private void ReceiveAddCreature(ZONE_102_PROTOCOL.MSG_ADDCREATURE message)
-        {
-            // This message is received on the WizardZone to:
-            // a. Give it a unique ID.
-            // b. Broadcast it's creation to every player in the zone.
-            // c. Keep it's reference here so that new players will be told of it's data.
-            var id = GenerateMobileId();
-            message.CoreObject.m_nMobileID = id;
-            
-            BroadcastObjectCreation(message.CoreObject);
-            
-            _zoneCreatures.Add(message.ObjectIdentity, message.CoreObject);
-        }
-
-        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDOBJECT))]
-        private void ReceiveAddObject(ZONE_102_PROTOCOL.MSG_ADDOBJECT message)
-        {
-            // This message is received on the WizardZone to:
-            // a. Give it a unique ID.
-            // b. Broadcast it's creation to every player in the zone.
-            // c. Keep it's reference here so that new players will be told of it's data.
-            var id = GenerateMobileId();
-            message.CoreObject.m_nMobileID = id;
-            
-            BroadcastObjectCreation(message.CoreObject);
-            
-            // The object has not been created as an actor yet. We're going to tell our ObjectSupervisor about it 
-            // and await it's reply. Also, append the mobile ID that was created for the object.
-            var rsp = _objectSupervisorRef
-                .Ask<ZONE_102_PROTOCOL.MSG_ADDOBJECTRSP>(message)
-                .Result;
-            rsp.MobileId = id;
-            
-            _zoneObjects.Add(rsp.ActorRef, message.CoreObject);
-            
-            // Return to sender.
-            Sender.Tell(rsp);
-        }
-
-        #endregion
-
-        private IActorRef CreatePathSupervisor()
-        {
-            var props = WizardZonePathSupervisor.Props(Self);
-            return Context.ActorOf(props);
-        }
-        
-        private IActorRef CreateObjectSupervisor()
-        {
-            var props = WizardZoneObjectSupervisor.Props(Self);
-            return Context.ActorOf(props);
-        }
-
-        private void BroadcastObjectCreation(CoreObject obj)
-        {
-            var serializer = new CoreObjectSerializer()
-                .WithSerializerFlags(SerializerFlags.None)
-                .WithPropertyFlags(PropertyFlags.Public | PropertyFlags.Transmit | PropertyFlags.AuthorityTransmit);
-            Broadcast(new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = serializer.Serialize(obj) });
-        }
-
-        private void SpawnZoneObjectsForClient(IActorRef newClient)
-        {
-            SerializeAndSendObjects(newClient, _zoneObjects.Values);
-            SerializeAndSendObjects(newClient, _zonePlayers.Values);
-            SerializeAndSendObjects(newClient, _zoneCreatures.Values);
-        }
-
-        private void RemoveZoneObjectsForClient(IActorRef client)
-        {
-            RemoveObjects(client, _zoneObjects.Values);
-            RemoveObjects(client, _zonePlayers.Values);
-            RemoveObjects(client, _zoneCreatures.Values);
-        }
-
-        private void SerializeAndSendObjects(IActorRef client, IEnumerable<CoreObject> objects)
-        {
-            var serializer = new CoreObjectSerializer()
-                .WithSerializerFlags(SerializerFlags.None)
-                .WithPropertyFlags(PropertyFlags.Public | PropertyFlags.Transmit | PropertyFlags.AuthorityTransmit);
-            foreach (var obj in objects)
-            {
-                var msg = new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = serializer.Serialize(obj) };
-                client.Tell(msg);
-            }
-        }
-
-        private void RemoveObjects(IActorRef client, IEnumerable<CoreObject> objects)
-        {
-            foreach (var obj in objects)
-            {
-                var msg = new GAME_5_PROTOCOL.MSG_REMOVEOBJECT { GameObjectID = obj.m_globalID };
-                client.Tell(msg);
-            }
-        }
-
-        private static uint GenerateDynamicZoneId()
-        {
-            var random = new Random();
-            return (uint) random.Next(0, int.MaxValue);
-        }
-
-        private ushort GenerateMobileId()
-        {
-            // Avoid collisions as much as possible.
-            ushort test;
-            var r = new Random();
-            while (true)
-            {
-                test = (ushort)r.Next(0, ushort.MaxValue);
-                if (_zoneObjects.Values.Any(x => x.m_nMobileID == test)
-                 || _zonePlayers.Values.Any(x => x.m_nMobileID == test)
-                 || _zoneCreatures.Values.Any(x => x.m_nMobileID == test))
-                    continue;
-
-                break;
-            }
-
-            return test;
+            var msg = new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = serializer.Serialize(obj) };
+            client.Tell(msg);
         }
     }
+
+    private void RemoveObjects(IActorRef client, IEnumerable<CoreObject> objects)
+    {
+        foreach (var obj in objects)
+        {
+            var msg = new GAME_5_PROTOCOL.MSG_REMOVEOBJECT { GameObjectID = obj.m_globalID };
+            client.Tell(msg);
+        }
+    }
+
+    /// <summary>
+    /// Generates a new <see cref="uint"/> value as a dynamic ID for this WizardZone.
+    /// </summary>
+    /// <returns>The ID generated.</returns>
+    private static uint GenerateDynamicZoneId()
+    {
+        var random = new Random();
+        return (uint)random.Next(0, int.MaxValue);
+    }
+
+    /// <summary>
+    /// Generates a random, unused <see cref="ushort"/> object ID.
+    /// </summary>
+    /// <returns>The ID generated.</returns>
+    private ushort GenerateMobileId()
+    {
+        // Avoid collisions as much as possible.
+        ushort test;
+        var r = new Random();
+        while (true)
+        {
+            test = (ushort)r.Next(0, ushort.MaxValue);
+            if (_zoneObjects.Values.Any(x => x.m_nMobileID == test)
+                || _zonePlayers.Values.Any(x => x.m_nMobileID == test)
+                || _zoneCreatures.Values.Any(x => x.m_nMobileID == test))
+                continue;
+
+            break;
+        }
+
+        return test;
+    }
+
+    #region Handlers
+    
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONE))]
+    private void ReceiveQueryZone(ZONE_102_PROTOCOL.MSG_QUERYZONE message)
+    {
+        Sender.Tell(new ZONE_102_PROTOCOL.MSG_QUERYZONERSP
+        {
+            ZoneActorRef = Self,
+            DynamicZoneId = _dynamicZoneId,
+            ErrorCode = 0
+        });
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
+    private void ReceiveAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message)
+    {
+        if (_zonePlayers.Keys.Contains(message.Player))
+            throw new Exception("Player actor already exists in this zone!");
+        
+        message.PlayerObject.m_nMobileID = GenerateMobileId();
+
+        SpawnZoneObjectsForClient(message.Player);
+
+        _zonePlayers.Add(message.Player, message.PlayerObject);
+        
+        BroadcastObjectCreation(message.PlayerObject);
+
+        // Inform the player that they've been successfully added to the zone.
+        var response = new ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP { PlayerObject = message.PlayerObject };
+        message.Player.Tell(response);
+
+        Log.Logger.Debug($"Player {message.Player.Path.Name} added to zone {ZoneName}.");
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER))]
+    private void ReceiveRemovePlayer(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message)
+    {
+        if (!_zonePlayers.TryGetValue(message.Player, out var obj))
+        {
+            Log.Logger.Error($"Zone [{ZoneName}] tried to remove player it did not have.");
+            return;
+        }
+
+        // Inform every Wizard101 client that this object has been removed.
+        Broadcast(new GAME_5_PROTOCOL.MSG_REMOVEOBJECT { GameObjectID = obj.m_globalID });
+
+        // Now, *actually* remove it from the zone.
+        _zonePlayers.Remove(message.Player);
+
+        // We only want to remove instanced objects for the client if they're transferring zones.
+        // Otherwise, we'll just be sending a torrent of messages to a disconnected socket.
+        if (message.IsZoneTransfer)
+            RemoveZoneObjectsForClient(message.Player);
+
+        _zonePlayers.Remove(message.Player);
+        
+        Log.Logger.Debug($"Player {message.Player.Path.Name} removed from zone {ZoneName}.");
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
+    private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message)
+    {
+        if (message.Selfless)
+            BroadcastSelfless(message.Sender, message.Message);
+        else
+            Broadcast(message.Message);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPATH))]
+    private void ReceiveAddPath(ZONE_102_PROTOCOL.MSG_ADDPATH message)
+    {
+        _pathSupervisorRef.Forward(message);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDCREATURE))]
+    private void ReceiveAddCreature(ZONE_102_PROTOCOL.MSG_ADDCREATURE message)
+    {
+        // This message is received on the WizardZone to:
+        // a. Give it a unique ID.
+        // b. Broadcast it's creation to every player in the zone.
+        // c. Keep it's reference here so that new players will be told of it's data.
+        var id = GenerateMobileId();
+        message.CoreObject.m_nMobileID = id;
+
+        BroadcastObjectCreation(message.CoreObject);
+
+        _zoneCreatures.Add(message.ObjectIdentity, message.CoreObject);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDOBJECT))]
+    private void ReceiveAddObject(ZONE_102_PROTOCOL.MSG_ADDOBJECT message)
+    {
+        // This message is received on the WizardZone to:
+        // a. Give it a unique ID.
+        // b. Broadcast it's creation to every player in the zone.
+        // c. Keep it's reference here so that new players will be told of it's data.
+        var id = GenerateMobileId();
+        message.CoreObject.m_nMobileID = id;
+
+        BroadcastObjectCreation(message.CoreObject);
+
+        // The object has not been created as an actor yet. We're going to tell our ObjectSupervisor about it 
+        // and await it's reply. Also, append the mobile ID that was created for the object.
+        var rsp = _objectSupervisorRef
+            .Ask<ZONE_102_PROTOCOL.MSG_ADDOBJECTRSP>(message)
+            .Result;
+        rsp.MobileId = id;
+
+        _zoneObjects.Add(rsp.ActorRef, message.CoreObject);
+
+        // Return to sender.
+        Sender.Tell(rsp);
+    }
+
+    #endregion
 }

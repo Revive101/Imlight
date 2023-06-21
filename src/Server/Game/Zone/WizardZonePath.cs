@@ -14,73 +14,100 @@ using Imlight.Server.Shared.Packets;
 using WizUnraveler.IO;
 using WizUnraveler.ObjectProperty;
 using static WizUnraveler.Cache.TypeCache;
+
 #pragma warning disable CS4014
 
 namespace Imlight.Server.Game.Zone;
 
 /// <summary>
-/// This is a child actor of a <see cref="WizardZone"/> that represents a path that exists in that zone. It is also
+/// This is a child actor of a <see cref="WizardZone" /> that represents a path that exists in that zone. It is also
 /// responsible for spawning the creatures on interval.
 /// </summary>
 public class WizardZonePath : ReceiveActor
 {
+    /// <summary>
+    /// Gets the identifier of the path.
+    /// </summary>
     public GID Id { get; init; }
+
+    /// <summary>
+    /// Gets the name of the path.
+    /// </summary>
     public ByteString Name { get; init; }
     
-    // The the value represents if the NodeObject is available.
-    private readonly Dictionary<NodeObject, bool> _nodes;
-    private readonly List<SpawnObject> _creatureSpawnData;
-    private readonly IActorRef _zoneActorRef;
     private readonly CancellationTokenSource _cancelToken;
     private readonly Dictionary<GID, byte> _creatureCount;
+    private readonly List<SpawnObject> _creatureSpawnData;
+
+    // The the value represents if the NodeObject is available.
+    private readonly Dictionary<NodeObject, bool> _nodes;
+    private readonly IActorRef _zoneActorRef;
 
     // ctor
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WizardZonePath" /> class.
+    /// </summary>
+    /// <param name="id">The identifier of the path.</param>
+    /// <param name="name">The name of the path.</param>
+    /// <param name="nodes">The list of nodes.</param>
+    /// <param name="creatures">The list of creatures.</param>
+    /// <param name="zoneActorRef">The reference to the zone actor.</param>
     public WizardZonePath(
-        GID id, 
-        ByteString name, 
-        List<NodeObject> nodes, 
+        GID id,
+        ByteString name,
+        List<NodeObject> nodes,
         List<SpawnObject> creatures,
         IActorRef zoneActorRef)
     {
-        this.Id = id;
-        this.Name = name;
-        this._nodes = nodes.ToDictionary(x => x, _ => true);
-        this._creatureSpawnData = creatures;
-        this._zoneActorRef = zoneActorRef;
-        this._cancelToken = new CancellationTokenSource();
-        this._creatureCount = new Dictionary<GID, byte>();
-        
+        Id = id;
+        Name = name;
+        _nodes = nodes.ToDictionary(x => x, _ => true);
+        _creatureSpawnData = creatures;
+        _zoneActorRef = zoneActorRef;
+        _cancelToken = new CancellationTokenSource();
+        _creatureCount = new Dictionary<GID, byte>();
+
         StartSpawnInterval();
     }
-    
+
     // Akka.NET ctor
+    /// <summary>
+    /// Creates the <see cref="Props" /> for creating a new instance of the <see cref="WizardZonePath" />.
+    /// </summary>
+    /// <param name="id">The identifier of the path.</param>
+    /// <param name="name">The name of the path.</param>
+    /// <param name="nodes">The list of nodes.</param>
+    /// <param name="creatures">The list of creatures.</param>
+    /// <param name="zoneActorRef">The reference to the zone actor.</param>
+    /// <returns>The <see cref="Props" /> for creating the actor.</returns>
     public static Props Props(
-        GID id, 
-        ByteString name, 
-        List<NodeObject> nodes, 
-        List<SpawnObject> creatures, 
+        GID id,
+        ByteString name,
+        List<NodeObject> nodes,
+        List<SpawnObject> creatures,
         IActorRef zoneActorRef)
     {
         return Akka.Actor.Props.Create(() => new WizardZonePath(id, name, nodes, creatures, zoneActorRef));
     }
 
+    /// <summary>
+    /// Starts the interval for spawning creatures on the path.
+    /// </summary>
     private void StartSpawnInterval()
     {
-        // Foreach spawn data in this path, we're going to create a new asynchronous task to spawn it on interval.
-        foreach (var spawnObject in _creatureSpawnData.Where(x => x.m_active))
-        {
-            DoCreatureSpawnInterval(spawnObject);
-        }
+        foreach (var spawnObject in _creatureSpawnData.Where(x => x.m_active)) DoCreatureSpawnInterval(spawnObject);
     }
 
+    /// <summary>
+    /// Performs the creature spawning at a specified interval.
+    /// </summary>
+    /// <param name="spawnObject">The spawn object containing information about the creature to be spawned.</param>
     private async Task DoCreatureSpawnInterval(SpawnObject spawnObject)
     {
-        // Add the creature to the counter dictionary.
         _creatureCount.Add(spawnObject.m_id, 0);
 
-        // When the path is just created, spawn all creatures.
         SpawnAllCreatures(spawnObject);
-            
+
         var hasRun = false;
         while (!_cancelToken.IsCancellationRequested)
         {
@@ -91,7 +118,7 @@ public class WizardZonePath : ReceiveActor
                 await Task.Delay(tinyDelay);
                 continue;
             }
-            
+
             var rngSpawn = PickRandomSpawnObject(spawnObject.m_spawnList);
             SpawnCreature(rngSpawn.m_objectInfo);
             IncrementCreatureCount(spawnObject);
@@ -101,9 +128,13 @@ public class WizardZonePath : ReceiveActor
         }
     }
 
+    /// <summary>
+    /// Checks if a creature can be spawned based on spawn restrictions.
+    /// </summary>
+    /// <param name="spawnObject">The spawn object representing the creature.</param>
+    /// <returns><c>true</c> if a creature can be spawned, <c>false</c> otherwise.</returns>
     private bool CanSpawn(SpawnObject spawnObject)
     {
-        // Check to see if we've reached the maximum amount allowed for this creature.
         if (!_creatureCount.TryGetValue(spawnObject.m_id, out var count))
             throw new Exception("Somehow, this SpawnObject was not found in the creature count dictionary?");
         if (count <= 0 && spawnObject.m_atLeastOneSpawn)
@@ -116,6 +147,11 @@ public class WizardZonePath : ReceiveActor
         // TODO: Add population sensitive here.
     }
 
+    /// <summary>
+    /// Picks a random spawn object from a list based on their percentage chance.
+    /// </summary>
+    /// <param name="spawnItems">The list of spawn items to choose from.</param>
+    /// <returns>The selected spawn item.</returns>
     private SpawnItem PickRandomSpawnObject(List<SpawnItem> spawnItems)
     {
         var rng = new Random();
@@ -128,28 +164,29 @@ public class WizardZonePath : ReceiveActor
             if (rngNum < cumulativePercentage)
                 return t;
         }
-        
-        // If no percentage is selected, return the last one.
+
         return spawnItems[^1];
     }
 
+    /// <summary>
+    /// Spawns a creature based on the given spawn object information.
+    /// </summary>
+    /// <param name="spawnInfo">The spawn object information of the creature to be spawned.</param>
     private void SpawnCreature(SpawnObjectInfo spawnInfo)
     {
         var spawnNode = GetRelevantNode(spawnInfo);
         var nodeIndex = _nodes.Keys.ToList().IndexOf(spawnNode);
         _nodes[spawnNode] = false;
-        
+
         var newObj = CoreObjectFactory.CreateObjectFromInfo(spawnInfo);
         if (newObj is null)
             throw new NullReferenceException();
         newObj.m_location = spawnNode.m_location;
 
-        // Create the creature as a child actor of this actor.
         var nodes = _nodes.Keys.ToArray();
         var props = WizardZoneCreature.Props(newObj, nodes, (byte)nodeIndex, _zoneActorRef);
         var actorRef = Context.ActorOf(props);
-        
-        // Tell the server about the creature we just created. This will also give the creature it's own mobile ID.
+
         var msg = new ZONE_102_PROTOCOL.MSG_ADDCREATURE
         {
             ObjectIdentity = actorRef,
@@ -158,14 +195,20 @@ public class WizardZonePath : ReceiveActor
         _zoneActorRef.Tell(msg);
     }
 
+    /// <summary>
+    /// Spawns all creatures associated with a spawn object.
+    /// </summary>
+    /// <param name="spawnObject">The spawn object representing the creatures.</param>
     private void SpawnAllCreatures(SpawnObject spawnObject)
     {
-        foreach (var spawn in spawnObject.m_spawnList)
-        {
-            SpawnCreature(spawn.m_objectInfo);
-        }
+        foreach (var spawn in spawnObject.m_spawnList) SpawnCreature(spawn.m_objectInfo);
     }
 
+    /// <summary>
+    /// Retrieves the relevant node for spawning a creature based on the spawn object information.
+    /// </summary>
+    /// <param name="spawnInfo">The spawn object information.</param>
+    /// <returns>The relevant node for spawning.</returns>
     private NodeObject GetRelevantNode(SpawnObjectInfo spawnInfo)
     {
         switch (spawnInfo.m_kStartNodeType)
@@ -186,12 +229,16 @@ public class WizardZonePath : ReceiveActor
             case SpawnObjectInfo.StartNodeType.SNT_SPECIFIC:
                 return _nodes.FirstOrDefault().Key;
             default:
-                throw new ArgumentOutOfRangeException(nameof(spawnInfo.m_kStartNodeType), 
-                    spawnInfo.m_kStartNodeType, 
+                throw new ArgumentOutOfRangeException(nameof(spawnInfo.m_kStartNodeType),
+                    spawnInfo.m_kStartNodeType,
                     "Invalid StartNodeType value");
         }
     }
 
+    /// <summary>
+    /// Increments the creature count for a spawn object.
+    /// </summary>
+    /// <param name="spawnObject">The spawn object.</param>
     private void IncrementCreatureCount(SpawnObject spawnObject)
     {
         _creatureCount[spawnObject.m_id]++;
