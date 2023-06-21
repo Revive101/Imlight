@@ -5,6 +5,7 @@
 
 using System;
 using System.Linq;
+using System.Net.Http;
 using Akka.Actor;
 using Imlight.Common.Structures;
 using Imlight.Common.Utilities;
