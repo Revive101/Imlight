@@ -196,11 +196,6 @@ public static class WizardZoneLoader
         return spawnList.All(x => x.m_objectInfo.m_pathID == firstPathId);
     }
 
-    private static void CreateChildActor(Props props, string childActorName)
-    {
-        _zoneActorContext.ActorOf(props, childActorName);
-    }
-
     private static void ClearUnmanagedMemory()
     {
         _zone = null;

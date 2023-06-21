@@ -1,4 +1,5 @@
 using Akka.Actor;
+using Imlight.Server.Database;
 using Imlight.Server.Shared.Networking;
 using static WizUnraveler.Cache.TypeCache;
 
@@ -6,7 +7,8 @@ namespace Imlight.Server.Game.Zone;
 
 public class WizardZoneObject : ReceiveProtocolDispatcher
 {
-    protected CoreObject ActiveGameObject;
+    protected readonly CoreObject ActiveGameObject;
+    protected readonly CoreTemplate Template;
     protected IActorRef WizardZoneRef;
     
     // ctor
@@ -14,6 +16,7 @@ public class WizardZoneObject : ReceiveProtocolDispatcher
     {
         this.ActiveGameObject = activeGameObject;
         this.WizardZoneRef = wizardZoneRef;
+        this.Template = CoreObjectFactory.GetTemplate<CoreTemplate>(activeGameObject.m_templateID);
     }
     
     // Akka.NET ctor

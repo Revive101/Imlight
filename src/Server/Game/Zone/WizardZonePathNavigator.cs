@@ -58,6 +58,7 @@ public class WizardZonePathNavigator : WizardZoneObject
         // Immediately target the next node.
         _targetNodeIndex = GetNextNodeIndex();
 
+        // Update the move state of the mob, since it's always moving.
         var moveBroadcast = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST
         {
             Message = new GAME_5_PROTOCOL.MSG_MOVESTATE
