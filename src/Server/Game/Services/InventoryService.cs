@@ -46,6 +46,7 @@ namespace Imlight.Server.Game.Services
             var serializer = new CoreObjectSerializer()
                 .WithSerializerFlags(SerializerFlags.None)
                 .WithPropertyFlags((PropertyFlags)1);
+
             var coreObject = GetActiveCoreObject();
 
             // Confirm to the player that we've equipped their item server side.
@@ -97,7 +98,7 @@ namespace Imlight.Server.Game.Services
                     Message = new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM()
                     {
                         GlobalID = coreObject.m_globalID,
-                        SerializedInfo = serializer.Serialize(item)
+                        SerializedInfo = data
                     }
                 });
             }
