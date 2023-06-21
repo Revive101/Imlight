@@ -76,7 +76,7 @@ namespace Imlight.Server.Game.Services
             if (message.IsEquip == 1)
             {
                 var templateId = itemObj.m_templateID;
-                var template = CoreObjectFactory.GetTemplate<WizItemTemplate>(templateId);
+                var template = (WizItemTemplate)CoreObjectFactory.GetCoreTemplate(templateId);
                 Log.Logger.Debug("Equippping item is not null, Name: " + template.m_objectName);
 
                 var item = new WizardEquippedItemInfo()
