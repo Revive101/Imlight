@@ -63,25 +63,17 @@ namespace Imlight.Server.Game.Services
             // @TODO: Remove this and gather from potential player behavior cache instead.
             if (!CoreObjectFactory.FindBehaviorInstance<ClientWizInventoryBehavior>(coreObject,
                     out var inventoryBehavior)) return;
-
-            Log.Logger.Debug("BehaviorInstance is not null, yeeeeeeeeeeeeeee");
+            
             var itemObj = inventoryBehavior.m_itemList.First(item => item.m_globalID == message.ItemID);
-
-            if (itemObj == null)
-            {
-                Log.Logger.Error("Item cannot be changed when global_ID is not found!");
-                return;
-            }
 
             if (message.IsEquip == 1)
             {
                 var templateId = itemObj.m_templateID;
                 var template = (WizItemTemplate)CoreObjectFactory.GetCoreTemplate(templateId);
-                Log.Logger.Debug("Equippping item is not null, Name: " + template.m_objectName);
 
                 var item = new WizardEquippedItemInfo()
                 {
-                    m_itemID = (uint)message.ItemID,
+                    m_itemID = (uint)itemObj.m_templateID,
                     m_pattern = (FiveBitByte)template.m_numPatterns,
                     m_baseColor = (FiveBitByte)template.m_numPrimaryColors,
                     m_trimColor = (FiveBitByte)template.m_numSecondaryColors,
@@ -173,7 +165,7 @@ namespace Imlight.Server.Game.Services
         }
         #endregion
 
-        private TypeCache.CoreObject GetActiveCoreObject()
+        private CoreObject GetActiveCoreObject()
         {
             var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
             var response = AskSessionServices<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
