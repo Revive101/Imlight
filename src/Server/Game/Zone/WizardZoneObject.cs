@@ -19,7 +19,7 @@ public class WizardZoneObject : ReceiveProtocolDispatcher
     {
         this.ActiveGameObject = activeGameObject;
         this.WizardZoneRef = wizardZoneRef;
-        this.Template = CoreObjectFactory.GetTemplate<CoreTemplate>(activeGameObject.m_templateID);
+        this.Template = CoreObjectFactory.GetCoreTemplate(activeGameObject.m_templateID);
     }
     
     // Akka.NET ctor

@@ -25,7 +25,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Common\Imlight.Common.csproj" />
     <ProjectReference Include="..\Server\Imlight.Server.csproj" />
-    <ProjectReference Include="D:\Phill030.de\WizUnraveler\src\WizUnraveler\WizUnraveler.csproj" />
   </ItemGroup>
 
 </Project>
