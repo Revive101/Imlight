@@ -97,10 +97,10 @@ namespace Imlight.Server.Database
             // =========================================================
             if (CoreObjectFactory.FindBehaviorInstance<ClientWizEquipmentBehavior>(clientObject, out var equipmentBehavior))
             {
-                var esi = new List<EquippedSlotInfo>();
+                var slotList = new List<EquippedSlotInfo>();
                 foreach (var slot in (EquipmentSlot[])Enum.GetValues(typeof(EquipmentSlot)))
                 {
-                    esi.Add(new EquippedSlotInfo()
+                    slotList.Add(new EquippedSlotInfo()
                     {
                         m_itemID = (GID)0,
                         m_itemSlotNameID = (uint)slot
@@ -109,7 +109,7 @@ namespace Imlight.Server.Database
 
                 equipmentBehavior.m_publicItemList = CreationData.m_equipmentInfoList?.m_infoList;
                 equipmentBehavior.m_equipmentSets = new List<EquipmentSet>();
-                equipmentBehavior.m_slotList = esi;
+                equipmentBehavior.m_slotList = slotList;
                 equipmentBehavior.m_itemList = new List<CoreObject>();
             }
             else
