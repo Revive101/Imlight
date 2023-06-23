@@ -56,8 +56,8 @@ namespace Imlight.Server.Game.Services
                 return;
             }
             
-            // This is the first authentication action the user will send on the game server. Send some service
-            // details using what we received here.
+            // This is the first authentication action the user will send on the game server. Send messages to the
+            // other services denoting both the account and character this SessionActor just logged into.
             SetAccountInternally(account);
             SetCharacterInternally(character);
             

@@ -49,7 +49,9 @@ namespace Imlight.Server.Login.Services
             var gameServer = GetGameServer();
             var serverEnqueueResult = (LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED)SessionActor.EnqueueToServer(gameServer.ActorRef);
             var allocatedKey = CreateSessionKey(gameServer.ActorRef, account);
-            
+            character.LastGameServerIp = gameServer.IP;
+            character.LastGameServerPort = (ushort)gameServer.Port;
+
             // Craft a successful message. This will instead be cached if the server is full.
             var charSelectedMsg = new LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED()
             {

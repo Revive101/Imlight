@@ -166,13 +166,6 @@ namespace Imlight.Server.Game.Services
             return response.Character;
         }
 
-        private ZONE_102_PROTOCOL.MSG_QUERYZONERSP GetZoneDetails(string zoneName)
-        {
-            // When we send a zone transfer request, it will also add the player to that zone.
-            var zoneMsg = new ZONE_102_PROTOCOL.MSG_QUERYZONE { ZoneName = zoneName, };
-            return AskSessionServices<ZONE_102_PROTOCOL.MSG_QUERYZONERSP>(zoneMsg);
-        }
-
         private void CheckTransferPoints(Character character, SharpDX.Vector2 pos, Dictionary<SharpDX.Vector2, string> dict) 
         {
             foreach (var p in dict)

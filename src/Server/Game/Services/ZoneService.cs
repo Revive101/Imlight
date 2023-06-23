@@ -29,10 +29,10 @@ namespace Imlight.Server.Game.Services
         {
             var result = AskServer<ZONE_102_PROTOCOL.MSG_QUERYZONERSP>(message);
             
-            // If the zone transfer request was successful, we'll set the zone reference.
+            // If the zone request was successful, we'll set the zone reference.
             if (result.ErrorCode == 0)
             {
-                _zoneRef = result.NewZone;
+                _zoneRef = result.ZoneActorRef;
             }
             
             Sender.Tell(result);
@@ -57,7 +57,6 @@ namespace Imlight.Server.Game.Services
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK))]
         private void ReceiveZoneTransferAck(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK message)
         {
-            // TESTING PURPOSES ONLY, is this method in the appropriate class?
             var account = GetSocketAccount();
             var character = GetActiveCharacter();
 
@@ -72,12 +71,12 @@ namespace Imlight.Server.Game.Services
 
             character.CreationData.m_location = character.nextZone;
 
-            // We don't need to add the player to the new zone, as the zone will do that for us.
+            // We don't need to add the player to the new zone, as the zone will do that for us on MSG_ATTACH.
             var serverTransfer = new GAME_5_PROTOCOL.MSG_SERVERTRANSFER()
             {
-                IP = "127.0.0.1",
-                TCPPort = 12333,
-                UDPPort = 12333,
+                IP = character.LastGameServerIp,
+                TCPPort = character.LastGameServerPort,
+                UDPPort = character.LastGameServerPort,
                 UserID = account.ID,
                 CharID = character.Id,
                 ZoneName = character.nextZone,
@@ -90,20 +89,27 @@ namespace Imlight.Server.Game.Services
             };
             SendToSocket(serverTransfer);
         }
+
+        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT))]
+        private void ReceiveQueryObject(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT message)
+        {
+            if (_zoneRef is null) throw new Exception("Zone Reference was null.");
+            
+            _zoneRef.Forward(message);
+        }
         
         [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_DISPOSE))]
         public override void ReceiveDispose(SERVICE_101_PROTOCOL.MSG_DISPOSE message)
         {
             base.ReceiveDispose(message);
-            var globalId = GetActiveCoreObject().m_globalID;
+            var globalId = GetActiveCoreObject()?.m_globalID;
 
             // If the zone reference is not null, we'll tell the zone to remove the player.
-            if (_zoneRef is not null)
-                _zoneRef.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER()
-                {
-                    Player = SessionActor.ActorRef,
-                    GlobalId = globalId
-                });
+            _zoneRef?.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER()
+            {
+                Player = SessionActor.ActorRef,
+                GlobalId = globalId ?? 0
+            });
 
             _zoneRef = null;
         }

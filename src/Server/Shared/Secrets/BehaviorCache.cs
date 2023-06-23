@@ -26,26 +26,26 @@ namespace Imlight.Server.Shared.Secrets
                 // ======================================================================
                 case 0x20DFFCEA: return new WizardCharacterBehavior();     // Avatar details, such as skin tone, eye color, etc.
                 case 0x1FDBA52F: return new ClientWizPlayerNameBehavior(); // The name above their head.
-
+                
                 case 0x065D0C7A: return new FidgetBehavior();              // How often this character uses an idle animation.
                 case 0x2688349D: return new AnimationBehavior();           // Self explanatory.
-
+                
                 // Surprisingly, this has no relation to core emotes.
                 //case 0x2091D4C9: return new CustomEmoteBehavior();
-
+                
                 // ======================================================================
                 // WIP. Dealing with zone objects
                 // ======================================================================
                 // ObjectStateBehavior must be loaded alongside NPCBehavior. Otherwise, the game crashes.
-                //case 0x28CE8984: return new ObjectStateBehavior();
-                //case 0x2AFFDE72: return new NPCBehavior();
-                //case 0x29E13F05: return new EffectsBehavior();
-                //case 0x0A5CA5EE: return new RenderBehavior();
-                //case 0x2808A0BF: return new CollisionBehaviorClient();
-                //case 0x605C502C: return new BasicMobileBehavior();
-                //case 0x0C46067D: return new BaseGameEffectBehavior();
-                //case 0x00A6C343: return new ClientInventoryBehavior();
-                //case 0x1DC10F47: return new ClientEquipmentBehavior();
+                case 0x28CE8984: return new ObjectStateBehavior();
+                case 0x2AFFDE72: return new NPCBehavior();
+                case 0x29E13F05: return new EffectsBehavior();
+                case 0x0A5CA5EE: return new RenderBehavior();
+                case 0x2808A0BF: return new CollisionBehaviorClient();
+                case 0x605C502C: return new BasicMobileBehavior();
+                case 0x0C46067D: return new BaseGameEffectBehavior();
+                case 0x00A6C343: return new ClientInventoryBehavior();
+                case 0x1DC10F47: return new ClientEquipmentBehavior();
 
                 // ======================================================================
                 // Below are the list of player behaviors we know works.
@@ -74,7 +74,7 @@ namespace Imlight.Server.Shared.Secrets
                 case 0x1B610937: return new ClientWizInventoryBehavior();
 
                 // Client also has PathMovementBehaviorTemplate, but doesn't appear to use the actual behavior.
-                //case 0x22B1AD8D: return new PathMovementBehavior();
+                case 0x22B1AD8D: return new PathMovementBehavior();
 
                 // ======================================================================
                 // Below are behaviors the client fails on. Unsure as to why.

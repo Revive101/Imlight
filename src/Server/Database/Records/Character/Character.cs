@@ -15,13 +15,15 @@ namespace Imlight.Server.Database
     public class Character
     {
         private const int    STARTING_LEVEL = 15;
-        private const string STARTING_LOCATION = "WizardCity/WC_Hub";
+        private const string STARTING_LOCATION = "WizardCity/WC_Streets/WC_Unicorn";
         private const int    STARTING_BASE_MANA = 15;
         private const int    STARTING_BASE_HEALTH = 500;
         private const int    STARTING_BASE_GOLD = 1000000;
 
         public string nextZone = ""; // TESTING ONLY
-        
+        public string LastGameServerIp = "";
+        public ushort LastGameServerPort;
+
         public ulong Id 
         { 
             get
@@ -42,6 +44,7 @@ namespace Imlight.Server.Database
             this.CreationData = creationData;
             this.CreationData.m_level = STARTING_LEVEL;  
             this.CreationData.m_location = STARTING_LOCATION;
+            this.CreationData.m_world = 1;
             this.CreationData.m_globalID = RandomGen.GenerateGUID();
             this.CreationData.m_userID = accountId;
             this.CreationData.m_equipmentInfoList = new EquippedItemInfoList()

@@ -8,6 +8,8 @@ using Akka.Actor;
 using WizUnraveler.Cache;
 using WizUnraveler.DML;
 using Imlight.Server.Shared.Networking;
+using WizUnraveler.IO;
+using WizUnraveler.ObjectProperty;
 
 namespace Imlight.Server.Shared.Packets
 {
@@ -31,33 +33,15 @@ namespace Imlight.Server.Shared.Packets
             public byte MessageOrder { get; } = 2;
             public byte ServiceID { get; } = 102;
 
-            public IActorRef NewZone;
-            public List<TypeCache.CoreObject> CriticalObjects;
-            public List<TypeCache.CoreObject> PlayerObjects;
+            public IActorRef ZoneActorRef;
+            public TypeCache.CoreObject[] ZoneObjects;
             public uint DynamicZoneId;
             public uint ErrorCode;
         }
 
-        public class MSG_QUERYZONEDETAILS : IServerMessage
-        {
-            public byte MessageOrder { get; } = 3;
-            public byte ServiceID { get; } = 102;
-        }
-
-        public class MSG_QUERYZONEDETAILSRSP : IServerMessage
-        {
-            public byte MessageOrder { get; } = 4;
-            public byte ServiceID { get; } = 102;
-
-            public uint PlayerCount;
-            public List<TypeCache.CoreObject> CriticalObjects;
-            public List<TypeCache.CoreObject> PlayerObjects;
-            public uint DynamicZoneId;
-        }
-        
         public class MSG_ADDPLAYER : IServerMessage
         {
-            public byte MessageOrder { get; } = 5;
+            public byte MessageOrder { get; } = 3;
             public byte ServiceID { get; } = 102;
             
             public IActorRef Player;
@@ -66,7 +50,7 @@ namespace Imlight.Server.Shared.Packets
         
         public class MSG_ADDPLAYERRSP : IServerMessage
         {
-            public byte MessageOrder { get; } = 6;
+            public byte MessageOrder { get; } = 4;
             public byte ServiceID { get; } = 102;
 
             public TypeCache.CoreObject PlayerObject;
@@ -74,7 +58,7 @@ namespace Imlight.Server.Shared.Packets
         
         public class MSG_REMOVEPLAYER : IServerMessage
         {
-            public byte MessageOrder { get; } = 7;
+            public byte MessageOrder { get; } = 5;
             public byte ServiceID { get; } = 102;
             
             public IActorRef Player;
@@ -84,12 +68,57 @@ namespace Imlight.Server.Shared.Packets
 
         public class MSG_ZONEBROADCAST : IServerMessage
         {
-            public byte MessageOrder { get; } = 8;
+            public byte MessageOrder { get; } = 6;
             public byte ServiceID { get; } = 102;
 
             public IActorRef Sender;
             public INetworkMessage Message;
             public bool Selfless;
+        }
+        
+        public class MSG_ADDOBJECT : IServerMessage
+        {
+            public byte MessageOrder { get; } = 6;
+            public byte ServiceID { get; } = 102;
+
+            public TypeCache.CoreObject CoreObject;
+        }
+        
+        public class MSG_ADDOBJECTRSP : IServerMessage
+        {
+            public byte MessageOrder { get; } = 7;
+            public byte ServiceID { get; } = 102;
+
+            public IActorRef ActorRef;
+            public ushort MobileId;
+        }
+        
+        public class MSG_ADDPATH : IServerMessage
+        {
+            public byte MessageOrder { get; } = 8;
+            public byte ServiceID { get; } = 102;
+            
+            public GID Id;
+            public ByteString Name;
+            public List<TypeCache.NodeObject> Nodes;
+            public List<TypeCache.SpawnObject> Creatures;
+        }
+        
+        public class MSG_OBJECTDETAILS : IServerMessage
+        {
+            public byte MessageOrder { get; } = 9;
+            public byte ServiceID { get; } = 102;
+
+            public IActorRef ObjectIdentity;
+            public TypeCache.CoreObject CoreObject;
+        }
+        
+        public class MSG_QUERYZONEOBJECT : IServerMessage
+        {
+            public byte MessageOrder { get; } = 10;
+            public byte ServiceID { get; } = 102;
+
+            public GID ObjectId;
         }
     }
 }
