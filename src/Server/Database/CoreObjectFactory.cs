@@ -201,17 +201,5 @@ namespace Imlight.Server.Database
 
             return template ?? null;
         }
-
-        public static T GetTemplate<T>(ulong id) 
-            where T : PropertyClass
-        {
-            if (!_coreTemplates.TryGetValue(id, out var loc)) return null;
-
-            var template = ResourceManager.LoadDeserializedFile<T>("Root.wad", loc);
-            if (template is null)
-                throw new NullReferenceException($"Template by ID {id} was not found!");
-
-            return template ?? null;
-        }
     }
 }

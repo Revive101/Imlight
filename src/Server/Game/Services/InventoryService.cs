@@ -15,6 +15,11 @@ using Imlight.Server.Database;
 using static WizUnraveler.Cache.TypeCache;
 using WizUnraveler;
 using Akka.Util.Internal;
+using Imlight.Common.Serializable;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using Imlight.Server.Database.Records.Character;
+using static Imlight.Server.Shared.Packets.CHARACTER_103_PROTOCOL;
+using WizUnraveler.IO;
 
 namespace Imlight.Server.Game.Services
 {
@@ -42,11 +47,13 @@ namespace Imlight.Server.Game.Services
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_EQUIPITEM))]
         private void ReceiveEquipItem(GAME_5_PROTOCOL.MSG_EQUIPITEM message)
         {
-            var serializer = new ObjectSerializer()
+            var serializer = new CoreObjectSerializer()
                 .WithSerializerFlags(SerializerFlags.None)
-                .WithPropertyFlags(PropertyFlags.Public | PropertyFlags.Transmit | PropertyFlags.AuthorityTransmit);
+                .WithPropertyFlags((PropertyFlags)1);
 
-            var coreObject = GetActiveCoreObject();
+            var character = GetActiveCoreObject();
+            var coreObject = character.CharacterObject;
+            var playerCharacter = character.Character;
 
             // Confirm to the player that we've equipped their item server side.
             // @TODO: There should be some "AntiAmbrose" logic here. Double check that the player meets the requirements
@@ -58,62 +65,57 @@ namespace Imlight.Server.Game.Services
                 SlotName = message.SlotName,
                 IsEquip = message.IsEquip
             });
-
             // @TODO: Remove this and gather from potential player behavior cache instead.
             if (!CoreObjectFactory.FindBehaviorInstance<ClientWizInventoryBehavior>(coreObject,
                     out var inventoryBehavior)) return;
 
-            Log.Logger.Debug("BehaviorInstance is not null, yeeeeeeeeeeeeeee");
             var itemObj = inventoryBehavior.m_itemList.First(item => item.m_globalID == message.ItemID);
-
-            if (itemObj == null)
-            {
-                Log.Logger.Error("Item cannot be changed when global_ID is not found!");
-                return;
-            }
-
             if (message.IsEquip == 1)
             {
+                Log.Logger.Information("Player equipped item " + (byte)inventoryBehavior.m_itemList.IndexOf(itemObj));
                 var templateId = itemObj.m_templateID;
-                var template = CoreObjectFactory.GetTemplate<WizItemTemplate>(templateId);
-                Log.Logger.Debug("Equippping item is not null, Name: " + template.m_objectName);
+                var template = (WizItemTemplate)CoreObjectFactory.GetCoreTemplate(templateId);
 
                 var item = new WizardEquippedItemInfo()
                 {
-                    m_itemID = (uint)message.ItemID,
+                    m_itemID = (uint)itemObj.m_templateID,
                     m_pattern = (FiveBitByte)template.m_numPatterns,
                     m_baseColor = (FiveBitByte)template.m_numPrimaryColors,
                     m_trimColor = (FiveBitByte)template.m_numSecondaryColors,
                 };
 
-                /*SendToSessionServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
+                var data = serializer.Serialize(item);
+                var hex = Convert.ToHexString(data);
+                Log.Logger.Information(hex);
+
+                SendToSessionServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
                 {
                     Selfless = false,
                     Sender = SessionActor.ActorRef,
                     Message = new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM()
                     {
                         GlobalID = coreObject.m_globalID,
-                        SerializedInfo = serializer.Serialize(item)
+                        SerializedInfo = data
                     }
-                });*/
-                SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM()
-                {
-                    GlobalID = coreObject.m_globalID,
-                    SerializedInfo = serializer.Serialize(item)
                 });
-
-                /*
-                    SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_EQUIPITEM()
-                    {
-                        GlobalID = coreObject.m_globalID,
-                        IsValid = 1,
-                        SerializedItem = serializer.Serialize(item),
-                        SlotName = "2",
-                    });
-                 */
-
             }
-            //@TODO: PUBLICEQUIPITEM & PUBLICUNEQUIPITEM (Behavior_XX ??)
+            else
+            {
+                Log.Logger.Information("Player unequipped an item");
+                for(int i = 0; i < 10; i++)
+                {
+                    SendToSessionServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
+                    {
+                        Selfless = false,
+                        Sender = SessionActor.ActorRef,
+                        Message = new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICUNEQUIPITEM()
+                        {
+                            GlobalID = coreObject.m_globalID,
+                            IndexToRemove = (byte)i
+                        }
+                    });
+                }
+            }
         }
 
         #region Destroy/Feed Inventoryitem
@@ -184,12 +186,12 @@ namespace Imlight.Server.Game.Services
         }
         #endregion
 
-        private TypeCache.CoreObject GetActiveCoreObject()
+        private MSG_CHARACTER GetActiveCoreObject()
         {
             var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
             var response = AskSessionServices<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
 
-            return response.CharacterObject;
+            return response;
         }
     }
 }

@@ -31,7 +31,7 @@ namespace Imlight.Server.Shared.Secrets
                 case 0x2688349D: return new AnimationBehavior();           // Self explanatory.
                 
                 // Surprisingly, this has no relation to core emotes.
-                case 0x2091D4C9: return new CustomEmoteBehavior();
+                //case 0x2091D4C9: return new CustomEmoteBehavior();
                 
                 // ======================================================================
                 // WIP. Dealing with zone objects
