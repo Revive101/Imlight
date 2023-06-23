@@ -19,6 +19,7 @@ using Imlight.Common.Serializable;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using Imlight.Server.Database.Records.Character;
 using static Imlight.Server.Shared.Packets.CHARACTER_103_PROTOCOL;
+using WizUnraveler.IO;
 
 namespace Imlight.Server.Game.Services
 {
@@ -100,9 +101,9 @@ namespace Imlight.Server.Game.Services
             }
             else
             {
+                Log.Logger.Information("Player unequipped an item");
                 for(int i = 0; i < 10; i++)
                 {
-                    Log.Logger.Information("Player unequipped an item");
                     SendToSessionServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
                     {
                         Selfless = false,
