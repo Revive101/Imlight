@@ -187,7 +187,7 @@ public class WizardZonePath : ReceiveActor
         var props = WizardZoneCreature.Props(newObj, nodes, (byte)nodeIndex, _zoneActorRef);
         var actorRef = Context.ActorOf(props);
 
-        var msg = new ZONE_102_PROTOCOL.MSG_ADDCREATURE
+        var msg = new ZONE_102_PROTOCOL.MSG_OBJECTDETAILS
         {
             ObjectIdentity = actorRef,
             CoreObject = newObj

@@ -104,13 +104,21 @@ namespace Imlight.Server.Shared.Packets
             public List<TypeCache.SpawnObject> Creatures;
         }
         
-        public class MSG_ADDCREATURE : IServerMessage
+        public class MSG_OBJECTDETAILS : IServerMessage
         {
             public byte MessageOrder { get; } = 9;
             public byte ServiceID { get; } = 102;
 
             public IActorRef ObjectIdentity;
             public TypeCache.CoreObject CoreObject;
+        }
+        
+        public class MSG_QUERYZONEOBJECT : IServerMessage
+        {
+            public byte MessageOrder { get; } = 10;
+            public byte ServiceID { get; } = 102;
+
+            public GID ObjectId;
         }
     }
 }

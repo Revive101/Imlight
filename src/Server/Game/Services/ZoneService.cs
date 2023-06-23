@@ -89,6 +89,14 @@ namespace Imlight.Server.Game.Services
             };
             SendToSocket(serverTransfer);
         }
+
+        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT))]
+        private void ReceiveQueryObject(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT message)
+        {
+            if (_zoneRef is null) throw new Exception("Zone Reference was null.");
+            
+            _zoneRef.Forward(message);
+        }
         
         [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_DISPOSE))]
         public override void ReceiveDispose(SERVICE_101_PROTOCOL.MSG_DISPOSE message)

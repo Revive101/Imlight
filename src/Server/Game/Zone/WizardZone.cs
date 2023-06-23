@@ -13,6 +13,7 @@ using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
 using WizUnraveler.Cache;
 using WizUnraveler.DML;
+using WizUnraveler.ObjectProperty;
 using static WizUnraveler.Cache.TypeCache;
 using static WizUnraveler.ObjectProperty.ObjectSerializer;
 
@@ -177,6 +178,21 @@ public class WizardZone : ReceiveProtocolDispatcher
         return test;
     }
 
+    private static KeyValuePair<IActorRef, CoreObject>? SearchObjectInZone(GID globalId,
+        params Dictionary<IActorRef, CoreObject>[] dictionaries)
+    {
+        foreach (var dictionary in dictionaries)
+        {
+            foreach (var kvp in dictionary)
+            {
+                if (kvp.Value.m_globalID == globalId)
+                    return kvp;
+            }
+        }
+
+        return null;
+    }
+
     #region Handlers
     
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONE))]
@@ -251,8 +267,8 @@ public class WizardZone : ReceiveProtocolDispatcher
         _pathSupervisorRef.Forward(message);
     }
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDCREATURE))]
-    private void ReceiveAddCreature(ZONE_102_PROTOCOL.MSG_ADDCREATURE message)
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_OBJECTDETAILS))]
+    private void ReceiveAddCreature(ZONE_102_PROTOCOL.MSG_OBJECTDETAILS message)
     {
         // This message is received on the WizardZone to:
         // a. Give it a unique ID.
@@ -288,6 +304,19 @@ public class WizardZone : ReceiveProtocolDispatcher
         _zoneObjects.Add(rsp.ActorRef, message.CoreObject);
 
         // Return to sender.
+        Sender.Tell(rsp);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT))]
+    private void ReceiveQueryObject(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT message)
+    {
+        var kvp = SearchObjectInZone(message.ObjectId, _zoneObjects, _zonePlayers, _zoneCreatures)!.Value;
+        var rsp = new ZONE_102_PROTOCOL.MSG_OBJECTDETAILS()
+        {
+            CoreObject = kvp.Value,
+            ObjectIdentity = kvp.Key
+        };
+        
         Sender.Tell(rsp);
     }
 
