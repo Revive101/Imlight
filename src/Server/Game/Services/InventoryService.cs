@@ -16,6 +16,9 @@ using static WizUnraveler.Cache.TypeCache;
 using WizUnraveler;
 using Akka.Util.Internal;
 using Imlight.Common.Serializable;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using Imlight.Server.Database.Records.Character;
+using static Imlight.Server.Shared.Packets.CHARACTER_103_PROTOCOL;
 
 namespace Imlight.Server.Game.Services
 {
@@ -47,7 +50,9 @@ namespace Imlight.Server.Game.Services
                 .WithSerializerFlags(SerializerFlags.None)
                 .WithPropertyFlags((PropertyFlags)1);
 
-            var coreObject = GetActiveCoreObject();
+            var character = GetActiveCoreObject();
+            var coreObject = character.CharacterObject;
+            var playerCharacter = character.Character;
 
             // Confirm to the player that we've equipped their item server side.
             // @TODO: There should be some "AntiAmbrose" logic here. Double check that the player meets the requirements
@@ -59,15 +64,14 @@ namespace Imlight.Server.Game.Services
                 SlotName = message.SlotName,
                 IsEquip = message.IsEquip
             });
-
             // @TODO: Remove this and gather from potential player behavior cache instead.
             if (!CoreObjectFactory.FindBehaviorInstance<ClientWizInventoryBehavior>(coreObject,
                     out var inventoryBehavior)) return;
-            
-            var itemObj = inventoryBehavior.m_itemList.First(item => item.m_globalID == message.ItemID);
 
+            var itemObj = inventoryBehavior.m_itemList.First(item => item.m_globalID == message.ItemID);
             if (message.IsEquip == 1)
             {
+                Log.Logger.Information("Player equipped item " + (byte)inventoryBehavior.m_itemList.IndexOf(itemObj));
                 var templateId = itemObj.m_templateID;
                 var template = (WizItemTemplate)CoreObjectFactory.GetCoreTemplate(templateId);
 
@@ -94,7 +98,23 @@ namespace Imlight.Server.Game.Services
                     }
                 });
             }
-            //@TODO: PUBLICEQUIPITEM & PUBLICUNEQUIPITEM (Behavior_XX ??)
+            else
+            {
+                for(int i = 0; i < 10; i++)
+                {
+                    Log.Logger.Information("Player unequipped an item");
+                    SendToSessionServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
+                    {
+                        Selfless = false,
+                        Sender = SessionActor.ActorRef,
+                        Message = new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICUNEQUIPITEM()
+                        {
+                            GlobalID = coreObject.m_globalID,
+                            IndexToRemove = (byte)i
+                        }
+                    });
+                }
+            }
         }
 
         #region Destroy/Feed Inventoryitem
@@ -165,12 +185,12 @@ namespace Imlight.Server.Game.Services
         }
         #endregion
 
-        private CoreObject GetActiveCoreObject()
+        private MSG_CHARACTER GetActiveCoreObject()
         {
             var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
             var response = AskSessionServices<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
 
-            return response.CharacterObject;
+            return response;
         }
     }
 }
