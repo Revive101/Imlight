@@ -56,7 +56,6 @@ namespace Imlight.Server.Game.Services
         {
             var character = GetActiveCoreObject();
             var coreObject = character.CharacterObject;
-            Log.Logger.Fatal(JsonConvert.SerializeObject(character.Character.equipmentBehaviorCache));
             switch (message.IsEquip)
             {
                 case 1:
@@ -105,7 +104,7 @@ namespace Imlight.Server.Game.Services
                         });
                     }
                     break;
-                case 2:
+                case 0:
                     var unequipResult = UnequipItem(message.ItemID, out var indexToRemove);
 
                     if (unequipResult != EquipmentStatus.Success)
@@ -216,17 +215,18 @@ namespace Imlight.Server.Game.Services
         {
             var coreObject = GetActiveCoreObject();
             var equipmentBehavior = coreObject.Character.equipmentBehaviorCache;
+            var inventoryBehavior = coreObject.Character.inventoryBehaviorCache;
 
             itemInfo = default;
             replacedId = default;
 
             try
             {
-                if (!HasItem(equipmentBehavior, itemId)) return EquipmentStatus.ItemNotInInventory;
-                if (equipmentBehavior.m_itemList.Any(i => i.m_globalID == itemId))
+                if (!HasItem(inventoryBehavior, itemId)) return EquipmentStatus.ItemNotInInventory;
+                if (equipmentBehavior.m_slotList.Any(i => i.m_itemID == itemId))
                     return EquipmentStatus.ItemAlreadyEquipped;
 
-                var itemObj = GetItemObject(equipmentBehavior, itemId);
+                var itemObj = GetItemCoreObject(inventoryBehavior, itemId);
                 var itemTemplate = (WizItemTemplate)CoreObjectFactory.GetCoreTemplate(itemObj.m_templateID);
 
                 var equippedItemInfo = new WizardEquippedItemInfo()
@@ -271,13 +271,14 @@ namespace Imlight.Server.Game.Services
         {
             var coreObject = GetActiveCoreObject();
             var equipmentBehavior = coreObject.Character.equipmentBehaviorCache;
+            var inventoryBehavior = coreObject.Character.inventoryBehaviorCache;
 
             indexToRemove = default;
             try
             {
                 // if inventory contains item
-                if (!HasItem(equipmentBehavior, globalId)) return EquipmentStatus.ItemNotInInventory;
-                var itemObj = GetItemObject(equipmentBehavior, globalId);
+                if (!HasItem(inventoryBehavior, globalId)) return EquipmentStatus.ItemNotInInventory;
+                var itemObj = GetItemCoreObject(inventoryBehavior, globalId);
 
                 // change in CharacterCreationInfo
                 var infList = coreObject.Character.CreationData.m_equipmentInfoList.m_infoList;
@@ -298,22 +299,18 @@ namespace Imlight.Server.Game.Services
         }
 
 
-        private bool HasItem(ClientWizEquipmentBehavior equipmentBehavior, ulong itemId) 
+        private bool HasItem(ClientWizInventoryBehavior inventoryBehavior, ulong itemId) 
         {
-            equipmentBehavior.m_itemList.ForEach(item =>
-            {
-                Log.Logger.Debug($"DisplayKey: {item.m_displayKey}, templateId: {item.m_templateID}, globalId: {item.m_globalID}");
-            });
-            return equipmentBehavior.m_itemList.Any(item => item.m_globalID == itemId);
+            return inventoryBehavior.m_itemList.Any(item => item.m_globalID == itemId);
         }
         private EquipmentSlot GetItemSlot(ClientWizEquipmentBehavior equipmentBehavior, ulong globalId) 
         {
             return (EquipmentSlot)equipmentBehavior.m_slotList.First(slot => slot.m_itemID == globalId).m_itemSlotNameID;
         }
 
-        public CoreObject GetItemObject(ClientWizEquipmentBehavior equipmentBehavior, ulong globalId)
+        public CoreObject GetItemCoreObject(ClientWizInventoryBehavior inventoryBehavior, ulong globalId)
         {
-            return equipmentBehavior.m_itemList.First(x => x.m_globalID == globalId);
+            return inventoryBehavior.m_itemList.First(x => x.m_globalID == globalId);
         }
     }
 }
