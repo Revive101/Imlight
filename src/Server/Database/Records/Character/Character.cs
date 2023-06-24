@@ -27,6 +27,7 @@ namespace Imlight.Server.Database
 
         // Cached Behaviors
         public ClientWizEquipmentBehavior equipmentBehaviorCache;
+        public ClientWizInventoryBehavior inventoryBehaviorCache;
 
         public ulong Id 
         { 
@@ -166,10 +167,10 @@ namespace Imlight.Server.Database
                     coreObject.m_globalID = RandomGen.GenerateGUID();
                     coreObject.m_templateID = (GID)templateId;
 
-                    equipmentBehavior.m_itemList.Add(coreObject);
-
                     inventoryBehavior.m_itemList.Add(coreObject);
                 });
+
+                inventoryBehaviorCache = inventoryBehavior;
             }
             else
                 throw new Exception("Behavior ClientWizInventoryBehavior not found!");
