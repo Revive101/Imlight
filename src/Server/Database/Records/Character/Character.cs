@@ -9,13 +9,14 @@ using WizUnraveler.ObjectProperty;
 using Imlight.Common.Utilities;
 using Imlight.Server.Database.Records.Character;
 using static WizUnraveler.Cache.TypeCache;
+using Newtonsoft.Json;
 
 namespace Imlight.Server.Database
 {
     public class Character
     {
         private const int    STARTING_LEVEL = 15;
-        private const string STARTING_LOCATION = "WizardCity/WC_Streets/WC_Unicorn";
+        private const string STARTING_LOCATION = "MooShu/MS_Hub";
         private const int    STARTING_BASE_MANA = 15;
         private const int    STARTING_BASE_HEALTH = 500;
         private const int    STARTING_BASE_GOLD = 1000000;
@@ -23,6 +24,9 @@ namespace Imlight.Server.Database
         public string nextZone = ""; // TESTING ONLY
         public string LastGameServerIp = "";
         public ushort LastGameServerPort;
+
+        // Cached Behaviors
+        public ClientWizEquipmentBehavior equipmentBehaviorCache;
 
         public ulong Id 
         { 
@@ -100,20 +104,28 @@ namespace Imlight.Server.Database
             // =========================================================
             if (CoreObjectFactory.FindBehaviorInstance<ClientWizEquipmentBehavior>(clientObject, out var equipmentBehavior))
             {
+                Log.Logger.Information("Found ClientWizEquipmentBehavior...");
+
                 var slotList = new List<EquippedSlotInfo>();
-                foreach (var slot in (EquipmentSlot[])Enum.GetValues(typeof(EquipmentSlot)))
+                for (int i = 0; i < Enum.GetValues(typeof(EquipmentSlot)).Length; i++)
                 {
                     slotList.Add(new EquippedSlotInfo()
                     {
                         m_itemID = (GID)0,
-                        m_itemSlotNameID = (uint)slot
+                        m_itemSlotNameID = (uint)i
                     });
                 }
 
-                equipmentBehavior.m_publicItemList = CreationData.m_equipmentInfoList?.m_infoList;
-                equipmentBehavior.m_equipmentSets = new List<EquipmentSet>();
-                equipmentBehavior.m_slotList = slotList;
-                equipmentBehavior.m_itemList = new List<CoreObject>();
+                var equipmentBehaviorNew = new ClientWizEquipmentBehavior()
+                {
+                    m_publicItemList = CreationData.m_equipmentInfoList?.m_infoList,
+                    m_equipmentSets = new List<EquipmentSet>(),
+                    m_slotList = slotList,
+                    m_itemList = new List<CoreObject>()
+                };
+
+                equipmentBehaviorCache = equipmentBehaviorNew;
+                equipmentBehavior = equipmentBehaviorNew;
             }
             else
                 throw new Exception("Behavior ClientWizEquipmentBehavior not found!");
@@ -139,13 +151,11 @@ namespace Imlight.Server.Database
                 inventoryBehavior.m_numJewelsAllowed = 100;
                 inventoryBehavior.m_itemList = new List<CoreObject>();
 
-
                 new List<ulong>() { 4740, 4705, 5030, 39068, 1363076, 1475149,
                     1472644, 1317133, 1317126, 1317234, 1359455,
-                    1392077, 1352341, 87158, 87159, 87160, 1540397 }.ForEach(templateId =>
+                    1392077, 1352341, 1540397 }.ForEach(templateId =>
                 {
                     CoreTemplate template = CoreObjectFactory.GetCoreTemplate(templateId);
-                    Log.Logger.Debug("Template is: "+template.GetType());
 
                     var coreObject = template switch
                     {
@@ -156,6 +166,7 @@ namespace Imlight.Server.Database
                     coreObject.m_globalID = RandomGen.GenerateGUID();
                     coreObject.m_templateID = (GID)templateId;
 
+                    equipmentBehavior.m_itemList.Add(coreObject);
 
                     inventoryBehavior.m_itemList.Add(coreObject);
                 });
