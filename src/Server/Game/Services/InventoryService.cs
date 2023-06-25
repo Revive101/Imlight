@@ -1,4 +1,9 @@
-﻿using Akka.Actor;
+﻿/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
+using Akka.Actor;
 using Imlight.Common.Utilities;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
@@ -12,13 +17,10 @@ using static WizUnraveler.ObjectProperty.ObjectSerializer;
 using WizUnraveler.ObjectProperty;
 using Imlight.Server.Database;
 using static WizUnraveler.Cache.TypeCache;
-using WizUnraveler;
 using Akka.Util.Internal;
 using Imlight.Common.Serializable;
 using Imlight.Server.Database.Records.Character;
 using static Imlight.Server.Shared.Packets.CHARACTER_103_PROTOCOL;
-using WizUnraveler.IO;
-using Newtonsoft.Json;
 
 namespace Imlight.Server.Game.Services
 {
@@ -56,12 +58,13 @@ namespace Imlight.Server.Game.Services
         {
             var character = GetActiveCoreObject();
             var coreObject = character.CharacterObject;
+
             switch (message.IsEquip)
             {
                 case 1:
                     if (!Enum.TryParse(message.SlotName, out EquipmentSlot slot))
                     {
-                        Log.Logger.Warning($"Could not parse slotName ${message.SlotName}!");
+                        Log.Logger.Warning($"Could not parse slotName {message.SlotName}");
                         return;
                     }
 
@@ -139,11 +142,32 @@ namespace Imlight.Server.Game.Services
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_TRASHINVENTORYITEM))]
         private void ReceiveTrashInventoryItem(GAME_5_PROTOCOL.MSG_TRASHINVENTORYITEM message)
         {
+            var coreObject = GetActiveCoreObject();
+            var inventoryBehavior = coreObject.Character.inventoryBehaviorCache;
+            var equipmentBehavior = coreObject.Character.equipmentBehaviorCache;
+
+            // Idk why but TemplateID is always 0 :pepeShrug: so we'll just get the templateID using the GlobalID
+            var itemObj = GetItemCoreObject(inventoryBehavior, message.GlobalID);
+            var itemTemplate = (WizItemTemplate)CoreObjectFactory.GetCoreTemplate(itemObj.m_templateID);
+
             SendToSocket(new GAME_5_PROTOCOL.MSG_TRASHINVENTORYITEM()
             {
                 GlobalID = message.GlobalID,
-                TemplateID = message.TemplateID,
+                TemplateID = itemTemplate.m_templateID,
             });
+
+            if (HasItem(inventoryBehavior, message.GlobalID))
+            {
+                Log.Logger.Debug($"ItemID {message.GlobalID}, templateID {message.TemplateID}/{itemTemplate.m_templateID}, actor_globalID {coreObject.CharacterObject.m_globalID}");
+                SendToSocket(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_REMOVEITEM()
+                {
+                    GlobalID = coreObject.CharacterObject.m_globalID,
+                    ItemID = message.GlobalID
+                });
+                inventoryBehavior.m_itemList.RemoveAll(item => item.m_globalID == message.GlobalID);
+                equipmentBehavior.m_itemList.RemoveAll(item => item.m_globalID == message.GlobalID);
+                Log.Logger.Debug("oadijaoidja");
+            }
         }
 
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_FEEDINVENTORYITEM))]
@@ -299,11 +323,11 @@ namespace Imlight.Server.Game.Services
         }
 
 
-        private bool HasItem(ClientWizInventoryBehavior inventoryBehavior, ulong itemId) 
+        private bool HasItem(ClientWizInventoryBehavior inventoryBehavior, ulong itemId)
         {
             return inventoryBehavior.m_itemList.Any(item => item.m_globalID == itemId);
         }
-        private EquipmentSlot GetItemSlot(ClientWizEquipmentBehavior equipmentBehavior, ulong globalId) 
+        private EquipmentSlot GetItemSlot(ClientWizEquipmentBehavior equipmentBehavior, ulong globalId)
         {
             return (EquipmentSlot)equipmentBehavior.m_slotList.First(slot => slot.m_itemID == globalId).m_itemSlotNameID;
         }
