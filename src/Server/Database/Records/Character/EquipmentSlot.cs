@@ -11,7 +11,7 @@ namespace Imlight.Server.Database.Records.Character
         Robe,
         Shoes,
         Weapon,
-        Anthem,
+        Athame,
         Amulet,
         Ring,
         Pet,
