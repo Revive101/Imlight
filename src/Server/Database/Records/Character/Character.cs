@@ -154,7 +154,7 @@ namespace Imlight.Server.Database
 
                 new List<ulong>() { 4740, 4705, 5030, 39068, 1363076, 1475149,
                     1472644, 1317133, 1317126, 1317234, 1359455,
-                    1392077, 1352341, 1540397 }.ForEach(templateId =>
+                    1392077, 1352341, 1540397, 653087, 87241 }.ForEach(templateId =>
                 {
                     CoreTemplate template = CoreObjectFactory.GetCoreTemplate(templateId);
 
