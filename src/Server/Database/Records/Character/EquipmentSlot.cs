@@ -16,6 +16,7 @@ namespace Imlight.Server.Database.Records.Character
         Ring,
         Pet,
         Mount,
-        Deck
+        Deck,
+        Elixir
     }
 }
