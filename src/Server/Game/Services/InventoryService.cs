@@ -230,7 +230,6 @@ namespace Imlight.Server.Game.Services
                 equipmentBehavior.m_slotList.RemoveAll(slot => slot.m_itemID == message.GlobalID);
                 equipmentBehavior.m_itemList.RemoveAll(item => item.m_globalID == message.GlobalID);
                 equipmentBehavior.m_publicItemList.RemoveAll(item => item.m_itemID == message.GlobalID);
-                //@TODO: Remove from equipmentlist
             }
             else
             {
