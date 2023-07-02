@@ -10,6 +10,7 @@ using Imlight.Common.Utilities;
 using Imlight.Server.Database.Records.Character;
 using static WizUnraveler.Cache.TypeCache;
 using Newtonsoft.Json;
+using System.Linq;
 
 namespace Imlight.Server.Database
 {
@@ -101,6 +102,18 @@ namespace Imlight.Server.Database
         private void SetWizClientBehaviors(ref WizClientObject clientObject)
         {
             // =========================================================
+            // PLAYER NAME
+            // =========================================================
+            if (CoreObjectFactory.FindBehaviorInstance<ClientWizPlayerNameBehavior>(clientObject, out var nameBehavior))
+            {
+                nameBehavior.m_eGender = CreationData.m_avatarBehavior.m_eGender;
+                nameBehavior.m_eRace = CreationData.m_avatarBehavior.m_eRace;
+                nameBehavior.m_nameKeys = CreationData.m_nameIndices;
+            }
+            else
+                throw new Exception("Behavior ClientWizPlayerNameBehavior not found!");
+
+            // =========================================================
             // EQUIPMENT
             // =========================================================
             if (CoreObjectFactory.FindBehaviorInstance<ClientWizEquipmentBehavior>(clientObject, out var equipmentBehavior))
@@ -132,18 +145,6 @@ namespace Imlight.Server.Database
                 throw new Exception("Behavior ClientWizEquipmentBehavior not found!");
 
             // =========================================================
-            // PLAYER NAME
-            // =========================================================
-            if (CoreObjectFactory.FindBehaviorInstance<ClientWizPlayerNameBehavior>(clientObject, out var nameBehavior))
-            {
-                nameBehavior.m_eGender = CreationData.m_avatarBehavior.m_eGender;
-                nameBehavior.m_eRace = CreationData.m_avatarBehavior.m_eRace;
-                nameBehavior.m_nameKeys = CreationData.m_nameIndices;
-            }
-            else
-                throw new Exception("Behavior ClientWizPlayerNameBehavior not found!");
-
-            // =========================================================
             // INVENTORY
             // =========================================================
             if (CoreObjectFactory.FindBehaviorInstance<ClientWizInventoryBehavior>(clientObject, out var inventoryBehavior))
@@ -154,21 +155,21 @@ namespace Imlight.Server.Database
 
                 new List<ulong>() { 4740, 4705, 5030, 39068, 1363076, 1475149,
                     1472644, 1317133, 1317126, 1317234, 1359455,
-                    1392077, 1352341, 1540397, 653087, 87241 }.ForEach(templateId =>
-                {
-                    CoreTemplate template = CoreObjectFactory.GetCoreTemplate(templateId);
-
-                    var coreObject = template switch
+                    1392077, 1352341, 1540397, 653087, 87241,  }.ForEach(templateId =>
                     {
-                        ItemTemplate => new WizClientObjectItem(),
-                        _ => new ClientObject()
-                    };
+                        CoreTemplate template = CoreObjectFactory.GetCoreTemplate(templateId);
 
-                    coreObject.m_globalID = RandomGen.GenerateGUID();
-                    coreObject.m_templateID = (GID)templateId;
+                        var coreObject = template switch
+                        {
+                            ItemTemplate => new WizClientObjectItem(),
+                            _ => new ClientObject()
+                        };
 
-                    inventoryBehavior.m_itemList.Add(coreObject);
-                });
+                        coreObject.m_globalID = RandomGen.GenerateGUID();
+                        coreObject.m_templateID = (GID)templateId;
+
+                        inventoryBehavior.m_itemList.Add(coreObject);
+                    });
 
                 inventoryBehaviorCache = inventoryBehavior;
             }
