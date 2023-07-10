@@ -23,26 +23,14 @@ namespace Imlight.Server.Database
     }
 
     /// <summary>
-    /// Abstractions for Imlight's local cache. It's safe it assume that the FileStorage of this cache will only
-    /// ever contain KIWADs.
+    /// Abstractions for Imlight's local KIWAD cache.
     /// </summary>
-    public static class LocalCache
+    public static class KiWadCache
     {
+        // TODO: Make this configurable.
         private static readonly string _path = Path.Combine(
                 Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
                 ?? string.Empty, $"cache");
-
-        /// <summary>
-        /// Get or create a new collection in the cache database.
-        /// </summary>
-        /// <param name="collectionName"></param>
-        public static ILiteCollection<T> GetCachedCollection<T>(string collectionName)
-        {
-            using var db = new LiteDatabase(_path);
-            var col = db.GetCollection<T>(collectionName);
-
-            return col;
-        }
 
         /// <summary>
         /// Gets a KIWAD cached in the FileStorage.
