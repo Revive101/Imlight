@@ -133,7 +133,7 @@ namespace Imlight.Server.Database
             foreach (var file in cachedFiles)
             {
                 // Imlight's cache removes the '/' character to match zone transfer data. There's also a naming
-                // in consistency. Wizard101 uses a path while Imlight does not.
+                // inconsistency. Wizard101 uses a path while Imlight does not.
                 var betterFileName = file.Filename.Replace('/', '-');
                 betterFileName = $"Data/GameData/{betterFileName}.wad";
                 
