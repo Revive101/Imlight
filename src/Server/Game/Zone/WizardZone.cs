@@ -16,6 +16,7 @@ using WizUnraveler.DML;
 using WizUnraveler.ObjectProperty;
 using static WizUnraveler.Cache.TypeCache;
 using static WizUnraveler.ObjectProperty.ObjectSerializer;
+using static WizUnraveler.Secrets.ServerTypeCache;
 
 namespace Imlight.Server.Game.Zone;
 
@@ -26,7 +27,9 @@ public class WizardZone : ReceiveProtocolDispatcher
     private readonly uint _dynamicZoneId;
     private readonly IActorRef _objectSupervisorRef;
     private readonly IActorRef _pathSupervisorRef;
-    
+    private readonly IActorRef _volumeSupervisorRef;
+    private readonly IEnumerable<Trigger> _triggers;
+
     // TODO: I don't want to be saving CoreObjects here.
     private readonly Dictionary<IActorRef, CoreObject> _zoneCreatures;
     private readonly Dictionary<IActorRef, CoreObject> _zoneObjects;
@@ -43,6 +46,7 @@ public class WizardZone : ReceiveProtocolDispatcher
 
         _pathSupervisorRef = CreatePathSupervisor();
         _objectSupervisorRef = CreateObjectSupervisor();
+        _volumeSupervisorRef = CreateVolumeSupervisor();
         // We don't need to create a PlayerSupervisor, as the GameServer manages that for us.
 
         // Load and initialize this zone.
@@ -99,6 +103,16 @@ public class WizardZone : ReceiveProtocolDispatcher
     }
 
     /// <summary>
+    /// Creates a new <see cref="WizardZoneVolumeSupervisor"/> as a child of this WizardZone.
+    /// </summary>
+    /// <returns></returns>
+    private IActorRef CreateVolumeSupervisor()
+    {
+        var props = WizardZoneVolumeSupervisor.Props(Self);
+        return Context.ActorOf(props);
+    }
+
+    /// <summary>
     /// Broadcasts the creation of a new <see cref="CoreObject"/> to each player in the zone.
     /// </summary>
     /// <param name="obj"></param>
@@ -112,6 +126,7 @@ public class WizardZone : ReceiveProtocolDispatcher
 
     private void SpawnZoneObjectsForClient(IActorRef newClient)
     {
+        // TODO: Make the WizardZoneObject responsible for this rather than the zone.
         SerializeAndSendObjects(newClient, _zoneObjects.Values);
         SerializeAndSendObjects(newClient, _zonePlayers.Values);
         SerializeAndSendObjects(newClient, _zoneCreatures.Values);
@@ -294,8 +309,8 @@ public class WizardZone : ReceiveProtocolDispatcher
 
         BroadcastObjectCreation(message.CoreObject);
 
-        // The object has not been created as an actor yet. We're going to tell our ObjectSupervisor about it 
-        // and await it's reply. Also, append the mobile ID that was created for the object.
+        // The object has not been created as an actor yet. We'll tell the object supervisor about this object, and let
+        // it handle the creation of this object. We will await the replies, since some of it's details are needed here.
         var rsp = _objectSupervisorRef
             .Ask<ZONE_102_PROTOCOL.MSG_ADDOBJECTRSP>(message)
             .Result;
@@ -318,6 +333,20 @@ public class WizardZone : ReceiveProtocolDispatcher
         };
         
         Sender.Tell(rsp);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDVOLUME))]
+    private void ReceiveAddVolume(ZONE_102_PROTOCOL.MSG_ADDVOLUME message)
+    {
+        var id = GenerateMobileId();
+        message.CoreObject.m_nMobileID = id;
+        
+        // The object has not been created as an actor yet. We'll tell the object supervisor about this object, and let
+        // it handle the creation of this object. We will await the replies, since some of it's details are needed here.
+        var rsp = _volumeSupervisorRef
+            .Ask<ZONE_102_PROTOCOL.MSG_ADDOBJECTRSP>(message)
+            .Result;
+        rsp.MobileId = id;
     }
 
     #endregion

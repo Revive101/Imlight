@@ -10,6 +10,7 @@ using WizUnraveler.DML;
 using Imlight.Server.Shared.Networking;
 using WizUnraveler.IO;
 using WizUnraveler.ObjectProperty;
+using WizUnraveler.Secrets;
 
 namespace Imlight.Server.Shared.Packets
 {
@@ -119,6 +120,15 @@ namespace Imlight.Server.Shared.Packets
             public byte ServiceID { get; } = 102;
 
             public GID ObjectId;
+        }
+        
+        public class MSG_ADDVOLUME : IServerMessage
+        {
+            public byte MessageOrder { get; } = 11;
+            public byte ServiceID { get; } = 102;
+
+            public TypeCache.CoreObject CoreObject;
+            public ServerTypeCache.Volume Volume;
         }
     }
 }

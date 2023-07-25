@@ -10,10 +10,12 @@ using Akka.Actor;
 using Imlight.Common.Utilities;
 using Imlight.Server.Database;
 using Imlight.Server.Shared.Packets;
+using SharpDX;
 using WizUnraveler.Formats;
 using WizUnraveler.IO;
 using static WizUnraveler.Cache.TypeCache;
 using static WizUnraveler.ObjectProperty.ObjectSerializer;
+using static WizUnraveler.Secrets.ServerTypeCache;
 
 namespace Imlight.Server.Game.Zone;
 
@@ -37,6 +39,8 @@ public static class WizardZoneLoader
     private static SpawnManager _spawnData;
     private static PathManager_PathTemplateList _pathData;
     private static PathManager_NodeTemplateList _nodeData;
+    private static WizZoneVolumes _zoneVolumes;
+    private static WizZoneTriggers _zoneTriggers;
 
     /// <summary>
     /// Loads the <see cref="WizardZone" /> data from the <see cref="ResourceManager" />.
@@ -55,7 +59,7 @@ public static class WizardZoneLoader
                 if (!ResourceManager.TryLoadFile(zone.ZoneName, out _wad))
                 {
                     Log.Logger.Error($"Zone [{zone.ZoneName}] tried to load its own data, but none was " +
-                                     $"found in the {nameof(ResourceManager)}. This is fine, but the zone will not " +
+                                     $"found in the {nameof(ResourceManager)}. We will continue, but the zone will not " +
                                      $"contain any objects, mobs or volumes.");
                     return;
                 }
@@ -64,13 +68,16 @@ public static class WizardZoneLoader
                 LoadSpawnData();
                 LoadPathData();
                 LoadNodeData();
+                LoadVolumeData();
+                LoadTriggerData();
                 CreateZoneGameObjects();
                 CreateZonePaths();
+                CreateZoneVolumes();
             }
             catch (Exception ex)
             {
                 Log.Logger.Warning($"Zone [{zone.ZoneName}] could not load resources for whatever " +
-                                   $"reason. EXCEPTION THROWN: {ex.Message}");
+                                   $"reason. EXCEPTION THROWN: {ex}");
             }
             finally
             {
@@ -130,6 +137,30 @@ public static class WizardZoneLoader
     }
 
     /// <summary>
+    /// Load the volume data from the KIWAD file.
+    /// </summary>
+    private static void LoadVolumeData()
+    {
+        var serializer = new FileSerializer();
+        var t = _zoneVolumes = serializer.OpenClass<WizZoneVolumes>(_wad, VolumeDataFileName);
+        if (_zoneVolumes is null)
+            Log.Logger.Error(
+                $"Zone {_zone.ZoneName} could not load {VolumeDataFileName} as it was missing or invalid.");
+    }
+    
+    /// <summary>
+    /// Load the trigger data from the KIWAD file.
+    /// </summary>
+    private static void LoadTriggerData()
+    {
+        var serializer = new FileSerializer();
+        var t = _zoneTriggers = serializer.OpenClass<WizZoneTriggers>(_wad, TriggerDataFileName);
+        if (_zoneTriggers is null)
+            Log.Logger.Error(
+                $"Zone {_zone.ZoneName} could not load {TriggerDataFileName} as it was missing or invalid.");
+    }
+
+    /// <summary>
     /// Creates game objects for the zone based on the loaded zone data.
     /// </summary>
     private static void CreateZoneGameObjects()
@@ -161,6 +192,36 @@ public static class WizardZoneLoader
                 Name = path.m_name,
                 Nodes = nodeList,
                 Creatures = creatureList
+            };
+            _zoneActorRef.Tell(msg);
+        }
+    }
+
+    /// <summary>
+    /// Creates the volumes for the zone based on the loaded volume and trigger data.
+    /// </summary>
+    /// <exception cref="NullReferenceException"></exception>
+    private static void CreateZoneVolumes()
+    {
+        if (_zoneVolumes is null) throw new NullReferenceException(nameof(_zoneVolumes));
+        if (_zoneTriggers is null) throw new NullReferenceException(nameof(_zoneTriggers));
+        
+        foreach (var volume in _zoneVolumes.m_volumes)
+        {
+            var newObj = CoreObjectFactory.CreateObjectFromInfo(volume, volume.m_templateID);
+            if (newObj is null)
+                continue;
+            
+            // Set data for this CoreObject from the given volume data.
+            var loc = new Vector3(volume.m_locationX, volume.m_locationY, volume.m_locationZ);
+            newObj.m_location = loc;
+            newObj.m_templateID = volume.m_templateID;
+
+            // Write a message citing the details of this volume, and send a message to the zone.
+            var msg = new ZONE_102_PROTOCOL.MSG_ADDVOLUME
+            {
+                CoreObject = newObj,
+                Volume = volume,
             };
             _zoneActorRef.Tell(msg);
         }
@@ -238,5 +299,7 @@ public static class WizardZoneLoader
         _spawnData = null;
         _pathData = null;
         _nodeData = null;
+        _zoneVolumes = null;
+        _zoneTriggers = null;
     }
 }
