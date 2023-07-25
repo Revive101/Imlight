@@ -83,7 +83,7 @@ namespace Imlight.Server.Database
             }
 
             // Create a new FileDefinition. Create a new byte array from the content stream.
-            var wadCrc = GetWadCRC(wad);
+            var wadCrc = GetWadCrc(wad);
             var def = new FileDefinition
             {
                 Filename = fileName,
@@ -109,7 +109,7 @@ namespace Imlight.Server.Database
             Log.Logger.Warning($"LocalCache tried to delete a file [{fileName}] it did not contain!");
         }
 
-        private static uint GetWadCRC(Wad wad)
+        private static uint GetWadCrc(Wad wad)
         {
             // TEST: Marleybone-MB_Station-MB_Station_Hub.wad has a CRC32 hash of 2084731962.
             //                                           The header CRC32 hash is 3169958109.
