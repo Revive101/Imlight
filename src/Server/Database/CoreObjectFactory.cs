@@ -114,9 +114,8 @@ namespace Imlight.Server.Database
             return false;
         }
 
-        public static CoreObject CreateObjectFromInfo(CoreObjectInfo objInfo)
+        public static CoreObject CreateObjectFromInfo(CoreObjectInfo objInfo, ulong templateId = 0)
         {
-            var templateId = GetTemplateId(objInfo);
             var template = GetCoreTemplate(templateId);
             if (template is null)
             {
@@ -146,9 +145,6 @@ namespace Imlight.Server.Database
                     break;
             }
 
-            // Initialize the object behaviors.
-            //obj = InitializeCoreObjectBehaviors(obj, objInfo.m_templateID);
-            
             // Set the object properties.
             obj.m_templateID = templateId;
             obj.m_location = objInfo.m_location;
@@ -162,35 +158,6 @@ namespace Imlight.Server.Database
             return obj;
         }
 
-        private static ulong GetTemplateId(CoreObjectInfo objInfo)
-        {
-            var templateId = objInfo.m_templateID;
-
-            // Fuck you, KingsIsle. Volume template IDs are serialized with a different hash.
-            /*
-            Volume volume = null;
-            var isVolume = objInfo is Volume;
-            if (isVolume)
-            {
-                volume = (Volume)objInfo;
-            }
-
-            if (templateId == 0 && (!isVolume || volume.m_templateID == 0))
-            {
-                Log.Logger.Error($"Object Info template ID was 0.");
-                return 0;
-            }
-
-            if (isVolume)
-            {
-                templateId = volume.m_templateID;
-            }
-
-            */
-
-            return templateId;
-        }      
-        
         public static CoreTemplate GetCoreTemplate(ulong id)
         {
             if (!_coreTemplates.TryGetValue(id, out var loc)) return null;
