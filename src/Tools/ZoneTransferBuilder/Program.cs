@@ -11,10 +11,12 @@
  * add it to the `serverdata` database you gave it. There is no output directory.
  */
 
+using System.Globalization;
 using System.Reflection;
 using System.Xml;
 using FuzzySharp;
 using LiteDB;
+using SharpDX;
 using Spectre.Console;
 using WizUnraveler.Cache;
 using WizUnraveler.Formats;
@@ -117,14 +119,15 @@ public static class Program
                 .PageSize(10)
                 .AddChoices(destinationLocations.Select(x => $"{x.m_locName} @ {x.m_location}")));
         // Refactor the selection name to not include the coordinate flavor text.
-        var destinationLocationName = destinationLocation.Split('@')[0].Trim();
+        var destinationLocationStr = destinationLocation.Split('@')[^1];
+        var destinationCoords = ConvertVector3ToWizard(destinationLocationStr);
 
         // Write the selected information to the console.
         var panel = new Panel(
             $"Source Zone: {zoneName}\n" +
             $"Source Trigger: {triggerName}\n" +
             $"Destination Zone: {destinationZoneName}\n" +
-            $"Destination Location: {destinationLocationName}\n");
+            $"Destination Location: {destinationCoords}\n");
         panel.Header = new PanelHeader("ResTeleport");
         panel.Border = BoxBorder.Rounded;
         AnsiConsole.Write(panel);
@@ -132,7 +135,7 @@ public static class Program
         var result = new ResTeleport
         {
             m_destinationZone = destinationZoneName,
-            m_destinationLoc = destinationLocationName
+            m_destinationLoc = destinationCoords
         };
 
         while (true)
@@ -148,6 +151,29 @@ public static class Program
                     continue;
             }
         }
+    }
+    
+    private static string ConvertVector3ToWizard(string input)
+    {
+        // Split the input string into individual components
+        var components = input.Trim().Split(' ');
+
+        // Extract the numeric values for X, Y, and Z
+        var x = ExtractValue(components[0]);
+        var y = ExtractValue(components[1]);
+        var z = ExtractValue(components[2]);
+        
+        return $"{x},{y},{z}";
+    }
+
+    private static float ExtractValue(string component)
+    {
+        // Split the component string by ':'
+        var parts = component.Split(':');
+
+        // Parse the value as a float using InvariantCulture to handle the decimal separator properly
+        var value = float.Parse(parts[^1], CultureInfo.InvariantCulture);
+        return value;
     }
 
     private static string EnterWadInputSelection()
