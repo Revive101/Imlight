@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using WizUnraveler.ObjectProperty;
 using Imlight.Common.Utilities;
 using Imlight.Server.Database.Records.Character;
+using SharpDX;
 using static WizUnraveler.Cache.TypeCache;
 
 namespace Imlight.Server.Database
@@ -68,7 +69,20 @@ namespace Imlight.Server.Database
             clientObject.m_globalID = CreationData.m_globalID;
             clientObject.m_characterId = (GID)Id;
             clientObject.m_permID = 0; // What is this?
-            clientObject.m_location = new SharpDX.Vector3(0, 0, 0);
+            
+            // Set object location.
+            if (nextLocation != string.Empty && nextLocation is not null)
+            {
+                var components = nextLocation.Split(",");
+                var x = float.Parse(components[0]);
+                var y = float.Parse(components[1]);
+                var z = float.Parse(components[2]);
+                var d = float.Parse(components[3]);
+                clientObject.m_location = new Vector3(x, y, z);
+                clientObject.m_orientation = new Vector3(0, 0, d);
+            }
+            else
+                clientObject.m_location = new SharpDX.Vector3(0, 0, 0);
             
             // @todo: source these stats from the API, probably
             clientObject.m_gameStats = new WizGameStats()

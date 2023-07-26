@@ -4,12 +4,15 @@
  */
 
 using System;
+using System.Globalization;
+using System.Numerics;
 using Akka.Actor;
 using WizUnraveler.Cache;
 using Imlight.Common.Utilities;
 using Imlight.Server.Database;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
+using Math = System.Math;
 
 namespace Imlight.Server.Game.Services
 {
@@ -90,7 +93,7 @@ namespace Imlight.Server.Game.Services
                 UserID = account.ID,
                 CharID = character.Id,
                 ZoneName = character.nextZone,
-                Location = character.nextLocation,
+                Location = character.nextLocation, // Doesn't seem to do anything.
                 Slot = 0,
                 SessionSlot = 0,
                 SessionID = 0,
