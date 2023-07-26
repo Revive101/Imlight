@@ -351,7 +351,7 @@ namespace Imlight.Server.Shared.Networking
                 .Split('.')[^1]
                 .Replace('+', '.');
             if (!_suppressedPackets.Contains(message.GetType()))
-                Log.Logger.Debug($"SessionActor [{SessionID}] sent message [{scopedMessageName}]");
+                Log.Logger.Verbose($"SessionActor [{SessionID}] sent message [{scopedMessageName}]");
         }
 
         private void OnSendCompleted(SocketAsyncEventArgs e)
