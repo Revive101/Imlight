@@ -3,7 +3,9 @@
  * Proprietary and confidential.
  */
 
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using LiteDB;
 
@@ -19,9 +21,11 @@ public static class ServerDataBroker
         Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
         ?? string.Empty, $"serverdata");
 
-    public static ILiteCollection<T> GetCollection<T>()
+    public static List<T> GetCollection<T>(string collectionName)
     {
         using var db = new LiteDatabase(_path);
-        return db.GetCollection<T>();
+        var table = db.GetCollection<T>(collectionName);
+        
+        return table.FindAll().ToList();
     }
 }
