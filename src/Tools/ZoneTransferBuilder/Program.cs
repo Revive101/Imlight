@@ -51,7 +51,9 @@ namespace TriggerResultBuilder
                 var (zoneName, triggerSelected) = SelectZoneAndTrigger();
 
                 // Get the server side data from the database and prompt for overwrite if data exists.
-                var colName = $"{ResultCollectionName}/{zoneName}/{triggerSelected.m_triggerName}".Replace('/', '_');
+                var colName = $"{ResultCollectionName}/{zoneName}/{triggerSelected.m_triggerName}"
+                    .Replace('/', '_')
+                    .Replace('-', '_');
                 using var db = new LiteDatabase(serverDatabasePath);
                 var col = db.GetCollection<TypeCache.Result>(colName);
                 if (col.FindAll().Any())
