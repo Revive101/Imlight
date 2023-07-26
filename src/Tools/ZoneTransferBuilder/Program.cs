@@ -68,7 +68,8 @@ public static class Program
         {
             // Select and handle the trigger.
             var triggerSelected = HandleTriggerSelection(zoneName, wad);
-            if (triggerSelected == null) return;
+            if (triggerSelected == null) 
+                throw new NullReferenceException("Trigger selected was null.");
     
             // Prompt the user to overwrite if this trigger already contains a `ResTeleport`.
             if (TriggerHasTeleportResult(zoneName, triggerSelected.m_triggerName))
@@ -110,7 +111,10 @@ public static class Program
                 .Title("Select a trigger:")
                 .PageSize(10)
                 .AddChoices(formattedTriggers));
-        triggerSel = triggerSel.Split(" ")[^1].Trim();
+        // Split at the first instance of the space character to trim off the prefix we created.
+        var idx = triggerSel.IndexOf(' ');
+        triggerSel = triggerSel.Substring(idx + 1).Trim();
+        Console.WriteLine(triggerSel);
     
         return triggers.FirstOrDefault(x => x.m_triggerName == triggerSel);
     }
