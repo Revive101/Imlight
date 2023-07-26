@@ -82,8 +82,9 @@ public class WizardZoneVolume : WizardZoneObject
 
     private bool IsInRadius(CoreObject obj1)
     {
-        var playerPos = new Vector2(obj1.m_location.X, obj1.m_location.Z);
-        var volPos = new Vector2(ActiveGameObject.m_location.X, ActiveGameObject.m_location.Z);
-        return Math.InsideOfCircle(playerPos, _volume.m_radius, volPos);
+        var sqrtDist = (obj1.m_location - ActiveGameObject.m_location).LengthSquared();
+        var sqrtRadius = _volume.m_radius * _volume.m_radius;
+
+        return sqrtDist <= sqrtRadius;
     }
 }
