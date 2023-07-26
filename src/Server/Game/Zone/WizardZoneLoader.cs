@@ -69,7 +69,7 @@ public static class WizardZoneLoader
                 LoadZoneData();
                 LoadSpawnData();
                 LoadPathData();
-                LoadNodeData();
+                LoadNodeData(); // TODO: This is taking a long time.
                 LoadVolumeData();
                 LoadTriggerData();
                 CreateZoneGameObjects();
@@ -80,7 +80,7 @@ public static class WizardZoneLoader
             catch (Exception ex)
             {
                 Log.Logger.Warning($"Zone [{zone.ZoneName}] could not load resources for whatever " +
-                                   $"reason. EXCEPTION THROWN: {ex}");
+                                   $"reason. Exception thrown: {ex}");
             }
             finally
             {

@@ -138,5 +138,13 @@ namespace Imlight.Server.Shared.Packets
 
             public ServerTypeCache.Trigger Trigger;
         }
+        
+        public class MSG_ASKFORINTERACTION : IServerMessage
+        {
+            public byte MessageOrder { get; } = 12;
+            public byte ServiceID { get; } = 102;
+
+            public TypeCache.CoreObject CoreObject;
+        }
     }
 }

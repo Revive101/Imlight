@@ -97,6 +97,14 @@ namespace Imlight.Server.Game.Services
             
             _zoneRef.Forward(message);
         }
+
+        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ASKFORINTERACTION))]
+        private void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_ASKFORINTERACTION message)
+        {
+            if (_zoneRef is null) throw new Exception("Zone Reference was null.");
+            
+            _zoneRef.Forward(message);
+        }
         
         [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_DISPOSE))]
         public override void ReceiveDispose(SERVICE_101_PROTOCOL.MSG_DISPOSE message)

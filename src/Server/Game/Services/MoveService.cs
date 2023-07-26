@@ -27,9 +27,8 @@ namespace Imlight.Server.Game.Services
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVE))]
         private void ReceiveClientMove(GAME_5_PROTOCOL.MSG_CLIENTMOVE message)
         {
+            // TODO: If this fails, raise an exception and let supervisor deal with it.
             var account = GetSocketAccount();
-
-            // If the socket account cannot be found, send the client an error.
             if (account is null)
             {
                 Log.Logger.Error($"Service [{this.GetType()}] socket account could not be retrieved!");
@@ -41,11 +40,10 @@ namespace Imlight.Server.Game.Services
 
             // Restore actual location information, as it is compressed by a factor of 4 and unsigned.
             // Yaw is represented in radians in the client, but transmitted to the server as degrees.
-            var position = new SharpDX.Vector4(
+            var position = new SharpDX.Vector3(
                 unchecked((short)message.LocationX * 4), 
                 unchecked((short)message.LocationY * 4), 
-                unchecked((short)message.LocationZ * 4), 
-                message.Direction);
+                unchecked((short)message.LocationZ * 4));
             var position2D = new SharpDX.Vector2(position.X, position.Y);
 
             // fixme: lazy fix
@@ -79,7 +77,7 @@ namespace Imlight.Server.Game.Services
                     { new SharpDX.Vector2(8380.9f, -2126.3f),   "WizardCity/WC_Streets/Interiors/WC_PET_Park" },
                 };
 
-                CheckTransferPrisms(character, new SharpDX.Vector3(position.X, position.Y, position.Z), ravenwoodBox); 
+                CheckTransferPrisms(character, position, ravenwoodBox); 
                 CheckTransferPoints(character, position2D, circleTriggers);
 
             } 
@@ -97,6 +95,7 @@ namespace Imlight.Server.Game.Services
 
             // Broadcast the move to all other players in the zone.
             BroadcastClientMove(message);
+            SendZoneInteractionFishRequest();
         }
 
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVESTATE))]
@@ -150,6 +149,13 @@ namespace Imlight.Server.Game.Services
             SendToSessionServices(broadcastMsg);
         }
 
+        private void SendZoneInteractionFishRequest()
+        {
+            var characterObj = GetActiveCoreObject();
+            var msg = new ZONE_102_PROTOCOL.MSG_ASKFORINTERACTION() { CoreObject = characterObj };
+            SendToSessionServices(msg);
+        }
+        
         private TypeCache.CoreObject GetActiveCoreObject()
         {
             var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
