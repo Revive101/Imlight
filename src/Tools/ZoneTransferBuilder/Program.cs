@@ -12,6 +12,7 @@
  */
 
 using System.Globalization;
+using System.Net;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Xml;
@@ -37,6 +38,12 @@ public static class Program
     private const string ZoneDataFileName = "gamedata.bin";
     private const string TriggerDataFileName = "triggers.xml";
     private const string ResultCollectionName = "zone_triggers";
+    private const string PATCH_SERVER_URL = "http://phill030.de:12369/repatcher/";
+    private const string PATCH_SERVER_WAD_URL_PREFIX = "wad";
+    private const int PATCH_SERVER_TIMEOUT = 10; // In seconds.
+    private const uint REVISION = 736675;
+    private const string USER_AGENT_VALUE = "KingsIsle Patcher";
+    private const ushort DOWNLOAD_BUFFER_SIZE = 4096;
 
     private static readonly string inputPath =
         Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? string.Empty, "input");
@@ -45,6 +52,8 @@ public static class Program
     private static readonly string serverDatabasePath = Path.Combine(inputPath, "serverdata");
 
     private static string[] zoneNames;
+    private static string _patchServerWorkingUrl;
+    private static bool _patchServerOnline;
 
     public static void Main()
     {
@@ -57,6 +66,7 @@ public static class Program
     
         // Get the list of zone names from the AccessPass.
         zoneNames = GetAccessPassZones();
+        _patchServerOnline = GetPatchServerStatus();
     
         // Select the zone.
         var zoneName = EnterWadInputSelection();
@@ -92,7 +102,6 @@ public static class Program
         }
     }
     
-    // Function to select and handle the trigger selection.
     private static Trigger HandleTriggerSelection(string zoneName, Wad wad)
     {
         AnsiConsole.MarkupLine($"You are in [bold]{zoneName}[/].");
@@ -233,15 +242,7 @@ public static class Program
                 .AddChoices(closestMatches.Select(x => $"({x.Similarity}%): {x.Option}")));
 
         // Refactor the zone name to not include percentage prefix.
-        zoneName = zoneName.Split(' ')[^1];
-        
-        // Check to see if the selected KIWAD exists in the input directory.
-        var properWadName = zoneName.Replace('/', '-');
-        var checkPath = $"{inputPath}/{properWadName}.wad";
-        if (File.Exists(checkPath)) 
-            return zoneName;
-        
-        throw new Exception($"There is no KIWAD by name \"{checkPath}\" in your input directory.");
+        return zoneName.Split(' ')[^1];
     }
 
     private static Wad GetWad(string wadName)
@@ -250,8 +251,18 @@ public static class Program
         var path = $"{inputPath}/{wadName}.wad";
         if (!File.Exists(path))
         {
-            Console.WriteLine($"Could not find KIWAD in the input directory by name \"{wadName}\".");
-            return null;
+            // Download the wad from the patch server.
+            // Remove the `.wad` extension if one exists.
+            if (wadName.EndsWith(".wad", StringComparison.OrdinalIgnoreCase))
+                wadName = wadName[..^4];
+
+            var url = $"{_patchServerWorkingUrl}/{PATCH_SERVER_WAD_URL_PREFIX}/{wadName}.wad";
+            var download = DownloadFileStream(url).Result;
+            var newMs = new MemoryStream();
+            download.Position = 0;
+            download.CopyTo(newMs);
+            newMs.Position = 0;
+            return new Wad(newMs);
         }
 
         var fs = File.ReadAllBytes(path);
@@ -273,28 +284,6 @@ public static class Program
 
         closestMatches.Sort((x, y) => y.Similarity.CompareTo(x.Similarity));
         return closestMatches.Take(200).ToList();
-    }
-
-    private static Trigger EnterTriggerInputSelection(Trigger[] triggers)
-    {
-        var formattedTriggers = new List<string>();
-        foreach (var t in triggers)
-        {
-            // Create a check or X prefix declaring if this trigger has a `ResTeleport` already.
-            var hasTeleport = t.m_results.m_results.Any(x => x is ResTeleport);
-            var prefix = hasTeleport ? "✓" : "𐄂";
-            formattedTriggers.Add($"({prefix}) {t.m_triggerName}");
-        }
-        
-        var triggerSel = AnsiConsole.Prompt(
-            new SelectionPrompt<string>()
-                .Title("Select a trigger")
-                .PageSize(10)
-                .AddChoices(formattedTriggers));
-        // Narrow our trigger selection to exclude the prefix we created for it.
-        triggerSel = triggerSel.Split(" ")[^1].Trim();
-
-        return triggers.FirstOrDefault(x => x.m_triggerName == triggerSel);
     }
 
     private static string[] GetAccessPassZones()
@@ -354,4 +343,85 @@ public static class Program
         // Use regular expression to remove any character that isn't an alphabet character or an underscore.
         return Regex.Replace(colName, @"[^a-zA-Z_]", "");
     }
+    
+    #region Patch
+    
+    private static bool GetPatchServerStatus()
+    {
+        var workingUrl = $"{PATCH_SERVER_URL}V_r{REVISION}.Wizard_1_510";
+
+        // Check to see if the patch server URL is available at all.
+        Console.WriteLine($"Checking patch server at URL {workingUrl}. Timeout: {PATCH_SERVER_TIMEOUT} s.");
+        if (!GetServerUrlStatus(workingUrl))
+        {
+            Console.WriteLine($"Patch server at URL {workingUrl} is not available.");
+            return false;
+        }
+
+        _patchServerWorkingUrl = workingUrl;
+        Console.WriteLine($"Patch server at URL {workingUrl} found and set.");
+
+        return true;
+    }
+
+    private static bool GetServerUrlStatus(string url)
+    {
+        using var client = new HttpClient();
+        client.DefaultRequestHeaders.UserAgent.ParseAdd(USER_AGENT_VALUE);
+        client.Timeout = TimeSpan.FromSeconds(PATCH_SERVER_TIMEOUT);
+
+        try
+        {
+            using var response = client.SendAsync(new HttpRequestMessage(HttpMethod.Head, url)).Result;
+            // Any response returned means the server is up.
+            return true;
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode >= HttpStatusCode.InternalServerError)
+        {
+            // Any response other than a 5xx error means the server is up.
+            return ex.StatusCode < HttpStatusCode.InternalServerError;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error while checking patch server at URL {url}. " +
+                              $"Exception: {ex.Message}");
+            return false;
+        }
+    }
+    
+    private static async Task<MemoryStream> DownloadFileStream(string url)
+    {
+        try
+        {
+            // Create a new HttpClient with the magic user agent values.
+            using var client = new HttpClient();
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(USER_AGENT_VALUE);
+            using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+            response.EnsureSuccessStatusCode();
+            var totalBytes = response.Content.Headers.ContentLength;
+            //var progressBar = new ConsoleProgressBar
+            Console.WriteLine($"Attempting to download file from patch server endpoint at " +
+                                   $"url {url}. " +
+                                   $"Content size: {totalBytes}");
+            // Download the file from web using the HttpClient.
+            await using var contentStream = await response.Content.ReadAsStreamAsync();
+            var memoryStream = new MemoryStream();
+            var buffer = new byte[DOWNLOAD_BUFFER_SIZE];
+            int bytesRead;
+            while ((bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+            {
+                await memoryStream.WriteAsync(buffer, 0, bytesRead);
+            }
+
+            Console.WriteLine($"File successfully downloaded from {url}. Content size: {memoryStream.Length}");
+            return memoryStream;
+        }
+        catch (Exception webException)
+        {
+            Console.WriteLine($"Error while downloading file from patch server endpoint: {webException.Message}");
+            return null;
+        }
+    }
+    
+    #endregion
 }
