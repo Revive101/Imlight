@@ -17,7 +17,7 @@ namespace Imlight.Common.Utilities
             ?? string.Empty, $"log.txt");
         
         private static readonly ILogger _logger = new LoggerConfiguration()
-            .MinimumLevel.Debug()
+            .MinimumLevel.Verbose()
             .Enrich.FromLogContext()
             .WriteTo.Console()
             .WriteTo.File(_path, rollingInterval: RollingInterval.Day)

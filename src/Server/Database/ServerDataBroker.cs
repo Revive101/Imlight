@@ -18,8 +18,9 @@ public static class ServerDataBroker
 {
     // TODO: Make this configurable.
     private static readonly string _path = Path.Combine(
-        Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
-        ?? string.Empty, $"serverdata");
+        Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? string.Empty,
+        "Content",
+        $"serverdata");
 
     public static List<T> GetCollection<T>(string collectionName)
     {
