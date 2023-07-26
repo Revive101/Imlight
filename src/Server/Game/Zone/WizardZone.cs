@@ -164,6 +164,15 @@ public class WizardZone : ReceiveProtocolDispatcher
         }
     }
 
+    private void InformVolumesOfNewPlayer(CoreObject newPlayer)
+    {
+        foreach (var vol in _zoneVolumes)
+        {
+            var msg = new ZONE_102_PROTOCOL.MSG_TRIGGERGRACE { CoreObject = newPlayer };
+            vol.Key.Tell(msg);
+        }
+    }
+
     /// <summary>
     /// Generates a new <see cref="uint"/> value as a dynamic ID for this WizardZone.
     /// </summary>
@@ -252,6 +261,10 @@ public class WizardZone : ReceiveProtocolDispatcher
         _zonePlayers.Add(message.Player, message.PlayerObject);
         
         BroadcastObjectCreation(message.PlayerObject);
+        
+        // Inform each volume of this object, so that they may check if the player is within it's bounds and provide
+        // them a grace period.
+        InformVolumesOfNewPlayer(message.PlayerObject);
 
         // Inform the player that they've been successfully added to the zone.
         var response = new ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP { PlayerObject = message.PlayerObject };

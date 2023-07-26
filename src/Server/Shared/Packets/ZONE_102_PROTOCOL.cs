@@ -156,5 +156,13 @@ namespace Imlight.Server.Shared.Packets
             public TypeCache.CoreObject CoreObject;
             public IActorRef Suspect;
         }
+        
+        public class MSG_TRIGGERGRACE : IServerMessage
+        {
+            public byte MessageOrder { get; } = 14;
+            public byte ServiceID { get; } = 102;
+
+            public TypeCache.CoreObject CoreObject;
+        }
     }
 }

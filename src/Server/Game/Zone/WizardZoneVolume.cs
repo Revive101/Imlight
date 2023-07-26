@@ -36,11 +36,7 @@ public class WizardZoneVolume : WizardZoneObject
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_TRIGGERQUERY))]
     private void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_TRIGGERQUERY message)
     {
-        var playerPos = new Vector2(message.CoreObject.m_location.X, message.CoreObject.m_location.Z);
-        var volPos = new Vector2(ActiveGameObject.m_location.X, ActiveGameObject.m_location.Z);
-        var isInRadius = Math.InsideOfCircle(playerPos, _volume.m_radius, volPos);
-
-        if (isInRadius)
+        if (IsInRadius(message.CoreObject))
         {
             // Keep track of the objects already within radius as to not trigger duplicate events.
             if (_objsInRadius.Contains(message.CoreObject))
@@ -59,7 +55,7 @@ public class WizardZoneVolume : WizardZoneObject
             }
             
         }
-        else if (_objsInRadius.Contains(message.CoreObject) && !isInRadius)
+        else if (_objsInRadius.Contains(message.CoreObject) && !IsInRadius(message.CoreObject))
         {
             // Do exit events.
             _objsInRadius.Remove(message.CoreObject);
@@ -73,5 +69,21 @@ public class WizardZoneVolume : WizardZoneObject
                 WizardZoneRef.Tell(msg);
             }
         }
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_TRIGGERQUERY))]
+    private void ReceiveGrace(ZONE_102_PROTOCOL.MSG_TRIGGERGRACE message)
+    {
+        if (!IsInRadius(message.CoreObject))
+            return;
+        
+        _objsInRadius.Add(message.CoreObject);
+    }
+
+    private bool IsInRadius(CoreObject obj1)
+    {
+        var playerPos = new Vector2(obj1.m_location.X, obj1.m_location.Z);
+        var volPos = new Vector2(ActiveGameObject.m_location.X, ActiveGameObject.m_location.Z);
+        return Math.InsideOfCircle(playerPos, _volume.m_radius, volPos);
     }
 }
