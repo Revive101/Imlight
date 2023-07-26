@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Akka.Actor;
 using Imlight.Common.Utilities;
 using Imlight.Server.Database;
@@ -243,8 +244,7 @@ public static class WizardZoneLoader
         foreach (var trigger in _zoneTriggers.m_triggers)
         {
             // Find this trigger's results in the server database.
-            var colName = $"{ResultCollectionName}/{zoneName}/{trigger.m_triggerName}"
-                .Replace('/', '_');
+            var colName = SanitizeColName($"{ResultCollectionName}/{zoneName}/{trigger.m_triggerName}");
             var col = ServerDataBroker.GetCollection<TypeCache.Result>(colName);
 
             if (col.Any())
@@ -338,5 +338,11 @@ public static class WizardZoneLoader
         _nodeData = null;
         _zoneVolumes = null;
         _zoneTriggers = null;
+    }
+    
+    private static string SanitizeColName(string colName)
+    {
+        // Use regular expression to remove any character that isn't an alphabet character or an underscore.
+        return Regex.Replace(colName, @"[^a-zA-Z_]", "");
     }
 }

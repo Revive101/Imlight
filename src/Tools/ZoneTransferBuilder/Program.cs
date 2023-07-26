@@ -13,6 +13,7 @@
 
 using System.Globalization;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Xml;
 using FuzzySharp;
 using LiteDB;
@@ -53,55 +54,89 @@ public static class Program
                               $"A new one will be created.");
         else
             Console.WriteLine("Found serverdata database!");
-
+    
         // Get the list of zone names from the AccessPass.
         zoneNames = GetAccessPassZones();
+    
+        // Select the zone.
+        var zoneName = EnterWadInputSelection();
 
+        var wad = GetWad(zoneName);
+        AnsiConsole.MarkupLine($"[italic]Selected zone \"{zoneName}\".[/]");
+    
         while (true)
         {
-            // Select the zone and trigger.
-            var (zoneName, triggerSelected) = SelectZoneAndTrigger();
-
-            // Get the server side data from the database and prompt for overwrite if data exists.
-            var colName = $"{ResultCollectionName}/{zoneName}/{triggerSelected.m_triggerName}"
-                .Replace('/', '_')
-                .Replace('-', '_');
-            using var db = new LiteDatabase(serverDatabasePath);
-            var col = db.GetCollection<TypeCache.Result>(colName);
-            if (col.FindAll().Any())
+            // Select and handle the trigger.
+            var triggerSelected = HandleTriggerSelection(zoneName, wad);
+            if (triggerSelected == null) return;
+    
+            // Prompt the user to overwrite if this trigger already contains a `ResTeleport`.
+            if (TriggerHasTeleportResult(zoneName, triggerSelected.m_triggerName))
             {
                 var overwriteResult = AnsiConsole.Ask<string>(
-                    "[bold]This trigger already has a zone transfer result! Do you want to overwrite it (y/n)?[/]");
+                    "[italic]This trigger already has a zone transfer result! Do you want to overwrite it (y/n)?[/]");
                 switch (overwriteResult)
                 {
                     case "n":
                         return;
                     case "y":
-                        col.DeleteAll();
+                        DeleteExistingTeleportResult(zoneName, triggerSelected.m_triggerName);
                         break;
                 }
             }
-
+    
             // Begin the process of rebuilding the ResTeleport type.
             var result = RebuildZoneTransferResult(zoneName, triggerSelected.m_triggerName);
-            col.Insert(result);
+            InsertTeleportResult(zoneName, triggerSelected.m_triggerName, result);
         }
     }
-
-    private static (string, Trigger) SelectZoneAndTrigger()
+    
+    // Function to select and handle the trigger selection.
+    private static Trigger HandleTriggerSelection(string zoneName, Wad wad)
     {
-        // Select the zone.
-        var zoneName = EnterWadInputSelection();
-        var wad = GetWad(zoneName);
-        AnsiConsole.MarkupLine($"[bold]Selected zone \"{zoneName}\".[/]");
-
-        // Print the triggers found that are zone teleports. Then prompt the user to select the trigger.
+        AnsiConsole.MarkupLine($"You are in [bold]{zoneName}[/].");
         var triggers = GetWadTriggers(wad);
-        if (triggers is null)
-            throw new Exception("Could not deserialize triggers.");
-        var triggerSelected = EnterTriggerInputSelection(triggers);
-        AnsiConsole.MarkupLine($"[bold]Selected trigger \"{triggerSelected.m_triggerName}\".[/]");
-        return (zoneName, triggerSelected);
+        var formattedTriggers = new List<string>();
+    
+        foreach (var t in triggers)
+        {
+            var hasTeleport = TriggerHasTeleportResult(zoneName, t.m_triggerName);
+            var prefix = hasTeleport ? "✓" : "𐄂";
+            formattedTriggers.Add($"({prefix}) {t.m_triggerName}");
+        }
+    
+        var triggerSel = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title("Select a trigger:")
+                .PageSize(10)
+                .AddChoices(formattedTriggers));
+        triggerSel = triggerSel.Split(" ")[^1].Trim();
+    
+        return triggers.FirstOrDefault(x => x.m_triggerName == triggerSel);
+    }
+    
+    private static bool TriggerHasTeleportResult(string zoneName, string triggerName)
+    {
+        var colName = SanitizeColName($"{ResultCollectionName}/{zoneName}/{triggerName}");
+        using var db = new LiteDatabase(serverDatabasePath);
+        var col= db.GetCollection<TypeCache.Result>(colName);
+        return col.FindAll().Any();
+    }
+    
+    private static void DeleteExistingTeleportResult(string zoneName, string triggerName)
+    {
+        var colName = SanitizeColName($"{ResultCollectionName}/{zoneName}/{triggerName}");
+        using var db = new LiteDatabase(serverDatabasePath);
+        var col= db.GetCollection<TypeCache.Result>(colName);
+        col.DeleteAll();
+    }
+    
+    private static void InsertTeleportResult(string zoneName, string triggerName, TypeCache.Result result)
+    {
+        var colName = SanitizeColName($"{ResultCollectionName}/{zoneName}/{triggerName}");
+        using var db = new LiteDatabase(serverDatabasePath);
+        var col= db.GetCollection<TypeCache.Result>(colName);
+        col.Insert(result);
     }
 
     private static ResTeleport RebuildZoneTransferResult(string zoneName, string triggerName)
@@ -117,10 +152,11 @@ public static class Program
             new SelectionPrompt<string>()
                 .Title("Select a teleport location in the destination zone:")
                 .PageSize(10)
-                .AddChoices(destinationLocations.Select(x => $"{x.m_locName} @ {x.m_location}")));
+                .AddChoices(destinationLocations.Select(x => $"{x.m_locName} @ {x.m_location} dir: {x.m_direction}")));
         // Refactor the selection name to not include the coordinate flavor text.
         var destinationLocationStr = destinationLocation.Split('@')[^1];
-        var destinationCoords = ConvertVector3ToWizard(destinationLocationStr);
+        var destinationLocationDir = destinationLocation.Split("dir:")[^1].Trim();
+        var destinationCoords = $"{ConvertVector3ToWizard(destinationLocationStr)},{destinationLocationDir}";
 
         // Write the selected information to the console.
         var panel = new Panel(
@@ -162,7 +198,7 @@ public static class Program
         var x = ExtractValue(components[0]);
         var y = ExtractValue(components[1]);
         var z = ExtractValue(components[2]);
-        
+
         return $"{x},{y},{z}";
     }
 
@@ -193,7 +229,15 @@ public static class Program
                 .AddChoices(closestMatches.Select(x => $"({x.Similarity}%): {x.Option}")));
 
         // Refactor the zone name to not include percentage prefix.
-        return zoneName.Split(' ')[^1];
+        zoneName = zoneName.Split(' ')[^1];
+        
+        // Check to see if the selected KIWAD exists in the input directory.
+        var properWadName = zoneName.Replace('/', '-');
+        var checkPath = $"{inputPath}/{properWadName}.wad";
+        if (File.Exists(checkPath)) 
+            return zoneName;
+        
+        throw new Exception($"There is no KIWAD by name \"{checkPath}\" in your input directory.");
     }
 
     private static Wad GetWad(string wadName)
@@ -229,11 +273,22 @@ public static class Program
 
     private static Trigger EnterTriggerInputSelection(Trigger[] triggers)
     {
+        var formattedTriggers = new List<string>();
+        foreach (var t in triggers)
+        {
+            // Create a check or X prefix declaring if this trigger has a `ResTeleport` already.
+            var hasTeleport = t.m_results.m_results.Any(x => x is ResTeleport);
+            var prefix = hasTeleport ? "✓" : "𐄂";
+            formattedTriggers.Add($"({prefix}) {t.m_triggerName}");
+        }
+        
         var triggerSel = AnsiConsole.Prompt(
             new SelectionPrompt<string>()
                 .Title("Select a trigger")
                 .PageSize(10)
-                .AddChoices(triggers.Select(x => (string)x.m_triggerName).ToList()));
+                .AddChoices(formattedTriggers));
+        // Narrow our trigger selection to exclude the prefix we created for it.
+        triggerSel = triggerSel.Split(" ")[^1].Trim();
 
         return triggers.FirstOrDefault(x => x.m_triggerName == triggerSel);
     }
@@ -288,5 +343,11 @@ public static class Program
     {
         var fs = new FileSerializer();
         return fs.OpenClass<TypeCache.WizZoneData>(wad, ZoneDataFileName).m_locationList;
+    }
+    
+    private static string SanitizeColName(string colName)
+    {
+        // Use regular expression to remove any character that isn't an alphabet character or an underscore.
+        return Regex.Replace(colName, @"[^a-zA-Z_]", "");
     }
 }

@@ -27,4 +27,8 @@
     <ProjectReference Include="..\Server\Imlight.Server.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Content\" />
+  </ItemGroup>
+
 </Project>
