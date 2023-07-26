@@ -38,7 +38,7 @@ namespace Imlight.Server.Game
             if (!AccessPassManager.DoesZoneExist(message.ZoneName))
             {
                 Log.Logger.Error(
-                    $"GameWorld received invalid zone transfer request from {Sender.Path.Name}.");
+                    $"{nameof(GameWorld)} received invalid zone name \"{message.ZoneName}\".");
                 
                 response.ErrorCode = 1;
                 Sender.Tell(response);
