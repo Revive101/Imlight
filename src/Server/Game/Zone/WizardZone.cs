@@ -360,6 +360,31 @@ public class WizardZone : ReceiveProtocolDispatcher
         this._triggers.Add(message.Trigger);
     }
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_TRIGGER))]
+    private void ReceiveActivateTrigger(ZONE_102_PROTOCOL.MSG_TRIGGER message)
+    {
+        var triggers = (
+            from trigger in _triggers 
+            from vol in trigger.m_volumes 
+            where vol == message.TriggerName 
+            select trigger)
+            .ToList();
+
+        if (!triggers.Any())
+        {
+            Log.Logger.Debug($"{nameof(WizardZoneVolume)} {ZoneName} tried to activate trigger " +
+                               $"\"{message.TriggerName}\", but no trigger was found in the zone.");
+            return;
+        }
+
+        foreach (var trigger in triggers)
+        {
+            
+        }
+        
+        Log.Logger.Debug($"{nameof(WizardZoneVolume)} {ZoneName} activated trigger \"{message.TriggerName}\".");
+    }
+
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ASKFORINTERACTION))]
     private void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_ASKFORINTERACTION message)
     {
