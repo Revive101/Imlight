@@ -11,6 +11,7 @@ using Imlight.Common.Utilities;
 using Imlight.Server.Database;
 using Imlight.Server.Shared.Packets;
 using SharpDX;
+using WizUnraveler.Cache;
 using WizUnraveler.Formats;
 using WizUnraveler.IO;
 using static WizUnraveler.Cache.TypeCache;
@@ -30,6 +31,7 @@ public static class WizardZoneLoader
     private const string NodeDataFileName = "pathNodeData.bin";
     private const string VolumeDataFileName = "volumes.xml";
     private const string TriggerDataFileName = "triggers.xml";
+    private const string ResultCollectionName = "zone-triggers";
     private static readonly object LockObject = new();
 
     private static WizardZone _zone;
@@ -73,6 +75,7 @@ public static class WizardZoneLoader
                 CreateZoneGameObjects();
                 CreateZonePaths();
                 CreateZoneVolumes();
+                CreateZoneTriggers();
             }
             catch (Exception ex)
             {
@@ -198,7 +201,7 @@ public static class WizardZoneLoader
     }
 
     /// <summary>
-    /// Creates the volumes for the zone based on the loaded volume and trigger data.
+    /// Creates the volumes for the zone based on the loaded volume data.
     /// </summary>
     /// <exception cref="NullReferenceException"></exception>
     private static void CreateZoneVolumes()
@@ -215,7 +218,10 @@ public static class WizardZoneLoader
             // Set data for this CoreObject from the given volume data.
             var loc = new Vector3(volume.m_locationX, volume.m_locationY, volume.m_locationZ);
             newObj.m_location = loc;
-            newObj.m_templateID = volume.m_templateID;
+            newObj.m_templateID = volume.m_templateID; // I've never seen this templateID be anything but 1700.
+
+            if (volume.m_templateID != 1700)
+                Log.Logger.Error("Zone volume has a template OTHER than 1700! Let Jooty know :)");
 
             // Write a message citing the details of this volume, and send a message to the zone.
             var msg = new ZONE_102_PROTOCOL.MSG_ADDVOLUME
@@ -223,6 +229,39 @@ public static class WizardZoneLoader
                 CoreObject = newObj,
                 Volume = volume,
             };
+            _zoneActorRef.Tell(msg);
+        }
+    }
+
+    /// <summary>
+    /// Creates the triggers for the zone based on the loaded trigger data. Trigger result data is loaded from Imlight's
+    /// <see cref="ServerDataBroker"/>.
+    /// </summary>
+    private static void CreateZoneTriggers()
+    {
+        if (_zoneTriggers is null) throw new NullReferenceException(nameof(_zoneTriggers));
+        
+        var zoneName = _zoneData.m_zoneName;
+
+        foreach (var trigger in _zoneTriggers.m_triggers)
+        {
+            // Find this trigger's results in the server database.
+            var colName = $"{ResultCollectionName}/{zoneName}/{trigger.m_triggerName}";
+            var col = ServerDataBroker.GetCollection<TypeCache.Result>(colName);
+
+            if (col.Any())
+            {
+                var resultList = new ResultList { m_results = new List<TypeCache.Result>() };
+                resultList.m_results = col.ToList();
+                trigger.m_results = resultList;
+            }
+            
+            // fixme: In the grand scheme, storing a trigger without any result data is wasted space. For now, the
+            // below code remains where it does for debugging purposes. In the way future, it should be added to the 
+            // conditional above.
+
+            // Write a message citing the details of this volume, and send a message to the zone.
+            var msg = new ZONE_102_PROTOCOL.MSG_ADDTRIGGER { Trigger = trigger };
             _zoneActorRef.Tell(msg);
         }
     }
@@ -276,7 +315,7 @@ public static class WizardZoneLoader
     }
     
     /// <summary>
-    /// Checks to see if all creates in a <see cref="SpawnItem"/> contain the same path ID.
+    /// Checks to see if all creatures in a <see cref="SpawnItem"/> contain the same path ID.
     /// </summary>
     /// <param name="spawnList">The list of spawns.</param>
     /// <returns>True, if all the creatures are on the same path; false otherwise.</returns>
@@ -287,7 +326,7 @@ public static class WizardZoneLoader
     }
 
     /// <summary>
-    /// Clears any unmanaged memory and resources.
+    /// Clears any memory used so the next lock iteration may have a clean slate.
     /// </summary>
     private static void ClearUnmanagedMemory()
     {

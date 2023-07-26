@@ -130,5 +130,13 @@ namespace Imlight.Server.Shared.Packets
             public TypeCache.CoreObject CoreObject;
             public ServerTypeCache.Volume Volume;
         }
+        
+        public class MSG_ADDTRIGGER : IServerMessage
+        {
+            public byte MessageOrder { get; } = 12;
+            public byte ServiceID { get; } = 102;
+
+            public ServerTypeCache.Trigger Trigger;
+        }
     }
 }

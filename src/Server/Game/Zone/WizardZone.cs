@@ -28,7 +28,7 @@ public class WizardZone : ReceiveProtocolDispatcher
     private readonly IActorRef _objectSupervisorRef;
     private readonly IActorRef _pathSupervisorRef;
     private readonly IActorRef _volumeSupervisorRef;
-    private readonly IEnumerable<Trigger> _triggers;
+    private readonly List<Trigger> _triggers;
 
     // TODO: I don't want to be saving CoreObjects here.
     private readonly Dictionary<IActorRef, CoreObject> _zoneCreatures;
@@ -47,6 +47,7 @@ public class WizardZone : ReceiveProtocolDispatcher
         _pathSupervisorRef = CreatePathSupervisor();
         _objectSupervisorRef = CreateObjectSupervisor();
         _volumeSupervisorRef = CreateVolumeSupervisor();
+        _triggers = new List<Trigger>();
         // We don't need to create a PlayerSupervisor, as the GameServer manages that for us.
 
         // Load and initialize this zone.
@@ -67,7 +68,8 @@ public class WizardZone : ReceiveProtocolDispatcher
     /// <param name="message">The <see cref="INetworkMessage" /> that will be broadcast.</param>
     private void Broadcast(INetworkMessage message)
     {
-        foreach (var player in _zonePlayers.Keys) player.Tell(message);
+        foreach (var player in _zonePlayers.Keys) 
+            player.Tell(message);
     }
 
     /// <summary>
@@ -229,8 +231,9 @@ public class WizardZone : ReceiveProtocolDispatcher
         
         message.PlayerObject.m_nMobileID = GenerateMobileId();
 
+        // Spawn the existing zone objects for our new player. Add them to the player list afterwards, so they don't
+        // load themselves.
         SpawnZoneObjectsForClient(message.Player);
-
         _zonePlayers.Add(message.Player, message.PlayerObject);
         
         BroadcastObjectCreation(message.PlayerObject);
@@ -247,6 +250,8 @@ public class WizardZone : ReceiveProtocolDispatcher
     {
         if (!_zonePlayers.TryGetValue(message.Player, out var obj))
         {
+            // fixme: This should become an exception inevitably. Due to race conditions, this ends up getting
+            // triggered more than it should, so for now it just remains an error log.
             Log.Logger.Error($"Zone [{ZoneName}] tried to remove player it did not have.");
             return;
         }
@@ -262,8 +267,6 @@ public class WizardZone : ReceiveProtocolDispatcher
         if (message.IsZoneTransfer)
             RemoveZoneObjectsForClient(message.Player);
 
-        _zonePlayers.Remove(message.Player);
-        
         Log.Logger.Debug($"Player {message.Player.Path.Name} removed from zone {ZoneName}.");
     }
 
@@ -317,8 +320,7 @@ public class WizardZone : ReceiveProtocolDispatcher
         rsp.MobileId = id;
 
         _zoneObjects.Add(rsp.ActorRef, message.CoreObject);
-
-        // Return to sender.
+        
         Sender.Tell(rsp);
     }
 
@@ -340,13 +342,12 @@ public class WizardZone : ReceiveProtocolDispatcher
     {
         var id = GenerateMobileId();
         message.CoreObject.m_nMobileID = id;
-        
-        // The object has not been created as an actor yet. We'll tell the object supervisor about this object, and let
-        // it handle the creation of this object. We will await the replies, since some of it's details are needed here.
-        var rsp = _volumeSupervisorRef
-            .Ask<ZONE_102_PROTOCOL.MSG_ADDOBJECTRSP>(message)
-            .Result;
-        rsp.MobileId = id;
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDTRIGGER))]
+    private void ReceiveAddTrigger(ZONE_102_PROTOCOL.MSG_ADDTRIGGER message)
+    {
+        this._triggers.Add(message.Trigger);
     }
 
     #endregion
