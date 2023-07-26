@@ -34,6 +34,7 @@ public class WizardZone : ReceiveProtocolDispatcher
     private readonly Dictionary<IActorRef, CoreObject> _zoneCreatures;
     private readonly Dictionary<IActorRef, CoreObject> _zoneObjects;
     private readonly Dictionary<IActorRef, CoreObject> _zonePlayers;
+    private readonly Dictionary<IActorRef, CoreObject> _zoneVolumes;
 
     // ctor
     public WizardZone(string zoneName)
@@ -43,6 +44,7 @@ public class WizardZone : ReceiveProtocolDispatcher
         _zonePlayers = new Dictionary<IActorRef, CoreObject>();
         _zoneCreatures = new Dictionary<IActorRef, CoreObject>();
         _zoneObjects = new Dictionary<IActorRef, CoreObject>();
+        _zoneVolumes = new Dictionary<IActorRef, CoreObject>();
 
         _pathSupervisorRef = CreatePathSupervisor();
         _objectSupervisorRef = CreateObjectSupervisor();
@@ -222,6 +224,19 @@ public class WizardZone : ReceiveProtocolDispatcher
             ErrorCode = 0
         });
     }
+    
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT))]
+    private void ReceiveQueryObject(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT message)
+    {
+        var kvp = SearchObjectInZone(message.ObjectId, _zoneObjects, _zonePlayers, _zoneCreatures)!.Value;
+        var rsp = new ZONE_102_PROTOCOL.MSG_OBJECTDETAILS()
+        {
+            CoreObject = kvp.Value,
+            ObjectIdentity = kvp.Key
+        };
+        
+        Sender.Tell(rsp);
+    }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
     private void ReceiveAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message)
@@ -324,30 +339,36 @@ public class WizardZone : ReceiveProtocolDispatcher
         Sender.Tell(rsp);
     }
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT))]
-    private void ReceiveQueryObject(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT message)
-    {
-        var kvp = SearchObjectInZone(message.ObjectId, _zoneObjects, _zonePlayers, _zoneCreatures)!.Value;
-        var rsp = new ZONE_102_PROTOCOL.MSG_OBJECTDETAILS()
-        {
-            CoreObject = kvp.Value,
-            ObjectIdentity = kvp.Key
-        };
-        
-        Sender.Tell(rsp);
-    }
-
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDVOLUME))]
     private void ReceiveAddVolume(ZONE_102_PROTOCOL.MSG_ADDVOLUME message)
     {
         var id = GenerateMobileId();
         message.CoreObject.m_nMobileID = id;
+        
+        // The object has not been created as an actor yet. We'll tell the volume supervisor about this object, and let
+        // it handle the creation of this object. We will await the replies, since some of it's details are needed here.
+        var rsp = _volumeSupervisorRef
+            .Ask<ZONE_102_PROTOCOL.MSG_ADDOBJECTRSP>(message)
+            .Result;
+        
+        _zoneVolumes.Add(rsp.ActorRef, message.CoreObject);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDTRIGGER))]
     private void ReceiveAddTrigger(ZONE_102_PROTOCOL.MSG_ADDTRIGGER message)
     {
         this._triggers.Add(message.Trigger);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ASKFORINTERACTION))]
+    private void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_ASKFORINTERACTION message)
+    {
+        // An object in the zone needs to inform every volume that it's fishing for a reaction. Forward the object to
+        // every volume in the zone.
+        foreach (var volume in _zoneVolumes.Keys)
+        {
+            volume.Forward(message);
+        }
     }
 
     #endregion

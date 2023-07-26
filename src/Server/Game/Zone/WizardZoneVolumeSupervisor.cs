@@ -30,9 +30,8 @@ public class WizardZoneVolumeSupervisor : ReceiveProtocolDispatcher
     private void ReceiveAddVolume(ZONE_102_PROTOCOL.MSG_ADDVOLUME message)
     {
         // Create an actor representation from the given message.
-        var volName = message.Volume.m_volumeName;
         var props = WizardZoneVolume.Props(message.CoreObject, _wizardZoneRef, message.Volume);
-        var actorRef = Context.ActorOf(props, volName);
+        var actorRef = Context.ActorOf(props);
         
         // Respond to the sender with the actor reference we just created.
         var rsp = new ZONE_102_PROTOCOL.MSG_ADDOBJECTRSP { ActorRef = actorRef };
