@@ -31,7 +31,7 @@ public static class WizardZoneLoader
     private const string NodeDataFileName = "pathNodeData.bin";
     private const string VolumeDataFileName = "volumes.xml";
     private const string TriggerDataFileName = "triggers.xml";
-    private const string ResultCollectionName = "zone-triggers";
+    private const string ResultCollectionName = "zone_triggers";
     private static readonly object LockObject = new();
 
     private static WizardZone _zone;
@@ -145,7 +145,7 @@ public static class WizardZoneLoader
     private static void LoadVolumeData()
     {
         var serializer = new FileSerializer();
-        var t = _zoneVolumes = serializer.OpenClass<WizZoneVolumes>(_wad, VolumeDataFileName);
+        _zoneVolumes = serializer.OpenClass<WizZoneVolumes>(_wad, VolumeDataFileName);
         if (_zoneVolumes is null)
             Log.Logger.Error(
                 $"Zone {_zone.ZoneName} could not load {VolumeDataFileName} as it was missing or invalid.");
@@ -157,7 +157,7 @@ public static class WizardZoneLoader
     private static void LoadTriggerData()
     {
         var serializer = new FileSerializer();
-        var t = _zoneTriggers = serializer.OpenClass<WizZoneTriggers>(_wad, TriggerDataFileName);
+        _zoneTriggers = serializer.OpenClass<WizZoneTriggers>(_wad, TriggerDataFileName);
         if (_zoneTriggers is null)
             Log.Logger.Error(
                 $"Zone {_zone.ZoneName} could not load {TriggerDataFileName} as it was missing or invalid.");
@@ -220,9 +220,6 @@ public static class WizardZoneLoader
             newObj.m_location = loc;
             newObj.m_templateID = volume.m_templateID; // I've never seen this templateID be anything but 1700.
 
-            if (volume.m_templateID != 1700)
-                Log.Logger.Error("Zone volume has a template OTHER than 1700! Let Jooty know :)");
-
             // Write a message citing the details of this volume, and send a message to the zone.
             var msg = new ZONE_102_PROTOCOL.MSG_ADDVOLUME
             {
@@ -246,7 +243,8 @@ public static class WizardZoneLoader
         foreach (var trigger in _zoneTriggers.m_triggers)
         {
             // Find this trigger's results in the server database.
-            var colName = $"{ResultCollectionName}/{zoneName}/{trigger.m_triggerName}";
+            var colName = $"{ResultCollectionName}/{zoneName}/{trigger.m_triggerName}"
+                .Replace('/', '_');
             var col = ServerDataBroker.GetCollection<TypeCache.Result>(colName);
 
             if (col.Any())
