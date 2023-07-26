@@ -145,6 +145,7 @@ namespace Imlight.Server.Shared.Packets
             public byte ServiceID { get; } = 102;
 
             public ByteString TriggerName;
+            public IActorRef Suspect;
         }
         
         public class MSG_ASKFORINTERACTION : IServerMessage
@@ -153,6 +154,7 @@ namespace Imlight.Server.Shared.Packets
             public byte ServiceID { get; } = 102;
 
             public TypeCache.CoreObject CoreObject;
+            public IActorRef Suspect;
         }
     }
 }

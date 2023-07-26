@@ -50,7 +50,11 @@ public class WizardZoneVolume : WizardZoneObject
             _objsInRadius.Add(message.CoreObject);
             foreach (var ev in _volume.m_enterEvents)
             {
-                var msg = new ZONE_102_PROTOCOL.MSG_TRIGGER() { TriggerName = ev };
+                var msg = new ZONE_102_PROTOCOL.MSG_TRIGGER()
+                {
+                    TriggerName = ev,
+                    Suspect = message.Suspect
+                };
                 WizardZoneRef.Tell(msg);
             }
             
@@ -61,7 +65,11 @@ public class WizardZoneVolume : WizardZoneObject
             _objsInRadius.Remove(message.CoreObject);
             foreach (var ev in _volume.m_exitEvents)
             {
-                var msg = new ZONE_102_PROTOCOL.MSG_TRIGGER() { TriggerName = ev };
+                var msg = new ZONE_102_PROTOCOL.MSG_TRIGGER()
+                {
+                    TriggerName = ev,
+                    Suspect = message.Suspect
+                };
                 WizardZoneRef.Tell(msg);
             }
         }

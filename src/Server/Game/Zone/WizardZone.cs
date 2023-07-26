@@ -379,7 +379,14 @@ public class WizardZone : ReceiveProtocolDispatcher
 
         foreach (var trigger in triggers)
         {
-            
+            // TODO: For now, we're only supporting the `ResTeleport`.
+            var teleportResult = trigger.m_results.m_results.FirstOrDefault(x => x is TypeCache.ResTeleport);
+            var msg = new GAME_5_PROTOCOL.MSG_ZONETRANSFERREQUEST
+            {
+                SendAck = 0,
+                ZoneName = "WizardCity/WC_Streets/WC_Unicorn"
+            };
+            message.Suspect.Tell(msg);
         }
         
         Log.Logger.Debug($"{nameof(WizardZoneVolume)} {ZoneName} activated trigger \"{message.TriggerName}\".");
