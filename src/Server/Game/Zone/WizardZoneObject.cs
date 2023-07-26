@@ -1,4 +1,5 @@
 using Akka.Actor;
+using Imlight.Common.Utilities;
 using Imlight.Server.Database;
 using Imlight.Server.Shared.Networking;
 using static WizUnraveler.Cache.TypeCache;
@@ -19,6 +20,13 @@ public class WizardZoneObject : ReceiveProtocolDispatcher
     {
         this.ActiveGameObject = activeGameObject;
         this.WizardZoneRef = wizardZoneRef;
+
+        if (activeGameObject.m_templateID == 0)
+        {
+            Log.Logger.Warning($"{nameof(WizardZoneObject)} \"{activeGameObject.m_debugName}\" was " +
+                               $"loaded with a template ID of 0.");
+            return;
+        }
         this.Template = CoreObjectFactory.GetCoreTemplate(activeGameObject.m_templateID);
     }
     
