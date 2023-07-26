@@ -152,7 +152,7 @@ namespace Imlight.Server.Game.Services
         private void SendZoneInteractionFishRequest()
         {
             var characterObj = GetActiveCoreObject();
-            var msg = new ZONE_102_PROTOCOL.MSG_ASKFORINTERACTION()
+            var msg = new ZONE_102_PROTOCOL.MSG_TRIGGERQUERY()
             {
                 CoreObject = characterObj,
                 Suspect = SessionActor.ActorRef

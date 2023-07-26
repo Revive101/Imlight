@@ -392,8 +392,8 @@ public class WizardZone : ReceiveProtocolDispatcher
         Log.Logger.Debug($"{nameof(WizardZoneVolume)} {ZoneName} activated trigger \"{message.TriggerName}\".");
     }
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ASKFORINTERACTION))]
-    private void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_ASKFORINTERACTION message)
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_TRIGGERQUERY))]
+    private void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_TRIGGERQUERY message)
     {
         // An object in the zone needs to inform every volume that it's fishing for a reaction. Forward the object to
         // every volume in the zone.

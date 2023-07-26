@@ -148,7 +148,7 @@ namespace Imlight.Server.Shared.Packets
             public IActorRef Suspect;
         }
         
-        public class MSG_ASKFORINTERACTION : IServerMessage
+        public class MSG_TRIGGERQUERY : IServerMessage
         {
             public byte MessageOrder { get; } = 14;
             public byte ServiceID { get; } = 102;

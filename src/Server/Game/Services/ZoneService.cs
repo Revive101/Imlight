@@ -98,8 +98,8 @@ namespace Imlight.Server.Game.Services
             _zoneRef.Forward(message);
         }
 
-        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ASKFORINTERACTION))]
-        private void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_ASKFORINTERACTION message)
+        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_TRIGGERQUERY))]
+        private void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_TRIGGERQUERY message)
         {
             if (_zoneRef is null) throw new Exception("Zone Reference was null.");
             

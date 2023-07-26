@@ -33,8 +33,8 @@ public class WizardZoneVolume : WizardZoneObject
         return Akka.Actor.Props.Create(() => new WizardZoneVolume(activeGameObject, wizardZoneRef, volume));
     }
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ASKFORINTERACTION))]
-    private void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_ASKFORINTERACTION message)
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_TRIGGERQUERY))]
+    private void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_TRIGGERQUERY message)
     {
         var playerPos = new Vector2(message.CoreObject.m_location.X, message.CoreObject.m_location.Z);
         var volPos = new Vector2(ActiveGameObject.m_location.X, ActiveGameObject.m_location.Z);
