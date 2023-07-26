@@ -9,11 +9,13 @@ using System.Linq;
 using Akka.Actor;
 using Imlight.Common.Serializable;
 using Imlight.Common.Utilities;
+using Imlight.Server.Database;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
 using WizUnraveler.Cache;
 using WizUnraveler.DML;
 using WizUnraveler.ObjectProperty;
+using WizUnraveler.Secrets;
 using static WizUnraveler.Cache.TypeCache;
 using static WizUnraveler.ObjectProperty.ObjectSerializer;
 using static WizUnraveler.Secrets.ServerTypeCache;
@@ -223,10 +225,10 @@ public class WizardZone : ReceiveProtocolDispatcher
 
     #region Handlers
     
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONE))]
-    private void ReceiveQueryZone(ZONE_102_PROTOCOL.MSG_QUERYZONE message)
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]
+    private void ReceiveQueryZone(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message)
     {
-        Sender.Tell(new ZONE_102_PROTOCOL.MSG_QUERYZONERSP
+        Sender.Tell(new ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP
         {
             ZoneActorRef = Self,
             DynamicZoneId = _dynamicZoneId,
@@ -261,7 +263,7 @@ public class WizardZone : ReceiveProtocolDispatcher
         _zonePlayers.Add(message.Player, message.PlayerObject);
         
         BroadcastObjectCreation(message.PlayerObject);
-        
+
         // Inform each volume of this object, so that they may check if the player is within it's bounds and provide
         // them a grace period.
         InformVolumesOfNewPlayer(message.PlayerObject);
@@ -357,6 +359,7 @@ public class WizardZone : ReceiveProtocolDispatcher
     {
         var id = GenerateMobileId();
         message.CoreObject.m_nMobileID = id;
+        message.CoreObject.m_debugName = message.Volume.m_volumeName;
         
         // The object has not been created as an actor yet. We'll tell the volume supervisor about this object, and let
         // it handle the creation of this object. We will await the replies, since some of it's details are needed here.
@@ -390,19 +393,23 @@ public class WizardZone : ReceiveProtocolDispatcher
             return;
         }
 
-        foreach (var trigger in triggers)
+        // TODO: For now, we're only supporting the `ResTeleport`.
+        foreach (var trigger in triggers
+                     .Where(t => t.m_results.m_results.FirstOrDefault() is ServerTypeCache.ResTeleport))
         {
-            // TODO: For now, we're only supporting the `ResTeleport`.
-            //var teleportResult = trigger.m_results.m_results.FirstOrDefault(x => x is TypeCache.ResTeleport);
-            //var msg = new GAME_5_PROTOCOL.MSG_ZONETRANSFERREQUEST
-            //{
-            //    SendAck = 0,
-            //    ZoneName = "WizardCity/WC_Streets/WC_Unicorn"
-            //};
-            //message.Suspect.Tell(msg);
+            foreach (var result in trigger.m_results.m_results)
+            {
+                var msg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER
+                {
+                    ZoneName = ((ServerTypeCache.ResTeleport)result).m_destinationZone,
+                    Location = ((ServerTypeCache.ResTeleport)result).m_destinationLoc,
+                    SendToClient = true
+                };
+                message.Suspect.Tell(msg);
+            }
         }
         
-        Log.Logger.Debug($"{nameof(WizardZoneVolume)} {ZoneName} activated trigger \"{message.TriggerName}\".");
+        Log.Logger.Debug($"{nameof(WizardZoneVolume)} {ZoneName} activated trigger \"{triggers[0].m_triggerName}\".");
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_TRIGGERQUERY))]

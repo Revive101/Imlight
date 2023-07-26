@@ -97,11 +97,10 @@ namespace Imlight.Server.Game.Services
             AddPlayerToZone(charGameObject);
         }
 
-        private ZONE_102_PROTOCOL.MSG_QUERYZONERSP GetZoneDetails(string zoneName)
+        private ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP GetZoneDetails(string zoneName)
         {
-            // When we send a zone transfer request, it will also add the player to that zone.
-            var zoneMsg = new ZONE_102_PROTOCOL.MSG_QUERYZONE { ZoneName = zoneName, };
-            return AskSessionServices<ZONE_102_PROTOCOL.MSG_QUERYZONERSP>(zoneMsg);
+            var zoneMsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER { ZoneName = zoneName, SendToClient = false};
+            return AskSessionServices<ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP>(zoneMsg);
         }
 
         private void AddPlayerToZone(WizClientObject charObj)

@@ -16,6 +16,7 @@ namespace Imlight.Server.Game.Services
     public class ZoneService : MessageService
     {
         private IActorRef _zoneRef;
+        private IActorRef _bankedZoneRef;
         
         public ZoneService(SessionActor sessionActor) : base(sessionActor) { }
 
@@ -24,13 +25,30 @@ namespace Imlight.Server.Game.Services
             return Akka.Actor.Props.Create(() => new ZoneService(parentActor));
         }
 
-        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONE))]
-        private void ReceiveZoneTransferRequest(ZONE_102_PROTOCOL.MSG_QUERYZONE message)
+        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]
+        private void ReceiveZoneTransferRequest(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message)
         {
-            var result = AskServer<ZONE_102_PROTOCOL.MSG_QUERYZONERSP>(message);
+            var character = GetActiveCharacter();
+            var result = AskServer<ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP>(message);
+            if (result.ErrorCode == 0 && message.SendToClient)
+            {
+                // Ask the client if it's okay with being transferred.
+                var msg = new GAME_5_PROTOCOL.MSG_ZONETRANSFERREQUEST
+                {
+                    ZoneName = message.ZoneName,
+                    SendAck = 0
+                };
+                SendToSocket(msg);
+
+                character.nextZone = message.ZoneName;
+                character.nextLocation = message.Location;
+                
+                // Bank the zone actor reference. If the client is okay with transferring, we'll set the actual
+                // zone ref to the banked one.
+                _bankedZoneRef = result.ZoneActorRef;
+            }
             
-            // If the zone request was successful, we'll set the zone reference.
-            if (result.ErrorCode == 0)
+            if (!message.SendToClient)
             {
                 _zoneRef = result.ZoneActorRef;
             }
@@ -38,22 +56,6 @@ namespace Imlight.Server.Game.Services
             Sender.Tell(result);
         }
         
-        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
-        private void ReceiveAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message)
-        {
-            if (_zoneRef is null) throw new NullReferenceException(nameof(_zoneRef));
-            
-            _zoneRef.Forward(message);
-        }
-
-        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
-        private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message)
-        {
-            if (_zoneRef is null) throw new Exception("Zone Reference was null.");
-            
-            _zoneRef.Tell(message);
-        }
-
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK))]
         private void ReceiveZoneTransferAck(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK message)
         {
@@ -71,7 +73,7 @@ namespace Imlight.Server.Game.Services
 
             character.CreationData.m_location = character.nextZone;
 
-            // We don't need to add the player to the new zone, as the zone will do that for us on MSG_ATTACH.
+            // We don't need to add the player to the new zone, as the attach service will do that.
             var serverTransfer = new GAME_5_PROTOCOL.MSG_SERVERTRANSFER()
             {
                 IP = character.LastGameServerIp,
@@ -80,7 +82,7 @@ namespace Imlight.Server.Game.Services
                 UserID = account.ID,
                 CharID = character.Id,
                 ZoneName = character.nextZone,
-                Location = "Start",
+                Location = character.nextLocation,
                 Slot = 0,
                 SessionSlot = 0,
                 SessionID = 0,
@@ -88,6 +90,25 @@ namespace Imlight.Server.Game.Services
                 TransitionID = 1
             };
             SendToSocket(serverTransfer);
+
+            _zoneRef = _bankedZoneRef;
+            _bankedZoneRef = null;
+        }
+        
+        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
+        private void ReceiveAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message)
+        {
+            if (_zoneRef is null) throw new NullReferenceException(nameof(_zoneRef));
+            
+            _zoneRef.Forward(message);
+        }
+
+        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
+        private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message)
+        {
+            if (_zoneRef is null) throw new Exception("Zone Reference was null.");
+            
+            _zoneRef.Tell(message);
         }
 
         [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT))]

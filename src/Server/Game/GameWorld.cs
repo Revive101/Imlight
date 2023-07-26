@@ -29,17 +29,16 @@ namespace Imlight.Server.Game
             return Akka.Actor.Props.Create(() => new GameWorld(server));
         }
         
-        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONE))]
-        private void ReceiveZoneTransferRequest(ZONE_102_PROTOCOL.MSG_QUERYZONE message)
+        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]
+        private void ReceiveQueryZone(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message)
         {
-            var response = new ZONE_102_PROTOCOL.MSG_QUERYZONERSP();
-            
             // First, make sure this zone is valid by checking the AccessPassManager.
             if (!AccessPassManager.DoesZoneExist(message.ZoneName))
             {
                 Log.Logger.Error(
                     $"{nameof(GameWorld)} received invalid zone name \"{message.ZoneName}\".");
                 
+                var response = new ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP();
                 response.ErrorCode = 1;
                 Sender.Tell(response);
 

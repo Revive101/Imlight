@@ -15,12 +15,13 @@ namespace Imlight.Server.Database
     public class Character
     {
         private const int    STARTING_LEVEL = 15;
-        private const string STARTING_LOCATION = "WizardCity/WC_Streets/WC_Unicorn";
+        private const string STARTING_LOCATION = "WizardCity/WC_Hub";
         private const int    STARTING_BASE_MANA = 15;
         private const int    STARTING_BASE_HEALTH = 500;
         private const int    STARTING_BASE_GOLD = 1000000;
 
-        public string nextZone = ""; // TESTING ONLY
+        public string nextZone;
+        public string nextLocation;
         public string LastGameServerIp = "";
         public ushort LastGameServerPort;
 

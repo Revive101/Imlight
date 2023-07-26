@@ -21,15 +21,17 @@ namespace Imlight.Server.Shared.Packets
         public int ProtocolVersion { get; } = 1;
         public string ProtocolDescription { get; } = "Internal Zone General Messages.";
         
-        public class MSG_QUERYZONE : IServerMessage
+        public class MSG_ZONETRANSFER : IServerMessage
         {
             public byte MessageOrder { get; } = 1;
             public byte ServiceID { get; } = 102;
             
             public string ZoneName;
+            public string Location;
+            public bool SendToClient = true;
         }
         
-        public class MSG_QUERYZONERSP : IServerMessage
+        public class MSG_ZONETRANSFERRSP : IServerMessage
         {
             public byte MessageOrder { get; } = 2;
             public byte ServiceID { get; } = 102;
