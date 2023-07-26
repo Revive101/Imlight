@@ -297,6 +297,9 @@ public class WizardZone : ReceiveProtocolDispatcher
         if (message.IsZoneTransfer)
             RemoveZoneObjectsForClient(message.Player);
 
+        var rsp = new ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP();
+        Sender.Tell(rsp);
+
         Log.Logger.Debug($"Player {message.Player.Path.Name} removed from zone {ZoneName}.");
     }
 
@@ -408,8 +411,12 @@ public class WizardZone : ReceiveProtocolDispatcher
                 message.Suspect.Tell(msg);
             }
         }
-        
-        Log.Logger.Debug($"{nameof(WizardZoneVolume)} {ZoneName} activated trigger \"{triggers[0].m_triggerName}\".");
+
+        foreach (var trigger in triggers)
+        {
+            Log.Logger.Debug(
+                $"{nameof(WizardZoneVolume)} {ZoneName} activated trigger \"{trigger.m_triggerName}\".");
+        }
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_TRIGGERQUERY))]

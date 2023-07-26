@@ -68,6 +68,12 @@ namespace Imlight.Server.Shared.Packets
             public ulong GlobalId;
             public bool IsZoneTransfer;
         }
+        
+        public class MSG_REMOVEPLAYERRSP : IServerMessage
+        {
+            public byte MessageOrder { get; } = 5;
+            public byte ServiceID { get; } = 102;
+        }
 
         public class MSG_ZONEBROADCAST : IServerMessage
         {
