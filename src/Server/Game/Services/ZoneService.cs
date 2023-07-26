@@ -17,6 +17,7 @@ namespace Imlight.Server.Game.Services
     {
         private IActorRef _zoneRef;
         private IActorRef _bankedZoneRef;
+        private bool _isTransferQueued;
         
         public ZoneService(SessionActor sessionActor) : base(sessionActor) { }
 
@@ -28,10 +29,16 @@ namespace Imlight.Server.Game.Services
         [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]
         private void ReceiveZoneTransferRequest(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message)
         {
+            // Avoid duplicate transfer requests.
+            if (_isTransferQueued)
+                return;
+            
             var character = GetActiveCharacter();
             var result = AskServer<ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP>(message);
             if (result.ErrorCode == 0 && message.SendToClient)
             {
+                _isTransferQueued = true;
+                
                 // Ask the client if it's okay with being transferred.
                 var msg = new GAME_5_PROTOCOL.MSG_ZONETRANSFERREQUEST
                 {
@@ -62,14 +69,15 @@ namespace Imlight.Server.Game.Services
             var account = GetSocketAccount();
             var character = GetActiveCharacter();
 
-            // Remove the player from their current zone.
+            // Remove the player from their current zone. We're doing an ask instead of a tell here to await the zone's
+            // removal process for us.
             var removePlayerMsg = new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER()
             {
                 Player = SessionActor.ActorRef,
                 GlobalId = GetActiveCoreObject().m_globalID,
                 IsZoneTransfer = true
             };
-            _zoneRef.Tell(removePlayerMsg);
+            _ = _zoneRef.Ask(removePlayerMsg).Result;
 
             character.CreationData.m_location = character.nextZone;
 
@@ -92,6 +100,7 @@ namespace Imlight.Server.Game.Services
             SendToSocket(serverTransfer);
 
             _zoneRef = _bankedZoneRef;
+            _isTransferQueued = false;
             _bankedZoneRef = null;
         }
         
