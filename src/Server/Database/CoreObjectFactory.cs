@@ -116,10 +116,12 @@ namespace Imlight.Server.Database
 
         public static CoreObject CreateObjectFromInfo(CoreObjectInfo objInfo, ulong templateId = 0)
         {
+            if (templateId == 0)
+                templateId = objInfo.m_templateID;
             var template = GetCoreTemplate(templateId);
             if (template is null)
             {
-                Log.Logger.Error($"Could not find template for object info [{templateId}]");
+                throw new Exception($"Could not find template for object info [{templateId}]");
                 return null;
             }
             
