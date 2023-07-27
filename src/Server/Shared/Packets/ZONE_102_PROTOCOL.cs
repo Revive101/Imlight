@@ -113,7 +113,7 @@ namespace Imlight.Server.Shared.Packets
             public List<TypeCache.SpawnObject> Creatures;
         }
         
-        public class MSG_OBJECTDETAILS : IServerMessage
+        public class MSG_ADDCREATURE : IServerMessage
         {
             public byte MessageOrder { get; } = 9;
             public byte ServiceID { get; } = 102;

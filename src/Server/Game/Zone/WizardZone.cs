@@ -226,27 +226,18 @@ public class WizardZone : ReceiveProtocolDispatcher
     #region Handlers
     
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]
-    private void ReceiveQueryZone(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message)
+    private void ReceiveZoneTransfer(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message)
     {
+        // This is step 1 of the zone transfer process.
+        // There's nothing we need to do here except for telling the sender the zone details.
+        // We'll be waiting to receive MSG_ADDPLAYER before we do any object creation.
+        
         Sender.Tell(new ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP
         {
             ZoneActorRef = Self,
             DynamicZoneId = _dynamicZoneId,
             ErrorCode = 0
         });
-    }
-    
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT))]
-    private void ReceiveQueryObject(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT message)
-    {
-        var kvp = SearchObjectInZone(message.ObjectId, _zoneObjects, _zonePlayers, _zoneCreatures)!.Value;
-        var rsp = new ZONE_102_PROTOCOL.MSG_OBJECTDETAILS()
-        {
-            CoreObject = kvp.Value,
-            ObjectIdentity = kvp.Key
-        };
-        
-        Sender.Tell(rsp);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
@@ -312,25 +303,23 @@ public class WizardZone : ReceiveProtocolDispatcher
             Broadcast(message.Message);
     }
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT))]
+    private void ReceiveQueryObject(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT message)
+    {
+        var kvp = SearchObjectInZone(message.ObjectId, _zoneObjects, _zonePlayers, _zoneCreatures)!.Value;
+        var rsp = new ZONE_102_PROTOCOL.MSG_ADDCREATURE()
+        {
+            CoreObject = kvp.Value,
+            ObjectIdentity = kvp.Key
+        };
+        
+        Sender.Tell(rsp);
+    }
+    
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPATH))]
     private void ReceiveAddPath(ZONE_102_PROTOCOL.MSG_ADDPATH message)
     {
         _pathSupervisorRef.Forward(message);
-    }
-
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_OBJECTDETAILS))]
-    private void ReceiveAddCreature(ZONE_102_PROTOCOL.MSG_OBJECTDETAILS message)
-    {
-        // This message is received on the WizardZone to:
-        // a. Give it a unique ID.
-        // b. Broadcast it's creation to every player in the zone.
-        // c. Keep it's reference here so that new players will be told of it's data.
-        var id = GenerateMobileId();
-        message.CoreObject.m_nMobileID = id;
-
-        BroadcastObjectCreation(message.CoreObject);
-
-        _zoneCreatures.Add(message.ObjectIdentity, message.CoreObject);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDOBJECT))]
@@ -356,6 +345,21 @@ public class WizardZone : ReceiveProtocolDispatcher
         
         Sender.Tell(rsp);
     }
+    
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDCREATURE))]
+    private void ReceiveAddCreature(ZONE_102_PROTOCOL.MSG_ADDCREATURE message)
+    {
+        // This message is received on the WizardZone to:
+        // a. Give it a unique ID.
+        // b. Broadcast it's creation to every player in the zone.
+        // c. Keep it's reference here so that new players will be told of it's data.
+        var id = GenerateMobileId();
+        message.CoreObject.m_nMobileID = id;
+
+        BroadcastObjectCreation(message.CoreObject);
+
+        _zoneCreatures.Add(message.ObjectIdentity, message.CoreObject);
+    }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDVOLUME))]
     private void ReceiveAddVolume(ZONE_102_PROTOCOL.MSG_ADDVOLUME message)
@@ -365,7 +369,7 @@ public class WizardZone : ReceiveProtocolDispatcher
         message.CoreObject.m_debugName = message.Volume.m_volumeName;
         
         // The object has not been created as an actor yet. We'll tell the volume supervisor about this object, and let
-        // it handle the creation of this object. We will await the replies, since some of it's details are needed here.
+        // it handle the creation of the actor. We will await the replies, since some of it's details are needed here.
         var rsp = _volumeSupervisorRef
             .Ask<ZONE_102_PROTOCOL.MSG_ADDOBJECTRSP>(message)
             .Result;
@@ -412,6 +416,7 @@ public class WizardZone : ReceiveProtocolDispatcher
             }
         }
 
+        // Debug log all the triggers that were activated.
         foreach (var trigger in triggers)
         {
             Log.Logger.Debug(

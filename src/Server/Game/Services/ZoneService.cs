@@ -37,8 +37,10 @@ namespace Imlight.Server.Game.Services
                 return;
             
             var character = GetActiveCharacter();
-            var result = AskServer<ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP>(message);
-            if (result.ErrorCode == 0 && message.SendToClient)
+            var zoneDetails = AskServer<ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP>(message);
+            
+            // If the zone is ready and we're sending to client, begin the zone transfer handshake with the client.
+            if (zoneDetails.ErrorCode == 0 && message.SendToClient)
             {
                 _isTransferQueued = true;
                 
@@ -55,25 +57,28 @@ namespace Imlight.Server.Game.Services
                 
                 // Bank the zone actor reference. If the client is okay with transferring, we'll set the actual
                 // zone ref to the banked one.
-                _bankedZoneRef = result.ZoneActorRef;
+                _bankedZoneRef = zoneDetails.ZoneActorRef;
             }
             
+            // If we're not sending this to client, this is an internal transfer, meaning we can immediately
+            // setup the new details.
             if (!message.SendToClient)
             {
-                _zoneRef = result.ZoneActorRef;
+                _zoneRef = zoneDetails.ZoneActorRef;
             }
             
-            Sender.Tell(result);
+            Sender.Tell(zoneDetails);
         }
         
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK))]
         private void ReceiveZoneTransferAck(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK message)
         {
+            // This message is received from the client when it's OK to transfer them.
             var account = GetSocketAccount();
             var character = GetActiveCharacter();
 
-            // Remove the player from their current zone. We're doing an ask instead of a tell here to await the zone's
-            // removal process for us.
+            // Remove the player from their current zone. We're awaiting a reply so the zone can properly clean up
+            // before we continue on potentially a different thread.
             var removePlayerMsg = new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER()
             {
                 Player = SessionActor.ActorRef,
@@ -82,9 +87,8 @@ namespace Imlight.Server.Game.Services
             };
             _ = _zoneRef.Ask(removePlayerMsg).Result;
 
-            character.CreationData.m_location = character.nextZone;
-
-            // We don't need to add the player to the new zone, as the attach service will do that.
+            // When we send this message, the client will disconnect from the current zone and reconnect to the next.
+            // This means attach will happen again, so this is all we need to do here.
             var serverTransfer = new GAME_5_PROTOCOL.MSG_SERVERTRANSFER()
             {
                 IP = character.LastGameServerIp,

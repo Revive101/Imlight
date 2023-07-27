@@ -63,7 +63,7 @@ namespace Imlight.Server.Game.Services
             
             // Tell the game server that the user has attached, and now we need to find a zone process for their
             // zone, or create a new one.
-            var zoneDetails = GetZoneDetails(message.ZoneName);
+            var zoneDetails = SendZoneTransfer(message.ZoneName);
             if (zoneDetails.ErrorCode != 0)
             {
                 SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED() { Error = zoneDetails.ErrorCode });
@@ -97,9 +97,13 @@ namespace Imlight.Server.Game.Services
             AddPlayerToZone(charGameObject);
         }
 
-        private ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP GetZoneDetails(string zoneName)
+        private ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP SendZoneTransfer(string zoneName)
         {
-            var zoneMsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER { ZoneName = zoneName, SendToClient = false};
+            var zoneMsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER
+            {
+                ZoneName = zoneName, 
+                SendToClient = false
+            };
             return AskSessionServices<ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP>(zoneMsg);
         }
 

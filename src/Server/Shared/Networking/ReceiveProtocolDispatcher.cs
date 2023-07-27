@@ -17,9 +17,9 @@ namespace Imlight.Server.Shared.Networking
     /// </summary>
     public class ReceiveProtocolDispatcher : ReceiveActor
     {
-        public virtual Dictionary<System.Type, MethodInfo> MessageHandlers { get; private set; }
-        
-        public ReceiveProtocolDispatcher()
+        public Dictionary<System.Type, MethodInfo> MessageHandlers { get; private set; }
+
+        protected ReceiveProtocolDispatcher()
         {
             SetMessageHandlers();
             ConfigureReceivers();

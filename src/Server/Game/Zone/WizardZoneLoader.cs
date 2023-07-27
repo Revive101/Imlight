@@ -70,7 +70,7 @@ public static class WizardZoneLoader
                 LoadZoneData();
                 LoadSpawnData();
                 LoadPathData();
-                LoadNodeData(); // TODO: This is taking a long time.
+                LoadNodeData();
                 LoadVolumeData();
                 LoadTriggerData();
                 CreateZoneGameObjects();
@@ -219,6 +219,7 @@ public static class WizardZoneLoader
             // Set data for this CoreObject from the given volume data.
             var loc = new Vector3(volume.m_locationX, volume.m_locationY, volume.m_locationZ);
             newObj.m_location = loc;
+            // For some reason, the volume type has two `m_templateID` fields, but only the duplicate one is used.
             newObj.m_templateID = volume.m_templateID; // I've never seen this templateID be anything but 1700.
 
             // Write a message citing the details of this volume, and send a message to the zone.

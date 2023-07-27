@@ -184,10 +184,10 @@ public class WizardZonePath : ReceiveActor
         newObj.m_location = spawnNode.m_location;
 
         var nodes = _nodes.Keys.ToArray();
-        var props = WizardZoneCreature.Props(newObj, nodes, (byte)nodeIndex, _zoneActorRef);
+        var props = WizardZonePathCreature.Props(newObj, nodes, (byte)nodeIndex, _zoneActorRef);
         var actorRef = Context.ActorOf(props);
 
-        var msg = new ZONE_102_PROTOCOL.MSG_OBJECTDETAILS
+        var msg = new ZONE_102_PROTOCOL.MSG_ADDCREATURE
         {
             ObjectIdentity = actorRef,
             CoreObject = newObj

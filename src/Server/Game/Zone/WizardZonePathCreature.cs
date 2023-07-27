@@ -18,7 +18,7 @@ namespace Imlight.Server.Game.Zone;
 /// An extension of <see cref="WizardZoneObject" /> that adds implementations to move along
 /// a given <see cref="WizardZonePath" />.
 /// </summary>
-public class WizardZoneCreature : WizardZoneObject
+public class WizardZonePathCreature : WizardZoneObject
 {
     private const float MovementIntervalPerSecond = 0.433f;
     
@@ -27,7 +27,7 @@ public class WizardZoneCreature : WizardZoneObject
     private byte _targetNodeIndex;
 
     // ctor
-    public WizardZoneCreature(
+    public WizardZonePathCreature(
         CoreObject activeGameObject,
         NodeObject[] nodes,
         byte startingNodeIndex,
@@ -51,7 +51,7 @@ public class WizardZoneCreature : WizardZoneObject
         IActorRef wizardZoneRef)
     {
         return Akka.Actor.Props.Create(()
-            => new WizardZoneCreature(activeGameObject, nodes, startingNodeIndex, wizardZoneRef));
+            => new WizardZonePathCreature(activeGameObject, nodes, startingNodeIndex, wizardZoneRef));
     }
 
     /// <summary>
@@ -120,7 +120,7 @@ public class WizardZoneCreature : WizardZoneObject
         {
             Message = new GAME_5_PROTOCOL.MSG_SERVERMOVE
             {
-                // Normalize the vector math (because it's different over DML for.. some.. reason).
+                // Compress fields by a factor of 4.
                 Direction = (byte)(targetNode.m_direction / Math.PI / 2 * 250),
                 LocationX = (ushort)(targetNode.m_location.X / 4.0f),
                 LocationY = (ushort)(targetNode.m_location.Y / 4.0f),
