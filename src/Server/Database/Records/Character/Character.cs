@@ -10,6 +10,7 @@ using Imlight.Common.Utilities;
 using Imlight.Server.Database.Records.Character;
 using SharpDX;
 using static WizUnraveler.Cache.TypeCache;
+using System.Globalization;
 
 namespace Imlight.Server.Database
 {
@@ -74,10 +75,10 @@ namespace Imlight.Server.Database
             if (nextLocation != string.Empty && nextLocation is not null)
             {
                 var components = nextLocation.Split(",");
-                var x = float.Parse(components[0]);
-                var y = float.Parse(components[1]);
-                var z = float.Parse(components[2]);
-                var d = float.Parse(components[3]);
+                var x = float.Parse(components[0], CultureInfo.InvariantCulture);
+                var y = float.Parse(components[1], CultureInfo.InvariantCulture);
+                var z = float.Parse(components[2], CultureInfo.InvariantCulture);
+                var d = float.Parse(components[3], CultureInfo.InvariantCulture);
                 clientObject.m_location = new Vector3(x, y, z);
                 clientObject.m_orientation = new Vector3(0, 0, d);
             }
