@@ -111,7 +111,7 @@ public static class Program
         foreach (var t in triggers)
         {
             var hasTeleport = TriggerHasTeleportResult(zoneName, t.m_triggerName);
-            var prefix = hasTeleport ? "✓" : "𐄂";
+            var prefix = hasTeleport ? "✔️" : "❌";
             formattedTriggers.Add($"({prefix}) {t.m_triggerName}");
         }
     
