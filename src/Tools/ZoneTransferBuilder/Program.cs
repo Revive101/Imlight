@@ -167,8 +167,8 @@ public static class Program
                 .PageSize(10)
                 .AddChoices(destinationLocations.Select(x => $"{x.m_locName} @ {x.m_location} dir: {x.m_direction}")));
         // Refactor the selection name to not include the coordinate flavor text.
-        var destinationLocationStr = destinationLocation.Split('@')[^1];
-        var destinationLocationDir = destinationLocation.Split("dir:")[^1].Trim();
+        var destinationLocationStr = destinationLocation.Split('@')[^1].Replace(",",".");
+        var destinationLocationDir = destinationLocation.Split("dir:")[^1].Trim().Replace(",", ".");
         var destinationCoords = $"{ConvertVector3ToWizard(destinationLocationStr)},{destinationLocationDir}";
 
         // Write the selected information to the console.
@@ -208,9 +208,9 @@ public static class Program
         var components = input.Trim().Split(' ');
 
         // Extract the numeric values for X, Y, and Z
-        var x = ExtractValue(components[0]);
-        var y = ExtractValue(components[1]);
-        var z = ExtractValue(components[2]);
+        var x = ExtractValue(components[0]).ToString().Replace(",",".");
+        var y = ExtractValue(components[1]).ToString().Replace(",", ".");
+        var z = ExtractValue(components[2]).ToString().Replace(",", ".");
 
         return $"{x},{y},{z}";
     }
