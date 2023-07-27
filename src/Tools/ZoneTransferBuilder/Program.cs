@@ -54,6 +54,7 @@ public static class Program
     private static string[] zoneNames;
     private static string _patchServerWorkingUrl;
     private static bool _patchServerOnline;
+    private static readonly Stack<(string, Wad)> _crawlStack = new();
 
     public static void Main()
     {
@@ -64,42 +65,36 @@ public static class Program
         else
             Console.WriteLine("Found serverdata database!");
     
-        // Get the list of zone names from the AccessPass.
-        zoneNames = GetAccessPassZones();
-        _patchServerOnline = GetPatchServerStatus();
-    
-        // Select the zone.
-        var zoneName = EnterWadInputSelection();
+        // Only check the patch server once.
+        if (!_patchServerOnline)
+        {
+            // Get the list of zone names from the AccessPass.
+            zoneNames = GetAccessPassZones();
+            _patchServerOnline = GetPatchServerStatus();
+        }
 
-        var wad = GetWad(zoneName);
-        AnsiConsole.MarkupLine($"[italic]Selected zone \"{zoneName}\".[/]");
-    
+        // Select the zone.
+        var (zoneName, wad) = GetWad();
+
         while (true)
         {
             // Select and handle the trigger.
             var triggerSelected = HandleTriggerSelection(zoneName, wad);
-            if (triggerSelected == null) 
-                throw new NullReferenceException("Trigger selected was null.");
-    
-            // Prompt the user to overwrite if this trigger already contains a `ResTeleport`.
-            if (TriggerHasTeleportResult(zoneName, triggerSelected.m_triggerName))
-            {
-                var overwriteResult = AnsiConsole.Ask<string>(
-                    "[italic]This trigger already has a zone transfer result! Do you want to overwrite it (y/n)?[/]");
-                switch (overwriteResult)
-                {
-                    case "n":
-                        return;
-                    case "y":
-                        DeleteExistingTeleportResult(zoneName, triggerSelected.m_triggerName);
-                        break;
-                }
-            }
-    
+            if (triggerSelected == null) continue;
+
             // Begin the process of rebuilding the ResTeleport type.
             var result = RebuildZoneTransferResult(zoneName, triggerSelected.m_triggerName);
             InsertTeleportResult(zoneName, triggerSelected.m_triggerName, result);
         }
+    }
+
+    private static (string, Wad) GetWad()
+    {
+        var zoneName = EnterWadInputSelection();
+        var wad = GetWad(zoneName);
+        AnsiConsole.MarkupLine($"[italic]Selected zone \"{zoneName}\".[/]");
+        
+        return (zoneName, wad);
     }
     
     private static Trigger HandleTriggerSelection(string zoneName, Wad wad)
@@ -107,6 +102,12 @@ public static class Program
         AnsiConsole.MarkupLine($"You are in [bold]{zoneName}[/].");
         var triggers = GetWadTriggers(wad);
         var formattedTriggers = new List<string>();
+        
+        // Add an option to crawl back to the previous zone, if one exists.
+        if (_crawlStack.Count >= 1)
+        {
+            formattedTriggers.Add("Crawl back to previous working zone");
+        }
     
         foreach (var t in triggers)
         {
@@ -120,12 +121,43 @@ public static class Program
                 .Title("Select a trigger:")
                 .PageSize(10)
                 .AddChoices(formattedTriggers));
+        
+        // If the user selected to crawl back:
+        if (triggerSel == "Crawl back to previous working zone")
+        {
+            var prev = _crawlStack.Pop();
+            HandleTriggerSelection(prev.Item1, prev.Item2);
+            return null;
+        }
+        
         // Split at the first instance of the space character to trim off the prefix we created.
         var idx = triggerSel.IndexOf(' ');
         triggerSel = triggerSel.Substring(idx + 1).Trim();
-        Console.WriteLine(triggerSel);
-    
-        return triggers.FirstOrDefault(x => x.m_triggerName == triggerSel);
+        var triggerSelected = triggers.FirstOrDefault(x => x.m_triggerName == triggerSel);
+        
+        if (!TriggerHasTeleportResult(zoneName, triggerSelected.m_triggerName)) 
+            return triggerSelected;
+        
+        // Prompt the user to overwrite if this trigger already contains a `ResTeleport`.
+        var overwriteResult = AnsiConsole.Ask<string>(
+            "[italic]This trigger already has a result. Overwrite (y), crawl (c), or cancel (n)?[/]");
+        switch (overwriteResult)
+        {
+            case "n":
+                HandleTriggerSelection(zoneName, wad);
+                break;
+            case "y":
+                DeleteExistingTeleportResult(zoneName, triggerSelected.m_triggerName);
+                break;
+            case "c":
+                _crawlStack.Push((zoneName, wad));
+                zoneName = GetExistingTriggerTeleport(zoneName, triggerSelected.m_triggerName);
+                wad = GetWad(zoneName);
+                HandleTriggerSelection(zoneName, wad);
+                break;
+        }
+
+        return triggerSelected;
     }
     
     private static bool TriggerHasTeleportResult(string zoneName, string triggerName)
@@ -134,6 +166,14 @@ public static class Program
         using var db = new LiteDatabase(serverDatabasePath);
         var col= db.GetCollection<TypeCache.Result>(colName);
         return col.FindAll().Any();
+    }
+
+    private static string GetExistingTriggerTeleport(string zoneName, string triggerName)
+    {
+        var colName = SanitizeColName($"{ResultCollectionName}/{zoneName}/{triggerName}");
+        using var db = new LiteDatabase(serverDatabasePath);
+        var col= db.GetCollection<TypeCache.Result>(colName);
+        return ((ResTeleport)col.FindAll().First()).m_destinationZone;
     }
     
     private static void DeleteExistingTeleportResult(string zoneName, string triggerName)
