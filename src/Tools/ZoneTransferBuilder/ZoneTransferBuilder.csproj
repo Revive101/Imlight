@@ -18,4 +18,11 @@
       <PackageReference Include="Spectre.Console" Version="0.47.1-preview.0.11" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Remove="input\base" />
+      <Content Include="input\base">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+
 </Project>
