@@ -14,7 +14,6 @@ namespace Imlight.Server.Game.Zone;
 /// </summary>
 public class WizardZoneObjectSupervisor : ReceiveProtocolDispatcher
 {
-    // TODO: Implement supervisor strategy.
     private readonly IActorRef _wizardZoneRef;
     
     // ctor
@@ -32,11 +31,29 @@ public class WizardZoneObjectSupervisor : ReceiveProtocolDispatcher
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDOBJECT))]
     private void ReceiveAddObject(ZONE_102_PROTOCOL.MSG_ADDOBJECT message)
     {
-        // Create the object as a child actor of this supervisor.
         var props = WizardZoneObject.Props(message.CoreObject, _wizardZoneRef);
+        CreateActorAndRespond(props);
+    }
+    
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPATH))]
+    private void ReceiveAddPath(ZONE_102_PROTOCOL.MSG_ADDPATH message)
+    {
+        var props = WizardZonePath.Props(message.Id, message.Name, message.Nodes, message.Creatures, _wizardZoneRef);
+        CreateActorAndRespond(props);
+    }
+    
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDVOLUME))]
+    private void ReceiveAddVolume(ZONE_102_PROTOCOL.MSG_ADDVOLUME message)
+    {
+        var props = WizardZoneVolume.Props(message.CoreObject, _wizardZoneRef, message.Volume);
+        CreateActorAndRespond(props);
+    }
+
+    private void CreateActorAndRespond(Props props)
+    {
         var actorRef = Context.ActorOf(props);
         
-        // Formulate response. Don't worry about not giving the mobile id; the WizardZone handles that part.
+        // Respond to the sender with the actor reference we just created.
         var rsp = new ZONE_102_PROTOCOL.MSG_ADDOBJECTRSP { ActorRef = actorRef };
         Sender.Tell(rsp);
     }

@@ -28,8 +28,6 @@ public class WizardZone : ReceiveProtocolDispatcher
     
     private readonly uint _dynamicZoneId;
     private readonly IActorRef _objectSupervisorRef;
-    private readonly IActorRef _pathSupervisorRef;
-    private readonly IActorRef _volumeSupervisorRef;
     private readonly List<Trigger> _triggers;
 
     // TODO: I don't want to be saving CoreObjects here.
@@ -47,10 +45,7 @@ public class WizardZone : ReceiveProtocolDispatcher
         _zoneCreatures = new Dictionary<IActorRef, CoreObject>();
         _zoneObjects = new Dictionary<IActorRef, CoreObject>();
         _zoneVolumes = new Dictionary<IActorRef, CoreObject>();
-
-        _pathSupervisorRef = CreatePathSupervisor();
         _objectSupervisorRef = CreateObjectSupervisor();
-        _volumeSupervisorRef = CreateVolumeSupervisor();
         _triggers = new List<Trigger>();
         // We don't need to create a PlayerSupervisor, as the GameServer manages that for us.
 
@@ -89,32 +84,12 @@ public class WizardZone : ReceiveProtocolDispatcher
     }
 
     /// <summary>
-    /// Creates a <see cref="WizardZonePathSupervisor"/> as a child of this WizardZone.
-    /// </summary>
-    /// <returns>The actor reference pointing to the newly created actor.</returns>
-    private IActorRef CreatePathSupervisor()
-    {
-        var props = WizardZonePathSupervisor.Props(Self);
-        return Context.ActorOf(props);
-    }
-
-    /// <summary>
     /// Creates a <see cref="WizardZoneObjectSupervisor"/> as a child of this WizardZone.
     /// </summary>
     /// <returns>The actor reference pointing to the newly created actor.</returns>
     private IActorRef CreateObjectSupervisor()
     {
         var props = WizardZoneObjectSupervisor.Props(Self);
-        return Context.ActorOf(props);
-    }
-
-    /// <summary>
-    /// Creates a new <see cref="WizardZoneVolumeSupervisor"/> as a child of this WizardZone.
-    /// </summary>
-    /// <returns></returns>
-    private IActorRef CreateVolumeSupervisor()
-    {
-        var props = WizardZoneVolumeSupervisor.Props(Self);
         return Context.ActorOf(props);
     }
 
@@ -319,7 +294,7 @@ public class WizardZone : ReceiveProtocolDispatcher
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPATH))]
     private void ReceiveAddPath(ZONE_102_PROTOCOL.MSG_ADDPATH message)
     {
-        _pathSupervisorRef.Forward(message);
+        _objectSupervisorRef.Forward(message);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDOBJECT))]
@@ -370,7 +345,7 @@ public class WizardZone : ReceiveProtocolDispatcher
         
         // The object has not been created as an actor yet. We'll tell the volume supervisor about this object, and let
         // it handle the creation of the actor. We will await the replies, since some of it's details are needed here.
-        var rsp = _volumeSupervisorRef
+        var rsp = _objectSupervisorRef
             .Ask<ZONE_102_PROTOCOL.MSG_ADDOBJECTRSP>(message)
             .Result;
         
