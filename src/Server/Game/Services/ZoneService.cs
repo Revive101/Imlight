@@ -138,7 +138,6 @@ namespace Imlight.Server.Game.Services
         [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_DISPOSE))]
         public override void ReceiveDispose(SERVICE_101_PROTOCOL.MSG_DISPOSE message)
         {
-            base.ReceiveDispose(message);
             var globalId = GetActiveCoreObject()?.m_globalID;
 
             // If the zone reference is not null, we'll tell the zone to remove the player.
@@ -147,8 +146,9 @@ namespace Imlight.Server.Game.Services
                 Player = SessionActor.ActorRef,
                 GlobalId = globalId ?? 0
             });
-
             _zoneRef = null;
+            
+            base.ReceiveDispose(message);
         }
         
         private TypeCache.CoreObject GetActiveCoreObject()

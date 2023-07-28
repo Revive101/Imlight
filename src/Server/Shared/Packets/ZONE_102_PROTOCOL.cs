@@ -36,8 +36,7 @@ namespace Imlight.Server.Shared.Packets
             public byte MessageOrder { get; } = 2;
             public byte ServiceID { get; } = 102;
 
-            public IActorRef ZoneActorRef;
-            public TypeCache.CoreObject[] ZoneObjects;
+            public IActorRef ZoneActorRef;  
             public uint DynamicZoneId;
             public uint ErrorCode;
         }
@@ -156,13 +155,14 @@ namespace Imlight.Server.Shared.Packets
             public TypeCache.CoreObject CoreObject;
             public IActorRef Suspect;
         }
-        
-        public class MSG_TRIGGERGRACE : IServerMessage
+
+        public class MSG_ZONEOBJECTBROADCAST : IServerMessage
         {
             public byte MessageOrder { get; } = 14;
             public byte ServiceID { get; } = 102;
 
-            public TypeCache.CoreObject CoreObject;
+            public IActorRef Source;
+            public IServerMessage[] Messages;
         }
     }
 }

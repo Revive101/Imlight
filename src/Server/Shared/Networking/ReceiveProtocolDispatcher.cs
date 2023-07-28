@@ -68,7 +68,7 @@ namespace Imlight.Server.Shared.Networking
                           | BindingFlags.Public 
                           | BindingFlags.NonPublic
                           | BindingFlags.FlattenHierarchy)
-                .Where(method => method.GetCustomAttribute<MessageHandlerAttribute>() != null);
+                .Where(method => method.GetCustomAttributes<MessageHandlerAttribute>().Any());
 
             foreach (var method in methods)
             {

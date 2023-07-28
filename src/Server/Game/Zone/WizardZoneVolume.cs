@@ -5,11 +5,8 @@
 
 using System.Collections.Generic;
 using Akka.Actor;
-using Imlight.Common.Utilities;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
-using SharpDX;
-using WizUnraveler.IO;
 using static WizUnraveler.Cache.TypeCache;
 using static WizUnraveler.Secrets.ServerTypeCache;
 
@@ -18,13 +15,14 @@ namespace Imlight.Server.Game.Zone;
 public class WizardZoneVolume : WizardZoneObject
 {
     private readonly Volume _volume;
-    private readonly List<CoreObject> _objsInRadius = new List<CoreObject>();
+    private readonly List<CoreObject> _objsInRadius;
 
     // ctor
     public WizardZoneVolume(CoreObject activeGameObject, IActorRef wizardZoneRef, Volume volume) 
         : base(activeGameObject, wizardZoneRef)
     {
         this._volume = volume;
+        this._objsInRadius = new List<CoreObject>();
     }
     
     // Akka.NET ctor
@@ -71,13 +69,22 @@ public class WizardZoneVolume : WizardZoneObject
         }
     }
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_TRIGGERQUERY))]
-    private void ReceiveGrace(ZONE_102_PROTOCOL.MSG_TRIGGERGRACE message)
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
+    protected override void ReceiveAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message)
     {
-        if (!IsInRadius(message.CoreObject))
-            return;
+        base.ReceiveAddPlayer(message);
         
-        _objsInRadius.Add(message.CoreObject);
+        if (IsInRadius(message.PlayerObject))
+            _objsInRadius.Add(message.PlayerObject);
+    }
+    
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER))]
+    protected override void ReceiveRemovePlayer(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message)
+    {
+        base.ReceiveRemovePlayer(message);
+        
+        // Remove the player object from our radius to clear up any resources.
+        _objsInRadius.RemoveAll(x => x.m_globalID == message.GlobalId);
     }
 
     private bool IsInRadius(CoreObject obj1)
