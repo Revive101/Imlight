@@ -50,6 +50,8 @@ public class WizardZoneObject : ReceiveProtocolDispatcher
                                | ObjectSerializer.PropertyFlags.AuthorityTransmit);
         var msg = new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = serializer.Serialize(ActiveGameObject) };
         message.Player.Tell(msg);
+        
+        Sender.Tell(new ZONE_102_PROTOCOL.MSG_ADDOBJECTRSP());
     }
     
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER))]
@@ -57,5 +59,7 @@ public class WizardZoneObject : ReceiveProtocolDispatcher
     {
         var msg = new GAME_5_PROTOCOL.MSG_REMOVEOBJECT { GameObjectID = ActiveGameObject.m_globalID };
         message.Player.Tell(msg);
+        
+        Sender.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP());
     }
 }

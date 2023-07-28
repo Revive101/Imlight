@@ -65,7 +65,7 @@ namespace Imlight.Server.Shared.Packets
             
             public IActorRef Player;
             public ulong GlobalId;
-            public bool IsZoneTransfer;
+            public bool IsPlayerStillConnected;
         }
         
         public class MSG_REMOVEPLAYERRSP : IServerMessage

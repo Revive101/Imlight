@@ -3,6 +3,7 @@
  * Proprietary and confidential.
  */
 
+using System;
 using System.Collections.Generic;
 using Akka.Actor;
 using Imlight.Server.Shared.Networking;
@@ -66,7 +67,7 @@ public class WizardZoneObjectSupervisor : ReceiveProtocolDispatcher
         {
             foreach (var msg in message.Messages)
             {
-                obj.Tell(msg);
+                obj.Forward(msg);
             }
         }
     }

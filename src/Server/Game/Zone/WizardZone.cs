@@ -6,15 +6,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Akka.Actor;
 using Imlight.Common.Serializable;
 using Imlight.Common.Utilities;
-using Imlight.Server.Database;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
 using WizUnraveler.Cache;
 using WizUnraveler.DML;
-using WizUnraveler.ObjectProperty;
 using WizUnraveler.Secrets;
 using static WizUnraveler.Cache.TypeCache;
 using static WizUnraveler.ObjectProperty.ObjectSerializer;
@@ -24,7 +23,7 @@ namespace Imlight.Server.Game.Zone;
 
 public class WizardZone : ReceiveProtocolDispatcher
 {
-    private const ushort ReservedMobileIDMax = 1000;
+    private const ushort ReservedMobileIdMax = 1000;
     
     public string ZoneName { get; }
     
@@ -108,7 +107,7 @@ public class WizardZone : ReceiveProtocolDispatcher
         _objectSupervisorRef.Tell(new ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST
         {
             Source = message.Player,
-            Messages = new[] { message }
+            Messages = new IServerMessage[] { message }
         });
 
         // Broadcast this new player to each existing player in the zone.
@@ -125,8 +124,11 @@ public class WizardZone : ReceiveProtocolDispatcher
         _objectSupervisorRef.Tell(new ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST
         {
             Source = message.Player,
-            Messages = new[] { message }
+            Messages = new IServerMessage[] { message }
         });
+        
+        // Inform every other player that this object has been removed.
+        Broadcast(new GAME_5_PROTOCOL.MSG_REMOVEOBJECT { GameObjectID = message.GlobalId });
     }
 
     /// <summary>
@@ -167,7 +169,7 @@ public class WizardZone : ReceiveProtocolDispatcher
         var r = new Random();
         while (true)
         {
-            test = (ushort)r.Next(ReservedMobileIDMax, ushort.MaxValue);
+            test = (ushort)r.Next(ReservedMobileIdMax, ushort.MaxValue);
             if (_zonePlayers.Values.Any(x => x.m_nMobileID == test))
                 continue;
 
@@ -183,7 +185,7 @@ public class WizardZone : ReceiveProtocolDispatcher
     /// <returns></returns>
     private ushort GenerateReservedMobileId()
     {
-        if (_zoneObjectMobileIdCounter + 1 >= ReservedMobileIDMax)
+        if (_zoneObjectMobileIdCounter + 1 >= ReservedMobileIdMax)
             throw new Exception($"Zone \"{ZoneName}\" reached the maximum reserved mobile ID count!");
         return ++_zoneObjectMobileIdCounter;
     }
@@ -196,7 +198,6 @@ public class WizardZone : ReceiveProtocolDispatcher
         // This is step 1 of the zone transfer process.
         // There's nothing we need to do here except for telling the sender the zone details.
         // We'll be waiting to receive MSG_ADDPLAYER before we do any object creation.
-        
         Sender.Tell(new ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP
         {
             ZoneActorRef = Self,
@@ -230,27 +231,23 @@ public class WizardZone : ReceiveProtocolDispatcher
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER))]
     private void ReceiveRemovePlayer(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message)
     {
-        if (!_zonePlayers.TryGetValue(message.Player, out var obj))
-        {
-            // fixme: This should become an exception inevitably. Due to race conditions, this ends up getting
-            // triggered more than it should, so for now it just remains an error log.
-            Log.Logger.Error($"Zone [{ZoneName}] tried to remove player it did not have.");
-            return;
-        }
+        //if (!_zonePlayers.TryGetValue(message.Player, out var obj))
+            //throw new Exception($"Zone \"{ZoneName}\" tried to remove player it did not have.");
 
-        // Inform every Wizard101 client that this object has been removed.
-        Broadcast(new GAME_5_PROTOCOL.MSG_REMOVEOBJECT { GameObjectID = obj.m_globalID });
-
-        // Now, *actually* remove it from the zone.
+        // Don't send a torrent of messages to a disconnected socket.
+        if (message.IsPlayerStillConnected) 
+            InformZoneObjectsOfDeparture(message);
+        
         _zonePlayers.Remove(message.Player);
 
-        // We only want to remove instanced objects for the client if they're transferring zones.
-        // Otherwise, we'll just be sending a torrent of messages to a disconnected socket.
-        if (message.IsZoneTransfer)
-            InformZoneObjectsOfDeparture(message);
-
-        var rsp = new ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP();
-        Sender.Tell(rsp);
+        // Wait a little while until sending the reply back, just in case the zone objects have not yet been cleaned.
+        var s = Sender;
+        Task.Run(async () =>
+        {
+            await Task.Delay(TimeSpan.FromSeconds(1));
+            var rsp = new ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP();
+            s.Tell(rsp);
+        }).Wait();
 
         Log.Logger.Debug($"Player {message.Player.Path.Name} removed from zone {ZoneName}.");
     }
@@ -369,7 +366,7 @@ public class WizardZone : ReceiveProtocolDispatcher
         var msgBroadcast = new ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST
         {
             Source = Sender,
-            Messages = new[] { message }
+            Messages = new IServerMessage[] { message }
         };
         _objectSupervisorRef.Tell(msgBroadcast);
     }
