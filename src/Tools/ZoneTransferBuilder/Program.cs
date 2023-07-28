@@ -43,28 +43,27 @@ public static class Program
 
     private static readonly string inputPath =
         Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? string.Empty, "input");
+    private static readonly string outputPath =
+        Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? string.Empty, "output");
     private static readonly string accessPassPath = Path.Combine(inputPath, "AccessPass.xml");
-    private static readonly string serverDatabasePath = Path.Combine(inputPath, "serverdata");
+    private static readonly string databaseDefaultPath = Path.Combine(outputPath, "serverdata");
 
-    private static string[] zoneNames;
+    private static string _databasePath;
+    private static string[] _zoneNames;
     private static string _patchServerWorkingUrl;
     private static bool _patchServerOnline;
     private static readonly Stack<(string, Wad)> _crawlStack = new();
 
     public static void Main()
     {
-        // Check if the server database exists and create a new one if not.
-        if (!File.Exists(serverDatabasePath))
-            Console.WriteLine($"The serverdata database was not found at path \"{serverDatabasePath}\". " +
-                              $"A new one will be created.");
-        else
-            Console.WriteLine("Found serverdata database!");
-    
+        _databasePath = HandleDatabaseSelection();
+        AnsiConsole.MarkupLine($"Using database at path [italic]{_databasePath}[/]");
+
         // Only check the patch server once.
         if (!_patchServerOnline)
         {
             // Get the list of zone names from the AccessPass.
-            zoneNames = GetAccessPassZones();
+            _zoneNames = GetAccessPassZones();
             _patchServerOnline = GetPatchServerStatus();
         }
 
@@ -80,6 +79,78 @@ public static class Program
             // Begin the process of rebuilding the ResTeleport type.
             var result = RebuildZoneTransferResult(zoneName, triggerSelected.m_triggerName);
             InsertTeleportResult(zoneName, triggerSelected.m_triggerName, result);
+        }
+    }
+
+    private static string HandleDatabaseSelection()
+    {
+        while (true)
+        {
+            var path = AnsiConsole.Ask<string>("Input the path to an existing [italic]serverdata[/] file, " +
+                                               "or just press enter to create a new one.");
+            if (path is "" or null) 
+                return databaseDefaultPath;
+
+            // Check to see if the file exists or exists in the directory given. Start by checking if the user gave us
+            // a directory or an exact file.
+            if (path.EndsWith('/'))
+            {
+                // Directory.
+                var filesInDir = Directory.GetFiles(path);
+                if (filesInDir.Length <= 0)
+                {
+                    AnsiConsole.MarkupLine($"The path [italic]{path}[/] does not exist, or does not contain any files.");
+                    continue;
+                }
+
+                // If we found the serverdata file in this directory, return the path to it.
+                if (filesInDir.Any(file => file.EndsWith("serverdata")))
+                {
+                    return $"{path}serverdata";
+                }
+                
+                AnsiConsole.MarkupLine($"The path [italic]{path}[/] does not contain a [italic]serverdata[/] file." +
+                                       $"Make sure it exists in that directory by that exact name.");
+                continue;
+            }
+            else
+            {
+                // Exact file.
+                if (File.Exists(path)) 
+                    return path;
+                
+                AnsiConsole.MarkupLine($"Could not find a file at path [italic]{path}[/].");
+                continue;
+            }
+
+            break;
+        }
+    }
+
+    private static string HandleWadInputSelection()
+    {
+        while (true)
+        {
+            var zoneName = AnsiConsole.Ask<string>("Enter the name of a zone, or use familiar terms to fuzzy find:");
+            if (_zoneNames.Contains(zoneName)) return zoneName;
+
+            // If we didn't find a match immediately, fuzzy find instead.
+            var closestMatches = FindClosestMatches(zoneName, _zoneNames);
+            Console.WriteLine($"AccessPass does not contain a zone by the name \"{zoneName}\". " + $"Closest matches:");
+
+            // Craft the list of selections.
+            var selections = new List<string> { "Retry search" };
+            selections.AddRange(closestMatches.Select(match => $"({match.Similarity}%): {match.Option}"));
+
+            zoneName = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Select a wizard zone")
+                .PageSize(10)
+                .AddChoices(selections));
+
+            if (zoneName == "Retry search")
+                continue;
+
+            // Refactor the zone name to not include percentage prefix.
+            return zoneName.Split(' ')[^1];
         }
     }
 
@@ -147,43 +218,11 @@ public static class Program
         }
     }
 
-    private static bool TriggerHasTeleportResult(string zoneName, string triggerName)
-    {
-        var colName = SanitizeColName($"{ResultCollectionName}/{zoneName}/{triggerName}");
-        using var db = new LiteDatabase(serverDatabasePath);
-        var col= db.GetCollection<TypeCache.Result>(colName);
-        return col.FindAll().Any();
-    }
-
-    private static string GetExistingTriggerTeleport(string zoneName, string triggerName)
-    {
-        var colName = SanitizeColName($"{ResultCollectionName}/{zoneName}/{triggerName}");
-        using var db = new LiteDatabase(serverDatabasePath);
-        var col= db.GetCollection<TypeCache.Result>(colName);
-        return ((ResTeleport)col.FindAll().First()).m_destinationZone;
-    }
-    
-    private static void DeleteExistingTeleportResult(string zoneName, string triggerName)
-    {
-        var colName = SanitizeColName($"{ResultCollectionName}/{zoneName}/{triggerName}");
-        using var db = new LiteDatabase(serverDatabasePath);
-        var col= db.GetCollection<TypeCache.Result>(colName);
-        col.DeleteAll();
-    }
-    
-    private static void InsertTeleportResult(string zoneName, string triggerName, TypeCache.Result result)
-    {
-        var colName = SanitizeColName($"{ResultCollectionName}/{zoneName}/{triggerName}");
-        using var db = new LiteDatabase(serverDatabasePath);
-        var col= db.GetCollection<TypeCache.Result>(colName);
-        col.Insert(result);
-    }
-
     private static ResTeleport RebuildZoneTransferResult(string zoneName, string triggerName)
     {
         AnsiConsole.MarkupLine("\n[underline]Now begins the process of rebuilding the [bold]ResTeleport[/] type.[/]");
         AnsiConsole.MarkupLine("Write the name of the destination zone:");
-        var destinationZoneName = EnterWadInputSelection();
+        var destinationZoneName = HandleWadInputSelection();
         var destinationWad = DownloadWad(destinationZoneName);
         var destinationLocations = GetWadLocations(destinationWad);
 
@@ -229,59 +268,9 @@ public static class Program
         }
     }
     
-    private static string ConvertVector3ToWizard(string input)
-    {
-        // Split the input string into individual components
-        var components = input.Trim().Split(' ');
-
-        // Extract the numeric values for X, Y, and Z
-        var x = ExtractValue(components[0]).ToString().Replace(",",".");
-        var y = ExtractValue(components[1]).ToString().Replace(",", ".");
-        var z = ExtractValue(components[2]).ToString().Replace(",", ".");
-
-        return $"{x},{y},{z}";
-    }
-
-    private static float ExtractValue(string component)
-    {
-        // Split the component string by ':'
-        var parts = component.Split(':');
-
-        // Parse the value as a float using InvariantCulture to handle the decimal separator properly
-        var value = float.Parse(parts[^1], CultureInfo.InvariantCulture);
-        return value;
-    }
-
-    private static string EnterWadInputSelection()
-    {
-        while (true)
-        {
-            var zoneName = AnsiConsole.Ask<string>("Enter the name of a zone, or use familiar terms to fuzzy find:");
-            if (zoneNames.Contains(zoneName)) return zoneName;
-
-            // If we didn't find a match immediately, fuzzy find instead.
-            var closestMatches = FindClosestMatches(zoneName, zoneNames);
-            Console.WriteLine($"AccessPass does not contain a zone by the name \"{zoneName}\". " + $"Closest matches:");
-
-            // Craft the list of selections.
-            var selections = new List<string> { "Retry search" };
-            selections.AddRange(closestMatches.Select(match => $"({match.Similarity}%): {match.Option}"));
-
-            zoneName = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Select a wizard zone")
-                .PageSize(10)
-                .AddChoices(selections));
-
-            if (zoneName == "Retry search")
-                continue;
-
-            // Refactor the zone name to not include percentage prefix.
-            return zoneName.Split(' ')[^1];
-        }
-    }
-
     private static (string, Wad) GetWad()
     {
-        var zoneName = EnterWadInputSelection();
+        var zoneName = HandleWadInputSelection();
         if (zoneName == string.Empty | zoneName is null)
             return (null, null);
         var wad = DownloadWad(zoneName);
@@ -313,6 +302,29 @@ public static class Program
         var fs = File.ReadAllBytes(path);
         var ms = new MemoryStream(fs);
         return new Wad(ms);
+    }
+    
+    private static string ConvertVector3ToWizard(string input)
+    {
+        // Split the input string into individual components
+        var components = input.Trim().Split(' ');
+
+        // Extract the numeric values for X, Y, and Z
+        var x = ExtractValue(components[0]).ToString().Replace(",",".");
+        var y = ExtractValue(components[1]).ToString().Replace(",", ".");
+        var z = ExtractValue(components[2]).ToString().Replace(",", ".");
+
+        return $"{x},{y},{z}";
+    }
+
+    private static float ExtractValue(string component)
+    {
+        // Split the component string by ':'
+        var parts = component.Split(':');
+
+        // Parse the value as a float using InvariantCulture to handle the decimal separator properly
+        var value = float.Parse(parts[^1], CultureInfo.InvariantCulture);
+        return value;
     }
 
     private static IEnumerable<MatchResult> FindClosestMatches(string userInput, IEnumerable<string> options)
@@ -466,6 +478,42 @@ public static class Program
             Console.WriteLine($"Error while downloading file from patch server endpoint: {webException.Message}");
             return null;
         }
+    }
+    
+    #endregion
+    
+    #region Database Operations
+    
+    private static bool TriggerHasTeleportResult(string zoneName, string triggerName)
+    {
+        var colName = SanitizeColName($"{ResultCollectionName}/{zoneName}/{triggerName}");
+        using var db = new LiteDatabase(_databasePath);
+        var col= db.GetCollection<TypeCache.Result>(colName);
+        return col.FindAll().Any();
+    }
+
+    private static string GetExistingTriggerTeleport(string zoneName, string triggerName)
+    {
+        var colName = SanitizeColName($"{ResultCollectionName}/{zoneName}/{triggerName}");
+        using var db = new LiteDatabase(_databasePath);
+        var col= db.GetCollection<TypeCache.Result>(colName);
+        return ((ResTeleport)col.FindAll().First()).m_destinationZone;
+    }
+    
+    private static void DeleteExistingTeleportResult(string zoneName, string triggerName)
+    {
+        var colName = SanitizeColName($"{ResultCollectionName}/{zoneName}/{triggerName}");
+        using var db = new LiteDatabase(_databasePath);
+        var col= db.GetCollection<TypeCache.Result>(colName);
+        col.DeleteAll();
+    }
+    
+    private static void InsertTeleportResult(string zoneName, string triggerName, TypeCache.Result result)
+    {
+        var colName = SanitizeColName($"{ResultCollectionName}/{zoneName}/{triggerName}");
+        using var db = new LiteDatabase(_databasePath);
+        var col= db.GetCollection<TypeCache.Result>(colName);
+        col.Insert(result);
     }
     
     #endregion
