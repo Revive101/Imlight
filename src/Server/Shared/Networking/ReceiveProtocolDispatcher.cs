@@ -17,9 +17,9 @@ namespace Imlight.Server.Shared.Networking
     /// </summary>
     public class ReceiveProtocolDispatcher : ReceiveActor
     {
-        public virtual Dictionary<System.Type, MethodInfo> MessageHandlers { get; private set; }
-        
-        public ReceiveProtocolDispatcher()
+        public Dictionary<System.Type, MethodInfo> MessageHandlers { get; private set; }
+
+        protected ReceiveProtocolDispatcher()
         {
             SetMessageHandlers();
             ConfigureReceivers();
@@ -69,13 +69,6 @@ namespace Imlight.Server.Shared.Networking
                           | BindingFlags.NonPublic
                           | BindingFlags.FlattenHierarchy)
                 .Where(method => method.GetCustomAttribute<MessageHandlerAttribute>() != null);
-
-            if (methods.Count() <= 0)
-            {
-                Log.Logger.Warning($"{this.GetType()} does not have any methods with attribute {nameof(MessageHandlerAttribute)}." +
-                                   $" Is this intended behavior?");
-                return;
-            }
 
             foreach (var method in methods)
             {

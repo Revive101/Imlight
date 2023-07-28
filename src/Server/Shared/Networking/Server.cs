@@ -5,6 +5,7 @@
 
 using System;
 using System.Linq;
+using System.Net.Http;
 using Akka.Actor;
 using Imlight.Common.Structures;
 using Imlight.Common.Utilities;
@@ -36,8 +37,8 @@ namespace Imlight.Server.Shared.Networking
             this._factoryProps = factoryProps;
 
             // Get outside IP.
-            //this.Ip = new HttpClient().GetStringAsync("https://api.ipify.org/").Result;
-            this.Ip = "127.0.0.1";
+            this.Ip = new HttpClient().GetStringAsync("https://api.ipify.org/").Result;
+            //this.Ip = "127.0.0.1";
 
             CreateTcpListener();
             _actorFactoryRef = CreateActorFactory();

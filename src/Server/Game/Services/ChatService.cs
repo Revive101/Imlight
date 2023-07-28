@@ -151,6 +151,7 @@ namespace Imlight.Server.Game.Services
             return response.Character;
         }
 
+        // TODO: Move this to a utility class.
         private static byte[] HexStringToBytes(string str)
         {
             str = str.Replace(" ", "");

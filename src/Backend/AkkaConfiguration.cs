@@ -18,7 +18,7 @@ namespace Imlight.Backend
         
         private static readonly string ConfigLocation = Path.Combine(
             Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? string.Empty,
-            $@"config/{CONFIGURATION_FILE_NAME}");
+            $@"Config/{CONFIGURATION_FILE_NAME}");
 
         internal static bool CreateActorSystem(string name, out ActorSystem system)
         {

@@ -4,18 +4,23 @@
  */
 
 using System;
+using System.Globalization;
+using System.Numerics;
 using Akka.Actor;
 using WizUnraveler.Cache;
 using Imlight.Common.Utilities;
 using Imlight.Server.Database;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
+using Math = System.Math;
 
 namespace Imlight.Server.Game.Services
 {
     public class ZoneService : MessageService
     {
         private IActorRef _zoneRef;
+        private IActorRef _bankedZoneRef;
+        private bool _isTransferQueued;
         
         public ZoneService(SessionActor sessionActor) : base(sessionActor) { }
 
@@ -24,18 +29,86 @@ namespace Imlight.Server.Game.Services
             return Akka.Actor.Props.Create(() => new ZoneService(parentActor));
         }
 
-        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONE))]
-        private void ReceiveZoneTransferRequest(ZONE_102_PROTOCOL.MSG_QUERYZONE message)
+        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]
+        private void ReceiveZoneTransferRequest(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message)
         {
-            var result = AskServer<ZONE_102_PROTOCOL.MSG_QUERYZONERSP>(message);
+            // Avoid duplicate transfer requests.
+            if (_isTransferQueued)
+                return;
             
-            // If the zone transfer request was successful, we'll set the zone reference.
-            if (result.ErrorCode == 0)
+            var character = GetActiveCharacter();
+            var zoneDetails = AskServer<ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP>(message);
+            
+            // If the zone is ready and we're sending to client, begin the zone transfer handshake with the client.
+            if (zoneDetails.ErrorCode == 0 && message.SendToClient)
             {
-                _zoneRef = result.NewZone;
+                _isTransferQueued = true;
+                
+                // Ask the client if it's okay with being transferred.
+                var msg = new GAME_5_PROTOCOL.MSG_ZONETRANSFERREQUEST
+                {
+                    ZoneName = message.ZoneName,
+                    SendAck = 0
+                };
+                SendToSocket(msg);
+
+                character.nextZone = message.ZoneName;
+                character.nextLocation = message.Location;
+                
+                // Bank the zone actor reference. If the client is okay with transferring, we'll set the actual
+                // zone ref to the banked one.
+                _bankedZoneRef = zoneDetails.ZoneActorRef;
             }
             
-            Sender.Tell(result);
+            // If we're not sending this to client, this is an internal transfer, meaning we can immediately
+            // setup the new details.
+            if (!message.SendToClient)
+            {
+                _zoneRef = zoneDetails.ZoneActorRef;
+            }
+            
+            Sender.Tell(zoneDetails);
+        }
+        
+        [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK))]
+        private void ReceiveZoneTransferAck(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK message)
+        {
+            // This message is received from the client when it's OK to transfer them.
+            var account = GetSocketAccount();
+            var character = GetActiveCharacter();
+
+            // Remove the player from their current zone. We're awaiting a reply so the zone can properly clean up
+            // before we continue on potentially a different thread.
+            var removePlayerMsg = new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER()
+            {
+                Player = SessionActor.ActorRef,
+                GlobalId = GetActiveCoreObject().m_globalID,
+                IsZoneTransfer = true
+            };
+            _ = _zoneRef.Ask(removePlayerMsg).Result;
+
+            // When we send this message, the client will disconnect from the current zone and reconnect to the next.
+            // This means attach will happen again, so this is all we need to do here.
+            var serverTransfer = new GAME_5_PROTOCOL.MSG_SERVERTRANSFER()
+            {
+                IP = character.LastGameServerIp,
+                TCPPort = character.LastGameServerPort,
+                UDPPort = character.LastGameServerPort,
+                UserID = account.ID,
+                CharID = character.Id,
+                ZoneName = character.nextZone,
+                Location = character.nextLocation, // Doesn't seem to do anything.
+                Slot = 0,
+                SessionSlot = 0,
+                SessionID = 0,
+                TargetPlayerID = character.Id,
+                TransitionID = 1
+            };
+            SendToSocket(serverTransfer);
+
+            _zoneRef = _bankedZoneRef;
+            _isTransferQueued = false;
+            _bankedZoneRef = null;
         }
         
         [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
@@ -54,55 +127,34 @@ namespace Imlight.Server.Game.Services
             _zoneRef.Tell(message);
         }
 
-        [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK))]
-        private void ReceiveZoneTransferAck(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK message)
+        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT))]
+        private void ReceiveQueryObject(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT message)
         {
-            var account = GetSocketAccount();
-            var character = GetActiveCharacter();
+            if (_zoneRef is null) throw new Exception("Zone Reference was null.");
+            
+            _zoneRef.Forward(message);
+        }
 
-            // Remove the player from their current zone.
-            var removePlayerMsg = new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER()
-            {
-                Player = SessionActor.ActorRef,
-                GlobalId = GetActiveCoreObject().m_globalID,
-                IsZoneTransfer = true
-            };
-            _zoneRef.Tell(removePlayerMsg);
-
-            character.CreationData.m_location = character.nextZone;
-
-            // We don't need to add the player to the new zone, as the zone will do that for us.
-            var serverTransfer = new GAME_5_PROTOCOL.MSG_SERVERTRANSFER()
-            {
-                IP = character.LastGameServerIp,
-                TCPPort = 12333,
-                UDPPort = 12333,
-                UserID = account.ID,
-                CharID = character.Id,
-                ZoneName = character.nextZone,
-                Location = "Start",
-                Slot = 0,
-                SessionSlot = 0,
-                SessionID = 0,
-                TargetPlayerID = character.Id,
-                TransitionID = 1
-            };
-            SendToSocket(serverTransfer);
+        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_TRIGGERQUERY))]
+        private void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_TRIGGERQUERY message)
+        {
+            if (_zoneRef is null) throw new Exception("Zone Reference was null.");
+            
+            _zoneRef.Forward(message);
         }
         
         [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_DISPOSE))]
         public override void ReceiveDispose(SERVICE_101_PROTOCOL.MSG_DISPOSE message)
         {
             base.ReceiveDispose(message);
-            var globalId = GetActiveCoreObject().m_globalID;
+            var globalId = GetActiveCoreObject()?.m_globalID;
 
             // If the zone reference is not null, we'll tell the zone to remove the player.
-            if (_zoneRef is not null)
-                _zoneRef.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER()
-                {
-                    Player = SessionActor.ActorRef,
-                    GlobalId = globalId
-                });
+            _zoneRef?.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER()
+            {
+                Player = SessionActor.ActorRef,
+                GlobalId = globalId ?? 0
+            });
 
             _zoneRef = null;
         }

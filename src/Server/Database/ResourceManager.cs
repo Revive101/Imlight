@@ -129,11 +129,11 @@ namespace Imlight.Server.Database
             var latestFileList = rsp.LatestFileList;
             
             // Iterate through every cached file and check to see if its CRC32 hash matches the latest.
-            var cachedFiles = LocalCache.GetAllCachedFiles();
+            var cachedFiles = KiWadCache.GetAllCachedFiles();
             foreach (var file in cachedFiles)
             {
                 // Imlight's cache removes the '/' character to match zone transfer data. There's also a naming
-                // in consistency. Wizard101 uses a path while Imlight does not.
+                // inconsistency. Wizard101 uses a path while Imlight does not.
                 var betterFileName = file.Filename.Replace('/', '-');
                 betterFileName = $"Data/GameData/{betterFileName}.wad";
                 
@@ -171,7 +171,7 @@ namespace Imlight.Server.Database
                 else
                 {
                     Log.Logger.Warning($"Cached file {latestFile.SourceFileName} was deleted.");
-                    LocalCache.DeleteWad(betterFileName);
+                    KiWadCache.DeleteWad(betterFileName);
                 }
             }
         }
@@ -181,7 +181,7 @@ namespace Imlight.Server.Database
             var betterWadName = FormatWadName(wadName);
             
             // Check if the file is already cached. If it is, just return that.
-            var cachedWad = LocalCache.GetCachedWad(betterWadName);
+            var cachedWad = KiWadCache.GetCachedWad(betterWadName);
             if (cachedWad is not null)
                 return cachedWad;
 
@@ -195,7 +195,7 @@ namespace Imlight.Server.Database
             // If we successfully downloaded it, we'll also cache it so we don't have to do that again.
             stream.Seek(0, SeekOrigin.Begin);
             var wad = new Wad(stream);
-            LocalCache.CacheWad(betterWadName, wad);
+            KiWadCache.CacheWad(betterWadName, wad);
             
             return wad;
         }

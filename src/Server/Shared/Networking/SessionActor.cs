@@ -11,6 +11,7 @@ using System.Threading;
 using Akka.Actor;
 using WizUnraveler;
 using WizUnraveler.DML;
+using WizUnraveler.Cache;
 using Imlight.Common.Utilities;
 using Imlight.Server.Shared.Packets;
 
@@ -45,6 +46,7 @@ namespace Imlight.Server.Shared.Networking
         private List<INetworkMessage> _preInitMessages;
 
         private readonly Stack<SocketAsyncEventArgs> _receiveEventArgPool = new();
+        private readonly List<Type> _suppressedPackets;
 
         public SessionActor(Socket socket, ushort sessionId, IActorRef server)
         {
@@ -53,6 +55,12 @@ namespace Imlight.Server.Shared.Networking
             this._services = new Dictionary<IActorRef, MessageService>();
             this._preInitMessages = new List<INetworkMessage>();
             this.ServerRef = server;
+            this._suppressedPackets = new()
+                {
+                    typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVE),
+                    typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVESTATE),
+                    typeof(GAME_5_PROTOCOL.MSG_SERVERMOVE)
+                };
 
             // To get the actor factory reference, we'll ask the server.
             var query = new SERVER_100_PROTOCOL.MSG_QUERYACTORFACTORY();
@@ -342,7 +350,8 @@ namespace Imlight.Server.Shared.Networking
                 .ToString()
                 .Split('.')[^1]
                 .Replace('+', '.');
-            Log.Logger.Debug($"SessionActor [{SessionID}] sent message [{scopedMessageName}]");
+            if (!_suppressedPackets.Contains(message.GetType()))
+                Log.Logger.Verbose($"SessionActor [{SessionID}] sent message [{scopedMessageName}]");
         }
 
         private void OnSendCompleted(SocketAsyncEventArgs e)
@@ -363,7 +372,8 @@ namespace Imlight.Server.Shared.Networking
                 .ToString()
                 .Split('.')[^1]
                 .Replace('+', '.');
-            Log.Logger.Verbose($"SessionActor [{SessionID}] received KiNP packet [{scopedMessageName}]");
+            if (!_suppressedPackets.Contains(packet.GetType()))
+                Log.Logger.Verbose($"SessionActor [{SessionID}] received KiNP packet [{scopedMessageName}]");
 
             // Iterate through services and forward the message to any service that can handle the message.
             var wasDispatched = false;

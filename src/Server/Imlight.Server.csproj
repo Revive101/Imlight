@@ -11,8 +11,8 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\WizUnraveler\src\WizUnraveler\WizUnraveler.csproj" />
         <ProjectReference Include="..\Common\Imlight.Common.csproj" />
-        <ProjectReference Include="\home\jay\Projects\\WizUnraveler\src\WizUnraveler\WizUnraveler.csproj" />
     </ItemGroup>
 
 </Project>

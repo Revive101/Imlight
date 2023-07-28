@@ -5,8 +5,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Timers;
 using static WizUnraveler.Cache.TypeCache;
 using WizUnraveler;
 using Imlight.Common.Utilities;
@@ -28,9 +30,14 @@ namespace Imlight.Server.Database
 
         public static bool Load()
         {
+            // Load the TemplateManifest.xml and record the amount of time it takes.
+            var timer = new Stopwatch();
+            timer.Start();
             var manifest = ResourceManager.LoadDeserializedFile<TemplateManifest>(ROOT_WAD_NAME, TEMPLATE_MANIFEST_NAME);
             if (manifest is null)
                 return false;
+            timer.Stop();
+            Log.Logger.Information($"TemplateManifest deserialize took {timer.ElapsedMilliseconds}ms.");
             
             foreach (var templateLocation in manifest.m_serializedTemplates)
             {
@@ -107,13 +114,14 @@ namespace Imlight.Server.Database
             return false;
         }
 
-        public static CoreObject CreateObjectFromInfo(CoreObjectInfo objInfo)
+        public static CoreObject CreateObjectFromInfo(CoreObjectInfo objInfo, ulong templateId = 0)
         {
-            var templateId = GetTemplateId(objInfo);
+            if (templateId == 0)
+                templateId = objInfo.m_templateID;
             var template = GetCoreTemplate(templateId);
             if (template is null)
             {
-                Log.Logger.Error($"Could not find template for object info [{templateId}]");
+                throw new Exception($"Could not find template for object info [{templateId}]");
                 return null;
             }
             
@@ -139,9 +147,6 @@ namespace Imlight.Server.Database
                     break;
             }
 
-            // Initialize the object behaviors.
-            //obj = InitializeCoreObjectBehaviors(obj, objInfo.m_templateID);
-            
             // Set the object properties.
             obj.m_templateID = templateId;
             obj.m_location = objInfo.m_location;
@@ -154,53 +159,12 @@ namespace Imlight.Server.Database
 
             return obj;
         }
-        
-        private static ulong GetTemplateId(CoreObjectInfo objInfo)
-        {
-            var templateId = objInfo.m_templateID;
 
-            // Fuck you, KingsIsle. Volume template IDs are serialized with a different hash.
-            /*
-            Volume volume = null;
-            var isVolume = objInfo is Volume;
-            if (isVolume)
-            {
-                volume = (Volume)objInfo;
-            }
-
-            if (templateId == 0 && (!isVolume || volume.m_templateID == 0))
-            {
-                Log.Logger.Error($"Object Info template ID was 0.");
-                return 0;
-            }
-
-            if (isVolume)
-            {
-                templateId = volume.m_templateID;
-            }
-
-            */
-
-            return templateId;
-        }      
-        
         public static CoreTemplate GetCoreTemplate(ulong id)
         {
             if (!_coreTemplates.TryGetValue(id, out var loc)) return null;
 
             var template = ResourceManager.LoadDeserializedFile<CoreTemplate>("Root.wad", loc);
-            if (template is null)
-                throw new NullReferenceException($"Template by ID {id} was not found!");
-
-            return template ?? null;
-        }
-
-        public static T GetTemplate<T>(ulong id) 
-            where T : PropertyClass
-        {
-            if (!_coreTemplates.TryGetValue(id, out var loc)) return null;
-
-            var template = ResourceManager.LoadDeserializedFile<T>("Root.wad", loc);
             if (template is null)
                 throw new NullReferenceException($"Template by ID {id} was not found!");
 

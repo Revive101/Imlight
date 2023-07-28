@@ -29,17 +29,16 @@ namespace Imlight.Server.Game
             return Akka.Actor.Props.Create(() => new GameWorld(server));
         }
         
-        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONE))]
-        private void ReceiveZoneTransferRequest(ZONE_102_PROTOCOL.MSG_QUERYZONE message)
+        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]
+        private void ReceiveQueryZone(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message)
         {
-            var response = new ZONE_102_PROTOCOL.MSG_QUERYZONERSP();
-            
             // First, make sure this zone is valid by checking the AccessPassManager.
             if (!AccessPassManager.DoesZoneExist(message.ZoneName))
             {
                 Log.Logger.Error(
-                    $"GameWorld received invalid zone transfer request from {Sender.Path.Name}.");
+                    $"{nameof(GameWorld)} received invalid zone name \"{message.ZoneName}\".");
                 
+                var response = new ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP();
                 response.ErrorCode = 1;
                 Sender.Tell(response);
 
@@ -52,9 +51,9 @@ namespace Imlight.Server.Game
             {
                 // '/' is an illegal character in Akka.NET actor names, so we replace it with '@'.
                 var zoneActorName = message.ZoneName
-                    .Replace('/', '@');
+                    .Replace('/', '-');
                 
-                zone = Context.ActorOf(Zone.Props(message.ZoneName), zoneActorName);
+                zone = Context.ActorOf(Zone.WizardZone.Props(message.ZoneName), zoneActorName);
                 Zones.Add(message.ZoneName, zone);
                 
                 // Log the new zone creation.
@@ -65,19 +64,8 @@ namespace Imlight.Server.Game
                 zone = Zones[message.ZoneName];
             }
             
-            // Query the zone for it's details.
-            var zoneQueryMessage = new ZONE_102_PROTOCOL.MSG_QUERYZONEDETAILS();
-            var zoneQueryResponse = zone
-                .Ask<ZONE_102_PROTOCOL.MSG_QUERYZONEDETAILSRSP>(zoneQueryMessage)
-                .Result;
-
-            // Send the response back to the client.
-            response.NewZone = zone;
-            response.CriticalObjects = zoneQueryResponse.CriticalObjects;
-            response.PlayerObjects = zoneQueryResponse.PlayerObjects;
-            response.DynamicZoneId = zoneQueryResponse.DynamicZoneId;
-            response.ErrorCode = 0;
-            Sender.Tell(response);
+            // Forward the message to the zone actor we just created.
+            zone.Forward(message);
         }
     }
 }
