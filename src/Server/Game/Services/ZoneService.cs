@@ -108,7 +108,7 @@ namespace Imlight.Server.Game.Services
         }
         
         [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_DISPOSE))]
-        protected override void ReceiveDispose(SERVICE_101_PROTOCOL.MSG_DISPOSE message)
+        public override void ReceiveDispose(SERVICE_101_PROTOCOL.MSG_DISPOSE message)
         {
             var globalId = GetActiveCoreObject()?.m_globalID;
 
@@ -156,22 +156,6 @@ namespace Imlight.Server.Game.Services
                 TransitionID = 1
             };
             SendToSocket(serverTransfer);
-        }
-        
-        private TypeCache.CoreObject GetActiveCoreObject()
-        {
-            var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
-            var response = AskOtherService<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
-
-            return response.CharacterObject;
-        }
-
-        private Character GetActiveCharacter()
-        {
-            var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
-            var response = AskOtherService<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
-
-            return response.Character;
         }
     }
 }

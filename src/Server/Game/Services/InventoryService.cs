@@ -50,10 +50,9 @@ namespace Imlight.Server.Game.Services
             var serializer = new CoreObjectSerializer()
                 .WithSerializerFlags(SerializerFlags.None)
                 .WithPropertyFlags((PropertyFlags)1);
-
-            var character = GetActiveCoreObject();
-            var coreObject = character.CharacterObject;
-            var playerCharacter = character.Character;
+            
+            var coreObject = GetActiveCoreObject();
+            var playerCharacter = GetActiveCharacter();
 
             // Confirm to the player that we've equipped their item server side.
             // @TODO: There should be some "AntiAmbrose" logic here. Double check that the player meets the requirements
@@ -185,13 +184,5 @@ namespace Imlight.Server.Game.Services
             });
         }
         #endregion
-
-        private MSG_CHARACTER GetActiveCoreObject()
-        {
-            var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
-            var response = AskOtherService<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
-
-            return response;
-        }
     }
 }

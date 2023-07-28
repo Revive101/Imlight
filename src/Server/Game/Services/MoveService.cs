@@ -93,13 +93,5 @@ namespace Imlight.Server.Game.Services
             };
             TellOtherService(msg);
         }
-        
-        private TypeCache.CoreObject GetActiveCoreObject()
-        {
-            var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
-            var response = AskOtherService<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
-
-            return response.CharacterObject;
-        }
     }
 }

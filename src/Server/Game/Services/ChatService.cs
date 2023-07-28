@@ -134,22 +134,6 @@ namespace Imlight.Server.Game.Services
 
             return HexStringToBytes(tail);
         }
-        
-        private TypeCache.CoreObject GetActiveCoreObject()
-        {
-            var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
-            var response = AskOtherService<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
-
-            return response.CharacterObject;
-        }
-
-        private Character GetActiveCharacter()
-        {
-            var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
-            var response = AskOtherService<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
-
-            return response.Character;
-        }
 
         // TODO: Move this to a utility class.
         private static byte[] HexStringToBytes(string str)

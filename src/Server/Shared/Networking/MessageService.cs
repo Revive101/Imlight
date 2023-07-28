@@ -8,7 +8,9 @@ using Akka.Actor;
 using WizUnraveler.DML;
 using Imlight.Common.Utilities;
 using Imlight.Server.Database;
+using Imlight.Server.Game.Services;
 using Imlight.Server.Shared.Packets;
+using WizUnraveler.Cache;
 
 namespace Imlight.Server.Shared.Networking
 {
@@ -127,8 +129,34 @@ namespace Imlight.Server.Shared.Networking
             SessionActor.ActorRef.Tell("Close");
         }
         
+        /// <summary>
+        /// Gets the active <see cref="TypeCache.CoreObject"/> of this session. Requires an active
+        /// <see cref="CharacterService"/> as a running service.
+        /// </summary>
+        /// <returns></returns>
+        protected TypeCache.CoreObject GetActiveCoreObject()
+        {
+            var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
+            var response = AskOtherService<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
+
+            return response.CharacterObject;
+        }
+
+        /// <summary>
+        /// Gets the active <see cref="Character"/> of this session. Requires an active
+        /// <see cref="CharacterService"/> as a running service.
+        /// </summary>
+        /// <returns></returns>
+        protected Character GetActiveCharacter()
+        {
+            var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
+            var response = AskOtherService<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
+
+            return response.Character;
+        }
+        
         [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_QUERYMESSAGESERVICEIDENTITY))]
-        private void ReceiveMessageServiceIdentify(SERVICE_101_PROTOCOL.MSG_QUERYMESSAGESERVICEIDENTITY message)
+        public void ReceiveMessageServiceIdentify(SERVICE_101_PROTOCOL.MSG_QUERYMESSAGESERVICEIDENTITY message)
         {
             var rsp = new SERVICE_101_PROTOCOL.MSG_MESSAGESERVICEIDENTITY()
             {
@@ -139,7 +167,7 @@ namespace Imlight.Server.Shared.Networking
         }
         
         [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_DISPOSE))]
-        protected virtual void ReceiveDispose(SERVICE_101_PROTOCOL.MSG_DISPOSE message)
+        public virtual void ReceiveDispose(SERVICE_101_PROTOCOL.MSG_DISPOSE message)
         {
             GC.SuppressFinalize(this);
         }
