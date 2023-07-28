@@ -36,7 +36,7 @@ namespace Imlight.Server.Login.Services
             // Inform the SessionActor of the account.
             TellOtherService(new ACCOUNT_104_PROTOCOL.MSG_ACCOUNT()
             {
-                Account = Database.Util.GetDebugAccount()
+                Account = Database.Util.GetFakeAccount()
             });
             
             // Inform the player that they've been authenticated.

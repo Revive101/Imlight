@@ -4,11 +4,7 @@
  */
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using WizUnraveler;
 using WizUnraveler.Cache;
 using WizUnraveler.ObjectProperty;
 
@@ -16,21 +12,21 @@ namespace Imlight.Server.Database
 {
     public static class Util
     {
-        private static Account _debugAccount;
-
         /// <summary>
         /// Creates and returns a debug account.
         /// </summary>
         /// <returns></returns>
-        public static Account GetDebugAccount()
+        public static Account GetFakeAccount()
         {
-            if (_debugAccount is not null)
-                return _debugAccount;
-
             // Create a new debug account.
-            _debugAccount = new Account("Chi", "Chi2Chomp@mail.com", "Password");
-            _debugAccount.AuthLevel = AuthLevel.Administrator;
-            
+            var userName = Faker.Internet.UserName();
+            var email = Faker.Internet.Email();
+            var password = Faker.Identification.SocialSecurityNumber();
+            var fakeAcc = new Account(userName, email, password)
+            {
+                AuthLevel = AuthLevel.Administrator
+            };
+
             // Create characters.
             var serializer = new ObjectSerializer();
 
@@ -42,8 +38,8 @@ namespace Imlight.Server.Database
                 "00000000000000000840CAB0400002300";
             var destinyRawBytes = StringToByteArray(destinyRawData);
             var destinyCreationData = (TypeCache.WizardCharacterCreationInfo)serializer.Deserialize(destinyRawBytes);
-            var destiny = new Character(destinyCreationData, new GID(_debugAccount.ID));
-            _debugAccount.AddCharacter(destiny);
+            var destiny = new Character(destinyCreationData, new GID(fakeAcc.ID));
+            fakeAcc.AddCharacter(destiny);
             
             // Kevin
             var kevinRawData =
@@ -55,20 +51,10 @@ namespace Imlight.Server.Database
                 "000000000000B336F80400005D00";
             var kevinRawBytes = StringToByteArray(kevinRawData);
             var kevinCreationData = (TypeCache.WizardCharacterCreationInfo)serializer.Deserialize(kevinRawBytes);
-            var kevin = new Character(kevinCreationData, new GID(_debugAccount.ID));
-            _debugAccount.AddCharacter(kevin);
+            var kevin = new Character(kevinCreationData, new GID(fakeAcc.ID));
+            fakeAcc.AddCharacter(kevin);
 
-            return _debugAccount;
-        }
-
-        // Creates a new account with a random username, password, and email.
-        public static Account GetEmptyAccount()
-        {
-            var username = Guid.NewGuid().ToString();
-            var password = Guid.NewGuid().ToString();
-            var email = Guid.NewGuid().ToString();
-
-            return new Account(username, email, password);
+            return fakeAcc;
         }
 
         public static byte[] StringToByteArray(string hex)
