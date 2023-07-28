@@ -138,6 +138,10 @@ namespace Imlight.Server.Shared.Networking
         {
             var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
             var response = AskOtherService<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
+            
+            if (response.CharacterObject is null)
+                throw new ServiceRetryException($"Tried to do client move but could not grab active character " +
+                                                $"object.");
 
             return response.CharacterObject;
         }
@@ -152,6 +156,9 @@ namespace Imlight.Server.Shared.Networking
             var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
             var response = AskOtherService<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
 
+            if (response.Character is null)
+                throw new ServiceRetryException($"Tried to do client move but could not grab active character.");
+            
             return response.Character;
         }
         

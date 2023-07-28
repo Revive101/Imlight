@@ -52,11 +52,9 @@ namespace Imlight.Server.Game.Services
         private void ReceiveClientMove(GAME_5_PROTOCOL.MSG_CLIENTMOVE message)
         {
             if (_activeCharacterObject is null)
-            {
-                Log.Logger.Error($"[{nameof(CharacterService)}]: Character was null!");
-                return;
-            }
-            
+                throw new ServiceRetryException($"Tried to do client move but could not grab active character " +
+                                                $"object");
+
             // Normalize differentiating message values
             var x = unchecked((short)message.LocationX) * 4.0f;
             var y = unchecked((short)message.LocationY) * 4.0f;
@@ -70,7 +68,9 @@ namespace Imlight.Server.Game.Services
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK))]
         private void ReceiveZoneTransferAck(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK message)
         {
-            if (_activeCharacter is null) throw new NullReferenceException(nameof(_activeCharacter));
+            if (_activeCharacterObject is null)
+                throw new ServiceRetryException($"Tried to do client move but could not grab active character " +
+                                                $"object");
             
             var character = _activeCharacter;
             character.CreationData.m_location = character.nextZone;
