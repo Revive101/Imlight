@@ -42,7 +42,7 @@ namespace Imlight.Server.Game.Services
                 NewState = message.NewState,
                 GlobalID = globalId
             };
-            SendToSessionServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
+            TellOtherService(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
             {
                 Sender = SessionActor.ActorRef,
                 Message = stateMsg,
@@ -53,7 +53,7 @@ namespace Imlight.Server.Game.Services
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_JUMP))]
         private void ReceiveClientJump(GAME_5_PROTOCOL.MSG_JUMP message)
         {
-            SendToSessionServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
+            TellOtherService(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
             {
                 Sender = SessionActor.ActorRef,
                 Message = message,
@@ -80,7 +80,7 @@ namespace Imlight.Server.Game.Services
                 Message = serverMoveMsg,
                 Selfless = true,
             };
-            SendToSessionServices(broadcastMsg);
+            TellOtherService(broadcastMsg);
         }
 
         private void SendZoneInteractionFishRequest()
@@ -91,13 +91,13 @@ namespace Imlight.Server.Game.Services
                 CoreObject = characterObj,
                 Suspect = SessionActor.ActorRef
             };
-            SendToSessionServices(msg);
+            TellOtherService(msg);
         }
         
         private TypeCache.CoreObject GetActiveCoreObject()
         {
             var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
-            var response = AskSessionServices<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
+            var response = AskOtherService<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
 
             return response.CharacterObject;
         }

@@ -21,23 +21,6 @@ namespace Imlight.Server.Shared.Networking
             this.SessionActor = sessionActor;
         }
 
-        [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_QUERYMESSAGESERVICEIDENTITY))]
-        public void ReceiveMessageServiceIdentify(SERVICE_101_PROTOCOL.MSG_QUERYMESSAGESERVICEIDENTITY message)
-        {
-            var rsp = new SERVICE_101_PROTOCOL.MSG_MESSAGESERVICEIDENTITY()
-            {
-                Service = this
-            };
-            
-            Sender.Tell(rsp);
-        }
-        
-        [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_DISPOSE))]
-        public virtual void ReceiveDispose(SERVICE_101_PROTOCOL.MSG_DISPOSE message)
-        {
-            GC.SuppressFinalize(this);
-        }
-
         /// <summary>
         /// Sends a message directly to the socket.
         /// </summary>
@@ -57,11 +40,11 @@ namespace Imlight.Server.Shared.Networking
         /// Sends the SessionActor a server message. Used to send data to another service of the SessionActor.
         /// </summary>
         /// <param name="message"></param>
-        public void SendToSessionServices(IServerMessage message)
+        public void TellOtherService(IServerMessage message)
         {
             if (message.ServiceID < 100)
             {
-                throw new Exception($"You are sending a non-server message using {nameof(SendToSessionServices)}! " +
+                throw new Exception($"You are sending a non-server message using {nameof(TellOtherService)}! " +
                                     $"Do not do this. Use {nameof(SendToSocket)} instead.");
             }
 
@@ -74,7 +57,7 @@ namespace Imlight.Server.Shared.Networking
         /// <param name="message"></param>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
-        public T AskSessionServices<T>(IServerMessage message)
+        public T AskOtherService<T>(IServerMessage message)
             where T : IServerMessage
         {
             if (SessionActor is null)
@@ -85,7 +68,7 @@ namespace Imlight.Server.Shared.Networking
             
             if (message.ServiceID < 100)
             {
-                throw new Exception($"You are sending a non-server message using {nameof(AskSessionServices)}! " +
+                throw new Exception($"You are sending a non-server message using {nameof(AskOtherService)}! " +
                                     $"Do not do this. Use {nameof(SendToSocket)} instead.");
             }
 
@@ -93,11 +76,10 @@ namespace Imlight.Server.Shared.Networking
 
             return task;
         }
-        
+
         /// <summary>
         /// Asks the server the SessionActor is connected to.
         /// </summary>
-        /// <param name="msg"></param>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
         public T AskServer<T>(IServerMessage message)
@@ -127,7 +109,7 @@ namespace Imlight.Server.Shared.Networking
         {
             // Get the account from the AccountService.
             var internalMessage = new ACCOUNT_104_PROTOCOL.MSG_QUERYACCOUNT();
-            var account = AskSessionServices<ACCOUNT_104_PROTOCOL.MSG_ACCOUNT>(internalMessage).Account;
+            var account = AskOtherService<ACCOUNT_104_PROTOCOL.MSG_ACCOUNT>(internalMessage).Account;
 
             if (account is null)
             {
@@ -143,6 +125,23 @@ namespace Imlight.Server.Shared.Networking
         protected void CloseSession()
         {
             SessionActor.ActorRef.Tell("Close");
+        }
+        
+        [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_QUERYMESSAGESERVICEIDENTITY))]
+        private void ReceiveMessageServiceIdentify(SERVICE_101_PROTOCOL.MSG_QUERYMESSAGESERVICEIDENTITY message)
+        {
+            var rsp = new SERVICE_101_PROTOCOL.MSG_MESSAGESERVICEIDENTITY()
+            {
+                Service = this
+            };
+            
+            Sender.Tell(rsp);
+        }
+        
+        [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_DISPOSE))]
+        protected virtual void ReceiveDispose(SERVICE_101_PROTOCOL.MSG_DISPOSE message)
+        {
+            GC.SuppressFinalize(this);
         }
     }
 }

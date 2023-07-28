@@ -104,7 +104,7 @@ namespace Imlight.Server.Game.Services
                 ZoneName = zoneName, 
                 SendToClient = false
             };
-            return AskSessionServices<ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP>(zoneMsg);
+            return AskOtherService<ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP>(zoneMsg);
         }
 
         private void AddPlayerToZone(WizClientObject charObj)
@@ -114,7 +114,7 @@ namespace Imlight.Server.Game.Services
                 Player = SessionActor.ActorRef,
                 PlayerObject = charObj
             };
-            SendToSessionServices(msg);
+            TellOtherService(msg);
         }
 
         private bool GetCharacter(Account account, ulong charId, out Character character)
@@ -144,7 +144,7 @@ namespace Imlight.Server.Game.Services
         private void SetAccountInternally(Account account)
         {
             // Tell the SessionActor to set the account.
-            SendToSessionServices(new ACCOUNT_104_PROTOCOL.MSG_ACCOUNT()
+            TellOtherService(new ACCOUNT_104_PROTOCOL.MSG_ACCOUNT()
             {
                 Account = account
             });
@@ -152,7 +152,7 @@ namespace Imlight.Server.Game.Services
 
         private void SetCharacterInternally(Character character)
         {
-            SendToSessionServices(new CHARACTER_103_PROTOCOL.MSG_SETACTIVECHARACTER
+            TellOtherService(new CHARACTER_103_PROTOCOL.MSG_SETACTIVECHARACTER
             {
                 Character = character
             });

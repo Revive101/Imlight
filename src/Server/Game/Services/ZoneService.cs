@@ -108,7 +108,7 @@ namespace Imlight.Server.Game.Services
         }
         
         [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_DISPOSE))]
-        public override void ReceiveDispose(SERVICE_101_PROTOCOL.MSG_DISPOSE message)
+        protected override void ReceiveDispose(SERVICE_101_PROTOCOL.MSG_DISPOSE message)
         {
             var globalId = GetActiveCoreObject()?.m_globalID;
 
@@ -161,7 +161,7 @@ namespace Imlight.Server.Game.Services
         private TypeCache.CoreObject GetActiveCoreObject()
         {
             var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
-            var response = AskSessionServices<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
+            var response = AskOtherService<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
 
             return response.CharacterObject;
         }
@@ -169,7 +169,7 @@ namespace Imlight.Server.Game.Services
         private Character GetActiveCharacter()
         {
             var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
-            var response = AskSessionServices<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
+            var response = AskOtherService<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
 
             return response.Character;
         }

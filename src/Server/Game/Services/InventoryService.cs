@@ -88,7 +88,7 @@ namespace Imlight.Server.Game.Services
                 var hex = Convert.ToHexString(data);
                 Log.Logger.Information(hex);
 
-                SendToSessionServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
+                TellOtherService(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
                 {
                     Selfless = false,
                     Sender = SessionActor.ActorRef,
@@ -104,7 +104,7 @@ namespace Imlight.Server.Game.Services
                 Log.Logger.Information("Player unequipped an item");
                 for(int i = 0; i < 10; i++)
                 {
-                    SendToSessionServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
+                    TellOtherService(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
                     {
                         Selfless = false,
                         Sender = SessionActor.ActorRef,
@@ -189,7 +189,7 @@ namespace Imlight.Server.Game.Services
         private MSG_CHARACTER GetActiveCoreObject()
         {
             var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
-            var response = AskSessionServices<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
+            var response = AskOtherService<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
 
             return response;
         }

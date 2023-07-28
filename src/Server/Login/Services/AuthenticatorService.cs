@@ -34,7 +34,7 @@ namespace Imlight.Server.Login.Services
             // For now, we'll always except any user.
             
             // Inform the SessionActor of the account.
-            SendToSessionServices(new ACCOUNT_104_PROTOCOL.MSG_ACCOUNT()
+            TellOtherService(new ACCOUNT_104_PROTOCOL.MSG_ACCOUNT()
             {
                 Account = Database.Util.GetDebugAccount()
             });
