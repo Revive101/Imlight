@@ -127,14 +127,6 @@ namespace Imlight.Server.Game.Services
             _zoneRef.Tell(message);
         }
 
-        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT))]
-        private void ReceiveQueryObject(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT message)
-        {
-            if (_zoneRef is null) throw new Exception("Zone Reference was null.");
-            
-            _zoneRef.Forward(message);
-        }
-
         [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_TRIGGERQUERY))]
         private void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_TRIGGERQUERY message)
         {

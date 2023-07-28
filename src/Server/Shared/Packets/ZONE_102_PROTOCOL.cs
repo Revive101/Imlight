@@ -121,15 +121,7 @@ namespace Imlight.Server.Shared.Packets
             public IActorRef ObjectIdentity;
             public TypeCache.CoreObject CoreObject;
         }
-        
-        public class MSG_QUERYZONEOBJECT : IServerMessage
-        {
-            public byte MessageOrder { get; } = 10;
-            public byte ServiceID { get; } = 102;
 
-            public GID ObjectId;
-        }
-        
         public class MSG_ADDVOLUME : IServerMessage
         {
             public byte MessageOrder { get; } = 11;

@@ -183,21 +183,6 @@ public class WizardZone : ReceiveProtocolDispatcher
         return test;
     }
 
-    private static KeyValuePair<IActorRef, CoreObject>? SearchObjectInZone(GID globalId,
-        params Dictionary<IActorRef, CoreObject>[] dictionaries)
-    {
-        foreach (var dictionary in dictionaries)
-        {
-            foreach (var kvp in dictionary)
-            {
-                if (kvp.Value.m_globalID == globalId)
-                    return kvp;
-            }
-        }
-
-        return null;
-    }
-
     #region Handlers
     
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]
@@ -278,19 +263,6 @@ public class WizardZone : ReceiveProtocolDispatcher
             Broadcast(message.Message);
     }
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT))]
-    private void ReceiveQueryObject(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT message)
-    {
-        var kvp = SearchObjectInZone(message.ObjectId, _zoneObjects, _zonePlayers, _zoneCreatures)!.Value;
-        var rsp = new ZONE_102_PROTOCOL.MSG_ADDCREATURE()
-        {
-            CoreObject = kvp.Value,
-            ObjectIdentity = kvp.Key
-        };
-        
-        Sender.Tell(rsp);
-    }
-    
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPATH))]
     private void ReceiveAddPath(ZONE_102_PROTOCOL.MSG_ADDPATH message)
     {
