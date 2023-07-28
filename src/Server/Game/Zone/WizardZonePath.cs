@@ -95,7 +95,8 @@ public class WizardZonePath : ReceiveActor
     /// </summary>
     private void StartSpawnInterval()
     {
-        foreach (var spawnObject in _creatureSpawnData.Where(x => x.m_active)) DoCreatureSpawnInterval(spawnObject);
+        foreach (var spawnObject in _creatureSpawnData.Where(x => x.m_active)) 
+            DoCreatureSpawnInterval(spawnObject);
     }
 
     /// <summary>

@@ -9,10 +9,13 @@ using Imlight.Server.Shared.Packets;
 
 namespace Imlight.Server.Game.Zone;
 
+/// <summary>
+/// Supervises a bunch of <see cref="WizardZoneVolume"/>/> child actors.
+/// </summary>
 public class WizardZoneVolumeSupervisor : ReceiveProtocolDispatcher
 {
     // TODO: Implement supervisor strategy.
-    private IActorRef _wizardZoneRef;
+    private readonly IActorRef _wizardZoneRef;
     
     // ctor
     public WizardZoneVolumeSupervisor(IActorRef wizardZoneRef)

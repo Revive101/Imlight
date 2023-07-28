@@ -15,7 +15,7 @@ namespace Imlight.Server.Game.Zone;
 public class WizardZoneObjectSupervisor : ReceiveProtocolDispatcher
 {
     // TODO: Implement supervisor strategy.
-    private IActorRef _wizardZoneRef;
+    private readonly IActorRef _wizardZoneRef;
     
     // ctor
     public WizardZoneObjectSupervisor(IActorRef wizardZoneRef)

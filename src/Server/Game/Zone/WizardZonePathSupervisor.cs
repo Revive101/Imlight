@@ -16,7 +16,7 @@ namespace Imlight.Server.Game.Zone;
 public class WizardZonePathSupervisor : ReceiveProtocolDispatcher
 {
     // TODO: Implement supervisor strategy: if a path fails, remove all the mobs and restart the WizardZonePath.
-    private IActorRef _wizardZoneRef;
+    private readonly IActorRef _wizardZoneRef;
     private readonly List<IActorRef> _paths;
     
     // ctor

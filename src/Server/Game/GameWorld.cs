@@ -30,7 +30,7 @@ namespace Imlight.Server.Game
         }
         
         [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]
-        private void ReceiveQueryZone(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message)
+        private void ReceiveZoneTransfer(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message)
         {
             // First, make sure this zone is valid by checking the AccessPassManager.
             if (!AccessPassManager.DoesZoneExist(message.ZoneName))
@@ -49,7 +49,7 @@ namespace Imlight.Server.Game
             IActorRef zone;
             if (!Zones.ContainsKey(message.ZoneName))
             {
-                // '/' is an illegal character in Akka.NET actor names, so we replace it with '@'.
+                // '/' is an illegal character in Akka.NET actor names, so we replace it with '-'.
                 var zoneActorName = message.ZoneName
                     .Replace('/', '-');
                 
