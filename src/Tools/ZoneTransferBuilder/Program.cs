@@ -4,11 +4,7 @@
  */
 
 /*
- * Hello to all goons who may use this tool.
- *
- * Inside the build directory will be an /input/ directory. This is where you need to place the
- * `AccessPass.xml`, `serverdata` database, and any KIWAD necessary. When you've added a zone transfer result, it will
- * add it to the `serverdata` database you gave it. There is no output directory.
+ * This script could be a lot better. However, in the future it will be replaced by a zone management tool, so no harm.
  */
 
 using System.Globalization;
@@ -38,16 +34,15 @@ public static class Program
     private const string ZoneDataFileName = "gamedata.bin";
     private const string TriggerDataFileName = "triggers.xml";
     private const string ResultCollectionName = "zone_triggers";
-    private const string PATCH_SERVER_URL = "http://phill030.de:12369/repatcher/";
-    private const string PATCH_SERVER_WAD_URL_PREFIX = "wad";
-    private const int PATCH_SERVER_TIMEOUT = 10; // In seconds.
-    private const uint REVISION = 736675;
-    private const string USER_AGENT_VALUE = "KingsIsle Patcher";
-    private const ushort DOWNLOAD_BUFFER_SIZE = 4096;
+    private const string PatchServerUrl = "http://phill030.de:12369/repatcher/";
+    private const string PatchServerWadUrlPrefix = "wad";
+    private const int PatchServerTimeout = 10; // In seconds.
+    private const uint Revision = 736675;
+    private const string UserAgentValue = "KingsIsle Patcher";
+    private const ushort DownloadBufferSize = 4096;
 
     private static readonly string inputPath =
         Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? string.Empty, "input");
-
     private static readonly string accessPassPath = Path.Combine(inputPath, "AccessPass.xml");
     private static readonly string serverDatabasePath = Path.Combine(inputPath, "serverdata");
 
@@ -88,78 +83,70 @@ public static class Program
         }
     }
 
-    private static (string, Wad) GetWad()
-    {
-        var zoneName = EnterWadInputSelection();
-        var wad = GetWad(zoneName);
-        AnsiConsole.MarkupLine($"[italic]Selected zone \"{zoneName}\".[/]");
-        
-        return (zoneName, wad);
-    }
-    
     private static Trigger HandleTriggerSelection(string zoneName, Wad wad)
     {
-        AnsiConsole.MarkupLine($"You are in [bold]{zoneName}[/].");
-        var triggers = GetWadTriggers(wad);
-        var formattedTriggers = new List<string>();
-        
-        // Add an option to crawl back to the previous zone, if one exists.
-        if (_crawlStack.Count >= 1)
+        while (true)
         {
-            formattedTriggers.Add("Crawl back to previous working zone");
-        }
-    
-        foreach (var t in triggers)
-        {
-            var hasTeleport = TriggerHasTeleportResult(zoneName, t.m_triggerName);
-            var prefix = hasTeleport ? "✔️" : "❌";
-            formattedTriggers.Add($"({prefix}) {t.m_triggerName}");
-        }
-    
-        var triggerSel = AnsiConsole.Prompt(
-            new SelectionPrompt<string>()
-                .Title("Select a trigger:")
+            AnsiConsole.MarkupLine($"You are in [bold]{zoneName}[/].");
+            var triggers = GetWadTriggers(wad);
+            var formattedTriggers = new List<string>();
+
+            // Add an option to crawl back to the previous zone, if one exists.
+            if (_crawlStack.Count >= 1)
+            {
+                formattedTriggers.Add("Crawl back to previous working zone");
+            }
+
+            foreach (var t in triggers)
+            {
+                var hasTeleport = TriggerHasTeleportResult(zoneName, t.m_triggerName);
+                var prefix = hasTeleport ? "✔️" : "❌";
+                formattedTriggers.Add($"({prefix}) {t.m_triggerName}");
+            }
+
+            var triggerSel = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Select a trigger:")
                 .PageSize(10)
                 .AddChoices(formattedTriggers));
-        
-        // If the user selected to crawl back:
-        if (triggerSel == "Crawl back to previous working zone")
-        {
-            var prev = _crawlStack.Pop();
-            HandleTriggerSelection(prev.Item1, prev.Item2);
-            return null;
-        }
-        
-        // Split at the first instance of the space character to trim off the prefix we created.
-        var idx = triggerSel.IndexOf(' ');
-        triggerSel = triggerSel.Substring(idx + 1).Trim();
-        var triggerSelected = triggers.FirstOrDefault(x => x.m_triggerName == triggerSel);
-        
-        if (!TriggerHasTeleportResult(zoneName, triggerSelected.m_triggerName)) 
-            return triggerSelected;
-        
-        // Prompt the user to overwrite if this trigger already contains a `ResTeleport`.
-        var overwriteResult = AnsiConsole.Ask<string>(
-            "[italic]This trigger already has a result. Overwrite (y), crawl (c), or cancel (n)?[/]");
-        switch (overwriteResult)
-        {
-            case "n":
-                HandleTriggerSelection(zoneName, wad);
-                break;
-            case "y":
-                DeleteExistingTeleportResult(zoneName, triggerSelected.m_triggerName);
-                break;
-            case "c":
-                _crawlStack.Push((zoneName, wad));
-                zoneName = GetExistingTriggerTeleport(zoneName, triggerSelected.m_triggerName);
-                wad = GetWad(zoneName);
-                HandleTriggerSelection(zoneName, wad);
-                break;
-        }
 
-        return triggerSelected;
+            // If the user selected to crawl back:
+            if (triggerSel == "Crawl back to previous working zone")
+            {
+                var prev = _crawlStack.Pop();
+                zoneName = prev.Item1;
+                wad = prev.Item2;
+                continue;
+            }
+
+            // Split at the first instance of the space character to trim off the prefix we created.
+            var idx = triggerSel.IndexOf(' ');
+            triggerSel = triggerSel.Substring(idx + 1).Trim();
+            var triggerSelected = triggers.FirstOrDefault(x => x.m_triggerName == triggerSel);
+
+            if (!TriggerHasTeleportResult(zoneName, triggerSelected.m_triggerName)) return triggerSelected;
+
+            // Prompt the user to overwrite if this trigger already contains a `ResTeleport`.
+            var overwriteResult = AnsiConsole.Ask<string>("[italic]This trigger already has a result. Overwrite (y), crawl (c), or cancel (n)?[/]");
+            switch (overwriteResult)
+            {
+                case "n":
+                    HandleTriggerSelection(zoneName, wad);
+                    break;
+                case "y":
+                    DeleteExistingTeleportResult(zoneName, triggerSelected.m_triggerName);
+                    break;
+                case "c":
+                    _crawlStack.Push((zoneName, wad));
+                    zoneName = GetExistingTriggerTeleport(zoneName, triggerSelected.m_triggerName);
+                    wad = DownloadWad(zoneName);
+                    HandleTriggerSelection(zoneName, wad);
+                    break;
+            }
+
+            return triggerSelected;
+            break;
+        }
     }
-    
+
     private static bool TriggerHasTeleportResult(string zoneName, string triggerName)
     {
         var colName = SanitizeColName($"{ResultCollectionName}/{zoneName}/{triggerName}");
@@ -197,7 +184,7 @@ public static class Program
         AnsiConsole.MarkupLine("\n[underline]Now begins the process of rebuilding the [bold]ResTeleport[/] type.[/]");
         AnsiConsole.MarkupLine("Write the name of the destination zone:");
         var destinationZoneName = EnterWadInputSelection();
-        var destinationWad = GetWad(destinationZoneName);
+        var destinationWad = DownloadWad(destinationZoneName);
         var destinationLocations = GetWadLocations(destinationWad);
 
         // Prompt the user to select a teleport location in the destination zone.
@@ -267,25 +254,43 @@ public static class Program
 
     private static string EnterWadInputSelection()
     {
-        var zoneName = AnsiConsole.Ask<string>("Enter the name of a zone, or use familiar terms to fuzzy find:");
-        if (zoneNames.Contains(zoneName))
-            return zoneName;
+        while (true)
+        {
+            var zoneName = AnsiConsole.Ask<string>("Enter the name of a zone, or use familiar terms to fuzzy find:");
+            if (zoneNames.Contains(zoneName)) return zoneName;
 
-        // If we didn't find a match immediately, fuzzy find instead.
-        var closestMatches = FindClosestMatches(zoneName, zoneNames);
-        Console.WriteLine($"AccessPass does not contain a zone by the name \"{zoneName}\". " +
-                          $"Closest matches:");
-        zoneName = AnsiConsole.Prompt(
-            new SelectionPrompt<string>()
-                .Title("Select a wizard zone")
+            // If we didn't find a match immediately, fuzzy find instead.
+            var closestMatches = FindClosestMatches(zoneName, zoneNames);
+            Console.WriteLine($"AccessPass does not contain a zone by the name \"{zoneName}\". " + $"Closest matches:");
+
+            // Craft the list of selections.
+            var selections = new List<string> { "Retry search" };
+            selections.AddRange(closestMatches.Select(match => $"({match.Similarity}%): {match.Option}"));
+
+            zoneName = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Select a wizard zone")
                 .PageSize(10)
-                .AddChoices(closestMatches.Select(x => $"({x.Similarity}%): {x.Option}")));
+                .AddChoices(selections));
 
-        // Refactor the zone name to not include percentage prefix.
-        return zoneName.Split(' ')[^1];
+            if (zoneName == "Retry search")
+                continue;
+
+            // Refactor the zone name to not include percentage prefix.
+            return zoneName.Split(' ')[^1];
+        }
     }
 
-    private static Wad GetWad(string wadName)
+    private static (string, Wad) GetWad()
+    {
+        var zoneName = EnterWadInputSelection();
+        if (zoneName == string.Empty | zoneName is null)
+            return (null, null);
+        var wad = DownloadWad(zoneName);
+        AnsiConsole.MarkupLine($"[italic]Selected zone \"{zoneName}\".[/]");
+        
+        return (zoneName, wad);
+    }
+    
+    private static Wad DownloadWad(string wadName)
     {
         wadName = wadName.Replace('/', '-');
         var path = $"{inputPath}/{wadName}.wad";
@@ -296,7 +301,7 @@ public static class Program
             if (wadName.EndsWith(".wad", StringComparison.OrdinalIgnoreCase))
                 wadName = wadName[..^4];
 
-            var url = $"{_patchServerWorkingUrl}/{PATCH_SERVER_WAD_URL_PREFIX}/{wadName}.wad";
+            var url = $"{_patchServerWorkingUrl}/{PatchServerWadUrlPrefix}/{wadName}.wad";
             var download = DownloadFileStream(url).Result;
             var newMs = new MemoryStream();
             download.Position = 0;
@@ -388,10 +393,10 @@ public static class Program
     
     private static bool GetPatchServerStatus()
     {
-        var workingUrl = $"{PATCH_SERVER_URL}V_r{REVISION}.Wizard_1_510";
+        var workingUrl = $"{PatchServerUrl}V_r{Revision}.Wizard_1_510";
 
         // Check to see if the patch server URL is available at all.
-        Console.WriteLine($"Checking patch server at URL {workingUrl}. Timeout: {PATCH_SERVER_TIMEOUT} s.");
+        Console.WriteLine($"Checking patch server at URL {workingUrl}. Timeout: {PatchServerTimeout} s.");
         if (!GetServerUrlStatus(workingUrl))
         {
             Console.WriteLine($"Patch server at URL {workingUrl} is not available.");
@@ -407,8 +412,8 @@ public static class Program
     private static bool GetServerUrlStatus(string url)
     {
         using var client = new HttpClient();
-        client.DefaultRequestHeaders.UserAgent.ParseAdd(USER_AGENT_VALUE);
-        client.Timeout = TimeSpan.FromSeconds(PATCH_SERVER_TIMEOUT);
+        client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgentValue);
+        client.Timeout = TimeSpan.FromSeconds(PatchServerTimeout);
 
         try
         {
@@ -435,7 +440,7 @@ public static class Program
         {
             // Create a new HttpClient with the magic user agent values.
             using var client = new HttpClient();
-            client.DefaultRequestHeaders.UserAgent.ParseAdd(USER_AGENT_VALUE);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgentValue);
             using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
             response.EnsureSuccessStatusCode();
             var totalBytes = response.Content.Headers.ContentLength;
@@ -446,7 +451,7 @@ public static class Program
             // Download the file from web using the HttpClient.
             await using var contentStream = await response.Content.ReadAsStreamAsync();
             var memoryStream = new MemoryStream();
-            var buffer = new byte[DOWNLOAD_BUFFER_SIZE];
+            var buffer = new byte[DownloadBufferSize];
             int bytesRead;
             while ((bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
             {
