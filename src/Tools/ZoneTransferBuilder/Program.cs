@@ -170,7 +170,7 @@ public static class Program
 
             foreach (var t in triggers)
             {
-                var hasTeleport = TriggerHasTeleportResult(zoneName, t.m_triggerName);
+                var hasTeleport = !string.IsNullOrEmpty(GetExistingTriggerTeleport(zoneName, t.m_triggerName));
                 var prefix = hasTeleport ? "✔️" : "❌";
                 formattedTriggers.Add($"({prefix}) {t.m_triggerName}");
             }
@@ -193,10 +193,14 @@ public static class Program
             triggerSel = triggerSel.Substring(idx + 1).Trim();
             var triggerSelected = triggers.FirstOrDefault(x => x.m_triggerName == triggerSel);
 
-            if (!TriggerHasTeleportResult(zoneName, triggerSelected.m_triggerName)) return triggerSelected;
+            var existingTeleport = GetExistingTriggerTeleport(zoneName, triggerSelected.m_triggerName);
+            if (string.IsNullOrEmpty(existingTeleport))
+                return triggerSelected;
 
             // Prompt the user to overwrite if this trigger already contains a `ResTeleport`.
-            var overwriteResult = AnsiConsole.Ask<string>("[italic]This trigger already has a result. Overwrite (y), crawl (c), or cancel (n)?[/]");
+            var overwriteResult = AnsiConsole.Ask<string>($"[italic]This trigger already leads " +
+                                                          $"to [bold]{existingTeleport}[/]. " +
+                                                          "Overwrite (y), crawl (c), or cancel (n)?[/]");
             switch (overwriteResult)
             {
                 case "n":
@@ -483,21 +487,13 @@ public static class Program
     #endregion
     
     #region Database Operations
-    
-    private static bool TriggerHasTeleportResult(string zoneName, string triggerName)
-    {
-        var colName = SanitizeColName($"{ResultCollectionName}/{zoneName}/{triggerName}");
-        using var db = new LiteDatabase(_databasePath);
-        var col= db.GetCollection<TypeCache.Result>(colName);
-        return col.FindAll().Any();
-    }
 
     private static string GetExistingTriggerTeleport(string zoneName, string triggerName)
     {
         var colName = SanitizeColName($"{ResultCollectionName}/{zoneName}/{triggerName}");
         using var db = new LiteDatabase(_databasePath);
         var col= db.GetCollection<TypeCache.Result>(colName);
-        return ((ResTeleport)col.FindAll().First()).m_destinationZone;
+        return col.FindAll().Any() ? ((ResTeleport)col.FindAll().First()).m_destinationZone : "";
     }
     
     private static void DeleteExistingTeleportResult(string zoneName, string triggerName)
