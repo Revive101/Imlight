@@ -126,9 +126,6 @@ public class WizardZone : ReceiveProtocolDispatcher
             Source = message.Player,
             Messages = new IServerMessage[] { message }
         });
-        
-        // Inform every other player that this object has been removed.
-        Broadcast(new GAME_5_PROTOCOL.MSG_REMOVEOBJECT { GameObjectID = message.GlobalId });
     }
 
     /// <summary>
@@ -231,12 +228,15 @@ public class WizardZone : ReceiveProtocolDispatcher
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER))]
     private void ReceiveRemovePlayer(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message)
     {
-        //if (!_zonePlayers.TryGetValue(message.Player, out var obj))
-            //throw new Exception($"Zone \"{ZoneName}\" tried to remove player it did not have.");
+        if (!_zonePlayers.TryGetValue(message.Player, out var obj))
+            throw new Exception($"Zone \"{ZoneName}\" tried to remove player it did not have.");
 
         // Don't send a torrent of messages to a disconnected socket.
         if (message.IsPlayerStillConnected) 
             InformZoneObjectsOfDeparture(message);
+        
+        // Inform every other player that this object has been removed.
+        Broadcast(new GAME_5_PROTOCOL.MSG_REMOVEOBJECT { GameObjectID = message.GlobalId });
         
         _zonePlayers.Remove(message.Player);
 
