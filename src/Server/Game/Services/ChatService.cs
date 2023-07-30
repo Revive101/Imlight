@@ -44,7 +44,7 @@ namespace Imlight.Server.Game.Services
                 SourceName = src,
                 Filter = 0
             };
-            TellOtherService(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
+            TellOtherServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
             {
                 Sender = SessionActor.ActorRef,
                 Message = msg,
@@ -68,7 +68,7 @@ namespace Imlight.Server.Game.Services
                 SourceName = src,
                 Filter = 0,
             };
-            TellOtherService(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
+            TellOtherServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
             {
                 Sender = SessionActor.ActorRef,
                 Message = msg,
@@ -85,7 +85,7 @@ namespace Imlight.Server.Game.Services
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CORE_EMOTE))]
         private void ReceiveCoreEmote(GAME_5_PROTOCOL.MSG_CORE_EMOTE message)
         {
-            TellOtherService(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
+            TellOtherServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
             {
                 Sender = SessionActor.ActorRef,
                 Message = message,

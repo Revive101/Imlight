@@ -87,7 +87,7 @@ namespace Imlight.Server.Game.Services
                 var hex = Convert.ToHexString(data);
                 Log.Logger.Information(hex);
 
-                TellOtherService(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
+                TellOtherServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
                 {
                     Selfless = false,
                     Sender = SessionActor.ActorRef,
@@ -103,7 +103,7 @@ namespace Imlight.Server.Game.Services
                 Log.Logger.Information("Player unequipped an item");
                 for(int i = 0; i < 10; i++)
                 {
-                    TellOtherService(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
+                    TellOtherServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
                     {
                         Selfless = false,
                         Sender = SessionActor.ActorRef,

@@ -114,7 +114,7 @@ namespace Imlight.Server.Game.Services
                 Player = SessionActor.ActorRef,
                 PlayerObject = charObj
             };
-            TellOtherService(msg);
+            TellOtherServices(msg);
         }
 
         private bool GetCharacterFromAccount(Account account, ulong charId, out Character character)
@@ -144,7 +144,7 @@ namespace Imlight.Server.Game.Services
         private void SetAccountInternally(Account account)
         {
             // Tell the SessionActor to set the account.
-            TellOtherService(new ACCOUNT_104_PROTOCOL.MSG_ACCOUNT()
+            TellOtherServices(new ACCOUNT_104_PROTOCOL.MSG_ACCOUNT()
             {
                 Account = account
             });
@@ -152,7 +152,7 @@ namespace Imlight.Server.Game.Services
 
         private void SetCharacterInternally(Character character)
         {
-            TellOtherService(new CHARACTER_103_PROTOCOL.MSG_SETACTIVECHARACTER
+            TellOtherServices(new CHARACTER_103_PROTOCOL.MSG_SETACTIVECHARACTER
             {
                 Character = character
             });

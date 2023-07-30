@@ -42,11 +42,11 @@ namespace Imlight.Server.Shared.Networking
         /// Sends the SessionActor a server message. Used to send data to another service of the SessionActor.
         /// </summary>
         /// <param name="message"></param>
-        public void TellOtherService(IServerMessage message)
+        public void TellOtherServices(IServerMessage message)
         {
             if (message.ServiceID < 100)
             {
-                throw new Exception($"You are sending a non-server message using {nameof(TellOtherService)}! " +
+                throw new Exception($"You are sending a non-server message using {nameof(TellOtherServices)}! " +
                                     $"Do not do this. Use {nameof(SendToSocket)} instead.");
             }
 
