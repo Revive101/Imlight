@@ -180,10 +180,7 @@ namespace Imlight.Server.Shared.Networking
             // Iterate through our services and send them a dispose message.
             foreach (var (actorRef, type) in _services)
             {
-                if (type.MessageHandlers.Any(x => x.Key == typeof(SERVICE_101_PROTOCOL.MSG_DISPOSE)))
-                {
-                    actorRef.Tell(new SERVICE_101_PROTOCOL.MSG_DISPOSE());
-                }
+                actorRef.Tell(new SERVICE_101_PROTOCOL.MSG_DISPOSE());
             }
             
             Context.Stop(Self);
@@ -197,9 +194,8 @@ namespace Imlight.Server.Shared.Networking
 
         protected override SupervisorStrategy SupervisorStrategy()
         {
-            // Recall that child actors of the SessionActor are the message services. If a service throws an exception,
-            // it is caught here and the SessionActor deals with.
-            return new OneForOneStrategy(
+            // Recall that child actors of the SessionActor are the message services.
+            return new AllForOneStrategy(
                 maxNrOfRetries: ServiceRetryCount,
                 withinTimeRange: TimeSpan.FromSeconds(ServiceTimeRangeRetryInSeconds),
                 localOnlyDecider: ex =>
@@ -216,9 +212,9 @@ namespace Imlight.Server.Shared.Networking
                         case SessionFatalException tex:
                         {
                             Log.Logger.Error($"SessionActor [{SessionID}] service " +
-                                             $"[{tex.CallingClass} L:{tex.LineNumber}] fatal threw exception: " +
+                                             $"[{tex.CallingClass} L:{tex.LineNumber}] threw fatal exception: " +
                                              $"{tex.Message}");
-                            return Directive.Restart;
+                            return Directive.Escalate;
                         }
                         default:
                             return Directive.Escalate;
@@ -256,6 +252,7 @@ namespace Imlight.Server.Shared.Networking
             Receive<string>(x => x == "Identify", x => Sender.Tell(this));
             Receive<SERVICE_101_PROTOCOL.MSG_GETALLSERVICES>(InitializeActiveSession);
             Receive<SERVER_100_PROTOCOL.MSG_PING>(x => this.Ping = x.Ping);
+            Receive<Exception>(ReceiveException);
 
             // Generic message handlers.
             Receive<IServerMessage>(HandleInternalTell);
@@ -303,6 +300,16 @@ namespace Imlight.Server.Shared.Networking
             }
         }
 
+        private void ReceiveException(Exception ex)
+        {
+            throw ex;
+        }
+
+        private void SendOldContextException(Exception ex)
+        {
+            ActorRef.Tell(ex);
+        }
+
         #region Socket Operations
 
         private void ProcessReceive(SocketAsyncEventArgs eventArgs)
@@ -316,7 +323,11 @@ namespace Imlight.Server.Shared.Networking
             // If receive failed, chances are the socket suddenly disconnected.
             if (e.SocketError != SocketError.Success)
             {
-                throw new SessionFatalException($"SessionActor receive error: {e.SocketError}");
+                // If the socket is not connected, we'll just dispose of the session. We cannot just throw the error
+                // here, because the actor context is on a different thread. We'll just send a message to the actor
+                // and let it handle the error.
+                SendOldContextException(new SessionFatalException($"SessionActor socket {e.SocketError}."));
+                return;
             }
             if (e.BytesTransferred <= 0) 
                 return;
@@ -347,9 +358,9 @@ namespace Imlight.Server.Shared.Networking
         {
             if (!Socket.Connected)
             {
-                throw new SessionFatalException(
+                SendOldContextException(new SessionFatalException(
                     $"SessionActor [{SessionID}] cannot send message [{message.GetType()}] " +
-                    $"send failure: Socket is not connected!");
+                    $"send failure: Socket is not connected!"));
             }
             if (_isSending)
             {
@@ -380,7 +391,8 @@ namespace Imlight.Server.Shared.Networking
             _isSending = false;
             if (e.SocketError != SocketError.Success)
             {
-                throw new SessionFatalException($"SessionActor [{SessionID}] send failure: {e.SocketError}");
+                SendOldContextException(
+                    new SessionFatalException($"SessionActor [{SessionID}] send failure: {e.SocketError}"));
             }
         }
 
@@ -443,7 +455,7 @@ namespace Imlight.Server.Shared.Networking
         }
 
         private bool IsKIPacket(byte[] buffer)
-            => (buffer.AsSpan()[0..2].SequenceEqual(stackalloc byte[2] { 0x0D, 0xF0 }));
+            => buffer.AsSpan()[..2].SequenceEqual(stackalloc byte[2] { 0x0D, 0xF0 });
 
         private SocketAsyncEventArgs GetReceiveEventArgsFromPool()
         {
@@ -464,9 +476,11 @@ namespace Imlight.Server.Shared.Networking
                     return receiveEventArgs;
                 }
             }
-
-            throw new SessionFatalException($"SessionActor [{SessionID}] receive argument " +
-                $"pool over maximum allowed count of {AsyncReceivePoolCount}.");
+            
+            SendOldContextException(new SessionFatalException($"SessionActor [{SessionID}] receive argument " +
+                                                              $"pool over maximum allowed count " +
+                                                              $"of {AsyncReceivePoolCount}."));
+            return null;
         }
 
         #endregion
