@@ -12,8 +12,9 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
+      with:
+        submodules: 'true'
+        token: ${{ GIT_TOKEN }}
     
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
