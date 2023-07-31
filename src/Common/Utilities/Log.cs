@@ -39,11 +39,11 @@ namespace Imlight.Common.Utilities
     internal class ThreadNameEnricher : ILogEventEnricher
     {
         public const string ThreadNamePropertyName = "Thread";
-        private const int MaxNameLength = 15;
+        private const int MaxNameLength = 2;
 
         public void Enrich(LogEvent logEvent, ILogEventPropertyFactory propertyFactory)
         {
-            var threadName = GetConsistentSpacedName(Thread.CurrentThread.Name);
+            var threadName = GetConsistentSpacedName(System.Environment.CurrentManagedThreadId.ToString());
             if (string.IsNullOrEmpty(threadName))
                 threadName = $"Thread-{System.Environment.CurrentManagedThreadId}";
 
