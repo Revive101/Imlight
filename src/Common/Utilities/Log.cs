@@ -73,16 +73,25 @@ namespace Imlight.Common.Utilities
         {
             var frame = new StackFrame(7, false);
             var method = frame.GetMethod();
-            if (method == null)
-                return;
+            var callingMethod = "Imlight";
 
-            var callingMethod = $"{method.ReflectedType?.Name}::{method.Name}";
-            if (IsStateMachineMethod(callingMethod))
+            if (method != null)
             {
-                callingMethod = GetCallerMethodNameFromAsyncStateMachine(frame);
+                callingMethod = $"{method.ReflectedType?.Name}::{method.Name}";
+                if (IsStateMachineMethod(callingMethod))
+                {
+                    callingMethod = GetCallerMethodNameFromAsyncStateMachine(frame);
+                }
             }
 
-            var propertyMethod = propertyFactory.CreateProperty(CallingMethodPropertyName, GetConsistentSpacedName(callingMethod));
+            AddCallingMethodProperty(logEvent, propertyFactory, callingMethod);
+        }
+
+        private static void AddCallingMethodProperty(LogEvent logEvent, ILogEventPropertyFactory propertyFactory,
+            string callingMethod)
+        {
+            var paddedName = GetConsistentSpacedName(callingMethod);
+            var propertyMethod = propertyFactory.CreateProperty(CallingMethodPropertyName, paddedName);
             logEvent.AddPropertyIfAbsent(propertyMethod);
         }
 
