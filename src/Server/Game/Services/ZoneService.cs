@@ -19,7 +19,6 @@ namespace Imlight.Server.Game.Services
     public class ZoneService : MessageService
     {
         private IActorRef _zoneRef;
-        private IActorRef _bankedZoneRef;
         private bool _isTransferQueued;
         
         public ZoneService(SessionActor sessionActor) : base(sessionActor) { }
@@ -54,10 +53,6 @@ namespace Imlight.Server.Game.Services
 
                 character.nextZone = message.ZoneName;
                 character.nextLocation = message.Location;
-                
-                // Bank the zone actor reference. If the client is okay with transferring, we'll set the actual
-                // zone ref to the banked one.
-                _bankedZoneRef = zoneDetails.ZoneActorRef;
             }
             
             // If we're not sending this to client, this is an internal transfer, meaning we can immediately
@@ -73,7 +68,63 @@ namespace Imlight.Server.Game.Services
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK))]
         private void ReceiveZoneTransferAck(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK message)
         {
-            // This message is received from the client when it's OK to transfer them.
+            DoZoneTransfer();
+        }
+
+        [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ZONETRANSFERNACK))]
+        private void ReceiveZoneTransferNack(GAME_5_PROTOCOL.MSG_ZONETRANSFERNACK message)
+        {
+            Log.Logger.Debug("Client was not OK with zone transfer! Possibly patching.");
+        }
+
+        [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_RETRYTELEPORT))]
+        private void ReceiveRetryTeleport(GAME_5_PROTOCOL.MSG_RETRYTELEPORT message)
+        {
+            DoZoneTransfer();
+        }
+        
+        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
+        private void ReceiveAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message)
+        {
+            if (_zoneRef is null) throw new NullReferenceException(nameof(_zoneRef));
+            
+            _zoneRef.Forward(message);
+        }
+
+        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
+        private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message)
+        {
+            if (_zoneRef is null) throw new Exception("Zone Reference was null.");
+            
+            _zoneRef.Tell(message);
+        }
+
+        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_TRIGGERQUERY))]
+        private void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_TRIGGERQUERY message)
+        {
+            if (_zoneRef is null) throw new Exception("Zone Reference was null.");
+            
+            _zoneRef.Forward(message);
+        }
+        
+        [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_DISPOSE))]
+        public override void ReceiveDispose(SERVICE_101_PROTOCOL.MSG_DISPOSE message)
+        {
+            var globalId = GetActiveCoreObject().m_globalID;
+
+            // If the zone reference is not null, we'll tell the zone to remove the player.
+            _zoneRef?.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER()
+            {
+                Player = SessionActor.ActorRef,
+                GlobalId = globalId
+            });
+            _zoneRef = null;
+            
+            base.ReceiveDispose(message);
+        }
+
+        private void DoZoneTransfer()
+        {
             var account = GetSocketAccount();
             var character = GetActiveCharacter();
 
@@ -83,7 +134,7 @@ namespace Imlight.Server.Game.Services
             {
                 Player = SessionActor.ActorRef,
                 GlobalId = GetActiveCoreObject().m_globalID,
-                IsZoneTransfer = true
+                IsPlayerStillConnected = true
             };
             _ = _zoneRef.Ask(removePlayerMsg).Result;
 
@@ -105,74 +156,6 @@ namespace Imlight.Server.Game.Services
                 TransitionID = 1
             };
             SendToSocket(serverTransfer);
-
-            _zoneRef = _bankedZoneRef;
-            _isTransferQueued = false;
-            _bankedZoneRef = null;
-        }
-        
-        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
-        private void ReceiveAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message)
-        {
-            if (_zoneRef is null) throw new NullReferenceException(nameof(_zoneRef));
-            
-            _zoneRef.Forward(message);
-        }
-
-        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
-        private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message)
-        {
-            if (_zoneRef is null) throw new Exception("Zone Reference was null.");
-            
-            _zoneRef.Tell(message);
-        }
-
-        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT))]
-        private void ReceiveQueryObject(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT message)
-        {
-            if (_zoneRef is null) throw new Exception("Zone Reference was null.");
-            
-            _zoneRef.Forward(message);
-        }
-
-        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_TRIGGERQUERY))]
-        private void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_TRIGGERQUERY message)
-        {
-            if (_zoneRef is null) throw new Exception("Zone Reference was null.");
-            
-            _zoneRef.Forward(message);
-        }
-        
-        [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_DISPOSE))]
-        public override void ReceiveDispose(SERVICE_101_PROTOCOL.MSG_DISPOSE message)
-        {
-            base.ReceiveDispose(message);
-            var globalId = GetActiveCoreObject()?.m_globalID;
-
-            // If the zone reference is not null, we'll tell the zone to remove the player.
-            _zoneRef?.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER()
-            {
-                Player = SessionActor.ActorRef,
-                GlobalId = globalId ?? 0
-            });
-
-            _zoneRef = null;
-        }
-        
-        private TypeCache.CoreObject GetActiveCoreObject()
-        {
-            var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
-            var response = AskSessionServices<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
-
-            return response.CharacterObject;
-        }
-
-        private Character GetActiveCharacter()
-        {
-            var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
-            var response = AskSessionServices<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
-
-            return response.Character;
         }
     }
 }

@@ -7,6 +7,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Akka.Actor;
+using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
 using SharpDX;
 using WizUnraveler.Cache;
@@ -152,5 +153,19 @@ public class WizardZonePathCreature : WizardZoneObject
             return 0;
 
         return unchecked((byte)(_targetNodeIndex + 1));
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
+    protected override void ReceiveAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message)
+    {
+        base.ReceiveAddPlayer(message);
+
+        // Inform the new player that this creature is moving.
+        var msgMoveState = new GAME_5_PROTOCOL.MSG_MOVESTATE
+        {
+            GlobalID = ActiveGameObject.m_globalID,
+            NewState = 0
+        };
+        message.Player.Tell(msgMoveState);
     }
 }

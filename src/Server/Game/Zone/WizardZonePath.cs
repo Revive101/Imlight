@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Imlight.Server.Database;
+using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
 using WizUnraveler.IO;
 using WizUnraveler.ObjectProperty;
@@ -23,7 +24,7 @@ namespace Imlight.Server.Game.Zone;
 /// This is a child actor of a <see cref="WizardZone" /> that represents a path that exists in that zone. It is also
 /// responsible for spawning the creatures on interval.
 /// </summary>
-public class WizardZonePath : ReceiveActor
+public class WizardZonePath : ReceiveProtocolDispatcher
 {
     /// <summary>
     /// Gets the identifier of the path.
@@ -34,7 +35,8 @@ public class WizardZonePath : ReceiveActor
     /// Gets the name of the path.
     /// </summary>
     public ByteString Name { get; init; }
-    
+
+    private readonly List<IActorRef> _creatures;
     private readonly CancellationTokenSource _cancelToken;
     private readonly Dictionary<GID, byte> _creatureCount;
     private readonly List<SpawnObject> _creatureSpawnData;
@@ -59,13 +61,14 @@ public class WizardZonePath : ReceiveActor
         List<SpawnObject> creatures,
         IActorRef zoneActorRef)
     {
-        Id = id;
-        Name = name;
-        _nodes = nodes.ToDictionary(x => x, _ => true);
-        _creatureSpawnData = creatures;
-        _zoneActorRef = zoneActorRef;
-        _cancelToken = new CancellationTokenSource();
-        _creatureCount = new Dictionary<GID, byte>();
+        this.Id = id;
+        this.Name = name;
+        this._creatures = new List<IActorRef>();
+        this._nodes = nodes.ToDictionary(x => x, _ => true);
+        this._creatureSpawnData = creatures;
+        this._zoneActorRef = zoneActorRef;
+        this._cancelToken = new CancellationTokenSource();
+        this._creatureCount = new Dictionary<GID, byte>();
 
         StartSpawnInterval();
     }
@@ -95,7 +98,8 @@ public class WizardZonePath : ReceiveActor
     /// </summary>
     private void StartSpawnInterval()
     {
-        foreach (var spawnObject in _creatureSpawnData.Where(x => x.m_active)) DoCreatureSpawnInterval(spawnObject);
+        foreach (var spawnObject in _creatureSpawnData.Where(x => x.m_active)) 
+            DoCreatureSpawnInterval(spawnObject);
     }
 
     /// <summary>
@@ -186,6 +190,7 @@ public class WizardZonePath : ReceiveActor
         var nodes = _nodes.Keys.ToArray();
         var props = WizardZonePathCreature.Props(newObj, nodes, (byte)nodeIndex, _zoneActorRef);
         var actorRef = Context.ActorOf(props);
+        _creatures.Add(actorRef);
 
         var msg = new ZONE_102_PROTOCOL.MSG_ADDCREATURE
         {
@@ -242,5 +247,18 @@ public class WizardZonePath : ReceiveActor
     private void IncrementCreatureCount(SpawnObject spawnObject)
     {
         _creatureCount[spawnObject.m_id]++;
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST))]
+    private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST message)
+    {
+        // Just forward this broadcast to each of the creatures on this path.
+        foreach (var creature in _creatures)
+        {
+            foreach (var msg in message.Messages)
+            {
+                creature.Tell(msg);
+            }
+        }
     }
 }

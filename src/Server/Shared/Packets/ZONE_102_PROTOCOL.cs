@@ -36,8 +36,7 @@ namespace Imlight.Server.Shared.Packets
             public byte MessageOrder { get; } = 2;
             public byte ServiceID { get; } = 102;
 
-            public IActorRef ZoneActorRef;
-            public TypeCache.CoreObject[] ZoneObjects;
+            public IActorRef ZoneActorRef;  
             public uint DynamicZoneId;
             public uint ErrorCode;
         }
@@ -66,7 +65,7 @@ namespace Imlight.Server.Shared.Packets
             
             public IActorRef Player;
             public ulong GlobalId;
-            public bool IsZoneTransfer;
+            public bool IsPlayerStillConnected;
         }
         
         public class MSG_REMOVEPLAYERRSP : IServerMessage
@@ -121,15 +120,7 @@ namespace Imlight.Server.Shared.Packets
             public IActorRef ObjectIdentity;
             public TypeCache.CoreObject CoreObject;
         }
-        
-        public class MSG_QUERYZONEOBJECT : IServerMessage
-        {
-            public byte MessageOrder { get; } = 10;
-            public byte ServiceID { get; } = 102;
 
-            public GID ObjectId;
-        }
-        
         public class MSG_ADDVOLUME : IServerMessage
         {
             public byte MessageOrder { get; } = 11;
@@ -164,13 +155,14 @@ namespace Imlight.Server.Shared.Packets
             public TypeCache.CoreObject CoreObject;
             public IActorRef Suspect;
         }
-        
-        public class MSG_TRIGGERGRACE : IServerMessage
+
+        public class MSG_ZONEOBJECTBROADCAST : IServerMessage
         {
             public byte MessageOrder { get; } = 14;
             public byte ServiceID { get; } = 102;
 
-            public TypeCache.CoreObject CoreObject;
+            public IActorRef Source;
+            public IServerMessage[] Messages;
         }
     }
 }

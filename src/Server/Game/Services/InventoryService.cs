@@ -50,10 +50,9 @@ namespace Imlight.Server.Game.Services
             var serializer = new CoreObjectSerializer()
                 .WithSerializerFlags(SerializerFlags.None)
                 .WithPropertyFlags((PropertyFlags)1);
-
-            var character = GetActiveCoreObject();
-            var coreObject = character.CharacterObject;
-            var playerCharacter = character.Character;
+            
+            var coreObject = GetActiveCoreObject();
+            var playerCharacter = GetActiveCharacter();
 
             // Confirm to the player that we've equipped their item server side.
             // @TODO: There should be some "AntiAmbrose" logic here. Double check that the player meets the requirements
@@ -88,7 +87,7 @@ namespace Imlight.Server.Game.Services
                 var hex = Convert.ToHexString(data);
                 Log.Logger.Information(hex);
 
-                SendToSessionServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
+                TellOtherServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
                 {
                     Selfless = false,
                     Sender = SessionActor.ActorRef,
@@ -104,7 +103,7 @@ namespace Imlight.Server.Game.Services
                 Log.Logger.Information("Player unequipped an item");
                 for(int i = 0; i < 10; i++)
                 {
-                    SendToSessionServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
+                    TellOtherServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
                     {
                         Selfless = false,
                         Sender = SessionActor.ActorRef,
@@ -185,13 +184,5 @@ namespace Imlight.Server.Game.Services
             });
         }
         #endregion
-
-        private MSG_CHARACTER GetActiveCoreObject()
-        {
-            var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
-            var response = AskSessionServices<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
-
-            return response;
-        }
     }
 }

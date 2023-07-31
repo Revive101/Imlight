@@ -6,15 +6,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Akka.Actor;
 using Imlight.Common.Serializable;
 using Imlight.Common.Utilities;
-using Imlight.Server.Database;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
 using WizUnraveler.Cache;
 using WizUnraveler.DML;
-using WizUnraveler.ObjectProperty;
 using WizUnraveler.Secrets;
 using static WizUnraveler.Cache.TypeCache;
 using static WizUnraveler.ObjectProperty.ObjectSerializer;
@@ -24,19 +23,15 @@ namespace Imlight.Server.Game.Zone;
 
 public class WizardZone : ReceiveProtocolDispatcher
 {
+    private const ushort ReservedMobileIdMax = 1000;
+    
     public string ZoneName { get; }
     
     private readonly uint _dynamicZoneId;
     private readonly IActorRef _objectSupervisorRef;
-    private readonly IActorRef _pathSupervisorRef;
-    private readonly IActorRef _volumeSupervisorRef;
     private readonly List<Trigger> _triggers;
-
-    // TODO: I don't want to be saving CoreObjects here.
-    private readonly Dictionary<IActorRef, CoreObject> _zoneCreatures;
-    private readonly Dictionary<IActorRef, CoreObject> _zoneObjects;
     private readonly Dictionary<IActorRef, CoreObject> _zonePlayers;
-    private readonly Dictionary<IActorRef, CoreObject> _zoneVolumes;
+    private ushort _zoneObjectMobileIdCounter;
 
     // ctor
     public WizardZone(string zoneName)
@@ -44,19 +39,11 @@ public class WizardZone : ReceiveProtocolDispatcher
         ZoneName = zoneName;
         _dynamicZoneId = GenerateDynamicZoneId();
         _zonePlayers = new Dictionary<IActorRef, CoreObject>();
-        _zoneCreatures = new Dictionary<IActorRef, CoreObject>();
-        _zoneObjects = new Dictionary<IActorRef, CoreObject>();
-        _zoneVolumes = new Dictionary<IActorRef, CoreObject>();
-
-        _pathSupervisorRef = CreatePathSupervisor();
         _objectSupervisorRef = CreateObjectSupervisor();
-        _volumeSupervisorRef = CreateVolumeSupervisor();
         _triggers = new List<Trigger>();
-        // We don't need to create a PlayerSupervisor, as the GameServer manages that for us.
 
         // Load and initialize this zone.
         WizardZoneLoader.LoadZoneData(this, Self);
-
         Log.Logger.Debug($"Zone [{ZoneName}] created.");
     }
 
@@ -89,32 +76,12 @@ public class WizardZone : ReceiveProtocolDispatcher
     }
 
     /// <summary>
-    /// Creates a <see cref="WizardZonePathSupervisor"/> as a child of this WizardZone.
-    /// </summary>
-    /// <returns>The actor reference pointing to the newly created actor.</returns>
-    private IActorRef CreatePathSupervisor()
-    {
-        var props = WizardZonePathSupervisor.Props(Self);
-        return Context.ActorOf(props);
-    }
-
-    /// <summary>
     /// Creates a <see cref="WizardZoneObjectSupervisor"/> as a child of this WizardZone.
     /// </summary>
     /// <returns>The actor reference pointing to the newly created actor.</returns>
     private IActorRef CreateObjectSupervisor()
     {
         var props = WizardZoneObjectSupervisor.Props(Self);
-        return Context.ActorOf(props);
-    }
-
-    /// <summary>
-    /// Creates a new <see cref="WizardZoneVolumeSupervisor"/> as a child of this WizardZone.
-    /// </summary>
-    /// <returns></returns>
-    private IActorRef CreateVolumeSupervisor()
-    {
-        var props = WizardZoneVolumeSupervisor.Props(Self);
         return Context.ActorOf(props);
     }
 
@@ -129,49 +96,52 @@ public class WizardZone : ReceiveProtocolDispatcher
             .WithPropertyFlags(PropertyFlags.Public | PropertyFlags.Transmit | PropertyFlags.AuthorityTransmit);
         Broadcast(new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = serializer.Serialize(obj) });
     }
-
-    private void SpawnZoneObjectsForClient(IActorRef newClient)
+    
+    /// <summary>
+    /// Broadcasts to each zone object and player of a new arrival in the zone.
+    /// </summary>
+    /// <param name="message"></param>
+    private void InformZoneObjectsOfJoin(ZONE_102_PROTOCOL.MSG_ADDPLAYER message)
     {
-        // TODO: Make the WizardZoneObject responsible for this rather than the zone.
-        SerializeAndSendObjects(newClient, _zoneObjects.Values);
-        SerializeAndSendObjects(newClient, _zonePlayers.Values);
-        SerializeAndSendObjects(newClient, _zoneCreatures.Values);
+        // Forward the new player message to every zone object so that they may personally deal with this situation.
+        _objectSupervisorRef.Tell(new ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST
+        {
+            Source = message.Player,
+            Messages = new IServerMessage[] { message }
+        });
+
+        // Broadcast this new player to each existing player in the zone.
+        BroadcastObjectCreation(message.PlayerObject);
     }
 
-    private void RemoveZoneObjectsForClient(IActorRef client)
+    /// <summary>
+    /// Broadcasts to each zone object and player of a departure in the zone.
+    /// </summary>
+    /// <param name="message"></param>
+    private void InformZoneObjectsOfDeparture(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message)
     {
-        RemoveObjects(client, _zoneObjects.Values);
-        RemoveObjects(client, _zonePlayers.Values);
-        RemoveObjects(client, _zoneCreatures.Values);
+        // Forward the departure message to every zone object so that they may personally deal with this situation.
+        _objectSupervisorRef.Tell(new ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST
+        {
+            Source = message.Player,
+            Messages = new IServerMessage[] { message }
+        });
     }
 
-    private void SerializeAndSendObjects(IActorRef client, IEnumerable<CoreObject> objects)
+    /// <summary>
+    /// Spawns each existing player in the zone for a client.
+    /// </summary>
+    /// <param name="client">The client in question.</param>
+    private void SpawnPlayersForNewClient(IActorRef client)
     {
+        // Now spawn each existing player.
         var serializer = new CoreObjectSerializer()
             .WithSerializerFlags(SerializerFlags.None)
             .WithPropertyFlags(PropertyFlags.Public | PropertyFlags.Transmit | PropertyFlags.AuthorityTransmit);
-        foreach (var obj in objects)
+        foreach (var obj in _zonePlayers.Values)
         {
             var msg = new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = serializer.Serialize(obj) };
             client.Tell(msg);
-        }
-    }
-
-    private void RemoveObjects(IActorRef client, IEnumerable<CoreObject> objects)
-    {
-        foreach (var obj in objects)
-        {
-            var msg = new GAME_5_PROTOCOL.MSG_REMOVEOBJECT { GameObjectID = obj.m_globalID };
-            client.Tell(msg);
-        }
-    }
-
-    private void InformVolumesOfNewPlayer(CoreObject newPlayer)
-    {
-        foreach (var vol in _zoneVolumes)
-        {
-            var msg = new ZONE_102_PROTOCOL.MSG_TRIGGERGRACE { CoreObject = newPlayer };
-            vol.Key.Tell(msg);
         }
     }
 
@@ -196,10 +166,8 @@ public class WizardZone : ReceiveProtocolDispatcher
         var r = new Random();
         while (true)
         {
-            test = (ushort)r.Next(0, ushort.MaxValue);
-            if (_zoneObjects.Values.Any(x => x.m_nMobileID == test)
-                || _zonePlayers.Values.Any(x => x.m_nMobileID == test)
-                || _zoneCreatures.Values.Any(x => x.m_nMobileID == test))
+            test = (ushort)r.Next(ReservedMobileIdMax, ushort.MaxValue);
+            if (_zonePlayers.Values.Any(x => x.m_nMobileID == test))
                 continue;
 
             break;
@@ -208,19 +176,15 @@ public class WizardZone : ReceiveProtocolDispatcher
         return test;
     }
 
-    private static KeyValuePair<IActorRef, CoreObject>? SearchObjectInZone(GID globalId,
-        params Dictionary<IActorRef, CoreObject>[] dictionaries)
+    /// <summary>
+    /// Generate an unused mobile ID. Reserved for zone objects.
+    /// </summary>
+    /// <returns></returns>
+    private ushort GenerateReservedMobileId()
     {
-        foreach (var dictionary in dictionaries)
-        {
-            foreach (var kvp in dictionary)
-            {
-                if (kvp.Value.m_globalID == globalId)
-                    return kvp;
-            }
-        }
-
-        return null;
+        if (_zoneObjectMobileIdCounter + 1 >= ReservedMobileIdMax)
+            throw new Exception($"Zone \"{ZoneName}\" reached the maximum reserved mobile ID count!");
+        return ++_zoneObjectMobileIdCounter;
     }
 
     #region Handlers
@@ -231,7 +195,6 @@ public class WizardZone : ReceiveProtocolDispatcher
         // This is step 1 of the zone transfer process.
         // There's nothing we need to do here except for telling the sender the zone details.
         // We'll be waiting to receive MSG_ADDPLAYER before we do any object creation.
-        
         Sender.Tell(new ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP
         {
             ZoneActorRef = Self,
@@ -243,21 +206,17 @@ public class WizardZone : ReceiveProtocolDispatcher
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
     private void ReceiveAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message)
     {
-        if (_zonePlayers.Keys.Contains(message.Player))
+        if (_zonePlayers.ContainsKey(message.Player))
             throw new Exception("Player actor already exists in this zone!");
         
+        // Generate an ID for this new player that is zone agnostic.
         message.PlayerObject.m_nMobileID = GenerateMobileId();
 
-        // Spawn the existing zone objects for our new player. Add them to the player list afterwards, so they don't
-        // load themselves.
-        SpawnZoneObjectsForClient(message.Player);
-        _zonePlayers.Add(message.Player, message.PlayerObject);
+        InformZoneObjectsOfJoin(message);
+        SpawnPlayersForNewClient(message.Player);
         
-        BroadcastObjectCreation(message.PlayerObject);
-
-        // Inform each volume of this object, so that they may check if the player is within it's bounds and provide
-        // them a grace period.
-        InformVolumesOfNewPlayer(message.PlayerObject);
+        // Now we add the player, so they don't end up creating themselves when we spawn each zone object.
+        _zonePlayers.Add(message.Player, message.PlayerObject);
 
         // Inform the player that they've been successfully added to the zone.
         var response = new ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP { PlayerObject = message.PlayerObject };
@@ -270,26 +229,25 @@ public class WizardZone : ReceiveProtocolDispatcher
     private void ReceiveRemovePlayer(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message)
     {
         if (!_zonePlayers.TryGetValue(message.Player, out var obj))
-        {
-            // fixme: This should become an exception inevitably. Due to race conditions, this ends up getting
-            // triggered more than it should, so for now it just remains an error log.
-            Log.Logger.Error($"Zone [{ZoneName}] tried to remove player it did not have.");
-            return;
-        }
+            throw new Exception($"Zone \"{ZoneName}\" tried to remove player it did not have.");
 
-        // Inform every Wizard101 client that this object has been removed.
-        Broadcast(new GAME_5_PROTOCOL.MSG_REMOVEOBJECT { GameObjectID = obj.m_globalID });
-
-        // Now, *actually* remove it from the zone.
+        // Don't send a torrent of messages to a disconnected socket.
+        if (message.IsPlayerStillConnected) 
+            InformZoneObjectsOfDeparture(message);
+        
+        // Inform every other player that this object has been removed.
+        Broadcast(new GAME_5_PROTOCOL.MSG_REMOVEOBJECT { GameObjectID = message.GlobalId });
+        
         _zonePlayers.Remove(message.Player);
 
-        // We only want to remove instanced objects for the client if they're transferring zones.
-        // Otherwise, we'll just be sending a torrent of messages to a disconnected socket.
-        if (message.IsZoneTransfer)
-            RemoveZoneObjectsForClient(message.Player);
-
-        var rsp = new ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP();
-        Sender.Tell(rsp);
+        // Wait a little while until sending the reply back, just in case the zone objects have not yet been cleaned.
+        var s = Sender;
+        Task.Run(async () =>
+        {
+            await Task.Delay(TimeSpan.FromSeconds(1));
+            var rsp = new ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP();
+            s.Tell(rsp);
+        }).Wait();
 
         Log.Logger.Debug($"Player {message.Player.Path.Name} removed from zone {ZoneName}.");
     }
@@ -303,23 +261,10 @@ public class WizardZone : ReceiveProtocolDispatcher
             Broadcast(message.Message);
     }
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT))]
-    private void ReceiveQueryObject(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT message)
-    {
-        var kvp = SearchObjectInZone(message.ObjectId, _zoneObjects, _zonePlayers, _zoneCreatures)!.Value;
-        var rsp = new ZONE_102_PROTOCOL.MSG_ADDCREATURE()
-        {
-            CoreObject = kvp.Value,
-            ObjectIdentity = kvp.Key
-        };
-        
-        Sender.Tell(rsp);
-    }
-    
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPATH))]
     private void ReceiveAddPath(ZONE_102_PROTOCOL.MSG_ADDPATH message)
     {
-        _pathSupervisorRef.Forward(message);
+        _objectSupervisorRef.Forward(message);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDOBJECT))]
@@ -327,22 +272,17 @@ public class WizardZone : ReceiveProtocolDispatcher
     {
         // This message is received on the WizardZone to:
         // a. Give it a unique ID.
-        // b. Broadcast it's creation to every player in the zone.
-        // c. Keep it's reference here so that new players will be told of it's data.
-        var id = GenerateMobileId();
+        // b. Broadcast its creation to every player in the zone.
+        var id = GenerateReservedMobileId();
         message.CoreObject.m_nMobileID = id;
-
         BroadcastObjectCreation(message.CoreObject);
 
-        // The object has not been created as an actor yet. We'll tell the object supervisor about this object, and let
-        // it handle the creation of this object. We will await the replies, since some of it's details are needed here.
+        // Inform the object supervisor to create an actor representation and add it to our zone objects list.
         var rsp = _objectSupervisorRef
             .Ask<ZONE_102_PROTOCOL.MSG_ADDOBJECTRSP>(message)
             .Result;
         rsp.MobileId = id;
 
-        _zoneObjects.Add(rsp.ActorRef, message.CoreObject);
-        
         Sender.Tell(rsp);
     }
     
@@ -351,36 +291,31 @@ public class WizardZone : ReceiveProtocolDispatcher
     {
         // This message is received on the WizardZone to:
         // a. Give it a unique ID.
-        // b. Broadcast it's creation to every player in the zone.
-        // c. Keep it's reference here so that new players will be told of it's data.
-        var id = GenerateMobileId();
+        // b. Broadcast its creation to every player in the zone.
+        var id = GenerateReservedMobileId();
         message.CoreObject.m_nMobileID = id;
-
         BroadcastObjectCreation(message.CoreObject);
-
-        _zoneCreatures.Add(message.ObjectIdentity, message.CoreObject);
+        
+        // Inform the object supervisor to create an actor representation and the it to our zone objects list.
+        _objectSupervisorRef.Tell(message);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDVOLUME))]
     private void ReceiveAddVolume(ZONE_102_PROTOCOL.MSG_ADDVOLUME message)
     {
-        var id = GenerateMobileId();
+        var id = GenerateReservedMobileId();
         message.CoreObject.m_nMobileID = id;
         message.CoreObject.m_debugName = message.Volume.m_volumeName;
+        // Volumes are server side only, so no need for broadcast.
         
-        // The object has not been created as an actor yet. We'll tell the volume supervisor about this object, and let
-        // it handle the creation of the actor. We will await the replies, since some of it's details are needed here.
-        var rsp = _volumeSupervisorRef
-            .Ask<ZONE_102_PROTOCOL.MSG_ADDOBJECTRSP>(message)
-            .Result;
-        
-        _zoneVolumes.Add(rsp.ActorRef, message.CoreObject);
+        // Inform the object supervisor to create an actor representation and add it to the zone objects list.
+        _objectSupervisorRef.Tell(message);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDTRIGGER))]
     private void ReceiveAddTrigger(ZONE_102_PROTOCOL.MSG_ADDTRIGGER message)
     {
-        this._triggers.Add(message.Trigger);
+        _triggers.Add(message.Trigger);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_TRIGGER))]
@@ -427,12 +362,13 @@ public class WizardZone : ReceiveProtocolDispatcher
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_TRIGGERQUERY))]
     private void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_TRIGGERQUERY message)
     {
-        // An object in the zone needs to inform every volume that it's fishing for a reaction. Forward the object to
-        // every volume in the zone.
-        foreach (var volume in _zoneVolumes.Keys)
+        // Broadcast to each zone object that a player is fishing for proximity reactions.
+        var msgBroadcast = new ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST
         {
-            volume.Forward(message);
-        }
+            Source = Sender,
+            Messages = new IServerMessage[] { message }
+        };
+        _objectSupervisorRef.Tell(msgBroadcast);
     }
 
     #endregion

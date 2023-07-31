@@ -31,29 +31,24 @@ namespace Imlight.Server.Game.Services
             // Use the session key given in the message to ensure that the user didn't bypass our login server.
             if (!ValidateLoginKey(message.LoginKey, message.UserID, out var account))
             {
-                Log.Logger.Warning($"User [{message.UserID}] failed to validate login key: {message.LoginKey}.");
-
-                var attachFailedMsg = new GAME_5_PROTOCOL.MSG_ATTACHFAILED()
+                SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED()
                 {
                     Error = 1,
                     Rejected = 1,
-                };
-                SendToSocket(attachFailedMsg);
-                
-                return;
+                });
+                throw new SessionFatalException(
+                    $"User [{message.UserID}] failed to validate login key: {message.LoginKey}.");
             }
-            if (!GetCharacter(account, message.CharID, out var character))
+            if (!GetCharacterFromAccount(account, message.CharID, out var character))
             {
-                Log.Logger.Error($"Could not get character by ID on MSG_ATTACH!");
-
                 SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED()
                 {
                     Error = 1,
                     NoDisconnect = 1, // @todo: find out what these error codes mean.
                     Rejected = 1,
                 });
-
-                return;
+                throw new SessionFatalException($"User [{message.UserID}] tried to attach with a character " +
+                                                $"they did not have.");
             }
             
             // This is the first authentication action the user will send on the game server. Send messages to the
@@ -66,13 +61,18 @@ namespace Imlight.Server.Game.Services
             var zoneDetails = SendZoneTransfer(message.ZoneName);
             if (zoneDetails.ErrorCode != 0)
             {
-                SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED() { Error = zoneDetails.ErrorCode });
+                SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED { Error = zoneDetails.ErrorCode });
                 return;
             }
 
-            // Serialize the character's game object and send login complete.
+            // Serialize the character's game object.
             var charGameObject = character.GetWizClientObject();
             var localGameObjectData = new CoreObjectSerializer().Serialize(charGameObject);
+            if (charGameObject is null || string.IsNullOrEmpty(localGameObjectData))
+                throw new ServiceRetryException($"User [{message.UserID}] failed to grab or deserialize " +
+                                                $"their player object.");
+            
+            // Send login complete.
             var loginCompleteMsg = new GAME_5_PROTOCOL.MSG_LOGINCOMPLETE()
             {
                 RealmName = "Imlight",
@@ -104,7 +104,7 @@ namespace Imlight.Server.Game.Services
                 ZoneName = zoneName, 
                 SendToClient = false
             };
-            return AskSessionServices<ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP>(zoneMsg);
+            return AskOtherService<ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP>(zoneMsg);
         }
 
         private void AddPlayerToZone(WizClientObject charObj)
@@ -114,10 +114,10 @@ namespace Imlight.Server.Game.Services
                 Player = SessionActor.ActorRef,
                 PlayerObject = charObj
             };
-            SendToSessionServices(msg);
+            TellOtherServices(msg);
         }
 
-        private bool GetCharacter(Account account, ulong charId, out Character character)
+        private bool GetCharacterFromAccount(Account account, ulong charId, out Character character)
         {
             var result = account.GetCharacter(charId, out var accChar);
             character = accChar;
@@ -144,7 +144,7 @@ namespace Imlight.Server.Game.Services
         private void SetAccountInternally(Account account)
         {
             // Tell the SessionActor to set the account.
-            SendToSessionServices(new ACCOUNT_104_PROTOCOL.MSG_ACCOUNT()
+            TellOtherServices(new ACCOUNT_104_PROTOCOL.MSG_ACCOUNT()
             {
                 Account = account
             });
@@ -152,7 +152,7 @@ namespace Imlight.Server.Game.Services
 
         private void SetCharacterInternally(Character character)
         {
-            SendToSessionServices(new CHARACTER_103_PROTOCOL.MSG_SETACTIVECHARACTER
+            TellOtherServices(new CHARACTER_103_PROTOCOL.MSG_SETACTIVECHARACTER
             {
                 Character = character
             });
