@@ -52,4 +52,4 @@ jobs:
         port: 22
         script: |
           cd ${{ secrets.REMOTE_TARGET }}
-          dotnet Imlight.Backend.dll
+          dotnet Imlight.Backend.dll &
