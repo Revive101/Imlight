@@ -76,7 +76,7 @@ namespace Imlight.Common.Utilities
             if (method == null)
                 return;
 
-            var callingMethod = $"{method.ReflectedType?.Name}.{method.Name}";
+            var callingMethod = $"{method.ReflectedType?.Name}::{method.Name}";
             if (IsStateMachineMethod(callingMethod))
             {
                 callingMethod = GetCallerMethodNameFromAsyncStateMachine(frame);
@@ -93,6 +93,7 @@ namespace Imlight.Common.Utilities
 
         private static string GetCallerMethodNameFromAsyncStateMachine(StackFrame frame)
         {
+            // This is a messy method, but it's a hell of a lot better than going to the call stack. 
             var method = frame.GetMethod();
             if (method == null) 
                 return "Unknown";
@@ -114,7 +115,7 @@ namespace Imlight.Common.Utilities
             var declaringTypeMethodName = declaringTypeName.Substring(startIndex, length)
                 .Split('.')[^1];
 
-            return $"{declaringTypeMethodName}.{stateMachineMethodName}";
+            return $"{declaringTypeMethodName}::{stateMachineMethodName}";
         }
         
         private static string GetConsistentSpacedName(string name)

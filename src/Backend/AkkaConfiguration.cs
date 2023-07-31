@@ -23,8 +23,6 @@ namespace Imlight.Backend
         internal static bool CreateActorSystem(string name, out ActorSystem system)
         {
             system = null;
-
-            Log.Logger.Information($"Searching for Akka.NET configuration file [{ConfigLocation}]");
             
             if (!GetAkkaConfiguration(out var config))
                 return false;
@@ -35,6 +33,7 @@ namespace Imlight.Backend
 
         private static bool GetAkkaConfiguration(out Config config)
         {
+            Log.Logger.Information("Searching for Akka.NET configuration file {ConfigLocation}", ConfigLocation);
             config = default;
 
             try
