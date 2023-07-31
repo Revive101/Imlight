@@ -4,28 +4,35 @@
  */
 
 using System;
-using System.Text;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Akka.Actor;
-using Imlight.Common.Cryptography;
 using Imlight.Common.Utilities;
 using Imlight.Server.Login;
 using Imlight.Server.Database;
-using Imlight.Server.Game;
 using Imlight.Server.Patch;
 using Imlight.Server.Shared.Packets;
 
 namespace Imlight.Backend
 {
-    internal class Program
+    internal static class Program
     {
-        private const string VERSION = "0.0.1";
-        private const string ACTOR_SYSTEM_NAME = "Imlight";
+        private const string ActorSystemName = "Imlight";
+        private const string VersionScript = @"
+            total_commits=$(git rev-list --count HEAD);
+            num_merges=$(git log --oneline --merges | wc -l)
+            num_features=$(git log --oneline | grep -c 'feat:');
+            num_fixes=$(git log --oneline | grep -c 'fix:');
+            major=$((num_merges));
+            minor=$((num_features));
+            patch=$((num_fixes));
+            version=""$major.$minor.$patch"";
+            echo $version";
 
         private static ActorSystem _imlightSystem;
 
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             // =============================================================
             // TIDBITS
@@ -36,7 +43,7 @@ namespace Imlight.Backend
             // AKKA.NET CONFIGURATION
             // =============================================================
             Log.Logger.Information("Getting Akka.NET configuration..");
-            if (!AkkaConfiguration.CreateActorSystem(ACTOR_SYSTEM_NAME, out var system))
+            if (!AkkaConfiguration.CreateActorSystem(ActorSystemName, out var system))
             {
                 Log.Logger.Fatal($"Could not find Akka.NET config file!");
 
@@ -109,21 +116,59 @@ namespace Imlight.Backend
 
         private static void PrintTitle()
         {
-            // I just like having fun.
-            Log.Logger.Information(@"==============================================================================================");
-            Log.Logger.Information(@" ______  __       __  __        ______   ______   __    __  ________");
-            Log.Logger.Information(@"/      |/  \     /  |/  |      /      | /      \ /  |  /  |/       |");
-            Log.Logger.Information(@"$$$$$$/ $$  \   /$$ |$$ |      $$$$$$/ /$$$$$$  |$$ |  $$ |$$$$$$$$/");
-            Log.Logger.Information(@"  $$ |  $$$  \ /$$$ |$$ |        $$ |  $$ | _$$/ $$ |__$$ |   $$ |");
-            Log.Logger.Information(@"  $$ |  $$$$  /$$$$ |$$ |        $$ |  $$ |/    |$$    $$ |   $$ |");
-            Log.Logger.Information(@"  $$ |  $$ $$ $$/$$ |$$ |        $$ |  $$ |$$$$ |$$$$$$$$ |   $$ |");
-            Log.Logger.Information(@" _$$ |_ $$ |$$$/ $$ |$$ |_____  _$$ |_ $$ \__$$ |$$ |  $$ |   $$ |");
-            Log.Logger.Information(@"/ $$   |$$ | $/  $$ |$$       |/ $$   |$$    $$/ $$ |  $$ |   $$ |");
-            Log.Logger.Information(@"$$$$$$/ $$/      $$/ $$$$$$$$/ $$$$$$/  $$$$$$/  $$/   $$/    $$/");
-            Log.Logger.Information(@"==============================================================================================");
-            Log.Logger.Information($"Imlight v{VERSION} -- Developed and maintained by Revive101.");
-            Log.Logger.Information(@"==============================================================================================");
+            // Write the title. This is a bit of a mess, but it's the best I could do. 
+            Console.WriteLine(@" _____           _ _       _     _    ______   ");
+            Console.WriteLine(@"|_   _|         | (_)     | |   | |   \ \ \ \  ");
+            Console.WriteLine(@"  | |  _ __ ___ | |_  __ _| |__ | |_   | | | | ");
+            Console.WriteLine(@"  | | | '_ ` _ \| | |/ _` | '_ \| __|   \ \ \ \");
+            Console.WriteLine(@" _| |_| | | | | | | | (_| | | | | |_    / / / /");
+            Console.WriteLine(@"|_____|_| |_| |_|_|_|\__, |_| |_|\__|  | | | | ");
+            Console.WriteLine(@"===================== __/ |===========/_/_/_/  ");
+            
+            // Write the boot type.
+            // Soon in the future Imlight will actually have different boot types. For now, it's just L&G, which stands
+            // for Login & Game.
+            Console.ForegroundColor = ConsoleColor.DarkCyan;
+            Console.Write("   :: L&G Boot ::    ");
+            Console.ForegroundColor = ConsoleColor.White;
+            
+            // Write version.
+            var version = RunSemanticVersionScript(VersionScript);
+            var buildConfiguration = GetBuildConfiguration();
+            Console.Write(@"|___/");
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            Console.Write($"   (proto-v{version} {buildConfiguration})\n");
+            Console.WriteLine("");
         }
         
+        private static string RunSemanticVersionScript(string script)
+        {
+            var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "bash",
+                    Arguments = "-c \"" + script.Replace("\"", "\\\"") + "\"",
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                }
+            };
+
+            process.Start();
+            var output = process.StandardOutput.ReadToEnd();
+            process.WaitForExit();
+
+            return output.Trim();
+        }
+        
+        private static string GetBuildConfiguration()
+        {
+#if DEBUG
+            return "DEBUG";
+#else
+            return "RELEASE";
+#endif
+        }
     }
 }
