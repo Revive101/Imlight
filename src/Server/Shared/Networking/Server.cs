@@ -77,7 +77,7 @@ namespace Imlight.Server.Shared.Networking
             Log.Logger.Verbose("New actor created under {Path}: SessionActor.{Id}",
                 Context.Self.Path, id);
             Log.Logger.Information("{Type} new connection from {RemoteEndPoint} given session ID {Id}",
-                GetType, message.Socket.RemoteEndPoint?.ToString(), id);
+                GetType(), message.Socket.RemoteEndPoint?.ToString(), id);
         }
 
         /// <summary>

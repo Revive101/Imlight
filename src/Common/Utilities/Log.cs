@@ -26,7 +26,7 @@ namespace Imlight.Common.Utilities
             ?? string.Empty, $"log.txt");
 
         public static ILogger Logger { get; } = new LoggerConfiguration()
-            .MinimumLevel.Verbose()
+            .MinimumLevel.Debug()
             .Enrich.FromLogContext()
             .Enrich.With(new ThreadNameEnricher())
             .Enrich.With(new CallingMethodEnricher())
@@ -71,7 +71,7 @@ namespace Imlight.Common.Utilities
 
         public void Enrich(LogEvent logEvent, ILogEventPropertyFactory propertyFactory)
         {
-            var frame = new StackFrame(6, false);
+            var frame = new StackFrame(7, false);
             var method = frame.GetMethod();
             if (method == null)
                 return;
