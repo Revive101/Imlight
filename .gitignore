@@ -351,3 +351,4 @@ MigrationBackup/
 *.xml
 src/.claudiaideconfig
 .directory
+act.vault

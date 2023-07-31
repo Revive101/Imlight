@@ -4,8 +4,11 @@
  */
 
 using System;
+using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Akka.Actor;
+using Imlight.Common.Cryptography;
 using Imlight.Common.Utilities;
 using Imlight.Server.Login;
 using Imlight.Server.Database;
@@ -68,7 +71,13 @@ namespace Imlight.Backend
             var loginServer = StartLoginServer();
             StartGameServer(loginServer);
 
-            Console.Read();
+            // Keep program busy with a while loop.
+            while (true)
+            {
+                Log.Logger.Information("Still alive..");
+                // Sleep for 5 minutes.
+                Thread.Sleep(300000);
+            }
         }
 
         private static IActorRef StartLoginServer()

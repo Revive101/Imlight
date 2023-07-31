@@ -51,5 +51,5 @@ jobs:
         key: ${{ secrets.REMOTE_SSH_KEY }}
         port: 22
         script: |
-          cd ${{ secrets.REMOTE_TARGET }}
-          dotnet Imlight.Backend.dll &
+          sudo systemctl daemon-reload
+          sudo systemctl restart imlight.service
