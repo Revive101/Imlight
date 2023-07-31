@@ -234,7 +234,7 @@ namespace Imlight.Server.Shared.Networking
 
             SetServices(services);
 
-            Log.Logger.Debug($"SessionActor [{SessionID}] PreStart completed.");
+            Log.Logger.Debug("SessionActor {Id} PreStart completed.", SessionID);
 
             base.PreStart();
         }
@@ -242,8 +242,8 @@ namespace Imlight.Server.Shared.Networking
         protected override void Unhandled(object message)
         {
             // Bump this up to warning on release builds.
-            Log.Logger.Verbose($"SessionActor [{SessionID}] " +
-                $"received unhandled message of type [{message.GetType()}].");
+            Log.Logger.Verbose("SessionActor {Id} received unhandled message of type {Type}.", 
+                SessionID, message.GetType());
         }
 
         private void ConfigureReceivers()
@@ -289,7 +289,8 @@ namespace Imlight.Server.Shared.Networking
                 var props = Akka.Actor.Props.Create(service, this);
                 var childRef = Context.ActorOf(props, serviceName);
 
-                Log.Logger.Verbose($"New actor created under {Context.Self.Path}: {serviceName}");
+                Log.Logger.Verbose("New actor created under {Path}: {Name}", 
+                    Context.Self.Path, serviceName);
 
                 // We've created the service as a child actor. Problem is, we need to know the actual class
                 // identity to use it later. To do that, we'll ask the actor to identify itself.
@@ -365,8 +366,8 @@ namespace Imlight.Server.Shared.Networking
             }
             if (_isSending)
             {
-                Log.Logger.Error($"SessionActor [{SessionID}] send failure: " +
-                                 $"Asynchronous send operation already in progress.");
+                Log.Logger.Error("SessionActor {SessionId} send failure: " +
+                                 "Asynchronous send operation already in progress.", SessionID);
                 return;
             }
 
@@ -384,7 +385,8 @@ namespace Imlight.Server.Shared.Networking
                 .Split('.')[^1]
                 .Replace('+', '.');
             if (!_suppressedPackets.Contains(message.GetType()))
-                Log.Logger.Verbose($"SessionActor [{SessionID}] sent message [{scopedMessageName}]");
+                Log.Logger.Verbose("SessionActor {Id} sent message {MessageName}", 
+                    SessionID, scopedMessageName);
         }
 
         private void OnSendCompleted(SocketAsyncEventArgs e)
@@ -406,7 +408,7 @@ namespace Imlight.Server.Shared.Networking
                 .Split('.')[^1]
                 .Replace('+', '.');
             if (!_suppressedPackets.Contains(packet.GetType()))
-                Log.Logger.Verbose($"SessionActor [{SessionID}] received KiNP packet [{scopedMessageName}]");
+                Log.Logger.Verbose("SessionActor {SessionId} received KiNP packet {ScopedMessageName}", SessionID, scopedMessageName);
 
             // Iterate through services and forward the message to any service that can handle the message.
             var wasDispatched = false;
@@ -426,7 +428,7 @@ namespace Imlight.Server.Shared.Networking
             var bufferSpan = new ReadOnlySpan<byte>(buffer, 0, bytesReceived).ToArray();
             if (!IsKIPacket(bufferSpan))
             {
-                Log.Logger.Warning($"SessionActor [{SessionID}] received non-KINP packet.");
+                Log.Logger.Warning("SessionActor {SessionId} received non-KINP packet", SessionID);
                 return null;
             }
 
@@ -434,7 +436,7 @@ namespace Imlight.Server.Shared.Networking
                 return record;
             
             // The packet failed to deserialize.
-            Log.Logger.Error($"SessionActor [{SessionID}] packet failed to deserialize.");
+            Log.Logger.Error("SessionActor {SessionId} packet failed to deserialize", SessionID);
             return null;
 
         }
@@ -448,7 +450,8 @@ namespace Imlight.Server.Shared.Networking
             }
             catch (Exception ex)
             {
-                Log.Logger.Error($"SessionActor [{SessionID}] packet deserialize failed: {ex.Message}");
+                Log.Logger.Error("SessionActor {SessionID} packet deserialize failed: {ExMessage}",
+                    SessionID, ex.Message);
 
                 message = null;
                 return false;

@@ -44,7 +44,7 @@ public class WizardZone : ReceiveProtocolDispatcher
 
         // Load and initialize this zone.
         WizardZoneLoader.LoadZoneData(this, Self);
-        Log.Logger.Debug($"Zone [{ZoneName}] created.");
+        Log.Logger.Debug("Zone {ZoneName} created.", ZoneName);
     }
 
     // Akka.NET ctor
@@ -222,7 +222,8 @@ public class WizardZone : ReceiveProtocolDispatcher
         var response = new ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP { PlayerObject = message.PlayerObject };
         message.Player.Tell(response);
 
-        Log.Logger.Debug($"Player {message.Player.Path.Name} added to zone {ZoneName}.");
+        Log.Logger.Debug("Player {Name} added to zone {ZoneName}.", 
+            message.Player.Path.Name, ZoneName);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER))]
@@ -249,7 +250,8 @@ public class WizardZone : ReceiveProtocolDispatcher
             s.Tell(rsp);
         }).Wait();
 
-        Log.Logger.Debug($"Player {message.Player.Path.Name} removed from zone {ZoneName}.");
+        Log.Logger.Debug("Player {Name} removed from zone {ZoneName}.",
+            message.Player.Path.Name, ZoneName);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
@@ -330,8 +332,9 @@ public class WizardZone : ReceiveProtocolDispatcher
 
         if (!triggers.Any())
         {
-            Log.Logger.Debug($"{nameof(WizardZoneVolume)} {ZoneName} tried to activate trigger " +
-                               $"\"{message.TriggerName}\", but no trigger was found in the zone.");
+            Log.Logger.Debug("{Volume} {ZoneName} tried to activate trigger " +
+                               "{TriggerName}, but no trigger was found in the zone",
+                nameof(WizardZoneVolume), ZoneName, message.TriggerName);
             return;
         }
 
@@ -355,7 +358,8 @@ public class WizardZone : ReceiveProtocolDispatcher
         foreach (var trigger in triggers)
         {
             Log.Logger.Debug(
-                $"{nameof(WizardZoneVolume)} {ZoneName} activated trigger \"{trigger.m_triggerName}\".");
+                "{WizardZoneVolume} {ZoneName} activated trigger {TriggerName}",
+                nameof(WizardZoneVolume), ZoneName, trigger.m_triggerName);
         }
     }
 

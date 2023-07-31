@@ -26,7 +26,7 @@ namespace Imlight.Common.Utilities
             ?? string.Empty, $"log.txt");
 
         public static ILogger Logger { get; } = new LoggerConfiguration()
-            .MinimumLevel.Debug()
+            .MinimumLevel.Verbose()
             .Enrich.FromLogContext()
             .Enrich.With(new ThreadNameEnricher())
             .Enrich.With(new CallingMethodEnricher())

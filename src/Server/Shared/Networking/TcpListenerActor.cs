@@ -49,8 +49,6 @@ namespace Imlight.Server.Shared.Networking
             this.Listening = false;
             this._tokenSource.Cancel();
             Listener.Stop();
-
-            Log.Logger.Information($"TcpListenerActor {Name} stopped.");
         }
 
         /// <summary>
