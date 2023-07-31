@@ -197,8 +197,8 @@ namespace Imlight.Server.Shared.Services
             if (_sessionValid) 
                 return;
             
-            Log.Logger.Debug("SessionActor {SessionID} " +
-                             "did not return a SessionAccept message in time", SessionActor.SessionID);
+            Log.Debug("SessionActor {SessionID} " +
+                             "did not return a SessionAccept message in time", Log.Args(SessionActor.SessionID));
             CloseSession();
         }
     }
