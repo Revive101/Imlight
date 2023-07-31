@@ -74,7 +74,7 @@ namespace Imlight.Server.Shared.Networking
             Context.ActorOf(sessionProps, $"SessionActor.{id}");
 
             // Log
-            Log.Logger.Debug($"New actor created under {Context.Self.Path}: SessionActor.{id}");
+            Log.Logger.Verbose($"New actor created under {Context.Self.Path}: SessionActor.{id}");
             Log.Logger.Information($"{this.GetType()} new connection " +
                                    $"from {message.Socket.RemoteEndPoint}, " +
                                    $"given session ID [{id}]");
@@ -95,6 +95,8 @@ namespace Imlight.Server.Shared.Networking
                 ActiveSessions.Remove(session);
                 return;
             }
+
+            Log.Logger.Warning($"{Name}.{Port} Could not find active session with ID [{message.Id}]");
         }
 
         /// <summary>
@@ -173,7 +175,7 @@ namespace Imlight.Server.Shared.Networking
             var tcpProps = TcpListenerActor.Props(Name, Port, Context.Self);
             Context.ActorOf(tcpProps, actorName);
             
-            Log.Logger.Debug($"New actor created under {Context.Self.Path}: {actorName}");
+            Log.Logger.Verbose($"New actor created under {Context.Self.Path}: {actorName}");
         }
 
         private IActorRef CreateActorFactory()
@@ -182,7 +184,7 @@ namespace Imlight.Server.Shared.Networking
             
             var actorName = $"{Name}.ActorFactory";
             
-            Log.Logger.Debug($"New actor created under {Context.Self.Path}: {actorName}");
+            Log.Logger.Verbose($"New actor created under {Context.Self.Path}: {actorName}");
             
             return Context.ActorOf(_factoryProps, actorName);
         }

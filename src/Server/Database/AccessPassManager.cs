@@ -36,7 +36,7 @@ namespace Imlight.Server.Database
             }
             
             // Log
-            Log.Logger.Information($"AccessPassManager loaded {zoneList.Count} zones.");
+            Log.Logger.Information("AccessPassManager loaded {Count} zones.", zoneList.Count);
 
             _zones = zoneList.ToArray();
 

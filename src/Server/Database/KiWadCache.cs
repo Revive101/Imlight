@@ -78,8 +78,8 @@ namespace Imlight.Server.Database
                 .FirstOrDefault();
             if (file is not null)
             {
-                Log.Logger.Warning($"LocalCache already contains a file definition for \"{fileName}\"! " +
-                                   $"File will be overwritten.");
+                Log.Logger.Warning("LocalCache already contains a file definition for {FileName}! " +
+                                   $"File will be overwritten.", fileName);
             }
 
             // Create a new FileDefinition. Create a new byte array from the content stream.
@@ -106,7 +106,7 @@ namespace Imlight.Server.Database
             if (file is not null) 
                 return;
             
-            Log.Logger.Warning($"LocalCache tried to delete a file [{fileName}] it did not contain!");
+            Log.Logger.Warning("LocalCache tried to delete a file {FileName} it did not contain!", fileName);
         }
 
         private static uint GetWadCrc(Wad wad)

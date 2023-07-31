@@ -26,6 +26,8 @@ namespace Imlight.Server.Login
         public GameServerPool()
         {
             this._gameServers = new Dictionary<ushort, IActorRef>();
+            
+            Log.Logger.Information("GameServerPool created.");
         }
         
         public static Props Props()
@@ -54,7 +56,7 @@ namespace Imlight.Server.Login
 
             _gameServers.Add(message.Port, gameServerRef);
             
-            Log.Logger.Debug($"New actor created under {Context.Self.Path}: {message.Name}.{message.Port}");
+            Log.Logger.Verbose($"New actor created under {Context.Self.Path}: {message.Name}.{message.Port}");
         }
 
         [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_QUERYGAMESERVERS))]

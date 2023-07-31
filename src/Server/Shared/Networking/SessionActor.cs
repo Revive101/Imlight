@@ -241,7 +241,8 @@ namespace Imlight.Server.Shared.Networking
 
         protected override void Unhandled(object message)
         {
-            Log.Logger.Warning($"SessionActor [{SessionID}] " +
+            // Bump this up to warning on release builds.
+            Log.Logger.Verbose($"SessionActor [{SessionID}] " +
                 $"received unhandled message of type [{message.GetType()}].");
         }
 

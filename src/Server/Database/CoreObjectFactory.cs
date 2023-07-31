@@ -37,7 +37,7 @@ namespace Imlight.Server.Database
             if (manifest is null)
                 return false;
             timer.Stop();
-            Log.Logger.Information($"TemplateManifest deserialize took {timer.ElapsedMilliseconds}ms.");
+            Log.Logger.Information("TemplateManifest deserialize took {Em}ms.", timer.ElapsedMilliseconds);
             
             foreach (var templateLocation in manifest.m_serializedTemplates)
             {
@@ -67,7 +67,8 @@ namespace Imlight.Server.Database
             var template = GetCoreTemplate(id);
             if (template is null)
             {
-                Log.Logger.Error($"Could not initialize CoreObject from TemplateID [{coreObject.m_templateID}]");
+                Log.Logger.Error("Could not initialize CoreObject from TemplateID {Tid}", 
+                    coreObject.m_templateID);
                 return coreObject;
             }
 
@@ -122,7 +123,6 @@ namespace Imlight.Server.Database
             if (template is null)
             {
                 throw new Exception($"Could not find template for object info [{templateId}]");
-                return null;
             }
             
             // Generate a GUID ahead of time.

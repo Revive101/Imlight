@@ -78,7 +78,7 @@ namespace Imlight.Server.Login
         {
             var poolProps = GameServerPool.Props();
 
-            Log.Logger.Debug($"New actor created under {Context.Self.Path}:" +
+            Log.Logger.Verbose($"New actor created under {Context.Self.Path}:" +
                              $" {this.Name}.{GAME_SERVER_POOL_NAME}");
             
             return Context.ActorOf(poolProps, $"{Name}.{GAME_SERVER_POOL_NAME}");
