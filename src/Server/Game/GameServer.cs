@@ -43,7 +43,7 @@ namespace Imlight.Server.Game
             // Create actor children.
             var gameWorldActorName = $"{Name}.GameWorld";
             _gameWorldRef = Context.ActorOf(GameWorld.Props(this), gameWorldActorName);
-            Log.Logger.Debug($"New actor created under {Context.Self.Path}: {gameWorldActorName}");
+            Log.Logger.Verbose($"New actor created under {Context.Self.Path}: {gameWorldActorName}");
 
             // Log
             Log.Logger.Information($"Game server created with " +

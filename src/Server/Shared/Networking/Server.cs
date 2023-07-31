@@ -71,7 +71,7 @@ namespace Imlight.Server.Shared.Networking
             var actor = Context.ActorOf(sessionProps, $"SessionActor.{id}");
 
             // Log
-            Log.Logger.Debug($"New actor created under {Context.Self.Path}: SessionActor.{id}");
+            Log.Logger.Verbose($"New actor created under {Context.Self.Path}: SessionActor.{id}");
             Log.Logger.Information($"{this.GetType()} new connection " +
                                    $"from {message.Socket.RemoteEndPoint}, " +
                                    $"given session ID [{id}]");
@@ -94,7 +94,7 @@ namespace Imlight.Server.Shared.Networking
                 return;
             }
             
-            Log.Logger.Error($"{Name}.{Port} Could not find active session with ID [{message.Id}]");
+            Log.Logger.Warning($"{Name}.{Port} Could not find active session with ID [{message.Id}]");
         }
 
         /// <summary>

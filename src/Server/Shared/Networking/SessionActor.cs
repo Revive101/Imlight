@@ -204,7 +204,8 @@ namespace Imlight.Server.Shared.Networking
 
         protected override void Unhandled(object message)
         {
-            Log.Logger.Warning($"SessionActor [{SessionID}] " +
+            // Bump this up to warning on release builds.
+            Log.Logger.Verbose($"SessionActor [{SessionID}] " +
                 $"received unhandled message of type [{message.GetType()}].");
         }
 
@@ -269,7 +270,7 @@ namespace Imlight.Server.Shared.Networking
                 var props = Akka.Actor.Props.Create(service, this);
                 var childRef = Context.ActorOf(props, serviceName);
 
-                Log.Logger.Debug($"New actor created under {Context.Self.Path}: {serviceName}");
+                Log.Logger.Verbose($"New actor created under {Context.Self.Path}: {serviceName}");
 
                 // We've created the service as a child actor. Problem is, we need to know the actual class
                 // identity to use it later. To do that, we'll ask the actor to identify itself.
