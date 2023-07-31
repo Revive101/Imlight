@@ -155,8 +155,8 @@ namespace Imlight.Server.Shared.Services
             if (_halted) return;
             if (!_sessionValid)
             {
-                Log.Logger.Error("{Name} {SessionID} tried to send heartbeat to an invalid session", 
-                    nameof(SessionActor), SessionActor.SessionID);
+                Log.Error("{Name} {SessionID} tried to send heartbeat to an invalid session", 
+                    Log.Args(nameof(SessionActor), SessionActor.SessionID));
                 CloseSession();
                 return;
             }

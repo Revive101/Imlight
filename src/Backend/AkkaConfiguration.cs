@@ -33,7 +33,7 @@ namespace Imlight.Backend
 
         private static bool GetAkkaConfiguration(out Config config)
         {
-            Log.Logger.Information("Searching for Akka.NET configuration file {ConfigLocation}", ConfigLocation);
+            Log.Information("Searching for Akka.NET configuration file {ConfigLocation}", Log.Args(ConfigLocation));
             config = default;
 
             try
@@ -48,7 +48,7 @@ namespace Imlight.Backend
             }
             catch (Exception e)
             {
-                Log.Logger.Error(e.Message);
+                Log.Error(e.Message);
                 return false;
             }
         }

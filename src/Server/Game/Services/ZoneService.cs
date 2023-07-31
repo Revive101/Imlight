@@ -74,7 +74,7 @@ namespace Imlight.Server.Game.Services
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ZONETRANSFERNACK))]
         private void ReceiveZoneTransferNack(GAME_5_PROTOCOL.MSG_ZONETRANSFERNACK message)
         {
-            Log.Logger.Debug("Client was not OK with zone transfer! Possibly patching.");
+            Log.Debug("Client was not OK with zone transfer! Possibly patching.");
         }
 
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_RETRYTELEPORT))]

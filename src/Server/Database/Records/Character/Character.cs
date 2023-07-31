@@ -160,9 +160,7 @@ namespace Imlight.Server.Database
                     1472644, 1317133, 1317126, 1317234, 1359455,
                     1392077, 1352341, 87158, 87159, 87160, 1540397 }.ForEach(templateId =>
                 {
-                    CoreTemplate template = CoreObjectFactory.GetCoreTemplate(templateId);
-                    Log.Logger.Debug("Template is: "+template.GetType());
-
+                    var template = CoreObjectFactory.GetCoreTemplate(templateId);
                     var coreObject = template switch
                     {
                         ItemTemplate => new WizClientObjectItem(),

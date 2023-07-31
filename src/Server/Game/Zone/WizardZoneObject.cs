@@ -27,9 +27,8 @@ public class WizardZoneObject : ReceiveProtocolDispatcher
 
         if (activeGameObject.m_templateID == 0)
         {
-            Log.Logger.Warning("{WizardZoneObject} \"{ActiveGameObjectMDebugName}\" was " +
-                               $"loaded with a template ID of 0.", 
-                nameof(WizardZoneObject), activeGameObject.m_debugName);
+            Log.Warning("{WizardZoneObject} {ActiveGameObjectMDebugName} was loaded with a template ID of 0.", 
+                Log.Args(nameof(WizardZoneObject), activeGameObject.m_debugName));
             return;
         }
         this.Template = CoreObjectFactory.GetCoreTemplate(activeGameObject.m_templateID);

@@ -27,7 +27,7 @@ namespace Imlight.Server.Login
         {
             this._gameServers = new Dictionary<ushort, IActorRef>();
             
-            Log.Logger.Information("GameServerPool created.");
+            Log.Information("GameServerPool created.");
         }
         
         public static Props Props()
@@ -40,14 +40,15 @@ namespace Imlight.Server.Login
         {
             if (_gameServers.Count >= ALLOWED_GAME_SERVER_COUNT)
             {
-                Log.Logger.Error("{Type} attempted to create a new game server, but the " +
-                                 $"internal limit has already been reached. Server has not been created.", GetType());
+                Log.Error("{Type} attempted to create a new game server, but the " +
+                                 $"internal limit has already been reached. Server has not been created.", 
+                    Log.Args(GetType()));
                 return;
             }
             if (_gameServers.Keys.Any(x => x == message.Port))
             {
-                Log.Logger.Error("{Type} attempted to create a new game server, but the port" +
-                                 " {Port} was already in use", GetType(), message.Port);
+                Log.Error("{Type} attempted to create a new game server, but the port" +
+                                 " {Port} was already in use", Log.Args(GetType(), message.Port));
                 return;
             }
             
@@ -56,8 +57,8 @@ namespace Imlight.Server.Login
 
             _gameServers.Add(message.Port, gameServerRef);
             
-            Log.Logger.Verbose("New actor created under {Path}: {Name}.{Port}",
-                Context.Self.Path, message.Name, message.Port);
+            Log.Verbose("New actor created under {Path}: {Name}.{Port}",
+               Log.Args(Context.Self.Path, message.Name, message.Port));
         }
 
         [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_QUERYGAMESERVERS))]

@@ -35,8 +35,8 @@ namespace Imlight.Server.Game
             // First, make sure this zone is valid by checking the AccessPassManager.
             if (!AccessPassManager.DoesZoneExist(message.ZoneName))
             {
-                Log.Logger.Error(
-                    $"{nameof(GameWorld)} received invalid zone name \"{message.ZoneName}\".");
+                Log.Error("{Name} received invalid zone name {ZoneName}",
+                    Log.Args(nameof(GameWorld), message.ZoneName));
                 
                 var response = new ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP();
                 response.ErrorCode = 1;
@@ -57,7 +57,8 @@ namespace Imlight.Server.Game
                 Zones.Add(message.ZoneName, zone);
                 
                 // Log the new zone creation.
-                Log.Logger.Information($"GameWorld created new zone: {message.ZoneName}");
+                Log.Information("GameWorld created new zone: {ZoneName}",
+                    Log.Args(message.ZoneName));
             }
             else
             {

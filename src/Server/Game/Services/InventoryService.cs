@@ -71,7 +71,8 @@ namespace Imlight.Server.Game.Services
             var itemObj = inventoryBehavior.m_itemList.First(item => item.m_globalID == message.ItemID);
             if (message.IsEquip == 1)
             {
-                Log.Logger.Information("Player equipped item " + (byte)inventoryBehavior.m_itemList.IndexOf(itemObj));
+                Log.Information("Player equipped item {Item}", 
+                    Log.Args((byte)inventoryBehavior.m_itemList.IndexOf(itemObj)));
                 var templateId = itemObj.m_templateID;
                 var template = (WizItemTemplate)CoreObjectFactory.GetCoreTemplate(templateId);
 
@@ -85,7 +86,7 @@ namespace Imlight.Server.Game.Services
 
                 var data = serializer.Serialize(item);
                 var hex = Convert.ToHexString(data);
-                Log.Logger.Information(hex);
+                Log.Information(hex);
 
                 TellOtherServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
                 {
@@ -100,7 +101,7 @@ namespace Imlight.Server.Game.Services
             }
             else
             {
-                Log.Logger.Information("Player unequipped an item");
+                Log.Information("Player unequipped an item");
                 for(int i = 0; i < 10; i++)
                 {
                     TellOtherServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()

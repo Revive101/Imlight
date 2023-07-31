@@ -204,16 +204,14 @@ namespace Imlight.Server.Shared.Networking
                     {
                         case ServiceRetryException tex:
                         {
-                            Log.Logger.Error($"SessionActor [{SessionID}] service " +
-                                             $"[{tex.CallingClass} L:{tex.LineNumber}] threw restart exception: " +
-                                             $"{tex.Message}");
+                            Log.Error("SessionActor {Sid} service {Class} L:{LineNumber} threw restart exception: " +
+                                             "{Message}", Log.Args(SessionID, tex.CallingClass, tex.LineNumber, tex.Message));
                             return Directive.Restart;
                         }
                         case SessionFatalException tex:
                         {
-                            Log.Logger.Error($"SessionActor [{SessionID}] service " +
-                                             $"[{tex.CallingClass} L:{tex.LineNumber}] threw fatal exception: " +
-                                             $"{tex.Message}");
+                            Log.Error("SessionActor {Sid} service {Class} L:{LineNumber} threw fatal exception: " +
+                                       "{Message}", Log.Args(SessionID, tex.CallingClass, tex.LineNumber, tex.Message));
                             return Directive.Escalate;
                         }
                         default:
@@ -234,7 +232,7 @@ namespace Imlight.Server.Shared.Networking
 
             SetServices(services);
 
-            Log.Logger.Debug("SessionActor {Id} PreStart completed.", SessionID);
+            Log.Debug("SessionActor {Id} PreStart completed.", Log.Args(SessionID));
 
             base.PreStart();
         }
@@ -242,8 +240,8 @@ namespace Imlight.Server.Shared.Networking
         protected override void Unhandled(object message)
         {
             // Bump this up to warning on release builds.
-            Log.Logger.Verbose("SessionActor {Id} received unhandled message of type {Type}.", 
-                SessionID, message.GetType());
+            Log.Verbose("SessionActor {Id} received unhandled message of type {Type}.", 
+                Log.Args(SessionID, message.GetType()));
         }
 
         private void ConfigureReceivers()
@@ -289,8 +287,8 @@ namespace Imlight.Server.Shared.Networking
                 var props = Akka.Actor.Props.Create(service, this);
                 var childRef = Context.ActorOf(props, serviceName);
 
-                Log.Logger.Verbose("New actor created under {Path}: {Name}", 
-                    Context.Self.Path, serviceName);
+                Log.Verbose("New actor created under {Path}: {Name}", 
+                    Log.Args(Context.Self.Path, serviceName));
 
                 // We've created the service as a child actor. Problem is, we need to know the actual class
                 // identity to use it later. To do that, we'll ask the actor to identify itself.
@@ -366,8 +364,8 @@ namespace Imlight.Server.Shared.Networking
             }
             if (_isSending)
             {
-                Log.Logger.Error("SessionActor {SessionId} send failure: " +
-                                 "Asynchronous send operation already in progress.", SessionID);
+                Log.Error("SessionActor {SessionId} send failure: " +
+                                 "Asynchronous send operation already in progress.", Log.Args(SessionID));
                 return;
             }
 
@@ -385,8 +383,8 @@ namespace Imlight.Server.Shared.Networking
                 .Split('.')[^1]
                 .Replace('+', '.');
             if (!_suppressedPackets.Contains(message.GetType()))
-                Log.Logger.Verbose("SessionActor {Id} sent message {MessageName}", 
-                    SessionID, scopedMessageName);
+                Log.Verbose("SessionActor {Id} sent message {MessageName}", 
+                    Log.Args(SessionID, scopedMessageName));
         }
 
         private void OnSendCompleted(SocketAsyncEventArgs e)
@@ -408,7 +406,8 @@ namespace Imlight.Server.Shared.Networking
                 .Split('.')[^1]
                 .Replace('+', '.');
             if (!_suppressedPackets.Contains(packet.GetType()))
-                Log.Logger.Verbose("SessionActor {SessionId} received KiNP packet {ScopedMessageName}", SessionID, scopedMessageName);
+                Log.Verbose("SessionActor {SessionId} received KiNP packet {ScopedMessageName}",
+                    Log.Args(SessionID, scopedMessageName));
 
             // Iterate through services and forward the message to any service that can handle the message.
             var wasDispatched = false;
@@ -428,7 +427,7 @@ namespace Imlight.Server.Shared.Networking
             var bufferSpan = new ReadOnlySpan<byte>(buffer, 0, bytesReceived).ToArray();
             if (!IsKIPacket(bufferSpan))
             {
-                Log.Logger.Warning("SessionActor {SessionId} received non-KINP packet", SessionID);
+                Log.Warning("SessionActor {SessionId} received non-KINP packet", Log.Args(SessionID));
                 return null;
             }
 
@@ -436,7 +435,7 @@ namespace Imlight.Server.Shared.Networking
                 return record;
             
             // The packet failed to deserialize.
-            Log.Logger.Error("SessionActor {SessionId} packet failed to deserialize", SessionID);
+            Log.Error("SessionActor {SessionId} packet failed to deserialize", Log.Args(SessionID));
             return null;
 
         }
@@ -450,8 +449,8 @@ namespace Imlight.Server.Shared.Networking
             }
             catch (Exception ex)
             {
-                Log.Logger.Error("SessionActor {SessionID} packet deserialize failed: {ExMessage}",
-                    SessionID, ex.Message);
+                Log.Error("SessionActor {SessionID} packet deserialize failed: {ExMessage}",
+                    Log.Args(SessionID, ex.Message));
 
                 message = null;
                 return false;

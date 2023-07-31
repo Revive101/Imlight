@@ -17,7 +17,7 @@ namespace Imlight.Common.Utilities
 {
     public static class Log
     {
-        private const byte MaxThreadNameLength = 15;
+        private const byte MaxCallerNameLength = 40;
         
         // TODO: Make this configurable.
         private static readonly string _path = Path.Combine(
@@ -30,73 +30,101 @@ namespace Imlight.Common.Utilities
             .Enrich.With(new ThreadIdEnricher())
             //.Enrich.With(new CallingMethodEnricher())
             .WriteTo.Console(outputTemplate:
-                "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] [{Thread}] {CallingClass}.{CallingMethod} : {Message:lj} {NewLine}{Exception}")
+                "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] [{Thread}] {CallingSpace} : {Message:lj} {NewLine}{Exception}")
             .WriteTo.File("log.txt", rollingInterval: RollingInterval.Day)
             .CreateLogger();
         
         public static void Verbose(string message, 
+            object[] args = null,
             [CallerFilePath] string callingClass = "",
             [CallerMemberName] string callingMethod = "", 
             [CallerLineNumber] int lineNumber = 0)
         {
-            LogEvent(callingClass, callingMethod, lineNumber, LogEventLevel.Verbose, message);
+            LogEvent(callingClass, callingMethod, lineNumber, LogEventLevel.Verbose, message, args);
         }
     
         public static void Debug(string message, 
+            object[] args = null,
             [CallerFilePath] string callingClass = "", 
             [CallerMemberName] string callingMethod = "",
             [CallerLineNumber] int lineNumber = 0)
         {
-            LogEvent(callingClass, callingMethod, lineNumber, LogEventLevel.Debug, message);
+            LogEvent(callingClass, callingMethod, lineNumber, LogEventLevel.Debug, message, args);
         }
     
         public static void Information(string message, 
+            object[] args = null,
             [CallerFilePath] string callingClass = "",
             [CallerMemberName] string callingMethod = "", 
             [CallerLineNumber] int lineNumber = 0)
         {
-            LogEvent(callingClass, callingMethod, lineNumber, LogEventLevel.Information, message);
+            LogEvent(callingClass, callingMethod, lineNumber, LogEventLevel.Information, message, args);
         }
     
         public static void Warning(string message, 
+            object[] args = null,
             [CallerFilePath] string callingClass = "",
             [CallerMemberName] string callingMethod = "", 
             [CallerLineNumber] int lineNumber = 0)
         {
-            LogEvent(callingClass, callingMethod, lineNumber, LogEventLevel.Warning, message);
+            LogEvent(callingClass, callingMethod, lineNumber, LogEventLevel.Warning, message, args);
         }
     
         public static void Error(string message, 
+            object[] args = null,
             [CallerFilePath] string callingClass = "", 
             [CallerMemberName] string callingMethod = "",
             [CallerLineNumber] int lineNumber = 0)
         {
-            LogEvent(callingClass, callingMethod, lineNumber, LogEventLevel.Error, message);
+            LogEvent(callingClass, callingMethod, lineNumber, LogEventLevel.Error, message, args);
         }
     
         public static void Fatal(string message, 
+            object[] args = null,
             [CallerFilePath] string callingClass = "", 
             [CallerMemberName] string callingMethod = "",
             [CallerLineNumber] int lineNumber = 0)
         {
-            LogEvent(callingClass, callingMethod, lineNumber, LogEventLevel.Fatal, message);
+            LogEvent(callingClass, callingMethod, lineNumber, LogEventLevel.Fatal, message, args);
         }
     
         private static void LogEvent(string callingClass, string callingMethod, int lineNumber, LogEventLevel logLevel,
-            string message)
+            string message, params object[] values)
         {
             callingClass = TrimCallingClass(callingClass);
-            LogContext.PushProperty("CallingClass", callingClass);
-            LogContext.PushProperty("CallingMethod", $"{callingMethod}");
-            Logger.Write(logLevel, message);
+            var callingSpace = $"{callingClass}.{callingMethod}";
+            callingSpace = GetConsistentSpacedName(callingSpace);
+            LogContext.PushProperty("CallingSpace", callingSpace);
+            Logger.Write(logLevel, message, values);
+        }
+
+        public static object[] Args(params object[] args)
+        {
+            return args;
         }
 
         private static string TrimCallingClass(string filePath)
         {
+            // If the file path doesn't contain a '.cs', then it's not a C# file.
+            if (!filePath.Contains(".cs"))
+                return filePath;
+            
             // Scope to the area between the final '/' character and the '.cs' extension.
             var startIndex = filePath.LastIndexOf('/') + 1;
             var length = filePath.LastIndexOf(".cs", StringComparison.Ordinal) - startIndex;
             return filePath.Substring(startIndex, length);
+        }
+        
+        private static string GetConsistentSpacedName(string name)
+        {
+            if (!string.IsNullOrEmpty(name))
+            {
+                return name.Length > MaxCallerNameLength 
+                    ? name[..MaxCallerNameLength] 
+                    : name.PadRight(MaxCallerNameLength);
+            }
+
+            return "Main".PadRight(MaxCallerNameLength);
         }
     }
 
