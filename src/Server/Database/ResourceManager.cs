@@ -35,9 +35,9 @@ namespace Imlight.Server.Database
         /// <returns></returns>
         public static bool Initialize()
         {
-            Log.Logger.Information("Updating local cache..");
+            Log.Information("Updating local cache..");
             UpdateCache();
-            Log.Logger.Information("Local cache updated!");
+            Log.Information("Local cache updated!");
 
             // Load submodules.
             var subModuleCoreObjectFactory = LoadSubCoreObjectFactory();
@@ -60,7 +60,7 @@ namespace Imlight.Server.Database
                     var rootCache = LoadWadFromCacheOrDownload(ROOT_WAD_NAME);
                     if (rootCache is null)
                     {
-                        Log.Logger.Error("Could not load vital {WadName} into memory!", ROOT_WAD_NAME);
+                        Log.Error("Could not load vital {WadName} into memory!", Log.Args(ROOT_WAD_NAME));
                         return false;
                     }
                     _rootWad = rootCache;
@@ -143,8 +143,8 @@ namespace Imlight.Server.Database
                     .Find(f => f.SourceFileName == betterFileName);
                 if (latestFile is null)
                 {
-                    Log.Logger.Warning("Cached file {FileName} does not exist in the LatestFileList!", 
-                        betterFileName);
+                    Log.Warning("Cached file {FileName} does not exist in the LatestFileList!", 
+                        Log.Args(betterFileName));
                     continue;
                 }
                 
@@ -152,8 +152,8 @@ namespace Imlight.Server.Database
                 // do not understand how the KIWAD CRC32 is calculated. Here's to hoping future me can do it better.
                 if (latestFile.Size == file.Size)
                 {
-                    Log.Logger.Debug("Cached file {FileName} did not require update", 
-                        latestFile.SourceFileName);
+                    Log.Debug("Cached file {FileName} did not require update", 
+                        Log.Args(latestFile.SourceFileName));
                     continue;
                 }
                 
@@ -161,22 +161,22 @@ namespace Imlight.Server.Database
                 // TODO: Move this boolean to config.
                 if (UPSERT_OUTDATED_CACHE)
                 {
-                    Log.Logger.Debug("Cached file {FileName} needed update", 
-                        latestFile.SourceFileName);
+                    Log.Debug("Cached file {FileName} needed update", 
+                        Log.Args(latestFile.SourceFileName));
                     
                     if (TryLoadFile(betterFileName, out _))
                     {
-                        Log.Logger.Debug("Cached file {FileName} was updated", 
-                            latestFile.SourceFileName);
+                        Log.Debug("Cached file {FileName} was updated", 
+                            Log.Args(latestFile.SourceFileName));
                         continue;
                     }
                     
-                    Log.Logger.Error("Could not upsert cached file {FileName}", betterFileName);
+                    Log.Error("Could not upsert cached file {FileName}", Log.Args(betterFileName));
                 }
                 else
                 {
-                    Log.Logger.Warning("Cached file {FileName} was deleted",
-                        latestFile.SourceFileName);
+                    Log.Warning("Cached file {FileName} was deleted",
+                        Log.Args(latestFile.SourceFileName));
                     KiWadCache.DeleteWad(betterFileName);
                 }
             }
@@ -194,7 +194,7 @@ namespace Imlight.Server.Database
             // Otherwise, download it from the patch server.
             if (!DownloadWadFromPatchServer(betterWadName, out var stream))
             {
-                Log.Logger.Error("Failed to download wad {WadName} from patch server", wadName);
+                Log.Error("Failed to download wad {WadName} from patch server", Log.Args(wadName));
                 return null;
             }
 
@@ -225,35 +225,35 @@ namespace Imlight.Server.Database
             }
             catch (Exception ex)
             {
-                Log.Logger.Error("Could not download wad \"{WadName}\". Exception: {Ex}", 
-                    wadName, ex.Message);
+                Log.Error("Could not download wad {WadName}. Exception: {Ex}", 
+                    Log.Args(wadName, ex.Message));
                 return false;
             }
         }
 
         private static bool LoadSubCoreObjectFactory()
         {
-            Log.Logger.Information("Start load of {Cof}", nameof(CoreObjectFactory));
+            Log.Information("Start load of {Cof}", Log.Args(nameof(CoreObjectFactory)));
             if (!CoreObjectFactory.Load())
             {
-                Log.Logger.Fatal("CoreObjectFactory could not be loaded.");
+                Log.Fatal("CoreObjectFactory could not be loaded.");
                 return false;
             }
 
-            Log.Logger.Information("Complete load of {Cof}", nameof(CoreObjectFactory));
+            Log.Information("Complete load of {Cof}", Log.Args(nameof(CoreObjectFactory)));
 
             return true;
         }
 
         private static bool LoadSubAccessPassManager()
         {
-            Log.Logger.Information("Start load of {Apm}", nameof(AccessPassManager));
+            Log.Information("Start load of {Apm}", Log.Args(nameof(AccessPassManager)));
             if (!AccessPassManager.Load())
             {
-                Log.Logger.Fatal("AccessPassManager could not be loaded.");
+                Log.Fatal("AccessPassManager could not be loaded.");
                 return false;
             }
-            Log.Logger.Information("Complete load of {Apm}", nameof(AccessPassManager));
+            Log.Information("Complete load of {Apm}", Log.Args(nameof(AccessPassManager)));
             
             return true;
         }

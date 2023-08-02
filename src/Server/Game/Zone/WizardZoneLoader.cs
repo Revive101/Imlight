@@ -61,9 +61,10 @@ public static class WizardZoneLoader
 
                 if (!ResourceManager.TryLoadFile(zone.ZoneName, out _wad))
                 {
-                    Log.Logger.Error($"Zone [{zone.ZoneName}] tried to load its own data, but none was " +
-                                     $"found in the {nameof(ResourceManager)}. We will continue, but the zone will not " +
-                                     $"contain any objects, mobs or volumes.");
+                    Log.Error("Zone {ZoneName} tried to load its own data, but none was " +
+                                     "found in the {Name}. We will continue, but the zone will not " +
+                                     "contain any objects, mobs or volumes.", 
+                        Log.Args(zone.ZoneName, nameof(ResourceManager)));
                     return;
                 }
 
@@ -80,8 +81,8 @@ public static class WizardZoneLoader
             }
             catch (Exception ex)
             {
-                Log.Logger.Warning($"Zone [{zone.ZoneName}] could not load resources for whatever " +
-                                   $"reason. Exception thrown: {ex}");
+                Log.Warning("Zone [{ZoneName}] could not load resources for whatever " +
+                                   "reason. Exception thrown: {Ex}", Log.Args(zone.ZoneName, ex));
             }
             finally
             {
@@ -98,8 +99,8 @@ public static class WizardZoneLoader
         var serializer = new FileSerializer();
         _zoneData = serializer.OpenClass<WizZoneData>(_wad, ZoneDataFileName);
         if (_zoneData is null)
-            Log.Logger.Error(
-                $"Zone {_zone.ZoneName} could not load {ZoneDataFileName} as it was missing or invalid.");
+            Log.Error("Zone {ZoneName} could not load {ZoneDataFileName} as it was missing or invalid.",
+                Log.Args(_zone.ZoneName, ZoneDataFileName));
     }
 
     /// <summary>
@@ -108,12 +109,11 @@ public static class WizardZoneLoader
     private static void LoadSpawnData()
     {
         var serializer = new FileSerializer()
-            .WithSerializerFlags(SerializerFlags.UseFlags | SerializerFlags.CompactLength |
-                                 SerializerFlags.StringEnums);
+            .WithSerializerFlags(SerializerFlags.UseFlags | SerializerFlags.CompactLength | SerializerFlags.StringEnums);
         _spawnData = serializer.OpenClass<SpawnManager>(_wad, SpawnDataFileName);
         if (_spawnData is null)
-            Log.Logger.Error(
-                $"Zone {_zone.ZoneName} could not load {SpawnDataFileName} as it was missing or invalid.");
+            Log.Error("Zone {Name} could not load {SpawnDataFileName} as it was missing or invalid.",
+                Log.Args(_zone.ZoneName, SpawnDataFileName));
     }
 
     /// <summary>
@@ -124,8 +124,9 @@ public static class WizardZoneLoader
         var serializer = new FileSerializer();
         _pathData = serializer.OpenClass<PathManager_PathTemplateList>(_wad, PathDataFileName);
         if (_pathData is null)
-            Log.Logger.Error(
-                $"Zone {_zone.ZoneName} could not load {PathDataFileName} as it was missing or invalid.");
+            Log.Error(
+                "Zone {Name} could not load {PathDataFileName} as it was missing or invalid.",
+                Log.Args(_zone.ZoneName, PathDataFileName));
     }
 
     /// <summary>
@@ -136,8 +137,9 @@ public static class WizardZoneLoader
         var serializer = new FileSerializer();
         _nodeData = serializer.OpenClass<PathManager_NodeTemplateList>(_wad, NodeDataFileName);
         if (_nodeData is null)
-            Log.Logger.Error(
-                $"Zone {_zone.ZoneName} could not load {NodeDataFileName} as it was missing or invalid.");
+            Log.Error(
+                "Zone {Name} could not load {NodeDataFileName} as it was missing or invalid.",
+                Log.Args(_zone.ZoneName, NodeDataFileName));
     }
 
     /// <summary>
@@ -148,8 +150,9 @@ public static class WizardZoneLoader
         var serializer = new FileSerializer();
         _zoneVolumes = serializer.OpenClass<WizZoneVolumes>(_wad, VolumeDataFileName);
         if (_zoneVolumes is null)
-            Log.Logger.Error(
-                $"Zone {_zone.ZoneName} could not load {VolumeDataFileName} as it was missing or invalid.");
+            Log.Error(
+                "Zone {Name} could not load {VolumeDataFileName} as it was missing or invalid.",
+                Log.Args(_zone.ZoneName, VolumeDataFileName));
     }
     
     /// <summary>
@@ -160,8 +163,9 @@ public static class WizardZoneLoader
         var serializer = new FileSerializer();
         _zoneTriggers = serializer.OpenClass<WizZoneTriggers>(_wad, TriggerDataFileName);
         if (_zoneTriggers is null)
-            Log.Logger.Error(
-                $"Zone {_zone.ZoneName} could not load {TriggerDataFileName} as it was missing or invalid.");
+            Log.Error(
+                "Zone {Name} could not load {TriggerDataFileName} as it was missing or invalid.",
+                Log.Args(_zone.ZoneName, TriggerDataFileName));
     }
 
     /// <summary>
@@ -279,8 +283,9 @@ public static class WizardZoneLoader
             if (node is not null)
                 nodeList.Add(node);
             else
-                Log.Logger.Warning($"Zone [{_zone.ZoneName}] contained a path [{path.m_name}] with a " +
-                                   $"node that could not be found. Node ID: [{id}]");
+                Log.Warning("Zone [{Name}] contained a path {PathName} with a node that could not be found. " +
+                            "Node ID: {Id}",
+                    Log.Args(_zone.ZoneName, path.m_name, id));
         }
 
         return nodeList;
@@ -306,8 +311,9 @@ public static class WizardZoneLoader
 
             // TEST: I'm not sure this will ever occur. Perhaps remove later?
             if (!AllObjectsContainSamePath(spawnList))
-                Log.Logger.Warning($"Zone [{_zone.ZoneName}] contains a SpawnObject [{spawnObject.m_name}] " +
-                                   $"that contains multiple objects, which spawn on different paths. Let Jooty know.");
+                Log.Warning("Zone {ZoneName} contains a SpawnObject {SoName} " +
+                                   "that contains multiple objects, which spawn on different paths. Let Jooty know.",
+                    Log.Args(_zone.ZoneName, spawnObject.m_name));
         }
 
         return creatureList;

@@ -31,7 +31,7 @@ namespace Imlight.Server.Shared.Networking
         {
             if (SessionActor is null)
             {
-                Log.Logger.Error($"{this.GetType()} attempted to send message to undefined SessionActor.");
+                throw new ActorKilledException($"{GetType()} attempted to send message to undefined SessionActor.");
                 return;
             }
 
@@ -64,8 +64,7 @@ namespace Imlight.Server.Shared.Networking
         {
             if (SessionActor is null)
             {
-                Log.Logger.Error($"{this.GetType()} attempted to send message to undefined SessionActor.");
-                return default(T);
+                throw new ActorKilledException($"{this.GetType()} attempted to send message to undefined SessionActor.");
             }
             
             if (message.ServiceID < 100)
@@ -115,7 +114,7 @@ namespace Imlight.Server.Shared.Networking
 
             if (account is null)
             {
-                Log.Logger.Error($"{this.GetType()} could not get account from AccountService.");
+                throw new Exception($"{GetType()} could not get account from AccountService.");
             }
 
             return account;

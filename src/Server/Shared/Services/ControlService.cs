@@ -83,9 +83,7 @@ namespace Imlight.Server.Shared.Services
             _responseStopwatch.Stop();
             if (message.SessionId != SessionActor.SessionID)
             {
-                Log.Logger.Error($"SessionActor [{SessionActor.SessionID}] misaligned Session ID.");
-                CloseSession();
-                return;
+                throw new Exception($"SessionActor [{SessionActor.SessionID}] misaligned Session ID.");
             }
 
             // Set local variables.
@@ -119,10 +117,7 @@ namespace Imlight.Server.Shared.Services
         {
             if (message.SessionId != SessionActor.SessionID)
             {
-                Log.Logger.Error($"SessionActor [{SessionActor.SessionID}] misaligned Session ID.");
-                CloseSession();
-
-                return;
+                throw new Exception($"SessionActor [{SessionActor.SessionID}] misaligned Session ID.");
             }
 
             var millisecondsIntoCurrentSecond = (ushort)(DateTime.UtcNow.TimeOfDay.TotalMilliseconds % 1000);
@@ -160,8 +155,8 @@ namespace Imlight.Server.Shared.Services
             if (_halted) return;
             if (!_sessionValid)
             {
-                Log.Logger.Error($"CommunicationActor [{SessionActor.SessionID}] " +
-                                 $"tried to send heartbeat to an invalid session.");
+                Log.Error("{Name} {SessionID} tried to send heartbeat to an invalid session", 
+                    Log.Args(nameof(SessionActor), SessionActor.SessionID));
                 CloseSession();
                 return;
             }
@@ -199,13 +194,12 @@ namespace Imlight.Server.Shared.Services
         
         private void SessionAcceptTimer()
         {
-            if (!_sessionValid)
-            {
-                Log.Logger.Debug($"SessionActor [{SessionActor.SessionID}] " +
-                                 $"did not return a SessionAccept message in time.");
-                CloseSession();
+            if (_sessionValid) 
                 return;
-            }
+            
+            Log.Debug("SessionActor {SessionID} " +
+                             "did not return a SessionAccept message in time", Log.Args(SessionActor.SessionID));
+            CloseSession();
         }
     }
 }

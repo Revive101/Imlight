@@ -42,15 +42,15 @@ namespace Imlight.Backend
             // =============================================================
             // AKKA.NET CONFIGURATION
             // =============================================================
-            Log.Logger.Information("Getting Akka.NET configuration..");
+            Log.Information("Getting Akka.NET configuration..");
             if (!AkkaConfiguration.CreateActorSystem(ActorSystemName, out var system))
             {
-                Log.Logger.Fatal($"Could not find Akka.NET config file!");
+                Log.Fatal($"Could not find Akka.NET config file!");
 
                 Console.ReadKey();
                 return;
             }
-            Log.Logger.Information("Akka.NET system created.");
+            Log.Information("Akka.NET system created.");
             _imlightSystem = system;
 
             // =============================================================
@@ -61,16 +61,16 @@ namespace Imlight.Backend
             var task = StartPatchServer();
             task.Wait();
 
-            Log.Logger.Information("Gathering appropriate resources..");
+            Log.Information("Gathering appropriate resources..");
             var resourceLoadResult = ResourceManager.Initialize();
             if (!resourceLoadResult)
             {
-                Log.Logger.Fatal($"Could not load resources!");
+                Log.Fatal($"Could not load resources!");
 
                 Console.Read();
                 return;
             }
-            Log.Logger.Information("Resources successfully allocated.");
+            Log.Information("Resources successfully allocated.");
 
             // =============================================================
             // SERVERS
@@ -79,13 +79,13 @@ namespace Imlight.Backend
             StartGameServer(loginServer);
 
             // Keep program busy with a while loop.
-            Log.Logger.Information("Main thread now hands off to the Akka.NET system. Godspeed, Imlight.");
+            Log.Information("Main thread now hands off to the Akka.NET system. Godspeed, Imlight.");
             while (true)
             {
                 // Sleep for 5 minutes.
                 Thread.Sleep(300000);
                 
-                Log.Logger.Information("Still alive..");
+                Log.Information("Still alive..");
             }
         }
 
@@ -94,9 +94,8 @@ namespace Imlight.Backend
             var loginProps = LoginServer.Props();
             var loginServer = _imlightSystem.ActorOf(loginProps, LoginServer.DEFAULT_LOGIN_SERVER_NAME);
             
-            Log.Logger.Debug("New actor created under {systemName}: {loginServerName}", 
-                _imlightSystem.Name, 
-                LoginServer.DEFAULT_LOGIN_SERVER_NAME);
+            Log.Debug("New actor created under {systemName}: {loginServerName}", 
+                Log.Args(_imlightSystem.Name, LoginServer.DEFAULT_LOGIN_SERVER_NAME));
             
             return loginServer;
         }
@@ -112,9 +111,8 @@ namespace Imlight.Backend
             var patchProps = PatchServer.Props();
             var actor = _imlightSystem.ActorOf(patchProps, PatchServer.DEFAULT_PATCH_SERVER_NAME);
             
-            Log.Logger.Debug("New actor created under {systemName}: {patchServerName}", 
-                _imlightSystem.Name, 
-                PatchServer.DEFAULT_PATCH_SERVER_NAME);
+            Log.Debug("New actor created under {systemName}: {patchServerName}", 
+                Log.Args(_imlightSystem.Name, PatchServer.DEFAULT_PATCH_SERVER_NAME));
 
             // Await initialization of the patch server.
             await actor.Ask<SERVER_100_PROTOCOL.MSG_INITIALIZE_COMPLETE>(new SERVER_100_PROTOCOL.MSG_INITIALIZE());

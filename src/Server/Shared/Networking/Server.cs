@@ -74,10 +74,10 @@ namespace Imlight.Server.Shared.Networking
             Context.ActorOf(sessionProps, $"SessionActor.{id}");
 
             // Log
-            Log.Logger.Verbose($"New actor created under {Context.Self.Path}: SessionActor.{id}");
-            Log.Logger.Information($"{this.GetType()} new connection " +
-                                   $"from {message.Socket.RemoteEndPoint}, " +
-                                   $"given session ID [{id}]");
+            Log.Verbose("New actor created under {Path}: SessionActor.{Id}",
+                Log.Args(Context.Self.Path, id));
+            Log.Information("{Type} new connection from {RemoteEndPoint} given session ID {Id}",
+                Log.Args(GetType(), message.Socket.RemoteEndPoint?.ToString(), id));
         }
 
         /// <summary>
@@ -87,7 +87,8 @@ namespace Imlight.Server.Shared.Networking
         [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET))]
         public virtual void ReceiveDeallocateSocket(SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET message)
         {
-            Log.Logger.Information($"{Name}.{Port} connection dropped from {message.Ip} ID: {message.Id}");
+            Log.Information("{Name}.{Port} connection dropped from {Ip} ID: {Id}",
+                Log.Args(Name, Port, message.Ip, message.Id));
 
             foreach (var session in ActiveSessions.ToList()
                          .Where(session => session.SessionID == message.Id))
@@ -96,7 +97,8 @@ namespace Imlight.Server.Shared.Networking
                 return;
             }
 
-            Log.Logger.Warning($"{Name}.{Port} Could not find active session with ID [{message.Id}]");
+            Log.Warning("{Name}.{Port} Could not find active session with ID {Id}",
+                Log.Args(Name, Port, message.Id));
         }
 
         /// <summary>
@@ -175,7 +177,8 @@ namespace Imlight.Server.Shared.Networking
             var tcpProps = TcpListenerActor.Props(Name, Port, Context.Self);
             Context.ActorOf(tcpProps, actorName);
             
-            Log.Logger.Verbose($"New actor created under {Context.Self.Path}: {actorName}");
+            Log.Logger.Verbose("New actor created under {Path}: {ActorName}",
+                Context.Self.Path, actorName);
         }
 
         private IActorRef CreateActorFactory()
@@ -184,7 +187,8 @@ namespace Imlight.Server.Shared.Networking
             
             var actorName = $"{Name}.ActorFactory";
             
-            Log.Logger.Verbose($"New actor created under {Context.Self.Path}: {actorName}");
+            Log.Logger.Verbose("New actor created under {Path}: {ActorName}",
+                Context.Self.Path, actorName);
             
             return Context.ActorOf(_factoryProps, actorName);
         }

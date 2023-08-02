@@ -65,7 +65,6 @@ namespace Imlight.Server.Database
         /// Caches a file into the local database.
         /// </summary>
         /// <param name="fileName"></param>
-        /// <param name="contentStream"></param>
         /// <param name="wad"></param>
         public static void CacheWad(string fileName, Wad wad)
         {
@@ -78,8 +77,8 @@ namespace Imlight.Server.Database
                 .FirstOrDefault();
             if (file is not null)
             {
-                Log.Logger.Warning("LocalCache already contains a file definition for {FileName}! " +
-                                   $"File will be overwritten.", fileName);
+                Log.Warning("LocalCache already contains a file definition for {FileName}! " +
+                                   $"File will be overwritten.", Log.Args(fileName));
             }
 
             // Create a new FileDefinition. Create a new byte array from the content stream.
@@ -106,7 +105,7 @@ namespace Imlight.Server.Database
             if (file is not null) 
                 return;
             
-            Log.Logger.Warning("LocalCache tried to delete a file {FileName} it did not contain!", fileName);
+            Log.Warning("LocalCache tried to delete a file {FileName} it did not contain!", Log.Args(fileName));
         }
 
         private static uint GetWadCrc(Wad wad)

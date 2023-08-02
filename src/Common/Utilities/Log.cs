@@ -3,49 +3,144 @@
  * Proprietary and confidential.
  */
 
+using System;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Threading;
 using Serilog;
+using Serilog.Context;
 using Serilog.Core;
-using Serilog.Enrichers;
 using Serilog.Events;
 
 namespace Imlight.Common.Utilities
 {
     public static class Log
     {
-        private const byte MaxThreadNameLength = 15;
+        private const byte MaxCallerNameLength = 40;
         
         // TODO: Make this configurable.
         private static readonly string _path = Path.Combine(
             Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
-            ?? string.Empty, $"log.txt");
+            ?? string.Empty, "log.txt");
 
         public static ILogger Logger { get; } = new LoggerConfiguration()
             .MinimumLevel.Debug()
             .Enrich.FromLogContext()
-            .Enrich.With(new ThreadNameEnricher())
-            .Enrich.With(new CallingMethodEnricher())
+            .Enrich.With(new ThreadIdEnricher())
+            //.Enrich.With(new CallingMethodEnricher())
             .WriteTo.Console(outputTemplate:
-                "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] [{Thread}] {CallingMethod} : {Message:lj} {NewLine}{Exception}")
+                "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] [{Thread}] {CallingSpace} : {Message:lj} {NewLine}{Exception}")
             .WriteTo.File("log.txt", rollingInterval: RollingInterval.Day)
             .CreateLogger();
+        
+        public static void Verbose(string message, 
+            object[] args = null,
+            [CallerFilePath] string callingClass = "",
+            [CallerMemberName] string callingMethod = "", 
+            [CallerLineNumber] int lineNumber = 0)
+        {
+            LogEvent(callingClass, callingMethod, lineNumber, LogEventLevel.Verbose, message, args);
+        }
+    
+        public static void Debug(string message, 
+            object[] args = null,
+            [CallerFilePath] string callingClass = "", 
+            [CallerMemberName] string callingMethod = "",
+            [CallerLineNumber] int lineNumber = 0)
+        {
+            LogEvent(callingClass, callingMethod, lineNumber, LogEventLevel.Debug, message, args);
+        }
+    
+        public static void Information(string message, 
+            object[] args = null,
+            [CallerFilePath] string callingClass = "",
+            [CallerMemberName] string callingMethod = "", 
+            [CallerLineNumber] int lineNumber = 0)
+        {
+            LogEvent(callingClass, callingMethod, lineNumber, LogEventLevel.Information, message, args);
+        }
+    
+        public static void Warning(string message, 
+            object[] args = null,
+            [CallerFilePath] string callingClass = "",
+            [CallerMemberName] string callingMethod = "", 
+            [CallerLineNumber] int lineNumber = 0)
+        {
+            LogEvent(callingClass, callingMethod, lineNumber, LogEventLevel.Warning, message, args);
+        }
+    
+        public static void Error(string message, 
+            object[] args = null,
+            [CallerFilePath] string callingClass = "", 
+            [CallerMemberName] string callingMethod = "",
+            [CallerLineNumber] int lineNumber = 0)
+        {
+            LogEvent(callingClass, callingMethod, lineNumber, LogEventLevel.Error, message, args);
+        }
+    
+        public static void Fatal(string message, 
+            object[] args = null,
+            [CallerFilePath] string callingClass = "", 
+            [CallerMemberName] string callingMethod = "",
+            [CallerLineNumber] int lineNumber = 0)
+        {
+            LogEvent(callingClass, callingMethod, lineNumber, LogEventLevel.Fatal, message, args);
+        }
+    
+        private static void LogEvent(string callingClass, string callingMethod, int lineNumber, LogEventLevel logLevel,
+            string message, params object[] values)
+        {
+            callingClass = TrimCallingClass(callingClass);
+            var callingSpace = $"{callingClass}.{callingMethod}";
+            callingSpace = GetConsistentSpacedName(callingSpace);
+            LogContext.PushProperty("CallingSpace", callingSpace);
+            Logger.Write(logLevel, message, values);
+        }
+
+        public static object[] Args(params object[] args)
+        {
+            return args;
+        }
+
+        private static string TrimCallingClass(string filePath)
+        {
+            // If the file path doesn't contain a '.cs', then it's not a C# file.
+            if (!filePath.Contains(".cs"))
+                return filePath;
+            
+            // Scope to the area between the final '/' character and the '.cs' extension.
+            var startIndex = filePath.LastIndexOf('/') + 1;
+            var length = filePath.LastIndexOf(".cs", StringComparison.Ordinal) - startIndex;
+            return filePath.Substring(startIndex, length);
+        }
+        
+        private static string GetConsistentSpacedName(string name)
+        {
+            if (!string.IsNullOrEmpty(name))
+            {
+                return name.Length > MaxCallerNameLength 
+                    ? name[..MaxCallerNameLength] 
+                    : name.PadRight(MaxCallerNameLength);
+            }
+
+            return "Main".PadRight(MaxCallerNameLength);
+        }
     }
 
-    internal class ThreadNameEnricher : ILogEventEnricher
+    /// <summary>
+    /// Reflects over the current environment to get a consistent thread name for context enrichment.
+    /// </summary>
+    internal class ThreadIdEnricher : ILogEventEnricher
     {
         public const string ThreadNamePropertyName = "Thread";
-        private const int MaxNameLength = 15;
+        private const int MaxNameLength = 2;
 
         public void Enrich(LogEvent logEvent, ILogEventPropertyFactory propertyFactory)
         {
-            var threadName = GetConsistentSpacedName(Thread.CurrentThread.Name);
+            var threadName = GetConsistentSpacedName(Environment.CurrentManagedThreadId.ToString());
             if (string.IsNullOrEmpty(threadName))
-                threadName = $"Thread-{System.Environment.CurrentManagedThreadId}";
+                threadName = $"Thread-{Environment.CurrentManagedThreadId}";
 
             var property = propertyFactory.CreateProperty(ThreadNamePropertyName, threadName);
             logEvent.AddPropertyIfAbsent(property);
@@ -64,25 +159,38 @@ namespace Imlight.Common.Utilities
         }
     }
     
+    /// <summary>
+    /// Reflects over the call stack to get a calling source for context enrichment. This is mighty expensive and
+    /// unreliable, but exists as a last resort.
+    /// </summary>
     internal class CallingMethodEnricher : ILogEventEnricher
     {
-        public const string CallingMethodPropertyName = "CallingMethod";
+        private const string CallingMethodPropertyName = "CallingMethod";
         private const int MaxNameLength = 40;
 
         public void Enrich(LogEvent logEvent, ILogEventPropertyFactory propertyFactory)
         {
-            var frame = new StackFrame(6, false);
+            var frame = new StackFrame(7, false);
             var method = frame.GetMethod();
-            if (method == null)
-                return;
+            var callingMethod = "Imlight";
 
-            var callingMethod = $"{method.ReflectedType?.Name}::{method.Name}";
-            if (IsStateMachineMethod(callingMethod))
+            if (method != null)
             {
-                callingMethod = GetCallerMethodNameFromAsyncStateMachine(frame);
+                callingMethod = $"{method.ReflectedType?.Name}::{method.Name}";
+                if (IsStateMachineMethod(callingMethod))
+                {
+                    callingMethod = GetCallerMethodNameFromAsyncStateMachine(frame);
+                }
             }
 
-            var propertyMethod = propertyFactory.CreateProperty(CallingMethodPropertyName, GetConsistentSpacedName(callingMethod));
+            AddCallingMethodProperty(logEvent, propertyFactory, callingMethod);
+        }
+
+        private static void AddCallingMethodProperty(LogEvent logEvent, ILogEventPropertyFactory propertyFactory,
+            string callingMethod)
+        {
+            var paddedName = GetConsistentSpacedName(callingMethod);
+            var propertyMethod = propertyFactory.CreateProperty(CallingMethodPropertyName, paddedName);
             logEvent.AddPropertyIfAbsent(propertyMethod);
         }
 
