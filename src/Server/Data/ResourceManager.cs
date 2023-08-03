@@ -5,18 +5,15 @@
 
 using System;
 using System.IO;
-using System.Reflection;
 using Akka.Actor;
-using WizUnraveler;
-using WizUnraveler.ObjectProperty;
 using Imlight.Common.Utilities;
 using Imlight.Server.Patch;
 using Imlight.Server.Shared.Packets;
-using WizUnraveler.Cache;
 using WizUnraveler.Formats;
 using WizUnraveler.IO;
+using WizUnraveler.ObjectProperty;
 
-namespace Imlight.Server.Database
+namespace Imlight.Server.Data
 {
     public static class ResourceManager
     {

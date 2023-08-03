@@ -5,15 +5,15 @@
 
 using System;
 using System.Collections.Generic;
-using System.Reflection;
-using System.Linq;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using Imlight.Common.Cryptography;
-using LiteDB;
 using Imlight.Common.Utilities;
+using LiteDB;
 using WizUnraveler.Formats;
 
-namespace Imlight.Server.Database
+namespace Imlight.Server.Data
 {
     public class FileDefinition
     {

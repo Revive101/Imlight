@@ -12,6 +12,7 @@ using Akka.Actor;
 using WizUnraveler.DML;
 using WizUnraveler.Cache;
 using Imlight.Common.Utilities;
+using Imlight.Server.Data;
 using Imlight.Server.Database;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
@@ -36,7 +37,7 @@ namespace Imlight.Server.Login.Services
             // Inform the SessionActor of the account.
             TellOtherServices(new ACCOUNT_104_PROTOCOL.MSG_ACCOUNT()
             {
-                Account = Database.Util.GetFakeAccount()
+                Account = Util.GetFakeAccount()
             });
             
             // Inform the player that they've been authenticated.

@@ -16,8 +16,4 @@
         <ProjectReference Include="..\Common\Imlight.Common.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Game\Models\" />
-    </ItemGroup>
-
 </Project>

@@ -9,7 +9,7 @@ using System.Linq;
 using System.Reflection;
 using LiteDB;
 
-namespace Imlight.Server.Database;
+namespace Imlight.Server.Data;
 
 /// <summary>
 ///     Provides a static interface to the server's database.

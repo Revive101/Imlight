@@ -4,12 +4,12 @@
  */
 
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Xml;
 using Imlight.Common.Utilities;
+using Imlight.Server.Database;
 
-namespace Imlight.Server.Database
+namespace Imlight.Server.Data
 {
     public static class AccessPassManager
     {

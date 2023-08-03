@@ -5,11 +5,12 @@
 
 using System;
 using System.Linq;
+using Imlight.Server.Database;
 using Imlight.Server.Login.Models;
 using WizUnraveler.Cache;
 using WizUnraveler.ObjectProperty;
 
-namespace Imlight.Server.Database
+namespace Imlight.Server.Data
 {
     public static class Util
     {

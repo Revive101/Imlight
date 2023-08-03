@@ -1,6 +1,7 @@
 using Akka.Actor;
 using Imlight.Common.Serializable;
 using Imlight.Common.Utilities;
+using Imlight.Server.Data;
 using Imlight.Server.Database;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;

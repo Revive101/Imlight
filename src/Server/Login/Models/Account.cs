@@ -44,12 +44,12 @@ namespace Imlight.Server.Login.Models
         /// </summary>
         public List<Character> Characters { get; private set; }
 
-        public Account(string Username, string Email, string Password)
+        public Account(string Username, string Email, string PasswordHash)
         {
             this.ID = RandomGen.GenerateGUID();
             this.Username = Username;
             this.Email = Email;
-            this.PasswordHash = Password;
+            this.PasswordHash = PasswordHash;
             this.Characters = new List<Character>();
         }
 

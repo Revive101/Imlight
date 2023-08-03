@@ -11,6 +11,7 @@ using Imlight.Server.Database.Records.Character;
 using SharpDX;
 using static WizUnraveler.Cache.TypeCache;
 using System.Globalization;
+using Imlight.Server.Data;
 
 namespace Imlight.Server.Database
 {
