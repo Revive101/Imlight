@@ -6,8 +6,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using Imlight.Common.Utilities;
+using Imlight.Server.Database;
 
-namespace Imlight.Server.Database
+namespace Imlight.Server.Login.Models
 {
     public class Account
     {

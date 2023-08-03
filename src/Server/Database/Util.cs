@@ -5,6 +5,7 @@
 
 using System;
 using System.Linq;
+using Imlight.Server.Login.Models;
 using WizUnraveler.Cache;
 using WizUnraveler.ObjectProperty;
 

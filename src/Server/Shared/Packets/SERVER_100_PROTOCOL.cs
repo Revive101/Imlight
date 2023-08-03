@@ -9,6 +9,7 @@ using WizUnraveler;
 using WizUnraveler.DML;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Database;
+using Imlight.Server.Login.Models;
 using WizUnraveler.IO;
 
 namespace Imlight.Server.Shared.Packets

@@ -9,6 +9,7 @@ using WizUnraveler.DML;
 using Imlight.Common.Utilities;
 using Imlight.Server.Database;
 using Imlight.Server.Game.Services;
+using Imlight.Server.Login.Models;
 using Imlight.Server.Shared.Packets;
 using WizUnraveler.Cache;
 

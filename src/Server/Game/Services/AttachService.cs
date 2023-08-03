@@ -10,6 +10,7 @@ using WizUnraveler.Cache;
 using static WizUnraveler.Cache.TypeCache;
 using Imlight.Common.Utilities;
 using Imlight.Server.Database;
+using Imlight.Server.Login.Models;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
 using WizUnraveler.IO;
