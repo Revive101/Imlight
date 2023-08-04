@@ -9,7 +9,6 @@ using System.Numerics;
 using Akka.Actor;
 using WizUnraveler.Cache;
 using Imlight.Common.Utilities;
-using Imlight.Server.Database;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
 using Math = System.Math;
@@ -51,8 +50,8 @@ namespace Imlight.Server.Game.Services
                 };
                 SendToSocket(msg);
 
-                character.nextZone = message.ZoneName;
-                character.nextLocation = message.Location;
+                character.QueuedZoneName = message.ZoneName;
+                character.QueuedZoneLocation = Data.Util.GetVectorFromCompactString(message.Location);
             }
             
             // If we're not sending this to client, this is an internal transfer, meaning we can immediately
@@ -146,13 +145,13 @@ namespace Imlight.Server.Game.Services
                 TCPPort = character.LastGameServerPort,
                 UDPPort = character.LastGameServerPort,
                 UserID = account.ID,
-                CharID = character.Id,
-                ZoneName = character.nextZone,
-                Location = character.nextLocation, // Doesn't seem to do anything.
+                CharID = character.CharId,
+                ZoneName = character.Zone,
+                Location = Data.Util.GetCompactStringFromVector(character.QueuedZoneLocation),
                 Slot = 0,
                 SessionSlot = 0,
                 SessionID = 0,
-                TargetPlayerID = character.Id,
+                TargetPlayerID = character.CharId,
                 TransitionID = 1
             };
             SendToSocket(serverTransfer);

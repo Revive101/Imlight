@@ -5,11 +5,10 @@
 
 using Akka.Actor;
 using Imlight.Common.Serializable;
+using Imlight.Server.Game.Models;
 using WizUnraveler;
 using WizUnraveler.Cache;
 using static WizUnraveler.Cache.TypeCache;
-using Imlight.Common.Utilities;
-using Imlight.Server.Database;
 using Imlight.Server.Login.Models;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
@@ -67,7 +66,7 @@ namespace Imlight.Server.Game.Services
             }
 
             // Serialize the character's game object.
-            var charGameObject = character.GetWizClientObject();
+            var charGameObject = CharacterObjectLoader.GetPlayerGameObject(ref character);
             var localGameObjectData = new CoreObjectSerializer().Serialize(charGameObject);
             if (charGameObject is null || string.IsNullOrEmpty(localGameObjectData))
                 throw new ServiceRetryException($"User [{message.UserID}] failed to grab or deserialize " +

@@ -3,7 +3,7 @@
  * Proprietary and confidential.
  */
 
-namespace Imlight.Server.Database.Records.Character
+namespace Imlight.Server.Game.Models
 {
     public enum EquipmentSlot
     {

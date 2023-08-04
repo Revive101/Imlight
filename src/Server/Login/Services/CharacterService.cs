@@ -13,7 +13,7 @@ using WizUnraveler;
 using WizUnraveler.Cache;
 using WizUnraveler.ObjectProperty;
 using Imlight.Common.Utilities;
-using Imlight.Server.Database;
+using Imlight.Server.Game.Models;
 using Imlight.Server.Shared.Networking;
 
 namespace Imlight.Server.Login.Services
@@ -88,7 +88,7 @@ namespace Imlight.Server.Login.Services
                     var character = account.Characters[i];
 
                     // WizApi saves the object. We need to serialize it here.
-                    var data = serializer.Serialize(character.CreationData);
+                    var data = serializer.Serialize(character.GetCharacterCreationInfo());
                     SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERINFO() { CharacterInfo = data });
                 }
             }

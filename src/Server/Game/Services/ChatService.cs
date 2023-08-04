@@ -6,7 +6,6 @@
 using System;
 using System.Text;
 using Akka.Actor;
-using Imlight.Server.Database;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
 using WizUnraveler.Cache;
@@ -33,8 +32,8 @@ namespace Imlight.Server.Game.Services
         {
             var globalId = GetActiveCoreObject().m_globalID;
             var character = GetActiveCharacter();
-            var nameIndices = character.CreationData.m_nameIndices;
-            var gender = character.CreationData.m_avatarBehavior.m_eGender;
+            var nameIndices = character.NameIndices;
+            var gender = character.WizardAvatar.m_eGender;
             var src = CraftSourceNameFromIndices(nameIndices, gender);
 
             var msg = new GAME_5_PROTOCOL.MSG_RADIALCHAT()
@@ -57,8 +56,8 @@ namespace Imlight.Server.Game.Services
         {
             var globalId = GetActiveCoreObject().m_globalID;
             var character = GetActiveCharacter();
-            var nameIndices = character.CreationData.m_nameIndices;
-            var gender = character.CreationData.m_avatarBehavior.m_eGender;
+            var nameIndices = character.NameIndices;
+            var gender = character.WizardAvatar.m_eGender;
             var src = CraftSourceNameFromIndices(nameIndices, gender);
 
             var msg = new GAME_5_PROTOCOL.MSG_RADIALQUICKCHAT()

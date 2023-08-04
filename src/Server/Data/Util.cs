@@ -4,9 +4,11 @@
  */
 
 using System;
+using System.Globalization;
 using System.Linq;
-using Imlight.Server.Database;
+using Imlight.Server.Game.Models;
 using Imlight.Server.Login.Models;
+using SharpDX;
 using WizUnraveler.Cache;
 using WizUnraveler.ObjectProperty;
 
@@ -65,6 +67,20 @@ namespace Imlight.Server.Data
                              .Where(x => x % 2 == 0)
                              .Select(x => Convert.ToByte(hex.Substring(x, 2), 16))
                              .ToArray();
+        }
+
+        public static string GetCompactStringFromVector(Vector4 vector)
+            => $"{vector.X},{vector.Y},{vector.Z},{vector.W}";
+        
+        public static Vector4 GetVectorFromCompactString(string loc)
+        {
+            var components = loc.Split(",");
+            var x = float.Parse(components[0], CultureInfo.InvariantCulture);
+            var y = float.Parse(components[1], CultureInfo.InvariantCulture);
+            var z = float.Parse(components[2], CultureInfo.InvariantCulture);
+            var d = float.Parse(components[3], CultureInfo.InvariantCulture);
+
+            return new Vector4(x, y, z, d);
         }
     }
 }
