@@ -7,7 +7,7 @@ using System;
 using Akka.Actor;
 using WizUnraveler.DML;
 using Imlight.Common.Utilities;
-using Imlight.Server.Database;
+using Imlight.Server.Game.Models;
 using Imlight.Server.Game.Services;
 using Imlight.Server.Login.Models;
 using Imlight.Server.Shared.Packets;

@@ -5,10 +5,9 @@
 
 using System;
 using Akka.Actor;
+using Imlight.Server.Game.Models;
 using SharpDX;
 using WizUnraveler.Cache;
-using Imlight.Common.Utilities;
-using Imlight.Server.Database;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
 
@@ -71,9 +70,6 @@ namespace Imlight.Server.Game.Services
             if (_activeCharacterObject is null)
                 throw new ServiceRetryException($"Tried to do client move but could not grab active character " +
                                                 $"object");
-            
-            var character = _activeCharacter;
-            character.CreationData.m_location = character.nextZone;
         }
 
         // Experimental - Sets the Crowns to 12,345,678

@@ -13,7 +13,6 @@ using WizUnraveler.Cache;
 using Imlight.Common.Structures;
 using Imlight.Common.Utilities;
 using Imlight.Common.Cryptography;
-using Imlight.Server.Database;
 using Imlight.Server.Login.Models;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;

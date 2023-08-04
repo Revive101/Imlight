@@ -4,7 +4,6 @@
  */
 
 using Imlight.Server.Shared.Networking;
-using Imlight.Server.Database;
 using Imlight.Server.Login.Models;
 
 namespace Imlight.Server.Shared.Packets

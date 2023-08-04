@@ -9,7 +9,6 @@ using WizUnraveler;
 using WizUnraveler.Cache;
 using WizUnraveler.ObjectProperty;
 using Imlight.Common.Utilities;
-using Imlight.Server.Database;
 using Imlight.Server.Login.Models;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
@@ -63,14 +62,14 @@ namespace Imlight.Server.Login.Services
                 Key = allocatedKey,                   // Login server -> game server session key.
                 PrepPhase = 0,                        // (0|1): Player is in queue.
                 Slot = 0,                             // The player's position in said queue.
-                LoginServer = "Imlight.Login",        // @FIXME: This should be sourced from elsewhere.
+                LoginServer = "Imlight.Login",      // TODO: This should be sourced from elsewhere.
                 
                 // Set details about the character.
                 UserID = account.ID,
-                CharID = character.Id,
+                CharID = character.CharId,
                 ZoneID = new GID((ulong)gameServer.Port),
-                ZoneName = character.CreationData.m_location, // Client uses this name to load a zone locally.
-                Location = "Start",                           // Most zones use "Start" on player login.
+                ZoneName = character.Zone,
+                Location = "Start",
             };
             
             // Cache the message if the player is queued.

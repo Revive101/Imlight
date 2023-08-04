@@ -6,7 +6,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Imlight.Common.Utilities;
-using Imlight.Server.Database;
+using Imlight.Server.Game.Models;
 
 namespace Imlight.Server.Login.Models
 {
@@ -75,15 +75,13 @@ namespace Imlight.Server.Login.Models
         /// <returns>False, if no character by ID is found. Otherwise, true.</returns>
         public bool DeleteCharacter(ulong charId)
         {
-            if (Characters.Any(x => x.Id == charId))
-            {
-                var character = Characters.First(x => x.Id == charId);
-                Characters.Remove(character);
+            if (Characters.All(x => x.CharId != charId))
+                return false;
+            
+            var character = Characters.First(x => x.CharId == charId);
+            Characters.Remove(character);
 
-                return true;
-            }
-
-            return false;
+            return true;
         }
 
         /// <summary>
@@ -96,14 +94,11 @@ namespace Imlight.Server.Login.Models
         {
             character = null;
 
-            if (Characters.Any(x => x.Id == charId))
-            {
-                character = Characters.First(x => x.Id == charId);
+            if (Characters.All(x => x.CharId != charId)) 
+                return false;
+            character = Characters.First(x => x.CharId == charId);
 
-                return true;
-            }
-
-            return false;
+            return true;
         }
     }
 }

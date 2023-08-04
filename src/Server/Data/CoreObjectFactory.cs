@@ -9,7 +9,6 @@ using System.Diagnostics;
 using System.Linq;
 using Imlight.Common.Cryptography;
 using Imlight.Common.Utilities;
-using Imlight.Server.Database;
 using Imlight.Server.Shared.Secrets;
 using WizUnraveler.Common;
 using WizUnraveler.IO;
