@@ -57,8 +57,7 @@ namespace Imlight.Server.Game
                 Zones.Add(message.ZoneName, zone);
                 
                 // Log the new zone creation.
-                Log.Information("GameWorld created new zone: {ZoneName}",
-                    Log.Args(message.ZoneName));
+                Log.Information("GameWorld created new zone: {ZoneName}", Log.Args(message.ZoneName));
             }
             else
             {

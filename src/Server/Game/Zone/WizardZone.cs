@@ -53,6 +53,12 @@ public class WizardZone : ReceiveProtocolDispatcher
         return Akka.Actor.Props.Create(() => new WizardZone(zoneName));
     }
 
+    protected override void PreRestart(Exception reason, object message)
+    {
+        Log.Error("Zone {ZoneName} restarts for: {Exception}", Log.Args(ZoneName, reason));
+        base.PreRestart(reason, message);
+    }
+
     /// <summary>
     /// Broadcast a message to all the players in the zone.
     /// </summary>
@@ -229,8 +235,10 @@ public class WizardZone : ReceiveProtocolDispatcher
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER))]
     private void ReceiveRemovePlayer(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message)
     {
+        // Make sure this player is in this zone. This is just a sanity check, and with different race conditions
+        // it's possible that this player is no longer in this zone. If that's the case, we just ignore this message.
         if (!_zonePlayers.TryGetValue(message.Player, out var obj))
-            throw new Exception($"Zone \"{ZoneName}\" tried to remove player it did not have.");
+            return;
 
         // Don't send a torrent of messages to a disconnected socket.
         if (message.IsPlayerStillConnected) 

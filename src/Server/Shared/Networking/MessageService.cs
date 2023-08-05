@@ -160,7 +160,15 @@ namespace Imlight.Server.Shared.Networking
             
             return response.Character;
         }
-        
+
+        protected override void PreRestart(Exception reason, object message)
+        {
+            Log.Error("MessageService {ServiceName} restarting due to {Reason}", 
+                Log.Args(GetType().Name, reason.Message));
+            
+            base.PreRestart(reason, message);
+        }
+
         [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_QUERYMESSAGESERVICEIDENTITY))]
         public void ReceiveMessageServiceIdentify(SERVICE_101_PROTOCOL.MSG_QUERYMESSAGESERVICEIDENTITY message)
         {

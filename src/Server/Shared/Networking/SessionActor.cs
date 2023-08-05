@@ -237,6 +237,14 @@ namespace Imlight.Server.Shared.Networking
             base.PreStart();
         }
 
+        protected override void PreRestart(Exception reason, object message)
+        {
+            Log.Error("{ActorName} {id} restarting due to {Reason}", 
+                Log.Args(nameof(SessionActor), SessionID, reason.Message));
+            
+            base.PreRestart(reason, message);
+        }
+
         protected override void Unhandled(object message)
         {
             // Bump this up to warning on release builds.
