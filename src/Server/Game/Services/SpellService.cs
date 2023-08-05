@@ -1,9 +1,4 @@
-﻿/* Copyright (C) Revive101 Development Team - All Rights Reserved
- * Unauthorized copying of this file, via any medium is strictly prohibited
- * Proprietary and confidential.
- */
-
-using Akka.Actor;
+﻿using Akka.Actor;
 using Imlight.Common.Utilities;
 using Imlight.Server.Shared.Networking;
 using System;
