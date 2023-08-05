@@ -104,65 +104,6 @@ namespace Imlight.Server.Game.Services
                 Log.Information("Player unequipped an item");
                 for(int i = 0; i < 10; i++)
                 {
-                    Log.Logger.Warning($"Could not parse slotName {message.SlotName}");
-                    return;
-                }
-
-                Log.Logger.Debug($"Parsed slotname '{message.SlotName}' to {(uint)slot}");
-
-                if (!ItemInInventory(message.ItemID))
-                {
-                    Log.Logger.Debug($"Player does not have the item in the inventory!");
-                    return;
-                }
-                Log.Logger.Debug($"Player has the item in the inventory");
-
-                var serializer = new CoreObjectSerializer()
-                    .WithSerializerFlags(SerializerFlags.None)
-                    .WithPropertyFlags((PropertyFlags)1);
-
-                var itemObj = GetItemCoreObject(message.ItemID);
-                var itemTemplate = (WizItemTemplate)CoreObjectFactory.GetCoreTemplate(itemObj.m_templateID);
-
-                var equippedItemInfo = new WizardEquippedItemInfo()
-                {
-                    m_itemID = (uint)itemObj.m_templateID, //!! Must be templateID !!
-                    m_pattern = (FiveBitByte)itemTemplate.m_numPatterns,
-                    m_baseColor = (FiveBitByte)itemTemplate.m_numPrimaryColors,
-                    m_trimColor = (FiveBitByte)itemTemplate.m_numSecondaryColors,
-                };
-
-                var currentEquippedItem = equipmentBehavior.m_slotList[(int)slot].m_itemID;
-                Log.Logger.Debug($"Current equipped item [{currentEquippedItem.Value}]");
-
-                // Change the equipped item for the CreationMenu
-                creationEquipment.RemoveAll(item => item.m_itemID == itemObj.m_templateID);
-                creationEquipment.Add(equippedItemInfo);
-
-                // EquipmentBehavior
-                // itemList
-                equipmentBehavior.m_itemList.RemoveAll(item => item.m_globalID == currentEquippedItem);
-                equipmentBehavior.m_itemList.RemoveAll(i => i.m_globalID != itemObj.m_globalID);
-                equipmentBehavior.m_itemList.Add(itemObj);
-
-                // publicItemList
-                equipmentBehavior.m_publicItemList.RemoveAll(item => item.m_itemID == itemObj.m_templateID);
-                equipmentBehavior.m_publicItemList.RemoveAll(i => i.m_itemID != itemObj.m_globalID);
-                equipmentBehavior.m_publicItemList.Add(new EquippedItemInfo() { m_itemID = (uint)itemObj.m_templateID });
-
-
-                // slotList
-                equipmentBehavior.m_slotList[(int)slot].m_itemID = (GID)message.ItemID;
-
-                if (currentEquippedItem != 0)
-                {
-                    SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPITEM()
-                    {
-                        IsEquip = 0,
-                        ItemID = (ulong)currentEquippedItem,
-                        SlotName = message.SlotName
-                    });
-
                     TellOtherServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
                     {
                         Selfless = false,
@@ -174,23 +115,6 @@ namespace Imlight.Server.Game.Services
                         }
                     });
                 }
-                TellOtherServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
-                {
-                    Selfless = false,
-                    Sender = SessionActor.ActorRef,
-                    Message = new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM()
-                    {
-                        GlobalID = characterObject.m_globalID,
-                        SerializedInfo = serializer.Serialize(equippedItemInfo)
-                    }
-                });
-
-                SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPITEM()
-                {
-                    IsEquip = 1,
-                    ItemID = message.ItemID,
-                    SlotName = message.SlotName,
-                });
             }
         }
 
@@ -261,36 +185,5 @@ namespace Imlight.Server.Game.Services
             });
         }
         #endregion
-
-        private MSG_CHARACTER GetActiveCoreObject()
-        {
-            var msg = new MSG_QUERYACTIVECHARACTER();
-            var response = AskOtherService<MSG_CHARACTER>(msg);
-
-            return response;
-        }
-
-        private bool ItemInInventory(ulong itemId)
-        {
-            var inventoryBehavior = GetActiveCoreObject().Character.inventoryBehaviorCache;
-            var invItemList = inventoryBehavior.m_itemList.Any(item => item.m_globalID == itemId);
-            return invItemList;
-        }
-
-        private uint GetItemSlot(ulong globalId)
-        {
-            var coreObject = GetActiveCoreObject();
-            var equipmentBehavior = coreObject.Character.equipmentBehaviorCache;
-
-            var itemSlot = equipmentBehavior.m_slotList.First(slot => slot.m_itemID == globalId).m_itemSlotNameID;
-            Log.Logger.Debug($"ItemSlot: {itemSlot} of ID {globalId}");
-            return itemSlot;
-        }
-
-        public CoreObject GetItemCoreObject(ulong globalId)
-        {
-            var inventoryBehavior = GetActiveCoreObject().Character.inventoryBehaviorCache;
-            return inventoryBehavior.m_itemList.First(x => x.m_globalID == globalId);
-        }
     }
 }
