@@ -21,10 +21,6 @@ using Akka.Util.Internal;
 using Imlight.Common.Serializable;
 using Imlight.Server.Database.Records.Character;
 using static Imlight.Server.Shared.Packets.CHARACTER_103_PROTOCOL;
-using Akka.Routing;
-using System.Net.Http;
-using System.Net;
-using System.IO;
 
 namespace Imlight.Server.Game.Services
 {
@@ -194,30 +190,6 @@ namespace Imlight.Server.Game.Services
                     ItemID = message.ItemID,
                     SlotName = message.SlotName,
                 });
-
-                foreach (SpeedEffectInfo effect in itemTemplate.m_equipEffects)
-                {
-                    for (int i = 0; i < 28; i++)
-                    {
-                        for(int j = 0; j < 4; j++)
-                        {
-                            var effectSerializer = new CoreObjectSerializer()
-                            .WithSerializerFlags((SerializerFlags)(j << 1))
-                            .WithPropertyFlags((PropertyFlags)(i << 1));
-
-                            var serialized = serializer.Serialize(effect);
-                            Log.Logger.Debug($"Name: {effect.m_effectName}  Multiplier: {effect.m_speedMultiplier}");
-                            Log.Logger.Debug($"{Convert.ToHexString(serialized)}");
-
-
-                            SendToSocket(new GAME_5_PROTOCOL.MSG_ADDEFFECT()
-                            {
-                                GameObjectID = characterObject.m_globalID,
-                                EffectData = serialized
-                            });
-                        }
-                    }
-                }
             }
         }
 
