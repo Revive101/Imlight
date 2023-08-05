@@ -112,6 +112,10 @@ public class WizardZonePath : ReceiveProtocolDispatcher
 
         SpawnAllCreatures(spawnObject);
 
+        // If the spawn time is 0, then we don't need to spawn creatures on an interval.
+        if (spawnObject.m_spawnTime <= 0)
+            return;
+
         var hasRun = false;
         while (!_cancelToken.IsCancellationRequested)
         {
