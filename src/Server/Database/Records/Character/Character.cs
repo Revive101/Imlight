@@ -4,16 +4,13 @@
  */
 
 using System;
-using System.Linq;
-using System.Globalization;
 using System.Collections.Generic;
 using WizUnraveler.ObjectProperty;
 using Imlight.Common.Utilities;
 using Imlight.Server.Database.Records.Character;
 using SharpDX;
 using static WizUnraveler.Cache.TypeCache;
-using Newtonsoft.Json;
-
+using System.Globalization;
 
 namespace Imlight.Server.Database
 {
@@ -29,10 +26,6 @@ namespace Imlight.Server.Database
         public string nextLocation;
         public string LastGameServerIp = "";
         public ushort LastGameServerPort;
-
-        // Cached Behaviors
-        public ClientWizEquipmentBehavior equipmentBehaviorCache;
-        public ClientWizInventoryBehavior inventoryBehaviorCache;
 
         public ulong Id 
         { 
@@ -119,6 +112,29 @@ namespace Imlight.Server.Database
         private void SetWizClientBehaviors(ref WizClientObject clientObject)
         {
             // =========================================================
+            // EQUIPMENT
+            // =========================================================
+            if (CoreObjectFactory.FindBehaviorInstance<ClientWizEquipmentBehavior>(clientObject, out var equipmentBehavior))
+            {
+                var slotList = new List<EquippedSlotInfo>();
+                foreach (var slot in (EquipmentSlot[])Enum.GetValues(typeof(EquipmentSlot)))
+                {
+                    slotList.Add(new EquippedSlotInfo()
+                    {
+                        m_itemID = (GID)0,
+                        m_itemSlotNameID = (uint)slot
+                    });
+                }
+
+                equipmentBehavior.m_publicItemList = CreationData.m_equipmentInfoList?.m_infoList;
+                equipmentBehavior.m_equipmentSets = new List<EquipmentSet>();
+                equipmentBehavior.m_slotList = slotList;
+                equipmentBehavior.m_itemList = new List<CoreObject>();
+            }
+            else
+                throw new Exception("Behavior ClientWizEquipmentBehavior not found!");
+
+            // =========================================================
             // PLAYER NAME
             // =========================================================
             if (CoreObjectFactory.FindBehaviorInstance<ClientWizPlayerNameBehavior>(clientObject, out var nameBehavior))
@@ -131,37 +147,6 @@ namespace Imlight.Server.Database
                 throw new Exception("Behavior ClientWizPlayerNameBehavior not found!");
 
             // =========================================================
-            // EQUIPMENT
-            // =========================================================
-            if (CoreObjectFactory.FindBehaviorInstance<ClientWizEquipmentBehavior>(clientObject, out var equipmentBehavior))
-            {
-                Log.Logger.Information("Found ClientWizEquipmentBehavior...");
-
-                var slotList = new List<EquippedSlotInfo>();
-                for (int i = 0; i < Enum.GetValues(typeof(EquipmentSlot)).Length; i++)
-                {
-                    slotList.Add(new EquippedSlotInfo()
-                    {
-                        m_itemID = (GID)0,
-                        m_itemSlotNameID = (uint)i
-                    });
-                }
-
-                var equipmentBehaviorNew = new ClientWizEquipmentBehavior()
-                {
-                    m_publicItemList = CreationData.m_equipmentInfoList?.m_infoList,
-                    m_equipmentSets = new List<EquipmentSet>(),
-                    m_slotList = slotList,
-                    m_itemList = new List<CoreObject>()
-                };
-
-                equipmentBehaviorCache = equipmentBehaviorNew;
-                equipmentBehavior = equipmentBehaviorNew;
-            }
-            else
-                throw new Exception("Behavior ClientWizEquipmentBehavior not found!");
-
-            // =========================================================
             // INVENTORY
             // =========================================================
             if (CoreObjectFactory.FindBehaviorInstance<ClientWizInventoryBehavior>(clientObject, out var inventoryBehavior))
@@ -170,25 +155,24 @@ namespace Imlight.Server.Database
                 inventoryBehavior.m_numJewelsAllowed = 100;
                 inventoryBehavior.m_itemList = new List<CoreObject>();
 
+
                 new List<ulong>() { 4740, 4705, 5030, 39068, 1363076, 1475149,
                     1472644, 1317133, 1317126, 1317234, 1359455,
-                    1392077, 1352341, 1540397, 653087, 87241,  }.ForEach(templateId =>
+                    1392077, 1352341, 87158, 87159, 87160, 1540397 }.ForEach(templateId =>
+                {
+                    var template = CoreObjectFactory.GetCoreTemplate(templateId);
+                    var coreObject = template switch
                     {
-                        CoreTemplate template = CoreObjectFactory.GetCoreTemplate(templateId);
+                        ItemTemplate => new WizClientObjectItem(),
+                        _ => new ClientObject()
+                    };
 
-                        var coreObject = template switch
-                        {
-                            ItemTemplate => new WizClientObjectItem(),
-                            _ => new ClientObject()
-                        };
+                    coreObject.m_globalID = RandomGen.GenerateGUID();
+                    coreObject.m_templateID = (GID)templateId;
 
-                        coreObject.m_globalID = RandomGen.GenerateGUID();
-                        coreObject.m_templateID = (GID)templateId;
 
-                        inventoryBehavior.m_itemList.Add(coreObject);
-                    });
-
-                inventoryBehaviorCache = inventoryBehavior;
+                    inventoryBehavior.m_itemList.Add(coreObject);
+                });
             }
             else
                 throw new Exception("Behavior ClientWizInventoryBehavior not found!");
