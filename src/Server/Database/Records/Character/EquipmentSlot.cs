@@ -11,12 +11,11 @@ namespace Imlight.Server.Database.Records.Character
         Robe,
         Shoes,
         Weapon,
-        Athame,
+        Anthem,
         Amulet,
         Ring,
         Pet,
         Mount,
-        Deck,
-        Elixir
+        Deck
     }
 }
