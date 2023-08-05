@@ -78,7 +78,7 @@ namespace Imlight.Server.Game.Services
                 equipmentBehavior.m_publicItemList.RemoveAll(item => item.m_itemID == message.ItemID);
                 equipmentBehavior.m_slotList[(int)GetItemSlot(message.ItemID)].m_itemID = (GID)0;
 
-                SendToSessionServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
+                TellOtherServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
                 {
                     Selfless = false,
                     Sender = SessionActor.ActorRef,
@@ -161,7 +161,7 @@ namespace Imlight.Server.Game.Services
                         SlotName = message.SlotName
                     });
 
-                    SendToSessionServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
+                    TellOtherServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
                     {
                         Selfless = false,
                         Sender = SessionActor.ActorRef,
@@ -173,7 +173,7 @@ namespace Imlight.Server.Game.Services
                     });
                 }
 
-                SendToSessionServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
+                TellOtherServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
                 {
                     Selfless = false,
                     Sender = SessionActor.ActorRef,
@@ -293,7 +293,7 @@ namespace Imlight.Server.Game.Services
         private MSG_CHARACTER GetActiveCoreObject()
         {
             var msg = new MSG_QUERYACTIVECHARACTER();
-            var response = AskSessionServices<MSG_CHARACTER>(msg);
+            var response = AskOtherService<MSG_CHARACTER>(msg);
 
             return response;
         }
