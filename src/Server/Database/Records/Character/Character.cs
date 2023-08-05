@@ -17,7 +17,7 @@ namespace Imlight.Server.Database
     public class Character
     {
         private const int    STARTING_LEVEL = 15;
-        private const string STARTING_LOCATION = "MooShu/MS_Hub";
+        private const string STARTING_LOCATION = "WizardCity/WC_Hub";
         private const int    STARTING_BASE_MANA = 15;
         private const int    STARTING_BASE_HEALTH = 500;
         private const int    STARTING_BASE_GOLD = 1000000;
