@@ -16,12 +16,15 @@ namespace Imlight.Server.Shared.Networking
     public abstract class Server : ReceiveProtocolDispatcher
     {
         // TODO: this sucks here pls move
-        public const ushort PLAYER_LIMIT = 10;
+        public const ushort PLAYER_LIMIT = 25;
 
         public string Name { get; }
         public string Ip { get; }
         public int Port { get; }
 
+        /// <summary>
+        /// The list of active sessions. A session is only considered active if it has been authenticated.
+        /// </summary>
         protected readonly ObservableHashSet<SessionActor> ActiveSessions;
 
         private readonly IActorRef _actorFactoryRef;
@@ -68,13 +71,13 @@ namespace Imlight.Server.Shared.Networking
             // Create a new child actor, which represents the active socket connection.
             var id = GetNewUniqueId();
             var sessionProps = SessionActor.Props(message.Socket, id, Context.Self);
-            var actor = Context.ActorOf(sessionProps, $"SessionActor.{id}");
+            Context.ActorOf(sessionProps, $"SessionActor.{id}");
 
             // Log
-            Log.Logger.Debug($"New actor created under {Context.Self.Path}: SessionActor.{id}");
-            Log.Logger.Information($"{this.GetType()} new connection " +
-                                   $"from {message.Socket.RemoteEndPoint}, " +
-                                   $"given session ID [{id}]");
+            Log.Verbose("New actor created under {Path}: SessionActor.{Id}",
+                Log.Args(Context.Self.Path, id));
+            Log.Information("{Type} new connection from {RemoteEndPoint} given session ID {Id}",
+                Log.Args(GetType(), message.Socket.RemoteEndPoint?.ToString(), id));
         }
 
         /// <summary>
@@ -84,17 +87,18 @@ namespace Imlight.Server.Shared.Networking
         [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET))]
         public virtual void ReceiveDeallocateSocket(SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET message)
         {
-            Log.Logger.Information($"{Name}.{Port} connection dropped from {message.Ip} ID: {message.Id}");
-            
-            foreach (var session in ActiveSessions.ToList())
-            {
-                if (session.SessionID != message.Id) continue;
+            Log.Information("{Name}.{Port} connection dropped from {Ip} ID: {Id}",
+                Log.Args(Name, Port, message.Ip, message.Id));
 
+            foreach (var session in ActiveSessions.ToList()
+                         .Where(session => session.SessionID == message.Id))
+            {
                 ActiveSessions.Remove(session);
                 return;
             }
-            
-            Log.Logger.Error($"{Name}.{Port} Could not find active session with ID [{message.Id}]");
+
+            Log.Warning("{Name}.{Port} Could not find active session with ID {Id}",
+                Log.Args(Name, Port, message.Id));
         }
 
         /// <summary>
@@ -129,6 +133,24 @@ namespace Imlight.Server.Shared.Networking
             
             Sender.Tell(msg);
         }
+        
+        protected override SupervisorStrategy SupervisorStrategy()
+        {
+            // There is no attempting to stabilize the connection server side. The Wizard101 client will attempt to
+            // reconnect on any given failure. This is a good thing, as it allows us to simply stop the session actor
+            // and let the client handle the rest.
+            return new OneForOneStrategy(
+                maxNrOfRetries: 1,
+                withinTimeRange: TimeSpan.FromSeconds(30),
+                localOnlyDecider: ex =>
+                {
+                    return ex switch
+                    {
+                        _ => Directive.Stop
+                    };
+                }
+            );
+        }
 
         protected virtual ushort GetNewUniqueId()
         {
@@ -140,7 +162,7 @@ namespace Imlight.Server.Shared.Networking
             {
                 newId = (ushort)random.Next(ushort.MaxValue);
 
-                if (!ActiveSessions.Any(s => s.SessionID == newId))
+                if (ActiveSessions.All(s => s.SessionID != newId))
                 {
                     isUniqueId = true;
                 }
@@ -155,7 +177,8 @@ namespace Imlight.Server.Shared.Networking
             var tcpProps = TcpListenerActor.Props(Name, Port, Context.Self);
             Context.ActorOf(tcpProps, actorName);
             
-            Log.Logger.Debug($"New actor created under {Context.Self.Path}: {actorName}");
+            Log.Logger.Verbose("New actor created under {Path}: {ActorName}",
+                Context.Self.Path, actorName);
         }
 
         private IActorRef CreateActorFactory()
@@ -164,7 +187,8 @@ namespace Imlight.Server.Shared.Networking
             
             var actorName = $"{Name}.ActorFactory";
             
-            Log.Logger.Debug($"New actor created under {Context.Self.Path}: {actorName}");
+            Log.Logger.Verbose("New actor created under {Path}: {ActorName}",
+                Context.Self.Path, actorName);
             
             return Context.ActorOf(_factoryProps, actorName);
         }

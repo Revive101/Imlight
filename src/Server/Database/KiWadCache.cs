@@ -23,26 +23,14 @@ namespace Imlight.Server.Database
     }
 
     /// <summary>
-    /// Abstractions for Imlight's local cache. It's safe it assume that the FileStorage of this cache will only
-    /// ever contain KIWADs.
+    /// Abstractions for Imlight's local KIWAD cache.
     /// </summary>
-    public static class LocalCache
+    public static class KiWadCache
     {
+        // TODO: Make this configurable.
         private static readonly string _path = Path.Combine(
                 Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
                 ?? string.Empty, $"cache");
-
-        /// <summary>
-        /// Get or create a new collection in the cache database.
-        /// </summary>
-        /// <param name="collectionName"></param>
-        public static ILiteCollection<T> GetCachedCollection<T>(string collectionName)
-        {
-            using var db = new LiteDatabase(_path);
-            var col = db.GetCollection<T>(collectionName);
-
-            return col;
-        }
 
         /// <summary>
         /// Gets a KIWAD cached in the FileStorage.
@@ -77,7 +65,6 @@ namespace Imlight.Server.Database
         /// Caches a file into the local database.
         /// </summary>
         /// <param name="fileName"></param>
-        /// <param name="contentStream"></param>
         /// <param name="wad"></param>
         public static void CacheWad(string fileName, Wad wad)
         {
@@ -90,12 +77,12 @@ namespace Imlight.Server.Database
                 .FirstOrDefault();
             if (file is not null)
             {
-                Log.Logger.Warning($"LocalCache already contains a file definition for \"{fileName}\"! " +
-                                   $"File will be overwritten.");
+                Log.Warning("LocalCache already contains a file definition for {FileName}! " +
+                                   $"File will be overwritten.", Log.Args(fileName));
             }
 
             // Create a new FileDefinition. Create a new byte array from the content stream.
-            var wadCrc = GetWadCRC(wad);
+            var wadCrc = GetWadCrc(wad);
             var def = new FileDefinition
             {
                 Filename = fileName,
@@ -118,10 +105,10 @@ namespace Imlight.Server.Database
             if (file is not null) 
                 return;
             
-            Log.Logger.Warning($"LocalCache tried to delete a file [{fileName}] it did not contain!");
+            Log.Warning("LocalCache tried to delete a file {FileName} it did not contain!", Log.Args(fileName));
         }
 
-        private static uint GetWadCRC(Wad wad)
+        private static uint GetWadCrc(Wad wad)
         {
             // TEST: Marleybone-MB_Station-MB_Station_Hub.wad has a CRC32 hash of 2084731962.
             //                                           The header CRC32 hash is 3169958109.

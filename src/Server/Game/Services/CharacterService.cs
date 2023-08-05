@@ -19,9 +19,7 @@ namespace Imlight.Server.Game.Services
         private Character _activeCharacter;
         private TypeCache.CoreObject _activeCharacterObject;
         
-        public CharacterService(SessionActor sessionActor) : base(sessionActor)
-        {
-        }
+        public CharacterService(SessionActor sessionActor) : base(sessionActor) { }
         
         protected static Props Props(SessionActor parentActor)
         {
@@ -54,11 +52,9 @@ namespace Imlight.Server.Game.Services
         private void ReceiveClientMove(GAME_5_PROTOCOL.MSG_CLIENTMOVE message)
         {
             if (_activeCharacterObject is null)
-            {
-                Log.Logger.Error($"[{nameof(CharacterService)}]: Character was null!");
-                return;
-            }
-            
+                throw new ServiceRetryException($"Tried to do client move but could not grab active character " +
+                                                $"object");
+
             // Normalize differentiating message values
             var x = unchecked((short)message.LocationX) * 4.0f;
             var y = unchecked((short)message.LocationY) * 4.0f;
@@ -67,6 +63,17 @@ namespace Imlight.Server.Game.Services
             
             _activeCharacterObject.m_location = new Vector3(x, y, z);
             _activeCharacterObject.m_orientation = new Vector3(0, 0, direction);
+        }
+
+        [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK))]
+        private void ReceiveZoneTransferAck(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK message)
+        {
+            if (_activeCharacterObject is null)
+                throw new ServiceRetryException($"Tried to do client move but could not grab active character " +
+                                                $"object");
+            
+            var character = _activeCharacter;
+            character.CreationData.m_location = character.nextZone;
         }
 
         // Experimental - Sets the Crowns to 12,345,678
@@ -93,6 +100,5 @@ namespace Imlight.Server.Game.Services
                 TournamentNameID = message.TournamentNameID,
             });
         }
-
     }
 }

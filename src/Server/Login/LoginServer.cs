@@ -26,9 +26,8 @@ namespace Imlight.Server.Login
                            : base(serverName, serverPort, LoginServiceFactory.Props())
         {
             this._gamePoolServer = CreateGameServerPool();
-            Log.Logger.Information($"Login server created with " +
-                                   $"name {serverName} " +
-                                   $"under port {serverPort}.");
+            Log.Information("Login server created with name {Name} under port {Port}.", 
+                Log.Args(serverName, serverPort));
         }
         
         public static Props Props(string serverName = DEFAULT_LOGIN_SERVER_NAME,
@@ -78,8 +77,8 @@ namespace Imlight.Server.Login
         {
             var poolProps = GameServerPool.Props();
 
-            Log.Logger.Debug($"New actor created under {Context.Self.Path}:" +
-                             $" {this.Name}.{GAME_SERVER_POOL_NAME}");
+            Log.Verbose("New actor created under {Path}: {Name}.{PoolName}", 
+                Log.Args(Context.Self.Path, Name, GAME_SERVER_POOL_NAME));
             
             return Context.ActorOf(poolProps, $"{Name}.{GAME_SERVER_POOL_NAME}");
         }

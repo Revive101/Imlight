@@ -10,8 +10,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="config\akka.conf">
+    <Content Include="Config\akka.conf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <None Remove="Content\serverdata" />
+    <Content Include="Content\serverdata">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
 
@@ -25,7 +29,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Common\Imlight.Common.csproj" />
     <ProjectReference Include="..\Server\Imlight.Server.csproj" />
-    <ProjectReference Include="D:\Phill030.de\WizUnraveler\src\WizUnraveler\WizUnraveler.csproj" />
   </ItemGroup>
 
 </Project>

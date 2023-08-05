@@ -41,8 +41,7 @@ namespace Imlight.Server.Login.Services
             var errorCode = 0;
             if (charData is null)
             {
-                Log.Logger.Error("Could not successfully deserialize WizardCharacterCreationData!");
-                errorCode = 1;
+                throw new ActorKilledException("Could not successfully deserialize WizardCharacterCreationData!");
             }
 
             // Add the new character to the player's account.

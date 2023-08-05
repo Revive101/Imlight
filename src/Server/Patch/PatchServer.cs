@@ -57,9 +57,7 @@ namespace Imlight.Server.Patch
             if (Instance is not null)
                 throw new Exception("Attempted to create more than one patch server! This is not possible!");
 
-            Log.Logger.Information($"Patch server created with " +
-                                   $"name {name} " +
-                                   $"under port {port}.");
+            Log.Information("Patch server created with name {name} under port {port}.", Log.Args(name, port));
             Instance = this.Self;
         }
 
@@ -82,7 +80,8 @@ namespace Imlight.Server.Patch
             _diagnosticStopwatch.Restart();
             EndpointReached = GetPatchServerStatus();
             _diagnosticStopwatch.Stop();
-            Log.Logger.Debug($"Patch server status check took {_diagnosticStopwatch.ElapsedMilliseconds} ms.");
+            Log.Debug("Patch server status check took {em} ms.", 
+                Log.Args(_diagnosticStopwatch.ElapsedMilliseconds));
 
             // Only perform the following if the patch server is available.
             if (!EndpointReached) return;
@@ -91,7 +90,8 @@ namespace Imlight.Server.Patch
             _diagnosticStopwatch.Restart();
             SetLatestFileList();
             _diagnosticStopwatch.Stop();
-            Log.Logger.Debug($"Downloaded and parsed LatestFileList in {_diagnosticStopwatch.ElapsedMilliseconds} ms.");
+            Log.Debug("Downloaded and parsed LatestFileList in {em} ms.", 
+                Log.Args(_diagnosticStopwatch.ElapsedMilliseconds));
 
             // Let whomever sender know that we're finished initializing!
             Sender.Tell(new SERVER_100_PROTOCOL.MSG_INITIALIZE_COMPLETE());
@@ -167,11 +167,9 @@ namespace Imlight.Server.Patch
                 response.EnsureSuccessStatusCode();
 
                 var totalBytes = response.Content.Headers.ContentLength;
-                //var progressBar = new ConsoleProgressBar();
 
-                Log.Logger.Information($"Attempting to download file from patch server endpoint at " +
-                                       $"url {url}. " +
-                                       $"Content size: {totalBytes}");
+                Log.Information("Attempting to download file from patch server endpoint " +
+                                       "at url {Url}. Content size: {TotalBytes}", Log.Args(url, totalBytes));
 
                 // Download the file from web using the HttpClient.
                 await using var contentStream = await response.Content.ReadAsStreamAsync();
@@ -180,23 +178,20 @@ namespace Imlight.Server.Patch
                 var buffer = new byte[DOWNLOAD_BUFFER_SIZE];
                 int bytesRead;
 
-                while ((bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                while ((bytesRead = await contentStream.ReadAsync(buffer)) > 0)
                 {
-                    await memoryStream.WriteAsync(buffer, 0, bytesRead);
-
-                    // Update the progress bar.
-                    // TODO: I want a progress bar here, but it currently doesn't play nice with Serilog.
-                    //var downloadedPercent = (double)(bytesDownloaded / totalBytes);
-                    //progressBar.Report(downloadedPercent * 1);
+                    await memoryStream.WriteAsync(buffer.AsMemory(0, bytesRead));
                 }
 
-                Log.Logger.Information($"File successfully downloaded from {url}. Content size: {memoryStream.Length}");
+                Log.Information("File successfully downloaded from {Url}. Content size: {Size}", 
+                    Log.Args(url, memoryStream.Length));
 
                 return memoryStream;
             }
             catch (Exception webException)
             {
-                Log.Logger.Error($"Error while downloading file from patch server endpoint: {webException.Message}");
+                Log.Error("Error while downloading file from patch server endpoint: {Ex}",
+                    Log.Args(webException.Message));
                 return null;
             }
         }
@@ -206,15 +201,16 @@ namespace Imlight.Server.Patch
             var workingUrl = $"{PATCH_SERVER_URL}V_r{REVISION}.Wizard_1_510";
 
             // Check to see if the patch server URL is available at all.
-            Log.Logger.Information($"Checking patch server at URL {workingUrl}. Timeout: {PATCH_SERVER_TIMEOUT} s.");
+            Log.Information("Checking patch server at URL {Url}. Timeout: {Timeout} s", 
+                 Log.Args( workingUrl, PATCH_SERVER_TIMEOUT));
             if (!GetServerUrlStatus(workingUrl))
             {
-                Log.Logger.Error($"Patch server at URL {workingUrl} is not available.");
+                Log.Error("Patch server at URL {Url} is not available", Log.Args(workingUrl));
                 return false;
             }
 
             _patchServerWorkingUrl = workingUrl;
-            Log.Logger.Information($"Patch server at URL {workingUrl} found and set.");
+            Log.Information("Patch server at URL {Url} found and set", Log.Args(workingUrl));
 
             return true;
         }
@@ -238,8 +234,8 @@ namespace Imlight.Server.Patch
             }
             catch (Exception ex)
             {
-                Log.Logger.Error($"Error while checking patch server at URL {url}. " +
-                                 $"Exception: {ex.Message}");
+                Log.Error("Error while checking patch server at URL {Url}. Exception: {Ex}", 
+                    Log.Args(url, ex.Message));
                 return false;
             }
         }
@@ -252,7 +248,7 @@ namespace Imlight.Server.Patch
             var latestXml = DownloadUtilityStream(LATEST_FILE_LIST_NAME_XML).Result;
             if (latestXml is null)
             {
-                Log.Logger.Error($"Had trouble downloading {LATEST_FILE_LIST_NAME_XML}.");
+                Log.Error("Had trouble downloading {Name}", Log.Args(LATEST_FILE_LIST_NAME_XML));
             }
             else
             {
@@ -262,7 +258,7 @@ namespace Imlight.Server.Patch
                 //latestXml.Seek(0, SeekOrigin.Begin);
                 if (!ParseLatestFileList(latestXml, out var latestXmlObj))
                 {
-                    Log.Logger.Error($"Could not successfully parse {LATEST_FILE_LIST_NAME_XML}.");
+                    Log.Error("Could not successfully parse {Name}", Log.Args(LATEST_FILE_LIST_NAME_XML));
                 }
                 else
                 {
@@ -275,7 +271,7 @@ namespace Imlight.Server.Patch
             var latestBin = DownloadUtilityStream(LATEST_FILE_LIST_NAME_BIN).Result;
             if (latestBin is null)
             {
-                Log.Logger.Error($"Had trouble downloading the {LATEST_FILE_LIST_NAME_BIN}.");
+                Log.Error("Had trouble downloading the {Name}", Log.Args(LATEST_FILE_LIST_NAME_BIN));
             }
             else
             {
@@ -307,7 +303,7 @@ namespace Imlight.Server.Patch
                 .FirstOrDefault();
             if (rootNode == null)
             {
-                Log.Logger.Error("XmlDocument does not contain a LatestFileList node.");
+                Log.Error("XmlDocument does not contain a LatestFileList node.");
                 return false;
             }
 
@@ -322,7 +318,7 @@ namespace Imlight.Server.Patch
             if (baseNode != null) 
                 return ParseChildNodes(baseNode, latestFileList);
             
-            Log.Logger.Error("XmlDocument does not contain a Base node.");
+            Log.Error("XmlDocument does not contain a Base node.");
             return false;
         }
 
@@ -351,7 +347,7 @@ namespace Imlight.Server.Patch
                     .FirstOrDefault();
             if (internalRecord == null)
             {
-                Log.Logger.Error("LatestFile xml node did not contain a child RECORD.");
+                Log.Error("LatestFile xml node did not contain a child RECORD.");
                 return null;
             }
             
@@ -383,7 +379,7 @@ namespace Imlight.Server.Patch
             }
             catch (Exception ex) 
             {
-                Log.Logger.Error($"Error parsing Stream to XmlDocument: {ex.Message}");
+                Log.Error("Error parsing Stream to XmlDocument: {Ex}", Log.Args(ex.Message));
                 return null;
             }
         }

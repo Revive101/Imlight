@@ -44,7 +44,7 @@ namespace Imlight.Server.Game.Services
                 SourceName = src,
                 Filter = 0
             };
-            SendToSessionServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
+            TellOtherServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
             {
                 Sender = SessionActor.ActorRef,
                 Message = msg,
@@ -68,7 +68,7 @@ namespace Imlight.Server.Game.Services
                 SourceName = src,
                 Filter = 0,
             };
-            SendToSessionServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
+            TellOtherServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
             {
                 Sender = SessionActor.ActorRef,
                 Message = msg,
@@ -85,7 +85,7 @@ namespace Imlight.Server.Game.Services
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CORE_EMOTE))]
         private void ReceiveCoreEmote(GAME_5_PROTOCOL.MSG_CORE_EMOTE message)
         {
-            SendToSessionServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
+            TellOtherServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
             {
                 Sender = SessionActor.ActorRef,
                 Message = message,
@@ -134,23 +134,8 @@ namespace Imlight.Server.Game.Services
 
             return HexStringToBytes(tail);
         }
-        
-        private TypeCache.CoreObject GetActiveCoreObject()
-        {
-            var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
-            var response = AskSessionServices<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
 
-            return response.CharacterObject;
-        }
-
-        private Character GetActiveCharacter()
-        {
-            var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
-            var response = AskSessionServices<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
-
-            return response.Character;
-        }
-
+        // TODO: Move this to a utility class.
         private static byte[] HexStringToBytes(string str)
         {
             str = str.Replace(" ", "");

@@ -6,14 +6,18 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Akka.Actor;
 using Imlight.Common.Utilities;
 using Imlight.Server.Database;
 using Imlight.Server.Shared.Packets;
+using SharpDX;
+using WizUnraveler.Cache;
 using WizUnraveler.Formats;
 using WizUnraveler.IO;
 using static WizUnraveler.Cache.TypeCache;
 using static WizUnraveler.ObjectProperty.ObjectSerializer;
+using static WizUnraveler.Secrets.ServerTypeCache;
 
 namespace Imlight.Server.Game.Zone;
 
@@ -28,6 +32,7 @@ public static class WizardZoneLoader
     private const string NodeDataFileName = "pathNodeData.bin";
     private const string VolumeDataFileName = "volumes.xml";
     private const string TriggerDataFileName = "triggers.xml";
+    private const string ResultCollectionName = "zone_triggers";
     private static readonly object LockObject = new();
 
     private static WizardZone _zone;
@@ -37,6 +42,8 @@ public static class WizardZoneLoader
     private static SpawnManager _spawnData;
     private static PathManager_PathTemplateList _pathData;
     private static PathManager_NodeTemplateList _nodeData;
+    private static WizZoneVolumes _zoneVolumes;
+    private static WizZoneTriggers _zoneTriggers;
 
     /// <summary>
     /// Loads the <see cref="WizardZone" /> data from the <see cref="ResourceManager" />.
@@ -54,9 +61,10 @@ public static class WizardZoneLoader
 
                 if (!ResourceManager.TryLoadFile(zone.ZoneName, out _wad))
                 {
-                    Log.Logger.Error($"Zone [{zone.ZoneName}] tried to load its own data, but none was " +
-                                     $"found in the {nameof(ResourceManager)}. This is fine, but the zone will not " +
-                                     $"contain any objects, mobs or volumes.");
+                    Log.Error("Zone {ZoneName} tried to load its own data, but none was " +
+                                     "found in the {Name}. We will continue, but the zone will not " +
+                                     "contain any objects, mobs or volumes.", 
+                        Log.Args(zone.ZoneName, nameof(ResourceManager)));
                     return;
                 }
 
@@ -64,13 +72,17 @@ public static class WizardZoneLoader
                 LoadSpawnData();
                 LoadPathData();
                 LoadNodeData();
+                LoadVolumeData();
+                LoadTriggerData();
                 CreateZoneGameObjects();
                 CreateZonePaths();
+                CreateZoneVolumes();
+                CreateZoneTriggers();
             }
             catch (Exception ex)
             {
-                Log.Logger.Warning($"Zone [{zone.ZoneName}] could not load resources for whatever " +
-                                   $"reason. EXCEPTION THROWN: {ex.Message}");
+                Log.Warning("Zone [{ZoneName}] could not load resources for whatever " +
+                                   "reason. Exception thrown: {Ex}", Log.Args(zone.ZoneName, ex));
             }
             finally
             {
@@ -87,8 +99,8 @@ public static class WizardZoneLoader
         var serializer = new FileSerializer();
         _zoneData = serializer.OpenClass<WizZoneData>(_wad, ZoneDataFileName);
         if (_zoneData is null)
-            Log.Logger.Error(
-                $"Zone {_zone.ZoneName} could not load {ZoneDataFileName} as it was missing or invalid.");
+            Log.Error("Zone {ZoneName} could not load {ZoneDataFileName} as it was missing or invalid.",
+                Log.Args(_zone.ZoneName, ZoneDataFileName));
     }
 
     /// <summary>
@@ -97,12 +109,11 @@ public static class WizardZoneLoader
     private static void LoadSpawnData()
     {
         var serializer = new FileSerializer()
-            .WithSerializerFlags(SerializerFlags.UseFlags | SerializerFlags.CompactLength |
-                                 SerializerFlags.StringEnums);
+            .WithSerializerFlags(SerializerFlags.UseFlags | SerializerFlags.CompactLength | SerializerFlags.StringEnums);
         _spawnData = serializer.OpenClass<SpawnManager>(_wad, SpawnDataFileName);
         if (_spawnData is null)
-            Log.Logger.Error(
-                $"Zone {_zone.ZoneName} could not load {SpawnDataFileName} as it was missing or invalid.");
+            Log.Error("Zone {Name} could not load {SpawnDataFileName} as it was missing or invalid.",
+                Log.Args(_zone.ZoneName, SpawnDataFileName));
     }
 
     /// <summary>
@@ -113,8 +124,9 @@ public static class WizardZoneLoader
         var serializer = new FileSerializer();
         _pathData = serializer.OpenClass<PathManager_PathTemplateList>(_wad, PathDataFileName);
         if (_pathData is null)
-            Log.Logger.Error(
-                $"Zone {_zone.ZoneName} could not load {PathDataFileName} as it was missing or invalid.");
+            Log.Error(
+                "Zone {Name} could not load {PathDataFileName} as it was missing or invalid.",
+                Log.Args(_zone.ZoneName, PathDataFileName));
     }
 
     /// <summary>
@@ -125,8 +137,35 @@ public static class WizardZoneLoader
         var serializer = new FileSerializer();
         _nodeData = serializer.OpenClass<PathManager_NodeTemplateList>(_wad, NodeDataFileName);
         if (_nodeData is null)
-            Log.Logger.Error(
-                $"Zone {_zone.ZoneName} could not load {NodeDataFileName} as it was missing or invalid.");
+            Log.Error(
+                "Zone {Name} could not load {NodeDataFileName} as it was missing or invalid.",
+                Log.Args(_zone.ZoneName, NodeDataFileName));
+    }
+
+    /// <summary>
+    /// Load the volume data from the KIWAD file.
+    /// </summary>
+    private static void LoadVolumeData()
+    {
+        var serializer = new FileSerializer();
+        _zoneVolumes = serializer.OpenClass<WizZoneVolumes>(_wad, VolumeDataFileName);
+        if (_zoneVolumes is null)
+            Log.Error(
+                "Zone {Name} could not load {VolumeDataFileName} as it was missing or invalid.",
+                Log.Args(_zone.ZoneName, VolumeDataFileName));
+    }
+    
+    /// <summary>
+    /// Load the trigger data from the KIWAD file.
+    /// </summary>
+    private static void LoadTriggerData()
+    {
+        var serializer = new FileSerializer();
+        _zoneTriggers = serializer.OpenClass<WizZoneTriggers>(_wad, TriggerDataFileName);
+        if (_zoneTriggers is null)
+            Log.Error(
+                "Zone {Name} could not load {TriggerDataFileName} as it was missing or invalid.",
+                Log.Args(_zone.ZoneName, TriggerDataFileName));
     }
 
     /// <summary>
@@ -167,6 +206,70 @@ public static class WizardZoneLoader
     }
 
     /// <summary>
+    /// Creates the volumes for the zone based on the loaded volume data.
+    /// </summary>
+    /// <exception cref="NullReferenceException"></exception>
+    private static void CreateZoneVolumes()
+    {
+        if (_zoneVolumes is null) throw new NullReferenceException(nameof(_zoneVolumes));
+        if (_zoneTriggers is null) throw new NullReferenceException(nameof(_zoneTriggers));
+        
+        foreach (var volume in _zoneVolumes.m_volumes)
+        {
+            var newObj = CoreObjectFactory.CreateObjectFromInfo(volume, volume.m_templateID);
+            if (newObj is null)
+                continue;
+            
+            // Set data for this CoreObject from the given volume data.
+            var loc = new Vector3(volume.m_locationX, volume.m_locationY, volume.m_locationZ);
+            newObj.m_location = loc;
+            // For some reason, the volume type has two `m_templateID` fields, but only the duplicate one is used.
+            newObj.m_templateID = volume.m_templateID; // I've never seen this templateID be anything but 1700.
+
+            // Write a message citing the details of this volume, and send a message to the zone.
+            var msg = new ZONE_102_PROTOCOL.MSG_ADDVOLUME
+            {
+                CoreObject = newObj,
+                Volume = volume,
+            };
+            _zoneActorRef.Tell(msg);
+        }
+    }
+
+    /// <summary>
+    /// Creates the triggers for the zone based on the loaded trigger data. Trigger result data is loaded from Imlight's
+    /// <see cref="ServerDataBroker"/>.
+    /// </summary>
+    private static void CreateZoneTriggers()
+    {
+        if (_zoneTriggers is null) throw new NullReferenceException(nameof(_zoneTriggers));
+        
+        var zoneName = _zoneData.m_zoneName;
+
+        foreach (var trigger in _zoneTriggers.m_triggers)
+        {
+            // Find this trigger's results in the server database.
+            var colName = SanitizeColName($"{ResultCollectionName}/{zoneName}/{trigger.m_triggerName}");
+            var col = ServerDataBroker.GetCollection<TypeCache.Result>(colName);
+
+            if (col.Any())
+            {
+                var resultList = new ResultList { m_results = new List<TypeCache.Result>() };
+                resultList.m_results = col.ToList();
+                trigger.m_results = resultList;
+            }
+            
+            // fixme: In the grand scheme, storing a trigger without any result data is wasted space. For now, the
+            // below code remains where it does for debugging purposes. In the way future, it should be added to the 
+            // conditional above.
+
+            // Write a message citing the details of this volume, and send a message to the zone.
+            var msg = new ZONE_102_PROTOCOL.MSG_ADDTRIGGER { Trigger = trigger };
+            _zoneActorRef.Tell(msg);
+        }
+    }
+
+    /// <summary>
     /// Retrieves a list of node objects for a given path.
     /// </summary>
     /// <param name="path">The path object template.</param>
@@ -180,8 +283,9 @@ public static class WizardZoneLoader
             if (node is not null)
                 nodeList.Add(node);
             else
-                Log.Logger.Warning($"Zone [{_zone.ZoneName}] contained a path [{path.m_name}] with a " +
-                                   $"node that could not be found. Node ID: [{id}]");
+                Log.Warning("Zone [{Name}] contained a path {PathName} with a node that could not be found. " +
+                            "Node ID: {Id}",
+                    Log.Args(_zone.ZoneName, path.m_name, id));
         }
 
         return nodeList;
@@ -207,15 +311,16 @@ public static class WizardZoneLoader
 
             // TEST: I'm not sure this will ever occur. Perhaps remove later?
             if (!AllObjectsContainSamePath(spawnList))
-                Log.Logger.Warning($"Zone [{_zone.ZoneName}] contains a SpawnObject [{spawnObject.m_name}] " +
-                                   $"that contains multiple objects, which spawn on different paths. Let Jooty know.");
+                Log.Warning("Zone {ZoneName} contains a SpawnObject {SoName} " +
+                                   "that contains multiple objects, which spawn on different paths. Let Jooty know.",
+                    Log.Args(_zone.ZoneName, spawnObject.m_name));
         }
 
         return creatureList;
     }
     
     /// <summary>
-    /// Checks to see if all creates in a <see cref="SpawnItem"/> contain the same path ID.
+    /// Checks to see if all creatures in a <see cref="SpawnItem"/> contain the same path ID.
     /// </summary>
     /// <param name="spawnList">The list of spawns.</param>
     /// <returns>True, if all the creatures are on the same path; false otherwise.</returns>
@@ -226,7 +331,7 @@ public static class WizardZoneLoader
     }
 
     /// <summary>
-    /// Clears any unmanaged memory and resources.
+    /// Clears any memory used so the next lock iteration may have a clean slate.
     /// </summary>
     private static void ClearUnmanagedMemory()
     {
@@ -238,5 +343,13 @@ public static class WizardZoneLoader
         _spawnData = null;
         _pathData = null;
         _nodeData = null;
+        _zoneVolumes = null;
+        _zoneTriggers = null;
+    }
+    
+    private static string SanitizeColName(string colName)
+    {
+        // Use regular expression to remove any character that isn't an alphabet character or an underscore.
+        return Regex.Replace(colName, @"[^a-zA-Z_]", "");
     }
 }

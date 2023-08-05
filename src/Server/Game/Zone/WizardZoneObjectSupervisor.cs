@@ -3,6 +3,8 @@
  * Proprietary and confidential.
  */
 
+using System;
+using System.Collections.Generic;
 using Akka.Actor;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
@@ -14,13 +16,14 @@ namespace Imlight.Server.Game.Zone;
 /// </summary>
 public class WizardZoneObjectSupervisor : ReceiveProtocolDispatcher
 {
-    // TODO: Implement supervisor strategy: if a path fails, remove all the mobs and restart the WizardZonePath.
-    private IActorRef _wizardZoneRef;
-    
+    private readonly IActorRef _wizardZoneRef;
+    private readonly List<IActorRef> _objects;
+
     // ctor
     public WizardZoneObjectSupervisor(IActorRef wizardZoneRef)
     {
         this._wizardZoneRef = wizardZoneRef;
+        this._objects = new List<IActorRef>();
     }
     
     // Akka.NET ctor
@@ -32,11 +35,49 @@ public class WizardZoneObjectSupervisor : ReceiveProtocolDispatcher
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDOBJECT))]
     private void ReceiveAddObject(ZONE_102_PROTOCOL.MSG_ADDOBJECT message)
     {
-        // Create the object as a child actor of this supervisor.
         var props = WizardZoneObject.Props(message.CoreObject, _wizardZoneRef);
+        CreateActorAndRespond(props);
+    }
+    
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPATH))]
+    private void ReceiveAddPath(ZONE_102_PROTOCOL.MSG_ADDPATH message)
+    {
+        var props = WizardZonePath.Props(message.Id, message.Name, message.Nodes, message.Creatures, _wizardZoneRef);
+        CreateActorAndRespond(props);
+    }
+    
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDVOLUME))]
+    private void ReceiveAddVolume(ZONE_102_PROTOCOL.MSG_ADDVOLUME message)
+    {
+        var props = WizardZoneVolume.Props(message.CoreObject, _wizardZoneRef, message.Volume);
+        CreateActorAndRespond(props);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDCREATURE))]
+    private void ReceiveAddCreature(ZONE_102_PROTOCOL.MSG_ADDCREATURE message)
+    {
+        // Creatures are not child actors of this supervisor, but instead are children of the path they belong to.
+        _objects.Add(message.ObjectIdentity);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST))]
+    private void ReceiveZoneObjectBroadcast(ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST message)
+    {
+        foreach (var obj in _objects)
+        {
+            foreach (var msg in message.Messages)
+            {
+                obj.Forward(msg);
+            }
+        }
+    }
+
+    private void CreateActorAndRespond(Props props)
+    {
         var actorRef = Context.ActorOf(props);
+        _objects.Add(actorRef);
         
-        // Formulate response. Don't worry about not giving the mobile id; the WizardZone handles that part.
+        // Respond to the sender with the actor reference we just created.
         var rsp = new ZONE_102_PROTOCOL.MSG_ADDOBJECTRSP { ActorRef = actorRef };
         Sender.Tell(rsp);
     }

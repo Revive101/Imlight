@@ -10,6 +10,7 @@ using WizUnraveler.DML;
 using Imlight.Server.Shared.Networking;
 using WizUnraveler.IO;
 using WizUnraveler.ObjectProperty;
+using WizUnraveler.Secrets;
 
 namespace Imlight.Server.Shared.Packets
 {
@@ -20,21 +21,22 @@ namespace Imlight.Server.Shared.Packets
         public int ProtocolVersion { get; } = 1;
         public string ProtocolDescription { get; } = "Internal Zone General Messages.";
         
-        public class MSG_QUERYZONE : IServerMessage
+        public class MSG_ZONETRANSFER : IServerMessage
         {
             public byte MessageOrder { get; } = 1;
             public byte ServiceID { get; } = 102;
             
             public string ZoneName;
+            public string Location;
+            public bool SendToClient = true;
         }
         
-        public class MSG_QUERYZONERSP : IServerMessage
+        public class MSG_ZONETRANSFERRSP : IServerMessage
         {
             public byte MessageOrder { get; } = 2;
             public byte ServiceID { get; } = 102;
 
-            public IActorRef ZoneActorRef;
-            public TypeCache.CoreObject[] ZoneObjects;
+            public IActorRef ZoneActorRef;  
             public uint DynamicZoneId;
             public uint ErrorCode;
         }
@@ -63,7 +65,13 @@ namespace Imlight.Server.Shared.Packets
             
             public IActorRef Player;
             public ulong GlobalId;
-            public bool IsZoneTransfer;
+            public bool IsPlayerStillConnected;
+        }
+        
+        public class MSG_REMOVEPLAYERRSP : IServerMessage
+        {
+            public byte MessageOrder { get; } = 5;
+            public byte ServiceID { get; } = 102;
         }
 
         public class MSG_ZONEBROADCAST : IServerMessage
@@ -104,7 +112,7 @@ namespace Imlight.Server.Shared.Packets
             public List<TypeCache.SpawnObject> Creatures;
         }
         
-        public class MSG_OBJECTDETAILS : IServerMessage
+        public class MSG_ADDCREATURE : IServerMessage
         {
             public byte MessageOrder { get; } = 9;
             public byte ServiceID { get; } = 102;
@@ -112,13 +120,49 @@ namespace Imlight.Server.Shared.Packets
             public IActorRef ObjectIdentity;
             public TypeCache.CoreObject CoreObject;
         }
-        
-        public class MSG_QUERYZONEOBJECT : IServerMessage
+
+        public class MSG_ADDVOLUME : IServerMessage
         {
-            public byte MessageOrder { get; } = 10;
+            public byte MessageOrder { get; } = 11;
             public byte ServiceID { get; } = 102;
 
-            public GID ObjectId;
+            public TypeCache.CoreObject CoreObject;
+            public ServerTypeCache.Volume Volume;
+        }
+        
+        public class MSG_ADDTRIGGER : IServerMessage
+        {
+            public byte MessageOrder { get; } = 12;
+            public byte ServiceID { get; } = 102;
+
+            public ServerTypeCache.Trigger Trigger;
+        }
+        
+        public class MSG_TRIGGER : IServerMessage
+        {
+            public byte MessageOrder { get; } = 13;
+            public byte ServiceID { get; } = 102;
+
+            public ByteString TriggerName;
+            public IActorRef Suspect;
+        }
+        
+        public class MSG_TRIGGERQUERY : IServerMessage
+        {
+            public byte MessageOrder { get; } = 14;
+            public byte ServiceID { get; } = 102;
+
+            public TypeCache.CoreObject CoreObject;
+            public IActorRef Suspect;
+        }
+
+        public class MSG_ZONEOBJECTBROADCAST : IServerMessage
+        {
+            public byte MessageOrder { get; } = 14;
+            public byte ServiceID { get; } = 102;
+
+            public IActorRef Source;
+            public IServerMessage[] Messages;
         }
     }
 }

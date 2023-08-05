@@ -32,7 +32,7 @@ namespace Imlight.Server.Login.Services
             var account = GetSocketAccount();
             if (account is null)
             {
-                Log.Logger.Error($"Service [{this.GetType()}] socket account could not be retrieved!");
+                Log.Logger.Error("Service {Type} socket account could not be retrieved!", GetType());
                 SendErrorToSocket();
                 return;
             }
@@ -40,7 +40,7 @@ namespace Imlight.Server.Login.Services
             // If the given character does not exist on this account, send the client an error.
             if (!account.GetCharacter(message.CharID, out var character))
             {
-                Log.Logger.Warning($"Account [{account.ID}] attempted to get a character it didn't have.");
+                Log.Logger.Warning("Account {Id} attempted to get a character it didn't have.", account.ID);
                 SendErrorToSocket();
                 return;
             }

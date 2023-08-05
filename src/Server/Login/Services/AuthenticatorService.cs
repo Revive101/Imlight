@@ -34,9 +34,9 @@ namespace Imlight.Server.Login.Services
             // For now, we'll always except any user.
             
             // Inform the SessionActor of the account.
-            SendToSessionServices(new ACCOUNT_104_PROTOCOL.MSG_ACCOUNT()
+            TellOtherServices(new ACCOUNT_104_PROTOCOL.MSG_ACCOUNT()
             {
-                Account = Database.Util.GetDebugAccount()
+                Account = Database.Util.GetFakeAccount()
             });
             
             // Inform the player that they've been authenticated.

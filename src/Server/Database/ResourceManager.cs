@@ -35,9 +35,9 @@ namespace Imlight.Server.Database
         /// <returns></returns>
         public static bool Initialize()
         {
-            Log.Logger.Information("Updating local cache..");
+            Log.Information("Updating local cache..");
             UpdateCache();
-            Log.Logger.Information("Local cache updated!");
+            Log.Information("Local cache updated!");
 
             // Load submodules.
             var subModuleCoreObjectFactory = LoadSubCoreObjectFactory();
@@ -54,12 +54,13 @@ namespace Imlight.Server.Database
             wad = default;
             if (wadName == ROOT_WAD_NAME)
             {
+                // Root is always loaded into memory. If it's not, we'll load it. 
                 if (_rootWad is null)
                 {
                     var rootCache = LoadWadFromCacheOrDownload(ROOT_WAD_NAME);
                     if (rootCache is null)
                     {
-                        Log.Logger.Error($"Could not load vital {ROOT_WAD_NAME} into memory!");
+                        Log.Error("Could not load vital {WadName} into memory!", Log.Args(ROOT_WAD_NAME));
                         return false;
                     }
                     _rootWad = rootCache;
@@ -129,11 +130,11 @@ namespace Imlight.Server.Database
             var latestFileList = rsp.LatestFileList;
             
             // Iterate through every cached file and check to see if its CRC32 hash matches the latest.
-            var cachedFiles = LocalCache.GetAllCachedFiles();
+            var cachedFiles = KiWadCache.GetAllCachedFiles();
             foreach (var file in cachedFiles)
             {
                 // Imlight's cache removes the '/' character to match zone transfer data. There's also a naming
-                // in consistency. Wizard101 uses a path while Imlight does not.
+                // inconsistency. Wizard101 uses a path while Imlight does not.
                 var betterFileName = file.Filename.Replace('/', '-');
                 betterFileName = $"Data/GameData/{betterFileName}.wad";
                 
@@ -142,7 +143,8 @@ namespace Imlight.Server.Database
                     .Find(f => f.SourceFileName == betterFileName);
                 if (latestFile is null)
                 {
-                    Log.Logger.Warning($"Cached file {betterFileName} does not exist in the LatestFileList!");
+                    Log.Warning("Cached file {FileName} does not exist in the LatestFileList!", 
+                        Log.Args(betterFileName));
                     continue;
                 }
                 
@@ -150,7 +152,8 @@ namespace Imlight.Server.Database
                 // do not understand how the KIWAD CRC32 is calculated. Here's to hoping future me can do it better.
                 if (latestFile.Size == file.Size)
                 {
-                    Log.Logger.Debug($"Cached file {latestFile.SourceFileName} did not require update.");
+                    Log.Debug("Cached file {FileName} did not require update", 
+                        Log.Args(latestFile.SourceFileName));
                     continue;
                 }
                 
@@ -158,20 +161,23 @@ namespace Imlight.Server.Database
                 // TODO: Move this boolean to config.
                 if (UPSERT_OUTDATED_CACHE)
                 {
-                    Log.Logger.Debug($"Cached file {latestFile.SourceFileName} needed update.");
+                    Log.Debug("Cached file {FileName} needed update", 
+                        Log.Args(latestFile.SourceFileName));
                     
                     if (TryLoadFile(betterFileName, out _))
                     {
-                        Log.Logger.Debug($"Cached file {latestFile.SourceFileName} was updated.");
+                        Log.Debug("Cached file {FileName} was updated", 
+                            Log.Args(latestFile.SourceFileName));
                         continue;
                     }
                     
-                    Log.Logger.Error($"Could not upsert cached file {betterFileName}.");
+                    Log.Error("Could not upsert cached file {FileName}", Log.Args(betterFileName));
                 }
                 else
                 {
-                    Log.Logger.Warning($"Cached file {latestFile.SourceFileName} was deleted.");
-                    LocalCache.DeleteWad(betterFileName);
+                    Log.Warning("Cached file {FileName} was deleted",
+                        Log.Args(latestFile.SourceFileName));
+                    KiWadCache.DeleteWad(betterFileName);
                 }
             }
         }
@@ -181,21 +187,21 @@ namespace Imlight.Server.Database
             var betterWadName = FormatWadName(wadName);
             
             // Check if the file is already cached. If it is, just return that.
-            var cachedWad = LocalCache.GetCachedWad(betterWadName);
+            var cachedWad = KiWadCache.GetCachedWad(betterWadName);
             if (cachedWad is not null)
                 return cachedWad;
 
             // Otherwise, download it from the patch server.
             if (!DownloadWadFromPatchServer(betterWadName, out var stream))
             {
-                Log.Logger.Error($"Failed to download wad \"{wadName}\" from patch server.");
+                Log.Error("Failed to download wad {WadName} from patch server", Log.Args(wadName));
                 return null;
             }
 
             // If we successfully downloaded it, we'll also cache it so we don't have to do that again.
             stream.Seek(0, SeekOrigin.Begin);
             var wad = new Wad(stream);
-            LocalCache.CacheWad(betterWadName, wad);
+            KiWadCache.CacheWad(betterWadName, wad);
             
             return wad;
         }
@@ -219,33 +225,35 @@ namespace Imlight.Server.Database
             }
             catch (Exception ex)
             {
-                Log.Logger.Error($"Could not download wad \"{wadName}\". Exception: {ex.Message}");
+                Log.Error("Could not download wad {WadName}. Exception: {Ex}", 
+                    Log.Args(wadName, ex.Message));
                 return false;
             }
         }
 
         private static bool LoadSubCoreObjectFactory()
         {
-            Log.Logger.Information("CoreObjectFactory loading [TemplateManifest.xml]..");
+            Log.Information("Start load of {Cof}", Log.Args(nameof(CoreObjectFactory)));
             if (!CoreObjectFactory.Load())
             {
-                Log.Logger.Fatal("CoreObjectFactory could not be loaded.");
+                Log.Fatal("CoreObjectFactory could not be loaded.");
                 return false;
             }
-            Log.Logger.Information("CoreObjectFactory [TemplateManifest.xml] loaded.");
+
+            Log.Information("Complete load of {Cof}", Log.Args(nameof(CoreObjectFactory)));
 
             return true;
         }
 
         private static bool LoadSubAccessPassManager()
         {
-            Log.Logger.Information("AccessPassManager loading [AccessPass.xml]..");
+            Log.Information("Start load of {Apm}", Log.Args(nameof(AccessPassManager)));
             if (!AccessPassManager.Load())
             {
-                Log.Logger.Fatal("AccessPassManager could not be loaded.");
+                Log.Fatal("AccessPassManager could not be loaded.");
                 return false;
             }
-            Log.Logger.Information("AccessPassManager [AccessPass.xml] loaded.");
+            Log.Information("Complete load of {Apm}", Log.Args(nameof(AccessPassManager)));
             
             return true;
         }

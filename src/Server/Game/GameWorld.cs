@@ -29,17 +29,16 @@ namespace Imlight.Server.Game
             return Akka.Actor.Props.Create(() => new GameWorld(server));
         }
         
-        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONE))]
-        private void ReceiveZoneTransferRequest(ZONE_102_PROTOCOL.MSG_QUERYZONE message)
+        [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]
+        private void ReceiveZoneTransfer(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message)
         {
-            var response = new ZONE_102_PROTOCOL.MSG_QUERYZONERSP();
-            
             // First, make sure this zone is valid by checking the AccessPassManager.
             if (!AccessPassManager.DoesZoneExist(message.ZoneName))
             {
-                Log.Logger.Error(
-                    $"GameWorld received invalid zone transfer request from {Sender.Path.Name}.");
+                Log.Error("{Name} received invalid zone name {ZoneName}",
+                    Log.Args(nameof(GameWorld), message.ZoneName));
                 
+                var response = new ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP();
                 response.ErrorCode = 1;
                 Sender.Tell(response);
 
@@ -50,7 +49,7 @@ namespace Imlight.Server.Game
             IActorRef zone;
             if (!Zones.ContainsKey(message.ZoneName))
             {
-                // '/' is an illegal character in Akka.NET actor names, so we replace it with '@'.
+                // '/' is an illegal character in Akka.NET actor names, so we replace it with '-'.
                 var zoneActorName = message.ZoneName
                     .Replace('/', '-');
                 
@@ -58,7 +57,7 @@ namespace Imlight.Server.Game
                 Zones.Add(message.ZoneName, zone);
                 
                 // Log the new zone creation.
-                Log.Logger.Information($"GameWorld created new zone: {message.ZoneName}");
+                Log.Information("GameWorld created new zone: {ZoneName}", Log.Args(message.ZoneName));
             }
             else
             {

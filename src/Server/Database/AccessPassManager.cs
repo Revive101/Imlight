@@ -25,8 +25,7 @@ namespace Imlight.Server.Database
 
             // Use the XmlReader to read the file. Only the zone names are needed,
             // so we find the <Zone> tags and read the name attribute.
-            var zoneList = new List<string>();
-            var zoneCounter = 0;
+            var zoneList = new HashSet<string>();
             var doc = new XmlDocument();
             doc.Load(stream);
             
@@ -34,11 +33,10 @@ namespace Imlight.Server.Database
             {
                 var zoneName = zoneNode.InnerText;
                 zoneList.Add(zoneName);
-                zoneCounter++;
             }
             
             // Log
-            Log.Logger.Information($"AccessPassManager loaded {zoneCounter} zones.");
+            Log.Information("AccessPassManager loaded {Count} zones.", Log.Args(zoneList.Count));
 
             _zones = zoneList.ToArray();
 
