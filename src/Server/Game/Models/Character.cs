@@ -48,7 +48,7 @@ public class Character
     public string LastGameServerIp;
     public ushort LastGameServerPort;
     public string QueuedZoneName;
-    public Vector4 QueuedZoneLocation;
+    public string QueuedZoneLocation;
 
     // ctor
     public Character(WizardCharacterCreationInfo characterCreationInfo, ulong accountId)
@@ -80,11 +80,7 @@ public class Character
 
     public void SetLocation(string loc)
     {
-        // If this is not a compact string, return.
-        if (!loc.StartsWith("x:"))
-            return;
-        
-        var location = Data.Util.GetVectorFromCompactString(loc);
+        var location = Util.GetVectorFromCompactString(loc);
         this.Location = new Vector3(location.X, location.Y, location.Z);
         this.Orientation = new Vector3(0, 0, location.W);
     }

@@ -30,14 +30,18 @@ namespace Imlight.Server.Game.Services
         [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]
         private void ReceiveZoneTransferRequest(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message)
         {
+            // This is an internal zone transfer message. It's meant to be the very first message sent to the 
+            // SessionActor in regards to a zone transfer. We're going to cache the destination zone and location,
+            // then start the zone transfer handshake with the client.
+            
             // Avoid duplicate transfer requests.
             if (_isTransferQueued)
                 return;
             
             var character = GetActiveCharacter();
-            var zoneDetails = AskServer<ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP>(message);
             
             // If the zone is ready and we're sending to client, begin the zone transfer handshake with the client.
+            var zoneDetails = AskServer<ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP>(message);
             if (zoneDetails.ErrorCode == 0 && message.SendToClient)
             {
                 _isTransferQueued = true;
@@ -45,13 +49,13 @@ namespace Imlight.Server.Game.Services
                 // Ask the client if it's okay with being transferred.
                 var msg = new GAME_5_PROTOCOL.MSG_ZONETRANSFERREQUEST
                 {
-                    ZoneName = message.ZoneName,
+                    ZoneName = message.DestinationZone,
                     SendAck = 0
                 };
                 SendToSocket(msg);
 
-                character.QueuedZoneName = message.ZoneName;
-                character.QueuedZoneLocation = Data.Util.GetVectorFromCompactString(message.Location);
+                character.QueuedZoneName = message.DestinationZone;
+                character.QueuedZoneLocation = message.DestinationLocation;
             }
             
             // If we're not sending this to client, this is an internal transfer, meaning we can immediately
@@ -146,8 +150,8 @@ namespace Imlight.Server.Game.Services
                 UDPPort = character.LastGameServerPort,
                 UserID = account.ID,
                 CharID = character.CharId,
-                ZoneName = character.Zone,
-                Location = Data.Util.GetCompactStringFromVector(character.QueuedZoneLocation),
+                ZoneName = character.QueuedZoneName,
+                Location = character.QueuedZoneLocation,
                 Slot = 0,
                 SessionSlot = 0,
                 SessionID = 0,

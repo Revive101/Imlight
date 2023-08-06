@@ -64,9 +64,14 @@ namespace Imlight.Server.Game.Services
                 SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED { Error = zoneDetails.ErrorCode });
                 return;
             }
+            
+            // Set the character's location and zone to the ones given in the message.
+            character.SetZone(message.ZoneName);
+            character.SetLocation(message.Location);
 
             // Serialize the character's game object.
             var charGameObject = CharacterObjectLoader.GetPlayerGameObject(ref character);
+            character.GameObject = charGameObject;
             var localGameObjectData = new CoreObjectSerializer().Serialize(charGameObject);
             if (charGameObject is null || string.IsNullOrEmpty(localGameObjectData))
                 throw new ServiceRetryException($"User [{message.UserID}] failed to grab or deserialize " +
@@ -79,7 +84,7 @@ namespace Imlight.Server.Game.Services
                 
                 // Set character data.
                 Data                = localGameObjectData,
-                IsCSR               = (int)account.AuthLevel >= 3 ? 1 : 0,
+                IsCSR               = (int)account.AuthLevel >= 1 ? 1 : 0,
                 Permissions         = 31679, // @todo: these permissions look like bitflags. Find out what they mean.
        
                 // Set zone data.
@@ -101,7 +106,7 @@ namespace Imlight.Server.Game.Services
         {
             var zoneMsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER
             {
-                ZoneName = zoneName, 
+                DestinationZone = zoneName, 
                 SendToClient = false
             };
             return AskOtherService<ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP>(zoneMsg);

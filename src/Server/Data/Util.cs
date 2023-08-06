@@ -72,13 +72,19 @@ namespace Imlight.Server.Data
         public static string GetCompactStringFromVector(Vector4 vector)
             => $"{vector.X},{vector.Y},{vector.Z},{vector.W}";
         
+        public static string GetCompactStringFromVector(Vector3 vector, Vector3 orientation)
+            => $"{vector.X},{vector.Y},{vector.Z},{orientation.Z}";
+        
         public static Vector4 GetVectorFromCompactString(string loc)
         {
+            if (!loc.Contains(','))
+                return Vector4.Zero;
+            
             var components = loc.Split(",");
-            var x = float.Parse(components[0], CultureInfo.InvariantCulture);
-            var y = float.Parse(components[1], CultureInfo.InvariantCulture);
-            var z = float.Parse(components[2], CultureInfo.InvariantCulture);
-            var d = float.Parse(components[3], CultureInfo.InvariantCulture);
+            var x = float.TryParse(components[0], out var xVal) ? xVal : 0;
+            var y = float.TryParse(components[1], out var yVal) ? yVal : 0;
+            var z = float.TryParse(components[2], out var zVal) ? zVal : 0;
+            var d = float.TryParse(components[3], out var dVal) ? dVal : 0;
 
             return new Vector4(x, y, z, d);
         }
