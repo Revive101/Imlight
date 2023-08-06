@@ -38,7 +38,7 @@ public static class CharacterObjectLoader
         SetInventoryBehavior(clientObject, ref character);
         SetMagicSchoolBehavior(clientObject, ref character);
         SetSpellbookBehavior(clientObject, ref character);
-    
+
         return clientObject;
     }
 
@@ -84,6 +84,9 @@ public static class CharacterObjectLoader
             nameBehavior.m_eRace = character.WizardAvatar.m_eRace;
             nameBehavior.m_nameKeys = character.NameIndices;
             nameBehavior.m_wsNameOverride = character.NameOverride;
+            nameBehavior.m_chatPermissions = 2; // todo: set this to the correct value.
+            nameBehavior.m_friendlyPlayer = character.GameStats.m_friendlyPlayer;
+            nameBehavior.m_volunteer = character.IsVolunteer;
         }
         else
             throw new Exception("Behavior ClientWizPlayerNameBehavior not found!");
@@ -119,10 +122,10 @@ public static class CharacterObjectLoader
     {
         if (CoreObjectFactory.FindBehaviorInstance<ClientMagicSchoolBehavior>(clientObject, out var schoolBehavior))
         {
-            schoolBehavior.m_equippedTeleportEffect = 0;
-            schoolBehavior.m_experiencePoints = 0;
+            schoolBehavior.m_equippedTeleportEffect = character.GameStats.m_equippedTeleportEffect;
+            schoolBehavior.m_experiencePoints = character.XpToNextLevel;
             schoolBehavior.m_level = character.Level;
-            schoolBehavior.m_trainingPoints = 0;
+            schoolBehavior.m_trainingPoints = character.TrainingPoints;
             schoolBehavior.m_schoolOfFocus = (uint)character.WizardSchool;
         }
         else

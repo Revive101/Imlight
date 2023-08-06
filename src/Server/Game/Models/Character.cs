@@ -3,6 +3,7 @@
  * Proprietary and confidential.
  */
 
+using System.Collections.Generic;
 using Imlight.Common.Utilities;
 using Imlight.Server.Data;
 using Imlight.Server.Data.Statistics;
@@ -25,7 +26,9 @@ public class Character
     public string Zone { get; private set; }
     public byte World { get; private set; }
     public WizGameStats GameStats { get; private set; }
+    public int TrainingPoints { get; private set; }
     public int XpToNextLevel { get; private set; }
+    public bool IsVolunteer { get; private set; }
     public Vector3 Location
     {
         get => this.GameObject?.m_location ?? Vector3.Zero;
@@ -137,6 +140,15 @@ public class Character
         existingStats.m_baseGoldPouch = WorldStats.GoldPouchMax;
         existingStats.m_powerPipBase = ClassStats.GetPowerPipChanceAtLevel(Level);
         existingStats.m_energyMax = ClassStats.GetPetEnergyAtLevel(Level);
+        
+        // Initialize the lists.
+        existingStats.m_blockPercentBySchool = new List<float>();
+        existingStats.m_blockRatingBySchool = new List<float>();
+        existingStats.m_dmgBonusFlat = new List<float>();
+        existingStats.m_dmgBonusPercent = new List<float>();
+        existingStats.m_dmgBonusFlat = new List<float>();
+        existingStats.m_dmgReduceFlat = new List<float>();
+        existingStats.m_dmgReducePercent = new List<float>();
 
         return existingStats;
     }
