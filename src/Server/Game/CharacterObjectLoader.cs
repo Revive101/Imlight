@@ -19,46 +19,41 @@ public static class CharacterObjectLoader
     public static WizClientObject GetPlayerGameObject(ref Character character)
     {
         var clientObject = CoreObjectFactory.InitializeCoreObjectBehaviors(new WizClientObject(), 1);
-        
+         
         // Set the stats on the new object.
         clientObject.m_templateID = 1;
         clientObject.m_fScale = 1f;
         clientObject.m_globalID = character.CharId;
         clientObject.m_characterId = character.CharId;
         clientObject.m_permID = 0; // What is this?
-        
+
         // Create the object at the location set in the character.
         clientObject.m_location = character.Location;
-        
-        CreateGameStatsForObject(clientObject, ref character);
-        SetEquipmentBehavior(ref clientObject, ref character);
-        SetPlayerNameBehavior(ref clientObject, ref character);
-        SetInventoryBehavior(ref clientObject, ref character);
-        SetMagicSchoolBehavior(ref clientObject, ref character);
-        SetSpellbookBehavior(ref clientObject, ref character);
+        clientObject.m_orientation = character.Orientation;
+        clientObject.m_gameStats = character.GameStats;
+
+        SetWizardAvatarBehavior(clientObject, ref character);
+        SetEquipmentBehavior(clientObject, ref character);
+        SetPlayerNameBehavior(clientObject, ref character);
+        SetInventoryBehavior(clientObject, ref character);
+        SetMagicSchoolBehavior(clientObject, ref character);
+        SetSpellbookBehavior(clientObject, ref character);
     
         return clientObject;
     }
-    
-    private static void CreateGameStatsForObject(WizClientObject obj, ref Character character)
+
+    private static void SetWizardAvatarBehavior(WizClientObject clientObject, ref Character character)
     {
-        // Calculate the health depending on the class and player level.
-        var wizClass = character.WizardSchool;
-        
-        // Calculate the mana depending on the player level.
-        var mana = ClassStats.StartMana + (character.Level * ClassStats.ManaPerLevel);
-        
-        obj.m_gameStats = new WizGameStats
+        if (CoreObjectFactory.FindBehaviorInstance<WizardCharacterBehavior>(clientObject, out var avatarBehavior))
         {
-            m_baseMana = mana,
-            m_baseGoldPouch = character.Gold,
-            m_baseHitpoints = 0,
-            m_currentHitpoints = character.Health,
-            m_currentMana = character.Mana,
-        };
+            var idx = clientObject.m_inactiveBehaviors.IndexOf(avatarBehavior);
+            clientObject.m_inactiveBehaviors[idx] = character.WizardAvatar;
+        }
+        else
+            throw new Exception($"Behavior WizardCharacterBehavior was not found!");
     }
-    
-    private static void SetEquipmentBehavior(ref WizClientObject clientObject, ref Character character)
+
+    private static void SetEquipmentBehavior(WizClientObject clientObject, ref Character character)
     {
         if (CoreObjectFactory.FindBehaviorInstance<ClientWizEquipmentBehavior>(clientObject, out var equipmentBehavior))
         {
@@ -81,19 +76,20 @@ public static class CharacterObjectLoader
             throw new Exception("Behavior ClientWizEquipmentBehavior not found!");
     }
     
-    private static void SetPlayerNameBehavior(ref WizClientObject clientObject, ref Character character)
+    private static void SetPlayerNameBehavior(WizClientObject clientObject, ref Character character)
     {
         if (CoreObjectFactory.FindBehaviorInstance<ClientWizPlayerNameBehavior>(clientObject, out var nameBehavior))
         {
             nameBehavior.m_eGender = character.WizardAvatar.m_eGender;
             nameBehavior.m_eRace = character.WizardAvatar.m_eRace;
             nameBehavior.m_nameKeys = character.NameIndices;
+            nameBehavior.m_wsNameOverride = character.NameOverride;
         }
         else
             throw new Exception("Behavior ClientWizPlayerNameBehavior not found!");
     }
     
-    private static void SetInventoryBehavior(ref WizClientObject clientObject, ref Character character)
+    private static void SetInventoryBehavior(WizClientObject clientObject, ref Character character)
     {
         if (CoreObjectFactory.FindBehaviorInstance<ClientWizInventoryBehavior>(clientObject, out var inventoryBehavior))
         {
@@ -119,7 +115,7 @@ public static class CharacterObjectLoader
             throw new Exception("Behavior ClientWizInventoryBehavior not found!");
     }
     
-    private static void SetMagicSchoolBehavior(ref WizClientObject clientObject, ref Character character)
+    private static void SetMagicSchoolBehavior(WizClientObject clientObject, ref Character character)
     {
         if (CoreObjectFactory.FindBehaviorInstance<ClientMagicSchoolBehavior>(clientObject, out var schoolBehavior))
         {
@@ -133,7 +129,7 @@ public static class CharacterObjectLoader
             throw new Exception("Behavior ClientMagicSchoolBehavior not found!");
     }
     
-    private static void SetSpellbookBehavior(ref WizClientObject clientObject, ref Character character)
+    private static void SetSpellbookBehavior(WizClientObject clientObject, ref Character character)
     {
         if (CoreObjectFactory.FindBehaviorInstance<ClientSpellbookBehavior>(clientObject, out var spellbookBehavior))
         {
