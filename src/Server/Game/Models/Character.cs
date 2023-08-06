@@ -3,9 +3,8 @@
  * Proprietary and confidential.
  */
 
-using System.Collections.Generic;
-using System.Globalization;
 using Imlight.Common.Utilities;
+using Imlight.Server.Data;
 using Imlight.Server.Data.Statistics;
 using SharpDX;
 using WizUnraveler.IO;
@@ -16,27 +15,41 @@ namespace Imlight.Server.Game.Models;
 
 public class Character
 {
-    public GID AccountId { get; private set; }
-    public GID CharId { get; private set; }
-    public uint NameIndices { get; private set; }
-    public WideByteString NameOverride { get; private set; }
-    public WizardSchool WizardSchool { get; private set; }
+    public GID AccountId { get; init; }
+    public GID CharId { get; init; }
+    public WizardCharacterBehavior WizardAvatar { get; init; }
+    public uint NameIndices { get; init; }
+    public WideByteString NameOverride { get; init; }
+    public WizardSchool WizardSchool { get; init; }
     public int Level { get; private set; }
     public string Zone { get; private set; }
     public byte World { get; private set; }
-    public int Health { get; private set; }
-    public int Mana { get; private set; }
-    public int Gold { get; private set; }
-    public int Experience { get; private set; }
-    public Vector3 Location { get; private set; }
-    public Vector3 Orientation { get; private set; }
-    public WizardCharacterBehavior WizardAvatar { get; private set; }
+    public WizGameStats GameStats { get; private set; }
+    public int XpToNextLevel { get; private set; }
+    public Vector3 Location
+    {
+        get => this.GameObject?.m_location ?? Vector3.Zero;
+        set
+        {
+            if (this.GameObject is not null) this.GameObject.m_location = value;
+        }
+    }
+    public Vector3 Orientation
+    {
+        get => this.GameObject?.m_orientation ?? Vector3.Zero;
+        set
+        {
+            if (this.GameObject is not null) this.GameObject.m_orientation = value;
+        }
+    }
 
+    // These stats should not be saved to the database.
+    public WizClientObject GameObject;
     public string LastGameServerIp;
     public ushort LastGameServerPort;
     public string QueuedZoneName;
     public Vector4 QueuedZoneLocation;
-    
+
     // ctor
     public Character(WizardCharacterCreationInfo characterCreationInfo, ulong accountId)
     {
@@ -49,9 +62,14 @@ public class Character
         this.Level = WorldStats.StartingLevel;
         this.Zone = WorldStats.StartingZone;
         this.World = WorldStats.StartingWorld;
-        this.WizardSchool = WizardSchool.Fire; // Need to find these.
+        this.WizardSchool = (WizardSchool)characterCreationInfo.m_schoolOfFocus;
         this.WizardAvatar = characterCreationInfo.m_avatarBehavior;
         this.NameIndices = characterCreationInfo.m_nameIndices;
+
+        // Create the game stats and calculate the base stats.
+        var gameStats = new WizGameStats();
+        gameStats = CalculateBaseGameStats(gameStats);
+        this.GameStats = gameStats;
     }
 
     public void SetLocation(Vector3 loc) 
@@ -59,6 +77,38 @@ public class Character
 
     public void SetLocation(float x, float y, float z) 
         => this.Location = new Vector3(x, y, z);
+
+    public void SetLocation(string loc)
+    {
+        // If this is not a compact string, return.
+        if (!loc.StartsWith("x:"))
+            return;
+        
+        var location = Data.Util.GetVectorFromCompactString(loc);
+        this.Location = new Vector3(location.X, location.Y, location.Z);
+        this.Orientation = new Vector3(0, 0, location.W);
+    }
+
+    public string GetStringLocation()
+    {
+        // If the location is zero, return "Start."
+        return this.Location == Vector3.Zero 
+            ? "Start" 
+            : Data.Util.GetCompactStringFromVector(this.Location, this.Orientation);
+    }
+
+    public void SetZone(string zone)
+    {
+        // Check if the zone exists in the AccessPass.
+        if (!AccessPassManager.DoesZoneExist(zone))
+        {
+            Log.Error("Character tried to set itself to zone {Zone}, but that zone does not exist.", 
+                Log.Args(zone));
+            return;
+        }
+        
+        this.Zone = zone;
+    }
 
     public WizardCharacterCreationInfo GetCharacterCreationInfo()
     {
@@ -77,5 +127,21 @@ public class Character
             // TODO: Equipment list
         };
         return creationInfo;
+    }
+
+    private WizGameStats CalculateBaseGameStats(WizGameStats existingStats)
+    {
+        var baseHealth = ClassStats.GetClassHealthAtLevel(WizardSchool, Level);
+        var baseMana = ClassStats.GetManaAtLevel(Level);
+
+        existingStats.m_baseHitpoints = baseHealth;
+        existingStats.m_currentHitpoints = baseHealth;
+        existingStats.m_baseMana = baseMana;
+        existingStats.m_currentMana = baseMana;
+        existingStats.m_baseGoldPouch = WorldStats.GoldPouchMax;
+        existingStats.m_powerPipBase = ClassStats.GetPowerPipChanceAtLevel(Level);
+        existingStats.m_energyMax = ClassStats.GetPetEnergyAtLevel(Level);
+
+        return existingStats;
     }
 }
