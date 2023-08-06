@@ -26,8 +26,8 @@ namespace Imlight.Server.Shared.Packets
             public byte MessageOrder { get; } = 1;
             public byte ServiceID { get; } = 102;
             
-            public string ZoneName;
-            public string Location;
+            public string DestinationZone;
+            public string DestinationLocation;
             public bool SendToClient = true;
         }
         

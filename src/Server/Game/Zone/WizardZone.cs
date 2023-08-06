@@ -346,8 +346,8 @@ public class WizardZone : ReceiveProtocolDispatcher
             {
                 var msg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER
                 {
-                    ZoneName = ((ServerTypeCache.ResTeleport)result).m_destinationZone,
-                    Location = ((ServerTypeCache.ResTeleport)result).m_destinationLoc,
+                    DestinationZone = ((ServerTypeCache.ResTeleport)result).m_destinationZone,
+                    DestinationLocation = ((ServerTypeCache.ResTeleport)result).m_destinationLoc,
                     SendToClient = true
                 };
                 message.Suspect.Tell(msg);
