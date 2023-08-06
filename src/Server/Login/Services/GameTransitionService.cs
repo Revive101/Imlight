@@ -32,7 +32,7 @@ namespace Imlight.Server.Login.Services
             var account = GetSocketAccount();
             if (account is null)
             {
-                Log.Logger.Error("Service {Type} socket account could not be retrieved!", GetType());
+                Log.Error("Service {Type} socket account could not be retrieved!", Log.Args(GetType()));
                 SendErrorToSocket();
                 return;
             }
@@ -40,7 +40,7 @@ namespace Imlight.Server.Login.Services
             // If the given character does not exist on this account, send the client an error.
             if (!account.GetCharacter(message.CharID, out var character))
             {
-                Log.Logger.Warning("Account {Id} attempted to get a character it didn't have.", account.ID);
+                Log.Warning("Account {Id} attempted to get a character it didn't have.", Log.Args(account.ID));
                 SendErrorToSocket();
                 return;
             }
@@ -69,7 +69,7 @@ namespace Imlight.Server.Login.Services
                 CharID = character.CharId,
                 ZoneID = new GID((ulong)gameServer.Port),
                 ZoneName = character.Zone,
-                Location = "Start",
+                Location = character.GetStringLocation(),
             };
             
             // Cache the message if the player is queued.
@@ -82,12 +82,6 @@ namespace Imlight.Server.Login.Services
             {
                 SendToSocket(charSelectedMsg);
             }
-
-            SendToSocket(new EXTENDEDBASE_2_PROTOCOL.MSG_SERVERMESSAGE()
-            {
-                Message = "<center><color;FFFFFF><ITALICS>Revive101 Community</ITALICS></color><br><color;1C1EC4>discord.gg/revive101</color></center>",
-                Modal = 0
-            });
         }
 
         private SERVER_100_PROTOCOL.MSG_SERVERINFO GetGameServer()
