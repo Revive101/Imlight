@@ -20,24 +20,17 @@ public class WizardZoneObject : ReceiveProtocolDispatcher
     protected readonly IActorRef WizardZoneRef;
     
     // ctor
-    public WizardZoneObject(CoreObject activeGameObject, IActorRef wizardZoneRef)
+    public WizardZoneObject(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef)
     {
         this.ActiveGameObject = activeGameObject;
+        this.Template = template;
         this.WizardZoneRef = wizardZoneRef;
-
-        if (activeGameObject.m_templateID == 0)
-        {
-            Log.Warning("{WizardZoneObject} {ActiveGameObjectMDebugName} was loaded with a template ID of 0.", 
-                Log.Args(nameof(WizardZoneObject), activeGameObject.m_debugName));
-            return;
-        }
-        this.Template = CoreObjectFactory.GetCoreTemplate(activeGameObject.m_templateID);
     }
     
     // Akka.NET ctor
-    public static Props Props(CoreObject activeGameObject, IActorRef wizardZoneRef)
+    public static Props Props(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef)
     {
-        return Akka.Actor.Props.Create(() => new WizardZoneObject(activeGameObject, wizardZoneRef));
+        return Akka.Actor.Props.Create(() => new WizardZoneObject(activeGameObject, template, wizardZoneRef));
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]

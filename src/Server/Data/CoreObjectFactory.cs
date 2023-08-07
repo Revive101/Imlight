@@ -110,48 +110,24 @@ namespace Imlight.Server.Data
             return false;
         }
 
+        public static CoreObject CreateObjectFromTemplate(CoreObjectInfo objInfo, CoreTemplate template, ulong templateId)
+        {
+            var obj = CreateCoreObjectFromTemplate(template);
+            obj.m_templateID = templateId;
+            SetCoreObjectStatsFromInfo(obj, ref objInfo);
+
+            return obj;
+        }
+
         public static CoreObject CreateObjectFromInfo(CoreObjectInfo objInfo, ulong templateId = 0)
         {
+            // If the template ID is 0, use the one from the object info.
             if (templateId == 0)
                 templateId = objInfo.m_templateID;
-            var template = GetCoreTemplate(templateId);
-            if (template is null)
-            {
-                throw new Exception($"Could not find template for object info [{templateId}]");
-            }
             
-            // Generate a GUID ahead of time.
-            var guid = RandomGen.GenerateGUID();
-            CoreObject obj;
-            switch (template)
-            {
-                case ReagentItemTemplate:
-                    obj = new ClientReagentItem();
-                    break;
-                case ItemTemplate:
-                    obj = new WizClientObjectItem();
-                    break;
-                case WizGameObjectTemplate:
-                    obj = new WizClientObject();
-                    // Below is probably not needed.
-                    ((WizClientObject)obj).m_characterId = guid;
-                    ((WizClientObject)obj).m_gameStats = new WizGameStats();
-                    break;
-                default:
-                    obj = new ClientObject();
-                    break;
-            }
+            var template = GetCoreTemplate(templateId);
 
-            // Set the object properties.
-            obj.m_templateID = templateId;
-            obj.m_location = objInfo.m_location;
-            obj.m_orientation = objInfo.m_orientation;
-            obj.m_fScale = objInfo.m_fScale;
-            obj.m_globalID = guid;
-            obj.m_permID = RandomGen.GenerateHash($"{obj.m_zoneTagID}{obj.m_templateID}{obj.m_location.X}");
-            obj.m_zoneTagID = Crypto.HashString(objInfo.m_zoneTag);
-            obj.m_debugName = objInfo.m_zoneTag;
-
+            var obj = CreateObjectFromTemplate(objInfo, template, templateId);
             return obj;
         }
 
@@ -164,6 +140,34 @@ namespace Imlight.Server.Data
                 throw new NullReferenceException($"Template by ID {id} was not found!");
 
             return template ?? null;
+        }
+
+        private static CoreObject CreateCoreObjectFromTemplate(CoreTemplate template)
+        {
+            if (template == null) throw new ArgumentNullException(nameof(template));
+
+            return template switch
+            {
+                ReagentItemTemplate => new ClientReagentItem(),
+                ItemTemplate => new WizClientObjectItem(),
+                WizGameObjectTemplate => new WizClientObject(),
+                _ => new ClientObject()
+            };
+        }
+
+        private static void SetCoreObjectStatsFromInfo(CoreObject obj, ref CoreObjectInfo info)
+        {
+            // Generate a GUID ahead of time.
+            var guid = RandomGen.GenerateGUID();
+
+            // Set the object properties.
+            obj.m_location = info.m_location;
+            obj.m_orientation = info.m_orientation;
+            obj.m_fScale = info.m_fScale;
+            obj.m_globalID = guid;
+            obj.m_permID = RandomGen.GenerateHash($"{obj.m_zoneTagID}{obj.m_templateID}{obj.m_location.X}");
+            obj.m_zoneTagID = Crypto.HashString(info.m_zoneTag);
+            obj.m_debugName = info.m_zoneTag;
         }
     }
 }

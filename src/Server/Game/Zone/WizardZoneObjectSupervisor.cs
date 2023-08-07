@@ -35,7 +35,7 @@ public class WizardZoneObjectSupervisor : ReceiveProtocolDispatcher
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDOBJECT))]
     private void ReceiveAddObject(ZONE_102_PROTOCOL.MSG_ADDOBJECT message)
     {
-        var props = WizardZoneObject.Props(message.CoreObject, _wizardZoneRef);
+        var props = WizardZoneObject.Props(message.CoreObject, message.Template, _wizardZoneRef);
         CreateActorAndRespond(props);
     }
     
@@ -49,7 +49,8 @@ public class WizardZoneObjectSupervisor : ReceiveProtocolDispatcher
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDVOLUME))]
     private void ReceiveAddVolume(ZONE_102_PROTOCOL.MSG_ADDVOLUME message)
     {
-        var props = WizardZoneVolume.Props(message.CoreObject, _wizardZoneRef, message.Volume);
+        // Volumes do not use a template, so we pass null.
+        var props = WizardZoneVolume.Props(message.CoreObject, null, _wizardZoneRef, message.Volume);
         CreateActorAndRespond(props);
     }
 

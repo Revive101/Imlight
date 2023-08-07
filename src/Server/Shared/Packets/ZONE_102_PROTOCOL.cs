@@ -90,6 +90,7 @@ namespace Imlight.Server.Shared.Packets
             public byte ServiceID { get; } = 102;
 
             public TypeCache.CoreObject CoreObject;
+            public TypeCache.CoreTemplate Template;
         }
         
         public class MSG_ADDOBJECTRSP : IServerMessage
