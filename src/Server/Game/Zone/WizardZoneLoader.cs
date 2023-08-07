@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 using Akka.Actor;
 using Imlight.Common.Utilities;
 using Imlight.Server.Data;
+using Imlight.Server.Data.Statistics;
 using Imlight.Server.Shared.Packets;
 using SharpDX;
 using WizUnraveler.Cache;
@@ -34,6 +35,13 @@ public static class WizardZoneLoader
     private const string TriggerDataFileName = "triggers.xml";
     private const string ResultCollectionName = "zone_triggers";
     private static readonly object LockObject = new();
+    private static readonly List<string> BlacklistedObjectActives = new()
+    {
+        "EditorOnly",
+        "PetOnly",
+        "Basic Positional.AdjRef",
+        "Basic Linear.AdjRef"
+    };
 
     private static WizardZone _zone;
     private static IActorRef _zoneActorRef;
@@ -56,7 +64,7 @@ public static class WizardZoneLoader
         {
             try
             {
-                _zone = zone;
+                var t= _zone = zone;
                 _zoneActorRef = zoneActorRef;
 
                 if (!ResourceManager.TryLoadFile(zone.ZoneName, out _wad))
@@ -74,7 +82,7 @@ public static class WizardZoneLoader
                 LoadNodeData();
                 LoadVolumeData();
                 LoadTriggerData();
-                CreateZoneGameObjects();
+                CreateZoneCoreObjects();
                 CreateZonePaths();
                 CreateZoneVolumes();
                 CreateZoneTriggers();
@@ -171,17 +179,45 @@ public static class WizardZoneLoader
     /// <summary>
     /// Creates game objects for the zone based on the loaded zone data.
     /// </summary>
-    private static void CreateZoneGameObjects()
+    private static void CreateZoneCoreObjects()
     {
-        foreach (var obj in _zoneData.m_objectList.Where(x => x is not null))
+        foreach (var objectInfo in _zoneData.m_objectList.Where(info => info != null))
         {
-            var newObj = CoreObjectFactory.CreateObjectFromInfo(obj);
-            if (newObj is null)
+            var template = (GameObjectTemplate)CoreObjectFactory.GetCoreTemplate(objectInfo.m_templateID);
+            var newObject = CoreObjectFactory.CreateObjectFromTemplate(objectInfo, template, objectInfo.m_templateID);
+            if (newObject == null)
+                continue;
+            
+            if (!ShouldLoadCoreObject(template))
                 continue;
 
-            var msg = new ZONE_102_PROTOCOL.MSG_ADDOBJECT { CoreObject = newObj };
-            _zoneActorRef.Tell(msg);
+            var message = new ZONE_102_PROTOCOL.MSG_ADDOBJECT
+            {
+                CoreObject = newObject,
+                Template = template
+            };
+            _zoneActorRef.Tell(message);
         }
+    }
+
+    /// <summary>
+    /// Checks if a given object should be loaded into the zone based on zone and world events.
+    /// </summary>
+    /// <param name="template"></param>
+    /// <returns></returns>
+    private static bool ShouldLoadCoreObject(GameObjectTemplate template)
+    {
+        // If the object is a core object of an inactive world event, don't load it.
+        if (WorldStats.IsCoreObjectOfInactiveWorldEvent(template))
+            return false;
+        if (WorldStats.IsCoreObjectOfInactiveZoneEvent(template, _zone.ZoneName))
+            return false;
+        
+        // If any adjective is blacklisted, don't load the object.
+        if (template.m_adjectiveList.Any(x => BlacklistedObjectActives.Contains(x)))
+            return false;
+
+        return true;
     }
 
     /// <summary>
