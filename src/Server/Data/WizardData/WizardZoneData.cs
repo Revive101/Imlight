@@ -5,10 +5,10 @@
 
 using System.Collections.Generic;
 
-namespace Imlight.Server.Data.Statistics;
+namespace Imlight.Server.Data.WizardData;
 
-public class ZoneStats
+public class WizardZoneData
 {
     public string ZoneName { get; set; }
-    public List<ZoneEvent> Events { get; set; } = new List<ZoneEvent>();
+    public List<WizardZoneEventData> Events { get; set; } = new List<WizardZoneEventData>();
 }

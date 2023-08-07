@@ -6,7 +6,7 @@
 using System.Collections.Generic;
 using Imlight.Common.Utilities;
 using Imlight.Server.Data;
-using Imlight.Server.Data.Statistics;
+using Imlight.Server.Data.WizardData;
 using SharpDX;
 using WizUnraveler.IO;
 using WizUnraveler.ObjectProperty;
@@ -62,9 +62,9 @@ public class Character
         
         // If this constructor has been called, then the character is a fresh character.
         // First, we'll set the character's stats from the creation info.
-        this.Level = WorldStats.StartingLevel;
-        this.Zone = WorldStats.StartingZone;
-        this.World = WorldStats.StartingWorld;
+        this.Level = WizardWorldData.StartingLevel;
+        this.Zone = WizardWorldData.StartingZone;
+        this.World = WizardWorldData.StartingWorld;
         this.WizardSchool = (WizardSchool)characterCreationInfo.m_schoolOfFocus;
         this.WizardAvatar = characterCreationInfo.m_avatarBehavior;
         this.NameIndices = characterCreationInfo.m_nameIndices;
@@ -130,16 +130,16 @@ public class Character
 
     private WizGameStats CalculateBaseGameStats(WizGameStats existingStats)
     {
-        var baseHealth = ClassStats.GetClassHealthAtLevel(WizardSchool, Level);
-        var baseMana = ClassStats.GetManaAtLevel(Level);
+        var baseHealth = WizardClassData.GetClassHealthAtLevel(WizardSchool, Level);
+        var baseMana = WizardClassData.GetManaAtLevel(Level);
 
         existingStats.m_baseHitpoints = baseHealth;
         existingStats.m_currentHitpoints = baseHealth;
         existingStats.m_baseMana = baseMana;
         existingStats.m_currentMana = baseMana;
-        existingStats.m_baseGoldPouch = WorldStats.GoldPouchMax;
-        existingStats.m_powerPipBase = ClassStats.GetPowerPipChanceAtLevel(Level);
-        existingStats.m_energyMax = ClassStats.GetPetEnergyAtLevel(Level);
+        existingStats.m_baseGoldPouch = WizardWorldData.GoldPouchMax;
+        existingStats.m_powerPipBase = WizardClassData.GetPowerPipChanceAtLevel(Level);
+        existingStats.m_energyMax = WizardClassData.GetPetEnergyAtLevel(Level);
         
         // Initialize the lists.
         existingStats.m_blockPercentBySchool = new List<float>();

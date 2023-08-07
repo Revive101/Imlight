@@ -6,9 +6,9 @@
 using System;
 using System.Collections.Generic;
 
-namespace Imlight.Server.Data.Statistics;
+namespace Imlight.Server.Data.WizardData;
 
-public class ZoneEvent
+public class WizardZoneEventData
 {
     public string Name { get; set; }
     public string Description { get; set; }
@@ -17,5 +17,5 @@ public class ZoneEvent
     public DateTime StartDate { get; set; } = new DateTime();
     public DateTime EndDate { get; set; } = new DateTime();
     public List<string> ObjectAdjectiveWhitelist { get; set; } = new List<string>();
-    public ZoneEventObjectAdjectiveType ObjectAdjectiveType { get; set; }
+    public WizardZoneEventObjectAdjectiveType ObjectAdjectiveType { get; set; }
 }

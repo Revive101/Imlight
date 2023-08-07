@@ -4,14 +4,12 @@
  */
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using WizUnraveler.IO;
 using static WizUnraveler.Cache.TypeCache;
 
-namespace Imlight.Server.Data.Statistics;
+namespace Imlight.Server.Data.WizardData;
 
-public static class WorldStats
+public static class WizardWorldData
 {
     public const string StartingZone = "WizardCity/WC_Hub";
     public const ushort StartingLevel = 1;
@@ -25,7 +23,7 @@ public static class WorldStats
     public const string BirthdayObjectKeyword = "BDay";
     public const bool IsChristmas = false;
     public const string ChristmasObjectAdjectivePrefix = "CH";
-    public static readonly ZoneEvent[] GlobalZoneEvents =
+    public static readonly WizardZoneEventData[] GlobalZoneEvents =
     {
         new()
         {
@@ -35,7 +33,7 @@ public static class WorldStats
             EnabledByDefault = false,
             StartDate = new DateTime(2023, 09, 02),
             EndDate = new DateTime(2023, 09, 11),
-            ObjectAdjectiveType = ZoneEventObjectAdjectiveType.Contains,
+            ObjectAdjectiveType = WizardZoneEventObjectAdjectiveType.Contains,
             ObjectAdjectiveWhitelist = { "BDay" },
         },
         new()
@@ -46,7 +44,7 @@ public static class WorldStats
             EnabledByDefault = false,
             StartDate = new DateTime(2023, 10, 01),
             EndDate = new DateTime(2023, 11, 01),
-            ObjectAdjectiveType = ZoneEventObjectAdjectiveType.PrefixedWith,
+            ObjectAdjectiveType = WizardZoneEventObjectAdjectiveType.PrefixedWith,
             ObjectAdjectiveWhitelist = { "HO" },
         },
         new()
@@ -57,46 +55,46 @@ public static class WorldStats
             EnabledByDefault = false,
             StartDate = new DateTime(2023, 12, 01),
             EndDate = new DateTime(2023, 12, 31),
-            ObjectAdjectiveType = ZoneEventObjectAdjectiveType.PrefixedWith,
+            ObjectAdjectiveType = WizardZoneEventObjectAdjectiveType.PrefixedWith,
             ObjectAdjectiveWhitelist = { "CH" },
         },
     };
-    public static readonly ZoneStats[] ZoneEvents =
+    public static readonly WizardZoneData[] ZoneEvents =
     {
         new()
         {
             ZoneName = "WizardCity/WC_Hub",
             Events =
             {
-                new ZoneEvent
+                new WizardZoneEventData
                 {
                     Name = "NewConstruction",
                     Description = "Rebuilding of Wizard City",
                     IsEnabled = false,
                     EnabledByDefault = false,
-                    ObjectAdjectiveType = ZoneEventObjectAdjectiveType.Raw,
+                    ObjectAdjectiveType = WizardZoneEventObjectAdjectiveType.Raw,
                     ObjectAdjectiveWhitelist =
                     {
                         "WC2_SurveyingStake", "WC-HUB-AmbientSaw", "WC-HUB-AmbientHammer",
                         "WC-HUB-NPC11", "WC-HUB-NPC12", "WC-HUB-NPC13"
                     },
                 },
-                new ZoneEvent
+                new WizardZoneEventData
                 {
                     Name = "NOFKD",
                     Description = "The bunny cookie guy.",
                     IsEnabled = false,
                     EnabledByDefault = false,
-                    ObjectAdjectiveType = ZoneEventObjectAdjectiveType.Contains,
+                    ObjectAdjectiveType = WizardZoneEventObjectAdjectiveType.Contains,
                     ObjectAdjectiveWhitelist = { "NOFKD", "WC-HUB-NPC19" },
                 },
-                new ZoneEvent
+                new WizardZoneEventData
                 {
                     Name = "Crown Furniture",
                     Description = "Shows presents in Wizard City hub.",
                     IsEnabled = false,
                     EnabledByDefault = false,
-                    ObjectAdjectiveType = ZoneEventObjectAdjectiveType.Raw,
+                    ObjectAdjectiveType = WizardZoneEventObjectAdjectiveType.Raw,
                     ObjectAdjectiveWhitelist = { "WC-CROWN-FURNITURE" },
                 },
             }
@@ -128,7 +126,7 @@ public static class WorldStats
             .Any(e => IsCoreObjectOfEvent(template, e));
     }
 
-    private static bool IsCoreObjectOfEvent(GameObjectTemplate template, ZoneEvent e)
+    private static bool IsCoreObjectOfEvent(GameObjectTemplate template, WizardZoneEventData e)
     {
         // Make all the adjectives lowercase for easier comparison.
         var lowerCaseAdjectives = e.ObjectAdjectiveWhitelist.Select(adj => adj.ToLower()).ToList();
@@ -144,24 +142,24 @@ public static class WorldStats
             // Check the ZoneEventObjectAdjectiveType to determine the matching condition
             switch (e.ObjectAdjectiveType)
             {
-                case ZoneEventObjectAdjectiveType.Contains:
+                case WizardZoneEventObjectAdjectiveType.Contains:
                     if (lowerCaseAdjectives.Any(mutAdj.Contains))
                         return true;
                     break;
-                case ZoneEventObjectAdjectiveType.PrefixedWith:
+                case WizardZoneEventObjectAdjectiveType.PrefixedWith:
                     if (lowerCaseAdjectives.Any(mutAdj.StartsWith))
                         return true;
                     break;
-                case ZoneEventObjectAdjectiveType.SuffixedWith:
+                case WizardZoneEventObjectAdjectiveType.SuffixedWith:
                     if (lowerCaseAdjectives.Any(mutAdj.EndsWith))
                         return true;
                     break;
-                case ZoneEventObjectAdjectiveType.Raw:
+                case WizardZoneEventObjectAdjectiveType.Raw:
                     if (lowerCaseAdjectives.Contains(mutAdj))
                         return true;
                     break;
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(ZoneEventObjectAdjectiveType));
+                    throw new ArgumentOutOfRangeException(nameof(WizardZoneEventObjectAdjectiveType));
             }
         }
 

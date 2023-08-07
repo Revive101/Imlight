@@ -3,9 +3,9 @@
  * Proprietary and confidential.
  */
 
-namespace Imlight.Server.Data.Statistics;
+namespace Imlight.Server.Data.WizardData;
 
-public enum ZoneEventObjectAdjectiveType
+public enum WizardZoneEventObjectAdjectiveType
 {
     PrefixedWith,
     Contains,

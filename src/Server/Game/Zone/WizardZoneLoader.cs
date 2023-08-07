@@ -10,7 +10,7 @@ using System.Text.RegularExpressions;
 using Akka.Actor;
 using Imlight.Common.Utilities;
 using Imlight.Server.Data;
-using Imlight.Server.Data.Statistics;
+using Imlight.Server.Data.WizardData;
 using Imlight.Server.Shared.Packets;
 using SharpDX;
 using WizUnraveler.Cache;
@@ -208,9 +208,9 @@ public static class WizardZoneLoader
     private static bool ShouldLoadCoreObject(GameObjectTemplate template)
     {
         // If the object is a core object of an inactive world event, don't load it.
-        if (WorldStats.IsCoreObjectOfInactiveWorldEvent(template))
+        if (WizardWorldData.IsCoreObjectOfInactiveWorldEvent(template))
             return false;
-        if (WorldStats.IsCoreObjectOfInactiveZoneEvent(template, _zone.ZoneName))
+        if (WizardWorldData.IsCoreObjectOfInactiveZoneEvent(template, _zone.ZoneName))
             return false;
         
         // If any adjective is blacklisted, don't load the object.

@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using Imlight.Common.Utilities;
 using Imlight.Server.Data;
-using Imlight.Server.Data.Statistics;
 using Imlight.Server.Game.Models;
 using WizUnraveler.ObjectProperty;
 using static WizUnraveler.Cache.TypeCache;

@@ -6,12 +6,12 @@
 using System;
 using Imlight.Server.Game.Models;
 
-namespace Imlight.Server.Data.Statistics;
+namespace Imlight.Server.Data.WizardData;
 
 /// <summary>
 /// Contains base stats for each class, as well as stats that are calculated based on level.
 /// </summary>
-public static class ClassStats
+public static class WizardClassData
 {
     private const int StartMana = 15;
     private const int StartGold = 0;
