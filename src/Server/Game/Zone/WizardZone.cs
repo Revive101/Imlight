@@ -187,6 +187,23 @@ public class WizardZone : ReceiveProtocolDispatcher
         return ++_zoneObjectMobileIdCounter;
     }
 
+    private void SendZoneTransfer(IActorRef suspect, ServerTypeCache.ResTeleport resTeleport)
+    {
+        var msg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER
+        {
+            DestinationZone = resTeleport.m_destinationZone,
+            DestinationLocation = resTeleport.m_destinationLoc,
+            SendToClient = true
+        };
+        suspect.Tell(msg);
+    }
+
+    private void SendDisplayText(IActorRef suspect, ResDisplayText resDisplayText)
+    {
+        var msg = new GAME_5_PROTOCOL.MSG_CLIENTNOTIFYTEXT { NotifyText = resDisplayText.m_text };
+        suspect.Tell(msg);
+    }
+
     #region Handlers
     
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]
@@ -338,19 +355,16 @@ public class WizardZone : ReceiveProtocolDispatcher
             return;
         }
 
-        // TODO: For now, we're only supporting the `ResTeleport`.
-        foreach (var trigger in triggers
-                     .Where(t => t.m_results.m_results.FirstOrDefault() is ServerTypeCache.ResTeleport))
+        foreach (var result in triggers.SelectMany(trigger => trigger.m_results.m_results))
         {
-            foreach (var result in trigger.m_results.m_results)
+            switch (result)
             {
-                var msg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER
-                {
-                    DestinationZone = ((ServerTypeCache.ResTeleport)result).m_destinationZone,
-                    DestinationLocation = ((ServerTypeCache.ResTeleport)result).m_destinationLoc,
-                    SendToClient = true
-                };
-                message.Suspect.Tell(msg);
+                case ServerTypeCache.ResTeleport resTeleport:
+                    SendZoneTransfer(message.Suspect, resTeleport);
+                    break;
+                case ServerTypeCache.ResDisplayText resDisplayText:
+                    SendDisplayText(message.Suspect, resDisplayText);
+                    break;
             }
         }
 
