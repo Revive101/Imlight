@@ -3,13 +3,18 @@
  * Proprietary and confidential.
  */
 
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using Imlight.Common.Utilities;
 using Imlight.Server.Data;
 using Imlight.Server.Data.WizardData;
 using SharpDX;
+using WizUnraveler.Cache;
 using WizUnraveler.IO;
 using WizUnraveler.ObjectProperty;
+using static Imlight.Server.Data.WizardData.WizardResults;
 using static WizUnraveler.Cache.TypeCache;
 
 namespace Imlight.Server.Game.Models;
@@ -26,8 +31,8 @@ public class Character
     public string Zone { get; private set; }
     public byte World { get; private set; }
     public WizGameStats GameStats { get; private set; }
-    public int TrainingPoints { get; private set; }
-    public int XpToNextLevel { get; private set; }
+    public int TrainingPoints { get; set; }
+    public int XpToNextLevel { get; set; }
     public bool IsVolunteer { get; private set; }
     public Vector3 Location
     {
@@ -53,6 +58,8 @@ public class Character
     public string QueuedZoneName;
     public string QueuedZoneLocation;
 
+    private Dictionary<System.Type, MethodInfo> _resultHandlers;
+
     // ctor
     public Character(WizardCharacterCreationInfo characterCreationInfo, ulong accountId)
     {
@@ -73,6 +80,8 @@ public class Character
         var gameStats = new WizGameStats();
         gameStats = CalculateBaseGameStats(gameStats);
         this.GameStats = gameStats;
+
+        SetResultHandlers();
     }
 
     public void SetLocation(Vector3 loc) 
@@ -128,6 +137,20 @@ public class Character
         return creationInfo;
     }
 
+    public void SendResult(TypeCache.Result result)
+    {
+        // Find the method that handles this message type
+        if (_resultHandlers.TryGetValue(result.GetType(), out var method))
+        {
+            // Invoke the method with the message
+            method.Invoke(this, new object[] { result });
+        }
+        else
+        {
+            Log.Warning("No character result handler for result type {ResultType}.", Log.Args(result.GetType()));
+        }
+    }
+
     private WizGameStats CalculateBaseGameStats(WizGameStats existingStats)
     {
         var baseHealth = WizardClassData.GetClassHealthAtLevel(WizardSchool, Level);
@@ -152,4 +175,53 @@ public class Character
 
         return existingStats;
     }
+    
+    private void SetResultHandlers()
+    {
+        _resultHandlers = new Dictionary<System.Type, MethodInfo>();
+
+        // Get all methods in this actor with a message handling attribute
+        var methods = this
+            .GetType()
+            .GetMethods(BindingFlags.Instance 
+                        | BindingFlags.Public 
+                        | BindingFlags.NonPublic
+                        | BindingFlags.FlattenHierarchy)
+            .Where(method => method.GetCustomAttributes<ResultHandlerAttribute>().Any());
+
+        foreach (var method in methods)
+        {
+            var paramType = method.GetParameters()[0].ParameterType;
+            _resultHandlers.Add(paramType, method);
+        }
+    }
+    
+    #region Result Handlers
+
+    [ResultHandler(typeof(ResAddHealth))]
+    private void ReceiveAddHealth(ResAddHealth result)
+    {
+        // If we're using flat health, just add the health up to the max health.
+        if (result.UseFlat)
+        {
+            this.GameStats.m_currentHitpoints += result.HealthFlat;
+            if (this.GameStats.m_currentHitpoints > this.GameStats.m_baseHitpoints)
+            {
+                this.GameStats.m_currentHitpoints = this.GameStats.m_baseHitpoints;
+            }
+        }
+        else
+        {
+            // If we're using percent health, add the percent of the max health.
+            var percent = result.HealthPercent / 100f;
+            var amount = this.GameStats.m_baseHitpoints * percent;
+            this.GameStats.m_currentHitpoints += (int)amount;
+            if (this.GameStats.m_currentHitpoints > this.GameStats.m_baseHitpoints)
+            {
+                this.GameStats.m_currentHitpoints = this.GameStats.m_baseHitpoints;
+            }
+        }
+    }
+    
+    #endregion
 }
