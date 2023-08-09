@@ -148,7 +148,7 @@ namespace Imlight.Server.Game.Services
                 IP = character.LastGameServerIp,
                 TCPPort = character.LastGameServerPort,
                 UDPPort = character.LastGameServerPort,
-                UserID = account.ID,
+                UserID = account.AccountId,
                 CharID = character.CharId,
                 ZoneName = character.QueuedZoneName,
                 Location = character.QueuedZoneLocation,

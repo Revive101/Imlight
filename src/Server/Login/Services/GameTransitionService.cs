@@ -38,9 +38,10 @@ namespace Imlight.Server.Login.Services
             }
 
             // If the given character does not exist on this account, send the client an error.
-            if (!account.GetCharacter(message.CharID, out var character))
+            var character = account.GetCharacter(message.CharID);
+            if (character is null)
             {
-                Log.Warning("Account {Id} attempted to get a character it didn't have.", Log.Args(account.ID));
+                Log.Warning("Account {Id} attempted to get a character it didn't have.", Log.Args(account.AccountId));
                 SendErrorToSocket();
                 return;
             }
@@ -65,7 +66,7 @@ namespace Imlight.Server.Login.Services
                 LoginServer = "Imlight.Login",      // TODO: This should be sourced from elsewhere.
                 
                 // Set details about the character.
-                UserID = account.ID,
+                UserID = account.AccountId,
                 CharID = character.CharId,
                 ZoneID = new GID((ulong)gameServer.Port),
                 ZoneName = character.Zone,

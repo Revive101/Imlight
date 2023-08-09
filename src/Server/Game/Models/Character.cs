@@ -10,6 +10,7 @@ using System.Reflection;
 using Imlight.Common.Utilities;
 using Imlight.Server.Shared.Resources;
 using Imlight.Server.WizardData;
+using Newtonsoft.Json;
 using SharpDX;
 using WizUnraveler.Cache;
 using WizUnraveler.IO;
@@ -21,8 +22,8 @@ namespace Imlight.Server.Game.Models;
 
 public class Character
 {
-    public GID AccountId { get; init; }
-    public GID CharId { get; init; }
+    public ulong AccountId { get; set; }
+    public ulong CharId { get; init; }
     public WizardCharacterBehavior WizardAvatar { get; init; }
     public uint NameIndices { get; init; }
     public WideByteString NameOverride { get; init; }
@@ -50,21 +51,22 @@ public class Character
             if (this.GameObject is not null) this.GameObject.m_orientation = value;
         }
     }
+    
+    [JsonIgnore] public WizClientObject GameObject;
+    [JsonIgnore] public string LastGameServerIp;
+    [JsonIgnore] public ushort LastGameServerPort;
+    [JsonIgnore] public string QueuedZoneName;
+    [JsonIgnore] public string QueuedZoneLocation;
 
-    // These stats should not be saved to the database.
-    public WizClientObject GameObject;
-    public string LastGameServerIp;
-    public ushort LastGameServerPort;
-    public string QueuedZoneName;
-    public string QueuedZoneLocation;
-
-    private Dictionary<System.Type, MethodInfo> _resultHandlers;
+    private Dictionary<Type, MethodInfo> _resultHandlers;
 
     // ctor
-    public Character(WizardCharacterCreationInfo characterCreationInfo, ulong accountId)
+    public Character(WizardCharacterCreationInfo characterCreationInfo)
     {
-        // Set the account ID and character ID.
-        this.AccountId = (GID)accountId;
+        // If the creation info is null, this character is being loaded from a database. In which case, don't do anything.
+        if (characterCreationInfo is null) 
+            return;
+        
         this.CharId = RandomGen.GenerateGUID();
         
         // If this constructor has been called, then the character is a fresh character.
@@ -129,9 +131,9 @@ public class Character
             m_name = this.NameOverride,
             m_world = this.World,
             m_location = this.Zone,
-            m_globalID = this.CharId,
+            m_globalID = (GID)this.CharId,
             m_templateID = 1,
-            m_userID = this.AccountId,
+            m_userID = (GID)this.AccountId,
             // TODO: Equipment list
         };
         return creationInfo;

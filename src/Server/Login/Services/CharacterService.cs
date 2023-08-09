@@ -48,11 +48,11 @@ namespace Imlight.Server.Login.Services
             var account = GetSocketAccount();
             if (account is not null)
             {
-                var newCharacter = new Character(charData, new GID(account.ID));
-                var result = account.AddCharacter(newCharacter);
+                var newCharacter = new Character(charData);
+                var createdCharacter = account.AddCharacter(newCharacter);
 
                 // @TODO: Figure out what each of these error codes means.
-                if (result == false)
+                if (createdCharacter is null)
                     errorCode = 2;
             }
             else

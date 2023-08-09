@@ -124,10 +124,10 @@ namespace Imlight.Server.Game.Services
 
         private bool GetCharacterFromAccount(Account account, ulong charId, out Character character)
         {
-            var result = account.GetCharacter(charId, out var accChar);
-            character = accChar;
+            var result = account.GetCharacter(charId);
+            character = result;
 
-            return result;
+            return result is not null;
         }
 
         private bool ValidateLoginKey(ByteString key, ulong userId, out Account account)

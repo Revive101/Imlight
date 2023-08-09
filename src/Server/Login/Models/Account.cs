@@ -3,10 +3,13 @@
  * Proprietary and confidential.
  */
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Imlight.Common.Utilities;
 using Imlight.Server.Game.Models;
+using Imlight.Server.WizardData.Collections;
+using Newtonsoft.Json;
 
 namespace Imlight.Server.Login.Models
 {
@@ -17,7 +20,7 @@ namespace Imlight.Server.Login.Models
         /// <summary>
         /// The account ID.
         /// </summary>
-        public ulong ID { get; private set; }
+        public ulong AccountId { get; private set; }
 
         /// <summary>
         /// The username of the account.
@@ -37,66 +40,55 @@ namespace Imlight.Server.Login.Models
         /// <summary>
         /// The authentication level of the account.
         /// </summary>
-        public AuthLevel AuthLevel { get; set; }
+        public AuthLevel AuthLevel { get; }
 
-        /// <summary>
-        /// An array of this account's character data.
-        /// </summary>
-        public List<Character> Characters { get; private set; }
+        public readonly List<ulong> CharacterIds = new();
 
-        public Account(string Username, string Email, string PasswordHash)
+        [JsonIgnore] public List<Character> Characters = new();
+
+        public Account(string username, string email, string passwordHash)
         {
-            this.ID = RandomGen.GenerateGUID();
-            this.Username = Username;
-            this.Email = Email;
-            this.PasswordHash = PasswordHash;
-            this.Characters = new List<Character>();
+            if (string.IsNullOrWhiteSpace(username))
+                throw new ArgumentException("Value cannot be null or whitespace.", nameof(username));
+            if (string.IsNullOrWhiteSpace(email))
+                throw new ArgumentException("Value cannot be null or whitespace.", nameof(email));
+            if (string.IsNullOrWhiteSpace(passwordHash))
+                throw new ArgumentException("Value cannot be null or whitespace.", nameof(passwordHash));
+            
+            this.AccountId = RandomGen.GenerateGUID();
+            this.Username = username;
+            this.Email = email;
+            this.PasswordHash = passwordHash;
         }
 
-        /// <summary>
-        /// Adds a character to this account.
-        /// </summary>
-        /// <param name="character"></param>
-        /// <returns>False, if an error occurs or the account doesn't have anymore character slots.</returns>
-        public bool AddCharacter(Character character)
+        public Character AddCharacter(Character character)
         {
-            if (Characters.Count >= MAX_ALLOWED_CHARACTERS)
-                return false;
-
+            // Change the character account ID to this account's ID.
+            character.AccountId = this.AccountId;
+            
+            CharacterCollection.AddCharacter(character);
+            this.CharacterIds.Add(character.CharId);
             this.Characters.Add(character);
 
-            return true;
+            return character;
         }
 
-        /// <summary>
-        /// Deletes a character from this account.
-        /// </summary>
-        /// <param name="charId"></param>
-        /// <returns>False, if no character by ID is found. Otherwise, true.</returns>
-        public bool DeleteCharacter(ulong charId)
+        public Character GetCharacter(ulong id)
         {
-            if (Characters.All(x => x.CharId != charId))
+            return this.Characters.First(c => c.CharId == id);
+        }
+
+        public bool DeleteCharacter(ulong id)
+        {
+            // Check to see if the character exists with our account id.
+            if (!this.CharacterIds.Contains(id))
                 return false;
             
-            var character = Characters.First(x => x.CharId == charId);
-            Characters.Remove(character);
-
-            return true;
-        }
-
-        /// <summary>
-        /// Attempts to get a character from this account.
-        /// </summary>
-        /// <param name="charId"></param>
-        /// <param name="character"></param>
-        /// <returns>True, if the character is found; otherwise, false.</returns>
-        public bool GetCharacter(ulong charId, out Character character)
-        {
-            character = null;
-
-            if (Characters.All(x => x.CharId != charId)) 
-                return false;
-            character = Characters.First(x => x.CharId == charId);
+            // Delete the character from the database.
+            CharacterCollection.DeleteCharacter(id);
+            
+            Characters.RemoveAll(c => c.CharId == id);
+            CharacterIds.Remove(id);
 
             return true;
         }

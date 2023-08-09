@@ -189,7 +189,7 @@ namespace Imlight.Server.Game
 
         private ByteString CreateKey(Account account)
         {
-            var key = SessionKey.GenerateHash(SESSION_KEY_HASH_INPUT, account.ID);
+            var key = SessionKey.GenerateHash(SESSION_KEY_HASH_INPUT, account.AccountId);
             
             // Add this key to the local server. We're going to map the key to an account, that way when a game
             // client finds its corresponding key, it will get it's account as well.

@@ -23,7 +23,7 @@ public static class CharacterObjectLoader
         clientObject.m_templateID = 1;
         clientObject.m_fScale = 1f;
         clientObject.m_globalID = character.CharId;
-        clientObject.m_characterId = character.CharId;
+        clientObject.m_characterId = (GID)character.CharId;
         clientObject.m_permID = 0; // What is this?
 
         // Create the object at the location set in the character.

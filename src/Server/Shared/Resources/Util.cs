@@ -7,6 +7,7 @@ using System;
 using System.Linq;
 using Imlight.Server.Game.Models;
 using Imlight.Server.Login.Models;
+using Imlight.Server.WizardData.Collections;
 using SharpDX;
 using WizUnraveler.Cache;
 using WizUnraveler.ObjectProperty;
@@ -19,43 +20,42 @@ namespace Imlight.Server.Shared.Resources
         /// Creates and returns a debug account.
         /// </summary>
         /// <returns></returns>
-        public static Account GetFakeAccount()
+        public static Account CreateFakeDatabaseAccount()
         {
             // Create a new debug account.
             var userName = Faker.Internet.UserName();
             var email = Faker.Internet.Email();
             var password = Faker.Identification.SocialSecurityNumber();
-            var fakeAcc = new Account(userName, email, password)
-            {
-                AuthLevel = AuthLevel.Administrator
-            };
+            var fakeAcc = new Account(userName, email, password);
 
             // Create characters.
             var serializer = new ObjectSerializer();
 
             // Destiny
-            var destinyRawData = "4C8F6E110100000000007200000000000" +
-                "00000000000000000000052078DD072100" +
-                "000CA186380310000000088BEC104000B0" +
-                "0000000610001000300000000000000000" +
-                "00000000000000000840CAB0400002300";
+            const string destinyRawData = "4C8F6E110100000000007200000000000" +
+                                          "00000000000000000000052078DD072100" +
+                                          "000CA186380310000000088BEC104000B0" +
+                                          "0000000610001000300000000000000000" +
+                                          "00000000000000000840CAB0400002300";
             var destinyRawBytes = StringToByteArray(destinyRawData);
             var destinyCreationData = (TypeCache.WizardCharacterCreationInfo)serializer.Deserialize(destinyRawBytes);
-            var destiny = new Character(destinyCreationData, new GID(fakeAcc.ID));
+            var destiny = new Character(destinyCreationData);
             fakeAcc.AddCharacter(destiny);
             
-            // Kevin
-            var kevinRawData =
-                "4C8F6E1101000000000072000000" +
-                "0000000000000000000000000052" +
-                "078DD072200000B5882240110100" +
-                "000088BEC1040000000000001B0A" +
-                "C079000000000000000000000000" +
-                "000000000000B336F80400005D00";
+            // I fucking hate Kevin.
+            const string kevinRawData = "4C8F6E1101000000000072000000" +
+                                        "0000000000000000000000000052" +
+                                        "078DD072200000B5882240110100" +
+                                        "000088BEC1040000000000001B0A" +
+                                        "C079000000000000000000000000" +
+                                        "000000000000B336F80400005D00";
             var kevinRawBytes = StringToByteArray(kevinRawData);
             var kevinCreationData = (TypeCache.WizardCharacterCreationInfo)serializer.Deserialize(kevinRawBytes);
-            var kevin = new Character(kevinCreationData, new GID(fakeAcc.ID));
+            var kevin = new Character(kevinCreationData);
             fakeAcc.AddCharacter(kevin);
+            
+            // Add the fake account to the database.
+            AccountCollection.CreateAccount(fakeAcc);
 
             return fakeAcc;
         }
