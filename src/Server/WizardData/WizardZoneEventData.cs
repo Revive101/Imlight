@@ -6,7 +6,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Imlight.Server.Data.WizardData;
+namespace Imlight.Server.WizardData;
 
 public class WizardZoneEventData
 {

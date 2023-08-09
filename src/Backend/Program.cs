@@ -9,10 +9,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Imlight.Common.Utilities;
-using Imlight.Server.Data;
 using Imlight.Server.Login;
 using Imlight.Server.Patch;
 using Imlight.Server.Shared.Packets;
+using Imlight.Server.Shared.Resources;
 
 namespace Imlight.Backend
 {

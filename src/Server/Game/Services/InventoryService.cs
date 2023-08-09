@@ -15,7 +15,7 @@ using static WizUnraveler.Cache.TypeCache;
 using WizUnraveler;
 using Akka.Util.Internal;
 using Imlight.Common.Serializable;
-using Imlight.Server.Data;
+using Imlight.Server.Shared.Resources;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using static Imlight.Server.Shared.Packets.CHARACTER_103_PROTOCOL;
 using WizUnraveler.IO;

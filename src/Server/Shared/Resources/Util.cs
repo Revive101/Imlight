@@ -4,7 +4,6 @@
  */
 
 using System;
-using System.Globalization;
 using System.Linq;
 using Imlight.Server.Game.Models;
 using Imlight.Server.Login.Models;
@@ -12,7 +11,7 @@ using SharpDX;
 using WizUnraveler.Cache;
 using WizUnraveler.ObjectProperty;
 
-namespace Imlight.Server.Data
+namespace Imlight.Server.Shared.Resources
 {
     public static class Util
     {

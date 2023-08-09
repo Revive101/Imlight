@@ -14,7 +14,7 @@ using WizUnraveler.Common;
 using WizUnraveler.IO;
 using static WizUnraveler.Cache.TypeCache;
 
-namespace Imlight.Server.Data
+namespace Imlight.Server.Shared.Resources
 {
     public static class CoreObjectFactory
     {

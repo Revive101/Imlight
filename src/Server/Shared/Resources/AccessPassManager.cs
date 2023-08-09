@@ -8,7 +8,7 @@ using System.Linq;
 using System.Xml;
 using Imlight.Common.Utilities;
 
-namespace Imlight.Server.Data
+namespace Imlight.Server.Shared.Resources
 {
     public static class AccessPassManager
     {

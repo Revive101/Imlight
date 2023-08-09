@@ -7,7 +7,7 @@ using WizUnraveler.IO;
 using WizUnraveler.ObjectProperty;
 using static WizUnraveler.Cache.TypeCache;
 
-namespace Imlight.Server.Data.WizardData;
+namespace Imlight.Server.WizardData;
 
 public static class WizardResults
 {

@@ -9,11 +9,12 @@ using Akka.Actor;
 using Imlight.Common.Utilities;
 using Imlight.Server.Patch;
 using Imlight.Server.Shared.Packets;
+using Imlight.Server.WizardData.Collections;
 using WizUnraveler.Formats;
 using WizUnraveler.IO;
 using WizUnraveler.ObjectProperty;
 
-namespace Imlight.Server.Data
+namespace Imlight.Server.Shared.Resources
 {
     public static class ResourceManager
     {

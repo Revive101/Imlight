@@ -5,9 +5,10 @@
 
 using System;
 using System.Linq;
+using Imlight.Server.Shared.Resources;
 using static WizUnraveler.Cache.TypeCache;
 
-namespace Imlight.Server.Data.WizardData;
+namespace Imlight.Server.WizardData;
 
 public static class WizardWorldData
 {

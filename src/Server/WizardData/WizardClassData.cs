@@ -6,7 +6,7 @@
 using System;
 using Imlight.Server.Game.Models;
 
-namespace Imlight.Server.Data.WizardData;
+namespace Imlight.Server.WizardData;
 
 /// <summary>
 /// Contains base stats for each class, as well as stats that are calculated based on level.

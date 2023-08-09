@@ -8,13 +8,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Imlight.Common.Utilities;
-using Imlight.Server.Data;
-using Imlight.Server.Data.WizardData;
+using Imlight.Server.Shared.Resources;
+using Imlight.Server.WizardData;
 using SharpDX;
 using WizUnraveler.Cache;
 using WizUnraveler.IO;
 using WizUnraveler.ObjectProperty;
-using static Imlight.Server.Data.WizardData.WizardResults;
+using static Imlight.Server.WizardData.WizardResults;
 using static WizUnraveler.Cache.TypeCache;
 
 namespace Imlight.Server.Game.Models;
@@ -102,7 +102,7 @@ public class Character
         // If the location is zero, return "Start."
         return this.Location == Vector3.Zero 
             ? "Start" 
-            : Data.Util.GetCompactStringFromVector(this.Location, this.Orientation);
+            : Util.GetCompactStringFromVector(this.Location, this.Orientation);
     }
 
     public void SetZone(string zone)
