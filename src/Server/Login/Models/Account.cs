@@ -40,7 +40,7 @@ namespace Imlight.Server.Login.Models
         /// <summary>
         /// The authentication level of the account.
         /// </summary>
-        public AuthLevel AuthLevel { get; }
+        public AuthLevel AuthLevel { get; set; }
 
         public readonly List<ulong> CharacterIds = new();
 

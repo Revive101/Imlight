@@ -63,6 +63,10 @@ namespace Imlight.Server.Shared.Services
                 TimestampLower = timestampLower,
                 Milliseconds = millisecondsIntoCurrentSecond,
             };
+            
+            // Set SessionActor variables.
+            SessionActor.OfferTime = currentUnixTimestamp;
+            SessionActor.OfferMillisecondsIntoSecond = millisecondsIntoCurrentSecond;
 
             SendToSocket(offer);
 

@@ -30,6 +30,8 @@ namespace Imlight.Server.Shared.Networking
         private const byte ServiceTimeRangeRetryInSeconds = 30;
 
         public ushort SessionID                     { get; }
+        public uint OfferTime                       { get; set; }
+        public uint OfferMillisecondsIntoSecond     { get; set; }
         public Socket Socket                        { get; }
         public IActorRef ActorRef                   { get; }
         public IActorRef ServerRef                  { get; }
@@ -38,7 +40,7 @@ namespace Imlight.Server.Shared.Networking
         public ushort QueuePosition                 { get; private set; }
         public INetworkMessage CachedDequeueMessage { get; set; }
         public long Ping                            { get; private set; }
-        
+
         private readonly IActorRef _actorFactoryRef;
         private readonly Dictionary<IActorRef, MessageService> _services;
         private readonly SocketAsyncEventArgs _socketSendArgs = new SocketAsyncEventArgs();
