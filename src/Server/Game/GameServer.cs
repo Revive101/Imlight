@@ -27,8 +27,8 @@ namespace Imlight.Server.Game
         private const string SESSION_KEY_HASH_INPUT = "MAGIC_HATTER";
         private const ushort SESSION_KEY_VALIDITY_TIME = 28800; // In seconds; 8 hours
         
-        private IActorRef _gameWorldRef;
-        private Cache<ByteString, Account> _sessionKeys;
+        private readonly IActorRef _gameWorldRef;
+        private readonly Cache<ByteString, Account> _sessionKeys;
         private readonly ListQueue<SessionActor> _playerQueue;
 
         public GameServer(string serverName = DEFAULT_GAME_SERVER_NAME,

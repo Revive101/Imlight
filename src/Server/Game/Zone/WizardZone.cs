@@ -200,7 +200,11 @@ public class WizardZone : ReceiveProtocolDispatcher
 
     private void SendDisplayText(IActorRef suspect, ResDisplayText resDisplayText)
     {
-        var msg = new GAME_5_PROTOCOL.MSG_CLIENTNOTIFYTEXT { NotifyText = resDisplayText.m_text };
+        var msg = new GAME_5_PROTOCOL.MSG_CLIENTNOTIFYTEXT
+        {
+            NotifyText = resDisplayText.m_text ,
+            Type = 1,
+        };
         suspect.Tell(msg);
     }
 
