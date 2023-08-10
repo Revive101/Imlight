@@ -10,6 +10,7 @@ using System.Reflection;
 using Imlight.Common.Utilities;
 using Imlight.Server.Shared.Resources;
 using Imlight.Server.WizardData;
+using Imlight.Server.WizardData.Implementations;
 using Newtonsoft.Json;
 using SharpDX;
 using WizUnraveler.Cache;
@@ -37,18 +38,20 @@ public class Character
     public bool IsVolunteer { get; private set; }
     public Vector3 Location
     {
-        get => this.GameObject?.m_location ?? Vector3.Zero;
+        get => this.GameObject?.m_location ?? _location;
         set
         {
             if (this.GameObject is not null) this.GameObject.m_location = value;
+            else _location = value;
         }
     }
     public Vector3 Orientation
     {
-        get => this.GameObject?.m_orientation ?? Vector3.Zero;
+        get => this.GameObject?.m_orientation ?? _orientation;
         set
         {
             if (this.GameObject is not null) this.GameObject.m_orientation = value;
+            else _orientation = value;
         }
     }
     
@@ -58,12 +61,16 @@ public class Character
     [JsonIgnore] public string QueuedZoneName;
     [JsonIgnore] public string QueuedZoneLocation;
 
+    [JsonProperty] private Vector3 _location;
+    [JsonProperty] private Vector3 _orientation;
     private Dictionary<Type, MethodInfo> _resultHandlers;
+    private ElementChangeCacheManager _cacheManager;
 
     // ctor
     public Character(WizardCharacterCreationInfo characterCreationInfo)
     {
-        // If the creation info is null, this character is being loaded from a database. In which case, don't do anything.
+        // If the creation info is null, this character is being loaded from a database.
+        // In which case, don't do anything.
         if (characterCreationInfo is null) 
             return;
         
@@ -86,11 +93,18 @@ public class Character
         SetResultHandlers();
     }
 
-    public void SetLocation(Vector3 loc) 
-        => this.Location = loc;
-
-    public void SetLocation(float x, float y, float z) 
-        => this.Location = new Vector3(x, y, z);
+    public void SetLocation(float x, float y, float z)
+    {
+        var vec = new Vector3(x, y, z);
+        SetLocation(vec);
+    }
+    
+    public void SetLocation(Vector3 loc)
+    {
+        this.Location = loc;
+        
+        SendPersistentChange("Location", 10, loc);
+    }
 
     public void SetLocation(string loc)
     {
@@ -196,6 +210,13 @@ public class Character
             var paramType = method.GetParameters()[0].ParameterType;
             _resultHandlers.Add(paramType, method);
         }
+    }
+
+    private void SendPersistentChange<T>(string elementName, byte batchSize, T value)
+    {
+        _cacheManager ??= new ElementChangeCacheManager(DocumentStoreSingleton.Store, CharId);
+
+        _cacheManager.EnqueueChange(elementName, batchSize, value);
     }
     
     #region Result Handlers

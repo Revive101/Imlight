@@ -26,6 +26,16 @@ namespace Imlight.Server.Game.Services
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVE))]
         private void ReceiveClientMove(GAME_5_PROTOCOL.MSG_CLIENTMOVE message)
         {
+            // Restore actual location information, as it is compressed by a factor of 4 and unsigned.
+            // Yaw is represented in radians in the client, but transmitted to the server as degrees.
+            var position = new SharpDX.Vector3(
+                unchecked((short)message.LocationX * 4), 
+                unchecked((short)message.LocationY * 4), 
+                unchecked((short)message.LocationZ * 4));
+
+            var character = GetActiveCharacter();
+            character.SetLocation(position);
+
             // Broadcast the move to all other players in the zone.
             BroadcastClientMove(message);
             SendZoneInteractionFishRequest();
