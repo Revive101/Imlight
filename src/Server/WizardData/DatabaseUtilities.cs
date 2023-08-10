@@ -1,6 +1,6 @@
 using Imlight.Server.Game.Models;
 using Imlight.Server.Login.Models;
-using Imlight.Server.WizardData.Collections;
+using Imlight.Server.WizardData.Implementations;
 using WizUnraveler.ObjectProperty;
 using Imlight.Common.Utilities;
 using static WizUnraveler.Cache.TypeCache;

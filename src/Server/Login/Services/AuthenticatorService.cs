@@ -11,7 +11,7 @@ using Imlight.Server.Login.Models;
 using WizUnraveler.Cache;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
-using Imlight.Server.WizardData.Collections;
+using Imlight.Server.WizardData.Implementations;
 using WizUnraveler.IO;
 
 namespace Imlight.Server.Login.Services;

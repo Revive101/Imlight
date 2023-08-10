@@ -1,12 +1,9 @@
 using System;
 using System.Security.Cryptography.X509Certificates;
-using System.Threading.Tasks;
 using Imlight.Common.Utilities;
-using Imlight.Server.Game.Models;
-using Imlight.Server.Login.Models;
 using Raven.Client.Documents;
 
-namespace Imlight.Server.WizardData;
+namespace Imlight.Server.WizardData.Implementations;
 
 /// <summary>
 /// Singleton for the RavenDB document store.

@@ -10,7 +10,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Imlight.Common.Utilities;
 using Imlight.Server.Game.Models;
-using Imlight.Server.WizardData.Collections;
+using Imlight.Server.WizardData.Implementations;
 using Newtonsoft.Json;
 using BCrypt.Net;
 using Imlight.Common.Cryptography;
@@ -25,7 +25,6 @@ namespace Imlight.Server.Login.Models
         public string Username { get; private set; }
         public string Email { get; private set; }
         public string PasswordHash { get; private set; }
-        public string UniqueSalt { get; }
         public AuthLevel AuthLevel { get; init; }
         public List<ulong> CharacterIds { get; private set; } = new();
 

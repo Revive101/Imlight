@@ -13,7 +13,7 @@ using Imlight.Common.Utilities;
 using LiteDB;
 using WizUnraveler.Formats;
 
-namespace Imlight.Server.WizardData.Collections;
+namespace Imlight.Server.WizardData.Implementations;
 
 public class FileDefinition
 {

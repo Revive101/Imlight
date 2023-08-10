@@ -4,7 +4,7 @@ using Imlight.Server.Game.Models;
 using Imlight.Server.Login.Models;
 using Raven.Client.Documents;
 
-namespace Imlight.Server.WizardData.Collections;
+namespace Imlight.Server.WizardData.Implementations;
 
 public static class AccountCollection
 {

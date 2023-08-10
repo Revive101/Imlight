@@ -7,7 +7,7 @@ using System;
 using System.Linq;
 using Imlight.Server.Game.Models;
 using Imlight.Server.Login.Models;
-using Imlight.Server.WizardData.Collections;
+using Imlight.Server.WizardData.Implementations;
 using SharpDX;
 using WizUnraveler.Cache;
 using WizUnraveler.ObjectProperty;
