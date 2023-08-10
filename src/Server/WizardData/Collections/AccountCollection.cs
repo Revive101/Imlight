@@ -89,4 +89,25 @@ public static class AccountCollection
 
         return account;
     }
+    
+    public static Account GetAccount(string username)
+    {
+        using var session = Store.OpenSession();
+
+        // Load the account with the characters included.
+        var account = session.Query<Account>()
+            .Include(c => c.CharacterIds)
+            .First(c => c.Username == username);
+        
+        // Load the characters if the account is not null.
+        if (account is not null)
+        {
+            var characters = session.Query<Character>()
+                .Where(c => c.AccountId == account.AccountId)
+                .ToList();
+            account.Characters = characters;
+        }
+
+        return account;
+    }
 }

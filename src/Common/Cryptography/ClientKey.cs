@@ -39,36 +39,17 @@ namespace Imlight.Common.Cryptography
         /// <returns></returns>
         public static bool VerifyCK1(string input, ushort sessionID, uint timeSecs, uint timeMillis, string encodedString)
         {
-            var expectedEncodedString = EncodeCK1(input, sessionID, timeSecs, timeMillis);
-            return encodedString == expectedEncodedString;
-        }
+            // Do not do the first pass.
+            var salt = $"{sessionID}{timeSecs}{timeMillis}";
+            var secondPass = SecondaryEncrypt(input, salt);
 
-        /// <summary>
-        /// Constructs a new salted ClientKey2 hash. This is used to validate a player's game client after their patcher closes.
-        /// </summary>
-        /// <param name="input"></param>
-        /// <param name="sessionID"></param>
-        /// <param name="timeSecs"></param>
-        /// <param name="timeMillis"></param>
-        /// <returns></returns>
-        public static string EncodeCK2(ushort sessionID, uint timeSecs, uint timeMillis)
-        {
-            using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
-            {
-                byte[] tokenData = new byte[32];
-                rng.GetBytes(tokenData);
-
-                string sessionHash = Convert.ToBase64String(tokenData);
-                string salt = $"{timeMillis}{timeSecs}{sessionID}";
-
-                return SecondaryEncrypt(sessionHash, salt);
-            }
+            return encodedString == secondPass;
         }
 
         private static string HashPassword(string password)
         {
             using var sha512 = SHA512.Create();
-            byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
+            var passwordBytes = Encoding.UTF8.GetBytes(password);
 
             return Convert.ToBase64String(sha512.ComputeHash(passwordBytes));
         }
@@ -76,10 +57,10 @@ namespace Imlight.Common.Cryptography
         public static string SecondaryEncrypt(string password, string seed)
         {
             using var sha512 = SHA512.Create();
-            byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
-            byte[] seedBytes = Encoding.UTF8.GetBytes(seed);
+            var passwordBytes = Encoding.UTF8.GetBytes(password);
+            var seedBytes = Encoding.UTF8.GetBytes(seed);
 
-            byte[] hash = sha512.ComputeHash(passwordBytes.Concat(seedBytes).ToArray());
+            var hash = sha512.ComputeHash(passwordBytes.Concat(seedBytes).ToArray());
 
             return Convert.ToBase64String(hash);
         }

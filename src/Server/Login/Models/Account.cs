@@ -6,63 +6,53 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using Imlight.Common.Utilities;
 using Imlight.Server.Game.Models;
 using Imlight.Server.WizardData.Collections;
 using Newtonsoft.Json;
+using BCrypt.Net;
+using Imlight.Common.Cryptography;
 
 namespace Imlight.Server.Login.Models
 {
     public class Account
     {
         public const byte MAX_ALLOWED_CHARACTERS = 6;
-
-        /// <summary>
-        /// The account ID.
-        /// </summary>
+        
         public ulong AccountId { get; private set; }
-
-        /// <summary>
-        /// The username of the account.
-        /// </summary>
         public string Username { get; private set; }
-
-        /// <summary>
-        /// The email of the account.
-        /// </summary>
         public string Email { get; private set; }
-
-        /// <summary>
-        /// The ClientKey1 hash of the plaintext password.
-        /// </summary>
         public string PasswordHash { get; private set; }
-
-        /// <summary>
-        /// The authentication level of the account.
-        /// </summary>
-        public AuthLevel AuthLevel { get; set; }
-
-        public readonly List<ulong> CharacterIds = new();
+        public string UniqueSalt { get; }
+        public AuthLevel AuthLevel { get; init; }
+        public List<ulong> CharacterIds { get; private set; } = new();
 
         [JsonIgnore] public List<Character> Characters = new();
 
-        public Account(string username, string email, string passwordHash)
+        public Account(string username, string email, string plaintextPassword)
         {
             if (string.IsNullOrWhiteSpace(username))
-                throw new ArgumentException("Value cannot be null or whitespace.", nameof(username));
+                return;
             if (string.IsNullOrWhiteSpace(email))
-                throw new ArgumentException("Value cannot be null or whitespace.", nameof(email));
-            if (string.IsNullOrWhiteSpace(passwordHash))
-                throw new ArgumentException("Value cannot be null or whitespace.", nameof(passwordHash));
+                return;
+            if (string.IsNullOrWhiteSpace(plaintextPassword))
+                return;
             
             this.AccountId = RandomGen.GenerateGUID();
             this.Username = username;
             this.Email = email;
-            this.PasswordHash = passwordHash;
+            
+            this.PasswordHash = CreateHashedPassword(plaintextPassword);
         }
 
         public Character AddCharacter(Character character)
         {
+            // Return null if adding this character would exceed the maximum allowed characters.
+            if (this.CharacterIds.Count >= MAX_ALLOWED_CHARACTERS)
+                return null;
+            
             // Change the character account ID to this account's ID.
             character.AccountId = this.AccountId;
             
@@ -91,6 +81,14 @@ namespace Imlight.Server.Login.Models
             CharacterIds.Remove(id);
 
             return true;
+        }
+
+        private static string CreateHashedPassword(string plaintextPassword)
+        {
+            using var sha512 = SHA512.Create();
+            var passwordBytes = Encoding.UTF8.GetBytes(plaintextPassword);
+
+            return Convert.ToBase64String(sha512.ComputeHash(passwordBytes));
         }
     }
 }

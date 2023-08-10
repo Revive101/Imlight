@@ -5,11 +5,14 @@
 
 using System;
 using Akka.Actor;
+using Imlight.Common.Cryptography;
+using Imlight.Server.Login.Exceptions;
+using Imlight.Server.Login.Models;
 using WizUnraveler.Cache;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
-using Imlight.Server.Shared.Resources;
 using Imlight.Server.WizardData.Collections;
+using WizUnraveler.IO;
 
 namespace Imlight.Server.Login.Services;
 
@@ -22,17 +25,111 @@ internal class AuthenticatorService : MessageService
         return Akka.Actor.Props.Create(() => new AuthenticatorService(parentActor));
     }
 
+    [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_V3))]
+    private void ReceiveUserAuth(LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_V3 message)
+    {
+        // Craft the record.
+        var offerTime = SessionActor.OfferTime;
+        var offerMilli = SessionActor.OfferMillisecondsIntoSecond;
+        var (sId, username, ck1) = DecodeRec1(message.Rec1);
+
+        // Check if the session id matches the one we sent. If it doesn't, inform the socket and return.
+        if (sId != SessionActor.SessionID)
+        {
+            // Return an error to the client.
+            SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_RSP()
+            {
+                Error = (int)UserAuthenError.AuthenFailed,
+                Reason = "Session ID mismatch",
+            });
+            
+            throw new Exception($"{nameof(LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_V3)} Session ID mismatch. " +
+                                $"Expected {SessionActor.SessionID}, got {sId}");
+        }
+        
+        // Get the account from database using the given user id. If the account doesn't exist, inform the socket
+        // and return.
+        var matchedAccount = AccountCollection.GetAccount(username);
+        if (matchedAccount == null)
+        {
+            SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_RSP()
+            {
+                Error = (int)UserAuthenError.AuthenFailed,
+                Reason = "Invalid UserID",
+            });
+            return;
+        }
+
+        // Check if the password hash matches the one we sent. If it doesn't, inform the socket and return.
+        var doesPassMatch = ClientKey.VerifyCK1(matchedAccount.PasswordHash, sId, offerTime, offerMilli,
+            ck1);
+        if (doesPassMatch)
+        {
+            var ck2 = "test";
+            var rec1 = Rec1.Encode(sId, matchedAccount.Username, ck2, offerTime, offerMilli);
+            SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_RSP()
+            {
+                Error = 0,
+                Flags = 0,
+                PayingUser = 1,
+                Reason = "",
+                Rec1 = rec1,
+                TimeStamp = "",
+                UserID = matchedAccount.AccountId
+            });
+        }
+        else
+        {
+            SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_RSP()
+            {
+                Error = (int)UserAuthenError.AuthenFailed,
+                Reason = "Invalid Password",
+            });
+            return;
+        }
+        
+        SendClientToLogin(matchedAccount);
+    }
+
     [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_USER_VALIDATE))]
     private void ReceiveUserValidate(LOGIN_7_PROTOCOL.MSG_USER_VALIDATE message)
     {
-        // @TODO: User authentication here !
-        // For now, we'll always except any user.
-
-        // Inform the SessionActor of the account.
-        TellOtherServices(new ACCOUNT_104_PROTOCOL.MSG_ACCOUNT()
+        // Get the account from database using the given user id. If the account doesn't exist,
+        // inform the socket and return.
+        var matchedAccount = AccountCollection.GetAccount(message.UserID);
+        if (matchedAccount == null)
         {
-            Account = Util.CreateFakeDatabaseAccount()
-        });
+            SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_VALIDATE_RSP()
+            {
+                UserID = message.UserID,
+                PayingUser = 1,
+                Error = (int)UserValidateError.ValidateFailed,
+                Reason = "Invalid UserID",
+            });
+            return;
+        }
+
+        var clientKey2 = "test";
+        var ps3Raw = message.PassKey3;
+        var sId = SessionActor.SessionID;
+        var acceptedTime = SessionActor.OfferTime;
+        var acceptedMilli = SessionActor.OfferMillisecondsIntoSecond;
+        var passKey = PassKey3.VerifyPK3(clientKey2, sId, acceptedTime, acceptedMilli, ps3Raw);
+        
+        // If the passkey is invalid, inform the socket and return.
+        if (!passKey)
+        {
+            SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_VALIDATE_RSP()
+            {
+                UserID = message.UserID,
+                PayingUser = 1,
+                Error = (int)UserValidateError.ValidateFailed,
+                Reason = "Invalid PassKey3",
+            });
+            return;
+        }
+
+        SendClientToLogin(matchedAccount);
             
         // Inform the player that they've been authenticated.
         SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_VALIDATE_RSP()
@@ -42,7 +139,29 @@ internal class AuthenticatorService : MessageService
             Error = (int)UserValidateError.NoError,
             Reason = "", // Unclear as to what this field means, but it's most likely an elaboration of an error.
         });
-            
+    }
+    
+    private (ushort, string, string) DecodeRec1(ByteString rec1)
+    {
+        var decoded = Rec1.Decode(rec1, SessionActor.SessionID, SessionActor.OfferTime,
+            SessionActor.OfferMillisecondsIntoSecond);
+        var split = decoded.ToString().Split(' ');
+        
+        // Cast the session id to a ushort.
+        if (!ushort.TryParse(split[0], out var sId))
+        {
+            throw new Exception($"{nameof(LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_V3)} Session ID is not a ushort. " +
+                                $"Expected ushort, got {split[0]}");
+        }
+        
+        return (sId, split[1], split[2]);
+    }
+
+    private void SendClientToLogin(Account account)
+    {
+        // Inform the SessionActor of the account.
+        TellOtherServices(new ACCOUNT_104_PROTOCOL.MSG_ACCOUNT { Account = account });
+
         // Enqueue ourselves to the connected server. Inform the socket if its been placed into a queue and
         // what position it could potentially be in.
         var serverEnqueueResult = (LOGIN_7_PROTOCOL.MSG_USER_ADMIT_IND)SessionActor.EnqueueToServer();
