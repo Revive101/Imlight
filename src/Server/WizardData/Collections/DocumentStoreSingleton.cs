@@ -10,6 +10,8 @@ namespace Imlight.Server.WizardData.Implementations;
 /// </summary>
 internal static class DocumentStoreSingleton
 {
+    public static readonly byte MaxNumberOfRequestsPerSession = 16; 
+    
     private static readonly Lazy<IDocumentStore> store = new(CreateStore);
     private static readonly X509Certificate2 certificate = new("/home/makima/.ssh/dragon-database/dragon.pfx");
     private static readonly string databaseName = "Imlight";
@@ -29,7 +31,7 @@ internal static class DocumentStoreSingleton
             Database = databaseName,
             Conventions =
             {
-                MaxNumberOfRequestsPerSession = 16,
+                MaxNumberOfRequestsPerSession = MaxNumberOfRequestsPerSession,
                 UseOptimisticConcurrency = true,
             },
             Certificate = certificate,
