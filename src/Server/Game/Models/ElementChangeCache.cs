@@ -60,7 +60,6 @@ public class ElementChangeCache<T> : IChangeCache
                                                      $"where c.CharId = {_charId} " +
                                                      $"update {{ c.{_elementName} = {json} }}");
         
-        // Todo: This shouldn't always be a try catch.
         try
         {
             var operation = await _documentStore.Operations.SendAsync(patchRequest);
@@ -70,7 +69,8 @@ public class ElementChangeCache<T> : IChangeCache
         }
         catch (Exception ex)
         {
-            
+            Log.Error("Could not save persistent stat {0} for reason: {1}",
+                Log.Args(_elementName, ex.Message));
         }
     }
 }
