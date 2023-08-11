@@ -8,7 +8,7 @@ namespace Imlight.Server.WizardData.Implementations;
 /// <summary>
 /// Singleton for the RavenDB document store.
 /// </summary>
-internal static class DocumentStoreSingleton
+public static class DocumentStoreSingleton
 {
     public static readonly byte MaxNumberOfRequestsPerSession = 16; 
     

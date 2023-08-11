@@ -13,6 +13,7 @@ using Imlight.Server.Login;
 using Imlight.Server.Patch;
 using Imlight.Server.Shared.Packets;
 using Imlight.Server.Shared.Resources;
+using Imlight.Server.WizardData.Implementations;
 
 namespace Imlight.Backend
 {
@@ -71,6 +72,10 @@ namespace Imlight.Backend
                 return;
             }
             Log.Information("Resources successfully allocated.");
+            
+            // Force the lazy database to load.
+            Log.Information("Loading database..");
+            _ = DocumentStoreSingleton.Store;
 
             // =============================================================
             // SERVERS
