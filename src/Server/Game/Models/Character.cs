@@ -102,6 +102,8 @@ public class Character
 
     public void SetLocation(string loc)
     {
+        // The only time a string location is given is on attach. In which case, we want to disassemble the string
+        // and immediately persist the location change.
         var location = Util.GetVectorFromCompactString(loc);
         this.Location = new Vector3(location.X, location.Y, location.Z);
         this.Orientation = new Vector3(0, 0, location.W);
@@ -187,6 +189,11 @@ public class Character
         existingStats.m_dmgReducePercent = new List<float>();
 
         return existingStats;
+    }
+
+    public void FlushAllCachedChanges()
+    {
+        _cacheManager.FlushAllChangesAsync();
     }
     
     private void SetResultHandlers()

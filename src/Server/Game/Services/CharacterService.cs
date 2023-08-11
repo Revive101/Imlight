@@ -96,5 +96,14 @@ namespace Imlight.Server.Game.Services
                 TournamentNameID = message.TournamentNameID,
             });
         }
+
+        [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_DISPOSE))]
+        public override void ReceiveDispose(SERVICE_101_PROTOCOL.MSG_DISPOSE message)
+        {
+            var character = GetActiveCharacter();
+            character.FlushAllCachedChanges();
+            
+            base.ReceiveDispose(message);
+        }
     }
 }
