@@ -61,10 +61,10 @@ public class Character
     [JsonIgnore] public string QueuedZoneName;
     [JsonIgnore] public string QueuedZoneLocation;
 
-    [JsonProperty] private Vector3 _location;
-    [JsonProperty] private Vector3 _orientation;
-    private Dictionary<Type, MethodInfo> _resultHandlers;
-    private ElementChangeCacheManager _cacheManager;
+    [JsonIgnore] private Vector3 _location;
+    [JsonIgnore] private Vector3 _orientation;
+    [JsonIgnore] private Dictionary<Type, MethodInfo> _resultHandlers;
+    [JsonIgnore] private ElementChangeCacheManager _cacheManager;
 
     // ctor
     public Character(WizardCharacterCreationInfo characterCreationInfo)
@@ -93,17 +93,11 @@ public class Character
         SetResultHandlers();
     }
 
-    public void SetLocation(float x, float y, float z)
-    {
-        var vec = new Vector3(x, y, z);
-        SetLocation(vec);
-    }
-    
     public void SetLocation(Vector3 loc)
     {
         this.Location = loc;
         
-        SendPersistentChange("Location", 10, loc);
+        SendCachedChange(nameof(Location), 10, loc);
     }
 
     public void SetLocation(string loc)
@@ -111,16 +105,10 @@ public class Character
         var location = Util.GetVectorFromCompactString(loc);
         this.Location = new Vector3(location.X, location.Y, location.Z);
         this.Orientation = new Vector3(0, 0, location.W);
-    }
 
-    public string GetStringLocation()
-    {
-        // If the location is zero, return "Start."
-        return this.Location == Vector3.Zero 
-            ? "Start" 
-            : Util.GetCompactStringFromVector(this.Location, this.Orientation);
+        SendPersistentChange(nameof(Location), this.Location);
     }
-
+    
     public void SetZone(string zone)
     {
         // Check if the zone exists in the AccessPass.
@@ -132,6 +120,15 @@ public class Character
         }
         
         this.Zone = zone;
+        SendPersistentChange(nameof(Zone), zone);
+    }
+
+    public string GetStringLocation()
+    {
+        // If the location is zero, return "Start."
+        return this.Location == Vector3.Zero 
+            ? "Start" 
+            : Util.GetCompactStringFromVector(this.Location, this.Orientation);
     }
 
     public WizardCharacterCreationInfo GetCharacterCreationInfo()
@@ -153,7 +150,7 @@ public class Character
         return creationInfo;
     }
 
-    public void SendResult(TypeCache.Result result)
+    public void HandleResult(TypeCache.Result result)
     {
         // Find the method that handles this message type
         if (_resultHandlers.TryGetValue(result.GetType(), out var method))
@@ -212,11 +209,16 @@ public class Character
         }
     }
 
-    private void SendPersistentChange<T>(string elementName, byte batchSize, T value)
+    private void SendCachedChange<T>(string elementName, byte batchSize, T value)
     {
         _cacheManager ??= new ElementChangeCacheManager(DocumentStoreSingleton.Store, CharId);
-
         _cacheManager.EnqueueChange(elementName, batchSize, value);
+    }
+    
+    private void SendPersistentChange<T>(string elementName, T value)
+    {
+        _cacheManager ??= new ElementChangeCacheManager(DocumentStoreSingleton.Store, CharId);
+        _cacheManager.FlushChangeAsync(elementName, value);
     }
     
     #region Result Handlers

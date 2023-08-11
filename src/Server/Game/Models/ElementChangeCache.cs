@@ -45,7 +45,7 @@ public class ElementChangeCache<T> : IChangeCache
         }
         else
         {
-            Log.Error($"Invalid change type. Expected {0}, but received {1}",
+            Log.Error("Invalid change type. Expected {0}, but received {1}",
                 Log.Args(typeof(T).Name, change.GetType().Name));
         }
     }

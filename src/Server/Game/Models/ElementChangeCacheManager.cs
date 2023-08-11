@@ -37,6 +37,25 @@ public class ElementChangeCacheManager
 
         changeCache.EnqueueChange(change);
     }
+    
+    /// <summary>
+    /// Flushes the batched changes of a specific element.
+    /// </summary>
+    /// <param name="elementName"></param>
+    /// <param name="change"></param>
+    /// <typeparam name="T"></typeparam>
+    public async Task FlushChangeAsync<T>(string elementName, T change)
+    {
+        if (!_changeCaches.TryGetValue(elementName, out var changeCache))
+        {
+            // Make a new change cache if one does not exist.
+            changeCache = new ElementChangeCache<T>(_accountId, elementName, 1);
+            _changeCaches[elementName] = changeCache;
+        }
+
+        _changeCaches[elementName].EnqueueChange(change);
+        await changeCache.FlushChangesAsync();
+    }
 
     /// <summary>
     /// Flushes all the batched changes of the manager.
