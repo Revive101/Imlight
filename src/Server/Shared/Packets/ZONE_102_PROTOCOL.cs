@@ -36,7 +36,8 @@ namespace Imlight.Server.Shared.Packets
             public byte MessageOrder { get; } = 2;
             public byte ServiceID { get; } = 102;
 
-            public IActorRef ZoneActorRef;  
+            public IActorRef ZoneActorRef;
+            public ushort MobileId;
             public uint DynamicZoneId;
             public uint ErrorCode;
         }

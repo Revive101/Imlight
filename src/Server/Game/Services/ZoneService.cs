@@ -50,7 +50,7 @@ namespace Imlight.Server.Game.Services
                 var msg = new GAME_5_PROTOCOL.MSG_ZONETRANSFERREQUEST
                 {
                     ZoneName = message.DestinationZone,
-                    SendAck = 0
+                    SendAck = 1
                 };
                 SendToSocket(msg);
 

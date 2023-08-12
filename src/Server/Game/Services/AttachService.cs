@@ -71,10 +71,11 @@ namespace Imlight.Server.Game.Services
 
             // Serialize the character's game object.
             var charGameObject = CharacterObjectLoader.GetPlayerGameObject(ref character);
+            charGameObject.m_nMobileID = zoneDetails.MobileId; // Set the mobile id to the one given by the zone.
             character.GameObject = charGameObject;
             var localGameObjectData = new CoreObjectSerializer().Serialize(charGameObject);
             if (charGameObject is null || string.IsNullOrEmpty(localGameObjectData))
-                throw new ServiceRetryException($"User [{message.UserID}] failed to grab or deserialize " +
+                throw new ServiceRetryException($"User {message.UserID} failed to grab or deserialize " +
                                                 $"their player object.");
             
             // Send login complete.

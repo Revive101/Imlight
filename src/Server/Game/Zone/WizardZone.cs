@@ -214,13 +214,14 @@ public class WizardZone : ReceiveProtocolDispatcher
     private void ReceiveZoneTransfer(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message)
     {
         // This is step 1 of the zone transfer process.
-        // There's nothing we need to do here except for telling the sender the zone details.
-        // We'll be waiting to receive MSG_ADDPLAYER before we do any object creation.
+        // There's nothing we need to do here except for telling the sender the zone details and allocating a dynamic
+        // zone ID for them.
         Sender.Tell(new ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP
         {
             ZoneActorRef = Self,
             DynamicZoneId = _dynamicZoneId,
-            ErrorCode = 0
+            ErrorCode = 0,
+            MobileId = GenerateMobileId()
         });
     }
 
@@ -229,9 +230,10 @@ public class WizardZone : ReceiveProtocolDispatcher
     {
         if (_zonePlayers.ContainsKey(message.Player))
             throw new Exception("Player actor already exists in this zone!");
-        
-        // Generate an ID for this new player that is zone agnostic.
-        message.PlayerObject.m_nMobileID = GenerateMobileId();
+
+        // If the message did not provide a mobile ID, then we need to generate one.
+        if (message.PlayerObject.m_nMobileID == 0)
+            message.PlayerObject.m_nMobileID = GenerateMobileId();
 
         InformZoneObjectsOfJoin(message);
         SpawnPlayersForNewClient(message.Player);
@@ -239,8 +241,10 @@ public class WizardZone : ReceiveProtocolDispatcher
         // Now we add the player, so they don't end up creating themselves when we spawn each zone object.
         _zonePlayers.Add(message.Player, message.PlayerObject);
 
-        // Inform the player that they've been successfully added to the zone.
+        // Inform the player that they've been successfully added to the zone. We want to reply to the callee
+        // and any services that may be waiting for this reply.
         var response = new ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP { PlayerObject = message.PlayerObject };
+        Sender.Tell(response);
         message.Player.Tell(response);
 
         Log.Debug("Player {Name} added to zone {ZoneName}.", 

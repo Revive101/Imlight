@@ -36,6 +36,9 @@ public class Character
     public int TrainingPoints { get; set; }
     public int XpToNextLevel { get; set; }
     public bool IsVolunteer { get; private set; }
+    public string MarkedZoneName { get; private set; }
+    public Vector3 MarkedLocation { get; private set; }
+    public Vector3 MarkedLocationOrientation { get; private set; }
     public Vector3 Location
     {
         get => this.GameObject?.m_location ?? _location;
@@ -123,6 +126,14 @@ public class Character
         
         this.Zone = zone;
         SendPersistentChange(nameof(Zone), zone);
+    }
+    
+    public void SetMarkedLocation(Vector3 loc, Vector3 orientation, string zoneName)
+    {
+        this.MarkedLocation = loc;
+        this.MarkedLocationOrientation = orientation;
+        this.MarkedZoneName = zoneName;
+        SendPersistentChange(nameof(MarkedLocation), loc);
     }
 
     public string GetStringLocation()
