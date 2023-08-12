@@ -61,12 +61,15 @@ internal class AuthenticatorService : MessageService
         }
 
         // Check if the password hash matches the one we sent. If it doesn't, inform the socket and return.
-        var doesPassMatch = ClientKey.VerifyCK1(matchedAccount.PasswordHash, sId, offerTime, offerMilli,
-            ck1);
+        var doesPassMatch = ClientKey.VerifyCK1(matchedAccount.PasswordHash, sId, offerTime, offerMilli, ck1);
         if (doesPassMatch)
         {
-            var ck2 = "test";
-            var rec1 = Rec1.Encode(sId, matchedAccount.Username, ck2, offerTime, offerMilli);
+            // Create a session key and store it in the database.
+            var sessionKey = ClientKey.HashSessionKey(sId, offerTime, offerMilli);
+            ClientKeyCollection.AddSessionKey(matchedAccount.AccountId, message.MachineID, sessionKey);
+
+            // Echo the session key and user id back to the client.
+            var rec1 = Rec1.Encode(sessionKey, sId, offerTime, offerMilli);
             SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_RSP()
             {
                 Error = 0,
@@ -108,18 +111,33 @@ internal class AuthenticatorService : MessageService
             });
             return;
         }
+        
+        // Get the stored session key associated with the user id. If a session key doesn't exist, inform the socket
+        // and return.
+        var sessionKey = ClientKeyCollection.GetSessionKey(message.UserID, message.MachineID);
+        if (sessionKey == null)
+        {
+            SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_VALIDATE_RSP()
+            {
+                UserID = message.UserID,
+                PayingUser = 1,
+                Error = (int)UserValidateError.ValidateFailed,
+                Reason = "Invalid UserID",
+            });
+            return;
+        }
 
-        var clientKey2 = "test";
+        // The client has echoed the session key back to us. We can now verify the passkey.
         var ps3Raw = message.PassKey3;
         var sId = SessionActor.SessionID;
-        var acceptedTime = SessionActor.OfferTime;
-        var acceptedMilli = SessionActor.OfferMillisecondsIntoSecond;
-        var passKey = PassKey3.VerifyPK3(clientKey2, sId, acceptedTime, acceptedMilli, ps3Raw);
+        var offerTime = SessionActor.OfferTime;
+        var offerMilli = SessionActor.OfferMillisecondsIntoSecond;
+        var passKey = PassKey3.VerifyPK3(sessionKey, sId, offerTime, offerMilli, ps3Raw);
         
         // If the passkey is invalid, inform the socket and return.
         if (!passKey)
         {
-            SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_VALIDATE_RSP()
+            SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_VALIDATE_RSP
             {
                 UserID = message.UserID,
                 PayingUser = 1,
@@ -129,6 +147,7 @@ internal class AuthenticatorService : MessageService
             return;
         }
 
+        // Otherwise, send the client to the login server.
         SendClientToLogin(matchedAccount);
             
         // Inform the player that they've been authenticated.

@@ -7,6 +7,7 @@ using System;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using WizUnraveler.IO;
 
 namespace Imlight.Common.Cryptography
 {
@@ -20,7 +21,7 @@ namespace Imlight.Common.Cryptography
         /// <param name="timeSecs"></param>
         /// <param name="timeMillis"></param>
         /// <returns></returns>
-        public static string EncodeCK1(string input, ushort sessionID, uint timeSecs, uint timeMillis)
+        public static string HaskCK1(string input, ushort sessionID, uint timeSecs, uint timeMillis)
         {
             var passwordHash = HashPassword(input);
 
@@ -44,6 +45,29 @@ namespace Imlight.Common.Cryptography
             var secondPass = SecondaryEncrypt(input, salt);
 
             return encodedString == secondPass;
+        }
+
+        /// <summary>
+        /// Constructs a new salted session key hash.
+        /// </summary>
+        /// <param name="sessionId"></param>
+        /// <param name="offerSeconds"></param>
+        /// <param name="offerMilli"></param>
+        /// <returns></returns>
+        public static ByteString HashSessionKey(ushort sessionId, uint offerSeconds, uint offerMilli)
+        {
+            // Generate a cryptographically safe number.
+            using var rng = new RNGCryptoServiceProvider();
+            var randomBytes = new byte[4];
+            rng.GetBytes(randomBytes);
+            var randomNum = BitConverter.ToInt32(randomBytes, 0);
+            randomNum = Math.Abs(randomNum);
+
+            var combinedData = $"{randomNum}{sessionId}{offerSeconds}{offerMilli}";
+            var dataBytes = Encoding.UTF8.GetBytes(combinedData);
+            var hashBytes = SHA256.HashData(dataBytes);
+
+            return Convert.ToBase64String(hashBytes);
         }
 
         private static string HashPassword(string password)
