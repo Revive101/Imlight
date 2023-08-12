@@ -40,7 +40,7 @@ public static class AccountCollection
         using var session = Store.OpenAsyncSession();
         
         // Start by loading an account, if one exists.
-        var existingAccount = session.Query<Account>()
+        var existingAccount = session.Query<Account>(collectionName: CollectionName)
             .First(c => c.AccountId == account.AccountId);
         if (existingAccount is null)
             return false;
@@ -74,7 +74,7 @@ public static class AccountCollection
         using var session = Store.OpenSession();
 
         // Load the account with the characters included.
-        var account = session.Query<Account>()
+        var account = session.Query<Account>(collectionName: CollectionName)
             .Include(c => c.CharacterIds)
             .First(c => c.AccountId == id);
         
@@ -95,7 +95,7 @@ public static class AccountCollection
         using var session = Store.OpenSession();
 
         // Load the account with the characters included.
-        var account = session.Query<Account>()
+        var account = session.Query<Account>(collectionName: CollectionName)
             .Include(c => c.CharacterIds)
             .First(c => c.Username == username);
         
