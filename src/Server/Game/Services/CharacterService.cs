@@ -25,18 +25,33 @@ namespace Imlight.Server.Game.Services
             return Akka.Actor.Props.Create(() => new CharacterService(parentActor));
         }
 
-        [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_SETACTIVECHARACTER))]
-        private void ReceiveSetActiveCharacter(CHARACTER_103_PROTOCOL.MSG_SETACTIVECHARACTER message)
-        {
-            _activeCharacter = message.Character;
-        }
-
+        #region Internal Handlers
+        
         [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP))]
         private void ReceiveZoneAddPlayerResponse(ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP message)
         {
             _activeCharacterObject = message.PlayerObject;
         }
         
+        [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_DISPOSE))]
+        public override void ReceiveDispose(SERVICE_101_PROTOCOL.MSG_DISPOSE message)
+        {
+            var character = GetActiveCharacter();
+            character.FlushAllCachedChanges();
+            
+            base.ReceiveDispose(message);
+        }
+        
+        #endregion
+        
+        #region Game Handlers
+        
+        [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_SETACTIVECHARACTER))]
+        private void ReceiveSetActiveCharacter(CHARACTER_103_PROTOCOL.MSG_SETACTIVECHARACTER message)
+        {
+            _activeCharacter = message.Character;
+        }
+
         [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER))]
         private void ReceiveQueryActiveCharacter(CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER message)
         {
@@ -96,14 +111,7 @@ namespace Imlight.Server.Game.Services
                 TournamentNameID = message.TournamentNameID,
             });
         }
-
-        [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_DISPOSE))]
-        public override void ReceiveDispose(SERVICE_101_PROTOCOL.MSG_DISPOSE message)
-        {
-            var character = GetActiveCharacter();
-            character.FlushAllCachedChanges();
-            
-            base.ReceiveDispose(message);
-        }
+        
+        #endregion
     }
 }

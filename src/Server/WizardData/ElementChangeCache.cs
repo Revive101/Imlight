@@ -1,14 +1,17 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Imlight.Common.Utilities;
-using Imlight.Server.Login.Models;
+using Imlight.Server.Game.Models;
 using Imlight.Server.WizardData.Implementations;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Operations;
 
-namespace Imlight.Server.Game.Models;
+namespace Imlight.Server.WizardData;
 
 public class ElementChangeCache<T> : IChangeCache
 {
