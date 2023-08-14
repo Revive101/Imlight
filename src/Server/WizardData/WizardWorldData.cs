@@ -12,7 +12,7 @@ namespace Imlight.Server.WizardData;
 
 public static class WizardWorldData
 {
-    public const string StartingZone = "WizardCity/WC_Hub";
+    public const string StartingZone = "WizardCity/WC_Streets/WC_OldeTown";
     public const ushort StartingLevel = 1;
     public const byte StartingWorld = 1;
     public const int GoldPouchMax = 1000000;

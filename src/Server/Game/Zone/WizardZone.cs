@@ -12,6 +12,7 @@ using Imlight.Common.Serializable;
 using Imlight.Common.Utilities;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
+using Imlight.Server.WizardData;
 using WizUnraveler.Cache;
 using WizUnraveler.DML;
 using WizUnraveler.Secrets;
@@ -203,8 +204,15 @@ public class WizardZone : ReceiveProtocolDispatcher
         var msg = new GAME_5_PROTOCOL.MSG_CLIENTNOTIFYTEXT
         {
             NotifyText = resDisplayText.m_text ,
-            Type = 1,
+            Type = resDisplayText.m_type,
         };
+        suspect.Tell(msg);
+    }
+
+    private void SendPlaySound(IActorRef suspect, ServerTypeCache.ResPlaySound resPlaySound)
+    {
+        // todo: implement
+        var msg = new GAME_5_PROTOCOL.MSG_PLAYSOUND { SoundFilename = resPlaySound.m_soundName };
         suspect.Tell(msg);
     }
 
@@ -372,6 +380,9 @@ public class WizardZone : ReceiveProtocolDispatcher
                     break;
                 case ServerTypeCache.ResDisplayText resDisplayText:
                     SendDisplayText(message.Suspect, resDisplayText);
+                    break;
+                case ServerTypeCache.ResPlaySound resPlaySound:
+                    SendPlaySound(message.Suspect, resPlaySound);
                     break;
             }
         }
