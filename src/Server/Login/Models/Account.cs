@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 using Imlight.Common.Utilities;
 using Imlight.Server.Game.Models;
 using Imlight.Server.WizardData.Implementations;
@@ -19,7 +20,7 @@ namespace Imlight.Server.Login.Models
 {
     public class Account
     {
-        public const byte MAX_ALLOWED_CHARACTERS = 6;
+        [JsonIgnore] public const byte MAX_ALLOWED_CHARACTERS = 6;
         
         public ulong AccountId { get; private set; }
         public string Username { get; private set; }
@@ -29,6 +30,9 @@ namespace Imlight.Server.Login.Models
         public List<ulong> CharacterIds { get; private set; } = new();
 
         [JsonIgnore] public List<Character> Characters = new();
+        
+        // Empty constructor for deserialization.
+        [JsonConstructor] public Account() {}
 
         public Account(string username, string email, string plaintextPassword)
         {
@@ -46,25 +50,22 @@ namespace Imlight.Server.Login.Models
             this.PasswordHash = CreateHashedPassword(plaintextPassword);
         }
 
-        public Character AddCharacter(Character character)
+        public bool AddCharacter(Character character)
         {
-            // Return null if adding this character would exceed the maximum allowed characters.
+            // Return false if adding this character would exceed the maximum allowed characters per account.
+            // Return false if the character already exists in the account.
             if (this.CharacterIds.Count >= MAX_ALLOWED_CHARACTERS)
-                return null;
+                return false;
+            if (this.CharacterIds.Contains(character.CharId))
+                return false;
             
             // Change the character account ID to this account's ID.
             character.AccountId = this.AccountId;
-            
-            CharacterCollection.AddCharacter(character);
+
             this.CharacterIds.Add(character.CharId);
             this.Characters.Add(character);
 
-            return character;
-        }
-
-        public Character GetCharacter(ulong id)
-        {
-            return this.Characters.First(c => c.CharId == id);
+            return true;
         }
 
         public bool DeleteCharacter(ulong id)
@@ -72,15 +73,15 @@ namespace Imlight.Server.Login.Models
             // Check to see if the character exists with our account id.
             if (!this.CharacterIds.Contains(id))
                 return false;
-            
-            // Delete the character from the database.
-            CharacterCollection.DeleteCharacter(id);
-            
+
             Characters.RemoveAll(c => c.CharId == id);
             CharacterIds.Remove(id);
 
             return true;
         }
+        
+        public Character GetCharacter(ulong id) 
+            => this.Characters.First(c => c.CharId == id);
 
         private static string CreateHashedPassword(string plaintextPassword)
         {

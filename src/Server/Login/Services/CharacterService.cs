@@ -3,18 +3,12 @@
  * Proprietary and confidential.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Akka.Actor;
-using WizUnraveler;
 using WizUnraveler.Cache;
 using WizUnraveler.ObjectProperty;
-using Imlight.Common.Utilities;
 using Imlight.Server.Game.Models;
 using Imlight.Server.Shared.Networking;
+using Imlight.Server.WizardData.Implementations;
 
 namespace Imlight.Server.Login.Services
 {
@@ -36,13 +30,12 @@ namespace Imlight.Server.Login.Services
             // The client has sent us serialized WizardCharacterCreationData. We need to
             // deserialize it to add it to our account database.
             var serializer = new ObjectSerializer();
-            var charData = (TypeCache.WizardCharacterCreationInfo)serializer.Deserialize(message.CreationInfo);
-
             var errorCode = 0;
+            
+            var charData = (TypeCache.WizardCharacterCreationInfo)serializer.Deserialize(message.CreationInfo);
             if (charData is null)
-            {
                 throw new ActorKilledException("Could not successfully deserialize WizardCharacterCreationData!");
-            }
+            
 
             // Add the new character to the player's account.
             var account = GetSocketAccount();
@@ -50,20 +43,54 @@ namespace Imlight.Server.Login.Services
             {
                 var newCharacter = new Character(charData);
                 var createdCharacter = account.AddCharacter(newCharacter);
+                
+                // If we had no problems adding the character to the account, save the characters in the database.
+                if (createdCharacter)
+                {
+                    var savedCharacterToCollection = CharacterCollection
+                        .AddCharacter(newCharacter);
+                    var savedCharacterToAccount = AccountCollection
+                        .AddCharacterToAccount(account.AccountId, newCharacter.CharId);
 
-                // @TODO: Figure out what each of these error codes means.
-                if (createdCharacter is null)
-                    errorCode = 2;
+                    if (!savedCharacterToCollection || !savedCharacterToAccount)
+                        errorCode = 1;
+                }
+                else
+                    errorCode = 1;
             }
             else
-            {
                 errorCode = 1;
-            }
 
-            SendToSocket(new LOGIN_7_PROTOCOL.MSG_CREATECHARACTERRESPONSE()
+            SendToSocket(new LOGIN_7_PROTOCOL.MSG_CREATECHARACTERRESPONSE { ErrorCode = errorCode });
+        }
+        
+        [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_DELETECHARACTER))]
+        private void ReceiveDeleteCharacter(LOGIN_7_PROTOCOL.MSG_DELETECHARACTER message)
+        {
+            var errorCode = 0;
+            var account = GetSocketAccount();
+            if (account is not null)
             {
-                ErrorCode = errorCode,
-            });
+                var deletedCharacter = account.DeleteCharacter(message.CharID);
+                
+                // If we had no problems deleting the character from the account, delete the character from the database.
+                if (deletedCharacter)
+                {
+                    var deletedCharacterFromCollection = CharacterCollection
+                        .DeleteCharacter(message.CharID);
+                    var deletedCharacterFromAccount = AccountCollection
+                        .DeleteCharacterFromAccount(account.AccountId, message.CharID);
+
+                    if (!deletedCharacterFromCollection || !deletedCharacterFromAccount)
+                        errorCode = 1;
+                }
+                else
+                    errorCode = 1;
+            }
+            else
+                errorCode = 1;
+
+            SendToSocket(new LOGIN_7_PROTOCOL.MSG_DELETECHARACTERRESPONSE { ErrorCode = errorCode });
         }
 
         [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_REQUESTCHARACTERLIST))]
@@ -95,23 +122,6 @@ namespace Imlight.Server.Login.Services
 
             // Tell the client we've finished sending the character list.
             SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERLIST());
-        }
-
-        [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_DELETECHARACTER))]
-        private void ReceiveDeleteCharacter(LOGIN_7_PROTOCOL.MSG_DELETECHARACTER message)
-        {
-            var errorCode = 0;
-            var account = GetSocketAccount();
-            if (account is null)
-                errorCode = 1;
-            
-            if (account != null && !account.DeleteCharacter(message.CharID))
-                errorCode = 2;
-
-            SendToSocket(new LOGIN_7_PROTOCOL.MSG_DELETECHARACTERRESPONSE()
-            {
-                ErrorCode = errorCode
-            });
         }
 
         [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_LOGINLOGCHARACTERCREATION))]

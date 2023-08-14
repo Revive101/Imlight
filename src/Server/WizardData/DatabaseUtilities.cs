@@ -9,12 +9,12 @@ namespace Imlight.Server.WizardData;
 
 public static class DatabaseUtilities
 {
-    private const string destinyRawData = "4C8F6E110100000000007200000000000" +
+    private const string DestinyRawData = "4C8F6E110100000000007200000000000" +
                                           "00000000000000000000052078DD072100" +
                                           "000CA186380310000000088BEC104000B0" +
                                           "0000000610001000300000000000000000" +
                                           "00000000000000000840CAB0400002300";
-    private const string kevinRawData = "4C8F6E1101000000000072000000" +
+    private const string KevinRawData = "4C8F6E1101000000000072000000" +
                                         "0000000000000000000000000052" +
                                         "078DD072200000B5882240110100" +
                                         "000088BEC1040000000000001B0A" +
@@ -34,11 +34,11 @@ public static class DatabaseUtilities
         var fakeAcc = new Account(userName, email, password);
         
         // Destiny
-        var destiny = GetCharacterFromRawCreationData(destinyRawData);
+        var destiny = GetCharacterFromRawCreationData(DestinyRawData);
         fakeAcc.AddCharacter(destiny);
         
         // I fucking hate Kevin.
-        var kevin = GetCharacterFromRawCreationData(kevinRawData);
+        var kevin = GetCharacterFromRawCreationData(KevinRawData);
         fakeAcc.AddCharacter(kevin);
         
         // Add the fake account to the database.
@@ -63,11 +63,11 @@ public static class DatabaseUtilities
         var acc = new Account(username, email, password) { AuthLevel = auth };
         
         // Destiny
-        var destiny = GetCharacterFromRawCreationData(destinyRawData);
+        var destiny = GetCharacterFromRawCreationData(DestinyRawData);
         acc.AddCharacter(destiny);
         
         // I fucking hate Kevin.
-        var kevin = GetCharacterFromRawCreationData(kevinRawData);
+        var kevin = GetCharacterFromRawCreationData(KevinRawData);
         acc.AddCharacter(kevin);
         
         // Save the account to the database.

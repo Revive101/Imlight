@@ -17,51 +17,33 @@ public static class AccountCollection
     }
 
     /// <summary>
-    /// Creates an account in the database. Persists immediately.
+    /// Creates an account in the database. 
     /// </summary>
     /// <param name="account">The created account.</param>
-    public static async void CreateAccount(Account account)
+    public static void CreateAccount(Account account)
     {
-        using var session = Store.OpenAsyncSession();
-        await session.StoreAsync(account);
+        using var session = Store.OpenSession();
+        
+        // Foreach character in the account, add it to the database.
+        foreach (var character in account.Characters)
+            CharacterCollection.AddCharacter(character);
+        
+        session.Store(account);
         var metadata = session.Advanced.GetMetadataFor(account);
         metadata[Raven.Client.Constants.Documents.Metadata.Collection] = CollectionName;
         
-        await session.SaveChangesAsync();
+        session.SaveChanges();
     }
-    
-    /// <summary>
-    /// Updates an account in the database. Persists immediately. Returns false if the account does not exist.
-    /// </summary>
-    /// <param name="account"></param>
-    /// <returns></returns>
-    public static async Task<bool> UpdateAccount(Account account)
-    {
-        using var session = Store.OpenAsyncSession();
-        
-        // Start by loading an account, if one exists.
-        var existingAccount = session.Query<Account>(collectionName: CollectionName)
-            .First(c => c.AccountId == account.AccountId);
-        if (existingAccount is null)
-            return false;
 
-        await session.StoreAsync(account);
-        var metadata = session.Advanced.GetMetadataFor(account);
-        metadata[Raven.Client.Constants.Documents.Metadata.Collection] = CollectionName;
-        
-        await session.SaveChangesAsync();
-        return true;
-    }
-    
     /// <summary>
-    /// Deletes an account from the database. Persists immediately.
+    /// Deletes an account from the database.
     /// </summary>
     /// <param name="account"></param>
-    public static async void DeleteAccount(Account account)
+    public static void DeleteAccount(Account account)
     {
         using var session = Store.OpenAsyncSession();
         session.Delete(account);
-        await session.SaveChangesAsync();
+        session.SaveChangesAsync();
     }
 
     /// <summary>
@@ -76,16 +58,15 @@ public static class AccountCollection
         // Load the account with the characters included.
         var account = session.Query<Account>(collectionName: CollectionName)
             .Include(c => c.CharacterIds)
-            .First(c => c.AccountId == id);
+            .FirstOrDefault(c => c.AccountId == id);
+        if (account is null)
+            return null;
         
         // Load the characters if the account is not null.
-        if (account is not null)
-        {
-            var characters = session.Query<Character>()
-                .Where(c => c.AccountId == id)
-                .ToList();
-            account.Characters = characters;
-        }
+        var characters = session.Query<Character>()
+            .Where(c => c.AccountId == id)
+            .ToList();
+        account.Characters = characters;
 
         return account;
     }
@@ -97,17 +78,60 @@ public static class AccountCollection
         // Load the account with the characters included.
         var account = session.Query<Account>(collectionName: CollectionName)
             .Include(c => c.CharacterIds)
-            .First(c => c.Username == username);
+            .FirstOrDefault(c => c.Username == username);
+        if (account is null) 
+            return null;
         
         // Load the characters if the account is not null.
-        if (account is not null)
-        {
-            var characters = session.Query<Character>()
-                .Where(c => c.AccountId == account.AccountId)
-                .ToList();
-            account.Characters = characters;
-        }
+        var characters = session.Query<Character>()
+            .Where(c => c.AccountId == account.AccountId)
+            .ToList();
+        account.Characters = characters;
 
         return account;
+    }
+    
+    /// <summary>
+    /// Adds a character to an account.
+    /// </summary>
+    /// <param name="accountId"></param>
+    /// <param name="characterId"></param>
+    /// <returns></returns>
+    public static bool AddCharacterToAccount(ulong accountId, ulong characterId)
+    {
+        using var session = Store.OpenSession();
+        
+        // Start by loading an account, if one exists.
+        var existingAccount = session.Query<Account>(collectionName: CollectionName)
+            .FirstOrDefault(c => c.AccountId == accountId);
+        if (existingAccount is null)
+            return false;
+
+        existingAccount.CharacterIds.Add(characterId);
+        session.SaveChanges();
+        
+        return true;
+    }
+    
+    /// <summary>
+    /// Removes a character from an account.
+    /// </summary>
+    /// <param name="accountId"></param>
+    /// <param name="characterId"></param>
+    /// <returns></returns>
+    public static bool DeleteCharacterFromAccount(ulong accountId, ulong characterId)
+    {
+        using var session = Store.OpenSession();
+        
+        // Start by loading an account, if one exists.
+        var existingAccount = session.Query<Account>(collectionName: CollectionName)
+            .FirstOrDefault(c => c.AccountId == accountId);
+        if (existingAccount is null)
+            return false;
+
+        existingAccount.CharacterIds.Remove(characterId);
+        session.SaveChanges();
+        
+        return true;
     }
 }

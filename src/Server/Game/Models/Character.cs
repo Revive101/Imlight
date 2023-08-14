@@ -24,7 +24,7 @@ namespace Imlight.Server.Game.Models;
 
 public class Character : IDisposable
 {
-    [JsonIgnore] private const byte DefaultUploadIntervalInMinutes = 1;
+    [JsonIgnore] private const byte DefaultUploadIntervalInMinutes = 6;
     
     public ulong AccountId { get; set; }
     public ulong CharId { get; init; }
@@ -78,10 +78,9 @@ public class Character : IDisposable
     // ctor
     public Character(WizardCharacterCreationInfo characterCreationInfo)
     {
-        this.CharId = RandomGen.GenerateGUID();
-        
         // If this constructor has been called, then the character is a fresh character.
         // First, we'll set the character's stats from the creation info.
+        this.CharId = RandomGen.GenerateGUID();
         this.Level = WizardWorldData.StartingLevel;
         this.Zone = WizardWorldData.StartingZone;
         this.World = WizardWorldData.StartingWorld;
@@ -131,6 +130,13 @@ public class Character : IDisposable
     
     public void SetMarkedLocation(Vector3 loc, Vector3 orientation, string zoneName)
     {
+        if (zoneName != this.Zone)
+        {
+            Log.Error($"Character tried to set a marker in a zone ({0}) in a zone it wasn't in {1}",
+                Log.Args(zoneName, this.Zone));
+            return;
+        }
+
         this.MarkedLocation = loc;
         this.MarkedLocationOrientation = orientation;
         this.MarkedZoneName = zoneName;
