@@ -24,9 +24,40 @@ internal class AuthenticatorService : MessageService
     {
         return Akka.Actor.Props.Create(() => new AuthenticatorService(parentActor));
     }
+    
+    #region Handlers
 
+    // Received when a user is trying to authenticate.
     [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_V3))]
     private void ReceiveUserAuth(LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_V3 message)
+    {
+        try
+        {
+            AuthenticateUser(message);
+        }
+        catch (Exception ex)
+        {
+            SendAuthenFailed(UserAuthenError.Timeout, ex.Message);
+        }
+    }
+
+    // Received when a user is trying to validate its session.
+    [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_USER_VALIDATE))]
+    private void ReceiveUserValidate(LOGIN_7_PROTOCOL.MSG_USER_VALIDATE message)
+    {
+        try
+        {
+            ValidateUser(message);
+        }
+        catch (Exception ex)
+        {
+            SendValidateFailed(UserValidateError.Timeout, ex.Message);
+        }
+    }
+
+    #endregion
+    
+    private void AuthenticateUser(LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_V3 message)
     {
         // Craft the record.
         var offerTime = SessionActor.OfferTime;
@@ -37,14 +68,8 @@ internal class AuthenticatorService : MessageService
         if (sId != SessionActor.SessionID)
         {
             // Return an error to the client.
-            SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_RSP()
-            {
-                Error = (int)UserAuthenError.AuthenFailed,
-                Reason = "Session ID mismatch",
-            });
-            
-            throw new Exception($"{nameof(LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_V3)} Session ID mismatch. " +
-                                $"Expected {SessionActor.SessionID}, got {sId}");
+            SendAuthenFailed(UserAuthenError.AuthenFailed, "Session ID mismatch.");
+            return;
         }
         
         // Get the account from database using the given user id. If the account doesn't exist, inform the socket
@@ -52,11 +77,7 @@ internal class AuthenticatorService : MessageService
         var matchedAccount = AccountCollection.GetAccount(username);
         if (matchedAccount == null)
         {
-            SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_RSP()
-            {
-                Error = (int)UserAuthenError.AuthenFailed,
-                Reason = "Invalid UserID",
-            });
+            SendAuthenFailed(UserAuthenError.AuthenFailed, "Invalid UserID");
             return;
         }
 
@@ -83,19 +104,14 @@ internal class AuthenticatorService : MessageService
         }
         else
         {
-            SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_RSP()
-            {
-                Error = (int)UserAuthenError.AuthenFailed,
-                Reason = "Invalid Password",
-            });
+            SendAuthenFailed(UserAuthenError.AuthenFailed, "Invalid Password");
             return;
         }
         
         SendClientToLogin(matchedAccount);
     }
 
-    [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_USER_VALIDATE))]
-    private void ReceiveUserValidate(LOGIN_7_PROTOCOL.MSG_USER_VALIDATE message)
+    private void ValidateUser(LOGIN_7_PROTOCOL.MSG_USER_VALIDATE message)
     {
         // Get the account from database using the given user id. If the account doesn't exist,
         // inform the socket and return.
@@ -115,14 +131,14 @@ internal class AuthenticatorService : MessageService
         // Get the stored session key associated with the user id. If a session key doesn't exist, inform the socket
         // and return.
         var sessionKey = ClientKeyCollection.GetSessionKey(message.UserID, message.MachineID);
-        if (sessionKey == null)
+        if (string.IsNullOrEmpty(sessionKey))
         {
             SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_VALIDATE_RSP()
             {
                 UserID = message.UserID,
                 PayingUser = 1,
                 Error = (int)UserValidateError.ValidateFailed,
-                Reason = "Invalid UserID",
+                Reason = "Invalid SessionKey",
             });
             return;
         }
@@ -176,6 +192,24 @@ internal class AuthenticatorService : MessageService
         return (sId, split[1], split[2]);
     }
 
+    private void SendAuthenFailed(UserAuthenError error, string reason)
+    {
+        SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_RSP
+        {
+            Error = (int)error,
+            Reason = reason
+        });
+    }
+
+    private void SendValidateFailed(UserValidateError error, string reason)
+    {
+        SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_VALIDATE_RSP
+        {
+            Error = (int)error,
+            Reason = reason
+        });
+    }
+    
     private void SendClientToLogin(Account account)
     {
         // Inform the SessionActor of the account.

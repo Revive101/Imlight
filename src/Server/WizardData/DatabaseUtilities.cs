@@ -1,3 +1,6 @@
+using System;
+using System.Security.Cryptography;
+using System.Text;
 using Imlight.Server.Game.Models;
 using Imlight.Server.Login.Models;
 using Imlight.Server.WizardData.Implementations;
@@ -75,8 +78,21 @@ public static class DatabaseUtilities
 
         return acc;
     }
+    
+    /// <summary>
+    /// Hashes a plaintext password with <see cref="SHA512"/>.
+    /// </summary>
+    /// <param name="plaintextPassword"></param>
+    /// <returns></returns>
+    public static string CreateHashedPassword(string plaintextPassword)
+    {
+        using var sha512 = SHA512.Create();
+        var passwordBytes = Encoding.UTF8.GetBytes(plaintextPassword);
 
-    public static Character GetCharacterFromRawCreationData(string rawData)
+        return Convert.ToBase64String(sha512.ComputeHash(passwordBytes));
+    }
+
+    private static Character GetCharacterFromRawCreationData(string rawData)
     {
         var serializer = new ObjectSerializer();
         var destinyRawBytes = DataManipulation.StringToByteArray(rawData);

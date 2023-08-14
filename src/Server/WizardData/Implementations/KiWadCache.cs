@@ -94,6 +94,10 @@ public static class KiWadCache
         fs.Upload(def, fileName, contentStream);
     }
 
+    /// <summary>
+    /// Deletes a file from the local database.
+    /// </summary>
+    /// <param name="fileName"></param>
     public static void DeleteWad(string fileName)
     {
         using var db = new LiteDatabase(_path);

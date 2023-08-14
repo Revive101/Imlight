@@ -22,6 +22,12 @@ public static class ServerDataBroker
         "Content",
         $"serverdata");
 
+    /// <summary>
+    ///    Gets a collection from the database.
+    /// </summary>
+    /// <param name="collectionName"></param>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
     public static List<T> GetCollection<T>(string collectionName)
     {
         using var db = new LiteDatabase(_path);

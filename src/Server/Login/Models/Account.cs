@@ -15,6 +15,7 @@ using Imlight.Server.WizardData.Implementations;
 using Newtonsoft.Json;
 using BCrypt.Net;
 using Imlight.Common.Cryptography;
+using Imlight.Server.WizardData;
 
 namespace Imlight.Server.Login.Models
 {
@@ -34,6 +35,7 @@ namespace Imlight.Server.Login.Models
         // Empty constructor for deserialization.
         [JsonConstructor] public Account() {}
 
+        // ctor
         public Account(string username, string email, string plaintextPassword)
         {
             if (string.IsNullOrWhiteSpace(username))
@@ -47,9 +49,14 @@ namespace Imlight.Server.Login.Models
             this.Username = username;
             this.Email = email;
             
-            this.PasswordHash = CreateHashedPassword(plaintextPassword);
+            this.PasswordHash = DatabaseUtilities.CreateHashedPassword(plaintextPassword);
         }
 
+        /// <summary>
+        /// Adds a character to the account.
+        /// </summary>
+        /// <param name="character"></param>
+        /// <returns></returns>
         public bool AddCharacter(Character character)
         {
             // Return false if adding this character would exceed the maximum allowed characters per account.
@@ -68,6 +75,11 @@ namespace Imlight.Server.Login.Models
             return true;
         }
 
+        /// <summary>
+        /// Deletes a character from the account.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         public bool DeleteCharacter(ulong id)
         {
             // Check to see if the character exists with our account id.
@@ -80,15 +92,12 @@ namespace Imlight.Server.Login.Models
             return true;
         }
         
+        /// <summary>
+        /// Gets a character from the account.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         public Character GetCharacter(ulong id) 
             => this.Characters.First(c => c.CharId == id);
-
-        private static string CreateHashedPassword(string plaintextPassword)
-        {
-            using var sha512 = SHA512.Create();
-            var passwordBytes = Encoding.UTF8.GetBytes(plaintextPassword);
-
-            return Convert.ToBase64String(sha512.ComputeHash(passwordBytes));
-        }
     }
 }

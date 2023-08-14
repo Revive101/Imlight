@@ -27,13 +27,19 @@ public static class ClientKeyCollection
     private const string CollectionName = "SessionKeys";
     
     private static readonly IDocumentStore Store;
-    private const uint KeyExpireTimeInDays = 3;
+    private const uint KeyExpireTimeInHours =30;
 
     static ClientKeyCollection()
     {
         Store = DocumentStoreSingleton.Store;
     }
 
+    /// <summary>
+    /// Adds a new session key to the database.
+    /// </summary>
+    /// <param name="accountId"></param>
+    /// <param name="machineId"></param>
+    /// <param name="key"></param>
     public static void AddSessionKey(ulong accountId, ulong machineId, string key)
     {
         using var session = Store.OpenSession();
@@ -41,14 +47,14 @@ public static class ClientKeyCollection
         // Remove any existing document that matches the account id.
         Store
             .Operations
-            .Send(new DeleteByQueryOperation(new IndexQuery()
+            .Send(new DeleteByQueryOperation(new IndexQuery
             {
                 Query = $"from {CollectionName} where AccountId = '{accountId}'"
             }));
 
         // Store a new ClientKeyPair in the database with an expiry date.
         var pair = new ClientKeyPair(accountId, machineId, key);
-        var expiry = DateTime.UtcNow.AddDays(KeyExpireTimeInDays);
+        var expiry = DateTime.UtcNow.AddHours(KeyExpireTimeInHours);
 
         // Store and set the metadata of the new document.
         session.Store(pair);
@@ -59,6 +65,12 @@ public static class ClientKeyCollection
         session.SaveChanges();
     }
 
+    /// <summary>
+    /// Gets the session key from the database.
+    /// </summary>
+    /// <param name="accountId"></param>
+    /// <param name="machineId"></param>
+    /// <returns></returns>
     public static ByteString GetSessionKey(ulong accountId, ulong machineId)
     {
         using var session = Store.OpenSession();

@@ -71,6 +71,11 @@ public static class AccountCollection
         return account;
     }
     
+    /// <summary>
+    /// Gets an account from the database by its username.
+    /// </summary>
+    /// <param name="username"></param>
+    /// <returns></returns>
     public static Account GetAccount(string username)
     {
         using var session = Store.OpenSession();
