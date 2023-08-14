@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using Imlight.Common.Utilities;
 using Imlight.Server.Shared.Resources;
 using Imlight.Server.WizardData;
@@ -21,8 +22,10 @@ using static WizUnraveler.Cache.TypeCache;
 
 namespace Imlight.Server.Game.Models;
 
-public class Character
+public class Character : IDisposable
 {
+    [JsonIgnore] private const byte DefaultUploadIntervalInMinutes = 1;
+    
     public ulong AccountId { get; set; }
     public ulong CharId { get; init; }
     public WizardCharacterBehavior WizardAvatar { get; init; }
@@ -68,15 +71,13 @@ public class Character
     [JsonIgnore] private Vector3 _orientation;
     [JsonIgnore] private Dictionary<Type, MethodInfo> _resultHandlers;
     [JsonIgnore] private ElementChangeCacheManager _cacheManager;
+    
+    // Empty constructor for deserialization.
+    [JsonConstructor] public Character() {}
 
     // ctor
     public Character(WizardCharacterCreationInfo characterCreationInfo)
     {
-        // If the creation info is null, this character is being loaded from a database.
-        // In which case, don't do anything.
-        if (characterCreationInfo is null) 
-            return;
-        
         this.CharId = RandomGen.GenerateGUID();
         
         // If this constructor has been called, then the character is a fresh character.
@@ -176,6 +177,12 @@ public class Character
             Log.Warning("No character result handler for result type {ResultType}.", Log.Args(result.GetType()));
         }
     }
+    
+    public void Dispose()
+    {
+        _cacheManager?.FlushAllChangesAsync().RunSynchronously();
+        _cacheManager?.Dispose();
+    }
 
     private WizGameStats CalculateBaseGameStats(WizGameStats existingStats)
     {
@@ -201,11 +208,6 @@ public class Character
 
         return existingStats;
     }
-
-    public void FlushAllCachedChanges()
-    {
-        _cacheManager.FlushAllChangesAsync();
-    }
     
     private void SetResultHandlers()
     {
@@ -229,14 +231,14 @@ public class Character
 
     private void SendCachedChange<T>(string elementName, byte batchSize, T value)
     {
-        _cacheManager ??= new ElementChangeCacheManager(DocumentStoreSingleton.Store, CharId);
-        _cacheManager.EnqueueChange(elementName, batchSize, value);
+        _cacheManager ??= new ElementChangeCacheManager(DocumentStoreSingleton.Store, CharId, DefaultUploadIntervalInMinutes);
+        _cacheManager.EnqueueChange(elementName, value);
     }
     
     private void SendPersistentChange<T>(string elementName, T value)
     {
-        _cacheManager ??= new ElementChangeCacheManager(DocumentStoreSingleton.Store, CharId);
-        _cacheManager.FlushChangeAsync(elementName, value);
+        _cacheManager ??= new ElementChangeCacheManager(DocumentStoreSingleton.Store, CharId, DefaultUploadIntervalInMinutes);
+        _cacheManager.EnqueueImmediateChange(elementName, value);
     }
     
     #region Result Handlers

@@ -5,62 +5,56 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
+using Imlight.Common.Utilities;
 using Imlight.Server.Game.Models;
 using Raven.Client.Documents;
+using Raven.Client.Documents.Operations;
 
 namespace Imlight.Server.WizardData;
 
-public class ElementChangeCacheManager
+public class ElementChangeCacheManager : IDisposable
 {
     private readonly IDocumentStore _documentStore;
-    private readonly Dictionary<string, IChangeCache> _changeCaches;
-    private readonly ulong _accountId;
+    private readonly Dictionary<string, object> _changeCaches;
+    private readonly ulong _charId;
+    private readonly CancellationTokenSource _cancellationTokenSource;
+    private readonly int _uploadIntervalInMinutesInMilliseconds;
 
-    public ElementChangeCacheManager(IDocumentStore documentStore, ulong accountId)
+    // ctor
+    public ElementChangeCacheManager(IDocumentStore documentStore, ulong charId, byte uploadIntervalInMinutes)
     {
-        this._accountId = accountId;
+        this._charId = charId;
         this._documentStore = documentStore ?? throw new ArgumentNullException(nameof(documentStore));
-        this._changeCaches = new Dictionary<string, IChangeCache>();
-    }
+        this._changeCaches = new Dictionary<string, object>();
+        this._cancellationTokenSource = new CancellationTokenSource();
+        this._uploadIntervalInMinutesInMilliseconds = uploadIntervalInMinutes * 60 * 1000;
 
-    /// <summary>
-    /// Enqueues a new element to be persistently saved to the <see cref="DocumentStore"/> database.
-    /// </summary>
-    /// <param name="elementName">The name of the element.</param>
-    /// <param name="batchSize">The amount of requests that must be received for this specific element before
-    /// the changes are saved to the database.</param>
-    /// <param name="change">The new value of the element.</param>
-    /// <typeparam name="T">The type of element.</typeparam>
-    public void EnqueueChange<T>(string elementName, byte batchSize, T change)
-    {
-        if (!_changeCaches.TryGetValue(elementName, out var changeCache))
-        {
-            // Make a new change cache if one does not exist.
-            changeCache = new ElementChangeCache<T>(_accountId, elementName, batchSize);
-            _changeCaches[elementName] = changeCache;
-        }
-
-        changeCache.EnqueueChange(change);
+        Task.Run(DoSaveInterval);
     }
     
     /// <summary>
-    /// Flushes the batched changes of a specific element.
+    /// Enqueues a change to be flushed on interval.
     /// </summary>
     /// <param name="elementName"></param>
     /// <param name="change"></param>
     /// <typeparam name="T"></typeparam>
-    public async Task FlushChangeAsync<T>(string elementName, T change)
+    public void EnqueueChange<T>(string elementName, T change)
     {
-        if (!_changeCaches.TryGetValue(elementName, out var changeCache))
-        {
-            // Make a new change cache if one does not exist.
-            changeCache = new ElementChangeCache<T>(_accountId, elementName, 1);
-            _changeCaches[elementName] = changeCache;
-        }
-
-        _changeCaches[elementName].EnqueueChange(change);
-        await changeCache.FlushChangesAsync();
+        _changeCaches[elementName] = change;
+    }
+    
+    /// <summary>
+    /// Enqueues a change to be flushed immediately.
+    /// </summary>
+    /// <param name="elementName"></param>
+    /// <param name="change"></param>
+    /// <typeparam name="T"></typeparam>
+    public void EnqueueImmediateChange<T>(string elementName, T change)
+    {
+        _changeCaches[elementName] = change;
+        FlushChangeAsync(new KeyValuePair<string, object>(elementName, change)).Wait();
     }
 
     /// <summary>
@@ -68,9 +62,47 @@ public class ElementChangeCacheManager
     /// </summary>
     public async Task FlushAllChangesAsync()
     {
-        foreach (var changeCache in _changeCaches.Values)
+        foreach (var changeCache in _changeCaches)
         {
-            await changeCache.FlushChangesAsync();
+            await FlushChangeAsync(changeCache);
         }
+    }
+    
+    private async Task DoSaveInterval()
+    {
+        // While loop with cancellation token.
+        while (!_cancellationTokenSource.IsCancellationRequested)
+        {
+            await Task.Delay(_uploadIntervalInMinutesInMilliseconds);
+            await FlushAllChangesAsync();
+        }
+    }
+    
+    private async Task FlushChangeAsync(KeyValuePair <string, object> changeCache)
+    {
+        // Serialize the most recent change as json.
+        var json = Newtonsoft.Json.JsonConvert.SerializeObject(changeCache.Value);
+        
+        // Patch.
+        var patchRequest = new PatchByQueryOperation($"from \"Characters\" as c " +
+                                                     $"where c.CharId = {_charId} " +
+                                                     $"update {{ c.{changeCache.Key} = {json} }}");
+        
+        try
+        {
+            var operation = await _documentStore.Operations.SendAsync(patchRequest);
+            await operation.WaitForCompletionAsync();
+        }
+        catch (Exception ex)
+        {
+            Log.Error("Could not save persistent stat {0} for reason: {1}",
+                Log.Args(changeCache.Key, ex.Message));
+        }
+    }
+
+    public void Dispose()
+    {
+        _documentStore?.Dispose();
+        _cancellationTokenSource?.Dispose();
     }
 }

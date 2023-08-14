@@ -177,8 +177,7 @@ namespace Imlight.Server.Shared.Networking
             var tcpProps = TcpListenerActor.Props(Name, Port, Context.Self);
             Context.ActorOf(tcpProps, actorName);
             
-            Log.Logger.Verbose("New actor created under {Path}: {ActorName}",
-                Context.Self.Path, actorName);
+            Log.Verbose("New actor created under {Path}: {ActorName}", Log.Args(Context.Self.Path, actorName));
         }
 
         private IActorRef CreateActorFactory()
@@ -187,8 +186,7 @@ namespace Imlight.Server.Shared.Networking
             
             var actorName = $"{Name}.ActorFactory";
             
-            Log.Logger.Verbose("New actor created under {Path}: {ActorName}",
-                Context.Self.Path, actorName);
+            Log.Verbose("New actor created under {Path}: {ActorName}", Log.Args(Context.Self.Path, actorName));
             
             return Context.ActorOf(_factoryProps, actorName);
         }

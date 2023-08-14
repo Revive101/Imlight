@@ -163,11 +163,12 @@ namespace Imlight.Server.Shared.Networking
 
             throw new SessionFatalException($"SessionActor [{SessionID}] contained a null server reference!");
         }
-        
+
         public void Dispose()
         {
             // Avoid duplicate Dispose calls.
-            if (_isDisposed) return;
+            if (_isDisposed) 
+                return;
             _isDisposed = true;
 
             // Send a message to the server to deallocate this SessionActor.

@@ -4,6 +4,7 @@
  */
 
 using System;
+using System.Threading.Tasks;
 using Akka.Actor;
 using Imlight.Server.Game.Models;
 using SharpDX;
@@ -36,9 +37,7 @@ namespace Imlight.Server.Game.Services
         [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_DISPOSE))]
         public override void ReceiveDispose(SERVICE_101_PROTOCOL.MSG_DISPOSE message)
         {
-            var character = GetActiveCharacter();
-            character.FlushAllCachedChanges();
-            
+            _activeCharacter.Dispose();
             base.ReceiveDispose(message);
         }
         
