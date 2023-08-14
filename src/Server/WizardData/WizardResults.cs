@@ -84,27 +84,4 @@ public static class WizardResults
     {
 
     }
-        
-    public class ResPlaySound : Result
-    {
-        public ZoneRouter m_router;
-        public ByteString m_soundName;
-    }
-        
-    public class ZoneRouter : PropertyClass
-    {
-        public override uint GetHash() => 0x0;
-            
-        public float m_locX;
-        public float m_locY;
-        public float m_locZ;
-        public RoutingType m_routingType;
-        public bool m_useLocation;
-        public bool m_userTriggerLocation;
-
-        public enum RoutingType
-        {
-            ROUTING_ACTOR,
-        }
-    }
 }

@@ -10,5 +10,5 @@ namespace Imlight.Server.WizardData;
 public class WizardZoneData
 {
     public string ZoneName { get; set; }
-    public List<WizardZoneEventData> Events { get; set; } = new List<WizardZoneEventData>();
+    public List<WizardZoneEventData> Events { get; set; } = new();
 }
