@@ -3,7 +3,7 @@
  * Proprietary and confidential.
  */
 
-namespace Imlight.Server.WizardData;
+namespace Imlight.Server.WizardData.Models;
 
 public enum WizardZoneEventObjectAdjectiveType
 {

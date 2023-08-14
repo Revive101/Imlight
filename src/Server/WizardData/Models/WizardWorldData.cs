@@ -1,7 +1,6 @@
-using System;
 using Newtonsoft.Json;
 
-namespace Imlight.Server.WizardData;
+namespace Imlight.Server.WizardData.Models;
 
 public class WizardWorldData
 {

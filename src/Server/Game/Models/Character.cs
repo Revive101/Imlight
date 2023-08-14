@@ -12,6 +12,7 @@ using Imlight.Common.Utilities;
 using Imlight.Server.Shared.Resources;
 using Imlight.Server.WizardData;
 using Imlight.Server.WizardData.Implementations;
+using Imlight.Server.WizardData.Models;
 using Newtonsoft.Json;
 using SharpDX;
 using WizUnraveler.Cache;

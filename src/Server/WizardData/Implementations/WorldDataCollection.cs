@@ -1,4 +1,10 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
 using System.Linq;
+using Imlight.Server.WizardData.Models;
 using Raven.Client.Documents;
 
 namespace Imlight.Server.WizardData.Implementations;

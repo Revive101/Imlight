@@ -13,6 +13,7 @@ using Imlight.Server.Shared.Packets;
 using Imlight.Server.Shared.Resources;
 using Imlight.Server.WizardData;
 using Imlight.Server.WizardData.Implementations;
+using Imlight.Server.WizardData.Models;
 using SharpDX;
 using WizUnraveler.Cache;
 using WizUnraveler.Formats;
