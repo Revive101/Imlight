@@ -16,6 +16,6 @@ public class WizardZoneEventData
     public bool EnabledByDefault { get; set; }
     public DateTime StartDate { get; set; } = new DateTime();
     public DateTime EndDate { get; set; } = new DateTime();
-    public List<string> ObjectAdjectiveWhitelist { get; set; } = new List<string>();
+    public List<string> ObjectAdjectiveWhitelist { get; set; } = new();
     public WizardZoneEventObjectAdjectiveType ObjectAdjectiveType { get; set; }
 }

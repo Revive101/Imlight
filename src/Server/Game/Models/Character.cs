@@ -79,11 +79,12 @@ public class Character : IDisposable
     public Character(WizardCharacterCreationInfo characterCreationInfo)
     {
         // If this constructor has been called, then the character is a fresh character.
-        // First, we'll set the character's stats from the creation info.
+        var worldData = WorldDataCollection.GetWorldData();
+        
         this.CharId = RandomGen.GenerateGUID();
-        this.Level = WizardWorldData.StartingLevel;
-        this.Zone = WizardWorldData.StartingZone;
-        this.World = WizardWorldData.StartingWorld;
+        this.Level = worldData.StartingLevel;
+        this.Zone = worldData.StartingZone;
+        this.World = worldData.StartingWorld;
         this.WizardSchool = (WizardSchool)characterCreationInfo.m_schoolOfFocus;
         this.WizardAvatar = characterCreationInfo.m_avatarBehavior;
         this.NameIndices = characterCreationInfo.m_nameIndices;
@@ -192,6 +193,7 @@ public class Character : IDisposable
 
     private WizGameStats CalculateBaseGameStats(WizGameStats existingStats)
     {
+        var worldData = WorldDataCollection.GetWorldData();
         var baseHealth = WizardClassData.GetClassHealthAtLevel(WizardSchool, Level);
         var baseMana = WizardClassData.GetManaAtLevel(Level);
 
@@ -199,7 +201,7 @@ public class Character : IDisposable
         existingStats.m_currentHitpoints = baseHealth;
         existingStats.m_baseMana = baseMana;
         existingStats.m_currentMana = baseMana;
-        existingStats.m_baseGoldPouch = WizardWorldData.GoldPouchMax;
+        existingStats.m_baseGoldPouch = worldData.GoldPouchMax;
         existingStats.m_powerPipBase = WizardClassData.GetPowerPipChanceAtLevel(Level);
         existingStats.m_energyMax = WizardClassData.GetPetEnergyAtLevel(Level);
         
