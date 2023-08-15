@@ -23,6 +23,7 @@ using static WizUnraveler.Cache.TypeCache;
 
 namespace Imlight.Server.Game.Models;
 
+[Serializable]
 public class Character : IDisposable
 {
     [JsonIgnore] private const byte DefaultUploadIntervalInMinutes = 6;

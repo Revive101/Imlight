@@ -8,6 +8,14 @@ using System.Collections.Generic;
 
 namespace Imlight.Server.WizardData.Models;
 
+public enum WizardZoneEventObjectAdjectiveType
+{
+    PrefixedWith,
+    Contains,
+    SuffixedWith,
+    Raw
+}
+
 public class WizardZoneEventData
 {
     public string Name { get; set; }
