@@ -25,16 +25,17 @@ namespace Imlight.Server.Patch
     public class PatchServer : Shared.Networking.Server
     {
         // @todo: move this to config
-        public const string DEFAULT_PATCH_SERVER_NAME = "Imlight.Patch";
-        private const ushort DEFAULT_PATCH_SERVER_PORT = 12500;
-        private const string PATCH_SERVER_URL = "http://phill030.de:12369/repatcher/";
-        private const string PATCH_SERVER_WAD_URL_PREFIX = "wad";
-        private const int PATCH_SERVER_TIMEOUT = 10; // In seconds.
-        private const string LATEST_FILE_LIST_NAME_BIN = "LatestFileList.bin";
-        private const string LATEST_FILE_LIST_NAME_XML = "LatestFileList.xml";
-        private const uint REVISION = 736675;
-        private const string USER_AGENT_VALUE = "KingsIsle Patcher";
-        private const ushort DOWNLOAD_BUFFER_SIZE = 4096;
+        public const string DefaultPatchServerName = "Imlight.Patch";
+        private const ushort DefaultPatchServerPort = 12500;
+        private const string PatchServerUrl = "http://phill030.de:12369/patcher/";
+        private const string PatchServerWadUrlPrefix = "wads";
+        private const string PatchServerUtilUrlPrefix = "utils";
+        private const int PatchServerTimeout = 10; // In seconds.
+        private const string LatestFileListNameBin = "LatestFileList.bin";
+        private const string LatestFileListNameXml = "LatestFileList.xml";
+        private const uint Revision = 739602;
+        private const string UserAgentValue = "KingsIsle Patcher";
+        private const ushort DownloadBufferSize = 4096;
 
         public static IActorRef Instance { get; private set; }
         private static bool EndpointReached { get; set; }
@@ -62,8 +63,8 @@ namespace Imlight.Server.Patch
         }
 
         public static Props Props(
-            string serverName = DEFAULT_PATCH_SERVER_NAME,
-            ushort serverPort = DEFAULT_PATCH_SERVER_PORT)
+            string serverName = DefaultPatchServerName,
+            ushort serverPort = DefaultPatchServerPort)
         {
             return Akka.Actor.Props.Create(() => new PatchServer(serverName, serverPort, PatchServiceFactory.Props()));
         }
@@ -88,10 +89,11 @@ namespace Imlight.Server.Patch
 
             // Download and parse the latest file list and record the diagnostics.
             _diagnosticStopwatch.Restart();
-            SetLatestFileList();
+            var latestFileSuccess = SetLatestFileList();
             _diagnosticStopwatch.Stop();
-            Log.Debug("Downloaded and parsed LatestFileList in {em} ms.", 
-                Log.Args(_diagnosticStopwatch.ElapsedMilliseconds));
+            if (latestFileSuccess)
+                Log.Debug("Downloaded and parsed LatestFileList in {em} ms.", 
+                    Log.Args(_diagnosticStopwatch.ElapsedMilliseconds));
 
             // Let whomever sender know that we're finished initializing!
             Sender.Tell(new SERVER_100_PROTOCOL.MSG_INITIALIZE_COMPLETE());
@@ -141,7 +143,7 @@ namespace Imlight.Server.Patch
             if (wadName.EndsWith(".wad", StringComparison.OrdinalIgnoreCase))
                 wadName = wadName[..^4];
 
-            var url = $"{_patchServerWorkingUrl}/{PATCH_SERVER_WAD_URL_PREFIX}/{wadName}.wad";
+            var url = $"{_patchServerWorkingUrl}/{PatchServerWadUrlPrefix}/{wadName}.wad";
 
             return await DownloadFileStream(url);
         }
@@ -151,7 +153,17 @@ namespace Imlight.Server.Patch
             if (!EndpointReached)
                 throw new Exception("By this point, the patch server endpoint has not yet been reached!");
             
-            var url = $"{_patchServerWorkingUrl}/{fileName}";
+            var url = $"{_patchServerWorkingUrl}/{PatchServerUtilUrlPrefix}/{fileName}";
+
+            return await DownloadFileStream(url);
+        }
+
+        private async Task<MemoryStream> DownloadLatestFileList()
+        {
+            if (!EndpointReached)
+                throw new Exception("By this point, the patch server endpoint has not yet been reached!");
+            
+            var url = $"{_patchServerWorkingUrl}";
 
             return await DownloadFileStream(url);
         }
@@ -162,7 +174,7 @@ namespace Imlight.Server.Patch
             {
                 // Create a new HttpClient with the magic user agent values.
                 using var client = new HttpClient();
-                client.DefaultRequestHeaders.UserAgent.ParseAdd(USER_AGENT_VALUE);
+                client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgentValue);
                 using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
                 response.EnsureSuccessStatusCode();
 
@@ -175,7 +187,7 @@ namespace Imlight.Server.Patch
                 await using var contentStream = await response.Content.ReadAsStreamAsync();
                 var memoryStream = new MemoryStream();
 
-                var buffer = new byte[DOWNLOAD_BUFFER_SIZE];
+                var buffer = new byte[DownloadBufferSize];
                 int bytesRead;
 
                 while ((bytesRead = await contentStream.ReadAsync(buffer)) > 0)
@@ -190,19 +202,19 @@ namespace Imlight.Server.Patch
             }
             catch (Exception webException)
             {
-                Log.Error("Error while downloading file from patch server endpoint: {Ex}",
-                    Log.Args(webException.Message));
+                Log.Error("Error while downloading file {File} from patch server endpoint: {Ex}",
+                    Log.Args(url, webException.Message));
                 return null;
             }
         }
 
         private bool GetPatchServerStatus()
         {
-            var workingUrl = $"{PATCH_SERVER_URL}V_r{REVISION}.Wizard_1_510";
+            var workingUrl = $"{PatchServerUrl}V_r{Revision}.Wizard_1_520_0_Live";
 
             // Check to see if the patch server URL is available at all.
             Log.Information("Checking patch server at URL {Url}. Timeout: {Timeout} s", 
-                 Log.Args( workingUrl, PATCH_SERVER_TIMEOUT));
+                 Log.Args( workingUrl, PatchServerTimeout));
             if (!GetServerUrlStatus(workingUrl))
             {
                 Log.Error("Patch server at URL {Url} is not available", Log.Args(workingUrl));
@@ -218,8 +230,8 @@ namespace Imlight.Server.Patch
         private static bool GetServerUrlStatus(string url)
         {
             using var client = new HttpClient();
-            client.DefaultRequestHeaders.UserAgent.ParseAdd(USER_AGENT_VALUE);
-            client.Timeout = TimeSpan.FromSeconds(PATCH_SERVER_TIMEOUT);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgentValue);
+            client.Timeout = TimeSpan.FromSeconds(PatchServerTimeout);
 
             try
             {
@@ -240,56 +252,52 @@ namespace Imlight.Server.Patch
             }
         }
 
-        private void SetLatestFileList()
+        private bool SetLatestFileList()
         {
             // We need both versions of the LatestFileList (for now).
             // The first interpretation is xml, and is for the server to parse and cache.
             // We'll be using it to check the integrity of Imlight's cached files.
-            var latestXml = DownloadUtilityStream(LATEST_FILE_LIST_NAME_XML).Result;
+            var latestXml = DownloadLatestFileList().Result;
             if (latestXml is null)
             {
-                Log.Error("Had trouble downloading {Name}", Log.Args(LATEST_FILE_LIST_NAME_XML));
+                Log.Error("Had trouble downloading {Name}", Log.Args(LatestFileListNameXml));
+                return false;
             }
-            else
+
+            latestXml.Seek(0, SeekOrigin.Begin);
+            if (!ParseLatestFileList(latestXml, out var latestXmlObj))
             {
-                //var fs = File.Create($"{Directory.GetCurrentDirectory()}/latest.xml");
-                latestXml.Seek(0, SeekOrigin.Begin);
-                //latestXml.CopyTo(fs);
-                //latestXml.Seek(0, SeekOrigin.Begin);
-                if (!ParseLatestFileList(latestXml, out var latestXmlObj))
-                {
-                    Log.Error("Could not successfully parse {Name}", Log.Args(LATEST_FILE_LIST_NAME_XML));
-                }
-                else
-                {
-                    _latestFileList = latestXmlObj;
-                }
+                Log.Error("Could not successfully parse {Name}", Log.Args(LatestFileListNameXml));
+                return false;
             }
+
+            _latestFileList = latestXmlObj;
 
             // The second interpretation is the `.bin`, which is what the Wizard101 client uses.
             // Download the `.bin` interpretation and cache the file stats.
-            var latestBin = DownloadUtilityStream(LATEST_FILE_LIST_NAME_BIN).Result;
+            var latestBin = DownloadUtilityStream(LatestFileListNameBin).Result;
             if (latestBin is null)
             {
-                Log.Error("Had trouble downloading the {Name}", Log.Args(LATEST_FILE_LIST_NAME_BIN));
+                Log.Error("Had trouble downloading the {Name}", Log.Args(LatestFileListNameBin));
+                return false;
             }
-            else
-            {
-                // Cache the `.bin` file properties.
-                _latestVersion = Convert.ToUInt32(REVISION);
-                _listFileName = LATEST_FILE_LIST_NAME_BIN;
-                _listFileUrl = $"{_patchServerWorkingUrl}/{LATEST_FILE_LIST_NAME_BIN}";
-                _listFileSize = Convert.ToUInt32(latestBin.Length);
-                _urlPrefix = _patchServerWorkingUrl;
-                _urlSuffix = "";
 
-                // Convert the stream to a byte array to compute the crc32 hash.
-                var ms = new MemoryStream();
-                latestBin.Seek(0, SeekOrigin.Begin);
-                latestBin.CopyTo(ms);
-                ms.Seek(0, SeekOrigin.Begin);
-                _listFileCrc = crc32.Compute(ms.ToArray());
-            }
+            // Cache the `.bin` file properties.
+            _latestVersion = Convert.ToUInt32(Revision);
+            _listFileName = LatestFileListNameBin;
+            _listFileUrl = $"{_patchServerWorkingUrl}/{LatestFileListNameBin}";
+            _listFileSize = Convert.ToUInt32(latestBin.Length);
+            _urlPrefix = _patchServerWorkingUrl;
+            _urlSuffix = "";
+
+            // Convert the stream to a byte array to compute the crc32 hash.
+            var ms = new MemoryStream();
+            latestBin.Seek(0, SeekOrigin.Begin);
+            latestBin.CopyTo(ms);
+            ms.Seek(0, SeekOrigin.Begin);
+            _listFileCrc = crc32.Compute(ms.ToArray());
+
+            return true;
         }
 
         private static bool ParseLatestFileList(Stream content, out LatestFileList latestFileList)
