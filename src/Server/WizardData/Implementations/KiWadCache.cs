@@ -106,8 +106,11 @@ public static class KiWadCache
         var file = fs.Find(f => f.Filename == fileName)
             .FirstOrDefault();
 
-        if (file is not null) 
+        if (file is not null)
+        {
+            fs.Delete(file.Id);
             return;
+        }
             
         Log.Warning("LocalCache tried to delete a file {FileName} it did not contain!", Log.Args(fileName));
     }

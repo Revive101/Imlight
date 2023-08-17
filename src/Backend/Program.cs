@@ -10,9 +10,11 @@ using System.Threading.Tasks;
 using Akka.Actor;
 using Imlight.Common.Utilities;
 using Imlight.Server.Login;
+using Imlight.Server.Login.Models;
 using Imlight.Server.Patch;
 using Imlight.Server.Shared.Packets;
 using Imlight.Server.Shared.Resources;
+using Imlight.Server.WizardData;
 using Imlight.Server.WizardData.Implementations;
 
 namespace Imlight.Backend
@@ -35,6 +37,7 @@ namespace Imlight.Backend
 
         private static void Main(string[] args)
         {
+            //DatabaseUtilities.CreateDatabaseAccount("jay", "jay@voidly.net", "password", AuthLevel.Administrator);
             // =============================================================
             // TIDBITS
             // =============================================================
@@ -114,10 +117,10 @@ namespace Imlight.Backend
         private static async Task StartPatchServer() 
         {
             var patchProps = PatchServer.Props();
-            var actor = _imlightSystem.ActorOf(patchProps, PatchServer.DEFAULT_PATCH_SERVER_NAME);
+            var actor = _imlightSystem.ActorOf(patchProps, PatchServer.DefaultPatchServerName);
             
             Log.Debug("New actor created under {systemName}: {patchServerName}", 
-                Log.Args(_imlightSystem.Name, PatchServer.DEFAULT_PATCH_SERVER_NAME));
+                Log.Args(_imlightSystem.Name, PatchServer.DefaultPatchServerName));
 
             // Await initialization of the patch server.
             await actor.Ask<SERVER_100_PROTOCOL.MSG_INITIALIZE_COMPLETE>(new SERVER_100_PROTOCOL.MSG_INITIALIZE());
