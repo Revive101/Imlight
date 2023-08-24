@@ -31,7 +31,7 @@ namespace Imlight.Backend
             return true;
         }
 
-        private static bool GetAkkaConfiguration(out Config config)
+        private static bool GetAkkaConfiguration(out Akka.Configuration.Config config)
         {
             Log.Information("Searching for Akka.NET configuration file {ConfigLocation}", Log.Args(ConfigLocation));
             config = default;
