@@ -12,7 +12,7 @@ public static class CharacterCollection
 
     static CharacterCollection()
     {
-        Store = DocumentStoreSingleton.Store;
+        Store = PlayerDatabase.Instance.Store;
     }
 
     /// <summary>

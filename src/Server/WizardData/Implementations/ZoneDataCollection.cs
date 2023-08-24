@@ -16,7 +16,7 @@ public static class ZoneDataCollection
 
     static ZoneDataCollection()
     {
-        Store = DocumentStoreSingleton.Store;
+        Store = WorldDatabase.Instance.Store;
     }
     
     /// <summary>

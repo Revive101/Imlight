@@ -241,13 +241,13 @@ public class Character : IDisposable
 
     private void SendCachedChange<T>(string elementName, byte batchSize, T value)
     {
-        _cacheManager ??= new ElementChangeCacheManager(DocumentStoreSingleton.Store, CharId, DefaultUploadIntervalInMinutes);
+        _cacheManager ??= new ElementChangeCacheManager(PlayerDatabase.Instance.Store, CharId, DefaultUploadIntervalInMinutes);
         _cacheManager.EnqueueChange(elementName, value);
     }
     
     private void SendPersistentChange<T>(string elementName, T value)
     {
-        _cacheManager ??= new ElementChangeCacheManager(DocumentStoreSingleton.Store, CharId, DefaultUploadIntervalInMinutes);
+        _cacheManager ??= new ElementChangeCacheManager(PlayerDatabase.Instance.Store, CharId, DefaultUploadIntervalInMinutes);
         _cacheManager.EnqueueImmediateChange(elementName, value);
     }
     

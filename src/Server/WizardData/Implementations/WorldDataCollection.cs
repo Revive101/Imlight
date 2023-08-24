@@ -17,7 +17,7 @@ public static class WorldDataCollection
 
     static WorldDataCollection()
     {
-        Store = DocumentStoreSingleton.Store;
+        Store = WorldDatabase.Instance.Store;
     }
 
     /// <summary>

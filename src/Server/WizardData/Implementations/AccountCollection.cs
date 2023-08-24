@@ -13,7 +13,7 @@ public static class AccountCollection
 
     static AccountCollection()
     {
-        Store = DocumentStoreSingleton.Store;
+        Store = PlayerDatabase.Instance.Store;
     }
 
     /// <summary>

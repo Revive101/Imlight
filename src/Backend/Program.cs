@@ -30,7 +30,7 @@ namespace Imlight.Backend
             major=$((num_merges));
             minor=$((num_features));
             patch=$((num_fixes));
-            version=""$major.$minor.$patch"";
+            version=""$major.$minor.$patch"";-
             echo $version";
 
         private static ActorSystem _imlightSystem;
@@ -75,10 +75,6 @@ namespace Imlight.Backend
                 return;
             }
             Log.Information("Resources successfully allocated.");
-            
-            // Force the lazy database to load.
-            Log.Information("Loading database..");
-            _ = DocumentStoreSingleton.Store;
 
             // =============================================================
             // SERVERS

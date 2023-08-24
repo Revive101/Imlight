@@ -31,7 +31,7 @@ public static class ClientKeyCollection
 
     static ClientKeyCollection()
     {
-        Store = DocumentStoreSingleton.Store;
+        Store = PlayerDatabase.Instance.Store;
     }
 
     /// <summary>
