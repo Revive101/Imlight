@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Text;
 using Imlight.Common.Configuration;
 using DefaultValueAttribute = Imlight.Common.Configuration.DefaultValueAttribute;
+using DescriptionAttribute = Imlight.Common.Configuration.DescriptionAttribute;
 
 namespace Imlight.Common.Serializable;
 
@@ -26,8 +27,14 @@ public static class IniSerializer
         {
             var sectionAttribute = property.GetCustomAttribute<IniSectionAttribute>();
             var defaultValueAttribute = property.GetCustomAttribute<DefaultValueAttribute>();
+            var descriptionAttribute = property.GetCustomAttribute<DescriptionAttribute>();
 
-            if (sectionAttribute != null)
+            // Write the description if it exists.
+            if (descriptionAttribute is not null)
+                iniData.AppendLine($"; {descriptionAttribute.Description}");
+
+            // Write the section header if it exists.
+            if (sectionAttribute is not null)
                 iniData.AppendLine($"\n[{sectionAttribute.SectionName}]");
 
             var value = property.GetValue(obj) ?? defaultValueAttribute?.Value;
