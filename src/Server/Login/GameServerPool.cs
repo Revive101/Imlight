@@ -21,7 +21,7 @@ namespace Imlight.Server.Login
     {
         private const byte ALLOWED_GAME_SERVER_COUNT = 3;
         
-        private Dictionary<ushort, IActorRef> _gameServers;
+        private readonly Dictionary<ushort, IActorRef> _gameServers;
 
         public GameServerPool()
         {

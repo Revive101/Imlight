@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Imlight.Common.Configuration;
 using Imlight.Common.Utilities;
 using Imlight.Server.Shared.Resources;
 using Imlight.Server.WizardData;
@@ -26,7 +27,8 @@ namespace Imlight.Server.Game.Models;
 [Serializable]
 public class Character : IDisposable
 {
-    [JsonIgnore] private const byte DefaultUploadIntervalInMinutes = 6;
+    [JsonIgnore] private readonly byte DefaultUploadIntervalInMinutes
+        = ConfigurationManager.Settings.CharacterUploadIntervalInMinutes;
     
     public ulong AccountId { get; set; }
     public ulong CharId { get; init; }
