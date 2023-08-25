@@ -21,6 +21,10 @@
     <Content Include="Certificates\base">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <None Remove="Config\Imlight.ini" />
+    <Content Include="Config\Imlight.ini">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
