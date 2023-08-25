@@ -17,6 +17,10 @@
     <Content Include="Content\serverdata">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <None Remove="Certificates\base" />
+    <Content Include="Certificates\base">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
