@@ -95,6 +95,42 @@ public sealed class ServerSettings
 
     #endregion
 
+    #region Database
+
+    [IniSection("Database")]
+    
+    [DefaultValue("https://a.voidly.ravendb.community")]
+    public string PlayerDatabaseUrl { get; set; }
+    
+    [DefaultValue("Playerdata")]
+    public string PlayerDatabaseName { get; set; }
+    
+    [DefaultValue("./Certificates/dragon.admin.pfx")]
+    public string PlayerDatabaseCertificatePath { get; set; }
+    
+    [DefaultValue("https://a.voidly.ravendb.community")]
+    public string WorldDatabaseUrl { get; set; }
+    
+    [DefaultValue("Imlight")]
+    public string WorldDatabaseName { get; set; }
+    
+    [DefaultValue("./Certificates/worlddata.client.certificate.pfx")]
+    public string WorldDatabaseCertificatePath { get; set; }
+    
+    [DefaultValue(16)]
+    [Description("The maximum number of requests that can be made per session.")]
+    public byte DatabaseMaxNumberOfRequestsPerSession { get; set; }
+    
+    [DefaultValue(90)]
+    [Description("The time in seconds that the database will wait for a request.")]
+    public byte DatabaseRequestTimeoutInSeconds { get; set; }
+    
+    [DefaultValue(5)]
+    [Description("The time in seconds that the database will wait for non-stale results.")]
+    public byte DatabaseWaitForNonStaleResultsTimeout { get; set; }
+    
+    #endregion
+
     #region Advanced
 
     [IniSection("Advanced")] 
