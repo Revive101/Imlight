@@ -18,17 +18,17 @@ namespace Imlight.Server.Shared.Resources
 {
     public static class CoreObjectFactory
     {
-        private const string ROOT_WAD_NAME = "Root.wad";
-        private const string TEMPLATE_MANIFEST_NAME = "TemplateManifest.xml";
+        private const string RootWadName = "Root.wad";
+        private const string TemplateManifestName = "TemplateManifest.xml";
         
-        private static readonly Dictionary<ulong, ByteString> _coreTemplates = new();
+        private static readonly Dictionary<ulong, ByteString> CoreTemplates = new();
 
         public static bool Load()
         {
             // Load the TemplateManifest.xml and record the amount of time it takes.
             var timer = new Stopwatch();
             timer.Start();
-            var manifest = ResourceManager.LoadDeserializedFile<TemplateManifest>(ROOT_WAD_NAME, TEMPLATE_MANIFEST_NAME);
+            var manifest = ResourceManager.LoadDeserializedFile<TemplateManifest>(RootWadName, TemplateManifestName);
             if (manifest is null)
                 return false;
             timer.Stop();
@@ -43,7 +43,7 @@ namespace Imlight.Server.Shared.Resources
 
                 // Drop the MSB from the id.
                 id &= 0xFFFFFFFF;
-                _coreTemplates.Add(id, loc);
+                CoreTemplates.Add(id, loc);
             }
 
             return true;
@@ -133,7 +133,7 @@ namespace Imlight.Server.Shared.Resources
 
         public static CoreTemplate GetCoreTemplate(ulong id)
         {
-            if (!_coreTemplates.TryGetValue(id, out var loc)) return null;
+            if (!CoreTemplates.TryGetValue(id, out var loc)) return null;
 
             var template = ResourceManager.LoadDeserializedFile<CoreTemplate>("Root.wad", loc);
             if (template is null)

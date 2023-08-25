@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Imlight.Common.Configuration;
 using Serilog;
 using Serilog.Context;
 using Serilog.Core;
@@ -18,20 +19,16 @@ namespace Imlight.Common.Utilities
     public static class Log
     {
         private const byte MaxCallerNameLength = 40;
-        
-        // TODO: Make this configurable.
-        private static readonly string _path = Path.Combine(
-            Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
-            ?? string.Empty, "log.txt");
+        private static readonly string _path = ConfigurationManager.Settings.LogPath;
+        private static readonly bool _logsIncludeTimestamp = ConfigurationManager.Settings.LogsIncludeTimestamp;
 
         public static ILogger Logger { get; } = new LoggerConfiguration()
             .MinimumLevel.Debug()
             .Enrich.FromLogContext()
             .Enrich.With(new ThreadIdEnricher())
             //.Enrich.With(new CallingMethodEnricher())
-            .WriteTo.Console(outputTemplate:
-                "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] [{Thread}] {CallingSpace} : {Message:lj} {NewLine}{Exception}")
-            .WriteTo.File("log.txt", rollingInterval: RollingInterval.Day)
+            .WriteTo.Console(outputTemplate: CreateOutputTemplate(_logsIncludeTimestamp))
+            .WriteTo.File(_path, rollingInterval: RollingInterval.Day)
             .CreateLogger();
         
         public static void Verbose(string message, 
@@ -125,6 +122,14 @@ namespace Imlight.Common.Utilities
             }
 
             return "Main".PadRight(MaxCallerNameLength);
+        }
+        
+        private static string CreateOutputTemplate(bool includeTimestamp)
+        {
+            return includeTimestamp 
+                ? "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] [{Thread}] {CallingSpace} " +
+                  ": {Message:lj} {NewLine}{Exception}" 
+                : "[{Level:u3}] [{Thread}] {CallingSpace} : {Message:lj} {NewLine}{Exception}";
         }
     }
 

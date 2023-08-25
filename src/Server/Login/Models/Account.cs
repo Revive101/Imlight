@@ -14,6 +14,7 @@ using Imlight.Server.Game.Models;
 using Imlight.Server.WizardData.Implementations;
 using Newtonsoft.Json;
 using BCrypt.Net;
+using Imlight.Common.Configuration;
 using Imlight.Common.Cryptography;
 using Imlight.Server.WizardData;
 
@@ -22,7 +23,8 @@ namespace Imlight.Server.Login.Models;
 [Serializable]
 public class Account
 {
-    [JsonIgnore] public const byte MAX_ALLOWED_CHARACTERS = 6;
+    [JsonIgnore] public readonly byte MAX_ALLOWED_CHARACTERS
+        = ConfigurationManager.Settings.MaxAllowedCharactersPerAccount;
         
     public ulong AccountId { get; private set; }
     public string Username { get; private set; }

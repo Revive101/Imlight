@@ -4,6 +4,7 @@
  */
 
 using Akka.Actor;
+using Imlight.Common.Configuration;
 using WizUnraveler.Cache;
 using Imlight.Common.Utilities;
 using Imlight.Server.Shared.Networking;
@@ -13,16 +14,10 @@ namespace Imlight.Server.Login
 {
     public class LoginServer : Shared.Networking.Server
     {
-        public const string DEFAULT_LOGIN_SERVER_NAME = "Imlight.Login";
-        private const ushort DEFAULT_LOGIN_SERVER_PORT = 12000;
-        private const string DEFAULT_LOCAL_GAME_SERVER_NAME = "Imlight.Game";
-        private const ushort DEFAULT_LOCAL_GAME_SERVER_PORT = 12333;
-        private const string GAME_SERVER_POOL_NAME = "GameServerPool";
+        private readonly IActorRef _gamePoolServer;
+        private const string GameServerPoolName = "GameServerPool";
 
-        private IActorRef _gamePoolServer;
-
-        public LoginServer(string serverName = DEFAULT_LOGIN_SERVER_NAME,
-                           ushort serverPort = DEFAULT_LOGIN_SERVER_PORT)
+        public LoginServer(string serverName, ushort serverPort)
                            : base(serverName, serverPort, LoginServiceFactory.Props())
         {
             this._gamePoolServer = CreateGameServerPool();
@@ -30,8 +25,7 @@ namespace Imlight.Server.Login
                 Log.Args(serverName, serverPort));
         }
         
-        public static Props Props(string serverName = DEFAULT_LOGIN_SERVER_NAME,
-                                  ushort serverPort = DEFAULT_LOGIN_SERVER_PORT)
+        public static Props Props(string serverName, ushort serverPort)
         {
             return Akka.Actor.Props.Create(() => new LoginServer(serverName, serverPort));
         }
@@ -65,10 +59,14 @@ namespace Imlight.Server.Login
         [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_CREATEGAMESERVER))]
         private void ReceiveCreateGameServer(SERVER_100_PROTOCOL.MSG_CREATEGAMESERVER message)
         {
+            var defaultGameServerName = ConfigurationManager.Settings.GameServerName;
+            var defaultGameServerPort = ConfigurationManager.Settings.GameServerPort;
+            
+            // If the name or port is not set, use the default values.
             if (message.Name is "" or null)
-                message.Name = DEFAULT_LOCAL_GAME_SERVER_NAME;
+                message.Name = defaultGameServerName;
             if (message.Port == 0)
-                message.Port = DEFAULT_LOCAL_GAME_SERVER_PORT;
+                message.Port = defaultGameServerPort;
             
             _gamePoolServer.Tell(message);
         }
@@ -78,9 +76,9 @@ namespace Imlight.Server.Login
             var poolProps = GameServerPool.Props();
 
             Log.Verbose("New actor created under {Path}: {Name}.{PoolName}", 
-                Log.Args(Context.Self.Path, Name, GAME_SERVER_POOL_NAME));
+                Log.Args(Context.Self.Path, Name, GameServerPoolName));
             
-            return Context.ActorOf(poolProps, $"{Name}.{GAME_SERVER_POOL_NAME}");
+            return Context.ActorOf(poolProps, $"{Name}.{GameServerPoolName}");
         }
     }
 }

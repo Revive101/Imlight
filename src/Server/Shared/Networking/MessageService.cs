@@ -17,7 +17,7 @@ namespace Imlight.Server.Shared.Networking
 {
     public abstract class MessageService : ReceiveProtocolDispatcher
     {
-        protected SessionActor SessionActor { get; set; }
+        protected SessionActor SessionActor { get; init; }
 
         public MessageService(SessionActor sessionActor)
         {
@@ -31,10 +31,7 @@ namespace Imlight.Server.Shared.Networking
         public void SendToSocket(INetworkMessage message)
         {
             if (SessionActor is null)
-            {
                 throw new ActorKilledException($"{GetType()} attempted to send message to undefined SessionActor.");
-                return;
-            }
 
             SessionActor.ActorRef.Tell(message);
         }

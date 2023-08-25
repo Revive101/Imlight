@@ -12,14 +12,14 @@ namespace Imlight.Server.Shared.Resources
 {
     public static class AccessPassManager
     {
-        const string ROOT_WAD_NAME = "Root.wad";
-        const string ACCESS_PASS_NAME = "AccessPass.xml";
+        private const string RootWadName = "Root.wad";
+        private const string AccessPassName = "AccessPass.xml";
         
         private static string[] _zones;
         
         public static bool Load()
         {
-            if (!ResourceManager.TryLoadFile(ROOT_WAD_NAME, ACCESS_PASS_NAME, out var stream))
+            if (!ResourceManager.TryLoadFile(RootWadName, AccessPassName, out var stream))
                 return false;
 
             // Use the XmlReader to read the file. Only the zone names are needed,

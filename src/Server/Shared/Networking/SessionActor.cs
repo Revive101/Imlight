@@ -9,6 +9,7 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
 using Akka.Actor;
+using Imlight.Common.Configuration;
 using WizUnraveler;
 using WizUnraveler.DML;
 using WizUnraveler.Cache;
@@ -22,12 +23,12 @@ namespace Imlight.Server.Shared.Networking
     /// </summary>
     public class SessionActor : ReceiveActor, IDisposable
     {
-        private const int  BufferSize = 4096;
-        private const byte AsyncSendPoolCount = 3;
-        private const byte AsyncReceivePoolCount = 3;
-        private const bool CloseOnSocketException = true;
-        private const byte ServiceRetryCount = 3;
-        private const byte ServiceTimeRangeRetryInSeconds = 30;
+        private readonly int _bufferSize = ConfigurationManager.Settings.SessionActorBufferSize;
+        private readonly byte _asyncSendPoolCount = ConfigurationManager.Settings.SessionActorSendPoolSize;
+        private readonly byte _asyncReceivePoolCount = ConfigurationManager.Settings.SessionActorReceivePoolSize;
+        private readonly bool _closeOnSocketException = ConfigurationManager.Settings.SessionActorCloseOnException;
+        private readonly byte _serviceRetryCount = ConfigurationManager.Settings.SessionActorServiceRetryCount;
+        private readonly byte _serviceTimeRangeRetryInSeconds = ConfigurationManager.Settings.SessionActorServiceRangeRetry;
 
         public ushort SessionID                     { get; }
         public uint OfferTime                       { get; set; }
@@ -199,8 +200,8 @@ namespace Imlight.Server.Shared.Networking
         {
             // Recall that child actors of the SessionActor are the message services.
             return new AllForOneStrategy(
-                maxNrOfRetries: ServiceRetryCount,
-                withinTimeRange: TimeSpan.FromSeconds(ServiceTimeRangeRetryInSeconds),
+                maxNrOfRetries: _serviceRetryCount,
+                withinTimeRange: TimeSpan.FromSeconds(_serviceTimeRangeRetryInSeconds),
                 localOnlyDecider: ex =>
                 {
                     switch (ex)
@@ -360,7 +361,7 @@ namespace Imlight.Server.Shared.Networking
 
             var newArgs = new SocketAsyncEventArgs();
             newArgs.Completed += (_, e) => OnReceiveCompleted(e);
-            newArgs.SetBuffer(new byte[BufferSize], 0, BufferSize);
+            newArgs.SetBuffer(new byte[_bufferSize], 0, _bufferSize);
             newArgs.AcceptSocket = this.Socket;
             ProcessReceive(newArgs);
         }
@@ -485,7 +486,7 @@ namespace Imlight.Server.Shared.Networking
                     var receiveEventArgs = new SocketAsyncEventArgs();
                     receiveEventArgs.Completed += (_, e) => OnReceiveCompleted(e);
                     receiveEventArgs.AcceptSocket = Socket;
-                    receiveEventArgs.SetBuffer(new byte[BufferSize], 0, BufferSize);
+                    receiveEventArgs.SetBuffer(new byte[_bufferSize], 0, _bufferSize);
 
                     return receiveEventArgs;
                 }
@@ -493,7 +494,7 @@ namespace Imlight.Server.Shared.Networking
             
             SendOldContextException(new SessionFatalException($"SessionActor [{SessionID}] receive argument " +
                                                               $"pool over maximum allowed count " +
-                                                              $"of {AsyncReceivePoolCount}."));
+                                                              $"of {_asyncReceivePoolCount}."));
             return null;
         }
 
