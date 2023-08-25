@@ -14,7 +14,7 @@ namespace Imlight.Server.Shared.Networking
         /// <summary>
         /// The unique session ID of this queue member.
         /// </summary>
-        public ushort SessionIO { get; }
+        public ushort SessionId { get; }
         
         /// <summary>
         /// The IActorRef.
@@ -26,9 +26,9 @@ namespace Imlight.Server.Shared.Networking
         /// </summary>
         public INetworkMessage EndMessage { get; }
         
-        public QueueMember(ushort sessionIo, IActorRef actorRef, INetworkMessage endMessage)
+        public QueueMember(ushort sessionId, IActorRef actorRef, INetworkMessage endMessage)
         {
-            SessionIO = sessionIo;
+            SessionId = sessionId;
             ActorRef = actorRef ?? throw new ArgumentNullException(nameof(actorRef));
             EndMessage = endMessage ?? throw new ArgumentNullException(nameof(endMessage));
         }

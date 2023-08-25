@@ -25,6 +25,7 @@ namespace Imlight.Server.Game
     {
         private readonly string _sessionKeyHashInput = ConfigurationManager.Settings.SessionKeyHashInput;
         private readonly ushort _sessionKeyValidityTime = ConfigurationManager.Settings.SessionKeyValidityTime;
+        private readonly ushort _playerLimit = ConfigurationManager.Settings.GameServerPlayerLimit;
         
         private readonly IActorRef _gameWorldRef;
         private readonly Cache<ByteString, Account> _sessionKeys;
@@ -108,7 +109,7 @@ namespace Imlight.Server.Game
             }
 
             // If the server is full, add them to the queue and inform the client.
-            if (ActiveSessions.Count >= PLAYER_LIMIT)
+            if (ActiveSessions.Count >= _playerLimit)
             {
                 _playerQueue.Enqueue(message.SessionActor);
                 var queuePos = _playerQueue.Count;

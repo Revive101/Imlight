@@ -33,7 +33,7 @@ namespace Imlight.Server.Patch
         private readonly string UserAgentValue = ConfigurationManager.Settings.PatchServerUserAgent;
         private readonly ushort DownloadBufferSize = ConfigurationManager.Settings.PatchServerBufferSize;
         private readonly uint Revision = ConfigurationManager.Settings.GameRevision;
-        private readonly uint PatchServerTimeout = ConfigurationManager.Settings.PatchServerTimeout;
+        private readonly uint PatchServerTimeout = ConfigurationManager.Settings.PatchServerInternalTimeout;
         private readonly string PatchServerInternalUrl = ConfigurationManager.Settings.PatchServerInternalUrl;
         private readonly ushort PatchServerInternalPort = ConfigurationManager.Settings.PatchServerInternalPort;
         // "http://phill030.de:12369/patcher/";
