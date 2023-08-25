@@ -5,6 +5,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Akka.Actor;
@@ -22,7 +23,7 @@ namespace Imlight.Backend
     internal static class Program
     {
         private const string ActorSystemName = "Imlight";
-        private const string VersionScript = @"
+        private const string VersionScriptBash = @"
             total_commits=$(git rev-list --count HEAD);
             num_merges=$(git log --oneline --merges | wc -l)
             num_features=$(git log --oneline | grep -c 'feat:');
@@ -30,8 +31,21 @@ namespace Imlight.Backend
             major=$((num_merges));
             minor=$((num_features));
             patch=$((num_fixes));
-            version=""$major.$minor.$patch"";-
+            version=""$major.$minor.$patch"";
             echo $version";
+        private const string VersionScriptBatch = @"
+            @echo off
+            for /f %%A in ('git rev-list --count HEAD') do set total_commits=%%A
+            for /f %%B in ('git log --oneline --merges ^| find /c /v """"') do set num_merges=%%B
+            for /f %%C in ('git log --oneline ^| find /c ""feat:""') do set num_features=%%C
+            for /f %%D in ('git log --oneline ^| find /c ""fix:""') do set num_fixes=%%D
+
+            set /a major=num_merges
+            set /a minor=num_features
+            set /a patch=num_fixes
+
+            set version=%major%.%minor%.%patch%
+            echo %version%";
 
         private static ActorSystem _imlightSystem;
 
@@ -141,7 +155,7 @@ namespace Imlight.Backend
             Console.ForegroundColor = ConsoleColor.White;
             
             // Write version.
-            var version = RunSemanticVersionScript(VersionScript);
+            var version = RunSemanticVersionScript();
             var buildConfiguration = GetBuildConfiguration();
             Console.Write(@"|___/");
             Console.ForegroundColor = ConsoleColor.DarkGray;
@@ -149,19 +163,28 @@ namespace Imlight.Backend
             Console.WriteLine("");
         }
         
-        private static string RunSemanticVersionScript(string script)
+        private static string RunSemanticVersionScript()
         {
-            var process = new Process
+            var process = new Process();
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "bash",
-                    Arguments = "-c \"" + script.Replace("\"", "\\\"") + "\"",
-                    RedirectStandardOutput = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                }
-            };
+                process.StartInfo.FileName = "cmd.exe";
+                process.StartInfo.Arguments = "/c \"" + VersionScriptBatch.Replace("\"", "\\\"") + "\"";
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                process.StartInfo.FileName = "bash";
+                process.StartInfo.Arguments = "-c \"" + VersionScriptBash.Replace("\"", "\\\"") + "\"";
+            }
+            else
+            {
+                throw new NotSupportedException("Unsupported operating system");
+            }
+
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.CreateNoWindow = true;
 
             process.Start();
             var output = process.StandardOutput.ReadToEnd();
@@ -169,7 +192,7 @@ namespace Imlight.Backend
 
             return output.Trim();
         }
-        
+
         private static string GetBuildConfiguration()
         {
 #if DEBUG
