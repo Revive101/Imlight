@@ -29,13 +29,13 @@ public static class IniSerializer
             var defaultValueAttribute = property.GetCustomAttribute<DefaultValueAttribute>();
             var descriptionAttribute = property.GetCustomAttribute<DescriptionAttribute>();
 
-            // Write the description if it exists.
-            if (descriptionAttribute is not null)
-                iniData.AppendLine($"; {descriptionAttribute.Description}");
-
             // Write the section header if it exists.
             if (sectionAttribute is not null)
                 iniData.AppendLine($"\n[{sectionAttribute.SectionName}]");
+            
+            // Write the description if it exists.
+            if (descriptionAttribute is not null)
+                iniData.AppendLine($"; {descriptionAttribute.Description}");
 
             var value = property.GetValue(obj) ?? defaultValueAttribute?.Value;
             iniData.AppendLine($"{property.Name} = {value}");
