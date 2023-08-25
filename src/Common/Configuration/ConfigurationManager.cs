@@ -38,7 +38,9 @@ public static class ConfigurationManager
                     .FirstOrDefault() is not DefaultValueAttribute attribute)
                 continue;
 
-            property.SetValue(defaultSettings, attribute.Value);
+            // Convert the value to the correct type.
+            var value = Convert.ChangeType(attribute.Value, property.PropertyType);
+            property.SetValue(defaultSettings, value);
         }
         
         // Serialize the data and write it to the file.
