@@ -15,9 +15,6 @@ namespace Imlight.Server.Shared.Networking
 {
     public abstract class Server : ReceiveProtocolDispatcher
     {
-        // TODO: this sucks here pls move
-        public const ushort PLAYER_LIMIT = 10;
-
         public string Name { get; }
         public string Ip { get; }
         public int Port { get; }

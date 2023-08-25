@@ -13,6 +13,7 @@ using System.Net.Http;
 using System.Xml;
 using System.Threading.Tasks;
 using Akka.Actor;
+using Imlight.Common.Configuration;
 using WizUnraveler;
 using Imlight.Common.Utilities;
 using Imlight.Common.Cryptography;
@@ -24,22 +25,21 @@ namespace Imlight.Server.Patch
 {
     public class PatchServer : Shared.Networking.Server
     {
-        // @todo: move this to config
-        public const string DefaultPatchServerName = "Imlight.Patch";
-        private const ushort DefaultPatchServerPort = 12500;
-        private const string PatchServerUrl = "http://phill030.de:12369/patcher/";
         private const string PatchServerWadUrlPrefix = "wads";
         private const string PatchServerUtilUrlPrefix = "utils";
-        private const int PatchServerTimeout = 10; // In seconds.
         private const string LatestFileListNameBin = "LatestFileList.bin";
         private const string LatestFileListNameXml = "LatestFileList.xml";
-        private const uint Revision = 739602;
-        private const string UserAgentValue = "KingsIsle Patcher";
-        private const ushort DownloadBufferSize = 4096;
+        // Configuration values.
+        private readonly string UserAgentValue = ConfigurationManager.Settings.PatchServerUserAgent;
+        private readonly ushort DownloadBufferSize = ConfigurationManager.Settings.PatchServerBufferSize;
+        private readonly uint Revision = ConfigurationManager.Settings.GameRevision;
+        private readonly uint PatchServerTimeout = ConfigurationManager.Settings.PatchServerInternalTimeout;
+        private readonly string PatchServerInternalUrl = ConfigurationManager.Settings.PatchServerInternalUrl;
+        private readonly ushort PatchServerInternalPort = ConfigurationManager.Settings.PatchServerInternalPort;
+        // "http://phill030.de:12369/patcher/";
 
         public static IActorRef Instance { get; private set; }
         private static bool EndpointReached { get; set; }
-        
         // LatestFileList cached information.
         private static uint _latestVersion;
         private static ByteString _listFileName;
@@ -62,9 +62,7 @@ namespace Imlight.Server.Patch
             Instance = this.Self;
         }
 
-        public static Props Props(
-            string serverName = DefaultPatchServerName,
-            ushort serverPort = DefaultPatchServerPort)
+        public static Props Props(string serverName, ushort serverPort)
         {
             return Akka.Actor.Props.Create(() => new PatchServer(serverName, serverPort, PatchServiceFactory.Props()));
         }
@@ -168,7 +166,7 @@ namespace Imlight.Server.Patch
             return await DownloadFileStream(url);
         }
 
-        private static async Task<MemoryStream> DownloadFileStream(string url)
+        private async Task<MemoryStream> DownloadFileStream(string url)
         {
             try
             {
@@ -210,7 +208,8 @@ namespace Imlight.Server.Patch
 
         private bool GetPatchServerStatus()
         {
-            var workingUrl = $"{PatchServerUrl}V_r{Revision}.Wizard_1_520_0_Live";
+            var internalUrl = $"{PatchServerInternalUrl}:{PatchServerInternalPort}/patcher";
+            var workingUrl = $"{internalUrl}/V_r{Revision}.Wizard_1_520_0_Live";
 
             // Check to see if the patch server URL is available at all.
             Log.Information("Checking patch server at URL {Url}. Timeout: {Timeout} s", 
@@ -227,7 +226,7 @@ namespace Imlight.Server.Patch
             return true;
         }
 
-        private static bool GetServerUrlStatus(string url)
+        private bool GetServerUrlStatus(string url)
         {
             using var client = new HttpClient();
             client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgentValue);

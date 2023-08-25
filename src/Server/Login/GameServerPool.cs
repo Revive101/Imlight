@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Akka.Actor;
+using Imlight.Common.Configuration;
 using WizUnraveler;
 using Imlight.Common.Utilities;
 using Imlight.Server.Shared.Networking;
@@ -19,9 +20,10 @@ namespace Imlight.Server.Login
 {
     internal class GameServerPool : ReceiveProtocolDispatcher
     {
-        private const byte ALLOWED_GAME_SERVER_COUNT = 3;
+        private readonly byte _maxGameServersAllowed = ConfigurationManager.Settings.MaxGameServersAllowed;
+        private readonly ushort _gameServerPlayerCount = ConfigurationManager.Settings.GameServerPlayerLimit;
         
-        private Dictionary<ushort, IActorRef> _gameServers;
+        private readonly Dictionary<ushort, IActorRef> _gameServers;
 
         public GameServerPool()
         {
@@ -38,7 +40,7 @@ namespace Imlight.Server.Login
         [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_CREATEGAMESERVER))]
         private void ReceiveCreateGameServer(SERVER_100_PROTOCOL.MSG_CREATEGAMESERVER message)
         {
-            if (_gameServers.Count >= ALLOWED_GAME_SERVER_COUNT)
+            if (_gameServers.Count >= _maxGameServersAllowed)
             {
                 Log.Error("{Type} attempted to create a new game server, but the " +
                                  $"internal limit has already been reached. Server has not been created.", 
@@ -78,8 +80,9 @@ namespace Imlight.Server.Login
             gameServers.Sort((s1, s2) => s2.PlayerCount.CompareTo(s1.PlayerCount));
 
             // Find the first non-full server or choose a random one if all servers are full
-            var chosenServer = gameServers.FirstOrDefault(server => server.PlayerCount < Shared.Networking.Server.PLAYER_LIMIT)
-                               ?? gameServers[new Random().Next(0, gameServers.Count)];
+            var chosenServer = gameServers
+                                   .FirstOrDefault(server => server.PlayerCount < _gameServerPlayerCount)
+                                    ?? gameServers[new Random().Next(0, gameServers.Count)];
 
             // Send the chosen server details back to the session actor
             Sender.Tell(chosenServer);

@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Akka.Actor;
+using Imlight.Common.Configuration;
 using Imlight.Common.Utilities;
 using Imlight.Server.Login;
 using Imlight.Server.Login.Models;
@@ -95,11 +96,14 @@ namespace Imlight.Backend
 
         private static IActorRef StartLoginServer()
         {
-            var loginProps = LoginServer.Props();
-            var loginServer = _imlightSystem.ActorOf(loginProps, LoginServer.DEFAULT_LOGIN_SERVER_NAME);
+            var loginServerName = ConfigurationManager.Settings.LoginServerName;
+            var loginServerPort = ConfigurationManager.Settings.LoginServerPort;
+            
+            var loginProps = LoginServer.Props(loginServerName, loginServerPort);
+            var loginServer = _imlightSystem.ActorOf(loginProps, loginServerName);
             
             Log.Debug("New actor created under {systemName}: {loginServerName}", 
-                Log.Args(_imlightSystem.Name, LoginServer.DEFAULT_LOGIN_SERVER_NAME));
+                Log.Args(_imlightSystem.Name, loginServerName));
             
             return loginServer;
         }
@@ -110,13 +114,16 @@ namespace Imlight.Backend
             loginActorRef.Tell(msg);
         }
 
-        private static async Task StartPatchServer() 
+        private static async Task StartPatchServer()
         {
-            var patchProps = PatchServer.Props();
-            var actor = _imlightSystem.ActorOf(patchProps, PatchServer.DefaultPatchServerName);
+            var defaultPatchServerName = ConfigurationManager.Settings.PatchServerName;
+            var defaultPatchServerPort = ConfigurationManager.Settings.PatchServerPort;
+            
+            var patchProps = PatchServer.Props(defaultPatchServerName, defaultPatchServerPort);
+            var actor = _imlightSystem.ActorOf(patchProps, defaultPatchServerName);
             
             Log.Debug("New actor created under {systemName}: {patchServerName}", 
-                Log.Args(_imlightSystem.Name, PatchServer.DefaultPatchServerName));
+                Log.Args(_imlightSystem.Name, defaultPatchServerName));
 
             // Await initialization of the patch server.
             await actor.Ask<SERVER_100_PROTOCOL.MSG_INITIALIZE_COMPLETE>(new SERVER_100_PROTOCOL.MSG_INITIALIZE());

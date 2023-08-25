@@ -1,5 +1,6 @@
 using System;
 using System.Security.Cryptography.X509Certificates;
+using Imlight.Common.Configuration;
 using Imlight.Common.Utilities;
 using Raven.Client.Documents;
 using Raven.Client.Json.Serialization.NewtonsoftJson;
@@ -8,14 +9,16 @@ namespace Imlight.Server.WizardData.Implementations;
 
 public class PlayerDatabase : RavenDatabaseSingleton<PlayerDatabase>, IRavenDatabaseAccessor
 {
-    protected const byte MaxNumberOfRequestsPerSession = 16;
-    protected const byte RequestTimeoutInSeconds = 90;
-    protected const byte WaitForNonStaleResultsTimeoutInSeconds = 5;
+    protected readonly byte MaxNumberOfRequestsPerSession 
+        = ConfigurationManager.Settings.DatabaseMaxNumberOfRequestsPerSession;
+    protected readonly byte RequestTimeoutInSeconds
+        = ConfigurationManager.Settings.DatabaseRequestTimeoutInSeconds;
+    protected readonly byte WaitForNonStaleResultsTimeoutInSeconds 
+        = ConfigurationManager.Settings.DatabaseWaitForNonStaleResultsTimeout;
     
-    public X509Certificate2 Certificate { get; }
-        = new("/home/makima/.ssh/dragon-database/dragon.admin/dragon.admin.pfx");
-    public string DatabaseName { get; } = "Playerdata";
-    public string Url { get; } = "https://a.voidly.ravendb.community";
+    public X509Certificate2 Certificate { get; } = new(ConfigurationManager.Settings.PlayerDatabaseCertificatePath);
+    public string DatabaseName { get; } = ConfigurationManager.Settings.PlayerDatabaseName;
+    public string Url { get; } = ConfigurationManager.Settings.PlayerDatabaseUrl;
     
     private IDocumentStore _store;
     public IDocumentStore Store => _store ??= CreateStore();
