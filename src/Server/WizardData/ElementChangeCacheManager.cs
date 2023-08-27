@@ -91,7 +91,7 @@ public class ElementChangeCacheManager : IDisposable
         try
         {
             var operation = await _documentStore.Operations.SendAsync(patchRequest);
-            await operation.WaitForCompletionAsync();
+            await operation.WaitForCompletionAsync(TimeSpan.FromSeconds(2));
         }
         catch (Exception ex)
         {
