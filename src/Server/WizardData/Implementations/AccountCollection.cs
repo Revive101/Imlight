@@ -20,9 +20,14 @@ public static class AccountCollection
     /// Creates an account in the database. 
     /// </summary>
     /// <param name="account">The created account.</param>
-    public static void CreateAccount(Account account)
+    public static bool CreateAccount(Account account)
     {
         using var session = Store.OpenSession();
+        
+        // Return false if the account already exists.
+        if (session.Query<Account>(collectionName: CollectionName)
+            .Any(c => c.Username == account.Username || c.Email == account.Email))
+            return false;
         
         // Foreach character in the account, add it to the database.
         foreach (var character in account.Characters)
@@ -33,6 +38,7 @@ public static class AccountCollection
         metadata[Raven.Client.Constants.Documents.Metadata.Collection] = CollectionName;
         
         session.SaveChanges();
+        return true;
     }
 
     /// <summary>
