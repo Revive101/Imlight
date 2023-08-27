@@ -69,6 +69,24 @@ public sealed class ServerSettings
     
     #endregion
     
+    #region Character 
+    
+    [IniSection("Character")]
+    
+    [DefaultValue(1)]
+    public byte StartingLevel { get; set; }
+    
+    [DefaultValue("WizardCity/WC_Hub")]
+    public string StartingZone { get; set; }
+    
+    [DefaultValue(1)]
+    public byte StartingWorld { get; set; }
+    
+    [DefaultValue(1000000)]
+    public int BaseGoldPouch { get; set; }
+    
+    #endregion
+    
     #region Patch Server
     
     [IniSection("Patch Server")]
@@ -99,7 +117,7 @@ public sealed class ServerSettings
 
     [IniSection("Database")]
     
-    [DefaultValue("https://a.voidly.ravendb.community")]
+    [DefaultValue("")]
     public string PlayerDatabaseUrl { get; set; }
     
     [DefaultValue("Playerdata")]
@@ -108,26 +126,42 @@ public sealed class ServerSettings
     [DefaultValue("./Certificates/dragon.admin.pfx")]
     public string PlayerDatabaseCertificatePath { get; set; }
     
-    [DefaultValue("https://a.voidly.ravendb.community")]
+    [DefaultValue("")]
     public string WorldDatabaseUrl { get; set; }
     
     [DefaultValue("Imlight")]
     public string WorldDatabaseName { get; set; }
     
-    [DefaultValue("./Certificates/worlddata.client.certificate.pfx")]
+    [DefaultValue("./Certificates/worlddata.client.pfx")]
     public string WorldDatabaseCertificatePath { get; set; }
     
     [DefaultValue(16)]
-    [Description("The maximum number of requests that can be made per session.")]
     public byte DatabaseMaxNumberOfRequestsPerSession { get; set; }
     
     [DefaultValue(90)]
-    [Description("The time in seconds that the database will wait for a request.")]
     public byte DatabaseRequestTimeoutInSeconds { get; set; }
     
     [DefaultValue(5)]
-    [Description("The time in seconds that the database will wait for non-stale results.")]
     public byte DatabaseWaitForNonStaleResultsTimeout { get; set; }
+    
+    [DefaultValue("./ImlightEmbeddedDatabase")]
+    [Description("The directory where the embedded database will be stored.")]
+    public string EmbeddedDatabaseDataDirectory { get; set; }
+    
+    [DefaultValue(8080)]
+    [Description("The port used by the embedded database.")]
+    public ushort EmbeddedDatabasePort { get; set; }
+    
+    [DefaultValue(90)]
+    [Description("The time in seconds that the embedded database will wait to reach the endpoint before timing out.")]
+    public ushort EmbeddedDatabaseTimeoutTime { get; set; }
+    
+    [DefaultValue(false)]
+    [Description("If true, a full RavenDb database will be used. The full database includes a dotnet runtime.")]
+    public bool EmbeddedDatabaseUseFull { get; set; }
+    
+    [Description("The path to the full RavenDb. Only used if EmbeddedDatabaseUseFull is true.")]
+    public string EmbeddedDatabaseFullPath { get; set; }
     
     #endregion
 

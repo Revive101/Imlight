@@ -10,9 +10,14 @@ public abstract class RavenDatabaseSingleton<T>
     private static readonly Lazy<T> Lazy =
         new(() => (Activator.CreateInstance(typeof(T), true) as T)!);
     public static T Instance => Lazy.Value;
+    
+    protected abstract X509Certificate2 Certificate { get; }
+    protected abstract string DatabaseName { get; }
+    protected abstract string Url { get; }
 
     protected IDocumentStore _store;
-    public IDocumentStore Store => _store ??= CreateStore();
+    public IDocumentStore Store => _store ??= Url == string.Empty ? CreateEmbeddedStore() : CreateStore();
 
     protected abstract IDocumentStore CreateStore();
+    protected abstract IDocumentStore CreateEmbeddedStore();
 }

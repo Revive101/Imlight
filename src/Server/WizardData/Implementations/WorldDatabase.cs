@@ -4,10 +4,12 @@ using Imlight.Common.Configuration;
 using Imlight.Common.Utilities;
 using Raven.Client.Documents;
 using Raven.Client.Json.Serialization.NewtonsoftJson;
+using Raven.Client.ServerWide;
+using Raven.Embedded;
 
 namespace Imlight.Server.WizardData.Implementations;
 
-public class WorldDatabase : RavenDatabaseSingleton<WorldDatabase>, IRavenDatabaseAccessor
+public class WorldDatabase : RavenDatabaseSingleton<WorldDatabase>
 {
     protected readonly byte MaxNumberOfRequestsPerSession 
         = ConfigurationManager.Settings.DatabaseMaxNumberOfRequestsPerSession;
@@ -16,16 +18,17 @@ public class WorldDatabase : RavenDatabaseSingleton<WorldDatabase>, IRavenDataba
     protected readonly byte WaitForNonStaleResultsTimeoutInSeconds 
         = ConfigurationManager.Settings.DatabaseWaitForNonStaleResultsTimeout;
     
-    public X509Certificate2 Certificate { get; } = new(ConfigurationManager.Settings.WorldDatabaseCertificatePath);
-    public string DatabaseName { get; } = ConfigurationManager.Settings.WorldDatabaseName;
-    public string Url { get; } = ConfigurationManager.Settings.WorldDatabaseUrl;
-    
-    public IDocumentStore Store => _store ??= CreateStore();
-    
+    protected override X509Certificate2 Certificate { get; } 
+        = ConfigurationManager.Settings.WorldDatabaseUrl == string.Empty 
+            ? null 
+            : new X509Certificate2(ConfigurationManager.Settings.WorldDatabaseCertificatePath);
+    protected override string DatabaseName { get; } = ConfigurationManager.Settings.WorldDatabaseName;
+    protected override string Url { get; } = ConfigurationManager.Settings.WorldDatabaseUrl;
+
     protected override IDocumentStore CreateStore()
     {
         // If this is the first time we're creating the store, we need to create the database.
-        Log.Information("Initializing RavenDB database for the first time..");
+        Log.Information("Initializing remote RavenDB database for the first time..");
         Log.Information("Database name: {0}", Log.Args(DatabaseName));
 
         var store = new DocumentStore
@@ -51,5 +54,11 @@ public class WorldDatabase : RavenDatabaseSingleton<WorldDatabase>, IRavenDataba
         Log.Information("Database initialized.");
 
         return store;
+    }
+    
+    protected override IDocumentStore CreateEmbeddedStore()
+    {
+        EmbeddedDatabaseManager.Start();
+        return EmbeddedDatabaseManager.GetDocumentStore(DatabaseName);
     }
 }
