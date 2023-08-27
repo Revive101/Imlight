@@ -27,7 +27,7 @@ namespace Imlight.Server.Game.Models;
 [Serializable]
 public class Character : IDisposable
 {
-    [JsonIgnore] private readonly byte DefaultUploadIntervalInMinutes
+    [JsonIgnore] private readonly byte _defaultUploadIntervalInMinutes
         = ConfigurationManager.Settings.CharacterUploadIntervalInMinutes;
     
     public ulong AccountId { get; set; }
@@ -83,12 +83,10 @@ public class Character : IDisposable
     public Character(WizardCharacterCreationInfo characterCreationInfo)
     {
         // If this constructor has been called, then the character is a fresh character.
-        var worldData = WorldDataCollection.GetWorldData();
-        
         this.CharId = RandomGen.GenerateGUID();
-        this.Level = worldData.StartingLevel;
-        this.Zone = worldData.StartingZone;
-        this.World = worldData.StartingWorld;
+        this.Level = ConfigurationManager.Settings.StartingLevel;
+        this.Zone = ConfigurationManager.Settings.StartingZone;
+        this.World = ConfigurationManager.Settings.StartingWorld;
         this.WizardSchool = (WizardSchool)characterCreationInfo.m_schoolOfFocus;
         this.WizardAvatar = characterCreationInfo.m_avatarBehavior;
         this.NameIndices = characterCreationInfo.m_nameIndices;
@@ -197,7 +195,6 @@ public class Character : IDisposable
 
     private WizGameStats CalculateBaseGameStats(WizGameStats existingStats)
     {
-        var worldData = WorldDataCollection.GetWorldData();
         var baseHealth = WizardClassData.GetClassHealthAtLevel(WizardSchool, Level);
         var baseMana = WizardClassData.GetManaAtLevel(Level);
 
@@ -205,7 +202,7 @@ public class Character : IDisposable
         existingStats.m_currentHitpoints = baseHealth;
         existingStats.m_baseMana = baseMana;
         existingStats.m_currentMana = baseMana;
-        existingStats.m_baseGoldPouch = worldData.GoldPouchMax;
+        existingStats.m_baseGoldPouch = ConfigurationManager.Settings.BaseGoldPouch;
         existingStats.m_powerPipBase = WizardClassData.GetPowerPipChanceAtLevel(Level);
         existingStats.m_energyMax = WizardClassData.GetPetEnergyAtLevel(Level);
         
@@ -243,13 +240,13 @@ public class Character : IDisposable
 
     private void SendCachedChange<T>(string elementName, byte batchSize, T value)
     {
-        _cacheManager ??= new ElementChangeCacheManager(PlayerDatabase.Instance.Store, CharId, DefaultUploadIntervalInMinutes);
+        _cacheManager ??= new ElementChangeCacheManager(PlayerDatabase.Instance.Store, CharId, _defaultUploadIntervalInMinutes);
         _cacheManager.EnqueueChange(elementName, value);
     }
     
     private void SendPersistentChange<T>(string elementName, T value)
     {
-        _cacheManager ??= new ElementChangeCacheManager(PlayerDatabase.Instance.Store, CharId, DefaultUploadIntervalInMinutes);
+        _cacheManager ??= new ElementChangeCacheManager(PlayerDatabase.Instance.Store, CharId, _defaultUploadIntervalInMinutes);
         _cacheManager.EnqueueImmediateChange(elementName, value);
     }
     
