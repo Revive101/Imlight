@@ -34,10 +34,10 @@ public static class Program
     private const string ZoneDataFileName = "gamedata.bin";
     private const string TriggerDataFileName = "triggers.xml";
     private const string ResultCollectionName = "zone_triggers";
-    private const string PatchServerUrl = "http://phill030.de:12369/repatcher/";
-    private const string PatchServerWadUrlPrefix = "wad";
+    private const string PatchServerUrl = "http://phill030.de:12369/patcher/";
+    private const string PatchServerWadUrlPrefix = "wads";
     private const int PatchServerTimeout = 10; // In seconds.
-    private const uint Revision = 736675;
+    private const uint Revision = 739602;
     private const string UserAgentValue = "KingsIsle Patcher";
     private const ushort DownloadBufferSize = 4096;
 
@@ -56,9 +56,6 @@ public static class Program
 
     public static void Main()
     {
-        _databasePath = HandleDatabaseSelection();
-        AnsiConsole.MarkupLine($"Using database at path [italic]{_databasePath}[/]");
-
         // Only check the patch server once.
         if (!_patchServerOnline)
         {
@@ -74,7 +71,6 @@ public static class Program
         {
             // Select and handle the trigger.
             var triggerSelected = HandleTriggerSelection(zoneName, wad);
-            if (triggerSelected == null) continue;
 
             // Begin the process of rebuilding the ResTeleport type.
             var result = RebuildZoneTransferResult(zoneName, triggerSelected.m_triggerName);
@@ -82,7 +78,7 @@ public static class Program
         }
     }
 
-    private static string HandleDatabaseSelection()
+    private static void HandleDatabaseSelection()
     {
         while (true)
         {
@@ -132,7 +128,10 @@ public static class Program
         while (true)
         {
             var zoneName = AnsiConsole.Ask<string>("Enter the name of a zone, or use familiar terms to fuzzy find:");
-            if (_zoneNames.Contains(zoneName)) return zoneName;
+            
+            // Return the zone name if the user typed it exactly.
+            if (_zoneNames.Contains(zoneName)) 
+                return zoneName;
 
             // If we didn't find a match immediately, fuzzy find instead.
             var closestMatches = FindClosestMatches(zoneName, _zoneNames);
@@ -409,7 +408,7 @@ public static class Program
     
     private static bool GetPatchServerStatus()
     {
-        var workingUrl = $"{PatchServerUrl}V_r{Revision}.Wizard_1_510";
+        var workingUrl = $"{PatchServerUrl}V_r{Revision}.Wizard_1_520_0_Live";
 
         // Check to see if the patch server URL is available at all.
         Console.WriteLine($"Checking patch server at URL {workingUrl}. Timeout: {PatchServerTimeout} s.");
