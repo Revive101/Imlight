@@ -53,23 +53,14 @@ internal class MoveService : MessageService
             NewState = message.NewState,
             GlobalID = globalId
         };
-        TellOtherServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST
-        {
-            Sender = SessionActor.ActorRef,
-            Message = stateMsg,
-            Selfless = true
-        });
+        ZoneBroadcast(stateMsg);
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_JUMP))]
     private void ReceiveClientJump(GAME_5_PROTOCOL.MSG_JUMP message)
     {
-        TellOtherServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
-        {
-            Sender = SessionActor.ActorRef,
-            Message = message,
-            Selfless = false,
-        });
+        var excludeOriginator = message.ExcludeOriginator == 1;
+        ZoneBroadcast(message, excludeOriginator);
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_MARK_LOCATION))]
@@ -179,13 +170,7 @@ internal class MoveService : MessageService
             Direction = message.Direction,
             MobileID = mobileId,
         };
-        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
-        {
-            Sender = SessionActor.ActorRef,
-            Message = serverMoveMsg,
-            Selfless = true,
-        };
-        TellOtherServices(broadcastMsg);
+        ZoneBroadcast(serverMoveMsg);
     }
 
     private void SendZoneInteractionFishRequest()

@@ -41,10 +41,6 @@ namespace Imlight.Server.Game.Services
             base.ReceiveDispose(message);
         }
         
-        #endregion
-        
-        #region Game Handlers
-        
         [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_SETACTIVECHARACTER))]
         private void ReceiveSetActiveCharacter(CHARACTER_103_PROTOCOL.MSG_SETACTIVECHARACTER message)
         {
@@ -60,10 +56,16 @@ namespace Imlight.Server.Game.Services
                 CharacterObject = _activeCharacterObject
             });
         }
+        
+        #endregion
+        
+        #region Game Handlers
 
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVE))]
         private void ReceiveClientMove(GAME_5_PROTOCOL.MSG_CLIENTMOVE message)
         {
+            // Save the player's location and direction on interval.
+            
             if (_activeCharacterObject is null)
                 throw new ServiceRetryException($"Tried to do client move but could not grab active character " +
                                                 $"object");

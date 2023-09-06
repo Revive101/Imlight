@@ -52,6 +52,27 @@ namespace Imlight.Server.Shared.Networking
         }
 
         /// <summary>
+        /// Broadcasts a message to the entire zone.
+        /// </summary>
+        /// <param name="originalMessage"></param>
+        /// <param name="isSelfless"></param>
+        /// <exception cref="ActorKilledException"></exception>
+        protected void ZoneBroadcast(INetworkMessage originalMessage, bool isSelfless = true)
+        {
+            if (SessionActor is null)
+                throw new ActorKilledException($"{GetType()} attempted to send message to undefined SessionActor.");
+
+            var msg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST
+            {
+                Message = originalMessage,
+                Selfless = isSelfless,
+                Sender = SessionActor.ActorRef
+            };
+            
+            SessionActor.ActorRef.Tell(msg);
+        }
+
+        /// <summary>
         /// Asks the SessionActor for a return. Used to get data from another service of the SessionActor.
         /// </summary>
         /// <param name="message"></param>

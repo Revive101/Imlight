@@ -6,6 +6,7 @@
 using System;
 using System.Text;
 using Akka.Actor;
+using Imlight.Common.Utilities;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
 using WizUnraveler.Cache;
@@ -35,20 +36,18 @@ namespace Imlight.Server.Game.Services
             var nameIndices = character.NameIndices;
             var gender = character.WizardAvatar.m_eGender;
             var src = CraftSourceNameFromIndices(nameIndices, gender);
+            
+            Log.Information($"User says in chat: {message.Message}");
 
-            var msg = new GAME_5_PROTOCOL.MSG_RADIALCHAT()
+            // Broadcast the message to the zone.
+            var msg = new GAME_5_PROTOCOL.MSG_RADIALCHAT
             {
                 Message = message.Message,
                 SourceID = globalId,
                 SourceName = src,
                 Filter = 0
             };
-            TellOtherServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
-            {
-                Sender = SessionActor.ActorRef,
-                Message = msg,
-                Selfless = true
-            });
+            ZoneBroadcast(msg);
         }
 
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_REQUESTRADIALQUICKCHAT))]
@@ -67,12 +66,7 @@ namespace Imlight.Server.Game.Services
                 SourceName = src,
                 Filter = 0,
             };
-            TellOtherServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
-            {
-                Sender = SessionActor.ActorRef,
-                Message = msg,
-                Selfless = true
-            });
+            ZoneBroadcast(msg);
         }
 
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_REQASKSERVER))]
@@ -84,6 +78,7 @@ namespace Imlight.Server.Game.Services
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CORE_EMOTE))]
         private void ReceiveCoreEmote(GAME_5_PROTOCOL.MSG_CORE_EMOTE message)
         {
+            // todo
             TellOtherServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()
             {
                 Sender = SessionActor.ActorRef,
@@ -92,7 +87,7 @@ namespace Imlight.Server.Game.Services
             });
         }
         
-        private ByteString GetMessagePayload(byte[] input)
+        private static ByteString GetMessagePayload(byte[] input)
         {
             // The message is a wide string.
             var msgBuffer = new BitIterator(input);
@@ -103,7 +98,7 @@ namespace Imlight.Server.Game.Services
             return msgText;
         }
 
-        private ByteString CraftMessagePayload(string input)
+        private static ByteString CraftMessagePayload(string input)
         {
             // Convert input string to byte array using Unicode encoding
             var newTextBytes = Encoding.Unicode.GetBytes(input);
@@ -118,7 +113,7 @@ namespace Imlight.Server.Game.Services
             return new ByteString(rebuffer.GetData());
         }
 
-        private byte[] CraftSourceNameFromIndices(uint input, TypeCache.eGender gender)
+        private static byte[] CraftSourceNameFromIndices(uint input, TypeCache.eGender gender)
         {
             // Drop the MSB from input, then convert it to a hex string.
             var raw = (input & 0x7FFFFFFF).ToString("X8");
@@ -131,26 +126,7 @@ namespace Imlight.Server.Game.Services
             var newMsb = gender == TypeCache.eGender.Female ? FemaleSourcePrefix : MaleSourcePrefix;
             tail = newMsb + tail.Substring(2);
 
-            return HexStringToBytes(tail);
+            return DataManipulation.SpacedHexStringToBytes(tail);
         }
-
-        // TODO: Move this to a utility class.
-        private static byte[] HexStringToBytes(string str)
-        {
-            str = str.Replace(" ", "");
-            if (str.Length % 2 != 0) throw new Exception("Hex string must have even number of characters");
-
-            // Convert each pair of characters to a byte and add to the output array
-            var ret = new byte[str.Length / 2];
-            for (int i = 0; i < str.Length; i += 2)
-            {
-                var byteString = str.Substring(i, 2);
-                var b = Convert.ToByte(byteString, 16);
-                ret[i / 2] = b;
-            }
-
-            return ret;
-        }
-
     }
 }
