@@ -33,8 +33,16 @@ namespace Imlight.Server.Shared.Resources
         public static bool Initialize()
         {
             Log.Information("Updating local cache..");
-            UpdateCache();
-            Log.Information("Local cache updated!");
+            if (PatchServer.EndpointReached)
+            {
+                UpdateCache();
+                Log.Information("Local cache updated!");
+            }
+            else
+            {
+                Log.Information("The patch server endpoint could not be reached. " +
+                                "The local cache will not be updated.");
+            }
 
             // Load submodules.
             var subModuleCoreObjectFactory = LoadSubCoreObjectFactory();
@@ -132,6 +140,13 @@ namespace Imlight.Server.Shared.Resources
                 return cachedWad;
 
             // Otherwise, download it from the patch server.
+            // If Imlight is running without the patch server, we'll just return null.
+            if (!PatchServer.EndpointReached)
+            {
+                Log.Warning($"Imlight tried to load an uncached KIWAD while the patch server was not available.");
+                return null;
+            }
+            
             if (!DownloadWadFromPatchServer(betterWadName, out var stream))
             {
                 Log.Error("Failed to download wad {WadName} from patch server", Log.Args(wadName));

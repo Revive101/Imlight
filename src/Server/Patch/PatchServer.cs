@@ -39,7 +39,7 @@ namespace Imlight.Server.Patch
         // "http://phill030.de:12369/patcher/";
 
         public static IActorRef Instance { get; private set; }
-        private static bool EndpointReached { get; set; }
+        public static bool EndpointReached { get; set; }
         // LatestFileList cached information.
         private static uint _latestVersion;
         private static ByteString _listFileName;
@@ -67,6 +67,13 @@ namespace Imlight.Server.Patch
             return Akka.Actor.Props.Create(() => new PatchServer(serverName, serverPort, PatchServiceFactory.Props()));
         }
 
+        protected override void PreRestart(Exception reason, object message)
+        {
+            Log.Error($"Patch server actor has restarted due to {reason.Message}");
+            
+            base.PreRestart(reason, message);
+        }
+
         [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_INITIALIZE))]
         private void InitializeServer(SERVER_100_PROTOCOL.MSG_INITIALIZE message)
         {
@@ -83,7 +90,13 @@ namespace Imlight.Server.Patch
                 Log.Args(_diagnosticStopwatch.ElapsedMilliseconds));
 
             // Only perform the following if the patch server is available.
-            if (!EndpointReached) return;
+            if (!EndpointReached)
+            {
+                Log.Error("Patch server endpoint is not available! Continuing without patch server.");
+                
+                Sender.Tell(new SERVER_100_PROTOCOL.MSG_INITIALIZE_COMPLETE());
+                return;
+            }
 
             // Download and parse the latest file list and record the diagnostics.
             _diagnosticStopwatch.Restart();
