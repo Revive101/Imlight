@@ -222,7 +222,7 @@ namespace Imlight.Server.Patch
         private bool GetPatchServerStatus()
         {
             var internalUrl = $"{PatchServerInternalUrl}:{PatchServerInternalPort}/patcher";
-            var workingUrl = $"{internalUrl}/V_r{Revision}.Wizard_1_520_0_Live";
+            var workingUrl = $"{internalUrl}/V_r{Revision}.Wizard_1_520";
 
             // Check to see if the patch server URL is available at all.
             Log.Information("Checking patch server at URL {Url}. Timeout: {Timeout} s", 
