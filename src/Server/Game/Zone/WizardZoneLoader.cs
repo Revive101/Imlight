@@ -284,26 +284,28 @@ public static class WizardZoneLoader
     /// </summary>
     private static void CreateZoneTriggers()
     {
-        if (_zoneTriggers is null) throw new NullReferenceException(nameof(_zoneTriggers));
+        if (_zoneTriggers is null) 
+            throw new NullReferenceException(nameof(_zoneTriggers));
         
         var zoneName = _zoneData.m_zoneName;
+        var persistentZoneData = ZoneDataCollection.GetZoneData(zoneName);
+        
+        // If the zone data doesn't exist in the database, don't try to load any trigger data.
+        if (persistentZoneData is null)
+            return;
 
         foreach (var trigger in _zoneTriggers.m_triggers)
         {
-            // Find this trigger's results in the server database.
-            var colName = SanitizeColName($"{ResultCollectionName}/{zoneName}/{trigger.m_triggerName}");
-            var col = ServerDataBroker.GetCollection<TypeCache.Result>(colName);
-
-            if (col.Any())
-            {
-                var resultList = new ResultList { m_results = new List<TypeCache.Result>() };
-                resultList.m_results = col.ToList();
-                trigger.m_results = resultList;
-            }
+            // If this trigger doesn't exist in the database, don't try to load any trigger data.
+            if (persistentZoneData.Teleports.All(x => x.TriggerName != trigger.m_triggerName))
+                continue;
             
-            // fixme: In the grand scheme, storing a trigger without any result data is wasted space. For now, the
-            // below code remains where it does for debugging purposes. In the way future, it should be added to the 
-            // conditional above.
+            var persistentTriggerData = persistentZoneData.Teleports
+                .First(x => x.TriggerName == trigger.m_triggerName);
+            
+            // Set the trigger results to the results stored in the database.
+            var resultList = new ResultList { m_results = new List<TypeCache.Result> { persistentTriggerData.Teleport }};
+            trigger.m_results = resultList;
 
             // Write a message citing the details of this volume, and send a message to the zone.
             var msg = new ZONE_102_PROTOCOL.MSG_ADDTRIGGER { Trigger = trigger };
