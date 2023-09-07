@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://i.ibb.co/3m7W22D/imlight-logo.png" />
+  <img src="https://i.ibb.co/z5JXHDz/2023-09-07-15-31.png" />
   <h3 align="center">Wizards Rewriting The Rules of Magic</h3>
 </p>
 <p align="center">
