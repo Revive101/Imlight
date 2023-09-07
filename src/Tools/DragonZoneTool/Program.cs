@@ -1,4 +1,9 @@
-﻿using System.Globalization;
+﻿/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
+using System.Globalization;
 using DragonZoneTool.Managers;
 using FuzzySharp;
 using Serilog;
