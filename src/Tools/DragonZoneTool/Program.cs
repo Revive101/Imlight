@@ -93,6 +93,7 @@ public static class Program
                 return triggerSelected;
             case "c":
                 var pushWad = PatchServerManager.DownloadWad(existingTeleport.Teleport.m_destinationZone);
+                pushWad.Name = existingTeleport.Teleport.m_destinationZone;
                 _wadStack.Push(pushWad);
                 return null;
             default: return null;
@@ -161,11 +162,15 @@ public static class Program
     
     private static List<string> FormatTriggers(string zoneName, ref IEnumerable<Trigger> triggers)
     {
+        var zoneData = DragonDatabaseManager.GetZoneData(zoneName);
+        if (zoneData is null)
+            return triggers.Select(x => $"X {x.m_triggerName}").ToList();
+        
         var formattedTriggers = new List<string>();
         foreach (var t in triggers)
         {
-            var hasTeleport = DragonDatabaseManager.DoesTriggerHaveTeleport(zoneName, t.m_triggerName);
-            var prefix = hasTeleport ? "✔️" : "❌";
+            var hasTeleport = zoneData.Teleports.Any(x => x.TriggerName == t.m_triggerName);
+            var prefix = hasTeleport ? "✔️" : "X";
             formattedTriggers.Add($"{prefix} {t.m_triggerName}");
         }
         

@@ -279,8 +279,7 @@ public static class WizardZoneLoader
     }
 
     /// <summary>
-    /// Creates the triggers for the zone based on the loaded trigger data. Trigger result data is loaded from Imlight's
-    /// <see cref="ServerDataBroker"/>.
+    /// Creates the triggers for the zone based on the loaded trigger data.
     /// </summary>
     private static void CreateZoneTriggers()
     {

@@ -55,17 +55,13 @@ public static class DragonDatabaseManager
         
         return zoneData;
     }
-
-    public static bool DoesTriggerHaveTeleport(string zoneName, string triggerName)
-    {
-        var zoneData = GetZoneData(zoneName);
-        return zoneData != null && zoneData.Teleports.Any(teleport => teleport.TriggerName == triggerName);
-    }
     
     public static WizardTeleportData? GetExistingTeleport(string zoneName, string triggerName)
     {
         var zoneData = GetZoneData(zoneName);
-        return zoneData!.Teleports.FirstOrDefault(teleport => teleport.TriggerName == triggerName);
+        return zoneData is null 
+            ? null 
+            : zoneData!.Teleports.FirstOrDefault(teleport => teleport.TriggerName == triggerName);
     }
     
     public static void DeleteExistingTeleport(string zoneName, string triggerName)
@@ -93,8 +89,21 @@ public static class DragonDatabaseManager
             .Query<WizardZoneData>(collectionName: CollectionName)
             .FirstOrDefault(x => x.ZoneName == zoneName);
 
+        // If no zone data was found for this zone, create a new one.
         if (zoneData == null)
-            return;
+        {
+            zoneData = new WizardZoneData
+            {
+                ZoneName = zoneName,
+                Teleports = new List<WizardTeleportData>()
+            };
+            
+            session.Store(zoneData);
+            
+            // Set collection metadata.
+            var metadata = session.Advanced.GetMetadataFor(zoneData);
+            metadata[Raven.Client.Constants.Documents.Metadata.Collection] = CollectionName;
+        }
         
         zoneData.Teleports.Add(new WizardTeleportData
         {
