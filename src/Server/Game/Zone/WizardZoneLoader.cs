@@ -288,23 +288,20 @@ public static class WizardZoneLoader
         
         var zoneName = _zoneData.m_zoneName;
         var persistentZoneData = ZoneDataCollection.GetZoneData(zoneName);
-        
-        // If the zone data doesn't exist in the database, don't try to load any trigger data.
-        if (persistentZoneData is null)
-            return;
+        var t = _zoneTriggers;
 
         foreach (var trigger in _zoneTriggers.m_triggers)
         {
-            // If this trigger doesn't exist in the database, don't try to load any trigger data.
-            if (persistentZoneData.Teleports.All(x => x.TriggerName != trigger.m_triggerName))
-                continue;
-            
-            var persistentTriggerData = persistentZoneData.Teleports
-                .First(x => x.TriggerName == trigger.m_triggerName);
-            
-            // Set the trigger results to the results stored in the database.
-            var resultList = new ResultList { m_results = new List<TypeCache.Result> { persistentTriggerData.Teleport }};
-            trigger.m_results = resultList;
+            // If there's persistent data associated with this trigger, load it.
+            var persistentTriggerData = persistentZoneData?.Teleports
+                .FirstOrDefault(x => x.TriggerName == trigger.m_triggerName);
+            if (persistentTriggerData is not null)
+            {
+                // Set the trigger results to the results stored in the database.
+                var resultList = new ResultList
+                    { m_results = new List<TypeCache.Result> { persistentTriggerData.Teleport } };
+                trigger.m_results = resultList;
+            }
 
             // Write a message citing the details of this volume, and send a message to the zone.
             var msg = new ZONE_102_PROTOCOL.MSG_ADDTRIGGER { Trigger = trigger };
