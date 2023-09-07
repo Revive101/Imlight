@@ -243,8 +243,8 @@ namespace Imlight.Server.Shared.Networking
 
         protected override void PreRestart(Exception reason, object message)
         {
-            Log.Error("SessionActor {Id} restarting due to {ExceptionType}: {ExceptionMessage}",
-                Log.Args(SessionID, reason.GetType(), reason.Message));
+            Log.Error("{ActorName} {id} restarting due to {Reason}", 
+                Log.Args(nameof(SessionActor), SessionID, reason.Message));
             
             base.PreRestart(reason, message);
         }
@@ -439,7 +439,7 @@ namespace Imlight.Server.Shared.Networking
             var bufferSpan = new ReadOnlySpan<byte>(buffer, 0, bytesReceived).ToArray();
             if (!IsKIPacket(bufferSpan))
             {
-                Log.Warning("SessionActor {SessionId} received non-KINP packet", Log.Args(SessionID));
+                Log.Debug("SessionActor {SessionId} received non-KINP packet", Log.Args(SessionID));
                 return null;
             }
 

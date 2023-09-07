@@ -182,18 +182,12 @@ namespace Imlight.Server.Shared.Networking
 
         protected override void PreRestart(Exception reason, object message)
         {
-            Log.Error("MessageService restart due to {0} when processing {1}", Log.Args(reason, message));
+            Log.Error("MessageService {ServiceName} restarting due to {Reason}", 
+                Log.Args(GetType().Name, reason.Message));
             
             base.PreRestart(reason, message);
         }
-
-        protected override void PostRestart(Exception reason)
-        {
-            Log.Error("MessageService restart due to {0}.", Log.Args(reason));
-            
-            base.PostRestart(reason);
-        }
-
+        
         [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_QUERYMESSAGESERVICEIDENTITY))]
         public void ReceiveMessageServiceIdentify(SERVICE_101_PROTOCOL.MSG_QUERYMESSAGESERVICEIDENTITY message)
         {
