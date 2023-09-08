@@ -53,6 +53,7 @@ namespace Imlight.Server.Shared.Networking
         private readonly Stack<SocketAsyncEventArgs> _receiveEventArgPool = new();
         private readonly List<Type> _suppressedPackets;
 
+        // ctor
         public SessionActor(Socket socket, ushort sessionId, IActorRef server)
         {
             this.Socket = socket;
@@ -79,23 +80,35 @@ namespace Imlight.Server.Shared.Networking
             ProcessReceive(GetReceiveEventArgsFromPool());
         }
 
+        // Akka.NET ctor
         public static Props Props(Socket socket, ushort sessionId, IActorRef server)
         {
             return Akka.Actor.Props.Create(() => new SessionActor(socket, sessionId, server));
         }
 
+        /// <summary>
+        /// Places the session in the queue.
+        /// </summary>
+        /// <param name="pos"></param>
         public void PlaceInQueue(ushort pos)
         {
             IsInQueue = true;
             QueuePosition = pos;
         }
 
+        /// <summary>
+        /// Removes the session from the queue.
+        /// </summary>
         public void Dequeue()
         {
             // Send the dequeue message to the socket.
             SendToSocket(CachedDequeueMessage);
         }
 
+        /// <summary>
+        /// Enqueues the session to the server.
+        /// </summary>
+        /// <returns></returns>
         public INetworkMessage EnqueueToServer()
         {
             var msg = new SERVER_100_PROTOCOL.MSG_PLAYERENQUEUED()
@@ -109,6 +122,11 @@ namespace Imlight.Server.Shared.Networking
             return rsp;
         }
         
+        /// <summary>
+        /// Enqueues the session to the server.
+        /// </summary>
+        /// <param name="serverRef"></param>
+        /// <returns></returns>
         public INetworkMessage EnqueueToServer(IActorRef serverRef)
         {
             var msg = new SERVER_100_PROTOCOL.MSG_PLAYERENQUEUED()
@@ -122,6 +140,10 @@ namespace Imlight.Server.Shared.Networking
             return rsp;
         }
         
+        /// <summary>
+        /// Dispatches a <see cref="IServerMessage"/> to any service that can handle the message.
+        /// </summary>
+        /// <param name="msg"></param>
         private void HandleInternalTell(IServerMessage msg)
         {
             // Iterate through services and forward the message to any service that can handle the message.
@@ -139,6 +161,13 @@ namespace Imlight.Server.Shared.Networking
                 Unhandled(msg);
         }
 
+        /// <summary>
+        /// Dispatches a <see cref="IServerMessage"/> to any service that can handle the message. Awaits a response
+        /// with a timeout of 2 seconds.
+        /// </summary>
+        /// <param name="msg"></param>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
         public T HandleInternalAsk<T>(IServerMessage msg) 
             where T : IServerMessage
         {
@@ -147,15 +176,30 @@ namespace Imlight.Server.Shared.Networking
             {
                 if (type.MessageHandlers.All(x => x.Key != msg.GetType())) 
                     continue;
-                
-                var result = actorRef.Ask<T>(msg).Result;
-                return result;
+
+                try
+                {
+                    var result = actorRef.Ask<T>(msg, timeout: TimeSpan.FromSeconds(20)).Result;
+                    return result;
+                }
+                catch (Exception ex)
+                {
+                    Log.Error("SessionActor service attempted to ask another service with {0}, but the timeout " +
+                              "was exceeded. {1}", Log.Args(msg.GetType(), ex.Message));
+                }
             }
 
             Unhandled(msg);
             return default(T);
         }
 
+        /// <summary>
+        /// Sends a message to the server and awaits a response.
+        /// </summary>
+        /// <param name="msg"></param>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        /// <exception cref="SessionFatalException"></exception>
         public T AskServer<T>(IServerMessage msg)
             where T : IServerMessage
         {
@@ -165,6 +209,9 @@ namespace Imlight.Server.Shared.Networking
             throw new SessionFatalException($"SessionActor [{SessionID}] contained a null server reference!");
         }
 
+        /// <summary>
+        /// Disposes of the SessionActor.
+        /// </summary>
         public void Dispose()
         {
             // Avoid duplicate Dispose calls.
@@ -180,6 +227,21 @@ namespace Imlight.Server.Shared.Networking
                 Ip = this.Socket?.RemoteEndPoint?.ToString()
             };
             ServerRef.Tell(msg);
+            
+            // Iterate through each service and send them a pre-dispose message. This lets a service gracefully handle
+            // the dispose in the case that it requires another service to still be active.
+            foreach (var (actorRef, type) in _services)
+            {
+                // Await a reply. This is a blocking call to ensure that the service gracefully disposes.
+                try
+                {
+                    actorRef.Ask(new SERVICE_101_PROTOCOL.MSG_PREDISPOSE(), timeout: TimeSpan.FromSeconds(6)).Wait();
+                }
+                catch (Exception ex)
+                {
+                    Log.Error("MessageService {0} failed to pre-dispose after timeout: {1}", Log.Args(type, ex.Message));
+                }
+            }
             
             // Iterate through our services and send them a dispose message.
             foreach (var (actorRef, type) in _services)
