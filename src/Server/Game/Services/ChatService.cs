@@ -37,7 +37,9 @@ namespace Imlight.Server.Game.Services
             var gender = character.WizardAvatar.m_eGender;
             var src = CraftSourceNameFromIndices(nameIndices, gender);
             
-            Log.Information($"User says in chat: {message.Message}");
+            // Remove the '\f' character from the message.
+            var logMessage = message.Message.ToString()?.Replace(@"\f", "");
+            Log.Information($"User says in chat: {logMessage}");
 
             // Broadcast the message to the zone.
             var msg = new GAME_5_PROTOCOL.MSG_RADIALCHAT
