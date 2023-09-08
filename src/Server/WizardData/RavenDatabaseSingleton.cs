@@ -22,6 +22,7 @@ public abstract class RavenDatabaseSingleton<T>
 
     protected IDocumentStore _store;
     public IDocumentStore Store => _store ??= Url == string.Empty ? CreateEmbeddedStore() : CreateStore();
+    public bool IsEmbedded { get; protected set; }
 
     protected abstract IDocumentStore CreateStore();
     protected abstract IDocumentStore CreateEmbeddedStore();

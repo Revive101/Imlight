@@ -62,7 +62,7 @@ public static class DatabaseUtilities
     /// <param name="password"></param>
     /// <param name="auth"></param>
     /// <returns></returns>
-    public static Account CreateDatabaseAccount(
+    public static Account CreateEmbeddedDatabaseAccount(
         string username,
         string email, 
         string password, 
@@ -79,7 +79,12 @@ public static class DatabaseUtilities
         acc.AddCharacter(kevin);
         
         // Save the account to the database.
-        AccountCollection.CreateAccount(acc);
+        var created = AccountCollection.CreateAccount(acc);
+        if (!created)
+        {
+            Log.Warning("A dud account by username {0} already exists in the embedded dragon database. Skipping..",
+                Log.Args(username));
+        }
 
         return acc;
     }

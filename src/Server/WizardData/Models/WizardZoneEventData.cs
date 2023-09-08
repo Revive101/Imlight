@@ -22,6 +22,7 @@ public class WizardZoneEventData
     public string Description { get; set; }
     public bool IsEnabled { get; set; }
     public bool EnabledByDefault { get; set; }
+    // These dates are for developer semantics only, they are not used by the server.
     public DateTime StartDate { get; set; } = new DateTime();
     public DateTime EndDate { get; set; } = new DateTime();
     public List<string> ObjectAdjectiveWhitelist { get; set; } = new();

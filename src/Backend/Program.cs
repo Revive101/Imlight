@@ -50,9 +50,8 @@ namespace Imlight.Backend
 
         private static ActorSystem _imlightSystem;
 
-        private static void Main(string[] args)
+        private static void Main()
         {
-            //DatabaseUtilities.CreateDatabaseAccount("jay", "jay@voidly.net", "password", AuthLevel.Administrator);
             // =============================================================
             // TIDBITS
             // =============================================================
@@ -96,6 +95,13 @@ namespace Imlight.Backend
             // =============================================================
             var loginServer = StartLoginServer();
             StartGameServer(loginServer);
+            
+            // Force load dragon database. Create a dud account if the database ends up using the embedded database.
+            _ = PlayerDatabase.Instance.Store;
+            if (PlayerDatabase.Instance.IsEmbedded)
+            {
+                DatabaseUtilities.CreateEmbeddedDatabaseAccount("admin", "@", "debug", AuthLevel.Administrator);
+            }
 
             // Keep program busy with a while loop.
             Log.Information("Main thread now hands off to the Akka.NET system. Godspeed, Imlight.");

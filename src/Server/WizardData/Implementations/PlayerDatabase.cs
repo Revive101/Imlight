@@ -7,6 +7,7 @@ using System;
 using System.Security.Cryptography.X509Certificates;
 using Imlight.Common.Configuration;
 using Imlight.Common.Utilities;
+using Imlight.Server.Login.Models;
 using Raven.Client.Documents;
 using Raven.Client.Json.Serialization.NewtonsoftJson;
 using Raven.Client.ServerWide;
@@ -64,6 +65,9 @@ public class PlayerDatabase : RavenDatabaseSingleton<PlayerDatabase>
     protected override IDocumentStore CreateEmbeddedStore()
     {
         EmbeddedDatabaseManager.Start();
-        return EmbeddedDatabaseManager.GetDocumentStore(DatabaseName);
+        var store = EmbeddedDatabaseManager.GetDocumentStore(DatabaseName);
+        IsEmbedded = true;
+        
+        return store;
     }
 }
