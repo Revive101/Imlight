@@ -189,8 +189,13 @@ public class Character : IDisposable
     
     public void Dispose()
     {
-        _cacheManager?.FlushAllChangesAsync().RunSynchronously();
+        FlushPersistentChanges();
         _cacheManager?.Dispose();
+    }
+    
+    public void FlushPersistentChanges()
+    {
+        _cacheManager?.FlushAllChangesAsync().RunSynchronously();
     }
 
     private WizGameStats CalculateBaseGameStats(WizGameStats existingStats)

@@ -28,7 +28,7 @@ namespace Imlight.Server.Shared.Networking
         /// Sends a message directly to the socket.
         /// </summary>
         /// <param name="message"></param>
-        public void SendToSocket(INetworkMessage message)
+        protected void SendToSocket(INetworkMessage message)
         {
             if (SessionActor is null)
                 throw new ActorKilledException($"{GetType()} attempted to send message to undefined SessionActor.");
@@ -40,7 +40,7 @@ namespace Imlight.Server.Shared.Networking
         /// Sends the SessionActor a server message. Used to send data to another service of the SessionActor.
         /// </summary>
         /// <param name="message"></param>
-        public void TellOtherServices(IServerMessage message)
+        protected void TellOtherServices(IServerMessage message)
         {
             if (message.ServiceID < 100)
             {
@@ -78,7 +78,7 @@ namespace Imlight.Server.Shared.Networking
         /// <param name="message"></param>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
-        public T AskOtherService<T>(IServerMessage message)
+        protected T AskOtherService<T>(IServerMessage message)
             where T : IServerMessage
         {
             if (SessionActor is null)
@@ -102,12 +102,12 @@ namespace Imlight.Server.Shared.Networking
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
-        public T AskServer<T>(IServerMessage message)
+        protected T AskServer<T>(IServerMessage message)
             where T : IServerMessage
         {
             if (SessionActor is null)
             {
-                Log.Logger.Error($"{this.GetType()} attempted to send message to undefined SessionActor.");
+                Log.Error("{0} attempted to send message to undefined SessionActor.", Log.Args(this.GetType()));
                 return default(T);
             }
             if (message.ServiceID < 100)
@@ -156,10 +156,6 @@ namespace Imlight.Server.Shared.Networking
         {
             var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
             var response = AskOtherService<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
-            
-            if (response.CharacterObject is null)
-                throw new ServiceRetryException($"Tried to do client move but could not grab active character " +
-                                                $"object.");
 
             return response.CharacterObject;
         }
@@ -173,9 +169,6 @@ namespace Imlight.Server.Shared.Networking
         {
             var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
             var response = AskOtherService<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
-
-            if (response.Character is null)
-                throw new ServiceRetryException($"Tried to do client move but could not grab active character.");
             
             return response.Character;
         }
@@ -188,6 +181,26 @@ namespace Imlight.Server.Shared.Networking
             base.PreRestart(reason, message);
         }
         
+        /// <summary>
+        /// Called when the service is about to be disposed. It is guaranteed that other services are still running,
+        /// so this method is used to gracefully shutdown any service who's disposal may affect other services.
+        /// Ensure that you call the base method when overriding this method to return a graceful shutdown response.
+        /// </summary>
+        protected virtual void OnPreDispose()
+        {
+            Sender.Tell(new SERVICE_101_PROTOCOL.MSG_PREDISPOSE());
+        }
+
+        /// <summary>
+        /// Called when the service is disposed. This is where you should clean up any resources.
+        /// </summary>
+        protected virtual void OnDispose()
+        {
+            GC.SuppressFinalize(this);
+        }
+        
+        #region Handlers
+        
         [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_QUERYMESSAGESERVICEIDENTITY))]
         public void ReceiveMessageServiceIdentify(SERVICE_101_PROTOCOL.MSG_QUERYMESSAGESERVICEIDENTITY message)
         {
@@ -198,11 +211,19 @@ namespace Imlight.Server.Shared.Networking
             
             Sender.Tell(rsp);
         }
+
+        [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_PREDISPOSE))]
+        public void ReceivePreDispose(SERVICE_101_PROTOCOL.MSG_PREDISPOSE message)
+        {
+            OnPreDispose();
+        }
         
         [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_DISPOSE))]
-        public virtual void ReceiveDispose(SERVICE_101_PROTOCOL.MSG_DISPOSE message)
+        public void ReceiveDispose(SERVICE_101_PROTOCOL.MSG_DISPOSE message)
         {
-            GC.SuppressFinalize(this);
+            OnDispose();
         }
+        
+        #endregion
     }
 }

@@ -26,19 +26,18 @@ namespace Imlight.Server.Game.Services
             return Akka.Actor.Props.Create(() => new CharacterService(parentActor));
         }
 
+        protected override void OnDispose()
+        {
+            _activeCharacter.Dispose();
+            base.OnDispose();
+        }
+
         #region Internal Handlers
         
         [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP))]
         private void ReceiveZoneAddPlayerResponse(ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP message)
         {
             _activeCharacterObject = message.PlayerObject;
-        }
-        
-        [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_DISPOSE))]
-        public override void ReceiveDispose(SERVICE_101_PROTOCOL.MSG_DISPOSE message)
-        {
-            _activeCharacter.Dispose();
-            base.ReceiveDispose(message);
         }
         
         [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_SETACTIVECHARACTER))]

@@ -27,6 +27,21 @@ namespace Imlight.Server.Game.Services
             return Akka.Actor.Props.Create(() => new ZoneService(parentActor));
         }
 
+        protected override void OnPreDispose()
+        {
+            var globalId = GetActiveCoreObject().m_globalID;
+
+            // If the zone reference is not null, we'll tell the zone to remove the player.
+            _zoneRef?.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER()
+            {
+                Player = SessionActor.ActorRef,
+                GlobalId = globalId
+            });
+            _zoneRef = null;
+            
+            base.OnPreDispose();
+        }
+
         [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]
         private void ReceiveZoneTransferRequest(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message)
         {
@@ -108,22 +123,6 @@ namespace Imlight.Server.Game.Services
             if (_zoneRef is null) throw new Exception("Zone Reference was null.");
             
             _zoneRef.Forward(message);
-        }
-        
-        [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_DISPOSE))]
-        public override void ReceiveDispose(SERVICE_101_PROTOCOL.MSG_DISPOSE message)
-        {
-            var globalId = GetActiveCoreObject().m_globalID;
-
-            // If the zone reference is not null, we'll tell the zone to remove the player.
-            _zoneRef?.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER()
-            {
-                Player = SessionActor.ActorRef,
-                GlobalId = globalId
-            });
-            _zoneRef = null;
-            
-            base.ReceiveDispose(message);
         }
 
         private void DoZoneTransfer()
