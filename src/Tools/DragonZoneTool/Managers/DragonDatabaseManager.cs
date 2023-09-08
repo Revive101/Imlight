@@ -4,9 +4,8 @@
  */
 
 using System.Security.Cryptography.X509Certificates;
-using Imlight.Server.WizardData.Models;
+using DragonZoneTool.Models;
 using Raven.Client.Documents;
-using Raven.Client.Json.Serialization.NewtonsoftJson;
 using Serilog;
 using WizUnraveler.Secrets;
 
