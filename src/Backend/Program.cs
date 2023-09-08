@@ -99,12 +99,10 @@ namespace Imlight.Backend
             // Force load dragon database. Create a dud account if the database ends up using the embedded database.
             _ = PlayerDatabase.Instance.Store;
             if (PlayerDatabase.Instance.IsEmbedded)
-            {
-                DatabaseUtilities.CreateEmbeddedDatabaseAccount("admin", "@", "debug", AuthLevel.Administrator);
-            }
+                CreateEmbeddedDatabaseAccounts();
 
             // Keep program busy with a while loop.
-            Log.Information("Main thread now hands off to the Akka.NET system. Godspeed, Imlight.");
+            Log.Information("Imlight may now be connected to.");
             while (true)
             {
                 // Sleep for 5 minutes.
@@ -147,6 +145,15 @@ namespace Imlight.Backend
 
             // Await initialization of the patch server.
             await actor.Ask<SERVER_100_PROTOCOL.MSG_INITIALIZE_COMPLETE>(new SERVER_100_PROTOCOL.MSG_INITIALIZE());
+        }
+
+        private static void CreateEmbeddedDatabaseAccounts()
+        {
+            // Create 9 accounts with the username "admin" and a number from 1 to 9.
+            for (int i = 1; i <= 9; i++)
+            {
+                DatabaseUtilities.CreateEmbeddedDatabaseAccount($"admin{i}", $"{i}@r101.com", "debug", AuthLevel.Administrator);
+            }
         }
 
         private static void PrintTitle()
