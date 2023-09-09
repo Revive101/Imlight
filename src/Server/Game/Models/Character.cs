@@ -116,6 +116,13 @@ public class Character : IDisposable
 
         SendPersistentChange(nameof(Location), this.Location);
     }
+
+    public void SetOrientation(byte direction)
+    {
+        this.Orientation = new Vector3(0, 0, direction * 0.708f);
+        
+        SendCachedChange(nameof(Orientation), 10, this.Orientation);
+    }
     
     public void SetZone(string zone)
     {

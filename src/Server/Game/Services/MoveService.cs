@@ -37,6 +37,7 @@ internal class MoveService : MessageService
 
         var character = GetActiveCharacter();
         character.SetLocation(position);
+        character.SetOrientation(message.Direction);
 
         // Broadcast the move to all other players in the zone.
         BroadcastClientMove(message);
