@@ -144,9 +144,9 @@ namespace Imlight.Server.Game.Services
             // This means attach will happen again, so this is all we need to do here.
             var serverTransfer = new GAME_5_PROTOCOL.MSG_SERVERTRANSFER()
             {
-                IP = character.LastGameServerIp,
-                TCPPort = character.LastGameServerPort,
-                UDPPort = character.LastGameServerPort,
+                IP = character.GameServerIp,
+                TCPPort = character.GameServerPort,
+                UDPPort = character.GameServerPort,
                 UserID = account.AccountId,
                 CharID = character.CharId,
                 ZoneName = character.QueuedZoneName,

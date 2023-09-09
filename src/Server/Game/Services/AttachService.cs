@@ -3,6 +3,7 @@
  * Proprietary and confidential.
  */
 
+using System.Net;
 using Akka.Actor;
 using Imlight.Common.Serializable;
 using Imlight.Server.Game.Models;
@@ -68,6 +69,9 @@ namespace Imlight.Server.Game.Services
             // Set the character's location and zone to the ones given in the message.
             character.SetZone(message.ZoneName);
             character.SetLocation(message.Location);
+            var gameServer = GetGameServer();
+            character.GameServerIp = gameServer.IP;
+            character.GameServerPort = (ushort)gameServer.Port;
 
             // Serialize the character's game object.
             var charGameObject = CharacterObjectLoader.GetPlayerGameObject(ref character);
@@ -129,6 +133,22 @@ namespace Imlight.Server.Game.Services
             character = result;
 
             return result is not null;
+        }
+        
+        private SERVER_100_PROTOCOL.MSG_SERVERINFO GetGameServer()
+        {
+            var msg = new SERVER_100_PROTOCOL.MSG_QUERYSERVER();
+            
+#if DEBUG
+            var localEndPoint = (IPEndPoint)SessionActor.Socket.LocalEndPoint;
+            var isLocal = localEndPoint.Address.ToString().Contains("127.0.");
+            msg = new SERVER_100_PROTOCOL.MSG_QUERYSERVER() { IsLocal = isLocal };
+#else
+            // Release builds should never be able to connect to their own local server.
+            msg = new SERVER_100_PROTOCOL.MSG_QUERYSERVER() { IsLocal = false };
+#endif
+            
+            return AskServer<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg);
         }
 
         private bool ValidateLoginKey(ByteString key, ulong userId, out Account account)

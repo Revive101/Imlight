@@ -66,8 +66,8 @@ public class Character : IDisposable
     }
     
     [JsonIgnore] public WizClientObject GameObject;
-    [JsonIgnore] public string LastGameServerIp;
-    [JsonIgnore] public ushort LastGameServerPort;
+    [JsonIgnore] public string GameServerIp;
+    [JsonIgnore] public ushort GameServerPort;
     [JsonIgnore] public string QueuedZoneName;
     [JsonIgnore] public string QueuedZoneLocation;
 
@@ -192,11 +192,6 @@ public class Character : IDisposable
         FlushPersistentChanges();
         _cacheManager?.Dispose();
     }
-    
-    public void FlushPersistentChanges()
-    {
-        _cacheManager?.FlushAllChangesAsync().RunSynchronously();
-    }
 
     private WizGameStats CalculateBaseGameStats(WizGameStats existingStats)
     {
@@ -253,6 +248,11 @@ public class Character : IDisposable
     {
         _cacheManager ??= new ElementChangeCacheManager(PlayerDatabase.Instance.Store, CharId, _defaultUploadIntervalInMinutes);
         _cacheManager.EnqueueImmediateChange(elementName, value);
+    }
+    
+    public void FlushPersistentChanges()
+    {
+        _cacheManager?.FlushAllChangesAsync().RunSynchronously();
     }
     
     #region Result Handlers

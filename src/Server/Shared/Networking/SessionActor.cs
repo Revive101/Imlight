@@ -228,27 +228,11 @@ namespace Imlight.Server.Shared.Networking
             };
             ServerRef.Tell(msg);
             
-            // Iterate through each service and send them a pre-dispose message. This lets a service gracefully handle
-            // the dispose in the case that it requires another service to still be active.
-            foreach (var (actorRef, type) in _services)
-            {
-                // Await a reply. This is a blocking call to ensure that the service gracefully disposes.
-                try
-                {
-                    actorRef.Ask(new SERVICE_101_PROTOCOL.MSG_PREDISPOSE(), timeout: TimeSpan.FromSeconds(6)).Wait();
-                }
-                catch (Exception ex)
-                {
-                    Log.Error("MessageService {0} failed to pre-dispose after timeout: {1}", Log.Args(type, ex.Message));
-                }
-            }
+            // Dispose services.
+            SendPreDisposeToServices();
+            SendDisposeToServices();
             
-            // Iterate through our services and send them a dispose message.
-            foreach (var (actorRef, type) in _services)
-            {
-                actorRef.Tell(new SERVICE_101_PROTOCOL.MSG_DISPOSE());
-            }
-            
+            // Dispose self.
             Context.Stop(Self);
             Socket?.Close();
             _cts.Cancel();
@@ -301,14 +285,6 @@ namespace Imlight.Server.Shared.Networking
             Log.Debug("SessionActor {Id} PreStart completed.", Log.Args(SessionID));
 
             base.PreStart();
-        }
-
-        protected override void PreRestart(Exception reason, object message)
-        {
-            Log.Error("{ActorName} {id} restarting due to {Reason}", 
-                Log.Args(nameof(SessionActor), SessionID, reason.Message));
-            
-            base.PreRestart(reason, message);
         }
 
         protected override void Unhandled(object message)
@@ -382,6 +358,37 @@ namespace Imlight.Server.Shared.Networking
         private void SendOldContextException(Exception ex)
         {
             ActorRef.Tell(ex);
+        }
+
+        private void SendPreDisposeToServices()
+        {
+            // Iterate through each service and send them a pre-dispose message. This lets a service gracefully handle
+            // the dispose in the case that it requires another service to still be active.
+            foreach (var (actorRef, type) in _services)
+            {
+                // If the service doesn't have a pre-dispose message handler, we'll just skip it.
+                if (!type.MessageHandlers.ContainsKey(typeof(SERVICE_101_PROTOCOL.MSG_PREDISPOSE)))
+                    continue;
+                
+                // Await a reply. This is a blocking call to ensure that the service gracefully disposes.
+                try
+                {
+                    actorRef.Ask(new SERVICE_101_PROTOCOL.MSG_PREDISPOSE(), timeout: TimeSpan.FromSeconds(6)).Wait();
+                }
+                catch (Exception ex)
+                {
+                    Log.Error("MessageService {0} failed to pre-dispose after timeout: {1}", Log.Args(type, ex.Message));
+                }
+            }
+        }
+        
+        private void SendDisposeToServices()
+        {
+            // Iterate through our services and send them a dispose message.
+            foreach (var (actorRef, type) in _services)
+            {
+                actorRef.Tell(new SERVICE_101_PROTOCOL.MSG_DISPOSE());
+            }
         }
 
         #region Socket Operations
