@@ -141,10 +141,15 @@ namespace Imlight.Server.Shared.Networking
                 withinTimeRange: TimeSpan.FromSeconds(30),
                 localOnlyDecider: ex =>
                 {
-                    return ex switch
+                    switch (ex)
                     {
-                        _ => Directive.Stop
-                    };
+                        default:
+                        {
+                            Log.Error("SessionActor {SessionId} has failed with exception {Exception}",
+                                Log.Args(Context.Self.Path.Name, ex));
+                            return Directive.Stop;
+                        }
+                    }
                 }
             );
         }
