@@ -9,7 +9,7 @@ using WizUnraveler;
 using WizUnraveler.Cache;
 using WizUnraveler.ObjectProperty;
 using Imlight.Common.Utilities;
-using Imlight.Server.Database;
+using Imlight.Server.Login.Models;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
 using WizUnraveler.IO;
@@ -32,15 +32,16 @@ namespace Imlight.Server.Login.Services
             var account = GetSocketAccount();
             if (account is null)
             {
-                Log.Logger.Error("Service {Type} socket account could not be retrieved!", GetType());
+                Log.Error("Service {Type} socket account could not be retrieved!", Log.Args(GetType()));
                 SendErrorToSocket();
                 return;
             }
 
             // If the given character does not exist on this account, send the client an error.
-            if (!account.GetCharacter(message.CharID, out var character))
+            var character = account.GetCharacter(message.CharID);
+            if (character is null)
             {
-                Log.Logger.Warning("Account {Id} attempted to get a character it didn't have.", account.ID);
+                Log.Warning("Account {Id} attempted to get a character it didn't have.", Log.Args(account.AccountId));
                 SendErrorToSocket();
                 return;
             }
@@ -49,8 +50,6 @@ namespace Imlight.Server.Login.Services
             var gameServer = GetGameServer();
             var serverEnqueueResult = (LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED)SessionActor.EnqueueToServer(gameServer.ActorRef);
             var allocatedKey = CreateSessionKey(gameServer.ActorRef, account);
-            character.LastGameServerIp = gameServer.IP;
-            character.LastGameServerPort = (ushort)gameServer.Port;
 
             // Craft a successful message. This will instead be cached if the server is full.
             var charSelectedMsg = new LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED()
@@ -62,14 +61,14 @@ namespace Imlight.Server.Login.Services
                 Key = allocatedKey,                   // Login server -> game server session key.
                 PrepPhase = 0,                        // (0|1): Player is in queue.
                 Slot = 0,                             // The player's position in said queue.
-                LoginServer = "Imlight.Login",        // @FIXME: This should be sourced from elsewhere.
+                LoginServer = "Imlight.Login",      // TODO: This should be sourced from elsewhere.
                 
                 // Set details about the character.
-                UserID = account.ID,
-                CharID = character.Id,
+                UserID = account.AccountId,
+                CharID = character.CharId,
                 ZoneID = new GID((ulong)gameServer.Port),
-                ZoneName = character.CreationData.m_location, // Client uses this name to load a zone locally.
-                Location = "Start",                           // Most zones use "Start" on player login.
+                ZoneName = character.Zone,
+                Location = character.GetStringLocation(),
             };
             
             // Cache the message if the player is queued.
@@ -82,12 +81,6 @@ namespace Imlight.Server.Login.Services
             {
                 SendToSocket(charSelectedMsg);
             }
-
-            SendToSocket(new EXTENDEDBASE_2_PROTOCOL.MSG_SERVERMESSAGE()
-            {
-                Message = "<center><color;FFFFFF><ITALICS>Revive101 Community</ITALICS></color><br><color;1C1EC4>discord.gg/revive101</color></center>",
-                Modal = 0
-            });
         }
 
         private SERVER_100_PROTOCOL.MSG_SERVERINFO GetGameServer()

@@ -9,6 +9,7 @@ using System.Linq;
 using System.Timers;
 using System.Threading.Tasks;
 using Akka.Actor;
+using Imlight.Common.Configuration;
 using WizUnraveler;
 using WizUnraveler.Cache;
 using WizUnraveler.ObjectProperty;
@@ -19,8 +20,8 @@ namespace Imlight.Server.Login.Services
 {
     internal class LoginAFKService : MessageService
     {
-        private const ushort AFK_TIMEOUT = 360;       // In seconds
-        private const ushort AFK_CHECK_INTERVAL = 60; // In seconds
+        private readonly ushort _afkTimeout = ConfigurationManager.Settings.LoginAfkTimeout;
+        private readonly ushort _afkCheckInterval = ConfigurationManager.Settings.LoginAfkCheckInterval;
 
         private bool _halted;
         private long _lastReceivedSeconds;
@@ -28,7 +29,7 @@ namespace Imlight.Server.Login.Services
 
         public LoginAFKService(SessionActor parentActor) : base (parentActor)
         {
-            _timer = new Timer(AFK_CHECK_INTERVAL * 1000);
+            _timer = new Timer(_afkCheckInterval * 1000);
             _timer.Elapsed += CheckAfk;
             _timer.AutoReset = true;
             _timer.Enabled = true;
@@ -40,7 +41,7 @@ namespace Imlight.Server.Login.Services
         }
 
         [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_LOGIN_NOT_AFK))]
-        private void ReceiveLoginNotAFK(LOGIN_7_PROTOCOL.MSG_LOGIN_NOT_AFK message)
+        private void ReceiveLoginNotAfk(LOGIN_7_PROTOCOL.MSG_LOGIN_NOT_AFK message)
         {
             _lastReceivedSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         }
@@ -63,7 +64,7 @@ namespace Imlight.Server.Login.Services
             
             var currentTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
-            if (currentTime - _lastReceivedSeconds >= AFK_TIMEOUT)
+            if (currentTime - _lastReceivedSeconds >= _afkTimeout)
             {
                 // User has gone AFK. Drop the connection.
                 SendToSocket(new LOGIN_7_PROTOCOL.MSG_DISCONNECT_LOGIN_AFK()

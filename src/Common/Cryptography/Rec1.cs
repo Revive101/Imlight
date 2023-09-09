@@ -21,33 +21,31 @@ namespace Imlight.Common.Cryptography
         private const byte KEY_CONSTANT = 0x17;
         private const byte IV_CONSTANT = 0xB6;
 
-        public static ByteString Encode(ushort sid, string username, string clientKey, uint timeSecs, uint timeMillis)
+        public static ByteString Encode(ByteString data, ushort sid, uint timeSecs, uint timeMillis)
         {
-            byte[] record = Encoding.UTF8.GetBytes($"{sid} {username} {clientKey}");
+            var key = DeriveTwofishKey(sid, timeSecs, timeMillis);
+            var nonce = DeriveTwofishNonce();
 
-            byte[] key = DeriveTwofishKey(sid, timeSecs, timeMillis);
-            byte[] nonce = DeriveTwofishNonce();
-
-            IBufferedCipher cipher = CipherUtilities.GetCipher("Twofish/OFB/NoPadding");
+            var cipher = CipherUtilities.GetCipher("Twofish/OFB/NoPadding");
             cipher.Init(true, new ParametersWithIV(new KeyParameter(key), nonce));
-            return cipher.DoFinal(record);
+            return cipher.DoFinal(data);
         }
 
         public static ByteString Decode(byte[] encodedData, ushort sid, uint timeSecs, uint timeMillis)
         {
-            byte[] key = DeriveTwofishKey(sid, timeSecs, timeMillis);
-            byte[] nonce = DeriveTwofishNonce();
+            var key = DeriveTwofishKey(sid, timeSecs, timeMillis);
+            var nonce = DeriveTwofishNonce();
 
-            IBufferedCipher cipher = CipherUtilities.GetCipher("Twofish/OFB/NoPadding");
+            var cipher = CipherUtilities.GetCipher("Twofish/OFB/NoPadding");
             cipher.Init(false, new ParametersWithIV(new KeyParameter(key), nonce));
             return cipher.DoFinal(encodedData);
         }
 
         private static byte[] DeriveTwofishKey(ushort sessionID, uint timeSecs, uint timeMillis)
         {
-            byte[] key = new byte[TWOFISH_KEY_SIZE];
+            var key = new byte[TWOFISH_KEY_SIZE];
 
-            for (int i = 0; i < key.Length; i++)
+            for (var i = 0; i < key.Length; i++)
             {
                 key[i] = (byte)(KEY_CONSTANT + i);
             }
@@ -71,7 +69,7 @@ namespace Imlight.Common.Cryptography
         {
             var iv = new byte[TWOFISH_NONCE_SIZE];
 
-            for (int i = 0; i < iv.Length; i++)
+            for (var i = 0; i < iv.Length; i++)
             {
                 iv[i] = (byte)(IV_CONSTANT - i);
             }

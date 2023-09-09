@@ -4,11 +4,11 @@
  */
 
 using System;
+using System.Threading.Tasks;
 using Akka.Actor;
+using Imlight.Server.Game.Models;
 using SharpDX;
 using WizUnraveler.Cache;
-using Imlight.Common.Utilities;
-using Imlight.Server.Database;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
 
@@ -26,18 +26,26 @@ namespace Imlight.Server.Game.Services
             return Akka.Actor.Props.Create(() => new CharacterService(parentActor));
         }
 
-        [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_SETACTIVECHARACTER))]
-        private void ReceiveSetActiveCharacter(CHARACTER_103_PROTOCOL.MSG_SETACTIVECHARACTER message)
+        protected override void OnDispose()
         {
-            _activeCharacter = message.Character;
+            _activeCharacter.Dispose();
+            base.OnDispose();
         }
 
+        #region Internal Handlers
+        
         [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP))]
         private void ReceiveZoneAddPlayerResponse(ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP message)
         {
             _activeCharacterObject = message.PlayerObject;
         }
         
+        [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_SETACTIVECHARACTER))]
+        private void ReceiveSetActiveCharacter(CHARACTER_103_PROTOCOL.MSG_SETACTIVECHARACTER message)
+        {
+            _activeCharacter = message.Character;
+        }
+
         [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER))]
         private void ReceiveQueryActiveCharacter(CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER message)
         {
@@ -47,10 +55,16 @@ namespace Imlight.Server.Game.Services
                 CharacterObject = _activeCharacterObject
             });
         }
+        
+        #endregion
+        
+        #region Game Handlers
 
         [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVE))]
         private void ReceiveClientMove(GAME_5_PROTOCOL.MSG_CLIENTMOVE message)
         {
+            // Save the player's location and direction on interval.
+            
             if (_activeCharacterObject is null)
                 throw new ServiceRetryException($"Tried to do client move but could not grab active character " +
                                                 $"object");
@@ -71,9 +85,6 @@ namespace Imlight.Server.Game.Services
             if (_activeCharacterObject is null)
                 throw new ServiceRetryException($"Tried to do client move but could not grab active character " +
                                                 $"object");
-            
-            var character = _activeCharacter;
-            character.CreationData.m_location = character.nextZone;
         }
 
         // Experimental - Sets the Crowns to 12,345,678
@@ -100,5 +111,7 @@ namespace Imlight.Server.Game.Services
                 TournamentNameID = message.TournamentNameID,
             });
         }
+        
+        #endregion
     }
 }

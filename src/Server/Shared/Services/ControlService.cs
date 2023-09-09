@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using Akka.Actor;
+using Imlight.Common.Configuration;
 using WizUnraveler.DML;
 using Imlight.Common.Utilities;
 using Imlight.Server.Shared.Networking;
@@ -19,8 +20,8 @@ namespace Imlight.Server.Shared.Services
 {
     public class ControlService : MessageService
     {
-        private const byte KEEP_ALIVE_INTERVAL = 60;       // In seconds
-        private const byte KEEP_ALIVE_RSP_WAIT_TIME = 4;   // In seconds
+        private readonly byte _keepAliveInterval = ConfigurationManager.Settings.KeepAliveInterval;
+        private readonly byte _keepAliveRspWaitTime = ConfigurationManager.Settings.KeepAliveRspWaitTime;
 
         private bool _sessionValid;
         private readonly Stopwatch _responseStopwatch;
@@ -63,6 +64,10 @@ namespace Imlight.Server.Shared.Services
                 TimestampLower = timestampLower,
                 Milliseconds = millisecondsIntoCurrentSecond,
             };
+            
+            // Set SessionActor variables.
+            SessionActor.OfferTime = currentUnixTimestamp;
+            SessionActor.OfferMillisecondsIntoSecond = millisecondsIntoCurrentSecond;
 
             SendToSocket(offer);
 
@@ -71,7 +76,7 @@ namespace Imlight.Server.Shared.Services
             
             // Send a message to ourselves to check if we've received a response.
             Context.System.Scheduler.ScheduleTellOnce(
-                TimeSpan.FromSeconds(KEEP_ALIVE_RSP_WAIT_TIME), 
+                TimeSpan.FromSeconds(_keepAliveRspWaitTime), 
                 Self, 
                 "SessionAcceptTimer", 
                 Self);
@@ -101,7 +106,7 @@ namespace Imlight.Server.Shared.Services
 
             // Once the session is created, we need to send a heartbeat to keep it active.
             // To do that. we'll have this actor send a message to itself on interval to check on the heartbeat.
-            var heartbeatInterval = TimeSpan.FromSeconds(KEEP_ALIVE_INTERVAL);
+            var heartbeatInterval = TimeSpan.FromSeconds(_keepAliveInterval);
             Context.System.Scheduler.ScheduleTellRepeatedly(
                 heartbeatInterval,
                 heartbeatInterval,
@@ -175,7 +180,7 @@ namespace Imlight.Server.Shared.Services
 
             // Send message to self after x seconds to remind CommunicationActor to check
             // the status of the KeepAlive.
-            var reminderTime = TimeSpan.FromSeconds(KEEP_ALIVE_RSP_WAIT_TIME);
+            var reminderTime = TimeSpan.FromSeconds(_keepAliveRspWaitTime);
             Context.System.Scheduler.ScheduleTellOnce(
                 reminderTime, 
                 Context.Self, 

@@ -30,10 +30,11 @@ public class WizardZonePathCreature : WizardZoneObject
     // ctor
     public WizardZonePathCreature(
         CoreObject activeGameObject,
+        CoreTemplate template,
         NodeObject[] nodes,
         byte startingNodeIndex,
         IActorRef wizardZoneRef)
-        : base(activeGameObject, wizardZoneRef)
+        : base(activeGameObject, template, wizardZoneRef)
     {
         _nodes = nodes;
         _cancelToken = new CancellationTokenSource();
@@ -47,12 +48,13 @@ public class WizardZonePathCreature : WizardZoneObject
     // Akka.NET ctor
     public static Props Props(
         CoreObject activeGameObject,
+        CoreTemplate template,
         NodeObject[] nodes,
         byte startingNodeIndex,
         IActorRef wizardZoneRef)
     {
         return Akka.Actor.Props.Create(()
-            => new WizardZonePathCreature(activeGameObject, nodes, startingNodeIndex, wizardZoneRef));
+            => new WizardZonePathCreature(activeGameObject, template, nodes, startingNodeIndex, wizardZoneRef));
     }
 
     /// <summary>

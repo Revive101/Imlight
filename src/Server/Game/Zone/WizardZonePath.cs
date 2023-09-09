@@ -9,9 +9,9 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Akka.Actor;
-using Imlight.Server.Database;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
+using Imlight.Server.Shared.Resources;
 using WizUnraveler.IO;
 using WizUnraveler.ObjectProperty;
 using static WizUnraveler.Cache.TypeCache;
@@ -186,13 +186,14 @@ public class WizardZonePath : ReceiveProtocolDispatcher
         var nodeIndex = _nodes.Keys.ToList().IndexOf(spawnNode);
         _nodes[spawnNode] = false;
 
-        var newObj = CoreObjectFactory.CreateObjectFromInfo(spawnInfo);
+        var template = CoreObjectFactory.GetCoreTemplate(spawnInfo.m_templateID);
+        var newObj = CoreObjectFactory.CreateObjectFromTemplate(spawnInfo, template, spawnInfo.m_templateID);
         if (newObj is null)
             throw new NullReferenceException();
         newObj.m_location = spawnNode.m_location;
 
         var nodes = _nodes.Keys.ToArray();
-        var props = WizardZonePathCreature.Props(newObj, nodes, (byte)nodeIndex, _zoneActorRef);
+        var props = WizardZonePathCreature.Props(newObj, template, nodes, (byte)nodeIndex, _zoneActorRef);
         var actorRef = Context.ActorOf(props);
         _creatures.Add(actorRef);
 

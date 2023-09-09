@@ -18,17 +18,17 @@ public class WizardZoneVolume : WizardZoneObject
     private readonly List<CoreObject> _objsInRadius;
 
     // ctor
-    public WizardZoneVolume(CoreObject activeGameObject, IActorRef wizardZoneRef, Volume volume) 
-        : base(activeGameObject, wizardZoneRef)
+    public WizardZoneVolume(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef, Volume volume) 
+        : base(activeGameObject, template, wizardZoneRef)
     {
         this._volume = volume;
         this._objsInRadius = new List<CoreObject>();
     }
     
     // Akka.NET ctor
-    public static Props Props(CoreObject activeGameObject, IActorRef wizardZoneRef, Volume volume)
+    public static Props Props(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef, Volume volume)
     {
-        return Akka.Actor.Props.Create(() => new WizardZoneVolume(activeGameObject, wizardZoneRef, volume));
+        return Akka.Actor.Props.Create(() => new WizardZoneVolume(activeGameObject, template, wizardZoneRef, volume));
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_TRIGGERQUERY))]

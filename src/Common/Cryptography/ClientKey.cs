@@ -7,6 +7,7 @@ using System;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using WizUnraveler.IO;
 
 namespace Imlight.Common.Cryptography
 {
@@ -20,7 +21,7 @@ namespace Imlight.Common.Cryptography
         /// <param name="timeSecs"></param>
         /// <param name="timeMillis"></param>
         /// <returns></returns>
-        public static string EncodeCK1(string input, ushort sessionID, uint timeSecs, uint timeMillis)
+        public static string HaskCK1(string input, ushort sessionID, uint timeSecs, uint timeMillis)
         {
             var passwordHash = HashPassword(input);
 
@@ -39,36 +40,40 @@ namespace Imlight.Common.Cryptography
         /// <returns></returns>
         public static bool VerifyCK1(string input, ushort sessionID, uint timeSecs, uint timeMillis, string encodedString)
         {
-            var expectedEncodedString = EncodeCK1(input, sessionID, timeSecs, timeMillis);
-            return encodedString == expectedEncodedString;
+            // Do not do the first pass.
+            var salt = $"{sessionID}{timeSecs}{timeMillis}";
+            var secondPass = SecondaryEncrypt(input, salt);
+
+            return encodedString == secondPass;
         }
 
         /// <summary>
-        /// Constructs a new salted ClientKey2 hash. This is used to validate a player's game client after their patcher closes.
+        /// Constructs a new salted session key hash.
         /// </summary>
-        /// <param name="input"></param>
-        /// <param name="sessionID"></param>
-        /// <param name="timeSecs"></param>
-        /// <param name="timeMillis"></param>
+        /// <param name="sessionId"></param>
+        /// <param name="offerSeconds"></param>
+        /// <param name="offerMilli"></param>
         /// <returns></returns>
-        public static string EncodeCK2(ushort sessionID, uint timeSecs, uint timeMillis)
+        public static ByteString HashSessionKey(ushort sessionId, uint offerSeconds, uint offerMilli)
         {
-            using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
-            {
-                byte[] tokenData = new byte[32];
-                rng.GetBytes(tokenData);
+            // Generate a cryptographically safe number.
+            using var rng = new RNGCryptoServiceProvider();
+            var randomBytes = new byte[4];
+            rng.GetBytes(randomBytes);
+            var randomNum = BitConverter.ToInt32(randomBytes, 0);
+            randomNum = Math.Abs(randomNum);
 
-                string sessionHash = Convert.ToBase64String(tokenData);
-                string salt = $"{timeMillis}{timeSecs}{sessionID}";
+            var combinedData = $"{randomNum}{sessionId}{offerSeconds}{offerMilli}";
+            var dataBytes = Encoding.UTF8.GetBytes(combinedData);
+            var hashBytes = SHA256.HashData(dataBytes);
 
-                return SecondaryEncrypt(sessionHash, salt);
-            }
+            return Convert.ToBase64String(hashBytes);
         }
 
         private static string HashPassword(string password)
         {
             using var sha512 = SHA512.Create();
-            byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
+            var passwordBytes = Encoding.UTF8.GetBytes(password);
 
             return Convert.ToBase64String(sha512.ComputeHash(passwordBytes));
         }
@@ -76,10 +81,10 @@ namespace Imlight.Common.Cryptography
         public static string SecondaryEncrypt(string password, string seed)
         {
             using var sha512 = SHA512.Create();
-            byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
-            byte[] seedBytes = Encoding.UTF8.GetBytes(seed);
+            var passwordBytes = Encoding.UTF8.GetBytes(password);
+            var seedBytes = Encoding.UTF8.GetBytes(seed);
 
-            byte[] hash = sha512.ComputeHash(passwordBytes.Concat(seedBytes).ToArray());
+            var hash = sha512.ComputeHash(passwordBytes.Concat(seedBytes).ToArray());
 
             return Convert.ToBase64String(hash);
         }

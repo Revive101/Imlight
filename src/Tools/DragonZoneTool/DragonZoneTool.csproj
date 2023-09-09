@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net7.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Reference Include="FuzzySharp">
+        <HintPath>..\..\..\..\..\..\.nuget\packages\fuzzysharp\2.0.2\lib\netcoreapp2.1\FuzzySharp.dll</HintPath>
+      </Reference>
+      <Reference Include="SharpDX.Mathematics">
+        <HintPath>..\..\..\..\..\..\.nuget\packages\sharpdx.mathematics\4.2.0\lib\netstandard1.1\SharpDX.Mathematics.dll</HintPath>
+      </Reference>
+      <Reference Include="Spectre.Console">
+        <HintPath>..\..\..\..\..\..\.nuget\packages\spectre.console\0.47.1-preview.0.11\lib\net7.0\Spectre.Console.dll</HintPath>
+      </Reference>
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="RavenDB.Client" Version="5.4.109" />
+      <PackageReference Include="SharpDX" Version="4.2.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\WizUnraveler\src\WizUnraveler\WizUnraveler.csproj" />
+    </ItemGroup>
+
+
+
+</Project>

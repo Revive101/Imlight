@@ -67,9 +67,15 @@ namespace Imlight.Server.Shared.Packets
             public byte ServiceID { get; } = 101;
         }
         
-        public class MSG_GETALLSERVICES : IServerMessage
+        public class MSG_PREDISPOSE : IServerMessage
         {
             public byte MessageOrder { get; } = 9;
+            public byte ServiceID { get; } = 101;
+        }
+        
+        public class MSG_GETALLSERVICES : IServerMessage
+        {
+            public byte MessageOrder { get; } = 10;
             public byte ServiceID { get; } = 101;
         }
     }

@@ -3,9 +3,9 @@
  * Proprietary and confidential.
  */
 
+using Imlight.Server.Game.Models;
 using WizUnraveler.Cache;
 using Imlight.Server.Shared.Networking;
-using Imlight.Server.Database;
 
 namespace Imlight.Server.Shared.Packets
 {

@@ -9,8 +9,11 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Akka.Actor;
 using Imlight.Common.Utilities;
-using Imlight.Server.Database;
 using Imlight.Server.Shared.Packets;
+using Imlight.Server.Shared.Resources;
+using Imlight.Server.WizardData;
+using Imlight.Server.WizardData.Implementations;
+using Imlight.Server.WizardData.Models;
 using SharpDX;
 using WizUnraveler.Cache;
 using WizUnraveler.Formats;
@@ -34,6 +37,13 @@ public static class WizardZoneLoader
     private const string TriggerDataFileName = "triggers.xml";
     private const string ResultCollectionName = "zone_triggers";
     private static readonly object LockObject = new();
+    private static readonly List<string> BlacklistedObjectActives = new()
+    {
+        "EditorOnly",
+        "PetOnly",
+        "Basic Positional.AdjRef",
+        "Basic Linear.AdjRef"
+    };
 
     private static WizardZone _zone;
     private static IActorRef _zoneActorRef;
@@ -44,6 +54,10 @@ public static class WizardZoneLoader
     private static PathManager_NodeTemplateList _nodeData;
     private static WizZoneVolumes _zoneVolumes;
     private static WizZoneTriggers _zoneTriggers;
+    private static WizardZoneData _wizardZoneData;
+    private static bool _retrievedZoneData;
+    private static bool _worldDataRetrievalFailed;
+    private static bool _zoneDataRetrievalFailed;
 
     /// <summary>
     /// Loads the <see cref="WizardZone" /> data from the <see cref="ResourceManager" />.
@@ -56,7 +70,7 @@ public static class WizardZoneLoader
         {
             try
             {
-                _zone = zone;
+                var t= _zone = zone;
                 _zoneActorRef = zoneActorRef;
 
                 if (!ResourceManager.TryLoadFile(zone.ZoneName, out _wad))
@@ -74,7 +88,7 @@ public static class WizardZoneLoader
                 LoadNodeData();
                 LoadVolumeData();
                 LoadTriggerData();
-                CreateZoneGameObjects();
+                CreateZoneCoreObjects();
                 CreateZonePaths();
                 CreateZoneVolumes();
                 CreateZoneTriggers();
@@ -171,17 +185,45 @@ public static class WizardZoneLoader
     /// <summary>
     /// Creates game objects for the zone based on the loaded zone data.
     /// </summary>
-    private static void CreateZoneGameObjects()
+    private static void CreateZoneCoreObjects()
     {
-        foreach (var obj in _zoneData.m_objectList.Where(x => x is not null))
+        foreach (var objectInfo in _zoneData.m_objectList.Where(info => info != null))
         {
-            var newObj = CoreObjectFactory.CreateObjectFromInfo(obj);
-            if (newObj is null)
+            var template = (GameObjectTemplate)CoreObjectFactory.GetCoreTemplate(objectInfo.m_templateID);
+            var newObject = CoreObjectFactory.CreateObjectFromTemplate(objectInfo, template, objectInfo.m_templateID);
+            if (newObject == null)
+                continue;
+            
+            if (!ShouldLoadCoreObject(template))
                 continue;
 
-            var msg = new ZONE_102_PROTOCOL.MSG_ADDOBJECT { CoreObject = newObj };
-            _zoneActorRef.Tell(msg);
+            var message = new ZONE_102_PROTOCOL.MSG_ADDOBJECT
+            {
+                CoreObject = newObject,
+                Template = template
+            };
+            _zoneActorRef.Tell(message);
         }
+    }
+
+    /// <summary>
+    /// Checks if a given object should be loaded into the zone based on zone and world events.
+    /// </summary>
+    /// <param name="template"></param>
+    /// <returns></returns>
+    private static bool ShouldLoadCoreObject(GameObjectTemplate template)
+    {
+        // If the object is a core object of an inactive world event, don't load it.
+        if (IsCoreObjectOfInactiveWorldEvent(template))
+            return false;
+        if (IsCoreObjectOfInactiveZoneEvent(template, _zone.ZoneName))
+            return false;
+        
+        // If any adjective is blacklisted, don't load the object.
+        if (template.m_adjectiveList.Any(x => BlacklistedObjectActives.Contains(x)))
+            return false;
+
+        return true;
     }
 
     /// <summary>
@@ -237,31 +279,29 @@ public static class WizardZoneLoader
     }
 
     /// <summary>
-    /// Creates the triggers for the zone based on the loaded trigger data. Trigger result data is loaded from Imlight's
-    /// <see cref="ServerDataBroker"/>.
+    /// Creates the triggers for the zone based on the loaded trigger data.
     /// </summary>
     private static void CreateZoneTriggers()
     {
-        if (_zoneTriggers is null) throw new NullReferenceException(nameof(_zoneTriggers));
+        if (_zoneTriggers is null) 
+            throw new NullReferenceException(nameof(_zoneTriggers));
         
         var zoneName = _zoneData.m_zoneName;
+        var persistentZoneData = ZoneDataCollection.GetZoneData(zoneName);
+        var t = _zoneTriggers;
 
         foreach (var trigger in _zoneTriggers.m_triggers)
         {
-            // Find this trigger's results in the server database.
-            var colName = SanitizeColName($"{ResultCollectionName}/{zoneName}/{trigger.m_triggerName}");
-            var col = ServerDataBroker.GetCollection<TypeCache.Result>(colName);
-
-            if (col.Any())
+            // If there's persistent data associated with this trigger, load it.
+            var persistentTriggerData = persistentZoneData?.Teleports
+                .FirstOrDefault(x => x.TriggerName == trigger.m_triggerName);
+            if (persistentTriggerData is not null)
             {
-                var resultList = new ResultList { m_results = new List<TypeCache.Result>() };
-                resultList.m_results = col.ToList();
+                // Set the trigger results to the results stored in the database.
+                var resultList = new ResultList
+                    { m_results = new List<TypeCache.Result> { persistentTriggerData.Teleport } };
                 trigger.m_results = resultList;
             }
-            
-            // fixme: In the grand scheme, storing a trigger without any result data is wasted space. For now, the
-            // below code remains where it does for debugging purposes. In the way future, it should be added to the 
-            // conditional above.
 
             // Write a message citing the details of this volume, and send a message to the zone.
             var msg = new ZONE_102_PROTOCOL.MSG_ADDTRIGGER { Trigger = trigger };
@@ -345,11 +385,129 @@ public static class WizardZoneLoader
         _nodeData = null;
         _zoneVolumes = null;
         _zoneTriggers = null;
+        _retrievedZoneData = false;
+        _wizardZoneData = null;
+        _zoneDataRetrievalFailed = false;
+        _worldDataRetrievalFailed = false;
     }
     
+    /// <summary>
+    /// Sanitizes a column name for use in the database.
+    /// </summary>
+    /// <param name="colName"></param>
+    /// <returns></returns>
     private static string SanitizeColName(string colName)
     {
         // Use regular expression to remove any character that isn't an alphabet character or an underscore.
         return Regex.Replace(colName, @"[^a-zA-Z_]", "");
+    }
+    
+    /// <summary>
+    /// Checks if a given object is a core object of an inactive world event.
+    /// </summary>
+    /// <param name="template"></param>
+    /// <returns></returns>
+    private static bool IsCoreObjectOfInactiveWorldEvent(GameObjectTemplate template)
+    {
+        // If we've tried to retrieve the world data and failed, don't try again.
+        if (_worldDataRetrievalFailed)
+            return false;
+        
+        // The world data is cached in memory, so we don't need to worry about performance here.
+        var globalZoneData = WorldDataCollection.GetWorldData();
+        if (globalZoneData is null)
+        {
+            Log.Error("World data could not be loaded.");
+            _worldDataRetrievalFailed = true;
+            return false;
+        }
+        
+        // Iterate through each zone event in WorldStats.GlobalZoneEvents
+        return globalZoneData
+            .GlobalZoneEvents
+            .Where(x => !Util.IsDateTimeNowBetween(x.StartDate, x.EndDate) || !x.IsEnabled || !x.EnabledByDefault)
+            .Any(e => IsCoreObjectOfEvent(template, e));
+    }
+    
+    /// <summary>
+    /// Checks if a given object is a core object of an inactive zone event.
+    /// </summary>
+    /// <param name="template"></param>
+    /// <param name="zoneName"></param>
+    /// <returns></returns>
+    private static bool IsCoreObjectOfInactiveZoneEvent(GameObjectTemplate template, string zoneName)
+    {
+        // If we've tried to retrieve the zone data and failed, don't try again.
+        if (_zoneDataRetrievalFailed)
+            return false;
+
+        // If we've already retrieved the zone data, use that.
+        WizardZoneData data;
+        if (_retrievedZoneData)
+            data = _wizardZoneData;
+        else
+        {
+            data = ZoneDataCollection.GetZoneData(zoneName);
+            if (data is null)
+            {
+                Log.Warning("Zone data for zone {0} does not exist in database", Log.Args(zoneName));
+                _zoneDataRetrievalFailed = true;
+                return false;
+            }
+
+            _retrievedZoneData = true;
+            _wizardZoneData = data;
+        }
+
+        return data.Events
+            .Where(x => !Util.IsDateTimeNowBetween(x.StartDate, x.EndDate) || !x.IsEnabled || !x.EnabledByDefault)
+            .Any(e => IsCoreObjectOfEvent(template, e));
+    }
+    
+    /// <summary>
+    /// Checks if a given object is a core object of a given event.
+    /// </summary>
+    /// <param name="template"></param>
+    /// <param name="e"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    private static bool IsCoreObjectOfEvent(GameObjectTemplate template, WizardZoneEventData e)
+    {
+        // Make all the adjectives lowercase for easier comparison.
+        var lowerCaseAdjectives = e.ObjectAdjectiveWhitelist.Select(adj => adj.ToLower()).ToList();
+
+        // Iterate through each adjective in the adjective list
+        foreach (var adj in template.m_adjectiveList)
+        {
+            // Trim off the ".AdjRef" suffix, if one exists.
+            var mutAdj = adj.ToString().ToLower();
+            if (mutAdj.EndsWith(".adjref"))
+                mutAdj = adj.ToString()[..(adj.ToString().Length - 7)].ToLower();
+            
+            // Check the ZoneEventObjectAdjectiveType to determine the matching condition
+            switch (e.ObjectAdjectiveType)
+            {
+                case WizardZoneEventObjectAdjectiveType.Contains:
+                    if (lowerCaseAdjectives.Any(mutAdj.Contains))
+                        return true;
+                    break;
+                case WizardZoneEventObjectAdjectiveType.PrefixedWith:
+                    if (lowerCaseAdjectives.Any(mutAdj.StartsWith))
+                        return true;
+                    break;
+                case WizardZoneEventObjectAdjectiveType.SuffixedWith:
+                    if (lowerCaseAdjectives.Any(mutAdj.EndsWith))
+                        return true;
+                    break;
+                case WizardZoneEventObjectAdjectiveType.Raw:
+                    if (lowerCaseAdjectives.Contains(mutAdj))
+                        return true;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(WizardZoneEventObjectAdjectiveType));
+            }
+        }
+
+        return false;
     }
 }

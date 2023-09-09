@@ -6,9 +6,9 @@
 using System.Collections.Generic;
 using Akka.Actor;
 using Imlight.Common.Utilities;
-using Imlight.Server.Database;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
+using Imlight.Server.Shared.Resources;
 
 namespace Imlight.Server.Game
 {
@@ -33,10 +33,10 @@ namespace Imlight.Server.Game
         private void ReceiveZoneTransfer(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message)
         {
             // First, make sure this zone is valid by checking the AccessPassManager.
-            if (!AccessPassManager.DoesZoneExist(message.ZoneName))
+            if (!AccessPassManager.DoesZoneExist(message.DestinationZone))
             {
                 Log.Error("{Name} received invalid zone name {ZoneName}",
-                    Log.Args(nameof(GameWorld), message.ZoneName));
+                    Log.Args(nameof(GameWorld), message.DestinationZone));
                 
                 var response = new ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP();
                 response.ErrorCode = 1;
@@ -47,21 +47,22 @@ namespace Imlight.Server.Game
             
             // Get the zone if it's already loaded; or, create a new one if it's not.
             IActorRef zone;
-            if (!Zones.ContainsKey(message.ZoneName))
+            if (!Zones.ContainsKey(message.DestinationZone))
             {
                 // '/' is an illegal character in Akka.NET actor names, so we replace it with '-'.
-                var zoneActorName = message.ZoneName
+                var zoneActorName = message.DestinationZone
                     .Replace('/', '-');
                 
-                zone = Context.ActorOf(Zone.WizardZone.Props(message.ZoneName), zoneActorName);
-                Zones.Add(message.ZoneName, zone);
+                zone = Context.ActorOf(Zone.WizardZone.Props(message.DestinationZone), zoneActorName);
+                Zones.Add(message.DestinationZone, zone);
                 
                 // Log the new zone creation.
-                Log.Information("GameWorld created new zone: {ZoneName}", Log.Args(message.ZoneName));
+                Log.Information("GameWorld created new zone: {ZoneName}",
+                    Log.Args(message.DestinationZone));
             }
             else
             {
-                zone = Zones[message.ZoneName];
+                zone = Zones[message.DestinationZone];
             }
             
             // Forward the message to the zone actor we just created.

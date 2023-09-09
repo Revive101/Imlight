@@ -15,9 +15,6 @@ namespace Imlight.Server.Shared.Networking
 {
     public abstract class Server : ReceiveProtocolDispatcher
     {
-        // TODO: this sucks here pls move
-        public const ushort PLAYER_LIMIT = 100;
-
         public string Name { get; }
         public string Ip { get; }
         public int Port { get; }
@@ -144,10 +141,15 @@ namespace Imlight.Server.Shared.Networking
                 withinTimeRange: TimeSpan.FromSeconds(30),
                 localOnlyDecider: ex =>
                 {
-                    return ex switch
+                    switch (ex)
                     {
-                        _ => Directive.Stop
-                    };
+                        default:
+                        {
+                            Log.Error("SessionActor {SessionId} has failed with exception {Exception}",
+                                Log.Args(Context.Self.Path.Name, ex));
+                            return Directive.Stop;
+                        }
+                    }
                 }
             );
         }
@@ -177,8 +179,7 @@ namespace Imlight.Server.Shared.Networking
             var tcpProps = TcpListenerActor.Props(Name, Port, Context.Self);
             Context.ActorOf(tcpProps, actorName);
             
-            Log.Logger.Verbose("New actor created under {Path}: {ActorName}",
-                Context.Self.Path, actorName);
+            Log.Verbose("New actor created under {Path}: {ActorName}", Log.Args(Context.Self.Path, actorName));
         }
 
         private IActorRef CreateActorFactory()
@@ -187,8 +188,7 @@ namespace Imlight.Server.Shared.Networking
             
             var actorName = $"{Name}.ActorFactory";
             
-            Log.Logger.Verbose("New actor created under {Path}: {ActorName}",
-                Context.Self.Path, actorName);
+            Log.Verbose("New actor created under {Path}: {ActorName}", Log.Args(Context.Self.Path, actorName));
             
             return Context.ActorOf(_factoryProps, actorName);
         }

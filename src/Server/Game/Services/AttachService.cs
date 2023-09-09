@@ -3,13 +3,14 @@
  * Proprietary and confidential.
  */
 
+using System.Net;
 using Akka.Actor;
 using Imlight.Common.Serializable;
+using Imlight.Server.Game.Models;
 using WizUnraveler;
 using WizUnraveler.Cache;
 using static WizUnraveler.Cache.TypeCache;
-using Imlight.Common.Utilities;
-using Imlight.Server.Database;
+using Imlight.Server.Login.Models;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
 using WizUnraveler.IO;
@@ -64,12 +65,21 @@ namespace Imlight.Server.Game.Services
                 SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED { Error = zoneDetails.ErrorCode });
                 return;
             }
+            
+            // Set the character's location and zone to the ones given in the message.
+            character.SetZone(message.ZoneName);
+            character.SetLocation(message.Location);
+            var gameServer = GetGameServer();
+            character.GameServerIp = gameServer.IP;
+            character.GameServerPort = (ushort)gameServer.Port;
 
             // Serialize the character's game object.
-            var charGameObject = character.GetWizClientObject();
+            var charGameObject = CharacterObjectLoader.GetPlayerGameObject(ref character);
+            charGameObject.m_nMobileID = zoneDetails.MobileId; // Set the mobile id to the one given by the zone.
+            character.GameObject = charGameObject;
             var localGameObjectData = new CoreObjectSerializer().Serialize(charGameObject);
             if (charGameObject is null || string.IsNullOrEmpty(localGameObjectData))
-                throw new ServiceRetryException($"User [{message.UserID}] failed to grab or deserialize " +
+                throw new ServiceRetryException($"User {message.UserID} failed to grab or deserialize " +
                                                 $"their player object.");
             
             // Send login complete.
@@ -79,7 +89,7 @@ namespace Imlight.Server.Game.Services
                 
                 // Set character data.
                 Data                = localGameObjectData,
-                IsCSR               = (int)account.AuthLevel >= 3 ? 1 : 0,
+                IsCSR               = (int)account.AuthLevel >= 1 ? 1 : 0,
                 Permissions         = 31679, // @todo: these permissions look like bitflags. Find out what they mean.
        
                 // Set zone data.
@@ -101,7 +111,7 @@ namespace Imlight.Server.Game.Services
         {
             var zoneMsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER
             {
-                ZoneName = zoneName, 
+                DestinationZone = zoneName, 
                 SendToClient = false
             };
             return AskOtherService<ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP>(zoneMsg);
@@ -119,10 +129,26 @@ namespace Imlight.Server.Game.Services
 
         private bool GetCharacterFromAccount(Account account, ulong charId, out Character character)
         {
-            var result = account.GetCharacter(charId, out var accChar);
-            character = accChar;
+            var result = account.GetCharacter(charId);
+            character = result;
 
-            return result;
+            return result is not null;
+        }
+        
+        private SERVER_100_PROTOCOL.MSG_SERVERINFO GetGameServer()
+        {
+            var msg = new SERVER_100_PROTOCOL.MSG_QUERYSERVER();
+            
+#if DEBUG
+            var localEndPoint = (IPEndPoint)SessionActor.Socket.LocalEndPoint;
+            var isLocal = localEndPoint.Address.ToString().Contains("127.0.");
+            msg = new SERVER_100_PROTOCOL.MSG_QUERYSERVER() { IsLocal = isLocal };
+#else
+            // Release builds should never be able to connect to their own local server.
+            msg = new SERVER_100_PROTOCOL.MSG_QUERYSERVER() { IsLocal = false };
+#endif
+            
+            return AskServer<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg);
         }
 
         private bool ValidateLoginKey(ByteString key, ulong userId, out Account account)

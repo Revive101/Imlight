@@ -8,12 +8,13 @@ using System.Collections.Specialized;
 using System.Linq;
 using Akka.Actor;
 using Akka.Actor.Dsl;
+using Imlight.Common.Configuration;
 using WizUnraveler;
 using WizUnraveler.Cache;
 using Imlight.Common.Structures;
 using Imlight.Common.Utilities;
 using Imlight.Common.Cryptography;
-using Imlight.Server.Database;
+using Imlight.Server.Login.Models;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
 using WizUnraveler.IO;
@@ -22,22 +23,19 @@ namespace Imlight.Server.Game
 {
     public class GameServer : Shared.Networking.Server
     {
-        private const string DEFAULT_GAME_SERVER_NAME = "Imlight.Game";
-        private const ushort DEFAULT_GAME_SERVER_PORT = 12333;
-        private const string SESSION_KEY_HASH_INPUT = "MAGIC_HATTER";
-        private const ushort SESSION_KEY_VALIDITY_TIME = 28800; // In seconds; 8 hours
+        private readonly string _sessionKeyHashInput = ConfigurationManager.Settings.SessionKeyHashInput;
+        private readonly ushort _sessionKeyValidityTime = ConfigurationManager.Settings.SessionKeyValidityTime;
+        private readonly ushort _playerLimit = ConfigurationManager.Settings.GameServerPlayerLimit;
         
-        private IActorRef _gameWorldRef;
-        private Cache<ByteString, Account> _sessionKeys;
+        private readonly IActorRef _gameWorldRef;
+        private readonly Cache<ByteString, Account> _sessionKeys;
         private readonly ListQueue<SessionActor> _playerQueue;
 
-        public GameServer(string serverName = DEFAULT_GAME_SERVER_NAME,
-                          ushort serverPort = DEFAULT_GAME_SERVER_PORT)
+        public GameServer(string serverName, ushort serverPort)
                           : base(serverName, serverPort, GameServiceFactory.Props())
         {
             this._playerQueue = new ListQueue<SessionActor>();
             this._sessionKeys = new Cache<ByteString, Account>();
-            
             this.ActiveSessions.CollectionChanged += ActiveSessionsChangedEvent;
             
             // Create actor children.
@@ -51,8 +49,7 @@ namespace Imlight.Server.Game
                 Log.Args(serverName, serverPort));
         }
         
-        public static Props Props(string serverName = DEFAULT_GAME_SERVER_NAME,
-                                  ushort serverPort = DEFAULT_GAME_SERVER_PORT)
+        public static Props Props(string serverName, ushort serverPort)
         {
             return Akka.Actor.Props.Create(() => new GameServer(serverName, serverPort));
         }
@@ -71,7 +68,7 @@ namespace Imlight.Server.Game
         {
             // A user has requested to join this server. We're going to check if the session key is valid.
             // If it is, we'll return the account associated with it. If not, we'll return an error code.
-            var keyTest = SessionKey.GenerateHash(SESSION_KEY_HASH_INPUT, message.UserID);
+            var keyTest = SessionKey.GenerateHash(_sessionKeyHashInput, message.UserID);
 
             foreach (var cachedKey in _sessionKeys)
             {
@@ -112,7 +109,7 @@ namespace Imlight.Server.Game
             }
 
             // If the server is full, add them to the queue and inform the client.
-            if (ActiveSessions.Count >= PLAYER_LIMIT)
+            if (ActiveSessions.Count >= _playerLimit)
             {
                 _playerQueue.Enqueue(message.SessionActor);
                 var queuePos = _playerQueue.Count;
@@ -189,11 +186,11 @@ namespace Imlight.Server.Game
 
         private ByteString CreateKey(Account account)
         {
-            var key = SessionKey.GenerateHash(SESSION_KEY_HASH_INPUT, account.ID);
+            var key = SessionKey.GenerateHash(_sessionKeyHashInput, account.AccountId);
             
             // Add this key to the local server. We're going to map the key to an account, that way when a game
             // client finds its corresponding key, it will get it's account as well.
-            var timeSpan = TimeSpan.FromSeconds(SESSION_KEY_VALIDITY_TIME);
+            var timeSpan = TimeSpan.FromSeconds(_sessionKeyValidityTime);
             _sessionKeys.Store(key, account, timeSpan);
 
             return key;

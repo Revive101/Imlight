@@ -26,8 +26,8 @@ namespace Imlight.Server.Shared.Packets
             public byte MessageOrder { get; } = 1;
             public byte ServiceID { get; } = 102;
             
-            public string ZoneName;
-            public string Location;
+            public string DestinationZone;
+            public string DestinationLocation;
             public bool SendToClient = true;
         }
         
@@ -36,7 +36,8 @@ namespace Imlight.Server.Shared.Packets
             public byte MessageOrder { get; } = 2;
             public byte ServiceID { get; } = 102;
 
-            public IActorRef ZoneActorRef;  
+            public IActorRef ZoneActorRef;
+            public ushort MobileId;
             public uint DynamicZoneId;
             public uint ErrorCode;
         }
@@ -90,6 +91,7 @@ namespace Imlight.Server.Shared.Packets
             public byte ServiceID { get; } = 102;
 
             public TypeCache.CoreObject CoreObject;
+            public TypeCache.CoreTemplate Template;
         }
         
         public class MSG_ADDOBJECTRSP : IServerMessage

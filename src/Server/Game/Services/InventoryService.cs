@@ -11,13 +11,12 @@ using System.Threading.Tasks;
 using WizUnraveler.Cache;
 using static WizUnraveler.ObjectProperty.ObjectSerializer;
 using WizUnraveler.ObjectProperty;
-using Imlight.Server.Database;
 using static WizUnraveler.Cache.TypeCache;
 using WizUnraveler;
 using Akka.Util.Internal;
 using Imlight.Common.Serializable;
+using Imlight.Server.Shared.Resources;
 using static System.Runtime.InteropServices.JavaScript.JSType;
-using Imlight.Server.Database.Records.Character;
 using static Imlight.Server.Shared.Packets.CHARACTER_103_PROTOCOL;
 using WizUnraveler.IO;
 
