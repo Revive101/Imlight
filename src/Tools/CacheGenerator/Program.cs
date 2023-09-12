@@ -1,7 +1,9 @@
 ﻿
 
+using System.Text;
 using System.Xml;
 using CacheGenerator.Network;
+using CacheGenerator.PropertyClass;
 using Imlight.Common.Formats;
 using Serilog;
 using Serilog.Core;
@@ -23,21 +25,32 @@ internal static class Program
     {
         if (!EnsureRootWadFromArguments(args))
             return;
-        //if (!EnsureTypeDumpFromArguments(args))
-        //    return;
+        if (!EnsureTypeDumpFromArguments(args))
+            return;
         
+        // Start work on generating the network cache.
         // Open a stream to the Root.wad file.
-        var wadPath = args[0];
-        var wadStream = GetFileStream(wadPath);
-        if (wadStream is null)
-            return;
+         var wadPath = args[0];
+         var wadStream = GetFileStream(wadPath);
+         if (wadStream is null)
+             return;
 
-        // Try to unpack the Root.wad
-        var rootWad = GetRootWad(wadStream);
-        if (rootWad is null)
-            return;
+         // Try to unpack the Root.wad
+         var rootWad = GetRootWad(wadStream);
+         if (rootWad is null)
+             return;
         
-        DoNetworkCacheGeneration(rootWad);
+         DoNetworkCacheGeneration(rootWad);
+        
+        // Start work on generating the property class cache.
+        var typeDumpPath = args[1];
+        
+        // Create the XML document from the stream.
+        XmlDocument xmlDoc = new();
+        using StreamReader reader = new(typeDumpPath, Encoding.UTF8);
+        xmlDoc.Load(reader);
+        
+        DoPropertyClassCacheGeneration(xmlDoc);
     }
 
     private static bool EnsureRootWadFromArguments(IReadOnlyList<string> args)
@@ -121,6 +134,11 @@ internal static class Program
             Log.Information("Finished C# class generation of {FileCount} protocols!", xmlFiles.Count);
         else
             Log.Error("Could not generate C# classes from the XML document!");
+    }
+
+    private static void DoPropertyClassCacheGeneration(XmlDocument wizardClientDefinitions)
+    {
+        PropertyClassGenerator.Generate(wizardClientDefinitions);
     }
 
     private static Stream? GetFileStream(string path)
