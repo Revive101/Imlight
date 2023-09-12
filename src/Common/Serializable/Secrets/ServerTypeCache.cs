@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using Imlight.Common.IO;
+using Imlight.Common.Serializable.Caches;
 using Imlight.Common.Serializable.ObjectProperty;
-using static WizUnraveler.Cache.TypeCache;
 
 namespace Imlight.Common.Serializable.Secrets;
 
@@ -44,8 +44,8 @@ public static class ServerTypeCache
         [Property(0xA7BEADF6, 31)] public List<ByteString> m_volumes;
         [Property(0x62A2160A, 31)] public byte unknown_byte_1;
         [Property(0x5C548D5F, 31)] public byte unknown_byte_2;
-        [Property(0xA955FFA6, 31)] public RequirementList m_requirements;
-        [Property(0xE11C8ADA, 31)] public ResultList m_results;
+        [Property(0xA955FFA6, 31)] public TypeCache.RequirementList m_requirements;
+        [Property(0xE11C8ADA, 31)] public TypeCache.ResultList m_results;
         [Property(0x794EA0DF, 31)] public uint unknown_uint_3;
         [Property(0x88B9D287, 31)] public byte unknown_byte_3;
         [Property(0x8177DA98, 31)] public uint unknown_int;
@@ -59,7 +59,7 @@ public static class ServerTypeCache
     }
 
     [DebuggerDisplay("{m_volumeName}")]
-    public class Volume : CoreObjectInfo
+    public class Volume : TypeCache.CoreObjectInfo
     {
         public override uint GetHash() => 0x1B7B55F6;
             
@@ -81,7 +81,7 @@ public static class ServerTypeCache
         [Property(0xAB57CF4A, 31)] public List<ByteString> m_exitEvents;
     }
     
-    public class ResTeleport : Result
+    public class ResTeleport : TypeCache.Result
     {
         public override uint GetHash() => 228794493;
             
@@ -98,7 +98,7 @@ public static class ServerTypeCache
         }
     }
     
-    public class ResDisplayText : Result
+    public class ResDisplayText : TypeCache.Result
     {
         public override uint GetHash() => 0x774C0B33;
             
@@ -113,7 +113,7 @@ public static class ServerTypeCache
         [Property(0x7E84339F, 31)] public bool m_unknown_bool_2;
     }
     
-    public class ResPlaySound : Result
+    public class ResPlaySound : TypeCache.Result
     {
         public override uint GetHash() => 0x3C626744;
         

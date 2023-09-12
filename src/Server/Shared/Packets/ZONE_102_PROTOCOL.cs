@@ -7,9 +7,9 @@ using System.Collections.Generic;
 using Akka.Actor;
 using Imlight.Common.DML;
 using Imlight.Common.IO;
+using Imlight.Common.Serializable.Caches;
 using Imlight.Common.Serializable.ObjectProperty;
 using Imlight.Common.Serializable.Secrets;
-using WizUnraveler.Cache;
 using Imlight.Server.Shared.Networking;
 
 namespace Imlight.Server.Shared.Packets;

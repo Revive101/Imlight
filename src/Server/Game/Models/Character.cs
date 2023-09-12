@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Imlight.Common.Configuration;
 using Imlight.Common.IO;
+using Imlight.Common.Serializable.Caches;
 using Imlight.Common.Serializable.ObjectProperty;
 using Imlight.Common.Utilities;
 using Imlight.Server.Shared.Resources;
@@ -18,9 +19,8 @@ using Imlight.Server.WizardData.Implementations;
 using Imlight.Server.WizardData.Models;
 using Newtonsoft.Json;
 using SharpDX;
-using WizUnraveler.Cache;
 using static Imlight.Server.WizardData.WizardResults;
-using static WizUnraveler.Cache.TypeCache;
+using static Imlight.Common.Serializable.Caches.TypeCache;
 
 namespace Imlight.Server.Game.Models;
 

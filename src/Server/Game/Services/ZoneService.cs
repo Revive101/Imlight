@@ -4,14 +4,11 @@
  */
 
 using System;
-using System.Globalization;
-using System.Numerics;
 using Akka.Actor;
-using WizUnraveler.Cache;
+using Imlight.Common.Serializable.Caches;
 using Imlight.Common.Utilities;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
-using Math = System.Math;
 
 namespace Imlight.Server.Game.Services;
 
@@ -62,7 +59,7 @@ public class ZoneService : MessageService
             _isTransferQueued = true;
                 
             // Ask the client if it's okay with being transferred.
-            var msg = new GAME_5_PROTOCOL.MSG_ZONETRANSFERREQUEST
+            var msg = new GAME.MSG_ZONETRANSFERREQUEST
             {
                 ZoneName = message.DestinationZone,
                 SendAck = 1
@@ -83,20 +80,20 @@ public class ZoneService : MessageService
         Sender.Tell(zoneDetails);
     }
         
-    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK))]
-    private void ReceiveZoneTransferAck(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK message)
+    [MessageHandler(typeof(GAME.MSG_ZONETRANSFERACK))]
+    private void ReceiveZoneTransferAck(GAME.MSG_ZONETRANSFERACK message)
     {
         DoZoneTransfer();
     }
 
-    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ZONETRANSFERNACK))]
-    private void ReceiveZoneTransferNack(GAME_5_PROTOCOL.MSG_ZONETRANSFERNACK message)
+    [MessageHandler(typeof(GAME.MSG_ZONETRANSFERNACK))]
+    private void ReceiveZoneTransferNack(GAME.MSG_ZONETRANSFERNACK message)
     {
         Log.Debug("Client was not OK with zone transfer! Possibly patching.");
     }
 
-    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_RETRYTELEPORT))]
-    private void ReceiveRetryTeleport(GAME_5_PROTOCOL.MSG_RETRYTELEPORT message)
+    [MessageHandler(typeof(GAME.MSG_RETRYTELEPORT))]
+    private void ReceiveRetryTeleport(GAME.MSG_RETRYTELEPORT message)
     {
         DoZoneTransfer();
     }
@@ -142,7 +139,7 @@ public class ZoneService : MessageService
 
         // When we send this message, the client will disconnect from the current zone and reconnect to the next.
         // This means attach will happen again, so this is all we need to do here.
-        var serverTransfer = new GAME_5_PROTOCOL.MSG_SERVERTRANSFER()
+        var serverTransfer = new GAME.MSG_SERVERTRANSFER()
         {
             IP = character.GameServerIp,
             TCPPort = character.GameServerPort,

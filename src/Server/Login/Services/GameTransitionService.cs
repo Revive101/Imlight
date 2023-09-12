@@ -6,9 +6,8 @@
 using System.Net;
 using Akka.Actor;
 using Imlight.Common.IO;
+using Imlight.Common.Serializable.Caches;
 using Imlight.Common.Serializable.ObjectProperty;
-using WizUnraveler;
-using WizUnraveler.Cache;
 using Imlight.Common.Utilities;
 using Imlight.Server.Login.Models;
 using Imlight.Server.Shared.Networking;
@@ -25,8 +24,8 @@ internal class GameTransitionService : MessageService
         return Akka.Actor.Props.Create(() => new GameTransitionService(parentActor));
     }
 
-    [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_SELECTCHARACTER))]
-    private void ReceiveSelectCharacter(LOGIN_7_PROTOCOL.MSG_SELECTCHARACTER message)
+    [MessageHandler(typeof(LOGIN.MSG_SELECTCHARACTER))]
+    private void ReceiveSelectCharacter(LOGIN.MSG_SELECTCHARACTER message)
     {
         // If the socket account cannot be found, send the client an error.
         var account = GetSocketAccount();
@@ -48,11 +47,11 @@ internal class GameTransitionService : MessageService
 
         // Enqueue the session actor onto the game server and create a session key.
         var gameServer = GetGameServer();
-        var serverEnqueueResult = (LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED)SessionActor.EnqueueToServer(gameServer.ActorRef);
+        var serverEnqueueResult = (LOGIN.MSG_CHARACTERSELECTED)SessionActor.EnqueueToServer(gameServer.ActorRef);
         var allocatedKey = CreateSessionKey(gameServer.ActorRef, account);
 
         // Craft a successful message. This will instead be cached if the server is full.
-        var charSelectedMsg = new LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED()
+        var charSelectedMsg = new LOGIN.MSG_CHARACTERSELECTED()
         {
             // Set details about the game server.
             IP = gameServer.IP,
@@ -113,7 +112,7 @@ internal class GameTransitionService : MessageService
 
     private void SendErrorToSocket(int errorCode = 1)
     {
-        var msg = new LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED() { Error = errorCode };
+        var msg = new LOGIN.MSG_CHARACTERSELECTED() { Error = errorCode };
         SendToSocket(msg);
     }
 }

@@ -7,10 +7,10 @@ using System;
 using System.Text;
 using Akka.Actor;
 using Imlight.Common.IO;
+using Imlight.Common.Serializable.Caches;
 using Imlight.Common.Utilities;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
-using WizUnraveler.Cache;
 
 namespace Imlight.Server.Game.Services;
 
@@ -28,8 +28,8 @@ public class ChatService : MessageService
         return Akka.Actor.Props.Create(() => new ChatService(parentActor));
     }
 
-    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_REQUESTRADIALCHAT))]
-    private void ReceiveRequestRadialChat(GAME_5_PROTOCOL.MSG_REQUESTRADIALCHAT message)
+    [MessageHandler(typeof(GAME.MSG_REQUESTRADIALCHAT))]
+    private void ReceiveRequestRadialChat(GAME.MSG_REQUESTRADIALCHAT message)
     {
         var globalId = GetActiveCoreObject().m_globalID;
         var character = GetActiveCharacter();
@@ -42,7 +42,7 @@ public class ChatService : MessageService
         Log.Information($"User says in chat: {logMessage}");
 
         // Broadcast the message to the zone.
-        var msg = new GAME_5_PROTOCOL.MSG_RADIALCHAT
+        var msg = new GAME.MSG_RADIALCHAT
         {
             Message = message.Message,
             SourceID = globalId,
@@ -52,8 +52,8 @@ public class ChatService : MessageService
         ZoneBroadcast(msg);
     }
 
-    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_REQUESTRADIALQUICKCHAT))]
-    private void ReceiveRequestRadialQuickChat(GAME_5_PROTOCOL.MSG_REQUESTRADIALQUICKCHAT message)
+    [MessageHandler(typeof(GAME.MSG_REQUESTRADIALQUICKCHAT))]
+    private void ReceiveRequestRadialQuickChat(GAME.MSG_REQUESTRADIALQUICKCHAT message)
     {
         var globalId = GetActiveCoreObject().m_globalID;
         var character = GetActiveCharacter();
@@ -61,7 +61,7 @@ public class ChatService : MessageService
         var gender = character.WizardAvatar.m_eGender;
         var src = CraftSourceNameFromIndices(nameIndices, gender);
 
-        var msg = new GAME_5_PROTOCOL.MSG_RADIALQUICKCHAT()
+        var msg = new GAME.MSG_RADIALQUICKCHAT()
         {
             MessageID = message.MessageID,
             SourceID = globalId,
@@ -71,14 +71,14 @@ public class ChatService : MessageService
         ZoneBroadcast(msg);
     }
 
-    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_REQASKSERVER))]
-    private void ReceiveRequest(GAME_5_PROTOCOL.MSG_REQASKSERVER message)
+    [MessageHandler(typeof(GAME.MSG_REQASKSERVER))]
+    private void ReceiveRequest(GAME.MSG_REQASKSERVER message)
     {
             
     }
 
-    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CORE_EMOTE))]
-    private void ReceiveCoreEmote(GAME_5_PROTOCOL.MSG_CORE_EMOTE message)
+    [MessageHandler(typeof(GAME.MSG_CORE_EMOTE))]
+    private void ReceiveCoreEmote(GAME.MSG_CORE_EMOTE message)
     {
         // todo
         TellOtherServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST()

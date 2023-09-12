@@ -7,7 +7,6 @@ using System.Net.Sockets;
 using Akka.Actor;
 using Imlight.Common.DML;
 using Imlight.Common.IO;
-using WizUnraveler;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Login.Models;
 

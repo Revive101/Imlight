@@ -7,11 +7,11 @@ using System;
 using System.Security.Cryptography;
 using System.Text;
 using Imlight.Common.Serializable;
+using Imlight.Common.Serializable.Caches;
 using Imlight.Server.Game.Models;
 using Imlight.Server.Login.Models;
 using Imlight.Server.WizardData.Implementations;
 using Imlight.Common.Utilities;
-using static WizUnraveler.Cache.TypeCache;
 
 namespace Imlight.Server.WizardData;
 
@@ -106,7 +106,7 @@ public static class DatabaseUtilities
     {
         var serializer = new ObjectSerializer();
         var destinyRawBytes = DataManipulation.StringToByteArray(rawData);
-        var destinyCreationData = (WizardCharacterCreationInfo)serializer.Deserialize(destinyRawBytes);
+        var destinyCreationData = (TypeCache.WizardCharacterCreationInfo)serializer.Deserialize(destinyRawBytes);
         var destiny = new Character(destinyCreationData);
 
         return destiny;

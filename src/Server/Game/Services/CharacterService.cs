@@ -6,9 +6,9 @@
 using System;
 using System.Threading.Tasks;
 using Akka.Actor;
+using Imlight.Common.Serializable.Caches;
 using Imlight.Server.Game.Models;
 using SharpDX;
-using WizUnraveler.Cache;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
 
@@ -60,8 +60,8 @@ public class CharacterService : MessageService
         
     #region Game Handlers
 
-    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVE))]
-    private void ReceiveClientMove(GAME_5_PROTOCOL.MSG_CLIENTMOVE message)
+    [MessageHandler(typeof(GAME.MSG_CLIENTMOVE))]
+    private void ReceiveClientMove(GAME.MSG_CLIENTMOVE message)
     {
         // Save the player's location and direction on interval.
             
@@ -79,8 +79,8 @@ public class CharacterService : MessageService
         _activeCharacterObject.m_orientation = new Vector3(0, 0, direction);
     }
 
-    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK))]
-    private void ReceiveZoneTransferAck(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK message)
+    [MessageHandler(typeof(GAME.MSG_ZONETRANSFERACK))]
+    private void ReceiveZoneTransferAck(GAME.MSG_ZONETRANSFERACK message)
     {
         if (_activeCharacterObject is null)
             throw new ServiceRetryException($"Tried to do client move but could not grab active character " +
@@ -88,10 +88,10 @@ public class CharacterService : MessageService
     }
 
     // Experimental - Sets the Crowns to 12,345,678
-    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_CROWNBALANCE))]
-    private void ReceiveCrownBalance(WIZARD_12_PROTOCOL.MSG_CROWNBALANCE message)
+    [MessageHandler(typeof(WIZARD.MSG_CROWNBALANCE))]
+    private void ReceiveCrownBalance(WIZARD.MSG_CROWNBALANCE message)
     {
-        SendToSocket(new WIZARD_12_PROTOCOL.MSG_CROWNBALANCE()
+        SendToSocket(new WIZARD.MSG_CROWNBALANCE()
         {
             CharacterID = message.CharacterID,
             Failure = 0,
@@ -101,10 +101,10 @@ public class CharacterService : MessageService
     }
 
     // Experimental - ??? should be something with stats
-    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_GETLADDER))]
-    private void ReceiveGetLadder(GAME_5_PROTOCOL.MSG_GETLADDER message)
+    [MessageHandler(typeof(GAME.MSG_GETLADDER))]
+    private void ReceiveGetLadder(GAME.MSG_GETLADDER message)
     {
-        SendToSocket(new GAME_5_PROTOCOL.MSG_GETLADDER()
+        SendToSocket(new GAME.MSG_GETLADDER()
         {
             CharacterID = message.CharacterID,
             NameBlob = message.NameBlob,

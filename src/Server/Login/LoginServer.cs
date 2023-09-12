@@ -5,7 +5,7 @@
 
 using Akka.Actor;
 using Imlight.Common.Configuration;
-using WizUnraveler.Cache;
+using Imlight.Common.Serializable.Caches;
 using Imlight.Common.Utilities;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
@@ -43,7 +43,7 @@ public class LoginServer : Shared.Networking.Server
         ActiveSessions.Add(message.SessionActor);
             
         // Inform the client they've been added to the server.
-        var rsp = new LOGIN_7_PROTOCOL.MSG_USER_ADMIT_IND()
+        var rsp = new LOGIN.MSG_USER_ADMIT_IND()
         {
             PositionInQueue = 0,
             Status = 1

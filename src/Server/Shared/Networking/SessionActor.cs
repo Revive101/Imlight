@@ -12,8 +12,7 @@ using Akka.Actor;
 using Imlight.Common.Configuration;
 using Imlight.Common.DML;
 using Imlight.Common.Serializable;
-using WizUnraveler;
-using WizUnraveler.Cache;
+using Imlight.Common.Serializable.Caches;
 using Imlight.Common.Utilities;
 using Imlight.Server.Shared.Packets;
 
@@ -64,9 +63,9 @@ public class SessionActor : ReceiveActor, IDisposable
         this.ServerRef = server;
         this._suppressedPackets = new List<Type>
         {
-            typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVE),
-            typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVESTATE),
-            typeof(GAME_5_PROTOCOL.MSG_SERVERMOVE)
+            typeof(GAME.MSG_CLIENTMOVE),
+            typeof(GAME.MSG_CLIENTMOVESTATE),
+            typeof(GAME.MSG_SERVERMOVE)
         };
 
         // To get the actor factory reference, we'll ask the server.

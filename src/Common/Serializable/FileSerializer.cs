@@ -9,9 +9,9 @@ using System.Xml;
 using Imlight.Common.Cryptography;
 using Imlight.Common.Formats;
 using Imlight.Common.IO;
+using Imlight.Common.Serializable.Caches;
 using Imlight.Common.Serializable.ObjectProperty;
 using Ionic.Zlib;
-using WizUnraveler.Cache;
 
 namespace Imlight.Common.Serializable;
 

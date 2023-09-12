@@ -7,14 +7,12 @@ using System;
 using System.Collections.Specialized;
 using System.Linq;
 using Akka.Actor;
-using Akka.Actor.Dsl;
 using Imlight.Common.Configuration;
-using WizUnraveler;
-using WizUnraveler.Cache;
 using Imlight.Common.Structures;
 using Imlight.Common.Utilities;
 using Imlight.Common.Cryptography;
 using Imlight.Common.IO;
+using Imlight.Common.Serializable.Caches;
 using Imlight.Server.Login.Models;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
@@ -95,7 +93,7 @@ public class GameServer : Shared.Networking.Server
     private void ReceivePlayerEnqueued(SERVER_100_PROTOCOL.MSG_PLAYERENQUEUED message)
     {
         // A player has requested to join this server.
-        var rsp = new LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED()
+        var rsp = new LOGIN.MSG_CHARACTERSELECTED()
         {
             PrepPhase = 0,
             Slot = 0
@@ -174,7 +172,7 @@ public class GameServer : Shared.Networking.Server
         // Inform each enqueued player of their new position.
         for (int i = 0; i < _playerQueue.Count; i++)
         {
-            var msg = new LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED()
+            var msg = new LOGIN.MSG_CHARACTERSELECTED()
             {
                 PrepPhase = 1,
                 Slot = i

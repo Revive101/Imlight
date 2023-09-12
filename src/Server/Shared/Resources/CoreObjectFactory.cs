@@ -11,8 +11,7 @@ using Imlight.Common.Cryptography;
 using Imlight.Common.IO;
 using Imlight.Common.Serializable.Secrets;
 using Imlight.Common.Utilities;
-using WizUnraveler.Common;
-using static WizUnraveler.Cache.TypeCache;
+using static Imlight.Common.Serializable.Caches.TypeCache;
 
 namespace Imlight.Server.Shared.Resources;
 
@@ -166,7 +165,7 @@ public static class CoreObjectFactory
         obj.m_fScale = info.m_fScale;
         obj.m_globalID = guid;
         obj.m_permID = RandomGen.GenerateHash($"{obj.m_zoneTagID}{obj.m_templateID}{obj.m_location.X}");
-        obj.m_zoneTagID = Crypto.HashString(info.m_zoneTag);
+        obj.m_zoneTagID = StringHash.Compute(info.m_zoneTag);
         obj.m_debugName = info.m_zoneTag;
     }
 }

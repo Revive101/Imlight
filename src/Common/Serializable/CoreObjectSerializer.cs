@@ -4,8 +4,8 @@
  */
 
 using Imlight.Common.IO;
+using Imlight.Common.Serializable.Caches;
 using Imlight.Common.Serializable.ObjectProperty;
-using WizUnraveler.Cache;
 
 namespace Imlight.Common.Serializable;
 

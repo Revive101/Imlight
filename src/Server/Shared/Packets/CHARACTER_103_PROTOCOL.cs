@@ -3,8 +3,8 @@
  * Proprietary and confidential.
  */
 
+using Imlight.Common.Serializable.Caches;
 using Imlight.Server.Game.Models;
-using WizUnraveler.Cache;
 using Imlight.Server.Shared.Networking;
 
 namespace Imlight.Server.Shared.Packets;

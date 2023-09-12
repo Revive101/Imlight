@@ -14,7 +14,6 @@ using System.Xml;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Imlight.Common.Configuration;
-using WizUnraveler;
 using Imlight.Common.Utilities;
 using Imlight.Common.Cryptography;
 using Imlight.Common.IO;

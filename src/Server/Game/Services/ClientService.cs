@@ -6,9 +6,7 @@
 using System;
 using System.Threading.Tasks;
 using Akka.Actor;
-using Imlight.Common.Serializable;
-using Imlight.Common.Utilities;
-using WizUnraveler.Cache;
+using Imlight.Common.Serializable.Caches;
 using Imlight.Server.Shared.Networking;
 
 namespace Imlight.Server.Game.Services;
@@ -22,20 +20,20 @@ public class ClientService : MessageService
         return Akka.Actor.Props.Create(() => new ClientService(parentActor));
     }
 
-    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT))]
-    private void ReceiveClientDisconnect(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT message)
+    [MessageHandler(typeof(GAME.MSG_CLIENT_DISCONNECT))]
+    private void ReceiveClientDisconnect(GAME.MSG_CLIENT_DISCONNECT message)
     {
         CloseSession();
     }
         
-    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT))]
-    private void ReceiveQueryLogout(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT message)
+    [MessageHandler(typeof(GAME.MSG_QUERY_LOGOUT))]
+    private void ReceiveQueryLogout(GAME.MSG_QUERY_LOGOUT message)
     {
         // Send the socket client disconnect, then wait about 1 second for the client to receive it before closing
         // the session.
         Task.Run(() =>
         {
-            SendToSocket(new GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT());
+            SendToSocket(new GAME.MSG_CLIENT_DISCONNECT());
             Task.Delay(TimeSpan.FromSeconds(1)).Wait();
             CloseSession();
         });

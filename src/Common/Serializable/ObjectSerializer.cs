@@ -12,10 +12,10 @@ using System.Reflection;
 using ICSharpCode.SharpZipLib.Zip.Compression;
 using ICSharpCode.SharpZipLib.Zip.Compression.Streams;
 using Imlight.Common.IO;
+using Imlight.Common.Serializable.Caches;
 using Imlight.Common.Serializable.ObjectProperty;
 using Imlight.Common.Utilities;
 using SharpDX;
-using WizUnraveler.Cache;
 
 namespace Imlight.Common.Serializable;
 

@@ -9,7 +9,7 @@ using Imlight.Common.Serializable.ObjectProperty;
 using Imlight.Common.Utilities;
 using Imlight.Server.Game.Models;
 using Imlight.Server.Shared.Resources;
-using static WizUnraveler.Cache.TypeCache;
+using static Imlight.Common.Serializable.Caches.TypeCache;
 
 namespace Imlight.Server.Game;
 
@@ -135,7 +135,7 @@ public static class CharacterObjectLoader
     {
         if (CoreObjectFactory.FindBehaviorInstance<ClientSpellbookBehavior>(clientObject, out var spellbookBehavior))
         {
-            spellbookBehavior.m_spellIDList = new List<SpellIDPair>();
+            spellbookBehavior.m_spellIDList = new List<SpellIDTracker>();
         }
         else
             throw new Exception("Behavior ClientSpellbookBehavior not found!");

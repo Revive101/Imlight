@@ -10,13 +10,11 @@ using System.Threading.Tasks;
 using Akka.Actor;
 using Imlight.Common.DML;
 using Imlight.Common.Serializable;
+using Imlight.Common.Serializable.Caches;
 using Imlight.Common.Serializable.Secrets;
 using Imlight.Common.Utilities;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
-using Imlight.Server.WizardData;
-using WizUnraveler.Cache;
-using static WizUnraveler.Cache.TypeCache;
 using static Imlight.Common.Serializable.ObjectSerializer;
 using static Imlight.Common.Serializable.Secrets.ServerTypeCache;
 
@@ -31,7 +29,7 @@ public class WizardZone : ReceiveProtocolDispatcher
     private readonly uint _dynamicZoneId;
     private readonly IActorRef _objectSupervisorRef;
     private readonly List<Trigger> _triggers;
-    private readonly Dictionary<IActorRef, CoreObject> _zonePlayers;
+    private readonly Dictionary<IActorRef, TypeCache.CoreObject> _zonePlayers;
     private ushort _zoneObjectMobileIdCounter;
 
     // ctor
@@ -39,7 +37,7 @@ public class WizardZone : ReceiveProtocolDispatcher
     {
         ZoneName = zoneName;
         _dynamicZoneId = GenerateDynamicZoneId();
-        _zonePlayers = new Dictionary<IActorRef, CoreObject>();
+        _zonePlayers = new Dictionary<IActorRef, TypeCache.CoreObject>();
         _objectSupervisorRef = CreateObjectSupervisor();
         _triggers = new List<Trigger>();
 
@@ -93,15 +91,15 @@ public class WizardZone : ReceiveProtocolDispatcher
     }
 
     /// <summary>
-    /// Broadcasts the creation of a new <see cref="CoreObject"/> to each player in the zone.
+    /// Broadcasts the creation of a new <see cref="TypeCache.CoreObject"/> to each player in the zone.
     /// </summary>
     /// <param name="obj"></param>
-    private void BroadcastObjectCreation(CoreObject obj)
+    private void BroadcastObjectCreation(TypeCache.CoreObject obj)
     {
         var serializer = new CoreObjectSerializer()
             .WithSerializerFlags(SerializerFlags.None)
             .WithPropertyFlags(PropertyFlags.Public | PropertyFlags.Transmit | PropertyFlags.AuthorityTransmit);
-        Broadcast(new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = serializer.Serialize(obj) });
+        Broadcast(new GAME.MSG_NEWOBJECT { Data = serializer.Serialize(obj) });
     }
     
     /// <summary>
@@ -147,7 +145,7 @@ public class WizardZone : ReceiveProtocolDispatcher
             .WithPropertyFlags(PropertyFlags.Public | PropertyFlags.Transmit | PropertyFlags.AuthorityTransmit);
         foreach (var obj in _zonePlayers.Values)
         {
-            var msg = new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = serializer.Serialize(obj) };
+            var msg = new GAME.MSG_NEWOBJECT { Data = serializer.Serialize(obj) };
             client.Tell(msg);
         }
     }
@@ -207,7 +205,7 @@ public class WizardZone : ReceiveProtocolDispatcher
 
     private void SendDisplayText(IActorRef suspect, ResDisplayText resDisplayText)
     {
-        var msg = new GAME_5_PROTOCOL.MSG_CLIENTNOTIFYTEXT
+        var msg = new GAME.MSG_CLIENTNOTIFYTEXT
         {
             NotifyText = resDisplayText.m_text ,
             Type = resDisplayText.m_type,
@@ -218,7 +216,7 @@ public class WizardZone : ReceiveProtocolDispatcher
     private void SendPlaySound(IActorRef suspect, ServerTypeCache.ResPlaySound resPlaySound)
     {
         // todo: implement
-        var msg = new GAME_5_PROTOCOL.MSG_PLAYSOUND { SoundFilename = resPlaySound.m_soundName };
+        var msg = new GAME.MSG_PLAYSOUND { SoundFilename = resPlaySound.m_soundName };
         suspect.Tell(msg);
     }
 
@@ -278,7 +276,7 @@ public class WizardZone : ReceiveProtocolDispatcher
             InformZoneObjectsOfDeparture(message);
         
         // Inform every other player that this object has been removed.
-        Broadcast(new GAME_5_PROTOCOL.MSG_REMOVEOBJECT { GameObjectID = message.GlobalId });
+        Broadcast(new GAME.MSG_REMOVEOBJECT { GameObjectID = message.GlobalId });
         
         _zonePlayers.Remove(message.Player);
 
