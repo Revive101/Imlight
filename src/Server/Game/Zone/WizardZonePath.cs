@@ -9,11 +9,11 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Akka.Actor;
+using Imlight.Common.IO;
+using Imlight.Common.Serializable.ObjectProperty;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
 using Imlight.Server.Shared.Resources;
-using WizUnraveler.IO;
-using WizUnraveler.ObjectProperty;
 using static WizUnraveler.Cache.TypeCache;
 
 #pragma warning disable CS4014

@@ -4,7 +4,6 @@ using Imlight.Common.Utilities;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
 using WizUnraveler.Cache;
-using WizUnraveler.ObjectProperty;
 using static WizUnraveler.Cache.TypeCache;
 
 namespace Imlight.Server.Game.Zone;

@@ -8,43 +8,42 @@ using System.Linq;
 using System.Xml;
 using Imlight.Common.Utilities;
 
-namespace Imlight.Server.Shared.Resources
+namespace Imlight.Server.Shared.Resources;
+
+public static class AccessPassManager
 {
-    public static class AccessPassManager
+    private const string RootWadName = "Root.wad";
+    private const string AccessPassName = "AccessPass.xml";
+        
+    private static string[] _zones;
+        
+    public static bool Load()
     {
-        private const string RootWadName = "Root.wad";
-        private const string AccessPassName = "AccessPass.xml";
-        
-        private static string[] _zones;
-        
-        public static bool Load()
-        {
-            if (!ResourceManager.TryLoadFile(RootWadName, AccessPassName, out var stream))
-                return false;
+        if (!ResourceManager.TryLoadFile(RootWadName, AccessPassName, out var stream))
+            return false;
 
-            // Use the XmlReader to read the file. Only the zone names are needed,
-            // so we find the <Zone> tags and read the name attribute.
-            var zoneList = new HashSet<string>();
-            var doc = new XmlDocument();
-            doc.Load(stream);
+        // Use the XmlReader to read the file. Only the zone names are needed,
+        // so we find the <Zone> tags and read the name attribute.
+        var zoneList = new HashSet<string>();
+        var doc = new XmlDocument();
+        doc.Load(stream);
             
-            foreach (XmlNode zoneNode in doc.GetElementsByTagName("Zone"))
-            {
-                var zoneName = zoneNode.InnerText;
-                zoneList.Add(zoneName);
-            }
-            
-            // Log
-            Log.Information("AccessPassManager loaded {Count} zones.", Log.Args(zoneList.Count));
-
-            _zones = zoneList.ToArray();
-
-            return true;
-        }
-        
-        public static bool DoesZoneExist(string zoneName)
+        foreach (XmlNode zoneNode in doc.GetElementsByTagName("Zone"))
         {
-            return _zones.Any(zone => zone == zoneName);
+            var zoneName = zoneNode.InnerText;
+            zoneList.Add(zoneName);
         }
+            
+        // Log
+        Log.Information("AccessPassManager loaded {Count} zones.", Log.Args(zoneList.Count));
+
+        _zones = zoneList.ToArray();
+
+        return true;
+    }
+        
+    public static bool DoesZoneExist(string zoneName)
+    {
+        return _zones.Any(zone => zone == zoneName);
     }
 }

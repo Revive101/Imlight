@@ -3,8 +3,7 @@
  * Proprietary and confidential.
  */
 
-using WizUnraveler.IO;
-using WizUnraveler.ObjectProperty;
+using Imlight.Common.IO;
 using static WizUnraveler.Cache.TypeCache;
 
 namespace Imlight.Server.WizardData;

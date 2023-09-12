@@ -8,7 +8,7 @@ using Akka.Actor;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
 using static WizUnraveler.Cache.TypeCache;
-using static WizUnraveler.Secrets.ServerTypeCache;
+using static Imlight.Common.Serializable.Secrets.ServerTypeCache;
 
 namespace Imlight.Server.Game.Zone;
 

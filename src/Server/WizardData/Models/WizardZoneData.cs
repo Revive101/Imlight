@@ -4,7 +4,7 @@
  */
 
 using System.Collections.Generic;
-using WizUnraveler.Secrets;
+using Imlight.Common.Serializable.Secrets;
 
 namespace Imlight.Server.WizardData.Models;
 

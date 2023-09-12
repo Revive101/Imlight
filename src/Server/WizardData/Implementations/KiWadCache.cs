@@ -9,9 +9,9 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Imlight.Common.Cryptography;
+using Imlight.Common.Formats;
 using Imlight.Common.Utilities;
 using LiteDB;
-using WizUnraveler.Formats;
 
 namespace Imlight.Server.WizardData.Implementations;
 

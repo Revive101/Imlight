@@ -6,10 +6,10 @@
 using System;
 using System.Security.Cryptography;
 using System.Text;
+using Imlight.Common.Serializable;
 using Imlight.Server.Game.Models;
 using Imlight.Server.Login.Models;
 using Imlight.Server.WizardData.Implementations;
-using WizUnraveler.ObjectProperty;
 using Imlight.Common.Utilities;
 using static WizUnraveler.Cache.TypeCache;
 
@@ -71,12 +71,12 @@ public static class DatabaseUtilities
         var acc = new Account(username, email, password) { AuthLevel = auth };
         
         // Destiny
-        var destiny = GetCharacterFromRawCreationData(DestinyRawData);
-        acc.AddCharacter(destiny);
-        
-        // I fucking hate Kevin.
-        var kevin = GetCharacterFromRawCreationData(KevinRawData);
-        acc.AddCharacter(kevin);
+        //var destiny = GetCharacterFromRawCreationData(DestinyRawData);
+        //acc.AddCharacter(destiny);
+        //
+        //// I fucking hate Kevin.
+        //var kevin = GetCharacterFromRawCreationData(KevinRawData);
+        //acc.AddCharacter(kevin);
         
         // Save the account to the database.
         var created = AccountCollection.CreateAccount(acc);

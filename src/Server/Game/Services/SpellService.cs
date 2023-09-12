@@ -9,39 +9,38 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using WizUnraveler.Cache;
 
-namespace Imlight.Server.Game.Services
+namespace Imlight.Server.Game.Services;
+
+public class SpellService : MessageService
 {
-    public class SpellService : MessageService
+    public SpellService(SessionActor sessionActor) : base(sessionActor) { }
+
+    protected static Props Props(SessionActor parentActor)
     {
-        public SpellService(SessionActor sessionActor) : base(sessionActor) { }
+        return Akka.Actor.Props.Create(() => new SpellService(parentActor));
+    }
 
-        protected static Props Props(SessionActor parentActor)
+    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_ADDSPELLTODECK))]
+    private void ReceiveAddSpellToDeck(WIZARD_12_PROTOCOL.MSG_ADDSPELLTODECK message)
+    {
+        Log.Debug("SpellID: " + message.SpellID + ", DeckID: " + message.DeckID + ", Success: " + message.Success);
+        SendToSocket(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTODECK()
         {
-            return Akka.Actor.Props.Create(() => new SpellService(parentActor));
-        }
+            SpellID = message.SpellID,
+            DeckID = message.DeckID,
+            Success = 1
+        });
+    }
 
-        [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_ADDSPELLTODECK))]
-        private void ReceiveAddSpellToDeck(WIZARD_12_PROTOCOL.MSG_ADDSPELLTODECK message)
+    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_REMOVESPELLFROMDECK))]
+    private void ReceiveRemoveSpellFromDeck(WIZARD_12_PROTOCOL.MSG_REMOVESPELLFROMDECK message)
+    {
+        Log.Debug("SpellID: " + message.SpellID + ", DeckID: " + message.DeckID + ", Success: " + message.Success);
+        SendToSocket(new WIZARD_12_PROTOCOL.MSG_REMOVESPELLFROMDECK()
         {
-            Log.Debug("SpellID: " + message.SpellID + ", DeckID: " + message.DeckID + ", Success: " + message.Success);
-            SendToSocket(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTODECK()
-            {
-                SpellID = message.SpellID,
-                DeckID = message.DeckID,
-                Success = 1
-            });
-        }
-
-        [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_REMOVESPELLFROMDECK))]
-        private void ReceiveRemoveSpellFromDeck(WIZARD_12_PROTOCOL.MSG_REMOVESPELLFROMDECK message)
-        {
-            Log.Debug("SpellID: " + message.SpellID + ", DeckID: " + message.DeckID + ", Success: " + message.Success);
-            SendToSocket(new WIZARD_12_PROTOCOL.MSG_REMOVESPELLFROMDECK()
-            {
-                SpellID = message.SpellID,
-                DeckID = message.DeckID,
-                Success = 1
-            });
-        }
+            SpellID = message.SpellID,
+            DeckID = message.DeckID,
+            Success = 1
+        });
     }
 }

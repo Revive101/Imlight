@@ -8,6 +8,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Akka.Actor;
+using Imlight.Common.Formats;
+using Imlight.Common.Serializable;
 using Imlight.Common.Utilities;
 using Imlight.Server.Shared.Packets;
 using Imlight.Server.Shared.Resources;
@@ -16,11 +18,9 @@ using Imlight.Server.WizardData.Implementations;
 using Imlight.Server.WizardData.Models;
 using SharpDX;
 using WizUnraveler.Cache;
-using WizUnraveler.Formats;
-using WizUnraveler.IO;
 using static WizUnraveler.Cache.TypeCache;
-using static WizUnraveler.ObjectProperty.ObjectSerializer;
-using static WizUnraveler.Secrets.ServerTypeCache;
+using static Imlight.Common.Serializable.ObjectSerializer;
+using static Imlight.Common.Serializable.Secrets.ServerTypeCache;
 
 namespace Imlight.Server.Game.Zone;
 

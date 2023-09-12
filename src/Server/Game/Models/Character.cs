@@ -9,6 +9,8 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Imlight.Common.Configuration;
+using Imlight.Common.IO;
+using Imlight.Common.Serializable.ObjectProperty;
 using Imlight.Common.Utilities;
 using Imlight.Server.Shared.Resources;
 using Imlight.Server.WizardData;
@@ -17,8 +19,6 @@ using Imlight.Server.WizardData.Models;
 using Newtonsoft.Json;
 using SharpDX;
 using WizUnraveler.Cache;
-using WizUnraveler.IO;
-using WizUnraveler.ObjectProperty;
 using static Imlight.Server.WizardData.WizardResults;
 using static WizUnraveler.Cache.TypeCache;
 
@@ -170,7 +170,6 @@ public class Character : IDisposable
             m_schoolOfFocus = (uint)this.WizardSchool,
             m_level = this.Level,
             m_name = this.NameOverride,
-            m_world = this.World,
             m_location = this.Zone,
             m_globalID = (GID)this.CharId,
             m_templateID = 1,
