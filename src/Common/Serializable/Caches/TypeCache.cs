@@ -12438,6 +12438,24 @@ namespace Imlight.Common.Serializable.Caches
 			    AQUIRED_NORMAL_TO_POWER_PIP_CONVERSION = 4,
 			    IMPEDE_PIPS = 5,
 			}
+            
+            public enum DynamicSigilSymbol
+            			{
+            				
+            			    NotSet = 0,
+            			    Dagger = 1,
+            			    Key = 2,
+            			    Gem = 3,
+            			    Spiral = 4,
+            			    Book = 5,
+            			    Chalice = 6,
+            			    Wand = 7,
+            			    Potion = 8,
+            			    Sun = 9,
+            			    Eye = 10,
+            			    Star = 11,
+            			    Moon = 12,
+            			}
 		}
 		
 		public class CustomEmoteBehaviorTemplate : BehaviorTemplate

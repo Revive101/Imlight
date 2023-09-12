@@ -3056,6 +3056,32 @@ namespace Imlight.Common.Serializable.Caches
 			[DmlElement(DmlType.UBYT)] public Byte SendAck;
 		}
 	}
+	public sealed class GAME2 : INetworkProtocol
+	{
+		public Byte ServiceId { get; } = 55;
+		public String ProtocolType { get; } = "GAME2";
+		public Int32 ProtocolVersion { get; } = 1;
+		public String ProtocolDescription { get; } = "Game Messages2";
+
+		public INetworkMessage Dispatch(byte id)
+        {
+            switch (id)
+            {
+                case (0): return new MSG_NOTIFYITEMFORSETBONUS();
+                default: throw new InternalException($"No message was found at ID {id} for this protocol!");
+            }
+        }
+
+		public sealed class MSG_NOTIFYITEMFORSETBONUS : INetworkMessage
+		{
+			// Server notify to client about an item that should be treated as equipped/unequipped for purpose of item set bonus
+			public byte MessageOrder { get; } = 1;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 55;
+			[DmlElement(DmlType.INT)] public Int32 AsEquip;
+			[DmlElement(DmlType.GID)] public UInt64 ItemID;
+		}
+	}
 	public sealed class LOGIN : INetworkProtocol
 	{
 		public Byte ServiceId { get; } = 7;
@@ -10984,6 +11010,3889 @@ namespace Imlight.Common.Serializable.Caches
 			public byte ServiceId { get; } = 12;
 			[DmlElement(DmlType.GID)] public UInt64 TeleportID;
 			[DmlElement(DmlType.STR)] public ByteString World;
+		}
+	}
+	public sealed class WIZARD2 : INetworkProtocol
+	{
+		public Byte ServiceId { get; } = 53;
+		public String ProtocolType { get; } = "WIZARD2";
+		public Int32 ProtocolVersion { get; } = 1;
+		public String ProtocolDescription { get; } = "Wizard Messages2";
+
+		public INetworkMessage Dispatch(byte id)
+        {
+            switch (id)
+            {
+                case (0): return new MSG_ACCESSPASSPURCHASE();
+                case (1): return new MSG_ADDCROWNSREWARDSEVENT();
+                case (2): return new MSG_ADDPLAYERTOBASICCHATCHANNEL();
+                case (3): return new MSG_ATHANORARRIVAL();
+                case (4): return new MSG_BANKCOUNT();
+                case (5): return new MSG_BASICCHATCHANNELERRORMESSAGE();
+                case (6): return new MSG_BASICCHATCHANNELUPDATECOOLDOWN();
+                case (7): return new MSG_BATTLECARDBUY();
+                case (8): return new MSG_BATTLECARDBUYCONFIRM();
+                case (9): return new MSG_BATTLECARDSHOPLIST();
+                case (10): return new MSG_BATTLECARDTRASH();
+                case (11): return new MSG_BATTLECARDTRASHCONFIRM();
+                case (12): return new MSG_BATTLEGROUNDEND();
+                case (13): return new MSG_BATTLEGROUNDPENALTY();
+                case (14): return new MSG_BATTLEGROUNDPOLYMORPHIMPROVEMENT();
+                case (15): return new MSG_BATTLEGROUNDPOLYMORPHIMPROVEREQ();
+                case (16): return new MSG_BATTLEGROUNDPOLYMORPHIMPROVERESP();
+                case (17): return new MSG_BATTLEGROUNDQUEUEGROUP();
+                case (18): return new MSG_BATTLEGROUNDQUEUEGROUPCHECK();
+                case (19): return new MSG_BATTLEGROUNDQUEUEGROUPJOINED();
+                case (20): return new MSG_BATTLEGROUNDQUEUEGROUPSTATUS();
+                case (21): return new MSG_BATTLEGROUNDQUEUEPLAYER();
+                case (22): return new MSG_BATTLEGROUNDQUEUESTATS();
+                case (23): return new MSG_BATTLEGROUNDQUEUEUPDATE();
+                case (24): return new MSG_BATTLEGROUNDREQUESTMATCHDATA();
+                case (25): return new MSG_BATTLEGROUNDSHOWCOMPASS();
+                case (26): return new MSG_BATTLEGROUNDTELEPORTPLAYER();
+                case (27): return new MSG_BATTLEGROUNDUPDATEPOINTS();
+                case (28): return new MSG_BGISPOLYMORPHUNLOCKEDREQUEST();
+                case (29): return new MSG_BGISPOLYMORPHUNLOCKEDRESPONSE();
+                case (30): return new MSG_BGOPENPOLYMORPHSELECT();
+                case (31): return new MSG_BGPOIUpdate();
+                case (32): return new MSG_BGPlayerStatsUpdate();
+                case (33): return new MSG_BGPlayerSync();
+                case (34): return new MSG_BGPlayerSyncStatus();
+                case (35): return new MSG_BGQueueStatus();
+                case (36): return new MSG_BGResetStats();
+                case (37): return new MSG_BGSELECTPOLYMORPHDONE();
+                case (38): return new MSG_BGSELECTPOLYMORPHREQUEST();
+                case (39): return new MSG_BGSELECTPOLYMORPHRESPONSE();
+                case (40): return new MSG_BGSigilProxyEvent();
+                case (41): return new MSG_BUYPETELIXIRCONFIRM();
+                case (42): return new MSG_BUYSEASONPASS();
+                case (43): return new MSG_BattleBookAdd();
+                case (44): return new MSG_BattleBookClear();
+                case (45): return new MSG_BattleBookRating();
+                case (46): return new MSG_BattleBookRemove();
+                case (47): return new MSG_BattlegroundChatProjectData();
+                case (48): return new MSG_BattlegroundTimeAdjust();
+                case (49): return new MSG_CANSEETIEREDSPELLGROUPS();
+                case (50): return new MSG_CASTLETOURSGOTOFRIEND();
+                case (51): return new MSG_CLAIMPERIODICOFFERS();
+                case (52): return new MSG_CLASSPROJECTCLAIMREWARD();
+                case (53): return new MSG_CLASSPROJECTREQUESTLEADERBOARD();
+                case (54): return new MSG_CLASSPROJECTREQUESTTELEPORT();
+                case (55): return new MSG_CLASSPROJECTSCSRRESULTS();
+                case (56): return new MSG_CLASSPROJECTSREQUESTFRIENDS();
+                case (57): return new MSG_CLASSPROJECTSTARTTIME();
+                case (58): return new MSG_CLASSPROJECTUSECROWNS();
+                case (59): return new MSG_CLASSPROJECTUSETOKEN();
+                case (60): return new MSG_CLEARALLINTERACTIONS();
+                case (61): return new MSG_CLEARRESUMEINSTANCE();
+                case (62): return new MSG_CLIENTREQUESTTEAMHELPWORLDINFO();
+                case (63): return new MSG_CLIENTZONED();
+                case (64): return new MSG_COMPLETEINSTANCE();
+                case (65): return new MSG_COMPLETEINSTANCE2();
+                case (66): return new MSG_CONNECTIONSTATS();
+                case (67): return new MSG_CREATENEWEQUIPMENTSET();
+                case (68): return new MSG_CREATESETFAILED();
+                case (69): return new MSG_CROWNSREWARDSTIERREACHED();
+                case (70): return new MSG_CSRADDFISH();
+                case (71): return new MSG_CSRDELETEGIFT();
+                case (72): return new MSG_CSRREQUESTFISHLIST();
+                case (73): return new MSG_CSRREQUESTGLOBALREGISTRY();
+                case (74): return new MSG_CSRSETFRIENDSTATUS();
+                case (75): return new MSG_CSRTRASHFISH();
+                case (76): return new MSG_CrownShopEvent();
+                case (77): return new MSG_CrownShopLogging();
+                case (78): return new MSG_DAILYPVPCOMPLETED();
+                case (79): return new MSG_DAILYQUESTEFFECT();
+                case (80): return new MSG_DELETEEQUIPMENTSET();
+                case (81): return new MSG_DELETESETSWITHITEM();
+                case (82): return new MSG_DILEVELUPELIXIRTELEPORT();
+                case (83): return new MSG_DISETCHECKSUBSCRIPTIONPURCHASE();
+                case (84): return new MSG_DISETLEVELUPELIXIRTELEPORT();
+                case (85): return new MSG_DISPLAYCOLLECTEDESSENCES();
+                case (86): return new MSG_DISPLAYHELPGUI();
+                case (87): return new MSG_DISPLAYMESSAGE();
+                case (88): return new MSG_DISPLAYPETONLYMESSAGE();
+                case (89): return new MSG_EQUIPJEWELREQUEST();
+                case (90): return new MSG_EQUIPJEWELTOITEM();
+                case (91): return new MSG_EQUIPMENTSETCREATED();
+                case (92): return new MSG_EQUIPNEWJEWELTOITEM();
+                case (93): return new MSG_EQUIPRECIPE();
+                case (94): return new MSG_EQUIPSET();
+                case (95): return new MSG_FISHINGLEVELUP();
+                case (96): return new MSG_GAINPETXP();
+                case (97): return new MSG_GETITEMINFO();
+                case (98): return new MSG_GoHomeConfirm();
+                case (99): return new MSG_GotoDormConfirm();
+                case (100): return new MSG_GotoPlayerConfirm();
+                case (101): return new MSG_HATCHMAKINGMESSAGE();
+                case (102): return new MSG_HATCHMAKINGSCSRRESULTS();
+                case (103): return new MSG_HATCHMAKINGSEARCHRESULTS();
+                case (104): return new MSG_HATCHMAKINGSREQUESTPREMIUMPETEXEMPTIONS();
+                case (105): return new MSG_HATCHMAKINGSTATUS();
+                case (106): return new MSG_HATCHMAKINGSUPDATEHATCHDAYPET();
+                case (107): return new MSG_HATCHMAKINGSUPDATEHATCHDAYPET2();
+                case (108): return new MSG_HATCHMAKINGUSETOME();
+                case (109): return new MSG_HOLIDAYDATA();
+                case (110): return new MSG_INVITEALLTOBASICCHATCHANNEL();
+                case (111): return new MSG_INVITETOBASICCHATCHANNEL();
+                case (112): return new MSG_ISFRIENDSWITHHOUSEOWNER();
+                case (113): return new MSG_ITEMACQUISITION();
+                case (114): return new MSG_ITEMFINDERHOUSECOMPLETE();
+                case (115): return new MSG_ITEMFINDERREQUESTBANK();
+                case (116): return new MSG_ITEMFINDERREQUESTHOUSE();
+                case (117): return new MSG_ITEMIDENTIFIERINFO();
+                case (118): return new MSG_Infraction();
+                case (119): return new MSG_JEWELSOCKETLOCKUPDATE();
+                case (120): return new MSG_JEWELSOCKETUNLOCKCOST();
+                case (121): return new MSG_JOINBASICCHATCHANNEL();
+                case (122): return new MSG_KHANDANCESTATUS();
+                case (123): return new MSG_LAVALOCKSTATUS();
+                case (124): return new MSG_LOGCLASSICMODE();
+                case (125): return new MSG_LOGVIDEOCAPABILITIES();
+                case (126): return new MSG_MAGICMIRRORCHANGEPLAYER();
+                case (127): return new MSG_MAGICMIRRORREQUESTCHANGE();
+                case (128): return new MSG_MAGICMIRRORSHOPOPEN();
+                case (129): return new MSG_MAPREQUIREMENTS();
+                case (130): return new MSG_MONSTERMAGICLEVELUP();
+                case (131): return new MSG_MONSTERMAGICREQUESTCREATE();
+                case (132): return new MSG_MONSTERMAGICUSETOME();
+                case (133): return new MSG_MOVEEQUIPMENTSET();
+                case (134): return new MSG_OPENCLASSPROJECTPORTAL();
+                case (135): return new MSG_OPENITEMFINDER();
+                case (136): return new MSG_PATCHBEFORETELEPORT();
+                case (137): return new MSG_PERIODICSUBSCRIPTIONS();
+                case (138): return new MSG_PETELIXIRBUYREQUEST();
+                case (139): return new MSG_PETELIXIROPEN();
+                case (140): return new MSG_PETFEEDHAPPINESS();
+                case (141): return new MSG_PETGAMESKIP();
+                case (142): return new MSG_PETGAMESKIPFEED();
+                case (143): return new MSG_PETTELEPORT();
+                case (144): return new MSG_PETTOMEPETADDED();
+                case (145): return new MSG_PHOTOMANCYUSETOME();
+                case (146): return new MSG_PHOTOTAKEN();
+                case (147): return new MSG_PUBLICJEWELSOCKETUPDATE();
+                case (148): return new MSG_QUICKSELLREQUEST();
+                case (149): return new MSG_RADIALZONECLUSTERQUICKCHATEXT();
+                case (150): return new MSG_READTUTORIALTIP();
+                case (151): return new MSG_REINTERACT();
+                case (152): return new MSG_REMOVECROWNSREWARDSEVENT();
+                case (153): return new MSG_REMOVEITEMLOCKS();
+                case (154): return new MSG_REMOVEPLAYERFROMBASICCHATCHANNEL();
+                case (155): return new MSG_REMOVEPLAYERFROMBASICCHATCHANNELUPDATE();
+                case (156): return new MSG_REQUESTBATTLEGROUNDSLOOT();
+                case (157): return new MSG_REQUESTCHATSTATS();
+                case (158): return new MSG_REQUESTCLASSPROJECTINFO();
+                case (159): return new MSG_REQUESTCROWNSREWARDSEVENTS();
+                case (160): return new MSG_REQUESTHATCHMAKING();
+                case (161): return new MSG_REQUESTHATCHMAKINGADDPET();
+                case (162): return new MSG_REQUESTHATCHMAKINGFRIENDPETS();
+                case (163): return new MSG_REQUESTHATCHMAKINGHATCH();
+                case (164): return new MSG_REQUESTHATCHMAKINGHATCH2();
+                case (165): return new MSG_REQUESTHATCHMAKINGHATCHEDPET();
+                case (166): return new MSG_REQUESTHATCHMAKINGPETDATA();
+                case (167): return new MSG_REQUESTHATCHMAKINGPETS();
+                case (168): return new MSG_REQUESTHATCHMAKINGPETTYPES();
+                case (169): return new MSG_REQUESTHATCHMAKINGREMOVEPET();
+                case (170): return new MSG_REQUESTHATCHMAKINGSEARCHPETS();
+                case (171): return new MSG_REQUESTMAINLINEAUDIT();
+                case (172): return new MSG_REQUESTMINIGAME();
+                case (173): return new MSG_REQUESTMONSTERTOME();
+                case (174): return new MSG_REQUESTPETTOME();
+                case (175): return new MSG_REQUESTRADIALFRIENDQUICKCHATEXT();
+                case (176): return new MSG_REQUESTSIGILINFO();
+                case (177): return new MSG_REQUESTTEAMHELPFAIL();
+                case (178): return new MSG_REQUESTTEAMHELPINFO();
+                case (179): return new MSG_REQUESTTEAMHELPJOIN();
+                case (180): return new MSG_REQUESTTEAMHELPJOINFAIL();
+                case (181): return new MSG_REQUESTTEAMHELPWORLDINFO();
+                case (182): return new MSG_REQUESTTEAMUP();
+                case (183): return new MSG_REQUESTTUTORIALTIPLOG();
+                case (184): return new MSG_REQUESTZONECLUSTERQUICKCHATEXT();
+                case (185): return new MSG_RESTOREORIGINALCASTLE();
+                case (186): return new MSG_RESUMEINSTANCETELEPORTPLAYER();
+                case (187): return new MSG_RIDABLEUPDATE();
+                case (188): return new MSG_RIDEOBJECT();
+                case (189): return new MSG_RIDEOBJECTFULL();
+                case (190): return new MSG_RIDERSLIST();
+                case (191): return new MSG_RecallLocationConfirm();
+                case (192): return new MSG_SELLMODIFIER();
+                case (193): return new MSG_SENDTRIVIA();
+                case (194): return new MSG_SEPIDIOUSARRIVAL();
+                case (195): return new MSG_SETBASICCHATCHANNELPUBLIC();
+                case (196): return new MSG_SETELIXIRTIMER();
+                case (197): return new MSG_SETRESUMEINSTANCE();
+                case (198): return new MSG_SETSTOREDMOUNT();
+                case (199): return new MSG_SWITCHACTIVEQUEST();
+                case (200): return new MSG_SWITCHTOPET();
+                case (201): return new MSG_SetBGPolymorphLevel();
+                case (202): return new MSG_SplashEnabled();
+                case (203): return new MSG_TEAMUPADDPLAYER();
+                case (204): return new MSG_TEAMUPADDPLAYERTOCLIENT();
+                case (205): return new MSG_TEAMUPFAILED();
+                case (206): return new MSG_TEAMUPREMOVEPLAYER();
+                case (207): return new MSG_TEAMUPREMOVEPLAYERFROMCLIENT();
+                case (208): return new MSG_TEAMUPTELEPORTPLAYER();
+                case (209): return new MSG_TIEREDSPELLRESET();
+                case (210): return new MSG_TIEREDSPELLRESETRESP();
+                case (211): return new MSG_TIEREDSPELLUPGRADE();
+                case (212): return new MSG_TIEREDSPELLUPGRADERESP();
+                case (213): return new MSG_TOURNAMENTLOOTROLLINFO();
+                case (214): return new MSG_TOURNAMENTLOOTROLLRESPONSE();
+                case (215): return new MSG_TOURNAMENTLOOTROLLRESULT();
+                case (216): return new MSG_UNEQUIPSOCKETEDJEWEL();
+                case (217): return new MSG_UNLOCKPETTALENT();
+                case (218): return new MSG_UNLOCKSOCKETS();
+                case (219): return new MSG_UNLOCKSOCKETSCONFIRM();
+                case (220): return new MSG_UNSOCKETJEWELREQUEST();
+                case (221): return new MSG_UPDATEADVENTUREPOWERCOOLDOWN();
+                case (222): return new MSG_UPDATEAFTERCOMBATDANCE();
+                case (223): return new MSG_UPDATEBANKLIMIT();
+                case (224): return new MSG_UPDATECLASSPROJECTBUTTON();
+                case (225): return new MSG_UPDATECLASSPROJECTSTATUS();
+                case (226): return new MSG_UPDATECOLLECTEDESSENCES();
+                case (227): return new MSG_UPDATECUSTOMEMOTES();
+                case (228): return new MSG_UPDATEEQUIPMENTSETS();
+                case (229): return new MSG_UPDATEEVENTCURRENCY1();
+                case (230): return new MSG_UPDATEEVENTCURRENCY2();
+                case (231): return new MSG_UPDATEEXPANSION();
+                case (232): return new MSG_UPDATEEXTRAINVENTORY();
+                case (233): return new MSG_UPDATEFISHINGXP();
+                case (234): return new MSG_UPDATEITEMSPELLEXCLUSIONLIST();
+                case (235): return new MSG_UPDATEMAXSHADOWPIPS();
+                case (236): return new MSG_UPDATEMONSTERMAGICXP();
+                case (237): return new MSG_UPDATENEWSPELLBOOKLAYOUTWARNING();
+                case (238): return new MSG_UPDATEPETBILLBOARD();
+                case (239): return new MSG_UPDATEPIPCONVERSION();
+                case (240): return new MSG_UPDATEPURCHASEDCHARACTERSLOTS();
+                case (241): return new MSG_UPDATEREMEMBERLASTREALM();
+                case (242): return new MSG_UPDATERESUMEINSTANCETIME();
+                case (243): return new MSG_UPDATERESUMEINSTANCETIME2();
+                case (244): return new MSG_UPDATESSUBSCRIBERBEBEFITFLAGS();
+                case (245): return new MSG_UPDATETELEPORTEFFECT();
+                case (246): return new MSG_UPDATETUTORIALTIPLOG();
+                case (247): return new MSG_USEPETADVENTUREPOWER();
+                case (248): return new MSG_UpdateClassProjectPlayerProgress();
+                case (249): return new MSG_WHIRLYBURLYMESSAGE();
+                case (250): return new MSG_WHIRLYBURLYOPENKIOSK();
+                case (251): return new MSG_ZONECLUSTERINFO();
+                case (252): return new MSG_ZONEGATELIST();
+                case (253): return new MSG_ZONEHOP();
+                default: throw new InternalException($"No message was found at ID {id} for this protocol!");
+            }
+        }
+
+		public sealed class MSG_ACCESSPASSPURCHASE : INetworkMessage
+		{
+			// Server tells client which access pass to offer for sale
+			public byte MessageOrder { get; } = 1;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString AccessPass;
+			[DmlElement(DmlType.STR)] public ByteString RequestedZoneDisplayName;
+			[DmlElement(DmlType.STR)] public ByteString PayToPlayStyle;
+			[DmlElement(DmlType.STR)] public ByteString TargetLoc;
+			[DmlElement(DmlType.GID)] public UInt64 ZoneID;
+			[DmlElement(DmlType.STR)] public ByteString ZoneName;
+			[DmlElement(DmlType.GID)] public UInt64 ClusterID;
+			[DmlElement(DmlType.STR)] public ByteString ClusterName;
+		}
+		public sealed class MSG_ADDCROWNSREWARDSEVENT : INetworkMessage
+		{
+			// Server tells client about a new crowns rewards event
+			public byte MessageOrder { get; } = 2;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString SerializedEvent;
+		}
+		public sealed class MSG_ADDPLAYERTOBASICCHATCHANNEL : INetworkMessage
+		{
+			// Chat server informs client of their chat channel
+			public byte MessageOrder { get; } = 3;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 OwningPlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 NewPlayerGID;
+			[DmlElement(DmlType.STR)] public ByteString NewPlayerNameBlob;
+			[DmlElement(DmlType.UINT)] public UInt32 NewPlayerSchoolLevel;
+			[DmlElement(DmlType.GID)] public UInt64 NewPlayerObjectGID;
+		}
+		public sealed class MSG_ATHANORARRIVAL : INetworkMessage
+		{
+			// Server tells client to start the Athanor Arrival sequence
+			public byte MessageOrder { get; } = 4;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+		}
+		public sealed class MSG_BANKCOUNT : INetworkMessage
+		{
+			// Client requests the current bank count from the server
+			public byte MessageOrder { get; } = 5;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 BankCount;
+		}
+		public sealed class MSG_BASICCHATCHANNELERRORMESSAGE : INetworkMessage
+		{
+			// Chat server informs client of chat channel problem
+			public byte MessageOrder { get; } = 6;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.UBYT)] public Byte ErrorCode;
+		}
+		public sealed class MSG_BASICCHATCHANNELUPDATECOOLDOWN : INetworkMessage
+		{
+			// Chat server informs client of cooldown for invite all
+			public byte MessageOrder { get; } = 7;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.UINT)] public UInt32 CooldownTime;
+		}
+		public sealed class MSG_BATTLECARDBUY : INetworkMessage
+		{
+			// battle card buy request from client to server
+			public byte MessageOrder { get; } = 8;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 npcGlobalID;
+			[DmlElement(DmlType.STR)] public ByteString Data;
+		}
+		public sealed class MSG_BATTLECARDBUYCONFIRM : INetworkMessage
+		{
+			// Confirm battle card purchase.  From Server to Client. 
+			public byte MessageOrder { get; } = 9;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.BYT)] public SByte Failure;
+		}
+		public sealed class MSG_BATTLECARDSHOPLIST : INetworkMessage
+		{
+			// Send list from server to client of battle cards the player can buy
+			public byte MessageOrder { get; } = 10;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.STR)] public ByteString Data;
+		}
+		public sealed class MSG_BATTLECARDTRASH : INetworkMessage
+		{
+			// battle card trash request from client to server
+			public byte MessageOrder { get; } = 11;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 npcGlobalID;
+			[DmlElement(DmlType.INT)] public Int32 SpellID;
+		}
+		public sealed class MSG_BATTLECARDTRASHCONFIRM : INetworkMessage
+		{
+			// Confirm battle card trash.  From Server to Client.
+			public byte MessageOrder { get; } = 12;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.BYT)] public SByte Failure;
+		}
+		public sealed class MSG_BATTLEGROUNDEND : INetworkMessage
+		{
+			// Zone server tells client how match ended
+			public byte MessageOrder { get; } = 13;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UBYT)] public Byte EndCode;
+			[DmlElement(DmlType.UBYT)] public Byte PvE;
+		}
+		public sealed class MSG_BATTLEGROUNDPENALTY : INetworkMessage
+		{
+			// Server tells chat server to give player a queue penalty
+			public byte MessageOrder { get; } = 14;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 ProjectID;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.UINT)] public UInt32 CancelPenalty;
+		}
+		public sealed class MSG_BATTLEGROUNDPOLYMORPHIMPROVEMENT : INetworkMessage
+		{
+			// Open screen. From server to client.
+			public byte MessageOrder { get; } = 15;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.STR)] public ByteString RatingData;
+			[DmlElement(DmlType.UINT)] public UInt32 BGClassProjectID;
+		}
+		public sealed class MSG_BATTLEGROUNDPOLYMORPHIMPROVEREQ : INetworkMessage
+		{
+			// Request from client to server
+			public byte MessageOrder { get; } = 16;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 npcGlobalID;
+			[DmlElement(DmlType.BYT)] public SByte Level;
+			[DmlElement(DmlType.BYT)] public SByte Rating;
+			[DmlElement(DmlType.STR)] public ByteString Tag;
+		}
+		public sealed class MSG_BATTLEGROUNDPOLYMORPHIMPROVERESP : INetworkMessage
+		{
+			// Confirm purchase.  From Server to Client. 
+			public byte MessageOrder { get; } = 17;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.BYT)] public SByte Failure;
+			[DmlElement(DmlType.INT)] public Int32 Rating;
+			[DmlElement(DmlType.INT)] public Int32 Level;
+			[DmlElement(DmlType.STR)] public ByteString Tag;
+		}
+		public sealed class MSG_BATTLEGROUNDQUEUEGROUP : INetworkMessage
+		{
+			// Client requests to be queued for a class project battleground
+			public byte MessageOrder { get; } = 18;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 ProjectID;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+		}
+		public sealed class MSG_BATTLEGROUNDQUEUEGROUPCHECK : INetworkMessage
+		{
+			// Client requests to be queued for a class project battleground
+			public byte MessageOrder { get; } = 19;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 GroupID;
+			[DmlElement(DmlType.UINT)] public UInt32 Status;
+		}
+		public sealed class MSG_BATTLEGROUNDQUEUEGROUPJOINED : INetworkMessage
+		{
+			// Server telling group members they have been added to the Beastmoon Hunt queue
+			public byte MessageOrder { get; } = 20;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.STR)] public ByteString LeaderName;
+		}
+		public sealed class MSG_BATTLEGROUNDQUEUEGROUPSTATUS : INetworkMessage
+		{
+			// Client requests to be queued for a class project battleground
+			public byte MessageOrder { get; } = 21;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.STR)] public ByteString Status;
+		}
+		public sealed class MSG_BATTLEGROUNDQUEUEPLAYER : INetworkMessage
+		{
+			// Client requests to be queued for a class project battleground
+			public byte MessageOrder { get; } = 22;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 ProjectID;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 MachineID;
+			[DmlElement(DmlType.INT)] public Int32 LastMatchStatus;
+		}
+		public sealed class MSG_BATTLEGROUNDQUEUESTATS : INetworkMessage
+		{
+			// Zone server rquests q stats, chat server forwards to zone server and client
+			public byte MessageOrder { get; } = 23;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.STR)] public ByteString Data;
+		}
+		public sealed class MSG_BATTLEGROUNDQUEUEUPDATE : INetworkMessage
+		{
+			// Server tells client that they are queued for a class project battleground
+			public byte MessageOrder { get; } = 24;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 ProjectID;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.UBYT)] public Byte Waiting;
+			[DmlElement(DmlType.UINT)] public UInt32 Cancel;
+			[DmlElement(DmlType.STR)] public ByteString Kicked;
+			[DmlElement(DmlType.UBYT)] public Byte Ready;
+			[DmlElement(DmlType.FLT)] public Single TimeLeft;
+		}
+		public sealed class MSG_BATTLEGROUNDREQUESTMATCHDATA : INetworkMessage
+		{
+			// Zone server requests match data from chat server
+			public byte MessageOrder { get; } = 25;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 ZoneID;
+			[DmlElement(DmlType.STR)] public ByteString Data;
+		}
+		public sealed class MSG_BATTLEGROUNDSHOWCOMPASS : INetworkMessage
+		{
+			// Zone server tells client to show the compass
+			public byte MessageOrder { get; } = 26;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UBYT)] public Byte ShowCompass;
+		}
+		public sealed class MSG_BATTLEGROUNDTELEPORTPLAYER : INetworkMessage
+		{
+			// Chat server tells zone server to teleport a player
+			public byte MessageOrder { get; } = 27;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 ProjectID;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 ZoneID;
+			[DmlElement(DmlType.UBYT)] public Byte Team;
+		}
+		public sealed class MSG_BATTLEGROUNDUPDATEPOINTS : INetworkMessage
+		{
+			// Zone server tells client new team points
+			public byte MessageOrder { get; } = 28;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.INT)] public Int32 Points;
+			[DmlElement(DmlType.INT)] public Int32 Delta;
+			[DmlElement(DmlType.UBYT)] public Byte Team;
+			[DmlElement(DmlType.INT)] public Int32 PointEvent;
+			[DmlElement(DmlType.STR)] public ByteString Tag;
+		}
+		public sealed class MSG_BGISPOLYMORPHUNLOCKEDREQUEST : INetworkMessage
+		{
+			// Send battleground is polymorph unlocked request from client to server
+			public byte MessageOrder { get; } = 29;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 PolymorphTemplateID;
+			[DmlElement(DmlType.GID)] public UInt64 npcGlobalID;
+		}
+		public sealed class MSG_BGISPOLYMORPHUNLOCKEDRESPONSE : INetworkMessage
+		{
+			// Send battleground is polymorph unlocked response from server to client
+			public byte MessageOrder { get; } = 30;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 PolymorphTemplateID;
+			[DmlElement(DmlType.INT)] public Int32 PolymorphRating;
+			[DmlElement(DmlType.UBYT)] public Byte IsPolymorphUnlocked;
+		}
+		public sealed class MSG_BGOPENPOLYMORPHSELECT : INetworkMessage
+		{
+			// Message sent from the server to the client to open polymorph select screen
+			public byte MessageOrder { get; } = 31;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 npcGlobalID;
+			[DmlElement(DmlType.STR)] public ByteString PolymorphCategory;
+			[DmlElement(DmlType.UBYT)] public Byte PolymorphCategoryAvailable;
+		}
+		public sealed class MSG_BGPOIUpdate : INetworkMessage
+		{
+			// Server updating the POI data
+			public byte MessageOrder { get; } = 32;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString Data;
+		}
+		public sealed class MSG_BGPlayerStatsUpdate : INetworkMessage
+		{
+			// Server updating a player's information
+			public byte MessageOrder { get; } = 33;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString Stats;
+		}
+		public sealed class MSG_BGPlayerSync : INetworkMessage
+		{
+			// Client syncing player stats
+			public byte MessageOrder { get; } = 34;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.UINT)] public UInt32 Data;
+			[DmlElement(DmlType.UINT)] public UInt32 Flags;
+		}
+		public sealed class MSG_BGPlayerSyncStatus : INetworkMessage
+		{
+			// Client syncing player stats
+			public byte MessageOrder { get; } = 35;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.GID)] public UInt64 TargetID;
+			[DmlElement(DmlType.UINT)] public UInt32 Flags;
+			[DmlElement(DmlType.STR)] public ByteString Config;
+		}
+		public sealed class MSG_BGQueueStatus : INetworkMessage
+		{
+			// Server tells client that they are queued for a class project battleground
+			public byte MessageOrder { get; } = 36;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.INT)] public Int32 State;
+			[DmlElement(DmlType.STR)] public ByteString Lines;
+		}
+		public sealed class MSG_BGResetStats : INetworkMessage
+		{
+			// Server telling the client to purge it's BG stats
+			public byte MessageOrder { get; } = 37;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString Stats;
+		}
+		public sealed class MSG_BGSELECTPOLYMORPHDONE : INetworkMessage
+		{
+			// Send battleground polymorph select done from client to server
+			public byte MessageOrder { get; } = 38;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+		}
+		public sealed class MSG_BGSELECTPOLYMORPHREQUEST : INetworkMessage
+		{
+			// Send battleground polymorph select request from client to server
+			public byte MessageOrder { get; } = 39;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 npcGlobalID;
+			[DmlElement(DmlType.GID)] public UInt64 PolymorphTemplateID;
+		}
+		public sealed class MSG_BGSELECTPOLYMORPHRESPONSE : INetworkMessage
+		{
+			// Send battleground polymorph select response from server to client
+			public byte MessageOrder { get; } = 40;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString PolymorphCategory;
+			[DmlElement(DmlType.UBYT)] public Byte PolymorphCategoryAvailable;
+			[DmlElement(DmlType.STR)] public ByteString ReleasedPolymorphCategory;
+		}
+		public sealed class MSG_BGSigilProxyEvent : INetworkMessage
+		{
+			// Message sent from the server to the client to modify a sigils proxy visuals
+			public byte MessageOrder { get; } = 41;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.UINT)] public UInt32 Operation;
+			[DmlElement(DmlType.STR)] public ByteString Data;
+			[DmlElement(DmlType.STR)] public ByteString Team;
+		}
+		public sealed class MSG_BUYPETELIXIRCONFIRM : INetworkMessage
+		{
+			// Server to client
+			public byte MessageOrder { get; } = 42;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.BYT)] public SByte Failure;
+			[DmlElement(DmlType.BYT)] public SByte WebFailure;
+			[DmlElement(DmlType.INT)] public Int32 Credits;
+		}
+		public sealed class MSG_BUYSEASONPASS : INetworkMessage
+		{
+			// Client request season pass info
+			public byte MessageOrder { get; } = 43;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 ProjectID;
+			[DmlElement(DmlType.UBYT)] public Byte Purchase;
+			[DmlElement(DmlType.INT)] public Int32 Credits;
+			[DmlElement(DmlType.INT)] public Int32 BattlePass;
+		}
+		public sealed class MSG_BattleBookAdd : INetworkMessage
+		{
+			// Message sent from the server to the client to add cards to the battle book
+			public byte MessageOrder { get; } = 44;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.UINT)] public UInt32 SpellID;
+			[DmlElement(DmlType.UINT)] public UInt32 EnchantmentID;
+		}
+		public sealed class MSG_BattleBookClear : INetworkMessage
+		{
+			// Message sent to the server or the client to empty the book
+			public byte MessageOrder { get; } = 45;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+		}
+		public sealed class MSG_BattleBookRating : INetworkMessage
+		{
+			// Message sent to the server or the client to empty the book
+			public byte MessageOrder { get; } = 46;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.STR)] public ByteString RatingData;
+		}
+		public sealed class MSG_BattleBookRemove : INetworkMessage
+		{
+			// Message sent from the server to the client to remove cards from the battle book
+			public byte MessageOrder { get; } = 47;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.UINT)] public UInt32 SpellID;
+			[DmlElement(DmlType.UINT)] public UInt32 EnchantmentID;
+			[DmlElement(DmlType.UINT)] public UInt32 Quantity;
+		}
+		public sealed class MSG_BattlegroundChatProjectData : INetworkMessage
+		{
+			// Chat server requesting all project data
+			public byte MessageOrder { get; } = 48;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString Data;
+		}
+		public sealed class MSG_BattlegroundTimeAdjust : INetworkMessage
+		{
+			// Adjusts the amount of time left in a match
+			public byte MessageOrder { get; } = 49;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.INT)] public Int32 DeltaS;
+		}
+		public sealed class MSG_CANSEETIEREDSPELLGROUPS : INetworkMessage
+		{
+			// client asks, server responsds
+			public byte MessageOrder { get; } = 50;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString Visibility;
+			[DmlElement(DmlType.UBYT)] public Byte CheckTieredSpellNotifications;
+			[DmlElement(DmlType.GID)] public UInt64 ShardType;
+		}
+		public sealed class MSG_CASTLETOURSGOTOFRIEND : INetworkMessage
+		{
+			// Zone server requests friend info from chat server
+			public byte MessageOrder { get; } = 51;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 TargetGID;
+			[DmlElement(DmlType.STR)] public ByteString ZoneName;
+			[DmlElement(DmlType.GID)] public UInt64 ZoneGID;
+		}
+		public sealed class MSG_CLAIMPERIODICOFFERS : INetworkMessage
+		{
+			// Claim Periodic Offers
+			public byte MessageOrder { get; } = 52;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UBYT)] public Byte Success;
+			[DmlElement(DmlType.INT)] public Int32 Crowns;
+			[DmlElement(DmlType.INT)] public Int32 Items;
+		}
+		public sealed class MSG_CLASSPROJECTCLAIMREWARD : INetworkMessage
+		{
+			// Client request that server claim a class project reward
+			public byte MessageOrder { get; } = 53;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 ProjectID;
+			[DmlElement(DmlType.UINT)] public UInt32 RewardIndex;
+		}
+		public sealed class MSG_CLASSPROJECTREQUESTLEADERBOARD : INetworkMessage
+		{
+			// Client requests, server sends a class project leaderboard
+			public byte MessageOrder { get; } = 54;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 ProjectID;
+			[DmlElement(DmlType.STR)] public ByteString TopBuffer;
+			[DmlElement(DmlType.STR)] public ByteString Buffer;
+		}
+		public sealed class MSG_CLASSPROJECTREQUESTTELEPORT : INetworkMessage
+		{
+			// Client requests, server teleports player to event area
+			public byte MessageOrder { get; } = 55;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 ProjectID;
+		}
+		public sealed class MSG_CLASSPROJECTSCSRRESULTS : INetworkMessage
+		{
+			// Server sends client csr results
+			public byte MessageOrder { get; } = 56;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString Result;
+		}
+		public sealed class MSG_CLASSPROJECTSREQUESTFRIENDS : INetworkMessage
+		{
+			// Class projects reuqests friend list from chat server
+			public byte MessageOrder { get; } = 57;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 ProjectID;
+			[DmlElement(DmlType.GID)] public UInt64 CharacterID;
+			[DmlElement(DmlType.STR)] public ByteString Data;
+			[DmlElement(DmlType.UINT)] public UInt32 PlayerName;
+			[DmlElement(DmlType.STR)] public ByteString LootTable;
+			[DmlElement(DmlType.GID)] public UInt64 BuddyListID;
+		}
+		public sealed class MSG_CLASSPROJECTSTARTTIME : INetworkMessage
+		{
+			// Server sends client info about the start time of a class project
+			public byte MessageOrder { get; } = 58;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 ClassProjectID;
+		}
+		public sealed class MSG_CLASSPROJECTUSECROWNS : INetworkMessage
+		{
+			// Client request that server use use crowns to enter a class project
+			public byte MessageOrder { get; } = 59;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 ProjectID;
+			[DmlElement(DmlType.UINT)] public UInt32 Level;
+		}
+		public sealed class MSG_CLASSPROJECTUSETOKEN : INetworkMessage
+		{
+			// Client request that server use a token
+			public byte MessageOrder { get; } = 60;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 ProjectID;
+			[DmlElement(DmlType.UINT)] public UInt32 Level;
+		}
+		public sealed class MSG_CLEARALLINTERACTIONS : INetworkMessage
+		{
+			// Server tells client to clear all interactions
+			public byte MessageOrder { get; } = 61;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+		}
+		public sealed class MSG_CLEARRESUMEINSTANCE : INetworkMessage
+		{
+			// Zone server tells client to clear resume instance
+			public byte MessageOrder { get; } = 62;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+		}
+		public sealed class MSG_CLIENTREQUESTTEAMHELPWORLDINFO : INetworkMessage
+		{
+			// Client requests info about teams wanting help by world
+			public byte MessageOrder { get; } = 63;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 WorldID;
+		}
+		public sealed class MSG_CLIENTZONED : INetworkMessage
+		{
+			// Message sent from the client after it enters a new zone
+			public byte MessageOrder { get; } = 64;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 ZoneNameID;
+		}
+		public sealed class MSG_COMPLETEINSTANCE : INetworkMessage
+		{
+			// Zone server sends chat server a list of players in the cluster that completed
+			public byte MessageOrder { get; } = 65;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 ClusterGID;
+			[DmlElement(DmlType.GID)] public UInt64 Player1;
+			[DmlElement(DmlType.GID)] public UInt64 Player2;
+			[DmlElement(DmlType.GID)] public UInt64 Player3;
+			[DmlElement(DmlType.GID)] public UInt64 Player4;
+		}
+		public sealed class MSG_COMPLETEINSTANCE2 : INetworkMessage
+		{
+			// Chat server sends zone server which sends to client completed message
+			public byte MessageOrder { get; } = 66;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 ClusterGID;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+		}
+		public sealed class MSG_CONNECTIONSTATS : INetworkMessage
+		{
+			// Client to server message with information about server connection RTT and such
+			public byte MessageOrder { get; } = 67;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString ServerHostname;
+			[DmlElement(DmlType.INT)] public Int32 ServerPort;
+			[DmlElement(DmlType.INT)] public Int32 ConnectMS;
+			[DmlElement(DmlType.INT)] public Int32 Timeouts;
+			[DmlElement(DmlType.INT)] public Int32 Errors;
+		}
+		public sealed class MSG_CREATENEWEQUIPMENTSET : INetworkMessage
+		{
+			// Client requests to create a new equipment set
+			public byte MessageOrder { get; } = 68;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 SetName;
+		}
+		public sealed class MSG_CREATESETFAILED : INetworkMessage
+		{
+			// Server tells client equipment set wasn't created.
+			public byte MessageOrder { get; } = 69;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+		}
+		public sealed class MSG_CROWNSREWARDSTIERREACHED : INetworkMessage
+		{
+			// Server tells client crowns rewards tier reached
+			public byte MessageOrder { get; } = 70;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString Data;
+			[DmlElement(DmlType.INT)] public Int32 Delay;
+		}
+		public sealed class MSG_CSRADDFISH : INetworkMessage
+		{
+			// CSR Client requests a fish to be added
+			public byte MessageOrder { get; } = 71;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 CharacterGID;
+			[DmlElement(DmlType.UINT)] public UInt32 FishTemplateID;
+			[DmlElement(DmlType.FLT)] public Single Size;
+			[DmlElement(DmlType.UINT)] public UInt32 Count;
+		}
+		public sealed class MSG_CSRDELETEGIFT : INetworkMessage
+		{
+			// Message sent from server to csr confirming promo gift deletion.
+			public byte MessageOrder { get; } = 72;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString GiftID;
+			[DmlElement(DmlType.INT)] public Int32 Success;
+		}
+		public sealed class MSG_CSRREQUESTFISHLIST : INetworkMessage
+		{
+			// CSR Client requests a players fish list and server sends them
+			public byte MessageOrder { get; } = 73;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 CharacterGID;
+			[DmlElement(DmlType.STR)] public ByteString FishData;
+		}
+		public sealed class MSG_CSRREQUESTGLOBALREGISTRY : INetworkMessage
+		{
+			// Client requests Global Registry
+			public byte MessageOrder { get; } = 74;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString Buffer;
+		}
+		public sealed class MSG_CSRSETFRIENDSTATUS : INetworkMessage
+		{
+			// Client requests that the server set friend status
+			public byte MessageOrder { get; } = 75;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 CharacterGID;
+			[DmlElement(DmlType.GID)] public UInt64 FriendGID;
+			[DmlElement(DmlType.INT)] public Int32 StatusCode;
+		}
+		public sealed class MSG_CSRTRASHFISH : INetworkMessage
+		{
+			// CSR Client requests a fish to be trashed
+			public byte MessageOrder { get; } = 76;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 CharacterGID;
+			[DmlElement(DmlType.UINT)] public UInt32 FishTemplateID;
+			[DmlElement(DmlType.FLT)] public Single Size;
+		}
+		public sealed class MSG_CrownShopEvent : INetworkMessage
+		{
+			// Client requests a teleport
+			public byte MessageOrder { get; } = 77;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UBYT)] public Byte EventID;
+			[DmlElement(DmlType.STR)] public ByteString Params;
+			[DmlElement(DmlType.UBYT)] public Byte Log;
+		}
+		public sealed class MSG_CrownShopLogging : INetworkMessage
+		{
+			// Server toggling CS logging events
+			public byte MessageOrder { get; } = 78;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UBYT)] public Byte Enabled;
+		}
+		public sealed class MSG_DAILYPVPCOMPLETED : INetworkMessage
+		{
+			// From server to client, open daily pvp quest conpleted window
+			public byte MessageOrder { get; } = 79;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UBYT)] public Byte ConsecutiveDays;
+			[DmlElement(DmlType.UINT)] public UInt32 ItemTemplateID;
+		}
+		public sealed class MSG_DAILYQUESTEFFECT : INetworkMessage
+		{
+			// Server tells client to play a daily effect
+			public byte MessageOrder { get; } = 80;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 EffectType;
+		}
+		public sealed class MSG_DELETEEQUIPMENTSET : INetworkMessage
+		{
+			// Client requests to delete an equipment set
+			public byte MessageOrder { get; } = 81;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString Set;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+		}
+		public sealed class MSG_DELETESETSWITHITEM : INetworkMessage
+		{
+			// Server sends message to client to update equipment set list.
+			public byte MessageOrder { get; } = 82;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 ItemID;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+		}
+		public sealed class MSG_DILEVELUPELIXIRTELEPORT : INetworkMessage
+		{
+			// Client requests a level up elixir teleport
+			public byte MessageOrder { get; } = 83;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 ItemGlobalID;
+		}
+		public sealed class MSG_DISETCHECKSUBSCRIPTIONPURCHASE : INetworkMessage
+		{
+			// Server asks client to possibly (But not always) trigger a logout once the Delivery Invoice is closed
+			public byte MessageOrder { get; } = 84;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+		}
+		public sealed class MSG_DISETLEVELUPELIXIRTELEPORT : INetworkMessage
+		{
+			// Server asks client to trigger a level up elixir teleport once the Delivery Invoice is closed
+			public byte MessageOrder { get; } = 85;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+		}
+		public sealed class MSG_DISPLAYCOLLECTEDESSENCES : INetworkMessage
+		{
+			// Display the collected essence info at the end of combat
+			public byte MessageOrder { get; } = 86;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString EssenceData;
+		}
+		public sealed class MSG_DISPLAYHELPGUI : INetworkMessage
+		{
+			// Server updating the POI data
+			public byte MessageOrder { get; } = 87;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString GUIFilename;
+		}
+		public sealed class MSG_DISPLAYMESSAGE : INetworkMessage
+		{
+			// Server tells client to display message
+			public byte MessageOrder { get; } = 88;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString Message;
+		}
+		public sealed class MSG_DISPLAYPETONLYMESSAGE : INetworkMessage
+		{
+			// Server tells client to display pet only message
+			public byte MessageOrder { get; } = 89;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+		}
+		public sealed class MSG_EQUIPJEWELREQUEST : INetworkMessage
+		{
+			// Client requests to socket jewel.
+			public byte MessageOrder { get; } = 90;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 ItemGID;
+			[DmlElement(DmlType.GID)] public UInt64 JewelGID;
+			[DmlElement(DmlType.UBYT)] public Byte SocketNumber;
+		}
+		public sealed class MSG_EQUIPJEWELTOITEM : INetworkMessage
+		{
+			// Existing jewel slotted into equipment
+			public byte MessageOrder { get; } = 91;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.GID)] public UInt64 ItemGID;
+			[DmlElement(DmlType.UBYT)] public Byte SocketNumber;
+			[DmlElement(DmlType.GID)] public UInt64 JewelGID;
+		}
+		public sealed class MSG_EQUIPMENTSETCREATED : INetworkMessage
+		{
+			// Server informs client a new set has been successfully created
+			public byte MessageOrder { get; } = 92;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString NewSet;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+		}
+		public sealed class MSG_EQUIPNEWJEWELTOITEM : INetworkMessage
+		{
+			// New jewel slotted into equipment
+			public byte MessageOrder { get; } = 93;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.GID)] public UInt64 ItemGID;
+			[DmlElement(DmlType.UBYT)] public Byte SocketNumber;
+			[DmlElement(DmlType.STR)] public ByteString SerializedJewel;
+		}
+		public sealed class MSG_EQUIPRECIPE : INetworkMessage
+		{
+			// Client requests server equip recipe
+			public byte MessageOrder { get; } = 94;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.UINT)] public UInt32 RecipeID;
+			[DmlElement(DmlType.UBYT)] public Byte Equip;
+		}
+		public sealed class MSG_EQUIPSET : INetworkMessage
+		{
+			// Client requests to equip a set
+			public byte MessageOrder { get; } = 95;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString Set;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+		}
+		public sealed class MSG_FISHINGLEVELUP : INetworkMessage
+		{
+			// This player has gained a new fishing level
+			public byte MessageOrder { get; } = 96;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.INT)] public Int32 NewLevel;
+		}
+		public sealed class MSG_GAINPETXP : INetworkMessage
+		{
+			// Server sends pet xp gained to client for display
+			public byte MessageOrder { get; } = 97;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 PetGID;
+			[DmlElement(DmlType.UINT)] public UInt32 XP;
+		}
+		public sealed class MSG_GETITEMINFO : INetworkMessage
+		{
+			// Item Identifier wants more information about item.
+			public byte MessageOrder { get; } = 98;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 ItemID;
+		}
+		public sealed class MSG_GoHomeConfirm : INetworkMessage
+		{
+			// Message that allows the client to confirm an exit teleport.
+			public byte MessageOrder { get; } = 99;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString PromptKey;
+		}
+		public sealed class MSG_GotoDormConfirm : INetworkMessage
+		{
+			// Message that allows the client to confirm an exit teleport.
+			public byte MessageOrder { get; } = 100;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString PromptKey;
+		}
+		public sealed class MSG_GotoPlayerConfirm : INetworkMessage
+		{
+			// Request to teleport to the position of a given player.
+			public byte MessageOrder { get; } = 101;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString PromptKey;
+			[DmlElement(DmlType.GID)] public UInt64 TargetCharacterID;
+		}
+		public sealed class MSG_HATCHMAKINGMESSAGE : INetworkMessage
+		{
+			// Client requests a hatchmaking hatch
+			public byte MessageOrder { get; } = 102;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 MessageType;
+			[DmlElement(DmlType.UINT)] public UInt32 MyPetTemplateID;
+			[DmlElement(DmlType.UINT)] public UInt32 MyPetName;
+			[DmlElement(DmlType.UINT)] public UInt32 TheirPetTemplateID;
+			[DmlElement(DmlType.UBYT)] public Byte HatchPepperCount;
+		}
+		public sealed class MSG_HATCHMAKINGSCSRRESULTS : INetworkMessage
+		{
+			// Server sends csr results to client
+			public byte MessageOrder { get; } = 103;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString Result;
+		}
+		public sealed class MSG_HATCHMAKINGSEARCHRESULTS : INetworkMessage
+		{
+			// Job server sends search results to chat server to zone server to client
+			public byte MessageOrder { get; } = 104;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 CharacterID;
+			[DmlElement(DmlType.STR)] public ByteString Data;
+			[DmlElement(DmlType.BYT)] public SByte InPerson;
+		}
+		public sealed class MSG_HATCHMAKINGSREQUESTPREMIUMPETEXEMPTIONS : INetworkMessage
+		{
+			// Client requests and server sends premium pet exemption list
+			public byte MessageOrder { get; } = 105;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString Buffer;
+			[DmlElement(DmlType.UINT)] public UInt32 PremiumPetExceptionCode;
+		}
+		public sealed class MSG_HATCHMAKINGSTATUS : INetworkMessage
+		{
+			// Server sends client hatchmaking status
+			public byte MessageOrder { get; } = 106;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 ErrorCode;
+		}
+		public sealed class MSG_HATCHMAKINGSUPDATEHATCHDAYPET : INetworkMessage
+		{
+			// Sever informs client that the hatch day pet has changed
+			public byte MessageOrder { get; } = 107;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.INT)] public Int32 PetTemplateID;
+		}
+		public sealed class MSG_HATCHMAKINGSUPDATEHATCHDAYPET2 : INetworkMessage
+		{
+			// Sever informs client that the hatch day pet has changed
+			public byte MessageOrder { get; } = 108;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.INT)] public Int32 PetTemplateID;
+		}
+		public sealed class MSG_HATCHMAKINGUSETOME : INetworkMessage
+		{
+			// Server tells client to hatchmaking tome
+			public byte MessageOrder { get; } = 109;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+		}
+		public sealed class MSG_HOLIDAYDATA : INetworkMessage
+		{
+			// Msg sent by server containing data when holiday flags set.
+			public byte MessageOrder { get; } = 110;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString SerializedHolidayLoadingScreens;
+			[DmlElement(DmlType.UINT)] public UInt32 HolidayLoadingScreensDisplayPer;
+		}
+		public sealed class MSG_INVITEALLTOBASICCHATCHANNEL : INetworkMessage
+		{
+			// Client request chat server invite all friends
+			public byte MessageOrder { get; } = 111;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+		}
+		public sealed class MSG_INVITETOBASICCHATCHANNEL : INetworkMessage
+		{
+			// Chat server informs client of their chat channel
+			public byte MessageOrder { get; } = 112;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 InvitingPlayerGID;
+			[DmlElement(DmlType.STR)] public ByteString InvitingPlayerNameBlob;
+			[DmlElement(DmlType.GID)] public UInt64 ChannelPlayerGID;
+			[DmlElement(DmlType.STR)] public ByteString ChannelPlayerNameBlob;
+			[DmlElement(DmlType.UBYT)] public Byte ConfirmationStatus;
+			[DmlElement(DmlType.INT)] public Int32 FriendsOnly;
+		}
+		public sealed class MSG_ISFRIENDSWITHHOUSEOWNER : INetworkMessage
+		{
+			// Ask or respond if the Originator is friends with the HouseOwner
+			public byte MessageOrder { get; } = 113;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 OriginatorID;
+			[DmlElement(DmlType.GID)] public UInt64 HouseOwnerID;
+			[DmlElement(DmlType.UBYT)] public Byte IsFriend;
+		}
+		public sealed class MSG_ITEMACQUISITION : INetworkMessage
+		{
+			// Update the client delivery invoice about an item purchase
+			public byte MessageOrder { get; } = 114;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 ItemGlobalID;
+			[DmlElement(DmlType.UINT)] public UInt32 ItemTemplateID;
+			[DmlElement(DmlType.UINT)] public UInt32 ItemLocation;
+		}
+		public sealed class MSG_ITEMFINDERHOUSECOMPLETE : INetworkMessage
+		{
+			// Server tells client about housing items for Item Finder
+			public byte MessageOrder { get; } = 115;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+		}
+		public sealed class MSG_ITEMFINDERREQUESTBANK : INetworkMessage
+		{
+			// Server tells client to bank is loaded for Item Finder
+			public byte MessageOrder { get; } = 116;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+		}
+		public sealed class MSG_ITEMFINDERREQUESTHOUSE : INetworkMessage
+		{
+			// Server tells client about housing items for Item Finder
+			public byte MessageOrder { get; } = 117;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString Data;
+			[DmlElement(DmlType.UINT)] public UInt32 HouseTemplateID;
+			[DmlElement(DmlType.BYT)] public SByte SectionCode;
+		}
+		public sealed class MSG_ITEMIDENTIFIERINFO : INetworkMessage
+		{
+			// ItemIdentifier - Send info about if/where player can find items.
+			public byte MessageOrder { get; } = 118;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UBYT)] public Byte IsAvailable;
+			[DmlElement(DmlType.STR)] public ByteString Locations;
+		}
+		public sealed class MSG_Infraction : INetworkMessage
+		{
+			// Server tells client to add or remove an infraction
+			public byte MessageOrder { get; } = 119;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.STR)] public ByteString Add;
+			[DmlElement(DmlType.UINT)] public UInt32 Remove;
+		}
+		public sealed class MSG_JEWELSOCKETLOCKUPDATE : INetworkMessage
+		{
+			// Item is updating jewel socket lock state
+			public byte MessageOrder { get; } = 120;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.GID)] public UInt64 ItemGID;
+			[DmlElement(DmlType.UBYT)] public Byte Locked;
+		}
+		public sealed class MSG_JEWELSOCKETUNLOCKCOST : INetworkMessage
+		{
+			// Message Cli to Ser asking for cost and Ser to Cli giving cost
+			public byte MessageOrder { get; } = 121;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString Data;
+		}
+		public sealed class MSG_JOINBASICCHATCHANNEL : INetworkMessage
+		{
+			// Chat server informs client of their chat channel
+			public byte MessageOrder { get; } = 122;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.STR)] public ByteString ChannelData;
+		}
+		public sealed class MSG_KHANDANCESTATUS : INetworkMessage
+		{
+			// Client sends server info about the Khan dance game
+			public byte MessageOrder { get; } = 123;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.INT)] public Int32 Status;
+			[DmlElement(DmlType.INT)] public Int32 X;
+			[DmlElement(DmlType.INT)] public Int32 Y;
+			[DmlElement(DmlType.INT)] public Int32 Z;
+		}
+		public sealed class MSG_LAVALOCKSTATUS : INetworkMessage
+		{
+			// Server tells client to start the Lava Lock
+			public byte MessageOrder { get; } = 124;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.INT)] public Int32 Status;
+		}
+		public sealed class MSG_LOGCLASSICMODE : INetworkMessage
+		{
+			// Message sent from the client when the player turns on or off classic mode
+			public byte MessageOrder { get; } = 125;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UBYT)] public Byte ClassicMode;
+		}
+		public sealed class MSG_LOGVIDEOCAPABILITIES : INetworkMessage
+		{
+			// Message sent from the client to log the video caps
+			public byte MessageOrder { get; } = 126;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString UserCapsBin;
+		}
+		public sealed class MSG_MAGICMIRRORCHANGEPLAYER : INetworkMessage
+		{
+			// Server sends client player changes
+			public byte MessageOrder { get; } = 127;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.INT)] public Int32 HairStyleIndex;
+			[DmlElement(DmlType.INT)] public Int32 HairColorIndex;
+			[DmlElement(DmlType.INT)] public Int32 SkinColorIndex;
+			[DmlElement(DmlType.INT)] public Int32 FaceStyleIndex;
+			[DmlElement(DmlType.INT)] public Int32 FacePaintIndex;
+			[DmlElement(DmlType.INT)] public Int32 EyeColorIndex;
+			[DmlElement(DmlType.INT)] public Int32 NoseStyleIndex;
+			[DmlElement(DmlType.INT)] public Int32 MouthStyleIndex;
+			[DmlElement(DmlType.INT)] public Int32 AccessoryStyleIndex;
+			[DmlElement(DmlType.INT)] public Int32 EyeBrowColorIndex;
+			[DmlElement(DmlType.INT)] public Int32 LipColorIndex;
+		}
+		public sealed class MSG_MAGICMIRRORREQUESTCHANGE : INetworkMessage
+		{
+			// Client requests character changes
+			public byte MessageOrder { get; } = 128;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.UINT)] public UInt32 HairStyleID;
+			[DmlElement(DmlType.UINT)] public UInt32 HairColorID;
+			[DmlElement(DmlType.UINT)] public UInt32 SkinColorID;
+			[DmlElement(DmlType.UINT)] public UInt32 FaceStyleID;
+			[DmlElement(DmlType.UINT)] public UInt32 EyeColorID;
+			[DmlElement(DmlType.INT)] public Int32 FacePaintID;
+			[DmlElement(DmlType.UINT)] public UInt32 NoseStyleID;
+			[DmlElement(DmlType.UINT)] public UInt32 MouthStyleID;
+			[DmlElement(DmlType.UINT)] public UInt32 AccessoryStyleID;
+			[DmlElement(DmlType.UINT)] public UInt32 EyeBrowColorID;
+			[DmlElement(DmlType.UINT)] public UInt32 LipColorID;
+		}
+		public sealed class MSG_MAGICMIRRORSHOPOPEN : INetworkMessage
+		{
+			// From server to client, includes magic mirror shop title
+			public byte MessageOrder { get; } = 129;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+		}
+		public sealed class MSG_MAPREQUIREMENTS : INetworkMessage
+		{
+			// Client requests server evaulate map requirements
+			public byte MessageOrder { get; } = 130;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString Data;
+		}
+		public sealed class MSG_MONSTERMAGICLEVELUP : INetworkMessage
+		{
+			// This player has gained a new Monster Magic level
+			public byte MessageOrder { get; } = 131;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.INT)] public Int32 NewLevel;
+		}
+		public sealed class MSG_MONSTERMAGICREQUESTCREATE : INetworkMessage
+		{
+			// Client requests server create a TC or house guest.
+			public byte MessageOrder { get; } = 132;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.INT)] public Int32 RequestType;
+			[DmlElement(DmlType.UINT)] public UInt32 MobTemplate;
+		}
+		public sealed class MSG_MONSTERMAGICUSETOME : INetworkMessage
+		{
+			// Server tells client to open monster tome
+			public byte MessageOrder { get; } = 133;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+		}
+		public sealed class MSG_MOVEEQUIPMENTSET : INetworkMessage
+		{
+			// Client requests server moves an equipment set up or down
+			public byte MessageOrder { get; } = 134;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 SetNumber;
+			[DmlElement(DmlType.UBYT)] public Byte MoveDown;
+		}
+		public sealed class MSG_OPENCLASSPROJECTPORTAL : INetworkMessage
+		{
+			// Server tells client to open portal window
+			public byte MessageOrder { get; } = 135;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 ProjectID;
+			[DmlElement(DmlType.UINT)] public UInt32 Tokens;
+			[DmlElement(DmlType.UINT)] public UInt32 Level;
+			[DmlElement(DmlType.BYT)] public SByte ClaimedDailyCredits;
+			[DmlElement(DmlType.UBYT)] public Byte TeleporterCheckPoint;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.BYT)] public SByte WebFailure;
+			[DmlElement(DmlType.INT)] public Int32 Credits;
+		}
+		public sealed class MSG_OPENITEMFINDER : INetworkMessage
+		{
+			// Server tells client to open Item Finder
+			public byte MessageOrder { get; } = 136;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+		}
+		public sealed class MSG_PATCHBEFORETELEPORT : INetworkMessage
+		{
+			// Server request that client patch a zone
+			public byte MessageOrder { get; } = 137;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString ZoneName;
+			[DmlElement(DmlType.STR)] public ByteString Buffer;
+		}
+		public sealed class MSG_PERIODICSUBSCRIPTIONS : INetworkMessage
+		{
+			// Periodic Subscription status
+			public byte MessageOrder { get; } = 138;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UBYT)] public Byte Success;
+			[DmlElement(DmlType.STR)] public ByteString Data;
+		}
+		public sealed class MSG_PETELIXIRBUYREQUEST : INetworkMessage
+		{
+			// Pet Elixir buy request from client to server
+			public byte MessageOrder { get; } = 139;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.BYT)] public SByte WebFailure;
+			[DmlElement(DmlType.INT)] public Int32 Credits;
+		}
+		public sealed class MSG_PETELIXIROPEN : INetworkMessage
+		{
+			// From server to client or server to client, request to open pet elixir shop
+			public byte MessageOrder { get; } = 140;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.BYT)] public SByte WebFailure;
+			[DmlElement(DmlType.INT)] public Int32 Credits;
+		}
+		public sealed class MSG_PETFEEDHAPPINESS : INetworkMessage
+		{
+			// Client requests server feed pet for happiness
+			public byte MessageOrder { get; } = 141;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 SnackTemplateID;
+			[DmlElement(DmlType.UBYT)] public Byte FeedStack;
+			[DmlElement(DmlType.UINT)] public UInt32 Happiness;
+		}
+		public sealed class MSG_PETGAMESKIP : INetworkMessage
+		{
+			// Client requests server skip pet game
+			public byte MessageOrder { get; } = 142;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.STR)] public ByteString Game;
+			[DmlElement(DmlType.UBYT)] public Byte Bonus;
+		}
+		public sealed class MSG_PETGAMESKIPFEED : INetworkMessage
+		{
+			// Client requests server skip pet game feed pet
+			public byte MessageOrder { get; } = 143;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.STR)] public ByteString Game;
+			[DmlElement(DmlType.STR)] public ByteString Data;
+		}
+		public sealed class MSG_PETTELEPORT : INetworkMessage
+		{
+			// Server tells client to teleport pet
+			public byte MessageOrder { get; } = 144;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.FLT)] public Single PositionX;
+			[DmlElement(DmlType.FLT)] public Single PositionY;
+			[DmlElement(DmlType.FLT)] public Single PositionZ;
+			[DmlElement(DmlType.FLT)] public Single Yaw;
+		}
+		public sealed class MSG_PETTOMEPETADDED : INetworkMessage
+		{
+			// Server tells client that a pet was added to their pet tome
+			public byte MessageOrder { get; } = 145;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.UINT)] public UInt32 PetTemplateID;
+		}
+		public sealed class MSG_PHOTOMANCYUSETOME : INetworkMessage
+		{
+			// Message sent server to client to open Photomancy tome
+			public byte MessageOrder { get; } = 146;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+		}
+		public sealed class MSG_PHOTOTAKEN : INetworkMessage
+		{
+			// Client takes a photo
+			public byte MessageOrder { get; } = 147;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString Buffer;
+		}
+		public sealed class MSG_PUBLICJEWELSOCKETUPDATE : INetworkMessage
+		{
+			// Server sends the client the current jewel socket data for an item
+			public byte MessageOrder { get; } = 148;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.UINT)] public UInt32 ItemID;
+			[DmlElement(DmlType.STR)] public ByteString SerializedInfo;
+		}
+		public sealed class MSG_QUICKSELLREQUEST : INetworkMessage
+		{
+			// Send a list of items to sell from client to server
+			public byte MessageOrder { get; } = 149;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString Data;
+		}
+		public sealed class MSG_RADIALZONECLUSTERQUICKCHATEXT : INetworkMessage
+		{
+			// Server-initiated radial quickchat response - send to all in range of player who requested radial chat
+			public byte MessageOrder { get; } = 150;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString SourceName;
+			[DmlElement(DmlType.GID)] public UInt64 SourceID;
+			[DmlElement(DmlType.STR)] public ByteString Message;
+			[DmlElement(DmlType.UBYT)] public Byte Filter;
+			[DmlElement(DmlType.UBYT)] public Byte IsOwner;
+		}
+		public sealed class MSG_READTUTORIALTIP : INetworkMessage
+		{
+			// Client requests server add id to the tutorial tip log
+			public byte MessageOrder { get; } = 151;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.UINT)] public UInt32 TutorialTipID;
+		}
+		public sealed class MSG_REINTERACT : INetworkMessage
+		{
+			// Message sent from the server to the client to cause a reinteract
+			public byte MessageOrder { get; } = 152;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UBYT)] public Byte ReinteractType;
+		}
+		public sealed class MSG_REMOVECROWNSREWARDSEVENT : INetworkMessage
+		{
+			// Server tells client to remove an expired crowns rewards event
+			public byte MessageOrder { get; } = 153;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 EventID;
+		}
+		public sealed class MSG_REMOVEITEMLOCKS : INetworkMessage
+		{
+			// Server tells client to remove all locks from items
+			public byte MessageOrder { get; } = 154;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+		}
+		public sealed class MSG_REMOVEPLAYERFROMBASICCHATCHANNEL : INetworkMessage
+		{
+			// Client requests player removed from chat channel
+			public byte MessageOrder { get; } = 155;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 OwningPlayerGID;
+			[DmlElement(DmlType.UBYT)] public Byte IsLeave;
+		}
+		public sealed class MSG_REMOVEPLAYERFROMBASICCHATCHANNELUPDATE : INetworkMessage
+		{
+			// Chat channel sends messages to clients to remove player
+			public byte MessageOrder { get; } = 156;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 RemovedPlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 OwningPlayerGID;
+		}
+		public sealed class MSG_REQUESTBATTLEGROUNDSLOOT : INetworkMessage
+		{
+			// Client is ready for BG loot
+			public byte MessageOrder { get; } = 157;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+		}
+		public sealed class MSG_REQUESTCHATSTATS : INetworkMessage
+		{
+			// Request chat channel stats for the chat server and send to the client
+			public byte MessageOrder { get; } = 158;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.STR)] public ByteString Message;
+		}
+		public sealed class MSG_REQUESTCLASSPROJECTINFO : INetworkMessage
+		{
+			// Client requests, server sends class project info
+			public byte MessageOrder { get; } = 159;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString Buffer;
+			[DmlElement(DmlType.STR)] public ByteString TokenBuffer;
+		}
+		public sealed class MSG_REQUESTCROWNSREWARDSEVENTS : INetworkMessage
+		{
+			// Client requests the current crowns rewards events from the server
+			public byte MessageOrder { get; } = 160;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+		}
+		public sealed class MSG_REQUESTHATCHMAKING : INetworkMessage
+		{
+			// Server sends client hatchmaking info
+			public byte MessageOrder { get; } = 161;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.STR)] public ByteString PetData;
+			[DmlElement(DmlType.FLT)] public Single CrownCost;
+			[DmlElement(DmlType.UINT)] public UInt32 HatchDayCode;
+			[DmlElement(DmlType.UBYT)] public Byte NoInPersonHatching;
+		}
+		public sealed class MSG_REQUESTHATCHMAKINGADDPET : INetworkMessage
+		{
+			// Client request that server add a pet to the hatchmaking kiosk
+			public byte MessageOrder { get; } = 162;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 PetID;
+		}
+		public sealed class MSG_REQUESTHATCHMAKINGFRIENDPETS : INetworkMessage
+		{
+			// Client requests and server sends friends hatchmaking pets
+			public byte MessageOrder { get; } = 163;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.STR)] public ByteString Data;
+			[DmlElement(DmlType.BYT)] public SByte InPerson;
+		}
+		public sealed class MSG_REQUESTHATCHMAKINGHATCH : INetworkMessage
+		{
+			// Client requests a hatchmaking hatch
+			public byte MessageOrder { get; } = 164;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 PetID1;
+			[DmlElement(DmlType.GID)] public UInt64 PetID2;
+		}
+		public sealed class MSG_REQUESTHATCHMAKINGHATCH2 : INetworkMessage
+		{
+			// Client requests a hatchmaking hatch with pets that my pet hatched with
+			public byte MessageOrder { get; } = 165;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 PetID1;
+			[DmlElement(DmlType.GID)] public UInt64 PetID2;
+			[DmlElement(DmlType.UINT)] public UInt32 PetIndex;
+		}
+		public sealed class MSG_REQUESTHATCHMAKINGHATCHEDPET : INetworkMessage
+		{
+			// Client requests and server sends a hatched pet
+			public byte MessageOrder { get; } = 166;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 PetID;
+			[DmlElement(DmlType.UINT)] public UInt32 PetIndex;
+			[DmlElement(DmlType.STR)] public ByteString PetData;
+			[DmlElement(DmlType.UBYT)] public Byte IsInPetTome;
+		}
+		public sealed class MSG_REQUESTHATCHMAKINGPETDATA : INetworkMessage
+		{
+			// Client requests and server sends hatchmaking pet data
+			public byte MessageOrder { get; } = 167;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString PetData;
+			[DmlElement(DmlType.GID)] public UInt64 PetID;
+			[DmlElement(DmlType.UBYT)] public Byte IsInPetTome;
+		}
+		public sealed class MSG_REQUESTHATCHMAKINGPETS : INetworkMessage
+		{
+			// Client requests and server sends hatchmaking pets
+			public byte MessageOrder { get; } = 168;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString PetData;
+			[DmlElement(DmlType.UINT)] public UInt32 PetTemplateID;
+			[DmlElement(DmlType.UINT)] public UInt32 Skip;
+		}
+		public sealed class MSG_REQUESTHATCHMAKINGPETTYPES : INetworkMessage
+		{
+			// Client requests and server sends hatchmaking pet types
+			public byte MessageOrder { get; } = 169;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString PetData;
+		}
+		public sealed class MSG_REQUESTHATCHMAKINGREMOVEPET : INetworkMessage
+		{
+			// Client request that server remove a pet from the hatchmaking kiosk
+			public byte MessageOrder { get; } = 170;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 PetID;
+		}
+		public sealed class MSG_REQUESTHATCHMAKINGSEARCHPETS : INetworkMessage
+		{
+			// Client requests and server sends a search hatchmaking pets
+			public byte MessageOrder { get; } = 171;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.STR)] public ByteString Data;
+			[DmlElement(DmlType.BYT)] public SByte SearchType;
+			[DmlElement(DmlType.BYT)] public SByte InPerson;
+		}
+		public sealed class MSG_REQUESTMAINLINEAUDIT : INetworkMessage
+		{
+			// Client requests a mainline quest audit
+			public byte MessageOrder { get; } = 172;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+		}
+		public sealed class MSG_REQUESTMINIGAME : INetworkMessage
+		{
+			// Zone server gives client a chance to reject teleport to minigame
+			public byte MessageOrder { get; } = 173;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+		}
+		public sealed class MSG_REQUESTMONSTERTOME : INetworkMessage
+		{
+			// Client requests a players monster tome and server sends it
+			public byte MessageOrder { get; } = 174;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.STR)] public ByteString MonsterData;
+		}
+		public sealed class MSG_REQUESTPETTOME : INetworkMessage
+		{
+			// Client requests a players pet tome and server sends it
+			public byte MessageOrder { get; } = 175;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.STR)] public ByteString PetData;
+			[DmlElement(DmlType.STR)] public ByteString Buffer;
+			[DmlElement(DmlType.UINT)] public UInt32 PremiumPetExceptionCode;
+		}
+		public sealed class MSG_REQUESTRADIALFRIENDQUICKCHATEXT : INetworkMessage
+		{
+			// Client-initiated radial friend quick chat request
+			public byte MessageOrder { get; } = 176;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.STR)] public ByteString Message;
+			[DmlElement(DmlType.GID)] public UInt64 SourceID;
+			[DmlElement(DmlType.UBYT)] public Byte Filter;
+			[DmlElement(DmlType.STR)] public ByteString SourceName;
+		}
+		public sealed class MSG_REQUESTSIGILINFO : INetworkMessage
+		{
+			// Chat server requests sigil info from a zone server
+			public byte MessageOrder { get; } = 177;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 SigilID;
+			[DmlElement(DmlType.UINT)] public UInt32 WorldID;
+			[DmlElement(DmlType.STR)] public ByteString SigilInfo;
+			[DmlElement(DmlType.UBYT)] public Byte Request;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.UBYT)] public Byte IsCluster;
+		}
+		public sealed class MSG_REQUESTTEAMHELPFAIL : INetworkMessage
+		{
+			// Zone server sends to client when request to join a team fails
+			public byte MessageOrder { get; } = 178;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 TimeLeft;
+		}
+		public sealed class MSG_REQUESTTEAMHELPINFO : INetworkMessage
+		{
+			// Used by Team Help to send info about teams wanting help
+			public byte MessageOrder { get; } = 179;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString WorldInfo;
+			[DmlElement(DmlType.STR)] public ByteString SigilInfo;
+		}
+		public sealed class MSG_REQUESTTEAMHELPJOIN : INetworkMessage
+		{
+			// Client requests to join a team
+			public byte MessageOrder { get; } = 180;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 SigilID;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.UINT)] public UInt32 SchoolID;
+			[DmlElement(DmlType.UINT)] public UInt32 WorldID;
+		}
+		public sealed class MSG_REQUESTTEAMHELPJOINFAIL : INetworkMessage
+		{
+			// Chat server sends to client when request to join a team fails
+			public byte MessageOrder { get; } = 181;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+		}
+		public sealed class MSG_REQUESTTEAMHELPWORLDINFO : INetworkMessage
+		{
+			// Used by Team Help to send info about teams wanting help by world
+			public byte MessageOrder { get; } = 182;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 WorldID;
+			[DmlElement(DmlType.STR)] public ByteString WorldSigilInfo;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+		}
+		public sealed class MSG_REQUESTTEAMUP : INetworkMessage
+		{
+			// Client request team up
+			public byte MessageOrder { get; } = 183;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 NPCID;
+			[DmlElement(DmlType.UBYT)] public Byte RequestedSigilMode;
+			[DmlElement(DmlType.UBYT)] public Byte IsFarming;
+			[DmlElement(DmlType.UBYT)] public Byte TeamSize;
+			[DmlElement(DmlType.UBYT)] public Byte Edit;
+		}
+		public sealed class MSG_REQUESTTUTORIALTIPLOG : INetworkMessage
+		{
+			// Client requests server update the tutorial tip log
+			public byte MessageOrder { get; } = 184;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.UINT)] public UInt32 TutorialTipCount;
+		}
+		public sealed class MSG_REQUESTZONECLUSTERQUICKCHATEXT : INetworkMessage
+		{
+			// Client-initiated radial quickchat for housing request
+			public byte MessageOrder { get; } = 185;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString Message;
+			[DmlElement(DmlType.UBYT)] public Byte IsOwner;
+		}
+		public sealed class MSG_RESTOREORIGINALCASTLE : INetworkMessage
+		{
+			// Client requests server restores the original castle
+			public byte MessageOrder { get; } = 186;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+		}
+		public sealed class MSG_RESUMEINSTANCETELEPORTPLAYER : INetworkMessage
+		{
+			// Client requests teleporting to an instances
+			public byte MessageOrder { get; } = 187;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 ClusterGID;
+		}
+		public sealed class MSG_RIDABLEUPDATE : INetworkMessage
+		{
+			// Client tells server about a ridable object yaw
+			public byte MessageOrder { get; } = 188;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.FLT)] public Single Yaw;
+			[DmlElement(DmlType.UBYT)] public Byte Slot;
+		}
+		public sealed class MSG_RIDEOBJECT : INetworkMessage
+		{
+			// Server tells client about an object rider
+			public byte MessageOrder { get; } = 189;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.INT)] public Int32 Slot;
+			[DmlElement(DmlType.UBYT)] public Byte AddPlayer;
+		}
+		public sealed class MSG_RIDEOBJECTFULL : INetworkMessage
+		{
+			// Server tells client no free slots
+			public byte MessageOrder { get; } = 190;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+		}
+		public sealed class MSG_RIDERSLIST : INetworkMessage
+		{
+			// Server tells client about existing riders
+			public byte MessageOrder { get; } = 191;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.STR)] public ByteString RiderList;
+		}
+		public sealed class MSG_RecallLocationConfirm : INetworkMessage
+		{
+			// Message that allows the client to confirm an exit teleport.
+			public byte MessageOrder { get; } = 192;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString PromptKey;
+		}
+		public sealed class MSG_SELLMODIFIER : INetworkMessage
+		{
+			// Client requests the sell modifier from the server
+			public byte MessageOrder { get; } = 193;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.FLT)] public Single SellModifier;
+		}
+		public sealed class MSG_SENDTRIVIA : INetworkMessage
+		{
+			// Send a question from the chat server to all players
+			public byte MessageOrder { get; } = 194;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.INT)] public Int32 QuestionNumber;
+		}
+		public sealed class MSG_SEPIDIOUSARRIVAL : INetworkMessage
+		{
+			// Server tells client to start the Sepidious Arrival sequence
+			public byte MessageOrder { get; } = 195;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+		}
+		public sealed class MSG_SETBASICCHATCHANNELPUBLIC : INetworkMessage
+		{
+			// Client asks chat server to switch public or private channel
+			public byte MessageOrder { get; } = 196;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 OwningPlayerGID;
+			[DmlElement(DmlType.UBYT)] public Byte IsPublic;
+		}
+		public sealed class MSG_SETELIXIRTIMER : INetworkMessage
+		{
+			// Server informing client that a elixir timer has started.
+			public byte MessageOrder { get; } = 197;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.UINT)] public UInt32 TimerTime;
+		}
+		public sealed class MSG_SETRESUMEINSTANCE : INetworkMessage
+		{
+			// Server tells client that it can resume an instance
+			public byte MessageOrder { get; } = 198;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 CharacterGID;
+			[DmlElement(DmlType.GID)] public UInt64 ClusterGID;
+			[DmlElement(DmlType.STR)] public ByteString ZoneDisplayNameID;
+			[DmlElement(DmlType.UINT)] public UInt32 ExpireTime;
+			[DmlElement(DmlType.UBYT)] public Byte Source;
+			[DmlElement(DmlType.STR)] public ByteString StartingZoneName;
+			[DmlElement(DmlType.STR)] public ByteString StartingZoneLocation;
+			[DmlElement(DmlType.STR)] public ByteString ClusterTemplate;
+		}
+		public sealed class MSG_SETSTOREDMOUNT : INetworkMessage
+		{
+			// Client requests server sets the stored mount id
+			public byte MessageOrder { get; } = 199;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 MountGID;
+		}
+		public sealed class MSG_SWITCHACTIVEQUEST : INetworkMessage
+		{
+			// Client informs server that player switched the active quest or goal
+			public byte MessageOrder { get; } = 200;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 ActiveQuestGID;
+			[DmlElement(DmlType.GID)] public UInt64 ActiveGoalGID;
+		}
+		public sealed class MSG_SWITCHTOPET : INetworkMessage
+		{
+			// The player switched to their pet
+			public byte MessageOrder { get; } = 201;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.UBYT)] public Byte Status;
+			[DmlElement(DmlType.UINT)] public UInt32 PetTemplate;
+		}
+		public sealed class MSG_SetBGPolymorphLevel : INetworkMessage
+		{
+			// Server sends updated polymorph level to the client
+			public byte MessageOrder { get; } = 202;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 ProjectID;
+			[DmlElement(DmlType.INT)] public Int32 Index;
+			[DmlElement(DmlType.INT)] public Int32 Level;
+		}
+		public sealed class MSG_SplashEnabled : INetworkMessage
+		{
+			// Client checks to see if the splash page is enabled
+			public byte MessageOrder { get; } = 203;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+		}
+		public sealed class MSG_TEAMUPADDPLAYER : INetworkMessage
+		{
+			// Server request to chat server for team up
+			public byte MessageOrder { get; } = 204;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.UINT)] public UInt32 SigilID;
+			[DmlElement(DmlType.UINT)] public UInt32 SchoolID;
+			[DmlElement(DmlType.UBYT)] public Byte IsFarming;
+			[DmlElement(DmlType.UBYT)] public Byte RequestedSigilMode;
+			[DmlElement(DmlType.UBYT)] public Byte TeamSize;
+		}
+		public sealed class MSG_TEAMUPADDPLAYERTOCLIENT : INetworkMessage
+		{
+			// Chat server request for client to add team up player
+			public byte MessageOrder { get; } = 205;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 SigilID;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.STR)] public ByteString PackedName;
+			[DmlElement(DmlType.STR)] public ByteString PlayerSchool;
+			[DmlElement(DmlType.STR)] public ByteString SigilName;
+			[DmlElement(DmlType.GID)] public UInt64 UpdatePlayerGID;
+			[DmlElement(DmlType.UINT)] public UInt32 SecondsLeft;
+			[DmlElement(DmlType.UBYT)] public Byte FromSigil;
+			[DmlElement(DmlType.UBYT)] public Byte RequestedSigilMode;
+		}
+		public sealed class MSG_TEAMUPFAILED : INetworkMessage
+		{
+			// Server tells client that player didn't get credit for team up
+			public byte MessageOrder { get; } = 206;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+		}
+		public sealed class MSG_TEAMUPREMOVEPLAYER : INetworkMessage
+		{
+			// Client request to remove player from team up
+			public byte MessageOrder { get; } = 207;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.UINT)] public UInt32 SigilID;
+		}
+		public sealed class MSG_TEAMUPREMOVEPLAYERFROMCLIENT : INetworkMessage
+		{
+			// Chat server request for client to remove team up player
+			public byte MessageOrder { get; } = 208;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 SigilID;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 UpdatePlayerGID;
+			[DmlElement(DmlType.UBYT)] public Byte Disbanded;
+		}
+		public sealed class MSG_TEAMUPTELEPORTPLAYER : INetworkMessage
+		{
+			// Chat server request for zone server to teleport a player
+			public byte MessageOrder { get; } = 209;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 SigilID;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 ZoneID;
+			[DmlElement(DmlType.UBYT)] public Byte PlayerPosition;
+			[DmlElement(DmlType.UBYT)] public Byte PlayerCount;
+		}
+		public sealed class MSG_TIEREDSPELLRESET : INetworkMessage
+		{
+			// Client Tells the server to upgrade a tiered spell
+			public byte MessageOrder { get; } = 210;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 SpellID;
+			[DmlElement(DmlType.UINT)] public UInt32 SpellIDOld;
+		}
+		public sealed class MSG_TIEREDSPELLRESETRESP : INetworkMessage
+		{
+			// Server tells the client success or failure
+			public byte MessageOrder { get; } = 211;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UBYT)] public Byte Success;
+			[DmlElement(DmlType.INT)] public Int32 FailedRequirementIndex;
+		}
+		public sealed class MSG_TIEREDSPELLUPGRADE : INetworkMessage
+		{
+			// Client Tells the server to upgrade a tiered spell
+			public byte MessageOrder { get; } = 212;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 SpellID;
+			[DmlElement(DmlType.UINT)] public UInt32 SpellIDNew;
+			[DmlElement(DmlType.UINT)] public UInt32 TieredSpellGroup;
+		}
+		public sealed class MSG_TIEREDSPELLUPGRADERESP : INetworkMessage
+		{
+			// Server tells the client success or failure
+			public byte MessageOrder { get; } = 213;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UBYT)] public Byte Success;
+			[DmlElement(DmlType.INT)] public Int32 FailedRequirementIndex;
+		}
+		public sealed class MSG_TOURNAMENTLOOTROLLINFO : INetworkMessage
+		{
+			// client to server asks, server to client responds
+			public byte MessageOrder { get; } = 214;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 InitialCost;
+		}
+		public sealed class MSG_TOURNAMENTLOOTROLLRESPONSE : INetworkMessage
+		{
+			// Sent from client to server
+			public byte MessageOrder { get; } = 215;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 BracketID;
+		}
+		public sealed class MSG_TOURNAMENTLOOTROLLRESULT : INetworkMessage
+		{
+			// Sent from server to tell client of roll results
+			public byte MessageOrder { get; } = 216;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 Id;
+			[DmlElement(DmlType.INT)] public Int32 Cost;
+			[DmlElement(DmlType.INT)] public Int32 Balance;
+			[DmlElement(DmlType.INT)] public Int32 Uses;
+			[DmlElement(DmlType.STR)] public ByteString Loot;
+		}
+		public sealed class MSG_UNEQUIPSOCKETEDJEWEL : INetworkMessage
+		{
+			// Jewel unslotted from equipment
+			public byte MessageOrder { get; } = 217;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.GID)] public UInt64 ItemGID;
+			[DmlElement(DmlType.UBYT)] public Byte SocketNumber;
+			[DmlElement(DmlType.UBYT)] public Byte SocketDeleted;
+		}
+		public sealed class MSG_UNLOCKPETTALENT : INetworkMessage
+		{
+			// Client requests that the server start the process of unlocking a pet talent
+			public byte MessageOrder { get; } = 218;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 PetGID;
+			[DmlElement(DmlType.UBYT)] public Byte DerbyTalent;
+			[DmlElement(DmlType.UINT)] public UInt32 TalentID;
+			[DmlElement(DmlType.UINT)] public UInt32 NewTalentID;
+		}
+		public sealed class MSG_UNLOCKSOCKETS : INetworkMessage
+		{
+			// This message has no description.
+			public byte MessageOrder { get; } = 219;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 ItemGID;
+			[DmlElement(DmlType.UBYT)] public Byte CostChoice;
+		}
+		public sealed class MSG_UNLOCKSOCKETSCONFIRM : INetworkMessage
+		{
+			// This message has no description.
+			public byte MessageOrder { get; } = 220;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.BYT)] public SByte Failure;
+			[DmlElement(DmlType.BYT)] public SByte WebFailure;
+			[DmlElement(DmlType.INT)] public Int32 Credits;
+		}
+		public sealed class MSG_UNSOCKETJEWELREQUEST : INetworkMessage
+		{
+			// Client requests to remove jewel from socket.
+			public byte MessageOrder { get; } = 221;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 ItemGID;
+			[DmlElement(DmlType.UBYT)] public Byte SocketNumber;
+		}
+		public sealed class MSG_UPDATEADVENTUREPOWERCOOLDOWN : INetworkMessage
+		{
+			// Server tells client to update the adventure power cooldown
+			public byte MessageOrder { get; } = 222;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 AdventurePowerCooldownTime;
+		}
+		public sealed class MSG_UPDATEAFTERCOMBATDANCE : INetworkMessage
+		{
+			// Client requests server update the after combat dance
+			public byte MessageOrder { get; } = 223;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.UINT)] public UInt32 AfterCombatDance;
+		}
+		public sealed class MSG_UPDATEBANKLIMIT : INetworkMessage
+		{
+			// Server tells client to update the banks capacity
+			public byte MessageOrder { get; } = 224;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.INT)] public Int32 BankLimit;
+		}
+		public sealed class MSG_UPDATECLASSPROJECTBUTTON : INetworkMessage
+		{
+			// Server sends class project button status
+			public byte MessageOrder { get; } = 225;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString Buffer;
+		}
+		public sealed class MSG_UPDATECLASSPROJECTSTATUS : INetworkMessage
+		{
+			// Server sends class project status
+			public byte MessageOrder { get; } = 226;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UBYT)] public Byte Status;
+			[DmlElement(DmlType.UINT)] public UInt32 ProjectID;
+			[DmlElement(DmlType.UINT)] public UInt32 Count;
+			[DmlElement(DmlType.UINT)] public UInt32 Points;
+			[DmlElement(DmlType.UBYT)] public Byte HasUnclaimedReward;
+		}
+		public sealed class MSG_UPDATECOLLECTEDESSENCES : INetworkMessage
+		{
+			// Update the collected essence info
+			public byte MessageOrder { get; } = 227;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString EssenceData;
+		}
+		public sealed class MSG_UPDATECUSTOMEMOTES : INetworkMessage
+		{
+			// Server tells client to update custom emotes
+			public byte MessageOrder { get; } = 228;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 CustomEmotes;
+			[DmlElement(DmlType.UINT)] public UInt32 CustomTeleportEffects;
+			[DmlElement(DmlType.UBYT)] public Byte Rank;
+		}
+		public sealed class MSG_UPDATEEQUIPMENTSETS : INetworkMessage
+		{
+			// Server send updated equipment sets
+			public byte MessageOrder { get; } = 229;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.STR)] public ByteString Buffer;
+		}
+		public sealed class MSG_UPDATEEVENTCURRENCY1 : INetworkMessage
+		{
+			// Update your eventCurrency1 and max eventCurrency1
+			public byte MessageOrder { get; } = 230;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.INT)] public Int32 EventCurrency1;
+			[DmlElement(DmlType.INT)] public Int32 MaxEventCurrency1;
+		}
+		public sealed class MSG_UPDATEEVENTCURRENCY2 : INetworkMessage
+		{
+			// Update your eventCurrency2 and max eventCurrency2
+			public byte MessageOrder { get; } = 231;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.INT)] public Int32 EventCurrency2;
+			[DmlElement(DmlType.INT)] public Int32 MaxEventCurrency2;
+		}
+		public sealed class MSG_UPDATEEXPANSION : INetworkMessage
+		{
+			// Sever sends a message to update the expansion count on the client
+			public byte MessageOrder { get; } = 232;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.INT)] public Int32 Category;
+			[DmlElement(DmlType.INT)] public Int32 Expansions;
+		}
+		public sealed class MSG_UPDATEEXTRAINVENTORY : INetworkMessage
+		{
+			// Server tells client to update the extra inventory space
+			public byte MessageOrder { get; } = 233;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.INT)] public Int32 ExtraInventorySpace;
+			[DmlElement(DmlType.INT)] public Int32 CurrentInventorySpace;
+		}
+		public sealed class MSG_UPDATEFISHINGXP : INetworkMessage
+		{
+			// The player has changed fishing xp or fishing level
+			public byte MessageOrder { get; } = 234;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.INT)] public Int32 XP;
+			[DmlElement(DmlType.INT)] public Int32 Level;
+		}
+		public sealed class MSG_UPDATEITEMSPELLEXCLUSIONLIST : INetworkMessage
+		{
+			// Client tells server to add or remove a spell id from player's exclusion list.
+			public byte MessageOrder { get; } = 235;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.INT)] public Int32 SpellID;
+			[DmlElement(DmlType.GID)] public UInt64 DeckID;
+			[DmlElement(DmlType.UBYT)] public Byte Exclude;
+			[DmlElement(DmlType.UBYT)] public Byte Success;
+		}
+		public sealed class MSG_UPDATEMAXSHADOWPIPS : INetworkMessage
+		{
+			// From server to client, update the max shadow pips that a player has
+			public byte MessageOrder { get; } = 236;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.INT)] public Int32 MaxShadowPips;
+		}
+		public sealed class MSG_UPDATEMONSTERMAGICXP : INetworkMessage
+		{
+			// The player has changed Monster Magic xp or Monster Magic level
+			public byte MessageOrder { get; } = 237;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.INT)] public Int32 XP;
+			[DmlElement(DmlType.INT)] public Int32 Level;
+		}
+		public sealed class MSG_UPDATENEWSPELLBOOKLAYOUTWARNING : INetworkMessage
+		{
+			// Client requests that the server update the new spellbool layout warning flag
+			public byte MessageOrder { get; } = 238;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UBYT)] public Byte WarningShown;
+		}
+		public sealed class MSG_UPDATEPETBILLBOARD : INetworkMessage
+		{
+			// Zone server tells clients to update a pet's billboard
+			public byte MessageOrder { get; } = 239;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.INT)] public Int32 Level;
+			[DmlElement(DmlType.INT)] public Int32 OverallRating;
+			[DmlElement(DmlType.INT)] public Int32 ActiveRating;
+			[DmlElement(DmlType.INT)] public Int32 HasJewel;
+		}
+		public sealed class MSG_UPDATEPIPCONVERSION : INetworkMessage
+		{
+			// Update your pip conversion base
+			public byte MessageOrder { get; } = 240;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.INT)] public Int32 PipConversionBaseAllSchools;
+			[DmlElement(DmlType.INT)] public Int32 PipConversionBaseFire;
+			[DmlElement(DmlType.INT)] public Int32 PipConversionBaseIce;
+			[DmlElement(DmlType.INT)] public Int32 PipConversionBaseStorm;
+			[DmlElement(DmlType.INT)] public Int32 PipConversionBaseLife;
+			[DmlElement(DmlType.INT)] public Int32 PipConversionBaseMyth;
+			[DmlElement(DmlType.INT)] public Int32 PipConversionBaseDeath;
+			[DmlElement(DmlType.INT)] public Int32 PipConversionBaseBalance;
+		}
+		public sealed class MSG_UPDATEPURCHASEDCHARACTERSLOTS : INetworkMessage
+		{
+			// Server updates Purchased Character Slots
+			public byte MessageOrder { get; } = 241;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.INT)] public Int32 PurchasedCharacterSlots;
+		}
+		public sealed class MSG_UPDATEREMEMBERLASTREALM : INetworkMessage
+		{
+			// Client requests that the server update the remember last realm flag
+			public byte MessageOrder { get; } = 242;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UBYT)] public Byte RememberLastRealm;
+		}
+		public sealed class MSG_UPDATERESUMEINSTANCETIME : INetworkMessage
+		{
+			// Zone server sends chat server a list of players to be updated
+			public byte MessageOrder { get; } = 243;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 ExpireTime;
+			[DmlElement(DmlType.GID)] public UInt64 ClusterGID;
+			[DmlElement(DmlType.GID)] public UInt64 Player1;
+			[DmlElement(DmlType.GID)] public UInt64 Player2;
+			[DmlElement(DmlType.GID)] public UInt64 Player3;
+			[DmlElement(DmlType.GID)] public UInt64 Player4;
+		}
+		public sealed class MSG_UPDATERESUMEINSTANCETIME2 : INetworkMessage
+		{
+			// Chat server sends zone server which sends to client cluster time update info
+			public byte MessageOrder { get; } = 244;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 ExpireTime;
+			[DmlElement(DmlType.GID)] public UInt64 ClusterGID;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+		}
+		public sealed class MSG_UPDATESSUBSCRIBERBEBEFITFLAGS : INetworkMessage
+		{
+			// Server sends new Benefit Flags to client
+			public byte MessageOrder { get; } = 245;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 SubscriberBenefitFlags;
+		}
+		public sealed class MSG_UPDATETELEPORTEFFECT : INetworkMessage
+		{
+			// Server tells client to update teleport effect
+			public byte MessageOrder { get; } = 246;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 TeleportEffect;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+		}
+		public sealed class MSG_UPDATETUTORIALTIPLOG : INetworkMessage
+		{
+			// Client or server updates the tutorial tip log
+			public byte MessageOrder { get; } = 247;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.STR)] public ByteString TutorialTipData;
+		}
+		public sealed class MSG_USEPETADVENTUREPOWER : INetworkMessage
+		{
+			// Client requests that the server use an adventure power
+			public byte MessageOrder { get; } = 248;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 ItemGID;
+			[DmlElement(DmlType.UINT)] public UInt32 PowerID;
+		}
+		public sealed class MSG_UpdateClassProjectPlayerProgress : INetworkMessage
+		{
+			// Server sends updated class project player progress to the client
+			public byte MessageOrder { get; } = 249;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.STR)] public ByteString ProgressData;
+		}
+		public sealed class MSG_WHIRLYBURLYMESSAGE : INetworkMessage
+		{
+			// Server and client Whirly Burly Messages
+			public byte MessageOrder { get; } = 250;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.UBYT)] public Byte MessageType;
+			[DmlElement(DmlType.UINT)] public UInt32 GameID;
+			[DmlElement(DmlType.STR)] public ByteString Data;
+		}
+		public sealed class MSG_WHIRLYBURLYOPENKIOSK : INetworkMessage
+		{
+			// Server tells client to open Whirly Burly kiosk
+			public byte MessageOrder { get; } = 251;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+		}
+		public sealed class MSG_ZONECLUSTERINFO : INetworkMessage
+		{
+			// Server sends client info about current cluster
+			public byte MessageOrder { get; } = 252;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.UINT)] public UInt32 NumberOfZones;
+			[DmlElement(DmlType.UINT)] public UInt32 PlayerCount;
+			[DmlElement(DmlType.UINT)] public UInt32 FreeSlots;
+		}
+		public sealed class MSG_ZONEGATELIST : INetworkMessage
+		{
+			// Send list of available zones from server to client
+			public byte MessageOrder { get; } = 253;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.STR)] public ByteString Data;
+		}
+		public sealed class MSG_ZONEHOP : INetworkMessage
+		{
+			// Client requests a reload of the current zone
+			public byte MessageOrder { get; } = 254;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 53;
+		}
+	}
+	public sealed class WIZARD3 : INetworkProtocol
+	{
+		public Byte ServiceId { get; } = 56;
+		public String ProtocolType { get; } = "WIZARD3";
+		public Int32 ProtocolVersion { get; } = 1;
+		public String ProtocolDescription { get; } = "Wizard Messages3";
+
+		public INetworkMessage Dispatch(byte id)
+        {
+            switch (id)
+            {
+                case (0): return new MSG_ADDGUILDINVENTORYITEM();
+                case (1): return new MSG_ADVANCESEASONPASS();
+                case (2): return new MSG_ADVENTUREPARTASKADDTOKIOSK();
+                case (3): return new MSG_ADVENTUREPARTSETPURPOSE();
+                case (4): return new MSG_ADVENTUREPARTYADDTOKIOSK();
+                case (5): return new MSG_ADVENTUREPARTYASKTOJOIN();
+                case (6): return new MSG_AddZoneToken();
+                case (7): return new MSG_AdvPvPEloData();
+                case (8): return new MSG_AdvPvPLeaderboardData();
+                case (9): return new MSG_AdvPvPLeaderboardDataRequest();
+                case (10): return new MSG_CANACQUIREGROUPELIXIR();
+                case (11): return new MSG_CANCELEDPARTYMESSAGE();
+                case (12): return new MSG_CHANGEGROUPLEADER();
+                case (13): return new MSG_CHANGEPARTYNAME();
+                case (14): return new MSG_CHANGEPARTYOWNER();
+                case (15): return new MSG_CHANGERESPONSEPARTYMESSAGE();
+                case (16): return new MSG_CREATEGUILDREQUEST();
+                case (17): return new MSG_CREATEGUILDTESTOBJECT();
+                case (18): return new MSG_CSRLOYALTYPAGEDATA();
+                case (19): return new MSG_CSRREQUESTRENAMEINFO();
+                case (20): return new MSG_EMPTYGUILDTRASH();
+                case (21): return new MSG_EnvironmentalDamage();
+                case (22): return new MSG_FULLDYEREQUEST();
+                case (23): return new MSG_GUILDINFO();
+                case (24): return new MSG_GUILDITEMCONTROL();
+                case (25): return new MSG_GUILDMEMBERSHIP();
+                case (26): return new MSG_GUILDUNLOCKREQUEST();
+                case (27): return new MSG_INPERSONHATCHINGCHECK();
+                case (28): return new MSG_LOADGUILDOBJECT();
+                case (29): return new MSG_LOCKLEVEL();
+                case (30): return new MSG_LOGCSBATTLEREADYITEM();
+                case (31): return new MSG_LOYALTYCLAIMLOYALTYTOKENS();
+                case (32): return new MSG_LOYALTYCLAIMLOYALTYTOKENSCONFIRM();
+                case (33): return new MSG_LOYALTYPROGRAMFORDAILYSPIRAL();
+                case (34): return new MSG_LOYALTYSTORELISTREQUEST();
+                case (35): return new MSG_LOYALTYSTORE_PURCHASE_LOCK_REQUEST();
+                case (36): return new MSG_LOYALTYSTORE_PURCHASE_LOCK_RESPONSE();
+                case (37): return new MSG_LOYALTYSTORE_PURCHASE_REQUEST();
+                case (38): return new MSG_LOYALTYSTORE_PURCHASE_RESPONSE();
+                case (39): return new MSG_ModifyZoneToken();
+                case (40): return new MSG_PETPOWERWORLDFAILURE();
+                case (41): return new MSG_PLAYERINGUILDCOOLDOWN();
+                case (42): return new MSG_PLAYGRAPHIC();
+                case (43): return new MSG_POSTPARTYMESSAGE();
+                case (44): return new MSG_PROMOTEPROVISIONALPLAYER();
+                case (45): return new MSG_PVP5THAGECANJOINMATCH();
+                case (46): return new MSG_PVP5THAGECANJOINMATCHRESPONSE();
+                case (47): return new MSG_PVP5THAGEKIOSKREQUEST();
+                case (48): return new MSG_PVP5THAGEOPENPVPWINDOW();
+                case (49): return new MSG_PVPDISABLED();
+                case (50): return new MSG_PlayerStatueChanged();
+                case (51): return new MSG_PlayerStatueData();
+                case (52): return new MSG_PlayerStatueGroup();
+                case (53): return new MSG_PlayerStatueInspect();
+                case (54): return new MSG_PvPStatueData();
+                case (55): return new MSG_PvPStatueInspect();
+                case (56): return new MSG_RAIDGATEUNLOCKREQUEST();
+                case (57): return new MSG_RATEMYSTITCHADD();
+                case (58): return new MSG_RATEMYSTITCHCLAIMJUDGESCHOICE();
+                case (59): return new MSG_RATEMYSTITCHCSRRESULTS();
+                case (60): return new MSG_RATEMYSTITCHEREQUESTREMOVE();
+                case (61): return new MSG_RATEMYSTITCHHELP();
+                case (62): return new MSG_RATEMYSTITCHHOLIDAYFLAGS();
+                case (63): return new MSG_RATEMYSTITCHPOSTRATE();
+                case (64): return new MSG_RATEMYSTITCHRATE();
+                case (65): return new MSG_RATEMYSTITCHRATEFAIL();
+                case (66): return new MSG_RATEMYSTITCHRATERESPONSE();
+                case (67): return new MSG_RATEMYSTITCHREQUEST();
+                case (68): return new MSG_RATEMYSTITCHREQUESTLEADERBOARD();
+                case (69): return new MSG_RATEMYSTITCHREQUESTOUTFITS();
+                case (70): return new MSG_REMOVEGUILDINVENTORYITEM();
+                case (71): return new MSG_REMOVEPARTYMEMBER();
+                case (72): return new MSG_REMOVEPARTYMESSAGE();
+                case (73): return new MSG_REQUESTGUILDINVENTORY();
+                case (74): return new MSG_REQUESTGUILDOBJECT();
+                case (75): return new MSG_REQUESTGUILDUNLOCKDATA();
+                case (76): return new MSG_REQUESTINPERSONHATCHINGCHANGE();
+                case (77): return new MSG_REQUESTPERMISSIONCHANGE();
+                case (78): return new MSG_REQUESTRADIALADVENTURECHAT();
+                case (79): return new MSG_REQUESTRADIALADVENTUREQUICKCHAT();
+                case (80): return new MSG_REQUESTRADIALADVENTUREQUICKCHATEXT();
+                case (81): return new MSG_REQUESTRENAMECHARACTER();
+                case (82): return new MSG_REQUESTSHOWPVPOPTION();
+                case (83): return new MSG_REQUESTSIGILSLOT();
+                case (84): return new MSG_RESPONSESHOWPVPOPTION();
+                case (85): return new MSG_ROLLCAMERA();
+                case (86): return new MSG_RemoveZoneToken();
+                case (87): return new MSG_ResetZoneToken();
+                case (88): return new MSG_SETGROUPQUEST();
+                case (89): return new MSG_SETSIGILSLOT();
+                case (90): return new MSG_SETSKINTONEMESSAGE();
+                case (91): return new MSG_SETTESTREALMWATERMARK();
+                case (92): return new MSG_SHOPLOYALTYLIST();
+                case (93): return new MSG_SHOWCLIENTGROUPELIXIRPOPUP();
+                case (94): return new MSG_SOCIALCONTROL();
+                case (95): return new MSG_SOCIALKIOSKREQUEST();
+                case (96): return new MSG_SetDeckArchmastery();
+                case (97): return new MSG_UNLOADGUILDOBJECT();
+                case (98): return new MSG_UNLOCKTRIGGERDATA();
+                case (99): return new MSG_UPDATEARCHMASTERY();
+                case (100): return new MSG_UPDATEGUILDNAME();
+                case (101): return new MSG_UPDATEGUILDUNLOCKTRIGGER();
+                case (102): return new MSG_UPDATELOYALTYPURCHASE();
+                case (103): return new MSG_UPDATEOVERFLOWXP();
+                case (104): return new MSG_UPDATEPVPCURRENCY();
+                case (105): return new MSG_UPDATESHOWPVPOPTION();
+                case (106): return new MSG_VISITGUILDHOUSE();
+                case (107): return new MSG_Visibility();
+                default: throw new InternalException($"No message was found at ID {id} for this protocol!");
+            }
+        }
+
+		public sealed class MSG_ADDGUILDINVENTORYITEM : INetworkMessage
+		{
+			// Server sends guild inventory item
+			public byte MessageOrder { get; } = 1;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PartyGID;
+			[DmlElement(DmlType.STR)] public ByteString Buffer;
+			[DmlElement(DmlType.UBYT)] public Byte IsTrash;
+		}
+		public sealed class MSG_ADVANCESEASONPASS : INetworkMessage
+		{
+			// Client request advance the season pass (SOF or Battle Pass)
+			public byte MessageOrder { get; } = 2;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.UINT)] public UInt32 ProjectID;
+			[DmlElement(DmlType.UBYT)] public Byte Advance;
+			[DmlElement(DmlType.INT)] public Int32 BattlePass;
+			[DmlElement(DmlType.INT)] public Int32 Credits;
+			[DmlElement(DmlType.INT)] public Int32 StartRewardIndex;
+			[DmlElement(DmlType.INT)] public Int32 EndRewardIndex;
+			[DmlElement(DmlType.INT)] public Int32 NewTotalProgress;
+		}
+		public sealed class MSG_ADVENTUREPARTASKADDTOKIOSK : INetworkMessage
+		{
+			// Server asks client if player wants to add Adventure Party to kiosk
+			public byte MessageOrder { get; } = 3;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 PartyGID;
+		}
+		public sealed class MSG_ADVENTUREPARTSETPURPOSE : INetworkMessage
+		{
+			// Client requests server set an adventure party's purpose
+			public byte MessageOrder { get; } = 4;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 PartyGID;
+			[DmlElement(DmlType.UINT)] public UInt32 ActivityType;
+			[DmlElement(DmlType.UINT)] public UInt32 WorldID;
+		}
+		public sealed class MSG_ADVENTUREPARTYADDTOKIOSK : INetworkMessage
+		{
+			// Client requests server add Adventure Party to kiosk
+			public byte MessageOrder { get; } = 5;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 PartyGID;
+			[DmlElement(DmlType.UINT)] public UInt32 AddToKiosk;
+		}
+		public sealed class MSG_ADVENTUREPARTYASKTOJOIN : INetworkMessage
+		{
+			// Player requests to join an Adventure Party from the kiosk
+			public byte MessageOrder { get; } = 6;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 PartyGID;
+			[DmlElement(DmlType.INT)] public Int32 Type;
+			[DmlElement(DmlType.UINT)] public UInt32 PartyName;
+			[DmlElement(DmlType.STR)] public ByteString NameBlob;
+			[DmlElement(DmlType.INT)] public Int32 Level;
+			[DmlElement(DmlType.STR)] public ByteString School;
+			[DmlElement(DmlType.UBYT)] public Byte Guild;
+		}
+		public sealed class MSG_AddZoneToken : INetworkMessage
+		{
+			// Server tells client to add a ZoneToken
+			public byte MessageOrder { get; } = 7;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.STR)] public ByteString Add;
+		}
+		public sealed class MSG_AdvPvPEloData : INetworkMessage
+		{
+			// Server forwarding ELO history data to the client or client requesting the ELO data
+			public byte MessageOrder { get; } = 8;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.STR)] public ByteString EntryList;
+			[DmlElement(DmlType.UBYT)] public Byte CheckCompletion;
+			[DmlElement(DmlType.GID)] public UInt64 RecordCacheID;
+		}
+		public sealed class MSG_AdvPvPLeaderboardData : INetworkMessage
+		{
+			// Server forwarding leader board data to the client
+			public byte MessageOrder { get; } = 9;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.UINT)] public UInt32 LeagueID;
+			[DmlElement(DmlType.UINT)] public UInt32 SeasonID;
+			[DmlElement(DmlType.UINT)] public UInt32 StartTime;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.STR)] public ByteString EntryList;
+			[DmlElement(DmlType.GID)] public UInt64 RelativeCharID;
+		}
+		public sealed class MSG_AdvPvPLeaderboardDataRequest : INetworkMessage
+		{
+			// Client requesting leader board data from the server
+			public byte MessageOrder { get; } = 10;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.UINT)] public UInt32 LeagueID;
+			[DmlElement(DmlType.UINT)] public UInt32 SeasonID;
+			[DmlElement(DmlType.UINT)] public UInt32 StartTime;
+			[DmlElement(DmlType.INT)] public Int32 StartRank;
+			[DmlElement(DmlType.GID)] public UInt64 RelativeCharID;
+			[DmlElement(DmlType.INT)] public Int32 Count;
+		}
+		public sealed class MSG_CANACQUIREGROUPELIXIR : INetworkMessage
+		{
+			// Client asks if it can acquire a group elixir
+			public byte MessageOrder { get; } = 11;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.UBYT)] public Byte CanAcquireGroupElixir;
+		}
+		public sealed class MSG_CANCELEDPARTYMESSAGE : INetworkMessage
+		{
+			// Server tells client about a canceled appointment
+			public byte MessageOrder { get; } = 12;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.UINT)] public UInt32 CentralTime;
+			[DmlElement(DmlType.UINT)] public UInt32 PartyName;
+			[DmlElement(DmlType.UBYT)] public Byte Guild;
+		}
+		public sealed class MSG_CHANGEGROUPLEADER : INetworkMessage
+		{
+			// Client requests server change the leader of a group
+			public byte MessageOrder { get; } = 13;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 RequestingPlayerGID;
+		}
+		public sealed class MSG_CHANGEPARTYNAME : INetworkMessage
+		{
+			// Client requests server change the name of an adventure party
+			public byte MessageOrder { get; } = 14;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.UINT)] public UInt32 PartyName;
+			[DmlElement(DmlType.GID)] public UInt64 PartyGID;
+			[DmlElement(DmlType.GID)] public UInt64 RequestingPlayerGID;
+		}
+		public sealed class MSG_CHANGEPARTYOWNER : INetworkMessage
+		{
+			// Client requests server change the owner of an adventure party
+			public byte MessageOrder { get; } = 15;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 PartyGID;
+			[DmlElement(DmlType.GID)] public UInt64 RequestingPlayerGID;
+		}
+		public sealed class MSG_CHANGERESPONSEPARTYMESSAGE : INetworkMessage
+		{
+			// Client requests server remove a message to an adventure party message board
+			public byte MessageOrder { get; } = 16;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 MessageGID;
+			[DmlElement(DmlType.GID)] public UInt64 PartyGID;
+			[DmlElement(DmlType.UINT)] public UInt32 CreationTime;
+			[DmlElement(DmlType.UINT)] public UInt32 RemovalTime;
+		}
+		public sealed class MSG_CREATEGUILDREQUEST : INetworkMessage
+		{
+			// Handles messaging for creating a guild
+			public byte MessageOrder { get; } = 17;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 OwnerGID;
+			[DmlElement(DmlType.STR)] public ByteString OwnerName;
+			[DmlElement(DmlType.UINT)] public UInt32 Status;
+			[DmlElement(DmlType.UINT)] public UInt32 PartyName;
+			[DmlElement(DmlType.STR)] public ByteString Data;
+		}
+		public sealed class MSG_CREATEGUILDTESTOBJECT : INetworkMessage
+		{
+			// Zone server request guild info to create test object
+			public byte MessageOrder { get; } = 18;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 PartyGID;
+			[DmlElement(DmlType.UINT)] public UInt32 TemplateID;
+		}
+		public sealed class MSG_CSRLOYALTYPAGEDATA : INetworkMessage
+		{
+			// Contains the loyalty page data requested by CSR
+			public byte MessageOrder { get; } = 19;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.STR)] public ByteString LoyaltyStartTime;
+			[DmlElement(DmlType.INT)] public Int32 LoyaltyTier;
+			[DmlElement(DmlType.INT)] public Int32 LoyaltyNumTokens;
+		}
+		public sealed class MSG_CSRREQUESTRENAMEINFO : INetworkMessage
+		{
+			// Client requests rename info
+			public byte MessageOrder { get; } = 20;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 CharacterID;
+			[DmlElement(DmlType.UINT)] public UInt32 UsedRename;
+			[DmlElement(DmlType.STR)] public ByteString NameBlob;
+		}
+		public sealed class MSG_EMPTYGUILDTRASH : INetworkMessage
+		{
+			// client request server empty the guilds trash
+			public byte MessageOrder { get; } = 21;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PartyGID;
+		}
+		public sealed class MSG_EnvironmentalDamage : INetworkMessage
+		{
+			// Server tells client of environmental damage
+			public byte MessageOrder { get; } = 22;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.INT)] public Int32 Damage;
+		}
+		public sealed class MSG_FULLDYEREQUEST : INetworkMessage
+		{
+			// Send item to dye from client to server
+			public byte MessageOrder { get; } = 23;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 itemGlobalID;
+			[DmlElement(DmlType.UINT)] public UInt32 color;
+			[DmlElement(DmlType.GID)] public UInt64 npcGlobalID;
+		}
+		public sealed class MSG_GUILDINFO : INetworkMessage
+		{
+			// CSR get guild info
+			public byte MessageOrder { get; } = 24;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 OwnerGID;
+			[DmlElement(DmlType.STR)] public ByteString OwnerName;
+			[DmlElement(DmlType.UINT)] public UInt32 PartyName;
+		}
+		public sealed class MSG_GUILDITEMCONTROL : INetworkMessage
+		{
+			// Client requests to donate, trash or reclaim an item for a guild
+			public byte MessageOrder { get; } = 25;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 PartyGID;
+			[DmlElement(DmlType.GID)] public UInt64 ItemGID;
+			[DmlElement(DmlType.UBYT)] public Byte IsTrash;
+		}
+		public sealed class MSG_GUILDMEMBERSHIP : INetworkMessage
+		{
+			// Handles messaging for guilds
+			public byte MessageOrder { get; } = 26;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 PartyGID;
+			[DmlElement(DmlType.UINT)] public UInt32 PartyName;
+			[DmlElement(DmlType.STR)] public ByteString Data;
+		}
+		public sealed class MSG_GUILDUNLOCKREQUEST : INetworkMessage
+		{
+			// Server requests client open the unlock trigger window
+			public byte MessageOrder { get; } = 27;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.GID)] public UInt64 PartyGID;
+			[DmlElement(DmlType.INT)] public Int32 Type;
+			[DmlElement(DmlType.INT)] public Int32 ReagentIndex;
+			[DmlElement(DmlType.INT)] public Int32 Quantity;
+		}
+		public sealed class MSG_INPERSONHATCHINGCHECK : INetworkMessage
+		{
+			// Check if in person hatching is allowed
+			public byte MessageOrder { get; } = 28;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.UBYT)] public Byte Status;
+			[DmlElement(DmlType.GID)] public UInt64 OwnerGID;
+			[DmlElement(DmlType.GID)] public UInt64 PetGID;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.STR)] public ByteString PackedName;
+			[DmlElement(DmlType.UINT)] public UInt32 PetName;
+		}
+		public sealed class MSG_LOADGUILDOBJECT : INetworkMessage
+		{
+			// Chat server requests that zone server load a Guild Object
+			public byte MessageOrder { get; } = 29;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 PartyGID;
+			[DmlElement(DmlType.GID)] public UInt64 GuildObjectGID;
+			[DmlElement(DmlType.UINT)] public UInt32 HousingTemplateID;
+			[DmlElement(DmlType.GID)] public UInt64 HousingInstanceGID;
+			[DmlElement(DmlType.GID)] public UInt64 InteriorInstanceGID;
+			[DmlElement(DmlType.UINT)] public UInt32 InteriorTemplateID;
+			[DmlElement(DmlType.STR)] public ByteString Buffer;
+			[DmlElement(DmlType.STR)] public ByteString AllBuffer;
+		}
+		public sealed class MSG_LOCKLEVEL : INetworkMessage
+		{
+			// Client request level lock or unlock
+			public byte MessageOrder { get; } = 30;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.UBYT)] public Byte Unlock;
+		}
+		public sealed class MSG_LOGCSBATTLEREADYITEM : INetworkMessage
+		{
+			// Message sent from the client whenever the player closes the CrownShop to report the battle ready item
+			public byte MessageOrder { get; } = 31;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.UINT)] public UInt32 BRItemTemplateID;
+		}
+		public sealed class MSG_LOYALTYCLAIMLOYALTYTOKENS : INetworkMessage
+		{
+			// Client requests server give any tokens that can be claimed
+			public byte MessageOrder { get; } = 32;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+		}
+		public sealed class MSG_LOYALTYCLAIMLOYALTYTOKENSCONFIRM : INetworkMessage
+		{
+			// Server confirms the claim of loyalty tokens requested by the client
+			public byte MessageOrder { get; } = 33;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.BYT)] public SByte Failure;
+		}
+		public sealed class MSG_LOYALTYPROGRAMFORDAILYSPIRAL : INetworkMessage
+		{
+			// Client permanent shop requests from server the loyalty program flag and current member tokens that can be claimed
+			public byte MessageOrder { get; } = 34;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.BYT)] public SByte LoyaltyProgramFlag;
+			[DmlElement(DmlType.INT)] public Int32 LoyaltyNumTokensCanClaim;
+		}
+		public sealed class MSG_LOYALTYSTORELISTREQUEST : INetworkMessage
+		{
+			// Sent from client to server to request the loyalty store item list
+			public byte MessageOrder { get; } = 35;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.UINT)] public UInt32 UpdateID;
+		}
+		public sealed class MSG_LOYALTYSTORE_PURCHASE_LOCK_REQUEST : INetworkMessage
+		{
+			// Sent from client when an item is selected to lock in the purchase
+			public byte MessageOrder { get; } = 36;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 Item;
+			[DmlElement(DmlType.UINT)] public UInt32 SaleID;
+		}
+		public sealed class MSG_LOYALTYSTORE_PURCHASE_LOCK_RESPONSE : INetworkMessage
+		{
+			// Server sends the current locked purchase for the item about to be purchased
+			public byte MessageOrder { get; } = 37;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 Item;
+			[DmlElement(DmlType.INT)] public Int32 LoyaltyTokensCost;
+			[DmlElement(DmlType.INT)] public Int32 Error;
+		}
+		public sealed class MSG_LOYALTYSTORE_PURCHASE_REQUEST : INetworkMessage
+		{
+			// Client sends confirmation of buying purchased locked item
+			public byte MessageOrder { get; } = 38;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 Item;
+			[DmlElement(DmlType.INT)] public Int32 LoyaltyTokensCost;
+			[DmlElement(DmlType.UINT)] public UInt32 SaleID;
+		}
+		public sealed class MSG_LOYALTYSTORE_PURCHASE_RESPONSE : INetworkMessage
+		{
+			// Server sends result of transaction - Currently not used...
+			public byte MessageOrder { get; } = 39;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 Item;
+			[DmlElement(DmlType.INT)] public Int32 Type;
+			[DmlElement(DmlType.INT)] public Int32 LoyaltyTokensCost;
+			[DmlElement(DmlType.INT)] public Int32 Error;
+		}
+		public sealed class MSG_ModifyZoneToken : INetworkMessage
+		{
+			// Server tells client to update a ZoneToken
+			public byte MessageOrder { get; } = 40;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.STR)] public ByteString TokenName;
+			[DmlElement(DmlType.INT)] public Int32 Delta;
+		}
+		public sealed class MSG_PETPOWERWORLDFAILURE : INetworkMessage
+		{
+			// Server tells client to pet power failed
+			public byte MessageOrder { get; } = 41;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+		}
+		public sealed class MSG_PLAYERINGUILDCOOLDOWN : INetworkMessage
+		{
+			// Server informs clients that player can't join a guild because they're in cooldown
+			public byte MessageOrder { get; } = 42;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.STR)] public ByteString PlayerName;
+			[DmlElement(DmlType.UINT)] public UInt32 PartyName;
+			[DmlElement(DmlType.UINT)] public UInt32 CooldownTime;
+			[DmlElement(DmlType.UBYT)] public Byte Status;
+		}
+		public sealed class MSG_PLAYGRAPHIC : INetworkMessage
+		{
+			// Server tells client to play a graphic
+			public byte MessageOrder { get; } = 43;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.FLT)] public Single X;
+			[DmlElement(DmlType.FLT)] public Single Y;
+			[DmlElement(DmlType.FLT)] public Single Z;
+			[DmlElement(DmlType.FLT)] public Single Yaw;
+			[DmlElement(DmlType.FLT)] public Single Duration;
+			[DmlElement(DmlType.STR)] public ByteString Filename;
+		}
+		public sealed class MSG_POSTPARTYMESSAGE : INetworkMessage
+		{
+			// Client posts a message to an adventure party message board
+			public byte MessageOrder { get; } = 44;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 PartyGID;
+			[DmlElement(DmlType.UINT)] public UInt32 ActivityType;
+			[DmlElement(DmlType.UINT)] public UInt32 WorldID;
+			[DmlElement(DmlType.UINT)] public UInt32 TimeOffset;
+			[DmlElement(DmlType.UINT)] public UInt32 ClientTime;
+			[DmlElement(DmlType.UINT)] public UInt32 HourOffset;
+		}
+		public sealed class MSG_PROMOTEPROVISIONALPLAYER : INetworkMessage
+		{
+			// Client requests server change the promote a provisional player
+			public byte MessageOrder { get; } = 45;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 PartyGID;
+			[DmlElement(DmlType.GID)] public UInt64 RequestingPlayerGID;
+		}
+		public sealed class MSG_PVP5THAGECANJOINMATCH : INetworkMessage
+		{
+			// Client asks if it can join the 5th age pvp queue (Ranked or Practice)
+			public byte MessageOrder { get; } = 46;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.UINT)] public UInt32 LeagueID;
+			[DmlElement(DmlType.UINT)] public UInt32 SeasonID;
+		}
+		public sealed class MSG_PVP5THAGECANJOINMATCHRESPONSE : INetworkMessage
+		{
+			// Server tells client if they can join the match (Ranked or Practice)
+			public byte MessageOrder { get; } = 47;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.UBYT)] public Byte CanJoinQueue;
+		}
+		public sealed class MSG_PVP5THAGEKIOSKREQUEST : INetworkMessage
+		{
+			// Server requests client open the pvp 5th age kiosk
+			public byte MessageOrder { get; } = 48;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.STR)] public ByteString Data;
+			[DmlElement(DmlType.STR)] public ByteString ProjectData;
+			[DmlElement(DmlType.GID)] public UInt64 KioskGID;
+		}
+		public sealed class MSG_PVP5THAGEOPENPVPWINDOW : INetworkMessage
+		{
+			// Client requests to open the PvPWindow for the match type
+			public byte MessageOrder { get; } = 49;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.UBYT)] public Byte MatchType;
+			[DmlElement(DmlType.UINT)] public UInt32 LeagueID;
+			[DmlElement(DmlType.UINT)] public UInt32 SeasonID;
+		}
+		public sealed class MSG_PVPDISABLED : INetworkMessage
+		{
+			// Server tells client pvp is disabled
+			public byte MessageOrder { get; } = 50;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+		}
+		public sealed class MSG_PlayerStatueChanged : INetworkMessage
+		{
+			// Push notification that a player statue has changed
+			public byte MessageOrder { get; } = 51;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.STR)] public ByteString Group;
+			[DmlElement(DmlType.STR)] public ByteString Name;
+		}
+		public sealed class MSG_PlayerStatueData : INetworkMessage
+		{
+			// Server updating a client side statue object
+			public byte MessageOrder { get; } = 52;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.STR)] public ByteString VisualBlob;
+			[DmlElement(DmlType.INT)] public Int32 BlobIndex;
+		}
+		public sealed class MSG_PlayerStatueGroup : INetworkMessage
+		{
+			// Client to server blob request
+			public byte MessageOrder { get; } = 53;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.STR)] public ByteString Group;
+			[DmlElement(DmlType.STR)] public ByteString Name;
+			[DmlElement(DmlType.STR)] public ByteString VisualBlob;
+			[DmlElement(DmlType.STR)] public ByteString Filter;
+		}
+		public sealed class MSG_PlayerStatueInspect : INetworkMessage
+		{
+			// Sent when a client interacts with a statue object
+			public byte MessageOrder { get; } = 54;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+		}
+		public sealed class MSG_PvPStatueData : INetworkMessage
+		{
+			// Server updating a client side statue object
+			public byte MessageOrder { get; } = 55;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.STR)] public ByteString VisualBlob;
+		}
+		public sealed class MSG_PvPStatueInspect : INetworkMessage
+		{
+			// Sent when a client interacts with a statue object
+			public byte MessageOrder { get; } = 56;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+		}
+		public sealed class MSG_RAIDGATEUNLOCKREQUEST : INetworkMessage
+		{
+			// Server requests client open the unlock raid gate window
+			public byte MessageOrder { get; } = 57;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.GID)] public UInt64 PartyGID;
+			[DmlElement(DmlType.UINT)] public UInt32 TemplateID;
+			[DmlElement(DmlType.GID)] public UInt64 KeyGID;
+			[DmlElement(DmlType.INT)] public Int32 Type;
+		}
+		public sealed class MSG_RATEMYSTITCHADD : INetworkMessage
+		{
+			// Client submits an outfit to Rate My Stitch
+			public byte MessageOrder { get; } = 58;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.UINT)] public UInt32 TeleportID;
+			[DmlElement(DmlType.UINT)] public UInt32 EmoteID;
+			[DmlElement(DmlType.UBYT)] public Byte Flags;
+			[DmlElement(DmlType.UINT)] public UInt32 Type;
+			[DmlElement(DmlType.STR)] public ByteString CharacterBuffer;
+			[DmlElement(DmlType.STR)] public ByteString EquipmentBuffer;
+		}
+		public sealed class MSG_RATEMYSTITCHCLAIMJUDGESCHOICE : INetworkMessage
+		{
+			// CLient request to claim Judges Choice points
+			public byte MessageOrder { get; } = 59;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+		}
+		public sealed class MSG_RATEMYSTITCHCSRRESULTS : INetworkMessage
+		{
+			// Server sends csr results to client
+			public byte MessageOrder { get; } = 60;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.STR)] public ByteString Result;
+		}
+		public sealed class MSG_RATEMYSTITCHEREQUESTREMOVE : INetworkMessage
+		{
+			// Client requests their removeal of a Rate My Stitch outfit
+			public byte MessageOrder { get; } = 61;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.UINT)] public UInt32 TypeID;
+		}
+		public sealed class MSG_RATEMYSTITCHHELP : INetworkMessage
+		{
+			// Client requests Rate My Stitch Help
+			public byte MessageOrder { get; } = 62;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+		}
+		public sealed class MSG_RATEMYSTITCHHOLIDAYFLAGS : INetworkMessage
+		{
+			// Ask chat server for holiday flag status
+			public byte MessageOrder { get; } = 63;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.UBYT)] public Byte Christmas;
+			[DmlElement(DmlType.UBYT)] public Byte Halloween;
+			[DmlElement(DmlType.UBYT)] public Byte AprilFools;
+		}
+		public sealed class MSG_RATEMYSTITCHPOSTRATE : INetworkMessage
+		{
+			// Housing job server tells player on zone server to get rating activity credit
+			public byte MessageOrder { get; } = 64;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 CharacterID;
+			[DmlElement(DmlType.BYT)] public SByte BadgeCredit;
+			[DmlElement(DmlType.BYT)] public SByte MaxBadgeCredit;
+		}
+		public sealed class MSG_RATEMYSTITCHRATE : INetworkMessage
+		{
+			// Client submits an outfit to Rate My Stitch
+			public byte MessageOrder { get; } = 65;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.GID)] public UInt64 CharacterID;
+			[DmlElement(DmlType.GID)] public UInt64 OwningCharacterID;
+			[DmlElement(DmlType.UBYT)] public Byte Status;
+			[DmlElement(DmlType.UINT)] public UInt32 TeleportID;
+			[DmlElement(DmlType.UINT)] public UInt32 EmoteID;
+			[DmlElement(DmlType.UBYT)] public Byte Flags;
+			[DmlElement(DmlType.UINT)] public UInt32 Type;
+			[DmlElement(DmlType.STR)] public ByteString CharacterBuffer;
+			[DmlElement(DmlType.STR)] public ByteString EquipmentBuffer;
+		}
+		public sealed class MSG_RATEMYSTITCHRATEFAIL : INetworkMessage
+		{
+			// Housing job server tells player it can't find a outfit to rate
+			public byte MessageOrder { get; } = 66;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.GID)] public UInt64 CharacterID;
+		}
+		public sealed class MSG_RATEMYSTITCHRATERESPONSE : INetworkMessage
+		{
+			// Post Rate My Stitch rating response
+			public byte MessageOrder { get; } = 67;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 CharacterID;
+			[DmlElement(DmlType.UINT)] public UInt32 Type;
+		}
+		public sealed class MSG_RATEMYSTITCHREQUEST : INetworkMessage
+		{
+			// Server requests client open Rate My Stitch UI
+			public byte MessageOrder { get; } = 68;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.STR)] public ByteString Parameter;
+		}
+		public sealed class MSG_RATEMYSTITCHREQUESTLEADERBOARD : INetworkMessage
+		{
+			// Client submits an outfit to Rate My Stitch
+			public byte MessageOrder { get; } = 69;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.GID)] public UInt64 CharacterID;
+			[DmlElement(DmlType.GID)] public UInt64 OwningCharacterID;
+			[DmlElement(DmlType.UBYT)] public Byte Status;
+			[DmlElement(DmlType.STR)] public ByteString PackedName;
+			[DmlElement(DmlType.UINT)] public UInt32 TeleportID;
+			[DmlElement(DmlType.UINT)] public UInt32 EmoteID;
+			[DmlElement(DmlType.UBYT)] public Byte Flags;
+			[DmlElement(DmlType.UINT)] public UInt32 Type;
+			[DmlElement(DmlType.STR)] public ByteString CharacterBuffer;
+			[DmlElement(DmlType.STR)] public ByteString EquipmentBuffer;
+		}
+		public sealed class MSG_RATEMYSTITCHREQUESTOUTFITS : INetworkMessage
+		{
+			// Client requests their Rate My Stitch outfits
+			public byte MessageOrder { get; } = 70;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.UBYT)] public Byte Status;
+			[DmlElement(DmlType.STR)] public ByteString Buffer;
+		}
+		public sealed class MSG_REMOVEGUILDINVENTORYITEM : INetworkMessage
+		{
+			// Server tells client to delete guild inventory item
+			public byte MessageOrder { get; } = 71;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PartyGID;
+			[DmlElement(DmlType.GID)] public UInt64 ItemGID;
+			[DmlElement(DmlType.UBYT)] public Byte IsTrash;
+		}
+		public sealed class MSG_REMOVEPARTYMEMBER : INetworkMessage
+		{
+			// Client requests server remove a player from an adventure party
+			public byte MessageOrder { get; } = 72;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 PartyGID;
+			[DmlElement(DmlType.GID)] public UInt64 RequestingPlayerGID;
+		}
+		public sealed class MSG_REMOVEPARTYMESSAGE : INetworkMessage
+		{
+			// Client requests server remove a message to an adventure party message board
+			public byte MessageOrder { get; } = 73;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 PartyGID;
+			[DmlElement(DmlType.UINT)] public UInt32 CreationTime;
+			[DmlElement(DmlType.UINT)] public UInt32 RemovalTime;
+		}
+		public sealed class MSG_REQUESTGUILDINVENTORY : INetworkMessage
+		{
+			// Client requests guild inventory
+			public byte MessageOrder { get; } = 74;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 PartyGID;
+		}
+		public sealed class MSG_REQUESTGUILDOBJECT : INetworkMessage
+		{
+			// Chat server requests that zone server create a Guild Object
+			public byte MessageOrder { get; } = 75;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 PartyGID;
+			[DmlElement(DmlType.GID)] public UInt64 GuildObjectGID;
+			[DmlElement(DmlType.GID)] public UInt64 HousingInstanceGID;
+			[DmlElement(DmlType.GID)] public UInt64 InteriorInstanceGID;
+			[DmlElement(DmlType.UINT)] public UInt32 HousingTemplateID;
+			[DmlElement(DmlType.UINT)] public UInt32 InteriorTemplateID;
+		}
+		public sealed class MSG_REQUESTGUILDUNLOCKDATA : INetworkMessage
+		{
+			// Client requests guild unlock info
+			public byte MessageOrder { get; } = 76;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+		}
+		public sealed class MSG_REQUESTINPERSONHATCHINGCHANGE : INetworkMessage
+		{
+			// Client requests In Person Hatching change
+			public byte MessageOrder { get; } = 77;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.UBYT)] public Byte Status;
+		}
+		public sealed class MSG_REQUESTPERMISSIONCHANGE : INetworkMessage
+		{
+			// Client requests permissions change
+			public byte MessageOrder { get; } = 78;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 RequestingPlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 PartyGID;
+			[DmlElement(DmlType.STR)] public ByteString Data;
+		}
+		public sealed class MSG_REQUESTRADIALADVENTURECHAT : INetworkMessage
+		{
+			// Client-initiated radial adventure chat request
+			public byte MessageOrder { get; } = 79;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.STR)] public ByteString Message;
+			[DmlElement(DmlType.GID)] public UInt64 SourceID;
+			[DmlElement(DmlType.UBYT)] public Byte Filter;
+			[DmlElement(DmlType.STR)] public ByteString SourceName;
+			[DmlElement(DmlType.GID)] public UInt64 PartyGID;
+		}
+		public sealed class MSG_REQUESTRADIALADVENTUREQUICKCHAT : INetworkMessage
+		{
+			// Client-initiated radial quickchat request
+			public byte MessageOrder { get; } = 80;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.UINT)] public UInt32 MessageID;
+			[DmlElement(DmlType.GID)] public UInt64 PartyGID;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 SourceID;
+			[DmlElement(DmlType.UBYT)] public Byte Filter;
+			[DmlElement(DmlType.STR)] public ByteString SourceName;
+		}
+		public sealed class MSG_REQUESTRADIALADVENTUREQUICKCHATEXT : INetworkMessage
+		{
+			// Client-initiated radial quickchat request that uses extended format for message
+			public byte MessageOrder { get; } = 81;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.STR)] public ByteString Message;
+			[DmlElement(DmlType.GID)] public UInt64 PartyGID;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 SourceID;
+			[DmlElement(DmlType.UBYT)] public Byte Filter;
+			[DmlElement(DmlType.STR)] public ByteString SourceName;
+		}
+		public sealed class MSG_REQUESTRENAMECHARACTER : INetworkMessage
+		{
+			// Client requests to rename character
+			public byte MessageOrder { get; } = 82;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.UINT)] public UInt32 Status;
+			[DmlElement(DmlType.UINT)] public UInt32 NewName;
+			[DmlElement(DmlType.UINT)] public UInt32 NewGender;
+			[DmlElement(DmlType.STR)] public ByteString Text;
+		}
+		public sealed class MSG_REQUESTSHOWPVPOPTION : INetworkMessage
+		{
+			// Client has requested the show pvp option about a character
+			public byte MessageOrder { get; } = 83;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+		}
+		public sealed class MSG_REQUESTSIGILSLOT : INetworkMessage
+		{
+			// Client requests server change their sigil slot
+			public byte MessageOrder { get; } = 84;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.UINT)] public UInt32 SigilSlot;
+		}
+		public sealed class MSG_RESPONSESHOWPVPOPTION : INetworkMessage
+		{
+			// Server is providing show pvp option about a character
+			public byte MessageOrder { get; } = 85;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.UBYT)] public Byte ShowPVPOption;
+		}
+		public sealed class MSG_ROLLCAMERA : INetworkMessage
+		{
+			// Server tells client to roll the camera
+			public byte MessageOrder { get; } = 86;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.FLT)] public Single Roll;
+		}
+		public sealed class MSG_RemoveZoneToken : INetworkMessage
+		{
+			// Server tells client to remove a ZoneToken
+			public byte MessageOrder { get; } = 87;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.STR)] public ByteString TokenName;
+		}
+		public sealed class MSG_ResetZoneToken : INetworkMessage
+		{
+			// Server tells client to update a ZoneToken
+			public byte MessageOrder { get; } = 88;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.STR)] public ByteString TokenName;
+		}
+		public sealed class MSG_SETGROUPQUEST : INetworkMessage
+		{
+			// Client requests server change the quest of a group
+			public byte MessageOrder { get; } = 89;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 QuestGID;
+			[DmlElement(DmlType.GID)] public UInt64 GoalGID;
+			[DmlElement(DmlType.STR)] public ByteString Data;
+		}
+		public sealed class MSG_SETSIGILSLOT : INetworkMessage
+		{
+			// Server broadcasts a sigil slot change
+			public byte MessageOrder { get; } = 90;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 TargetGID;
+			[DmlElement(DmlType.UINT)] public UInt32 SigilSlot;
+		}
+		public sealed class MSG_SETSKINTONEMESSAGE : INetworkMessage
+		{
+			// Client requests skin tone change
+			public byte MessageOrder { get; } = 91;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.UINT)] public UInt32 SkinTone;
+		}
+		public sealed class MSG_SETTESTREALMWATERMARK : INetworkMessage
+		{
+			// Server tells client to display the test realm watermark
+			public byte MessageOrder { get; } = 92;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.UINT)] public UInt32 Enable;
+		}
+		public sealed class MSG_SHOPLOYALTYLIST : INetworkMessage
+		{
+			// Send list of loyalty items can buy from server to client
+			public byte MessageOrder { get; } = 93;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.INT)] public Int32 Credits;
+			[DmlElement(DmlType.STR)] public ByteString LoyaltyInfoUpdateData;
+			[DmlElement(DmlType.STR)] public ByteString LoyaltyStoreData;
+			[DmlElement(DmlType.STR)] public ByteString Updates;
+			[DmlElement(DmlType.UINT)] public UInt32 UpdateID;
+		}
+		public sealed class MSG_SHOWCLIENTGROUPELIXIRPOPUP : INetworkMessage
+		{
+			// Server tells client to pop up a group elixir confirmation window
+			public byte MessageOrder { get; } = 94;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 SenderPlayerGID;
+			[DmlElement(DmlType.STR)] public ByteString GroupElxirDisplayKey;
+		}
+		public sealed class MSG_SOCIALCONTROL : INetworkMessage
+		{
+			// Send social systems info
+			public byte MessageOrder { get; } = 95;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.STR)] public ByteString Data;
+			[DmlElement(DmlType.UINT)] public UInt32 Value;
+		}
+		public sealed class MSG_SOCIALKIOSKREQUEST : INetworkMessage
+		{
+			// Server requests client open the social kiosk
+			public byte MessageOrder { get; } = 96;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.INT)] public Int32 Type;
+			[DmlElement(DmlType.STR)] public ByteString Data;
+		}
+		public sealed class MSG_SetDeckArchmastery : INetworkMessage
+		{
+			// Sets the selected archmastery school on a deck
+			public byte MessageOrder { get; } = 97;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 ItemGID;
+			[DmlElement(DmlType.UINT)] public UInt32 School;
+		}
+		public sealed class MSG_UNLOADGUILDOBJECT : INetworkMessage
+		{
+			// Chat server requests that zone server unload a Guild Object
+			public byte MessageOrder { get; } = 98;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PartyGID;
+		}
+		public sealed class MSG_UNLOCKTRIGGERDATA : INetworkMessage
+		{
+			// Server sends unlock trigger data
+			public byte MessageOrder { get; } = 99;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 PartyGID;
+			[DmlElement(DmlType.STR)] public ByteString Buffer;
+		}
+		public sealed class MSG_UPDATEARCHMASTERY : INetworkMessage
+		{
+			// Update your Archmastery stat
+			public byte MessageOrder { get; } = 100;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.FLT)] public Single Stat;
+		}
+		public sealed class MSG_UPDATEGUILDNAME : INetworkMessage
+		{
+			// Server update guild name on a client
+			public byte MessageOrder { get; } = 101;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.UINT)] public UInt32 PartyName;
+		}
+		public sealed class MSG_UPDATEGUILDUNLOCKTRIGGER : INetworkMessage
+		{
+			// Server requests client update unlock trigger reagents
+			public byte MessageOrder { get; } = 102;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PartyGID;
+			[DmlElement(DmlType.INT)] public Int32 ReagentIndex;
+			[DmlElement(DmlType.INT)] public Int32 Quantity;
+			[DmlElement(DmlType.UINT)] public UInt32 TemplateID;
+			[DmlElement(DmlType.UINT)] public UInt32 State;
+		}
+		public sealed class MSG_UPDATELOYALTYPURCHASE : INetworkMessage
+		{
+			// Server update Client with a recent Loyalty Purchase Data
+			public byte MessageOrder { get; } = 103;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.STR)] public ByteString LoyaltyPurchaseData;
+		}
+		public sealed class MSG_UPDATEOVERFLOWXP : INetworkMessage
+		{
+			// Server tells client to update overflow XP
+			public byte MessageOrder { get; } = 104;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.UINT)] public UInt32 OverflowXP;
+		}
+		public sealed class MSG_UPDATEPVPCURRENCY : INetworkMessage
+		{
+			// Update your pvpCurrency and max pvpCurrency
+			public byte MessageOrder { get; } = 105;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.INT)] public Int32 PvPCurrency;
+			[DmlElement(DmlType.INT)] public Int32 MaxPvPCurrency;
+		}
+		public sealed class MSG_UPDATESHOWPVPOPTION : INetworkMessage
+		{
+			// Client is updating the server with the new show pvp option
+			public byte MessageOrder { get; } = 106;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.UINT)] public UInt32 ShowPVPOption;
+		}
+		public sealed class MSG_VISITGUILDHOUSE : INetworkMessage
+		{
+			// Client requests player teleport to guild house
+			public byte MessageOrder { get; } = 107;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 PlayerGID;
+			[DmlElement(DmlType.GID)] public UInt64 PartyGID;
+			[DmlElement(DmlType.GID)] public UInt64 GuildObjectGID;
+			[DmlElement(DmlType.UINT)] public UInt32 HousingTemplateID;
+			[DmlElement(DmlType.GID)] public UInt64 HousingInstanceGID;
+			[DmlElement(DmlType.GID)] public UInt64 InteriorInstanceGID;
+			[DmlElement(DmlType.UINT)] public UInt32 InteriorTemplateID;
+			[DmlElement(DmlType.UINT)] public UInt32 Status;
+		}
+		public sealed class MSG_Visibility : INetworkMessage
+		{
+			// Adjusts the visibility of a client side object
+			public byte MessageOrder { get; } = 108;
+			public byte AccessLevel { get; } = 0;
+			public byte ServiceId { get; } = 56;
+			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
+			[DmlElement(DmlType.UBYT)] public Byte Action;
+			[DmlElement(DmlType.GID)] public UInt64 GIDValue;
 		}
 	}
 }
