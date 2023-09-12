@@ -18,7 +18,6 @@ internal static class Program
     
     private const string RootWadName = "Root.wad";
     private const string TypeDumpName = "ClientTypeDump.xml";
-    private const string ProtocolFileExtension = "Messages.xml";
     private const string NetworkMessageOutputPath = "NetworkMessages.cs";
     
     static void Main(string[] args)
@@ -94,12 +93,11 @@ internal static class Program
         Log.Information("Starting network cache generation...");
         
         var messageFileRecords = rootWad.Files
-            .Where(x => x.Key.EndsWith(ProtocolFileExtension));
+            .Where(x => x.Key.EndsWith(".xml") && x.Key.Contains("Messages"));
 
         if (!messageFileRecords.Any())
         {
-            Log.Error("Could not find any files with the {Extension} extension in the {RootFile}!", 
-                ProtocolFileExtension, RootWadName);
+            Log.Error("Could not find any message files in the {RootFile}!", RootWadName);
             return;
         }
 
