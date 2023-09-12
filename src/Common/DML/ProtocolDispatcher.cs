@@ -5,46 +5,34 @@
 
 using System;
 using System.Collections.Generic;
-using Imlight.Common.Serializable.Caches;
-using WizUnraveler.Cache;
+using System.Linq;
 
 namespace Imlight.Common.DML;
 
 public static class ProtocolDispatcher
 {
-    private static readonly Dictionary<byte, INetworkProtocol> Protocols = new Dictionary<byte, INetworkProtocol>()
+    private static readonly Dictionary<byte, INetworkProtocol> Protocols = new();
+
+    static ProtocolDispatcher()
     {
-        { 0, new ControlMessages() },
-        { 1, new SYSTEM_1_PROTOCOL() },
-        { 2, new EXTENDEDBASE_2_PROTOCOL() },
-        { 5, new GAME_5_PROTOCOL() },
-        { 7, new LOGIN_7_PROTOCOL() },
-        { 8, new PATCH_8_PROTOCOL() },
-        { 9, new PET_9_PROTOCOL() },
-        { 10, new SCRIPT_10_PROTOCOL() },
-        { 11, new TESTMANAGER_11_PROTOCOL() },
-        { 12, new WIZARD_12_PROTOCOL() },
-        { 15, new MOVEBEHAVIOR_15_PROTOCOL() },
-        { 16, new PHYSICS_16_PROTOCOL() },
-        { 19, new AISCLIENT_19_PROTOCOL() },
-        { 25, new SOBLOCKS_MESSAGES_25_PROTOCOL() },
-        { 40, new SKULLRIDERS_MESSAGES_40_PROTOCOL() },
-        { 41, new DOODLEDOUG_MESSAGES_41_PROTOCOL() },
-        { 42, new MG1_MESSAGES_42_PROTOCOL() },
-        { 43, new MG2_MESSAGES_43_PROTOCOL() },
-        { 44, new MG3_MESSAGES_44_PROTOCOL() },
-        { 45, new MG4_MESSAGES_45_PROTOCOL() },
-        { 46, new MG5_MESSAGES_46_PROTOCOL() },
-        { 47, new MG6_MESSAGES_47_PROTOCOL() },
-        { 50, new WIZARDHOUSING_50_PROTOCOL() },
-        { 51, new WIZARDCOMBAT_MESSAGES_51_PROTOCOL() },
-        { 52, new QUEST_MESSAGES_52_PROTOCOL() },
-        { 53, new WIZARD2_53_PROTOCOL() },
-        { 54, new MG9_MESSAGES_54_PROTOCOL() },
-        { 55, new GAME2_55_PROTOCOL() },
-        { 56, new WIZARD3_56_PROTOCOL() },
-        { 57, new CANTRIPSMESSAGES_57_PROTOCOL() },
-    };
+        // Get any class that inherits from INetworkProtocol.
+        var types = AppDomain.CurrentDomain.GetAssemblies()
+            .SelectMany(s => s.GetTypes())
+            .Where(p => typeof(INetworkProtocol).IsAssignableFrom(p) && !p.IsInterface);
+        
+        // Iterate through each type. get the ServiceId field and add it to the dictionary.
+        foreach (var type in types)
+        {
+            var instance = (INetworkProtocol)Activator.CreateInstance(type);
+            var serviceIdProperty = type.GetProperty(nameof(INetworkProtocol.ServiceId));
+        
+            if (serviceIdProperty != null)
+            {
+                var serviceId = (byte)serviceIdProperty.GetValue(instance)!;
+                Protocols.Add(serviceId, instance);
+            }
+        }
+    }
 
     public static INetworkProtocol Dispatch(byte serviceId)
     {
@@ -53,5 +41,4 @@ public static class ProtocolDispatcher
 
         return Protocols[serviceId];
     }
-
 }
