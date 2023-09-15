@@ -5,7 +5,6 @@
 
 using System.Net;
 using Imlight.Common.Formats;
-using WizUnraveler.Formats;
 
 namespace DragonZoneTool.Managers;
 
