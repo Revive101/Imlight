@@ -6,7 +6,7 @@
 using System;
 using Imlight.Server.Game.Models;
 
-namespace Imlight.Server.WizardData.Models;
+namespace Imlight.Server.Shared.WizardData.Models;
 
 /// <summary>
 /// Contains base stats for each class, as well as stats that are calculated based on level.
@@ -17,7 +17,7 @@ public static class WizardClassData
     private const int StartGold = 0;
     // There's some tomfoolery happening here. Some levels give 3 mana rather than 2.
     private const int ManaPerLevel = 2;
-    
+
     private const int FireStartHealth = 415;
     private const int IceStartHealth = 500;
     private const int StormStartHealth = 400;
@@ -49,25 +49,25 @@ public static class WizardClassData
             _ => throw new ArgumentOutOfRangeException(nameof(school), school, null)
         };
     }
-    
+
     public static int GetClassHealthAtLevel(WizardSchool school, int level)
     {
         return school switch
         {
-            WizardSchool.Fire    => FireStartHealth    + (FireHealthPerLevel    * (level - 1)),
-            WizardSchool.Ice     => IceStartHealth     + (IceHealthPerLevel     * (level - 1)),
-            WizardSchool.Storm   => StormStartHealth   + (StormHealthPerLevel   * (level - 1)),
-            WizardSchool.Myth    => MythStartHealth    + (MythHealthPerLevel    * (level - 1)),
-            WizardSchool.Life    => LifeStartHealth    + (MythHealthPerLevel    * (level - 1)),
-            WizardSchool.Death   => DeathStartHealth   + (DeathHealthPerLevel   * (level - 1)),
-            WizardSchool.Balance => BalanceStartHealth + (BalanceHealthPerLevel * (level - 1)),
+            WizardSchool.Fire => FireStartHealth + FireHealthPerLevel * (level - 1),
+            WizardSchool.Ice => IceStartHealth + IceHealthPerLevel * (level - 1),
+            WizardSchool.Storm => StormStartHealth + StormHealthPerLevel * (level - 1),
+            WizardSchool.Myth => MythStartHealth + MythHealthPerLevel * (level - 1),
+            WizardSchool.Life => LifeStartHealth + MythHealthPerLevel * (level - 1),
+            WizardSchool.Death => DeathStartHealth + DeathHealthPerLevel * (level - 1),
+            WizardSchool.Balance => BalanceStartHealth + BalanceHealthPerLevel * (level - 1),
             _ => throw new ArgumentOutOfRangeException(nameof(school), school, null)
         };
     }
 
     public static int GetManaAtLevel(int level)
     {
-        return StartMana + (ManaPerLevel * (level - 1));
+        return StartMana + ManaPerLevel * (level - 1);
     }
 
     public static float GetPowerPipChanceAtLevel(int level)
@@ -82,6 +82,6 @@ public static class WizardClassData
     {
         // Wizards start with 40 energy, and gain 1 energy every 2 levels, until they reach a max of 130 energy.
         // At level 7, they get an increase of 10 energy.
-        return Math.Min(130, 40 + ((level - 1) / 2) + (level >= 7 ? 10 : 0));
+        return Math.Min(130, 40 + (level - 1) / 2 + (level >= 7 ? 10 : 0));
     }
 }

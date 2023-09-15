@@ -8,25 +8,26 @@ using System.Security.Cryptography.X509Certificates;
 using Imlight.Common.Configuration;
 using Imlight.Common.Utilities;
 using Imlight.Server.Login.Models;
+using Imlight.Server.Shared.WizardData;
 using Raven.Client.Documents;
 using Raven.Client.Json.Serialization.NewtonsoftJson;
 using Raven.Client.ServerWide;
 using Raven.Embedded;
 
-namespace Imlight.Server.WizardData.Implementations;
+namespace Imlight.Server.Shared.WizardData.Implementations;
 
 public class PlayerDatabase : RavenDatabaseSingleton<PlayerDatabase>
 {
-    protected readonly byte MaxNumberOfRequestsPerSession 
+    protected readonly byte MaxNumberOfRequestsPerSession
         = ConfigurationManager.Settings.DatabaseMaxNumberOfRequestsPerSession;
     protected readonly byte RequestTimeoutInSeconds
         = ConfigurationManager.Settings.DatabaseRequestTimeoutInSeconds;
-    protected readonly byte WaitForNonStaleResultsTimeoutInSeconds 
+    protected readonly byte WaitForNonStaleResultsTimeoutInSeconds
         = ConfigurationManager.Settings.DatabaseWaitForNonStaleResultsTimeout;
-    
-    protected override X509Certificate2 Certificate { get; } 
-        = ConfigurationManager.Settings.PlayerDatabaseUrl == string.Empty 
-            ? null 
+
+    protected override X509Certificate2 Certificate { get; }
+        = ConfigurationManager.Settings.PlayerDatabaseUrl == string.Empty
+            ? null
             : new X509Certificate2(ConfigurationManager.Settings.PlayerDatabaseCertificatePath);
     protected override string DatabaseName { get; } = ConfigurationManager.Settings.PlayerDatabaseName;
     protected override string Url { get; } = ConfigurationManager.Settings.PlayerDatabaseUrl;
@@ -67,7 +68,7 @@ public class PlayerDatabase : RavenDatabaseSingleton<PlayerDatabase>
         EmbeddedDatabaseManager.Start();
         var store = EmbeddedDatabaseManager.GetDocumentStore(DatabaseName);
         IsEmbedded = true;
-        
+
         return store;
     }
 }

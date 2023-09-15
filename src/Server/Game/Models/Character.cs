@@ -14,12 +14,12 @@ using Imlight.Common.Serializable.Caches;
 using Imlight.Common.Serializable.ObjectProperty;
 using Imlight.Common.Utilities;
 using Imlight.Server.Shared.Resources;
-using Imlight.Server.WizardData;
-using Imlight.Server.WizardData.Implementations;
-using Imlight.Server.WizardData.Models;
+using Imlight.Server.Shared.WizardData;
+using Imlight.Server.Shared.WizardData.Implementations;
+using Imlight.Server.Shared.WizardData.Models;
 using Newtonsoft.Json;
 using SharpDX;
-using static Imlight.Server.WizardData.WizardResults;
+using static Imlight.Server.Shared.WizardData.WizardResults;
 using static Imlight.Common.Serializable.Caches.TypeCache;
 
 namespace Imlight.Server.Game.Models;

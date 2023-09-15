@@ -6,7 +6,7 @@
 using System.Collections.Generic;
 using Imlight.Common.Serializable.Secrets;
 
-namespace Imlight.Server.WizardData.Models;
+namespace Imlight.Server.Shared.WizardData.Models;
 
 public class WizardZoneData
 {

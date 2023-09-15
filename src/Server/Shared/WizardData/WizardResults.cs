@@ -6,19 +6,19 @@
 using Imlight.Common.IO;
 using Imlight.Common.Serializable.Caches;
 
-namespace Imlight.Server.WizardData;
+namespace Imlight.Server.Shared.WizardData;
 
 public static class WizardResults
 {
     // TODO: Move the ResTeleport off of WizUnraveler and to this file instead.
-    
+
     public class ResAddHealth : TypeCache.Result
     {
         public int HealthFlat { get; set; }
         public int HealthPercent { get; set; }
         public bool UseFlat { get; set; }
     }
-    
+
     public class ResRemoveHealth : TypeCache.Result
     {
         public int HealthFlat { get; set; }
@@ -32,24 +32,24 @@ public static class WizardResults
         public int ManaPercent { get; set; }
         public bool UseFlat { get; set; }
     }
-    
+
     public class ResRemoveMana : TypeCache.Result
     {
         public int ManaFlat { get; set; }
         public int ManaPercent { get; set; }
         public bool UseFlat { get; set; }
     }
-    
+
     public class ResAddGold : TypeCache.Result
     {
         public int Gold { get; set; }
     }
-    
+
     public class ResRemoveGold : TypeCache.Result
     {
         public int Gold { get; set; }
     }
-    
+
     public class ResAddTrainingPoints : TypeCache.Result
     {
         public int TrainingPoints { get; set; }
@@ -61,24 +61,24 @@ public static class WizardResults
         public ByteString MagicSchool;
         public ByteString SourceType;
     }
-    
+
     public class ResClearSpellbook : TypeCache.Result
     {
         public override uint GetHash() => 0x0;
     }
-        
+
     public class ResGiveSpell : TypeCache.Result
     {
         public ByteString m_spellName;
         public byte m_subCircle;
     }
-        
+
     public class ResSetPips : TypeCache.Result
     {
         public byte m_numPips;
         public byte m_subCircle;
     }
-        
+
     public class ResClearHand : TypeCache.Result
     {
 

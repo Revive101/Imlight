@@ -7,25 +7,26 @@ using System;
 using System.Security.Cryptography.X509Certificates;
 using Imlight.Common.Configuration;
 using Imlight.Common.Utilities;
+using Imlight.Server.Shared.WizardData;
 using Raven.Client.Documents;
 using Raven.Client.Json.Serialization.NewtonsoftJson;
 using Raven.Client.ServerWide;
 using Raven.Embedded;
 
-namespace Imlight.Server.WizardData.Implementations;
+namespace Imlight.Server.Shared.WizardData.Implementations;
 
 public class WorldDatabase : RavenDatabaseSingleton<WorldDatabase>
 {
-    protected readonly byte MaxNumberOfRequestsPerSession 
+    protected readonly byte MaxNumberOfRequestsPerSession
         = ConfigurationManager.Settings.DatabaseMaxNumberOfRequestsPerSession;
     protected readonly byte RequestTimeoutInSeconds
         = ConfigurationManager.Settings.DatabaseRequestTimeoutInSeconds;
-    protected readonly byte WaitForNonStaleResultsTimeoutInSeconds 
+    protected readonly byte WaitForNonStaleResultsTimeoutInSeconds
         = ConfigurationManager.Settings.DatabaseWaitForNonStaleResultsTimeout;
-    
-    protected override X509Certificate2 Certificate { get; } 
-        = ConfigurationManager.Settings.WorldDatabaseUrl == string.Empty 
-            ? null 
+
+    protected override X509Certificate2 Certificate { get; }
+        = ConfigurationManager.Settings.WorldDatabaseUrl == string.Empty
+            ? null
             : new X509Certificate2(ConfigurationManager.Settings.WorldDatabaseCertificatePath);
     protected override string DatabaseName { get; } = ConfigurationManager.Settings.WorldDatabaseName;
     protected override string Url { get; } = ConfigurationManager.Settings.WorldDatabaseUrl;
@@ -60,7 +61,7 @@ public class WorldDatabase : RavenDatabaseSingleton<WorldDatabase>
 
         return store;
     }
-    
+
     protected override IDocumentStore CreateEmbeddedStore()
     {
         EmbeddedDatabaseManager.Start();

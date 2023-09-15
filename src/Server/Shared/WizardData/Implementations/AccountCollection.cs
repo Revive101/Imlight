@@ -9,7 +9,7 @@ using Imlight.Server.Game.Models;
 using Imlight.Server.Login.Models;
 using Raven.Client.Documents;
 
-namespace Imlight.Server.WizardData.Implementations;
+namespace Imlight.Server.Shared.WizardData.Implementations;
 
 public static class AccountCollection
 {
@@ -28,20 +28,20 @@ public static class AccountCollection
     public static bool CreateAccount(Account account)
     {
         using var session = Store.OpenSession();
-        
+
         // Return false if the account already exists.
         if (session.Query<Account>(collectionName: CollectionName)
             .Any(c => c.Username == account.Username || c.Email == account.Email))
             return false;
-        
+
         // Foreach character in the account, add it to the database.
         foreach (var character in account.Characters)
             CharacterCollection.AddCharacter(character);
-        
+
         session.Store(account);
         var metadata = session.Advanced.GetMetadataFor(account);
         metadata[Raven.Client.Constants.Documents.Metadata.Collection] = CollectionName;
-        
+
         session.SaveChanges();
         return true;
     }
@@ -72,7 +72,7 @@ public static class AccountCollection
             .FirstOrDefault(c => c.AccountId == id);
         if (account is null)
             return null;
-        
+
         // Load the characters if the account is not null.
         var characters = session.Query<Character>()
             .Where(c => c.AccountId == id)
@@ -81,7 +81,7 @@ public static class AccountCollection
 
         return account;
     }
-    
+
     /// <summary>
     /// Gets an account from the database by its username.
     /// </summary>
@@ -95,9 +95,9 @@ public static class AccountCollection
         var account = session.Query<Account>(collectionName: CollectionName)
             .Include(c => c.CharacterIds)
             .FirstOrDefault(c => c.Username == username);
-        if (account is null) 
+        if (account is null)
             return null;
-        
+
         // Load the characters if the account is not null.
         var characters = session.Query<Character>()
             .Where(c => c.AccountId == account.AccountId)
@@ -106,7 +106,7 @@ public static class AccountCollection
 
         return account;
     }
-    
+
     /// <summary>
     /// Adds a character to an account.
     /// </summary>
@@ -116,7 +116,7 @@ public static class AccountCollection
     public static bool AddCharacterToAccount(ulong accountId, ulong characterId)
     {
         using var session = Store.OpenSession();
-        
+
         // Start by loading an account, if one exists.
         var existingAccount = session.Query<Account>(collectionName: CollectionName)
             .FirstOrDefault(c => c.AccountId == accountId);
@@ -125,10 +125,10 @@ public static class AccountCollection
 
         existingAccount.CharacterIds.Add(characterId);
         session.SaveChanges();
-        
+
         return true;
     }
-    
+
     /// <summary>
     /// Removes a character from an account.
     /// </summary>
@@ -138,7 +138,7 @@ public static class AccountCollection
     public static bool DeleteCharacterFromAccount(ulong accountId, ulong characterId)
     {
         using var session = Store.OpenSession();
-        
+
         // Start by loading an account, if one exists.
         var existingAccount = session.Query<Account>(collectionName: CollectionName)
             .FirstOrDefault(c => c.AccountId == accountId);
@@ -147,7 +147,7 @@ public static class AccountCollection
 
         existingAccount.CharacterIds.Remove(characterId);
         session.SaveChanges();
-        
+
         return true;
     }
 }

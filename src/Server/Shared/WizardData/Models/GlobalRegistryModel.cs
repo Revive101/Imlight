@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Imlight.Server.WizardData.Models;
+namespace Imlight.Server.Shared.WizardData.Models;
 
 public class GlobalRegistryModel
 {

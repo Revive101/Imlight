@@ -13,7 +13,7 @@ using Imlight.Common.Formats;
 using Imlight.Common.Utilities;
 using LiteDB;
 
-namespace Imlight.Server.WizardData.Implementations;
+namespace Imlight.Server.Shared.WizardData.Implementations;
 
 public class FileDefinition
 {
@@ -102,7 +102,7 @@ public static class KiWadCache
     {
         using var db = new LiteDatabase(_path);
         var fs = db.GetStorage<FileDefinition>();
-            
+
         var file = fs.Find(f => f.Filename == fileName)
             .FirstOrDefault();
 
@@ -111,7 +111,7 @@ public static class KiWadCache
             fs.Delete(file.Id);
             return;
         }
-            
+
         Log.Warning("LocalCache tried to delete a file {FileName} it did not contain!", Log.Args(fileName));
     }
 

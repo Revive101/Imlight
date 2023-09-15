@@ -7,7 +7,7 @@ using System;
 using System.Security.Cryptography.X509Certificates;
 using Raven.Client.Documents;
 
-namespace Imlight.Server.WizardData;
+namespace Imlight.Server.Shared.WizardData;
 
 public abstract class RavenDatabaseSingleton<T>
     where T : RavenDatabaseSingleton<T>
@@ -15,7 +15,7 @@ public abstract class RavenDatabaseSingleton<T>
     private static readonly Lazy<T> Lazy =
         new(() => (Activator.CreateInstance(typeof(T), true) as T)!);
     public static T Instance => Lazy.Value;
-    
+
     protected abstract X509Certificate2 Certificate { get; }
     protected abstract string DatabaseName { get; }
     protected abstract string Url { get; }

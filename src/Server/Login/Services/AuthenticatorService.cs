@@ -12,7 +12,7 @@ using Imlight.Server.Login.Exceptions;
 using Imlight.Server.Login.Models;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
-using Imlight.Server.WizardData.Implementations;
+using Imlight.Server.Shared.WizardData.Implementations;
 
 namespace Imlight.Server.Login.Services;
 

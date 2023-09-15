@@ -8,16 +8,16 @@ using System.Threading.Tasks;
 using Imlight.Common.Utilities;
 using Imlight.Server.Game.Models;
 using Imlight.Server.Login.Models;
-using Imlight.Server.WizardData.Models;
+using Imlight.Server.Shared.WizardData.Models;
 using Raven.Client.Documents;
 
-namespace Imlight.Server.WizardData.Implementations;
+namespace Imlight.Server.Shared.WizardData.Implementations;
 
 public static class GlobalRegistry
 {
     private const string CollectionName = "GlobalRegistry";
     private static readonly IDocumentStore Store;
-    
+
     private static bool _isInitialized;
     private static GlobalRegistryModel _model;
 
@@ -25,7 +25,7 @@ public static class GlobalRegistry
     {
         Store = WorldDatabase.Instance.Store;
     }
-    
+
     /// <summary>
     /// Saves a new global registry to the database.
     /// </summary>
@@ -33,24 +33,24 @@ public static class GlobalRegistry
     public static void SaveGlobalRegistry(GlobalRegistryModel globalRegistry)
     {
         using var session = Store.OpenSession();
-        
+
         // Delete the old global registry.
         var oldGlobalRegistry = session
             .Query<GlobalRegistryModel>(collectionName: CollectionName)
             .FirstOrDefault();
         if (oldGlobalRegistry is not null)
             session.Delete(oldGlobalRegistry);
-        
+
         // Store the new one and set it's metadata.
         session.Store(globalRegistry);
         var metadata = session.Advanced.GetMetadataFor(globalRegistry);
         metadata[Raven.Client.Constants.Documents.Metadata.Collection] = CollectionName;
-        
+
         session.SaveChanges();
         _model = globalRegistry;
         _isInitialized = true;
     }
-    
+
     /// <summary>
     /// Gets the global registry from the database.
     /// </summary>
@@ -59,7 +59,7 @@ public static class GlobalRegistry
     {
         if (_isInitialized)
             return _model;
-        
+
         using var session = Store.OpenSession();
         _model = session
             .Query<GlobalRegistryModel>(collectionName: CollectionName)

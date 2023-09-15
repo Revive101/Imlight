@@ -12,7 +12,7 @@ using Imlight.Common.Serializable.ObjectProperty;
 using Imlight.Common.Utilities;
 using Imlight.Server.Patch;
 using Imlight.Server.Shared.Packets;
-using Imlight.Server.WizardData.Implementations;
+using Imlight.Server.Shared.WizardData.Implementations;
 
 namespace Imlight.Server.Shared.Resources;
 

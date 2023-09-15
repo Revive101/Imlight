@@ -10,10 +10,10 @@ using Imlight.Common.Serializable;
 using Imlight.Common.Serializable.Caches;
 using Imlight.Server.Game.Models;
 using Imlight.Server.Login.Models;
-using Imlight.Server.WizardData.Implementations;
 using Imlight.Common.Utilities;
+using Imlight.Server.Shared.WizardData.Implementations;
 
-namespace Imlight.Server.WizardData;
+namespace Imlight.Server.Shared.WizardData;
 
 public static class DatabaseUtilities
 {
@@ -28,7 +28,7 @@ public static class DatabaseUtilities
                                         "000088BEC1040000000000001B0A" +
                                         "C079000000000000000000000000" +
                                         "000000000000B336F80400005D00";
-    
+
     /// <summary>
     /// Creates and returns a fake account with random details.
     /// </summary>
@@ -40,15 +40,15 @@ public static class DatabaseUtilities
         var email = Faker.Internet.Email();
         var password = Faker.Identification.SocialSecurityNumber();
         var fakeAcc = new Account(userName, email, password);
-        
+
         // Destiny
         var destiny = GetCharacterFromRawCreationData(DestinyRawData);
         fakeAcc.AddCharacter(destiny);
-        
+
         // I fucking hate Kevin.
         var kevin = GetCharacterFromRawCreationData(KevinRawData);
         fakeAcc.AddCharacter(kevin);
-        
+
         // Add the fake account to the database.
         AccountCollection.CreateAccount(fakeAcc);
         return fakeAcc;
@@ -64,12 +64,12 @@ public static class DatabaseUtilities
     /// <returns></returns>
     public static Account CreateEmbeddedDatabaseAccount(
         string username,
-        string email, 
-        string password, 
+        string email,
+        string password,
         AuthLevel auth = AuthLevel.None)
     {
         var acc = new Account(username, email, password) { AuthLevel = auth };
-        
+
         // Destiny
         //var destiny = GetCharacterFromRawCreationData(DestinyRawData);
         //acc.AddCharacter(destiny);
@@ -77,7 +77,7 @@ public static class DatabaseUtilities
         //// I fucking hate Kevin.
         //var kevin = GetCharacterFromRawCreationData(KevinRawData);
         //acc.AddCharacter(kevin);
-        
+
         // Save the account to the database.
         var created = AccountCollection.CreateAccount(acc);
         if (!created)
@@ -88,7 +88,7 @@ public static class DatabaseUtilities
 
         return acc;
     }
-    
+
     /// <summary>
     /// Hashes a plaintext password with <see cref="SHA512"/>.
     /// </summary>

@@ -12,7 +12,7 @@ using Imlight.Server.Game.Models;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Operations;
 
-namespace Imlight.Server.WizardData;
+namespace Imlight.Server.Shared.WizardData;
 
 public class ElementChangeCacheManager : IDisposable
 {
@@ -25,15 +25,15 @@ public class ElementChangeCacheManager : IDisposable
     // ctor
     public ElementChangeCacheManager(IDocumentStore documentStore, ulong charId, byte uploadIntervalInMinutes)
     {
-        this._charId = charId;
-        this._documentStore = documentStore ?? throw new ArgumentNullException(nameof(documentStore));
-        this._changeCaches = new Dictionary<string, object>();
-        this._cancellationTokenSource = new CancellationTokenSource();
-        this._uploadIntervalInMinutesInMilliseconds = uploadIntervalInMinutes * 60 * 1000;
+        _charId = charId;
+        _documentStore = documentStore ?? throw new ArgumentNullException(nameof(documentStore));
+        _changeCaches = new Dictionary<string, object>();
+        _cancellationTokenSource = new CancellationTokenSource();
+        _uploadIntervalInMinutesInMilliseconds = uploadIntervalInMinutes * 60 * 1000;
 
         Task.Run(DoSaveInterval);
     }
-    
+
     /// <summary>
     /// Enqueues a change to be flushed on interval.
     /// </summary>
@@ -44,7 +44,7 @@ public class ElementChangeCacheManager : IDisposable
     {
         _changeCaches[elementName] = change;
     }
-    
+
     /// <summary>
     /// Enqueues a change to be flushed immediately.
     /// </summary>
@@ -67,7 +67,7 @@ public class ElementChangeCacheManager : IDisposable
             await FlushChangeAsync(changeCache);
         }
     }
-    
+
     private async Task DoSaveInterval()
     {
         // While loop with cancellation token.
@@ -77,17 +77,17 @@ public class ElementChangeCacheManager : IDisposable
             await FlushAllChangesAsync();
         }
     }
-    
-    private async Task FlushChangeAsync(KeyValuePair <string, object> changeCache)
+
+    private async Task FlushChangeAsync(KeyValuePair<string, object> changeCache)
     {
         // Serialize the most recent change as json.
         var json = Newtonsoft.Json.JsonConvert.SerializeObject(changeCache.Value);
-        
+
         // Patch.
         var patchRequest = new PatchByQueryOperation($"from \"Characters\" as c " +
                                                      $"where c.CharId = {_charId} " +
                                                      $"update {{ c.{changeCache.Key} = {json} }}");
-        
+
         try
         {
             var operation = await _documentStore.Operations.SendAsync(patchRequest);

@@ -6,7 +6,7 @@
 using System;
 using Newtonsoft.Json;
 
-namespace Imlight.Server.WizardData;
+namespace Imlight.Server.Shared.WizardData;
 
 public class ULongToStringConverter : JsonConverter
 {

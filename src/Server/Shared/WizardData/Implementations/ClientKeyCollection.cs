@@ -11,7 +11,7 @@ using Raven.Client.Documents;
 using Raven.Client.Documents.Operations;
 using Raven.Client.Documents.Queries;
 
-namespace Imlight.Server.WizardData.Implementations;
+namespace Imlight.Server.Shared.WizardData.Implementations;
 
 public class ClientKeyPair
 {
@@ -30,9 +30,9 @@ public class ClientKeyPair
 public static class ClientKeyCollection
 {
     private const string CollectionName = "SessionKeys";
-    
+
     private static readonly IDocumentStore Store;
-    private const uint KeyExpireTimeInHours =30;
+    private const uint KeyExpireTimeInHours = 30;
 
     static ClientKeyCollection()
     {

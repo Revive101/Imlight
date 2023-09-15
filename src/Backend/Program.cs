@@ -16,8 +16,8 @@ using Imlight.Server.Login.Models;
 using Imlight.Server.Patch;
 using Imlight.Server.Shared.Packets;
 using Imlight.Server.Shared.Resources;
-using Imlight.Server.WizardData;
-using Imlight.Server.WizardData.Implementations;
+using Imlight.Server.Shared.WizardData;
+using Imlight.Server.Shared.WizardData.Implementations;
 
 namespace Imlight.Backend;
 

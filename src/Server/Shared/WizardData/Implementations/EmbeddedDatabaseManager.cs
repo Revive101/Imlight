@@ -11,12 +11,12 @@ using Raven.Client.Documents;
 using Raven.Client.ServerWide;
 using Raven.Embedded;
 
-namespace Imlight.Server.WizardData.Implementations;
+namespace Imlight.Server.Shared.WizardData.Implementations;
 
 public static class EmbeddedDatabaseManager
 {
     public static bool IsRunning { get; private set; }
-    
+
     public static void Start()
     {
         try
@@ -44,7 +44,7 @@ public static class EmbeddedDatabaseManager
 
             EmbeddedServer.Instance.StartServer(serverOptions);
             IsRunning = true;
-            
+
             EmbeddedServer.Instance.ServerProcessExited += (sender, args) =>
             {
                 Log.Error("Embedded database process exited unexpectedly. Restarting..");
@@ -64,7 +64,7 @@ public static class EmbeddedDatabaseManager
     {
         if (!IsRunning)
             return null;
-        
+
         var databaseOptions = new DatabaseOptions(new DatabaseRecord { DatabaseName = databaseName });
         var docStore = EmbeddedServer.Instance.GetDocumentStore(databaseOptions);
         return docStore;
