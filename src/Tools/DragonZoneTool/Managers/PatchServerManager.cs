@@ -13,7 +13,7 @@ public static class PatchServerManager
     private const string PatchServerUrl = "http://phill030.de:12369/patcher/";
     private const string PatchServerWadUrlPrefix = "wads";
     private const int PatchServerTimeout = 10; // In seconds.
-    private const uint GameClientRevision = 7408722;
+    private const uint GameClientRevision = 740872;
     private const string UserAgentValue = "KingsIsle Patcher";
     private const ushort DownloadBufferSize = 4096;
     private static string? _patchServerWorkingUrl;
