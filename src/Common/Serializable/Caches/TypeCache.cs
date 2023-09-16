@@ -25437,6 +25437,11 @@ namespace Imlight.Common.Serializable.Caches
 			Guest_SKB_AZ_Ixcax_A_100 = 556560994,
 			Guest_SKB_AZ_Ixcax_A_150 = 556610146,
 			Guest_SKB_AZ_Ixcax_A_50 = 564951650,
+			MNT_GhoulsShovel = 2035610946,
+			PP_CrystalBdayDragon = 1897078804,
+			PP_SunGobblerBall = 1522469440,
+			PP_Sun_GreenGobbler = 1337690394,
+			MNT_2P_AutumnTreant = 1063435527,
 		}
 		
 		public enum eMountType
