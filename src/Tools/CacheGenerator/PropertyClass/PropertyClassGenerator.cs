@@ -348,7 +348,7 @@ public static class PropertyClassGenerator
                         continue;
                     }
                 }
-                    
+
                 // If the parent class has a definition already defined, skip it.
                 if (scopedTypeDef!.Properties
                     .Where(x => x.Options != null)
@@ -372,7 +372,7 @@ public static class PropertyClassGenerator
 
     private static CodeMemberMethod GenerateDispatcherMethod()
     {
-        if (_classDefinitions is null) 
+        if (_classDefinitions is null)
             throw new NullReferenceException($"{nameof(_classDefinitions)} cannot be null.");
 
         var codeMethod = new CodeMemberMethod()
@@ -463,7 +463,8 @@ public static class PropertyClassGenerator
         };
         using var writer = new StreamWriter(outputPath);
         domProvider.GenerateCodeFromCompileUnit(compiler, writer, options);
-        
+        writer.Close();
+
         // Find the line "public sealed partial class TypeCache" and add a static keyword. A limitation of CodeDom:
         // you cannot create static classes.
         var file = File.ReadAllLines(outputPath);
@@ -512,9 +513,9 @@ public static class PropertyClassGenerator
             codeDecl.Members.Add(snippet);
 
             // If this property has an attached enumerator, generate it here.
-            if (propDef.Options is null 
-                || propDef.Options.DoNotWrite 
-                || propDef.Options.IsDefaultOrBaseClass) 
+            if (propDef.Options is null
+                || propDef.Options.DoNotWrite
+                || propDef.Options.IsDefaultOrBaseClass)
                 continue;
             var enumDef = CreateDeclarationFromDefinition(propDef.Options, true);
             codeDecl.Members.Add(enumDef);
