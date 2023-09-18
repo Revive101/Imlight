@@ -12370,7 +12370,7 @@ namespace Imlight.Common.Serializable.Caches
 			[Property(1748202326, 31)] public Int32 m_subcircle;
 			[Property(269527241, 31)] public Boolean m_pvp;
 			[Property(222284947, 31)] public Boolean m_raid;
-			[Property(701705655, 31)] public DynamicSigilSymbol m_dynamicSymbol;
+			[Property(701705655, 31)] public DynamicSigilSubcircle.DynamicSigilSymbol m_dynamicSymbol;
 			[Property(1440672233, 1)] public Single m_accuracyBonus;
 			[Property(1896926112, 31)] public Int32 m_minionSubCircle;
 			[Property(1597230777, 31)] public Boolean m_isMinion;
@@ -12438,24 +12438,6 @@ namespace Imlight.Common.Serializable.Caches
 			    AQUIRED_NORMAL_TO_POWER_PIP_CONVERSION = 4,
 			    IMPEDE_PIPS = 5,
 			}
-            
-            public enum DynamicSigilSymbol
-            			{
-            				
-            			    NotSet = 0,
-            			    Dagger = 1,
-            			    Key = 2,
-            			    Gem = 3,
-            			    Spiral = 4,
-            			    Book = 5,
-            			    Chalice = 6,
-            			    Wand = 7,
-            			    Potion = 8,
-            			    Sun = 9,
-            			    Eye = 10,
-            			    Star = 11,
-            			    Moon = 12,
-            			}
 		}
 		
 		public class CustomEmoteBehaviorTemplate : BehaviorTemplate

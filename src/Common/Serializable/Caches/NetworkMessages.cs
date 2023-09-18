@@ -13,7 +13,7 @@ namespace Imlight.Common.Serializable.Caches
 	using Imlight.Common.DML;
 	using Imlight.Common.IO;
 	
-	public sealed class AISCLIENT : INetworkProtocol
+	public sealed class AISCLIENT_19_PROTOCOL : INetworkProtocol
 	{
 		public Byte ServiceId { get; } = 19;
 		public String ProtocolType { get; } = "AISCLIENT";
@@ -24,7 +24,7 @@ namespace Imlight.Common.Serializable.Caches
         {
             switch (id)
             {
-                case (0): return new MSG_AISMESSAGE();
+                case (1): return new MSG_AISMESSAGE();
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
@@ -39,7 +39,7 @@ namespace Imlight.Common.Serializable.Caches
 			[DmlElement(DmlType.UBYT)] public Byte Modal;
 		}
 	}
-	public sealed class SYSTEM : INetworkProtocol
+	public sealed class SYSTEM_1_PROTOCOL : INetworkProtocol
 	{
 		public Byte ServiceId { get; } = 1;
 		public String ProtocolType { get; } = "SYSTEM";
@@ -71,7 +71,7 @@ namespace Imlight.Common.Serializable.Caches
 			public byte ServiceId { get; } = 1;
 		}
 	}
-	public sealed class EXTENDEDBASE : INetworkProtocol
+	public sealed class EXTENDEDBASE_2_PROTOCOL : INetworkProtocol
 	{
 		public Byte ServiceId { get; } = 2;
 		public String ProtocolType { get; } = "EXTENDEDBASE";
@@ -82,12 +82,12 @@ namespace Imlight.Common.Serializable.Caches
         {
             switch (id)
             {
-                case (0): return new MSG_CUSTOMDICT();
-                case (1): return new MSG_CUSTOMRECORD();
-                case (2): return new MSG_FORCE_DISCONNECT();
-                case (3): return new MSG_RAWRECORD();
-                case (4): return new MSG_RAW_TEXT();
-                case (5): return new MSG_SERVERMESSAGE();
+                case (1): return new MSG_CUSTOMDICT();
+                case (2): return new MSG_CUSTOMRECORD();
+                case (3): return new MSG_FORCE_DISCONNECT();
+                case (4): return new MSG_RAWRECORD();
+                case (5): return new MSG_RAW_TEXT();
+                case (6): return new MSG_SERVERMESSAGE();
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
@@ -141,7 +141,7 @@ namespace Imlight.Common.Serializable.Caches
 			[DmlElement(DmlType.WSTR)] public WideByteString Message;
 		}
 	}
-	public sealed class GAME : INetworkProtocol
+	public sealed class GAME_5_PROTOCOL : INetworkProtocol
 	{
 		public Byte ServiceId { get; } = 5;
 		public String ProtocolType { get; } = "GAME";
@@ -152,188 +152,188 @@ namespace Imlight.Common.Serializable.Caches
         {
             switch (id)
             {
-                case (0): return new MSG_ADCLICKTHROUGH();
-                case (1): return new MSG_ADDEFFECT();
-                case (2): return new MSG_ADDITEMREQUEST();
-                case (3): return new MSG_ADDOBJECT();
-                case (4): return new MSG_ADDPARTICLE();
-                case (5): return new MSG_ADDZONETIMER();
-                case (6): return new MSG_ATTACH();
-                case (7): return new MSG_ATTACHFAILED();
-                case (8): return new MSG_AUCTIONHOUSEUPDATE();
-                case (9): return new MSG_BADGES();
-                case (10): return new MSG_BAN_RSP();
-                case (11): return new MSG_BESTFRIEND();
-                case (12): return new MSG_BLACKBALL();
-                case (13): return new MSG_BUDDYDROP();
-                case (14): return new MSG_BUDDYENTRY();
-                case (15): return new MSG_BUDDYLISTCOMPLETE();
-                case (16): return new MSG_BUDDYREQUESTACCEPT();
-                case (17): return new MSG_BUDDYREQUESTACCEPTFWD();
-                case (18): return new MSG_BUDDYREQUESTADD();
-                case (19): return new MSG_BUDDYREQUESTADDFWD();
-                case (20): return new MSG_BUDDYREQUESTDENY();
-                case (21): return new MSG_BUDDYREQUESTDENYFWD();
-                case (22): return new MSG_BUDDYREQUESTDROP();
-                case (23): return new MSG_BUDDYREQUESTERROR();
-                case (24): return new MSG_BUDDYREQUESTLIST();
-                case (25): return new MSG_BUDDYSTATS();
-                case (26): return new MSG_BUDDYSTATUSUPDATE();
-                case (27): return new MSG_BUGREPORT();
-                case (28): return new MSG_BUGSUBMITRESPONSE();
-                case (29): return new MSG_CHANNELCHAT();
-                case (30): return new MSG_CHANNELSUBSCRIPTION();
-                case (31): return new MSG_CHATDIAGNOSTICS();
-                case (32): return new MSG_CHATERROR();
-                case (33): return new MSG_CHECKSUBSCRIPTION();
-                case (34): return new MSG_CHECK_MAIL();
-                case (35): return new MSG_CLIENTMOVE();
-                case (36): return new MSG_CLIENTMOVESTATE();
-                case (37): return new MSG_CLIENTNOTIFYTEXT();
-                case (38): return new MSG_CLIENTTUTORIALEVENT();
-                case (39): return new MSG_CLIENT_DISCONNECT();
-                case (40): return new MSG_CLIENT_ERROR();
-                case (41): return new MSG_CLIENT_PROCESS_TERMINATED();
-                case (42): return new MSG_COMBINEINVENTORYITEMS();
-                case (43): return new MSG_COMMAND();
-                case (44): return new MSG_COMMANDRESULT();
-                case (45): return new MSG_COMPANIONEFFECTS();
-                case (46): return new MSG_CORE_EMOTE();
-                case (47): return new MSG_CREATECHANNELRESPONSE();
-                case (48): return new MSG_CREATE_SESSION();
-                case (49): return new MSG_CSRBANKITEMS();
-                case (50): return new MSG_CSRBANKITEMSDONE();
-                case (51): return new MSG_CSREDITCHARACTER();
-                case (52): return new MSG_CSREDITCHARACTERFAILED();
-                case (53): return new MSG_CSRFINISHEDHOUSE();
-                case (54): return new MSG_CSRSEARCHLIST();
-                case (55): return new MSG_CSR_MAIL_DATA();
-                case (56): return new MSG_CSR_RECEIVE_GIFTS();
-                case (57): return new MSG_DEBUGDELETEALLOBJECTS();
-                case (58): return new MSG_DELETEOBJECT();
-                case (59): return new MSG_DELETE_GIFT();
-                case (60): return new MSG_DIRECTEDCHAT();
-                case (61): return new MSG_DIRECTEDCHATBYNAMERESPONSE();
-                case (62): return new MSG_DIRECTEDCHATFAIL();
-                case (63): return new MSG_DIRECTEDQUICKCHAT();
-                case (64): return new MSG_DIRECTEDQUICKCHATEXT();
-                case (65): return new MSG_DISCONNECT_AFK();
-                case (66): return new MSG_DOWNLOADBROWSER();
-                case (67): return new MSG_DOWNLOADPACKAGE();
-                case (68): return new MSG_DOWNLOADPACKAGEELEMENT();
-                case (69): return new MSG_DYNAMODBEHAVIOR_UPDATEMODS();
-                case (70): return new MSG_DYNAMODDUMP();
-                case (71): return new MSG_ENTERSTATE();
-                case (72): return new MSG_EQUIPITEM();
-                case (73): return new MSG_EQUIPMENTBEHAVIOR_EQUIPITEM();
-                case (74): return new MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM();
-                case (75): return new MSG_EQUIPMENTBEHAVIOR_PUBLICUNEQUIPITEM();
-                case (76): return new MSG_EQUIPMENTBEHAVIOR_UNEQUIPITEM();
-                case (77): return new MSG_FEEDINVENTORYITEM();
-                case (78): return new MSG_FIND_SESSIONS();
-                case (79): return new MSG_FIND_SESSION_PLAYERS();
-                case (80): return new MSG_GENERICGAME();
-                case (81): return new MSG_GETLADDER();
-                case (82): return new MSG_GET_RANKINGS();
-                case (83): return new MSG_GIFT_REDEEMED();
-                case (84): return new MSG_GOTOPLAYER();
-                case (85): return new MSG_GOTOPLAYERRESP();
-                case (86): return new MSG_HARASSMENTREPORT();
-                case (87): return new MSG_IGNOREADD();
-                case (88): return new MSG_IGNOREDROP();
-                case (89): return new MSG_IGNORELIST();
-                case (90): return new MSG_INTERACTOBJECT();
-                case (91): return new MSG_INTERACTOPTION();
-                case (92): return new MSG_INVENTORYBEHAVIOR_ADDITEM();
-                case (93): return new MSG_INVENTORYBEHAVIOR_REMOVEITEM();
-                case (94): return new MSG_INVENTORYBEHAVIOR_TRADEITEM();
-                case (95): return new MSG_INVITEFRIEND();
-                case (96): return new MSG_INVITE_RESPONSE();
-                case (97): return new MSG_JOINCHANNELRESPONSE();
-                case (98): return new MSG_JOIN_SESSION();
-                case (99): return new MSG_JUMP();
-                case (100): return new MSG_KILL_CLIENT_PROCESS();
-                case (101): return new MSG_LADDER();
-                case (102): return new MSG_LEAVECHANNELRESPONSE();
-                case (103): return new MSG_LEAVEHOUSINGLOT();
-                case (104): return new MSG_LEAVESERVICERANGE();
-                case (105): return new MSG_LEAVESTATE();
-                case (106): return new MSG_LOADSAVEOBJECTS();
-                case (107): return new MSG_LOGINCOMPLETE();
-                case (108): return new MSG_MAIL_DATA();
-                case (109): return new MSG_MARK_LOCATION();
-                case (110): return new MSG_MARK_LOCATION_RESPONSE();
-                case (111): return new MSG_MATCHAWARD();
-                case (112): return new MSG_MATCHINVITE();
-                case (113): return new MSG_MATCHMAKERUPDATE();
-                case (114): return new MSG_MATCHREADY();
-                case (115): return new MSG_MATCHRESULT();
-                case (116): return new MSG_MESSAGE_PROCESS();
-                case (117): return new MSG_MOVECORRECTION();
-                case (118): return new MSG_MOVESTATE();
-                case (119): return new MSG_MUTE();
-                case (120): return new MSG_MUTE_RSP();
-                case (121): return new MSG_NEWOBJECT();
-                case (122): return new MSG_NEWSYSSTATS();
-                case (123): return new MSG_NEWTICKCNT();
-                case (124): return new MSG_NEWTOURNEYREWARDS();
-                case (125): return new MSG_NEW_MAIL();
-                case (126): return new MSG_NOTIFYCHANNELINSTANCE();
-                case (127): return new MSG_NOTIFY_GIFT();
-                case (128): return new MSG_NOTMUTED();
-                case (129): return new MSG_NOT_AFK();
-                case (130): return new MSG_NPCSPEECH();
-                case (131): return new MSG_OBJECT_INFO_QUERY();
-                case (132): return new MSG_PARTYDISBAND();
-                case (133): return new MSG_PARTYJOINFAILED();
-                case (134): return new MSG_PARTYJOINNOTIFICATION();
-                case (135): return new MSG_PARTYLEAVE();
-                case (136): return new MSG_PARTYLEAVENOTIFICATION();
-                case (137): return new MSG_PARTYLEVELUP();
-                case (138): return new MSG_PARTYLEVELUPUPDATE();
-                case (139): return new MSG_PARTYMULTIPLAYERMOUNTEQUIP();
-                case (140): return new MSG_PARTYMULTIPLAYERMOUNTEQUIPUPDATE();
-                case (141): return new MSG_PARTYMULTIPLAYERMOUNTJOIN();
-                case (142): return new MSG_PARTYMULTIPLAYERMOUNTJOINUPDATE();
-                case (143): return new MSG_PARTYREQUESTACCEPT();
-                case (144): return new MSG_PARTYREQUESTDECLINE();
-                case (145): return new MSG_PARTYREQUESTINVITE();
-                case (146): return new MSG_PARTYREQUESTJOIN();
-                case (147): return new MSG_PARTYREQUESTMEMBERZONES();
-                case (148): return new MSG_PARTYREQUESTRESPONSE();
-                case (149): return new MSG_PARTYREQUESTTIMEOUT();
-                case (150): return new MSG_PARTYSUBMITMEMBERZONES();
-                case (151): return new MSG_PARTYUPDATE();
-                case (152): return new MSG_PARTYZONEREQUEST();
-                case (153): return new MSG_PARTYZONEREQUESTRESPONSE();
-                case (154): return new MSG_PICKUPOBJECT();
-                case (155): return new MSG_PLACEOBJECT();
-                case (156): return new MSG_PLAYCINEMATIC();
-                case (157): return new MSG_PLAYERBLACKBALLEDALERT();
-                case (158): return new MSG_PLAYERREADYACK();
-                case (159): return new MSG_PLAYSOUND();
-                case (160): return new MSG_POSTZONEEVENTFROMCLIENT();
-                case (161): return new MSG_PREVIEW_ISLAND();
-                case (162): return new MSG_PVPUPDATEINFO();
-                case (163): return new MSG_QUERY_LOGOUT();
-                case (164): return new MSG_RADIALCHAT();
-                case (165): return new MSG_RADIALQUICKCHAT();
-                case (166): return new MSG_RADIALQUICKCHATEXT();
-                case (167): return new MSG_RADIALZONECLUSTERQUICKCHAT();
-                case (168): return new MSG_RANKING();
-                case (169): return new MSG_REALM_INFO_QUERY();
-                case (170): return new MSG_RECALL_LOCATION();
-                case (171): return new MSG_RECEIVE_GIFTS();
-                case (172): return new MSG_RECEIVE_PROMOTIONS();
-                case (173): return new MSG_REDEEM_GIFT();
-                case (174): return new MSG_REDEEM_MAIL_GIFT();
-                case (175): return new MSG_REDEEM_MAIL_GIFT_RESPONSE();
-                case (176): return new MSG_RELEASEDELAY();
-                case (177): return new MSG_RELOADTEMPLATEDIR();
-                case (178): return new MSG_REMOVEDSHOPPER();
-                case (179): return new MSG_REMOVEEFFECT();
-                case (180): return new MSG_REMOVEITEMREQUEST();
-                case (181): return new MSG_REMOVEOBJECT();
+                case (1): return new MSG_ADCLICKTHROUGH();
+                case (2): return new MSG_ADDEFFECT();
+                case (3): return new MSG_ADDITEMREQUEST();
+                case (4): return new MSG_ADDOBJECT();
+                case (5): return new MSG_ADDPARTICLE();
+                case (6): return new MSG_ADDZONETIMER();
+                case (7): return new MSG_ATTACH();
+                case (8): return new MSG_ATTACHFAILED();
+                case (9): return new MSG_AUCTIONHOUSEUPDATE();
+                case (10): return new MSG_BADGES();
+                case (11): return new MSG_BAN_RSP();
+                case (12): return new MSG_BESTFRIEND();
+                case (13): return new MSG_BLACKBALL();
+                case (14): return new MSG_BUDDYDROP();
+                case (15): return new MSG_BUDDYENTRY();
+                case (16): return new MSG_BUDDYLISTCOMPLETE();
+                case (17): return new MSG_BUDDYREQUESTACCEPT();
+                case (18): return new MSG_BUDDYREQUESTACCEPTFWD();
+                case (19): return new MSG_BUDDYREQUESTADD();
+                case (20): return new MSG_BUDDYREQUESTADDFWD();
+                case (21): return new MSG_BUDDYREQUESTDENY();
+                case (22): return new MSG_BUDDYREQUESTDENYFWD();
+                case (23): return new MSG_BUDDYREQUESTDROP();
+                case (24): return new MSG_BUDDYREQUESTERROR();
+                case (25): return new MSG_BUDDYREQUESTLIST();
+                case (26): return new MSG_BUDDYSTATS();
+                case (27): return new MSG_BUDDYSTATUSUPDATE();
+                case (28): return new MSG_BUGREPORT();
+                case (29): return new MSG_BUGSUBMITRESPONSE();
+                case (30): return new MSG_CHANNELCHAT();
+                case (31): return new MSG_CHANNELSUBSCRIPTION();
+                case (32): return new MSG_CHATDIAGNOSTICS();
+                case (33): return new MSG_CHATERROR();
+                case (34): return new MSG_CHECKSUBSCRIPTION();
+                case (35): return new MSG_CHECK_MAIL();
+                case (36): return new MSG_CLIENTMOVE();
+                case (37): return new MSG_CLIENTMOVESTATE();
+                case (38): return new MSG_CLIENTNOTIFYTEXT();
+                case (39): return new MSG_CLIENTTUTORIALEVENT();
+                case (40): return new MSG_CLIENT_DISCONNECT();
+                case (41): return new MSG_CLIENT_ERROR();
+                case (42): return new MSG_CLIENT_PROCESS_TERMINATED();
+                case (43): return new MSG_COMBINEINVENTORYITEMS();
+                case (44): return new MSG_COMMAND();
+                case (45): return new MSG_COMMANDRESULT();
+                case (46): return new MSG_COMPANIONEFFECTS();
+                case (47): return new MSG_CORE_EMOTE();
+                case (48): return new MSG_CREATECHANNELRESPONSE();
+                case (49): return new MSG_CREATE_SESSION();
+                case (50): return new MSG_CSRBANKITEMS();
+                case (51): return new MSG_CSRBANKITEMSDONE();
+                case (52): return new MSG_CSREDITCHARACTER();
+                case (53): return new MSG_CSREDITCHARACTERFAILED();
+                case (54): return new MSG_CSRFINISHEDHOUSE();
+                case (55): return new MSG_CSRSEARCHLIST();
+                case (56): return new MSG_CSR_MAIL_DATA();
+                case (57): return new MSG_CSR_RECEIVE_GIFTS();
+                case (58): return new MSG_DEBUGDELETEALLOBJECTS();
+                case (59): return new MSG_DELETEOBJECT();
+                case (60): return new MSG_DELETE_GIFT();
+                case (61): return new MSG_DIRECTEDCHAT();
+                case (62): return new MSG_DIRECTEDCHATBYNAMERESPONSE();
+                case (63): return new MSG_DIRECTEDCHATFAIL();
+                case (64): return new MSG_DIRECTEDQUICKCHAT();
+                case (65): return new MSG_DIRECTEDQUICKCHATEXT();
+                case (66): return new MSG_DISCONNECT_AFK();
+                case (67): return new MSG_DOWNLOADBROWSER();
+                case (68): return new MSG_DOWNLOADPACKAGE();
+                case (69): return new MSG_DOWNLOADPACKAGEELEMENT();
+                case (70): return new MSG_DYNAMODBEHAVIOR_UPDATEMODS();
+                case (71): return new MSG_DYNAMODDUMP();
+                case (72): return new MSG_ENTERSTATE();
+                case (73): return new MSG_EQUIPITEM();
+                case (74): return new MSG_EQUIPMENTBEHAVIOR_EQUIPITEM();
+                case (75): return new MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM();
+                case (76): return new MSG_EQUIPMENTBEHAVIOR_PUBLICUNEQUIPITEM();
+                case (77): return new MSG_EQUIPMENTBEHAVIOR_UNEQUIPITEM();
+                case (78): return new MSG_FEEDINVENTORYITEM();
+                case (79): return new MSG_FIND_SESSIONS();
+                case (80): return new MSG_FIND_SESSION_PLAYERS();
+                case (81): return new MSG_GENERICGAME();
+                case (82): return new MSG_GETLADDER();
+                case (83): return new MSG_GET_RANKINGS();
+                case (84): return new MSG_GIFT_REDEEMED();
+                case (85): return new MSG_GOTOPLAYER();
+                case (86): return new MSG_GOTOPLAYERRESP();
+                case (87): return new MSG_HARASSMENTREPORT();
+                case (88): return new MSG_IGNOREADD();
+                case (89): return new MSG_IGNOREDROP();
+                case (90): return new MSG_IGNORELIST();
+                case (91): return new MSG_INTERACTOBJECT();
+                case (92): return new MSG_INTERACTOPTION();
+                case (93): return new MSG_INVENTORYBEHAVIOR_ADDITEM();
+                case (94): return new MSG_INVENTORYBEHAVIOR_REMOVEITEM();
+                case (95): return new MSG_INVENTORYBEHAVIOR_TRADEITEM();
+                case (96): return new MSG_INVITEFRIEND();
+                case (97): return new MSG_INVITE_RESPONSE();
+                case (98): return new MSG_JOINCHANNELRESPONSE();
+                case (99): return new MSG_JOIN_SESSION();
+                case (100): return new MSG_JUMP();
+                case (101): return new MSG_KILL_CLIENT_PROCESS();
+                case (102): return new MSG_LADDER();
+                case (103): return new MSG_LEAVECHANNELRESPONSE();
+                case (104): return new MSG_LEAVEHOUSINGLOT();
+                case (105): return new MSG_LEAVESERVICERANGE();
+                case (106): return new MSG_LEAVESTATE();
+                case (107): return new MSG_LOADSAVEOBJECTS();
+                case (108): return new MSG_LOGINCOMPLETE();
+                case (109): return new MSG_MAIL_DATA();
+                case (110): return new MSG_MARK_LOCATION();
+                case (111): return new MSG_MARK_LOCATION_RESPONSE();
+                case (112): return new MSG_MATCHAWARD();
+                case (113): return new MSG_MATCHINVITE();
+                case (114): return new MSG_MATCHMAKERUPDATE();
+                case (115): return new MSG_MATCHREADY();
+                case (116): return new MSG_MATCHRESULT();
+                case (117): return new MSG_MESSAGE_PROCESS();
+                case (118): return new MSG_MOVECORRECTION();
+                case (119): return new MSG_MOVESTATE();
+                case (120): return new MSG_MUTE();
+                case (121): return new MSG_MUTE_RSP();
+                case (122): return new MSG_NEWOBJECT();
+                case (123): return new MSG_NEWSYSSTATS();
+                case (124): return new MSG_NEWTICKCNT();
+                case (125): return new MSG_NEWTOURNEYREWARDS();
+                case (126): return new MSG_NEW_MAIL();
+                case (127): return new MSG_NOTIFYCHANNELINSTANCE();
+                case (128): return new MSG_NOTIFY_GIFT();
+                case (129): return new MSG_NOTMUTED();
+                case (130): return new MSG_NOT_AFK();
+                case (131): return new MSG_NPCSPEECH();
+                case (132): return new MSG_OBJECT_INFO_QUERY();
+                case (133): return new MSG_PARTYDISBAND();
+                case (134): return new MSG_PARTYJOINFAILED();
+                case (135): return new MSG_PARTYJOINNOTIFICATION();
+                case (136): return new MSG_PARTYLEAVE();
+                case (137): return new MSG_PARTYLEAVENOTIFICATION();
+                case (138): return new MSG_PARTYLEVELUP();
+                case (139): return new MSG_PARTYLEVELUPUPDATE();
+                case (140): return new MSG_PARTYMULTIPLAYERMOUNTEQUIP();
+                case (141): return new MSG_PARTYMULTIPLAYERMOUNTEQUIPUPDATE();
+                case (142): return new MSG_PARTYMULTIPLAYERMOUNTJOIN();
+                case (143): return new MSG_PARTYMULTIPLAYERMOUNTJOINUPDATE();
+                case (144): return new MSG_PARTYREQUESTACCEPT();
+                case (145): return new MSG_PARTYREQUESTDECLINE();
+                case (146): return new MSG_PARTYREQUESTINVITE();
+                case (147): return new MSG_PARTYREQUESTJOIN();
+                case (148): return new MSG_PARTYREQUESTMEMBERZONES();
+                case (149): return new MSG_PARTYREQUESTRESPONSE();
+                case (150): return new MSG_PARTYREQUESTTIMEOUT();
+                case (151): return new MSG_PARTYSUBMITMEMBERZONES();
+                case (152): return new MSG_PARTYUPDATE();
+                case (153): return new MSG_PARTYZONEREQUEST();
+                case (154): return new MSG_PARTYZONEREQUESTRESPONSE();
+                case (155): return new MSG_PICKUPOBJECT();
+                case (156): return new MSG_PLACEOBJECT();
+                case (157): return new MSG_PLAYCINEMATIC();
+                case (158): return new MSG_PLAYERBLACKBALLEDALERT();
+                case (159): return new MSG_PLAYERREADYACK();
+                case (160): return new MSG_PLAYSOUND();
+                case (161): return new MSG_POSTZONEEVENTFROMCLIENT();
+                case (162): return new MSG_PREVIEW_ISLAND();
+                case (163): return new MSG_PVPUPDATEINFO();
+                case (164): return new MSG_QUERY_LOGOUT();
+                case (165): return new MSG_RADIALCHAT();
+                case (166): return new MSG_RADIALQUICKCHAT();
+                case (167): return new MSG_RADIALQUICKCHATEXT();
+                case (168): return new MSG_RADIALZONECLUSTERQUICKCHAT();
+                case (169): return new MSG_RANKING();
+                case (170): return new MSG_REALM_INFO_QUERY();
+                case (171): return new MSG_RECALL_LOCATION();
+                case (172): return new MSG_RECEIVE_GIFTS();
+                case (173): return new MSG_RECEIVE_PROMOTIONS();
+                case (174): return new MSG_REDEEM_GIFT();
+                case (175): return new MSG_REDEEM_MAIL_GIFT();
+                case (176): return new MSG_REDEEM_MAIL_GIFT_RESPONSE();
+                case (177): return new MSG_RELEASEDELAY();
+                case (178): return new MSG_RELOADTEMPLATEDIR();
+                case (179): return new MSG_REMOVEDSHOPPER();
+                case (180): return new MSG_REMOVEEFFECT();
+                case (181): return new MSG_REMOVEITEMREQUEST();
+                case (182): return new MSG_REMOVEOBJECT();
                 case (183): return new MSG_REMOVEPARTICLE();
                 case (184): return new MSG_REMOVEZONETIMER();
                 case (185): return new MSG_REPORTADTAKEOVER();
@@ -3056,7 +3056,7 @@ namespace Imlight.Common.Serializable.Caches
 			[DmlElement(DmlType.UBYT)] public Byte SendAck;
 		}
 	}
-	public sealed class GAME2 : INetworkProtocol
+	public sealed class GAME2_55_PROTOCOL : INetworkProtocol
 	{
 		public Byte ServiceId { get; } = 55;
 		public String ProtocolType { get; } = "GAME2";
@@ -3067,7 +3067,7 @@ namespace Imlight.Common.Serializable.Caches
         {
             switch (id)
             {
-                case (0): return new MSG_NOTIFYITEMFORSETBONUS();
+                case (1): return new MSG_NOTIFYITEMFORSETBONUS();
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
@@ -3082,7 +3082,7 @@ namespace Imlight.Common.Serializable.Caches
 			[DmlElement(DmlType.GID)] public UInt64 ItemID;
 		}
 	}
-	public sealed class LOGIN : INetworkProtocol
+	public sealed class LOGIN_7_PROTOCOL : INetworkProtocol
 	{
 		public Byte ServiceId { get; } = 7;
 		public String ProtocolType { get; } = "LOGIN";
@@ -3412,7 +3412,7 @@ namespace Imlight.Common.Serializable.Caches
 			[DmlElement(DmlType.UINT)] public UInt32 Parameter;
 		}
 	}
-	public sealed class CANTRIPSMESSAGES : INetworkProtocol
+	public sealed class CANTRIPSMESSAGES_57_PROTOCOL : INetworkProtocol
 	{
 		public Byte ServiceId { get; } = 57;
 		public String ProtocolType { get; } = "CANTRIPSMESSAGES";
@@ -3423,24 +3423,24 @@ namespace Imlight.Common.Serializable.Caches
         {
             switch (id)
             {
-                case (0): return new MSG_BENEFICIALLUCKUPDATE();
-                case (1): return new MSG_CANCELINVISIBLITY();
-                case (2): return new MSG_CANTRIPAFFECTEDPLAYER();
-                case (3): return new MSG_CANTRIPENDLOOP();
-                case (4): return new MSG_CANTRIPLEVELUP();
-                case (5): return new MSG_CANTRIPNOAGGRO();
-                case (6): return new MSG_CANTRIPSIGILSPELL();
-                case (7): return new MSG_CANTRIPSRESPONSE();
-                case (8): return new MSG_CANTRIPSRESPONSEERROR();
-                case (9): return new MSG_CANTRIPSSPELLCAST();
-                case (10): return new MSG_CANTRIPTUTORIALEFFECT();
-                case (11): return new MSG_CASTEFFECT();
-                case (12): return new MSG_CASTRITUAL();
-                case (13): return new MSG_CONTROLVISIBLITY();
-                case (14): return new MSG_ENTERBENEFICIALOBJECT();
-                case (15): return new MSG_EXITBENEFICIALOBJECT();
-                case (16): return new MSG_UPDATECANTRIPXP();
-                case (17): return new MSG_UPDATERITUALOBJECT();
+                case (1): return new MSG_BENEFICIALLUCKUPDATE();
+                case (2): return new MSG_CANCELINVISIBLITY();
+                case (3): return new MSG_CANTRIPAFFECTEDPLAYER();
+                case (4): return new MSG_CANTRIPENDLOOP();
+                case (5): return new MSG_CANTRIPLEVELUP();
+                case (6): return new MSG_CANTRIPNOAGGRO();
+                case (7): return new MSG_CANTRIPSIGILSPELL();
+                case (8): return new MSG_CANTRIPSRESPONSE();
+                case (9): return new MSG_CANTRIPSRESPONSEERROR();
+                case (10): return new MSG_CANTRIPSSPELLCAST();
+                case (11): return new MSG_CANTRIPTUTORIALEFFECT();
+                case (12): return new MSG_CASTEFFECT();
+                case (13): return new MSG_CASTRITUAL();
+                case (14): return new MSG_CONTROLVISIBLITY();
+                case (15): return new MSG_ENTERBENEFICIALOBJECT();
+                case (16): return new MSG_EXITBENEFICIALOBJECT();
+                case (17): return new MSG_UPDATECANTRIPXP();
+                case (18): return new MSG_UPDATERITUALOBJECT();
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
@@ -3618,7 +3618,7 @@ namespace Imlight.Common.Serializable.Caches
 			[DmlElement(DmlType.UBYT)] public Byte Count;
 		}
 	}
-	public sealed class MG9_MESSAGES : INetworkProtocol
+	public sealed class MG9_MESSAGES_54_PROTOCOL : INetworkProtocol
 	{
 		public Byte ServiceId { get; } = 54;
 		public String ProtocolType { get; } = "MG9_MESSAGES";
@@ -3629,9 +3629,9 @@ namespace Imlight.Common.Serializable.Caches
         {
             switch (id)
             {
-                case (0): return new MSG_MG3_CONNECT();
-                case (1): return new MSG_MG3_MOVED();
-                case (2): return new MSG_MG3_REWARDS();
+                case (1): return new MSG_MG3_CONNECT();
+                case (2): return new MSG_MG3_MOVED();
+                case (3): return new MSG_MG3_REWARDS();
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
@@ -3660,7 +3660,7 @@ namespace Imlight.Common.Serializable.Caches
 			[DmlElement(DmlType.STR)] public ByteString gameName;
 		}
 	}
-	public sealed class MG4_MESSAGES : INetworkProtocol
+	public sealed class MG4_MESSAGES_45_PROTOCOL : INetworkProtocol
 	{
 		public Byte ServiceId { get; } = 45;
 		public String ProtocolType { get; } = "MG4_MESSAGES";
@@ -3671,9 +3671,9 @@ namespace Imlight.Common.Serializable.Caches
         {
             switch (id)
             {
-                case (0): return new MSG_MG4_CONNECT();
-                case (1): return new MSG_MG4_MOVED();
-                case (2): return new MSG_MG4_REWARDS();
+                case (1): return new MSG_MG4_CONNECT();
+                case (2): return new MSG_MG4_MOVED();
+                case (3): return new MSG_MG4_REWARDS();
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
@@ -3702,7 +3702,7 @@ namespace Imlight.Common.Serializable.Caches
 			[DmlElement(DmlType.STR)] public ByteString gameName;
 		}
 	}
-	public sealed class MG1_MESSAGES : INetworkProtocol
+	public sealed class MG1_MESSAGES_42_PROTOCOL : INetworkProtocol
 	{
 		public Byte ServiceId { get; } = 42;
 		public String ProtocolType { get; } = "MG1_MESSAGES";
@@ -3713,9 +3713,9 @@ namespace Imlight.Common.Serializable.Caches
         {
             switch (id)
             {
-                case (0): return new MSG_MG1_CONNECT();
-                case (1): return new MSG_MG1_MOVED();
-                case (2): return new MSG_MG1_REWARDS();
+                case (1): return new MSG_MG1_CONNECT();
+                case (2): return new MSG_MG1_MOVED();
+                case (3): return new MSG_MG1_REWARDS();
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
@@ -3744,7 +3744,7 @@ namespace Imlight.Common.Serializable.Caches
 			[DmlElement(DmlType.STR)] public ByteString gameName;
 		}
 	}
-	public sealed class DOODLEDOUG_MESSAGES : INetworkProtocol
+	public sealed class DOODLEDOUG_MESSAGES_41_PROTOCOL : INetworkProtocol
 	{
 		public Byte ServiceId { get; } = 41;
 		public String ProtocolType { get; } = "DOODLEDOUG_MESSAGES";
@@ -3755,9 +3755,9 @@ namespace Imlight.Common.Serializable.Caches
         {
             switch (id)
             {
-                case (0): return new MSG_DOODLEDOUG_CONNECT();
-                case (1): return new MSG_DOODLEDOUG_MOVED();
-                case (2): return new MSG_DOODLEDOUG_REWARDS();
+                case (1): return new MSG_DOODLEDOUG_CONNECT();
+                case (2): return new MSG_DOODLEDOUG_MOVED();
+                case (3): return new MSG_DOODLEDOUG_REWARDS();
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
@@ -3786,7 +3786,7 @@ namespace Imlight.Common.Serializable.Caches
 			[DmlElement(DmlType.STR)] public ByteString gameName;
 		}
 	}
-	public sealed class MG6_MESSAGES : INetworkProtocol
+	public sealed class MG6_MESSAGES_47_PROTOCOL : INetworkProtocol
 	{
 		public Byte ServiceId { get; } = 47;
 		public String ProtocolType { get; } = "MG6_MESSAGES";
@@ -3797,9 +3797,9 @@ namespace Imlight.Common.Serializable.Caches
         {
             switch (id)
             {
-                case (0): return new MSG_MG6_CONNECT();
-                case (1): return new MSG_MG6_MOVED();
-                case (2): return new MSG_MG6_REWARDS();
+                case (1): return new MSG_MG6_CONNECT();
+                case (2): return new MSG_MG6_MOVED();
+                case (3): return new MSG_MG6_REWARDS();
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
@@ -3828,7 +3828,7 @@ namespace Imlight.Common.Serializable.Caches
 			[DmlElement(DmlType.STR)] public ByteString gameName;
 		}
 	}
-	public sealed class MG2_MESSAGES : INetworkProtocol
+	public sealed class MG2_MESSAGES_43_PROTOCOL : INetworkProtocol
 	{
 		public Byte ServiceId { get; } = 43;
 		public String ProtocolType { get; } = "MG2_MESSAGES";
@@ -3839,9 +3839,9 @@ namespace Imlight.Common.Serializable.Caches
         {
             switch (id)
             {
-                case (0): return new MSG_MG2_CONNECT();
-                case (1): return new MSG_MG2_MOVED();
-                case (2): return new MSG_MG2_REWARDS();
+                case (1): return new MSG_MG2_CONNECT();
+                case (2): return new MSG_MG2_MOVED();
+                case (3): return new MSG_MG2_REWARDS();
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
@@ -3870,7 +3870,7 @@ namespace Imlight.Common.Serializable.Caches
 			[DmlElement(DmlType.STR)] public ByteString gameName;
 		}
 	}
-	public sealed class WIZARDHOUSING : INetworkProtocol
+	public sealed class WIZARDHOUSING_50_PROTOCOL : INetworkProtocol
 	{
 		public Byte ServiceId { get; } = 50;
 		public String ProtocolType { get; } = "WIZARDHOUSING";
@@ -3881,210 +3881,210 @@ namespace Imlight.Common.Serializable.Caches
         {
             switch (id)
             {
-                case (0): return new MSG_ADDFISHTOAQUARIUM();
-                case (1): return new MSG_ADDINSTANCEFISH();
-                case (2): return new MSG_ADDTOTREASURECARDPOSTER();
-                case (3): return new MSG_AUDITATTICRESULTS();
-                case (4): return new MSG_BEGINFISHINGCAST();
-                case (5): return new MSG_BLOCKPETSPAWN();
-                case (6): return new MSG_BUYISLANDSPACECONFIRM();
-                case (7): return new MSG_CASTLEGAMESREQUEST();
-                case (8): return new MSG_CASTLEGAMESREQUESTGAMEDATA();
-                case (9): return new MSG_CASTLEGAMESTELEPORTREJECTED();
-                case (10): return new MSG_CASTLEMAGICCANTRIP();
-                case (11): return new MSG_CASTLEMAGICCHANGEACTION();
-                case (12): return new MSG_CASTLEMAGICCLEAR();
-                case (13): return new MSG_CASTLEMAGICCURRENTSTATE();
-                case (14): return new MSG_CASTLEMAGICORB();
-                case (15): return new MSG_CASTLEMAGICREQUESTALLOWMOUNTS();
-                case (16): return new MSG_CASTLEMAGICREQUESTALLOWPVP();
-                case (17): return new MSG_CASTLEMAGICREQUESTPLAYERTELEPORT();
-                case (18): return new MSG_CASTLEMAGICREQUESTPVPSTATE();
-                case (19): return new MSG_CASTLEMAGICREQUESTRANDOM();
-                case (20): return new MSG_CASTLEMAGICREQUESTUSE();
-                case (21): return new MSG_CASTLEMAGICTUTORIAL();
-                case (22): return new MSG_CASTLEMAGICUPDATESTATE();
-                case (23): return new MSG_CASTLETOURSADD();
-                case (24): return new MSG_CASTLETOURSADDFAVORITE();
-                case (25): return new MSG_CASTLETOURSADDRESULT();
-                case (26): return new MSG_CASTLETOURSCSRRESULTS();
-                case (27): return new MSG_CASTLETOURSDELETECHARACTER();
-                case (28): return new MSG_CASTLETOURSENABLERATINGDISPLAY();
-                case (29): return new MSG_CASTLETOURSFAVORITEINFO();
-                case (30): return new MSG_CASTLETOURSFAVORITEINFO2();
-                case (31): return new MSG_CASTLETOURSLEADERBOARDRESPONSE();
-                case (32): return new MSG_CASTLETOURSPLAYERBANNED();
-                case (33): return new MSG_CASTLETOURSPOSTRATEHOUSE();
-                case (34): return new MSG_CASTLETOURSPREADD();
-                case (35): return new MSG_CASTLETOURSRATINGDISPLAY();
-                case (36): return new MSG_CASTLETOURSREMOVE();
-                case (37): return new MSG_CASTLETOURSREMOVEFAVORITE();
-                case (38): return new MSG_CASTLETOURSREMOVERESULT();
-                case (39): return new MSG_CASTLETOURSREQUEST();
-                case (40): return new MSG_CASTLETOURSREQUESTFRIENDS();
-                case (41): return new MSG_CASTLETOURSREQUESTLEADERBOARD();
-                case (42): return new MSG_CASTLETOURSREQUESTMYCASTLEDATA();
-                case (43): return new MSG_CASTLETOURSREQUESTMYCASTLES();
-                case (44): return new MSG_CASTLETOURSSENDRATING();
-                case (45): return new MSG_CASTLETOURSTELEPORTPLAYER();
-                case (46): return new MSG_CASTLETOURSTELEPORTREJECTED();
-                case (47): return new MSG_CASTLETOURSVISITCASTLE();
-                case (48): return new MSG_CATCHFISH();
-                case (49): return new MSG_CATCHOFTHEDAYOPEN();
-                case (50): return new MSG_CATCHSUCCESS();
-                case (51): return new MSG_CHANGEBREADCRUMBREQUEST();
-                case (52): return new MSG_CREATETESTISLAND();
-                case (53): return new MSG_DAILYPVPOPEN();
-                case (54): return new MSG_DAILYQUESTCOMPLETED();
-                case (55): return new MSG_DAILYQUESTCSRDATA();
-                case (56): return new MSG_DAILYQUESTEXPLORE();
-                case (57): return new MSG_DAILYQUESTOPEN();
-                case (58): return new MSG_DELETEEQUIPPEDHOUSINGITEM();
-                case (59): return new MSG_DELETEFISH();
-                case (60): return new MSG_DELETEFROMATTIC();
-                case (61): return new MSG_DELETEMUSICLOOP();
-                case (62): return new MSG_DISPLAYCATCHFISH();
-                case (63): return new MSG_DISPLAYCAUGHTFISH();
-                case (64): return new MSG_DISPOSABLEDUNGEONNOOWNER();
-                case (65): return new MSG_DailyPvPUpdate();
-                case (66): return new MSG_DailyQuestUpdate();
-                case (67): return new MSG_EMPTYLOTCHECK();
-                case (68): return new MSG_ENDFISHINGCAST();
-                case (69): return new MSG_ENTERTOURNAMENTFISH();
-                case (70): return new MSG_ENTERTOURNAMENTFISHRESULT();
-                case (71): return new MSG_EQUIPHOUSEMUSIC();
-                case (72): return new MSG_EQUIPMANNEQUINITEM();
-                case (73): return new MSG_FISHESCAPED();
-                case (74): return new MSG_FISHINGCSRRESULTS();
-                case (75): return new MSG_FISHINGSPELLCAST();
-                case (76): return new MSG_FISHTOURNAMENTLEADERBOARDOPEN();
-                case (77): return new MSG_FISHTOURNAMENTLEADERBOARDREQUEST();
-                case (78): return new MSG_FISHTOURNAMENTOPEN();
-                case (79): return new MSG_GARDENINGCASTSPELL();
-                case (80): return new MSG_GARDENINGCOMMAND();
-                case (81): return new MSG_GARDENINGCOMMANDRESPONSE();
-                case (82): return new MSG_GARDENINGCSRRESULTS();
-                case (83): return new MSG_GARDENINGHARVESTPLANT();
-                case (84): return new MSG_GARDENINGHARVESTPLANTSECONDSPRING();
-                case (85): return new MSG_GARDENINGPELLFIZZLE();
-                case (86): return new MSG_GARDENINGSPELLINSPECT();
-                case (87): return new MSG_GARDENLEVELUP();
-                case (88): return new MSG_HIDEHOUSINGOBJECT();
-                case (89): return new MSG_HOUSINGGAMEREQUESTPOWERUPLOCATIONS();
-                case (90): return new MSG_HOUSINGGAMESTATUSUPDATE();
-                case (91): return new MSG_HOUSINGGAMEUSEPOWERUP();
-                case (92): return new MSG_HOUSINGOBJECTNOPICKUP();
-                case (93): return new MSG_HOUSINGOBJECTPROXIMITY();
-                case (94): return new MSG_HOUSINGZONEPLAYER();
-                case (95): return new MSG_HOUSINGZONEPLAYERLIST();
-                case (96): return new MSG_INTERACTIVEMUSICERROR();
-                case (97): return new MSG_INTERACTIVEMUSICINUSE();
-                case (98): return new MSG_INTERACTIVEMUSICINUSE2();
-                case (99): return new MSG_ISLANDSPACEBUYREQUEST();
-                case (100): return new MSG_ISLANDSPACESHOPOPEN();
-                case (101): return new MSG_MISSFISH();
-                case (102): return new MSG_MONSTERMAGICADDMONSTER();
-                case (103): return new MSG_MONSTERMAGICERASEMONSTER();
-                case (104): return new MSG_MOVEFROMATTIC();
-                case (105): return new MSG_MOVEGEARFROMGEARVAULT();
-                case (106): return new MSG_MOVEGEARTOGEARVAULT();
-                case (107): return new MSG_MOVEJEWELFROMJEWELVAULT();
-                case (108): return new MSG_MOVEJEWELTOJEWELVAULT();
-                case (109): return new MSG_MOVESEEDFROMGARDENINGSHED();
-                case (110): return new MSG_MOVESEEDTOGARDENINGSHED();
-                case (111): return new MSG_MOVETCFROMTCVAULT();
-                case (112): return new MSG_MOVETCTOTCVAULT();
-                case (113): return new MSG_MOVETOATTIC();
-                case (114): return new MSG_NOFISHSPACE();
-                case (115): return new MSG_PATCHADDATTIC();
-                case (116): return new MSG_PATCHADDHOUSINGOBJECT();
-                case (117): return new MSG_PATCHAQUARIUM();
-                case (118): return new MSG_PATCHCASTLEMAGIC();
-                case (119): return new MSG_PATCHDELETEATTIC();
-                case (120): return new MSG_PATCHDELETEHOUSINGOBJECT();
-                case (121): return new MSG_PATCHEQUIPHOUSINGOBJECT();
-                case (122): return new MSG_PATCHGARDENING();
-                case (123): return new MSG_PATCHHOUSE();
-                case (124): return new MSG_PATCHHOUSINGBREADCRUMB();
-                case (125): return new MSG_PATCHHOUSINGGARDENINGSHED();
-                case (126): return new MSG_PATCHHOUSINGGEARVAULT();
-                case (127): return new MSG_PATCHHOUSINGJEWELVAULT();
-                case (128): return new MSG_PATCHHOUSINGMUSICOBJECT();
-                case (129): return new MSG_PATCHHOUSINGSIGNOBJECT();
-                case (130): return new MSG_PATCHHOUSINGTELEPORTEROBJECT();
-                case (131): return new MSG_PATCHHOUSINGTRAIN();
-                case (132): return new MSG_PATCHMONSTERARENA();
-                case (133): return new MSG_PATCHMUSICLOOP();
-                case (134): return new MSG_PATCHREMOVETEXTUREREMAP();
-                case (135): return new MSG_PATCHTEXTUREREMAP();
-                case (136): return new MSG_PATCHTINTHOUSINGOBJECT();
-                case (137): return new MSG_PATCHTREASURECARDPOSTER();
-                case (138): return new MSG_PATCHTREASURECARDVAULT();
-                case (139): return new MSG_PATCHUPDATEHOUSINGOBJECT();
-                case (140): return new MSG_PATCHUPEXTENDEDTILE();
-                case (141): return new MSG_PETTOMESCANATTIC();
-                case (142): return new MSG_PICKUPALL();
-                case (143): return new MSG_PICKUPHOUSINGTEXTURE();
-                case (144): return new MSG_PLACEHOUSINGFISH();
-                case (145): return new MSG_PLACEHOUSINGOBJECT();
-                case (146): return new MSG_PLAYERTELEPORTINGTOFRIEND();
-                case (147): return new MSG_PLAYINTERACTIVEMUSIC();
-                case (148): return new MSG_PLAYINTERACTIVEMUSIC2();
-                case (149): return new MSG_PLAYINTERACTIVEMUSICLOOP();
-                case (150): return new MSG_PLAYINTERACTIVEMUSICLOOPING();
-                case (151): return new MSG_PLAYINTERACTIVEMUSICLOOPING2();
-                case (152): return new MSG_PLAYTRAINSOUND();
-                case (153): return new MSG_REMOVEFISHFROMAQUARIUM();
-                case (154): return new MSG_REMOVEHOUSEMUSIC();
-                case (155): return new MSG_REPORTHOUSE();
-                case (156): return new MSG_REQUESTALLFISH();
-                case (157): return new MSG_REQUESTATTIC();
-                case (158): return new MSG_REQUESTCATCHSUCCESS();
-                case (159): return new MSG_REQUESTDEEDZONE();
-                case (160): return new MSG_REQUESTFISHHISTORY();
-                case (161): return new MSG_REQUESTHOUSEOWNERCHARACTERID();
-                case (162): return new MSG_REQUESTHOUSETRANSFERLIST();
-                case (163): return new MSG_REQUESTHOUSINGZONE();
-                case (164): return new MSG_REQUESTHOUSINGZONETELEPORT();
-                case (165): return new MSG_REQUESTINTERACTIVEMUSIC();
-                case (166): return new MSG_REQUESTISLANDSWITCH();
-                case (167): return new MSG_REQUESTSENDAWAY();
-                case (168): return new MSG_REQUESTTELEPORTERHOUSINGCONFIRM();
-                case (169): return new MSG_REQUESTTELEPORTERHOUSINGZONE();
-                case (170): return new MSG_REQUEST_BLOBS();
-                case (171): return new MSG_RESPEC();
-                case (172): return new MSG_SELECTHOUSEMUSIC();
-                case (173): return new MSG_SELECTMUSICSTYLE();
-                case (174): return new MSG_SELLFISHOPEN();
-                case (175): return new MSG_SELLFISHREQUEST();
-                case (176): return new MSG_SENDHOUSINGOBJECTSTATES();
-                case (177): return new MSG_SENDHOUSINGTEXTUREINFO();
-                case (178): return new MSG_SEND_BLOB();
-                case (179): return new MSG_SETATTICID();
-                case (180): return new MSG_SETFISHINGPLAYERS();
-                case (181): return new MSG_SETHOUSESIGN();
-                case (182): return new MSG_SETHOUSETELEPORTER();
-                case (183): return new MSG_SETHOUSINGGAMESTATE();
-                case (184): return new MSG_SETHOUSINGPALETTE();
-                case (185): return new MSG_SETINSTANCEFISH();
-                case (186): return new MSG_SETINVISIBLETOFRIENDS();
-                case (187): return new MSG_SETMUSICLOOP();
-                case (188): return new MSG_SETNEXTTRAIN();
-                case (189): return new MSG_SETTILEWALLPAPER();
-                case (190): return new MSG_SHOWFISHINGCAST();
-                case (191): return new MSG_STARTHOUSINGGAME();
-                case (192): return new MSG_STARTTRAIN();
-                case (193): return new MSG_STOPINTERACTIVEMUSICLOOP();
-                case (194): return new MSG_SWITCHGOTOCOMMONS();
-                case (195): return new MSG_TELEPORTEDTODELETEDLOT();
-                case (196): return new MSG_TELEPORTTOSTART();
-                case (197): return new MSG_UPDATEATTICCOUNT();
-                case (198): return new MSG_UPDATEGARDENINGXP();
-                case (199): return new MSG_UPDATEHOUSINGOBJECT();
-                case (200): return new MSG_UPDATEHOUSINGPET();
-                case (201): return new MSG_UPDATEISLANDSPACE();
-                case (202): return new MSG_UPDATEMAXIMUMHOUSINGITEMS();
-                case (203): return new MSG_UPDATETRAIN();
+                case (1): return new MSG_ADDFISHTOAQUARIUM();
+                case (2): return new MSG_ADDINSTANCEFISH();
+                case (3): return new MSG_ADDTOTREASURECARDPOSTER();
+                case (4): return new MSG_AUDITATTICRESULTS();
+                case (5): return new MSG_BEGINFISHINGCAST();
+                case (6): return new MSG_BLOCKPETSPAWN();
+                case (7): return new MSG_BUYISLANDSPACECONFIRM();
+                case (8): return new MSG_CASTLEGAMESREQUEST();
+                case (9): return new MSG_CASTLEGAMESREQUESTGAMEDATA();
+                case (10): return new MSG_CASTLEGAMESTELEPORTREJECTED();
+                case (11): return new MSG_CASTLEMAGICCANTRIP();
+                case (12): return new MSG_CASTLEMAGICCHANGEACTION();
+                case (13): return new MSG_CASTLEMAGICCLEAR();
+                case (14): return new MSG_CASTLEMAGICCURRENTSTATE();
+                case (15): return new MSG_CASTLEMAGICORB();
+                case (16): return new MSG_CASTLEMAGICREQUESTALLOWMOUNTS();
+                case (17): return new MSG_CASTLEMAGICREQUESTALLOWPVP();
+                case (18): return new MSG_CASTLEMAGICREQUESTPLAYERTELEPORT();
+                case (19): return new MSG_CASTLEMAGICREQUESTPVPSTATE();
+                case (20): return new MSG_CASTLEMAGICREQUESTRANDOM();
+                case (21): return new MSG_CASTLEMAGICREQUESTUSE();
+                case (22): return new MSG_CASTLEMAGICTUTORIAL();
+                case (23): return new MSG_CASTLEMAGICUPDATESTATE();
+                case (24): return new MSG_CASTLETOURSADD();
+                case (25): return new MSG_CASTLETOURSADDFAVORITE();
+                case (26): return new MSG_CASTLETOURSADDRESULT();
+                case (27): return new MSG_CASTLETOURSCSRRESULTS();
+                case (28): return new MSG_CASTLETOURSDELETECHARACTER();
+                case (29): return new MSG_CASTLETOURSENABLERATINGDISPLAY();
+                case (30): return new MSG_CASTLETOURSFAVORITEINFO();
+                case (31): return new MSG_CASTLETOURSFAVORITEINFO2();
+                case (32): return new MSG_CASTLETOURSLEADERBOARDRESPONSE();
+                case (33): return new MSG_CASTLETOURSPLAYERBANNED();
+                case (34): return new MSG_CASTLETOURSPOSTRATEHOUSE();
+                case (35): return new MSG_CASTLETOURSPREADD();
+                case (36): return new MSG_CASTLETOURSRATINGDISPLAY();
+                case (37): return new MSG_CASTLETOURSREMOVE();
+                case (38): return new MSG_CASTLETOURSREMOVEFAVORITE();
+                case (39): return new MSG_CASTLETOURSREMOVERESULT();
+                case (40): return new MSG_CASTLETOURSREQUEST();
+                case (41): return new MSG_CASTLETOURSREQUESTFRIENDS();
+                case (42): return new MSG_CASTLETOURSREQUESTLEADERBOARD();
+                case (43): return new MSG_CASTLETOURSREQUESTMYCASTLEDATA();
+                case (44): return new MSG_CASTLETOURSREQUESTMYCASTLES();
+                case (45): return new MSG_CASTLETOURSSENDRATING();
+                case (46): return new MSG_CASTLETOURSTELEPORTPLAYER();
+                case (47): return new MSG_CASTLETOURSTELEPORTREJECTED();
+                case (48): return new MSG_CASTLETOURSVISITCASTLE();
+                case (49): return new MSG_CATCHFISH();
+                case (50): return new MSG_CATCHOFTHEDAYOPEN();
+                case (51): return new MSG_CATCHSUCCESS();
+                case (52): return new MSG_CHANGEBREADCRUMBREQUEST();
+                case (53): return new MSG_CREATETESTISLAND();
+                case (54): return new MSG_DAILYPVPOPEN();
+                case (55): return new MSG_DAILYQUESTCOMPLETED();
+                case (56): return new MSG_DAILYQUESTCSRDATA();
+                case (57): return new MSG_DAILYQUESTEXPLORE();
+                case (58): return new MSG_DAILYQUESTOPEN();
+                case (59): return new MSG_DELETEEQUIPPEDHOUSINGITEM();
+                case (60): return new MSG_DELETEFISH();
+                case (61): return new MSG_DELETEFROMATTIC();
+                case (62): return new MSG_DELETEMUSICLOOP();
+                case (63): return new MSG_DISPLAYCATCHFISH();
+                case (64): return new MSG_DISPLAYCAUGHTFISH();
+                case (65): return new MSG_DISPOSABLEDUNGEONNOOWNER();
+                case (66): return new MSG_DailyPvPUpdate();
+                case (67): return new MSG_DailyQuestUpdate();
+                case (68): return new MSG_EMPTYLOTCHECK();
+                case (69): return new MSG_ENDFISHINGCAST();
+                case (70): return new MSG_ENTERTOURNAMENTFISH();
+                case (71): return new MSG_ENTERTOURNAMENTFISHRESULT();
+                case (72): return new MSG_EQUIPHOUSEMUSIC();
+                case (73): return new MSG_EQUIPMANNEQUINITEM();
+                case (74): return new MSG_FISHESCAPED();
+                case (75): return new MSG_FISHINGCSRRESULTS();
+                case (76): return new MSG_FISHINGSPELLCAST();
+                case (77): return new MSG_FISHTOURNAMENTLEADERBOARDOPEN();
+                case (78): return new MSG_FISHTOURNAMENTLEADERBOARDREQUEST();
+                case (79): return new MSG_FISHTOURNAMENTOPEN();
+                case (80): return new MSG_GARDENINGCASTSPELL();
+                case (81): return new MSG_GARDENINGCOMMAND();
+                case (82): return new MSG_GARDENINGCOMMANDRESPONSE();
+                case (83): return new MSG_GARDENINGCSRRESULTS();
+                case (84): return new MSG_GARDENINGHARVESTPLANT();
+                case (85): return new MSG_GARDENINGHARVESTPLANTSECONDSPRING();
+                case (86): return new MSG_GARDENINGPELLFIZZLE();
+                case (87): return new MSG_GARDENINGSPELLINSPECT();
+                case (88): return new MSG_GARDENLEVELUP();
+                case (89): return new MSG_HIDEHOUSINGOBJECT();
+                case (90): return new MSG_HOUSINGGAMEREQUESTPOWERUPLOCATIONS();
+                case (91): return new MSG_HOUSINGGAMESTATUSUPDATE();
+                case (92): return new MSG_HOUSINGGAMEUSEPOWERUP();
+                case (93): return new MSG_HOUSINGOBJECTNOPICKUP();
+                case (94): return new MSG_HOUSINGOBJECTPROXIMITY();
+                case (95): return new MSG_HOUSINGZONEPLAYER();
+                case (96): return new MSG_HOUSINGZONEPLAYERLIST();
+                case (97): return new MSG_INTERACTIVEMUSICERROR();
+                case (98): return new MSG_INTERACTIVEMUSICINUSE();
+                case (99): return new MSG_INTERACTIVEMUSICINUSE2();
+                case (100): return new MSG_ISLANDSPACEBUYREQUEST();
+                case (101): return new MSG_ISLANDSPACESHOPOPEN();
+                case (102): return new MSG_MISSFISH();
+                case (103): return new MSG_MONSTERMAGICADDMONSTER();
+                case (104): return new MSG_MONSTERMAGICERASEMONSTER();
+                case (105): return new MSG_MOVEFROMATTIC();
+                case (106): return new MSG_MOVEGEARFROMGEARVAULT();
+                case (107): return new MSG_MOVEGEARTOGEARVAULT();
+                case (108): return new MSG_MOVEJEWELFROMJEWELVAULT();
+                case (109): return new MSG_MOVEJEWELTOJEWELVAULT();
+                case (110): return new MSG_MOVESEEDFROMGARDENINGSHED();
+                case (111): return new MSG_MOVESEEDTOGARDENINGSHED();
+                case (112): return new MSG_MOVETCFROMTCVAULT();
+                case (113): return new MSG_MOVETCTOTCVAULT();
+                case (114): return new MSG_MOVETOATTIC();
+                case (115): return new MSG_NOFISHSPACE();
+                case (116): return new MSG_PATCHADDATTIC();
+                case (117): return new MSG_PATCHADDHOUSINGOBJECT();
+                case (118): return new MSG_PATCHAQUARIUM();
+                case (119): return new MSG_PATCHCASTLEMAGIC();
+                case (120): return new MSG_PATCHDELETEATTIC();
+                case (121): return new MSG_PATCHDELETEHOUSINGOBJECT();
+                case (122): return new MSG_PATCHEQUIPHOUSINGOBJECT();
+                case (123): return new MSG_PATCHGARDENING();
+                case (124): return new MSG_PATCHHOUSE();
+                case (125): return new MSG_PATCHHOUSINGBREADCRUMB();
+                case (126): return new MSG_PATCHHOUSINGGARDENINGSHED();
+                case (127): return new MSG_PATCHHOUSINGGEARVAULT();
+                case (128): return new MSG_PATCHHOUSINGJEWELVAULT();
+                case (129): return new MSG_PATCHHOUSINGMUSICOBJECT();
+                case (130): return new MSG_PATCHHOUSINGSIGNOBJECT();
+                case (131): return new MSG_PATCHHOUSINGTELEPORTEROBJECT();
+                case (132): return new MSG_PATCHHOUSINGTRAIN();
+                case (133): return new MSG_PATCHMONSTERARENA();
+                case (134): return new MSG_PATCHMUSICLOOP();
+                case (135): return new MSG_PATCHREMOVETEXTUREREMAP();
+                case (136): return new MSG_PATCHTEXTUREREMAP();
+                case (137): return new MSG_PATCHTINTHOUSINGOBJECT();
+                case (138): return new MSG_PATCHTREASURECARDPOSTER();
+                case (139): return new MSG_PATCHTREASURECARDVAULT();
+                case (140): return new MSG_PATCHUPDATEHOUSINGOBJECT();
+                case (141): return new MSG_PATCHUPEXTENDEDTILE();
+                case (142): return new MSG_PETTOMESCANATTIC();
+                case (143): return new MSG_PICKUPALL();
+                case (144): return new MSG_PICKUPHOUSINGTEXTURE();
+                case (145): return new MSG_PLACEHOUSINGFISH();
+                case (146): return new MSG_PLACEHOUSINGOBJECT();
+                case (147): return new MSG_PLAYERTELEPORTINGTOFRIEND();
+                case (148): return new MSG_PLAYINTERACTIVEMUSIC();
+                case (149): return new MSG_PLAYINTERACTIVEMUSIC2();
+                case (150): return new MSG_PLAYINTERACTIVEMUSICLOOP();
+                case (151): return new MSG_PLAYINTERACTIVEMUSICLOOPING();
+                case (152): return new MSG_PLAYINTERACTIVEMUSICLOOPING2();
+                case (153): return new MSG_PLAYTRAINSOUND();
+                case (154): return new MSG_REMOVEFISHFROMAQUARIUM();
+                case (155): return new MSG_REMOVEHOUSEMUSIC();
+                case (156): return new MSG_REPORTHOUSE();
+                case (157): return new MSG_REQUESTALLFISH();
+                case (158): return new MSG_REQUESTATTIC();
+                case (159): return new MSG_REQUESTCATCHSUCCESS();
+                case (160): return new MSG_REQUESTDEEDZONE();
+                case (161): return new MSG_REQUESTFISHHISTORY();
+                case (162): return new MSG_REQUESTHOUSEOWNERCHARACTERID();
+                case (163): return new MSG_REQUESTHOUSETRANSFERLIST();
+                case (164): return new MSG_REQUESTHOUSINGZONE();
+                case (165): return new MSG_REQUESTHOUSINGZONETELEPORT();
+                case (166): return new MSG_REQUESTINTERACTIVEMUSIC();
+                case (167): return new MSG_REQUESTISLANDSWITCH();
+                case (168): return new MSG_REQUESTSENDAWAY();
+                case (169): return new MSG_REQUESTTELEPORTERHOUSINGCONFIRM();
+                case (170): return new MSG_REQUESTTELEPORTERHOUSINGZONE();
+                case (171): return new MSG_REQUEST_BLOBS();
+                case (172): return new MSG_RESPEC();
+                case (173): return new MSG_SELECTHOUSEMUSIC();
+                case (174): return new MSG_SELECTMUSICSTYLE();
+                case (175): return new MSG_SELLFISHOPEN();
+                case (176): return new MSG_SELLFISHREQUEST();
+                case (177): return new MSG_SENDHOUSINGOBJECTSTATES();
+                case (178): return new MSG_SENDHOUSINGTEXTUREINFO();
+                case (179): return new MSG_SEND_BLOB();
+                case (180): return new MSG_SETATTICID();
+                case (181): return new MSG_SETFISHINGPLAYERS();
+                case (182): return new MSG_SETHOUSESIGN();
+                case (183): return new MSG_SETHOUSETELEPORTER();
+                case (184): return new MSG_SETHOUSINGGAMESTATE();
+                case (185): return new MSG_SETHOUSINGPALETTE();
+                case (186): return new MSG_SETINSTANCEFISH();
+                case (187): return new MSG_SETINVISIBLETOFRIENDS();
+                case (188): return new MSG_SETMUSICLOOP();
+                case (189): return new MSG_SETNEXTTRAIN();
+                case (190): return new MSG_SETTILEWALLPAPER();
+                case (191): return new MSG_SHOWFISHINGCAST();
+                case (192): return new MSG_STARTHOUSINGGAME();
+                case (193): return new MSG_STARTTRAIN();
+                case (194): return new MSG_STOPINTERACTIVEMUSICLOOP();
+                case (195): return new MSG_SWITCHGOTOCOMMONS();
+                case (196): return new MSG_TELEPORTEDTODELETEDLOT();
+                case (197): return new MSG_TELEPORTTOSTART();
+                case (198): return new MSG_UPDATEATTICCOUNT();
+                case (199): return new MSG_UPDATEGARDENINGXP();
+                case (200): return new MSG_UPDATEHOUSINGOBJECT();
+                case (201): return new MSG_UPDATEHOUSINGPET();
+                case (202): return new MSG_UPDATEISLANDSPACE();
+                case (203): return new MSG_UPDATEMAXIMUMHOUSINGITEMS();
+                case (204): return new MSG_UPDATETRAIN();
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
@@ -6110,7 +6110,7 @@ namespace Imlight.Common.Serializable.Caches
 			[DmlElement(DmlType.UINT)] public UInt32 BreadCrumbID;
 		}
 	}
-	public sealed class MOVEBEHAVIOR : INetworkProtocol
+	public sealed class MOVEBEHAVIOR_15_PROTOCOL : INetworkProtocol
 	{
 		public Byte ServiceId { get; } = 15;
 		public String ProtocolType { get; } = "MOVEBEHAVIOR";
@@ -6121,10 +6121,10 @@ namespace Imlight.Common.Serializable.Caches
         {
             switch (id)
             {
-                case (0): return new MSG_MB_MOVE();
-                case (1): return new MSG_MB_MOVESTATE();
-                case (2): return new MSG_MB_MOVE_T();
-                case (3): return new MSG_MB_TELEPORT();
+                case (1): return new MSG_MB_MOVE();
+                case (2): return new MSG_MB_MOVESTATE();
+                case (3): return new MSG_MB_MOVE_T();
+                case (4): return new MSG_MB_TELEPORT();
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
@@ -6178,7 +6178,7 @@ namespace Imlight.Common.Serializable.Caches
 			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
 		}
 	}
-	public sealed class PHYSICS : INetworkProtocol
+	public sealed class PHYSICS_16_PROTOCOL : INetworkProtocol
 	{
 		public Byte ServiceId { get; } = 16;
 		public String ProtocolType { get; } = "PHYSICS";
@@ -6189,12 +6189,12 @@ namespace Imlight.Common.Serializable.Caches
         {
             switch (id)
             {
-                case (0): return new MSG_PHYSICS_FORCE();
-                case (1): return new MSG_PHYSICS_FORCE_AT_POS();
-                case (2): return new MSG_PHYSICS_GRAB();
-                case (3): return new MSG_PHYSICS_RELEASE();
-                case (4): return new MSG_PHYSICS_STATE();
-                case (5): return new MSG_PHYSICS_TORQUE();
+                case (1): return new MSG_PHYSICS_FORCE();
+                case (2): return new MSG_PHYSICS_FORCE_AT_POS();
+                case (3): return new MSG_PHYSICS_GRAB();
+                case (4): return new MSG_PHYSICS_RELEASE();
+                case (5): return new MSG_PHYSICS_STATE();
+                case (6): return new MSG_PHYSICS_TORQUE();
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
@@ -6314,7 +6314,7 @@ namespace Imlight.Common.Serializable.Caches
 			[DmlElement(DmlType.GID)] public UInt64 GlobalID;
 		}
 	}
-	public sealed class MG5_MESSAGES : INetworkProtocol
+	public sealed class MG5_MESSAGES_46_PROTOCOL : INetworkProtocol
 	{
 		public Byte ServiceId { get; } = 46;
 		public String ProtocolType { get; } = "MG5_MESSAGES";
@@ -6325,9 +6325,9 @@ namespace Imlight.Common.Serializable.Caches
         {
             switch (id)
             {
-                case (0): return new MSG_MG5_CONNECT();
-                case (1): return new MSG_MG5_MOVED();
-                case (2): return new MSG_MG5_REWARDS();
+                case (1): return new MSG_MG5_CONNECT();
+                case (2): return new MSG_MG5_MOVED();
+                case (3): return new MSG_MG5_REWARDS();
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
@@ -6356,7 +6356,7 @@ namespace Imlight.Common.Serializable.Caches
 			[DmlElement(DmlType.STR)] public ByteString gameName;
 		}
 	}
-	public sealed class QUEST_MESSAGES : INetworkProtocol
+	public sealed class QUEST_MESSAGES_52_PROTOCOL : INetworkProtocol
 	{
 		public Byte ServiceId { get; } = 52;
 		public String ProtocolType { get; } = "QUEST_MESSAGES";
@@ -6367,25 +6367,25 @@ namespace Imlight.Common.Serializable.Caches
         {
             switch (id)
             {
-                case (0): return new MSG_ACCEPTQUEST();
-                case (1): return new MSG_CANACQUIREWORLDELIXIR();
-                case (2): return new MSG_COMPLETEGOAL();
-                case (3): return new MSG_COMPLETEPERSONA();
-                case (4): return new MSG_COMPLETEQUEST();
-                case (5): return new MSG_DEBUGQUESTDATA();
-                case (6): return new MSG_DECLINEQUEST();
-                case (7): return new MSG_GETNEXTWORLD();
-                case (8): return new MSG_INTERACTNPC();
-                case (9): return new MSG_NPCINFO();
-                case (10): return new MSG_PERSONAINFO();
-                case (11): return new MSG_QUESTOFFER();
-                case (12): return new MSG_QUESTREADYTOTURNIN();
-                case (13): return new MSG_REMOVEGOAL();
-                case (14): return new MSG_REMOVEQUEST();
-                case (15): return new MSG_SENDGOAL();
-                case (16): return new MSG_SENDNPCOPTIONS();
-                case (17): return new MSG_SENDQUEST();
-                case (18): return new MSG_UPDATEUSERHIDDENQUESTS();
+                case (1): return new MSG_ACCEPTQUEST();
+                case (2): return new MSG_CANACQUIREWORLDELIXIR();
+                case (3): return new MSG_COMPLETEGOAL();
+                case (4): return new MSG_COMPLETEPERSONA();
+                case (5): return new MSG_COMPLETEQUEST();
+                case (6): return new MSG_DEBUGQUESTDATA();
+                case (7): return new MSG_DECLINEQUEST();
+                case (8): return new MSG_GETNEXTWORLD();
+                case (9): return new MSG_INTERACTNPC();
+                case (10): return new MSG_NPCINFO();
+                case (11): return new MSG_PERSONAINFO();
+                case (12): return new MSG_QUESTOFFER();
+                case (13): return new MSG_QUESTREADYTOTURNIN();
+                case (14): return new MSG_REMOVEGOAL();
+                case (15): return new MSG_REMOVEQUEST();
+                case (16): return new MSG_SENDGOAL();
+                case (17): return new MSG_SENDNPCOPTIONS();
+                case (18): return new MSG_SENDQUEST();
+                case (19): return new MSG_UPDATEUSERHIDDENQUESTS();
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
@@ -6614,7 +6614,7 @@ namespace Imlight.Common.Serializable.Caches
 			[DmlElement(DmlType.STR)] public ByteString Data;
 		}
 	}
-	public sealed class MG3_MESSAGES : INetworkProtocol
+	public sealed class MG3_MESSAGES_44_PROTOCOL : INetworkProtocol
 	{
 		public Byte ServiceId { get; } = 44;
 		public String ProtocolType { get; } = "MG3_MESSAGES";
@@ -6625,9 +6625,9 @@ namespace Imlight.Common.Serializable.Caches
         {
             switch (id)
             {
-                case (0): return new MSG_MG3_CONNECT();
-                case (1): return new MSG_MG3_MOVED();
-                case (2): return new MSG_MG3_REWARDS();
+                case (1): return new MSG_MG3_CONNECT();
+                case (2): return new MSG_MG3_MOVED();
+                case (3): return new MSG_MG3_REWARDS();
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
@@ -6656,7 +6656,7 @@ namespace Imlight.Common.Serializable.Caches
 			[DmlElement(DmlType.STR)] public ByteString gameName;
 		}
 	}
-	public sealed class SKULLRIDERS_MESSAGES : INetworkProtocol
+	public sealed class SKULLRIDERS_MESSAGES_40_PROTOCOL : INetworkProtocol
 	{
 		public Byte ServiceId { get; } = 40;
 		public String ProtocolType { get; } = "SKULLRIDERS_MESSAGES";
@@ -6667,9 +6667,9 @@ namespace Imlight.Common.Serializable.Caches
         {
             switch (id)
             {
-                case (0): return new MSG_SKULLRIDERS_CONNECT();
-                case (1): return new MSG_SKULLRIDERS_MOVED();
-                case (2): return new MSG_SKULLRIDERS_REWARDS();
+                case (1): return new MSG_SKULLRIDERS_CONNECT();
+                case (2): return new MSG_SKULLRIDERS_MOVED();
+                case (3): return new MSG_SKULLRIDERS_REWARDS();
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
@@ -6698,7 +6698,7 @@ namespace Imlight.Common.Serializable.Caches
 			[DmlElement(DmlType.STR)] public ByteString gameName;
 		}
 	}
-	public sealed class SOBLOCKS_MESSAGES : INetworkProtocol
+	public sealed class SOBLOCKS_MESSAGES_25_PROTOCOL : INetworkProtocol
 	{
 		public Byte ServiceId { get; } = 25;
 		public String ProtocolType { get; } = "SOBLOCKS_MESSAGES";
@@ -6709,29 +6709,29 @@ namespace Imlight.Common.Serializable.Caches
         {
             switch (id)
             {
-                case (0): return new MSG_SOBLOCKS_ADVANCEOFF();
-                case (1): return new MSG_SOBLOCKS_ADVANCEON();
-                case (2): return new MSG_SOBLOCKS_ATTACK();
-                case (3): return new MSG_SOBLOCKS_COUNTDOWN();
-                case (4): return new MSG_SOBLOCKS_ENDGAME();
-                case (5): return new MSG_SOBLOCKS_FREEZEBLOCKS();
-                case (6): return new MSG_SOBLOCKS_INFO();
-                case (7): return new MSG_SOBLOCKS_LEVELUP();
-                case (8): return new MSG_SOBLOCKS_LOSS();
-                case (9): return new MSG_SOBLOCKS_PAUSE();
-                case (10): return new MSG_SOBLOCKS_PAUSEOFF();
-                case (11): return new MSG_SOBLOCKS_PAUSEON();
-                case (12): return new MSG_SOBLOCKS_READY();
-                case (13): return new MSG_SOBLOCKS_REQUESTROW();
-                case (14): return new MSG_SOBLOCKS_RESETGAME();
-                case (15): return new MSG_SOBLOCKS_ROCKDROP();
-                case (16): return new MSG_SOBLOCKS_ROWINFO();
-                case (17): return new MSG_SOBLOCKS_SELECTGAME();
-                case (18): return new MSG_SOBLOCKS_SENDROW();
-                case (19): return new MSG_SOBLOCKS_SETLEVEL();
-                case (20): return new MSG_SOBLOCKS_STARTSWAP();
-                case (21): return new MSG_SOBLOCKS_TIMEDDROP();
-                case (22): return new MSG_SOBLOCKS_WIN();
+                case (1): return new MSG_SOBLOCKS_ADVANCEOFF();
+                case (2): return new MSG_SOBLOCKS_ADVANCEON();
+                case (3): return new MSG_SOBLOCKS_ATTACK();
+                case (4): return new MSG_SOBLOCKS_COUNTDOWN();
+                case (5): return new MSG_SOBLOCKS_ENDGAME();
+                case (6): return new MSG_SOBLOCKS_FREEZEBLOCKS();
+                case (7): return new MSG_SOBLOCKS_INFO();
+                case (8): return new MSG_SOBLOCKS_LEVELUP();
+                case (9): return new MSG_SOBLOCKS_LOSS();
+                case (10): return new MSG_SOBLOCKS_PAUSE();
+                case (11): return new MSG_SOBLOCKS_PAUSEOFF();
+                case (12): return new MSG_SOBLOCKS_PAUSEON();
+                case (13): return new MSG_SOBLOCKS_READY();
+                case (14): return new MSG_SOBLOCKS_REQUESTROW();
+                case (15): return new MSG_SOBLOCKS_RESETGAME();
+                case (16): return new MSG_SOBLOCKS_ROCKDROP();
+                case (17): return new MSG_SOBLOCKS_ROWINFO();
+                case (18): return new MSG_SOBLOCKS_SELECTGAME();
+                case (19): return new MSG_SOBLOCKS_SENDROW();
+                case (20): return new MSG_SOBLOCKS_SETLEVEL();
+                case (21): return new MSG_SOBLOCKS_STARTSWAP();
+                case (22): return new MSG_SOBLOCKS_TIMEDDROP();
+                case (23): return new MSG_SOBLOCKS_WIN();
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
@@ -6938,7 +6938,7 @@ namespace Imlight.Common.Serializable.Caches
 			public byte ServiceId { get; } = 25;
 		}
 	}
-	public sealed class WIZARDCOMBAT_MESSAGES : INetworkProtocol
+	public sealed class WIZARDCOMBAT_MESSAGES_51_PROTOCOL : INetworkProtocol
 	{
 		public Byte ServiceId { get; } = 51;
 		public String ProtocolType { get; } = "WIZARDCOMBAT_MESSAGES";
@@ -6949,42 +6949,42 @@ namespace Imlight.Common.Serializable.Caches
         {
             switch (id)
             {
-                case (0): return new MSG_ALLOWLEAVEPVP();
-                case (1): return new MSG_COMBATACTIONS();
-                case (2): return new MSG_COMBATADD();
-                case (3): return new MSG_COMBATAFK();
-                case (4): return new MSG_COMBATCHEAT();
-                case (5): return new MSG_COMBATDRAW();
-                case (6): return new MSG_COMBATFLEE();
-                case (7): return new MSG_COMBATHAND();
-                case (8): return new MSG_COMBATHEALTH();
-                case (9): return new MSG_COMBATLOADED();
-                case (10): return new MSG_COMBATMATCHRESULT();
-                case (11): return new MSG_COMBATMOVE();
-                case (12): return new MSG_COMBATMOVESELECTION();
-                case (13): return new MSG_COMBATPAUSED();
-                case (14): return new MSG_COMBATPHASE();
-                case (15): return new MSG_COMBATPHASEFORSPECTATORS();
-                case (16): return new MSG_COMBATPIPS();
-                case (17): return new MSG_COMBATREMOVE();
-                case (18): return new MSG_COMBATREVEALHANGING();
-                case (19): return new MSG_COMBATSTATS();
-                case (20): return new MSG_COMBATUPFIRST();
-                case (21): return new MSG_COMBATVICTORY();
-                case (22): return new MSG_DISMISS_SUMMON();
-                case (23): return new MSG_DUEL();
-                case (24): return new MSG_ENDDUEL();
-                case (25): return new MSG_PETWILLCAST();
-                case (26): return new MSG_SETDUELTIMER();
-                case (27): return new MSG_SETPLANNINGPHASETIMER();
-                case (28): return new MSG_SETST();
-                case (29): return new MSG_SETST2();
-                case (30): return new MSG_SETSTATUS();
-                case (31): return new MSG_SHOWCOMBATUI();
-                case (32): return new MSG_SHOWPETCARD();
-                case (33): return new MSG_SIGILSPELL();
-                case (34): return new MSG_UPDATECOMBATPARTICIPANT();
-                case (35): return new MSG_UPDATEDUELTIMER();
+                case (1): return new MSG_ALLOWLEAVEPVP();
+                case (2): return new MSG_COMBATACTIONS();
+                case (3): return new MSG_COMBATADD();
+                case (4): return new MSG_COMBATAFK();
+                case (5): return new MSG_COMBATCHEAT();
+                case (6): return new MSG_COMBATDRAW();
+                case (7): return new MSG_COMBATFLEE();
+                case (8): return new MSG_COMBATHAND();
+                case (9): return new MSG_COMBATHEALTH();
+                case (10): return new MSG_COMBATLOADED();
+                case (11): return new MSG_COMBATMATCHRESULT();
+                case (12): return new MSG_COMBATMOVE();
+                case (13): return new MSG_COMBATMOVESELECTION();
+                case (14): return new MSG_COMBATPAUSED();
+                case (15): return new MSG_COMBATPHASE();
+                case (16): return new MSG_COMBATPHASEFORSPECTATORS();
+                case (17): return new MSG_COMBATPIPS();
+                case (18): return new MSG_COMBATREMOVE();
+                case (19): return new MSG_COMBATREVEALHANGING();
+                case (20): return new MSG_COMBATSTATS();
+                case (21): return new MSG_COMBATUPFIRST();
+                case (22): return new MSG_COMBATVICTORY();
+                case (23): return new MSG_DISMISS_SUMMON();
+                case (24): return new MSG_DUEL();
+                case (25): return new MSG_ENDDUEL();
+                case (26): return new MSG_PETWILLCAST();
+                case (27): return new MSG_SETDUELTIMER();
+                case (28): return new MSG_SETPLANNINGPHASETIMER();
+                case (29): return new MSG_SETST();
+                case (30): return new MSG_SETST2();
+                case (31): return new MSG_SETSTATUS();
+                case (32): return new MSG_SHOWCOMBATUI();
+                case (33): return new MSG_SHOWPETCARD();
+                case (34): return new MSG_SIGILSPELL();
+                case (35): return new MSG_UPDATECOMBATPARTICIPANT();
+                case (36): return new MSG_UPDATEDUELTIMER();
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
@@ -7358,7 +7358,7 @@ namespace Imlight.Common.Serializable.Caches
 			[DmlElement(DmlType.UINT)] public UInt32 RemainingTime;
 		}
 	}
-	public sealed class PATCH : INetworkProtocol
+	public sealed class PATCH_8_PROTOCOL : INetworkProtocol
 	{
 		public Byte ServiceId { get; } = 8;
 		public String ProtocolType { get; } = "PATCH";
@@ -7422,7 +7422,7 @@ namespace Imlight.Common.Serializable.Caches
 			[DmlElement(DmlType.INT)] public Int32 FileType;
 		}
 	}
-	public sealed class PET : INetworkProtocol
+	public sealed class PET_9_PROTOCOL : INetworkProtocol
 	{
 		public Byte ServiceId { get; } = 9;
 		public String ProtocolType { get; } = "PET";
@@ -7433,61 +7433,61 @@ namespace Imlight.Common.Serializable.Caches
         {
             switch (id)
             {
-                case (1): return new MSG_CHEERCOSTMAPUPDATE();
-                case (2): return new MSG_DERBYEFFECTAPPLY();
-                case (3): return new MSG_DERBYEFFECTREMOVE();
-                case (4): return new MSG_DERBYEFFECTSLISTUPDATE();
-                case (5): return new MSG_DERBYLOCATION();
-                case (6): return new MSG_DERBYPETENERGYINFO();
-                case (7): return new MSG_DERBYSTATMOD();
-                case (8): return new MSG_DERBYSYNC();
-                case (9): return new MSG_HATCHEGGNOW();
-                case (10): return new MSG_LENTPET();
-                case (11): return new MSG_PETDERBYBUFF();
-                case (12): return new MSG_PETDERBYCHEER();
-                case (13): return new MSG_PETDERBYJUMPDUCK();
-                case (14): return new MSG_PETDERBYLAP();
-                case (15): return new MSG_PETDERBYMODIFYSTAT();
-                case (16): return new MSG_PETDERBYMORALE();
-                case (17): return new MSG_PETDERBYPHOTOFINISH();
-                case (18): return new MSG_PETDERBYPLAYERLEFT();
-                case (19): return new MSG_PETDERBYSLOW();
-                case (20): return new MSG_PETDERBYSPEED();
-                case (21): return new MSG_PETDERBYSTART();
-                case (22): return new MSG_PETDERBYSWITCHLANE();
-                case (23): return new MSG_PETDERBYSWITCHLANEFAIL();
-                case (24): return new MSG_PETDERBYUSETALENT();
-                case (25): return new MSG_PETEGGMORPHED();
-                case (26): return new MSG_PETENERGYMAX();
-                case (27): return new MSG_PETENERGYTICK();
-                case (28): return new MSG_PETGAMEDANCE();
-                case (29): return new MSG_PETGAMEDATA();
-                case (30): return new MSG_PETGAMEDERBYRESULTS();
-                case (31): return new MSG_PETGAMEDROPBONUS();
-                case (32): return new MSG_PETGAMEDROPOBJECT();
-                case (33): return new MSG_PETGAMEEND();
-                case (34): return new MSG_PETGAMEENDING();
-                case (35): return new MSG_PETGAMEINDIVIDUALRESULTS();
-                case (36): return new MSG_PETGAMEINIT();
-                case (37): return new MSG_PETGAMEJOIN();
-                case (38): return new MSG_PETGAMEJOINRSP();
-                case (39): return new MSG_PETGAMEJUMP();
-                case (40): return new MSG_PETGAMEMAZE();
-                case (41): return new MSG_PETGAMEREADY();
-                case (42): return new MSG_PETGAMESNACKFEEDFAILED();
-                case (43): return new MSG_PETGAMESNACKFEEDSUCCESS();
-                case (44): return new MSG_PETGAMESTART();
-                case (45): return new MSG_PETHATCHED();
-                case (46): return new MSG_PETLEVELUP();
-                case (47): return new MSG_PETMORPHCANAFFORD();
-                case (48): return new MSG_PETMORPHINGSLOT();
-                case (49): return new MSG_PETMORPHREADY();
-                case (50): return new MSG_PETMORPHSET();
-                case (51): return new MSG_PETSNACKADD();
-                case (52): return new MSG_PETSNACKREMOVE();
-                case (53): return new MSG_PETSNACKREMOVEREQUEST();
-                case (54): return new MSG_PETSNACKUPDATE();
-                case (55): return new MSG_PETUPDATEBEHAVIOR();
+                case (2): return new MSG_CHEERCOSTMAPUPDATE();
+                case (3): return new MSG_DERBYEFFECTAPPLY();
+                case (4): return new MSG_DERBYEFFECTREMOVE();
+                case (5): return new MSG_DERBYEFFECTSLISTUPDATE();
+                case (6): return new MSG_DERBYLOCATION();
+                case (7): return new MSG_DERBYPETENERGYINFO();
+                case (8): return new MSG_DERBYSTATMOD();
+                case (9): return new MSG_DERBYSYNC();
+                case (10): return new MSG_HATCHEGGNOW();
+                case (11): return new MSG_LENTPET();
+                case (12): return new MSG_PETDERBYBUFF();
+                case (13): return new MSG_PETDERBYCHEER();
+                case (14): return new MSG_PETDERBYJUMPDUCK();
+                case (15): return new MSG_PETDERBYLAP();
+                case (16): return new MSG_PETDERBYMODIFYSTAT();
+                case (17): return new MSG_PETDERBYMORALE();
+                case (18): return new MSG_PETDERBYPHOTOFINISH();
+                case (19): return new MSG_PETDERBYPLAYERLEFT();
+                case (20): return new MSG_PETDERBYSLOW();
+                case (21): return new MSG_PETDERBYSPEED();
+                case (22): return new MSG_PETDERBYSTART();
+                case (23): return new MSG_PETDERBYSWITCHLANE();
+                case (24): return new MSG_PETDERBYSWITCHLANEFAIL();
+                case (25): return new MSG_PETDERBYUSETALENT();
+                case (26): return new MSG_PETEGGMORPHED();
+                case (27): return new MSG_PETENERGYMAX();
+                case (28): return new MSG_PETENERGYTICK();
+                case (29): return new MSG_PETGAMEDANCE();
+                case (30): return new MSG_PETGAMEDATA();
+                case (31): return new MSG_PETGAMEDERBYRESULTS();
+                case (32): return new MSG_PETGAMEDROPBONUS();
+                case (33): return new MSG_PETGAMEDROPOBJECT();
+                case (34): return new MSG_PETGAMEEND();
+                case (35): return new MSG_PETGAMEENDING();
+                case (36): return new MSG_PETGAMEINDIVIDUALRESULTS();
+                case (37): return new MSG_PETGAMEINIT();
+                case (38): return new MSG_PETGAMEJOIN();
+                case (39): return new MSG_PETGAMEJOINRSP();
+                case (40): return new MSG_PETGAMEJUMP();
+                case (41): return new MSG_PETGAMEMAZE();
+                case (42): return new MSG_PETGAMEREADY();
+                case (43): return new MSG_PETGAMESNACKFEEDFAILED();
+                case (44): return new MSG_PETGAMESNACKFEEDSUCCESS();
+                case (45): return new MSG_PETGAMESTART();
+                case (46): return new MSG_PETHATCHED();
+                case (47): return new MSG_PETLEVELUP();
+                case (48): return new MSG_PETMORPHCANAFFORD();
+                case (49): return new MSG_PETMORPHINGSLOT();
+                case (50): return new MSG_PETMORPHREADY();
+                case (51): return new MSG_PETMORPHSET();
+                case (52): return new MSG_PETSNACKADD();
+                case (53): return new MSG_PETSNACKREMOVE();
+                case (54): return new MSG_PETSNACKREMOVEREQUEST();
+                case (55): return new MSG_PETSNACKUPDATE();
+                case (56): return new MSG_PETUPDATEBEHAVIOR();
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
@@ -7987,7 +7987,7 @@ namespace Imlight.Common.Serializable.Caches
 			[DmlElement(DmlType.STR)] public ByteString Data;
 		}
 	}
-	public sealed class SCRIPT : INetworkProtocol
+	public sealed class SCRIPT_10_PROTOCOL : INetworkProtocol
 	{
 		public Byte ServiceId { get; } = 10;
 		public String ProtocolType { get; } = "SCRIPT";
@@ -7998,26 +7998,26 @@ namespace Imlight.Common.Serializable.Caches
         {
             switch (id)
             {
-                case (0): return new MSG_ADD_BREAKPOINT();
-                case (1): return new MSG_ADD_MESSAGE();
-                case (2): return new MSG_ADD_PROCESS();
-                case (3): return new MSG_ADD_WATCH();
-                case (4): return new MSG_ATTACH_PROCESS();
-                case (5): return new MSG_BREAK_PROCESS();
-                case (6): return new MSG_DEL_BREAKPOINT();
-                case (7): return new MSG_DEL_WATCH();
-                case (8): return new MSG_DETACH_PROCESS();
-                case (9): return new MSG_ENUM_PROCESS();
-                case (10): return new MSG_KILL_PROCESS();
-                case (11): return new MSG_PROCESS_STATE();
-                case (12): return new MSG_PROCESS_STATUS();
-                case (13): return new MSG_REMOVE_PROCESS();
-                case (14): return new MSG_RUN_PROCESS();
-                case (15): return new MSG_SEND_STATE();
-                case (16): return new MSG_SET_VARIABLE();
-                case (17): return new MSG_START_PROCESS();
-                case (18): return new MSG_STEPOVER_PROCESS();
-                case (19): return new MSG_STEP_PROCESS();
+                case (1): return new MSG_ADD_BREAKPOINT();
+                case (2): return new MSG_ADD_MESSAGE();
+                case (3): return new MSG_ADD_PROCESS();
+                case (4): return new MSG_ADD_WATCH();
+                case (5): return new MSG_ATTACH_PROCESS();
+                case (6): return new MSG_BREAK_PROCESS();
+                case (7): return new MSG_DEL_BREAKPOINT();
+                case (8): return new MSG_DEL_WATCH();
+                case (9): return new MSG_DETACH_PROCESS();
+                case (10): return new MSG_ENUM_PROCESS();
+                case (11): return new MSG_KILL_PROCESS();
+                case (12): return new MSG_PROCESS_STATE();
+                case (13): return new MSG_PROCESS_STATUS();
+                case (14): return new MSG_REMOVE_PROCESS();
+                case (15): return new MSG_RUN_PROCESS();
+                case (16): return new MSG_SEND_STATE();
+                case (17): return new MSG_SET_VARIABLE();
+                case (18): return new MSG_START_PROCESS();
+                case (19): return new MSG_STEPOVER_PROCESS();
+                case (20): return new MSG_STEP_PROCESS();
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
@@ -8192,7 +8192,7 @@ namespace Imlight.Common.Serializable.Caches
 			public byte ServiceId { get; } = 10;
 		}
 	}
-	public sealed class TESTMANAGER : INetworkProtocol
+	public sealed class TESTMANAGER_11_PROTOCOL : INetworkProtocol
 	{
 		public Byte ServiceId { get; } = 11;
 		public String ProtocolType { get; } = "TESTMANAGER";
@@ -8203,8 +8203,8 @@ namespace Imlight.Common.Serializable.Caches
         {
             switch (id)
             {
-                case (1): return new MSG_LOGIN();
-                case (2): return new MSG_LOGINRESPONSE();
+                case (100): return new MSG_LOGIN();
+                case (101): return new MSG_LOGINRESPONSE();
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
@@ -8227,7 +8227,7 @@ namespace Imlight.Common.Serializable.Caches
 			[DmlElement(DmlType.INT)] public Int32 Success;
 		}
 	}
-	public sealed class WIZARD : INetworkProtocol
+	public sealed class WIZARD_12_PROTOCOL : INetworkProtocol
 	{
 		public Byte ServiceId { get; } = 12;
 		public String ProtocolType { get; } = "WIZARD";
@@ -8238,128 +8238,128 @@ namespace Imlight.Common.Serializable.Caches
         {
             switch (id)
             {
-                case (0): return new MSG_ACCEPTQUESTBOGUS();
-                case (1): return new MSG_ACCESSPASSBUYCONFIRM();
-                case (2): return new MSG_ACCESSPASSBUYREQUEST();
-                case (3): return new MSG_ACCESSPASSDECLINED();
-                case (4): return new MSG_ACCESSPASSINFOREQUEST();
-                case (5): return new MSG_ACCESSPASSOFFER();
-                case (6): return new MSG_ACCESSPASSREJECTED();
-                case (7): return new MSG_ACTORDIALOG();
-                case (8): return new MSG_ADDQUESTFINDER();
-                case (9): return new MSG_ADDSPELLTOBOOK();
-                case (10): return new MSG_ADDSPELLTODECK();
-                case (11): return new MSG_ADDTREASURESPELLTOBOOK();
-                case (12): return new MSG_ADDTREASURESPELLTODECK();
-                case (13): return new MSG_ADVENTUREPARTYMESSAGE();
-                case (14): return new MSG_AGGRO();
-                case (15): return new MSG_ALCHEMYSTATION();
-                case (16): return new MSG_ARENA_ERROR();
-                case (17): return new MSG_AUCTIONHOUSECONTENTS();
-                case (18): return new MSG_AUCTIONHOUSEMOREACKNOWLEDGEMENT();
-                case (19): return new MSG_AUCTIONHOUSEREQUEST();
-                case (20): return new MSG_AUCTIONREQUESTBANK();
-                case (21): return new MSG_AUCTIONRESPONSE();
-                case (22): return new MSG_BANKDELETE();
-                case (23): return new MSG_BANKDELETECONFIRM();
-                case (24): return new MSG_BANKTOBANKCONFIRM();
-                case (25): return new MSG_BANKTOINVCONFIRM();
-                case (26): return new MSG_BOOSTERDISTRIBUTIONRESULTS();
-                case (27): return new MSG_BRACKETREPORT();
-                case (28): return new MSG_BUYENERGYCONFIRM();
-                case (29): return new MSG_CHATFILTERBLACK();
-                case (30): return new MSG_CHATFILTERWHITE();
-                case (31): return new MSG_CHOOSEFOCUS();
-                case (32): return new MSG_CLEARALLCRAFTINGSLOTS();
-                case (33): return new MSG_CLEAR_EQUIPPED_DECK();
-                case (34): return new MSG_COMPLETEDIALOG();
-                case (35): return new MSG_CONTROLMUSIC();
-                case (36): return new MSG_CRAFTINGSLOTADD();
-                case (37): return new MSG_CRAFTINGSLOTCOUNT();
-                case (38): return new MSG_CRAFTINGSLOTREMOVE();
-                case (39): return new MSG_CREATEBOOSTERDISTRIBUTION();
-                case (40): return new MSG_CROWNBALANCE();
-                case (41): return new MSG_CROWNSBUYCONFIRM();
-                case (42): return new MSG_CROWNSBUYREQUEST();
-                case (43): return new MSG_CROWNSERVICESOPEN();
-                case (44): return new MSG_CSRCROWNBALANCE();
-                case (45): return new MSG_CSR_REQUEST_BLOBS();
-                case (46): return new MSG_DELIVERYINVOICEREQUESTBANK();
-                case (47): return new MSG_DELIVERYINVOICETRANSFEROBJECTSFROMSTORAGETOBANK();
-                case (48): return new MSG_DISMISSTUTORIALTIP();
-                case (49): return new MSG_DONESHOPPING();
-                case (50): return new MSG_DUELSIMRESULT();
-                case (51): return new MSG_DYECONFIRM();
-                case (52): return new MSG_DYEREQUEST();
-                case (53): return new MSG_DYESHOPOPEN();
-                case (54): return new MSG_ELIXIRSTATECHANGE();
-                case (55): return new MSG_ENCOUNTERDIALOG();
-                case (56): return new MSG_ENERGYBUYREQUEST();
-                case (57): return new MSG_ENERGYSHOPOPEN();
-                case (58): return new MSG_ENTERMINIGAME();
-                case (59): return new MSG_EXITCONFIRMTELEPORT();
-                case (60): return new MSG_EXPANDPVPSEARCH();
-                case (61): return new MSG_FREETOURNEYCREDITINFO();
-                case (62): return new MSG_GETSNACKLIST();
-                case (63): return new MSG_GETSUBSCRIBERONLYITEMS();
-                case (64): return new MSG_GETTIMEDACCESSPASSES();
-                case (65): return new MSG_GOHOME();
-                case (66): return new MSG_GOTODORM();
-                case (67): return new MSG_GOTOFRIENDLYPLAYER();
-                case (68): return new MSG_GROUPQUESTCREDIT();
-                case (69): return new MSG_INTERACTAVAILABLEQUEST();
-                case (70): return new MSG_INTERACTCOMPLETEGOAL();
-                case (71): return new MSG_INTERACTUNDERWAYQUEST();
-                case (72): return new MSG_INVTOBANKCONFIRM();
-                case (73): return new MSG_ITEMDROP();
-                case (74): return new MSG_ITEMLOCK();
-                case (75): return new MSG_ITEMOVERFLOWTOBANK();
-                case (76): return new MSG_LEADERBOARDFRIENDREQUEST();
-                case (77): return new MSG_LEADERBOARDREQUEST();
-                case (78): return new MSG_LEADERBOARDRESPONSE();
-                case (79): return new MSG_LEASH();
-                case (80): return new MSG_LEASHOFFSET();
-                case (81): return new MSG_LEAVEADVENTUREPARTY();
-                case (82): return new MSG_LEAVEMINIGAME();
-                case (83): return new MSG_LEAVESIGILTIMERWAITING();
-                case (84): return new MSG_LEMURIASTATUS();
-                case (85): return new MSG_LEVELUP();
-                case (86): return new MSG_LOGCLIENTRESOLUTION();
-                case (87): return new MSG_LOGOFFER();
-                case (88): return new MSG_LOGPATCHCLIENTPATCHTIME();
-                case (89): return new MSG_LOOT();
-                case (90): return new MSG_MINIGAMEKIOSK();
-                case (91): return new MSG_MINIGAMEREWARDS();
-                case (92): return new MSG_MINIGAMESELECT();
-                case (93): return new MSG_MINIGAMETIMEREND();
-                case (94): return new MSG_MINIGAMETIMERSTART();
-                case (95): return new MSG_MOVEBANKTOBANK();
-                case (96): return new MSG_MOVEBANKTOINV();
-                case (97): return new MSG_MOVEINVTOBANK();
-                case (98): return new MSG_NEWTITLE();
-                case (99): return new MSG_NOTIFYSCHOOLFOCUS();
-                case (100): return new MSG_OPENBANK();
-                case (101): return new MSG_PAID_LOOT_CROWNS_BALANCE();
-                case (102): return new MSG_PAID_LOOT_ROLL_ERROR();
-                case (103): return new MSG_PAID_LOOT_ROLL_PROMPT();
-                case (104): return new MSG_PAID_LOOT_ROLL_RESPONSE();
-                case (105): return new MSG_PAID_LOOT_ROLL_RESULT();
-                case (106): return new MSG_PATCHINGBLOCKED();
-                case (107): return new MSG_PCS_CACHESEGREQSSUMMARY_REQUEST();
-                case (108): return new MSG_PCS_LIST_REQUEST();
-                case (109): return new MSG_PCS_LIST_RESPONSE();
-                case (110): return new MSG_PCS_PATCH();
-                case (111): return new MSG_PCS_PRICE_LOCK_REQUEST();
-                case (112): return new MSG_PCS_PRICE_LOCK_RESPONSE();
-                case (113): return new MSG_PCS_PURCHASE_REQUEST();
-                case (114): return new MSG_PCS_PURCHASE_RESPONSE();
-                case (115): return new MSG_PCS_SEGDATA_REQUEST();
-                case (116): return new MSG_PCS_SEGDATA_RESPONSE();
-                case (117): return new MSG_PCS_UPDATEUSERWISHLIST();
-                case (118): return new MSG_PETGAMEKIOSK();
-                case (119): return new MSG_PETHATCHCREATE();
-                case (120): return new MSG_PETHATCHJOINSTATUS();
-                case (121): return new MSG_PETHATCHREADYSTATUS();
+                case (1): return new MSG_ACCEPTQUESTBOGUS();
+                case (2): return new MSG_ACCESSPASSBUYCONFIRM();
+                case (3): return new MSG_ACCESSPASSBUYREQUEST();
+                case (4): return new MSG_ACCESSPASSDECLINED();
+                case (5): return new MSG_ACCESSPASSINFOREQUEST();
+                case (6): return new MSG_ACCESSPASSOFFER();
+                case (7): return new MSG_ACCESSPASSREJECTED();
+                case (8): return new MSG_ACTORDIALOG();
+                case (9): return new MSG_ADDQUESTFINDER();
+                case (10): return new MSG_ADDSPELLTOBOOK();
+                case (11): return new MSG_ADDSPELLTODECK();
+                case (12): return new MSG_ADDTREASURESPELLTOBOOK();
+                case (13): return new MSG_ADDTREASURESPELLTODECK();
+                case (14): return new MSG_ADVENTUREPARTYMESSAGE();
+                case (15): return new MSG_AGGRO();
+                case (16): return new MSG_ALCHEMYSTATION();
+                case (17): return new MSG_ARENA_ERROR();
+                case (18): return new MSG_AUCTIONHOUSECONTENTS();
+                case (19): return new MSG_AUCTIONHOUSEMOREACKNOWLEDGEMENT();
+                case (20): return new MSG_AUCTIONHOUSEREQUEST();
+                case (21): return new MSG_AUCTIONREQUESTBANK();
+                case (22): return new MSG_AUCTIONRESPONSE();
+                case (23): return new MSG_BANKDELETE();
+                case (24): return new MSG_BANKDELETECONFIRM();
+                case (25): return new MSG_BANKTOBANKCONFIRM();
+                case (26): return new MSG_BANKTOINVCONFIRM();
+                case (27): return new MSG_BOOSTERDISTRIBUTIONRESULTS();
+                case (28): return new MSG_BRACKETREPORT();
+                case (29): return new MSG_BUYENERGYCONFIRM();
+                case (30): return new MSG_CHATFILTERBLACK();
+                case (31): return new MSG_CHATFILTERWHITE();
+                case (32): return new MSG_CHOOSEFOCUS();
+                case (33): return new MSG_CLEARALLCRAFTINGSLOTS();
+                case (34): return new MSG_CLEAR_EQUIPPED_DECK();
+                case (35): return new MSG_COMPLETEDIALOG();
+                case (36): return new MSG_CONTROLMUSIC();
+                case (37): return new MSG_CRAFTINGSLOTADD();
+                case (38): return new MSG_CRAFTINGSLOTCOUNT();
+                case (39): return new MSG_CRAFTINGSLOTREMOVE();
+                case (40): return new MSG_CREATEBOOSTERDISTRIBUTION();
+                case (41): return new MSG_CROWNBALANCE();
+                case (42): return new MSG_CROWNSBUYCONFIRM();
+                case (43): return new MSG_CROWNSBUYREQUEST();
+                case (44): return new MSG_CROWNSERVICESOPEN();
+                case (45): return new MSG_CSRCROWNBALANCE();
+                case (46): return new MSG_CSR_REQUEST_BLOBS();
+                case (47): return new MSG_DELIVERYINVOICEREQUESTBANK();
+                case (48): return new MSG_DELIVERYINVOICETRANSFEROBJECTSFROMSTORAGETOBANK();
+                case (49): return new MSG_DISMISSTUTORIALTIP();
+                case (50): return new MSG_DONESHOPPING();
+                case (51): return new MSG_DUELSIMRESULT();
+                case (52): return new MSG_DYECONFIRM();
+                case (53): return new MSG_DYEREQUEST();
+                case (54): return new MSG_DYESHOPOPEN();
+                case (55): return new MSG_ELIXIRSTATECHANGE();
+                case (56): return new MSG_ENCOUNTERDIALOG();
+                case (57): return new MSG_ENERGYBUYREQUEST();
+                case (58): return new MSG_ENERGYSHOPOPEN();
+                case (59): return new MSG_ENTERMINIGAME();
+                case (60): return new MSG_EXITCONFIRMTELEPORT();
+                case (61): return new MSG_EXPANDPVPSEARCH();
+                case (62): return new MSG_FREETOURNEYCREDITINFO();
+                case (63): return new MSG_GETSNACKLIST();
+                case (64): return new MSG_GETSUBSCRIBERONLYITEMS();
+                case (65): return new MSG_GETTIMEDACCESSPASSES();
+                case (66): return new MSG_GOHOME();
+                case (67): return new MSG_GOTODORM();
+                case (68): return new MSG_GOTOFRIENDLYPLAYER();
+                case (69): return new MSG_GROUPQUESTCREDIT();
+                case (70): return new MSG_INTERACTAVAILABLEQUEST();
+                case (71): return new MSG_INTERACTCOMPLETEGOAL();
+                case (72): return new MSG_INTERACTUNDERWAYQUEST();
+                case (73): return new MSG_INVTOBANKCONFIRM();
+                case (74): return new MSG_ITEMDROP();
+                case (75): return new MSG_ITEMLOCK();
+                case (76): return new MSG_ITEMOVERFLOWTOBANK();
+                case (77): return new MSG_LEADERBOARDFRIENDREQUEST();
+                case (78): return new MSG_LEADERBOARDREQUEST();
+                case (79): return new MSG_LEADERBOARDRESPONSE();
+                case (80): return new MSG_LEASH();
+                case (81): return new MSG_LEASHOFFSET();
+                case (82): return new MSG_LEAVEADVENTUREPARTY();
+                case (83): return new MSG_LEAVEMINIGAME();
+                case (84): return new MSG_LEAVESIGILTIMERWAITING();
+                case (85): return new MSG_LEMURIASTATUS();
+                case (86): return new MSG_LEVELUP();
+                case (87): return new MSG_LOGCLIENTRESOLUTION();
+                case (88): return new MSG_LOGOFFER();
+                case (89): return new MSG_LOGPATCHCLIENTPATCHTIME();
+                case (90): return new MSG_LOOT();
+                case (91): return new MSG_MINIGAMEKIOSK();
+                case (92): return new MSG_MINIGAMEREWARDS();
+                case (93): return new MSG_MINIGAMESELECT();
+                case (94): return new MSG_MINIGAMETIMEREND();
+                case (95): return new MSG_MINIGAMETIMERSTART();
+                case (96): return new MSG_MOVEBANKTOBANK();
+                case (97): return new MSG_MOVEBANKTOINV();
+                case (98): return new MSG_MOVEINVTOBANK();
+                case (99): return new MSG_NEWTITLE();
+                case (100): return new MSG_NOTIFYSCHOOLFOCUS();
+                case (101): return new MSG_OPENBANK();
+                case (102): return new MSG_PAID_LOOT_CROWNS_BALANCE();
+                case (103): return new MSG_PAID_LOOT_ROLL_ERROR();
+                case (104): return new MSG_PAID_LOOT_ROLL_PROMPT();
+                case (105): return new MSG_PAID_LOOT_ROLL_RESPONSE();
+                case (106): return new MSG_PAID_LOOT_ROLL_RESULT();
+                case (107): return new MSG_PATCHINGBLOCKED();
+                case (108): return new MSG_PCS_CACHESEGREQSSUMMARY_REQUEST();
+                case (109): return new MSG_PCS_LIST_REQUEST();
+                case (110): return new MSG_PCS_LIST_RESPONSE();
+                case (111): return new MSG_PCS_PATCH();
+                case (112): return new MSG_PCS_PRICE_LOCK_REQUEST();
+                case (113): return new MSG_PCS_PRICE_LOCK_RESPONSE();
+                case (114): return new MSG_PCS_PURCHASE_REQUEST();
+                case (115): return new MSG_PCS_PURCHASE_RESPONSE();
+                case (116): return new MSG_PCS_SEGDATA_REQUEST();
+                case (117): return new MSG_PCS_SEGDATA_RESPONSE();
+                case (118): return new MSG_PCS_UPDATEUSERWISHLIST();
+                case (119): return new MSG_PETGAMEKIOSK();
+                case (120): return new MSG_PETHATCHCREATE();
+                case (121): return new MSG_PETHATCHJOINSTATUS();
+                case (122): return new MSG_PETHATCHREADYSTATUS();
                 case (123): return new MSG_PETHATCHREQUEST();
                 case (124): return new MSG_PETHATCHRESULT();
                 case (125): return new MSG_PETRENAMECONFIRM();
@@ -11012,7 +11012,7 @@ namespace Imlight.Common.Serializable.Caches
 			[DmlElement(DmlType.STR)] public ByteString World;
 		}
 	}
-	public sealed class WIZARD2 : INetworkProtocol
+	public sealed class WIZARD2_53_PROTOCOL : INetworkProtocol
 	{
 		public Byte ServiceId { get; } = 53;
 		public String ProtocolType { get; } = "WIZARD2";
@@ -11023,260 +11023,260 @@ namespace Imlight.Common.Serializable.Caches
         {
             switch (id)
             {
-                case (0): return new MSG_ACCESSPASSPURCHASE();
-                case (1): return new MSG_ADDCROWNSREWARDSEVENT();
-                case (2): return new MSG_ADDPLAYERTOBASICCHATCHANNEL();
-                case (3): return new MSG_ATHANORARRIVAL();
-                case (4): return new MSG_BANKCOUNT();
-                case (5): return new MSG_BASICCHATCHANNELERRORMESSAGE();
-                case (6): return new MSG_BASICCHATCHANNELUPDATECOOLDOWN();
-                case (7): return new MSG_BATTLECARDBUY();
-                case (8): return new MSG_BATTLECARDBUYCONFIRM();
-                case (9): return new MSG_BATTLECARDSHOPLIST();
-                case (10): return new MSG_BATTLECARDTRASH();
-                case (11): return new MSG_BATTLECARDTRASHCONFIRM();
-                case (12): return new MSG_BATTLEGROUNDEND();
-                case (13): return new MSG_BATTLEGROUNDPENALTY();
-                case (14): return new MSG_BATTLEGROUNDPOLYMORPHIMPROVEMENT();
-                case (15): return new MSG_BATTLEGROUNDPOLYMORPHIMPROVEREQ();
-                case (16): return new MSG_BATTLEGROUNDPOLYMORPHIMPROVERESP();
-                case (17): return new MSG_BATTLEGROUNDQUEUEGROUP();
-                case (18): return new MSG_BATTLEGROUNDQUEUEGROUPCHECK();
-                case (19): return new MSG_BATTLEGROUNDQUEUEGROUPJOINED();
-                case (20): return new MSG_BATTLEGROUNDQUEUEGROUPSTATUS();
-                case (21): return new MSG_BATTLEGROUNDQUEUEPLAYER();
-                case (22): return new MSG_BATTLEGROUNDQUEUESTATS();
-                case (23): return new MSG_BATTLEGROUNDQUEUEUPDATE();
-                case (24): return new MSG_BATTLEGROUNDREQUESTMATCHDATA();
-                case (25): return new MSG_BATTLEGROUNDSHOWCOMPASS();
-                case (26): return new MSG_BATTLEGROUNDTELEPORTPLAYER();
-                case (27): return new MSG_BATTLEGROUNDUPDATEPOINTS();
-                case (28): return new MSG_BGISPOLYMORPHUNLOCKEDREQUEST();
-                case (29): return new MSG_BGISPOLYMORPHUNLOCKEDRESPONSE();
-                case (30): return new MSG_BGOPENPOLYMORPHSELECT();
-                case (31): return new MSG_BGPOIUpdate();
-                case (32): return new MSG_BGPlayerStatsUpdate();
-                case (33): return new MSG_BGPlayerSync();
-                case (34): return new MSG_BGPlayerSyncStatus();
-                case (35): return new MSG_BGQueueStatus();
-                case (36): return new MSG_BGResetStats();
-                case (37): return new MSG_BGSELECTPOLYMORPHDONE();
-                case (38): return new MSG_BGSELECTPOLYMORPHREQUEST();
-                case (39): return new MSG_BGSELECTPOLYMORPHRESPONSE();
-                case (40): return new MSG_BGSigilProxyEvent();
-                case (41): return new MSG_BUYPETELIXIRCONFIRM();
-                case (42): return new MSG_BUYSEASONPASS();
-                case (43): return new MSG_BattleBookAdd();
-                case (44): return new MSG_BattleBookClear();
-                case (45): return new MSG_BattleBookRating();
-                case (46): return new MSG_BattleBookRemove();
-                case (47): return new MSG_BattlegroundChatProjectData();
-                case (48): return new MSG_BattlegroundTimeAdjust();
-                case (49): return new MSG_CANSEETIEREDSPELLGROUPS();
-                case (50): return new MSG_CASTLETOURSGOTOFRIEND();
-                case (51): return new MSG_CLAIMPERIODICOFFERS();
-                case (52): return new MSG_CLASSPROJECTCLAIMREWARD();
-                case (53): return new MSG_CLASSPROJECTREQUESTLEADERBOARD();
-                case (54): return new MSG_CLASSPROJECTREQUESTTELEPORT();
-                case (55): return new MSG_CLASSPROJECTSCSRRESULTS();
-                case (56): return new MSG_CLASSPROJECTSREQUESTFRIENDS();
-                case (57): return new MSG_CLASSPROJECTSTARTTIME();
-                case (58): return new MSG_CLASSPROJECTUSECROWNS();
-                case (59): return new MSG_CLASSPROJECTUSETOKEN();
-                case (60): return new MSG_CLEARALLINTERACTIONS();
-                case (61): return new MSG_CLEARRESUMEINSTANCE();
-                case (62): return new MSG_CLIENTREQUESTTEAMHELPWORLDINFO();
-                case (63): return new MSG_CLIENTZONED();
-                case (64): return new MSG_COMPLETEINSTANCE();
-                case (65): return new MSG_COMPLETEINSTANCE2();
-                case (66): return new MSG_CONNECTIONSTATS();
-                case (67): return new MSG_CREATENEWEQUIPMENTSET();
-                case (68): return new MSG_CREATESETFAILED();
-                case (69): return new MSG_CROWNSREWARDSTIERREACHED();
-                case (70): return new MSG_CSRADDFISH();
-                case (71): return new MSG_CSRDELETEGIFT();
-                case (72): return new MSG_CSRREQUESTFISHLIST();
-                case (73): return new MSG_CSRREQUESTGLOBALREGISTRY();
-                case (74): return new MSG_CSRSETFRIENDSTATUS();
-                case (75): return new MSG_CSRTRASHFISH();
-                case (76): return new MSG_CrownShopEvent();
-                case (77): return new MSG_CrownShopLogging();
-                case (78): return new MSG_DAILYPVPCOMPLETED();
-                case (79): return new MSG_DAILYQUESTEFFECT();
-                case (80): return new MSG_DELETEEQUIPMENTSET();
-                case (81): return new MSG_DELETESETSWITHITEM();
-                case (82): return new MSG_DILEVELUPELIXIRTELEPORT();
-                case (83): return new MSG_DISETCHECKSUBSCRIPTIONPURCHASE();
-                case (84): return new MSG_DISETLEVELUPELIXIRTELEPORT();
-                case (85): return new MSG_DISPLAYCOLLECTEDESSENCES();
-                case (86): return new MSG_DISPLAYHELPGUI();
-                case (87): return new MSG_DISPLAYMESSAGE();
-                case (88): return new MSG_DISPLAYPETONLYMESSAGE();
-                case (89): return new MSG_EQUIPJEWELREQUEST();
-                case (90): return new MSG_EQUIPJEWELTOITEM();
-                case (91): return new MSG_EQUIPMENTSETCREATED();
-                case (92): return new MSG_EQUIPNEWJEWELTOITEM();
-                case (93): return new MSG_EQUIPRECIPE();
-                case (94): return new MSG_EQUIPSET();
-                case (95): return new MSG_FISHINGLEVELUP();
-                case (96): return new MSG_GAINPETXP();
-                case (97): return new MSG_GETITEMINFO();
-                case (98): return new MSG_GoHomeConfirm();
-                case (99): return new MSG_GotoDormConfirm();
-                case (100): return new MSG_GotoPlayerConfirm();
-                case (101): return new MSG_HATCHMAKINGMESSAGE();
-                case (102): return new MSG_HATCHMAKINGSCSRRESULTS();
-                case (103): return new MSG_HATCHMAKINGSEARCHRESULTS();
-                case (104): return new MSG_HATCHMAKINGSREQUESTPREMIUMPETEXEMPTIONS();
-                case (105): return new MSG_HATCHMAKINGSTATUS();
-                case (106): return new MSG_HATCHMAKINGSUPDATEHATCHDAYPET();
-                case (107): return new MSG_HATCHMAKINGSUPDATEHATCHDAYPET2();
-                case (108): return new MSG_HATCHMAKINGUSETOME();
-                case (109): return new MSG_HOLIDAYDATA();
-                case (110): return new MSG_INVITEALLTOBASICCHATCHANNEL();
-                case (111): return new MSG_INVITETOBASICCHATCHANNEL();
-                case (112): return new MSG_ISFRIENDSWITHHOUSEOWNER();
-                case (113): return new MSG_ITEMACQUISITION();
-                case (114): return new MSG_ITEMFINDERHOUSECOMPLETE();
-                case (115): return new MSG_ITEMFINDERREQUESTBANK();
-                case (116): return new MSG_ITEMFINDERREQUESTHOUSE();
-                case (117): return new MSG_ITEMIDENTIFIERINFO();
-                case (118): return new MSG_Infraction();
-                case (119): return new MSG_JEWELSOCKETLOCKUPDATE();
-                case (120): return new MSG_JEWELSOCKETUNLOCKCOST();
-                case (121): return new MSG_JOINBASICCHATCHANNEL();
-                case (122): return new MSG_KHANDANCESTATUS();
-                case (123): return new MSG_LAVALOCKSTATUS();
-                case (124): return new MSG_LOGCLASSICMODE();
-                case (125): return new MSG_LOGVIDEOCAPABILITIES();
-                case (126): return new MSG_MAGICMIRRORCHANGEPLAYER();
-                case (127): return new MSG_MAGICMIRRORREQUESTCHANGE();
-                case (128): return new MSG_MAGICMIRRORSHOPOPEN();
-                case (129): return new MSG_MAPREQUIREMENTS();
-                case (130): return new MSG_MONSTERMAGICLEVELUP();
-                case (131): return new MSG_MONSTERMAGICREQUESTCREATE();
-                case (132): return new MSG_MONSTERMAGICUSETOME();
-                case (133): return new MSG_MOVEEQUIPMENTSET();
-                case (134): return new MSG_OPENCLASSPROJECTPORTAL();
-                case (135): return new MSG_OPENITEMFINDER();
-                case (136): return new MSG_PATCHBEFORETELEPORT();
-                case (137): return new MSG_PERIODICSUBSCRIPTIONS();
-                case (138): return new MSG_PETELIXIRBUYREQUEST();
-                case (139): return new MSG_PETELIXIROPEN();
-                case (140): return new MSG_PETFEEDHAPPINESS();
-                case (141): return new MSG_PETGAMESKIP();
-                case (142): return new MSG_PETGAMESKIPFEED();
-                case (143): return new MSG_PETTELEPORT();
-                case (144): return new MSG_PETTOMEPETADDED();
-                case (145): return new MSG_PHOTOMANCYUSETOME();
-                case (146): return new MSG_PHOTOTAKEN();
-                case (147): return new MSG_PUBLICJEWELSOCKETUPDATE();
-                case (148): return new MSG_QUICKSELLREQUEST();
-                case (149): return new MSG_RADIALZONECLUSTERQUICKCHATEXT();
-                case (150): return new MSG_READTUTORIALTIP();
-                case (151): return new MSG_REINTERACT();
-                case (152): return new MSG_REMOVECROWNSREWARDSEVENT();
-                case (153): return new MSG_REMOVEITEMLOCKS();
-                case (154): return new MSG_REMOVEPLAYERFROMBASICCHATCHANNEL();
-                case (155): return new MSG_REMOVEPLAYERFROMBASICCHATCHANNELUPDATE();
-                case (156): return new MSG_REQUESTBATTLEGROUNDSLOOT();
-                case (157): return new MSG_REQUESTCHATSTATS();
-                case (158): return new MSG_REQUESTCLASSPROJECTINFO();
-                case (159): return new MSG_REQUESTCROWNSREWARDSEVENTS();
-                case (160): return new MSG_REQUESTHATCHMAKING();
-                case (161): return new MSG_REQUESTHATCHMAKINGADDPET();
-                case (162): return new MSG_REQUESTHATCHMAKINGFRIENDPETS();
-                case (163): return new MSG_REQUESTHATCHMAKINGHATCH();
-                case (164): return new MSG_REQUESTHATCHMAKINGHATCH2();
-                case (165): return new MSG_REQUESTHATCHMAKINGHATCHEDPET();
-                case (166): return new MSG_REQUESTHATCHMAKINGPETDATA();
-                case (167): return new MSG_REQUESTHATCHMAKINGPETS();
-                case (168): return new MSG_REQUESTHATCHMAKINGPETTYPES();
-                case (169): return new MSG_REQUESTHATCHMAKINGREMOVEPET();
-                case (170): return new MSG_REQUESTHATCHMAKINGSEARCHPETS();
-                case (171): return new MSG_REQUESTMAINLINEAUDIT();
-                case (172): return new MSG_REQUESTMINIGAME();
-                case (173): return new MSG_REQUESTMONSTERTOME();
-                case (174): return new MSG_REQUESTPETTOME();
-                case (175): return new MSG_REQUESTRADIALFRIENDQUICKCHATEXT();
-                case (176): return new MSG_REQUESTSIGILINFO();
-                case (177): return new MSG_REQUESTTEAMHELPFAIL();
-                case (178): return new MSG_REQUESTTEAMHELPINFO();
-                case (179): return new MSG_REQUESTTEAMHELPJOIN();
-                case (180): return new MSG_REQUESTTEAMHELPJOINFAIL();
-                case (181): return new MSG_REQUESTTEAMHELPWORLDINFO();
-                case (182): return new MSG_REQUESTTEAMUP();
-                case (183): return new MSG_REQUESTTUTORIALTIPLOG();
-                case (184): return new MSG_REQUESTZONECLUSTERQUICKCHATEXT();
-                case (185): return new MSG_RESTOREORIGINALCASTLE();
-                case (186): return new MSG_RESUMEINSTANCETELEPORTPLAYER();
-                case (187): return new MSG_RIDABLEUPDATE();
-                case (188): return new MSG_RIDEOBJECT();
-                case (189): return new MSG_RIDEOBJECTFULL();
-                case (190): return new MSG_RIDERSLIST();
-                case (191): return new MSG_RecallLocationConfirm();
-                case (192): return new MSG_SELLMODIFIER();
-                case (193): return new MSG_SENDTRIVIA();
-                case (194): return new MSG_SEPIDIOUSARRIVAL();
-                case (195): return new MSG_SETBASICCHATCHANNELPUBLIC();
-                case (196): return new MSG_SETELIXIRTIMER();
-                case (197): return new MSG_SETRESUMEINSTANCE();
-                case (198): return new MSG_SETSTOREDMOUNT();
-                case (199): return new MSG_SWITCHACTIVEQUEST();
-                case (200): return new MSG_SWITCHTOPET();
-                case (201): return new MSG_SetBGPolymorphLevel();
-                case (202): return new MSG_SplashEnabled();
-                case (203): return new MSG_TEAMUPADDPLAYER();
-                case (204): return new MSG_TEAMUPADDPLAYERTOCLIENT();
-                case (205): return new MSG_TEAMUPFAILED();
-                case (206): return new MSG_TEAMUPREMOVEPLAYER();
-                case (207): return new MSG_TEAMUPREMOVEPLAYERFROMCLIENT();
-                case (208): return new MSG_TEAMUPTELEPORTPLAYER();
-                case (209): return new MSG_TIEREDSPELLRESET();
-                case (210): return new MSG_TIEREDSPELLRESETRESP();
-                case (211): return new MSG_TIEREDSPELLUPGRADE();
-                case (212): return new MSG_TIEREDSPELLUPGRADERESP();
-                case (213): return new MSG_TOURNAMENTLOOTROLLINFO();
-                case (214): return new MSG_TOURNAMENTLOOTROLLRESPONSE();
-                case (215): return new MSG_TOURNAMENTLOOTROLLRESULT();
-                case (216): return new MSG_UNEQUIPSOCKETEDJEWEL();
-                case (217): return new MSG_UNLOCKPETTALENT();
-                case (218): return new MSG_UNLOCKSOCKETS();
-                case (219): return new MSG_UNLOCKSOCKETSCONFIRM();
-                case (220): return new MSG_UNSOCKETJEWELREQUEST();
-                case (221): return new MSG_UPDATEADVENTUREPOWERCOOLDOWN();
-                case (222): return new MSG_UPDATEAFTERCOMBATDANCE();
-                case (223): return new MSG_UPDATEBANKLIMIT();
-                case (224): return new MSG_UPDATECLASSPROJECTBUTTON();
-                case (225): return new MSG_UPDATECLASSPROJECTSTATUS();
-                case (226): return new MSG_UPDATECOLLECTEDESSENCES();
-                case (227): return new MSG_UPDATECUSTOMEMOTES();
-                case (228): return new MSG_UPDATEEQUIPMENTSETS();
-                case (229): return new MSG_UPDATEEVENTCURRENCY1();
-                case (230): return new MSG_UPDATEEVENTCURRENCY2();
-                case (231): return new MSG_UPDATEEXPANSION();
-                case (232): return new MSG_UPDATEEXTRAINVENTORY();
-                case (233): return new MSG_UPDATEFISHINGXP();
-                case (234): return new MSG_UPDATEITEMSPELLEXCLUSIONLIST();
-                case (235): return new MSG_UPDATEMAXSHADOWPIPS();
-                case (236): return new MSG_UPDATEMONSTERMAGICXP();
-                case (237): return new MSG_UPDATENEWSPELLBOOKLAYOUTWARNING();
-                case (238): return new MSG_UPDATEPETBILLBOARD();
-                case (239): return new MSG_UPDATEPIPCONVERSION();
-                case (240): return new MSG_UPDATEPURCHASEDCHARACTERSLOTS();
-                case (241): return new MSG_UPDATEREMEMBERLASTREALM();
-                case (242): return new MSG_UPDATERESUMEINSTANCETIME();
-                case (243): return new MSG_UPDATERESUMEINSTANCETIME2();
-                case (244): return new MSG_UPDATESSUBSCRIBERBEBEFITFLAGS();
-                case (245): return new MSG_UPDATETELEPORTEFFECT();
-                case (246): return new MSG_UPDATETUTORIALTIPLOG();
-                case (247): return new MSG_USEPETADVENTUREPOWER();
-                case (248): return new MSG_UpdateClassProjectPlayerProgress();
-                case (249): return new MSG_WHIRLYBURLYMESSAGE();
-                case (250): return new MSG_WHIRLYBURLYOPENKIOSK();
-                case (251): return new MSG_ZONECLUSTERINFO();
-                case (252): return new MSG_ZONEGATELIST();
-                case (253): return new MSG_ZONEHOP();
+                case (1): return new MSG_ACCESSPASSPURCHASE();
+                case (2): return new MSG_ADDCROWNSREWARDSEVENT();
+                case (3): return new MSG_ADDPLAYERTOBASICCHATCHANNEL();
+                case (4): return new MSG_ATHANORARRIVAL();
+                case (5): return new MSG_BANKCOUNT();
+                case (6): return new MSG_BASICCHATCHANNELERRORMESSAGE();
+                case (7): return new MSG_BASICCHATCHANNELUPDATECOOLDOWN();
+                case (8): return new MSG_BATTLECARDBUY();
+                case (9): return new MSG_BATTLECARDBUYCONFIRM();
+                case (10): return new MSG_BATTLECARDSHOPLIST();
+                case (11): return new MSG_BATTLECARDTRASH();
+                case (12): return new MSG_BATTLECARDTRASHCONFIRM();
+                case (13): return new MSG_BATTLEGROUNDEND();
+                case (14): return new MSG_BATTLEGROUNDPENALTY();
+                case (15): return new MSG_BATTLEGROUNDPOLYMORPHIMPROVEMENT();
+                case (16): return new MSG_BATTLEGROUNDPOLYMORPHIMPROVEREQ();
+                case (17): return new MSG_BATTLEGROUNDPOLYMORPHIMPROVERESP();
+                case (18): return new MSG_BATTLEGROUNDQUEUEGROUP();
+                case (19): return new MSG_BATTLEGROUNDQUEUEGROUPCHECK();
+                case (20): return new MSG_BATTLEGROUNDQUEUEGROUPJOINED();
+                case (21): return new MSG_BATTLEGROUNDQUEUEGROUPSTATUS();
+                case (22): return new MSG_BATTLEGROUNDQUEUEPLAYER();
+                case (23): return new MSG_BATTLEGROUNDQUEUESTATS();
+                case (24): return new MSG_BATTLEGROUNDQUEUEUPDATE();
+                case (25): return new MSG_BATTLEGROUNDREQUESTMATCHDATA();
+                case (26): return new MSG_BATTLEGROUNDSHOWCOMPASS();
+                case (27): return new MSG_BATTLEGROUNDTELEPORTPLAYER();
+                case (28): return new MSG_BATTLEGROUNDUPDATEPOINTS();
+                case (29): return new MSG_BGISPOLYMORPHUNLOCKEDREQUEST();
+                case (30): return new MSG_BGISPOLYMORPHUNLOCKEDRESPONSE();
+                case (31): return new MSG_BGOPENPOLYMORPHSELECT();
+                case (32): return new MSG_BGPOIUpdate();
+                case (33): return new MSG_BGPlayerStatsUpdate();
+                case (34): return new MSG_BGPlayerSync();
+                case (35): return new MSG_BGPlayerSyncStatus();
+                case (36): return new MSG_BGQueueStatus();
+                case (37): return new MSG_BGResetStats();
+                case (38): return new MSG_BGSELECTPOLYMORPHDONE();
+                case (39): return new MSG_BGSELECTPOLYMORPHREQUEST();
+                case (40): return new MSG_BGSELECTPOLYMORPHRESPONSE();
+                case (41): return new MSG_BGSigilProxyEvent();
+                case (42): return new MSG_BUYPETELIXIRCONFIRM();
+                case (43): return new MSG_BUYSEASONPASS();
+                case (44): return new MSG_BattleBookAdd();
+                case (45): return new MSG_BattleBookClear();
+                case (46): return new MSG_BattleBookRating();
+                case (47): return new MSG_BattleBookRemove();
+                case (48): return new MSG_BattlegroundChatProjectData();
+                case (49): return new MSG_BattlegroundTimeAdjust();
+                case (50): return new MSG_CANSEETIEREDSPELLGROUPS();
+                case (51): return new MSG_CASTLETOURSGOTOFRIEND();
+                case (52): return new MSG_CLAIMPERIODICOFFERS();
+                case (53): return new MSG_CLASSPROJECTCLAIMREWARD();
+                case (54): return new MSG_CLASSPROJECTREQUESTLEADERBOARD();
+                case (55): return new MSG_CLASSPROJECTREQUESTTELEPORT();
+                case (56): return new MSG_CLASSPROJECTSCSRRESULTS();
+                case (57): return new MSG_CLASSPROJECTSREQUESTFRIENDS();
+                case (58): return new MSG_CLASSPROJECTSTARTTIME();
+                case (59): return new MSG_CLASSPROJECTUSECROWNS();
+                case (60): return new MSG_CLASSPROJECTUSETOKEN();
+                case (61): return new MSG_CLEARALLINTERACTIONS();
+                case (62): return new MSG_CLEARRESUMEINSTANCE();
+                case (63): return new MSG_CLIENTREQUESTTEAMHELPWORLDINFO();
+                case (64): return new MSG_CLIENTZONED();
+                case (65): return new MSG_COMPLETEINSTANCE();
+                case (66): return new MSG_COMPLETEINSTANCE2();
+                case (67): return new MSG_CONNECTIONSTATS();
+                case (68): return new MSG_CREATENEWEQUIPMENTSET();
+                case (69): return new MSG_CREATESETFAILED();
+                case (70): return new MSG_CROWNSREWARDSTIERREACHED();
+                case (71): return new MSG_CSRADDFISH();
+                case (72): return new MSG_CSRDELETEGIFT();
+                case (73): return new MSG_CSRREQUESTFISHLIST();
+                case (74): return new MSG_CSRREQUESTGLOBALREGISTRY();
+                case (75): return new MSG_CSRSETFRIENDSTATUS();
+                case (76): return new MSG_CSRTRASHFISH();
+                case (77): return new MSG_CrownShopEvent();
+                case (78): return new MSG_CrownShopLogging();
+                case (79): return new MSG_DAILYPVPCOMPLETED();
+                case (80): return new MSG_DAILYQUESTEFFECT();
+                case (81): return new MSG_DELETEEQUIPMENTSET();
+                case (82): return new MSG_DELETESETSWITHITEM();
+                case (83): return new MSG_DILEVELUPELIXIRTELEPORT();
+                case (84): return new MSG_DISETCHECKSUBSCRIPTIONPURCHASE();
+                case (85): return new MSG_DISETLEVELUPELIXIRTELEPORT();
+                case (86): return new MSG_DISPLAYCOLLECTEDESSENCES();
+                case (87): return new MSG_DISPLAYHELPGUI();
+                case (88): return new MSG_DISPLAYMESSAGE();
+                case (89): return new MSG_DISPLAYPETONLYMESSAGE();
+                case (90): return new MSG_EQUIPJEWELREQUEST();
+                case (91): return new MSG_EQUIPJEWELTOITEM();
+                case (92): return new MSG_EQUIPMENTSETCREATED();
+                case (93): return new MSG_EQUIPNEWJEWELTOITEM();
+                case (94): return new MSG_EQUIPRECIPE();
+                case (95): return new MSG_EQUIPSET();
+                case (96): return new MSG_FISHINGLEVELUP();
+                case (97): return new MSG_GAINPETXP();
+                case (98): return new MSG_GETITEMINFO();
+                case (99): return new MSG_GoHomeConfirm();
+                case (100): return new MSG_GotoDormConfirm();
+                case (101): return new MSG_GotoPlayerConfirm();
+                case (102): return new MSG_HATCHMAKINGMESSAGE();
+                case (103): return new MSG_HATCHMAKINGSCSRRESULTS();
+                case (104): return new MSG_HATCHMAKINGSEARCHRESULTS();
+                case (105): return new MSG_HATCHMAKINGSREQUESTPREMIUMPETEXEMPTIONS();
+                case (106): return new MSG_HATCHMAKINGSTATUS();
+                case (107): return new MSG_HATCHMAKINGSUPDATEHATCHDAYPET();
+                case (108): return new MSG_HATCHMAKINGSUPDATEHATCHDAYPET2();
+                case (109): return new MSG_HATCHMAKINGUSETOME();
+                case (110): return new MSG_HOLIDAYDATA();
+                case (111): return new MSG_INVITEALLTOBASICCHATCHANNEL();
+                case (112): return new MSG_INVITETOBASICCHATCHANNEL();
+                case (113): return new MSG_ISFRIENDSWITHHOUSEOWNER();
+                case (114): return new MSG_ITEMACQUISITION();
+                case (115): return new MSG_ITEMFINDERHOUSECOMPLETE();
+                case (116): return new MSG_ITEMFINDERREQUESTBANK();
+                case (117): return new MSG_ITEMFINDERREQUESTHOUSE();
+                case (118): return new MSG_ITEMIDENTIFIERINFO();
+                case (119): return new MSG_Infraction();
+                case (120): return new MSG_JEWELSOCKETLOCKUPDATE();
+                case (121): return new MSG_JEWELSOCKETUNLOCKCOST();
+                case (122): return new MSG_JOINBASICCHATCHANNEL();
+                case (123): return new MSG_KHANDANCESTATUS();
+                case (124): return new MSG_LAVALOCKSTATUS();
+                case (125): return new MSG_LOGCLASSICMODE();
+                case (126): return new MSG_LOGVIDEOCAPABILITIES();
+                case (127): return new MSG_MAGICMIRRORCHANGEPLAYER();
+                case (128): return new MSG_MAGICMIRRORREQUESTCHANGE();
+                case (129): return new MSG_MAGICMIRRORSHOPOPEN();
+                case (130): return new MSG_MAPREQUIREMENTS();
+                case (131): return new MSG_MONSTERMAGICLEVELUP();
+                case (132): return new MSG_MONSTERMAGICREQUESTCREATE();
+                case (133): return new MSG_MONSTERMAGICUSETOME();
+                case (134): return new MSG_MOVEEQUIPMENTSET();
+                case (135): return new MSG_OPENCLASSPROJECTPORTAL();
+                case (136): return new MSG_OPENITEMFINDER();
+                case (137): return new MSG_PATCHBEFORETELEPORT();
+                case (138): return new MSG_PERIODICSUBSCRIPTIONS();
+                case (139): return new MSG_PETELIXIRBUYREQUEST();
+                case (140): return new MSG_PETELIXIROPEN();
+                case (141): return new MSG_PETFEEDHAPPINESS();
+                case (142): return new MSG_PETGAMESKIP();
+                case (143): return new MSG_PETGAMESKIPFEED();
+                case (144): return new MSG_PETTELEPORT();
+                case (145): return new MSG_PETTOMEPETADDED();
+                case (146): return new MSG_PHOTOMANCYUSETOME();
+                case (147): return new MSG_PHOTOTAKEN();
+                case (148): return new MSG_PUBLICJEWELSOCKETUPDATE();
+                case (149): return new MSG_QUICKSELLREQUEST();
+                case (150): return new MSG_RADIALZONECLUSTERQUICKCHATEXT();
+                case (151): return new MSG_READTUTORIALTIP();
+                case (152): return new MSG_REINTERACT();
+                case (153): return new MSG_REMOVECROWNSREWARDSEVENT();
+                case (154): return new MSG_REMOVEITEMLOCKS();
+                case (155): return new MSG_REMOVEPLAYERFROMBASICCHATCHANNEL();
+                case (156): return new MSG_REMOVEPLAYERFROMBASICCHATCHANNELUPDATE();
+                case (157): return new MSG_REQUESTBATTLEGROUNDSLOOT();
+                case (158): return new MSG_REQUESTCHATSTATS();
+                case (159): return new MSG_REQUESTCLASSPROJECTINFO();
+                case (160): return new MSG_REQUESTCROWNSREWARDSEVENTS();
+                case (161): return new MSG_REQUESTHATCHMAKING();
+                case (162): return new MSG_REQUESTHATCHMAKINGADDPET();
+                case (163): return new MSG_REQUESTHATCHMAKINGFRIENDPETS();
+                case (164): return new MSG_REQUESTHATCHMAKINGHATCH();
+                case (165): return new MSG_REQUESTHATCHMAKINGHATCH2();
+                case (166): return new MSG_REQUESTHATCHMAKINGHATCHEDPET();
+                case (167): return new MSG_REQUESTHATCHMAKINGPETDATA();
+                case (168): return new MSG_REQUESTHATCHMAKINGPETS();
+                case (169): return new MSG_REQUESTHATCHMAKINGPETTYPES();
+                case (170): return new MSG_REQUESTHATCHMAKINGREMOVEPET();
+                case (171): return new MSG_REQUESTHATCHMAKINGSEARCHPETS();
+                case (172): return new MSG_REQUESTMAINLINEAUDIT();
+                case (173): return new MSG_REQUESTMINIGAME();
+                case (174): return new MSG_REQUESTMONSTERTOME();
+                case (175): return new MSG_REQUESTPETTOME();
+                case (176): return new MSG_REQUESTRADIALFRIENDQUICKCHATEXT();
+                case (177): return new MSG_REQUESTSIGILINFO();
+                case (178): return new MSG_REQUESTTEAMHELPFAIL();
+                case (179): return new MSG_REQUESTTEAMHELPINFO();
+                case (180): return new MSG_REQUESTTEAMHELPJOIN();
+                case (181): return new MSG_REQUESTTEAMHELPJOINFAIL();
+                case (182): return new MSG_REQUESTTEAMHELPWORLDINFO();
+                case (183): return new MSG_REQUESTTEAMUP();
+                case (184): return new MSG_REQUESTTUTORIALTIPLOG();
+                case (185): return new MSG_REQUESTZONECLUSTERQUICKCHATEXT();
+                case (186): return new MSG_RESTOREORIGINALCASTLE();
+                case (187): return new MSG_RESUMEINSTANCETELEPORTPLAYER();
+                case (188): return new MSG_RIDABLEUPDATE();
+                case (189): return new MSG_RIDEOBJECT();
+                case (190): return new MSG_RIDEOBJECTFULL();
+                case (191): return new MSG_RIDERSLIST();
+                case (192): return new MSG_RecallLocationConfirm();
+                case (193): return new MSG_SELLMODIFIER();
+                case (194): return new MSG_SENDTRIVIA();
+                case (195): return new MSG_SEPIDIOUSARRIVAL();
+                case (196): return new MSG_SETBASICCHATCHANNELPUBLIC();
+                case (197): return new MSG_SETELIXIRTIMER();
+                case (198): return new MSG_SETRESUMEINSTANCE();
+                case (199): return new MSG_SETSTOREDMOUNT();
+                case (200): return new MSG_SWITCHACTIVEQUEST();
+                case (201): return new MSG_SWITCHTOPET();
+                case (202): return new MSG_SetBGPolymorphLevel();
+                case (203): return new MSG_SplashEnabled();
+                case (204): return new MSG_TEAMUPADDPLAYER();
+                case (205): return new MSG_TEAMUPADDPLAYERTOCLIENT();
+                case (206): return new MSG_TEAMUPFAILED();
+                case (207): return new MSG_TEAMUPREMOVEPLAYER();
+                case (208): return new MSG_TEAMUPREMOVEPLAYERFROMCLIENT();
+                case (209): return new MSG_TEAMUPTELEPORTPLAYER();
+                case (210): return new MSG_TIEREDSPELLRESET();
+                case (211): return new MSG_TIEREDSPELLRESETRESP();
+                case (212): return new MSG_TIEREDSPELLUPGRADE();
+                case (213): return new MSG_TIEREDSPELLUPGRADERESP();
+                case (214): return new MSG_TOURNAMENTLOOTROLLINFO();
+                case (215): return new MSG_TOURNAMENTLOOTROLLRESPONSE();
+                case (216): return new MSG_TOURNAMENTLOOTROLLRESULT();
+                case (217): return new MSG_UNEQUIPSOCKETEDJEWEL();
+                case (218): return new MSG_UNLOCKPETTALENT();
+                case (219): return new MSG_UNLOCKSOCKETS();
+                case (220): return new MSG_UNLOCKSOCKETSCONFIRM();
+                case (221): return new MSG_UNSOCKETJEWELREQUEST();
+                case (222): return new MSG_UPDATEADVENTUREPOWERCOOLDOWN();
+                case (223): return new MSG_UPDATEAFTERCOMBATDANCE();
+                case (224): return new MSG_UPDATEBANKLIMIT();
+                case (225): return new MSG_UPDATECLASSPROJECTBUTTON();
+                case (226): return new MSG_UPDATECLASSPROJECTSTATUS();
+                case (227): return new MSG_UPDATECOLLECTEDESSENCES();
+                case (228): return new MSG_UPDATECUSTOMEMOTES();
+                case (229): return new MSG_UPDATEEQUIPMENTSETS();
+                case (230): return new MSG_UPDATEEVENTCURRENCY1();
+                case (231): return new MSG_UPDATEEVENTCURRENCY2();
+                case (232): return new MSG_UPDATEEXPANSION();
+                case (233): return new MSG_UPDATEEXTRAINVENTORY();
+                case (234): return new MSG_UPDATEFISHINGXP();
+                case (235): return new MSG_UPDATEITEMSPELLEXCLUSIONLIST();
+                case (236): return new MSG_UPDATEMAXSHADOWPIPS();
+                case (237): return new MSG_UPDATEMONSTERMAGICXP();
+                case (238): return new MSG_UPDATENEWSPELLBOOKLAYOUTWARNING();
+                case (239): return new MSG_UPDATEPETBILLBOARD();
+                case (240): return new MSG_UPDATEPIPCONVERSION();
+                case (241): return new MSG_UPDATEPURCHASEDCHARACTERSLOTS();
+                case (242): return new MSG_UPDATEREMEMBERLASTREALM();
+                case (243): return new MSG_UPDATERESUMEINSTANCETIME();
+                case (244): return new MSG_UPDATERESUMEINSTANCETIME2();
+                case (245): return new MSG_UPDATESSUBSCRIBERBEBEFITFLAGS();
+                case (246): return new MSG_UPDATETELEPORTEFFECT();
+                case (247): return new MSG_UPDATETUTORIALTIPLOG();
+                case (248): return new MSG_USEPETADVENTUREPOWER();
+                case (249): return new MSG_UpdateClassProjectPlayerProgress();
+                case (250): return new MSG_WHIRLYBURLYMESSAGE();
+                case (251): return new MSG_WHIRLYBURLYOPENKIOSK();
+                case (252): return new MSG_ZONECLUSTERINFO();
+                case (253): return new MSG_ZONEGATELIST();
+                case (254): return new MSG_ZONEHOP();
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
@@ -13673,7 +13673,7 @@ namespace Imlight.Common.Serializable.Caches
 			public byte ServiceId { get; } = 53;
 		}
 	}
-	public sealed class WIZARD3 : INetworkProtocol
+	public sealed class WIZARD3_56_PROTOCOL : INetworkProtocol
 	{
 		public Byte ServiceId { get; } = 56;
 		public String ProtocolType { get; } = "WIZARD3";
@@ -13684,114 +13684,114 @@ namespace Imlight.Common.Serializable.Caches
         {
             switch (id)
             {
-                case (0): return new MSG_ADDGUILDINVENTORYITEM();
-                case (1): return new MSG_ADVANCESEASONPASS();
-                case (2): return new MSG_ADVENTUREPARTASKADDTOKIOSK();
-                case (3): return new MSG_ADVENTUREPARTSETPURPOSE();
-                case (4): return new MSG_ADVENTUREPARTYADDTOKIOSK();
-                case (5): return new MSG_ADVENTUREPARTYASKTOJOIN();
-                case (6): return new MSG_AddZoneToken();
-                case (7): return new MSG_AdvPvPEloData();
-                case (8): return new MSG_AdvPvPLeaderboardData();
-                case (9): return new MSG_AdvPvPLeaderboardDataRequest();
-                case (10): return new MSG_CANACQUIREGROUPELIXIR();
-                case (11): return new MSG_CANCELEDPARTYMESSAGE();
-                case (12): return new MSG_CHANGEGROUPLEADER();
-                case (13): return new MSG_CHANGEPARTYNAME();
-                case (14): return new MSG_CHANGEPARTYOWNER();
-                case (15): return new MSG_CHANGERESPONSEPARTYMESSAGE();
-                case (16): return new MSG_CREATEGUILDREQUEST();
-                case (17): return new MSG_CREATEGUILDTESTOBJECT();
-                case (18): return new MSG_CSRLOYALTYPAGEDATA();
-                case (19): return new MSG_CSRREQUESTRENAMEINFO();
-                case (20): return new MSG_EMPTYGUILDTRASH();
-                case (21): return new MSG_EnvironmentalDamage();
-                case (22): return new MSG_FULLDYEREQUEST();
-                case (23): return new MSG_GUILDINFO();
-                case (24): return new MSG_GUILDITEMCONTROL();
-                case (25): return new MSG_GUILDMEMBERSHIP();
-                case (26): return new MSG_GUILDUNLOCKREQUEST();
-                case (27): return new MSG_INPERSONHATCHINGCHECK();
-                case (28): return new MSG_LOADGUILDOBJECT();
-                case (29): return new MSG_LOCKLEVEL();
-                case (30): return new MSG_LOGCSBATTLEREADYITEM();
-                case (31): return new MSG_LOYALTYCLAIMLOYALTYTOKENS();
-                case (32): return new MSG_LOYALTYCLAIMLOYALTYTOKENSCONFIRM();
-                case (33): return new MSG_LOYALTYPROGRAMFORDAILYSPIRAL();
-                case (34): return new MSG_LOYALTYSTORELISTREQUEST();
-                case (35): return new MSG_LOYALTYSTORE_PURCHASE_LOCK_REQUEST();
-                case (36): return new MSG_LOYALTYSTORE_PURCHASE_LOCK_RESPONSE();
-                case (37): return new MSG_LOYALTYSTORE_PURCHASE_REQUEST();
-                case (38): return new MSG_LOYALTYSTORE_PURCHASE_RESPONSE();
-                case (39): return new MSG_ModifyZoneToken();
-                case (40): return new MSG_PETPOWERWORLDFAILURE();
-                case (41): return new MSG_PLAYERINGUILDCOOLDOWN();
-                case (42): return new MSG_PLAYGRAPHIC();
-                case (43): return new MSG_POSTPARTYMESSAGE();
-                case (44): return new MSG_PROMOTEPROVISIONALPLAYER();
-                case (45): return new MSG_PVP5THAGECANJOINMATCH();
-                case (46): return new MSG_PVP5THAGECANJOINMATCHRESPONSE();
-                case (47): return new MSG_PVP5THAGEKIOSKREQUEST();
-                case (48): return new MSG_PVP5THAGEOPENPVPWINDOW();
-                case (49): return new MSG_PVPDISABLED();
-                case (50): return new MSG_PlayerStatueChanged();
-                case (51): return new MSG_PlayerStatueData();
-                case (52): return new MSG_PlayerStatueGroup();
-                case (53): return new MSG_PlayerStatueInspect();
-                case (54): return new MSG_PvPStatueData();
-                case (55): return new MSG_PvPStatueInspect();
-                case (56): return new MSG_RAIDGATEUNLOCKREQUEST();
-                case (57): return new MSG_RATEMYSTITCHADD();
-                case (58): return new MSG_RATEMYSTITCHCLAIMJUDGESCHOICE();
-                case (59): return new MSG_RATEMYSTITCHCSRRESULTS();
-                case (60): return new MSG_RATEMYSTITCHEREQUESTREMOVE();
-                case (61): return new MSG_RATEMYSTITCHHELP();
-                case (62): return new MSG_RATEMYSTITCHHOLIDAYFLAGS();
-                case (63): return new MSG_RATEMYSTITCHPOSTRATE();
-                case (64): return new MSG_RATEMYSTITCHRATE();
-                case (65): return new MSG_RATEMYSTITCHRATEFAIL();
-                case (66): return new MSG_RATEMYSTITCHRATERESPONSE();
-                case (67): return new MSG_RATEMYSTITCHREQUEST();
-                case (68): return new MSG_RATEMYSTITCHREQUESTLEADERBOARD();
-                case (69): return new MSG_RATEMYSTITCHREQUESTOUTFITS();
-                case (70): return new MSG_REMOVEGUILDINVENTORYITEM();
-                case (71): return new MSG_REMOVEPARTYMEMBER();
-                case (72): return new MSG_REMOVEPARTYMESSAGE();
-                case (73): return new MSG_REQUESTGUILDINVENTORY();
-                case (74): return new MSG_REQUESTGUILDOBJECT();
-                case (75): return new MSG_REQUESTGUILDUNLOCKDATA();
-                case (76): return new MSG_REQUESTINPERSONHATCHINGCHANGE();
-                case (77): return new MSG_REQUESTPERMISSIONCHANGE();
-                case (78): return new MSG_REQUESTRADIALADVENTURECHAT();
-                case (79): return new MSG_REQUESTRADIALADVENTUREQUICKCHAT();
-                case (80): return new MSG_REQUESTRADIALADVENTUREQUICKCHATEXT();
-                case (81): return new MSG_REQUESTRENAMECHARACTER();
-                case (82): return new MSG_REQUESTSHOWPVPOPTION();
-                case (83): return new MSG_REQUESTSIGILSLOT();
-                case (84): return new MSG_RESPONSESHOWPVPOPTION();
-                case (85): return new MSG_ROLLCAMERA();
-                case (86): return new MSG_RemoveZoneToken();
-                case (87): return new MSG_ResetZoneToken();
-                case (88): return new MSG_SETGROUPQUEST();
-                case (89): return new MSG_SETSIGILSLOT();
-                case (90): return new MSG_SETSKINTONEMESSAGE();
-                case (91): return new MSG_SETTESTREALMWATERMARK();
-                case (92): return new MSG_SHOPLOYALTYLIST();
-                case (93): return new MSG_SHOWCLIENTGROUPELIXIRPOPUP();
-                case (94): return new MSG_SOCIALCONTROL();
-                case (95): return new MSG_SOCIALKIOSKREQUEST();
-                case (96): return new MSG_SetDeckArchmastery();
-                case (97): return new MSG_UNLOADGUILDOBJECT();
-                case (98): return new MSG_UNLOCKTRIGGERDATA();
-                case (99): return new MSG_UPDATEARCHMASTERY();
-                case (100): return new MSG_UPDATEGUILDNAME();
-                case (101): return new MSG_UPDATEGUILDUNLOCKTRIGGER();
-                case (102): return new MSG_UPDATELOYALTYPURCHASE();
-                case (103): return new MSG_UPDATEOVERFLOWXP();
-                case (104): return new MSG_UPDATEPVPCURRENCY();
-                case (105): return new MSG_UPDATESHOWPVPOPTION();
-                case (106): return new MSG_VISITGUILDHOUSE();
-                case (107): return new MSG_Visibility();
+                case (1): return new MSG_ADDGUILDINVENTORYITEM();
+                case (2): return new MSG_ADVANCESEASONPASS();
+                case (3): return new MSG_ADVENTUREPARTASKADDTOKIOSK();
+                case (4): return new MSG_ADVENTUREPARTSETPURPOSE();
+                case (5): return new MSG_ADVENTUREPARTYADDTOKIOSK();
+                case (6): return new MSG_ADVENTUREPARTYASKTOJOIN();
+                case (7): return new MSG_AddZoneToken();
+                case (8): return new MSG_AdvPvPEloData();
+                case (9): return new MSG_AdvPvPLeaderboardData();
+                case (10): return new MSG_AdvPvPLeaderboardDataRequest();
+                case (11): return new MSG_CANACQUIREGROUPELIXIR();
+                case (12): return new MSG_CANCELEDPARTYMESSAGE();
+                case (13): return new MSG_CHANGEGROUPLEADER();
+                case (14): return new MSG_CHANGEPARTYNAME();
+                case (15): return new MSG_CHANGEPARTYOWNER();
+                case (16): return new MSG_CHANGERESPONSEPARTYMESSAGE();
+                case (17): return new MSG_CREATEGUILDREQUEST();
+                case (18): return new MSG_CREATEGUILDTESTOBJECT();
+                case (19): return new MSG_CSRLOYALTYPAGEDATA();
+                case (20): return new MSG_CSRREQUESTRENAMEINFO();
+                case (21): return new MSG_EMPTYGUILDTRASH();
+                case (22): return new MSG_EnvironmentalDamage();
+                case (23): return new MSG_FULLDYEREQUEST();
+                case (24): return new MSG_GUILDINFO();
+                case (25): return new MSG_GUILDITEMCONTROL();
+                case (26): return new MSG_GUILDMEMBERSHIP();
+                case (27): return new MSG_GUILDUNLOCKREQUEST();
+                case (28): return new MSG_INPERSONHATCHINGCHECK();
+                case (29): return new MSG_LOADGUILDOBJECT();
+                case (30): return new MSG_LOCKLEVEL();
+                case (31): return new MSG_LOGCSBATTLEREADYITEM();
+                case (32): return new MSG_LOYALTYCLAIMLOYALTYTOKENS();
+                case (33): return new MSG_LOYALTYCLAIMLOYALTYTOKENSCONFIRM();
+                case (34): return new MSG_LOYALTYPROGRAMFORDAILYSPIRAL();
+                case (35): return new MSG_LOYALTYSTORELISTREQUEST();
+                case (36): return new MSG_LOYALTYSTORE_PURCHASE_LOCK_REQUEST();
+                case (37): return new MSG_LOYALTYSTORE_PURCHASE_LOCK_RESPONSE();
+                case (38): return new MSG_LOYALTYSTORE_PURCHASE_REQUEST();
+                case (39): return new MSG_LOYALTYSTORE_PURCHASE_RESPONSE();
+                case (40): return new MSG_ModifyZoneToken();
+                case (41): return new MSG_PETPOWERWORLDFAILURE();
+                case (42): return new MSG_PLAYERINGUILDCOOLDOWN();
+                case (43): return new MSG_PLAYGRAPHIC();
+                case (44): return new MSG_POSTPARTYMESSAGE();
+                case (45): return new MSG_PROMOTEPROVISIONALPLAYER();
+                case (46): return new MSG_PVP5THAGECANJOINMATCH();
+                case (47): return new MSG_PVP5THAGECANJOINMATCHRESPONSE();
+                case (48): return new MSG_PVP5THAGEKIOSKREQUEST();
+                case (49): return new MSG_PVP5THAGEOPENPVPWINDOW();
+                case (50): return new MSG_PVPDISABLED();
+                case (51): return new MSG_PlayerStatueChanged();
+                case (52): return new MSG_PlayerStatueData();
+                case (53): return new MSG_PlayerStatueGroup();
+                case (54): return new MSG_PlayerStatueInspect();
+                case (55): return new MSG_PvPStatueData();
+                case (56): return new MSG_PvPStatueInspect();
+                case (57): return new MSG_RAIDGATEUNLOCKREQUEST();
+                case (58): return new MSG_RATEMYSTITCHADD();
+                case (59): return new MSG_RATEMYSTITCHCLAIMJUDGESCHOICE();
+                case (60): return new MSG_RATEMYSTITCHCSRRESULTS();
+                case (61): return new MSG_RATEMYSTITCHEREQUESTREMOVE();
+                case (62): return new MSG_RATEMYSTITCHHELP();
+                case (63): return new MSG_RATEMYSTITCHHOLIDAYFLAGS();
+                case (64): return new MSG_RATEMYSTITCHPOSTRATE();
+                case (65): return new MSG_RATEMYSTITCHRATE();
+                case (66): return new MSG_RATEMYSTITCHRATEFAIL();
+                case (67): return new MSG_RATEMYSTITCHRATERESPONSE();
+                case (68): return new MSG_RATEMYSTITCHREQUEST();
+                case (69): return new MSG_RATEMYSTITCHREQUESTLEADERBOARD();
+                case (70): return new MSG_RATEMYSTITCHREQUESTOUTFITS();
+                case (71): return new MSG_REMOVEGUILDINVENTORYITEM();
+                case (72): return new MSG_REMOVEPARTYMEMBER();
+                case (73): return new MSG_REMOVEPARTYMESSAGE();
+                case (74): return new MSG_REQUESTGUILDINVENTORY();
+                case (75): return new MSG_REQUESTGUILDOBJECT();
+                case (76): return new MSG_REQUESTGUILDUNLOCKDATA();
+                case (77): return new MSG_REQUESTINPERSONHATCHINGCHANGE();
+                case (78): return new MSG_REQUESTPERMISSIONCHANGE();
+                case (79): return new MSG_REQUESTRADIALADVENTURECHAT();
+                case (80): return new MSG_REQUESTRADIALADVENTUREQUICKCHAT();
+                case (81): return new MSG_REQUESTRADIALADVENTUREQUICKCHATEXT();
+                case (82): return new MSG_REQUESTRENAMECHARACTER();
+                case (83): return new MSG_REQUESTSHOWPVPOPTION();
+                case (84): return new MSG_REQUESTSIGILSLOT();
+                case (85): return new MSG_RESPONSESHOWPVPOPTION();
+                case (86): return new MSG_ROLLCAMERA();
+                case (87): return new MSG_RemoveZoneToken();
+                case (88): return new MSG_ResetZoneToken();
+                case (89): return new MSG_SETGROUPQUEST();
+                case (90): return new MSG_SETSIGILSLOT();
+                case (91): return new MSG_SETSKINTONEMESSAGE();
+                case (92): return new MSG_SETTESTREALMWATERMARK();
+                case (93): return new MSG_SHOPLOYALTYLIST();
+                case (94): return new MSG_SHOWCLIENTGROUPELIXIRPOPUP();
+                case (95): return new MSG_SOCIALCONTROL();
+                case (96): return new MSG_SOCIALKIOSKREQUEST();
+                case (97): return new MSG_SetDeckArchmastery();
+                case (98): return new MSG_UNLOADGUILDOBJECT();
+                case (99): return new MSG_UNLOCKTRIGGERDATA();
+                case (100): return new MSG_UPDATEARCHMASTERY();
+                case (101): return new MSG_UPDATEGUILDNAME();
+                case (102): return new MSG_UPDATEGUILDUNLOCKTRIGGER();
+                case (103): return new MSG_UPDATELOYALTYPURCHASE();
+                case (104): return new MSG_UPDATEOVERFLOWXP();
+                case (105): return new MSG_UPDATEPVPCURRENCY();
+                case (106): return new MSG_UPDATESHOWPVPOPTION();
+                case (107): return new MSG_VISITGUILDHOUSE();
+                case (108): return new MSG_Visibility();
                 default: throw new InternalException($"No message was found at ID {id} for this protocol!");
             }
         }
