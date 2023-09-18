@@ -21,11 +21,11 @@ public static class NetworkMessageGenerator
     private const string ProtocolTabLength = "\t\t";
     private const string RecordTabLength = "\t\t\t";
     private const string NetworkProtocolInterfaceName = nameof(INetworkProtocol);
-    private const TypeAttributes ProtocolClassTypeAttributes 
+    private const TypeAttributes ProtocolClassTypeAttributes
         = TypeAttributes.Public | TypeAttributes.BeforeFieldInit | TypeAttributes.Sealed;
     private const TypeAttributes RecordClassTypeAttributes = TypeAttributes.Public | TypeAttributes.Sealed;
 
-    private static readonly string[] CodeClassImports = 
+    private static readonly string[] CodeClassImports =
     {
         "System",
         "Imlight.Common.DML",
@@ -91,32 +91,32 @@ public static class NetworkMessageGenerator
         // Start working with CodeDom.
         var compileUnit = new CodeCompileUnit();
         var codeNamespace = new CodeNamespace(CacheNamespace);
-        
+
         // Add imports to the namespace.
         foreach (var import in CodeClassImports)
         {
             var importNamespace = new CodeNamespaceImport(import);
             codeNamespace.Imports.Add(importNamespace);
         }
-        
+
         // Iterate through each protocol and generate a class for it.
         foreach (var xmlDoc in xmlDocuments)
         {
             var protocolHeader = new ProtocolHeader(xmlDoc);
             var codeClass = CreateProtocolTypeDeclaration(protocolHeader);
-            
+
             // Add the sub-records to the class.
             var xmlRecords = GetXmlRecordsFromProtocol(xmlDoc);
             var createdClasses = AddSubRecordsToProtocol(ref codeClass, xmlRecords, protocolHeader.ServiceId);
             ImplementNetworkProtocolInterfaceDispatcher(ref codeClass, createdClasses);
-            
+
             codeNamespace.Types.Add(codeClass);
         }
 
         compileUnit.Namespaces.Add(codeNamespace);
         return compileUnit;
     }
-    
+
     /// <summary>
     /// Adds sub-records to the provided protocol class.
     /// </summary>
@@ -134,10 +134,8 @@ public static class NetworkMessageGenerator
         var createdClasses = new Dictionary<byte, string>();
 
         var xmlBases = xmlRecords as XmlNode[] ?? xmlRecords.ToArray();
-        for (var i = 0; i < xmlBases.Length; i++)
+        foreach (var xmlBase in xmlBases)
         {
-            var xmlBase = xmlBases[i];
-            
             // Skip metadata, comments, and duplicate records.
             if (xmlBase.Name.StartsWith(MetadataNodePrefix) || xmlBase.NodeType == XmlNodeType.Comment)
                 continue;
@@ -149,9 +147,29 @@ public static class NetworkMessageGenerator
 
             var msgOrderFallback = Array.IndexOf(xmlBases, xmlBase) + 1 - duplicateRecordCount;
             var codeClass = CreateRecordTypeDeclaration(xmlBase, serviceId, (byte)msgOrderFallback);
-            
+
             protocolClass.Members.Add(codeClass);
-            createdClasses.Add(unchecked((byte)i), xmlBase.Name);
+
+            // Check to see if the message has a _MsgOrder or _MsgType property. If it does, we'll use that as the key.
+            // Otherwise, we'll use the index of the message as it appears in the protocol.
+            // Delve in 1 layer to get into the RECORD node.
+            if (xmlBase.ChildNodes[0]!
+                .ChildNodes
+                .OfType<XmlElement>()
+                .Any(x => x.Name is MetadataOrderName or MetadataTypeName))
+            {
+                var msgOrder = xmlBase.ChildNodes[0]!
+                    .ChildNodes
+                    .OfType<XmlElement>()
+                    .First(x => x.Name is MetadataOrderName or MetadataTypeName);
+                var msgOrderValue = byte.Parse(msgOrder.InnerText);
+                createdClasses.Add(msgOrderValue, codeClass.Name);
+                continue;
+            }
+
+            // If we're here, the message doesn't have a _MsgOrder property.
+            // We'll use the index of the message as it appears in the protocol.
+            createdClasses.Add(unchecked((byte)msgOrderFallback), codeClass.Name);
         }
 
         return createdClasses;
@@ -164,7 +182,10 @@ public static class NetworkMessageGenerator
     /// <returns></returns>
     private static CodeTypeDeclaration CreateProtocolTypeDeclaration(ProtocolHeader protocolHeader)
     {
-        var codeClass = new CodeTypeDeclaration(protocolHeader.ProtocolType ?? UnknownProtocolType)
+        // Create a fancy name for the protocol.
+        var protocolName = $"{protocolHeader.ProtocolType ?? UnknownProtocolType}_{protocolHeader.ServiceId}_PROTOCOL";
+
+        var codeClass = new CodeTypeDeclaration(protocolName)
         {
             IsClass = true,
             TypeAttributes = ProtocolClassTypeAttributes,
@@ -191,7 +212,7 @@ public static class NetworkMessageGenerator
         {
             TypeAttributes = ProtocolClassTypeAttributes
         };
-        
+
         // Add our interface.
         ImplementNetworkMessageInterfaceProperties(ref codeClass, xmlNode, serviceId, messageOrderFallback);
 
@@ -204,7 +225,7 @@ public static class NetworkMessageGenerator
                 continue;
             if (xmlElement!.Name.StartsWith(MetadataNodePrefix))
                 continue;
-            
+
             var rawType = GetDataTypeFromXmlElement(xmlElement);
             if (!InternalTypeTranslationDict.TryGetValue(rawType, out var type))
             {
@@ -218,13 +239,13 @@ public static class NetworkMessageGenerator
             var propSnippetText =
                 $"{RecordTabLength}[{formattedAttributeName}({nameof(DmlType)}.{type.Item2})] " +
                 $"public {formattedType} {xmlElement.Name};";
-            
+
             // Append a newline character, unless it's the last property.
             if (i != xmlRecord.ChildNodes.Count - 1)
                 propSnippetText += Environment.NewLine;
-            
+
             var propSnippet = CreateGenericPropertySnippet(propSnippetText);
-            
+
             codeClass.Members.Add(propSnippet);
         }
 
@@ -241,14 +262,14 @@ public static class NetworkMessageGenerator
     {
         var networkInterfaceRef = new CodeTypeReference(NetworkProtocolInterfaceName);
         codeClass.BaseTypes.Add(networkInterfaceRef);
-        
+
         // Implement the INetworkProtocol interface.
         var interfaceProperties = typeof(INetworkProtocol).GetProperties();
         for (var i = 0; i < interfaceProperties.Length; i++)
         {
             var property = interfaceProperties[i];
             var propertySnippetText = $"{ProtocolTabLength}public {property.PropertyType.Name} {property.Name} {{ get; }}";
-            
+
             // Check to see if the ProtocolHeader has a value for this property of the same name.
             // If it does, we'll append the text to include the value.
             var protocolHeaderProperties = typeof(ProtocolHeader).GetProperties();
@@ -256,18 +277,18 @@ public static class NetworkMessageGenerator
             {
                 var protocolHeaderProperty = protocolHeaderProperties.First(x => x.Name == property.Name);
                 var protocolHeaderValue = protocolHeaderProperty.GetValue(protocolHeader);
-                
+
                 // If the property is a string, we'll wrap it in quotes.
                 if (property.PropertyType.Name.ToLower() == "string")
                     propertySnippetText += $" = \"{protocolHeaderValue}\";";
                 else
                     propertySnippetText += $" = {protocolHeaderValue};";
-                
+
                 // Append newline character, unless it's the last one.
                 if (i != interfaceProperties.Length - 1)
                     propertySnippetText += Environment.NewLine;
             }
-            
+
             var propertySnippet = CreateGenericPropertySnippet(propertySnippetText);
             codeClass.Members.Add(propertySnippet);
         }
@@ -285,7 +306,7 @@ public static class NetworkMessageGenerator
     {
         var networkInterfaceRef = new CodeTypeReference(nameof(INetworkMessage));
         codeClass.BaseTypes.Add(networkInterfaceRef);
-        
+
         // Implement the interface properties. Go one layer down to enter the RECORD element.
         bool wroteMessageOrder = false, wroteAccessLevel = false;
         var recordNode = xmlNode.ChildNodes[0];
@@ -298,10 +319,10 @@ public static class NetworkMessageGenerator
             switch (xmlElement.Name)
             {
                 case MetadataDescriptionName:
-                    var descSnippetText = xmlInnerText == "" 
-                        ? $"{RecordTabLength}// This message has no description.\n" 
+                    var descSnippetText = xmlInnerText == ""
+                        ? $"{RecordTabLength}// This message has no description.\n"
                         : $"{RecordTabLength}// {xmlInnerText.Replace("\n", $"\n// ")}\n";
-                    var descProp= CreateGenericPropertySnippet(descSnippetText);
+                    var descProp = CreateGenericPropertySnippet(descSnippetText);
                     codeClass.Members.Add(descProp);
                     break;
                 case MetadataAccessLevelName:
@@ -327,7 +348,7 @@ public static class NetworkMessageGenerator
             var orderProp = CreateGenericPropertySnippet(orderSnippetText);
             codeClass.Members.Add(orderProp);
         }
-        
+
         // If we didn't write the access level, just write 0.
         if (!wroteAccessLevel)
         {
@@ -335,14 +356,14 @@ public static class NetworkMessageGenerator
             var accessLevelProp = CreateGenericPropertySnippet(accessLevelSnippetText);
             codeClass.Members.Add(accessLevelProp);
         }
-        
+
         // Write the service ID.
         var serviceIdSnippetText = $"{RecordTabLength}public byte ServiceId {{ get; }} = {serviceId};";
-        
+
         // Append a newline character only if the record has a field other than metadata.
         if (!recordNode.ChildNodes.OfType<XmlElement>().All(x => x.Name.StartsWith(MetadataNodePrefix)))
             serviceIdSnippetText += Environment.NewLine;
-        
+
         var serviceIdProp = CreateGenericPropertySnippet(serviceIdSnippetText);
         codeClass.Members.Add(serviceIdProp);
     }
@@ -362,7 +383,7 @@ public static class NetworkMessageGenerator
                 }
             }
         */
-        
+
         // CodeDom doesn't support switch/case. It needs to be written manually.
         // Create the IndentedWriter and set options.
         var sw = new StringWriter();
@@ -377,7 +398,7 @@ public static class NetworkMessageGenerator
         tw.WriteLine("switch (id)");
         tw.WriteLine("{");
         tw.Indent++;
-            
+
         // Iterate through r_classes and create a case statements from the options.
         foreach (KeyValuePair<byte, string> entry in createdClasses)
         {
@@ -406,13 +427,13 @@ public static class NetworkMessageGenerator
         // will instead be the index of the message as it appears ordinal sorted.
         // First, check the first record and see if it contains a metadata field for ordering. If it does, we don't need
         // to bother ordering it ourselves.
-        var properUsingList = DoesProtocolNeedOrdering(recordsList) 
-            ? SortXmlRecordsOrdinal(recordsList) 
+        var properUsingList = DoesProtocolNeedOrdering(recordsList)
+            ? SortXmlRecordsOrdinal(recordsList)
             : recordsList.Cast<XmlNode>().ToArray();
 
         return properUsingList;
     }
-    
+
     private static bool DoesProtocolNeedOrdering(XmlNodeList protocolRecordsNode)
     {
         if (protocolRecordsNode is null) throw new ArgumentNullException(nameof(protocolRecordsNode));
@@ -461,7 +482,7 @@ public static class NetworkMessageGenerator
         Array.Sort(sortedNodes, (x, y) => String.CompareOrdinal(x.Name, y.Name));
         return sortedNodes;
     }
-    
+
     private static string GetDataTypeFromXmlElement(XmlElement element)
     {
         var attributeNames = new Dictionary<string, string>
@@ -484,6 +505,6 @@ public static class NetworkMessageGenerator
             // no matching attribute found, return empty string
             "";
     }
-    
+
     private static CodeSnippetTypeMember CreateGenericPropertySnippet(string snippet) => new() { Text = $"{snippet}" };
 }
