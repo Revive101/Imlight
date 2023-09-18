@@ -22,20 +22,20 @@ public class InventoryService : MessageService
         return Akka.Actor.Props.Create(() => new InventoryService(parentActor));
     }
 
-    [MessageHandler(typeof(GAME.MSG_REQUESTRADIALQUICKCHAT))]
-    private void ReceiveRequestRadialQuickChat(GAME.MSG_REQUESTRADIALQUICKCHAT message)
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_REQUESTRADIALQUICKCHAT))]
+    private void ReceiveRequestRadialQuickChat(GAME_5_PROTOCOL.MSG_REQUESTRADIALQUICKCHAT message)
     {
         new int[] { 2066, 860841451, 2537945, 203556948 }.ForEach(spellId =>
         {
-            SendToSocket(new WIZARD.MSG_ADDSPELLTOBOOK()
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTOBOOK()
             {
                 SpellID = spellId
             });
         });
     }
 
-    [MessageHandler(typeof(GAME.MSG_EQUIPITEM))]
-    private void ReceiveEquipItem(GAME.MSG_EQUIPITEM message)
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_EQUIPITEM))]
+    private void ReceiveEquipItem(GAME_5_PROTOCOL.MSG_EQUIPITEM message)
     {
         var serializer = new CoreObjectSerializer()
             .WithSerializerFlags(SerializerFlags.None)
@@ -48,7 +48,7 @@ public class InventoryService : MessageService
         // @TODO: There should be some "AntiAmbrose" logic here. Double check that the player meets the requirements
         // to equip this item.
 
-        SendToSocket(new GAME.MSG_EQUIPITEM()
+        SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPITEM()
         {
             ItemID = message.ItemID,
             SlotName = message.SlotName,
@@ -82,7 +82,7 @@ public class InventoryService : MessageService
             {
                 Selfless = false,
                 Sender = SessionActor.ActorRef,
-                Message = new GAME.MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM()
+                Message = new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM()
                 {
                     GlobalID = coreObject.m_globalID,
                     SerializedInfo = data
@@ -98,7 +98,7 @@ public class InventoryService : MessageService
                 {
                     Selfless = false,
                     Sender = SessionActor.ActorRef,
-                    Message = new GAME.MSG_EQUIPMENTBEHAVIOR_PUBLICUNEQUIPITEM()
+                    Message = new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICUNEQUIPITEM()
                     {
                         GlobalID = coreObject.m_globalID,
                         IndexToRemove = (byte)i
@@ -109,20 +109,20 @@ public class InventoryService : MessageService
     }
 
     #region Destroy/Feed Inventoryitem
-    [MessageHandler(typeof(GAME.MSG_TRASHINVENTORYITEM))]
-    private void ReceiveTrashInventoryItem(GAME.MSG_TRASHINVENTORYITEM message)
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_TRASHINVENTORYITEM))]
+    private void ReceiveTrashInventoryItem(GAME_5_PROTOCOL.MSG_TRASHINVENTORYITEM message)
     {
-        SendToSocket(new GAME.MSG_TRASHINVENTORYITEM()
+        SendToSocket(new GAME_5_PROTOCOL.MSG_TRASHINVENTORYITEM()
         {
             GlobalID = message.GlobalID,
             TemplateID = message.TemplateID,
         });
     }
 
-    [MessageHandler(typeof(GAME.MSG_FEEDINVENTORYITEM))]
-    private void ReceiveFeedInventoryItem(GAME.MSG_FEEDINVENTORYITEM message)
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_FEEDINVENTORYITEM))]
+    private void ReceiveFeedInventoryItem(GAME_5_PROTOCOL.MSG_FEEDINVENTORYITEM message)
     {
-        SendToSocket(new GAME.MSG_FEEDINVENTORYITEM()
+        SendToSocket(new GAME_5_PROTOCOL.MSG_FEEDINVENTORYITEM()
         {
             FedObjectID = message.FedObjectID,
             PetID = message.PetID,
@@ -132,10 +132,10 @@ public class InventoryService : MessageService
 
     #region Quicksell from Inventory
     // QUICKSELL FROM INVENTORY
-    [MessageHandler(typeof(WIZARD.MSG_REQUESTQUICKSELL))]
-    private void ReceiveRequestQuickSell(WIZARD.MSG_REQUESTQUICKSELL message)
+    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_REQUESTQUICKSELL))]
+    private void ReceiveRequestQuickSell(WIZARD_12_PROTOCOL.MSG_REQUESTQUICKSELL message)
     {
-        SendToSocket(new WIZARD.MSG_REQUESTQUICKSELL()
+        SendToSocket(new WIZARD_12_PROTOCOL.MSG_REQUESTQUICKSELL()
         {
             FromTemplateID = message.FromTemplateID,
             Section = message.Section,
@@ -143,11 +143,11 @@ public class InventoryService : MessageService
         });
     }
 
-    [MessageHandler(typeof(WIZARD2.MSG_QUICKSELLREQUEST))]
-    private void ReceiveQuickSellRequest(WIZARD2.MSG_QUICKSELLREQUEST message)
+    [MessageHandler(typeof(WIZARD2_53_PROTOCOL.MSG_QUICKSELLREQUEST))]
+    private void ReceiveQuickSellRequest(WIZARD2_53_PROTOCOL.MSG_QUICKSELLREQUEST message)
     {
         // @TODO: Remove items from inventory & add gold to player
-        SendToSocket(new WIZARD2.MSG_QUICKSELLREQUEST()
+        SendToSocket(new WIZARD2_53_PROTOCOL.MSG_QUICKSELLREQUEST()
         {
             Data = message.Data,
         });
@@ -156,17 +156,17 @@ public class InventoryService : MessageService
 
     #region Jewels
     // JEWELS
-    [MessageHandler(typeof(WIZARD2.MSG_EQUIPJEWELREQUEST))]
-    private void ReceiveEquipJewelRequest(WIZARD2.MSG_EQUIPJEWELREQUEST message)
+    [MessageHandler(typeof(WIZARD2_53_PROTOCOL.MSG_EQUIPJEWELREQUEST))]
+    private void ReceiveEquipJewelRequest(WIZARD2_53_PROTOCOL.MSG_EQUIPJEWELREQUEST message)
     {
-        SendToSocket(new WIZARD2.MSG_EQUIPJEWELREQUEST()
+        SendToSocket(new WIZARD2_53_PROTOCOL.MSG_EQUIPJEWELREQUEST()
         {
             ItemGID = message.ItemGID,
             JewelGID = message.JewelGID,
             SocketNumber = message.SocketNumber,
         });
 
-        SendToSocket(new WIZARD2.MSG_EQUIPJEWELTOITEM()
+        SendToSocket(new WIZARD2_53_PROTOCOL.MSG_EQUIPJEWELTOITEM()
         {
             ItemGID = message.ItemGID,
             JewelGID = message.JewelGID,

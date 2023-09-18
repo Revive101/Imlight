@@ -99,7 +99,7 @@ public class WizardZone : ReceiveProtocolDispatcher
         var serializer = new CoreObjectSerializer()
             .WithSerializerFlags(SerializerFlags.None)
             .WithPropertyFlags(PropertyFlags.Public | PropertyFlags.Transmit | PropertyFlags.AuthorityTransmit);
-        Broadcast(new GAME.MSG_NEWOBJECT { Data = serializer.Serialize(obj) });
+        Broadcast(new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = serializer.Serialize(obj) });
     }
     
     /// <summary>
@@ -145,7 +145,7 @@ public class WizardZone : ReceiveProtocolDispatcher
             .WithPropertyFlags(PropertyFlags.Public | PropertyFlags.Transmit | PropertyFlags.AuthorityTransmit);
         foreach (var obj in _zonePlayers.Values)
         {
-            var msg = new GAME.MSG_NEWOBJECT { Data = serializer.Serialize(obj) };
+            var msg = new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = serializer.Serialize(obj) };
             client.Tell(msg);
         }
     }
@@ -205,7 +205,7 @@ public class WizardZone : ReceiveProtocolDispatcher
 
     private void SendDisplayText(IActorRef suspect, ResDisplayText resDisplayText)
     {
-        var msg = new GAME.MSG_CLIENTNOTIFYTEXT
+        var msg = new GAME_5_PROTOCOL.MSG_CLIENTNOTIFYTEXT
         {
             NotifyText = resDisplayText.m_text ,
             Type = resDisplayText.m_type,
@@ -216,7 +216,7 @@ public class WizardZone : ReceiveProtocolDispatcher
     private void SendPlaySound(IActorRef suspect, ServerTypeCache.ResPlaySound resPlaySound)
     {
         // todo: implement
-        var msg = new GAME.MSG_PLAYSOUND { SoundFilename = resPlaySound.m_soundName };
+        var msg = new GAME_5_PROTOCOL.MSG_PLAYSOUND { SoundFilename = resPlaySound.m_soundName };
         suspect.Tell(msg);
     }
 
@@ -276,7 +276,7 @@ public class WizardZone : ReceiveProtocolDispatcher
             InformZoneObjectsOfDeparture(message);
         
         // Inform every other player that this object has been removed.
-        Broadcast(new GAME.MSG_REMOVEOBJECT { GameObjectID = message.GlobalId });
+        Broadcast(new GAME_5_PROTOCOL.MSG_REMOVEOBJECT { GameObjectID = message.GlobalId });
         
         _zonePlayers.Remove(message.Player);
 

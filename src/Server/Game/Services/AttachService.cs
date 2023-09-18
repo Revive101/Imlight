@@ -25,13 +25,13 @@ internal class AttachService : MessageService
         return Akka.Actor.Props.Create(() => new AttachService(parentActor));
     }
 
-    [MessageHandler(typeof(GAME.MSG_ATTACH))]
-    private void ReceiveAttach(GAME.MSG_ATTACH message)
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ATTACH))]
+    private void ReceiveAttach(GAME_5_PROTOCOL.MSG_ATTACH message)
     {
         // Use the session key given in the message to ensure that the user didn't bypass our login server.
         if (!ValidateLoginKey(message.LoginKey, message.UserID, out var account))
         {
-            SendToSocket(new GAME.MSG_ATTACHFAILED()
+            SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED()
             {
                 Error = 1,
                 Rejected = 1,
@@ -41,7 +41,7 @@ internal class AttachService : MessageService
         }
         if (!GetCharacterFromAccount(account, message.CharID, out var character))
         {
-            SendToSocket(new GAME.MSG_ATTACHFAILED()
+            SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED()
             {
                 Error = 1,
                 NoDisconnect = 1, // @todo: find out what these error codes mean.
@@ -61,7 +61,7 @@ internal class AttachService : MessageService
         var zoneDetails = SendZoneTransfer(message.ZoneName);
         if (zoneDetails.ErrorCode != 0)
         {
-            SendToSocket(new GAME.MSG_ATTACHFAILED { Error = zoneDetails.ErrorCode });
+            SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED { Error = zoneDetails.ErrorCode });
             return;
         }
             
@@ -82,7 +82,7 @@ internal class AttachService : MessageService
                                             $"their player object.");
             
         // Send login complete.
-        var loginCompleteMsg = new GAME.MSG_LOGINCOMPLETE()
+        var loginCompleteMsg = new GAME_5_PROTOCOL.MSG_LOGINCOMPLETE()
         {
             RealmName = "Imlight",
                 

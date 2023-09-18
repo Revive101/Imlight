@@ -25,8 +25,8 @@ internal class MoveService : MessageService
         return Akka.Actor.Props.Create(() => new MoveService(parentActor));
     }
 
-    [MessageHandler(typeof(GAME.MSG_CLIENTMOVE))]
-    private void ReceiveClientMove(GAME.MSG_CLIENTMOVE message)
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVE))]
+    private void ReceiveClientMove(GAME_5_PROTOCOL.MSG_CLIENTMOVE message)
     {
         // Restore actual location information, as it is compressed by a factor of 4 and unsigned.
         // Yaw is represented in radians in the client, but transmitted to the server as degrees.
@@ -44,12 +44,12 @@ internal class MoveService : MessageService
         SendZoneInteractionFishRequest();
     }
 
-    [MessageHandler(typeof(GAME.MSG_CLIENTMOVESTATE))]
-    private void ReceiveClientMoveState(GAME.MSG_CLIENTMOVESTATE message)
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVESTATE))]
+    private void ReceiveClientMoveState(GAME_5_PROTOCOL.MSG_CLIENTMOVESTATE message)
     {
         var globalId = GetActiveCoreObject().m_globalID;
             
-        var stateMsg = new GAME.MSG_MOVESTATE
+        var stateMsg = new GAME_5_PROTOCOL.MSG_MOVESTATE
         {
             NewState = message.NewState,
             GlobalID = globalId
@@ -57,22 +57,22 @@ internal class MoveService : MessageService
         ZoneBroadcast(stateMsg);
     }
 
-    [MessageHandler(typeof(GAME.MSG_JUMP))]
-    private void ReceiveClientJump(GAME.MSG_JUMP message)
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_JUMP))]
+    private void ReceiveClientJump(GAME_5_PROTOCOL.MSG_JUMP message)
     {
         var excludeOriginator = message.ExcludeOriginator == 1;
         ZoneBroadcast(message, excludeOriginator);
     }
 
-    [MessageHandler(typeof(GAME.MSG_MARK_LOCATION))]
-    private void ReceiveMarkLocation(GAME.MSG_MARK_LOCATION message)
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_MARK_LOCATION))]
+    private void ReceiveMarkLocation(GAME_5_PROTOCOL.MSG_MARK_LOCATION message)
     {
         var character = GetActiveCharacter();
         
         // If the character wouldn't have another mana to perform this action, return.
         if (character.GameStats.m_currentMana < character.GameStats.m_baseMana / MarkManaCostPercent)
         {
-            var failedRsp = new GAME.MSG_MARK_LOCATION_RESPONSE
+            var failedRsp = new GAME_5_PROTOCOL.MSG_MARK_LOCATION_RESPONSE
             {
                 Result = 0,
                 MarkType = "1"
@@ -84,7 +84,7 @@ internal class MoveService : MessageService
         character.SetMarkedLocation(character.Location, character.Orientation, character.Zone);
         
         // Todo: reduce the character's mana here by 10%.
-        var rsp = new GAME.MSG_MARK_LOCATION_RESPONSE
+        var rsp = new GAME_5_PROTOCOL.MSG_MARK_LOCATION_RESPONSE
         {
             Result = 1,
             ZoneName = character.Zone,
@@ -101,8 +101,8 @@ internal class MoveService : MessageService
         SendToSocket(rsp);
     }
 
-    [MessageHandler(typeof(GAME.MSG_RECALL_LOCATION))]
-    private void ReceiveRecallLocation(GAME.MSG_RECALL_LOCATION message)
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_RECALL_LOCATION))]
+    private void ReceiveRecallLocation(GAME_5_PROTOCOL.MSG_RECALL_LOCATION message)
     {
         var character = GetActiveCharacter();
         var coreObj = GetActiveCoreObject();
@@ -110,7 +110,7 @@ internal class MoveService : MessageService
         // If we are in the same zone as the marked location, teleport to it.
         if (character.MarkedZoneName == character.Zone)
         {
-            var serverTeleportRsp = new GAME.MSG_SERVERTELEPORT
+            var serverTeleportRsp = new GAME_5_PROTOCOL.MSG_SERVERTELEPORT
             {
                 // Compress the location by a factor of 4 and convert to unsigned.
                 Direction = (byte)(character.MarkedLocationOrientation.Z / Math.PI / 2 * 250),
@@ -119,7 +119,7 @@ internal class MoveService : MessageService
                 LocationZ = (ushort)(character.MarkedLocation.Z / 4),
                 MobileID = coreObj.m_nMobileID,
             };
-            var recallRsp = new GAME.MSG_MARK_LOCATION_RESPONSE
+            var recallRsp = new GAME_5_PROTOCOL.MSG_MARK_LOCATION_RESPONSE
             {
                 Result = 1,
                 MarkType = "1"
@@ -149,7 +149,7 @@ internal class MoveService : MessageService
             };
             TellOtherServices(zoneTransfer);
             
-            var recallRsp = new GAME.MSG_MARK_LOCATION_RESPONSE
+            var recallRsp = new GAME_5_PROTOCOL.MSG_MARK_LOCATION_RESPONSE
             {
                 Result = 1,
                 MarkType = "1"
@@ -158,12 +158,12 @@ internal class MoveService : MessageService
         }
     }
 
-    private void BroadcastClientMove(GAME.MSG_CLIENTMOVE message)
+    private void BroadcastClientMove(GAME_5_PROTOCOL.MSG_CLIENTMOVE message)
     {
         // Query the mobile ID from the CharacterService
         var mobileId = GetActiveCoreObject().m_nMobileID;
             
-        var serverMoveMsg = new GAME.MSG_SERVERMOVE
+        var serverMoveMsg = new GAME_5_PROTOCOL.MSG_SERVERMOVE
         {
             LocationX = message.LocationX,
             LocationY = message.LocationY,

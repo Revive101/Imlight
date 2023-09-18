@@ -14,11 +14,11 @@ public class SpellService : MessageService
         return Akka.Actor.Props.Create(() => new SpellService(parentActor));
     }
 
-    [MessageHandler(typeof(WIZARD.MSG_ADDSPELLTODECK))]
-    private void ReceiveAddSpellToDeck(WIZARD.MSG_ADDSPELLTODECK message)
+    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_ADDSPELLTODECK))]
+    private void ReceiveAddSpellToDeck(WIZARD_12_PROTOCOL.MSG_ADDSPELLTODECK message)
     {
         Log.Debug("SpellID: " + message.SpellID + ", DeckID: " + message.DeckID + ", Success: " + message.Success);
-        SendToSocket(new WIZARD.MSG_ADDSPELLTODECK()
+        SendToSocket(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTODECK()
         {
             SpellID = message.SpellID,
             DeckID = message.DeckID,
@@ -26,11 +26,11 @@ public class SpellService : MessageService
         });
     }
 
-    [MessageHandler(typeof(WIZARD.MSG_REMOVESPELLFROMDECK))]
-    private void ReceiveRemoveSpellFromDeck(WIZARD.MSG_REMOVESPELLFROMDECK message)
+    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_REMOVESPELLFROMDECK))]
+    private void ReceiveRemoveSpellFromDeck(WIZARD_12_PROTOCOL.MSG_REMOVESPELLFROMDECK message)
     {
         Log.Debug("SpellID: " + message.SpellID + ", DeckID: " + message.DeckID + ", Success: " + message.Success);
-        SendToSocket(new WIZARD.MSG_REMOVESPELLFROMDECK()
+        SendToSocket(new WIZARD_12_PROTOCOL.MSG_REMOVESPELLFROMDECK()
         {
             SpellID = message.SpellID,
             DeckID = message.DeckID,

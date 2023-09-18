@@ -63,9 +63,9 @@ public class SessionActor : ReceiveActor, IDisposable
         this.ServerRef = server;
         this._suppressedPackets = new List<Type>
         {
-            typeof(GAME.MSG_CLIENTMOVE),
-            typeof(GAME.MSG_CLIENTMOVESTATE),
-            typeof(GAME.MSG_SERVERMOVE)
+            typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVE),
+            typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVESTATE),
+            typeof(GAME_5_PROTOCOL.MSG_SERVERMOVE)
         };
 
         // To get the actor factory reference, we'll ask the server.

@@ -91,7 +91,7 @@ public class WizardZonePathCreature : WizardZoneObject
     {
         var moveBroadcast = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST
         {
-            Message = new GAME.MSG_MOVESTATE
+            Message = new GAME_5_PROTOCOL.MSG_MOVESTATE
             {
                 GlobalID = ActiveGameObject.m_globalID,
                 NewState = 0
@@ -120,7 +120,7 @@ public class WizardZonePathCreature : WizardZoneObject
     {
         var msg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST
         {
-            Message = new GAME.MSG_SERVERMOVE
+            Message = new GAME_5_PROTOCOL.MSG_SERVERMOVE
             {
                 // Compress fields by a factor of 4.
                 Direction = (byte)(targetNode.m_direction / Math.PI / 2 * 250),
@@ -162,7 +162,7 @@ public class WizardZonePathCreature : WizardZoneObject
         base.ReceiveAddPlayer(message);
 
         // Inform the new player that this creature is moving.
-        var msgMoveState = new GAME.MSG_MOVESTATE
+        var msgMoveState = new GAME_5_PROTOCOL.MSG_MOVESTATE
         {
             GlobalID = ActiveGameObject.m_globalID,
             NewState = 0

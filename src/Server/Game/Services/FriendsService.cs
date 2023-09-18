@@ -14,8 +14,8 @@ public class FriendsService : MessageService
         return Akka.Actor.Props.Create(() => new FriendsService(parentActor));
     }
 
-    [MessageHandler(typeof(GAME.MSG_BUDDYREQUESTLIST))]
-    private void ReceiveBuddyRequestList(GAME.MSG_BUDDYREQUESTLIST message)
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_BUDDYREQUESTLIST))]
+    private void ReceiveBuddyRequestList(GAME_5_PROTOCOL.MSG_BUDDYREQUESTLIST message)
     {
         Log.Debug("ListOwnerGID: " + message.ListOwnerGID + ", Forwarded: " + message.Forwarded);
     }

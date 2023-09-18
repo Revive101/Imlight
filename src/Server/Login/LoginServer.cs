@@ -43,7 +43,7 @@ public class LoginServer : Shared.Networking.Server
         ActiveSessions.Add(message.SessionActor);
             
         // Inform the client they've been added to the server.
-        var rsp = new LOGIN.MSG_USER_ADMIT_IND()
+        var rsp = new LOGIN_7_PROTOCOL.MSG_USER_ADMIT_IND()
         {
             PositionInQueue = 0,
             Status = 1

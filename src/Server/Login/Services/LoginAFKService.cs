@@ -35,8 +35,8 @@ internal class LoginAFKService : MessageService
         return Akka.Actor.Props.Create(() => new LoginAFKService(parentActor));
     }
 
-    [MessageHandler(typeof(LOGIN.MSG_LOGIN_NOT_AFK))]
-    private void ReceiveLoginNotAfk(LOGIN.MSG_LOGIN_NOT_AFK message)
+    [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_LOGIN_NOT_AFK))]
+    private void ReceiveLoginNotAfk(LOGIN_7_PROTOCOL.MSG_LOGIN_NOT_AFK message)
     {
         _lastReceivedSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
     }
@@ -62,7 +62,7 @@ internal class LoginAFKService : MessageService
         if (currentTime - _lastReceivedSeconds >= _afkTimeout)
         {
             // User has gone AFK. Drop the connection.
-            SendToSocket(new LOGIN.MSG_DISCONNECT_LOGIN_AFK()
+            SendToSocket(new LOGIN_7_PROTOCOL.MSG_DISCONNECT_LOGIN_AFK()
             {
                 Warning = 1 // ???
             });

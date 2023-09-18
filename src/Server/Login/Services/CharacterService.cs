@@ -24,8 +24,8 @@ internal class CharacterService : MessageService
         return Akka.Actor.Props.Create(() => new CharacterService(parentActor));
     }
 
-    [MessageHandler(typeof(LOGIN.MSG_CREATECHARACTER))]
-    private void ReceiveCreateCharacter(LOGIN.MSG_CREATECHARACTER message)
+    [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_CREATECHARACTER))]
+    private void ReceiveCreateCharacter(LOGIN_7_PROTOCOL.MSG_CREATECHARACTER message)
     {
         // The client has sent us serialized WizardCharacterCreationData. We need to
         // deserialize it to add it to our account database.
@@ -61,11 +61,11 @@ internal class CharacterService : MessageService
         else
             errorCode = 1;
 
-        SendToSocket(new LOGIN.MSG_CREATECHARACTERRESPONSE { ErrorCode = errorCode });
+        SendToSocket(new LOGIN_7_PROTOCOL.MSG_CREATECHARACTERRESPONSE { ErrorCode = errorCode });
     }
         
-    [MessageHandler(typeof(LOGIN.MSG_DELETECHARACTER))]
-    private void ReceiveDeleteCharacter(LOGIN.MSG_DELETECHARACTER message)
+    [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_DELETECHARACTER))]
+    private void ReceiveDeleteCharacter(LOGIN_7_PROTOCOL.MSG_DELETECHARACTER message)
     {
         var errorCode = 0;
         var account = GetSocketAccount();
@@ -90,21 +90,21 @@ internal class CharacterService : MessageService
         else
             errorCode = 1;
 
-        SendToSocket(new LOGIN.MSG_DELETECHARACTERRESPONSE { ErrorCode = errorCode });
+        SendToSocket(new LOGIN_7_PROTOCOL.MSG_DELETECHARACTERRESPONSE { ErrorCode = errorCode });
     }
 
-    [MessageHandler(typeof(LOGIN.MSG_REQUESTCHARACTERLIST))]
-    private void ReceiveRequestCharacterList(LOGIN.MSG_REQUESTCHARACTERLIST message)
+    [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_REQUESTCHARACTERLIST))]
+    private void ReceiveRequestCharacterList(LOGIN_7_PROTOCOL.MSG_REQUESTCHARACTERLIST message)
     {
         var account = GetSocketAccount();
         if (account is null)
         {
-            SendToSocket(new LOGIN.MSG_CHARACTERLIST() { Error = 1 });
+            SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERLIST() { Error = 1 });
             return;
         }
 
         // Tell the client we're going to start sending the character list.
-        SendToSocket(new LOGIN.MSG_STARTCHARACTERLIST());
+        SendToSocket(new LOGIN_7_PROTOCOL.MSG_STARTCHARACTERLIST());
 
         // For every character, we're going to serialize the document and send to the client.
         if (account.Characters.Count > 0)
@@ -116,16 +116,16 @@ internal class CharacterService : MessageService
 
                 // WizApi saves the object. We need to serialize it here.
                 var data = serializer.Serialize(character.GetCharacterCreationInfo());
-                SendToSocket(new LOGIN.MSG_CHARACTERINFO() { CharacterInfo = data });
+                SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERINFO() { CharacterInfo = data });
             }
         }
 
         // Tell the client we've finished sending the character list.
-        SendToSocket(new LOGIN.MSG_CHARACTERLIST());
+        SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERLIST());
     }
 
-    [MessageHandler(typeof(LOGIN.MSG_LOGINLOGCHARACTERCREATION))]
-    private void ReceiveLoginLogCharacterCreation(LOGIN.MSG_LOGINLOGCHARACTERCREATION message)
+    [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_LOGINLOGCHARACTERCREATION))]
+    private void ReceiveLoginLogCharacterCreation(LOGIN_7_PROTOCOL.MSG_LOGINLOGCHARACTERCREATION message)
     {
         this._characterCreationParameter = message.Parameter;
         this._characterCreationStage = message.Stage;

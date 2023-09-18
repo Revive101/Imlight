@@ -28,8 +28,8 @@ internal class AuthenticatorService : MessageService
     #region Handlers
 
     // Received when a user is trying to authenticate.
-    [MessageHandler(typeof(LOGIN.MSG_USER_AUTHEN_V3))]
-    private void ReceiveUserAuth(LOGIN.MSG_USER_AUTHEN_V3 message)
+    [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_V3))]
+    private void ReceiveUserAuth(LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_V3 message)
     {
         try
         {
@@ -42,8 +42,8 @@ internal class AuthenticatorService : MessageService
     }
 
     // Received when a user is trying to validate its session.
-    [MessageHandler(typeof(LOGIN.MSG_USER_VALIDATE))]
-    private void ReceiveUserValidate(LOGIN.MSG_USER_VALIDATE message)
+    [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_USER_VALIDATE))]
+    private void ReceiveUserValidate(LOGIN_7_PROTOCOL.MSG_USER_VALIDATE message)
     {
         try
         {
@@ -57,7 +57,7 @@ internal class AuthenticatorService : MessageService
 
     #endregion
     
-    private void AuthenticateUser(LOGIN.MSG_USER_AUTHEN_V3 message)
+    private void AuthenticateUser(LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_V3 message)
     {
         // Craft the record.
         var offerTime = SessionActor.OfferTime;
@@ -91,7 +91,7 @@ internal class AuthenticatorService : MessageService
 
             // Echo the session key and user id back to the client.
             var rec1 = Rec1.Encode(sessionKey, sId, offerTime, offerMilli);
-            SendToSocket(new LOGIN.MSG_USER_AUTHEN_RSP()
+            SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_RSP()
             {
                 Error = 0,
                 Flags = 0,
@@ -111,14 +111,14 @@ internal class AuthenticatorService : MessageService
         SendClientToLogin(matchedAccount);
     }
 
-    private void ValidateUser(LOGIN.MSG_USER_VALIDATE message)
+    private void ValidateUser(LOGIN_7_PROTOCOL.MSG_USER_VALIDATE message)
     {
         // Get the account from database using the given user id. If the account doesn't exist,
         // inform the socket and return.
         var matchedAccount = AccountCollection.GetAccount(message.UserID);
         if (matchedAccount == null)
         {
-            SendToSocket(new LOGIN.MSG_USER_VALIDATE_RSP()
+            SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_VALIDATE_RSP()
             {
                 UserID = message.UserID,
                 PayingUser = 1,
@@ -133,7 +133,7 @@ internal class AuthenticatorService : MessageService
         var sessionKey = ClientKeyCollection.GetSessionKey(message.UserID, message.MachineID);
         if (string.IsNullOrEmpty(sessionKey))
         {
-            SendToSocket(new LOGIN.MSG_USER_VALIDATE_RSP()
+            SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_VALIDATE_RSP()
             {
                 UserID = message.UserID,
                 PayingUser = 1,
@@ -153,7 +153,7 @@ internal class AuthenticatorService : MessageService
         // If the passkey is invalid, inform the socket and return.
         if (!passKey)
         {
-            SendToSocket(new LOGIN.MSG_USER_VALIDATE_RSP
+            SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_VALIDATE_RSP
             {
                 UserID = message.UserID,
                 PayingUser = 1,
@@ -167,7 +167,7 @@ internal class AuthenticatorService : MessageService
         SendClientToLogin(matchedAccount);
             
         // Inform the player that they've been authenticated.
-        SendToSocket(new LOGIN.MSG_USER_VALIDATE_RSP()
+        SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_VALIDATE_RSP()
         {
             UserID = message.UserID,
             PayingUser = 1,
@@ -185,7 +185,7 @@ internal class AuthenticatorService : MessageService
         // Cast the session id to a ushort.
         if (!ushort.TryParse(split[0], out var sId))
         {
-            throw new Exception($"{nameof(LOGIN.MSG_USER_AUTHEN_V3)} Session ID is not a ushort. " +
+            throw new Exception($"{nameof(LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_V3)} Session ID is not a ushort. " +
                                 $"Expected ushort, got {split[0]}");
         }
         
@@ -194,7 +194,7 @@ internal class AuthenticatorService : MessageService
 
     private void SendAuthenFailed(UserAuthenError error, string reason)
     {
-        SendToSocket(new LOGIN.MSG_USER_AUTHEN_RSP
+        SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_RSP
         {
             Error = (int)error,
             Reason = reason
@@ -203,7 +203,7 @@ internal class AuthenticatorService : MessageService
 
     private void SendValidateFailed(UserValidateError error, string reason)
     {
-        SendToSocket(new LOGIN.MSG_USER_VALIDATE_RSP
+        SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_VALIDATE_RSP
         {
             Error = (int)error,
             Reason = reason
@@ -217,7 +217,7 @@ internal class AuthenticatorService : MessageService
 
         // Enqueue ourselves to the connected server. Inform the socket if its been placed into a queue and
         // what position it could potentially be in.
-        var serverEnqueueResult = (LOGIN.MSG_USER_ADMIT_IND)SessionActor.EnqueueToServer();
+        var serverEnqueueResult = (LOGIN_7_PROTOCOL.MSG_USER_ADMIT_IND)SessionActor.EnqueueToServer();
         SendToSocket(serverEnqueueResult);
     }
 }
