@@ -77,6 +77,8 @@ public static class GlobalRegistry
     {
         if (!_isInitialized)
             _model = GetGlobalRegistry();
+        if (_model is null)
+            return 0;
         if (!_model.GlobalRegistryValues.ContainsKey(entry))
         {
             Log.Warning("Global registry entry {0} does not exist.", Log.Args(entry));
