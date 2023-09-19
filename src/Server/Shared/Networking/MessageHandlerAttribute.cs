@@ -5,22 +5,21 @@
 
 using System;
 
-namespace Imlight.Server.Shared.Networking
+namespace Imlight.Server.Shared.Networking;
+
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+public class MessageHandlerAttribute : Attribute
 {
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public class MessageHandlerAttribute : Attribute
-    {
-        public Type MessageType { get; }
+    public Type MessageType { get; }
 
-        public MessageHandlerAttribute(Type messageType)
-        {
-            MessageType = messageType;
-        }
-    }
-
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public class InternalMessageHandlerAttribute : MessageHandlerAttribute
+    public MessageHandlerAttribute(Type messageType)
     {
-        public InternalMessageHandlerAttribute(Type messageType) : base(messageType) { }
+        MessageType = messageType;
     }
+}
+
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+public class InternalMessageHandlerAttribute : MessageHandlerAttribute
+{
+    public InternalMessageHandlerAttribute(Type messageType) : base(messageType) { }
 }

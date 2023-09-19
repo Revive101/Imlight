@@ -7,7 +7,6 @@ using System.Security.Cryptography.X509Certificates;
 using DragonZoneTool.Models;
 using Raven.Client.Documents;
 using Serilog;
-using WizUnraveler.Secrets;
 
 namespace DragonZoneTool.Managers;
 

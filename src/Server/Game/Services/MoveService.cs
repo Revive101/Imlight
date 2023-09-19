@@ -6,11 +6,11 @@
 using System;
 using System.Collections.Generic;
 using Akka.Actor;
-using WizUnraveler.Cache;
+using Imlight.Common.Serializable.Caches;
+using Imlight.Common.Serializable.ObjectProperty;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
 using Imlight.Server.Shared.Resources;
-using WizUnraveler.ObjectProperty;
 
 namespace Imlight.Server.Game.Services;
 

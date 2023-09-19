@@ -4,16 +4,16 @@
  */
 
 using System.Net;
-using WizUnraveler.Formats;
+using Imlight.Common.Formats;
 
 namespace DragonZoneTool.Managers;
 
-public static class PatchServerManager 
+public static class PatchServerManager
 {
     private const string PatchServerUrl = "http://phill030.de:12369/patcher/";
     private const string PatchServerWadUrlPrefix = "wads";
     private const int PatchServerTimeout = 10; // In seconds.
-    private const uint GameClientRevision = 740730;
+    private const uint GameClientRevision = 740872;
     private const string UserAgentValue = "KingsIsle Patcher";
     private const ushort DownloadBufferSize = 4096;
     private static string? _patchServerWorkingUrl;
@@ -23,7 +23,7 @@ public static class PatchServerManager
         if (!GetPatchServerStatus())
             throw new Exception($"Patch server is not available!");
     }
-    
+
     public static bool IsPatchServerAvailable() => GetPatchServerStatus();
 
     public static Wad DownloadWad(string wadName)
@@ -86,7 +86,7 @@ public static class PatchServerManager
             return false;
         }
     }
-    
+
     private static async Task<MemoryStream> DownloadFileStream(string url)
     {
         try
@@ -120,5 +120,5 @@ public static class PatchServerManager
             return null;
         }
     }
- 
+
 }

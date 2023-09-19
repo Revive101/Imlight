@@ -8,17 +8,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Akka.Actor;
+using Imlight.Common.DML;
 using Imlight.Common.Serializable;
+using Imlight.Common.Serializable.Caches;
+using Imlight.Common.Serializable.Secrets;
 using Imlight.Common.Utilities;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
-using Imlight.Server.WizardData;
-using WizUnraveler.Cache;
-using WizUnraveler.DML;
-using WizUnraveler.Secrets;
-using static WizUnraveler.Cache.TypeCache;
-using static WizUnraveler.ObjectProperty.ObjectSerializer;
-using static WizUnraveler.Secrets.ServerTypeCache;
+using static Imlight.Common.Serializable.ObjectSerializer;
+using static Imlight.Common.Serializable.Secrets.ServerTypeCache;
 
 namespace Imlight.Server.Game.Zone;
 
@@ -31,7 +29,7 @@ public class WizardZone : ReceiveProtocolDispatcher
     private readonly uint _dynamicZoneId;
     private readonly IActorRef _objectSupervisorRef;
     private readonly List<Trigger> _triggers;
-    private readonly Dictionary<IActorRef, CoreObject> _zonePlayers;
+    private readonly Dictionary<IActorRef, TypeCache.CoreObject> _zonePlayers;
     private ushort _zoneObjectMobileIdCounter;
 
     // ctor
@@ -39,7 +37,7 @@ public class WizardZone : ReceiveProtocolDispatcher
     {
         ZoneName = zoneName;
         _dynamicZoneId = GenerateDynamicZoneId();
-        _zonePlayers = new Dictionary<IActorRef, CoreObject>();
+        _zonePlayers = new Dictionary<IActorRef, TypeCache.CoreObject>();
         _objectSupervisorRef = CreateObjectSupervisor();
         _triggers = new List<Trigger>();
 
@@ -93,10 +91,10 @@ public class WizardZone : ReceiveProtocolDispatcher
     }
 
     /// <summary>
-    /// Broadcasts the creation of a new <see cref="CoreObject"/> to each player in the zone.
+    /// Broadcasts the creation of a new <see cref="TypeCache.CoreObject"/> to each player in the zone.
     /// </summary>
     /// <param name="obj"></param>
-    private void BroadcastObjectCreation(CoreObject obj)
+    private void BroadcastObjectCreation(TypeCache.CoreObject obj)
     {
         var serializer = new CoreObjectSerializer()
             .WithSerializerFlags(SerializerFlags.None)

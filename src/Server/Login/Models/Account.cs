@@ -10,13 +10,13 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Imlight.Common.Utilities;
-using Imlight.Server.Game.Models;
-using Imlight.Server.WizardData.Implementations;
-using Newtonsoft.Json;
-using BCrypt.Net;
 using Imlight.Common.Configuration;
 using Imlight.Common.Cryptography;
-using Imlight.Server.WizardData;
+using Imlight.Server.Game.Models;
+using Imlight.Server.Shared.WizardData;
+using Imlight.Server.Shared.WizardData.Implementations;
+using Newtonsoft.Json;
+using BCrypt.Net;
 
 namespace Imlight.Server.Login.Models;
 

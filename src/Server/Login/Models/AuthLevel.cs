@@ -3,13 +3,12 @@
  * Proprietary and confidential.
  */
 
-namespace Imlight.Server.Login.Models
+namespace Imlight.Server.Login.Models;
+
+public enum AuthLevel
 {
-    public enum AuthLevel
-    {
-        None,
-        HallMonitor,
-        Developer,
-        Administrator
-    }
+    None,
+    HallMonitor,
+    Developer,
+    Administrator
 }

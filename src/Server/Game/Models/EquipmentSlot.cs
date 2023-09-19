@@ -3,19 +3,18 @@
  * Proprietary and confidential.
  */
 
-namespace Imlight.Server.Game.Models
+namespace Imlight.Server.Game.Models;
+
+public enum EquipmentSlot
 {
-    public enum EquipmentSlot
-    {
-        Hat,
-        Robe,
-        Shoes,
-        Weapon,
-        Anthem,
-        Amulet,
-        Ring,
-        Pet,
-        Mount,
-        Deck
-    }
+    Hat,
+    Robe,
+    Shoes,
+    Weapon,
+    Anthem,
+    Amulet,
+    Ring,
+    Pet,
+    Mount,
+    Deck
 }

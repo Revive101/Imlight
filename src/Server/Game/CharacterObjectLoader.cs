@@ -5,11 +5,11 @@
 
 using System;
 using System.Collections.Generic;
+using Imlight.Common.Serializable.ObjectProperty;
 using Imlight.Common.Utilities;
 using Imlight.Server.Game.Models;
 using Imlight.Server.Shared.Resources;
-using WizUnraveler.ObjectProperty;
-using static WizUnraveler.Cache.TypeCache;
+using static Imlight.Common.Serializable.Caches.TypeCache;
 
 namespace Imlight.Server.Game;
 

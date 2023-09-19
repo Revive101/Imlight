@@ -38,7 +38,7 @@ If a database URL *is* present, _dragon_ requires certificates to be available a
 Imlight comes preequipped with a configuration file at `./Config/Imlight.ini`. A default configuration is built with _Imlight.Backend_:
 ```ini
 [Global Settings]
-GameRevision = 740730
+GameRevision = 740872
 
 [Logging]
 LogPath = ./logs/log.txt

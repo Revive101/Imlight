@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,5 +24,6 @@
   <ItemGroup>
     <ProjectReference Include="..\WizUnraveler\src\WizUnraveler\WizUnraveler.csproj" />
   </ItemGroup>
+
 
 </Project>
