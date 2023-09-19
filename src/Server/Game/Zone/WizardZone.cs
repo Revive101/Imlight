@@ -8,16 +8,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Akka.Actor;
+using Imlight.Common.DML;
 using Imlight.Common.Serializable;
+using Imlight.Common.Serializable.Caches;
+using Imlight.Common.Serializable.Secrets;
 using Imlight.Common.Utilities;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
-using WizUnraveler.Cache;
-using WizUnraveler.DML;
-using WizUnraveler.Secrets;
-using static WizUnraveler.Cache.TypeCache;
-using static WizUnraveler.ObjectProperty.ObjectSerializer;
-using static WizUnraveler.Secrets.ServerTypeCache;
+using static Imlight.Common.Serializable.ObjectSerializer;
+using static Imlight.Common.Serializable.Secrets.ServerTypeCache;
 
 namespace Imlight.Server.Game.Zone;
 
@@ -30,7 +29,7 @@ public class WizardZone : ReceiveProtocolDispatcher
     private readonly uint _dynamicZoneId;
     private readonly IActorRef _objectSupervisorRef;
     private readonly List<Trigger> _triggers;
-    private readonly Dictionary<IActorRef, CoreObject> _zonePlayers;
+    private readonly Dictionary<IActorRef, TypeCache.CoreObject> _zonePlayers;
     private ushort _zoneObjectMobileIdCounter;
 
     // ctor
@@ -38,7 +37,7 @@ public class WizardZone : ReceiveProtocolDispatcher
     {
         ZoneName = zoneName;
         _dynamicZoneId = GenerateDynamicZoneId();
-        _zonePlayers = new Dictionary<IActorRef, CoreObject>();
+        _zonePlayers = new Dictionary<IActorRef, TypeCache.CoreObject>();
         _objectSupervisorRef = CreateObjectSupervisor();
         _triggers = new List<Trigger>();
 
@@ -92,10 +91,10 @@ public class WizardZone : ReceiveProtocolDispatcher
     }
 
     /// <summary>
-    /// Broadcasts the creation of a new <see cref="CoreObject"/> to each player in the zone.
+    /// Broadcasts the creation of a new <see cref="TypeCache.CoreObject"/> to each player in the zone.
     /// </summary>
     /// <param name="obj"></param>
-    private void BroadcastObjectCreation(CoreObject obj)
+    private void BroadcastObjectCreation(TypeCache.CoreObject obj)
     {
         var serializer = new CoreObjectSerializer()
             .WithSerializerFlags(SerializerFlags.None)
@@ -193,19 +192,48 @@ public class WizardZone : ReceiveProtocolDispatcher
         return ++_zoneObjectMobileIdCounter;
     }
 
+    private void SendZoneTransfer(IActorRef suspect, ServerTypeCache.ResTeleport resTeleport)
+    {
+        var msg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER
+        {
+            DestinationZone = resTeleport.m_destinationZone,
+            DestinationLocation = resTeleport.m_destinationLoc,
+            SendToClient = true
+        };
+        suspect.Tell(msg);
+    }
+
+    private void SendDisplayText(IActorRef suspect, ResDisplayText resDisplayText)
+    {
+        var msg = new GAME_5_PROTOCOL.MSG_CLIENTNOTIFYTEXT
+        {
+            NotifyText = resDisplayText.m_text ,
+            Type = resDisplayText.m_type,
+        };
+        suspect.Tell(msg);
+    }
+
+    private void SendPlaySound(IActorRef suspect, ServerTypeCache.ResPlaySound resPlaySound)
+    {
+        // todo: implement
+        var msg = new GAME_5_PROTOCOL.MSG_PLAYSOUND { SoundFilename = resPlaySound.m_soundName };
+        suspect.Tell(msg);
+    }
+
     #region Handlers
     
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]
     private void ReceiveZoneTransfer(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message)
     {
         // This is step 1 of the zone transfer process.
-        // There's nothing we need to do here except for telling the sender the zone details.
-        // We'll be waiting to receive MSG_ADDPLAYER before we do any object creation.
+        // There's nothing we need to do here except for telling the sender the zone details and allocating a dynamic
+        // zone ID for them.
         Sender.Tell(new ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP
         {
             ZoneActorRef = Self,
             DynamicZoneId = _dynamicZoneId,
-            ErrorCode = 0
+            ErrorCode = 0,
+            MobileId = GenerateMobileId()
         });
     }
 
@@ -214,9 +242,10 @@ public class WizardZone : ReceiveProtocolDispatcher
     {
         if (_zonePlayers.ContainsKey(message.Player))
             throw new Exception("Player actor already exists in this zone!");
-        
-        // Generate an ID for this new player that is zone agnostic.
-        message.PlayerObject.m_nMobileID = GenerateMobileId();
+
+        // If the message did not provide a mobile ID, then we need to generate one.
+        if (message.PlayerObject.m_nMobileID == 0)
+            message.PlayerObject.m_nMobileID = GenerateMobileId();
 
         InformZoneObjectsOfJoin(message);
         SpawnPlayersForNewClient(message.Player);
@@ -224,8 +253,10 @@ public class WizardZone : ReceiveProtocolDispatcher
         // Now we add the player, so they don't end up creating themselves when we spawn each zone object.
         _zonePlayers.Add(message.Player, message.PlayerObject);
 
-        // Inform the player that they've been successfully added to the zone.
+        // Inform the player that they've been successfully added to the zone. We want to reply to the callee
+        // and any services that may be waiting for this reply.
         var response = new ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP { PlayerObject = message.PlayerObject };
+        Sender.Tell(response);
         message.Player.Tell(response);
 
         Log.Debug("Player {Name} added to zone {ZoneName}.", 
@@ -346,19 +377,19 @@ public class WizardZone : ReceiveProtocolDispatcher
             return;
         }
 
-        // TODO: For now, we're only supporting the `ResTeleport`.
-        foreach (var trigger in triggers
-                     .Where(t => t.m_results.m_results.FirstOrDefault() is ServerTypeCache.ResTeleport))
+        foreach (var result in triggers.SelectMany(trigger => trigger.m_results.m_results))
         {
-            foreach (var result in trigger.m_results.m_results)
+            switch (result)
             {
-                var msg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER
-                {
-                    ZoneName = ((ServerTypeCache.ResTeleport)result).m_destinationZone,
-                    Location = ((ServerTypeCache.ResTeleport)result).m_destinationLoc,
-                    SendToClient = true
-                };
-                message.Suspect.Tell(msg);
+                case ServerTypeCache.ResTeleport resTeleport:
+                    SendZoneTransfer(message.Suspect, resTeleport);
+                    break;
+                case ServerTypeCache.ResDisplayText resDisplayText:
+                    SendDisplayText(message.Suspect, resDisplayText);
+                    break;
+                case ServerTypeCache.ResPlaySound resPlaySound:
+                    SendPlaySound(message.Suspect, resPlaySound);
+                    break;
             }
         }
 

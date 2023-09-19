@@ -8,16 +8,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Akka.Actor;
+using Imlight.Common.Formats;
+using Imlight.Common.Serializable;
+using Imlight.Common.Serializable.Caches;
 using Imlight.Common.Utilities;
-using Imlight.Server.Database;
 using Imlight.Server.Shared.Packets;
+using Imlight.Server.Shared.Resources;
+using Imlight.Server.Shared.WizardData.Implementations;
+using Imlight.Server.Shared.WizardData.Models;
 using SharpDX;
-using WizUnraveler.Cache;
-using WizUnraveler.Formats;
-using WizUnraveler.IO;
-using static WizUnraveler.Cache.TypeCache;
-using static WizUnraveler.ObjectProperty.ObjectSerializer;
-using static WizUnraveler.Secrets.ServerTypeCache;
+using static Imlight.Common.Serializable.ObjectSerializer;
+using static Imlight.Common.Serializable.Secrets.ServerTypeCache;
 
 namespace Imlight.Server.Game.Zone;
 
@@ -34,16 +35,25 @@ public static class WizardZoneLoader
     private const string TriggerDataFileName = "triggers.xml";
     private const string ResultCollectionName = "zone_triggers";
     private static readonly object LockObject = new();
+    private static readonly List<string> BlacklistedObjectActives = new()
+    {
+        "EditorOnly",
+        "PetOnly",
+    };
 
     private static WizardZone _zone;
     private static IActorRef _zoneActorRef;
     private static Wad _wad;
-    private static WizZoneData _zoneData;
-    private static SpawnManager _spawnData;
-    private static PathManager_PathTemplateList _pathData;
-    private static PathManager_NodeTemplateList _nodeData;
+    private static TypeCache.WizZoneData _zoneData;
+    private static TypeCache.SpawnManager _spawnData;
+    private static TypeCache.PathManager_PathTemplateList _pathData;
+    private static TypeCache.PathManager_NodeTemplateList _nodeData;
     private static WizZoneVolumes _zoneVolumes;
     private static WizZoneTriggers _zoneTriggers;
+    private static WizardZoneData _wizardZoneData;
+    private static bool _retrievedZoneData;
+    private static bool _worldDataRetrievalFailed;
+    private static bool _zoneDataRetrievalFailed;
 
     /// <summary>
     /// Loads the <see cref="WizardZone" /> data from the <see cref="ResourceManager" />.
@@ -56,7 +66,7 @@ public static class WizardZoneLoader
         {
             try
             {
-                _zone = zone;
+                var t= _zone = zone;
                 _zoneActorRef = zoneActorRef;
 
                 if (!ResourceManager.TryLoadFile(zone.ZoneName, out _wad))
@@ -74,7 +84,7 @@ public static class WizardZoneLoader
                 LoadNodeData();
                 LoadVolumeData();
                 LoadTriggerData();
-                CreateZoneGameObjects();
+                CreateZoneCoreObjects();
                 CreateZonePaths();
                 CreateZoneVolumes();
                 CreateZoneTriggers();
@@ -97,7 +107,8 @@ public static class WizardZoneLoader
     private static void LoadZoneData()
     {
         var serializer = new FileSerializer();
-        _zoneData = serializer.OpenClass<WizZoneData>(_wad, ZoneDataFileName);
+        var t = _zoneData = serializer.OpenClass<TypeCache.WizZoneData>(_wad, ZoneDataFileName);
+        
         if (_zoneData is null)
             Log.Error("Zone {ZoneName} could not load {ZoneDataFileName} as it was missing or invalid.",
                 Log.Args(_zone.ZoneName, ZoneDataFileName));
@@ -110,7 +121,7 @@ public static class WizardZoneLoader
     {
         var serializer = new FileSerializer()
             .WithSerializerFlags(SerializerFlags.UseFlags | SerializerFlags.CompactLength | SerializerFlags.StringEnums);
-        _spawnData = serializer.OpenClass<SpawnManager>(_wad, SpawnDataFileName);
+        _spawnData = serializer.OpenClass<TypeCache.SpawnManager>(_wad, SpawnDataFileName);
         if (_spawnData is null)
             Log.Error("Zone {Name} could not load {SpawnDataFileName} as it was missing or invalid.",
                 Log.Args(_zone.ZoneName, SpawnDataFileName));
@@ -122,7 +133,7 @@ public static class WizardZoneLoader
     private static void LoadPathData()
     {
         var serializer = new FileSerializer();
-        _pathData = serializer.OpenClass<PathManager_PathTemplateList>(_wad, PathDataFileName);
+        _pathData = serializer.OpenClass<TypeCache.PathManager_PathTemplateList>(_wad, PathDataFileName);
         if (_pathData is null)
             Log.Error(
                 "Zone {Name} could not load {PathDataFileName} as it was missing or invalid.",
@@ -135,7 +146,7 @@ public static class WizardZoneLoader
     private static void LoadNodeData()
     {
         var serializer = new FileSerializer();
-        _nodeData = serializer.OpenClass<PathManager_NodeTemplateList>(_wad, NodeDataFileName);
+        _nodeData = serializer.OpenClass<TypeCache.PathManager_NodeTemplateList>(_wad, NodeDataFileName);
         if (_nodeData is null)
             Log.Error(
                 "Zone {Name} could not load {NodeDataFileName} as it was missing or invalid.",
@@ -171,17 +182,82 @@ public static class WizardZoneLoader
     /// <summary>
     /// Creates game objects for the zone based on the loaded zone data.
     /// </summary>
-    private static void CreateZoneGameObjects()
+    private static void CreateZoneCoreObjects()
     {
-        foreach (var obj in _zoneData.m_objectList.Where(x => x is not null))
+        foreach (var objectInfo in _zoneData.m_objectList.Where(info => info != null))
         {
-            var newObj = CoreObjectFactory.CreateObjectFromInfo(obj);
-            if (newObj is null)
+            if (!ShouldLoadCoreObject(objectInfo))
+                continue;
+            
+            var template = (TypeCache.GameObjectTemplate)CoreObjectFactory.GetCoreTemplate(objectInfo.m_templateID);
+            var newObject = CoreObjectFactory.CreateObjectFromTemplate(objectInfo, template, objectInfo.m_templateID);
+            if (newObject == null)
                 continue;
 
-            var msg = new ZONE_102_PROTOCOL.MSG_ADDOBJECT { CoreObject = newObj };
-            _zoneActorRef.Tell(msg);
+            var message = new ZONE_102_PROTOCOL.MSG_ADDOBJECT
+            {
+                CoreObject = newObject,
+                Template = template
+            };
+            _zoneActorRef.Tell(message);
         }
+    }
+
+    /// <summary>
+    /// Checks if a given object should be loaded into the zone based on zone and world events.
+    /// </summary>
+    /// <param name="info"></param>
+    /// <returns></returns>
+    private static bool ShouldLoadCoreObject(TypeCache.CoreObjectInfo info)
+    {
+        if (info.m_spawnRequirements is null)
+            return true;
+        
+        var allMatched = info.m_spawnRequirements.m_operator == TypeCache.Requirement.Operator.ROP_OR;
+    
+        foreach (var requirement in info.m_spawnRequirements.m_requirements)
+        {
+            if (requirement is TypeCache.ReqGlobalRegistryValue globalReq)
+            {
+                var globalValue = GlobalRegistry.GetRegistryEntry(globalReq.m_entryName);
+    
+                switch (globalReq.m_operatorType)
+                {
+                    case TypeCache.ReqNumeric.OPERATOR_TYPE.OPERATOR_EQUALS:
+                        allMatched = allMatched && (globalReq.m_numericValue == globalValue);
+                        break;
+                    case TypeCache.ReqNumeric.OPERATOR_TYPE.OPERATOR_LESS_THAN:
+                        allMatched = allMatched && (globalReq.m_numericValue < globalValue);
+                        break;
+                    case TypeCache.ReqNumeric.OPERATOR_TYPE.OPERATOR_LESS_THAN_EQ:
+                        allMatched = allMatched && (globalReq.m_numericValue <= globalValue);
+                        break;
+                    case TypeCache.ReqNumeric.OPERATOR_TYPE.OPERATOR_GREATER_THAN:
+                        allMatched = allMatched && (globalReq.m_numericValue > globalValue);
+                        break;
+                    case TypeCache.ReqNumeric.OPERATOR_TYPE.OPERATOR_GREATER_THAN_EQ:
+                        allMatched = allMatched && (globalReq.m_numericValue >= globalValue);
+                        break;
+                    case TypeCache.ReqNumeric.OPERATOR_TYPE.OPERATOR_UNKNOWN:
+                    default:
+                    {
+                        Log.Error("Zone {ZoneName} contains a spawn requirement that " +
+                                          "references a global registry value that does not exist. " +
+                                          "Entry name: {EntryName}", Log.Args(_zone.ZoneName, globalReq.m_entryName));
+                        break;
+                    }
+                }
+                
+                allMatched = allMatched && !globalReq.m_applyNOT;
+            }
+            else
+            {
+                Log.Warning("Holy!!! We found a spawn requirement that isn't a global registry value. " +
+                            "This is a problem. Let Jooty know.");
+            }
+        }
+    
+        return allMatched;
     }
 
     /// <summary>
@@ -237,31 +313,29 @@ public static class WizardZoneLoader
     }
 
     /// <summary>
-    /// Creates the triggers for the zone based on the loaded trigger data. Trigger result data is loaded from Imlight's
-    /// <see cref="ServerDataBroker"/>.
+    /// Creates the triggers for the zone based on the loaded trigger data.
     /// </summary>
     private static void CreateZoneTriggers()
     {
-        if (_zoneTriggers is null) throw new NullReferenceException(nameof(_zoneTriggers));
+        if (_zoneTriggers is null) 
+            throw new NullReferenceException(nameof(_zoneTriggers));
         
         var zoneName = _zoneData.m_zoneName;
+        var persistentZoneData = ZoneDataCollection.GetZoneData(zoneName);
+        var t = _zoneTriggers;
 
         foreach (var trigger in _zoneTriggers.m_triggers)
         {
-            // Find this trigger's results in the server database.
-            var colName = SanitizeColName($"{ResultCollectionName}/{zoneName}/{trigger.m_triggerName}");
-            var col = ServerDataBroker.GetCollection<TypeCache.Result>(colName);
-
-            if (col.Any())
+            // If there's persistent data associated with this trigger, load it.
+            var persistentTriggerData = persistentZoneData?.Teleports
+                .FirstOrDefault(x => x.TriggerName == trigger.m_triggerName);
+            if (persistentTriggerData is not null)
             {
-                var resultList = new ResultList { m_results = new List<TypeCache.Result>() };
-                resultList.m_results = col.ToList();
+                // Set the trigger results to the results stored in the database.
+                var resultList = new TypeCache.ResultList
+                    { m_results = new List<TypeCache.Result> { persistentTriggerData.Teleport } };
                 trigger.m_results = resultList;
             }
-            
-            // fixme: In the grand scheme, storing a trigger without any result data is wasted space. For now, the
-            // below code remains where it does for debugging purposes. In the way future, it should be added to the 
-            // conditional above.
 
             // Write a message citing the details of this volume, and send a message to the zone.
             var msg = new ZONE_102_PROTOCOL.MSG_ADDTRIGGER { Trigger = trigger };
@@ -274,9 +348,9 @@ public static class WizardZoneLoader
     /// </summary>
     /// <param name="path">The path object template.</param>
     /// <returns>A list of node objects.</returns>
-    private static List<NodeObject> GetNodesForPath(PathObjectTemplate path)
+    private static List<TypeCache.NodeObject> GetNodesForPath(TypeCache.PathObjectTemplate path)
     {
-        var nodeList = new List<NodeObject>();
+        var nodeList = new List<TypeCache.NodeObject>();
         foreach (var id in path.m_nodeIDs)
         {
             var node = _nodeData.m_nodeList.Find(n => n.m_id == id);
@@ -296,9 +370,9 @@ public static class WizardZoneLoader
     /// </summary>
     /// <param name="path">The path object template.</param>
     /// <returns>A list of creature objects.</returns>
-    private static List<SpawnObject> GetCreaturesForPath(PathObjectTemplate path)
+    private static List<TypeCache.SpawnObject> GetCreaturesForPath(TypeCache.PathObjectTemplate path)
     {
-        var creatureList = new List<SpawnObject>();
+        var creatureList = new List<TypeCache.SpawnObject>();
         foreach (var spawnObject in _spawnData.m_spawners)
         {
             var spawnList = spawnObject.m_spawnList;
@@ -320,11 +394,11 @@ public static class WizardZoneLoader
     }
     
     /// <summary>
-    /// Checks to see if all creatures in a <see cref="SpawnItem"/> contain the same path ID.
+    /// Checks to see if all creatures in a <see cref="TypeCache.SpawnItem"/> contain the same path ID.
     /// </summary>
     /// <param name="spawnList">The list of spawns.</param>
     /// <returns>True, if all the creatures are on the same path; false otherwise.</returns>
-    private static bool AllObjectsContainSamePath(IReadOnlyList<SpawnItem> spawnList)
+    private static bool AllObjectsContainSamePath(IReadOnlyList<TypeCache.SpawnItem> spawnList)
     {
         var firstPathId = spawnList[0].m_objectInfo.m_pathID;
         return spawnList.All(x => x.m_objectInfo.m_pathID == firstPathId);
@@ -345,8 +419,17 @@ public static class WizardZoneLoader
         _nodeData = null;
         _zoneVolumes = null;
         _zoneTriggers = null;
+        _retrievedZoneData = false;
+        _wizardZoneData = null;
+        _zoneDataRetrievalFailed = false;
+        _worldDataRetrievalFailed = false;
     }
     
+    /// <summary>
+    /// Sanitizes a column name for use in the database.
+    /// </summary>
+    /// <param name="colName"></param>
+    /// <returns></returns>
     private static string SanitizeColName(string colName)
     {
         // Use regular expression to remove any character that isn't an alphabet character or an underscore.

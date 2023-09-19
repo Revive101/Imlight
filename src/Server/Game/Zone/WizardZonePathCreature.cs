@@ -7,11 +7,10 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Akka.Actor;
+using Imlight.Common.Serializable.Caches;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
 using SharpDX;
-using WizUnraveler.Cache;
-using static WizUnraveler.Cache.TypeCache;
 
 namespace Imlight.Server.Game.Zone;
 
@@ -24,16 +23,17 @@ public class WizardZonePathCreature : WizardZoneObject
     private const float MovementIntervalPerSecond = 0.433f;
     
     private readonly CancellationTokenSource _cancelToken;
-    private readonly NodeObject[] _nodes;
+    private readonly TypeCache.NodeObject[] _nodes;
     private byte _targetNodeIndex;
 
     // ctor
     public WizardZonePathCreature(
-        CoreObject activeGameObject,
-        NodeObject[] nodes,
+        TypeCache.CoreObject activeGameObject,
+        TypeCache.CoreTemplate template,
+        TypeCache.NodeObject[] nodes,
         byte startingNodeIndex,
         IActorRef wizardZoneRef)
-        : base(activeGameObject, wizardZoneRef)
+        : base(activeGameObject, template, wizardZoneRef)
     {
         _nodes = nodes;
         _cancelToken = new CancellationTokenSource();
@@ -46,13 +46,14 @@ public class WizardZonePathCreature : WizardZoneObject
 
     // Akka.NET ctor
     public static Props Props(
-        CoreObject activeGameObject,
-        NodeObject[] nodes,
+        TypeCache.CoreObject activeGameObject,
+        TypeCache.CoreTemplate template,
+        TypeCache.NodeObject[] nodes,
         byte startingNodeIndex,
         IActorRef wizardZoneRef)
     {
         return Akka.Actor.Props.Create(()
-            => new WizardZonePathCreature(activeGameObject, nodes, startingNodeIndex, wizardZoneRef));
+            => new WizardZonePathCreature(activeGameObject, template, nodes, startingNodeIndex, wizardZoneRef));
     }
 
     /// <summary>
@@ -115,7 +116,7 @@ public class WizardZonePathCreature : WizardZoneObject
     /// <summary>
     /// Broadcasts the movement of the mob to the players in the zone.
     /// </summary>
-    private async Task BroadcastMovement(NodeObject targetNode)
+    private async Task BroadcastMovement(TypeCache.NodeObject targetNode)
     {
         var msg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST
         {
@@ -135,7 +136,7 @@ public class WizardZonePathCreature : WizardZoneObject
     /// <summary>
     /// Updates the position of the game object.
     /// </summary>
-    private void UpdateGameObjectPosition(NodeObject targetNode)
+    private void UpdateGameObjectPosition(TypeCache.NodeObject targetNode)
     {
         ActiveGameObject.m_location = new Vector3(
             targetNode.m_location.X,

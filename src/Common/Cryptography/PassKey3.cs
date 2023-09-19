@@ -10,33 +10,28 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Security.Cryptography;
 
-namespace Imlight.Common.Cryptography
+namespace Imlight.Common.Cryptography;
+
+public static class PassKey3
 {
-    public static class PassKey3
+    public static string EncodePK3(string input, ushort sessionID, uint timeSecs, uint timeMillis)
     {
-        public static string EncodePK3(string input, ushort sessionID, uint timeSecs, uint timeMillis)
-        {
-            // Convert input string to bytes so we can actually work with it.
-            var encoding = Encoding.UTF8;
-            var inputBytes = encoding.GetBytes(input);
+        using var sha512 = SHA512.Create();
+        var bytes = Encoding.UTF8.GetBytes(input);
+        sha512.TransformBlock(bytes, 0, bytes.Length, null, 0);
 
-            using (var sha512 = SHA512.Create())
-            {
-                var firstHash = sha512.ComputeHash(inputBytes);
+        var sessionInfoBytes = Encoding.UTF8.GetBytes($"{sessionID}{timeSecs}{timeMillis}");
+        sha512.TransformFinalBlock(sessionInfoBytes, 0, sessionInfoBytes.Length);
 
-                // Add salt to our soup!
-                var salt = encoding.GetBytes($"{sessionID}{timeSecs}{timeMillis}");
-                var state = sha512.ComputeHash(firstHash.Concat(salt).ToArray());
+        var passkey3Bytes = sha512.Hash;
+        var passkey3 = Convert.ToBase64String(passkey3Bytes);
 
-                // Convert to 64 again and return.
-                return Convert.ToBase64String(state);
-            }
-        }
+        return passkey3;
+    }
 
-        public static bool VerifyPK3(string input, ushort sessionID, uint timeSecs, uint timeMillis, string encodedString)
-        {
-            var expectedEncodedString = EncodePK3(input, sessionID, timeSecs, timeMillis);
-            return encodedString == expectedEncodedString;
-        }
+    public static bool VerifyPK3(string input, ushort sessionID, uint timeSecs, uint timeMillis, string encodedString)
+    {
+        var expectedEncodedString = EncodePK3(input, sessionID, timeSecs, timeMillis);
+        return encodedString == expectedEncodedString;
     }
 }

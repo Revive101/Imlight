@@ -1,12 +1,9 @@
 using Akka.Actor;
 using Imlight.Common.Serializable;
+using Imlight.Common.Serializable.Caches;
 using Imlight.Common.Utilities;
-using Imlight.Server.Database;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
-using WizUnraveler.Cache;
-using WizUnraveler.ObjectProperty;
-using static WizUnraveler.Cache.TypeCache;
 
 namespace Imlight.Server.Game.Zone;
 
@@ -15,29 +12,22 @@ namespace Imlight.Server.Game.Zone;
 /// </summary>
 public class WizardZoneObject : ReceiveProtocolDispatcher
 {
-    protected readonly CoreObject ActiveGameObject;
-    protected readonly CoreTemplate Template;
+    protected readonly TypeCache.CoreObject ActiveGameObject;
+    protected readonly TypeCache.CoreTemplate Template;
     protected readonly IActorRef WizardZoneRef;
     
     // ctor
-    public WizardZoneObject(CoreObject activeGameObject, IActorRef wizardZoneRef)
+    public WizardZoneObject(TypeCache.CoreObject activeGameObject, TypeCache.CoreTemplate template, IActorRef wizardZoneRef)
     {
         this.ActiveGameObject = activeGameObject;
+        this.Template = template;
         this.WizardZoneRef = wizardZoneRef;
-
-        if (activeGameObject.m_templateID == 0)
-        {
-            Log.Warning("{WizardZoneObject} {ActiveGameObjectMDebugName} was loaded with a template ID of 0.", 
-                Log.Args(nameof(WizardZoneObject), activeGameObject.m_debugName));
-            return;
-        }
-        this.Template = CoreObjectFactory.GetCoreTemplate(activeGameObject.m_templateID);
     }
     
     // Akka.NET ctor
-    public static Props Props(CoreObject activeGameObject, IActorRef wizardZoneRef)
+    public static Props Props(TypeCache.CoreObject activeGameObject, TypeCache.CoreTemplate template, IActorRef wizardZoneRef)
     {
-        return Akka.Actor.Props.Create(() => new WizardZoneObject(activeGameObject, wizardZoneRef));
+        return Akka.Actor.Props.Create(() => new WizardZoneObject(activeGameObject, template, wizardZoneRef));
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]

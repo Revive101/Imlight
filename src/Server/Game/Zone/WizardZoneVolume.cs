@@ -5,30 +5,30 @@
 
 using System.Collections.Generic;
 using Akka.Actor;
+using Imlight.Common.Serializable.Caches;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
-using static WizUnraveler.Cache.TypeCache;
-using static WizUnraveler.Secrets.ServerTypeCache;
+using static Imlight.Common.Serializable.Secrets.ServerTypeCache;
 
 namespace Imlight.Server.Game.Zone;
 
 public class WizardZoneVolume : WizardZoneObject
 {
     private readonly Volume _volume;
-    private readonly List<CoreObject> _objsInRadius;
+    private readonly List<TypeCache.CoreObject> _objsInRadius;
 
     // ctor
-    public WizardZoneVolume(CoreObject activeGameObject, IActorRef wizardZoneRef, Volume volume) 
-        : base(activeGameObject, wizardZoneRef)
+    public WizardZoneVolume(TypeCache.CoreObject activeGameObject, TypeCache.CoreTemplate template, IActorRef wizardZoneRef, Volume volume) 
+        : base(activeGameObject, template, wizardZoneRef)
     {
         this._volume = volume;
-        this._objsInRadius = new List<CoreObject>();
+        this._objsInRadius = new List<TypeCache.CoreObject>();
     }
     
     // Akka.NET ctor
-    public static Props Props(CoreObject activeGameObject, IActorRef wizardZoneRef, Volume volume)
+    public static Props Props(TypeCache.CoreObject activeGameObject, TypeCache.CoreTemplate template, IActorRef wizardZoneRef, Volume volume)
     {
-        return Akka.Actor.Props.Create(() => new WizardZoneVolume(activeGameObject, wizardZoneRef, volume));
+        return Akka.Actor.Props.Create(() => new WizardZoneVolume(activeGameObject, template, wizardZoneRef, volume));
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_TRIGGERQUERY))]
@@ -87,7 +87,7 @@ public class WizardZoneVolume : WizardZoneObject
         _objsInRadius.RemoveAll(x => x.m_globalID == message.GlobalId);
     }
 
-    private bool IsInRadius(CoreObject obj1)
+    private bool IsInRadius(TypeCache.CoreObject obj1)
     {
         var sqrtDist = (obj1.m_location - ActiveGameObject.m_location).LengthSquared();
         var sqrtRadius = _volume.m_radius * _volume.m_radius;

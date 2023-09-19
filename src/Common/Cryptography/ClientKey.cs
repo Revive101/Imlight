@@ -7,81 +7,85 @@ using System;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using Imlight.Common.IO;
 
-namespace Imlight.Common.Cryptography
+namespace Imlight.Common.Cryptography;
+
+public static class ClientKey
 {
-    public static class ClientKey
+    /// <summary>
+    /// Constructs a new salted ClientKey1 hash.
+    /// </summary>
+    /// <param name="input"></param>
+    /// <param name="sessionID"></param>
+    /// <param name="timeSecs"></param>
+    /// <param name="timeMillis"></param>
+    /// <returns></returns>
+    public static string HaskCK1(string input, ushort sessionID, uint timeSecs, uint timeMillis)
     {
-        /// <summary>
-        /// Constructs a new salted ClientKey1 hash.
-        /// </summary>
-        /// <param name="input"></param>
-        /// <param name="sessionID"></param>
-        /// <param name="timeSecs"></param>
-        /// <param name="timeMillis"></param>
-        /// <returns></returns>
-        public static string EncodeCK1(string input, ushort sessionID, uint timeSecs, uint timeMillis)
-        {
-            var passwordHash = HashPassword(input);
+        var passwordHash = HashPassword(input);
 
-            var salt = $"{sessionID}{timeSecs}{timeMillis}";
-            return SecondaryEncrypt(passwordHash, salt);
-        }
+        var salt = $"{sessionID}{timeSecs}{timeMillis}";
+        return SecondaryEncrypt(passwordHash, salt);
+    }
         
-        /// <summary>
-        /// Verify a ClientKey1 hash against an input.
-        /// </summary>
-        /// <param name="input"></param>
-        /// <param name="sessionID"></param>
-        /// <param name="timeSecs"></param>
-        /// <param name="timeMillis"></param>
-        /// <param name="encodedString"></param>
-        /// <returns></returns>
-        public static bool VerifyCK1(string input, ushort sessionID, uint timeSecs, uint timeMillis, string encodedString)
-        {
-            var expectedEncodedString = EncodeCK1(input, sessionID, timeSecs, timeMillis);
-            return encodedString == expectedEncodedString;
-        }
+    /// <summary>
+    /// Verify a ClientKey1 hash against an input.
+    /// </summary>
+    /// <param name="input"></param>
+    /// <param name="sessionID"></param>
+    /// <param name="timeSecs"></param>
+    /// <param name="timeMillis"></param>
+    /// <param name="encodedString"></param>
+    /// <returns></returns>
+    public static bool VerifyCK1(string input, ushort sessionID, uint timeSecs, uint timeMillis, string encodedString)
+    {
+        // Do not do the first pass.
+        var salt = $"{sessionID}{timeSecs}{timeMillis}";
+        var secondPass = SecondaryEncrypt(input, salt);
 
-        /// <summary>
-        /// Constructs a new salted ClientKey2 hash. This is used to validate a player's game client after their patcher closes.
-        /// </summary>
-        /// <param name="input"></param>
-        /// <param name="sessionID"></param>
-        /// <param name="timeSecs"></param>
-        /// <param name="timeMillis"></param>
-        /// <returns></returns>
-        public static string EncodeCK2(ushort sessionID, uint timeSecs, uint timeMillis)
-        {
-            using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
-            {
-                byte[] tokenData = new byte[32];
-                rng.GetBytes(tokenData);
+        return encodedString == secondPass;
+    }
 
-                string sessionHash = Convert.ToBase64String(tokenData);
-                string salt = $"{timeMillis}{timeSecs}{sessionID}";
+    /// <summary>
+    /// Constructs a new salted session key hash.
+    /// </summary>
+    /// <param name="sessionId"></param>
+    /// <param name="offerSeconds"></param>
+    /// <param name="offerMilli"></param>
+    /// <returns></returns>
+    public static ByteString HashSessionKey(ushort sessionId, uint offerSeconds, uint offerMilli)
+    {
+        // Generate a cryptographically safe number.
+        using var rng = new RNGCryptoServiceProvider();
+        var randomBytes = new byte[4];
+        rng.GetBytes(randomBytes);
+        var randomNum = BitConverter.ToInt32(randomBytes, 0);
+        randomNum = Math.Abs(randomNum);
 
-                return SecondaryEncrypt(sessionHash, salt);
-            }
-        }
+        var combinedData = $"{randomNum}{sessionId}{offerSeconds}{offerMilli}";
+        var dataBytes = Encoding.UTF8.GetBytes(combinedData);
+        var hashBytes = SHA256.HashData(dataBytes);
 
-        private static string HashPassword(string password)
-        {
-            using var sha512 = SHA512.Create();
-            byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
+        return Convert.ToBase64String(hashBytes);
+    }
 
-            return Convert.ToBase64String(sha512.ComputeHash(passwordBytes));
-        }
+    private static string HashPassword(string password)
+    {
+        using var sha512 = SHA512.Create();
+        var passwordBytes = Encoding.UTF8.GetBytes(password);
 
-        public static string SecondaryEncrypt(string password, string seed)
-        {
-            using var sha512 = SHA512.Create();
-            byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
-            byte[] seedBytes = Encoding.UTF8.GetBytes(seed);
+        return Convert.ToBase64String(sha512.ComputeHash(passwordBytes));
+    }
 
-            byte[] hash = sha512.ComputeHash(passwordBytes.Concat(seedBytes).ToArray());
+    public static string SecondaryEncrypt(string password, string seed)
+    {
+        using var sha512 = SHA512.Create();
+        var passwordBytes = Encoding.UTF8.GetBytes(password);
+        var seedBytes = Encoding.UTF8.GetBytes(seed);
 
-            return Convert.ToBase64String(hash);
-        }
+        var hash = sha512.ComputeHash(passwordBytes.Concat(seedBytes).ToArray());
+
+        return Convert.ToBase64String(hash);
     }
 }

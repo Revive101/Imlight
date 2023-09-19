@@ -9,12 +9,12 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Akka.Actor;
-using Imlight.Server.Database;
+using Imlight.Common.IO;
+using Imlight.Common.Serializable.Caches;
+using Imlight.Common.Serializable.ObjectProperty;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
-using WizUnraveler.IO;
-using WizUnraveler.ObjectProperty;
-using static WizUnraveler.Cache.TypeCache;
+using Imlight.Server.Shared.Resources;
 
 #pragma warning disable CS4014
 
@@ -39,10 +39,10 @@ public class WizardZonePath : ReceiveProtocolDispatcher
     private readonly List<IActorRef> _creatures;
     private readonly CancellationTokenSource _cancelToken;
     private readonly Dictionary<GID, byte> _creatureCount;
-    private readonly List<SpawnObject> _creatureSpawnData;
+    private readonly List<TypeCache.SpawnObject> _creatureSpawnData;
 
     // The the value represents if the NodeObject is available.
-    private readonly Dictionary<NodeObject, bool> _nodes;
+    private readonly Dictionary<TypeCache.NodeObject, bool> _nodes;
     private readonly IActorRef _zoneActorRef;
 
     // ctor
@@ -57,8 +57,8 @@ public class WizardZonePath : ReceiveProtocolDispatcher
     public WizardZonePath(
         GID id,
         ByteString name,
-        List<NodeObject> nodes,
-        List<SpawnObject> creatures,
+        List<TypeCache.NodeObject> nodes,
+        List<TypeCache.SpawnObject> creatures,
         IActorRef zoneActorRef)
     {
         this.Id = id;
@@ -86,8 +86,8 @@ public class WizardZonePath : ReceiveProtocolDispatcher
     public static Props Props(
         GID id,
         ByteString name,
-        List<NodeObject> nodes,
-        List<SpawnObject> creatures,
+        List<TypeCache.NodeObject> nodes,
+        List<TypeCache.SpawnObject> creatures,
         IActorRef zoneActorRef)
     {
         return Akka.Actor.Props.Create(() => new WizardZonePath(id, name, nodes, creatures, zoneActorRef));
@@ -106,11 +106,15 @@ public class WizardZonePath : ReceiveProtocolDispatcher
     /// Performs the creature spawning at a specified interval.
     /// </summary>
     /// <param name="spawnObject">The spawn object containing information about the creature to be spawned.</param>
-    private async Task DoCreatureSpawnInterval(SpawnObject spawnObject)
+    private async Task DoCreatureSpawnInterval(TypeCache.SpawnObject spawnObject)
     {
         _creatureCount.Add(spawnObject.m_id, 0);
 
         SpawnAllCreatures(spawnObject);
+
+        // If the spawn time is 0, then we don't need to spawn creatures on an interval.
+        if (spawnObject.m_spawnTime <= 0)
+            return;
 
         var hasRun = false;
         while (!_cancelToken.IsCancellationRequested)
@@ -137,7 +141,7 @@ public class WizardZonePath : ReceiveProtocolDispatcher
     /// </summary>
     /// <param name="spawnObject">The spawn object representing the creature.</param>
     /// <returns><c>true</c> if a creature can be spawned, <c>false</c> otherwise.</returns>
-    private bool CanSpawn(SpawnObject spawnObject)
+    private bool CanSpawn(TypeCache.SpawnObject spawnObject)
     {
         if (!_creatureCount.TryGetValue(spawnObject.m_id, out var count))
             throw new Exception("Somehow, this SpawnObject was not found in the creature count dictionary?");
@@ -156,7 +160,7 @@ public class WizardZonePath : ReceiveProtocolDispatcher
     /// </summary>
     /// <param name="spawnItems">The list of spawn items to choose from.</param>
     /// <returns>The selected spawn item.</returns>
-    private SpawnItem PickRandomSpawnObject(List<SpawnItem> spawnItems)
+    private TypeCache.SpawnItem PickRandomSpawnObject(List<TypeCache.SpawnItem> spawnItems)
     {
         var rng = new Random();
         var rngNum = rng.Next(0, 100);
@@ -176,19 +180,20 @@ public class WizardZonePath : ReceiveProtocolDispatcher
     /// Spawns a creature based on the given spawn object information.
     /// </summary>
     /// <param name="spawnInfo">The spawn object information of the creature to be spawned.</param>
-    private void SpawnCreature(SpawnObjectInfo spawnInfo)
+    private void SpawnCreature(TypeCache.SpawnObjectInfo spawnInfo)
     {
         var spawnNode = GetRelevantNode(spawnInfo);
         var nodeIndex = _nodes.Keys.ToList().IndexOf(spawnNode);
         _nodes[spawnNode] = false;
 
-        var newObj = CoreObjectFactory.CreateObjectFromInfo(spawnInfo);
+        var template = CoreObjectFactory.GetCoreTemplate(spawnInfo.m_templateID);
+        var newObj = CoreObjectFactory.CreateObjectFromTemplate(spawnInfo, template, spawnInfo.m_templateID);
         if (newObj is null)
             throw new NullReferenceException();
         newObj.m_location = spawnNode.m_location;
 
         var nodes = _nodes.Keys.ToArray();
-        var props = WizardZonePathCreature.Props(newObj, nodes, (byte)nodeIndex, _zoneActorRef);
+        var props = WizardZonePathCreature.Props(newObj, template, nodes, (byte)nodeIndex, _zoneActorRef);
         var actorRef = Context.ActorOf(props);
         _creatures.Add(actorRef);
 
@@ -204,7 +209,7 @@ public class WizardZonePath : ReceiveProtocolDispatcher
     /// Spawns all creatures associated with a spawn object.
     /// </summary>
     /// <param name="spawnObject">The spawn object representing the creatures.</param>
-    private void SpawnAllCreatures(SpawnObject spawnObject)
+    private void SpawnAllCreatures(TypeCache.SpawnObject spawnObject)
     {
         foreach (var spawn in spawnObject.m_spawnList) SpawnCreature(spawn.m_objectInfo);
     }
@@ -214,24 +219,24 @@ public class WizardZonePath : ReceiveProtocolDispatcher
     /// </summary>
     /// <param name="spawnInfo">The spawn object information.</param>
     /// <returns>The relevant node for spawning.</returns>
-    private NodeObject GetRelevantNode(SpawnObjectInfo spawnInfo)
+    private TypeCache.NodeObject GetRelevantNode(TypeCache.SpawnObjectInfo spawnInfo)
     {
         switch (spawnInfo.m_kStartNodeType)
         {
-            case SpawnObjectInfo.StartNodeType.SNT_RANDOM:
+            case TypeCache.SpawnObjectInfo.StartNodeType.SNT_RANDOM:
                 var rng = new Random();
                 var rngIndex = rng.Next(0, _nodes.Count);
                 return _nodes.ElementAt(rngIndex).Key;
-            case SpawnObjectInfo.StartNodeType.SNT_RANDOM_UNIQUE:
+            case TypeCache.SpawnObjectInfo.StartNodeType.SNT_RANDOM_UNIQUE:
                 var selection = _nodes.Where(x => x.Value).ToArray();
                 var rng2 = new Random();
                 var rngIndex2 = rng2.Next(0, selection.Length);
                 return _nodes.ElementAt(rngIndex2).Key;
-            case SpawnObjectInfo.StartNodeType.SNT_FIRST:
+            case TypeCache.SpawnObjectInfo.StartNodeType.SNT_FIRST:
                 return _nodes.First().Key;
-            case SpawnObjectInfo.StartNodeType.SNT_LAST:
+            case TypeCache.SpawnObjectInfo.StartNodeType.SNT_LAST:
                 return _nodes.Last().Key;
-            case SpawnObjectInfo.StartNodeType.SNT_SPECIFIC:
+            case TypeCache.SpawnObjectInfo.StartNodeType.SNT_SPECIFIC:
                 return _nodes.FirstOrDefault().Key;
             default:
                 throw new ArgumentOutOfRangeException(nameof(spawnInfo.m_kStartNodeType),
@@ -244,7 +249,7 @@ public class WizardZonePath : ReceiveProtocolDispatcher
     /// Increments the creature count for a spawn object.
     /// </summary>
     /// <param name="spawnObject">The spawn object.</param>
-    private void IncrementCreatureCount(SpawnObject spawnObject)
+    private void IncrementCreatureCount(TypeCache.SpawnObject spawnObject)
     {
         _creatureCount[spawnObject.m_id]++;
     }

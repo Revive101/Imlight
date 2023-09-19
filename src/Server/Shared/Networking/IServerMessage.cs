@@ -3,11 +3,10 @@
  * Proprietary and confidential.
  */
 
-namespace Imlight.Server.Shared.Networking
+namespace Imlight.Server.Shared.Networking;
+
+public interface IServerMessage
 {
-    public interface IServerMessage
-    {
-        public byte MessageOrder { get; }
-        public byte ServiceID { get; }
-    }
+    public byte MessageOrder { get; }
+    public byte ServiceID { get; }
 }
