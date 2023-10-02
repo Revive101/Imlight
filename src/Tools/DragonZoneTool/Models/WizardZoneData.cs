@@ -3,6 +3,8 @@
  * Proprietary and confidential.
  */
 
+using Imlight.Common.Serializable.Secrets;
+
 namespace DragonZoneTool.Models;
 
 public class WizardZoneData
