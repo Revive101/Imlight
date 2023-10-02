@@ -9,9 +9,10 @@ using FuzzySharp;
 using Imlight.Common.Formats;
 using Imlight.Common.Serializable;
 using Imlight.Common.Serializable.Caches;
+using Imlight.Common.Serializable.Secrets;
 using Serilog;
+using Serilog.Core;
 using Spectre.Console;
-using static DragonZoneTool.Models.ServerTypeCache;
 
 namespace DragonZoneTool;
 
@@ -28,6 +29,36 @@ public static class Program
     {
         if (!AreAllResourcesAvailable())
             return;
+
+        Console.WriteLine("Connect to Imlight? (y/n)");
+        var userSettingsInput = Console.ReadLine();
+        if (userSettingsInput is null)
+            return;
+
+        if (userSettingsInput == "y")
+        {
+            DragonDatabaseManager.SetRemoteServer("https://a.worlddata.ravendb.community", "input/worlddata.dev.certificate.pfx");
+        }
+        else
+        {
+
+            Console.WriteLine("Enter the remote database URL, or a local path to an embedded database:");
+            var userDatabaseInput = Console.ReadLine();
+            if (userDatabaseInput is null)
+                return;
+            if (userDatabaseInput.StartsWith("http"))
+            {
+                Console.WriteLine("Using remote database. Enter the path to your certificate:");
+                var userCertificateInput = Console.ReadLine();
+                if (userCertificateInput is null)
+                    return;
+                DragonDatabaseManager.SetRemoteServer(userDatabaseInput, userCertificateInput);
+            }
+            else
+            {
+                DragonDatabaseManager.SetEmbeddedServer(userDatabaseInput);
+            }
+        }
         
         // Start the WAD input process.
         var workingKiwad = DoWadInput();
@@ -54,7 +85,7 @@ public static class Program
         }
     }
 
-    private static Trigger? DoTriggerInput(Wad wad)
+    private static ServerTypeCache.Trigger? DoTriggerInput(Wad wad)
     {
         // Get the triggers contained in this KIWAD, then format them for the user.
         // If a trigger has an existing teleport, mark it with a checkmark.
@@ -154,10 +185,10 @@ public static class Program
         }
     }
     
-    private static IEnumerable<Trigger>? GetWadTriggers(Wad wad)
+    private static IEnumerable<ServerTypeCache.Trigger>? GetWadTriggers(Wad wad)
     {
         var fs = new FileSerializer();
-        var triggers = fs.OpenClass<WizZoneTriggers>(wad, TriggerDataFileName);
+        var triggers = fs.OpenClass<ServerTypeCache.WizZoneTriggers>(wad, TriggerDataFileName);
 
         return triggers?.m_triggers?
             .Where(trigger => trigger.m_results?.m_results != null)
@@ -165,7 +196,7 @@ public static class Program
             .ToArray();
     }
     
-    private static List<string> FormatTriggers(string zoneName, ref IEnumerable<Trigger> triggers)
+    private static List<string> FormatTriggers(string zoneName, ref IEnumerable<ServerTypeCache.Trigger> triggers)
     {
         var zoneData = DragonDatabaseManager.GetZoneData(zoneName);
         if (zoneData is null)
@@ -188,7 +219,7 @@ public static class Program
         return fs.OpenClass<TypeCache.WizZoneData>(wad, ZoneDataFileName).m_locationList;
     }
     
-    private static ResTeleport RebuildZoneTransferResult(string zoneName, string triggerName)
+    private static ServerTypeCache.ResTeleport RebuildZoneTransferResult(string zoneName, string triggerName)
     {
         AnsiConsole.MarkupLine("\n[underline]Now begins the process of rebuilding the [bold]ResTeleport[/] type.[/]");
         AnsiConsole.MarkupLine("Write the name of the destination zone:");
@@ -216,7 +247,7 @@ public static class Program
         panel.Border = BoxBorder.Rounded;
         AnsiConsole.Write(panel);
 
-        var result = new ResTeleport
+        var result = new ServerTypeCache.ResTeleport
         {
             m_destinationZone = destinationWad.Name,
             m_destinationLoc = destinationCoords
@@ -249,7 +280,7 @@ public static class Program
         }
         catch (Exception ex)
         {
-            Log.Fatal("Some resource was not available: {Ex}", ex.Message);
+            Console.WriteLine("Some resource was not available: {Ex}", ex.Message);
             return false;
         }
 
