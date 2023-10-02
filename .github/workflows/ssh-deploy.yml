@@ -33,16 +33,16 @@ jobs:
         SSH_PRIVATE_KEY: ${{ secrets.REMOTE_SSH_KEY }}
         SSH_USERNAME: ${{ secrets.REMOTE_USER }}
         SSH_HOSTNAME: ${{ secrets.REMOTE_HOST }}   
-    - name: Install .NET Core on the server
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.REMOTE_HOST }}
-        username: ${{ secrets.REMOTE_USER }}
-        key: ${{ secrets.REMOTE_SSH_KEY }}
-        port: 22
-        script: |
-          sudo apt-get update
-          sudo apt-get install -y dotnet-runtime-7.0
+    #- name: Install .NET Core on the server
+    #  uses: appleboy/ssh-action@master
+    #  with:
+    #    host: ${{ secrets.REMOTE_HOST }}
+    #    username: ${{ secrets.REMOTE_USER }}
+    #    key: ${{ secrets.REMOTE_SSH_KEY }}
+    #    port: 22
+    #    script: |
+    #      sudo apt-get update
+    #      sudo apt-get install -y dotnet-runtime-7.0
     - name: Run the application on the server
       uses: appleboy/ssh-action@master
       with:
