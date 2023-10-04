@@ -37,8 +37,7 @@ public abstract class Server : ReceiveProtocolDispatcher
         this._factoryProps = factoryProps;
 
         // Get outside IP.
-        //this.Ip = new HttpClient().GetStringAsync("https://api.ipify.org/").Result;
-        this.Ip = "127.0.0.1";
+        this.Ip = new HttpClient().GetStringAsync("https://api.ipify.org/").Result;
 
         CreateTcpListener();
         _actorFactoryRef = CreateActorFactory();
