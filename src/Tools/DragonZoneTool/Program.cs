@@ -30,7 +30,7 @@ public static class Program
         if (!AreAllResourcesAvailable())
             return;
 
-        Console.WriteLine("Connect to Imlight? (y/n)");
+        Console.Write("Connect to Imlight? (y/n) ");
         var userSettingsInput = Console.ReadLine();
         if (userSettingsInput is null)
             return;
@@ -241,7 +241,7 @@ public static class Program
         var panel = new Panel(
             $"Source Zone: {zoneName}\n" +
             $"Source Trigger: {triggerName}\n" +
-            $"Destination Zone: {zoneName}\n" +
+            $"Destination Zone: {destinationWad.Name}\n" +
             $"Destination Location: {destinationCoords}\n");
         panel.Header = new PanelHeader("ResTeleport");
         panel.Border = BoxBorder.Rounded;
