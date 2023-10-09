@@ -65,9 +65,11 @@ public class SessionActor : ReceiveActor, IDisposable
         {
             typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVE),
             typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVESTATE),
+            typeof(GAME_5_PROTOCOL.MSG_MOVESTATE),
             typeof(GAME_5_PROTOCOL.MSG_SERVERMOVE),
             typeof(GAME_5_PROTOCOL.MSG_NEWOBJECT),
             typeof(GAME_5_PROTOCOL.MSG_REMOVEOBJECT),
+            typeof(LOGIN_7_PROTOCOL.MSG_LOGIN_NOT_AFK)
         };
 
         // To get the actor factory reference, we'll ask the server.
