@@ -38,8 +38,8 @@ public class ChatService : MessageService
         var src = CraftSourceNameFromIndices(nameIndices, gender);
             
         // Remove the '\f' character from the message.
-        var logMessage = message.Message.ToString()?.Replace(@"\f", "");
-        Log.Information($"User says in chat: {logMessage}");
+        var logMessage = message.Message.ToString()?.Replace(@"\f", "")?.Replace(@"\n", "")[1..];
+        Log.Information($"{SessionActor.SessionID} says in chat: {logMessage}");
 
         // Broadcast the message to the zone.
         var msg = new GAME_5_PROTOCOL.MSG_RADIALCHAT
