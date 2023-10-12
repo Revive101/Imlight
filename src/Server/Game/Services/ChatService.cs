@@ -11,6 +11,9 @@ using Imlight.Common.Serializable.Caches;
 using Imlight.Common.Utilities;
 using Imlight.Server.Shared.Networking;
 using Imlight.Server.Shared.Packets;
+using Imlight.Server.Game.Models;
+using Imlight.Server.Login.Models;
+using Imlight.Server.Shared.WizardData.Implementations;
 
 namespace Imlight.Server.Game.Services;
 
@@ -37,9 +40,18 @@ public class ChatService : MessageService
         var gender = character.WizardAvatar.m_eGender;
         var src = CraftSourceNameFromIndices(nameIndices, gender);
             
-        // Remove the '\f' character from the message.
-        var logMessage = message.Message.ToString()?.Replace(@"\f", "")?.Replace(@"\n", "")[1..];
-        Log.Information($"{SessionActor.SessionID} says in chat: {logMessage}");
+        // Remove the '\f', '\n', '\0' character from the message.
+        var cleanedMessage = message.Message.ToString()?.Replace(@"\f", "")?.Replace("\n", "")?.Replace("\0", "")[1..];
+
+        // Parse in-game chat commands. Do not broadcast it to the zone.
+        if (cleanedMessage.StartsWith('/'))
+        {
+            Log.Information($"{SessionActor.SessionID} used QA command: {cleanedMessage}");
+            ParseQAChatCommand(cleanedMessage, character);
+            return;
+        }
+
+        Log.Information($"{SessionActor.SessionID} says in chat: {cleanedMessage}");
 
         // Broadcast the message to the zone.
         var msg = new GAME_5_PROTOCOL.MSG_RADIALCHAT
@@ -129,5 +141,31 @@ public class ChatService : MessageService
         tail = newMsb + tail.Substring(2);
 
         return DataManipulation.SpacedHexStringToBytes(tail);
+    }
+
+    private void ParseQAChatCommand(string input, Character character)
+    {
+        // Get account from character and check authorization level.
+        var account = AccountCollection.GetAccount(character.AccountId);
+        if (account.AuthLevel < AuthLevel.Administrator)
+            return;
+
+        // Parse the command.
+        var command = input.Split(' ');
+        switch (command[0])
+        {
+            case "/port":
+                var msg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER()
+                {
+                    DestinationZone = command[1],
+                    DestinationLocation = "Start",
+                    SendToClient = true
+                };
+                TellOtherServices(msg);
+                break;
+            default:
+                Log.Information($"Unknown QA command: {command[0]}");
+                break;
+        }
     }
 }
