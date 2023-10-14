@@ -23,7 +23,7 @@ public static class Log
     private static readonly bool _logsIncludeTimestamp = ConfigurationManager.Settings.LogsIncludeTimestamp;
 
     public static ILogger Logger { get; } = new LoggerConfiguration()
-        .MinimumLevel.Debug()
+        .MinimumLevel.Verbose()
         .Enrich.FromLogContext()
         .Enrich.With(new ThreadIdEnricher())
         //.Enrich.With(new CallingMethodEnricher())

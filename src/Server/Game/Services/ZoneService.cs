@@ -4,6 +4,8 @@
  */
 
 using System;
+using System.Linq;
+using System.Numerics;
 using Akka.Actor;
 using Imlight.Common.Serializable.Caches;
 using Imlight.Common.Utilities;
@@ -51,13 +53,37 @@ public class ZoneService : MessageService
             return;
             
         var character = GetActiveCharacter();
-            
+
         // If the zone is ready and we're sending to client, begin the zone transfer handshake with the client.
         var zoneDetails = AskServer<ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP>(message);
         if (zoneDetails.ErrorCode == 0 && message.SendToClient)
         {
+            // Check if the destination zone is the same as the current zone. If so, we move the player to the
+            // destination coordinates using a SERVERTELEPORT.
+            if (message.DestinationZone == character.Zone)
+            {
+                // Split coordinate string by commas.
+                var coords = message.DestinationLocation.Split(',').ToArray();
+                // Put split string coordinates into Vector3.
+                var destinationCoords = new Vector3(
+                    float.Parse(coords[0]) / 4,
+                    float.Parse(coords[1]) / 4,
+                    float.Parse(coords[2]) / 4);
+
+                var serverTele = new GAME_5_PROTOCOL.MSG_SERVERTELEPORT()
+                {
+                    LocationX = (ushort)destinationCoords.X,
+                    LocationY = (ushort)destinationCoords.Y,
+                    LocationZ = (ushort)destinationCoords.Z,
+                    Direction = 0,
+                    MobileID = GetActiveCoreObject().m_nMobileID,
+                };
+                SendToSocket(serverTele);
+                return;
+            }
+
             _isTransferQueued = true;
-                
+            
             // Ask the client if it's okay with being transferred.
             var msg = new GAME_5_PROTOCOL.MSG_ZONETRANSFERREQUEST
             {

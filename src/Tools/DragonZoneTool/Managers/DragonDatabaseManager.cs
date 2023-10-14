@@ -5,31 +5,88 @@
 
 using System.Security.Cryptography.X509Certificates;
 using DragonZoneTool.Models;
+using Imlight.Common.Serializable.Secrets;
 using Raven.Client.Documents;
+using Raven.Client.ServerWide;
+using Raven.Embedded;
 using Serilog;
+using static System.Console;
 
 namespace DragonZoneTool.Managers;
 
 public static class DragonDatabaseManager
 {
-    private static X509Certificate2 Certificate
-        = new($"{Directory.GetCurrentDirectory()}/input/worlddata.client.certificate.pfx");
-    private static string DatabaseName = "Imlight";
-    private static string Url = "https://a.voidly.ravendb.community";
-    private static string CollectionName = "ZoneData";
+    private const ushort EmbeddedDatabasePort = 8080;
+    
+    private static readonly string _databaseName = "WorldData";
+    private static readonly string _collectionName = "ZoneTransfer";
     
     private static IDocumentStore? _store;
-    public static IDocumentStore? Store => _store ??= CreateStore();
+    public static IDocumentStore? Store => _store ??= _isInEmbeddedMode ? CreateEmbeddedStore() : CreateRemoteStore();
     
-    private static IDocumentStore? CreateStore()
+    private static bool _isInEmbeddedMode;
+    private static string _embeddedDataPath = "EmbeddedData";
+    private static string _remoteUrl;
+    private static string _certificateUrl;
+
+    public static void SetEmbeddedServer(string dataPath)
     {
-        Log.Information("Initializing remote RavenDB database for the first time..");
-        Log.Information("Database name: {Name}", DatabaseName);
+        _isInEmbeddedMode = true;
+        _embeddedDataPath = dataPath;
+
+        var t = _store = CreateEmbeddedStore();
+    }
+
+    public static void SetRemoteServer(string url, string certificateUrl)
+    {
+        _isInEmbeddedMode = false;
+        _remoteUrl = url;
+        _certificateUrl = certificateUrl;
+    }
+
+    private static IDocumentStore? CreateEmbeddedStore()
+    {
+        if (_embeddedDataPath is null or "")
+            throw new Exception("Embedded data path is null or empty.");
+        
+        WriteLine("Initializing embedded RavenDB database for the first time..");
+
+        // Configure the embedded server.
+        var serverOptions = new ServerOptions
+        {
+            DataDirectory = _embeddedDataPath,
+            ServerUrl = $"http://127.0.0.1:{EmbeddedDatabasePort}",
+            CommandLineArgs = new List<string> { "--Databases.MaxIdleTimeInSec=-1" }
+        };
+
+        EmbeddedServer.Instance.StartServer(serverOptions);
+        EmbeddedServer.Instance.ServerProcessExited += (sender, args) =>
+        {
+            Log.Error("Embedded database process exited unexpectedly. Restarting..");
+            EmbeddedServer.Instance.RestartServerAsync().Wait();
+            WriteLine("Embedded database restarted");
+        };
+
+        WriteLine("Embedded database initialized on port {0}", EmbeddedDatabasePort);
+
+        var databaseOptions = new DatabaseOptions(new DatabaseRecord(databaseName: _databaseName));
+        return EmbeddedServer.Instance.GetDocumentStore(databaseOptions);
+    }
+    
+    private static IDocumentStore? CreateRemoteStore()
+    {
+        WriteLine("Initializing remote RavenDB database for the first time..");
+        WriteLine("Database name: {0}", _databaseName);
+        
+        // Try to make an x509 certificate from the certificate file.
+        if (!File.Exists(_certificateUrl))
+            throw new Exception("Certificate file does not exist.");
+        var certificate = new X509Certificate2(_certificateUrl);
 
         var store = new DocumentStore
         {
-            Urls = new[] { Url },
-            Database = DatabaseName,
+            Urls = new[] { _remoteUrl },
+            Database = _databaseName,
             Conventions =
             {
                 MaxNumberOfRequestsPerSession = 16,
@@ -37,10 +94,10 @@ public static class DragonDatabaseManager
                 RequestTimeout = TimeSpan.FromSeconds(90),
                 WaitForNonStaleResultsTimeout = TimeSpan.FromSeconds(90),
             },
-            Certificate = Certificate
+            Certificate = certificate
         }.Initialize();
 
-        Log.Information("Database initialized");
+        WriteLine("Database initialized");
 
         return store;
     }
@@ -53,7 +110,7 @@ public static class DragonDatabaseManager
         // Retrieve the zone data from the database.
         using var session = Store.OpenSession();
         var zoneData = session
-            .Query<WizardZoneData>(collectionName: CollectionName)
+            .Query<WizardZoneData>(collectionName: _collectionName)
             .FirstOrDefault(x => x.ZoneName == zoneName);
         
         return zoneData;
@@ -71,7 +128,7 @@ public static class DragonDatabaseManager
     {
         using var session = Store!.OpenSession();
         var zoneData = session
-            .Query<WizardZoneData>(collectionName: CollectionName)
+            .Query<WizardZoneData>(collectionName: _collectionName)
             .FirstOrDefault(x => x.ZoneName == zoneName);
 
         if (zoneData == null)
@@ -89,7 +146,7 @@ public static class DragonDatabaseManager
     {
         using var session = Store!.OpenSession();
         var zoneData = session
-            .Query<WizardZoneData>(collectionName: CollectionName)
+            .Query<WizardZoneData>(collectionName: _collectionName)
             .FirstOrDefault(x => x.ZoneName == zoneName);
 
         // If no zone data was found for this zone, create a new one.
@@ -105,7 +162,7 @@ public static class DragonDatabaseManager
             
             // Set collection metadata.
             var metadata = session.Advanced.GetMetadataFor(zoneData);
-            metadata[Raven.Client.Constants.Documents.Metadata.Collection] = CollectionName;
+            metadata[Raven.Client.Constants.Documents.Metadata.Collection] = _collectionName;
         }
         
         zoneData.Teleports.Add(new WizardTeleportData

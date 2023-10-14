@@ -11,7 +11,7 @@ namespace Imlight.Server.Shared.WizardData.Implementations;
 
 public static class ZoneDataCollection
 {
-    private const string CollectionName = "ZoneData";
+    private const string CollectionName = "ZoneTransfer";
     private static readonly IDocumentStore Store;
 
     static ZoneDataCollection()
