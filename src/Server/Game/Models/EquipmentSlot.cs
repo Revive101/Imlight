@@ -11,7 +11,7 @@ public enum EquipmentSlot
     Robe,
     Shoes,
     Weapon,
-    Anthem,
+    Athame,
     Amulet,
     Ring,
     Pet,
