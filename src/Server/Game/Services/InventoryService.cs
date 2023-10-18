@@ -48,7 +48,7 @@ public class InventoryService : MessageService
             .WithSerializerFlags(SerializerFlags.None)
             .WithPropertyFlags((PropertyFlags)1);
 
-        var coreObject = GetActiveCoreObject().CharacterObject;
+        var coreObject = GetActiveCoreObject();
         var playerCharacter = GetActiveCharacter();
 
         // Confirm to the player that we've equipped their item server side.
@@ -306,12 +306,6 @@ public class InventoryService : MessageService
     }
     #endregion
 
-    private CHARACTER_103_PROTOCOL.MSG_CHARACTER GetActiveCoreObject()
-    {
-        var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
-        var response = AskOtherService<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
-        return response;
-    }
     private bool ItemInInventory(ulong itemId, CoreObject coreObject)
     {
         if (!CoreObjectFactory.FindBehaviorInstance<ClientWizInventoryBehavior>(coreObject,
