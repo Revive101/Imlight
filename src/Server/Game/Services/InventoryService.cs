@@ -68,7 +68,7 @@ public class InventoryService : MessageService
             if (!ItemInInventory(message.ItemID, coreObject))
             {
                 // @TODO: Respond to client appropriately.
-                Log.Logger.Debug($"Player does not have the item in their inventory!");
+                Log.Debug($"Player does not have the item in their inventory!");
                 return;
             }
 
@@ -78,10 +78,50 @@ public class InventoryService : MessageService
                 var objTemplate = (WizItemTemplate)CoreObjectFactory.GetCoreTemplate(obj.m_templateID);
                 if (objTemplate.m_adjectiveList[1] == template.m_adjectiveList[1])
                 {
-                    // @TODO: Unequip the current item in the target slot and equip the new item.
+                    Log.Debug("Player swapping items in slot {Slot}", Log.Args(template.m_adjectiveList[1].ToString()));
+
+                    // Get current equipped item and its slot.
+                    var slot = equipmentBehavior.m_slotList.FindIndex(slot => slot.m_itemID == obj.m_globalID);
+                    var currentEquippedItem = equipmentBehavior.m_slotList[slot].m_itemID;
+
+                    Log.Debug("Unequipping item from slot {Slot} | {Name}",
+                        Log.Args(slot, template.m_objectName.ToString()));
+
+                    // EquipmentBehavior
+                    // itemList
+                    equipmentBehavior.m_itemList.RemoveAll(item => item.m_globalID == currentEquippedItem);
+
+                    // publicItemList
+                    //equipmentBehavior.m_publicItemList.RemoveAll(item => item.m_itemID == itemObj.m_templateID);
+
+                    // slotList
+                    // Zero-out item from slot list and move all items down to fill "empty" zero slots, should they exist.
+                    equipmentBehavior = RemoveSlotFromEquipmentSlotList(slot, equipmentBehavior);
+
+                    // CreationMenu
+                    //creationEquipment.RemoveAll(item => item.m_itemID == itemObj.m_templateID);
+
+                    // Unequip the previous item.
+                    if (currentEquippedItem != 0)
+                    {
+                        SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPITEM()
+                        {
+                            ItemID = obj.m_globalID,
+                            SlotName = "",
+                            IsEquip = 0
+                        });
+
+                        var publicUnequipMsg = new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICUNEQUIPITEM()
+                        {
+                            GlobalID = coreObject.m_globalID,
+                            IndexToRemove = (byte)slot
+                        };
+                        ZoneBroadcast(publicUnequipMsg, false);
+                    }
+
                     break;
                 }
-            }   
+            }
 
             // Confirm to the player that we've equipped their item server side.
             SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPITEM()
@@ -108,7 +148,7 @@ public class InventoryService : MessageService
             //creationEquipment.Add(equippedItemInfo);
 
             Log.Information("Player equipped item from inventory, index {Item} | {Name}",
-                Log.Args((byte)inventoryBehavior.m_itemList.IndexOf(itemObj), template.m_adjectiveList[0].ToString()));
+                Log.Args((byte)inventoryBehavior.m_itemList.IndexOf(itemObj), template.m_objectName.ToString()));
             Log.Debug("Equipped item to slot {Slot}", Log.Args(index));
 
             // Serialize item and broadcast equip action to other players.
@@ -133,7 +173,7 @@ public class InventoryService : MessageService
             if (!ItemInInventory(message.ItemID, coreObject))
             {
                 // @TODO: Respond to client appropriately.
-                Log.Logger.Debug($"Player does not have the item in their inventory!");
+                Log.Debug($"Player does not have the item in their inventory!");
                 return;
             }
 
@@ -147,11 +187,10 @@ public class InventoryService : MessageService
 
             // Get slot index of item to unequip and number of total equipped items.
             var slot = equipmentBehavior.m_slotList.FindIndex(slot => slot.m_itemID == message.ItemID);
-            var numEquippedItemsInSlots = equipmentBehavior.m_slotList.Count(slot => slot.m_itemID != 0);
             var currentEquippedItem = equipmentBehavior.m_slotList[slot].m_itemID;
 
             Log.Debug("Unequipping item from slot {Slot} | {Name}", 
-                Log.Args(slot, template.m_adjectiveList[0].ToString()));
+                Log.Args(slot, template.m_objectName.ToString()));
 
             // EquipmentBehavior
             // itemList
@@ -162,19 +201,7 @@ public class InventoryService : MessageService
 
             // slotList
             // Zero-out item from slot list and move all items down to fill "empty" zero slots, should they exist.
-            equipmentBehavior.m_slotList[slot].m_itemID = (GID)0;
-
-            if (slot < numEquippedItemsInSlots - 1)
-            {
-                for (int i = slot; i < numEquippedItemsInSlots; i++)
-                {
-                    if (equipmentBehavior.m_slotList[i].m_itemID != 0)
-                    {
-                        equipmentBehavior.m_slotList[i - 1].m_itemID = equipmentBehavior.m_slotList[i].m_itemID;
-                        equipmentBehavior.m_slotList[i].m_itemID = (GID)0;
-                    }
-                }
-            }
+            equipmentBehavior = RemoveSlotFromEquipmentSlotList(slot, equipmentBehavior);
 
             // CreationMenu
             //creationEquipment.RemoveAll(item => item.m_itemID == itemObj.m_templateID);
@@ -284,5 +311,25 @@ public class InventoryService : MessageService
                 out var inventoryBehavior)) return null;
 
         return inventoryBehavior.m_itemList.First(x => x.m_globalID == globalId);
+    }
+
+    private ClientWizEquipmentBehavior RemoveSlotFromEquipmentSlotList(int slot, ClientWizEquipmentBehavior equipmentBehavior)
+    {
+        var numEquippedItemsInSlots = equipmentBehavior.m_slotList.Count(slot => slot.m_itemID != 0);
+
+        equipmentBehavior.m_slotList[slot].m_itemID = (GID)0;
+
+        if (slot < numEquippedItemsInSlots - 1)
+        {
+            for (int i = slot; i < numEquippedItemsInSlots; i++)
+            {
+                if (equipmentBehavior.m_slotList[i].m_itemID != 0)
+                {
+                    equipmentBehavior.m_slotList[i - 1].m_itemID = equipmentBehavior.m_slotList[i].m_itemID;
+                    equipmentBehavior.m_slotList[i].m_itemID = (GID)0;
+                }
+            }
+        }
+        return equipmentBehavior;
     }
 }
