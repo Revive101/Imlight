@@ -179,9 +179,10 @@ public class PatchServer : Shared.Networking.Server {
             response.EnsureSuccessStatusCode();
 
             var totalBytes = response.Content.Headers.ContentLength;
+            var totalMegaBytes = totalBytes / 1024 / 1024;
 
             Logger.Information("Attempting to download file from patch server endpoint " +
-                            "at url {Url}. Content size: {TotalBytes}", Logger.Args(url, totalBytes));
+                            "at url {Url}. Content size: {totalMegaBytes} MB", Logger.Args(url, totalMegaBytes));
 
             // Download the file from web using the HttpClient.
             await using var contentStream = await response.Content.ReadAsStreamAsync();
@@ -194,8 +195,8 @@ public class PatchServer : Shared.Networking.Server {
                 await memoryStream.WriteAsync(buffer.AsMemory(0, bytesRead));
             }
 
-            Logger.Information("File successfully downloaded from {Url}. Content size: {Size}",
-                Logger.Args(url, memoryStream.Length));
+            Logger.Information("File successfully downloaded from {Url}. Content size: {totalMegaBytes} MB",
+                Logger.Args(url, totalMegaBytes));
 
             return memoryStream;
         }
