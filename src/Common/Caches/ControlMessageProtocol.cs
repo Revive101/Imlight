@@ -1,4 +1,6 @@
-namespace Imlight.Common.MessageLayer;
+using Imlight.Common.MessageLayer;
+
+namespace Imlight.Common.Caches;
 
 public class ControlMessageProtocol : MessageProtocol {
     public override byte ServiceId => 0;
