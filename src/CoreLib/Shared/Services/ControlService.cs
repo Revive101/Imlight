@@ -7,8 +7,8 @@ using System;
 using System.Diagnostics;
 using Akka.Actor;
 using Imlight.Common;
+using Imlight.Common.Caches;
 using Imlight.Common.Configuration;
-using Imlight.Common.MessageLayer;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 
