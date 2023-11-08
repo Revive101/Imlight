@@ -7,15 +7,13 @@ using Imlight.Common.Caches;
 
 namespace DragonZoneTool.Models;
 
-public class WizardZoneData
-{
+public class WizardZoneData {
     public string ZoneName { get; set; }
     public List<WizardZoneEventData> Events { get; set; } = new();
     public List<WizardTeleportData> Teleports { get; set; } = new();
 }
 
-public class WizardTeleportData
-{
+public class WizardTeleportData {
     public string TriggerName { get; set; }
     public ServerTypeCache.ResTeleport Teleport { get; set; }
 }

@@ -14,8 +14,7 @@ using static System.Console;
 
 namespace DragonZoneTool.Managers;
 
-public static class DragonDatabaseManager
-{
+public static class DragonDatabaseManager {
     private const ushort EmbeddedDatabasePort = 8080;
 
     private static readonly string _databaseName = "WorldData";
@@ -29,23 +28,20 @@ public static class DragonDatabaseManager
     private static string _remoteUrl;
     private static string _certificateUrl;
 
-    public static void SetEmbeddedServer(string dataPath)
-    {
+    public static void SetEmbeddedServer(string dataPath) {
         _isInEmbeddedMode = true;
         _embeddedDataPath = dataPath;
 
         var t = _store = CreateEmbeddedStore();
     }
 
-    public static void SetRemoteServer(string url, string certificateUrl)
-    {
+    public static void SetRemoteServer(string url, string certificateUrl) {
         _isInEmbeddedMode = false;
         _remoteUrl = url;
         _certificateUrl = certificateUrl;
     }
 
-    private static IDocumentStore? CreateEmbeddedStore()
-    {
+    private static IDocumentStore? CreateEmbeddedStore() {
         if (_embeddedDataPath is null or "") {
             throw new Exception("Embedded data path is null or empty.");
         }
@@ -53,16 +49,14 @@ public static class DragonDatabaseManager
         WriteLine("Initializing embedded RavenDB database for the first time..");
 
         // Configure the embedded server.
-        var serverOptions = new ServerOptions
-        {
+        var serverOptions = new ServerOptions {
             DataDirectory = _embeddedDataPath,
             ServerUrl = $"http://127.0.0.1:{EmbeddedDatabasePort}",
             CommandLineArgs = new List<string> { "--Databases.MaxIdleTimeInSec=-1" }
         };
 
         EmbeddedServer.Instance.StartServer(serverOptions);
-        EmbeddedServer.Instance.ServerProcessExited += (sender, args) =>
-        {
+        EmbeddedServer.Instance.ServerProcessExited += (sender, args) => {
             Log.Error("Embedded database process exited unexpectedly. Restarting..");
             EmbeddedServer.Instance.RestartServerAsync().Wait();
             WriteLine("Embedded database restarted");
@@ -73,8 +67,7 @@ public static class DragonDatabaseManager
         var databaseOptions = new DatabaseOptions(new DatabaseRecord(databaseName: _databaseName));
         return EmbeddedServer.Instance.GetDocumentStore(databaseOptions);
     }
-    private static IDocumentStore? CreateRemoteStore()
-    {
+    private static IDocumentStore? CreateRemoteStore() {
         WriteLine("Initializing remote RavenDB database for the first time..");
         WriteLine("Database name: {0}", _databaseName);
 
@@ -85,8 +78,7 @@ public static class DragonDatabaseManager
 
         var certificate = new X509Certificate2(_certificateUrl);
 
-        var store = new DocumentStore
-        {
+        var store = new DocumentStore {
             Urls = new[] { _remoteUrl },
             Database = _databaseName,
             Conventions =
@@ -104,8 +96,7 @@ public static class DragonDatabaseManager
         return store;
     }
 
-    public static WizardZoneData? GetZoneData(string zoneName)
-    {
+    public static WizardZoneData? GetZoneData(string zoneName) {
         if (Store == null) {
             return null;
         }
@@ -119,16 +110,14 @@ public static class DragonDatabaseManager
         return zoneData;
     }
 
-    public static WizardTeleportData? GetExistingTeleport(string zoneName, string triggerName)
-    {
+    public static WizardTeleportData? GetExistingTeleport(string zoneName, string triggerName) {
         var zoneData = GetZoneData(zoneName);
         return zoneData is null
             ? null
             : zoneData!.Teleports.FirstOrDefault(teleport => teleport.TriggerName == triggerName);
     }
 
-    public static void DeleteExistingTeleport(string zoneName, string triggerName)
-    {
+    public static void DeleteExistingTeleport(string zoneName, string triggerName) {
         using var session = Store!.OpenSession();
         var zoneData = session
             .Query<WizardZoneData>(collectionName: _collectionName)
@@ -147,18 +136,15 @@ public static class DragonDatabaseManager
         session.SaveChanges();
     }
 
-    public static void AddNewTeleport(string zoneName, string triggerName, ServerTypeCache.ResTeleport result)
-    {
+    public static void AddNewTeleport(string zoneName, string triggerName, ServerTypeCache.ResTeleport result) {
         using var session = Store!.OpenSession();
         var zoneData = session
             .Query<WizardZoneData>(collectionName: _collectionName)
             .FirstOrDefault(x => x.ZoneName == zoneName);
 
         // If no zone data was found for this zone, create a new one.
-        if (zoneData == null)
-        {
-            zoneData = new WizardZoneData
-            {
+        if (zoneData == null) {
+            zoneData = new WizardZoneData {
                 ZoneName = zoneName,
                 Teleports = new List<WizardTeleportData>()
             };
@@ -170,8 +156,7 @@ public static class DragonDatabaseManager
             metadata[Raven.Client.Constants.Documents.Metadata.Collection] = _collectionName;
         }
 
-        zoneData.Teleports.Add(new WizardTeleportData
-        {
+        zoneData.Teleports.Add(new WizardTeleportData {
             TriggerName = triggerName,
             Teleport = result
         });

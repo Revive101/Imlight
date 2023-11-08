@@ -5,16 +5,14 @@
 
 namespace DragonZoneTool.Models;
 
-public enum WizardZoneEventObjectAdjectiveType
-{
+public enum WizardZoneEventObjectAdjectiveType {
     PrefixedWith,
     Contains,
     SuffixedWith,
     Raw
 }
 
-public class WizardZoneEventData
-{
+public class WizardZoneEventData {
     public string Name { get; set; }
     public string Description { get; set; }
     public bool IsEnabled { get; set; }

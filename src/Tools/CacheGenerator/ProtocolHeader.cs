@@ -2,8 +2,7 @@ using System.Xml;
 
 namespace CacheGenerator;
 
-public class ProtocolHeader
-{
+public class ProtocolHeader {
     private const string WizardCombatProtocolType = "WIZARDCOMBAT";
     private const string DuplicateProtocolType = "MG9";
 

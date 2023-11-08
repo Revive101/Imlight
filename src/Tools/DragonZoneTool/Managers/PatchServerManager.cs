@@ -8,8 +8,7 @@ using System.Net;
 
 namespace DragonZoneTool.Managers;
 
-public static class PatchServerManager
-{
+public static class PatchServerManager {
     private const string PatchServerUrl = "http://phill030.de:12369/patcher/";
     private const string PatchServerWadUrlPrefix = "wads";
     private const int PatchServerTimeout = 10; // In seconds.
@@ -18,8 +17,7 @@ public static class PatchServerManager
     private const ushort DownloadBufferSize = 4096;
     private static string? _patchServerWorkingUrl;
 
-    static PatchServerManager()
-    {
+    static PatchServerManager() {
         if (!GetPatchServerStatus()) {
             throw new Exception($"Patch server is not available!");
         }
@@ -27,8 +25,7 @@ public static class PatchServerManager
 
     public static bool IsPatchServerAvailable() => GetPatchServerStatus();
 
-    public static KiWad DownloadWad(string wadName)
-    {
+    public static KiWad DownloadWad(string wadName) {
         // Download the wad from the patch server.
         // Remove the `.wad` extension if one exists.
         if (wadName.EndsWith(".wad", StringComparison.OrdinalIgnoreCase)) {
@@ -46,14 +43,12 @@ public static class PatchServerManager
         return new KiWad(newMs);
     }
 
-    private static bool GetPatchServerStatus()
-    {
+    private static bool GetPatchServerStatus() {
         var workingUrl = $"{PatchServerUrl}V_r{GameClientRevision}.Wizard_1_520";
 
         // Check to see if the patch server URL is available at all.
         Console.WriteLine($"Checking patch server at URL {workingUrl}. Timeout: {PatchServerTimeout} s.");
-        if (!GetServerUrlStatus(workingUrl))
-        {
+        if (!GetServerUrlStatus(workingUrl)) {
             Console.WriteLine($"Patch server at URL {workingUrl} is not available.");
             return false;
         }
@@ -64,35 +59,29 @@ public static class PatchServerManager
         return true;
     }
 
-    private static bool GetServerUrlStatus(string? url)
-    {
+    private static bool GetServerUrlStatus(string? url) {
         using var client = new HttpClient();
         client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgentValue);
         client.Timeout = TimeSpan.FromSeconds(PatchServerTimeout);
 
-        try
-        {
+        try {
             using var response = client.SendAsync(new HttpRequestMessage(HttpMethod.Head, url)).Result;
             // Any response returned means the server is up.
             return true;
         }
-        catch (HttpRequestException ex) when (ex.StatusCode >= HttpStatusCode.InternalServerError)
-        {
+        catch (HttpRequestException ex) when (ex.StatusCode >= HttpStatusCode.InternalServerError) {
             // Any response other than a 5xx error means the server is up.
             return ex.StatusCode < HttpStatusCode.InternalServerError;
         }
-        catch (Exception ex)
-        {
+        catch (Exception ex) {
             Console.WriteLine($"Error while checking patch server at URL {url}. " +
                               $"Exception: {ex.Message}");
             return false;
         }
     }
 
-    private static async Task<MemoryStream> DownloadFileStream(string url)
-    {
-        try
-        {
+    private static async Task<MemoryStream> DownloadFileStream(string url) {
+        try {
             // Create a new HttpClient with the magic user agent values.
             using var client = new HttpClient();
             client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgentValue);
@@ -108,16 +97,14 @@ public static class PatchServerManager
             var memoryStream = new MemoryStream();
             var buffer = new byte[DownloadBufferSize];
             int bytesRead;
-            while ((bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
-            {
+            while ((bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length)) > 0) {
                 await memoryStream.WriteAsync(buffer, 0, bytesRead);
             }
 
             Console.WriteLine($"File successfully downloaded from {url}. Content size: {memoryStream.Length}");
             return memoryStream;
         }
-        catch (Exception webException)
-        {
+        catch (Exception webException) {
             Console.WriteLine($"Error while downloading file from patch server endpoint: {webException.Message}");
             return null;
         }

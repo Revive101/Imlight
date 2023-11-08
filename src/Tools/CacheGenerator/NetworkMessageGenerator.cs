@@ -9,8 +9,7 @@ using Imlight.Common.IO;
 
 namespace CacheGenerator;
 
-public static class NetworkMessageGenerator
-{
+public static class NetworkMessageGenerator {
     private const string CacheNamespace = "Common.Caches";
     private const string UnknownProtocolType = "UNKNOWN_PROTOCOL_TYPE";
     private const string MetadataNodePrefix = "_";
@@ -126,7 +125,7 @@ public static class NetworkMessageGenerator
             }
 
             var msgOrderFallback = Array.IndexOf(xmlBases, xmlBase) + 1 - duplicateRecordCount;
-            var codeClass = CreateRecordTypeDeclaration(xmlBase, serviceId, (byte)msgOrderFallback);
+            var codeClass = CreateRecordTypeDeclaration(xmlBase, serviceId, (byte) msgOrderFallback);
 
             protocolClass.Members.Add(codeClass);
 
@@ -148,7 +147,7 @@ public static class NetworkMessageGenerator
 
             // If we're here, the message doesn't have a _MsgOrder property.
             // We'll use the index of the message as it appears in the protocol.
-            createdClasses.Add(unchecked((byte)msgOrderFallback), codeClass.Name);
+            createdClasses.Add(unchecked((byte) msgOrderFallback), codeClass.Name);
         }
 
         return createdClasses;
@@ -192,8 +191,7 @@ public static class NetworkMessageGenerator
             }
 
             var rawType = GetDataTypeFromXmlElement(xmlElement);
-            if (!InternalTypeTranslationDict.TryGetValue(rawType, out var type))
-            {
+            if (!InternalTypeTranslationDict.TryGetValue(rawType, out var type)) {
                 throw new InvalidOperationException(
                     $"Could not find type {rawType} in the type translation dictionary!");
             }
@@ -336,8 +334,7 @@ public static class NetworkMessageGenerator
         return properUsingList;
     }
 
-    private static bool DoesProtocolNeedOrdering(XmlNodeList protocolRecordsNode)
-    {
+    private static bool DoesProtocolNeedOrdering(XmlNodeList protocolRecordsNode) {
         if (protocolRecordsNode is null) {
             throw new ArgumentNullException(nameof(protocolRecordsNode));
         }

@@ -7,16 +7,13 @@ using System.Xml;
 
 namespace DragonZoneTool.Managers;
 
-public static class AccessPassManager
-{
+public static class AccessPassManager {
     private static readonly string AccessPassPath = Path.Combine(FileUtility.InputPath, "AccessPass.xml");
     private static readonly string DatabaseDefaultPath = Path.Combine(FileUtility.OutputPath, "serverdata");
 
-    public static string[] GetAccessPassZones()
-    {
+    public static string[] GetAccessPassZones() {
         var stream = FileUtility.GetFileStream(AccessPassPath);
-        if (stream is null)
-        {
+        if (stream is null) {
             throw new NullReferenceException($"AccessPass.xml was not found at path {AccessPassPath}.");
         }
 
@@ -25,8 +22,7 @@ public static class AccessPassManager
         var doc = new XmlDocument();
         doc.Load(stream);
 
-        foreach (XmlNode zoneNode in doc.GetElementsByTagName("Zone"))
-        {
+        foreach (XmlNode zoneNode in doc.GetElementsByTagName("Zone")) {
             var zoneName = zoneNode.InnerText;
             zoneList.Add(zoneName);
             zoneCounter++;
