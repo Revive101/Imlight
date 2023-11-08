@@ -113,12 +113,24 @@ public abstract class BitManipulator : IDisposable {
     /// </summary>
     /// <param name="bit">The bit position to seek to.</param>
     public void SeekBit(int bit) {
-        var offset = bit / 8;
-        var bitPos = bit % 8;
+        Stream.Position = bit >> 3;
+        ResetBitPos();
 
-        Stream.Seek(offset, SeekOrigin.Begin);
-        BitPosition = (byte)bitPos;
-        BitValue = 0;
+        var remainingBits = bit - ((bit >> 3) << 3);
+        for (int i = 0; i < remainingBits; i++) {
+            if (BitPosition == 8) {
+                try {
+                    BitValue = Reverse((byte)Stream.ReadByte());
+                }
+                catch (EndOfStreamException) {
+                    BitValue = 0;
+                }
+                BitPosition = 0;
+            }
+
+            BitValue <<= 1;
+            BitPosition++;
+        }
     }
 
     public void Dispose() {
