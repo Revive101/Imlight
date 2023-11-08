@@ -1,6 +1,4 @@
-﻿
-
-using System.Text;
+﻿using System.Text;
 using System.Xml;
 using Serilog;
 using Serilog.Core;
@@ -9,8 +7,7 @@ using Imlight.Common.Formats;
 
 namespace CacheGenerator;
 
-internal static class Program
-{
+internal static class Program {
     public static Logger Log { get; } = new LoggerConfiguration()
         .WriteTo.Console()
         .CreateLogger();
@@ -19,8 +16,7 @@ internal static class Program
     private const string TypeDumpName = "ClientTypeDump.xml";
     private const string NetworkMessageOutputPath = "NetworkMessages.cs";
 
-    static void Main(string[] args)
-    {
+    static void Main(string[] args) {
         if (!EnsureRootWadFromArguments(args)) {
             return;
         }
@@ -56,12 +52,10 @@ internal static class Program
         DoPropertyClassCacheGeneration(xmlDoc);
     }
 
-    private static bool EnsureRootWadFromArguments(IReadOnlyList<string> args)
-    {
+    private static bool EnsureRootWadFromArguments(IReadOnlyList<string> args) {
         // The user should provide the path to the Root.wad file in the first argument.
         // Ensure that they've done that.
-        if (args.Count >= 1)
-        {
+        if (args.Count >= 1) {
             var wadPath = args[0];
             if (File.Exists(wadPath)) {
                 return true;
@@ -75,12 +69,10 @@ internal static class Program
         return false;
     }
 
-    private static bool EnsureTypeDumpFromArguments(IReadOnlyList<string> args)
-    {
+    private static bool EnsureTypeDumpFromArguments(IReadOnlyList<string> args) {
         // The user should provide the path to the ClientTypeDump.xml file in the second argument.
         // Ensure that they've done that.
-        if (args.Count >= 1)
-        {
+        if (args.Count >= 1) {
             var typeDumpPath = args[1];
             if (File.Exists(typeDumpPath)) {
                 return true;
@@ -94,27 +86,23 @@ internal static class Program
         return false;
     }
 
-    private static void DoNetworkCacheGeneration(KiWad rootWad)
-    {
+    private static void DoNetworkCacheGeneration(KiWad rootWad) {
         Log.Information("Starting network cache generation...");
 
         var messageFileRecords = rootWad.Files
             .Where(x => x.Key.EndsWith(".xml") && x.Key.Contains("Messages"));
 
-        if (!messageFileRecords.Any())
-        {
+        if (!messageFileRecords.Any()) {
             Log.Error("Could not find any message files in the {RootFile}!", RootWadName);
             return;
         }
 
         var xmlFiles = new List<XmlDocument>();
-        foreach (var (name, protocol) in messageFileRecords)
-        {
+        foreach (var (name, protocol) in messageFileRecords) {
             Log.Debug("Opening file {File}...", name);
 
             var record = rootWad.OpenFile(name);
-            if (record is null)
-            {
+            if (record is null) {
                 Log.Error("Could not open file {File} in the {RootFile}",
                     name, RootWadName);
                 continue;
@@ -142,15 +130,12 @@ internal static class Program
         }
     }
 
-    private static void DoPropertyClassCacheGeneration(XmlDocument wizardClientDefinitions)
-    {
+    private static void DoPropertyClassCacheGeneration(XmlDocument wizardClientDefinitions) {
         PropertyClassGenerator.Generate(wizardClientDefinitions);
     }
 
-    private static Stream? GetFileStream(string path)
-    {
-        if (!File.Exists(path))
-        {
+    private static Stream? GetFileStream(string path) {
+        if (!File.Exists(path)) {
             Log.Fatal("Could not find file by path {Path}!", path);
             return null;
         }
@@ -159,16 +144,13 @@ internal static class Program
         return stream;
     }
 
-    private static KiWad? GetRootWad(Stream stream)
-    {
+    private static KiWad? GetRootWad(Stream stream) {
         // Try to unpack the Root.wad
         KiWad? rootWad;
-        try
-        {
+        try {
             rootWad = new KiWad(stream);
         }
-        catch (Exception ex)
-        {
+        catch (Exception ex) {
             Log.Error("Could not unpack the {File} file! {Ex}", RootWadName, ex.Message);
             return null;
         }

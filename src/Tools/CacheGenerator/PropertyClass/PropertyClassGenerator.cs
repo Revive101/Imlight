@@ -1,7 +1,7 @@
 ﻿/* Copyright (C) Revive101 Development Team - All Rights Reserved
- * Unauthorized copying of this file, via any medium is strictly prohibited
- * Proprietary and confidential.
- */
+* Unauthorized copying of this file, via any medium is strictly prohibited
+* Proprietary and confidential.
+*/
 
 using System.CodeDom;
 using System.CodeDom.Compiler;
@@ -14,8 +14,7 @@ using Serilog.Core;
 
 namespace CacheGenerator.PropertyClass;
 
-public static class PropertyClassGenerator
-{
+public static class PropertyClassGenerator {
     // The end goal is to use the Wizard101 type dump to generate C# classes.
     // You can find this dump by handing the `-x <file_name>` argument to the `WizardGraphicalClient.exe`.
     // The `csr.wad` *must* be present for proper authority.
@@ -53,8 +52,7 @@ public static class PropertyClassGenerator
         .WriteTo.Console()
         .CreateLogger();
 
-    public static void Generate(XmlDocument wizardClientDefinitions)
-    {
+    public static void Generate(XmlDocument wizardClientDefinitions) {
         Log.Warning("Beginning generation on PropertyClasses! This may take many moments");
 
         // Begin by grabbing and validating the dump xml from the Wizard101 client.
@@ -76,8 +74,7 @@ public static class PropertyClassGenerator
                            " the integrity of these files before using them practically");
     }
 
-    private static void SetClassDefs(XmlDocument doc)
-    {
+    private static void SetClassDefs(XmlDocument doc) {
         // There's only one base node here, labeled `ClassList`. Every child node will be a class definition.
         // We're going to create a ClassDef from each of these nodes.
         var classesList = doc.ChildNodes?[0]?.ChildNodes
@@ -85,8 +82,7 @@ public static class PropertyClassGenerator
 
         // Iterate through each of the nodes and create a ClassDef from it.
         var classes = new HashSet<Definitions.ClassDef>();
-        for (var i = 0; i < classesList.Count; i++)
-        {
+        for (var i = 0; i < classesList.Count; i++) {
             var xmlNode = classesList[i] ?? throw new NullReferenceException();
             var def = new Definitions.ClassDef(xmlNode);
 
@@ -98,25 +94,21 @@ public static class PropertyClassGenerator
         // All class definitions have been created. Now we must iterate through each one again
         // to set the more difficult properties. It's unreliable to do this prior, as some properties
         // rely on other class definitions already existing.
-        foreach (var def in classes)
-        {
+        foreach (var def in classes) {
             if (def.Name == "PropertyClass") {
                 continue;
             }
 
-            if (def.BaseName is null or "")
-            {
+            if (def.BaseName is null or "") {
                 def.BaseName = "PropertyClass";
             }
 
             // Find and set the actual parent definition for this class.
             var parentDef = classes.FirstOrDefault(x => x.Name == def.BaseName);
-            if (parentDef is not null)
-            {
+            if (parentDef is not null) {
                 def.BaseDef = parentDef;
             }
-            else
-            {
+            else {
                 // If the name is set but we can't find the class definition, it means the parent class
                 // does not inherit PropertyClass. In such case, we must rename the parent.
                 def.BaseName = def.BaseName!.Replace('.', '_');
@@ -137,16 +129,14 @@ public static class PropertyClassGenerator
             .ToList();
     }
 
-    private static void RemoveOverriddenPropertiesFromDef(Definitions.ClassDef def)
-    {
+    private static void RemoveOverriddenPropertiesFromDef(Definitions.ClassDef def) {
         // We're going to go up the inhertiance tree until we find the root.
         // Then, we'll take each property from those parent classes and compare them
         // to the current. If a property is shared between the class and any of it's parent classes,
         // it will be removed from the class.
         var parentProperties = new List<Definitions.PropertyDef>();
         var lastDef = def;
-        while (true)
-        {
+        while (true) {
             if (lastDef.BaseName is "" or null) {
                 break;
             }
@@ -172,15 +162,12 @@ public static class PropertyClassGenerator
         parentProperties.Clear();
     }
 
-    private static void SetOptionEnums()
-    {
+    private static void SetOptionEnums() {
         // Iterate through every property of every class and find if it's an enum.
         // We'll add these enums to a list to then generate later.
         var enumDefs = new List<Definitions.EnumDef>();
-        foreach (var classDef in _classDefinitions)
-        {
-            foreach (var propDef in classDef.Properties.Where(propDef => propDef.Options is not null))
-            {
+        foreach (var classDef in _classDefinitions) {
+            foreach (var propDef in classDef.Properties.Where(propDef => propDef.Options is not null)) {
                 enumDefs.Add(propDef.Options!);
 
                 // In some cases, an enum will not have a proper name. It will usually be a
@@ -194,8 +181,7 @@ public static class PropertyClassGenerator
                 var scopedName = $"{classDef.Name}.{propDef.Name}";
 
                 // Clean the name if possible.
-                if (scopedName.Contains("m_"))
-                {
+                if (scopedName.Contains("m_")) {
                     // ex: ElixirBenefitEffectTemplate.m_flags
                     var idx = scopedName.IndexOf("m_", StringComparison.Ordinal);
                     scopedName = scopedName.Replace("m_", "");
@@ -222,10 +208,8 @@ public static class PropertyClassGenerator
             .Select(g => g.First())
             .ToList();
 
-        foreach (var item in enumDefs)
-        {
-            if (duplicateEnums.Any(x => x.Name == item.Name))
-            {
+        foreach (var item in enumDefs) {
+            if (duplicateEnums.Any(x => x.Name == item.Name)) {
                 item.DoNotWrite = true;
             }
         }
@@ -234,16 +218,14 @@ public static class PropertyClassGenerator
         _enumDefinitions = enumDefs;
     }
 
-    private static void NestSubclasses(ref HashSet<Definitions.ClassDef> classDefs)
-    {
+    private static void NestSubclasses(ref HashSet<Definitions.ClassDef> classDefs) {
         // Some classes will be named to their parent class. They must be declared inside their parent class definition.
         // For example: `MapInformationManager.MapInformation`
 
         var renameCollection = new List<Definitions.ClassDef>();
         foreach (var classDef in classDefs
                      .Where(classDef => classDef.Name.Contains('.'))
-                     .ToList())
-        {
+                     .ToList()) {
             // Get the parent class name.
             var idx = classDef.Name.LastIndexOf('.');
             var parentName = classDef.Name[..idx];
@@ -251,8 +233,7 @@ public static class PropertyClassGenerator
 
             // If we're unable to find the parent class, it means the parent class does not inherit PropertyClass.
             // In such cases, we will rename the class to use underscores instead of dot notation.
-            if (lastScopedDef is null)
-            {
+            if (lastScopedDef is null) {
                 renameCollection.Add(classDef);
                 continue;
             }
@@ -267,8 +248,7 @@ public static class PropertyClassGenerator
         }
 
         // Do the same thing for the enumerators.
-        foreach (var enumDef in _enumDefinitions.Where(enumDef => enumDef.Name.Contains('.')))
-        {
+        foreach (var enumDef in _enumDefinitions.Where(enumDef => enumDef.Name.Contains('.'))) {
             var idx = enumDef.Name.LastIndexOf('.');
             var parentName = enumDef.Name[..idx];
             var lastScopedDef = _classDefinitions.FirstOrDefault(x => x.Name == parentName);
@@ -279,16 +259,14 @@ public static class PropertyClassGenerator
             enumDef.Name = enumDef.Name.Split('.')[^1];
         }
 
-        foreach (var entry in renameCollection)
-        {
+        foreach (var entry in renameCollection) {
             var oldName = entry.Name;
             entry.Name = entry.Name.Replace('.', '_');
             Log.Warning($"Renamed hazardous class definition [{oldName}] to: {entry.Name}");
         }
     }
 
-    private static void VerifyPropertyTypes(ref HashSet<Definitions.ClassDef> classDefs)
-    {
+    private static void VerifyPropertyTypes(ref HashSet<Definitions.ClassDef> classDefs) {
         // Essay inbound. This is for future Jay who never wants to come back to this. Consider it a heritage gift.
 
         // This method is intended to be called in the last stage of class definition generation.
@@ -311,17 +289,14 @@ public static class PropertyClassGenerator
         // Case B: Wizard101 simply doesn't define a definition in the dump.
         //  1. Create an empty enum with respective name.
 
-        foreach (var def in classDefs.Where(x => x.Properties.Count > 0))
-        {
+        foreach (var def in classDefs.Where(x => x.Properties.Count > 0)) {
             foreach (var prop in def.Properties.Where(x => x.Type.Contains('.'))
                          .GroupBy(x => x.Type)
                          .Select(x => x.First())
-                         .ToList())
-            {
+                         .ToList()) {
                 var workingTypeName = prop.Type;
                 var isList = prop.Type.Contains("List<");
-                if (isList)
-                {
+                if (isList) {
                     var idx1 = workingTypeName.IndexOf('<');
                     var idx2 = workingTypeName.IndexOf('>');
                     workingTypeName = workingTypeName[(idx1 + 1)..idx2];
@@ -333,16 +308,13 @@ public static class PropertyClassGenerator
                 var scopedTypeDef = _classDefinitions.FirstOrDefault(y => y.Name == scopedTypeName);
 
                 // Failsafe; if a class is not found, replace '.' with '_'.
-                if (scopedTypeDef == null)
-                {
+                if (scopedTypeDef == null) {
                     var found = false;
-                    for (var i = 0; i < scopedTypeName.Count(c => c == '.') + 1; i++)
-                    {
+                    for (var i = 0; i < scopedTypeName.Count(c => c == '.') + 1; i++) {
                         var regx = new Regex(Regex.Escape("."));
-                        var t = regx.Replace(scopedTypeName, "_", i+1);
+                        var t = regx.Replace(scopedTypeName, "_", i + 1);
                         scopedTypeDef = _classDefinitions.FirstOrDefault(y => y.Name == t);
-                        if (scopedTypeDef != null)
-                        {
+                        if (scopedTypeDef != null) {
                             found = true;
                             prop.Type = isList ? $"List<{typeName}>" : typeName;
                             break;
@@ -350,8 +322,7 @@ public static class PropertyClassGenerator
                     }
                     // If a parent class is not found, we're going to rename the type
                     // to match our naming conentions.
-                    if (!found)
-                    {
+                    if (!found) {
                         workingTypeName = workingTypeName.Replace('.', '_');
                         prop.Type = isList ? $"List<{workingTypeName}>" : workingTypeName;
                         prop.Options = new Definitions.EnumDef(typeName);
@@ -374,8 +345,7 @@ public static class PropertyClassGenerator
                 // Otherwise, create a new empty enum definition on the property.
                 // Change the rest of the occurrences of this data type in this class def.
                 var check = prop.Type;
-                foreach (var t in def.Properties.Where(t => t.Type == check))
-                {
+                foreach (var t in def.Properties.Where(t => t.Type == check)) {
                     t.Type = typeName;
                 }
                 prop.Options = new Definitions.EnumDef(typeName);
@@ -385,14 +355,12 @@ public static class PropertyClassGenerator
         }
     }
 
-    private static CodeMemberMethod GenerateDispatcherMethod()
-    {
+    private static CodeMemberMethod GenerateDispatcherMethod() {
         if (_classDefinitions is null) {
             throw new NullReferenceException($"{nameof(_classDefinitions)} cannot be null.");
         }
 
-        var codeMethod = new CodeMemberMethod()
-        {
+        var codeMethod = new CodeMemberMethod() {
             Name = "Dispatch",
             ReturnType = new CodeTypeReference(typeof(Imlight.Common.ObjectProperty.PropertyReflection.PropertyClass)),
             Attributes = MemberAttributes.Static | MemberAttributes.Public,
@@ -403,8 +371,7 @@ public static class PropertyClassGenerator
         // Create the start of this method. Then, iterate through the class definitions to create a case for each hash.
         var sb = new StringBuilder();
         sb.Append("switch (hash) {\n");
-        foreach (var classDef in _classDefinitions.Where(classDef => classDef.Name != "PropertyClass"))
-        {
+        foreach (var classDef in _classDefinitions.Where(classDef => classDef.Name != "PropertyClass")) {
             sb.Append($"{DispatchTabs}case {classDef.Hash}: return new {classDef.Name}();\n");
         }
         sb.Append($"{DispatchTabs}default: return null;\n");
@@ -415,16 +382,14 @@ public static class PropertyClassGenerator
         return codeMethod;
     }
 
-    private static CodeCompileUnit CreateCodeDom()
-    {
+    private static CodeCompileUnit CreateCodeDom() {
         // Initialize CodeDom.
         CodeCompileUnit codeCompileUnit = new();
         CodeNamespace codeNamespace = new(NamespaceName);
 
         // Declare code declaration. This will be the sealed base class in each file.
         // Every PropertyClass will be a subclass of this one.
-        CodeTypeDeclaration fileBaseClassDecl = new(TypesClassName)
-        {
+        CodeTypeDeclaration fileBaseClassDecl = new(TypesClassName) {
             IsPartial = true,
             IsClass = true,
             TypeAttributes = TypeAttributes.Public
@@ -435,8 +400,7 @@ public static class PropertyClassGenerator
 
         // Add imports to the namespace.
         foreach (var importDecl in Imports
-                     .Select(import => new CodeNamespaceImport(import)))
-        {
+                     .Select(import => new CodeNamespaceImport(import))) {
             codeNamespace.Imports.Add(importDecl);
         }
 
@@ -444,8 +408,7 @@ public static class PropertyClassGenerator
         codeCompileUnit.Namespaces.Add(codeNamespace);
         codeNamespace.Types.Add(fileBaseClassDecl);
 
-        foreach (var classDef in _classDefinitions)
-        {
+        foreach (var classDef in _classDefinitions) {
             // We don't need to generate this, as it's manually typed.
             if (classDef.Name == "PropertyClass") {
                 continue;
@@ -455,8 +418,7 @@ public static class PropertyClassGenerator
             fileBaseClassDecl.Members.Add(classDecl);
         }
 
-        foreach (var enumDef in _standaloneEnumDefinitions)
-        {
+        foreach (var enumDef in _standaloneEnumDefinitions) {
             var enumDecl = CreateDeclarationFromDefinition(enumDef);
             fileBaseClassDecl.Members.Add(enumDecl);
         }
@@ -469,12 +431,10 @@ public static class PropertyClassGenerator
         return codeCompileUnit;
     }
 
-    private static void WriteCodeDomToDisk(CodeCompileUnit compiler)
-    {
+    private static void WriteCodeDomToDisk(CodeCompileUnit compiler) {
         var domProvider = CodeDomProvider.CreateProvider("CSharp");
         var outputPath = $"{GetOrCreateOutputDirectory()}/{TypesClassName}.cs";
-        var options = new CodeGeneratorOptions
-        {
+        var options = new CodeGeneratorOptions {
             BracingStyle = "C",
             IndentString = "\t",
             ElseOnClosing = false,
@@ -492,19 +452,16 @@ public static class PropertyClassGenerator
         Log.Information($"Generated partial class to file {TypesClassName}.cs");
     }
 
-    private static CodeTypeDeclaration CreateDeclarationFromDefinition(Definitions.ClassDef def, bool isSub = false)
-    {
+    private static CodeTypeDeclaration CreateDeclarationFromDefinition(Definitions.ClassDef def, bool isSub = false) {
         var codeDecl = new CodeTypeDeclaration(def.Name);
 
         // Determine how many tabs must be applied, if this is a subclass.
         var bonusTabs = isSub ? "    " : "";
 
         // Add a base class, if one exists.
-        if (def.BaseName is not null)
-        {
+        if (def.BaseName is not null) {
             var properBaseName = def.BaseName;
-            if (properBaseName == "Search.ResultItem")
-            {
+            if (properBaseName == "Search.ResultItem") {
                 properBaseName = properBaseName.Replace('.', '_');
             }
             codeDecl.BaseTypes.Add(new CodeTypeReference(properBaseName));
@@ -517,15 +474,13 @@ public static class PropertyClassGenerator
         }
 
         // Iterate through sub classes and create a new, nested CodeDom class.
-        foreach (var subDef in def.SubClasses)
-        {
+        foreach (var subDef in def.SubClasses) {
             var subDecl = CreateDeclarationFromDefinition(subDef, true);
             codeDecl.Members.Add(subDecl);
         }
 
         // Iterate through the properties.
-        foreach (var propDef in def.Properties)
-        {
+        foreach (var propDef in def.Properties) {
             var snippet = CreateGenericPropertySnippet($"{PropertyTabs}{bonusTabs}{propDef}");
             codeDecl.Members.Add(snippet);
 
@@ -543,10 +498,8 @@ public static class PropertyClassGenerator
         return codeDecl;
     }
 
-    private static CodeTypeDeclaration CreateDeclarationFromDefinition(Definitions.EnumDef def, bool isSub = false)
-    {
-        var enumDecl = new CodeTypeDeclaration(def.Name)
-        {
+    private static CodeTypeDeclaration CreateDeclarationFromDefinition(Definitions.EnumDef def, bool isSub = false) {
+        var enumDecl = new CodeTypeDeclaration(def.Name) {
             IsEnum = true
         };
 
@@ -554,8 +507,7 @@ public static class PropertyClassGenerator
         var bonusTabs = isSub ? "    " : "";
 
         // Add the [Flags] attribute if needed
-        if (def.IsFlags)
-        {
+        if (def.IsFlags) {
             var flagsRef = new CodeTypeReference(typeof(FlagsAttribute));
             var flagsAttr = new CodeAttributeDeclaration(flagsRef);
             enumDecl.CustomAttributes.Add(flagsAttr);
@@ -566,8 +518,7 @@ public static class PropertyClassGenerator
             return enumDecl;
         }
 
-        foreach (var enumOptionDef in def.Options)
-        {
+        foreach (var enumOptionDef in def.Options) {
             var snippet = (def.IsStringValued)
                 ? CreateGenericPropertySnippet(
                     $"{PropertyTabs}{bonusTabs}{enumOptionDef.Name},")
@@ -580,8 +531,7 @@ public static class PropertyClassGenerator
         return enumDecl;
     }
 
-    private static string GetOrCreateOutputDirectory()
-    {
+    private static string GetOrCreateOutputDirectory() {
         if (!Directory.Exists(OutputPath)) {
             Directory.CreateDirectory(OutputPath);
         }

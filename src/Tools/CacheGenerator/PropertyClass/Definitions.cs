@@ -1,7 +1,7 @@
 ﻿/* Copyright (C) Revive101 Development Team - All Rights Reserved
- * Unauthorized copying of this file, via any medium is strictly prohibited
- * Proprietary and confidential.
- */
+* Unauthorized copying of this file, via any medium is strictly prohibited
+* Proprietary and confidential.
+*/
 
 using System.Xml;
 using Imlight.Common.Cryptography;
@@ -12,10 +12,8 @@ using SharpDX;
 
 namespace CacheGenerator.PropertyClass;
 
-internal class Definitions
-{
-    internal class ClassDef
-    {
+internal class Definitions {
+    internal class ClassDef {
         internal string Name { get; set; }
         internal string? BaseName { get; set; }
         internal ClassDef? BaseDef { get; set; }
@@ -26,8 +24,7 @@ internal class Definitions
         internal List<ClassDef> SubClasses { get; }
 
         // ctor
-        public ClassDef(XmlNode node)
-        {
+        public ClassDef(XmlNode node) {
             this.Properties = new List<PropertyDef>();
             this.SubClasses = new List<ClassDef>();
             var rawName = node.Attributes["Name"].Value;
@@ -42,8 +39,7 @@ internal class Definitions
             this.Name = rawName;
 
             // If the base definition name has been set, we need to clean that too.
-            if (rawBaseName is not null)
-            {
+            if (rawBaseName is not null) {
                 rawBaseName = DefinitionUtil.RefactorName(rawBaseName);
                 //rawBaseName = rawBaseName.Replace('.', '_');
                 this.BaseName = rawBaseName;
@@ -62,8 +58,7 @@ internal class Definitions
 
             // Iterate through the Xml child nodes and create a propertyDef.
             // Then, add that PropertyDef to this ClassDef.
-            foreach (XmlNode propNode in node.ChildNodes)
-            {
+            foreach (XmlNode propNode in node.ChildNodes) {
                 if (propNode.Name is "Function") {
                     continue;
                 }
@@ -73,8 +68,7 @@ internal class Definitions
             }
         }
 
-        private static string FixMadlibName(string rawName)
-        {
+        private static string FixMadlibName(string rawName) {
             // MadlibArgT<std::string const>
             if (!rawName.Contains('<')) {
                 return rawName;
@@ -95,8 +89,7 @@ internal class Definitions
         }
     }
 
-    internal class PropertyDef
-    {
+    internal class PropertyDef {
         internal string Name { get; init; }
         internal string Type { get; set; }
         internal int Flags { get; init; }
@@ -149,10 +142,8 @@ internal class Definitions
             };
 
         // ctor
-        public PropertyDef(XmlNode node)
-        {
-            try
-            {
+        public PropertyDef(XmlNode node) {
+            try {
                 var rawName = node.Attributes["Name"].Value;
                 this.Name = DefinitionUtil.RefactorName(rawName);
 
@@ -177,20 +168,17 @@ internal class Definitions
                 // Check if this property contains a nested node.
                 // If it does, it's an option. If the enumerator is of type `unsigned long`,
                 // it's a flagged enumerator.
-                if (node.ChildNodes.Count > 0 && node.ChildNodes[0]!.Name.StartsWith("Enum"))
-                {
+                if (node.ChildNodes.Count > 0 && node.ChildNodes[0]!.Name.StartsWith("Enum")) {
                     var optionsNode = node.ChildNodes[0];
                     this.Options = new EnumDef(optionsNode!);
                 }
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 Log.Logger.Error($"Property [{this.Name}] exception met: {ex.Message}");
             }
         }
 
-        private static bool TryParseType(string strType, string strContainer, out string parsedType)
-        {
+        private static bool TryParseType(string strType, string strContainer, out string parsedType) {
             /*
              * Attribute "Container" is the data structure used for a property.
              * 1. Static | Raw T
@@ -201,13 +189,11 @@ internal class Definitions
             // If the type is a class, struct, or enum, we don't need to validate it as it will be generated.
             if (strType.StartsWith("class ")
                 || strType.StartsWith("struct ")
-                || strType.StartsWith("enum "))
-            {
+                || strType.StartsWith("enum ")) {
                 var formattedName = strType;
 
                 // Check for pointers (which don't apply in C#).
-                if (strType.Contains("SharedPointer"))
-                {
+                if (strType.Contains("SharedPointer")) {
                     // Type="class SharedPointer<class PropertyClass>"
                     var i1 = strType.IndexOf('<');
                     var i2 = strType.IndexOf('>');
@@ -220,14 +206,12 @@ internal class Definitions
                 strType = DefinitionUtil.RefactorName(formattedName);
 
                 // Check to see if the type is an accepted type.
-                if (TryGetType(strType, out var type))
-                {
+                if (TryGetType(strType, out var type)) {
                     strType = type.ToString();
                     strType = DefinitionUtil.ParseScopeName(strType);
                 }
             }
-            else
-            {
+            else {
                 // Check to see if the type is an accepted type.
                 if (!TryGetType(strType, out var type)) {
                     throw new InvalidOperationException($"Type attribute [{strType}] could not be translated!");
@@ -243,13 +227,11 @@ internal class Definitions
             return true;
         }
 
-        private static bool TryGetType(string internalTypeName, out Type type)
-        {
+        private static bool TryGetType(string internalTypeName, out Type type) {
             return InternalTypeTranslationDict.TryGetValue(internalTypeName, out type);
         }
 
-        public override string ToString()
-        {
+        public override string ToString() {
             var type = Options is { IsDefaultOrBaseClass: false } ? Options.Name : Type;
             var str = $"[Property({Hash}, {Flags})] public {type} {Name}";
             //if (DefaultValue is not "") str += $" = {DefaultValue}";
@@ -259,8 +241,7 @@ internal class Definitions
         }
     }
 
-    internal class EnumDef
-    {
+    internal class EnumDef {
         internal string Name { get; set; }
         internal int OptionsCount { get; init; }
         internal EnumOptionDef[] Options { get; set; }
@@ -270,8 +251,7 @@ internal class Definitions
         internal bool DoNotWrite { get; set; }
 
         // ctor
-        internal EnumDef(XmlNode node)
-        {
+        internal EnumDef(XmlNode node) {
             DoNotWrite = false;
 
             // Get Xml values. We need exceptions to be thrown incase KI ever changes things.
@@ -288,8 +268,7 @@ internal class Definitions
             this.OptionsCount = bResult;
             this.Name = DefinitionUtil.RefactorName(rawName);
 
-            switch (rawName)
-            {
+            switch (rawName) {
                 // If the enumerator is a string type, we need to change some things.
                 // The value will be a string, which doesn't apply in C#.
                 case "std::string":
@@ -302,8 +281,7 @@ internal class Definitions
 
             // Finally, iterate through the child nodes and create a new definition for each.
             var options = new List<EnumOptionDef>();
-            for (int i = 0; i < bResult; i++)
-            {
+            for (int i = 0; i < bResult; i++) {
                 var cNode = node.ChildNodes[i];
                 var optDef = new EnumOptionDef(cNode!);
 
@@ -323,20 +301,17 @@ internal class Definitions
         }
 
         // ctor
-        internal EnumDef(string Name)
-        {
+        internal EnumDef(string Name) {
             this.Name = Name;
         }
     }
 
-    internal class EnumOptionDef
-    {
+    internal class EnumOptionDef {
         internal string Name { get; set; }
         internal string Value { get; set; }
 
         // ctor
-        internal EnumOptionDef(XmlNode node)
-        {
+        internal EnumOptionDef(XmlNode node) {
             // Get Xml attributes.
             var rawName = node.Attributes?["Name"]?.Value
                           ?? throw new NullReferenceException("Node somehow did not contain a name?");
@@ -360,16 +335,14 @@ internal class Definitions
         }
     }
 
-    private static class DefinitionUtil
-    {
+    private static class DefinitionUtil {
         /// <summary>
         /// Trims off the prefixed 'class' subtext found in some nodes.
         /// </summary>
         /// <param name="name"></param>
         /// <returns></returns>
         /// <exception cref="ArgumentNullException"></exception>
-        internal static string RefactorName(string name)
-        {
+        internal static string RefactorName(string name) {
             if (name is null) {
                 return null;
             }
@@ -389,8 +362,7 @@ internal class Definitions
                 : name.Split(' ')[1];
         }
 
-        internal static string ParseScopeName(string name)
-        {
+        internal static string ParseScopeName(string name) {
             return name.Split('.')[^1];
         }
     }

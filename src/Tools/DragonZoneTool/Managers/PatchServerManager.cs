@@ -3,6 +3,7 @@
  * Proprietary and confidential.
  */
 
+using Imlight.Common.Formats;
 using System.Net;
 
 namespace DragonZoneTool.Managers;
@@ -12,7 +13,7 @@ public static class PatchServerManager
     private const string PatchServerUrl = "http://phill030.de:12369/patcher/";
     private const string PatchServerWadUrlPrefix = "wads";
     private const int PatchServerTimeout = 10; // In seconds.
-    private const uint GameClientRevision = 740730;
+    private const uint GameClientRevision = 740872;
     private const string UserAgentValue = "KingsIsle Patcher";
     private const ushort DownloadBufferSize = 4096;
     private static string? _patchServerWorkingUrl;
@@ -26,7 +27,7 @@ public static class PatchServerManager
 
     public static bool IsPatchServerAvailable() => GetPatchServerStatus();
 
-    public static Wad DownloadWad(string wadName)
+    public static KiWad DownloadWad(string wadName)
     {
         // Download the wad from the patch server.
         // Remove the `.wad` extension if one exists.
@@ -42,7 +43,7 @@ public static class PatchServerManager
         download.Position = 0;
         download.CopyTo(newMs);
         newMs.Position = 0;
-        return new Wad(newMs);
+        return new KiWad(newMs);
     }
 
     private static bool GetPatchServerStatus()

@@ -10,7 +10,7 @@
     <ItemGroup>
       <ProjectReference Include="..\..\Common\Imlight.Common.csproj" />
     </ItemGroup>
-    
+
     <ItemGroup>
       <PackageReference Include="SharpDX.Mathematics" Version="4.2.0" />
       <PackageReference Include="System.CodeDom" Version="8.0.0-rc.1.23419.4" />

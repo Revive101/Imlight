@@ -15,7 +15,8 @@ public static class AccessPassManager
     public static string[] GetAccessPassZones()
     {
         var stream = FileUtility.GetFileStream(AccessPassPath);
-        if (stream is null) {
+        if (stream is null)
+        {
             throw new NullReferenceException($"AccessPass.xml was not found at path {AccessPassPath}.");
         }
 

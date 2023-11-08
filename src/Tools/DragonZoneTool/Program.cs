@@ -1,10 +1,16 @@
 ﻿/* Copyright (C) Revive101 Development Team - All Rights Reserved
- * Unauthorized copying of this file, via any medium is strictly prohibited
- * Proprietary and confidential.
- */
+* Unauthorized copying of this file, via any medium is strictly prohibited
+* Proprietary and confidential.
+*/
 
 using System.Globalization;
 using DragonZoneTool.Managers;
+using FuzzySharp;
+using Imlight.Common.Caches;
+using Imlight.Common.Formats;
+using Imlight.Common.ObjectProperty;
+using Serilog;
+using Serilog.Core;
 using Spectre.Console;
 
 namespace DragonZoneTool;
@@ -16,33 +22,41 @@ public static class Program
     private const string TriggerDataFileName = "triggers.xml";
 
     private static string[] _zoneNames;
-    private static Stack<Wad> _wadStack = new();
+    private static Stack<KiWad> _wadStack = new();
 
     public static void Main()
     {
-        if (!AreAllResourcesAvailable()) {
+        if (!AreAllResourcesAvailable())
             return;
-        }
 
-        Console.WriteLine("Enter the remote database URL, or a local path to an embedded database:");
-        var userDatabaseInput = Console.ReadLine();
-        if (userDatabaseInput is null) {
+        Console.Write("Connect to Imlight? (y/n) ");
+        var userSettingsInput = Console.ReadLine();
+        if (userSettingsInput is null)
             return;
-        }
 
-        if (userDatabaseInput.StartsWith("http"))
+        if (userSettingsInput == "y")
         {
-            Console.WriteLine("Using remote database. Enter the path to your certificate:");
-            var userCertificateInput = Console.ReadLine();
-            if (userCertificateInput is null) {
-                return;
-            }
-
-            DragonDatabaseManager.SetRemoteServer(userDatabaseInput, userCertificateInput);
+            DragonDatabaseManager.SetRemoteServer("https://a.worlddata.ravendb.community", "input/worlddata.dev.certificate.pfx");
         }
         else
         {
-            DragonDatabaseManager.SetEmbeddedServer(userDatabaseInput);
+
+            Console.WriteLine("Enter the remote database URL, or a local path to an embedded database:");
+            var userDatabaseInput = Console.ReadLine();
+            if (userDatabaseInput is null)
+                return;
+            if (userDatabaseInput.StartsWith("http"))
+            {
+                Console.WriteLine("Using remote database. Enter the path to your certificate:");
+                var userCertificateInput = Console.ReadLine();
+                if (userCertificateInput is null)
+                    return;
+                DragonDatabaseManager.SetRemoteServer(userDatabaseInput, userCertificateInput);
+            }
+            else
+            {
+                DragonDatabaseManager.SetEmbeddedServer(userDatabaseInput);
+            }
         }
 
         // Start the WAD input process.
@@ -62,16 +76,15 @@ public static class Program
             // Prompt the user to select a trigger from the current WAD.
             var workingTrigger = DoTriggerInput(workingWad);
 
-            if (workingTrigger == null) {
+            if (workingTrigger == null)
                 continue;
-            }
 
             var result = RebuildZoneTransferResult(workingWad.Name, workingTrigger.m_triggerName);
             DragonDatabaseManager.AddNewTeleport(workingWad.Name, workingTrigger.m_triggerName, result);
         }
     }
 
-    private static ServerTypeCache.Trigger? DoTriggerInput(Wad wad)
+    private static ServerTypeCache.Trigger? DoTriggerInput(KiWad wad)
     {
         // Get the triggers contained in this KIWAD, then format them for the user.
         // If a trigger has an existing teleport, mark it with a checkmark.
@@ -79,9 +92,8 @@ public static class Program
         var formatTriggers = FormatTriggers(wad.Name, ref triggers);
 
         // If our wad stack is more than one deep, allow the user to go back.
-        if (_wadStack.Count > 1) {
+        if (_wadStack.Count > 1)
             formatTriggers.Add("Crawl back to the previous working zone.");
-        }
 
         var rawTriggerSelected = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Select a trigger:")
             .PageSize(10)
@@ -101,9 +113,8 @@ public static class Program
         // If the trigger does not have an existing teleport, return it.
         var existingTeleport
             = DragonDatabaseManager.GetExistingTeleport(wad.Name, triggerSelected.m_triggerName);
-        if (existingTeleport is null) {
+        if (existingTeleport is null)
             return triggerSelected;
-        }
 
         // Otherwise, prompt the user to overwrite the existing teleport.
         var overwriteResult = AnsiConsole.Ask<string>($"[italic]This trigger already leads " +
@@ -124,7 +135,7 @@ public static class Program
         }
     }
 
-    private static Wad DoWadInput()
+    private static KiWad DoWadInput()
     {
         // Get the zone name from the user. Then, download the WAD.
         var zoneName = GetWadInputString();
@@ -150,9 +161,8 @@ public static class Program
                 .Ask<string>("Enter the name of a zone, or use familiar terms to fuzzy find:");
 
             // Return the zone name if the user typed it exactly.
-            if (_zoneNames.Contains(zoneName)) {
+            if (_zoneNames.Contains(zoneName))
                 return zoneName;
-            }
 
             // If we didn't find a match immediately, fuzzy find instead.
             var closestMatches = Fuzzy.FindClosestMatches(zoneName, _zoneNames);
@@ -166,16 +176,15 @@ public static class Program
                 .PageSize(10)
                 .AddChoices(selections));
 
-            if (zoneName == "Retry search") {
+            if (zoneName == "Retry search")
                 continue;
-            }
 
             // Refactor the zone name to not include percentage prefix.
             return zoneName.Split(' ')[^1];
         }
     }
 
-    private static IEnumerable<ServerTypeCache.Trigger>? GetWadTriggers(Wad wad)
+    private static IEnumerable<ServerTypeCache.Trigger>? GetWadTriggers(KiWad wad)
     {
         var fs = new FileSerializer();
         var triggers = fs.OpenClass<ServerTypeCache.WizZoneTriggers>(wad, TriggerDataFileName);
@@ -189,9 +198,8 @@ public static class Program
     private static List<string> FormatTriggers(string zoneName, ref IEnumerable<ServerTypeCache.Trigger> triggers)
     {
         var zoneData = DragonDatabaseManager.GetZoneData(zoneName);
-        if (zoneData is null) {
+        if (zoneData is null)
             return triggers.Select(x => $"X {x.m_triggerName}").ToList();
-        }
 
         var formattedTriggers = new List<string>();
         foreach (var t in triggers)
@@ -204,7 +212,7 @@ public static class Program
         return formattedTriggers;
     }
 
-    private static IEnumerable<TypeCache.LocationTemplate> GetWadLocations(Wad wad)
+    private static IEnumerable<TypeCache.LocationTemplate> GetWadLocations(KiWad wad)
     {
         var fs = new FileSerializer();
         return fs.OpenClass<TypeCache.WizZoneData>(wad, ZoneDataFileName).m_locationList;
@@ -224,7 +232,7 @@ public static class Program
                 .PageSize(10)
                 .AddChoices(destinationLocations.Select(x => $"{x.m_locName} @ {x.m_location} dir: {x.m_direction}")));
         // Refactor the selection name to not include the coordinate flavor text.
-        var destinationLocationStr = destinationLocation.Split('@')[^1].Replace(",",".");
+        var destinationLocationStr = destinationLocation.Split('@')[^1].Replace(",", ".");
         var destinationLocationDir = destinationLocation.Split("dir:")[^1].Trim().Replace(",", ".");
         var destinationCoords = $"{ConvertVector3ToWizard(destinationLocationStr)},{destinationLocationDir}";
 
@@ -232,7 +240,7 @@ public static class Program
         var panel = new Panel(
             $"Source Zone: {zoneName}\n" +
             $"Source Trigger: {triggerName}\n" +
-            $"Destination Zone: {zoneName}\n" +
+            $"Destination Zone: {destinationWad.Name}\n" +
             $"Destination Location: {destinationCoords}\n");
         panel.Header = new PanelHeader("ResTeleport");
         panel.Border = BoxBorder.Rounded;
@@ -264,13 +272,10 @@ public static class Program
         try
         {
             _zoneNames = AccessPassManager.GetAccessPassZones();
-            if (_zoneNames.Length <= 0) {
+            if (_zoneNames.Length <= 0)
                 throw new Exception("No zones found in AccessPass.");
-            }
-
-            if (!PatchServerManager.IsPatchServerAvailable()) {
+            if (!PatchServerManager.IsPatchServerAvailable())
                 throw new Exception("Patch server is not available.");
-            }
         }
         catch (Exception ex)
         {
@@ -287,7 +292,7 @@ public static class Program
         var components = input.Trim().Split(' ');
 
         // Extract the numeric values for X, Y, and Z
-        var x = ExtractValue(components[0]).ToString().Replace(",",".");
+        var x = ExtractValue(components[0]).ToString().Replace(",", ".");
         var y = ExtractValue(components[1]).ToString().Replace(",", ".");
         var z = ExtractValue(components[2]).ToString().Replace(",", ".");
 

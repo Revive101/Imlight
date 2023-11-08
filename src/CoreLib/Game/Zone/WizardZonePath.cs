@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Akka.Actor;
+using Imlight.Common.Caches;
 using Imlight.Common.IO;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Shared.Networking;
@@ -224,16 +225,16 @@ public class WizardZonePath : ReceiveProtocolDispatcher {
                 var rng = new Random();
                 var rngIndex = rng.Next(0, _nodes.Count);
                 return _nodes.ElementAt(rngIndex).Key;
-            case SpawnObjectInfo.StartNodeType.SNT_RANDOM_UNIQUE:
+            case TypeCache.SpawnObjectInfo.StartNodeType.SNT_RANDOM_UNIQUE:
                 var selection = _nodes.Where(x => x.Value).ToArray();
                 var rng2 = new Random();
                 var rngIndex2 = rng2.Next(0, selection.Length);
                 return _nodes.ElementAt(rngIndex2).Key;
-            case SpawnObjectInfo.StartNodeType.SNT_FIRST:
+            case TypeCache.SpawnObjectInfo.StartNodeType.SNT_FIRST:
                 return _nodes.First().Key;
-            case SpawnObjectInfo.StartNodeType.SNT_LAST:
+            case TypeCache.SpawnObjectInfo.StartNodeType.SNT_LAST:
                 return _nodes.Last().Key;
-            case SpawnObjectInfo.StartNodeType.SNT_SPECIFIC:
+            case TypeCache.SpawnObjectInfo.StartNodeType.SNT_SPECIFIC:
                 return _nodes.FirstOrDefault().Key;
             default:
                 throw new ArgumentOutOfRangeException(nameof(spawnInfo.m_kStartNodeType),

@@ -5,6 +5,7 @@
 
 using System.Security.Cryptography.X509Certificates;
 using DragonZoneTool.Models;
+using Imlight.Common.Caches;
 using Raven.Client.Documents;
 using Raven.Client.ServerWide;
 using Raven.Embedded;
@@ -17,8 +18,8 @@ public static class DragonDatabaseManager
 {
     private const ushort EmbeddedDatabasePort = 8080;
 
-    private static readonly string _databaseName = "Imlight";
-    private static readonly string _collectionName = "ZoneData";
+    private static readonly string _databaseName = "WorldData";
+    private static readonly string _collectionName = "ZoneTransfer";
 
     private static IDocumentStore? _store;
     public static IDocumentStore? Store => _store ??= _isInEmbeddedMode ? CreateEmbeddedStore() : CreateRemoteStore();
@@ -72,7 +73,6 @@ public static class DragonDatabaseManager
         var databaseOptions = new DatabaseOptions(new DatabaseRecord(databaseName: _databaseName));
         return EmbeddedServer.Instance.GetDocumentStore(databaseOptions);
     }
-
     private static IDocumentStore? CreateRemoteStore()
     {
         WriteLine("Initializing remote RavenDB database for the first time..");
