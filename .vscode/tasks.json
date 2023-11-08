@@ -7,7 +7,7 @@
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/src/Backend/Imlight.Backend.csproj",
+                "${workspaceFolder}/src/Director/Imlight.Director.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
@@ -19,7 +19,7 @@
             "type": "process",
             "args": [
                 "publish",
-                "${workspaceFolder}/src/Backend/Imlight.Backend.csproj",
+                "${workspaceFolder}/src/Director/Imlight.Director.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
@@ -33,7 +33,7 @@
                 "watch",
                 "run",
                 "--project",
-                "${workspaceFolder}/src/Backend/Imlight.Backend.csproj"
+                "${workspaceFolder}/src/Director/Imlight.Director.csproj"
             ],
             "problemMatcher": "$msCompile"
         }
