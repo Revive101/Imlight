@@ -218,7 +218,7 @@ public class ObjectSerializer {
         var writerFunc = ClassElementWriters.TryGetWriter(type);
 
         // Serialize enum if field type is enum or the ProperyFlags indicate bits or enum.
-        if ((flags & (SerializerOptions.PropertyFlags.Bits | SerializerOptions.PropertyFlags.Enum)) != 0) {
+        if ((flags & (SerializerOptions.PropertyFlags.Bits | SerializerOptions.PropertyFlags.Enum)) != 0 || type.IsEnum) {
             if ((Options.BehaviorFlags & SerializerOptions.Behaviors.StringEnums) != 0) {
                 writer.WriteString(value.ToString()!);
             }
