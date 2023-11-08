@@ -6,83 +6,68 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.ComponentModel;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Imlight.Common.Structures
-{
-    public class ObservableQueue<T> : Queue<T>, INotifyCollectionChanged, IDisposable
-    {
+namespace Imlight.Common.Structures;
 
-        public event NotifyCollectionChangedEventHandler CollectionChanged;
+public class ObservableQueue<T> : Queue<T>, INotifyCollectionChanged, IDisposable {
 
-        public ObservableQueue()
-        {
+    public event NotifyCollectionChangedEventHandler CollectionChanged;
+
+    public ObservableQueue() {
+    }
+
+    public ObservableQueue(IEnumerable<T> collection) : base(collection) {
+        for (int i = 0; i < collection.Count(); i++) {
+            base.Enqueue(collection.ElementAt(i));
         }
+    }
 
-        public ObservableQueue(IEnumerable<T> collection) : base(collection)
-        {
-            for (int i = 0; i < collection.Count(); i++)
-                base.Enqueue(collection.ElementAt(i));
+    public ObservableQueue(List<T> collection) : base(collection) {
+        for (int i = 0; i < collection.Count(); i++) {
+            base.Enqueue(collection.ElementAt(i));
         }
+    }
 
-        public ObservableQueue(List<T> collection) : base(collection)
-        {
-            for (int i = 0; i < collection.Count(); i++)
-                base.Enqueue(collection.ElementAt(i));
-        }
+    public ObservableQueue(int capacity) : base(capacity) {
+    }
 
-        public ObservableQueue(int capacity) : base(capacity)
-        {
-        }
+    public new virtual void Clear() {
+        base.Clear();
+        this.CollectionChanged(
+            this,
+            new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+    }
 
-        public new virtual void Clear()
-        {
-            base.Clear();
-            this.CollectionChanged(
-                this,
-                new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
-        }
+    public new virtual void Enqueue(T item) {
+        base.Enqueue(item);
+        this.CollectionChanged(
+            this,
+            new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item));
+    }
 
-        public new virtual void Enqueue(T item)
-        {
-            base.Enqueue(item);
-            this.CollectionChanged(
-                this,
-                new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item));
-        }
+    public new virtual void Dequeue() {
+        var lastItem = base.Dequeue();
+        this.CollectionChanged(
+            this,
+            new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, lastItem));
+    }
 
-        public new virtual void Dequeue()
-        {
-            var lastItem = base.Dequeue();
-            this.CollectionChanged(
-                this,
-                new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, lastItem));
-        }
-        
-        public T this[int index]
-        {
-            get
-            {
-                if (index < 0 || index >= Count)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index));
-                }
-
-                return this.ElementAt(index);
+    public T this[int index] {
+        get {
+            if (index < 0 || index >= Count) {
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
-        }
 
-        ~ObservableQueue()
-        {
-            base.Clear();
+            return this.ElementAt(index);
         }
+    }
 
-        public void Dispose()
-        {
-            base.Clear();
-        }
+    ~ObservableQueue() {
+        base.Clear();
+    }
+
+    public void Dispose() {
+        base.Clear();
     }
 }

@@ -7,30 +7,38 @@ using System;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace Imlight.Common.Cryptography
-{
-    public static class SessionKey
-    {
-        public static string GenerateHash(string input, ulong salt)
-        {
-            byte[] saltBytes = BitConverter.GetBytes(salt);
-            byte[] inputBytes = Encoding.UTF8.GetBytes(input);
+namespace Imlight.Common.Cryptography;
 
-            byte[] combinedBytes = new byte[saltBytes.Length + inputBytes.Length];
-            Buffer.BlockCopy(saltBytes, 0, combinedBytes, 0, saltBytes.Length);
-            Buffer.BlockCopy(inputBytes, 0, combinedBytes, saltBytes.Length, inputBytes.Length);
+public static class SessionKey {
+    /// <summary>
+    /// Generates a hash for the given input string and salt using SHA256 algorithm.
+    /// </summary>
+    /// <param name="input">The input string to generate hash for.</param>
+    /// <param name="salt">The salt value to use for generating hash.</param>
+    /// <returns>The generated hash as a base64 encoded string.</returns>
+    public static string GenerateHash(string input, ulong salt) {
+        byte[] saltBytes = BitConverter.GetBytes(salt);
+        byte[] inputBytes = Encoding.UTF8.GetBytes(input);
 
-            using (SHA256 sha256 = SHA256.Create())
-            {
-                byte[] hashBytes = sha256.ComputeHash(combinedBytes);
-                return Convert.ToBase64String(hashBytes);
-            }
+        byte[] combinedBytes = new byte[saltBytes.Length + inputBytes.Length];
+        Buffer.BlockCopy(saltBytes, 0, combinedBytes, 0, saltBytes.Length);
+        Buffer.BlockCopy(inputBytes, 0, combinedBytes, saltBytes.Length, inputBytes.Length);
+
+        using (SHA256 sha256 = SHA256.Create()) {
+            byte[] hashBytes = sha256.ComputeHash(combinedBytes);
+            return Convert.ToBase64String(hashBytes);
         }
-        
-        public static bool ValidateHash(string input, ulong salt, string expectedHash)
-        {
-            string generatedHash = GenerateHash(input, salt);
-            return generatedHash.Equals(expectedHash);
-        }
+    }
+
+    /// <summary>
+    /// Validates the hash of the input string using the provided salt and expected hash.
+    /// </summary>
+    /// <param name="input">The input string to validate.</param>
+    /// <param name="salt">The salt used to generate the hash.</param>
+    /// <param name="expectedHash">The expected hash to compare against the generated hash.</param>
+    /// <returns>True if the generated hash matches the expected hash, false otherwise.</returns>
+    public static bool ValidateHash(string input, ulong salt, string expectedHash) {
+        string generatedHash = GenerateHash(input, salt);
+        return generatedHash.Equals(expectedHash);
     }
 }

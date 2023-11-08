@@ -4,11 +4,10 @@
  */
 
 using System.Net;
-using WizUnraveler.Formats;
 
 namespace DragonZoneTool.Managers;
 
-public static class PatchServerManager 
+public static class PatchServerManager
 {
     private const string PatchServerUrl = "http://phill030.de:12369/patcher/";
     private const string PatchServerWadUrlPrefix = "wads";
@@ -20,18 +19,20 @@ public static class PatchServerManager
 
     static PatchServerManager()
     {
-        if (!GetPatchServerStatus())
+        if (!GetPatchServerStatus()) {
             throw new Exception($"Patch server is not available!");
+        }
     }
-    
+
     public static bool IsPatchServerAvailable() => GetPatchServerStatus();
 
     public static Wad DownloadWad(string wadName)
     {
         // Download the wad from the patch server.
         // Remove the `.wad` extension if one exists.
-        if (wadName.EndsWith(".wad", StringComparison.OrdinalIgnoreCase))
+        if (wadName.EndsWith(".wad", StringComparison.OrdinalIgnoreCase)) {
             wadName = wadName[..^4];
+        }
         // Replace forward slashes with a hyphen.
         wadName = wadName.Replace('/', '-');
 
@@ -86,7 +87,7 @@ public static class PatchServerManager
             return false;
         }
     }
-    
+
     private static async Task<MemoryStream> DownloadFileStream(string url)
     {
         try
@@ -120,5 +121,5 @@ public static class PatchServerManager
             return null;
         }
     }
- 
+
 }

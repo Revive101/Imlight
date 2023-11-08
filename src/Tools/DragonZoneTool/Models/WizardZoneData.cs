@@ -3,8 +3,6 @@
  * Proprietary and confidential.
  */
 
-using WizUnraveler.Secrets;
-
 namespace DragonZoneTool.Models;
 
 public class WizardZoneData

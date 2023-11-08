@@ -1,0 +1,52 @@
+﻿/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
+using System;
+using System.IO;
+using System.Reflection;
+using Akka.Actor;
+using Akka.Configuration;
+using Imlight.Common;
+
+namespace Imlight.Director;
+
+internal static class AkkaConfiguration {
+    private const string CONFIGURATION_FILE_NAME = "akka.conf";
+
+    private static readonly string ConfigLocation = Path.Combine(
+        Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? string.Empty,
+        $@"Config/{CONFIGURATION_FILE_NAME}");
+
+    internal static bool CreateActorSystem(string name, out ActorSystem system) {
+        system = null;
+
+        if (!GetAkkaConfiguration(out var config)) {
+            return false;
+        }
+
+        system = ActorSystem.Create(name, config);
+        return true;
+    }
+
+    private static bool GetAkkaConfiguration(out Akka.Configuration.Config config) {
+        Logger.Information("Searching for Akka.NET configuration file {ConfigLocation}", Logger.Args(ConfigLocation));
+        config = default;
+
+        try {
+            if (!File.Exists(ConfigLocation)) {
+                return false;
+            }
+
+            var configContents = File.ReadAllText(ConfigLocation);
+
+            config = ConfigurationFactory.ParseString(configContents);
+            return true;
+        }
+        catch (Exception e) {
+            Logger.Error(e.Message);
+            return false;
+        }
+    }
+}

@@ -352,3 +352,4 @@ MigrationBackup/
 src/.claudiaideconfig
 .directory
 act.vault
+/src/Backend/ImlightEmbeddedDatabase/Databases/Playerdata/

@@ -13,11 +13,12 @@ public static class FileUtility
         Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? string.Empty, "input");
     public static readonly string OutputPath =
         Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? string.Empty, "output");
-    
+
     public static MemoryStream? GetFileStream(string path)
     {
-        if (!File.Exists(path))
+        if (!File.Exists(path)) {
             return null;
+        }
 
         var fs = File.ReadAllBytes(path);
         var ms = new MemoryStream(fs);
