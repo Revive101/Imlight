@@ -15,8 +15,6 @@ using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Implementations;
-using Imlight.CoreLib.WizardData.Models;
-using Serilog;
 using SharpDX;
 using static Imlight.Common.Caches.ServerTypeCache;
 
@@ -57,37 +55,30 @@ public static class WizardZoneLoader {
     /// <param name="zoneActorRef">The Akka.NET actor reference of the zone.</param>
     public static void LoadZoneData(WizardZone zone, IActorRef zoneActorRef) {
         lock (s_lockObject) {
-            try {
-                s_zone = zone;
-                s_zoneActorRef = zoneActorRef;
+            s_zone = zone;
+            s_zoneActorRef = zoneActorRef;
 
-                if (!ResourceManager.TryLoadFile(zone.ZoneName, out s_wad)) {
-                    Logger.Error("Zone {ZoneName} tried to load its own data, but none was " +
-                                 "found in the {Name}. We will continue, but the zone will not " +
-                                 "contain any objects, mobs or volumes.",
-                        Logger.Args(zone.ZoneName, nameof(ResourceManager)));
-                    return;
-                }
+            if (!ResourceManager.TryLoadFile(zone.ZoneName, out s_wad)) {
+                Logger.Error("Zone {ZoneName} tried to load its own data, but none was " +
+                             "found in the {Name}. We will continue, but the zone will not " +
+                             "contain any objects, mobs or volumes.",
+                    Logger.Args(zone.ZoneName, nameof(ResourceManager)));
+                return;
+            }
 
-                LoadZoneData();
-                LoadSpawnData();
-                LoadPathData();
-                LoadNodeData();
-                LoadVolumeData();
-                LoadTriggerData();
-                CreateZoneCoreObjects();
-                CreateZoneCombatSigils();
-                CreateZonePaths();
-                CreateZoneVolumes();
-                CreateZoneTriggers();
-            }
-            catch (Exception ex) {
-                Logger.Warning("Zone [{ZoneName}] could not load resources for whatever " +
-                                   "reason. Exception thrown: {Ex}", Logger.Args(zone.ZoneName, ex));
-            }
-            finally {
-                ClearUnmanagedMemory();
-            }
+            LoadZoneData();
+            LoadSpawnData();
+            LoadPathData();
+            LoadNodeData();
+            LoadVolumeData();
+            LoadTriggerData();
+            CreateZoneCoreObjects();
+            CreateZoneCombatSigils();
+            CreateZonePaths();
+            CreateZoneVolumes();
+            CreateZoneTriggers();
+
+            ClearUnmanagedMemory();
         }
     }
 
@@ -98,7 +89,7 @@ public static class WizardZoneLoader {
         Logger.Verbose("Loading zone data for {ZoneName}...", Logger.Args(s_zone.ZoneName));
 
         var serializer = new FileSerializer();
-        var s_zoneData = serializer.OpenClass<TypeCache.WizZoneData>(s_wad, ZoneDataFileName);
+        s_zoneData = serializer.OpenClass<TypeCache.WizZoneData>(s_wad, ZoneDataFileName);
 
         if (s_zoneData is null) {
             Logger.Error("Zone {ZoneName} could not load {ZoneDataFileName} as it was missing or invalid.",
@@ -112,12 +103,9 @@ public static class WizardZoneLoader {
     private static void LoadSpawnData() {
         Logger.Verbose("Loading spawn data for {ZoneName}...", Logger.Args(s_zone.ZoneName));
 
-        var serializer = new FileSerializer()
-            .OnBehaviors(SerializerOptions.Behaviors.UseFlags
-                       | SerializerOptions.Behaviors.CompactLength
-                       | SerializerOptions.Behaviors.StringEnums);
-
+        var serializer = new FileSerializer();
         s_spawnData = serializer.OpenClass<TypeCache.SpawnManager>(s_wad, SpawnDataFileName);
+
         if (s_spawnData is null) {
             Logger.Error("Zone {Name} could not load {SpawnDataFileName} as it was missing or invalid.",
                 Logger.Args(s_zone.ZoneName, SpawnDataFileName));
@@ -132,6 +120,7 @@ public static class WizardZoneLoader {
 
         var serializer = new FileSerializer();
         s_pathData = serializer.OpenClass<TypeCache.PathManager_PathTemplateList>(s_wad, PathDataFileName);
+
         if (s_pathData is null) {
             Logger.Error(
                 "Zone {Name} could not load {PathDataFileName} as it was missing or invalid.",
@@ -147,6 +136,7 @@ public static class WizardZoneLoader {
 
         var serializer = new FileSerializer();
         s_nodeData = serializer.OpenClass<TypeCache.PathManager_NodeTemplateList>(s_wad, NodeDataFileName);
+
         if (s_nodeData is null) {
             Logger.Error(
                 "Zone {Name} could not load {NodeDataFileName} as it was missing or invalid.",
@@ -162,6 +152,7 @@ public static class WizardZoneLoader {
 
         var serializer = new FileSerializer();
         s_zoneVolumes = serializer.OpenClass<WizZoneVolumes>(s_wad, VolumeDataFileName);
+
         if (s_zoneVolumes is null) {
             Logger.Error(
                 "Zone {Name} could not load {VolumeDataFileName} as it was missing or invalid.",
@@ -177,6 +168,7 @@ public static class WizardZoneLoader {
 
         var serializer = new FileSerializer();
         s_zoneTriggers = serializer.OpenClass<WizZoneTriggers>(s_wad, TriggerDataFileName);
+
         if (s_zoneTriggers is null) {
             Logger.Error(
                 "Zone {Name} could not load {TriggerDataFileName} as it was missing or invalid.",
@@ -188,6 +180,10 @@ public static class WizardZoneLoader {
     /// Creates game objects for the zone based on the loaded zone data.
     /// </summary>
     private static void CreateZoneCoreObjects() {
+        if (s_zoneData is null) {
+            return;
+        }
+
         foreach (var objectInfo in s_zoneData.m_objectList
             .Where(info => info != null)
             .Where(info => info is not CombatSigil)) {
