@@ -21,14 +21,13 @@ namespace Imlight.Common.ObjectProperty;
 public class FileSerializer : ObjectSerializer {
     private const uint BiNdMagic = 0x644E4942;
     private const uint BiNdPropertyFlags = 7;
-    private const int BiNdHeaderSize = 4;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="FileSerializer"/> class with default options.
     /// </summary>
     public FileSerializer() {
         base.Options.SerializerMode = SerializerOptions.Mode.Verbose;
-        base.Options.BehaviorFlags = SerializerOptions.Behaviors.UseFlags | SerializerOptions.Behaviors.CompactLength;
+        base.Options.BehaviorFlags = SerializerOptions.Behaviors.None;
         base.Options.PropertyMask = (SerializerOptions.PropertyFlags) BiNdPropertyFlags;
     }
 
@@ -104,18 +103,11 @@ public class FileSerializer : ObjectSerializer {
     }
 
     private T? DeserializeFromStream<T>(MemoryStream stream) where T : PropertyClass {
-        Span<byte> buffer = stackalloc byte[BiNdHeaderSize];
-        var read = stream.Read(buffer);
+        var reader = new BitReader(stream);
+        var header = reader.ReadUInt32();
 
-        // Validate that there is even enough data here.
-        if (read != BiNdHeaderSize) {
-            return null;
-        }
-
-        var header = BitConverter.ToUInt32(buffer);
         if (header == BiNdMagic) {
             // If this is BINd_MAGIC, the flags are next.
-            var reader = new BitReader(stream);
             var flags = reader.ReadUInt32();
             if ((flags & 8) != 0) {
                 _ = reader.ReadBit();
@@ -127,61 +119,19 @@ public class FileSerializer : ObjectSerializer {
             return DeserializeAndHandleErrors<T>(reader.GetRelativeData());
         }
         else {
-            // If this is not BiNd, we'll try to read it the same, just without the BiNd header and flags.
+            // If this is not BiNd, we'll try to read it the same, just with default settings.
             stream.Seek(0, SeekOrigin.Begin);
             return DeserializeAndHandleErrors<T>(stream.ToArray());
         }
     }
 
     private T? DeserializeAndHandleErrors<T>(byte[] data) where T : PropertyClass {
-        try {
-            var val = Deserialize(data);
-            if (val is null) {
-                return default;
-            }
-            else {
-                return (T) val;
-            }
+        var val = Deserialize(data);
+        if (val is null) {
+            return default;
         }
-        catch {
-            // Log the exception.
-            Logger.Error("Failed to deserialize {0}", Logger.Args(typeof(T).Name));
-            return null;
+        else {
+            return (T) val;
         }
-    }
-
-    private static T? ReadXml<T>(XmlDocument doc) where T : PropertyClass {
-        if (doc is null) {
-            throw new ArgumentNullException(nameof(doc));
-        }
-
-        var xmlObjects = GetSerializedXmlObjects(doc);
-        if (xmlObjects is null) {
-            return null;
-        }
-
-        var nameAttr = xmlObjects.Attributes?.GetNamedItem("Name");
-        var objName = "";
-        if (nameAttr != null) {
-            objName = nameAttr.Value;
-        }
-        else if (xmlObjects.LocalName.StartsWith("class.")) {
-            objName = $"class {xmlObjects.LocalName[6..]}";
-        }
-
-        var objHash = StringHash.Compute(objName!);
-        var propClass = TypeCache.Dispatch(objHash);
-
-        return (T) propClass;
-    }
-
-    private static XmlNode? GetSerializedXmlObjects(XmlNode doc) {
-        var objCollection = doc["Objects"];
-        if (objCollection is null) {
-            //throw new InvalidOperationException("Cannot find Object Collection!");
-            return null;
-        }
-
-        return objCollection;
     }
 }
