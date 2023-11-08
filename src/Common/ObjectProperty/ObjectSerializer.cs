@@ -13,14 +13,13 @@ using Imlight.Common.IO;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.Common.Caches;
 using SharpDX;
+using Serilog;
 
 namespace Imlight.Common.ObjectProperty;
 
 public class ObjectSerializer {
     private const byte RecursionLimit = byte.MaxValue / 2;
-
     protected SerializerOptions Options;
-
     private int _recursionLevel;
 
     /// <summary>
@@ -290,13 +289,13 @@ public class ObjectSerializer {
     }
 
     protected virtual bool PreloadObject(BitReader buffer, out PropertyClass? propClass) {
-        // Dispatch the hash to our type cache to see if we carry this type.
         var hash = buffer.ReadUInt32();
         if (hash == 0) {
             propClass = null;
             return false;
         }
 
+        // Dispatch the hash to our type cache to see if we carry this type.
         propClass = TypeCache.Dispatch(hash);
         if (propClass is not null) {
             return true;
@@ -406,25 +405,21 @@ public class ObjectSerializer {
         if (fieldType.IsGenericType
             && fieldType.GetGenericTypeDefinition() == typeof(List<>)) {
             // Create a generic list and iterate through the elements.
-            var innerType = fieldType.GetGenericArguments()[0];
-            var vecType = typeof(List<>).MakeGenericType(innerType);
-            var vec = (IList) Activator.CreateInstance(vecType)!
-                ?? throw new Exception($"Could not create generic list of type {innerType}.");
+            var fieldInnerType = fieldType.GetGenericArguments()[0];
+            var vectorType = typeof(List<>).MakeGenericType(fieldInnerType);
+            var vector = (IList) Activator.CreateInstance(vectorType)!;
+            var vectorLength = ReadVectorCount(reader);
 
-            var vecLength = ReadVectorCount(reader);
-            for (int i = 0; i < vecLength; i++) {
-                var val = DeserializeObjectValue(reader, innerType);
-                if (val is null) {
-                    vec?.Add(null);
-                    continue;
-                }
+            // Iterate through the elements and deserialize them.
+            for (int i = 0; i < vectorLength; i++) {
+                var val = DeserializeObjectValue(reader, fieldInnerType);
 
                 // For some reason, GID fails to be added to the generic list type.
                 // @todo: fixme
-                vec?.Add(innerType == typeof(GID) ? new GID((ulong) val) : val);
+                vector?.Add(fieldInnerType == typeof(GID) ? new GID((ulong) val) : val);
             }
 
-            SetValue(propertyClass, field, vec!);
+            SetValue(propertyClass, field, vector!);
         }
         else {
             var val = DeserializeObjectValue(reader, field.FieldType);
@@ -451,6 +446,7 @@ public class ObjectSerializer {
 
         }
 
+        // If it's a primitive data type, we'll just read it as-is.
         var potentialReader = ClassElementReaders.TryGetReader(type);
         if (potentialReader is not null) {
             return potentialReader.Invoke(reader);
@@ -458,18 +454,6 @@ public class ObjectSerializer {
 
         // If it's not a primitive data type, it's another PropertyClass.
         var subVal = DeserializeInternal(reader);
-
-        // This is a failsafe. If we could not successfully deserialize the PropertyClass, the buffer alignment
-        // will be just before the PropertyClass size. Read that size, and skip by that amount of bytes.
-        if (subVal is null && Options.SerializerMode == SerializerOptions.Mode.Verbose) {
-            // Just return null if the buffer doesn't have enough bits to read.
-            if (reader.BitPos() + 32 > reader.GetData().Length * 8) {
-                return null;
-            }
-
-            var skip = reader.ReadInt32();
-            reader.SeekBit(reader.BitPos() + skip - 32);
-        }
 
         return subVal;
     }
@@ -540,7 +524,7 @@ public class ObjectSerializer {
 
     private uint ReadVectorCount(BitReader buffer) {
         if ((Options.BehaviorFlags & SerializerOptions.Behaviors.CompactLength) != 0) {
-            // If the LSB is 1, we're still using the regular length.
+            // If the MSB is 1, we're still using the regular length.
             return buffer.ReadBits<uint>(buffer.ReadBit() ? 31 : 7);
         }
         else {
