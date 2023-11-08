@@ -143,7 +143,7 @@ internal static class Program {
         var buildConfiguration = GetBuildConfiguration();
         Console.Write(@"|___/");
         Console.ForegroundColor = ConsoleColor.DarkGray;
-        Console.Write($"   (proto-v1.1.0 {buildConfiguration})\n");
+        Console.Write($"   (NETHRA-v1.0.0 {buildConfiguration})\n");
         Console.WriteLine("");
     }
 
