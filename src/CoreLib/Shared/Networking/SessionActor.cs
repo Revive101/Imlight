@@ -312,8 +312,8 @@ public class SessionActor : ReceiveActor, IDisposable {
             var props = Akka.Actor.Props.Create(service, this);
             var childRef = Context.ActorOf(props, serviceName);
 
-            Logger.Verbose("New actor created under {Path}: {Name}",
-                Logger.Args(Context.Self.Path, serviceName));
+            Logger.Verbose("New actor created for session {Id}: {Name}",
+                Logger.Args(SessionID, serviceName));
 
             // We've created the service as a child actor. Problem is, we need to know the actual class
             // identity to use it later. To do that, we'll ask the actor to identify itself.

@@ -16,6 +16,7 @@ using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models;
+using Serilog;
 using SharpDX;
 using static Imlight.Common.Caches.ServerTypeCache;
 
@@ -57,13 +58,13 @@ public static class WizardZoneLoader {
     public static void LoadZoneData(WizardZone zone, IActorRef zoneActorRef) {
         lock (s_lockObject) {
             try {
-                var t = s_zone = zone;
+                s_zone = zone;
                 s_zoneActorRef = zoneActorRef;
 
                 if (!ResourceManager.TryLoadFile(zone.ZoneName, out s_wad)) {
                     Logger.Error("Zone {ZoneName} tried to load its own data, but none was " +
-                                     "found in the {Name}. We will continue, but the zone will not " +
-                                     "contain any objects, mobs or volumes.",
+                                 "found in the {Name}. We will continue, but the zone will not " +
+                                 "contain any objects, mobs or volumes.",
                         Logger.Args(zone.ZoneName, nameof(ResourceManager)));
                     return;
                 }
@@ -94,6 +95,8 @@ public static class WizardZoneLoader {
     /// Loads the zone data from the KIWAD file.
     /// </summary>
     private static void LoadZoneData() {
+        Logger.Verbose("Loading zone data for {ZoneName}...", Logger.Args(s_zone.ZoneName));
+
         var serializer = new FileSerializer();
         var s_zoneData = serializer.OpenClass<TypeCache.WizZoneData>(s_wad, ZoneDataFileName);
 
@@ -107,6 +110,8 @@ public static class WizardZoneLoader {
     /// Loads the spawn data from the KIWAD file.
     /// </summary>
     private static void LoadSpawnData() {
+        Logger.Verbose("Loading spawn data for {ZoneName}...", Logger.Args(s_zone.ZoneName));
+
         var serializer = new FileSerializer()
             .OnBehaviors(SerializerOptions.Behaviors.UseFlags
                        | SerializerOptions.Behaviors.CompactLength
@@ -123,6 +128,8 @@ public static class WizardZoneLoader {
     /// Loads the path data from the KIWAD file.
     /// </summary>
     private static void LoadPathData() {
+        Logger.Verbose("Loading path data for {ZoneName}...", Logger.Args(s_zone.ZoneName));
+
         var serializer = new FileSerializer();
         s_pathData = serializer.OpenClass<TypeCache.PathManager_PathTemplateList>(s_wad, PathDataFileName);
         if (s_pathData is null) {
@@ -136,6 +143,8 @@ public static class WizardZoneLoader {
     /// Loads the node data from the KIWAD file.
     /// </summary>
     private static void LoadNodeData() {
+        Logger.Verbose("Loading node data for {ZoneName}...", Logger.Args(s_zone.ZoneName));
+
         var serializer = new FileSerializer();
         s_nodeData = serializer.OpenClass<TypeCache.PathManager_NodeTemplateList>(s_wad, NodeDataFileName);
         if (s_nodeData is null) {
@@ -149,6 +158,8 @@ public static class WizardZoneLoader {
     /// Load the volume data from the KIWAD file.
     /// </summary>
     private static void LoadVolumeData() {
+        Logger.Verbose("Loading volume data for {ZoneName}...", Logger.Args(s_zone.ZoneName));
+
         var serializer = new FileSerializer();
         s_zoneVolumes = serializer.OpenClass<WizZoneVolumes>(s_wad, VolumeDataFileName);
         if (s_zoneVolumes is null) {
@@ -162,6 +173,8 @@ public static class WizardZoneLoader {
     /// Load the trigger data from the KIWAD file.
     /// </summary>
     private static void LoadTriggerData() {
+        Logger.Verbose("Loading trigger data for {ZoneName}...", Logger.Args(s_zone.ZoneName));
+
         var serializer = new FileSerializer();
         s_zoneTriggers = serializer.OpenClass<WizZoneTriggers>(s_wad, TriggerDataFileName);
         if (s_zoneTriggers is null) {
@@ -201,8 +214,8 @@ public static class WizardZoneLoader {
     /// </summary>
     private static void CreateZoneCombatSigils() {
         foreach (var objectInfo in s_zoneData.m_objectList
-            .Where(info => info != null)
-            .Where(info => info is CombatSigil)) {
+                .Where(info => info != null)
+                .Where(info => info is CombatSigil)) {
             var template = (TypeCache.GameObjectTemplate) CoreObjectFactory.GetCoreTemplate(objectInfo.m_templateID);
             var newObject = CoreObjectFactory.CreateObjectFromTemplate(objectInfo, template, objectInfo.m_templateID);
             if (newObject == null) {
