@@ -440,8 +440,7 @@ public class ObjectSerializer {
                 return obj;
             }
 
-            Logger.Error($"[{nameof(ObjectSerializer)}]: Could not string string enum " +
-                             $"when string enum bitflag was set.");
+            Logger.Error("Could not string string enum when string enum bitflag was set.");
             return 0;
 
         }
@@ -454,6 +453,22 @@ public class ObjectSerializer {
 
         // If it's not a primitive data type, it's another PropertyClass.
         var subVal = DeserializeInternal(reader);
+
+        // This is a failsafe. If we could not successfully deserialize the PropertyClass.
+        if (subVal is null && Options.SerializerMode == SerializerOptions.Mode.Verbose) {
+            // Just return null if the buffer doesn't have enough bits to read.
+            if (reader.BitPos() + 32 > reader.GetData().Length * 8) {
+                return null;
+            }
+
+            // Only seek back if the hash is not 0.
+            reader.SeekBit(reader.BitPos() - 32);
+            var hash = reader.ReadUInt32();
+            if (hash != 0) {
+                var skip = reader.ReadInt32();
+                reader.SeekBit(reader.BitPos() + skip - 32);
+            }
+        }
 
         return subVal;
     }
