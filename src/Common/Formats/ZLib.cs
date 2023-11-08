@@ -1,7 +1,7 @@
 using System.IO;
 using Ionic.Zlib;
 
-namespace Imlight.Common.IO;
+namespace Imlight.Common.Formats;
 
 public class ZLib {
     /// <summary>
