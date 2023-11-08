@@ -276,7 +276,6 @@ public class ObjectSerializer {
 
         // If the serializer flags are set to compress, we'll decompress the serialized data.
         if ((Options.BehaviorFlags & SerializerOptions.Behaviors.Compress) != 0) {
-
             reader = Decompress(reader);
             if (reader is null) {
                 return null;
@@ -310,12 +309,7 @@ public class ObjectSerializer {
         }
         else {
             // If a hash is here that we don't have a type for, log it.
-            var blobSize = buffer.ReadUInt32();
-            var blob = buffer.ReadBytes((int) blobSize);
-            var hex = BitConverter.ToString(blob).Replace("-", "");
-            Logger.Error($"Could not find type for hash [{hash}]. "
-                            + $"Skipping by {blobSize} bytes.");
-            buffer.SeekBit(buffer.BitPos() - 32 - (int) blobSize);
+            Logger.Error("Could not find type for hash {hash}", Logger.Args(hash));
             return false;
         }
     }
@@ -389,9 +383,8 @@ public class ObjectSerializer {
             }
             else {
                 var hexHash = propertyHash.ToString("X");
-                Logger.Error($"Could not find property with property hash [{hexHash}] "
-                    + $"in PropertyClass [{propertyClass.GetType()}]. "
-                    + $"Skipping by {propertySize} bits.");
+                Logger.Error("No property with hash {0}(0x{1}) in PropertyClass {2} was found. Skipping by {3} bits.",
+                    Logger.Args(propertyHash, hexHash, propertyClass.GetType().ToString().Split('+')[^1], propertySize));
             }
 
             bufReader.SeekBit((int) (propertyStart + propertySize));
@@ -562,16 +555,13 @@ public class ObjectSerializer {
             throw new ArgumentNullException(nameof(propClass));
         }
 
-        var propertyAttributeType = typeof(PropertyAttribute);
-        var optionsFlags = (SerializerOptions.PropertyFlags) Options.PropertyMask;
-
         return propClass.GetType()
             .GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy)
-            .Where(x => Attribute.IsDefined(x, propertyAttributeType))
+            .Where(x => Attribute.IsDefined(x, typeof(PropertyAttribute)))
             .Select(x => (Field: x, Attribute: x.GetCustomAttribute<PropertyAttribute>()))
             .Where(x => x.Attribute is not null &&
                         ((SerializerOptions.PropertyFlags) x.Attribute!.Flags & SerializerOptions.PropertyFlags.Deprecated) == 0 &&
-                        ((SerializerOptions.PropertyFlags) x.Attribute!.Flags & optionsFlags) == optionsFlags)
+                        ((SerializerOptions.PropertyFlags) x.Attribute!.Flags & Options.PropertyMask) == Options.PropertyMask)
             .OrderBy(x => x.Field, new PropertyClassFieldComparer())
             .Select(x => x.Field);
     }
