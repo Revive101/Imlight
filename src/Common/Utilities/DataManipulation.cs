@@ -4,6 +4,11 @@ using System.Linq;
 namespace Imlight.Common.Utilities;
 
 public static class DataManipulation {
+    /// <summary>
+    /// Converts a hexadecimal string to a byte array.
+    /// </summary>
+    /// <param name="hex">The hexadecimal string to convert.</param>
+    /// <returns>The resulting byte array.</returns>
     public static byte[] StringToByteArray(string hex) {
         return Enumerable.Range(0, hex.Length)
             .Where(x => x % 2 == 0)
@@ -11,6 +16,11 @@ public static class DataManipulation {
             .ToArray();
     }
 
+    /// <summary>
+    /// Converts a spaced hexadecimal string to a byte array.
+    /// </summary>
+    /// <param name="str">The spaced hexadecimal string to convert.</param>
+    /// <returns>A byte array representing the hexadecimal string.</returns>
     public static byte[] SpacedHexStringToBytes(string str) {
         str = str.Replace(" ", "");
         if (str.Length % 2 != 0) {

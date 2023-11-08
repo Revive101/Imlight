@@ -39,6 +39,11 @@ public static class ClassElementWriters {
         { typeof(U24),            (r, v) => r.WriteBits((U24)v, 24)              },
     };
 
+    /// <summary>
+    /// Tries to get a writer function for the specified type.
+    /// </summary>
+    /// <param name="r">The type to get the writer function for.</param>
+    /// <returns>The writer function if found, otherwise null.</returns>
     public static Action<BitWriter, object> TryGetWriter(Type r) {
         if (s_primitiveWriters.TryGetValue(r, out var func)) {
             return func!;
