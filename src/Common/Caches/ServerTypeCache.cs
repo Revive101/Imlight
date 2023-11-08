@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
+using Akka.Util;
 using Imlight.Common.IO;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 // ReSharper disable InconsistentNaming
@@ -27,6 +28,7 @@ public static class ServerTypeCache {
             0x3C626744 => new ResPlaySound(),
             0xDa51FA8 => new ZoneRouter(),
             478486736 => new CombatSigil(),
+            16312488 => new ResPlayCinematic(),
             _ => null
         };
     }
@@ -140,6 +142,25 @@ public static class ServerTypeCache {
         public enum RoutingType {
             ROUTING_ACTOR,
         }
+    }
+
+    public class ResPlayCinematic : TypeCache.Result {
+        public override uint GetHash() => 16312488;
+
+        [Property(2611527497, 134217735)] public ByteString m_cinematicName;
+        [Property(0x444373FA, 31)] public ZoneRouter? m_router;
+        [Property(0x1D70805C, 31)] public bool m_unknown_bool_1;
+        [Property(0x3AAF6E2F, 31)] public bool m_unknown_bool_2;
+        [Property(0x61436E16, 31)] public bool m_unknown_bool_3;
+        [Property(0x78B7B1EE, 31)] public ByteString m_unknown_string_1;
+        [Property(0x3C1B4C58, 31)] public bool m_unknown_bool_4;
+        [Property(0x5BB196FF, 31)] public bool m_unknown_bool_5;
+        [Property(0x7B00E397, 31)] public ByteString m_unknown_string_2;
+        [Property(0x197BBD69, 31)] public bool m_unknown_bool_6;
+        [Property(0x4FA58BBA, 31)] public float m_unknown_float_1;
+        [Property(0x3DAC4C0A, 31)] public bool m_unknown_bool_7;
+        [Property(0x66ECE9B3, 31)] public ByteString m_unknown_string_3;
+        [Property(0xA4092DFC, 31)] public bool m_unknown_bool_8;
     }
 
     public class CombatSigil : TypeCache.CoreObjectInfo {
