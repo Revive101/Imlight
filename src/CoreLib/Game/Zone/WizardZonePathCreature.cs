@@ -92,7 +92,7 @@ public class WizardZonePathCreature : WizardZoneObject {
                 { Self, ActiveGameObject }
             }
         };
-        WizardZoneRef.Tell(msg);
+        //WizardZoneRef.Tell(msg);
     }
 
     private void SetPropertiesFromTemplate() {
