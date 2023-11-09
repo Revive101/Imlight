@@ -309,7 +309,7 @@ public class ObjectSerializer {
         else {
             // If a hash is here that we don't have a type for, log it.
             // It isn't too worrisome to miss a type. There are a lot of server types.
-            Logger.Warning("Could not find type for hash {hash}", Logger.Args(hash));
+            Logger.Debug("Could not find type for hash {hash}", Logger.Args(hash));
             return false;
         }
     }
@@ -383,7 +383,7 @@ public class ObjectSerializer {
             }
             else {
                 var hexHash = propertyHash.ToString("X");
-                Logger.Error("No property with hash {0}(0x{1}) in PropertyClass {2} was found. Skipping by {3} bits.",
+                Logger.Debug("No property with hash {0}(0x{1}) in PropertyClass {2} was found. Skipping by {3} bits.",
                     Logger.Args(propertyHash, hexHash, propertyClass.GetType().ToString().Split('+')[^1], propertySize));
             }
 

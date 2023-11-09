@@ -79,7 +79,7 @@ public static class DatabaseUtilities {
         // Save the account to the database.
         var created = AccountCollection.CreateAccount(acc);
         if (!created) {
-            Logger.Warning("A dud account by username {0} already exists in the embedded dragon database. Skipping..",
+            Logger.Debug("A dud account by username {0} already exists in the embedded dragon database. Skipping..",
                 Logger.Args(username));
         }
 

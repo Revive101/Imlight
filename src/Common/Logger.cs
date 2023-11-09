@@ -13,7 +13,7 @@ public class Logger {
     private static readonly bool s_logsIncludeTimestamp = ConfigurationManager.Settings.LogsIncludeTimestamp;
 
     public static ILogger Log { get; } = new LoggerConfiguration()
-        .MinimumLevel.Verbose()
+        .MinimumLevel.Information()
         .Enrich.FromLogContext()
         .WriteTo.Console(outputTemplate: CreateOutputTemplate())
         .WriteTo.File(s_path, rollingInterval: RollingInterval.Day)
