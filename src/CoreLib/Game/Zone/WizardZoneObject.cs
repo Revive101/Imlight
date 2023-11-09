@@ -33,7 +33,13 @@ public class WizardZoneObject : ReceiveProtocolDispatcher {
         return Akka.Actor.Props.Create(() => new WizardZoneObject(activeGameObject, template, wizardZoneRef));
     }
 
+    /// <summary>
+    /// Called when a player joins the wizard zone. Sends the player the object data and adds the object to the zone.
+    /// </summary>
+    /// <param name="player">The player object that joined the zone.</param>
+    /// <param name="suspect">The actor reference of the player that joined the zone.</param>
     protected virtual void OnPlayerJoin(CoreObject player, IActorRef suspect) {
+        // When a new player joins, we need to send them the object data.
         var serializer = new CoreObjectSerializer()
             .OnBehaviors(SerializerOptions.Behaviors.None)
             .OnPropertyMask(SerializerOptions.PropertyFlags.Public
@@ -45,7 +51,12 @@ public class WizardZoneObject : ReceiveProtocolDispatcher {
         Sender.Tell(new ZONE_102_PROTOCOL.MSG_ADDOBJECTRSP());
     }
 
+    /// <summary>
+    /// Called when a player leaves the wizard zone object.
+    /// </summary>
+    /// <param name="suspect">The actor reference of the player who left.</param>
     protected virtual void OnPlayerLeave(IActorRef suspect) {
+        // Tell the player client to remove this object from the world.
         var msg = new GAME_5_PROTOCOL.MSG_REMOVEOBJECT { GameObjectID = ActiveGameObject.m_globalID };
         suspect.Tell(msg);
 
@@ -70,6 +81,18 @@ public class WizardZoneObject : ReceiveProtocolDispatcher {
 
     }
 
+    /// <summary>
+    /// Determines whether the specified object is within the interaction radius of this zone object.
+    /// </summary>
+    /// <param name="obj1">The object to check.</param>
+    /// <returns>True if the object is within the interaction radius, false otherwise.</returns>
+    protected virtual bool IsInRadius(CoreObject obj1) {
+        var sqrtDist = (obj1.m_location - ActiveGameObject.m_location).LengthSquared();
+        var sqrtRadius = InteractionRadius * InteractionRadius;
+
+        return sqrtDist <= sqrtRadius;
+    }
+
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
     protected virtual void ReceiveAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message)
         => OnPlayerJoin(message.PlayerObject, message.Player);
@@ -80,6 +103,7 @@ public class WizardZoneObject : ReceiveProtocolDispatcher {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_FISHINTERACTION))]
     protected void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_FISHINTERACTION message) {
+        // An actor is asking if our current game object is within a certain interaction radius.
         if (IsInRadius(message.CoreObject)) {
             // Keep track of the objects already within radius as to not trigger duplicate events.
             if (_objsInRadius.Contains(message.CoreObject)) {
@@ -99,14 +123,11 @@ public class WizardZoneObject : ReceiveProtocolDispatcher {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_GETCOREOBJECT))]
     protected void ReceiveGetCoreObject(ZONE_102_PROTOCOL.MSG_GETCOREOBJECT message) {
-        var rsp = new ZONE_102_PROTOCOL.MSG_GETCOREOBJECTRSP() { CoreObject = ActiveGameObject };
+        // An actor is asking for our active core object.
+        var rsp = new ZONE_102_PROTOCOL.MSG_GETCOREOBJECTRSP() {
+            CoreObject = ActiveGameObject
+        };
+
         Sender.Tell(rsp);
-    }
-
-    protected bool IsInRadius(CoreObject obj1) {
-        var sqrtDist = (obj1.m_location - ActiveGameObject.m_location).LengthSquared();
-        var sqrtRadius = InteractionRadius * InteractionRadius;
-
-        return sqrtDist <= sqrtRadius;
     }
 }
