@@ -340,7 +340,6 @@ public static class WizardZoneLoader {
 
         var zoneName = s_zoneData.m_zoneName;
         var persistentZoneData = ZoneDataCollection.GetZoneData(zoneName);
-        var t = s_zoneTriggers;
 
         foreach (var trigger in s_zoneTriggers.m_triggers) {
             // If there's persistent data associated with this trigger, load it.
