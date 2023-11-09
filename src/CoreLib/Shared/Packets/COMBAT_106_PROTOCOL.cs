@@ -39,5 +39,14 @@ namespace Imlight.CoreLib.Shared.Packets {
 			public IActorRef DuelActor;
 			public Duel Duel;
 		}
+
+        public sealed class MSG_ADDPARTICIPANT : IServerMessage
+        {
+            public byte MessageOrder => 4;
+            public byte ServiceID => 106;
+
+            public IActorRef Participant;
+            public CoreObject ParticipantObject;
+        }
 	}
 }

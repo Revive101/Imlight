@@ -21,12 +21,19 @@ namespace Imlight.CoreLib.Game.Zone;
 /// a given <see cref="WizardZonePath" />.
 /// </summary>
 public class WizardZonePathCreature : WizardZoneObject {
+    internal enum CreatureState {
+        Stopped,
+        Wandering,
+        Combat
+    }
+
     private const int MovementDelayWithoutMobileId = 300;
     private const int MinimumMovementspeedDelayInMilli = 4000;
     private const int MovementErrorCompensation = 200;
 
     private readonly CancellationTokenSource _cancelToken;
     private readonly NodeObject[] _nodes;
+    private CreatureState _creatureState;
     private byte _targetNodeIndex;
     private float _movementSpeed = 0.0f;
     private float _movementSpeedMultiplier = 1.0f;
@@ -45,6 +52,7 @@ public class WizardZonePathCreature : WizardZoneObject {
         this._nodes = nodes;
         this._cancelToken = new CancellationTokenSource();
         this._targetNodeIndex = startingNodeIndex;
+        this._creatureState = CreatureState.Stopped;
 
         SetPropertiesFromTemplate();
 
@@ -87,10 +95,12 @@ public class WizardZonePathCreature : WizardZoneObject {
             return;
         }
 
+        // If I'm a hostile creature and a player just provoked me, then start a duel.
+        // This message is forwarded to the DuelActorSupervisor of the WizardZone.
         var msg = new ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL {
             Participants = new Dictionary<IActorRef, CoreObject>
             {
-                { suspect, player } ,
+                { suspect, player },
                 { Self, ActiveGameObject }
             }
         };

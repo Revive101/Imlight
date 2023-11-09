@@ -10,6 +10,10 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone;
 
+/// <summary>
+/// This class is responsible for creating a duel actor and spawning the combat sigil object.
+/// It only represents the combat sigil object, not the duel itself.
+/// </summary>
 public class WizardZoneCombatSigil : WizardZoneObject {
     private const uint SigilTemplateId = 1901671683;
 
@@ -24,29 +28,44 @@ public class WizardZoneCombatSigil : WizardZoneObject {
         return Akka.Actor.Props.Create(() => new WizardZoneCombatSigil(activeGameObject, template, wizardZoneRef));
     }
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL))]
-    private void ReceiveSpawnSigil(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL message) {
-        var duelCreated = CreateDuelActor(message.Participants);
-        SpawnCombatSigilObject(duelCreated);
+    protected override void OnPlayerInteractionEnter(CoreObject player, IActorRef suspect) {
+        if (_activeDuel is null) {
+            return;
+        }
+
+        var msg = new COMBAT_106_PROTOCOL.MSG_ADDPARTICIPANT {
+            Participant = suspect,
+            ParticipantObject = player,
+        };
+        _activeDuelActor.Tell(msg);
     }
 
-    private Duel CreateDuelActor(Dictionary<IActorRef, CoreObject> participants) {
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL))]
+    private void ReceiveSpawnSigil(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL message) {
+        var duel = RequestDuelActor(message.Participants);
+        _activeDuelActor = duel.Item1;
+        _activeDuel = duel.Item2;
+
+        SpawnCombatSigilObject();
+    }
+
+    private (IActorRef, Duel) RequestDuelActor(Dictionary<IActorRef, CoreObject> participants) {
         var createMsg = new COMBAT_106_PROTOCOL.MSG_STARTDUEL {
             Participants = participants,
             SigilId = ActiveGameObject.m_globalID,
             SigilLocation = ActiveGameObject.m_location,
             SigilOrientation = ActiveGameObject.m_orientation,
         };
+
+        // The zone is going to be the one to create the duel. Await its reply here.
         var createRsp = WizardZoneRef
             .Ask<COMBAT_106_PROTOCOL.MSG_DUELDETAILS>(createMsg)
             .Result;
 
-        _activeDuelActor = createRsp.DuelActor;
-        _activeDuel = createRsp.Duel;
-        return createRsp.Duel;
+        return (createRsp.DuelActor, createRsp.Duel);
     }
 
-    private void SpawnCombatSigilObject(Duel duel) {
+    private void SpawnCombatSigilObject() {
         if (_activeDuel is null || _activeDuelActor is null) {
             throw new Exception("Duel or DuelActor is null. Cannot spawn combat sigil object.");
         }
@@ -62,6 +81,7 @@ public class WizardZoneCombatSigil : WizardZoneObject {
             throw new Exception("Could not find DuelBehavior on CoreObject.");
         }
 
+        // Serialize the object and broadcast it to the zone.
         var serializer = new CoreObjectSerializer()
             .OnBehaviors(SerializerOptions.Behaviors.None)
             .OnPropertyMask(SerializerOptions.PropertyFlags.Public
