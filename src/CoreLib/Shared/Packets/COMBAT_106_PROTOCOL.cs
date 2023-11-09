@@ -1,0 +1,43 @@
+using System.Collections.Generic;
+using Akka.Actor;
+using Imlight.CoreLib.Shared.Networking;
+using SharpDX;
+using static Imlight.Common.Caches.TypeCache;
+
+namespace Imlight.CoreLib.Shared.Packets {
+    public sealed class COMBAT_106_PROTOCOL : IServerProtocol
+	{
+		public byte ServiceID => 106;
+		public string ProtocolType => "Wizard dueling messages";
+		public int ProtocolVersion => 1;
+		public string ProtocolDescription => "Internal messages for dueling.";
+
+		public sealed class MSG_STARTDUEL : IServerMessage
+		{
+			public byte MessageOrder => 1;
+			public byte ServiceID => 106;
+
+			public Dictionary<IActorRef, CoreObject> Participants;
+			public ulong SigilId;
+			public Vector3 SigilLocation;
+			public Vector3 SigilOrientation;
+		}
+
+		public sealed class MSG_ENDDUEL : IServerMessage
+		{
+			public byte MessageOrder => 2;
+			public byte ServiceID => 106;
+
+			public Dictionary<IActorRef, CoreObject> Participants;
+		}
+
+		public sealed class MSG_DUELDETAILS : IServerMessage
+		{
+			public byte MessageOrder => 3;
+			public byte ServiceID => 106;
+
+			public IActorRef DuelActor;
+			public Duel Duel;
+		}
+	}
+}

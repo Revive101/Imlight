@@ -8,26 +8,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Reference Include="FuzzySharp">
-        <HintPath>..\..\..\..\..\..\.nuget\packages\fuzzysharp\2.0.2\lib\netcoreapp2.1\FuzzySharp.dll</HintPath>
-      </Reference>
-      <Reference Include="Raven.Embedded">
-        <HintPath>..\..\..\..\..\..\.nuget\packages\ravendb.embedded\5.4.100\lib\netstandard2.0\Raven.Embedded.dll</HintPath>
-      </Reference>
-      <Reference Include="SharpDX.Mathematics">
-        <HintPath>..\..\..\..\..\..\.nuget\packages\sharpdx.mathematics\4.2.0\lib\netstandard1.1\SharpDX.Mathematics.dll</HintPath>
-      </Reference>
-      <Reference Include="Spectre.Console">
-        <HintPath>..\..\..\..\..\..\.nuget\packages\spectre.console\0.47.1-preview.0.11\lib\net7.0\Spectre.Console.dll</HintPath>
-      </Reference>
-    </ItemGroup>
-
-    <ItemGroup>
       <PackageReference Include="FuzzySharp" Version="2.0.2" />
       <PackageReference Include="RavenDB.Client" Version="5.4.109" />
       <PackageReference Include="RavenDB.Embedded" Version="5.4.109" />
-      <PackageReference Include="SharpDX" Version="4.2.0" />
-      <PackageReference Include="Spectre.Console" Version="0.47.0" />
+      <PackageReference Include="SharpDX.Mathematics" Version="4.2.0" />
+      <PackageReference Include="Spectre.Console" Version="0.47.1-preview.0.27" />
     </ItemGroup>
 
     <ItemGroup>

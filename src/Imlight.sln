@@ -1,10 +1,10 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Imlight.Backend", "Backend\Imlight.Backend.csproj", "{D75F750B-9988-4BC3-9DEE-7A1EC95E4D56}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Imlight.Director", "Director\Imlight.Director.csproj", "{D75F750B-9988-4BC3-9DEE-7A1EC95E4D56}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Imlight.Common", "Common\Imlight.Common.csproj", "{88ED340C-8B4E-4E82-844C-BBD02183D2FF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Imlight.Server", "Server\Imlight.Server.csproj", "{454FBBD0-49B2-4A16-8DA7-EB6166A4D3E6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Imlight.CoreLib", "CoreLib\Imlight.CoreLib.csproj", "{454FBBD0-49B2-4A16-8DA7-EB6166A4D3E6}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tools", "Tools", "{8A28CCDB-E2C9-442A-9405-424D89137D7B}"
 EndProject

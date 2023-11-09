@@ -16,7 +16,7 @@ jobs:
       with:
         submodules: 'true'
         token: ${{ secrets.GIT_TOKEN }}
-    
+
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
       with:
@@ -32,7 +32,7 @@ jobs:
       env:
         SSH_PRIVATE_KEY: ${{ secrets.REMOTE_SSH_KEY }}
         SSH_USERNAME: ${{ secrets.REMOTE_USER }}
-        SSH_HOSTNAME: ${{ secrets.REMOTE_HOST }}   
+        SSH_HOSTNAME: ${{ secrets.REMOTE_HOST }}
     - name: Upgrade and Install .NET Core on the server
       uses: appleboy/ssh-action@master
       with:
