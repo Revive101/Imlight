@@ -28,8 +28,7 @@ public class WizardZonePathCreature : WizardZoneObject {
     }
 
     private const int MovementDelayWithoutMobileId = 300;
-    private const int MinimumMovementspeedDelayInMilli = 3000;
-    private const int MovementErrorCompensation = 200;
+    private const int MinimumMovementspeedDelayInMilli = 500;
 
     private readonly CancellationTokenSource _cancelToken;
     private readonly NodeObject[] _nodes;
@@ -77,15 +76,31 @@ public class WizardZonePathCreature : WizardZoneObject {
             => new WizardZonePathCreature(activeGameObject, template, nodes, startingNodeIndex, wizardZoneRef));
     }
 
-    protected override void OnPlayerJoin(CoreObject player, IActorRef suspect) {
-        base.OnPlayerJoin(player, suspect);
+    protected override void OnPlayerJoin(CoreObject player, IActorRef playerActor) {
+        // Since we're not constantly updating the position of the game object, we need to
+        // update the position of the game object when a player joins.
+        ActiveGameObject.m_location = GetPosition();
+        base.OnPlayerJoin(player, playerActor);
 
         // Inform the new player that this creature is moving.
+        // MOVESTATE: 0 = stopped, 1 = moving.
         var msgMoveState = new GAME_5_PROTOCOL.MSG_MOVESTATE {
             GlobalID = ActiveGameObject.m_globalID,
-            NewState = 1
+            NewState = (sbyte) (_creatureState == CreatureState.Wandering ? 0 : 1)
         };
-        suspect.Tell(msgMoveState);
+        playerActor.Tell(msgMoveState);
+
+        // Inform the new player which node we might be moving to.
+        if (_creatureState == CreatureState.Wandering) {
+            var msgServerMove = new GAME_5_PROTOCOL.MSG_SERVERMOVE {
+                Direction = (byte) (CurrentTargetNode.m_direction / Math.PI / 2 * 250),
+                LocationX = (ushort) (CurrentTargetNode.m_location.X / 4.0f),
+                LocationY = (ushort) (CurrentTargetNode.m_location.Y / 4.0f),
+                LocationZ = (ushort) (CurrentTargetNode.m_location.Z / 4.0f),
+                MobileID = ActiveGameObject.m_nMobileID
+            };
+            playerActor.Tell(msgServerMove);
+        }
     }
 
     protected override void OnPlayerInteractionEnter(CoreObject player, IActorRef suspect) {
@@ -116,29 +131,27 @@ public class WizardZonePathCreature : WizardZoneObject {
     }
 
     protected override Vector3 GetPosition() {
-        // Todo: go back and work on this.
-
         // If the creature is not moving, then return the current position.
         if (!_isMovingCreature) {
             return ActiveGameObject.m_location;
         }
 
         // If the creature is moving, then calculate the position based on the
-        // current position, the target node position, and the movement speed.
-        var pos = ActiveGameObject.m_location;
-        var target = CurrentTargetNode.m_location;
-        var totalDistance = Vector3.Distance(pos, target);
+        // last node reached, the target node position, and the movement speed.
+        var lastNodeReached = ActiveGameObject.m_location;
+        var targetNode = CurrentTargetNode.m_location;
+        var totalDistance = Vector3.Distance(lastNodeReached, targetNode);
         var elapsedTimeInSeconds = (DateTime.Now - _lastMoveTime).TotalSeconds;
         var distanceTraveled = elapsedTimeInSeconds * _movementSpeed * _movementSpeedMultiplier;
 
         if (distanceTraveled >= totalDistance) {
-            return target;
+            return targetNode;
         }
 
         var t = distanceTraveled / totalDistance;
-        var x = pos.X + t * (target.X - pos.X) - MovementErrorCompensation;
-        var y = pos.Y + t * (target.Y - pos.Y) - MovementErrorCompensation;
-        var z = pos.Z + t * (target.Z - pos.Z);
+        var x = lastNodeReached.X + t * (targetNode.X - lastNodeReached.X);
+        var y = lastNodeReached.Y + t * (targetNode.Y - lastNodeReached.Y);
+        var z = lastNodeReached.Z + t * (targetNode.Z - lastNodeReached.Z);
 
         return new Vector3((float) x, (float) y, (float) z);
     }
@@ -152,7 +165,7 @@ public class WizardZonePathCreature : WizardZoneObject {
         if (pathBehavior is not null) {
             this._movementSpeed = pathBehavior.m_movementSpeed;
             this._movementSpeedMultiplier = pathBehavior.m_movementScale;
-            this._isMovingCreature = true;
+            this._isMovingCreature = true && pathBehavior.m_movementSpeed > 0.0f;
         }
 
         if (duelistBehavior is not null) {
@@ -185,18 +198,18 @@ public class WizardZonePathCreature : WizardZoneObject {
 
             // Calculate the delay based on the distance between the current position
             // and the target node position, and the movement speed of the creature.
-            var travelTimeInSeconds = distance / (_movementSpeed * _movementSpeedMultiplier);
-            var delay = (int) Math.Round(distance / (travelTimeInSeconds * 1000));
+            var travelTimeInSeconds = distance / (_movementSpeed * _movementSpeedMultiplier) * 0.1f;
+            var travelTimeInMilli = (int) travelTimeInSeconds * 1000;
 
             // Clamp the delay to a minimum.
-            if (delay < MinimumMovementspeedDelayInMilli) {
-                delay = MinimumMovementspeedDelayInMilli;
+            if (travelTimeInMilli < MinimumMovementspeedDelayInMilli) {
+                travelTimeInMilli = MinimumMovementspeedDelayInMilli;
             }
 
+            // Begin traveling to the target node.
             _lastMoveTime = DateTime.Now;
             BroadcastMovement(CurrentTargetNode);
-
-            await Task.Delay(delay);
+            await Task.Delay(travelTimeInMilli);
 
             // Update the game object position to the target node position once we've reached it.
             UpdateGameObjectPosition(CurrentTargetNode);
