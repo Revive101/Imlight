@@ -441,9 +441,8 @@ public class ObjectSerializer {
                 return obj;
             }
 
-            Logger.Error("Could not string string enum when string enum bitflag was set.");
+            Logger.Error("Could not parse string enum of {0}", Logger.Args(str));
             return 0;
-
         }
 
         // If it's a primitive data type, we'll just read it as-is.

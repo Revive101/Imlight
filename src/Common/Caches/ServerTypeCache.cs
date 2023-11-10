@@ -141,6 +141,8 @@ public static class ServerTypeCache {
 
         public enum RoutingType {
             ROUTING_ACTOR,
+            ROUTING_ZONE,
+            ROUTING_PROXIMITY,
         }
     }
 
