@@ -28,6 +28,12 @@ public class WizardZoneCombatSigil : WizardZoneObject {
         return Akka.Actor.Props.Create(() => new WizardZoneCombatSigil(activeGameObject, template, wizardZoneRef));
     }
 
+    protected override void OnPlayerJoin(CoreObject player, IActorRef suspect) {
+        if (_activeDuel is not null) {
+            SpawnCombatSigilObject();
+        }
+    }
+
     protected override void OnPlayerInteractionEnter(CoreObject player, IActorRef suspect) {
         if (_activeDuel is null) {
             return;

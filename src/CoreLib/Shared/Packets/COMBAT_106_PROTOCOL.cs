@@ -48,5 +48,11 @@ namespace Imlight.CoreLib.Shared.Packets {
             public IActorRef Participant;
             public CoreObject ParticipantObject;
         }
+
+        public sealed class MSG_GRACEPERIODOVER : IServerMessage
+        {
+            public byte MessageOrder => 5;
+            public byte ServiceID => 106;
+        }
 	}
 }
