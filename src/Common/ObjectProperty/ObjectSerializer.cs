@@ -316,7 +316,7 @@ public class ObjectSerializer {
 
     protected virtual BitReader? Decompress(BitReader reader) {
         var uncompressedLength = reader.ReadInt32();
-        var decompressedData = Compression.Decompress(reader.GetRelativeData()[4..]);
+        var decompressedData = Compression.Decompress(reader.GetData()[4..]);
 
         // If the decompressed data length does not match the recorded length, log it and return null.
         if (decompressedData.Length != uncompressedLength) {
