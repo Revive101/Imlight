@@ -4,6 +4,7 @@ using Imlight.Common.Caches;
 using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using SharpDX;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone;
@@ -82,15 +83,11 @@ public class WizardZoneObject : ReceiveProtocolDispatcher {
     }
 
     /// <summary>
-    /// Determines whether the specified object is within the interaction radius of this zone object.
+    /// Gets the position of the active game object.
     /// </summary>
-    /// <param name="obj1">The object to check.</param>
-    /// <returns>True if the object is within the interaction radius, false otherwise.</returns>
-    protected virtual bool IsInRadius(CoreObject obj1) {
-        var sqrtDist = (obj1.m_location - ActiveGameObject.m_location).LengthSquared();
-        var sqrtRadius = InteractionRadius * InteractionRadius;
-
-        return sqrtDist <= sqrtRadius;
+    /// <returns>The position as a Vector3.</returns>
+    protected virtual Vector3 GetPosition() {
+        return ActiveGameObject.m_location;
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
@@ -129,5 +126,18 @@ public class WizardZoneObject : ReceiveProtocolDispatcher {
         };
 
         Sender.Tell(rsp);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
+    protected void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message) {
+        // An actor is broadcasting a message to all players in the zone.
+        WizardZoneRef.Tell(message);
+    }
+
+    private bool IsInRadius(CoreObject obj1) {
+        var sqrtDist = (obj1.m_location - GetPosition()).LengthSquared();
+        var sqrtRadius = InteractionRadius * InteractionRadius;
+
+        return sqrtDist <= sqrtRadius;
     }
 }
