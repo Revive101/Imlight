@@ -117,7 +117,7 @@ internal static class Program {
 
     private static void CreateEmbeddedDatabaseAccounts() {
         // Create 9 accounts with the username "admin" and a number from 1 to 9.
-        for (int i = 1; i <= 9; i++) {
+        for (int i = 1; i <= 20; i++) {
             DatabaseUtilities.CreateEmbeddedDatabaseAccount($"admin{i}", $"{i}@r101.com", "debug", AuthLevel.Administrator);
         }
     }
