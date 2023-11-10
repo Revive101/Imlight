@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Runtime.CompilerServices;
 using Imlight.Common.Configuration;
 using Serilog;
@@ -156,8 +157,9 @@ public class Logger {
             return filePath;
         }
 
-        // Scope to the area between the final '/' character and the '.cs' extension.
-        var startIndex = filePath.LastIndexOf('/') + 1;
+        // Scope to the area between the final directory separator character and the '.cs' extension.
+        var separatorChar = Path.DirectorySeparatorChar;
+        var startIndex = filePath.LastIndexOf(separatorChar) + 1;
         var length = filePath.LastIndexOf(".cs", StringComparison.Ordinal) - startIndex;
         return filePath.Substring(startIndex, length);
     }
