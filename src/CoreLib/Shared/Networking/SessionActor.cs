@@ -350,7 +350,7 @@ public class SessionActor : ReceiveActor, IDisposable {
                 actorRef.Ask(new SERVICE_101_PROTOCOL.MSG_PREDISPOSE(), timeout: TimeSpan.FromSeconds(6)).Wait();
             }
             catch (Exception ex) {
-                Logger.Error("MessageService {0} failed to pre-dispose after timeout: {1}", Logger.Args(type, ex.Message));
+                Logger.Verbose("MessageService {0} failed to pre-dispose after timeout: {1}", Logger.Args(type, ex.Message));
             }
         }
     }

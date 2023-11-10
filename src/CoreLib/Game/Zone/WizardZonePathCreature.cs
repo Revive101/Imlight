@@ -198,7 +198,7 @@ public class WizardZonePathCreature : WizardZoneObject {
 
             // Calculate the delay based on the distance between the current position
             // and the target node position, and the movement speed of the creature.
-            var travelTimeInSeconds = distance / (_movementSpeed * _movementSpeedMultiplier) * 0.1f;
+            var travelTimeInSeconds = distance / (_movementSpeed * _movementSpeedMultiplier);
             var travelTimeInMilli = (int) travelTimeInSeconds * 1000;
 
             // Clamp the delay to a minimum.

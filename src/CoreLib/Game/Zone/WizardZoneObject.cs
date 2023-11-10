@@ -40,6 +40,11 @@ public class WizardZoneObject : ReceiveProtocolDispatcher {
     /// <param name="player">The player object that joined the zone.</param>
     /// <param name="suspect">The actor reference of the player that joined the zone.</param>
     protected virtual void OnPlayerJoin(CoreObject player, IActorRef suspect) {
+        // If the player spawns within this object, add them to the list of objects in radius.
+        if (IsInRadius(player)) {
+            _objsInRadius.Add(player);
+        }
+
         // When a new player joins, we need to send them the object data.
         var serializer = new CoreObjectSerializer()
             .OnBehaviors(SerializerOptions.Behaviors.None)
@@ -56,12 +61,16 @@ public class WizardZoneObject : ReceiveProtocolDispatcher {
     /// Called when a player leaves the wizard zone object.
     /// </summary>
     /// <param name="suspect">The actor reference of the player who left.</param>
-    protected virtual void OnPlayerLeave(IActorRef suspect) {
+    protected virtual void OnPlayerLeave(IActorRef suspect, ulong id) {
         // Tell the player client to remove this object from the world.
-        var msg = new GAME_5_PROTOCOL.MSG_REMOVEOBJECT { GameObjectID = ActiveGameObject.m_globalID };
+        var msg = new GAME_5_PROTOCOL.MSG_REMOVEOBJECT {
+            GameObjectID = ActiveGameObject.m_globalID
+        };
         suspect.Tell(msg);
-
         Sender.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP());
+
+        // Remove the player object from our radius.
+        _objsInRadius.RemoveAll(x => x.m_globalID == id);
     }
 
     /// <summary>
@@ -96,7 +105,7 @@ public class WizardZoneObject : ReceiveProtocolDispatcher {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER))]
     protected virtual void ReceiveRemovePlayer(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message)
-        => OnPlayerLeave(message.Player);
+        => OnPlayerLeave(message.Player, message.GlobalId);
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_FISHINTERACTION))]
     protected void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_FISHINTERACTION message) {
