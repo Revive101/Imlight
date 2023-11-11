@@ -13,16 +13,16 @@ public class DuelActorSubCircle {
     private const float AggroTimeInSeconds = 0.75f;
 
     public Vector3 Location { get; set; }
-    public Vector3 Orientation { get; set; }
+    public float Yaw { get; set; }
     public CombatParticipant Participant { get; set; }
     public IActorRef Actor { get; set; }
     public CoreObject ParticipantObject { get; set; }
 
     private ulong _sigilId;
 
-    public DuelActorSubCircle(Vector3 location, Vector3 orientation, ulong sigilId) {
+    public DuelActorSubCircle(Vector3 location, float yaw, ulong sigilId) {
         Location = location;
-        Orientation = orientation;
+        Yaw = yaw;
         _sigilId = sigilId;
     }
 
@@ -51,17 +51,18 @@ public class DuelActorSubCircle {
             LocX = Location.X,
             LocY = Location.Y,
             LocZ = Location.Z,
-            Yaw = Orientation.Z,
+            Yaw = this.Yaw,
             SigilGID = _sigilId
         };
-        actor.Tell(aggroMsg);
+        broadcastMsg.Message = aggroMsg;
+        actor.Tell(broadcastMsg);
 
         // Wait the amount of time it takes for the actor to enter the sigil, then set
         // their state to combat idle.
         await Task.Delay((int) (AggroTimeInSeconds * 1000));
 
         // Set state.
-        ((GAME_5_PROTOCOL.MSG_ENTERSTATE)broadcastMsg.Message).State = (uint) State.Unknown_2;
+        ((GAME_5_PROTOCOL.MSG_ENTERSTATE)broadcastMsg.Message).State = (uint) State.CombatIdle;
         actor.Tell(broadcastMsg);
     }
 }

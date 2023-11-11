@@ -17,32 +17,34 @@ namespace Imlight.CoreLib.Game.Combat;
 /// <see cref="DuelActorSupervisor"/> and is a child of it.
 /// </summary>
 public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
+    private enum Team {
+        Creature,
+        Player
+    }
+
     private const float DuelRadius = 584.0f;
-    private const float AngleBetweenSubCircles = 15.0f;
-    private const float FirstSubCircleAngle = 52.0f;
-    private const float OrientationCompactionFactor = 0.708f;
+    private const byte NumOfSubCircles = 8;
+    private const float AngleBetweenSubCircles = 36.8f;
+    private const float FirstSubCircleAngle = 145.0f;
     private const float DuelStartedGracePeriodInSeconds = 3.0f;
+    private const float YawErrorCompensation = 1.58f;
 
     public ITimerScheduler Timers { get; set; }
 
     private Duel _duel;
     private DuelActorSubCircle[] _subCircles = new DuelActorSubCircle[8];
-
-    private Dictionary<IActorRef, CoreObject> _participants;
-    private ulong _sigilId; // Same as the sigil ID.
+    private ulong _sigilId;
     private Vector3 _sigilLocation;
     private Vector3 _sigilOrientation;
+    private byte _creatureCount;
+    private byte _playerCount;
 
-    public DuelActor() {
-        _duel = new Duel();
-        _participants = new Dictionary<IActorRef, CoreObject>();
-    }
+    public DuelActor() { }
 
     public static Props Props() => Akka.Actor.Props.Create(() => new DuelActor());
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_STARTDUEL))]
     private void ReceiveStartDuel(COMBAT_106_PROTOCOL.MSG_STARTDUEL message) {
-        this._participants = message.Participants;
         this._sigilId = message.SigilId;
         this._sigilLocation = message.SigilLocation;
         this._sigilOrientation = message.SigilOrientation;
@@ -59,12 +61,12 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         Sender.Tell(rsp);
 
         // At this point, there are only two participants. One from each team.
-        // Assign them to the sub circles. Team A will always be the player and
-        // team B will always be the creature.
-        var teamA = GetAvailableSubCircleTeamA();
-        var teamB = GetAvailableSubCircleTeamB();
-        var teamAAssigned = AssignParticipantToSubCircle(teamA, message.Participants.Keys.First(), message.Participants.Values.First());
-        var teamBAssigned = AssignParticipantToSubCircle(teamB, message.Participants.Keys.Last(), message.Participants.Values.Last());
+        // Assign them to the sub circles. Team A will always be the creatures and
+        // team B will always be the players.
+        var teamCreatures = GetAvailableSubCircleTeamCreature();
+        var teamPlayers = GetAvailableSubCircleTeamPlayer();
+        var teamAAssigned = AssignParticipantToSubCircle(Team.Creature, teamCreatures, message.Participants.Keys.Last(), message.Participants.Values.Last());
+        var teamBAssigned = AssignParticipantToSubCircle(Team.Player, teamPlayers, message.Participants.Keys.First(), message.Participants.Values.First());
 
         if (!teamAAssigned || !teamBAssigned) {
             throw new Exception("Failed to assign participants to sub circles.");
@@ -86,11 +88,23 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         // We can determine if this participant is a player by checking their template ID. If it's
         // 1, then it's a player. Otherwise, it's a creature.
         var isPlayer = message.ParticipantObject.m_templateID == 1;
-        var subCircle = isPlayer ? GetAvailableSubCircleTeamA() : GetAvailableSubCircleTeamB();
+        var subCircle = isPlayer ? GetAvailableSubCircleTeamCreature() : GetAvailableSubCircleTeamPlayer();
+        var team = isPlayer ? Team.Creature : Team.Player;
 
-        if (subCircle is null || !AssignParticipantToSubCircle(subCircle, message.Participant, message.ParticipantObject)) {
+        if (subCircle is null || !AssignParticipantToSubCircle(team, subCircle, message.Participant, message.ParticipantObject)) {
             Logger.Debug("Player attempted to join duel {0}, but the duel was full.", Logger.Args(_duel.m_duelID));
         }
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_DUELDETAILS))]
+    private void ReceiveDuelDetails(COMBAT_106_PROTOCOL.MSG_DUELDETAILS message) {
+        var rsp = new COMBAT_106_PROTOCOL.MSG_DUELDETAILS {
+            DuelActor = Self,
+            Duel = _duel,
+            CreatureCount = _creatureCount,
+            PlayerCount = _playerCount,
+        };
+        Sender.Tell(rsp);
     }
 
     private Duel CreateDuelWithDefaults(ulong sigilId) {
@@ -109,32 +123,52 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
     private DuelActorSubCircle[] CreateDuelActorSubCircles() {
         var subCircles = new DuelActorSubCircle[8];
+        var workingAngle = FirstSubCircleAngle;
 
-        // Calculate the initial angle for the first sub circle.
-        var initialAngle = MathF.PI * FirstSubCircleAngle / 180; // Degrees --> Radians
+        for (int i = 0; i < NumOfSubCircles / 2; i++) {
+            var angleRadians = workingAngle * (MathF.PI / 180f);
 
-        // Calculate the rotated angle based on the sigil's orientation.
-        var rotatedAngle = MathF.PI * _sigilOrientation.Z / (180 * OrientationCompactionFactor); // Degrees --> Radians
+            // The sigil rotation is stored between -pi and pi. We need to convert it to 0-2PI.
+            var sigilRotation = _sigilOrientation.Z;
+            if (sigilRotation < 0) {
+                sigilRotation = (2 * MathF.PI) + sigilRotation;
+            }
 
-        for (int i = 0; i < 4; i++) {
-            var angle = initialAngle + i * AngleBetweenSubCircles;
+            // Calculate rotated position
+            var rotatedX = DuelRadius * MathF.Cos(angleRadians - sigilRotation);
+            var rotatedY = DuelRadius * MathF.Sin(angleRadians - sigilRotation);
+            var x = _sigilLocation.X + rotatedX;
+            var y = _sigilLocation.Y + rotatedY;
+            var sigilPosition = new Vector3(x, y, _sigilLocation.Z);
 
-            var x = _sigilLocation.X + DuelRadius * MathF.Cos((float) (angle));
-            var y = _sigilLocation.Y + DuelRadius * MathF.Sin((float) (angle));
+            // Calculate the direction vector towards the center of the duel (only Z-axis in radians)
+            var directionVector = new Vector3(_sigilLocation.X - x, _sigilLocation.Y - y, 0);
+            var yaw = MathF.Atan2(directionVector.Y, directionVector.X);
+            // The yaw must be between 0 and 2PI. It must also be reversed as the client rotates clockwise.
+            yaw = (2 * MathF.PI) - yaw - YawErrorCompensation;
+            if (yaw < 0) {
+                yaw += 2 * MathF.PI;
+            }
 
-            var direction = new Vector3(x, y, _sigilLocation.Z / OrientationCompactionFactor) - _sigilLocation;
-            direction.Normalize();
+            subCircles[i] = new DuelActorSubCircle(sigilPosition, yaw, _sigilId);
 
-            subCircles[i] = new DuelActorSubCircle(new Vector3(x, y, _sigilLocation.Z), direction, _sigilId);
+            // Mirror for the bottom hemisphere (mirrored on both X and Y axes)
+            var mirroredX = _sigilLocation.X - rotatedX;
+            var mirroredY = _sigilLocation.Y - rotatedY;
+            var mirroredPos = new Vector3(mirroredX, mirroredY, _sigilLocation.Z);
+            var mirroredYaw = yaw + MathF.PI;
+            mirroredYaw = (mirroredYaw < 0) ? (2 * MathF.PI) + mirroredYaw : mirroredYaw; // Normalize to 0-2PI
 
-            // Mirror for bottom hemisphere
-            subCircles[i + 4] = new DuelActorSubCircle(new Vector3(x, -y, _sigilLocation.Z), direction, _sigilId);
+            subCircles[i + 4] = new DuelActorSubCircle(mirroredPos, mirroredYaw, _sigilId);
+
+            // Update initial angle for the next sub-circle
+            workingAngle -= AngleBetweenSubCircles;
         }
 
         return subCircles;
     }
 
-    private DuelActorSubCircle GetAvailableSubCircleTeamA() {
+    private DuelActorSubCircle GetAvailableSubCircleTeamCreature() {
         for (int i = 0; i < 4; i++) {
             if (_subCircles[i].Participant == null) {
                 return _subCircles[i];
@@ -144,7 +178,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         return null;
     }
 
-    private DuelActorSubCircle GetAvailableSubCircleTeamB() {
+    private DuelActorSubCircle GetAvailableSubCircleTeamPlayer() {
         for (int i = 4; i < 8; i++) {
             if (_subCircles[i].Participant == null) {
                 return _subCircles[i];
@@ -154,9 +188,16 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         return null;
     }
 
-    private bool AssignParticipantToSubCircle(DuelActorSubCircle subCircle, IActorRef actorRef, CoreObject coreObject) {
+    private bool AssignParticipantToSubCircle(Team team, DuelActorSubCircle subCircle, IActorRef actorRef, CoreObject coreObject) {
         if (subCircle.Participant != null) {
             return false;
+        }
+
+        if (team == Team.Creature) {
+            _creatureCount++;
+        }
+        else {
+            _playerCount++;
         }
 
         subCircle.AssignParticipant(actorRef, coreObject);
