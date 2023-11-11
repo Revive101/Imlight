@@ -64,7 +64,7 @@ public class WizardZoneCreature : WizardZoneObject {
         // Start the movement interval asynchronously as to not block the actor mailbox.
 #pragma warning disable CS4014
         _ = DoMovementInterval();
-        _ = DoInteractionInterval();
+        _ = DoSigilInteractionInterval();
 #pragma warning restore CS4014
     }
 
@@ -214,8 +214,9 @@ public class WizardZoneCreature : WizardZoneObject {
         }
     }
 
-    private async Task DoInteractionInterval() {
-        // On interval, tell the zone to check if this creature is interacting with another object.
+    private async Task DoSigilInteractionInterval() {
+        // todo: fix me
+        // On interval, tell the zone to check if this creature is interacting with a sigil object.
         while (!_pathMovementCancelToken.IsCancellationRequested) {
             if (_creatureState == CreatureState.Combat || !_isMovingCreature) {
                 break;

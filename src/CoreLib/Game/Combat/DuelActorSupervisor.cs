@@ -9,18 +9,21 @@ namespace Imlight.CoreLib.Game.Combat;
 /// This class is responsible for managing all duels in a <see cref="WizardZone"/>.
 /// </summary>
 public class DuelActorSupervisor : ReceiveProtocolDispatcher {
+    private readonly IActorRef _wizardZoneRef;
     private List<IActorRef> _duels;
 
-    public DuelActorSupervisor() {
+    public DuelActorSupervisor(IActorRef wizardZoneRef) {
+        _wizardZoneRef = wizardZoneRef;
         _duels = new List<IActorRef>();
     }
 
-    public static Props Props() => Akka.Actor.Props.Create(() => new DuelActorSupervisor());
+    public static Props Props(IActorRef wizardZoneRef)
+        => Akka.Actor.Props.Create(() => new DuelActorSupervisor(wizardZoneRef));
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_STARTDUEL))]
     private void ReceiveStartDuel(COMBAT_106_PROTOCOL.MSG_STARTDUEL message) {
         // Create the duel as a child of this supervisor. Add it to our references so we can manage it.
-        var duelProps = DuelActor.Props();
+        var duelProps = DuelActor.Props(_wizardZoneRef);
         var duelActor = CreateChildActor(duelProps);
         _duels.Add(duelActor);
 
