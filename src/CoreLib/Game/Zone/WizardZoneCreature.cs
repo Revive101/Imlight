@@ -20,7 +20,7 @@ namespace Imlight.CoreLib.Game.Zone;
 /// An extension of <see cref="WizardZoneObject" /> that adds implementations to move along
 /// a given <see cref="WizardZonePath" />.
 /// </summary>
-public class WizardZonePathCreature : WizardZoneObject {
+public class WizardZoneCreature : WizardZoneObject {
     internal enum CreatureState {
         Stopped,
         Wandering,
@@ -29,8 +29,10 @@ public class WizardZonePathCreature : WizardZoneObject {
 
     private const int MovementDelayWithoutMobileId = 300;
     private const int MinimumMovementspeedDelayInMilli = 500;
+    private const int InteractionIntervalInSeconds = 2;
 
-    private readonly CancellationTokenSource _cancelToken;
+    private readonly CancellationTokenSource _pathMovementCancelToken;
+    private readonly CancellationTokenSource _interactionCancelToken;
     private readonly NodeObject[] _nodes;
     private CreatureState _creatureState;
     private byte _targetNodeIndex;
@@ -41,15 +43,15 @@ public class WizardZonePathCreature : WizardZoneObject {
     private bool _isDuelingCreature;
 
     // ctor
-    public WizardZonePathCreature(
-        CoreObject activeGameObject,
-        CoreTemplate template,
-        NodeObject[] nodes,
-        byte startingNodeIndex,
-        IActorRef wizardZoneRef)
-        : base(activeGameObject, template, wizardZoneRef) {
+    public WizardZoneCreature(CoreObject activeGameObject,
+                                  CoreTemplate template,
+                                  NodeObject[] nodes,
+                                  byte startingNodeIndex,
+                                  IActorRef wizardZoneRef)
+            : base(activeGameObject, template, wizardZoneRef) {
         this._nodes = nodes;
-        this._cancelToken = new CancellationTokenSource();
+        this._pathMovementCancelToken = new CancellationTokenSource();
+        this._interactionCancelToken = new CancellationTokenSource();
         this._targetNodeIndex = startingNodeIndex;
         this._creatureState = CreatureState.Stopped;
 
@@ -62,18 +64,18 @@ public class WizardZonePathCreature : WizardZoneObject {
         // Start the movement interval asynchronously as to not block the actor mailbox.
 #pragma warning disable CS4014
         _ = DoMovementInterval();
+        _ = DoInteractionInterval();
 #pragma warning restore CS4014
     }
 
     // Akka.NET ctor
-    public static Props Props(
-        CoreObject activeGameObject,
-        CoreTemplate template,
-        NodeObject[] nodes,
-        byte startingNodeIndex,
-        IActorRef wizardZoneRef) {
+    public static Props Props(CoreObject activeGameObject,
+                              CoreTemplate template,
+                              NodeObject[] nodes,
+                              byte startingNodeIndex,
+                              IActorRef wizardZoneRef) {
         return Akka.Actor.Props.Create(()
-            => new WizardZonePathCreature(activeGameObject, template, nodes, startingNodeIndex, wizardZoneRef));
+            => new WizardZoneCreature(activeGameObject, template, nodes, startingNodeIndex, wizardZoneRef));
     }
 
     protected override void OnPlayerJoin(CoreObject player, IActorRef playerActor) {
@@ -104,15 +106,11 @@ public class WizardZonePathCreature : WizardZoneObject {
     }
 
     protected override void OnPlayerInteractionEnter(CoreObject player, IActorRef suspect) {
-        if (_creatureState == CreatureState.Combat) {
+        if (_creatureState == CreatureState.Combat || !_isDuelingCreature) {
             return;
         }
 
         base.OnPlayerInteractionEnter(player, suspect);
-
-        if (!_isDuelingCreature) {
-            return;
-        }
 
         // Prepare this creature for combat.
         StopMovement();
@@ -177,7 +175,7 @@ public class WizardZonePathCreature : WizardZoneObject {
     private async Task DoMovementInterval() {
         _creatureState = CreatureState.Wandering;
 
-        while (!_cancelToken.IsCancellationRequested) {
+        while (!_pathMovementCancelToken.IsCancellationRequested) {
             // Wait until this object officially has a mobile ID from the zone.
             if (ActiveGameObject.m_nMobileID == 0) {
                 await Task.Delay(MovementDelayWithoutMobileId);
@@ -209,15 +207,35 @@ public class WizardZonePathCreature : WizardZoneObject {
             // Begin traveling to the target node.
             _lastMoveTime = DateTime.Now;
             BroadcastMovement(CurrentTargetNode);
-            await Task.Delay(travelTimeInMilli);
+            await Task.Delay(travelTimeInMilli, _pathMovementCancelToken.Token);
 
             // Update the game object position to the target node position once we've reached it.
             UpdateGameObjectPosition(CurrentTargetNode);
         }
     }
 
+    private async Task DoInteractionInterval() {
+        // On interval, tell the zone to check if this creature is interacting with another object.
+        while (!_pathMovementCancelToken.IsCancellationRequested) {
+            if (_creatureState == CreatureState.Combat || !_isMovingCreature) {
+                break;
+            }
+
+            ActiveGameObject.m_location = GetPosition();
+            var fishMsg = new ZONE_102_PROTOCOL.MSG_FISHINTERACTION() {
+                CoreObject = ActiveGameObject,
+                Suspect = Self,
+                IsCreature = true
+            };
+            WizardZoneRef.Tell(fishMsg);
+
+            await Task.Delay(TimeSpan.FromSeconds(InteractionIntervalInSeconds), _interactionCancelToken.Token);
+        }
+    }
+
     private void StopMovement() {
-        _cancelToken.Cancel();
+        _pathMovementCancelToken.Cancel();
+        _interactionCancelToken.Cancel();
         _creatureState = CreatureState.Stopped;
 
         // Broadcast the new move state to all players.
