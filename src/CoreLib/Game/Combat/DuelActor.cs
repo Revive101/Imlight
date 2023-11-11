@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
@@ -19,26 +20,36 @@ namespace Imlight.CoreLib.Game.Combat;
 public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     private const float DuelRadius = 584.0f;
     private const byte NumOfSubCircles = 8;
+    private const byte PlanningTime = 30;
     private const float AngleBetweenSubCircles = 36.8f;
     private const float FirstSubCircleAngle = 145.0f;
     private const float DuelStartedGracePeriodInSeconds = 3.0f;
     private const float YawErrorCompensation = 1.58f;
 
     public ITimerScheduler Timers { get; set; }
+    private readonly IActorRef _wizardZoneRef;
     private byte PlayerCount => (byte) _subCircles.Count(x => x.IsOccupied && x.Team == Team.Player);
     private byte CreatureCount => (byte) _subCircles.Count(x => x.IsOccupied && x.Team == Team.Creature);
+    private DuelActorSubCircle[] ActiveSubCircles => _subCircles.Where(x => x.IsOccupied).ToArray();
 
     private Duel _duel;
     private DuelActorSubCircle[] _subCircles = new DuelActorSubCircle[8];
     private ulong _sigilId;
     private Vector3 _sigilLocation;
     private Vector3 _sigilOrientation;
+
+    // Variables to keep track of the actual duel.
     private byte _creatureCount;
     private byte _playerCount;
+    private byte _round = 1;
+    private byte _phase = 1;
+    private Team _upFirstTeam;
 
-    public DuelActor() { }
+    public DuelActor(IActorRef wizardZoneRef) {
+        this._wizardZoneRef = wizardZoneRef;
+    }
 
-    public static Props Props() => Akka.Actor.Props.Create(() => new DuelActor());
+    public static Props Props(IActorRef wizardZoneRef) => Akka.Actor.Props.Create(() => new DuelActor(wizardZoneRef));
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_STARTDUEL))]
     private void ReceiveStartDuel(COMBAT_106_PROTOCOL.MSG_STARTDUEL message) {
@@ -69,6 +80,10 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             throw new Exception("Failed to assign participants to sub circles.");
         }
 
+        // Flip a coin to determine which team goes first
+        var random = new Random();
+        _upFirstTeam = random.Next(0, 2) == 0 ? Team.Player : Team.Creature;
+
         // Fire a message to self to start the duel after the grace period has ended.
         var delay = TimeSpan.FromSeconds(DuelStartedGracePeriodInSeconds);
         Timers.StartSingleTimer("graceover", new COMBAT_106_PROTOCOL.MSG_GRACEPERIODOVER(), delay);
@@ -77,6 +92,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_GRACEPERIODOVER))]
     private void ReceiveGracePeriodOver(COMBAT_106_PROTOCOL.MSG_GRACEPERIODOVER message) {
         // The grace period for adding participants is now over.
+       RoundStart();
     }
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ADDPARTICIPANT))]
@@ -130,12 +146,117 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         }
     }
 
+    private void RoundStart() {
+        // Phase 1 of next round
+        if (_round <= 1) {
+            SendCombatAddForAllParticipants();
+        }
+        SendCombatPhase(_phase);
+        SendUpFirst(_upFirstTeam, _round);
+
+        _phase++;
+
+        // Phase 2 of next round
+        SendCombatPhase(_phase);
+        if (_round <= 1) {
+            SendCombatUI(PlanningTime);
+        }
+    }
+
+    private void SendCombatAddForAllParticipants() {
+        foreach (var circle in ActiveSubCircles) {
+            var serializedData = circle.GetSerializedCombatParticipant();
+            var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATADD {
+                DuelID = _sigilId,
+                ParticipantData = serializedData,
+            };
+            var broadCastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+                Selfless = false,
+                Sender = circle.Actor,
+                Message = msg
+            };
+            _wizardZoneRef.Tell(broadCastMsg);
+        }
+    }
+
+    private void SendCombatPhase(byte phase) {
+        var serializer = new ObjectSerializer()
+                .OnBehaviors(SerializerOptions.Behaviors.None)
+                .OnPropertyMask(SerializerOptions.PropertyFlags.Public
+                              | SerializerOptions.PropertyFlags.Transmit
+                              | SerializerOptions.PropertyFlags.AuthorityTransmit);
+
+        // Unsure what any of this is for. It's just copied from the client.
+        var upFirstData = serializer.Serialize(new UpFirstData() {
+            m_resultType = 1884669703,
+            m_roundNum = 96,
+            m_upFirst = 320,
+        });
+
+        var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATPHASE() {
+            DuelID = _sigilId,
+            NewPhase = phase,
+            PlayerID = 0,
+            Data = phase == 0 ? upFirstData : "",
+        };
+
+        // Broadcast the message to the zone.
+        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+            Selfless = false,
+            Sender = Self,
+            Message = msg
+        };
+        _wizardZoneRef.Tell(broadcastMsg);
+    }
+
+    private void SendUpFirst(Team firstTeamToAct, byte roundNum) {
+        // The client counts the sigils in reverse order.
+        // If creatures are first, the sigil is 4. If players are first, the sigil is 8.
+        var upFirstSigilSlot = (byte) (firstTeamToAct == Team.Player ? 4 : 1);
+
+        var upFirstMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATUPFIRST {
+            DuelID = _sigilId,
+            RoundNum = roundNum,
+            FirstTeamToAct = (byte) (firstTeamToAct == Team.Player ? 0 : 1),
+            UpFirst = upFirstSigilSlot,
+        };
+        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+            Selfless = false,
+            Sender = Self,
+            Message = upFirstMsg
+        };
+        _wizardZoneRef.Tell(broadcastMsg);
+    }
+
+    private void SendCombatUI(byte planningPhaseTimer) {
+        var combatUiMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_SHOWCOMBATUI {
+            DuelID = _sigilId
+        };
+        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+            Selfless = false,
+            Sender = Self,
+            Message = combatUiMsg
+        };
+        _wizardZoneRef.Tell(broadcastMsg);
+
+        var planningMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_SETPLANNINGPHASETIMER {
+            DuelID = _sigilId,
+            Time = planningPhaseTimer,
+        };
+        var planningBroadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+            Selfless = false,
+            Sender = Self,
+            Message = planningMsg
+        };
+        _wizardZoneRef.Tell(planningBroadcastMsg);
+    }
+
     private Duel CreateDuelWithDefaults(ulong sigilId) {
         // todo: source these from config
         var duel = new Duel() {
             m_flatParticipantList = new(),
             m_duelID = sigilId,
-            m_planningTimer = 30,
+            m_planningTimer = PlanningTime,
             m_firstTeamToAct = 0,
             m_executionPhaseTimer = 3.4078238f,
             m_duelPhase = Duel.kDuelPhase.kPhase_PrePlanning,
@@ -226,78 +347,5 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         subCircle.AssignParticipant(actorRef, coreObject);
 
         return true;
-    }
-
-    private void SendCombatStartToParticipants(Dictionary<IActorRef, CoreObject> participants) {
-        foreach (var participant in participants) {
-            // A player will always have a template ID of 1.
-            CombatParticipant combatParticipant;
-            if (participant.Value.m_templateID == 1) {
-                combatParticipant = CreateCombatParticipantFromPlayer(participant.Key, participant.Value);
-            }
-            else {
-                combatParticipant = CreateCombatParticipantFromCreature(participant.Value);
-            }
-
-            // Serialize and send the combat participant to the participant.
-            var serializer = new ObjectSerializer()
-            .OnBehaviors(SerializerOptions.Behaviors.None)
-            .OnPropertyMask(SerializerOptions.PropertyFlags.Public
-                          | SerializerOptions.PropertyFlags.Transmit
-                          | SerializerOptions.PropertyFlags.AuthorityTransmit);
-            var serializedCombatParticipant = serializer.Serialize(combatParticipant);
-
-            // Send to client.
-            var addMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATADD {
-                DuelID = _sigilId,
-                ParticipantData = serializedCombatParticipant
-            };
-
-            participant.Key.Tell(addMsg);
-        }
-    }
-
-    private CombatParticipant CreateCombatParticipantFromPlayer(IActorRef playerActor, CoreObject playerObject) {
-        var queryCharacterMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
-        var queryCharacterRsp = playerActor
-            .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryCharacterMsg)
-            .Result
-            .Character;
-
-        var combatParticipant = new CombatParticipant {
-            m_ownerID = playerObject.m_globalID,
-            m_templateID = playerObject.m_templateID, // Captued 2199023255553 from live
-            m_isPlayer = true,
-            m_zoneID = 0,
-            m_teamID = 0,
-            m_primaryMagicSchoolID = 0,
-            m_pipCount = new() { m_powerPips = 1, m_genericPips = 1 },
-            m_pipRoundRates = new(),
-            m_PipsSuspended = false,
-            m_playerHealth = queryCharacterRsp.GameStats.m_currentHitpoints,
-            m_maxPlayerHealth = queryCharacterRsp.GameStats.m_baseHitpoints,
-
-            // todo: this causes client to fail deserialization
-            //m_pGameStats = queryCharacterRsp.GameStats,
-        };
-
-        return combatParticipant;
-    }
-
-    private CombatParticipant CreateCombatParticipantFromCreature(CoreObject creatureObject) {
-        var combatParticipant = new CombatParticipant {
-            m_ownerID = creatureObject.m_globalID,
-            m_templateID = creatureObject.m_templateID, // Captued 2199023290637 from live
-            m_isPlayer = true,
-            m_zoneID = 0,
-            m_teamID = 1,
-            m_primaryMagicSchoolID = 0,
-            m_pipCount = new() { m_powerPips = 1, m_genericPips = 1 },
-            m_pipRoundRates = new(),
-            m_PipsSuspended = false,
-        };
-
-        return combatParticipant;
-
     }
 }
