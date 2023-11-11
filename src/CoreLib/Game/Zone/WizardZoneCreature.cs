@@ -106,11 +106,11 @@ public class WizardZoneCreature : WizardZoneObject {
     }
 
     protected override void OnPlayerInteractionEnter(CoreObject player, IActorRef suspect) {
+        base.OnPlayerInteractionEnter(player, suspect);
+
         if (_creatureState == CreatureState.Combat || !_isDuelingCreature) {
             return;
         }
-
-        base.OnPlayerInteractionEnter(player, suspect);
 
         // Prepare this creature for combat.
         StopMovement();
@@ -119,7 +119,7 @@ public class WizardZoneCreature : WizardZoneObject {
         // If I'm a hostile creature and a player just provoked me, then start a duel.
         // This message is forwarded to the DuelActorSupervisor of the WizardZone.
         var msg = new ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL {
-            Participants = new Dictionary<IActorRef, CoreObject>
+            StartingParticipants = new Dictionary<IActorRef, CoreObject>
             {
                 { suspect, player },
                 { Self, ActiveGameObject }

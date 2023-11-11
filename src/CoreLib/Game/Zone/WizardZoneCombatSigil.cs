@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Akka.Actor;
+using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Shared.Networking;
@@ -24,9 +27,8 @@ public class WizardZoneCombatSigil : WizardZoneObject {
         : base(activeGameObject, template, wizardZoneRef) {
     }
 
-    public static Props Props(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef) {
-        return Akka.Actor.Props.Create(() => new WizardZoneCombatSigil(activeGameObject, template, wizardZoneRef));
-    }
+    public static Props Props(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef)
+        => Akka.Actor.Props.Create(() => new WizardZoneCombatSigil(activeGameObject, template, wizardZoneRef));
 
     protected override void OnPlayerJoin(CoreObject player, IActorRef suspect) {
         if (_activeDuel is not null) {
@@ -35,20 +37,52 @@ public class WizardZoneCombatSigil : WizardZoneObject {
     }
 
     protected override void OnPlayerInteractionEnter(CoreObject player, IActorRef suspect) {
-        if (_activeDuel is null) {
+        if (_activeDuel is null || _activeDuelActor is null) {
             return;
         }
 
-        var msg = new COMBAT_106_PROTOCOL.MSG_ADDPARTICIPANT {
-            Participant = suspect,
-            ParticipantObject = player,
-        };
-        _activeDuelActor.Tell(msg);
+        if (IsPlayerSlotAvailable()) {
+            AddParticipant(suspect, player);
+        }
+        else {
+            Logger.Debug("Cannot add player {0} to duel {1} because there are already 4 players.",
+                Logger.Args(player.m_globalID, _activeDuelActor));
+        }
+    }
+
+    protected override void OnCreatureInteractionEnter(CoreObject creature, IActorRef suspect) {
+        if (_activeDuel is null || _activeDuelActor is null) {
+            return;
+        }
+
+        if (IsCreatureSlotAvailable()) {
+            AddParticipant(suspect, creature);
+        }
+        else {
+            Logger.Debug("Cannot add creature {0} to duel {1} is full.",
+                Logger.Args(creature.m_globalID, _activeDuelActor));
+        }
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL))]
-    private void ReceiveSpawnSigil(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL message) {
-        var duel = RequestDuelActor(message.Participants);
+    private void ReceiveRequestSigil(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL message) {
+        // If there is already an active duel, we'll add them to it.
+        if (_activeDuel is not null) {
+            foreach (var participant in message.StartingParticipants) {
+                var participantActor = participant.Key;
+                var participantObject = participant.Value;
+                var isCreature = participantObject.m_templateID != 1;
+
+                var isSlotAvailable = isCreature ? IsCreatureSlotAvailable() : IsPlayerSlotAvailable();
+
+                if (isSlotAvailable) {
+                    AddParticipant(participantActor, participantObject);
+                }
+            }
+            return;
+        }
+
+        var duel = RequestDuelActor(message.StartingParticipants);
         _activeDuelActor = duel.Item1;
         _activeDuel = duel.Item2;
 
@@ -101,5 +135,49 @@ public class WizardZoneCombatSigil : WizardZoneObject {
             Sender = Self,
         };
         base.WizardZoneRef.Tell(broadcastMsg);
+    }
+
+    private bool IsPlayerSlotAvailable() {
+        if (_activeDuel is null || _activeDuelActor is null) {
+            return false;
+        }
+
+        var checkForSlotMsg = new COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLE {
+            Team = Combat.Team.Player
+        };
+        var slotAvailable = _activeDuelActor
+            .Ask<COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLERSP>(checkForSlotMsg)
+            .Result
+            .Available;
+
+        return slotAvailable;
+    }
+
+    private bool IsCreatureSlotAvailable() {
+        if (_activeDuel is null || _activeDuelActor is null) {
+            return false;
+        }
+
+        var checkForSlotMsg = new COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLE {
+            Team = Combat.Team.Creature
+        };
+        var slotAvailable = _activeDuelActor
+            .Ask<COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLERSP>(checkForSlotMsg)
+            .Result
+            .Available;
+
+        return slotAvailable;
+    }
+
+    private void AddParticipant(IActorRef actorRef, CoreObject obj) {
+        if (_activeDuel is null || _activeDuelActor is null) {
+            return;
+        }
+
+        var msg = new COMBAT_106_PROTOCOL.MSG_ADDPARTICIPANT {
+            Participant = actorRef,
+            ParticipantObject = obj,
+        };
+        _activeDuelActor.Tell(msg);
     }
 }

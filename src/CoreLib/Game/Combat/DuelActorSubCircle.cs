@@ -17,6 +17,8 @@ public class DuelActorSubCircle {
     public CombatParticipant Participant { get; set; }
     public IActorRef Actor { get; set; }
     public CoreObject ParticipantObject { get; set; }
+    public bool IsOccupied { get; set; }
+    public Team Team { get; set; }
 
     private ulong _sigilId;
 
@@ -29,6 +31,8 @@ public class DuelActorSubCircle {
     public async Task AssignParticipant(IActorRef actor, CoreObject participantObject) {
         Actor = actor;
         ParticipantObject = participantObject;
+        Team = participantObject.m_templateID == 1 ? Team.Player : Team.Creature;
+        IsOccupied = true;
 
         await PlayEntranceAnimation(actor, participantObject);
     }

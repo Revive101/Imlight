@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Akka.Actor;
+using Imlight.CoreLib.Game.Combat;
 using Imlight.CoreLib.Shared.Networking;
 using SharpDX;
 using static Imlight.Common.Caches.TypeCache;
@@ -38,6 +39,8 @@ namespace Imlight.CoreLib.Shared.Packets {
 
 			public IActorRef DuelActor;
 			public Duel Duel;
+            public byte CreatureCount;
+            public byte PlayerCount;
 		}
 
         public sealed class MSG_ADDPARTICIPANT : IServerMessage
@@ -53,6 +56,22 @@ namespace Imlight.CoreLib.Shared.Packets {
         {
             public byte MessageOrder => 5;
             public byte ServiceID => 106;
+        }
+
+        public sealed class MSG_SLOTAVAILABLE : IServerMessage
+        {
+            public byte MessageOrder => 6;
+            public byte ServiceID => 106;
+
+            public Team Team;
+        }
+
+        public sealed class MSG_SLOTAVAILABLERSP : IServerMessage
+        {
+            public byte MessageOrder => 7;
+            public byte ServiceID => 106;
+
+            public bool Available;
         }
 	}
 }

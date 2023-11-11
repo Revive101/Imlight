@@ -92,6 +92,15 @@ public class WizardZoneObject : ReceiveProtocolDispatcher {
     }
 
     /// <summary>
+    /// Called when a creature enters the interaction zone of this object.
+    /// </summary>
+    /// <param name="creature">The CoreObject representing the creature.</param>
+    /// <param name="suspect">The IActorRef representing the suspect.</param>
+    protected virtual void OnCreatureInteractionEnter(CoreObject creature, IActorRef suspect) {
+
+    }
+
+    /// <summary>
     /// Gets the position of the active game object.
     /// </summary>
     /// <returns>The position as a Vector3.</returns>
@@ -118,12 +127,19 @@ public class WizardZoneObject : ReceiveProtocolDispatcher {
 
             // Do enter events.
             _objsInRadius.Add(message.CoreObject);
-            OnPlayerInteractionEnter(message.CoreObject, message.Suspect);
+            if (message.IsCreature) {
+                OnCreatureInteractionEnter(message.CoreObject, message.Suspect);
+            }
+            else {
+                OnPlayerInteractionEnter(message.CoreObject, message.Suspect);
+            }
         }
         else if (_objsInRadius.Contains(message.CoreObject) && !IsInRadius(message.CoreObject)) {
             // Do exit events.
             _objsInRadius.Remove(message.CoreObject);
-            OnPlayerInteractionExit(message.CoreObject, message.Suspect);
+            if (!message.IsCreature) {
+                OnPlayerInteractionExit(message.CoreObject, message.Suspect);
+            }
         }
     }
 

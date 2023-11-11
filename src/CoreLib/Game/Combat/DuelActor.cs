@@ -17,11 +17,6 @@ namespace Imlight.CoreLib.Game.Combat;
 /// <see cref="DuelActorSupervisor"/> and is a child of it.
 /// </summary>
 public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
-    private enum Team {
-        Creature,
-        Player
-    }
-
     private const float DuelRadius = 584.0f;
     private const byte NumOfSubCircles = 8;
     private const float AngleBetweenSubCircles = 36.8f;
@@ -30,6 +25,8 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     private const float YawErrorCompensation = 1.58f;
 
     public ITimerScheduler Timers { get; set; }
+    private byte PlayerCount => (byte) _subCircles.Count(x => x.IsOccupied && x.Team == Team.Player);
+    private byte CreatureCount => (byte) _subCircles.Count(x => x.IsOccupied && x.Team == Team.Creature);
 
     private Duel _duel;
     private DuelActorSubCircle[] _subCircles = new DuelActorSubCircle[8];
@@ -88,7 +85,14 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         // We can determine if this participant is a player by checking their template ID. If it's
         // 1, then it's a player. Otherwise, it's a creature.
         var isPlayer = message.ParticipantObject.m_templateID == 1;
-        var subCircle = isPlayer ? GetAvailableSubCircleTeamCreature() : GetAvailableSubCircleTeamPlayer();
+
+        // Check to see if the participant actor is already in the duel. If so, we don't need to do anything.
+        var isAlreadyInDuel = _subCircles.Any(x => x.Participant == message.Participant);
+        if (isAlreadyInDuel) {
+            return;
+        }
+
+        var subCircle = isPlayer ? GetAvailableSubCircleTeamPlayer() : GetAvailableSubCircleTeamCreature();
         var team = isPlayer ? Team.Creature : Team.Player;
 
         if (subCircle is null || !AssignParticipantToSubCircle(team, subCircle, message.Participant, message.ParticipantObject)) {
@@ -105,6 +109,25 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             PlayerCount = _playerCount,
         };
         Sender.Tell(rsp);
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLE))]
+    private void ReceiveSlotAvailable(COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLE message) {
+        if (message.Team == Team.Player) {
+            var available = PlayerCount < 4;
+            var rsp = new COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLERSP {
+                Available = available
+            };
+            Sender.Tell(rsp);
+        }
+        else {
+            // For every player, there are 2 creatures allowed to a max of 4 creatures.
+            var available = CreatureCount < (PlayerCount * 2) && CreatureCount < 4;
+            var rsp = new COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLERSP {
+                Available = available
+            };
+            Sender.Tell(rsp);
+        }
     }
 
     private Duel CreateDuelWithDefaults(ulong sigilId) {
@@ -170,7 +193,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
     private DuelActorSubCircle GetAvailableSubCircleTeamCreature() {
         for (int i = 0; i < 4; i++) {
-            if (_subCircles[i].Participant == null) {
+            if (!_subCircles[i].IsOccupied) {
                 return _subCircles[i];
             }
         }
@@ -180,7 +203,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
     private DuelActorSubCircle GetAvailableSubCircleTeamPlayer() {
         for (int i = 4; i < 8; i++) {
-            if (_subCircles[i].Participant == null) {
+            if (!_subCircles[i].IsOccupied) {
                 return _subCircles[i];
             }
         }
