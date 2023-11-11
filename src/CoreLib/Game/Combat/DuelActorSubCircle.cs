@@ -1,6 +1,7 @@
 using Akka.Actor;
 using Imlight.Common.Caches;
-using Imlight.Common.ObjectProperty.PropertyReflection;
+using Imlight.Common.IO;
+using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Game.Models;
 using Imlight.CoreLib.Shared.Packets;
 using SharpDX;
@@ -20,7 +21,7 @@ public class DuelActorSubCircle {
     public bool IsOccupied { get; set; }
     public Team Team { get; set; }
 
-    private ulong _sigilId;
+    private readonly ulong _sigilId;
 
     public DuelActorSubCircle(Vector3 location, float yaw, ulong sigilId) {
         Location = location;
@@ -28,13 +29,25 @@ public class DuelActorSubCircle {
         _sigilId = sigilId;
     }
 
-    public async Task AssignParticipant(IActorRef actor, CoreObject participantObject) {
+    internal async Task AssignParticipant(IActorRef actor, CoreObject participantObject) {
         Actor = actor;
         ParticipantObject = participantObject;
         Team = participantObject.m_templateID == 1 ? Team.Player : Team.Creature;
         IsOccupied = true;
 
         await PlayEntranceAnimation(actor, participantObject);
+    }
+
+    internal ByteString GetSerializedCombatParticipant() {
+        // Get the combat participant and serialize it.
+        Participant = GetParticipant();
+        var serializer = new ObjectSerializer()
+        .OnBehaviors(SerializerOptions.Behaviors.None)
+        .OnPropertyMask(SerializerOptions.PropertyFlags.Public
+                      | SerializerOptions.PropertyFlags.Transmit
+                      | SerializerOptions.PropertyFlags.AuthorityTransmit);
+
+        return serializer.Serialize(Participant);
     }
 
     private async Task PlayEntranceAnimation(IActorRef actor, CoreObject participantObject) {
@@ -66,7 +79,66 @@ public class DuelActorSubCircle {
         await Task.Delay((int) (AggroTimeInSeconds * 1000));
 
         // Set state.
-        ((GAME_5_PROTOCOL.MSG_ENTERSTATE)broadcastMsg.Message).State = (uint) State.CombatIdle;
-        actor.Tell(broadcastMsg);
+        var secondBroadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST() {
+            Selfless = false,
+            Sender = actor,
+            Message = new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
+                GameObjectID = participantObject.m_globalID,
+                State = (uint) State.CombatIdle
+            }
+        };
+        actor.Tell(secondBroadcastMsg);
+    }
+
+    private CombatParticipant GetParticipant() {
+        if (Team == Team.Player) {
+            return GetPlayerParicipant();
+        } else {
+            return GetCreatureParticipant();
+        }
+    }
+
+    private CombatParticipant GetPlayerParicipant() {
+        var queryCharacterMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
+        var queryCharacterRsp = Actor
+            .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryCharacterMsg)
+            .Result
+            .Character;
+
+        var combatParticipant = new CombatParticipant {
+            m_ownerID = ParticipantObject.m_globalID,
+            m_templateID = ParticipantObject.m_templateID, // Captued 2199023255553 from live
+            m_isPlayer = true,
+            m_zoneID = 0,
+            m_teamID = 0,
+            m_primaryMagicSchoolID = 0,
+            m_pipCount = new() { m_powerPips = 1, m_genericPips = 1 },
+            m_pipRoundRates = new(),
+            m_PipsSuspended = false,
+            m_playerHealth = queryCharacterRsp.GameStats.m_currentHitpoints,
+            m_maxPlayerHealth = queryCharacterRsp.GameStats.m_baseHitpoints,
+
+            // todo: this causes client to fail deserialization
+            //m_pGameStats = queryCharacterRsp.GameStats,
+        };
+
+        return combatParticipant;
+    }
+
+    private CombatParticipant GetCreatureParticipant() {
+        var combatParticipant = new CombatParticipant {
+            m_ownerID = ParticipantObject.m_globalID,
+            m_templateID = ParticipantObject.m_templateID, // Captued 2199023290637 from live
+            m_isPlayer = true,
+            m_zoneID = 0,
+            m_teamID = 1,
+            m_primaryMagicSchoolID = 0,
+            m_pipCount = new() { m_powerPips = 1, m_genericPips = 1 },
+            m_pipRoundRates = new(),
+            m_PipsSuspended = false,
+        };
+
+        return combatParticipant;
+
     }
 }
