@@ -18,6 +18,7 @@ public static class ClassElementWriters {
         { typeof(uint),           (r, v) => r.WriteUInt32((uint)v)               },
         { typeof(long),           (r, v) => r.WriteInt64((long)v)                },
         { typeof(ulong),          (r, v) => r.WriteUInt64((ulong)v)              },
+        { typeof(double),         (r, v) => r.WriteDouble((double)v)             },
         { typeof(ByteString),     (r, v) => r.WriteString((ByteString)v)         },
         { typeof(WideByteString), (r, v) => r.WriteWString((WideByteString)v)    },
         { typeof(float),          (r, v) => r.WriteFloat((float)v)               },
