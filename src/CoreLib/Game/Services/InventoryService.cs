@@ -78,18 +78,10 @@ public class InventoryService : MessageService {
                     Logger.Debug("Unequipping item from slot {Slot} | {Name}",
                         Logger.Args(slot, template.m_objectName.ToString()));
 
-                    // EquipmentBehavior
-                    // itemList
-                    equipmentBehavior.m_itemList.RemoveAll(item => item.m_globalID == currentEquippedItem);
-
-                    // publicItemList
-                    //equipmentBehavior.m_publicItemList.RemoveAll(item => item.m_itemID == itemObj.m_templateID);
-
-                    // slotList
-                    // Zero-out item from slot list and move all items down to fill "empty" zero slots, should they exist.
+                    // Remove item from equipment behavior lists.
                     equipmentBehavior = RemoveSlotFromEquipmentSlotList(slot, equipmentBehavior);
-
-                    // CreationMenu
+                    equipmentBehavior.m_itemList.RemoveAll(item => item.m_globalID == currentEquippedItem);
+                    //equipmentBehavior.m_publicItemList.RemoveAll(item => item.m_itemID == itemObj.m_templateID);
                     //creationEquipment.RemoveAll(item => item.m_itemID == itemObj.m_templateID);
 
                     // Unequip the previous item.
@@ -106,7 +98,6 @@ public class InventoryService : MessageService {
                         };
                         ZoneBroadcast(publicUnequipMsg, false);
                     }
-
                     break;
                 }
             }
@@ -117,13 +108,6 @@ public class InventoryService : MessageService {
                 SlotName = message.SlotName,
                 IsEquip = message.IsEquip
             });
-
-            var equippedItemInfo = new WizardEquippedItemInfo() {
-                m_itemID = (uint) itemObj.m_templateID, //!! Must be templateID !!
-                m_pattern = (Bui5) template.m_numPatterns,
-                m_baseColor = (Bui5) template.m_numPrimaryColors,
-                m_trimColor = (Bui5) template.m_numSecondaryColors,
-            };
 
             // Put ID of equipped item in first empty slot in the slot list, and update itemList, creationList, publicItemList.
             var index = equipmentBehavior.m_slotList.FindIndex(slot => slot.m_itemID == 0);
@@ -173,18 +157,10 @@ public class InventoryService : MessageService {
             Logger.Debug("Unequipping item from slot {Slot} | {Name}",
                 Logger.Args(slot, template.m_objectName.ToString()));
 
-            // EquipmentBehavior
-            // itemList
-            equipmentBehavior.m_itemList.RemoveAll(item => item.m_globalID == currentEquippedItem);
-
-            // publicItemList
-            //equipmentBehavior.m_publicItemList.RemoveAll(item => item.m_itemID == itemObj.m_templateID);
-
-            // slotList
-            // Zero-out item from slot list and move all items down to fill "empty" zero slots, should they exist.
+            // Remove item from equipment behavior lists.
             equipmentBehavior = RemoveSlotFromEquipmentSlotList(slot, equipmentBehavior);
-
-            // CreationMenu
+            equipmentBehavior.m_itemList.RemoveAll(item => item.m_globalID == currentEquippedItem);
+            //equipmentBehavior.m_publicItemList.RemoveAll(item => item.m_itemID == itemObj.m_templateID);
             //creationEquipment.RemoveAll(item => item.m_itemID == itemObj.m_templateID);
 
             if (currentEquippedItem != 0) {
@@ -194,7 +170,6 @@ public class InventoryService : MessageService {
                 };
 
                 ZoneBroadcast(publicUnequipMsg, false);
-                return;
             }
         }
     }
@@ -312,8 +287,8 @@ public class InventoryService : MessageService {
     }
 
     private ClientWizEquipmentBehavior RemoveSlotFromEquipmentSlotList(int slot, ClientWizEquipmentBehavior equipmentBehavior) {
+        // Zero-out item from slot list and move all items down to fill "empty" zero slots, should they exist.
         var numEquippedItemsInSlots = equipmentBehavior.m_slotList.Count(slot => slot.m_itemID != 0);
-
         equipmentBehavior.m_slotList[slot].m_itemID = (GID) 0;
 
         if (slot < numEquippedItemsInSlots - 1) {
