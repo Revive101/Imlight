@@ -133,7 +133,7 @@ public class InventoryService : MessageService {
             //equipmentBehavior.m_publicItemList.Add(new EquippedItemInfo() { m_itemID = (uint)itemObj.m_templateID });
             //creationEquipment.Add(equippedItemInfo);
 
-            Logger.Information("Player equipped item from inventory, index {Item} | {Name}",
+            Logger.Debug("Player equipped item from inventory, index {Item} | {Name}",
                 Logger.Args((byte) inventoryBehavior.m_itemList.IndexOf(itemObj), template.m_objectName.ToString()));
             Logger.Debug("Equipped item to slot {Slot}", Logger.Args(index));
 
@@ -202,9 +202,20 @@ public class InventoryService : MessageService {
     #region Destroy/Feed Inventoryitem
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_TRASHINVENTORYITEM))]
     private void ReceiveTrashInventoryItem(GAME_5_PROTOCOL.MSG_TRASHINVENTORYITEM message) {
-        SendToSocket(new GAME_5_PROTOCOL.MSG_TRASHINVENTORYITEM() {
-            GlobalID = message.GlobalID,
-            TemplateID = message.TemplateID,
+        var coreObject = GetActiveCoreObject();
+
+        // @TODO: Remove this and gather from potential player behavior cache instead.
+        if (!CoreObjectFactory.FindBehaviorInstance<ClientWizInventoryBehavior>(coreObject,
+                out var inventoryBehavior)) return;
+        if (!CoreObjectFactory.FindBehaviorInstance<ClientWizEquipmentBehavior>(coreObject,
+            out var equipmentBehavior)) return;
+
+        inventoryBehavior.m_itemList.RemoveAll(item => item.m_globalID == message.GlobalID);
+        equipmentBehavior.m_itemList.RemoveAll(item => item.m_globalID == message.GlobalID);
+
+        SendToSocket(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_REMOVEITEM() {
+            GlobalID = coreObject.m_globalID,
+            ItemID = message.GlobalID
         });
     }
 
