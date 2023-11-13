@@ -25,6 +25,7 @@ public class GameServer : Server {
     private readonly ushort _playerLimit = ConfigurationManager.Settings.GameServerPlayerLimit;
 
     private readonly IActorRef _gameWorldRef;
+    private readonly IActorRef _commandDispatcherRef;
     private readonly Cache<ByteString, Account> _sessionKeys;
     private readonly ListQueue<SessionActor> _playerQueue;
 
@@ -39,6 +40,11 @@ public class GameServer : Server {
         _gameWorldRef = Context.ActorOf(GameWorld.Props(this), gameWorldActorName);
         Logger.Verbose("New actor created under {Path}: {Name}",
             Logger.Args(Context.Self.Path, gameWorldActorName));
+
+        var commandDispatcherActorName = $"{Name}.CommandDispatcher";
+        _commandDispatcherRef = Context.ActorOf(CommandDispatcher.Props(), commandDispatcherActorName);
+        Logger.Verbose("New actor created under {Path}: {Name}",
+            Logger.Args(Context.Self.Path, commandDispatcherActorName));
 
         // Log
         Logger.Information("Game server created with name {Name} under port {Port}.",

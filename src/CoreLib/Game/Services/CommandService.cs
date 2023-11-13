@@ -13,13 +13,16 @@ using Imlight.CoreLib.Shared.Networking;
 namespace Imlight.CoreLib.Game.Services;
 
 internal class CommandService : MessageService {
+    private IActorRef _dispatcherRef;
 
-    public CommandService(SessionActor sessionActor) : base(sessionActor) { }
+    public CommandService(SessionActor sessionActor) : base(sessionActor) { _dispatcherRef = CommandDispatcher.Instance; }
+
     protected static Props Props(SessionActor parentActor) {
         return Akka.Actor.Props.Create(() => new CommandService(parentActor));
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_COMMAND))]
-    private void ReceiveCommand(GAME_5_PROTOCOL.MSG_COMMAND message) { }
-
+    private void ReceiveCommand(GAME_5_PROTOCOL.MSG_COMMAND message) {
+        _dispatcherRef.Forward(message);
+    }
 }
