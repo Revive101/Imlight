@@ -8,6 +8,8 @@ using Akka.Actor;
 using Imlight.Common.IO;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Login.Models;
+using Imlight.CoreLib.Game.Models;
+using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Shared.Packets;
 
@@ -153,5 +155,16 @@ public sealed class SERVER_100_PROTOCOL : IServerProtocol
     {
         public byte MessageOrder { get; } = 16;
         public byte ServiceID { get; } = 100;
+    }
+
+    public class MSG_COMMAND : IServerMessage
+    {
+        public byte MessageOrder { get; } = 17;
+        public byte ServiceID { get; } = 100;
+
+        public WideByteString CommandText;
+        public IActorRef ActorRef;
+        public CoreObject CoreObject;
+        public Character PlayerCharacter;
     }
 }
