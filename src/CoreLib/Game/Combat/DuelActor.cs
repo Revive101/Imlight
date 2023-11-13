@@ -10,6 +10,7 @@ using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using SharpDX;
 using static Imlight.Common.Caches.TypeCache;
+using static Imlight.Common.Caches.TypeCache.Duel;
 
 namespace Imlight.CoreLib.Game.Combat;
 
@@ -41,15 +42,14 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     // Variables to keep track of the actual duel.
     private byte _creatureCount;
     private byte _playerCount;
-    private byte _round = 1;
-    private byte _phase = 1;
     private Team _upFirstTeam;
 
     public DuelActor(IActorRef wizardZoneRef) {
         this._wizardZoneRef = wizardZoneRef;
     }
 
-    public static Props Props(IActorRef wizardZoneRef) => Akka.Actor.Props.Create(() => new DuelActor(wizardZoneRef));
+    public static Props Props(IActorRef wizardZoneRef)
+        => Akka.Actor.Props.Create(() => new DuelActor(wizardZoneRef));
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_STARTDUEL))]
     private void ReceiveStartDuel(COMBAT_106_PROTOCOL.MSG_STARTDUEL message) {
@@ -147,18 +147,20 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     private void RoundStart() {
+        _duel.m_duelPhase = kDuelPhase.kPhase_PrePlanning;
+
         // Phase 1 of next round
-        if (_round <= 1) {
+        if (_duel.m_roundNum <= 1) {
             SendCombatAddForAllParticipants();
         }
-        SendCombatPhase(_phase);
-        SendUpFirst(_upFirstTeam, _round);
+        SendCombatPhase((byte) _duel.m_duelPhase);
+        SendUpFirst(_upFirstTeam, _duel.m_roundNum);
 
-        _phase++;
+        _duel.m_duelPhase = kDuelPhase.kPhase_Planning;
 
         // Phase 2 of next round
-        SendCombatPhase(_phase);
-        if (_round <= 1) {
+        SendCombatPhase((byte) _duel.m_duelPhase);
+        if (_duel.m_roundNum <= 1) {
             SendCombatUI(PlanningTime);
         }
     }
@@ -209,14 +211,14 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         _wizardZoneRef.Tell(broadcastMsg);
     }
 
-    private void SendUpFirst(Team firstTeamToAct, byte roundNum) {
+    private void SendUpFirst(Team firstTeamToAct, int roundNum) {
         // The client counts the sigils in reverse order.
         // If creatures are first, the sigil is 4. If players are first, the sigil is 8.
         var upFirstSigilSlot = (byte) (firstTeamToAct == Team.Player ? 4 : 1);
 
         var upFirstMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATUPFIRST {
             DuelID = _sigilId,
-            RoundNum = roundNum,
+            RoundNum = (ushort) roundNum,
             FirstTeamToAct = (byte) (firstTeamToAct == Team.Player ? 0 : 1),
             UpFirst = upFirstSigilSlot,
         };
@@ -260,6 +262,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             m_firstTeamToAct = 0,
             m_executionPhaseTimer = 3.4078238f,
             m_duelPhase = Duel.kDuelPhase.kPhase_PrePlanning,
+            m_roundNum = 1,
         };
 
         return duel;
@@ -294,7 +297,8 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
                 yaw += 2 * MathF.PI;
             }
 
-            subCircles[i] = new DuelActorSubCircle(sigilPosition, yaw, _sigilId);
+            var subCircleId = (byte)(i + 1);
+            subCircles[i] = new DuelActorSubCircle(sigilPosition, yaw, _sigilId, subCircleId);
 
             // Mirror for the bottom hemisphere (mirrored on both X and Y axes)
             var mirroredX = _sigilLocation.X - rotatedX;
@@ -303,7 +307,8 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             var mirroredYaw = yaw + MathF.PI;
             mirroredYaw = (mirroredYaw < 0) ? (2 * MathF.PI) + mirroredYaw : mirroredYaw; // Normalize to 0-2PI
 
-            subCircles[i + 4] = new DuelActorSubCircle(mirroredPos, mirroredYaw, _sigilId);
+            subCircleId = (byte)(i + 4);
+            subCircles[i + 4] = new DuelActorSubCircle(mirroredPos, mirroredYaw, _sigilId, subCircleId);
 
             // Update initial angle for the next sub-circle
             workingAngle -= AngleBetweenSubCircles;

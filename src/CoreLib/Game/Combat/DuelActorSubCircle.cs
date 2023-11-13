@@ -146,7 +146,7 @@ public class DuelActorSubCircle {
             m_ownerID = ParticipantObject.m_globalID,
             m_templateID = 2199023290637, // Captured 2199023290637 from live
             m_isPlayer = false,
-            m_isMonster = 0,
+            m_isMonster = 1u,
             m_zoneID = 0,
             m_teamID = 1,
             m_originalTeam = 1,
@@ -157,8 +157,9 @@ public class DuelActorSubCircle {
             m_PipsSuspended = false,
             m_color = (Color3) SharpDX.Color.Red,
             //m_rotation = Yaw, // This crashes the client when present
-            m_subcircle = -256,
-            m_dynamicSymbol = DynamicSigilSymbol.NotSet,
+            m_subcircle = 1,
+            m_dynamicSymbol = DynamicSigilSymbol.Dagger,
+            m_planningPhasePipAquiredType = PipAquiredByEnum.AQUIRED_PIP_UNKNOWN
         };
 
         return combatParticipant;
