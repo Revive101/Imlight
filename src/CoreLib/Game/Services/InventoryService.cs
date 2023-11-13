@@ -233,8 +233,11 @@ public class InventoryService : MessageService {
 
         // Remove items from inventory and equipment, tally up gold sum.
         foreach (QuickSellItem quickSellItem in quickSellItemList.m_quickSellItemList) {
-            inventoryBehavior.m_itemList.RemoveAll(item => item.m_globalID == quickSellItem.m_sellItemGID);
-            equipmentBehavior.m_itemList.RemoveAll(item => item.m_globalID == quickSellItem.m_sellItemGID);
+            var item = inventoryBehavior.m_itemList.First(item => item.m_globalID == quickSellItem.m_sellItemGID);
+            var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
+
+            inventoryBehavior.m_itemList.Remove(item);
+            equipmentBehavior.m_itemList.Remove(item);
 
             // Some items (snack, reagents) are stackable.
             for (int i = 0; i < quickSellItem.m_quantity; i++) {
@@ -243,7 +246,7 @@ public class InventoryService : MessageService {
                     ItemID = quickSellItem.m_sellItemGID
                 });
 
-                goldSum += 10; // @TODO: Find out where item gold values are stored.
+                goldSum += (int) Math.Ceiling(template.m_baseCost * 0.05f); // @TODO: Fix payout, slightly less than client calculation.
             }
         }
 
