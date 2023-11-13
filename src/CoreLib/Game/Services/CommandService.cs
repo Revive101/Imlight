@@ -8,7 +8,9 @@ using System.Linq;
 using Akka.Actor;
 using Akka.Util.Internal;
 using Imlight.Common.Caches;
+using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.Login.Models;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -23,6 +25,19 @@ internal class CommandService : MessageService {
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_COMMAND))]
     private void ReceiveCommand(GAME_5_PROTOCOL.MSG_COMMAND message) {
-        _dispatcherRef.Forward(message);
+        var account = GetActiveAccount();
+        if (account.AuthLevel < AuthLevel.Administrator) {
+            return;
+        }
+
+        var coreObject = GetActiveCoreObject();
+        var playerCharacter = GetActiveCharacter();
+
+        _dispatcherRef.Tell(new SERVER_100_PROTOCOL.MSG_COMMAND() {
+            CommandText = message.Command,
+            ActorRef = Self,
+            CoreObject = coreObject,
+            PlayerCharacter = playerCharacter
+        });
     }
 }
