@@ -25,6 +25,10 @@ public struct ByteString {
     }
 
     public static implicit operator ByteString(string str) {
+        if (str is null) {
+            return new ByteString();
+        }
+
         return new ByteString(Encoding.UTF8.GetBytes(str));
     }
 
