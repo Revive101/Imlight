@@ -80,6 +80,16 @@ public class Account {
         this.CharacterIds.Add(character.CharId);
         this.Characters.Add(character);
 
+        // Save the character persistently.
+        var savedCharacterToCollection = CharacterCollection
+            .AddCharacter(character);
+        var savedCharacterToAccount = AccountCollection
+            .AddCharacterToAccount(AccountId, character.CharId);
+
+        if (!savedCharacterToCollection || !savedCharacterToAccount) {
+            return false;
+        }
+
         return true;
     }
 

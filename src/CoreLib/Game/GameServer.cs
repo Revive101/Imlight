@@ -16,6 +16,7 @@ using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.Common.Caches;
 using Imlight.Common;
+using Imlight.CoreLib.WizardData.Implementations;
 
 namespace Imlight.CoreLib.Game;
 
@@ -26,13 +27,13 @@ public class GameServer : Server {
 
     private readonly IActorRef _gameWorldRef;
     private readonly IActorRef _commandDispatcherRef;
-    private readonly Cache<ByteString, Account> _sessionKeys;
+    private readonly Cache<ByteString, ulong> _sessionKeys;
     private readonly ListQueue<SessionActor> _playerQueue;
 
     public GameServer(string serverName, ushort serverPort)
         : base(serverName, serverPort, GameServiceFactory.Props()) {
         this._playerQueue = new ListQueue<SessionActor>();
-        this._sessionKeys = new Cache<ByteString, Account>();
+        this._sessionKeys = new Cache<ByteString, ulong>();
         this.ActiveSessions.CollectionChanged += ActiveSessionsChangedEvent;
 
         // Create actor children.
@@ -57,7 +58,7 @@ public class GameServer : Server {
 
     [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_CREATEKEY))]
     private void ReceiveCreateKey(SERVER_100_PROTOCOL.MSG_CREATEKEY message) {
-        var key = CreateKey(message.Account);
+        var key = CreateKey(message.Account.AccountId);
 
         var rsp = new SERVER_100_PROTOCOL.MSG_CREATEKEYRSP() { Key = key };
         Sender.Tell(rsp);
@@ -75,12 +76,15 @@ public class GameServer : Server {
             }
 
             ActiveSessions.Add(message.SessionActor);
-            //_sessionKeys.Remove(cachedKey.Key);
+
+            // Get the account associated with this key.
+            var accountId = cachedKey.Value;
+            var account = AccountCollection.GetAccount(accountId);
 
             // Inform the client that the session key is valid. We'll also send the account associated with it.
             Sender.Tell(new SERVER_100_PROTOCOL.MSG_VALIDATESESSIONKEYRSP() {
-                ErrorCode = 0,
-                Account = cachedKey.Value
+                ErrorCode = account is null ? 1 : 0,
+                Account = account
             });
 
             return;
@@ -173,13 +177,13 @@ public class GameServer : Server {
         }
     }
 
-    private ByteString CreateKey(Account account) {
-        var key = SessionKey.GenerateHash(_sessionKeyHashInput, account.AccountId);
+    private ByteString CreateKey(ulong accountId) {
+        var key = SessionKey.GenerateHash(_sessionKeyHashInput, accountId);
 
         // Add this key to the local server. We're going to map the key to an account, that way when a game
         // client finds its corresponding key, it will get it's account as well.
         var timeSpan = TimeSpan.FromSeconds(_sessionKeyValidityTime);
-        _sessionKeys.Store(key, account, timeSpan);
+        _sessionKeys.Store(key, accountId, timeSpan);
 
         return key;
     }
