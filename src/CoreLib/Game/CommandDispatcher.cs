@@ -49,6 +49,7 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
         var actualZoneName = zone;
         var hasZone = AccessPassManager.DoesZoneExist(zone);
         if (!hasZone) {
+            // Fallback to the zone name that is contained in the zone name.
             actualZoneName = AccessPassManager.GetContainedZoneName(zone);
 
             if (!AccessPassManager.DoesZoneExist(actualZoneName)) {
