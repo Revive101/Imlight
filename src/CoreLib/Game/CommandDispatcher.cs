@@ -12,6 +12,7 @@ using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.CoreLib.Game.Services;
 using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.Shared.Packets;
 using Serilog.Debugging;
 
 namespace Imlight.CoreLib.Game;
@@ -25,9 +26,9 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
     }
 
     public static Props Props() => Akka.Actor.Props.Create(() => new CommandDispatcher());
-    
-    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_COMMAND))]
-    public void ReceiveCommand(GAME_5_PROTOCOL.MSG_COMMAND message) {
-        Logger.Debug($"Received command: {message.Command}");
+
+    [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_COMMAND))]
+    public void ReceiveCommand(SERVER_100_PROTOCOL.MSG_COMMAND message) {
+        Logger.Debug($"Received command: {message.CommandText}");
     }
 }

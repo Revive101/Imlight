@@ -26,7 +26,7 @@ internal class CommandService : MessageService {
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_COMMAND))]
     private void ReceiveCommand(GAME_5_PROTOCOL.MSG_COMMAND message) {
         var account = GetActiveAccount();
-        if (account.AuthLevel < AuthLevel.Administrator) {
+        if (account.AuthLevel < AuthLevel.HallMonitor) {
             return;
         }
 
@@ -37,7 +37,8 @@ internal class CommandService : MessageService {
             CommandText = message.Command,
             ActorRef = Self,
             CoreObject = coreObject,
-            PlayerCharacter = playerCharacter
+            PlayerCharacter = playerCharacter,
+            AuthLevel = account.AuthLevel,
         });
     }
 }

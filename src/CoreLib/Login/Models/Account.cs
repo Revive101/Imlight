@@ -16,9 +16,7 @@ namespace Imlight.CoreLib.Login.Models;
 
 [Serializable]
 public class Account {
-    [JsonIgnore]
-    public readonly byte MAX_ALLOWED_CHARACTERS
-        = ConfigurationManager.Settings.MaxAllowedCharactersPerAccount;
+    [JsonIgnore] public readonly byte MAX_ALLOWED_CHARACTERS = ConfigurationManager.Settings.MaxAllowedCharactersPerAccount;
 
     public ulong AccountId { get; private set; }
     public string Username { get; private set; }

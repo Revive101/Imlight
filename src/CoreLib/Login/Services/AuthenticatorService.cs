@@ -70,7 +70,7 @@ internal class AuthenticatorService : MessageService {
             return;
         }
 
-        // Check if the password hash matches the one we sent. If it doesn't, inform the socket and return.
+        // Check if the password hash matches the one we sent.
         var doesPassMatch = ClientKey.VerifyCK1(matchedAccount.PasswordHash, sId, offerTime, offerMilli, ck1);
         if (doesPassMatch) {
             // Create a session key and store it in the database.
@@ -90,6 +90,7 @@ internal class AuthenticatorService : MessageService {
             });
         }
         else {
+            // If it doesn't, inform the socket and return.
             SendAuthenFailed(UserAuthenError.AuthenFailed, "Invalid Password");
             return;
         }
