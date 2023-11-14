@@ -54,20 +54,15 @@ public class CharacterService : MessageService {
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVE))]
     private void ReceiveClientMove(GAME_5_PROTOCOL.MSG_CLIENTMOVE message) {
         // Save the player's location and direction on interval.
+        // Restore actual location information, as it is compressed by a factor of 4 and unsigned.
+        // Yaw is represented in radians in the client, but transmitted to the server as degrees.
+        var position = new SharpDX.Vector3(
+            unchecked((short) message.LocationX * 4),
+            unchecked((short) message.LocationY * 4),
+            unchecked((short) message.LocationZ * 4));
 
-        if (_activeCharacterObject is null) {
-            throw new ServiceRetryException($"Tried to do client move but could not grab active character " +
-                                            $"object");
-        }
-
-        // Normalize differentiating message values
-        var x = unchecked((short) message.LocationX) * 4.0f;
-        var y = unchecked((short) message.LocationY) * 4.0f;
-        var z = unchecked((short) message.LocationZ) * 4.0f;
-        var direction = (float) (message.Direction * System.Math.PI * 2 / 250);
-
-        _activeCharacterObject.m_location = new Vector3(x, y, z);
-        _activeCharacterObject.m_orientation = new Vector3(0, 0, direction);
+        _activeCharacter.SetLocation(position);
+        _activeCharacter.SetOrientation(message.Direction);
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK))]

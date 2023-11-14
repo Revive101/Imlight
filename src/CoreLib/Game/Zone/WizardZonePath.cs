@@ -193,7 +193,7 @@ public class WizardZonePath : ReceiveProtocolDispatcher {
         newObj.m_location = spawnNode.m_location;
 
         var nodes = _nodes.Keys.ToArray();
-        var props = WizardZonePathCreature.Props(newObj, template, nodes, (byte) nodeIndex, _zoneActorRef);
+        var props = WizardZoneCreature.Props(newObj, template, nodes, (byte) nodeIndex, _zoneActorRef);
         var actorRef = Context.ActorOf(props);
         _creatures.Add(actorRef);
 

@@ -106,7 +106,7 @@ public class WizardZone : ReceiveProtocolDispatcher {
     /// </summary>
     /// <returns>The actor reference for the supervisor.</returns>
     private IActorRef CreateDuelSupervisor() {
-        var props = DuelActorSupervisor.Props();
+        var props = DuelActorSupervisor.Props(Self);
         return Context.ActorOf(props);
     }
 
