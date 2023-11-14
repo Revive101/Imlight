@@ -508,10 +508,10 @@ public class ObjectSerializer {
                 field.SetValue(propertyClass, new Bui7((byte) fieldValue));
                 break;
             case nameof(S24):
-                field.SetValue(propertyClass, new S24((byte) fieldValue));
+                field.SetValue(propertyClass, new S24((S24) fieldValue));
                 break;
             case nameof(U24):
-                field.SetValue(propertyClass, new U24((byte) fieldValue));
+                field.SetValue(propertyClass, new U24((U24) fieldValue));
                 break;
             case nameof(Point):
                 var pointCast = (Vector2) (fieldValue);
