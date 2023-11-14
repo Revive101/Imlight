@@ -65,9 +65,9 @@ public abstract class Server : ReceiveProtocolDispatcher {
         var sessionProps = SessionActor.Props(message.Socket, id, Context.Self);
         Context.ActorOf(sessionProps, $"SessionActor.{id}");
 
+        // We don't add to our active session here. Let the implementations handle that.
+
         // Logger
-        Logger.Verbose("New actor created under {Path}: SessionActor.{Id}",
-            Logger.Args(Context.Self.Path, id));
         Logger.Information("{Type} new connection from {RemoteEndPoint} given session ID {Id}",
             Logger.Args(GetType(), message.Socket.RemoteEndPoint?.ToString(), id));
     }

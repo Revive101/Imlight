@@ -214,5 +214,17 @@ public sealed class ServerSettings {
     [Description("The time in seconds the server will wait for a heartbeat response.")]
     public byte KeepAliveRspWaitTime { get; set; }
 
+    [DefaultValue(15)]
+    [Description("How many requests are allowed within the token bucket of the session actor.")]
+    public int SessionTokenBucketMax { get; set; }
+
+    [DefaultValue(10)]
+    [Description("How many new tokens are added to the token bucket per second.")]
+    public int SessionTokenBucketPerSecond { get; set; }
+
+    [DefaultValue(5)]
+    [Description("How many times the session actor will try to acquire a token before failing.")]
+    public byte SessionTokenBucketFailedAcquisitionLimit { get; set; }
+
     #endregion
 }
