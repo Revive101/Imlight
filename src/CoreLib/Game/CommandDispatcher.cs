@@ -14,6 +14,7 @@ using Imlight.CoreLib.Game.Services;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
+using Serilog;
 
 namespace Imlight.CoreLib.Game;
 
@@ -45,7 +46,16 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
     }
 
     private void Teleport(string zone) {
-        var actualZoneName = AccessPassManager.GetContainedZoneName(zone);
+        var actualZoneName = zone;
+        var hasZone = AccessPassManager.DoesZoneExist(zone);
+        if (!hasZone) {
+            actualZoneName = AccessPassManager.GetContainedZoneName(zone);
+
+            if (!AccessPassManager.DoesZoneExist(actualZoneName)) {
+                Log.Error("Teleport command was given an invalid zone name {0}", Logger.Args(zone));
+                return;
+            }
+        }
 
         var msg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER() {
             DestinationZone = actualZoneName,
