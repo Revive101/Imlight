@@ -77,10 +77,7 @@ public static class Program {
             var workingTrigger = DoTriggerInput(workingWad);
 
             if (workingTrigger == null) {
-                if (_wadStack.Any()) {
-                    _wadStack.Pop();
-                    continue;
-                }
+                continue;
             }
 
             var result = RebuildZoneTransferResult(workingWad.Name, workingTrigger.m_triggerName);
@@ -108,6 +105,7 @@ public static class Program {
             .AddChoices(formatTriggers));
 
         if (rawTriggerSelected == "Crawl back to the previous working zone.") {
+            _wadStack.Pop();
             return null;
         }
 
@@ -190,7 +188,7 @@ public static class Program {
         var triggers = fs.OpenClass<ServerTypeCache.WizZoneTriggers>(wad, TriggerDataFileName);
 
         return triggers?.m_triggers?
-            .Where(trigger => trigger.m_results?.m_results != null)
+            .Where(trigger => trigger?.m_results?.m_results != null)
             .Where(trigger => trigger.m_results.m_results.Any(result => result is TypeCache.ResTeleport))
             .ToArray();
     }
