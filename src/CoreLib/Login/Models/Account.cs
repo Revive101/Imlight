@@ -24,6 +24,7 @@ public class Account {
     public string PasswordHash { get; private set; }
     public AuthLevel AuthLevel { get; init; }
     public List<ulong> CharacterIds { get; private set; } = new();
+    public InfractionHistory InfractionHistory { get; private set; } = new();
 
     [JsonIgnore] public List<Character> Characters = new();
 

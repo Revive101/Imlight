@@ -40,6 +40,12 @@ internal static class UserAuthenticator {
         var (returnedSessionid, username, clientKey1) = DecodeRec1(authMessage.Rec1, sessionActor);
         var details = new AuthenticationDetails();
 
+        // Check to see if this machine is banned.
+        if (InfractionCollection.IsMachineBanned(authMessage.MachineID)) {
+            details._result = UserAuthenResult.MachineBanned;
+            return details;
+        }
+
         // Check if the session id matches.
         if (returnedSessionid != sessionId) {
             details._result = UserAuthenResult.AuthenFailed;

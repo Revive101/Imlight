@@ -29,6 +29,12 @@ internal static class UserValidator {
     internal static ValidationDetails Validate(SessionActor sessionActor, MSG_USER_VALIDATE validateMessage) {
         var details = new ValidationDetails();
 
+        // Check to see if this machine is banned.
+        if (InfractionCollection.IsMachineBanned(validateMessage.MachineID)) {
+            details._result = UserValidateResult.MachineBanned;
+            return details;
+        }
+
         // Try getting the account from the message's UserID.
         var matchedAccount = AccountCollection.GetAccount(validateMessage.UserID);
         if (matchedAccount is null) {
