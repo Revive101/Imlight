@@ -90,6 +90,7 @@ public static class WizardZoneLoader {
 
         var serializer = new FileSerializer();
         s_zoneData = serializer.OpenClass<TypeCache.WizZoneData>(s_wad, ZoneDataFileName);
+        s_zone.ZoneDisplayName = s_zoneData.m_zoneDisplayName;
 
         if (s_zoneData is null) {
             Logger.Error("Zone {ZoneName} could not load {ZoneDataFileName} as it was missing or invalid.",
