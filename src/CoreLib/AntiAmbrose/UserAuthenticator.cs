@@ -59,6 +59,12 @@ internal static class UserAuthenticator {
             return details;
         }
 
+        // Check to see if this account is currently banned.
+        if (matchedAccount.InfractionHistory.IsCurrentlyBanned) {
+            details._result = UserAuthenResult.AccountBanned;
+            return details;
+        }
+
         details._account = matchedAccount;
 
         var doesPasswordMatch = ClientKey.VerifyCK1(matchedAccount.PasswordHash, sessionId, offerTime, offerMilli, clientKey1);

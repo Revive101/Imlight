@@ -42,6 +42,12 @@ internal static class UserValidator {
             return details;
         }
 
+        // Check to see if this account is banned.
+        if (matchedAccount.InfractionHistory.IsCurrentlyBanned) {
+            details._result = UserValidateResult.AccountBanned;
+            return details;
+        }
+
         // Validation happens after authentication, so we need to check if the session key matches.
         var sessionKey = ClientKeyCollection.GetSessionKey(matchedAccount.AccountId, validateMessage.MachineID);
         if (string.IsNullOrEmpty(sessionKey)) {

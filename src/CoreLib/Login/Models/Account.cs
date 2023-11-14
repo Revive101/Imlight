@@ -11,6 +11,7 @@ using Imlight.CoreLib.Game.Models;
 using Newtonsoft.Json;
 using Imlight.Common.Configuration;
 using Imlight.CoreLib.WizardData;
+using Imlight.CoreLib.WizardData.Models;
 
 namespace Imlight.CoreLib.Login.Models;
 
