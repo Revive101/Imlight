@@ -353,3 +353,4 @@ src/.claudiaideconfig
 .directory
 act.vault
 /src/Backend/ImlightEmbeddedDatabase/Databases/Playerdata/
+src/Director/Config/Imlight.ini

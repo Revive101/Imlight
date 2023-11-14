@@ -88,7 +88,7 @@ public class DuelActorSubCircle {
             Sender = actor,
             Message = new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
                 GameObjectID = participantObject.m_globalID,
-                State = (uint) NPCStates.Stationary
+                State = (uint) NPCStates.Sigil
             }
         };
         actor.Tell(secondBroadcastMsg);
@@ -143,6 +143,8 @@ public class DuelActorSubCircle {
         var dynamicSigilSymbol = (DynamicSigilSymbol) (SubCircleId < 5 ? SubCircleId : SubCircleId + 4);
 
         var combatParticipant = new CombatParticipant {
+            m_minionSubCircle = 1,//awesome wizard101 moment settint this to 0 makes mob go to center of the sigil
+
             m_ownerID = ParticipantObject.m_globalID,
             m_templateID = 2199023290637, // Captured 2199023290637 from live
             m_isPlayer = false,
