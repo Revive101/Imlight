@@ -251,10 +251,10 @@ public class SessionActor : ReceiveActor, IDisposable {
                     case SessionFatalException tex: {
                             Logger.Error("SessionActor {Sid} service {Class} L:{LineNumber} threw fatal exception: " +
                                       "{Message}", Logger.Args(SessionID, tex.CallingClass, tex.LineNumber, tex.Message));
-                            return Directive.Escalate;
+                            return Directive.Stop;
                         }
                     default:
-                        return Directive.Escalate;
+                        return Directive.Stop;
                 }
             }
         );
@@ -352,10 +352,10 @@ public class SessionActor : ReceiveActor, IDisposable {
 
             // Await a reply. This is a blocking call to ensure that the service gracefully disposes.
             try {
-                actorRef.Ask(new SERVICE_101_PROTOCOL.MSG_PREDISPOSE(), timeout: TimeSpan.FromSeconds(6)).Wait();
+                actorRef.Ask(new SERVICE_101_PROTOCOL.MSG_PREDISPOSE(), timeout: TimeSpan.FromSeconds(2)).Wait();
             }
-            catch (Exception ex) {
-                Logger.Error("MessageService {0} failed to pre-dispose after timeout: {1}", Logger.Args(type, ex.Message));
+            catch {
+                continue;
             }
         }
     }
@@ -380,6 +380,10 @@ public class SessionActor : ReceiveActor, IDisposable {
             // The rate limit was reached.
             var failedAcquisitionCount = _tokenBucket.GetFailedAcquisitionCount();
             if (failedAcquisitionCount >= _tokenBucketFailedAcquisitionLimit) {
+                // Log warning.
+                Logger.Warning("SessionActor [{SessionId}] failed to acquire token {FailedAcquisitionCount} times.",
+                    Logger.Args(SessionID, failedAcquisitionCount));
+
                 // The session has exceeded the failed acquisition limit. We'll dispose of the session.
                 SendOldContextException(new SessionFatalException($"SessionActor [{SessionID}] failed to acquire " +
                                                                   $"token {failedAcquisitionCount} times. " +
