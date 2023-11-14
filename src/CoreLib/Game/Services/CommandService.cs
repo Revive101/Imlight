@@ -35,7 +35,7 @@ internal class CommandService : MessageService {
 
         _dispatcherRef.Tell(new SERVER_100_PROTOCOL.MSG_COMMAND() {
             CommandText = message.Command,
-            ActorRef = Self,
+            ActorRef = SessionActor.ActorRef,
             CoreObject = coreObject,
             PlayerCharacter = playerCharacter,
             AuthLevel = account.AuthLevel,

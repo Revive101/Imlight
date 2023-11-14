@@ -40,7 +40,9 @@ public static class AccessPassManager {
         return true;
     }
 
-    public static bool DoesZoneExist(string zoneName) {
-        return s_zones.Any(zone => zone == zoneName);
-    }
+    public static bool DoesZoneExist(string zoneName)
+        => s_zones.Any(zone => zone == zoneName);
+
+    public static string GetContainedZoneName(string partialZoneName)
+        => s_zones.FirstOrDefault(zone => zone.Contains(partialZoneName));
 }
