@@ -38,6 +38,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol
 		public IActorRef ZoneActorRef;
 		public ushort MobileId;
 		public uint DynamicZoneId;
+        public string ZoneDisplayName;
 		public uint ErrorCode;
 	}
 

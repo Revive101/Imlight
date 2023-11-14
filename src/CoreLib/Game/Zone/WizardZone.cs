@@ -24,6 +24,7 @@ public class WizardZone : ReceiveProtocolDispatcher {
     private const ushort ReservedMobileIdMax = 1000;
 
     public string ZoneName { get; }
+    public string ZoneDisplayName { get; set; }
 
     private readonly uint _dynamicZoneId;
     private readonly IActorRef _objectSupervisorRef;
@@ -241,7 +242,8 @@ public class WizardZone : ReceiveProtocolDispatcher {
             ZoneActorRef = Self,
             DynamicZoneId = _dynamicZoneId,
             ErrorCode = 0,
-            MobileId = GenerateMobileId()
+            MobileId = GenerateMobileId(),
+            ZoneDisplayName = ZoneDisplayName
         });
     }
 

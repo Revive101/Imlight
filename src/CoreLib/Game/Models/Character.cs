@@ -38,6 +38,7 @@ public class Character : IDisposable {
     public WizardSchool WizardSchool { get; init; }
     public int Level { get; private set; }
     public string Zone { get; private set; }
+    public string ZoneDisplayName { get; private set; }
     public byte World { get; private set; }
     public WizGameStats GameStats { get; private set; }
     public int TrainingPoints { get; set; }
@@ -124,7 +125,7 @@ public class Character : IDisposable {
         SendCachedChange(nameof(Orientation), 10, this.Orientation);
     }
 
-    public void SetZone(string zone) {
+    public void SetZone(string zone, string zoneDisplayName) {
         // Check if the zone exists in the AccessPass.
         if (!AccessPassManager.DoesZoneExist(zone)) {
             Logger.Error("Character tried to set itself to zone {Zone}, but that zone does not exist.",
@@ -133,7 +134,9 @@ public class Character : IDisposable {
         }
 
         this.Zone = zone;
+        this.ZoneDisplayName = zoneDisplayName;
         SendPersistentChange(nameof(Zone), zone);
+        SendPersistentChange(nameof(ZoneDisplayName), zoneDisplayName);
     }
 
     public void SetMarkedLocation(Vector3 loc, Vector3 orientation, string zoneName) {
@@ -163,7 +166,7 @@ public class Character : IDisposable {
             m_schoolOfFocus = (uint) this.WizardSchool,
             m_level = this.Level,
             m_name = this.NameOverride,
-            m_location = this.Zone,
+            m_location = this.ZoneDisplayName,
             m_globalID = (GID) this.CharId,
             m_templateID = 1,
             m_userID = (GID) this.AccountId,
