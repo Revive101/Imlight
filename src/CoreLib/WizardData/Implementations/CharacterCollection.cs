@@ -10,7 +10,7 @@ using Raven.Client.Documents;
 namespace Imlight.CoreLib.WizardData.Implementations;
 
 public static class CharacterCollection {
-    private const string CollectionName = "Characters";
+    public const string CollectionName = "Characters";
     private static readonly IDocumentStore s_store;
 
     static CharacterCollection() {

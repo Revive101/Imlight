@@ -1,4 +1,4 @@
-﻿/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
  */
@@ -12,6 +12,7 @@ using Imlight.CoreLib.Game.Models;
 using Imlight.CoreLib.Game.Services;
 using Imlight.CoreLib.Login.Models;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.WizardData.Implementations;
 
 namespace Imlight.CoreLib.Shared.Networking;
 
@@ -155,6 +156,17 @@ public abstract class MessageService : ReceiveProtocolDispatcher {
         var response = AskOtherService<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
 
         return response.Character;
+    }
+
+    /// <summary>
+    /// Gets the active <see cref="Account"/> of this session. Requires an active
+    /// <see cref="CharacterService"/> as a running service.
+    /// </summary>
+    /// <returns></returns>
+    protected Account GetActiveAccount() {
+        var character = GetActiveCharacter();
+
+        return AccountCollection.GetAccount(character.AccountId);
     }
 
     protected override void PreRestart(Exception reason, object message) {

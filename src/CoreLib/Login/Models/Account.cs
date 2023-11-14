@@ -11,14 +11,14 @@ using Imlight.CoreLib.Game.Models;
 using Newtonsoft.Json;
 using Imlight.Common.Configuration;
 using Imlight.CoreLib.WizardData;
+using Imlight.CoreLib.WizardData.Models;
+using Imlight.CoreLib.WizardData.Implementations;
 
 namespace Imlight.CoreLib.Login.Models;
 
 [Serializable]
 public class Account {
-    [JsonIgnore]
-    public readonly byte MAX_ALLOWED_CHARACTERS
-        = ConfigurationManager.Settings.MaxAllowedCharactersPerAccount;
+    [JsonIgnore] public readonly byte MAX_ALLOWED_CHARACTERS = ConfigurationManager.Settings.MaxAllowedCharactersPerAccount;
 
     public ulong AccountId { get; private set; }
     public string Username { get; private set; }
@@ -26,11 +26,16 @@ public class Account {
     public string PasswordHash { get; private set; }
     public AuthLevel AuthLevel { get; init; }
     public List<ulong> CharacterIds { get; private set; } = new();
+    public List<ulong> InfractionIds { get; private set; } = new();
+    public DateTime CreationTime { get; private set; }
+    public DateTime LastLoginTime { get; set; }
+    public ulong LastLoginMachineId { get; set; }
+    public string LastLoginIp { get; set; }
 
     [JsonIgnore] public List<Character> Characters = new();
+    [JsonIgnore] public InfractionHistory InfractionHistory { get; set; }
 
-    // Empty constructor for deserialization.
-    [JsonConstructor] public Account() { }
+    [JsonConstructor] public Account() {  }
 
     // ctor
     public Account(string username, string email, string plaintextPassword) {
@@ -49,8 +54,8 @@ public class Account {
         this.AccountId = RandomGen.GenerateGUID();
         this.Username = username;
         this.Email = email;
-
         this.PasswordHash = DatabaseUtilities.CreateHashedPassword(plaintextPassword);
+        this.CreationTime = DateTime.UtcNow;
     }
 
     /// <summary>
@@ -102,4 +107,26 @@ public class Account {
     /// <returns></returns>
     public Character GetCharacter(ulong id)
         => this.Characters.First(c => c.CharId == id);
+
+    public Infraction AddInfraction(InfractionType infractionType, string reason, string source = null, DateTime? expiration = null) {
+        var infraction = new Infraction {
+            InfractionId = RandomGen.GenerateGUID(),
+            AccountId = this.AccountId,
+            MachineId = LastLoginMachineId,
+            InfractionType = infractionType,
+            InfractionTime = DateTime.UtcNow,
+            Reason = reason,
+            Expiration = expiration,
+            ResponsibleModerator = source ?? "Imlight"
+        };
+
+        this.InfractionIds.Add(infraction.InfractionId);
+        this.InfractionHistory.AddInfraction(infraction);
+
+        // Save the infraction to the database.
+        InfractionCollection.AddInfraction(infraction);
+        AccountCollection.AddInfractionToAccount(this.AccountId, infraction.InfractionId);
+
+        return infraction;
+    }
 }

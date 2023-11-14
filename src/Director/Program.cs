@@ -126,10 +126,10 @@ internal static class Program {
         // Write the title. This is a bit of a mess, but it's the best I could do.
         Console.WriteLine(@" _____           _ _       _     _    ______   ");
         Console.WriteLine(@"|_   _|         | (_)     | |   | |   \ \ \ \  ");
-        Console.WriteLine(@"  | |  _ __ ___ | |_  __ _| |__ | |_   | | | | ");
+        Console.WriteLine(@"  | |  _ __ ___ | |_  __ _| |__ | |_   \ \ \ \ ");
         Console.WriteLine(@"  | | | '_ ` _ \| | |/ _` | '_ \| __|   \ \ \ \");
         Console.WriteLine(@" _| |_| | | | | | | | (_| | | | | |_    / / / /");
-        Console.WriteLine(@"|_____|_| |_| |_|_|_|\__, |_| |_|\__|  | | | | ");
+        Console.WriteLine(@"|_____|_| |_| |_|_|_|\__, |_| |_|\__|  / / / / ");
         Console.WriteLine(@"===================== __/ |===========/_/_/_/  ");
 
         // Write the boot type.
