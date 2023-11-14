@@ -45,10 +45,17 @@ internal class GameTransitionService : MessageService {
         var serverEnqueueResult = (LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED) SessionActor.EnqueueToServer(gameServer.ActorRef);
         var allocatedKey = CreateSessionKey(gameServer.ActorRef, account);
 
+        var ip = "";
+        #if DEBUG
+        ip = "127.0.0.1";
+        #else
+        ip = gameServer.IP;
+        #endif
+
         // Craft a successful message. This will instead be cached if the server is full.
         var charSelectedMsg = new LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED() {
             // Set details about the game server.
-            IP = "127.0.0.1",
+            IP = ip,
             TCPPort = gameServer.Port,
             UDPPort = gameServer.Port,
             Key = allocatedKey,                   // Loggerin server -> game server session key.
