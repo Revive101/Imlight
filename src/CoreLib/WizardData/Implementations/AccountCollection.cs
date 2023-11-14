@@ -6,6 +6,7 @@
 using System.Linq;
 using Imlight.CoreLib.Game.Models;
 using Imlight.CoreLib.Login.Models;
+using Imlight.CoreLib.WizardData.Models;
 using Raven.Client.Documents;
 
 namespace Imlight.CoreLib.WizardData.Implementations;
@@ -71,10 +72,18 @@ public static class AccountCollection {
         }
 
         // Load the characters if the account is not null.
-        var characters = session.Query<Character>()
+        var characters = session.Query<Character>(collectionName: CharacterCollection.CollectionName)
             .Where(c => c.AccountId == id)
             .ToList();
         account.Characters = characters;
+
+        // Load infractions. The constructor will load the action history.
+        var infractions = session.Query<Infraction>(collectionName: InfractionCollection.CollectionName)
+            .Where(i => i.AccountId == account.AccountId)
+            .ToList();
+
+        // Rebuild the InfractionHistory object.
+        account.InfractionHistory = new InfractionHistory(account.AccountId, infractions);
 
         return account;
     }
@@ -100,6 +109,14 @@ public static class AccountCollection {
             .Where(c => c.AccountId == account.AccountId)
             .ToList();
         account.Characters = characters;
+
+        // Load infractions. The constructor will load the action history.
+        var infractions = session.Query<Infraction>(collectionName: InfractionCollection.CollectionName)
+            .Where(i => i.AccountId == account.AccountId)
+            .ToList();
+
+        // Rebuild the InfractionHistory object.
+        account.InfractionHistory = new InfractionHistory(account.AccountId, infractions);
 
         return account;
     }
@@ -146,5 +163,24 @@ public static class AccountCollection {
         session.SaveChanges();
 
         return true;
+    }
+
+    /// <summary>
+    /// Adds an infraction to the account with the specified account ID.
+    /// </summary>
+    /// <param name="accountId">The ID of the account to add the infraction to.</param>
+    /// <param name="infractionId">The ID of the infraction to add.</param>
+    public static void AddInfractionToAccount(ulong accountId, ulong infractionId) {
+        using var session = s_store.OpenSession();
+
+        // Start by loading an account, if one exists.
+        var existingAccount = session.Query<Account>(collectionName: CollectionName)
+            .FirstOrDefault(c => c.AccountId == accountId);
+        if (existingAccount is null) {
+            return;
+        }
+
+        existingAccount.InfractionIds.Add(infractionId);
+        session.SaveChanges();
     }
 }

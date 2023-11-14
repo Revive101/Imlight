@@ -4,6 +4,7 @@ using Imlight.Common.IO;
 using Imlight.CoreLib.Login.Models;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Implementations;
+using Imlight.CoreLib.WizardData.Models;
 using System;
 using static Imlight.Common.Caches.LOGIN_7_PROTOCOL;
 
@@ -40,12 +41,6 @@ internal static class UserAuthenticator {
         var (returnedSessionid, username, clientKey1) = DecodeRec1(authMessage.Rec1, sessionActor);
         var details = new AuthenticationDetails();
 
-        // Check to see if this machine is banned.
-        if (InfractionCollection.IsMachineBanned(authMessage.MachineID)) {
-            details._result = UserAuthenResult.MachineBanned;
-            return details;
-        }
-
         // Check if the session id matches.
         if (returnedSessionid != sessionId) {
             details._result = UserAuthenResult.AuthenFailed;
@@ -59,11 +54,23 @@ internal static class UserAuthenticator {
             return details;
         }
 
+        // Check to see if this machine is banned.
+        if (InfractionCollection.IsMachineBanned(authMessage.MachineID)) {
+            // Add an infraction to the account.
+            matchedAccount.AddInfraction(InfractionType.Warn, "Logged in with banned machine ID.", null);
+
+            details._result = UserAuthenResult.MachineBanned;
+            return details;
+        }
+
         // Check to see if this account is currently banned.
         if (matchedAccount.InfractionHistory.IsCurrentlyBanned) {
             details._result = UserAuthenResult.AccountBanned;
             return details;
         }
+
+        matchedAccount.LastLoginMachineId = authMessage.MachineID;
+        matchedAccount.LastLoginTime = DateTime.UtcNow;
 
         details._account = matchedAccount;
 

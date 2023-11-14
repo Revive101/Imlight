@@ -2,6 +2,7 @@ using Imlight.Common.Cryptography;
 using Imlight.CoreLib.Login.Models;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Implementations;
+using Imlight.CoreLib.WizardData.Models;
 using System;
 using static Imlight.Common.Caches.LOGIN_7_PROTOCOL;
 
@@ -29,12 +30,6 @@ internal static class UserValidator {
     internal static ValidationDetails Validate(SessionActor sessionActor, MSG_USER_VALIDATE validateMessage) {
         var details = new ValidationDetails();
 
-        // Check to see if this machine is banned.
-        if (InfractionCollection.IsMachineBanned(validateMessage.MachineID)) {
-            details._result = UserValidateResult.MachineBanned;
-            return details;
-        }
-
         // Try getting the account from the message's UserID.
         var matchedAccount = AccountCollection.GetAccount(validateMessage.UserID);
         if (matchedAccount is null) {
@@ -45,6 +40,15 @@ internal static class UserValidator {
         // Check to see if this account is banned.
         if (matchedAccount.InfractionHistory.IsCurrentlyBanned) {
             details._result = UserValidateResult.AccountBanned;
+            return details;
+        }
+
+        // Check to see if this machine is banned.
+        if (InfractionCollection.IsMachineBanned(validateMessage.MachineID)) {
+            // Add an infraction to the account.
+            matchedAccount.AddInfraction(InfractionType.Warn, "Logged in with banned machine ID.", null);
+
+            details._result = UserValidateResult.MachineBanned;
             return details;
         }
 
