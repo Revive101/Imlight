@@ -10,6 +10,7 @@ using Akka.Util.Internal;
 using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.Utilities;
+using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Shared.Networking;
@@ -69,14 +70,14 @@ public class InventoryService : MessageService {
             foreach (CoreObject obj in equipmentBehavior.m_itemList) {
                 var objTemplate = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(obj.m_templateID);
                 if (objTemplate.m_adjectiveList[1] == template.m_adjectiveList[1]) {
-                    Logger.Debug("Player swapping items in slot {Slot}", Logger.Args(template.m_adjectiveList[1].ToString()));
-
                     // Get current equipped item and its slot.
                     var slot = equipmentBehavior.m_slotList.FindIndex(slot => slot.m_itemID == obj.m_globalID);
                     var currentEquippedItem = equipmentBehavior.m_slotList[slot].m_itemID;
 
-                    Logger.Debug("Unequipping item from slot {Slot} | {Name}",
-                        Logger.Args(slot, template.m_objectName.ToString()));
+                    if (currentEquippedItem == 0) {
+                        Logger.Debug("Player somehow has an item with GID: 0!");
+                        return;
+                    }
 
                     // Remove item from equipment behavior lists.
                     equipmentBehavior = RemoveSlotFromEquipmentSlotList(slot, equipmentBehavior);
@@ -85,19 +86,18 @@ public class InventoryService : MessageService {
                     //creationEquipment.RemoveAll(item => item.m_itemID == itemObj.m_templateID);
 
                     // Unequip the previous item.
-                    if (currentEquippedItem != 0) {
-                        SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPITEM() {
-                            ItemID = obj.m_globalID,
-                            SlotName = "",
-                            IsEquip = 0
-                        });
+                    SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPITEM() {
+                        ItemID = obj.m_globalID,
+                        SlotName = "",
+                        IsEquip = 0
+                    });
+                    ZoneBroadcast(new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICUNEQUIPITEM() {
+                        GlobalID = coreObject.m_globalID,
+                        IndexToRemove = (byte) slot
+                    }, false);
 
-                        var publicUnequipMsg = new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICUNEQUIPITEM() {
-                            GlobalID = coreObject.m_globalID,
-                            IndexToRemove = (byte) slot
-                        };
-                        ZoneBroadcast(publicUnequipMsg, false);
-                    }
+                    RemoveItemEffectsFromPlayer(coreObject, template);
+
                     break;
                 }
             }
@@ -117,10 +117,6 @@ public class InventoryService : MessageService {
             //equipmentBehavior.m_publicItemList.Add(new EquippedItemInfo() { m_itemID = (uint)itemObj.m_templateID });
             //creationEquipment.Add(equippedItemInfo);
 
-            Logger.Debug("Player equipped item from inventory, index {Item} | {Name}",
-                Logger.Args((byte) inventoryBehavior.m_itemList.IndexOf(itemObj), template.m_objectName.ToString()));
-            Logger.Debug("Equipped item to slot {Slot}", Logger.Args(index));
-
             // Serialize item and broadcast equip action to other players.
             var item = new WizardEquippedItemInfo() {
                 m_itemID = (uint) itemObj.m_templateID,
@@ -130,11 +126,12 @@ public class InventoryService : MessageService {
             };
 
             var data = serializer.Serialize(item);
-            var publicEquipMsg = new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM() {
+            ZoneBroadcast(new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM() {
                 GlobalID = coreObject.m_globalID,
                 SerializedInfo = data
-            };
-            ZoneBroadcast(publicEquipMsg, false);
+            }, false);
+
+            ApplyItemEffectsToPlayer(coreObject, template);
         }
         else {
             if (!ItemInInventory(message.ItemID, coreObject)) {
@@ -154,8 +151,10 @@ public class InventoryService : MessageService {
             var slot = equipmentBehavior.m_slotList.FindIndex(slot => slot.m_itemID == message.ItemID);
             var currentEquippedItem = equipmentBehavior.m_slotList[slot].m_itemID;
 
-            Logger.Debug("Unequipping item from slot {Slot} | {Name}",
-                Logger.Args(slot, template.m_objectName.ToString()));
+            if (currentEquippedItem == 0) {
+                Logger.Debug("Player somehow has an item with GID: 0!");
+                return;
+            }
 
             // Remove item from equipment behavior lists.
             equipmentBehavior = RemoveSlotFromEquipmentSlotList(slot, equipmentBehavior);
@@ -163,14 +162,12 @@ public class InventoryService : MessageService {
             //equipmentBehavior.m_publicItemList.RemoveAll(item => item.m_itemID == itemObj.m_templateID);
             //creationEquipment.RemoveAll(item => item.m_itemID == itemObj.m_templateID);
 
-            if (currentEquippedItem != 0) {
-                var publicUnequipMsg = new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICUNEQUIPITEM() {
-                    GlobalID = coreObject.m_globalID,
-                    IndexToRemove = (byte) slot
-                };
+            ZoneBroadcast(new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICUNEQUIPITEM() {
+                GlobalID = coreObject.m_globalID,
+                IndexToRemove = (byte) slot
+            }, false);
 
-                ZoneBroadcast(publicUnequipMsg, false);
-            }
+            RemoveItemEffectsFromPlayer(coreObject, template);
         }
     }
 
@@ -303,5 +300,49 @@ public class InventoryService : MessageService {
             }
         }
         return equipmentBehavior;
+    }
+
+    private void ApplyItemEffectsToPlayer(CoreObject coreObject, WizItemTemplate template) {
+        var effectSerializer = new CoreObjectSerializer()
+                    .OnBehaviors(SerializerOptions.Behaviors.None)
+                    .OnPropertyMask(SerializerOptions.PropertyFlags.Public
+                              | SerializerOptions.PropertyFlags.Transmit
+                              | SerializerOptions.PropertyFlags.AuthorityTransmit);
+
+        foreach (GameEffectInfo it in template.m_equipEffects) {
+            // Speed effects use a different object type.
+            if (it.m_effectName == "SpeedBuff") {
+                // @TODO: Add effect to character model.
+
+                var speedEffect = (SpeedEffectInfo) it;
+                var speedEffectObj = new SpeedEffect() {
+                    m_speedMultiplier = speedEffect.m_speedMultiplier,
+                    m_effectNameID = StringHash.Compute(it.m_effectName),
+                    m_internalID = 1,
+                    m_itemSlotID = StringHash.Compute(template.m_adjectiveList[1].ToString())
+                };
+
+                var speedData = effectSerializer.Serialize(speedEffectObj);
+                ZoneBroadcast(new GAME_5_PROTOCOL.MSG_ADDEFFECT() {
+                    GameObjectID = coreObject.m_globalID,
+                    EffectData = speedData
+                }, false);
+                return;
+            }
+
+            // @TODO: Normal item stat effects.
+            var effect = (StatisticEffectInfo) it;
+            var wizStatisticEffect = new WizStatisticEffect() { };
+
+            var effectData = effectSerializer.Serialize(wizStatisticEffect);
+            SendToSocket(new GAME_5_PROTOCOL.MSG_ADDEFFECT() {
+                GameObjectID = coreObject.m_globalID,
+                EffectData = effectData
+            });
+        }
+    }
+
+    private void RemoveItemEffectsFromPlayer(CoreObject coreObject, WizItemTemplate template) {
+        // @TODO: Remove item's effects from player.
     }
 }
