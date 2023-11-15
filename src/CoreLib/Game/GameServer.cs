@@ -17,6 +17,7 @@ using Imlight.CoreLib.Shared.Packets;
 using Imlight.Common.Caches;
 using Imlight.Common;
 using Imlight.CoreLib.WizardData.Implementations;
+using Imlight.CoreLib.Game.Commands;
 
 namespace Imlight.CoreLib.Game;
 

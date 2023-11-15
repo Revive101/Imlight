@@ -3,14 +3,12 @@
  * Proprietary and confidential.
  */
 
-using System;
-using System.Linq;
 using Akka.Actor;
-using Akka.Util.Internal;
 using Imlight.Common.Caches;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Login.Models;
+using Imlight.CoreLib.Game.Commands;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -25,20 +23,16 @@ internal class CommandService : MessageService {
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_COMMAND))]
     private void ReceiveCommand(GAME_5_PROTOCOL.MSG_COMMAND message) {
-        var account = GetActiveAccount();
-        if (account.AuthLevel < AuthLevel.HallMonitor) {
-            return;
-        }
-
         var coreObject = GetActiveCoreObject();
         var playerCharacter = GetActiveCharacter();
+        var account = GetActiveAccount();
 
         _dispatcherRef.Tell(new SERVER_100_PROTOCOL.MSG_COMMAND() {
             CommandText = message.Command,
             ActorRef = SessionActor.ActorRef,
             CoreObject = coreObject,
             PlayerCharacter = playerCharacter,
-            AuthLevel = account.AuthLevel,
+            Account = account
         });
     }
 }
