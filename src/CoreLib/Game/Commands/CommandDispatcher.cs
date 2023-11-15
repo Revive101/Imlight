@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
+using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Game.Models;
 using Imlight.CoreLib.Game.Services;
 using Imlight.CoreLib.Login.Models;
@@ -20,6 +21,7 @@ using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models;
 using Serilog;
+using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Commands;
 
@@ -30,6 +32,7 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
     private IActorRef _senderContext;
     private Account _accountContext;
     private Character _characterContext;
+    private CoreObject _characterObjectContext;
     private readonly Dictionary<string, MethodInfo> _commands = new(StringComparer.OrdinalIgnoreCase);
 
     public CommandDispatcher() {
@@ -44,8 +47,10 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
                 _commands[commandAttribute.Name.ToLower()] = method;
 
                 var aliasAttribute = method.GetCustomAttribute<AliasAttribute>();
-                foreach (var alias in aliasAttribute.Aliases) {
-                    _commands[alias.ToLower()] = method;
+                if (aliasAttribute is not null) {
+                    foreach (var alias in aliasAttribute.Aliases) {
+                        _commands[alias.ToLower()] = method;
+                    }
                 }
             }
         }
@@ -86,6 +91,7 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
         _senderContext = message.ActorRef;
         _characterContext = message.PlayerCharacter;
         _accountContext = message.Account;
+        _characterObjectContext = message.CoreObject;
 
         var parameters = message.CommandText.ToString().Split(' ');
         var command = parameters[0].ToLower();
@@ -114,6 +120,38 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
             DestinationZone = actualZoneName,
             DestinationLocation = "Start",
             SendToClient = true
+        };
+        _senderContext.Tell(msg);
+    }
+
+    [Command("editcharacter")]
+    [AuthRequired(AuthLevel.Administrator)]
+    private void Editcharacter() {
+        // This CoreObject is 100% compressed. Client crashes if not.
+        var coreObjectSerializer = new CoreObjectSerializer()
+            .OnBehaviors(SerializerOptions.Behaviors.UseFlags | SerializerOptions.Behaviors.Compress)
+            .OnPropertyMask(0);
+        var serializedCharObj = coreObjectSerializer.Serialize(_characterObjectContext);
+
+        // This client will crash if the character registry is not present.
+        var serializer = new ObjectSerializer();
+        var registry = new CharacterRegistry();
+        var serializedRegistry = serializer.Serialize(registry);
+
+        var msg = new GAME_5_PROTOCOL.MSG_CSREDITCHARACTER() {
+            ChunkNum = 0,
+            CharacterID = _characterContext.CharId,
+            UserID = _accountContext.AccountId,
+            UserName = _accountContext.Username,
+            CurrentBan = "",  // Serialized?
+            CurrentMute = "", // Serialized?
+            Object = serializedCharObj,
+            CurrentQuests = "",
+            Registry = serializedRegistry,
+            AccessPasses = "",
+            BadgeList = "",
+            Edit = 0,
+            AllowedToReport = 0,
         };
         _senderContext.Tell(msg);
     }
