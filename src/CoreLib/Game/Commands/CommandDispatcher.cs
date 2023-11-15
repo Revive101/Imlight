@@ -29,7 +29,6 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
     private static IActorRef _instance;
     public static IActorRef Instance => _instance;
 
-    private IActorRef _senderContext;
     private Account _accountContext;
     private Character _characterContext;
     private CoreObject _characterObjectContext;
@@ -72,6 +71,9 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
                         _accountContext.AddInfraction(InfractionType.SuspiciousBehavior, "Attempted to use commands without auth level");
                     }
 
+                    // Inform the invoker of his failure. Laugh at him.
+                    InformSenderOfFailure(commandName, "You do not have permission to use this command.");
+
                     return;
                 }
             }
@@ -81,20 +83,38 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
             if (parameterCount != parameters.Length) {
                 Logger.Warning("Command {0} requires {1} parameters but {2} were given",
                                Logger.Args(commandName, parameterCount, parameters.Length));
+
+                // Write the usage of this command.
+                var properUsageStr = new StringBuilder();
+                properUsageStr.Append(commandName);
+                properUsageStr.Append("<color;1C1EC4>");
+                foreach (var parameter in method.GetParameters()) {
+                    properUsageStr.Append(" (");
+                    properUsageStr.Append(parameter.Name);
+                    properUsageStr.Append(')');
+                }
+
+                // Inform the invoker of improper usage. Point and laugh!
+                InformSenderOfFailure(commandName, $"Proper usage: {properUsageStr}");
                 return;
             }
 
             method.Invoke(this, parameters);
+
+            // Inform the invoker of his success. Give him a cookie.
+            InformSenderOfSuccess(commandName, "Command executed successfully.");
         }
         else {
             Logger.Warning("Command not found: {0}", Logger.Args(commandName));
+
+            // Inform the invoker of his failure. Take his lunch money.
+            InformSenderOfFailure(commandName, "Command not found.");
         }
     }
 
     [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_COMMAND))]
     private void ReceiveCommand(SERVER_100_PROTOCOL.MSG_COMMAND message) {
         // Setup context before parsing any commands.
-        _senderContext = message.ActorRef;
         _characterContext = message.PlayerCharacter;
         _accountContext = message.Account;
         _characterObjectContext = message.CoreObject;
@@ -139,7 +159,7 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
             DestinationLocation = "Start",
             SendToClient = true
         };
-        _senderContext.Tell(msg);
+        Sender.Tell(msg);
     }
 
     [Command("editcharacter")]
@@ -171,6 +191,22 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
             Edit = 0,
             AllowedToReport = 0,
         };
-        _senderContext.Tell(msg);
+        Sender.Tell(msg);
+    }
+
+    private void InformSenderOfFailure(string commandName, string reason) {
+        Sender.Tell(new SERVER_100_PROTOCOL.MSG_COMMANDRSP {
+            CommandText = commandName,
+            Failed = true,
+            ResponseText = reason,
+        });
+    }
+
+    private void InformSenderOfSuccess(string commandName, string reason) {
+        Sender.Tell(new SERVER_100_PROTOCOL.MSG_COMMANDRSP {
+            CommandText = commandName,
+            Failed = false,
+            ResponseText = reason,
+        });
     }
 }

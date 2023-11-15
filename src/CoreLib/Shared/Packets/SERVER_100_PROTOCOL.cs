@@ -168,4 +168,14 @@ public sealed class SERVER_100_PROTOCOL : IServerProtocol
         public Character PlayerCharacter;
         public Account Account;
     }
+
+    public class MSG_COMMANDRSP : IServerMessage
+    {
+        public byte MessageOrder { get; } = 18;
+        public byte ServiceID { get; } = 100;
+
+        public WideByteString CommandText;
+        public bool Failed;
+        public ByteString ResponseText;
+    }
 }
