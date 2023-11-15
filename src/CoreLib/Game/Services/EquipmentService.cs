@@ -221,7 +221,7 @@ public class EquipmentService : MessageService {
         foreach (GameEffectInfo it in template.m_equipEffects) {
             int internalID = _effectInternalIDCounter++;
 
-            // Speed effects use a different object type.
+            // @TODO: SpellEffect, PipEffect
             if (it.m_effectName == "SpeedBuff") {
                 var speedEffect = (SpeedEffectInfo) it;
                 var speedEffectObj = new SpeedEffect() {
@@ -241,9 +241,8 @@ public class EquipmentService : MessageService {
                 return;
             }
 
-            // @TODO: Normal item stat effects.
             var statEffect = (StatisticEffectInfo) it;
-            var wizStatisticEffect = new WizStatisticEffect() {
+            var wSE = new WizStatisticEffect() {
                 m_lookupIndex = statEffect.m_lookupIndex,
                 m_effectNameID = StringHash.Compute(statEffect.m_effectName),
                 m_internalID = internalID,
@@ -251,27 +250,39 @@ public class EquipmentService : MessageService {
             };
 
             // Read it and weep.
-            switch (statEffect.m_effectName.ToString()) {
-                case "CanonicalMaxHealth":        wizStatisticEffect.m_hitPointBonus = statEffect.m_lookupIndex + 1;                      break;
-                case "CanonicalMaxEnergy":        wizStatisticEffect.m_energyBonus = statEffect.m_lookupIndex + 1;                        break;
-                case "CanonicalAllBlock":         wizStatisticEffect.m_blockRating = statEffect.m_lookupIndex + 1;                        break;
-                case "CanonicalAllCriticalHit":   wizStatisticEffect.m_criticalHitRating = statEffect.m_lookupIndex + 1;                  break;
-                case "CanonicalAllPipConversion": wizStatisticEffect.m_pipConversionRating = statEffect.m_lookupIndex + 1;                break;
-                case "CanonicalShadowPipRating":  wizStatisticEffect.m_shadowPipRating = statEffect.m_lookupIndex + 1;                    break;
-                case "CanonicalPowerPip":         wizStatisticEffect.m_powerPipBonusPercent = (statEffect.m_lookupIndex - 99) / 100;      break;
-                case "CanonicalAllAccuracy":      wizStatisticEffect.m_accuracyBonusPercent = (statEffect.m_lookupIndex - 99) / 100;      break;
-                case "CanonicalAllArmorPiercing": wizStatisticEffect.m_armorPiercingBonusPercent = (statEffect.m_lookupIndex - 99) / 100; break;
-                case "CanonicalAllDamage":        wizStatisticEffect.m_damageBonusPercent = (statEffect.m_lookupIndex - 99) / 100;        break;
-                case "CanonicalAllReduceDamage":  wizStatisticEffect.m_damageReducePercent = (statEffect.m_lookupIndex - 99) / 100;       break;
-                case "CanonicalAllFishingLuck":   wizStatisticEffect.m_fishingLuckBonusPercent = (statEffect.m_lookupIndex - 99) / 100;   break;
-                case "CanonicalIncHealing":       wizStatisticEffect.m_healIncBonusPercent = (statEffect.m_lookupIndex - 99) / 100;       break;
-                case "CanonicalLifeHealing":      wizStatisticEffect.m_healBonusPercent = (statEffect.m_lookupIndex - 99) / 100;          break;
-                case "CanonicalStunResistance":   wizStatisticEffect.m_stunResistancePercent = (statEffect.m_lookupIndex - 99) / 100;     break;
-                case "CanonicalMaxMana":          wizStatisticEffect.m_manaBonus = statEffect.m_lookupIndex + 98;                         break;
+            var effectName = statEffect.m_effectName.ToString();
+            switch (effectName) {
+                case var _ when effectName.Contains("MaxMana"):         wSE.m_manaBonus = statEffect.m_lookupIndex + 98;                            break;
+                case var _ when effectName.Contains("MaxHealth"):       wSE.m_hitPointBonus = statEffect.m_lookupIndex + 1;                         break;
+                case var _ when effectName.Contains("MaxEnergy"):       wSE.m_energyBonus = statEffect.m_lookupIndex + 1;                           break;
+                case var _ when effectName.Contains("FlatReduceDamage"):wSE.m_damageReduceFlat = statEffect.m_lookupIndex + 1;                      break;
+                case var _ when effectName.Contains("FlatDamage"):      wSE.m_damageBonusFlat = statEffect.m_lookupIndex + 1;                       break;
+                case var _ when effectName.Contains("CriticalHit"):     wSE.m_criticalHitRating = statEffect.m_lookupIndex + 1;                     break;
+                case var _ when effectName.Contains("Block"):           wSE.m_blockRating = statEffect.m_lookupIndex + 1;                           break;
+                case var _ when effectName.Contains("PipConversion"):   wSE.m_pipConversionRating = statEffect.m_lookupIndex + 1;                   break;
+                case var _ when effectName.Contains("ShadowPipRating"): wSE.m_shadowPipRating = statEffect.m_lookupIndex + 1;                       break;
+                case var _ when effectName.Contains("PowerPip"):        wSE.m_powerPipBonusPercent = (statEffect.m_lookupIndex - 99) / 100f;        break;
+                case var _ when effectName.Contains("ReduceDamage"):    wSE.m_damageReducePercent = (statEffect.m_lookupIndex - 99) / 100f;         break;
+                case var _ when effectName.Contains("Damage"):          wSE.m_damageBonusPercent = (statEffect.m_lookupIndex - 99) / 100f;          break;
+                case var _ when effectName.Contains("Accuracy"):        wSE.m_accuracyBonusPercent = (statEffect.m_lookupIndex - 99) / 100f;        break;
+                case var _ when effectName.Contains("ArmorPiercing"):   wSE.m_armorPiercingBonusPercent = (statEffect.m_lookupIndex - 99) / 100f;   break;
+                case var _ when effectName.Contains("FishingLuck"):     wSE.m_fishingLuckBonusPercent = (statEffect.m_lookupIndex - 99) / 100f;     break;
+                case var _ when effectName.Contains("IncHealing"):      wSE.m_healIncBonusPercent = (statEffect.m_lookupIndex - 99) / 100f;         break;
+                case var _ when effectName.Contains("LifeHealing"):     wSE.m_healBonusPercent = (statEffect.m_lookupIndex - 99) / 100f;            break;
+                case var _ when effectName.Contains("StunResistance"):  wSE.m_stunResistancePercent = (statEffect.m_lookupIndex - 99) / 100f;       break;
+                case var _ when effectName.Contains("XPPercent"):       wSE.m_expPercent = (statEffect.m_lookupIndex - 99) / 100f;                  break;
+                case var _ when effectName.Contains("GoldPercent"):     wSE.m_goldPercent = (statEffect.m_lookupIndex - 99) / 100f;                 break;
+                case "CanonicalStormMastery":   wSE.m_stormMastery = 1;     break;
+                case "CanonicalFireMastery":    wSE.m_fireMastery = 1;      break;
+                case "CanonicalIceMastery":     wSE.m_iceMastery = 1;       break;
+                case "CanonicalLifeMastery":    wSE.m_lifeMastery = 1;      break;
+                case "CanonicalDeathMastery":   wSE.m_deathMastery = 1;     break;
+                case "CanonicalMythMastery":    wSE.m_mythMastery = 1;      break;
+                case "CanonicalBalanceMastery": wSE.m_balanceMastery = 1;   break;
                 default: break;
             }
 
-            var effectData = effectSerializer.Serialize(wizStatisticEffect);
+            var effectData = effectSerializer.Serialize(wSE);
             ZoneBroadcast(new GAME_5_PROTOCOL.MSG_ADDEFFECT() {
                 GameObjectID = coreObject.m_globalID,
                 EffectData = effectData
@@ -285,6 +296,8 @@ public class EquipmentService : MessageService {
         int internalID = 0;
 
         foreach (GameEffectInfo it in template.m_equipEffects) {
+            // @TODO: SpellEffect, PipEffect
+
             if (it.m_effectName == "SpeedBuff") {
                 var speedEffect = (SpeedEffectInfo) it;
 
