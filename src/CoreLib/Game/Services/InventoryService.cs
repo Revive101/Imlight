@@ -385,7 +385,7 @@ public class InventoryService : MessageService {
             if (it.m_effectName == "SpeedBuff") {
                 var speedEffect = (SpeedEffectInfo) it;
 
-                foreach (KeyValuePair<int, GameEffectInfo> effect in _gameEffects) {
+                foreach (var effect in _gameEffects) {
                     if (effect.Value.m_effectName != speedEffect.m_effectName) continue;
                     if (((SpeedEffectInfo) effect.Value).m_speedMultiplier != speedEffect.m_speedMultiplier) continue;
                     internalID = effect.Key;
@@ -403,7 +403,7 @@ public class InventoryService : MessageService {
 
             var statEffect = (StatisticEffectInfo) it;
 
-            foreach (KeyValuePair<int, GameEffectInfo> effect in _gameEffects) {
+            foreach (var effect in _gameEffects) {
                 if (effect.Value.m_effectName != statEffect.m_effectName) continue;
                 if (((StatisticEffectInfo) effect.Value).m_lookupIndex != statEffect.m_lookupIndex) continue;
                 internalID = effect.Key;
