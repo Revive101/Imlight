@@ -19,6 +19,7 @@ using Imlight.CoreLib.Login.Models;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models;
 using Serilog;
 using static Imlight.Common.Caches.TypeCache;
@@ -76,6 +77,14 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
                 }
             }
 
+            // If the parameter count doesn't match, return.
+            var parameterCount = method.GetParameters().Length;
+            if (parameterCount != parameters.Length) {
+                Logger.Warning("Command {0} requires {1} parameters but {2} were given",
+                               Logger.Args(commandName, parameterCount, parameters.Length));
+                return;
+            }
+
             method.Invoke(this, parameters);
         }
         else {
@@ -85,13 +94,23 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
 
     [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_COMMAND))]
     private void ReceiveCommand(SERVER_100_PROTOCOL.MSG_COMMAND message) {
-        Logger.Debug($"Received command: {message.CommandText}");
-
         // Setup context before parsing any commands.
         _senderContext = message.ActorRef;
         _characterContext = message.PlayerCharacter;
         _accountContext = message.Account;
         _characterObjectContext = message.CoreObject;
+
+        Logger.Information("{0} Uses command: {1}", Logger.Args(_accountContext.Username, message.CommandText));
+
+        // Log the use of this command to the database.
+        var chatLog = new ChatLog() {
+            TimeStamp = DateTime.UtcNow,
+            ZoneName = _characterContext.Zone,
+            CharacterId = _characterContext.CharId,
+            AccountId = _accountContext.AccountId,
+            Message = message.CommandText.ToString(),
+        };
+        CommandLogCollection.AddCommandLog(chatLog);
 
         var parameters = message.CommandText.ToString().Split(' ');
         var command = parameters[0].ToLower();
@@ -111,7 +130,7 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
             actualZoneName = AccessPassManager.GetContainedZoneName(zone);
 
             if (!AccessPassManager.DoesZoneExist(actualZoneName)) {
-                Log.Error("Teleport command was given an invalid zone name {0}", Logger.Args(zone));
+                Log.Warning("Teleport command was given an invalid zone name {0}", Logger.Args(zone));
                 return;
             }
         }
