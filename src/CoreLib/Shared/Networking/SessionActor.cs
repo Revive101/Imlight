@@ -43,6 +43,7 @@ public class SessionActor : ReceiveActor, IDisposable {
     public IMessage CachedDequeueMessage                     { get; set; }
     public long Ping                                         { get; private set; }
     public string Ip => Socket?.RemoteEndPoint?.ToString();
+    public string RemoteIp => Socket?.RemoteEndPoint?.ToString().Split(':')[0];
 
     private readonly IActorRef _actorFactoryRef;
     private readonly Dictionary<IActorRef, MessageService> _services;
@@ -111,12 +112,12 @@ public class SessionActor : ReceiveActor, IDisposable {
     /// Enqueues the session to the server.
     /// </summary>
     /// <returns></returns>
-    public IMessage EnqueueToServer() {
+    public SERVER_100_PROTOCOL.MSG_PLAYERENQUEUEDRSP EnqueueToServer() {
         var msg = new SERVER_100_PROTOCOL.MSG_PLAYERENQUEUED() {
             SessionActor = this
         };
 
-        var rsp = ServerRef.Ask<IMessage>(msg)
+        var rsp = ServerRef.Ask<SERVER_100_PROTOCOL.MSG_PLAYERENQUEUEDRSP>(msg)
             .Result;
 
         return rsp;
@@ -219,7 +220,7 @@ public class SessionActor : ReceiveActor, IDisposable {
         var msg = new SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET() {
             Id = SessionID,
             Socket = this.Socket,
-            Ip = this.Socket?.RemoteEndPoint?.ToString()
+            Ip = this.RemoteIp
         };
         ServerRef.Tell(msg);
 

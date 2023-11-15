@@ -14,30 +14,26 @@ using Imlight.CoreLib.Shared.Packets;
 
 namespace Imlight.CoreLib.Shared.Services;
 
-public class ControlService : MessageService
-{
+public class ControlService : MessageService {
     private readonly byte _keepAliveInterval = ConfigurationManager.Settings.KeepAliveInterval;
     private readonly byte _keepAliveRspWaitTime = ConfigurationManager.Settings.KeepAliveRspWaitTime;
 
     private bool _sessionValid;
     private readonly Stopwatch _responseStopwatch;
     private bool _isWaitingForHeartbeatResponse;
-    private bool _halted;
+    private bool _isInGameServer;
 
-    public ControlService(SessionActor parentActor) : base(parentActor)
-    {
+    public ControlService(SessionActor parentActor) : base(parentActor) {
         this._responseStopwatch = new Stopwatch();
 
         SendSessionOffer();
     }
 
-    protected static Props Props(SessionActor parentActor)
-    {
+    protected static Props Props(SessionActor parentActor) {
         return Akka.Actor.Props.Create(() => new ControlService(parentActor));
     }
 
-    protected override void ConfigureReceivers()
-    {
+    protected override void ConfigureReceivers() {
         // These are sent from self on interval to remind the actor of the session heartbeat.
         Receive<string>(s => s == "KeepAliveHeartbeat", x => SendHeartbeat());
         Receive<string>(s => s == "KeepAliveEndTimes", x => ReceiveKeepAliveEndTimes());
@@ -46,15 +42,13 @@ public class ControlService : MessageService
         base.ConfigureReceivers();
     }
 
-    private void SendSessionOffer()
-    {
-        var currentUnixTimestamp = (uint)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
-        var timestampUpper = (int)(currentUnixTimestamp >> 32);
-        var timestampLower = (int)(currentUnixTimestamp & uint.MaxValue);
-        var millisecondsIntoCurrentSecond = (uint)(DateTime.UtcNow.TimeOfDay.TotalMilliseconds % 1000);
+    private void SendSessionOffer() {
+        var currentUnixTimestamp = (uint) (DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+        var timestampUpper = (int) (currentUnixTimestamp >> 32);
+        var timestampLower = (int) (currentUnixTimestamp & uint.MaxValue);
+        var millisecondsIntoCurrentSecond = (uint) (DateTime.UtcNow.TimeOfDay.TotalMilliseconds % 1000);
 
-        var offer = new ControlMessageProtocol.SessionOffer()
-        {
+        var offer = new ControlMessageProtocol.SessionOffer() {
             SessionId = SessionActor.SessionID,
             TimestampUpper = timestampUpper,
             TimestampLower = timestampLower,
@@ -79,11 +73,9 @@ public class ControlService : MessageService
     }
 
     [MessageHandler(typeof(ControlMessageProtocol.SessionAccept))]
-    private void ReceiveSessionAccept(ControlMessageProtocol.SessionAccept message)
-    {
+    private void ReceiveSessionAccept(ControlMessageProtocol.SessionAccept message) {
         _responseStopwatch.Stop();
-        if (message.SessionId != SessionActor.SessionID)
-        {
+        if (message.SessionId != SessionActor.SessionID) {
             throw new Exception($"SessionActor [{SessionActor.SessionID}] misaligned Session ID.");
         }
 
@@ -98,7 +90,7 @@ public class ControlService : MessageService
         SessionActor.ActorRef.Tell(msg);
         SessionActor
             .ActorRef
-            .Tell(new SERVER_100_PROTOCOL.MSG_PING() {Ping = _responseStopwatch.ElapsedMilliseconds});
+            .Tell(new SERVER_100_PROTOCOL.MSG_PING() { Ping = _responseStopwatch.ElapsedMilliseconds });
 
         // Once the session is created, we need to send a heartbeat to keep it active.
         // To do that. we'll have this actor send a message to itself on interval to check on the heartbeat.
@@ -114,16 +106,13 @@ public class ControlService : MessageService
     }
 
     [MessageHandler(typeof(ControlMessageProtocol.KeepAlive))]
-    private void ReceiveKeepAlive(ControlMessageProtocol.KeepAlive message)
-    {
-        if (message.SessionId != SessionActor.SessionID)
-        {
+    private void ReceiveKeepAlive(ControlMessageProtocol.KeepAlive message) {
+        if (message.SessionId != SessionActor.SessionID) {
             throw new Exception($"SessionActor [{SessionActor.SessionID}] misaligned Session ID.");
         }
 
-        var millisecondsIntoCurrentSecond = (ushort)(DateTime.UtcNow.TimeOfDay.TotalMilliseconds % 1000);
-        var rsp = new ControlMessageProtocol.KeepAliveResponse()
-        {
+        var millisecondsIntoCurrentSecond = (ushort) (DateTime.UtcNow.TimeOfDay.TotalMilliseconds % 1000);
+        var rsp = new ControlMessageProtocol.KeepAliveResponse() {
             SessionId = SessionActor.SessionID,
             Milliseconds = millisecondsIntoCurrentSecond,
             ElapsedSessionTime = message.ElapsedSessionTime,
@@ -133,32 +122,23 @@ public class ControlService : MessageService
     }
 
     [MessageHandler(typeof(ControlMessageProtocol.KeepAliveResponse))]
-    private void ReceiveKeepAliveRsp(ControlMessageProtocol.KeepAliveResponse message)
-    {
+    private void ReceiveKeepAliveRsp(ControlMessageProtocol.KeepAliveResponse message) {
         _responseStopwatch.Reset();
         _isWaitingForHeartbeatResponse = false;
 
         SessionActor
             .ActorRef
-            .Tell(new SERVER_100_PROTOCOL.MSG_PING() {Ping = _responseStopwatch.ElapsedMilliseconds});
+            .Tell(new SERVER_100_PROTOCOL.MSG_PING() { Ping = _responseStopwatch.ElapsedMilliseconds });
     }
 
     [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_OPCODE_HALT))]
-    private void ReceiveHalt(SERVICE_101_PROTOCOL.MSG_OPCODE_HALT message) => _halted = true;
+    private void ReceiveHalt(SERVICE_101_PROTOCOL.MSG_OPCODE_HALT message) => _isInGameServer = true;
 
     [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_OPCODE_RESUME))]
-    private void ReceiveResume(SERVICE_101_PROTOCOL.MSG_OPCODE_RESUME message) => _halted = false;
+    private void ReceiveResume(SERVICE_101_PROTOCOL.MSG_OPCODE_RESUME message) => _isInGameServer = false;
 
-    private void SendHeartbeat()
-    {
-        // If this service is halted, it means the session has moved onto the game server.
-        // The Loggerin socket is now closed, and we don't need to send heartbeats anymore.
-        if (_halted) {
-            return;
-        }
-
-        if (!_sessionValid)
-        {
+    private void SendHeartbeat() {
+        if (!_sessionValid) {
             Logger.Error("{Name} {SessionID} tried to send heartbeat to an invalid session",
                 Logger.Args(nameof(SessionActor), SessionActor.SessionID));
             CloseSession();
@@ -169,10 +149,9 @@ public class ControlService : MessageService
         // If we don't receive a response for `KEEP_ALIVE_RSP_WAIT_TIME` time, we'll drop the session.
         _isWaitingForHeartbeatResponse = true;
 
-        var keepAlive = new ControlMessageProtocol.KeepAliveServer()
-        {
+        var keepAlive = new ControlMessageProtocol.KeepAliveServer() {
             SessionId = SessionActor.SessionID,
-            Milliseconds = (uint)0,
+            Milliseconds = (uint) 0,
         };
 
         SendToSocket(keepAlive);
@@ -189,17 +168,15 @@ public class ControlService : MessageService
         _responseStopwatch.Start();
     }
 
-    private void ReceiveKeepAliveEndTimes()
-    {
-        if (!_isWaitingForHeartbeatResponse || _halted) {
+    private void ReceiveKeepAliveEndTimes() {
+        if (!_isWaitingForHeartbeatResponse || _isInGameServer) {
             return;
         }
 
         CloseSession();
     }
 
-    private void SessionAcceptTimer()
-    {
+    private void SessionAcceptTimer() {
         if (_sessionValid) {
             return;
         }

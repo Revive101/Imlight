@@ -178,4 +178,14 @@ public sealed class SERVER_100_PROTOCOL : IServerProtocol
         public bool Failed;
         public ByteString ResponseText;
     }
+
+    public class MSG_PLAYERENQUEUEDRSP : IServerMessage
+    {
+        public byte MessageOrder { get; } = 19;
+        public byte ServiceID { get; } = 100;
+
+        public int PositionInQueue;
+        public int Status;
+        public bool Failed;
+    }
 }

@@ -65,10 +65,8 @@ public abstract class Server : ReceiveProtocolDispatcher {
         var sessionProps = SessionActor.Props(message.Socket, id, Context.Self);
         Context.ActorOf(sessionProps, $"SessionActor.{id}");
 
-        // We don't add to our active session here. Let the implementations handle that.
-
         // Logger
-        Logger.Information("{Type} new connection from {RemoteEndPoint} given session ID {Id}",
+        Logger.Debug("{Type} new connection from {RemoteEndPoint} given session ID {Id}",
             Logger.Args(GetType(), message.Socket.RemoteEndPoint?.ToString(), id));
     }
 
@@ -78,17 +76,12 @@ public abstract class Server : ReceiveProtocolDispatcher {
     /// <param name="message"></param>
     [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET))]
     public virtual void ReceiveDeallocateSocket(SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET message) {
-        Logger.Information("{Name}.{Port} connection dropped from {Ip} ID: {Id}",
-            Logger.Args(Name, Port, message.Ip, message.Id));
-
-        foreach (var session in ActiveSessions.ToList()
-                     .Where(session => session.SessionID == message.Id)) {
-            ActiveSessions.Remove(session);
-            return;
+        if (!ActiveSessions.Remove(ActiveSessions.FirstOrDefault(x => x.SessionID == message.Id))) {
+            // It's fine if no session was found. This is a common occurrence.
         }
-
-        Logger.Warning("{Name}.{Port} Could not find active session with ID {Id}",
-            Logger.Args(Name, Port, message.Id));
+        else {
+            Logger.Information("{Name} lost connection to {Ip}", Logger.Args(Name, message.Ip, message.Id));
+        }
     }
 
     /// <summary>
@@ -131,7 +124,7 @@ public abstract class Server : ReceiveProtocolDispatcher {
                 switch (ex) {
                     default: {
                             // Client regularly shuts down the socket. No need to log it.
-                            if (ex.Message.Contains("Send failure: Shutdown")) {
+                            if (ex.Message.ToLower().Contains("failure: shutdown")) {
                                 return Directive.Stop;
                             }
 

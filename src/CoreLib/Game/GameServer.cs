@@ -162,6 +162,7 @@ public class GameServer : Server {
 
             var newPlayer = _playerQueue.Dequeue();
             ActiveSessions.Add(newPlayer);
+            Logger.Information("{Name} New connection {RemoteEndPoint}", Logger.Args(Name, newPlayer.RemoteIp));
 
             // Inform the SessionActor that it's finally outside of queue.
             newPlayer.Dequeue(); ;

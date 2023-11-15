@@ -103,7 +103,27 @@ internal class AuthenticatorService : MessageService {
 
         // Enqueue ourselves to the connected server. Inform the socket if its been placed into a queue and
         // what position it could potentially be in.
-        var serverEnqueueResult = (LOGIN_7_PROTOCOL.MSG_USER_ADMIT_IND) SessionActor.EnqueueToServer();
-        SendToSocket(serverEnqueueResult);
+        var serverEnqueueResult = SessionActor.EnqueueToServer();
+        if (serverEnqueueResult.Failed) {
+            var clientResponse = new LOGIN_7_PROTOCOL.MSG_USER_ADMIT_IND {
+                Status = 0,
+            };
+            SendToSocket(clientResponse);
+
+            // Explicitly inform the socket about this.
+            var clientExplicitFailedResponse = new EXTENDEDBASE_2_PROTOCOL.MSG_SERVERMESSAGE {
+                Message = "This user is currently logged in elsewhere."
+            };
+            SendToSocket(clientExplicitFailedResponse);
+
+            CloseSession();
+        }
+        else {
+            var clientResponse = new LOGIN_7_PROTOCOL.MSG_USER_ADMIT_IND {
+                PositionInQueue = (uint) serverEnqueueResult.PositionInQueue,
+                Status = serverEnqueueResult.Status,
+            };
+            SendToSocket(clientResponse);
+        }
     }
 }
