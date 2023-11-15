@@ -351,37 +351,41 @@ public class InventoryService : MessageService {
     }
 
     private void RemoveItemEffectsFromPlayer(CoreObject coreObject, WizItemTemplate template) {
-        var playerCharacter = GetActiveCharacter();
+        int internalID = 0;
 
         foreach (GameEffectInfo it in template.m_equipEffects) {
             if (it.m_effectName == "SpeedBuff") {
                 var speedEffect = (SpeedEffectInfo) it;
-                int speedEffectInternalID = _gameEffects.First(effect =>
-                    ((SpeedEffectInfo) effect.Value).m_effectName == speedEffect.m_effectName &&
-                    ((SpeedEffectInfo) effect.Value).m_speedMultiplier == speedEffect.m_speedMultiplier).Key;
 
-                SendToSocket(new GAME_5_PROTOCOL.MSG_REMOVEEFFECT() {
+                foreach (KeyValuePair<int, GameEffectInfo> effect in _gameEffects) {
+                    if (effect.Value.m_effectName != speedEffect.m_effectName) continue;
+                    internalID = effect.Key;
+                }
+
+                ZoneBroadcast(new GAME_5_PROTOCOL.MSG_REMOVEEFFECT() {
                     GameObjectID = coreObject.m_globalID,
                     EffectNameID = StringHash.Compute(it.m_effectName),
-                    InternalID = speedEffectInternalID,
-                });
+                    InternalID = internalID,
+                }, false);
 
-                _gameEffects.Remove(speedEffectInternalID);
+                _gameEffects.Remove(internalID);
                 return;
             }
 
             var statEffect = (StatisticEffectInfo) it;
-            int statEffectInternalID = _gameEffects.First(effect =>
-                ((StatisticEffectInfo) effect.Value).m_effectName == statEffect.m_effectName &&
-                ((StatisticEffectInfo) effect.Value).m_lookupIndex == statEffect.m_lookupIndex).Key;
 
-            SendToSocket(new GAME_5_PROTOCOL.MSG_REMOVEEFFECT() {
+            foreach (KeyValuePair<int, GameEffectInfo> effect in _gameEffects) {
+                if (effect.Value.m_effectName != statEffect.m_effectName) continue;
+                internalID = effect.Key;
+            }
+
+            ZoneBroadcast(new GAME_5_PROTOCOL.MSG_REMOVEEFFECT() {
                 GameObjectID = coreObject.m_globalID,
                 EffectNameID = StringHash.Compute(it.m_effectName),
-                InternalID = statEffectInternalID,
-            });
+                InternalID = internalID,
+            }, false);
 
-            _gameEffects.Remove(statEffectInternalID);
+            _gameEffects.Remove(internalID);
         }
     }
 }
