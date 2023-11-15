@@ -5,6 +5,7 @@
 
 using System;
 using System.Text;
+using System.Text.RegularExpressions;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
@@ -107,13 +108,13 @@ public class ChatService : MessageService {
     }
 
     private static string CleanMessage(ByteString message) {
-        // Remove the '\f', '\n', '\0' character from the message.
-        var cleanedMessage = message.ToString()?
-            .Replace(@"\f", "")?
-            .Replace("\n", "")?
-            .Replace("\0", "")
-            .Trim()
-            [1..];
+        if (message == null) {
+            return null;
+        }
+
+        // Define a regular expression pattern to keep alphanumeric characters and punctuation
+        string validCharactersPattern = "[^a-zA-Z0-9\\p{P}]"; // \p{P} matches any punctuation character
+        var cleanedMessage = Regex.Replace(message.ToString(), validCharactersPattern, "");
 
         return cleanedMessage;
     }
