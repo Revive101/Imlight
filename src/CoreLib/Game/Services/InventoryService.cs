@@ -78,6 +78,8 @@ public class InventoryService : MessageService {
                     // Get current equipped item and its slot.
                     var slot = equipmentBehavior.m_slotList.FindIndex(slot => slot.m_itemID == obj.m_globalID);
                     var currentEquippedItem = equipmentBehavior.m_slotList[slot].m_itemID;
+                    var oldItemTemplateID = inventoryBehavior.m_itemList.First(item => item.m_globalID == currentEquippedItem).m_templateID;
+                    var oldItemTemplate = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(oldItemTemplateID);
 
                     if (currentEquippedItem == 0) {
                         Logger.Debug("Player somehow has an item with GID: 0!");
@@ -102,7 +104,7 @@ public class InventoryService : MessageService {
                     }, false);
 
                     // @TODO: Get previous item's template and pass it here
-                    RemoveItemEffectsFromPlayer(coreObject, template);
+                    RemoveItemEffectsFromPlayer(coreObject, oldItemTemplate);
 
                     break;
                 }
@@ -356,7 +358,7 @@ public class InventoryService : MessageService {
         foreach (GameEffectInfo it in template.m_equipEffects) {
             if (it.m_effectName == "SpeedBuff") {
                 var speedEffect = (SpeedEffectInfo) it;
-                int speedEffectInternalID = _gameEffects.First(effect => // Scuffed, but it works.
+                int speedEffectInternalID = _gameEffects.First(effect =>
                     ((SpeedEffectInfo) effect.Value).m_effectName == speedEffect.m_effectName &&
                     ((SpeedEffectInfo) effect.Value).m_speedMultiplier == speedEffect.m_speedMultiplier).Key;
 
