@@ -166,6 +166,6 @@ public sealed class SERVER_100_PROTOCOL : IServerProtocol
         public IActorRef ActorRef;
         public CoreObject CoreObject;
         public Character PlayerCharacter;
-        public AuthLevel AuthLevel;
+        public Account Account;
     }
 }
