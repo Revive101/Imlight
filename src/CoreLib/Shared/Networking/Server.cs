@@ -103,11 +103,14 @@ public abstract class Server : ReceiveProtocolDispatcher {
     /// <param name="message"></param>
     [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_QUERYSERVER))]
     public void ReceiveQueryServer(SERVER_100_PROTOCOL.MSG_QUERYSERVER message) {
+        // Get a list of strings for the connected IPs.
+        var ips = ActiveSessions.Select(x => x.RemoteIp).ToArray();
         var msg = new SERVER_100_PROTOCOL.MSG_SERVERINFO() {
             IP = message.IsLocal ? "127.0.0.1" : this.Ip,
             Port = Port,
             PlayerCount = (ushort) ActiveSessions.Count,
             ActorRef = Context.Self,
+            ConnectedIps = ips
         };
 
         Sender.Tell(msg);

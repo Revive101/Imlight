@@ -28,8 +28,8 @@ public class LoginServer : Server {
         return Akka.Actor.Props.Create(() => new LoginServer(serverName, serverPort));
     }
 
-    [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_QUERYGAMESERVERS))]
-    private void ReceiveQueryGameServer(SERVER_100_PROTOCOL.MSG_QUERYGAMESERVERS message) {
+    [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_GETBESTSERVER))]
+    private void ReceiveQueryGameServer(SERVER_100_PROTOCOL.MSG_GETBESTSERVER message) {
         _gamePoolServer.Forward(message);
     }
 
@@ -37,13 +37,17 @@ public class LoginServer : Server {
     private void ReceivePlayerEnqueued(SERVER_100_PROTOCOL.MSG_PLAYERENQUEUED message) {
         var rsp = new SERVER_100_PROTOCOL.MSG_PLAYERENQUEUEDRSP();
 
-        // If this IP is already in our active session, do not allow entry.
-        if (ActiveSessions.Any(x => x.RemoteIp == message.SessionActor.RemoteIp)) {
+#if !DEBUG
+        // If this IP is already in the login server or any game server, deny entry.
+        var findPlayerMsg = new SERVER_100_PROTOCOL.MSG_FINDPLAYER() { Ip = message.SessionActor.RemoteIp };
+        var foundPlayerRsp = _gamePoolServer.Ask<SERVER_100_PROTOCOL.MSG_PLAYERFOUND>(findPlayerMsg).Result.Found;
+        if (ActiveSessions.Any(x => x.RemoteIp == message.SessionActor.RemoteIp) || foundPlayerRsp) {
             rsp.Failed = true;
             Sender.Tell(rsp);
 
             return;
         }
+#endif
 
         // The login server does not have a queue. For now. >:(
         ActiveSessions.Add(message.SessionActor);
