@@ -5,6 +5,7 @@
 
 using System;
 using System.Linq;
+using System.Collections.Generic;
 using Akka.Actor;
 using Akka.Util.Internal;
 using Imlight.Common;
@@ -21,7 +22,11 @@ using static Imlight.Common.ObjectProperty.SerializerOptions;
 namespace Imlight.CoreLib.Game.Services;
 
 public class InventoryService : MessageService {
-    public InventoryService(SessionActor sessionActor) : base(sessionActor) { }
+    private Dictionary<int, GameEffectInfo> _gameEffects;
+    private int _effectInternalIDCounter = 1;
+
+    public InventoryService(SessionActor sessionActor) : base(sessionActor)
+        => _gameEffects = new Dictionary<int, GameEffectInfo>();
 
     protected static Props Props(SessionActor parentActor) {
         return Akka.Actor.Props.Create(() => new InventoryService(parentActor));
@@ -96,6 +101,7 @@ public class InventoryService : MessageService {
                         IndexToRemove = (byte) slot
                     }, false);
 
+                    // @TODO: Get previous item's template and pass it here
                     RemoveItemEffectsFromPlayer(coreObject, template);
 
                     break;
@@ -312,13 +318,12 @@ public class InventoryService : MessageService {
         foreach (GameEffectInfo it in template.m_equipEffects) {
             // Speed effects use a different object type.
             if (it.m_effectName == "SpeedBuff") {
-                // @TODO: Add effect to character model.
-
+                var internalID = _effectInternalIDCounter++;
                 var speedEffect = (SpeedEffectInfo) it;
                 var speedEffectObj = new SpeedEffect() {
                     m_speedMultiplier = speedEffect.m_speedMultiplier,
                     m_effectNameID = StringHash.Compute(it.m_effectName),
-                    m_internalID = 1,
+                    m_internalID = internalID,
                     m_itemSlotID = StringHash.Compute(template.m_adjectiveList[1].ToString())
                 };
 
@@ -327,11 +332,14 @@ public class InventoryService : MessageService {
                     GameObjectID = coreObject.m_globalID,
                     EffectData = speedData
                 }, false);
+
+                _gameEffects.Add(internalID, speedEffect);
+
                 return;
             }
 
             // @TODO: Normal item stat effects.
-            var effect = (StatisticEffectInfo) it;
+            var statEffect = (StatisticEffectInfo) it;
             var wizStatisticEffect = new WizStatisticEffect() { };
 
             var effectData = effectSerializer.Serialize(wizStatisticEffect);
@@ -343,6 +351,37 @@ public class InventoryService : MessageService {
     }
 
     private void RemoveItemEffectsFromPlayer(CoreObject coreObject, WizItemTemplate template) {
-        // @TODO: Remove item's effects from player.
+        var playerCharacter = GetActiveCharacter();
+
+        foreach (GameEffectInfo it in template.m_equipEffects) {
+            if (it.m_effectName == "SpeedBuff") {
+                var speedEffect = (SpeedEffectInfo) it;
+                int speedEffectInternalID = _gameEffects.First(effect => // Scuffed, but it works.
+                    ((SpeedEffectInfo) effect.Value).m_effectName == speedEffect.m_effectName &&
+                    ((SpeedEffectInfo) effect.Value).m_speedMultiplier == speedEffect.m_speedMultiplier).Key;
+
+                SendToSocket(new GAME_5_PROTOCOL.MSG_REMOVEEFFECT() {
+                    GameObjectID = coreObject.m_globalID,
+                    EffectNameID = StringHash.Compute(it.m_effectName),
+                    InternalID = speedEffectInternalID,
+                });
+
+                _gameEffects.Remove(speedEffectInternalID);
+                return;
+            }
+
+            var statEffect = (StatisticEffectInfo) it;
+            int statEffectInternalID = _gameEffects.First(effect =>
+                ((StatisticEffectInfo) effect.Value).m_effectName == statEffect.m_effectName &&
+                ((StatisticEffectInfo) effect.Value).m_lookupIndex == statEffect.m_lookupIndex).Key;
+
+            SendToSocket(new GAME_5_PROTOCOL.MSG_REMOVEEFFECT() {
+                GameObjectID = coreObject.m_globalID,
+                EffectNameID = StringHash.Compute(it.m_effectName),
+                InternalID = statEffectInternalID,
+            });
+
+            _gameEffects.Remove(statEffectInternalID);
+        }
     }
 }
