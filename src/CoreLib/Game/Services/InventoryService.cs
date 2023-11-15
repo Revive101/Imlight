@@ -87,7 +87,7 @@ public class InventoryService : MessageService {
                     }
 
                     // Remove item from equipment behavior lists.
-                    equipmentBehavior = RemoveSlotFromEquipmentSlotList(slot, equipmentBehavior);
+                    equipmentBehavior.m_slotList = RemoveSlotFromEquipmentSlotList(slot, equipmentBehavior.m_slotList);
                     equipmentBehavior.m_itemList.RemoveAll(item => item.m_globalID == currentEquippedItem);
                     //equipmentBehavior.m_publicItemList.RemoveAll(item => item.m_itemID == itemObj.m_templateID);
                     //creationEquipment.RemoveAll(item => item.m_itemID == itemObj.m_templateID);
@@ -103,9 +103,7 @@ public class InventoryService : MessageService {
                         IndexToRemove = (byte) slot
                     }, false);
 
-                    // @TODO: Get previous item's template and pass it here
                     RemoveItemEffectsFromPlayer(coreObject, oldItemTemplate);
-
                     break;
                 }
             }
@@ -165,7 +163,7 @@ public class InventoryService : MessageService {
             }
 
             // Remove item from equipment behavior lists.
-            equipmentBehavior = RemoveSlotFromEquipmentSlotList(slot, equipmentBehavior);
+            equipmentBehavior.m_slotList = RemoveSlotFromEquipmentSlotList(slot, equipmentBehavior.m_slotList);
             equipmentBehavior.m_itemList.RemoveAll(item => item.m_globalID == currentEquippedItem);
             //equipmentBehavior.m_publicItemList.RemoveAll(item => item.m_itemID == itemObj.m_templateID);
             //creationEquipment.RemoveAll(item => item.m_itemID == itemObj.m_templateID);
@@ -294,20 +292,20 @@ public class InventoryService : MessageService {
         return invItemList;
     }
 
-    private ClientWizEquipmentBehavior RemoveSlotFromEquipmentSlotList(int slot, ClientWizEquipmentBehavior equipmentBehavior) {
+    private List<EquippedSlotInfo> RemoveSlotFromEquipmentSlotList(int slot, List<EquippedSlotInfo> slotList) {
         // Zero-out item from slot list and move all items down to fill "empty" zero slots, should they exist.
-        var numEquippedItemsInSlots = equipmentBehavior.m_slotList.Count(slot => slot.m_itemID != 0);
-        equipmentBehavior.m_slotList[slot].m_itemID = (GID) 0;
+        var numEquippedItemsInSlots = slotList.Count(slot => slot.m_itemID != 0);
+        slotList[slot].m_itemID = (GID) 0;
 
         if (slot < numEquippedItemsInSlots - 1) {
             for (int i = slot; i < numEquippedItemsInSlots; i++) {
-                if (equipmentBehavior.m_slotList[i].m_itemID != 0) {
-                    equipmentBehavior.m_slotList[i - 1].m_itemID = equipmentBehavior.m_slotList[i].m_itemID;
-                    equipmentBehavior.m_slotList[i].m_itemID = (GID) 0;
+                if (slotList[i].m_itemID != 0) {
+                    slotList[i - 1].m_itemID = slotList[i].m_itemID;
+                    slotList[i].m_itemID = (GID) 0;
                 }
             }
         }
-        return equipmentBehavior;
+        return slotList;
     }
 
     private void ApplyItemEffectsToPlayer(CoreObject coreObject, WizItemTemplate template) {
