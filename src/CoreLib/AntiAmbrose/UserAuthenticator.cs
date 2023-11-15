@@ -69,9 +69,6 @@ internal static class UserAuthenticator {
             return details;
         }
 
-        matchedAccount.LastLoginMachineId = authMessage.MachineID;
-        matchedAccount.LastLoginTime = DateTime.UtcNow;
-
         details._account = matchedAccount;
 
         var doesPasswordMatch = ClientKey.VerifyCK1(matchedAccount.PasswordHash, sessionId, offerTime, offerMilli, clientKey1);
@@ -80,6 +77,10 @@ internal static class UserAuthenticator {
             var sessionKey = ClientKey.HashSessionKey(sessionId, offerTime, offerMilli);
             ClientKeyCollection.AddSessionKey(matchedAccount.AccountId, authMessage.MachineID, sessionKey);
             details._sessionKey = sessionKey;
+
+            matchedAccount.LastLoginMachineId = authMessage.MachineID;
+            matchedAccount.LastLoginTime = DateTime.UtcNow;
+            matchedAccount.LastLoginIp = sessionActor.Ip;
 
             // Craft a successful reply and return.
             var rec1 = Rec1.Encode(sessionKey, sessionId, offerTime, offerMilli);

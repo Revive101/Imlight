@@ -113,8 +113,8 @@ public class ChatService : MessageService {
         }
 
         // Define a regular expression pattern to keep alphanumeric characters and punctuation
-        string validCharactersPattern = "[^a-zA-Z0-9\\p{P}]"; // \p{P} matches any punctuation character
-        var cleanedMessage = Regex.Replace(message.ToString(), validCharactersPattern, "");
+        string validCharactersPattern = "[^a-zA-Z0-9\\p{P} ]"; // \p{P} matches any punctuation character
+        var cleanedMessage = Regex.Replace(message.ToString(), validCharactersPattern, "").Trim();
 
         return cleanedMessage;
     }

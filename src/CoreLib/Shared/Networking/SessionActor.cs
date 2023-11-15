@@ -42,6 +42,7 @@ public class SessionActor : ReceiveActor, IDisposable {
     public ushort QueuePosition                              { get; private set; }
     public IMessage CachedDequeueMessage                     { get; set; }
     public long Ping                                         { get; private set; }
+    public string Ip => Socket?.RemoteEndPoint?.ToString();
 
     private readonly IActorRef _actorFactoryRef;
     private readonly Dictionary<IActorRef, MessageService> _services;

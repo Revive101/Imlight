@@ -21,7 +21,6 @@ using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models;
-using Serilog;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Commands;
@@ -130,7 +129,7 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
             actualZoneName = AccessPassManager.GetContainedZoneName(zone);
 
             if (!AccessPassManager.DoesZoneExist(actualZoneName)) {
-                Log.Warning("Teleport command was given an invalid zone name {0}", Logger.Args(zone));
+                Logger.Warning("Teleport command was given an invalid zone name {0}", Logger.Args(zone));
                 return;
             }
         }

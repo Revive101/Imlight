@@ -77,6 +77,10 @@ internal static class UserValidator {
         }
 
         // If we've made it this far, the user is valid.
+        matchedAccount.LastLoginMachineId = validateMessage.MachineID;
+        matchedAccount.LastLoginTime = DateTime.UtcNow;
+        matchedAccount.LastLoginIp = sessionActor.Ip;
+
         details._account = matchedAccount;
         details._sessionKey = sessionKey;
         details._result = UserValidateResult.Success;
