@@ -316,13 +316,14 @@ public class InventoryService : MessageService {
                               | SerializerOptions.PropertyFlags.AuthorityTransmit);
 
         foreach (GameEffectInfo it in template.m_equipEffects) {
+            int internalID = _effectInternalIDCounter++;
+
             // Speed effects use a different object type.
             if (it.m_effectName == "SpeedBuff") {
-                var internalID = _effectInternalIDCounter++;
                 var speedEffect = (SpeedEffectInfo) it;
                 var speedEffectObj = new SpeedEffect() {
                     m_speedMultiplier = speedEffect.m_speedMultiplier,
-                    m_effectNameID = StringHash.Compute(it.m_effectName),
+                    m_effectNameID = StringHash.Compute(speedEffect.m_effectName),
                     m_internalID = internalID,
                     m_itemSlotID = StringHash.Compute(template.m_adjectiveList[1].ToString())
                 };
@@ -334,19 +335,46 @@ public class InventoryService : MessageService {
                 }, false);
 
                 _gameEffects.Add(internalID, speedEffect);
-
                 return;
             }
 
             // @TODO: Normal item stat effects.
             var statEffect = (StatisticEffectInfo) it;
-            var wizStatisticEffect = new WizStatisticEffect() { };
+            var wizStatisticEffect = new WizStatisticEffect() {
+                m_lookupIndex = statEffect.m_lookupIndex,
+                m_effectNameID = StringHash.Compute(statEffect.m_effectName),
+                m_internalID = internalID,
+                m_itemSlotID = StringHash.Compute(template.m_adjectiveList[1].ToString())
+            };
+
+            // Read it and weep.
+            switch (statEffect.m_effectName.ToString()) {
+                case "CanonicalMaxHealth":          wizStatisticEffect.m_hitPointBonus = statEffect.m_lookupIndex + 1;                      break;
+                case "CanonicalMaxEnergy":          wizStatisticEffect.m_energyBonus = statEffect.m_lookupIndex + 1;                        break;
+                case "CanonicalAllBlock":           wizStatisticEffect.m_blockRating = statEffect.m_lookupIndex + 1;                        break;
+                case "CanonicalAllCriticalHit":     wizStatisticEffect.m_criticalHitRating = statEffect.m_lookupIndex + 1;                  break;
+                case "CanonicalAllPipConversion":   wizStatisticEffect.m_pipConversionRating = statEffect.m_lookupIndex + 1;                break;
+                case "CanonicalShadowPipRating":    wizStatisticEffect.m_shadowPipRating = statEffect.m_lookupIndex + 1;                    break;
+                case "CanonicalPowerPip":           wizStatisticEffect.m_powerPipBonusPercent = (statEffect.m_lookupIndex - 99) / 100;      break;
+                case "CanonicalAllAccuracy":        wizStatisticEffect.m_accuracyBonusPercent = (statEffect.m_lookupIndex - 99) / 100;      break;
+                case "CanonicalAllArmorPiercing":   wizStatisticEffect.m_armorPiercingBonusPercent = (statEffect.m_lookupIndex - 99) / 100; break;
+                case "CanonicalAllDamage":          wizStatisticEffect.m_damageBonusPercent = (statEffect.m_lookupIndex - 99) / 100;        break;
+                case "CanonicalAllReduceDamage":    wizStatisticEffect.m_damageReducePercent = (statEffect.m_lookupIndex - 99) / 100;       break;
+                case "CanonicalAllFishingLuck":     wizStatisticEffect.m_fishingLuckBonusPercent = (statEffect.m_lookupIndex - 99) / 100;   break;
+                case "CanonicalIncHealing":         wizStatisticEffect.m_healIncBonusPercent = (statEffect.m_lookupIndex - 99) / 100;       break;
+                case "CanonicalLifeHealing":        wizStatisticEffect.m_healBonusPercent = (statEffect.m_lookupIndex - 99) / 100;          break;
+                case "CanonicalStunResistance":     wizStatisticEffect.m_stunResistancePercent = (statEffect.m_lookupIndex - 99) / 100;     break;
+                case "CanonicalMaxMana":            wizStatisticEffect.m_manaBonus = statEffect.m_lookupIndex + 98;                         break;
+                default: break;
+            }
 
             var effectData = effectSerializer.Serialize(wizStatisticEffect);
-            SendToSocket(new GAME_5_PROTOCOL.MSG_ADDEFFECT() {
+            ZoneBroadcast(new GAME_5_PROTOCOL.MSG_ADDEFFECT() {
                 GameObjectID = coreObject.m_globalID,
                 EffectData = effectData
-            });
+            }, false);
+
+            _gameEffects.Add(internalID, statEffect);
         }
     }
 
@@ -359,6 +387,7 @@ public class InventoryService : MessageService {
 
                 foreach (KeyValuePair<int, GameEffectInfo> effect in _gameEffects) {
                     if (effect.Value.m_effectName != speedEffect.m_effectName) continue;
+                    if (((SpeedEffectInfo) effect.Value).m_speedMultiplier != speedEffect.m_speedMultiplier) continue;
                     internalID = effect.Key;
                 }
 
@@ -376,6 +405,7 @@ public class InventoryService : MessageService {
 
             foreach (KeyValuePair<int, GameEffectInfo> effect in _gameEffects) {
                 if (effect.Value.m_effectName != statEffect.m_effectName) continue;
+                if (((StatisticEffectInfo) effect.Value).m_lookupIndex != statEffect.m_lookupIndex) continue;
                 internalID = effect.Key;
             }
 
