@@ -334,6 +334,7 @@ public class SessionActor : ReceiveActor, IDisposable {
     }
 
     private void ReceiveException(Exception ex) {
+        Dispose();
         throw ex;
     }
 
