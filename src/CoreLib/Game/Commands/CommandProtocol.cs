@@ -2,8 +2,8 @@ using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.CoreLib.AntiAmbrose;
-using Imlight.CoreLib.Game.Commands;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 
@@ -37,16 +37,38 @@ internal abstract class CommandProtocol {
             }
         }
 
+        // Process the parameters with respect to RemainderAttribute, if it is present.
+        var methodParameters = method.GetParameters();
+        var expectedParameterCount = methodParameters.Length;
+        var processedParameters = new List<object>();
+        for (int i = 0; i < methodParameters.Length; i++) {
+            if (methodParameters[i].GetCustomAttribute<RemainderAttribute>() != null) {
+                // Combine the remaining parameters into a single string
+                var restOfString = string.Join(" ", parameters.Skip(i));
+                processedParameters.Add(restOfString);
+
+                break;
+            }
+            else {
+                processedParameters.Add(parameters[i]);
+            }
+        }
+
         // If the parameter count doesn't match, return.
-        var parameterCount = method.GetParameters().Length;
-        if (parameterCount != parameters.Length) {
+        if (expectedParameterCount != processedParameters.Count) {
             // Write the usage of this command.
             var properUsageStr = new StringBuilder();
             properUsageStr.Append(commandName);
             properUsageStr.Append("<color;1C1EC4>");
-            foreach (var parameter in method.GetParameters()) {
+
+            foreach (var parameter in methodParameters) {
                 properUsageStr.Append(" (");
                 properUsageStr.Append(parameter.Name);
+
+                if (parameter.GetCustomAttribute<RemainderAttribute>() != null) {
+                    properUsageStr.Append("...");
+                }
+
                 properUsageStr.Append(')');
             }
 
@@ -55,15 +77,7 @@ internal abstract class CommandProtocol {
             return true;
         }
 
-        var commandAttribute = method.GetCustomAttribute<CommandAttribute>();
-        if (commandAttribute != null) {
-            method.Invoke(this, parameters);
-        }
-        else {
-            Logger.Warning("Method {0} in command protocol {1} does not have the [2] attribute",
-                Logger.Args(commandName, this.GetType(), nameof(commandAttribute)));
-        }
-
+        method.Invoke(this, processedParameters.ToArray());
         return true;
     }
 

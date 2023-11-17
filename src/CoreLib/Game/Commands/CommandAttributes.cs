@@ -29,3 +29,7 @@ internal sealed class AuthRequiredAttribute : Attribute {
         Level = level;
     }
 }
+
+[AttributeUsage(AttributeTargets.Parameter)]
+internal class RemainderAttribute : Attribute {
+}

@@ -28,6 +28,9 @@ public class InfractionHistory {
     public List<Infraction> Infractions { get; set; }
     public bool IsCurrentlyBanned => Infractions.Any(x => x.InfractionType == InfractionType.Ban && !x.IsExpired);
     public bool IsCurrentlyMuted => Infractions.Any(x => x.InfractionType == InfractionType.Mute && !x.IsExpired);
+    public DateTime LastInfractionTime => Infractions.Max(x => x.InfractionTime);
+    public DateTime BanEndsAt => Infractions.Where(x => x.InfractionType == InfractionType.Ban).Max(x => x.Expiration.Value);
+    public DateTime MuteEndsAt => Infractions.Where(x => x.InfractionType == InfractionType.Mute).Max(x => x.Expiration.Value);
 
     public InfractionHistory(ulong accountId, List<Infraction> infractions) {
         AccountId = accountId;

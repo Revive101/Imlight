@@ -54,28 +54,39 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
         // The group name will be the first word in the command.
         var split = commandName.Split(' ');
 
-        if (split.Length > 1 && s_protocols.TryGetValue(split[0], out var protocol)) {
-            // Create new parameters with the first word removed.
+        if (split.Length < 1) {
+            InformSenderClient(context, "Command not found.");
+            return;
+        }
+
+        var protocolName = split[0];
+        var command = split.Length > 1 ? split[1] : "";
+
+        if (s_protocols.TryGetValue(protocolName, out var protocol)) {
+            // Create new parameters with the first two words removed.
             var parameters = split.Skip(2).ToArray();
-            var executed = protocol.Execute(split[1], context, parameters);
+            var executed = protocol.Execute(command, context, parameters);
             if (!executed) {
                 InformSenderClient(context, "Command not found.");
-                return;
             }
         }
         else {
             // If we couldn't find it, try searching for protocols with no group name.
-            var protocols = s_protocols.Values.Where(x => x.Group is "" or null);
+            var protocols = s_protocols.Values.Where(x => string.IsNullOrEmpty(x.Group));
             var commandFound = false;
+
             foreach (var p in protocols) {
-                var parameters = split.Length >= 1 ? split.Skip(1).ToArray() : Array.Empty<string>();
-                commandFound = p.Execute(split[0], context, parameters);
+                var parameters = split.Skip(1).ToArray();
+                commandFound = p.Execute(command, context, parameters);
+
+                if (commandFound) {
+                    break; // Exit the loop once a matching command is found.
+                }
             }
 
             if (!commandFound) {
                 // Inform the invoker of his failure. Take his lunch money.
                 InformSenderClient(context, "Command not found.");
-                return;
             }
         }
     }
