@@ -141,22 +141,12 @@ public class ChatService : MessageService {
         var character = GetActiveCharacter();
         var account = GetActiveAccount();
 
-        var commandRsp = _dispatcherRef
-            .Ask<SERVER_100_PROTOCOL.MSG_COMMANDRSP>(new SERVER_100_PROTOCOL.MSG_COMMAND() {
-                CommandText = input[1..], // Remove the command prefix
-                ActorRef = SessionActor.ActorRef,
-                CoreObject = charObj,
-                PlayerCharacter = character,
-                Account = account
-        })
-        .Result;
-
-        if (commandRsp.Failed) {
-            var clientFailureMsg = new EXTENDEDBASE_2_PROTOCOL.MSG_SERVERMESSAGE {
-                Message = commandRsp.ResponseText.ToString(),
-            };
-
-            SendToSocket(clientFailureMsg);
-        }
+        _dispatcherRef.Tell(new SERVER_100_PROTOCOL.MSG_COMMAND() {
+            CommandText = input[1..], // Remove the command prefix
+            ActorRef = SessionActor.ActorRef,
+            CoreObject = charObj,
+            PlayerCharacter = character,
+            Account = account
+        });
     }
 }
