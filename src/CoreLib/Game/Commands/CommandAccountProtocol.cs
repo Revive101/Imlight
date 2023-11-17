@@ -1,6 +1,7 @@
 using Imlight.CoreLib.AntiAmbrose;
 using Imlight.CoreLib.Login.Models;
 using Imlight.CoreLib.WizardData.Implementations;
+using Imlight.CoreLib.WizardData.Models;
 using System;
 using System.Text;
 
@@ -133,19 +134,99 @@ internal class CommandAccountProtocol : CommandProtocol {
         // Craft the reply.
         var sb = new StringBuilder();
         sb.Append($"<center>{account.Username}</center>\n");
-        sb.Append($"<center>Email: {account.Email}</center>\n");
         sb.Append($"<center>Auth Level: {account.AuthLevel}</center>\n");
-        sb.Append($"<center>Creation Time: {account.CreationTime}</center>\n");
-        sb.Append($"<center>Last Login Time: {account.LastLoginTime}</center>\n");
-        sb.Append($"<center>Last Login Machine ID: {account.LastLoginMachineId}</center>\n");
-        sb.Append($"<center>Last Login IP: {account.LastLoginIp}</center>\n");
-        sb.Append($"<center>Is Locked: {account.IsLocked}</center>\n");
+        sb.AppendLine("");
 
-        sb.Append($"<center>Character IDs:");
+        sb.Append($"<left>Creation Time: {account.CreationTime}</left>\n");
+        sb.Append($"<left>Last Login Time: {account.LastLoginTime}</left>\n");
+        sb.Append($"<left>Last Login Machine ID: {account.LastLoginMachineId}</left>\n");
+        sb.Append($"<left>Last Login IP: {account.LastLoginIp}</left>\n");
+        sb.AppendLine("");
+
+        var history = account.InfractionHistory;
+        sb.Append($"<left>Is Locked: {account.IsLocked}</left>\n");
+
+        if (history.IsCurrentlyBanned) {
+            sb.Append($"<left>Ban Ends At: {history.BanEndsAt}</left>\n");
+        }
+
+        if (history.IsCurrentlyMuted) {
+            sb.Append($"<left>Mute Ends At: {history.MuteEndsAt}</left>\n");
+        }
+
+        if (history.Infractions.Count > 1) {
+            sb.Append($"<left>Infractions: {history.Infractions.Count}</left>\n");
+        }
+        else {
+            sb.Append($"<left>No infractions.</left>\n");
+        }
+
+        sb.Append($"<left>Character IDs:");
         for (int i = 0; i < account.CharacterIds.Count; i++) {
             sb.Append($"{account.CharacterIds[i]}, ");
         }
 
         InformSenderClient(sb.ToString(), true);
+    }
+
+    [Command("infractions")]
+    [Alias("warns", "warnings")]
+    private void GetAccountInfractionsCommand(string username) {
+        var account = AccountCollection.GetAccount(username);
+        if (account is null) {
+            InformSenderClient("Account not found.");
+            return;
+        }
+
+        var history = account.InfractionHistory;
+        if (history.Infractions.Count >= 1) {
+            var sb = new StringBuilder();
+            sb.Append($"<left>Infractions:</left>\n");
+            for (int i = 0; i < history.Infractions.Count; i++) {
+                var infraction = history.Infractions[i];
+                sb.Append($"<left>[{i + 1}] {infraction.InfractionTime} ({infraction.ResponsibleModerator}): {infraction.Reason}</left>\n");
+            }
+
+            InformSenderClient(sb.ToString(), true);
+        }
+        else {
+            InformSenderClient("No infractions.");
+        }
+    }
+
+    [Command("warn")]
+    [AuthRequired(AuthLevel.HallMonitor)]
+    private void WarnCommand(string username, [Remainder]string reason) {
+        var account = AccountCollection.GetAccount(username);
+        if (account is null) {
+            InformSenderClient("Account not found.");
+            return;
+        }
+
+        var infractionAddedSuccess = account.AddInfraction(InfractionType.Warn, reason, Context.Account.Username);
+
+        var reply = infractionAddedSuccess is not null ? "Infraction added successfully." : "Infraction add failed.";
+        InformSenderClient(reply);
+    }
+
+    [Command("removewarn")]
+    [AuthRequired(AuthLevel.HallMonitor)]
+    private void RemoveWarnCommand(string username, string infractionIndex) {
+        // Parse the infraction index as an integer.
+        if (!int.TryParse(infractionIndex, out var infractionIndexInt)) {
+            InformSenderClient("Invalid infraction index.");
+            return;
+        }
+
+        var account = AccountCollection.GetAccount(username);
+        if (account is null) {
+            InformSenderClient("Account not found.");
+            return;
+        }
+
+        var infractionRemovedSuccess = account.RemoveInfraction(infractionIndexInt - 1);
+
+        var reply = infractionRemovedSuccess ? "Infraction removed successfully." : "Infraction remove failed.";
+        InformSenderClient(reply);
     }
 }
