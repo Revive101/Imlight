@@ -136,4 +136,20 @@ public class Account {
 
         return infraction;
     }
+
+    public bool RemoveInfraction(int infractionIndex) {
+        if (infractionIndex < 0 || infractionIndex >= InfractionHistory.Infractions.Count) {
+            return false;
+        }
+
+        var infraction = InfractionHistory.Infractions[infractionIndex];
+        InfractionHistory.Infractions.RemoveAt(infractionIndex);
+        InfractionIds.Remove(infraction.InfractionId);
+
+        // Remove the infraction from the database.
+        InfractionCollection.RemoveInfraction(infraction.InfractionId);
+        AccountCollection.RemoveInfractionFromAccount(this.AccountId, infraction.InfractionId);
+
+        return true;
+    }
 }

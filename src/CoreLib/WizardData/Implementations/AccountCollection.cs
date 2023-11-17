@@ -289,4 +289,18 @@ public static class AccountCollection {
         existingAccount.InfractionIds.Add(infractionId);
         session.SaveChanges();
     }
+
+    public static void RemoveInfractionFromAccount(ulong accountId, ulong infractionIndex) {
+        using var session = s_store.OpenSession();
+
+        // Start by loading an account, if one exists.
+        var existingAccount = session.Query<Account>(collectionName: CollectionName)
+            .FirstOrDefault(c => c.AccountId == accountId);
+        if (existingAccount is null) {
+            return;
+        }
+
+        existingAccount.InfractionIds.Remove(infractionIndex);
+        session.SaveChanges();
+    }
 }

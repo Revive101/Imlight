@@ -46,6 +46,18 @@ public static class InfractionCollection {
         session.SaveChanges();
     }
 
+    public static void RemoveInfraction(ulong infractionId) {
+        using var session = s_store.OpenSession();
+        var infraction = session.Query<Infraction>(collectionName: CollectionName)
+            .Where(x => x.InfractionId == infractionId)
+            .FirstOrDefault();
+
+        if (infraction != null) {
+            session.Delete(infraction);
+            session.SaveChanges();
+        }
+    }
+
     public static Infraction GetInfraction(ulong infractionId) {
         using var session = s_store.OpenSession();
         var infraction = session.Query<Infraction>(collectionName: CollectionName)
