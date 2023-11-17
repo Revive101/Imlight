@@ -64,7 +64,7 @@ internal static class UserAuthenticator {
         }
 
         // Check to see if this account is currently banned.
-        if (matchedAccount.InfractionHistory.IsCurrentlyBanned) {
+        if (matchedAccount.InfractionHistory.IsCurrentlyBanned || matchedAccount.IsLocked) {
             details._result = UserAuthenResult.AccountBanned;
             return details;
         }

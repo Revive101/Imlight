@@ -38,7 +38,7 @@ internal static class UserValidator {
         }
 
         // Check to see if this account is banned.
-        if (matchedAccount.InfractionHistory.IsCurrentlyBanned) {
+        if (matchedAccount.InfractionHistory.IsCurrentlyBanned || matchedAccount.IsLocked) {
             details._result = UserValidateResult.AccountBanned;
             return details;
         }

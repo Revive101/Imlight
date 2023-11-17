@@ -48,27 +48,35 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
 
     public static Props Props() => Akka.Actor.Props.Create(() => new CommandDispatcher());
 
-    private void ExecuteCommand(string commandName, CommandContext context, params object[] parameters) {
-        if (string.IsNullOrWhiteSpace(commandName)) {
-            InformSenderClient(context, "Command name is null or empty.");
-            return;
-        }
-
+    private void ExecuteCommand(string commandName, CommandContext context) {
         commandName = commandName.Trim().ToLower();
 
-        if (commandName.Contains(" ")) {
-            // The group name will be the first word in the command.
-            var group = commandName.Split(' ')[0];
-            if (s_protocols.TryGetValue(group, out var protocol)) {
-                protocol.Execute(commandName, context, parameters);
-            }
-            else {
+        // The group name will be the first word in the command.
+        var split = commandName.Split(' ');
+
+        if (split.Length > 1 && s_protocols.TryGetValue(split[0], out var protocol)) {
+            // Create new parameters with the first word removed.
+            var parameters = split.Skip(2).ToArray();
+            var executed = protocol.Execute(split[1], context, parameters);
+            if (!executed) {
                 InformSenderClient(context, "Command not found.");
+                return;
             }
         }
         else {
-            // Handle the case where commandName does not contain a space.
-            InformSenderClient(context, "Command name does not contain a group.");
+            // If we couldn't find it, try searching for protocols with no group name.
+            var protocols = s_protocols.Values.Where(x => x.Group is "" or null);
+            var commandFound = false;
+            foreach (var p in protocols) {
+                var parameters = split.Length >= 1 ? split.Skip(1).ToArray() : Array.Empty<string>();
+                commandFound = p.Execute(commandName, context, parameters);
+            }
+
+            if (!commandFound) {
+                // Inform the invoker of his failure. Take his lunch money.
+                InformSenderClient(context, "Command not found.");
+                return;
+            }
         }
     }
 
@@ -93,11 +101,7 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
         };
         CommandLogCollection.AddCommandLog(chatLog);
 
-        var parameters = message.CommandText.ToString().Split(' ');
-        var command = parameters[0].ToLower();
-        var arguments = parameters.Skip(1).ToArray();
-
-        ExecuteCommand(command, context, arguments);
+        ExecuteCommand(message.CommandText, context);
     }
 
     private void InformSenderClient(CommandContext context, string reason)

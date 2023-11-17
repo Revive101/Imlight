@@ -3,6 +3,7 @@ using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.CoreLib.AntiAmbrose;
 using Imlight.CoreLib.Game.Commands;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 
@@ -12,13 +13,18 @@ internal abstract class CommandProtocol {
     internal abstract string Group { get; set; }
     protected CommandContext Context;
 
+    private Dictionary<string, MethodInfo> _commandMethods;
+    private bool _hasInitiated;
+
     internal bool Execute(string commandName, CommandContext context, params object[] parameters) {
+        // If we haven't initiated the commands, do so now.
+        if (!_hasInitiated) {
+            InitiateHandlers();
+        }
+
         this.Context = context;
 
-        // Use reflection to find and execute the command method
-        MethodInfo method = GetType()
-            .GetMethod(commandName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.IgnoreCase);
-        if (method == null) {
+        if (!_commandMethods.TryGetValue(commandName.ToLower(), out var method)) {
             Logger.Warning("Command {0} not found in protocol", Logger.Args(commandName));
             return false;
         }
@@ -63,4 +69,21 @@ internal abstract class CommandProtocol {
 
     protected void InformSenderClient(string reason)
         => Context.SessionActor.Tell(new EXTENDEDBASE_2_PROTOCOL.MSG_SERVERMESSAGE { Message = reason });
+
+    private void InitiateHandlers()
+    {
+        _hasInitiated = true;
+        _commandMethods = new Dictionary<string, MethodInfo>();
+
+        // Get all the methods in this class that have the Command attribute.
+        var bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+        foreach (var method in GetType().GetMethods(bindingFlags))
+        {
+            var commandAttribute = method.GetCustomAttribute<CommandAttribute>();
+            if (commandAttribute != null)
+            {
+                _commandMethods[commandAttribute.Name.ToLower()] = method;
+            }
+        }
+    }
 }
