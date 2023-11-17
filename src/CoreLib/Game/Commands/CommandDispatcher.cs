@@ -13,6 +13,7 @@ using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.ObjectProperty;
+using Imlight.CoreLib.AntiAmbrose;
 using Imlight.CoreLib.Game.Models;
 using Imlight.CoreLib.Game.Services;
 using Imlight.CoreLib.Login.Models;
@@ -28,7 +29,12 @@ namespace Imlight.CoreLib.Game.Commands;
 internal class CommandDispatcher : ReceiveProtocolDispatcher {
     private static IActorRef _instance;
     public static IActorRef Instance => _instance;
+    private static readonly string s_gmIslandZoneName = "Housing/CardPromo/GS_Fantasy_Castle";
+    private static readonly string[] s_gmIslandShortcutNames = new [] {
+        "gm", "gmisland", "gm_island", "gmis", "gm_is", "gm_isl", "gm_isla", "gm_islan", "gm_island"
+    };
 
+    private IActorRef _receiverContext;
     private Account _accountContext;
     private Character _characterContext;
     private CoreObject _characterObjectContext;
@@ -58,63 +64,53 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
     public static Props Props() => Akka.Actor.Props.Create(() => new CommandDispatcher());
 
     private void ExecuteCommand(string commandName, params object[] parameters) {
-        if (_commands.TryGetValue(commandName, out var method)) {
-            var authAttribute = method.GetCustomAttribute<AuthRequiredAttribute>();
-            var currentAuthLevel = _accountContext.AuthLevel;
-            if (authAttribute != null) {
-                if (currentAuthLevel < authAttribute.Level) {
-                    Logger.Warning("Command {0} requires auth level {1} but player has auth level {2}",
-                                   Logger.Args(commandName, authAttribute.Level, currentAuthLevel));
-
-                    // If the player is not capable of performing any sort of commands, log an infraction.
-                    if (currentAuthLevel == AuthLevel.None) {
-                        _accountContext.AddInfraction(InfractionType.SuspiciousBehavior, "Attempted to use commands without auth level");
-                    }
-
-                    // Inform the invoker of his failure. Laugh at him.
-                    InformSenderOfFailure(commandName, "You do not have permission to use this command.");
-
-                    return;
-                }
-            }
-
-            // If the parameter count doesn't match, return.
-            var parameterCount = method.GetParameters().Length;
-            if (parameterCount != parameters.Length) {
-                Logger.Warning("Command {0} requires {1} parameters but {2} were given",
-                               Logger.Args(commandName, parameterCount, parameters.Length));
-
-                // Write the usage of this command.
-                var properUsageStr = new StringBuilder();
-                properUsageStr.Append(commandName);
-                properUsageStr.Append("<color;1C1EC4>");
-                foreach (var parameter in method.GetParameters()) {
-                    properUsageStr.Append(" (");
-                    properUsageStr.Append(parameter.Name);
-                    properUsageStr.Append(')');
-                }
-
-                // Inform the invoker of improper usage. Point and laugh!
-                InformSenderOfFailure(commandName, $"Proper usage: {properUsageStr}");
-                return;
-            }
-
-            method.Invoke(this, parameters);
-
-            // Inform the invoker of his success. Give him a cookie.
-            InformSenderOfSuccess(commandName, "Command executed successfully.");
-        }
-        else {
+        commandName = commandName.ToLower();
+        if (!_commands.TryGetValue(commandName, out var method)) {
             Logger.Warning("Command not found: {0}", Logger.Args(commandName));
 
             // Inform the invoker of his failure. Take his lunch money.
-            InformSenderOfFailure(commandName, "Command not found.");
+            InformSenderClient("Command not found.");
+
+            return;
         }
+
+        var authAttribute = method.GetCustomAttribute<AuthRequiredAttribute>();
+        if (authAttribute != null) {
+            if (!AuthorityRequester.RequestAuthority(authAttribute.Level, _accountContext, $"Command {commandName}")) {
+                InformSenderClient("You do not have permission to use this command.");
+                return;
+            }
+        }
+
+        // If the parameter count doesn't match, return.
+        var parameterCount = method.GetParameters().Length;
+        if (parameterCount != parameters.Length) {
+            Logger.Warning("Command {0} requires {1} parameters but {2} were given",
+                           Logger.Args(commandName, parameterCount, parameters.Length));
+
+            // Write the usage of this command.
+            var properUsageStr = new StringBuilder();
+            properUsageStr.Append(commandName);
+            properUsageStr.Append("<color;1C1EC4>");
+            foreach (var parameter in method.GetParameters()) {
+                properUsageStr.Append(" (");
+                properUsageStr.Append(parameter.Name);
+                properUsageStr.Append(')');
+            }
+
+            // Inform the invoker of improper usage. Point and laugh!
+            InformSenderClient($"Proper usage: {properUsageStr}");
+            return;
+        }
+
+        // Invoke the method.
+        method.Invoke(this, parameters);
     }
 
     [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_COMMAND))]
     private void ReceiveCommand(SERVER_100_PROTOCOL.MSG_COMMAND message) {
         // Setup context before parsing any commands.
+        _receiverContext = message.ActorRef;
         _characterContext = message.PlayerCharacter;
         _accountContext = message.Account;
         _characterObjectContext = message.CoreObject;
@@ -144,14 +140,18 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
     private void Teleport(string zone) {
         var actualZoneName = zone;
         var hasZone = AccessPassManager.DoesZoneExist(zone);
-        if (!hasZone) {
+        if (!hasZone && !s_gmIslandShortcutNames.Any(x => x == zone)) {
             // Fallback to the zone name that is contained in the zone name.
             actualZoneName = AccessPassManager.GetContainedZoneName(zone);
 
-            if (!AccessPassManager.DoesZoneExist(actualZoneName)) {
+            if (actualZoneName == null | actualZoneName == "") {
                 Logger.Warning("Teleport command was given an invalid zone name {0}", Logger.Args(zone));
+                InformSenderClient($"Zone {zone} does not exist.");
                 return;
             }
+        }
+        else if (s_gmIslandShortcutNames.Any(x => x == zone)) {
+            actualZoneName = s_gmIslandZoneName;
         }
 
         var msg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER() {
@@ -159,54 +159,9 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
             DestinationLocation = "Start",
             SendToClient = true
         };
-        Sender.Tell(msg);
+        _receiverContext.Tell(msg);
     }
 
-    [Command("editcharacter")]
-    [AuthRequired(AuthLevel.Administrator)]
-    private void Editcharacter() {
-        // This CoreObject is 100% compressed. Client crashes if not.
-        var coreObjectSerializer = new CoreObjectSerializer()
-            .OnBehaviors(SerializerOptions.Behaviors.UseFlags | SerializerOptions.Behaviors.Compress)
-            .OnPropertyMask(0);
-        var serializedCharObj = coreObjectSerializer.Serialize(_characterObjectContext);
-
-        // This client will crash if the character registry is not present.
-        var serializer = new ObjectSerializer();
-        var registry = new CharacterRegistry();
-        var serializedRegistry = serializer.Serialize(registry);
-
-        var msg = new GAME_5_PROTOCOL.MSG_CSREDITCHARACTER() {
-            ChunkNum = 0,
-            CharacterID = _characterContext.CharId,
-            UserID = _accountContext.AccountId,
-            UserName = _accountContext.Username,
-            CurrentBan = "",  // Serialized?
-            CurrentMute = "", // Serialized?
-            Object = serializedCharObj,
-            CurrentQuests = "",
-            Registry = serializedRegistry,
-            AccessPasses = "",
-            BadgeList = "",
-            Edit = 0,
-            AllowedToReport = 0,
-        };
-        Sender.Tell(msg);
-    }
-
-    private void InformSenderOfFailure(string commandName, string reason) {
-        Sender.Tell(new SERVER_100_PROTOCOL.MSG_COMMANDRSP {
-            CommandText = commandName,
-            Failed = true,
-            ResponseText = reason,
-        });
-    }
-
-    private void InformSenderOfSuccess(string commandName, string reason) {
-        Sender.Tell(new SERVER_100_PROTOCOL.MSG_COMMANDRSP {
-            CommandText = commandName,
-            Failed = false,
-            ResponseText = reason,
-        });
-    }
+    private void InformSenderClient(string reason)
+        => _receiverContext.Tell(new EXTENDEDBASE_2_PROTOCOL.MSG_SERVERMESSAGE() {Message = reason});
 }
