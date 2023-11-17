@@ -23,14 +23,15 @@ public class Account {
     public ulong AccountId { get; private set; }
     public string Username { get; private set; }
     public string Email { get; private set; }
-    public string PasswordHash { get; private set; }
-    public AuthLevel AuthLevel { get; init; }
+    public string PasswordHash { get; set; }
+    public AuthLevel AuthLevel { get; set; }
     public List<ulong> CharacterIds { get; private set; } = new();
     public List<ulong> InfractionIds { get; private set; } = new();
     public DateTime CreationTime { get; private set; }
     public DateTime LastLoginTime { get; set; }
     public ulong LastLoginMachineId { get; set; }
     public string LastLoginIp { get; set; }
+    public bool IsLocked { get; set; }
 
     [JsonIgnore] public List<Character> Characters = new();
     [JsonIgnore] public InfractionHistory InfractionHistory { get; set; }
@@ -40,10 +41,6 @@ public class Account {
     // ctor
     public Account(string username, string email, string plaintextPassword) {
         if (string.IsNullOrWhiteSpace(username)) {
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(email)) {
             return;
         }
 

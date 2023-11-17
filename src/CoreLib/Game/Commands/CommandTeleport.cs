@@ -18,7 +18,7 @@ internal class CommandTeleport : CommandProtocol {
     [Command("teleport")]
     [Alias("tp", "port")]
     [AuthRequired(AuthLevel.HallMonitor)]
-    private void Teleport(string zone) {
+    private void TeleportCommand(string zone) {
         var actualZoneName = zone;
         var hasZone = AccessPassManager.DoesZoneExist(zone);
         if (!hasZone && !s_gmIslandShortcutNames.Any(x => x == zone)) {
