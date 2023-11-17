@@ -69,7 +69,7 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
             var commandFound = false;
             foreach (var p in protocols) {
                 var parameters = split.Length >= 1 ? split.Skip(1).ToArray() : Array.Empty<string>();
-                commandFound = p.Execute(commandName, context, parameters);
+                commandFound = p.Execute(split[0], context, parameters);
             }
 
             if (!commandFound) {

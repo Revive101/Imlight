@@ -67,8 +67,10 @@ internal abstract class CommandProtocol {
         return true;
     }
 
-    protected void InformSenderClient(string reason)
-        => Context.SessionActor.Tell(new EXTENDEDBASE_2_PROTOCOL.MSG_SERVERMESSAGE { Message = reason });
+    protected void InformSenderClient(string reason, bool isImportant = false)
+        => Context.SessionActor.Tell(new EXTENDEDBASE_2_PROTOCOL.MSG_SERVERMESSAGE {
+            Message = reason, Modal = (byte) (isImportant ? 1 : 0)
+        });
 
     private void InitiateHandlers()
     {
