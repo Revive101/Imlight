@@ -169,6 +169,8 @@ public sealed class SERVER_100_PROTOCOL : IServerProtocol
         public CoreObject CoreObject;
         public Character PlayerCharacter;
         public Account Account;
+        public IActorRef ZoneActor;
+        public IActorRef ServerActor;
     }
 
     public class MSG_COMMANDRSP : IServerMessage

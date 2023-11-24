@@ -37,6 +37,7 @@ public class SessionActor : ReceiveActor, IDisposable {
     public Socket Socket                                     { get; }
     public IActorRef ActorRef                                { get; }
     public IActorRef ServerRef                               { get; }
+    public IActorRef ZoneRef                                 { get; set; }
     public bool SessionValid                                 { get; private set; }
     public bool IsInQueue                                    { get; private set; }
     public ushort QueuePosition                              { get; private set; }

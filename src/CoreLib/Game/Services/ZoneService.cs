@@ -91,6 +91,7 @@ public class ZoneService : MessageService {
         // setup the new details.
         if (!message.SendToClient) {
             _zoneRef = zoneDetails.ZoneActorRef;
+            SessionActor.ZoneRef = _zoneRef;
         }
 
         Sender.Tell(zoneDetails);
@@ -98,11 +99,13 @@ public class ZoneService : MessageService {
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK))]
     private void ReceiveZoneTransferAck(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK message) {
+        // The client has accepted the zone transfer. We can now send the server transfer message.
         DoZoneTransfer();
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ZONETRANSFERNACK))]
     private void ReceiveZoneTransferNack(GAME_5_PROTOCOL.MSG_ZONETRANSFERNACK message) {
+        // The client has denied the zone transfer. We can now send the server transfer message.
         Logger.Debug("Client was not OK with zone transfer! Possibly patching.");
     }
 
@@ -113,6 +116,7 @@ public class ZoneService : MessageService {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
     private void ReceiveAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message) {
+        // This is an internal message from MSG_ATTACH to add the player to the zone.
         if (_zoneRef is null) {
             throw new NullReferenceException(nameof(_zoneRef));
         }

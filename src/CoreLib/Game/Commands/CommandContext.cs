@@ -10,11 +10,6 @@ internal class CommandContext {
     public TypeCache.CoreObject CharacterObject { get; init; }
     public Character Character { get; init; }
     public Account Account { get; init; }
-
-    public CommandContext(IActorRef sessionActor, TypeCache.CoreObject characterObject, Character character, Account account) {
-        SessionActor = sessionActor;
-        CharacterObject = characterObject;
-        Character = character;
-        Account = account;
-    }
+    public IActorRef ZoneActor { get; init; }
+    public IActorRef ServerActor { get; init; }
 }

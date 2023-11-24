@@ -98,7 +98,14 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
         var characterContext = message.PlayerCharacter;
         var accountContext = message.Account;
         var objectContext = message.CoreObject;
-        var context = new CommandContext(receiverContext, objectContext, characterContext, accountContext);
+        var context = new CommandContext() {
+            SessionActor = receiverContext,
+            CharacterObject = objectContext,
+            Character = characterContext,
+            Account = accountContext,
+            ZoneActor = message.ZoneActor,
+            ServerActor = message.ServerActor,
+        };
 
         Logger.Information("{0} Uses command: {1}", Logger.Args(accountContext.Username, message.CommandText));
 
