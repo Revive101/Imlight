@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Imlight.CoreLib.Game.Models;
 using Imlight.CoreLib.WizardData.Models;
@@ -18,17 +19,15 @@ public static class InfractionCollection {
     public static bool IsMachineBanned(ulong machineId) {
         using var session = s_store.OpenSession();
         var bannedMachine = session.Query<MachineBanRecord>(collectionName: BannedMachinesCollection)
-            .Where(x => x.MachineId == machineId)
+            .Where(x => x.MachineId == machineId && x.BanExpiration > DateTime.UtcNow)
             .FirstOrDefault();
 
         return bannedMachine != null;
     }
 
-    public static void AddMachineBan(ulong machineId) {
+    public static void AddMachineBan(ulong machineId, DateTime expiration) {
         using var session = s_store.OpenSession();
-        var bannedMachine = new MachineBanRecord {
-            MachineId = machineId
-        };
+        var bannedMachine = new MachineBanRecord(machineId, expiration);
 
         session.Store(bannedMachine);
         var metaData = session.Advanced.GetMetadataFor(bannedMachine);
@@ -37,26 +36,54 @@ public static class InfractionCollection {
         session.SaveChanges();
     }
 
+    public static bool RemoveMachineBan(ulong machineId) {
+        using var session = s_store.OpenSession();
+        var bannedMachine = session.Query<MachineBanRecord>(collectionName: BannedMachinesCollection)
+            .Where(x => x.MachineId == machineId)
+            .FirstOrDefault();
+
+        if (bannedMachine != null) {
+            session.Delete(bannedMachine);
+            session.SaveChanges();
+            return true;
+        }
+
+        return false;
+    }
+
     public static bool IsIpBanned(string ip) {
         using var session = s_store.OpenSession();
         var bannedIp = session.Query<IpBanRecord>(collectionName: BannedIpsCollection)
-            .Where(x => x.Ip == ip)
+            .Where(x => x.Ip == ip && x.BanExpiration > DateTime.UtcNow)
             .FirstOrDefault();
 
         return bannedIp != null;
     }
 
-    public static void AddIpBan(string ip) {
+    public static void AddIpBan(string ip, DateTime expiration) {
         using var session = s_store.OpenSession();
-        var bannedIp = new IpBanRecord {
-            Ip = ip
-        };
+        var bannedIp = new IpBanRecord(ip, expiration);
 
         session.Store(bannedIp);
         var metaData = session.Advanced.GetMetadataFor(bannedIp);
         metaData[Raven.Client.Constants.Documents.Metadata.Collection] = BannedIpsCollection;
 
         session.SaveChanges();
+    }
+
+    public static bool RemoveIpBan(string ip) {
+        using var session = s_store.OpenSession();
+        var bannedIp = session.Query<IpBanRecord>(collectionName: BannedIpsCollection)
+            .Where(x => x.Ip == ip)
+            .FirstOrDefault();
+
+        if (bannedIp != null) {
+            session.Delete(bannedIp);
+            session.SaveChanges();
+            return true;
+        }
+
+        return false;
     }
 
     public static void AddInfraction(Infraction infraction) {
