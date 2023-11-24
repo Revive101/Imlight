@@ -196,7 +196,7 @@ internal class CommandAccountProtocol : CommandProtocol {
 
     [Command("warn")]
     [AuthRequired(AuthLevel.HallMonitor)]
-    private void WarnCommand(string username, [Remainder]string reason) {
+    private void WarnCommand(string username, [Remainder] string reason) {
         var account = AccountCollection.GetAccount(username);
         if (account is null) {
             InformSenderClient("Account not found.");

@@ -52,6 +52,15 @@ internal static class UserValidator {
             return details;
         }
 
+        // Check to see if this IP is banned.
+        if (InfractionCollection.IsIpBanned(sessionActor.Ip)) {
+            // Add an infraction to the account.
+            matchedAccount.AddInfraction(InfractionType.Warn, "Logged in with banned IP.", null);
+
+            details._result = UserValidateResult.MachineBanned;
+            return details;
+        }
+
         // Validation happens after authentication, so we need to check if the session key matches.
         var sessionKey = ClientKeyCollection.GetSessionKey(matchedAccount.AccountId, validateMessage.MachineID);
         if (string.IsNullOrEmpty(sessionKey)) {

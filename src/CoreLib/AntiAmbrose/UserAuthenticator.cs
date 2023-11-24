@@ -63,6 +63,15 @@ internal static class UserAuthenticator {
             return details;
         }
 
+        // Check to see if the IP is banned.
+        if (InfractionCollection.IsIpBanned(sessionActor.Ip)) {
+            // Add an infraction to the account.
+            matchedAccount.AddInfraction(InfractionType.Warn, "Logged in with banned IP.", null);
+
+            details._result = UserAuthenResult.MachineBanned;
+            return details;
+        }
+
         // Check to see if this account is currently banned.
         if (matchedAccount.InfractionHistory.IsCurrentlyBanned || matchedAccount.IsLocked) {
             details._result = UserAuthenResult.AccountBanned;

@@ -8,6 +8,7 @@ namespace Imlight.CoreLib.WizardData.Implementations;
 public static class InfractionCollection {
     public const string CollectionName = "Infractions";
     private const string BannedMachinesCollection = "BannedMachineIDs";
+    private const string BannedIpsCollection = "BannedIPs";
     private static readonly IDocumentStore s_store;
 
     static InfractionCollection() {
@@ -32,6 +33,28 @@ public static class InfractionCollection {
         session.Store(bannedMachine);
         var metaData = session.Advanced.GetMetadataFor(bannedMachine);
         metaData[Raven.Client.Constants.Documents.Metadata.Collection] = BannedMachinesCollection;
+
+        session.SaveChanges();
+    }
+
+    public static bool IsIpBanned(string ip) {
+        using var session = s_store.OpenSession();
+        var bannedIp = session.Query<IpBanRecord>(collectionName: BannedIpsCollection)
+            .Where(x => x.Ip == ip)
+            .FirstOrDefault();
+
+        return bannedIp != null;
+    }
+
+    public static void AddIpBan(string ip) {
+        using var session = s_store.OpenSession();
+        var bannedIp = new IpBanRecord {
+            Ip = ip
+        };
+
+        session.Store(bannedIp);
+        var metaData = session.Advanced.GetMetadataFor(bannedIp);
+        metaData[Raven.Client.Constants.Documents.Metadata.Collection] = BannedIpsCollection;
 
         session.SaveChanges();
     }
