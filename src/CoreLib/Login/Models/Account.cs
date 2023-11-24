@@ -152,4 +152,40 @@ public class Account {
 
         return true;
     }
+
+    public bool WaiveCurrentBan(string source) {
+        var currentBan = InfractionHistory
+            .Infractions
+            .Where(x => x.InfractionType == InfractionType.Ban && !x.IsExpired && !x.WasWaived)
+            .FirstOrDefault();
+        if (currentBan is null) {
+            return false;
+        }
+
+        currentBan.WasWaived = true;
+        currentBan.WasWaivedBy = source;
+
+        // Update the infraction in the database.
+        InfractionCollection.UpdateInfraction(currentBan);
+
+        return true;
+    }
+
+    public bool WaiveCurrentMute(string source) {
+        var currentMute = InfractionHistory
+            .Infractions
+            .Where(x => x.InfractionType == InfractionType.Mute && !x.IsExpired && !x.WasWaived)
+            .FirstOrDefault();
+        if (currentMute is null) {
+            return false;
+        }
+
+        currentMute.WasWaived = true;
+        currentMute.WasWaivedBy = source;
+
+        // Update the infraction in the database.
+        InfractionCollection.UpdateInfraction(currentMute);
+
+        return true;
+    }
 }

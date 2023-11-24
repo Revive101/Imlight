@@ -22,6 +22,7 @@ public class Infraction {
     public bool IsExpired => Expiration.HasValue && Expiration.Value < DateTime.UtcNow;
     public string ResponsibleModerator { get; set; } = "Imlight";
     public bool WasWaived { get; set; }
+    public string WasWaivedBy { get; set; }
 }
 
 public class InfractionHistory {

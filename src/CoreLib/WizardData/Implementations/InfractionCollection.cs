@@ -108,6 +108,26 @@ public static class InfractionCollection {
         }
     }
 
+    public static void UpdateInfraction(Infraction infraction) {
+        // Find the infraction by Id.
+        using var session = s_store.OpenSession();
+        var infractionToUpdate = session.Query<Infraction>(collectionName: CollectionName)
+            .Where(x => x.InfractionId == infraction.InfractionId)
+            .FirstOrDefault();
+
+        // Update the infraction.
+        infractionToUpdate.InfractionType = infraction.InfractionType;
+        infractionToUpdate.InfractionTime = infraction.InfractionTime;
+        infractionToUpdate.Reason = infraction.Reason;
+        infractionToUpdate.Expiration = infraction.Expiration;
+        infractionToUpdate.ResponsibleModerator = infraction.ResponsibleModerator;
+        infractionToUpdate.WasWaived = infraction.WasWaived;
+        infractionToUpdate.WasWaivedBy = infraction.WasWaivedBy;
+
+        // Save the changes.
+        session.SaveChanges();
+    }
+
     public static Infraction GetInfraction(ulong infractionId) {
         using var session = s_store.OpenSession();
         var infraction = session.Query<Infraction>(collectionName: CollectionName)
