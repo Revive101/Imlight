@@ -17,6 +17,11 @@ internal abstract class CommandProtocol {
     private bool _hasInitiated;
 
     internal bool Execute(string commandName, CommandContext context, params object[] parameters) {
+        if (commandName is "help" or "?" or "" or null) {
+            InformClientHelp();
+            return true;
+        }
+
         // If we haven't initiated the commands, do so now.
         if (!_hasInitiated) {
             InitiateHandlers();
@@ -101,5 +106,21 @@ internal abstract class CommandProtocol {
                 _commandMethods[commandAttribute.Name.ToLower()] = method;
             }
         }
+    }
+
+    private void InformClientHelp() {
+        var sb = new StringBuilder();
+        sb.AppendLine("Available commands:");
+        foreach (var command in _commandMethods) {
+            var commandAttribute = command.Value.GetCustomAttribute<CommandAttribute>();
+
+            // Get all the parameters for this command.
+            var parameters = command.Value.GetParameters();
+            var parameterStr = string.Join(" ", parameters.Select(x => x.Name));
+
+            sb.AppendLine($"{commandAttribute.Name} {parameterStr}");
+        }
+
+        InformSenderClient(sb.ToString(), true);
     }
 }
