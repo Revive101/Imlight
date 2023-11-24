@@ -36,7 +36,7 @@ internal class CommandBanProtocol : CommandProtocol {
         var source = Context.Account.Username;
         account.AddInfraction(InfractionType.Ban, reason, source, banExpiration);
 
-        InformSenderClient($"Account {account.Username} has been banned");
+        InformSenderClient($"Account {account.Username} has been banned until {banExpiration}", true);
     }
 
     [Command("machine")]
@@ -64,7 +64,7 @@ internal class CommandBanProtocol : CommandProtocol {
 
         InfractionCollection.AddMachineBan(machineIdLong, banExpiration);
 
-        InformSenderClient($"Machine {machineIdLong} has been banned");
+        InformSenderClient($"Machine {machineIdLong} has been banned until {banExpiration}");
     }
 
     [Command("ip")]
@@ -86,7 +86,7 @@ internal class CommandBanProtocol : CommandProtocol {
 
         InfractionCollection.AddIpBan(ip, banExpiration);
 
-        InformSenderClient($"IP {ip} has been banned");
+        InformSenderClient($"IP {ip} has been banned until {banExpiration}");
     }
 
     [Command("info")]
