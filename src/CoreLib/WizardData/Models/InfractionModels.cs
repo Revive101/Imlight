@@ -52,11 +52,21 @@ public class InfractionHistory {
 }
 
 internal class MachineBanRecord {
+    public MachineBanRecord(ulong machineId, DateTime banExpiration) {
+        MachineId = machineId;
+        BanExpiration = banExpiration;
+    }
+
     internal ulong MachineId { get; set; }
     internal DateTime BanExpiration { get; set; }
 }
 
 internal class IpBanRecord {
+    public IpBanRecord(string ip, DateTime banExpiration) {
+        Ip = ip;
+        BanExpiration = banExpiration;
+    }
+
     internal string Ip { get; set; }
     internal DateTime BanExpiration { get; set; }
 }
