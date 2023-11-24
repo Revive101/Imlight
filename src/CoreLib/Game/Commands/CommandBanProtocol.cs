@@ -36,6 +36,9 @@ internal class CommandBanProtocol : CommandProtocol {
         var source = Context.Account.Username;
         account.AddInfraction(InfractionType.Ban, reason, source, banExpiration);
 
+        // Kick the player from the game.
+        account.KickFromGame();
+
         InformSenderClient($"Account {account.Username} has been banned until {banExpiration}", true);
     }
 

@@ -13,6 +13,7 @@ using Imlight.Common.Configuration;
 using Imlight.CoreLib.WizardData;
 using Imlight.CoreLib.WizardData.Models;
 using Imlight.CoreLib.WizardData.Implementations;
+using Imlight.CoreLib.Shared.Networking;
 
 namespace Imlight.CoreLib.Login.Models;
 
@@ -35,6 +36,7 @@ public class Account {
 
     [JsonIgnore] public List<Character> Characters = new();
     [JsonIgnore] public InfractionHistory InfractionHistory { get; set; }
+    [JsonIgnore] public SessionActor SessionActor { get; set; }
 
     [JsonConstructor] public Account() {  }
 
@@ -151,6 +153,14 @@ public class Account {
         AccountCollection.RemoveInfractionFromAccount(this.AccountId, infraction.InfractionId);
 
         return true;
+    }
+
+    public void KickFromGame() {
+        if (this.SessionActor is null) {
+            return;
+        }
+
+        this.SessionActor.Dispose();
     }
 
     public bool WaiveCurrentBan(string source) {

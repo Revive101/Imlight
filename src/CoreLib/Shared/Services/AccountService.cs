@@ -22,6 +22,7 @@ public class AccountService : MessageService {
     [InternalMessageHandler(typeof(ACCOUNT_104_PROTOCOL.MSG_ACCOUNT))]
     private void InternalReceiveSetAccount(ACCOUNT_104_PROTOCOL.MSG_ACCOUNT message) {
         this.Account = message.Account;
+        this.Account.SessionActor = this.SessionActor;
     }
 
     [InternalMessageHandler(typeof(ACCOUNT_104_PROTOCOL.MSG_QUERYACCOUNT))]
