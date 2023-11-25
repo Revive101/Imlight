@@ -221,7 +221,29 @@ public class EquipmentService : MessageService {
         foreach (GameEffectInfo it in template.m_equipEffects) {
             int internalID = _effectInternalIDCounter++;
 
-            // @TODO: SpellEffect
+            if (it.m_effectName == "ProvideSpell") {
+                var spellEffect = (ProvideSpellEffectInfo) it;
+                var spellEffectObj = new ProvideSpellEffect() {
+                    m_spellName = spellEffect.m_spellName,
+                    m_numSpells = spellEffect.m_numSpells,
+                    m_vFX = spellEffect.m_vFX,
+                    m_vFXOverride = spellEffect.m_vFXOverride,
+                    m_sound = spellEffect.m_sound,
+                    m_effectNameID = StringHash.Compute(spellEffect.m_effectName),
+                    m_internalID = internalID,
+                    m_itemSlotID = StringHash.Compute(template.m_adjectiveList[1].ToString())
+                };
+
+                var spellData = effectSerializer.Serialize(spellEffectObj);
+                SendToSocket(new GAME_5_PROTOCOL.MSG_ADDEFFECT() {
+                    GameObjectID = coreObject.m_globalID,
+                    EffectData = spellData
+                });
+
+                _gameEffects.Add(internalID, spellEffect);
+                continue;
+            }
+
             if (it.m_effectName == "StartingPips") {
                 var pipEffect = (StartingPipEffectInfo) it;
                 var pipEffectObj = new StartingPipEffect() {
@@ -316,7 +338,35 @@ public class EquipmentService : MessageService {
         int internalID = 0;
 
         foreach (GameEffectInfo it in template.m_equipEffects) {
-            // @TODO: SpellEffect
+
+            if (it.m_effectName == "ProvideSpell") {
+                var spellEffect = (ProvideSpellEffectInfo) it;
+
+                foreach (var effect in _gameEffects) {
+                    if (effect.Value.m_effectName != spellEffect.m_effectName) {
+                        continue;
+                    }
+
+                    if (((ProvideSpellEffectInfo) effect.Value).m_spellName != spellEffect.m_spellName) {
+                        continue;
+                    }
+
+                    if (((ProvideSpellEffectInfo) effect.Value).m_numSpells != spellEffect.m_numSpells) {
+                        continue;
+                    }
+
+                    internalID = effect.Key;
+                }
+
+                SendToSocket(new GAME_5_PROTOCOL.MSG_REMOVEEFFECT() {
+                    GameObjectID = coreObject.m_globalID,
+                    EffectNameID = StringHash.Compute(it.m_effectName),
+                    InternalID = internalID,
+                });
+
+                _gameEffects.Remove(internalID);
+                continue;
+            }
 
             if (it.m_effectName == "StartingPips") {
                 var pipEffect = (StartingPipEffectInfo) it;
