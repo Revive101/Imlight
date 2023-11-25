@@ -1,6 +1,8 @@
 using System;
 using System.Text;
+using System.Text.RegularExpressions;
 using Imlight.CoreLib.Login.Models;
+using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models;
 
@@ -25,7 +27,7 @@ internal class CommandBanProtocol : CommandProtocol {
         }
 
         // The time will be in the format of 1d2h3m4s. Parse it into a TimeSpan.
-        if (!TimeSpan.TryParse(time, out var timeSpan)) {
+        if (!TryParseDuration(time, out var timeSpan)) {
             InformSenderClient("Invalid time format");
             return;
         }
@@ -37,7 +39,10 @@ internal class CommandBanProtocol : CommandProtocol {
         account.AddInfraction(InfractionType.Ban, reason, source, banExpiration);
 
         // Kick the player from the game.
-        account.KickFromGame();
+        var kickMsg = new SERVER_100_PROTOCOL.MSG_KICKPLAYER {
+            AccountID = account.AccountId
+        };
+        Context.ServerActor.Tell(kickMsg, Context.SessionActor);
 
         InformSenderClient($"Account {account.Username} has been banned until {banExpiration}", true);
     }
@@ -57,7 +62,7 @@ internal class CommandBanProtocol : CommandProtocol {
         }
 
         // The time will be in the format of 1d2h3m4s. Parse it into a TimeSpan.
-        if (!TimeSpan.TryParse(time, out var timeSpan)) {
+        if (!TryParseDuration(time, out var timeSpan)) {
             InformSenderClient("Invalid time format");
             return;
         }
@@ -79,7 +84,7 @@ internal class CommandBanProtocol : CommandProtocol {
         }
 
         // The time will be in the format of 1d2h3m4s. Parse it into a TimeSpan.
-        if (!TimeSpan.TryParse(time, out var timeSpan)) {
+        if (!TryParseDuration(time, out var timeSpan)) {
             InformSenderClient("Invalid time format");
             return;
         }
@@ -110,5 +115,31 @@ internal class CommandBanProtocol : CommandProtocol {
         sb.AppendLine($"Last infraction: {account.InfractionHistory.LastInfractionTime}");
 
         InformSenderClient(sb.ToString(), true);
+    }
+
+    private static bool TryParseDuration(string durationString, out TimeSpan result) {
+        result = TimeSpan.Zero;
+
+        // Use regular expression to match and extract components
+        var match = Regex.Match(durationString, @"(\d+d)?(\d+h)?(\d+m)?(\d+s)?");
+
+        if (match.Success) {
+            // Try to extract and convert each component
+            if (match.Groups[1].Success && int.TryParse(match.Groups[1].Value.TrimEnd('d'), out int days))
+                result += TimeSpan.FromDays(days);
+
+            if (match.Groups[2].Success && int.TryParse(match.Groups[2].Value.TrimEnd('h'), out int hours))
+                result += TimeSpan.FromHours(hours);
+
+            if (match.Groups[3].Success && int.TryParse(match.Groups[3].Value.TrimEnd('m'), out int minutes))
+                result += TimeSpan.FromMinutes(minutes);
+
+            if (match.Groups[4].Success && int.TryParse(match.Groups[4].Value.TrimEnd('s'), out int seconds))
+                result += TimeSpan.FromSeconds(seconds);
+
+            return true;
+        }
+
+        return false;
     }
 }
