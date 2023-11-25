@@ -303,10 +303,10 @@ public class EquipmentService : MessageService {
             }
 
             var effectData = effectSerializer.Serialize(wSE);
-            ZoneBroadcast(new GAME_5_PROTOCOL.MSG_ADDEFFECT() {
+            SendToSocket(new GAME_5_PROTOCOL.MSG_ADDEFFECT() {
                 GameObjectID = coreObject.m_globalID,
                 EffectData = effectData
-            }, false);
+            });
 
             _gameEffects.Add(internalID, statEffect);
         }
@@ -316,7 +316,36 @@ public class EquipmentService : MessageService {
         int internalID = 0;
 
         foreach (GameEffectInfo it in template.m_equipEffects) {
-            // @TODO: SpellEffect, PipEffect
+            // @TODO: SpellEffect
+
+            if (it.m_effectName == "StartingPips") {
+                var pipEffect = (StartingPipEffectInfo) it;
+
+                foreach (var effect in _gameEffects) {
+                    if (effect.Value.m_effectName != pipEffect.m_effectName) {
+                        continue;
+                    }
+
+                    if (((StartingPipEffectInfo) effect.Value).m_pipsGiven != pipEffect.m_pipsGiven) {
+                        continue;
+                    }
+
+                    if (((StartingPipEffectInfo) effect.Value).m_powerPipsGiven != pipEffect.m_powerPipsGiven) {
+                        continue;
+                    }
+
+                    internalID = effect.Key;
+                }
+
+                SendToSocket(new GAME_5_PROTOCOL.MSG_REMOVEEFFECT() {
+                    GameObjectID = coreObject.m_globalID,
+                    EffectNameID = StringHash.Compute(it.m_effectName),
+                    InternalID = internalID,
+                });
+
+                _gameEffects.Remove(internalID);
+                return;
+            }   
 
             if (it.m_effectName == "SpeedBuff") {
                 var speedEffect = (SpeedEffectInfo) it;
@@ -357,11 +386,11 @@ public class EquipmentService : MessageService {
                 internalID = effect.Key;
             }
 
-            ZoneBroadcast(new GAME_5_PROTOCOL.MSG_REMOVEEFFECT() {
+            SendToSocket(new GAME_5_PROTOCOL.MSG_REMOVEEFFECT() {
                 GameObjectID = coreObject.m_globalID,
                 EffectNameID = StringHash.Compute(it.m_effectName),
                 InternalID = internalID,
-            }, false);
+            });
 
             _gameEffects.Remove(internalID);
         }
