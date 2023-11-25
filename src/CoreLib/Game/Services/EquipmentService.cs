@@ -221,7 +221,27 @@ public class EquipmentService : MessageService {
         foreach (GameEffectInfo it in template.m_equipEffects) {
             int internalID = _effectInternalIDCounter++;
 
-            // @TODO: SpellEffect, PipEffect
+            // @TODO: SpellEffect
+            if (it.m_effectName == "StartingPips") {
+                var pipEffect = (StartingPipEffectInfo) it;
+                var pipEffectObj = new StartingPipEffect() {
+                    m_pipsGiven = pipEffect.m_pipsGiven,
+                    m_powerPipsGiven = pipEffect.m_powerPipsGiven,
+                    m_effectNameID = StringHash.Compute(pipEffect.m_effectName),
+                    m_internalID = internalID,
+                    m_itemSlotID = StringHash.Compute(template.m_adjectiveList[1].ToString())
+                };
+
+                var pipData = effectSerializer.Serialize(pipEffectObj);
+                SendToSocket(new GAME_5_PROTOCOL.MSG_ADDEFFECT() {
+                    GameObjectID = coreObject.m_globalID,
+                    EffectData = pipData
+                });
+
+                _gameEffects.Add(internalID, pipEffect);
+                continue;
+            }
+
             if (it.m_effectName == "SpeedBuff") {
                 var speedEffect = (SpeedEffectInfo) it;
                 var speedEffectObj = new SpeedEffect() {
@@ -238,7 +258,7 @@ public class EquipmentService : MessageService {
                 }, false);
 
                 _gameEffects.Add(internalID, speedEffect);
-                return;
+                continue;
             }
 
             var statEffect = (StatisticEffectInfo) it;
