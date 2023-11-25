@@ -394,7 +394,7 @@ public class EquipmentService : MessageService {
                 });
 
                 _gameEffects.Remove(internalID);
-                return;
+                continue;
             }   
 
             if (it.m_effectName == "SpeedBuff") {
@@ -419,7 +419,7 @@ public class EquipmentService : MessageService {
                 }, false);
 
                 _gameEffects.Remove(internalID);
-                return;
+                continue;
             }
 
             var statEffect = (StatisticEffectInfo) it;
