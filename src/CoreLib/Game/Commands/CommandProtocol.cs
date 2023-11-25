@@ -105,6 +105,16 @@ internal abstract class CommandProtocol {
             {
                 _commandMethods[commandAttribute.Name.ToLower()] = method;
             }
+
+            // Add an entry for each of the aliases on the Alias attribute, if it has one.
+            var aliasAttribute = method.GetCustomAttribute<AliasAttribute>();
+            if (aliasAttribute != null)
+            {
+                foreach (var alias in aliasAttribute.Aliases)
+                {
+                    _commandMethods[alias.ToLower()] = method;
+                }
+            }
         }
     }
 

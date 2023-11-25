@@ -77,7 +77,7 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
 
             foreach (var p in protocols) {
                 var parameters = split.Skip(1).ToArray();
-                commandFound = p.Execute(command, context, parameters);
+                commandFound = p.Execute(protocolName, context, parameters);
 
                 if (commandFound) {
                     break; // Exit the loop once a matching command is found.
