@@ -33,7 +33,7 @@ internal class CommandService : MessageService {
             CoreObject = coreObject,
             PlayerCharacter = playerCharacter,
             Account = account,
-            ZoneActor = SessionActor.ZoneRef,
+            ZoneActor = SessionActor.GetZoneActor(),
             ServerActor = SessionActor.ServerRef,
         });
     }

@@ -13,7 +13,10 @@ using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.Configuration;
 using Imlight.Common.MessageLayer;
+using Imlight.CoreLib.Game.Services;
+using Imlight.CoreLib.Login.Models;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Services;
 
 namespace Imlight.CoreLib.Shared.Networking;
 
@@ -37,7 +40,6 @@ public class SessionActor : ReceiveActor, IDisposable {
     public Socket Socket                                     { get; }
     public IActorRef ActorRef                                { get; }
     public IActorRef ServerRef                               { get; }
-    public IActorRef ZoneRef                                 { get; set; }
     public bool SessionValid                                 { get; private set; }
     public bool IsInQueue                                    { get; private set; }
     public ushort QueuePosition                              { get; private set; }
@@ -204,6 +206,34 @@ public class SessionActor : ReceiveActor, IDisposable {
         }
 
         throw new SessionFatalException($"SessionActor [{SessionID}] contained a null server reference!");
+    }
+
+    /// <summary>
+    /// Gets the actor reference for the zone.
+    /// </summary>
+    /// <returns>The actor reference for the zone, or null if the zone service is not available.</returns>
+    public IActorRef GetZoneActor() {
+        // Check to see if we have a ZoneService.
+        var zoneService = _services.FirstOrDefault(x => x.Value is ZoneService);
+        if (zoneService.Key is null) {
+            return null;
+        }
+
+        return ((ZoneService)zoneService.Value).ZoneActor;
+    }
+
+    /// <summary>
+    /// Retrieves the associated account for the session actor.
+    /// </summary>
+    /// <returns>The associated account, or null if no account is found.</returns>
+    public Account GetAssociatedAccount() {
+        // Check to see if we have a LoginService.
+        var accountService = _services.FirstOrDefault(x => x.Value is AccountService);
+        if (accountService.Key is null) {
+            return null;
+        }
+
+        return ((AccountService) accountService.Value).Account;
     }
 
     /// <summary>

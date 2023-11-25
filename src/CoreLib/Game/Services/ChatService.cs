@@ -146,7 +146,9 @@ public class ChatService : MessageService {
             ActorRef = SessionActor.ActorRef,
             CoreObject = charObj,
             PlayerCharacter = character,
-            Account = account
+            Account = account,
+            ZoneActor = SessionActor.GetZoneActor(),
+            ServerActor = SessionActor.ServerRef,
         });
     }
 }

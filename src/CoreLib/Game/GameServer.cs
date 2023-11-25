@@ -125,6 +125,23 @@ public class GameServer : Server {
         Sender.Tell(rsp);
     }
 
+    [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_KICKPLAYER))]
+    private void ReceiveKickPlayer(SERVER_100_PROTOCOL.MSG_KICKPLAYER message) {
+        // A player has requested to be kicked from the server.
+        var session = ActiveSessions.FirstOrDefault(s => s.GetAssociatedAccount()?.AccountId == message.AccountID);
+        if (session is null) {
+            return;
+        }
+
+        var kickedMsg = new EXTENDEDBASE_2_PROTOCOL.MSG_SERVERMESSAGE {
+            Message = "You have been kicked from the server.",
+            Modal = 1
+        };
+        session.ActorRef.Tell(kickedMsg);
+
+        session.Dispose();
+    }
+
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]
     private void ReceiveZoneTransferRequest(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message) {
         _gameWorldRef.Forward(message);

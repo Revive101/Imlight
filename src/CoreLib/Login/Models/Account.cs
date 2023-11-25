@@ -155,14 +155,6 @@ public class Account {
         return true;
     }
 
-    public void KickFromGame() {
-        if (this.SessionActor is null) {
-            return;
-        }
-
-        this.SessionActor.Dispose();
-    }
-
     public bool WaiveCurrentBan(string source) {
         var currentBan = InfractionHistory
             .Infractions

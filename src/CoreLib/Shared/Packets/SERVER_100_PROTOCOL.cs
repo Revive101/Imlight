@@ -210,4 +210,11 @@ public sealed class SERVER_100_PROTOCOL : IServerProtocol
         public bool Found;
         public IActorRef ServerActor;
     }
+
+    public class MSG_KICKPLAYER : IServerMessage {
+        public byte MessageOrder { get; } = 22;
+        public byte ServiceID { get; } = 100;
+
+        public ulong AccountID;
+    }
 }
