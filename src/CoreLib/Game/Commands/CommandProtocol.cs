@@ -17,17 +17,17 @@ internal abstract class CommandProtocol {
     private bool _hasInitiated;
 
     internal bool Execute(string commandName, CommandContext context, params object[] parameters) {
-        if (commandName is "help" or "?" or "" or null) {
-            InformClientHelp();
-            return true;
-        }
-
         // If we haven't initiated the commands, do so now.
         if (!_hasInitiated) {
             InitiateHandlers();
         }
 
         this.Context = context;
+
+        if (commandName is "help" or "?" or "" or null) {
+            InformClientHelp();
+            return true;
+        }
 
         if (!_commandMethods.TryGetValue(commandName.ToLower(), out var method)) {
             Logger.Warning("Command {0} not found in protocol", Logger.Args(commandName));
@@ -114,11 +114,10 @@ internal abstract class CommandProtocol {
         foreach (var command in _commandMethods) {
             var commandAttribute = command.Value.GetCustomAttribute<CommandAttribute>();
 
-            // Get all the parameters for this command.
-            var parameters = command.Value.GetParameters();
-            var parameterStr = string.Join(" ", parameters.Select(x => x.Name));
+            // Get all the parameters for this command. Put a '$' in front of each parameter name.
+            var parameterStr = string.Join(" ", command.Value.GetParameters().Select(x => $"${x.Name}"));
 
-            sb.AppendLine($"{commandAttribute.Name} {parameterStr}");
+            sb.AppendLine($"{Group} {commandAttribute.Name} {parameterStr}");
         }
 
         InformSenderClient(sb.ToString(), true);
