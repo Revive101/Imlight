@@ -169,6 +169,17 @@ public abstract class MessageService : ReceiveProtocolDispatcher {
         return AccountCollection.GetAccount(character.AccountId);
     }
 
+    /// <summary>
+    /// Informs the sender client with a message.
+    /// </summary>
+    /// <param name="reason">The reason for the message.</param>
+    /// <param name="isImportant">Specifies whether the message is important or not. Default is false.</param>
+    protected void InformGameClient(string reason, bool isImportant = false)
+        => SessionActor.ActorRef.Tell(new EXTENDEDBASE_2_PROTOCOL.MSG_SERVERMESSAGE {
+            Message = reason,
+            Modal = (byte) (isImportant ? 1 : 0)
+        });
+
     protected override void PreRestart(Exception reason, object message) {
         Logger.Error("MessageService {ServiceName} restarting due to {Reason}",
             Logger.Args(GetType().Name, reason.Message));
