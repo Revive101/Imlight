@@ -73,15 +73,13 @@ internal abstract class CommandProtocol {
             }
 
             method.Invoke(this, processedParameters.ToArray());
+            return true;
         }
         else {
             // Invoke the method with no parameters.
             method.Invoke(this, null);
             return true;
         }
-
-        InformClientOfProperParameterCount(commandName, methodParameters);
-        return true;
     }
 
     protected void InformSenderClient(string reason, bool isImportant = false)
