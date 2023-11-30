@@ -16,6 +16,7 @@ using Imlight.CoreLib.Game.Models;
 using Imlight.CoreLib.Login.Models;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models;
 
@@ -24,7 +25,10 @@ namespace Imlight.CoreLib.Game.Services;
 public class ChatService : MessageService {
     private const string FemaleSourcePrefix = "80";
     private const string MaleSourcePrefix = "82";
-    private const char CommandPrefix = '.';
+
+    // Always make sure this command prefix is within the bounds of the Regex.
+    private const string CommandPrefix = ".";
+    private const string MessageRegex = "[^a-zA-Z0-9\\p{P} ]";
 
     private Character _selectedCharacter;
     private Account _selectedAccount;
@@ -52,16 +56,16 @@ public class ChatService : MessageService {
         var gender = character.WizardAvatar.m_eGender;
         var sourceName = CraftSourceNameFromIndices(nameIndices, gender);
 
-        var cleanedMessage = CleanMessage(message.Message);
+        var cleanedMessage = CleanMessageTrash(message.Message);
 
         // Parse in-game chat commands. Do not broadcast it to the zone.
         if (cleanedMessage.StartsWith(CommandPrefix) && account.AuthLevel > AuthLevel.None) {
-            // Remove the commandp prefix.
             SendChatCommand(cleanedMessage);
             return;
         }
 
-        Logger.Information($"{SessionActor.SessionID} says in chat: {cleanedMessage}");
+        var actualCharacterName = CharacterNameBank.GetEnglishName(character.NameIndices, character.WizardAvatar.m_eGender);
+        Logger.Information("{0} says in chat: {1}", Logger.Args(actualCharacterName, cleanedMessage));
 
         // Add the chat log to the database.
         var chatLog = new ChatLog() {
@@ -142,13 +146,18 @@ public class ChatService : MessageService {
         _selectedAccount = account;
     }
 
-    private static string CleanMessage(ByteString message) {
+    private static string CleanMessageTrash(ByteString message) {
         if (message == null) {
             return null;
         }
 
+        // Remove the first byte, unless it's the command prefix.
+        if (!message.ToString().StartsWith(CommandPrefix)) {
+            message = ((byte[])message)[1..];
+        }
+
         // Define a regular expression pattern to keep alphanumeric characters and punctuation
-        string validCharactersPattern = "[^a-zA-Z0-9\\p{P} ]"; // \p{P} matches any punctuation character
+        string validCharactersPattern = MessageRegex; // \p{P} matches any punctuation character
         var cleanedMessage = Regex.Replace(message.ToString(), validCharactersPattern, "").Trim();
 
         return cleanedMessage;
