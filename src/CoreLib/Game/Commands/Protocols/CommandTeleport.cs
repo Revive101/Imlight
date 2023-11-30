@@ -5,7 +5,7 @@ using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using System.Linq;
 
-namespace Imlight.CoreLib.Game.Commands;
+namespace Imlight.CoreLib.Game.Commands.Protocols;
 
 internal class CommandTeleport : CommandProtocol {
     internal override string Group { get; set; } = "";

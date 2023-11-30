@@ -6,7 +6,7 @@ using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models;
 
-namespace Imlight.CoreLib.Game.Commands;
+namespace Imlight.CoreLib.Game.Commands.Protocols;
 
 internal class CommandBanProtocol : CommandProtocol {
     internal override string Group { get; set; } = "ban";

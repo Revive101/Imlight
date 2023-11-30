@@ -5,7 +5,7 @@ using Imlight.CoreLib.WizardData.Models;
 using System;
 using System.Text;
 
-namespace Imlight.CoreLib.Game.Commands;
+namespace Imlight.CoreLib.Game.Commands.Protocols;
 
 internal class CommandDebugProtocol : CommandProtocol {
     internal override string Group { get; set; } = "debug";

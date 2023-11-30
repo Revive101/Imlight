@@ -34,10 +34,8 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
         Instance = Self;
         s_protocols = new Dictionary<string, CommandProtocol>();
 
-        // Get all types in the same namespace as CommandDispatcher
-        var types = Assembly.GetExecutingAssembly().GetTypes()
-            .Where(t => t.Namespace == typeof(CommandDispatcher).Namespace);
-
+        // Get all types.
+        var types = Assembly.GetExecutingAssembly().GetTypes();
         var keyIncrememnt = 0;
         foreach (var type in types) {
             if (type.IsSubclassOf(typeof(CommandProtocol))) {

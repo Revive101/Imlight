@@ -4,7 +4,7 @@ using Imlight.CoreLib.Login.Models;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models;
 
-namespace Imlight.CoreLib.Game.Commands;
+namespace Imlight.CoreLib.Game.Commands.Protocols;
 
 internal class CommandUnbanProtocol : CommandProtocol {
     internal override string Group { get; set; } = "unban";
