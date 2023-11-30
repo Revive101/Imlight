@@ -45,44 +45,42 @@ internal abstract class CommandProtocol {
         // Process the parameters with respect to RemainderAttribute, if it is present.
         var methodParameters = method.GetParameters();
         var expectedParameterCount = methodParameters.Length;
-        var processedParameters = new List<object>();
-        for (int i = 0; i < methodParameters.Length; i++) {
-            if (methodParameters[i].GetCustomAttribute<RemainderAttribute>() != null) {
-                // Combine the remaining parameters into a single string
-                var restOfString = string.Join(" ", parameters.Skip(i));
-                processedParameters.Add(restOfString);
-
-                break;
+        if (expectedParameterCount > 0) {
+            // If we expected parameters, but none were provided, return.
+            if (parameters.Length == 0) {
+                InformClientOfProperParameterCount(commandName, methodParameters);
+                return true;
             }
-            else {
-                processedParameters.Add(parameters[i]);
-            }
-        }
 
-        // If the parameter count doesn't match, return.
-        if (expectedParameterCount != processedParameters.Count) {
-            // Write the usage of this command.
-            var properUsageStr = new StringBuilder();
-            properUsageStr.Append(commandName);
-            properUsageStr.Append("<color;1C1EC4>");
+            var processedParameters = new List<object>();
+            for (int i = 0; i < methodParameters.Length; i++) {
+                if (methodParameters[i].GetCustomAttribute<RemainderAttribute>() != null) {
+                    // Combine the remaining parameters into a single string
+                    var restOfString = string.Join(" ", parameters.Skip(i));
+                    processedParameters.Add(restOfString);
 
-            foreach (var parameter in methodParameters) {
-                properUsageStr.Append(" (");
-                properUsageStr.Append(parameter.Name);
-
-                if (parameter.GetCustomAttribute<RemainderAttribute>() != null) {
-                    properUsageStr.Append("...");
+                    break;
                 }
-
-                properUsageStr.Append(')');
+                else {
+                    processedParameters.Add(parameters[i]);
+                }
             }
 
-            // Inform the invoker of improper usage. Point and laugh!
-            InformSenderClient($"Proper usage: {properUsageStr}");
+            // If the parameter count doesn't match, return.
+            if (expectedParameterCount != processedParameters.Count) {
+                InformClientOfProperParameterCount(commandName, methodParameters);
+                return true;
+            }
+
+            method.Invoke(this, processedParameters.ToArray());
+        }
+        else {
+            // Invoke the method with no parameters.
+            method.Invoke(this, null);
             return true;
         }
 
-        method.Invoke(this, processedParameters.ToArray());
+        InformClientOfProperParameterCount(commandName, methodParameters);
         return true;
     }
 
@@ -116,6 +114,27 @@ internal abstract class CommandProtocol {
                 }
             }
         }
+    }
+
+    private void InformClientOfProperParameterCount(string commandName, ParameterInfo[] methodParameters) {
+        // Write the usage of this command.
+        var properUsageStr = new StringBuilder();
+        properUsageStr.Append(commandName);
+        properUsageStr.Append("<color;1C1EC4>");
+
+        foreach (var parameter in methodParameters) {
+            properUsageStr.Append(" (");
+            properUsageStr.Append(parameter.Name);
+
+            if (parameter.GetCustomAttribute<RemainderAttribute>() != null) {
+                properUsageStr.Append("...");
+            }
+
+            properUsageStr.Append(')');
+        }
+
+        // Inform the invoker of improper usage. Point and laugh!
+        InformSenderClient($"Proper usage: {properUsageStr}");
     }
 
     private void InformClientHelp() {
