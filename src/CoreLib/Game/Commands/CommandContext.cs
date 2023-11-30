@@ -12,4 +12,6 @@ internal class CommandContext {
     public Account Account { get; init; }
     public IActorRef ZoneActor { get; init; }
     public IActorRef ServerActor { get; init; }
+    public Character SelectedCharacter { get; init; }
+    public Account SelectedAccount { get; init; }
 }

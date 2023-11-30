@@ -105,6 +105,8 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
             Account = accountContext,
             ZoneActor = message.ZoneActor,
             ServerActor = message.ServerActor,
+            SelectedCharacter = message.SelectedCharacter,
+            SelectedAccount = message.SelectedAccount
         };
 
         Logger.Information("{0} Uses command: {1}", Logger.Args(accountContext.Username, message.CommandText));

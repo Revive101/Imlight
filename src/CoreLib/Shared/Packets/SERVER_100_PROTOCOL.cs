@@ -171,6 +171,8 @@ public sealed class SERVER_100_PROTOCOL : IServerProtocol
         public Account Account;
         public IActorRef ZoneActor;
         public IActorRef ServerActor;
+        public Account SelectedAccount;
+        public Character SelectedCharacter;
     }
 
     public class MSG_COMMANDRSP : IServerMessage
