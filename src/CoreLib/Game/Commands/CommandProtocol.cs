@@ -30,7 +30,11 @@ internal abstract class CommandProtocol {
         }
 
         if (!_commandMethods.TryGetValue(commandName.ToLower(), out var method)) {
-            Logger.Warning("Command {0} not found in protocol", Logger.Args(commandName));
+            if (!string.IsNullOrEmpty(Group)) {
+                // We don't need to log here if this is an ungrouped command. The command dispatcher is just
+                // firing everywhere.
+                Logger.Warning("Command {0} not found in {1}", Logger.Args(commandName, GetType().Name));
+            }
             return false;
         }
 
