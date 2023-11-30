@@ -39,6 +39,11 @@ public class ChatService : MessageService {
         var character = GetActiveCharacter();
         var account = GetActiveAccount();
 
+        if (account.InfractionHistory.IsCurrentlyMuted) {
+            InformGameClient("You are currently muted.");
+            return;
+        }
+
         // Craft the wizard name.
         var nameIndices = character.NameIndices;
         var gender = character.WizardAvatar.m_eGender;
@@ -77,6 +82,12 @@ public class ChatService : MessageService {
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_REQUESTRADIALQUICKCHAT))]
     private void ReceiveRequestRadialQuickChat(GAME_5_PROTOCOL.MSG_REQUESTRADIALQUICKCHAT message) {
+        var account = GetActiveAccount();
+        if (account.InfractionHistory.IsCurrentlyMuted) {
+            InformGameClient("You are currently muted.");
+            return;
+        }
+
         var globalId = GetActiveCoreObject().m_globalID;
         var character = GetActiveCharacter();
         var nameIndices = character.NameIndices;
