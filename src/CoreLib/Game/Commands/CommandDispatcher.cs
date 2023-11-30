@@ -24,6 +24,8 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Game.Commands;
 
 internal class CommandDispatcher : ReceiveProtocolDispatcher {
+    private const string GrouplessCommandPrefix = "nogroup";
+
     public static IActorRef Instance { get; private set; }
 
     private static Dictionary<string, CommandProtocol> s_protocols;
@@ -36,11 +38,20 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
         var types = Assembly.GetExecutingAssembly().GetTypes()
             .Where(t => t.Namespace == typeof(CommandDispatcher).Namespace);
 
+        var keyIncrememnt = 0;
         foreach (var type in types) {
             if (type.IsSubclassOf(typeof(CommandProtocol))) {
                 // Create an instance of the protocol and register it
                 if (Activator.CreateInstance(type) is CommandProtocol protocol) {
-                    s_protocols[protocol.Group.ToLower()] = protocol;
+                    // There may be duplicate keys here if the protocol doesn't have a group.
+                    // Since such a protocol can arise from multiple assemblies, we'll just increment the key.
+                    var groupName = protocol.Group.ToLower();
+                    if (groupName is "" or null) {
+                        groupName = $"{GrouplessCommandPrefix}{keyIncrememnt}";
+                        keyIncrememnt++;
+                    }
+
+                    s_protocols[groupName] = protocol;
                 }
             }
         }
