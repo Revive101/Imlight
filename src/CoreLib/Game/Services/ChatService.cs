@@ -26,6 +26,9 @@ public class ChatService : MessageService {
     private const string MaleSourcePrefix = "82";
     private const char CommandPrefix = '.';
 
+    private Character _selectedCharacter;
+    private Account _selectedAccount;
+
     private IActorRef _dispatcherRef;
 
     public ChatService(SessionActor sessionActor) : base(sessionActor) { _dispatcherRef = CommandDispatcher.Instance; }
@@ -118,6 +121,27 @@ public class ChatService : MessageService {
         });
     }
 
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_BUDDYSTATS))]
+    private void ReceivePlayerSelect(GAME_5_PROTOCOL.MSG_BUDDYSTATS message) {
+        // We only care about the ID sent here. It's the ID of the core object, but Imlight serialized
+        // it using the character ID.
+        var id = message.BuddyID;
+
+        var persistentCharacter = CharacterCollection.GetCharacter(id);
+        if (persistentCharacter is null) {
+            return;
+        }
+
+        var account = AccountCollection.GetAccount(persistentCharacter.AccountId);
+        if (account is null) {
+            return;
+        }
+
+        // Cache for our next command.
+        _selectedCharacter = persistentCharacter;
+        _selectedAccount = account;
+    }
+
     private static string CleanMessage(ByteString message) {
         if (message == null) {
             return null;
@@ -160,6 +184,8 @@ public class ChatService : MessageService {
             Account = account,
             ZoneActor = SessionActor.GetZoneActor(),
             ServerActor = SessionActor.ServerRef,
+            SelectedCharacter = _selectedCharacter,
+            SelectedAccount = _selectedAccount
         });
     }
 }
