@@ -25,7 +25,7 @@ internal abstract class CommandProtocol {
 
         this.Context = context;
 
-        if (commandName is "help" or "?" or "" or null) {
+        if (commandName is "help" or "?" or "" or null && !string.IsNullOrEmpty(Group)) {
             InformClientHelp();
             return true;
         }
