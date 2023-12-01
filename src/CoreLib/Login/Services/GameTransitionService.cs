@@ -83,7 +83,7 @@ internal class GameTransitionService : MessageService {
         msg = new SERVER_100_PROTOCOL.MSG_QUERYGAMESERVERS() { IsLocal = isLocal };
 #else
             // Release builds should never be able to connect to their own local server.
-            msg = new SERVER_100_PROTOCOL.MSG_QUERYGAMESERVERS() { IsLocal = false };
+            msg = new SERVER_100_PROTOCOL.MSG_GETBESTSERVER() { IsLocal = false };
 #endif
 
         return AskServer<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg);
