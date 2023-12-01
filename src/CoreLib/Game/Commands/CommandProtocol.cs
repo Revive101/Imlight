@@ -51,7 +51,7 @@ internal abstract class CommandProtocol {
 
             if (!AuthorityRequester.RequestAuthority(actualAuthLevel, context.Account, $"Command {commandName}")) {
                 InformSenderClient("You do not have permission to use this command.");
-                return false;
+                return true;
             }
         }
 
@@ -149,9 +149,16 @@ internal abstract class CommandProtocol {
     }
 
     private void InformClientHelp() {
-        var sb = new StringBuilder();
-        sb.AppendLine("Available commands:");
+        var sb = new StringBuilder()
+            .AppendLine("Available commands:");
+
+        var seenCommands = new HashSet<MethodInfo>();
         foreach (var command in _commandMethods) {
+            // If we've already seen this command, skip it.
+            if (!seenCommands.Add(command.Value)) {
+                continue;
+            }
+
             var commandAttribute = command.Value.GetCustomAttribute<CommandAttribute>();
 
             // Get all the parameters for this command. Put a '$' in front of each parameter name.
