@@ -2,6 +2,7 @@ using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.CoreLib.AntiAmbrose;
+using Imlight.CoreLib.Login.Models;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -40,7 +41,15 @@ internal abstract class CommandProtocol {
 
         var authAttribute = method.GetCustomAttribute<AuthRequiredAttribute>();
         if (authAttribute != null) {
-            if (!AuthorityRequester.RequestAuthority(authAttribute.Level, context.Account, $"Command {commandName}")) {
+            var actualAuthLevel = authAttribute.Level;
+#if !DEBUG
+            // If the auth level is developer, bump it up to administrator if we're not in debug builds.
+            if (actualAuthLevel == AuthLevel.Developer) {
+                actualAuthLevel = AuthLevel.Administrator;
+            }
+#endif
+
+            if (!AuthorityRequester.RequestAuthority(actualAuthLevel, context.Account, $"Command {commandName}")) {
                 InformSenderClient("You do not have permission to use this command.");
                 return false;
             }
