@@ -6,12 +6,11 @@
 //     the code is regenerated.
 // </auto-generated>
 //------------------------------------------------------------------------------
+using System;
+using Imlight.Common.IO;
+using Imlight.Common.MessageLayer;
 
 namespace Imlight.Common.Caches;
-
-using System;
-using Common.IO;
-using Common.MessageLayer;
 
 public sealed class AISCLIENT_19_PROTOCOL : MessageProtocol {
     public override Byte ServiceId { get; } = 19;

@@ -31,7 +31,7 @@ public class WizardZone : ReceiveProtocolDispatcher {
     private readonly IActorRef _sigilSupervisorRef;
     private readonly IActorRef _duelSupervisorRef;
     private readonly List<Trigger> _triggers;
-    private readonly Dictionary<IActorRef, TypeCache.CoreObject> _zonePlayers;
+    private readonly Dictionary<IActorRef, CoreObject> _zonePlayers;
     private ushort _zoneObjectMobileIdCounter;
 
     // ctor

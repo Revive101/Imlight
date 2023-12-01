@@ -13,7 +13,10 @@ using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.Configuration;
 using Imlight.Common.MessageLayer;
+using Imlight.CoreLib.Game.Services;
+using Imlight.CoreLib.Login.Models;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Services;
 
 namespace Imlight.CoreLib.Shared.Networking;
 
@@ -42,6 +45,8 @@ public class SessionActor : ReceiveActor, IDisposable {
     public ushort QueuePosition                              { get; private set; }
     public IMessage CachedDequeueMessage                     { get; set; }
     public long Ping                                         { get; private set; }
+    public string Ip => Socket?.RemoteEndPoint?.ToString();
+    public string RemoteIp => Socket?.RemoteEndPoint?.ToString().Split(':')[0];
 
     private readonly IActorRef _actorFactoryRef;
     private readonly Dictionary<IActorRef, MessageService> _services;
@@ -110,12 +115,12 @@ public class SessionActor : ReceiveActor, IDisposable {
     /// Enqueues the session to the server.
     /// </summary>
     /// <returns></returns>
-    public IMessage EnqueueToServer() {
+    public SERVER_100_PROTOCOL.MSG_PLAYERENQUEUEDRSP EnqueueToServer() {
         var msg = new SERVER_100_PROTOCOL.MSG_PLAYERENQUEUED() {
             SessionActor = this
         };
 
-        var rsp = ServerRef.Ask<IMessage>(msg)
+        var rsp = ServerRef.Ask<SERVER_100_PROTOCOL.MSG_PLAYERENQUEUEDRSP>(msg)
             .Result;
 
         return rsp;
@@ -204,6 +209,34 @@ public class SessionActor : ReceiveActor, IDisposable {
     }
 
     /// <summary>
+    /// Gets the actor reference for the zone.
+    /// </summary>
+    /// <returns>The actor reference for the zone, or null if the zone service is not available.</returns>
+    public IActorRef GetZoneActor() {
+        // Check to see if we have a ZoneService.
+        var zoneService = _services.FirstOrDefault(x => x.Value is ZoneService);
+        if (zoneService.Key is null) {
+            return null;
+        }
+
+        return ((ZoneService)zoneService.Value).ZoneActor;
+    }
+
+    /// <summary>
+    /// Retrieves the associated account for the session actor.
+    /// </summary>
+    /// <returns>The associated account, or null if no account is found.</returns>
+    public Account GetAssociatedAccount() {
+        // Check to see if we have a LoginService.
+        var accountService = _services.FirstOrDefault(x => x.Value is AccountService);
+        if (accountService.Key is null) {
+            return null;
+        }
+
+        return ((AccountService) accountService.Value).Account;
+    }
+
+    /// <summary>
     /// Disposes of the SessionActor.
     /// </summary>
     public void Dispose() {
@@ -218,7 +251,7 @@ public class SessionActor : ReceiveActor, IDisposable {
         var msg = new SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET() {
             Id = SessionID,
             Socket = this.Socket,
-            Ip = this.Socket?.RemoteEndPoint?.ToString()
+            Ip = this.RemoteIp
         };
         ServerRef.Tell(msg);
 
@@ -334,6 +367,7 @@ public class SessionActor : ReceiveActor, IDisposable {
     }
 
     private void ReceiveException(Exception ex) {
+        Dispose();
         throw ex;
     }
 

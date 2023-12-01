@@ -38,7 +38,7 @@ internal static class UserValidator {
         }
 
         // Check to see if this account is banned.
-        if (matchedAccount.InfractionHistory.IsCurrentlyBanned) {
+        if (matchedAccount.InfractionHistory.IsCurrentlyBanned || matchedAccount.IsLocked) {
             details._result = UserValidateResult.AccountBanned;
             return details;
         }
@@ -47,6 +47,15 @@ internal static class UserValidator {
         if (InfractionCollection.IsMachineBanned(validateMessage.MachineID)) {
             // Add an infraction to the account.
             matchedAccount.AddInfraction(InfractionType.Warn, "Logged in with banned machine ID.", null);
+
+            details._result = UserValidateResult.MachineBanned;
+            return details;
+        }
+
+        // Check to see if this IP is banned.
+        if (InfractionCollection.IsIpBanned(sessionActor.Ip)) {
+            // Add an infraction to the account.
+            matchedAccount.AddInfraction(InfractionType.Warn, "Logged in with banned IP.", null);
 
             details._result = UserValidateResult.MachineBanned;
             return details;
@@ -77,6 +86,10 @@ internal static class UserValidator {
         }
 
         // If we've made it this far, the user is valid.
+        matchedAccount.LastLoginMachineId = validateMessage.MachineID;
+        matchedAccount.LastLoginTime = DateTime.UtcNow;
+        matchedAccount.LastLoginIp = sessionActor.Ip;
+
         details._account = matchedAccount;
         details._sessionKey = sessionKey;
         details._result = UserValidateResult.Success;

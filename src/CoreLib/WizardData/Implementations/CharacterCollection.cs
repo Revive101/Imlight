@@ -56,4 +56,17 @@ public static class CharacterCollection {
         session.SaveChanges();
         return true;
     }
+
+    /// <summary>
+    /// Retrieves a character from the database based on the specified ID.
+    /// </summary>
+    /// <param name="id">The ID of the character to retrieve.</param>
+    /// <returns>The character with the specified ID, or null if not found.</returns>
+    public static Character? GetCharacter(ulong id) {
+        using var session = s_store.OpenSession();
+
+        var character = session.Query<Character>()
+            .FirstOrDefault(x => x.CharId == id);
+        return character;
+    }
 }

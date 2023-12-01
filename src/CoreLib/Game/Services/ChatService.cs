@@ -5,16 +5,20 @@
 
 using System;
 using System.Text;
+using System.Text.RegularExpressions;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.IO;
 using Imlight.Common.Utilities;
+using Imlight.CoreLib.Game.Commands;
 using Imlight.CoreLib.Game.Models;
 using Imlight.CoreLib.Login.Models;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Implementations;
+using Imlight.CoreLib.WizardData.Models;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -22,38 +26,62 @@ public class ChatService : MessageService {
     private const string FemaleSourcePrefix = "80";
     private const string MaleSourcePrefix = "82";
 
-    public ChatService(SessionActor sessionActor) : base(sessionActor) {
-    }
+    // Always make sure this command prefix is within the bounds of the Regex.
+    private const string CommandPrefix = ".";
+    private const string MessageRegex = "[^a-zA-Z0-9\\p{P} ]";
 
-    protected static Props Props(SessionActor parentActor) {
-        return Akka.Actor.Props.Create(() => new ChatService(parentActor));
-    }
+    private Character _selectedCharacter;
+    private Account _selectedAccount;
+
+    private IActorRef _dispatcherRef;
+
+    public ChatService(SessionActor sessionActor) : base(sessionActor) { _dispatcherRef = CommandDispatcher.Instance; }
+
+    protected static Props Props(SessionActor parentActor)
+        => Akka.Actor.Props.Create(() => new ChatService(parentActor));
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_REQUESTRADIALCHAT))]
     private void ReceiveRequestRadialChat(GAME_5_PROTOCOL.MSG_REQUESTRADIALCHAT message) {
-        var globalId = GetActiveCoreObject().m_globalID;
+        var charObj = GetActiveCoreObject();
         var character = GetActiveCharacter();
-        var nameIndices = character.NameIndices;
-        var gender = character.WizardAvatar.m_eGender;
-        var src = CraftSourceNameFromIndices(nameIndices, gender);
+        var account = GetActiveAccount();
 
-        // Remove the '\f', '\n', '\0' character from the message.
-        var cleanedMessage = message.Message.ToString()?.Replace(@"\f", "")?.Replace("\n", "")?.Replace("\0", "")[1..];
-
-        // Parse in-game chat commands. Do not broadcast it to the zone.
-        if (cleanedMessage.StartsWith('/')) {
-            Logger.Information($"{SessionActor.SessionID} used QA command: {cleanedMessage}");
-            ParseQAChatCommand(cleanedMessage, character);
+        if (account.InfractionHistory.IsCurrentlyMuted) {
+            InformGameClient("You are currently muted.");
             return;
         }
 
-        Logger.Information($"{SessionActor.SessionID} says in chat: {cleanedMessage}");
+        // Craft the wizard name.
+        var nameIndices = character.NameIndices;
+        var gender = character.WizardAvatar.m_eGender;
+        var sourceName = CraftSourceNameFromIndices(nameIndices, gender);
+
+        var cleanedMessage = CleanMessageTrash(message.Message);
+
+        // Parse in-game chat commands. Do not broadcast it to the zone.
+        if (cleanedMessage.StartsWith(CommandPrefix) && account.AuthLevel > AuthLevel.None) {
+            SendChatCommand(cleanedMessage);
+            return;
+        }
+
+        var actualCharacterName = CharacterNameBank.GetEnglishName(character.NameIndices, character.WizardAvatar.m_eGender);
+        Logger.Information("{0} says in chat: {1}", Logger.Args(actualCharacterName, cleanedMessage));
+
+        // Add the chat log to the database.
+        var chatLog = new ChatLog() {
+            TimeStamp = DateTime.UtcNow,
+            ZoneName = character.Zone,
+            CharacterId = charObj.m_globalID,
+            AccountId = character.AccountId,
+            Message = cleanedMessage,
+        };
+        ChatLogCollection.AddChatLog(chatLog);
 
         // Broadcast the message to the zone.
         var msg = new GAME_5_PROTOCOL.MSG_RADIALCHAT {
             Message = message.Message,
-            SourceID = globalId,
-            SourceName = src,
+            SourceID = charObj.m_globalID,
+            SourceName = sourceName,
             Filter = 0
         };
         ZoneBroadcast(msg);
@@ -61,6 +89,12 @@ public class ChatService : MessageService {
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_REQUESTRADIALQUICKCHAT))]
     private void ReceiveRequestRadialQuickChat(GAME_5_PROTOCOL.MSG_REQUESTRADIALQUICKCHAT message) {
+        var account = GetActiveAccount();
+        if (account.InfractionHistory.IsCurrentlyMuted) {
+            InformGameClient("You are currently muted.");
+            return;
+        }
+
         var globalId = GetActiveCoreObject().m_globalID;
         var character = GetActiveCharacter();
         var nameIndices = character.NameIndices;
@@ -91,65 +125,76 @@ public class ChatService : MessageService {
         });
     }
 
-    private static ByteString GetMessagePayload(byte[] input) {
-        // The message is a wide string.
-        var msgBuffer = new BitReader(input);
-        var msgSize = msgBuffer.ReadUInt16() * 2; // Account for unicode
-        var msgTextRaw = msgBuffer.ReadBytes(msgSize);
-        var msgText = Encoding.Unicode.GetString(msgTextRaw);
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_BUDDYSTATS))]
+    private void ReceivePlayerSelect(GAME_5_PROTOCOL.MSG_BUDDYSTATS message) {
+        // We only care about the ID sent here. It's the ID of the core object, but Imlight serialized
+        // it using the character ID.
+        var id = message.BuddyID;
 
-        return msgText;
+        var persistentCharacter = CharacterCollection.GetCharacter(id);
+        if (persistentCharacter is null) {
+            return;
+        }
+
+        var account = AccountCollection.GetAccount(persistentCharacter.AccountId);
+        if (account is null) {
+            return;
+        }
+
+        // Cache for our next command.
+        _selectedCharacter = persistentCharacter;
+        _selectedAccount = account;
     }
 
-    private static ByteString CraftMessagePayload(string input) {
-        // Convert input string to byte array using Unicode encoding
-        var newTextBytes = Encoding.Unicode.GetBytes(input);
-        var rebuffer = new BitWriter();
+    private static string CleanMessageTrash(ByteString message) {
+        if (message == null) {
+            return null;
+        }
 
-        // Calculate length of byte array, rounded up to nearest multiple of 2
-        var len = (ushort) ((newTextBytes.Length + 2) / 2);
-        rebuffer.WriteUInt16(len);
-        rebuffer.WriteBytes(newTextBytes);
-        rebuffer.WriteUInt16(32);
+        // Remove the first byte, unless it's the command prefix.
+        if (!message.ToString().StartsWith(CommandPrefix)) {
+            message = ((byte[])message)[1..];
+        }
 
-        return new ByteString(rebuffer.GetData());
+        // Define a regular expression pattern to keep alphanumeric characters and punctuation
+        string validCharactersPattern = MessageRegex; // \p{P} matches any punctuation character
+        var cleanedMessage = Regex.Replace(message.ToString(), validCharactersPattern, "").Trim();
+
+        return cleanedMessage;
     }
 
     private static byte[] CraftSourceNameFromIndices(uint input, TypeCache.eGender gender) {
         // Drop the MSB from input, then convert it to a hex string.
         var raw = (input & 0x7FFFFFFF).ToString("X8");
         var sb = new StringBuilder(raw);
-        for (int i = sb.Length - 2; i >= 0; i -= 2)
+        for (int i = sb.Length - 2; i >= 0; i -= 2) {
             sb.Insert(i, ' ');
+        }
+
         var tail = sb.ToString().TrimStart();
 
         // Replace the first 2 characters depending on gender.
         var newMsb = gender == TypeCache.eGender.Female ? FemaleSourcePrefix : MaleSourcePrefix;
-        tail = newMsb + tail.Substring(2);
+        tail = newMsb + tail[2..];
 
         return DataManipulation.SpacedHexStringToBytes(tail);
     }
 
-    private void ParseQAChatCommand(string input, Character character) {
-        // Get account from character and check authorization level.
-        var account = AccountCollection.GetAccount(character.AccountId);
-        if (account.AuthLevel < AuthLevel.Administrator)
-            return;
+    private void SendChatCommand(string input) {
+        var charObj = GetActiveCoreObject();
+        var character = GetActiveCharacter();
+        var account = GetActiveAccount();
 
-        // Parse the command.
-        var command = input.Split(' ');
-        switch (command[0]) {
-            case "/port":
-                var msg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER() {
-                    DestinationZone = command[1],
-                    DestinationLocation = "Start",
-                    SendToClient = true
-                };
-                TellOtherServices(msg);
-                break;
-            default:
-                Logger.Information($"Unknown QA command: {command[0]}");
-                break;
-        }
+        _dispatcherRef.Tell(new SERVER_100_PROTOCOL.MSG_COMMAND() {
+            CommandText = input[1..], // Remove the command prefix
+            ActorRef = SessionActor.ActorRef,
+            CoreObject = charObj,
+            PlayerCharacter = character,
+            Account = account,
+            ZoneActor = SessionActor.GetZoneActor(),
+            ServerActor = SessionActor.ServerRef,
+            SelectedCharacter = _selectedCharacter,
+            SelectedAccount = _selectedAccount
+        });
     }
 }

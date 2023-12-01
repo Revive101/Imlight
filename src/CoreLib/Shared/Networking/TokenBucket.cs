@@ -28,6 +28,7 @@ public class TokenBucket {
                 return true;
             }
 
+            _failedAcquisitionCount++;
             return false;
         }
     }

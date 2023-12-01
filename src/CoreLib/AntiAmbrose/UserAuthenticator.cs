@@ -63,14 +63,20 @@ internal static class UserAuthenticator {
             return details;
         }
 
-        // Check to see if this account is currently banned.
-        if (matchedAccount.InfractionHistory.IsCurrentlyBanned) {
-            details._result = UserAuthenResult.AccountBanned;
+        // Check to see if the IP is banned.
+        if (InfractionCollection.IsIpBanned(sessionActor.Ip)) {
+            // Add an infraction to the account.
+            matchedAccount.AddInfraction(InfractionType.Warn, "Logged in with banned IP.", null);
+
+            details._result = UserAuthenResult.MachineBanned;
             return details;
         }
 
-        matchedAccount.LastLoginMachineId = authMessage.MachineID;
-        matchedAccount.LastLoginTime = DateTime.UtcNow;
+        // Check to see if this account is currently banned.
+        if (matchedAccount.InfractionHistory.IsCurrentlyBanned || matchedAccount.IsLocked) {
+            details._result = UserAuthenResult.AccountBanned;
+            return details;
+        }
 
         details._account = matchedAccount;
 
@@ -80,6 +86,10 @@ internal static class UserAuthenticator {
             var sessionKey = ClientKey.HashSessionKey(sessionId, offerTime, offerMilli);
             ClientKeyCollection.AddSessionKey(matchedAccount.AccountId, authMessage.MachineID, sessionKey);
             details._sessionKey = sessionKey;
+
+            matchedAccount.LastLoginMachineId = authMessage.MachineID;
+            matchedAccount.LastLoginTime = DateTime.UtcNow;
+            matchedAccount.LastLoginIp = sessionActor.Ip;
 
             // Craft a successful reply and return.
             var rec1 = Rec1.Encode(sessionKey, sessionId, offerTime, offerMilli);

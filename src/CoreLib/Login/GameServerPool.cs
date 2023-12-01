@@ -54,8 +54,8 @@ internal class GameServerPool : ReceiveProtocolDispatcher {
             Logger.Args(Context.Self.Path, message.Name, message.Port));
     }
 
-    [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_QUERYGAMESERVERS))]
-    private void ReceiveQueryGameServer(SERVER_100_PROTOCOL.MSG_QUERYGAMESERVERS message) {
+    [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_GETBESTSERVER))]
+    private void ReceiveQueryGameServer(SERVER_100_PROTOCOL.MSG_GETBESTSERVER message) {
         // Create a list of game servers and query each server for its details
         var gameServers = _gameServers.Values
             .Select(gameServer => {
@@ -75,5 +75,33 @@ internal class GameServerPool : ReceiveProtocolDispatcher {
 
         // Send the chosen server details back to the session actor
         Sender.Tell(chosenServer);
+    }
+
+    [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_FINDPLAYER))]
+    private void ReceiveFindPlayer(SERVER_100_PROTOCOL.MSG_FINDPLAYER message) {
+        var gameServers = _gameServers.Values
+            .Select(gameServer => {
+                var msg = new SERVER_100_PROTOCOL.MSG_QUERYSERVER();
+                var rsp = gameServer.Ask<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg).Result;
+                return rsp;
+            })
+            .ToList();
+
+        foreach (var server in gameServers) {
+            var connectedPlayers = server.ConnectedIps;
+            if (server.ConnectedIps.Contains(message.Ip)) {
+                var foundMsg = new SERVER_100_PROTOCOL.MSG_PLAYERFOUND() {
+                    Found = true,
+                };
+                Sender.Tell(foundMsg);
+                return;
+            }
+        }
+
+        // Inform the sender that this player was not found on any game servers.
+        var failureMsg = new SERVER_100_PROTOCOL.MSG_PLAYERFOUND() {
+            Found = false,
+        };
+        Sender.Tell(failureMsg);
     }
 }

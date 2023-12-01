@@ -41,20 +41,7 @@ internal class CharacterService : MessageService {
             var newCharacter = new Character(charData);
             var createdCharacter = account.AddCharacter(newCharacter);
 
-            // If we had no problems adding the character to the account, save the characters in the database.
-            if (createdCharacter) {
-                var savedCharacterToCollection = CharacterCollection
-                    .AddCharacter(newCharacter);
-                var savedCharacterToAccount = AccountCollection
-                    .AddCharacterToAccount(account.AccountId, newCharacter.CharId);
-
-                if (!savedCharacterToCollection || !savedCharacterToAccount) {
-                    errorCode = 1;
-                }
-            }
-            else {
-                errorCode = 1;
-            }
+            errorCode = createdCharacter ? 0 : 1;
         }
 
         SendToSocket(new LOGIN_7_PROTOCOL.MSG_CREATECHARACTERRESPONSE { ErrorCode = errorCode });

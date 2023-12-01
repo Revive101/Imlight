@@ -16,6 +16,8 @@ using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.Common.Caches;
 using Imlight.Common;
+using Imlight.CoreLib.WizardData.Implementations;
+using Imlight.CoreLib.Game.Commands;
 
 namespace Imlight.CoreLib.Game;
 
@@ -26,13 +28,13 @@ public class GameServer : Server {
 
     private readonly IActorRef _gameWorldRef;
     private readonly IActorRef _commandDispatcherRef;
-    private readonly Cache<ByteString, Account> _sessionKeys;
+    private readonly Cache<ByteString, ulong> _sessionKeys;
     private readonly ListQueue<SessionActor> _playerQueue;
 
     public GameServer(string serverName, ushort serverPort)
         : base(serverName, serverPort, GameServiceFactory.Props()) {
         this._playerQueue = new ListQueue<SessionActor>();
-        this._sessionKeys = new Cache<ByteString, Account>();
+        this._sessionKeys = new Cache<ByteString, ulong>();
         this.ActiveSessions.CollectionChanged += ActiveSessionsChangedEvent;
 
         // Create actor children.
@@ -57,7 +59,7 @@ public class GameServer : Server {
 
     [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_CREATEKEY))]
     private void ReceiveCreateKey(SERVER_100_PROTOCOL.MSG_CREATEKEY message) {
-        var key = CreateKey(message.Account);
+        var key = CreateKey(message.Account.AccountId);
 
         var rsp = new SERVER_100_PROTOCOL.MSG_CREATEKEYRSP() { Key = key };
         Sender.Tell(rsp);
@@ -75,12 +77,15 @@ public class GameServer : Server {
             }
 
             ActiveSessions.Add(message.SessionActor);
-            //_sessionKeys.Remove(cachedKey.Key);
+
+            // Get the account associated with this key.
+            var accountId = cachedKey.Value;
+            var account = AccountCollection.GetAccount(accountId);
 
             // Inform the client that the session key is valid. We'll also send the account associated with it.
             Sender.Tell(new SERVER_100_PROTOCOL.MSG_VALIDATESESSIONKEYRSP() {
-                ErrorCode = 0,
-                Account = cachedKey.Value
+                ErrorCode = account is null ? 1 : 0,
+                Account = account
             });
 
             return;
@@ -120,6 +125,23 @@ public class GameServer : Server {
         Sender.Tell(rsp);
     }
 
+    [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_KICKPLAYER))]
+    private void ReceiveKickPlayer(SERVER_100_PROTOCOL.MSG_KICKPLAYER message) {
+        // A player has requested to be kicked from the server.
+        var session = ActiveSessions.FirstOrDefault(s => s.GetAssociatedAccount()?.AccountId == message.AccountID);
+        if (session is null) {
+            return;
+        }
+
+        var kickedMsg = new EXTENDEDBASE_2_PROTOCOL.MSG_SERVERMESSAGE {
+            Message = "You have been kicked from the server.",
+            Modal = 1
+        };
+        session.ActorRef.Tell(kickedMsg);
+
+        session.Dispose();
+    }
+
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]
     private void ReceiveZoneTransferRequest(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message) {
         _gameWorldRef.Forward(message);
@@ -157,6 +179,7 @@ public class GameServer : Server {
 
             var newPlayer = _playerQueue.Dequeue();
             ActiveSessions.Add(newPlayer);
+            Logger.Information("{Name} New connection {RemoteEndPoint}", Logger.Args(Name, newPlayer.RemoteIp));
 
             // Inform the SessionActor that it's finally outside of queue.
             newPlayer.Dequeue(); ;
@@ -173,13 +196,13 @@ public class GameServer : Server {
         }
     }
 
-    private ByteString CreateKey(Account account) {
-        var key = SessionKey.GenerateHash(_sessionKeyHashInput, account.AccountId);
+    private ByteString CreateKey(ulong accountId) {
+        var key = SessionKey.GenerateHash(_sessionKeyHashInput, accountId);
 
         // Add this key to the local server. We're going to map the key to an account, that way when a game
         // client finds its corresponding key, it will get it's account as well.
         var timeSpan = TimeSpan.FromSeconds(_sessionKeyValidityTime);
-        _sessionKeys.Store(key, account, timeSpan);
+        _sessionKeys.Store(key, accountId, timeSpan);
 
         return key;
     }

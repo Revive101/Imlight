@@ -3,42 +3,64 @@
  * Proprietary and confidential.
  */
 
-using System;
-using System.Linq;
 using Akka.Actor;
-using Akka.Util.Internal;
 using Imlight.Common.Caches;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Login.Models;
+using Imlight.CoreLib.Game.Commands;
+using Imlight.CoreLib.Game.Models;
+using Imlight.CoreLib.WizardData.Implementations;
 
 namespace Imlight.CoreLib.Game.Services;
 
 internal class CommandService : MessageService {
-    private IActorRef _dispatcherRef;
+    private readonly IActorRef _dispatcherRef;
 
-    public CommandService(SessionActor sessionActor) : base(sessionActor) { _dispatcherRef = CommandDispatcher.Instance; }
+    private Character _selectedCharacter;
+    private Account _selectedAccount;
 
-    protected static Props Props(SessionActor parentActor) {
-        return Akka.Actor.Props.Create(() => new CommandService(parentActor));
-    }
+    public CommandService(SessionActor sessionActor) : base(sessionActor) => _dispatcherRef = CommandDispatcher.Instance;
+
+    protected static Props Props(SessionActor parentActor) => Akka.Actor.Props.Create(() => new CommandService(parentActor));
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_COMMAND))]
     private void ReceiveCommand(GAME_5_PROTOCOL.MSG_COMMAND message) {
-        var account = GetActiveAccount();
-        if (account.AuthLevel < AuthLevel.HallMonitor) {
-            return;
-        }
-
         var coreObject = GetActiveCoreObject();
         var playerCharacter = GetActiveCharacter();
+        var account = GetActiveAccount();
 
         _dispatcherRef.Tell(new SERVER_100_PROTOCOL.MSG_COMMAND() {
             CommandText = message.Command,
             ActorRef = SessionActor.ActorRef,
             CoreObject = coreObject,
             PlayerCharacter = playerCharacter,
-            AuthLevel = account.AuthLevel,
+            Account = account,
+            ZoneActor = SessionActor.GetZoneActor(),
+            ServerActor = SessionActor.ServerRef,
+            SelectedCharacter = _selectedCharacter,
+            SelectedAccount = _selectedAccount
         });
+    }
+
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_BUDDYSTATS))]
+    private void ReceivePlayerSelect(GAME_5_PROTOCOL.MSG_BUDDYSTATS message) {
+        // We only care about the ID sent here. It's the ID of the core object, but Imlight serialized
+        // it using the character ID.
+        var id = message.BuddyID;
+
+        var persistentCharacter = CharacterCollection.GetCharacter(id);
+        if (persistentCharacter is null) {
+            return;
+        }
+
+        var account = AccountCollection.GetAccount(persistentCharacter.AccountId);
+        if (account is null) {
+            return;
+        }
+
+        // Cache for our next command.
+        _selectedCharacter = persistentCharacter;
+        _selectedAccount = account;
     }
 }

@@ -82,15 +82,15 @@ internal class GameTransitionService : MessageService {
     }
 
     private SERVER_100_PROTOCOL.MSG_SERVERINFO GetGameServer() {
-        var msg = new SERVER_100_PROTOCOL.MSG_QUERYGAMESERVERS();
+        var msg = new SERVER_100_PROTOCOL.MSG_GETBESTSERVER();
 
 #if DEBUG
         var localEndPoint = (IPEndPoint) SessionActor.Socket.LocalEndPoint;
         var isLocal = localEndPoint.Address.ToString().Contains("127.0.");
-        msg = new SERVER_100_PROTOCOL.MSG_QUERYGAMESERVERS() { IsLocal = isLocal };
+        msg = new SERVER_100_PROTOCOL.MSG_GETBESTSERVER() { IsLocal = isLocal };
 #else
             // Release builds should never be able to connect to their own local server.
-            msg = new SERVER_100_PROTOCOL.MSG_QUERYGAMESERVERS() { IsLocal = false };
+            msg = new SERVER_100_PROTOCOL.MSG_GETBESTSERVER() { IsLocal = false };
 #endif
 
         return AskServer<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg);

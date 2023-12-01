@@ -13,7 +13,6 @@ using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.Common.IO;
 
 namespace Imlight.Common.Caches;
-
 public static partial class TypeCache {
 
     public static Imlight.Common.ObjectProperty.PropertyReflection.PropertyClass Dispatch(uint hash) {
@@ -23198,6 +23197,15 @@ public static partial class TypeCache {
         Guest_SKB_AZ_Ixcax_A_100 = 556560994,
         Guest_SKB_AZ_Ixcax_A_150 = 556610146,
         Guest_SKB_AZ_Ixcax_A_50 = 564951650,
+        MNT_GhoulsShovel = 2035610946,
+        PP_CrystalBdayDragon = 1897078804,
+        PP_SunGobblerBall = 1522469440,
+        PP_Sun_GreenGobbler = 1337690394,
+        MNT_2P_AutumnTreant = 1063435527,
+        MNT_FlyingMonkey = 490807393,
+        PP_BabyPlantMonster = 2076646587,
+        MNT_PlantCreature_A = 1802823265,
+        PP_AutumnTreant = 561077291,
     }
 
     public enum eMountType {

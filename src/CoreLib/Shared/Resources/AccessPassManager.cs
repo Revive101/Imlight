@@ -41,8 +41,8 @@ public static class AccessPassManager {
     }
 
     public static bool DoesZoneExist(string zoneName)
-        => s_zones.Any(zone => zone == zoneName);
+        => s_zones.Any(zone => zone.ToLower() == zoneName?.ToLower());
 
     public static string GetContainedZoneName(string partialZoneName)
-        => s_zones.FirstOrDefault(zone => zone.Contains(partialZoneName));
+        => s_zones.FirstOrDefault(zone => zone.ToLower().Contains(partialZoneName.ToLower()));
 }
