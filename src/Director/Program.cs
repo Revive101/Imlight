@@ -126,6 +126,11 @@ internal static class Program {
             DatabaseUtilities.CreateEmbeddedDatabaseAccount($"hm{i}", $"hm{i}@r101.com", "hm9999", AuthLevel.HallMonitor);
         }
 
+        // Create 3 developer accounts.
+        for (int i = 1; i < 3; i++) {
+            DatabaseUtilities.CreateEmbeddedDatabaseAccount($"dev{i}", $"dev{i}@r101.com", "dev9999", AuthLevel.Administrator);
+        }
+
         // Hard code hall monitor lead accounts. Don't share these passwords!
         DatabaseUtilities.CreateEmbeddedDatabaseAccount($"mitsu", $"mitsu@r101.com", "2034", AuthLevel.Administrator);
     }
