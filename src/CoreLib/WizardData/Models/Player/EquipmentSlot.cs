@@ -3,7 +3,7 @@
  * Proprietary and confidential.
  */
 
-namespace Imlight.CoreLib.Game.Models;
+namespace Imlight.CoreLib.WizardData.Models.Player;
 
 public enum EquipmentSlot {
     Hat,

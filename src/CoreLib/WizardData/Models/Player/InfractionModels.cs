@@ -1,8 +1,13 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Imlight.CoreLib.WizardData.Models;
+namespace Imlight.CoreLib.WizardData.Models.Player;
 
 public enum InfractionType {
     SuspiciousBehavior,

@@ -5,24 +5,19 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using Imlight.Common;
-using Imlight.Common.Caches;
 using Imlight.Common.Configuration;
 using Imlight.Common.IO;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.Common.Utilities;
 using Imlight.CoreLib.Shared.Resources;
-using Imlight.CoreLib.WizardData;
+using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Implementations;
-using Imlight.CoreLib.WizardData.Models;
 using Newtonsoft.Json;
 using SharpDX;
 using static Imlight.Common.Caches.TypeCache;
-using static Imlight.CoreLib.WizardData.WizardResults;
 
-namespace Imlight.CoreLib.Game.Models;
+namespace Imlight.CoreLib.WizardData.Models.Player;
 
 [Serializable]
 public class Character : IDisposable {
@@ -78,7 +73,6 @@ public class Character : IDisposable {
 
     [JsonIgnore] private Vector3 _location;
     [JsonIgnore] private Vector3 _orientation;
-    [JsonIgnore] private Dictionary<Type, MethodInfo> _resultHandlers;
     [JsonIgnore] private ElementChangeCacheManager _cacheManager;
 
     // Empty constructor for deserialization.
@@ -99,8 +93,6 @@ public class Character : IDisposable {
         var gameStats = new WizGameStats();
         gameStats = CalculateBaseGameStats(gameStats);
         this.GameStats = gameStats;
-
-        SetResultHandlers();
     }
 
     public void SetLocation(Vector3 loc) {
@@ -175,17 +167,6 @@ public class Character : IDisposable {
         return creationInfo;
     }
 
-    public void HandleResult(TypeCache.Result result) {
-        // Find the method that handles this message type
-        if (_resultHandlers.TryGetValue(result.GetType(), out var method)) {
-            // Invoke the method with the message
-            method.Invoke(this, new object[] { result });
-        }
-        else {
-            Logger.Warning("No character result handler for result type {ResultType}.", Logger.Args(result.GetType()));
-        }
-    }
-
     public void Dispose() {
         FlushPersistentChanges();
         _cacheManager?.Dispose();
@@ -215,24 +196,6 @@ public class Character : IDisposable {
         return existingStats;
     }
 
-    private void SetResultHandlers() {
-        _resultHandlers = new Dictionary<System.Type, MethodInfo>();
-
-        // Get all methods in this actor with a message handling attribute
-        var methods = this
-            .GetType()
-            .GetMethods(BindingFlags.Instance
-                        | BindingFlags.Public
-                        | BindingFlags.NonPublic
-                        | BindingFlags.FlattenHierarchy)
-            .Where(method => method.GetCustomAttributes<ResultHandlerAttribute>().Any());
-
-        foreach (var method in methods) {
-            var paramType = method.GetParameters()[0].ParameterType;
-            _resultHandlers.Add(paramType, method);
-        }
-    }
-
     private void SendCachedChange<T>(string elementName, byte batchSize, T value) {
         _cacheManager ??= new ElementChangeCacheManager(PlayerDatabase.Instance.Store, CharId, _defaultUploadIntervalInMinutes);
         _cacheManager.EnqueueChange(elementName, value);
@@ -246,28 +209,4 @@ public class Character : IDisposable {
     public void FlushPersistentChanges() {
         _cacheManager?.FlushAllChangesAsync().RunSynchronously();
     }
-
-    #region Result Handlers
-
-    [ResultHandler(typeof(ResAddHealth))]
-    private void ReceiveAddHealth(ResAddHealth result) {
-        // If we're using flat health, just add the health up to the max health.
-        if (result.UseFlat) {
-            this.GameStats.m_currentHitpoints += result.HealthFlat;
-            if (this.GameStats.m_currentHitpoints > this.GameStats.m_baseHitpoints) {
-                this.GameStats.m_currentHitpoints = this.GameStats.m_baseHitpoints;
-            }
-        }
-        else {
-            // If we're using percent health, add the percent of the max health.
-            var percent = result.HealthPercent / 100f;
-            var amount = this.GameStats.m_baseHitpoints * percent;
-            this.GameStats.m_currentHitpoints += (int) amount;
-            if (this.GameStats.m_currentHitpoints > this.GameStats.m_baseHitpoints) {
-                this.GameStats.m_currentHitpoints = this.GameStats.m_baseHitpoints;
-            }
-        }
-    }
-
-    #endregion
 }

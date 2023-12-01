@@ -14,6 +14,7 @@ using Imlight.Common.Formats;
 using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Implementations;
 using SharpDX;
 using static Imlight.Common.Caches.ServerTypeCache;
@@ -244,7 +245,7 @@ public static class WizardZoneLoader {
 
         foreach (var requirement in info.m_spawnRequirements.m_requirements) {
             if (requirement is TypeCache.ReqGlobalRegistryValue globalReq) {
-                var globalValue = GlobalRegistry.GetRegistryEntry(globalReq.m_entryName);
+                var globalValue = GlobalRegistryCollection.GetRegistryEntry(globalReq.m_entryName);
 
                 switch (globalReq.m_operatorType) {
                     case TypeCache.ReqNumeric.OPERATOR_TYPE.OPERATOR_EQUALS:

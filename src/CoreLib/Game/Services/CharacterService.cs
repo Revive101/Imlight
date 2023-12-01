@@ -4,11 +4,10 @@
  */
 
 using Akka.Actor;
-using Imlight.CoreLib.Game.Models;
-using SharpDX;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.Common.Caches;
+using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Services;
 

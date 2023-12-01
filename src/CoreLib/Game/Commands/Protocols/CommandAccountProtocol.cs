@@ -1,7 +1,11 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
 using Imlight.CoreLib.AntiAmbrose;
-using Imlight.CoreLib.Login.Models;
 using Imlight.CoreLib.WizardData.Implementations;
-using Imlight.CoreLib.WizardData.Models;
+using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using System.Text;
 

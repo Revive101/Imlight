@@ -17,10 +17,12 @@ def process_files(folder_path, header):
 
 if __name__ == "__main__":
     # Set your copyright header
-    copyright_header = """/* Copyright (C) Revive101 Development Team - All Rights Reserved
+    copyright_header = """
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
- */"""
+ */
+"""
 
     # Set the folder path to start the search
     current_folder = os.getcwd()

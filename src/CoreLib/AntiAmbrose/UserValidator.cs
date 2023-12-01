@@ -1,8 +1,13 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
 using Imlight.Common.Cryptography;
-using Imlight.CoreLib.Login.Models;
 using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Implementations;
-using Imlight.CoreLib.WizardData.Models;
+using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using static Imlight.Common.Caches.LOGIN_7_PROTOCOL;
 

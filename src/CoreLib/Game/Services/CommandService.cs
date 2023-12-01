@@ -7,10 +7,9 @@ using Akka.Actor;
 using Imlight.Common.Caches;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Networking;
-using Imlight.CoreLib.Login.Models;
 using Imlight.CoreLib.Game.Commands;
-using Imlight.CoreLib.Game.Models;
 using Imlight.CoreLib.WizardData.Implementations;
+using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Services;
 

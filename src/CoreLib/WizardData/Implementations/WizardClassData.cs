@@ -4,9 +4,9 @@
  */
 
 using System;
-using Imlight.CoreLib.Game.Models;
+using Imlight.CoreLib.WizardData.Models.Player;
 
-namespace Imlight.CoreLib.WizardData.Models;
+namespace Imlight.CoreLib.WizardData.Implementations;
 
 /// <summary>
 /// Contains base stats for each class, as well as stats that are calculated based on level.

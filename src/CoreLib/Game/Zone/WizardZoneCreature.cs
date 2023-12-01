@@ -107,7 +107,6 @@ public class WizardZoneCreature : WizardZoneObject {
 
     protected override void OnPlayerInteractionEnter(CoreObject player, IActorRef suspect) {
         base.OnPlayerInteractionEnter(player, suspect);
-        return; // this is for combat branch.
 
         if (_creatureState == CreatureState.Combat || !_isDuelingCreature) {
             return;

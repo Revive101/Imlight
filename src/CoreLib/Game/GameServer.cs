@@ -11,7 +11,6 @@ using Imlight.Common.Configuration;
 using Imlight.Common.Structures;
 using Imlight.Common.Cryptography;
 using Imlight.Common.IO;
-using Imlight.CoreLib.Login.Models;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.Common.Caches;

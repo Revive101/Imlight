@@ -7,10 +7,10 @@ using System;
 using System.Security.Cryptography.X509Certificates;
 using Imlight.Common;
 using Imlight.Common.Configuration;
+using Imlight.CoreLib.WizardData.Implementations;
 using Raven.Client.Documents;
-using Raven.Client.Json.Serialization.NewtonsoftJson;
 
-namespace Imlight.CoreLib.WizardData.Implementations;
+namespace Imlight.CoreLib.WizardData.Databases;
 
 public class PlayerDatabase : RavenDatabaseSingleton<PlayerDatabase> {
     protected readonly byte MaxNumberOfRequestsPerSession
@@ -41,12 +41,6 @@ public class PlayerDatabase : RavenDatabaseSingleton<PlayerDatabase> {
                 UseOptimisticConcurrency = true,
                 RequestTimeout = TimeSpan.FromSeconds(RequestTimeoutInSeconds),
                 WaitForNonStaleResultsTimeout = TimeSpan.FromSeconds(WaitForNonStaleResultsTimeoutInSeconds),
-
-                // RavenDb Studio cannot properly display ulong values, so we convert them to strings. JavaScript moment.
-                Serialization = new NewtonsoftJsonSerializationConventions()
-                {
-                    CustomizeJsonSerializer = s => s.Converters.Add(new ULongToStringConverter())
-                }
             },
             Certificate = Certificate
         }.Initialize();

@@ -4,8 +4,8 @@
  */
 
 using Imlight.Common.Caches;
-using Imlight.CoreLib.Game.Models;
 using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Shared.Packets;
 

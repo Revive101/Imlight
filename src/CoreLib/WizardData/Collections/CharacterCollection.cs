@@ -4,7 +4,8 @@
  */
 
 using System.Linq;
-using Imlight.CoreLib.Game.Models;
+using Imlight.CoreLib.WizardData.Databases;
+using Imlight.CoreLib.WizardData.Models.Player;
 using Raven.Client.Documents;
 
 namespace Imlight.CoreLib.WizardData.Implementations;
@@ -62,7 +63,7 @@ public static class CharacterCollection {
     /// </summary>
     /// <param name="id">The ID of the character to retrieve.</param>
     /// <returns>The character with the specified ID, or null if not found.</returns>
-    public static Character? GetCharacter(ulong id) {
+    public static Character GetCharacter(ulong id) {
         using var session = s_store.OpenSession();
 
         var character = session.Query<Character>()

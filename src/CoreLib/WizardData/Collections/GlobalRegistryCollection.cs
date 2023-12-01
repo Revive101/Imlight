@@ -5,19 +5,21 @@
 
 using System.Linq;
 using Imlight.Common;
+using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models;
+using Imlight.CoreLib.WizardData.Models.World;
 using Raven.Client.Documents;
 
-namespace Imlight.CoreLib.WizardData.Implementations;
+namespace Imlight.CoreLib.WizardData.Collections;
 
-public static class GlobalRegistry {
+public static class GlobalRegistryCollection {
     private const string CollectionName = "GlobalRegistry";
 
     private static readonly IDocumentStore s_store;
     private static bool s_isInitialized;
     private static GlobalRegistryModel s_model;
 
-    static GlobalRegistry() {
+    static GlobalRegistryCollection() {
         s_store = WorldDatabase.Instance.Store;
     }
 

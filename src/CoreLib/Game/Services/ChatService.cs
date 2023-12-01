@@ -12,13 +12,12 @@ using Imlight.Common.Caches;
 using Imlight.Common.IO;
 using Imlight.Common.Utilities;
 using Imlight.CoreLib.Game.Commands;
-using Imlight.CoreLib.Game.Models;
-using Imlight.CoreLib.Login.Models;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Implementations;
-using Imlight.CoreLib.WizardData.Models;
+using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Services;
 

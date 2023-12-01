@@ -4,9 +4,9 @@
  */
 
 using System.Linq;
-using Imlight.CoreLib.Game.Models;
-using Imlight.CoreLib.Login.Models;
-using Imlight.CoreLib.WizardData.Models;
+using Imlight.CoreLib.WizardData.Collections;
+using Imlight.CoreLib.WizardData.Databases;
+using Imlight.CoreLib.WizardData.Models.Player;
 using Raven.Client.Documents;
 
 namespace Imlight.CoreLib.WizardData.Implementations;
@@ -20,9 +20,10 @@ public static class AccountCollection {
     }
 
     /// <summary>
-    /// Creates an account in the database.
+    /// Creates a new account in the database.
     /// </summary>
-    /// <param name="account">The created account.</param>
+    /// <param name="account">The account to be created.</param>
+    /// <returns>True if the account is successfully created, false if the account already exists.</returns>
     public static bool CreateAccount(Account account) {
         using var session = s_store.OpenSession();
 
@@ -46,10 +47,11 @@ public static class AccountCollection {
     }
 
     /// <summary>
-    /// Deletes an account from the database.
+    /// Deletes an account and all associated characters from the database.
     /// </summary>
-    /// <param name="account"></param>
-    public static void DeleteAccount(string username) {
+    /// <param name="username">The username of the account to delete.</param>
+    /// <returns>True if the account was successfully deleted, false otherwise.</returns>
+    public static bool DeleteAccount(string username) {
         using var session = s_store.OpenSession();
 
         // Load the account with the characters included.
@@ -57,7 +59,7 @@ public static class AccountCollection {
             .Include(c => c.CharacterIds)
             .FirstOrDefault(c => c.Username == username);
         if (account is null) {
-            return;
+            return false;
         }
 
         // Delete the characters.
@@ -68,6 +70,8 @@ public static class AccountCollection {
         // Delete the account.
         session.Delete(account);
         session.SaveChanges();
+
+        return true;
     }
 
     /// <summary>
@@ -290,6 +294,11 @@ public static class AccountCollection {
         session.SaveChanges();
     }
 
+    /// <summary>
+    /// Removes an infraction from an account.
+    /// </summary>
+    /// <param name="accountId">The ID of the account.</param>
+    /// <param name="infractionIndex">The index of the infraction to remove.</param>
     public static void RemoveInfractionFromAccount(ulong accountId, ulong infractionIndex) {
         using var session = s_store.OpenSession();
 

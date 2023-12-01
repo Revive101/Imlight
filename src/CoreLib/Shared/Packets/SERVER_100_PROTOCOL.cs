@@ -7,10 +7,8 @@ using System.Net.Sockets;
 using Akka.Actor;
 using Imlight.Common.IO;
 using Imlight.CoreLib.Shared.Networking;
-using Imlight.CoreLib.Login.Models;
-using Imlight.CoreLib.Game.Models;
 using static Imlight.Common.Caches.TypeCache;
-using System.Collections.Generic;
+using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Shared.Packets;
 

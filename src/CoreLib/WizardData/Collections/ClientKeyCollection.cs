@@ -6,12 +6,13 @@
 using System;
 using System.Linq;
 using Imlight.Common.IO;
+using Imlight.CoreLib.WizardData.Databases;
 using Raven.Client;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Operations;
 using Raven.Client.Documents.Queries;
 
-namespace Imlight.CoreLib.WizardData.Implementations;
+namespace Imlight.CoreLib.WizardData.Collections;
 
 public class ClientKeyPair {
     public ulong AccountId { get; set; }

@@ -1,8 +1,13 @@
-using Imlight.CoreLib.WizardData.Models;
-using Raven.Client.Documents;
-using System;
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
 
-namespace Imlight.CoreLib.WizardData.Implementations;
+using Imlight.CoreLib.WizardData.Databases;
+using Imlight.CoreLib.WizardData.Models.Player;
+using Raven.Client.Documents;
+
+namespace Imlight.CoreLib.WizardData.Collections;
 
 public static class ChatLogCollection {
     public const string CollectionName = "ChatLog";
@@ -12,6 +17,10 @@ public static class ChatLogCollection {
         s_store = PlayerDatabase.Instance.Store;
     }
 
+    /// <summary>
+    /// Adds a chat log to the collection.
+    /// </summary>
+    /// <param name="chatLog">The chat log to add.</param>
     public static void AddChatLog(ChatLog chatLog) {
         using var session = s_store.OpenSession();
 

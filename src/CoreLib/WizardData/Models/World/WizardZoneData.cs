@@ -6,7 +6,7 @@
 using Imlight.Common.Caches;
 using System.Collections.Generic;
 
-namespace Imlight.CoreLib.WizardData.Models;
+namespace Imlight.CoreLib.WizardData.Models.World;
 
 public class WizardZoneData {
     public string ZoneName { get; set; }

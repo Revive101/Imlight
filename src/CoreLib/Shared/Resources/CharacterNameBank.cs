@@ -1,3 +1,8 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -18,6 +23,12 @@ public static class CharacterNameBank {
     private static readonly string[] _englishNameBank = GetEnglishNameBank();
     private static readonly Dictionary<string, List<string>> _characterNameTable = GetCharacterNameTable();
 
+    /// <summary>
+    /// Retrieves the English name based on the given name indices and gender.
+    /// </summary>
+    /// <param name="nameIndices">The name indices containing the first name, middle name, and last name.</param>
+    /// <param name="gender">The gender of the character.</param>
+    /// <returns>The English name composed of the first name, middle name, and last name.</returns>
     public static string GetEnglishName(uint nameIndices, eGender gender) {
         // Drop the uneeded MSB.
         nameIndices &= 0x7FFFFFFF;

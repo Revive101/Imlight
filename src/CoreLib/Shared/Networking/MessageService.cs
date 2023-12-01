@@ -8,11 +8,10 @@ using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.MessageLayer;
-using Imlight.CoreLib.Game.Models;
 using Imlight.CoreLib.Game.Services;
-using Imlight.CoreLib.Login.Models;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Implementations;
+using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Shared.Networking;
 

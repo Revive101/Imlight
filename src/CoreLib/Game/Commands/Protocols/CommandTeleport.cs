@@ -1,8 +1,13 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
 using Akka.Actor;
 using Imlight.Common;
-using Imlight.CoreLib.Login.Models;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Models.Player;
 using System.Linq;
 
 namespace Imlight.CoreLib.Game.Commands.Protocols;

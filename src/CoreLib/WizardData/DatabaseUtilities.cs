@@ -6,13 +6,12 @@
 using System;
 using System.Security.Cryptography;
 using System.Text;
-using Imlight.CoreLib.Game.Models;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.Common.Utilities;
 using Imlight.Common;
 using Imlight.Common.ObjectProperty;
 using Imlight.Common.Caches;
-using Imlight.CoreLib.Login.Models;
+using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.WizardData;
 
