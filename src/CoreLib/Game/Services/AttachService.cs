@@ -58,7 +58,7 @@ internal class AttachService : MessageService {
         }
 
         // Set the character's location and zone to the ones given in the message.
-        character.SetZone(message.ZoneName);
+        character.SetZone(message.ZoneName, zoneDetails.ZoneDisplayName);
         character.SetLocation(message.Location);
         var gameServer = GetGameServer();
         character.GameServerIp = gameServer.IP;

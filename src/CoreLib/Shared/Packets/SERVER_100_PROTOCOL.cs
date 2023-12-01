@@ -8,6 +8,9 @@ using Akka.Actor;
 using Imlight.Common.IO;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Login.Models;
+using Imlight.CoreLib.Game.Models;
+using static Imlight.Common.Caches.TypeCache;
+using System.Collections.Generic;
 
 namespace Imlight.CoreLib.Shared.Packets;
 
@@ -67,7 +70,7 @@ public sealed class SERVER_100_PROTOCOL : IServerProtocol
         public bool IsLocal;
     }
 
-    public class MSG_QUERYGAMESERVERS : IServerMessage
+    public class MSG_GETBESTSERVER : IServerMessage
     {
         public byte MessageOrder { get; } = 7;
         public byte ServiceID { get; } = 100;
@@ -95,6 +98,7 @@ public sealed class SERVER_100_PROTOCOL : IServerProtocol
         public ushort PlayerCount;
         public TcpListener TcpClient;
         public IActorRef ActorRef;
+        public string[] ConnectedIps;
     }
 
     public class MSG_CREATEKEY : IServerMessage
@@ -153,5 +157,66 @@ public sealed class SERVER_100_PROTOCOL : IServerProtocol
     {
         public byte MessageOrder { get; } = 16;
         public byte ServiceID { get; } = 100;
+    }
+
+    public class MSG_COMMAND : IServerMessage
+    {
+        public byte MessageOrder { get; } = 17;
+        public byte ServiceID { get; } = 100;
+
+        public WideByteString CommandText;
+        public IActorRef ActorRef;
+        public CoreObject CoreObject;
+        public Character PlayerCharacter;
+        public Account Account;
+        public IActorRef ZoneActor;
+        public IActorRef ServerActor;
+        public Account SelectedAccount;
+        public Character SelectedCharacter;
+    }
+
+    public class MSG_COMMANDRSP : IServerMessage
+    {
+        public byte MessageOrder { get; } = 18;
+        public byte ServiceID { get; } = 100;
+
+        public WideByteString CommandText;
+        public bool Failed;
+        public ByteString ResponseText;
+    }
+
+    public class MSG_PLAYERENQUEUEDRSP : IServerMessage
+    {
+        public byte MessageOrder { get; } = 19;
+        public byte ServiceID { get; } = 100;
+
+        public int PositionInQueue;
+        public int Status;
+        public bool Failed;
+    }
+
+    public class MSG_FINDPLAYER : IServerMessage {
+        public byte MessageOrder { get; } = 20;
+        public byte ServiceID { get; } = 100;
+
+        public ulong UserID;
+        public string Username;
+        public string CharacterName;
+        public string Ip;
+    }
+
+    public class MSG_PLAYERFOUND : IServerMessage {
+        public byte MessageOrder { get; } = 21;
+        public byte ServiceID { get; } = 100;
+
+        public bool Found;
+        public IActorRef ServerActor;
+    }
+
+    public class MSG_KICKPLAYER : IServerMessage {
+        public byte MessageOrder { get; } = 22;
+        public byte ServiceID { get; } = 100;
+
+        public ulong AccountID;
     }
 }

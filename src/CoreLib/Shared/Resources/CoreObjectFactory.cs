@@ -124,20 +124,18 @@ public static class CoreObjectFactory {
 
     public static CoreTemplate GetCoreTemplate(ulong id) {
         if (!s_coreTemplates.TryGetValue(id, out var loc)) {
-            Logger.Error("Could not find CoreTemplate by ID {Tid}", Logger.Args(id));
+            Logger.Debug("Could not find CoreTemplate by ID {Tid}", Logger.Args(id));
             return null;
         }
 
-        var template = ResourceManager.LoadDeserializedFile<CoreTemplate>("Root.wad", loc)
-            ?? throw new NullReferenceException($"Template by ID {id} was not able to be loaded!");
+        var template = ResourceManager.LoadDeserializedFile<CoreTemplate>("Root.wad", loc);
+        if (template is null) {
+            Logger.Warning("Could not load CoreTemplate from {Loc}", Logger.Args(loc));
+        }
         return template ?? null;
     }
 
     private static CoreObject CreateCoreObjectFromTemplate(CoreTemplate template) {
-        if (template == null) {
-            throw new ArgumentNullException(nameof(template));
-        }
-
         return template switch {
             ReagentItemTemplate => new ClientReagentItem(),
             ItemTemplate => new WizClientObjectItem(),

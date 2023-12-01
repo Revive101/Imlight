@@ -10,6 +10,7 @@ using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
+using SharpDX;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -24,16 +25,19 @@ internal class MoveService : MessageService {
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVE))]
     private void ReceiveClientMove(GAME_5_PROTOCOL.MSG_CLIENTMOVE message) {
+        // MoveService saves the location of the player's game object.
+        // CharacterService saves the location of the player's character persistently.
+
         // Restore actual location information, as it is compressed by a factor of 4 and unsigned.
         // Yaw is represented in radians in the client, but transmitted to the server as degrees.
-        var position = new SharpDX.Vector3(
-            unchecked((short) message.LocationX * 4),
-            unchecked((short) message.LocationY * 4),
-            unchecked((short) message.LocationZ * 4));
+        var x = unchecked((short) message.LocationX) * 4.0f;
+        var y = unchecked((short) message.LocationY) * 4.0f;
+        var z = unchecked((short) message.LocationZ) * 4.0f;
+        var direction = (float) (message.Direction * Math.PI * 2 / 250);
 
-        var character = GetActiveCharacter();
-        character.SetLocation(position);
-        character.SetOrientation(message.Direction);
+        var activeCharacterObject = GetActiveCoreObject();
+        activeCharacterObject.m_location = new Vector3(x, y, z);
+        activeCharacterObject.m_orientation = new Vector3(0, 0, direction);
 
         // Broadcast the move to all other players in the zone.
         BroadcastClientMove(message);

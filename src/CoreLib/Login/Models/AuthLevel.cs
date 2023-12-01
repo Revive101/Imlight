@@ -7,6 +7,7 @@ namespace Imlight.CoreLib.Login.Models;
 
 public enum AuthLevel {
     None,
+    QualityAssurance,
     HallMonitor,
     Developer,
     Administrator

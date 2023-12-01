@@ -17,6 +17,7 @@ public static class ClassElementReaders {
         { typeof(int),            (r) => r.ReadInt32()                     },
         { typeof(uint),           (r) => r.ReadUInt32()                    },
         { typeof(long),           (r) => r.ReadInt64()                     },
+        { typeof(double),         (r) => r.ReadDouble()                    },
         { typeof(ulong),          (r) => r.ReadUInt64()                    },
         { typeof(ByteString),     (r) => r.ReadString()                    },
         { typeof(WideByteString), (r) => r.ReadWString()                   },

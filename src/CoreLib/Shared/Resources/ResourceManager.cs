@@ -17,8 +17,8 @@ using Imlight.CoreLib.WizardData.Implementations;
 namespace Imlight.CoreLib.Shared.Resources;
 
 public static class ResourceManager {
+    public const string RootWadName = "Root.wad";
     private const uint PatchServerDownloadTimeoutSeconds = 360;
-    private const string RootWadName = "Root.wad";
     private static KiWad _rootWad;
 
     /// <summary>

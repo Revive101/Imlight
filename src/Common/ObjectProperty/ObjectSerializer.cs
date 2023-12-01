@@ -14,6 +14,7 @@ using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.Common.Caches;
 using SharpDX;
 using Serilog;
+using static Imlight.Common.ObjectProperty.SerializerOptions;
 
 namespace Imlight.Common.ObjectProperty;
 
@@ -28,9 +29,9 @@ public class ObjectSerializer {
     /// <param name="options">The serializer options.</param>
     public ObjectSerializer() {
         this.Options = new SerializerOptions()
-            .OnMode(SerializerOptions.Mode.Compact)
-            .OnBehaviors(SerializerOptions.Behaviors.None)
-            .OnPropertyMask(SerializerOptions.PropertyFlags.Transmit | SerializerOptions.PropertyFlags.AuthorityTransmit);
+            .OnMode(Mode.Compact)
+            .OnBehaviors(Behaviors.None)
+            .OnPropertyMask(PropertyFlags.Transmit | PropertyFlags.AuthorityTransmit);
     }
 
     /// <summary>
@@ -38,7 +39,7 @@ public class ObjectSerializer {
     /// </summary>
     /// <param name="mode">The SerializerOptions.Mode to set.</param>
     /// <returns>A new instance of the ObjectSerializer with the specified SerializerOptions.Mode.</returns>
-    public virtual ObjectSerializer OnMode(SerializerOptions.Mode mode) {
+    public virtual ObjectSerializer OnMode(Mode mode) {
         this.Options.SerializerMode = mode;
         return this;
     }
@@ -48,7 +49,7 @@ public class ObjectSerializer {
     /// </summary>readbits
     /// <param name="flags">The SerializerOptions.Behaviors flags to set.</param>
     /// <returns>A new instance of the ObjectSerializer with the specified SerializerOptions.Behaviors flags.</returns>
-    public virtual ObjectSerializer OnBehaviors(SerializerOptions.Behaviors flags) {
+    public virtual ObjectSerializer OnBehaviors(Behaviors flags) {
         this.Options.BehaviorFlags = flags;
         return this;
     }
@@ -58,7 +59,7 @@ public class ObjectSerializer {
     /// </summary>
     /// <param name="flags">The property flags to set.</param>
     /// <returns>A new instance of the ObjectSerializer with the specified property flags.</returns>
-    public virtual ObjectSerializer OnPropertyMask(SerializerOptions.PropertyFlags flags) {
+    public virtual ObjectSerializer OnPropertyMask(PropertyFlags flags) {
         this.Options.PropertyMask = flags;
         return this;
     }
@@ -80,7 +81,7 @@ public class ObjectSerializer {
         // Configure to begin serialization.
         _recursionLevel = 0;
         var writer = new BitWriter();
-        if ((Options.BehaviorFlags & SerializerOptions.Behaviors.CompactLength) != 0) {
+        if (Options.BehaviorFlags.HasFlag(Behaviors.CompactLength)) {
             writer.WithCompactLengths();
         }
 
@@ -88,8 +89,7 @@ public class ObjectSerializer {
         var serializedData = SerializeInternal(writer, propertyClass).GetData();
 
         // If the serializer flags are set to compress, we'll compress the serialized data.
-        var isCompressed = (Options.BehaviorFlags & SerializerOptions.Behaviors.Compress) != 0;
-        if (!isCompressed) {
+        if (!Options.BehaviorFlags.HasFlag(Behaviors.Compress)) {
             // If not, we'll just return the serialized data.
             return serializedData;
         }
@@ -147,15 +147,15 @@ public class ObjectSerializer {
         // Verbose mode requires us to write the size of the object. We'll write an empty size for now,
         // and go back to it later.
         var lengthLocation = writer.BitPos();
-        if (Options.SerializerMode == SerializerOptions.Mode.Verbose) {
+        if (Options.SerializerMode == Mode.Verbose) {
             writer.WriteUInt32(0);
         }
 
         switch (Options.SerializerMode) {
-            case SerializerOptions.Mode.Compact:
+            case Mode.Compact:
                 SerializeCompact(writer, propertyClass);
                 break;
-            case SerializerOptions.Mode.Verbose:
+            case Mode.Verbose:
             default:
                 throw new NotImplementedException();
         }
@@ -163,7 +163,7 @@ public class ObjectSerializer {
         _recursionLevel--;
 
         // If we're not in verbose mode, we can return the writer now.
-        if (Options.SerializerMode != SerializerOptions.Mode.Verbose) {
+        if (Options.SerializerMode != Mode.Verbose) {
             return writer;
         }
 
@@ -213,12 +213,12 @@ public class ObjectSerializer {
 
     private void SerializeObjectValue(BitWriter writer, FieldInfo field, object value) {
         var type = field.FieldType;
-        var flags = (SerializerOptions.PropertyFlags) field.GetCustomAttribute<PropertyAttribute>()!.Flags;
+        var flags = (PropertyFlags) field.GetCustomAttribute<PropertyAttribute>()!.Flags;
         var writerFunc = ClassElementWriters.TryGetWriter(type);
 
         // Serialize enum if field type is enum or the ProperyFlags indicate bits or enum.
-        if ((flags & (SerializerOptions.PropertyFlags.Bits | SerializerOptions.PropertyFlags.Enum)) != 0 || type.IsEnum) {
-            if ((Options.BehaviorFlags & SerializerOptions.Behaviors.StringEnums) != 0) {
+        if ((flags & (PropertyFlags.Bits | PropertyFlags.Enum)) != 0 || type.IsEnum) {
+            if (Options.BehaviorFlags.HasFlag(Behaviors.StringEnums)) {
                 writer.WriteString(value.ToString()!);
             }
             else {
@@ -240,7 +240,7 @@ public class ObjectSerializer {
     }
 
     private void WriteVectorCount(BitWriter buffer, int count) {
-        if ((Options.BehaviorFlags & SerializerOptions.Behaviors.CompactLength) != 0) {
+        if (Options.BehaviorFlags.HasFlag(Behaviors.CompactLength)) {
             if (count >= 128) {
                 buffer.WriteBit(1);
                 buffer.WriteBits(count, 31);
@@ -269,18 +269,18 @@ public class ObjectSerializer {
         _recursionLevel = 0;
         var reader = new BitReader(buffer);
 
-        if ((Options.BehaviorFlags & SerializerOptions.Behaviors.CompactLength) != 0) {
+        if (Options.BehaviorFlags.HasFlag(Behaviors.CompactLength)) {
             reader.WithCompactLengths();
         }
 
         // If the serializer flags are set to compress, we'll decompress the serialized data.
-        if ((Options.BehaviorFlags & SerializerOptions.Behaviors.Compress) != 0) {
+        if (Options.BehaviorFlags.HasFlag(Behaviors.Compress)) {
             reader = Decompress(reader);
             if (reader is null) {
                 return null;
             }
 
-            if ((Options.BehaviorFlags & SerializerOptions.Behaviors.CompactLength) != 0) {
+            if (Options.BehaviorFlags.HasFlag(Behaviors.CompactLength)) {
                 reader.WithCompactLengths();
             }
         }
@@ -316,7 +316,7 @@ public class ObjectSerializer {
 
     protected virtual BitReader? Decompress(BitReader reader) {
         var uncompressedLength = reader.ReadInt32();
-        var decompressedData = Compression.Decompress(reader.GetRelativeData()[4..]);
+        var decompressedData = Compression.Decompress(reader.GetData()[4..]);
 
         // If the decompressed data length does not match the recorded length, log it and return null.
         if (decompressedData.Length != uncompressedLength) {
@@ -342,12 +342,12 @@ public class ObjectSerializer {
         }
 
         // If we're in verbose mode, we'll read the size of the object.
-        var typeSize = (Options.SerializerMode == SerializerOptions.Mode.Verbose)
+        var typeSize = (Options.SerializerMode == Mode.Verbose)
             ? buffer.ReadUInt32() - 32 // -32 from the length itself.
             : 0;
 
         var deserializedObject = Options.SerializerMode switch {
-            SerializerOptions.Mode.Compact => DeserializeCompact(buffer, propertyClass!),
+            Mode.Compact => DeserializeCompact(buffer, propertyClass!),
             _ => DeserializeVerbose(buffer, propertyClass!, typeSize)
         };
 
@@ -431,8 +431,7 @@ public class ObjectSerializer {
     private object? DeserializeObjectValue(BitReader reader, Type type) {
         if (type.IsEnum) {
             // Read human-readable string if serializer bitflag is set.
-            var stringEnum = (Options.BehaviorFlags & SerializerOptions.Behaviors.StringEnums) != 0;
-            if (!stringEnum) {
+            if (!Options.BehaviorFlags.HasFlag(Behaviors.StringEnums)) {
                 return reader.ReadUInt32();
             }
 
@@ -441,9 +440,8 @@ public class ObjectSerializer {
                 return obj;
             }
 
-            Logger.Error("Could not string string enum when string enum bitflag was set.");
+            Logger.Error("Could not parse string enum of {0}", Logger.Args(str));
             return 0;
-
         }
 
         // If it's a primitive data type, we'll just read it as-is.
@@ -456,7 +454,7 @@ public class ObjectSerializer {
         var subVal = DeserializeInternal(reader);
 
         // This is a failsafe. If we could not successfully deserialize the PropertyClass.
-        if (subVal is null && Options.SerializerMode == SerializerOptions.Mode.Verbose) {
+        if (subVal is null && Options.SerializerMode == Mode.Verbose) {
             // Just return null if the buffer doesn't have enough bits to read.
             if (reader.BitPos() + 32 > reader.GetData().Length * 8) {
                 return null;
@@ -481,7 +479,7 @@ public class ObjectSerializer {
         }
 
         if (fieldType.IsEnum) {
-            var stringEnum = (Options.BehaviorFlags & SerializerOptions.Behaviors.StringEnums) != 0;
+            var stringEnum = Options.BehaviorFlags.HasFlag(Behaviors.StringEnums);
             field.SetValue(propertyClass, stringEnum
                 ? fieldValue
                 : Enum.ToObject(fieldType, (uint) fieldValue));
@@ -510,10 +508,10 @@ public class ObjectSerializer {
                 field.SetValue(propertyClass, new Bui7((byte) fieldValue));
                 break;
             case nameof(S24):
-                field.SetValue(propertyClass, new S24((byte) fieldValue));
+                field.SetValue(propertyClass, new S24((S24) fieldValue));
                 break;
             case nameof(U24):
-                field.SetValue(propertyClass, new U24((byte) fieldValue));
+                field.SetValue(propertyClass, new U24((U24) fieldValue));
                 break;
             case nameof(Point):
                 var pointCast = (Vector2) (fieldValue);
@@ -539,7 +537,7 @@ public class ObjectSerializer {
     }
 
     private uint ReadVectorCount(BitReader buffer) {
-        if ((Options.BehaviorFlags & SerializerOptions.Behaviors.CompactLength) != 0) {
+        if (Options.BehaviorFlags.HasFlag(Behaviors.CompactLength)) {
             // If the MSB is 1, we're still using the regular length.
             return buffer.ReadBits<uint>(buffer.ReadBit() ? 31 : 7);
         }
@@ -550,8 +548,10 @@ public class ObjectSerializer {
 
     #endregion
 
-    private IEnumerable<FieldInfo> GetPropertyClassFields(PropertyClass propClass) {
-        if (propClass is null) {
+    private IEnumerable<FieldInfo> GetPropertyClassFields(PropertyClass propClass)
+    {
+        if (propClass is null)
+        {
             throw new ArgumentNullException(nameof(propClass));
         }
 
@@ -560,8 +560,9 @@ public class ObjectSerializer {
             .Where(x => Attribute.IsDefined(x, typeof(PropertyAttribute)))
             .Select(x => (Field: x, Attribute: x.GetCustomAttribute<PropertyAttribute>()))
             .Where(x => x.Attribute is not null &&
-                        ((SerializerOptions.PropertyFlags) x.Attribute!.Flags & SerializerOptions.PropertyFlags.Deprecated) == 0 &&
-                        ((SerializerOptions.PropertyFlags) x.Attribute!.Flags & Options.PropertyMask) == Options.PropertyMask)
+                        ((PropertyFlags) x.Attribute!.Flags & PropertyFlags.Deprecated) == 0 &&
+                        ((PropertyFlags) x.Attribute!.Flags & Options.PropertyMask) == Options.PropertyMask &&
+                        !(Options.BehaviorFlags.HasFlag(Behaviors.AlwaysEncode) && ((PropertyFlags) x.Attribute!.Flags & PropertyFlags.Encode) != 0))
             .OrderBy(x => x.Field, new PropertyClassFieldComparer())
             .Select(x => x.Field);
     }

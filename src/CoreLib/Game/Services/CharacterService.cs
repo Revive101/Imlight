@@ -54,49 +54,15 @@ public class CharacterService : MessageService {
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVE))]
     private void ReceiveClientMove(GAME_5_PROTOCOL.MSG_CLIENTMOVE message) {
         // Save the player's location and direction on interval.
+        // Restore actual location information, as it is compressed by a factor of 4 and unsigned.
+        // Yaw is represented in radians in the client, but transmitted to the server as degrees.
+        var position = new SharpDX.Vector3(
+            unchecked((short) message.LocationX * 4),
+            unchecked((short) message.LocationY * 4),
+            unchecked((short) message.LocationZ * 4));
 
-        if (_activeCharacterObject is null) {
-            throw new ServiceRetryException($"Tried to do client move but could not grab active character " +
-                                            $"object");
-        }
-
-        // Normalize differentiating message values
-        var x = unchecked((short) message.LocationX) * 4.0f;
-        var y = unchecked((short) message.LocationY) * 4.0f;
-        var z = unchecked((short) message.LocationZ) * 4.0f;
-        var direction = (float) (message.Direction * System.Math.PI * 2 / 250);
-
-        _activeCharacterObject.m_location = new Vector3(x, y, z);
-        _activeCharacterObject.m_orientation = new Vector3(0, 0, direction);
-    }
-
-    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK))]
-    private void ReceiveZoneTransferAck(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK message) {
-        if (_activeCharacterObject is null) {
-            throw new ServiceRetryException($"Tried to do client move but could not grab active character " +
-                                            $"object");
-        }
-    }
-
-    // Experimental - Sets the Crowns to 12,345,678
-    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_CROWNBALANCE))]
-    private void ReceiveCrownBalance(WIZARD_12_PROTOCOL.MSG_CROWNBALANCE message) {
-        SendToSocket(new WIZARD_12_PROTOCOL.MSG_CROWNBALANCE() {
-            CharacterID = message.CharacterID,
-            Failure = 0,
-            TotalCrowns = 12345678,
-            CacheBalanceForCSSegmentation = 1
-        });
-    }
-
-    // Experimental - ??? should be something with stats
-    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_GETLADDER))]
-    private void ReceiveGetLadder(GAME_5_PROTOCOL.MSG_GETLADDER message) {
-        SendToSocket(new GAME_5_PROTOCOL.MSG_GETLADDER() {
-            CharacterID = message.CharacterID,
-            NameBlob = message.NameBlob,
-            TournamentNameID = message.TournamentNameID,
-        });
+        _activeCharacter.SetLocation(position);
+        _activeCharacter.SetOrientation(message.Direction);
     }
 
     #endregion

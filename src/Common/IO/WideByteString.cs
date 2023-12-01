@@ -22,6 +22,10 @@ public readonly struct WideByteString {
     }
 
     public static implicit operator WideByteString(string str) {
+        if (str is null) {
+            return new WideByteString();
+        }
+
         return new WideByteString(Encoding.Unicode.GetBytes(str));
     }
 

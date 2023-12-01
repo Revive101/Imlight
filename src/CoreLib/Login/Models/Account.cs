@@ -11,34 +11,38 @@ using Imlight.CoreLib.Game.Models;
 using Newtonsoft.Json;
 using Imlight.Common.Configuration;
 using Imlight.CoreLib.WizardData;
+using Imlight.CoreLib.WizardData.Models;
+using Imlight.CoreLib.WizardData.Implementations;
+using Imlight.CoreLib.Shared.Networking;
 
 namespace Imlight.CoreLib.Login.Models;
 
 [Serializable]
 public class Account {
-    [JsonIgnore]
-    public readonly byte MAX_ALLOWED_CHARACTERS
-        = ConfigurationManager.Settings.MaxAllowedCharactersPerAccount;
+    [JsonIgnore] public readonly byte MAX_ALLOWED_CHARACTERS = ConfigurationManager.Settings.MaxAllowedCharactersPerAccount;
 
     public ulong AccountId { get; private set; }
     public string Username { get; private set; }
     public string Email { get; private set; }
-    public string PasswordHash { get; private set; }
-    public AuthLevel AuthLevel { get; init; }
+    public string PasswordHash { get; set; }
+    public AuthLevel AuthLevel { get; set; }
     public List<ulong> CharacterIds { get; private set; } = new();
+    public List<ulong> InfractionIds { get; private set; } = new();
+    public DateTime CreationTime { get; private set; }
+    public DateTime LastLoginTime { get; set; }
+    public ulong LastLoginMachineId { get; set; }
+    public string LastLoginIp { get; set; }
+    public bool IsLocked { get; set; }
 
     [JsonIgnore] public List<Character> Characters = new();
+    [JsonIgnore] public InfractionHistory InfractionHistory { get; set; }
+    [JsonIgnore] public SessionActor SessionActor { get; set; }
 
-    // Empty constructor for deserialization.
-    [JsonConstructor] public Account() { }
+    [JsonConstructor] public Account() {  }
 
     // ctor
     public Account(string username, string email, string plaintextPassword) {
         if (string.IsNullOrWhiteSpace(username)) {
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(email)) {
             return;
         }
 
@@ -49,8 +53,8 @@ public class Account {
         this.AccountId = RandomGen.GenerateGUID();
         this.Username = username;
         this.Email = email;
-
         this.PasswordHash = DatabaseUtilities.CreateHashedPassword(plaintextPassword);
+        this.CreationTime = DateTime.UtcNow;
     }
 
     /// <summary>
@@ -74,6 +78,16 @@ public class Account {
 
         this.CharacterIds.Add(character.CharId);
         this.Characters.Add(character);
+
+        // Save the character persistently.
+        var savedCharacterToCollection = CharacterCollection
+            .AddCharacter(character);
+        var savedCharacterToAccount = AccountCollection
+            .AddCharacterToAccount(AccountId, character.CharId);
+
+        if (!savedCharacterToCollection || !savedCharacterToAccount) {
+            return false;
+        }
 
         return true;
     }
@@ -102,4 +116,78 @@ public class Account {
     /// <returns></returns>
     public Character GetCharacter(ulong id)
         => this.Characters.First(c => c.CharId == id);
+
+    public Infraction AddInfraction(InfractionType infractionType, string reason, string source = null, DateTime? expiration = null) {
+        var infraction = new Infraction {
+            InfractionId = RandomGen.GenerateGUID(),
+            AccountId = this.AccountId,
+            MachineId = LastLoginMachineId,
+            InfractionType = infractionType,
+            InfractionTime = DateTime.UtcNow,
+            Reason = reason,
+            Expiration = expiration,
+            ResponsibleModerator = source ?? "Imlight"
+        };
+
+        this.InfractionIds.Add(infraction.InfractionId);
+        this.InfractionHistory.AddInfraction(infraction);
+
+        // Save the infraction to the database.
+        InfractionCollection.AddInfraction(infraction);
+        AccountCollection.AddInfractionToAccount(this.AccountId, infraction.InfractionId);
+
+        return infraction;
+    }
+
+    public bool RemoveInfraction(int infractionIndex) {
+        if (infractionIndex < 0 || infractionIndex >= InfractionHistory.Infractions.Count) {
+            return false;
+        }
+
+        var infraction = InfractionHistory.Infractions[infractionIndex];
+        InfractionHistory.Infractions.RemoveAt(infractionIndex);
+        InfractionIds.Remove(infraction.InfractionId);
+
+        // Remove the infraction from the database.
+        InfractionCollection.RemoveInfraction(infraction.InfractionId);
+        AccountCollection.RemoveInfractionFromAccount(this.AccountId, infraction.InfractionId);
+
+        return true;
+    }
+
+    public bool WaiveCurrentBan(string source) {
+        var currentBan = InfractionHistory
+            .Infractions
+            .Where(x => x.InfractionType == InfractionType.Ban && !x.IsExpired && !x.WasWaived)
+            .FirstOrDefault();
+        if (currentBan is null) {
+            return false;
+        }
+
+        currentBan.WasWaived = true;
+        currentBan.WasWaivedBy = source;
+
+        // Update the infraction in the database.
+        InfractionCollection.UpdateInfraction(currentBan);
+
+        return true;
+    }
+
+    public bool WaiveCurrentMute(string source) {
+        var currentMute = InfractionHistory
+            .Infractions
+            .Where(x => x.InfractionType == InfractionType.Mute && !x.IsExpired && !x.WasWaived)
+            .FirstOrDefault();
+        if (currentMute is null) {
+            return false;
+        }
+
+        currentMute.WasWaived = true;
+        currentMute.WasWaivedBy = source;
+
+        // Update the infraction in the database.
+        InfractionCollection.UpdateInfraction(currentMute);
+
+        return true;
+    }
 }

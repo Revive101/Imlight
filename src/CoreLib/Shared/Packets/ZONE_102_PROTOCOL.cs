@@ -38,6 +38,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol
 		public IActorRef ZoneActorRef;
 		public ushort MobileId;
 		public uint DynamicZoneId;
+        public string ZoneDisplayName;
 		public uint ErrorCode;
 	}
 
@@ -155,6 +156,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol
 
 		public TypeCache.CoreObject CoreObject;
 		public IActorRef Suspect;
+        public bool IsCreature;
 	}
 
 	public class MSG_ZONEOBJECTBROADCAST : IServerMessage
@@ -189,7 +191,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol
 		public byte MessageOrder { get; } = 17;
 		public byte ServiceID { get; } = 102;
 
-		public Dictionary<IActorRef, TypeCache.CoreObject> Participants;
+		public Dictionary<IActorRef, TypeCache.CoreObject> StartingParticipants;
 	}
 
 	public class MSG_GETCOREOBJECT : IServerMessage
