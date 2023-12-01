@@ -11,15 +11,18 @@ internal class CommandDebugProtocol : CommandProtocol {
     internal override string Group { get; set; } = "debug";
 
     [Command("gps")]
-    [AuthRequired(AuthLevel.HallMonitor)]
+    [AuthRequired(AuthLevel.QualityAssurance)]
     private void GpsCommand() {
         var player = Context.CharacterObject;
         var playerPosition = player.m_location;
         var playerRotation = player.m_orientation;
+        var zone = Context.Character.Zone;
 
-        var message = new StringBuilder();
-        message.AppendLine($"Position: {playerPosition}");
-        message.AppendLine($"Rotation: {playerRotation}");
+        var message = new StringBuilder()
+            .AppendLine($"<center>Showing the information saved on Imlight:</center>\n")
+            .AppendLine($"Position: {playerPosition}")
+            .AppendLine($"Rotation: {playerRotation}")
+            .AppendLine($"Zone: {zone}");
 
         InformSenderClient(message.ToString(), true);
     }

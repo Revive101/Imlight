@@ -17,7 +17,7 @@ internal class CommandTeleport : CommandProtocol {
 
     [Command("teleport")]
     [Alias("tp", "port")]
-    [AuthRequired(AuthLevel.HallMonitor)]
+    [AuthRequired(AuthLevel.QualityAssurance)]
     private void TeleportCommand(string zone) {
         var actualZoneName = zone;
         var hasZone = AccessPassManager.DoesZoneExist(zone);
