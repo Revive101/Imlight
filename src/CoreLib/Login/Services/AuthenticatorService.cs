@@ -6,13 +6,10 @@
 using System;
 using Akka.Actor;
 using Imlight.Common.Caches;
-using Imlight.Common.Cryptography;
-using Imlight.Common.IO;
-using Imlight.CoreLib.Login.Exceptions;
+using Imlight.CoreLib.AntiAmbrose;
 using Imlight.CoreLib.Login.Models;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
-using Imlight.CoreLib.WizardData.Implementations;
 
 namespace Imlight.CoreLib.Login.Services;
 
@@ -32,7 +29,10 @@ internal class AuthenticatorService : MessageService {
             AuthenticateUser(message);
         }
         catch (Exception ex) {
-            SendAuthenFailed(UserAuthenError.Timeout, ex.Message);
+            SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_RSP {
+                Error = (int) UserAuthenResult.Timeout,
+                Reason = ex.Message,
+            });
         }
     }
 
@@ -43,143 +43,58 @@ internal class AuthenticatorService : MessageService {
             ValidateUser(message);
         }
         catch (Exception ex) {
-            SendValidateFailed(UserValidateError.Timeout, ex.Message);
+            SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_VALIDATE_RSP {
+                Error = (int) UserValidateResult.Timeout,
+                Reason = ex.Message,
+            });
         }
     }
 
     #endregion
 
     private void AuthenticateUser(LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_V3 message) {
-        // Craft the record.
-        var offerTime = SessionActor.OfferTime;
-        var offerMilli = SessionActor.OfferMillisecondsIntoSecond;
-        var (sId, username, ck1) = DecodeRec1(message.Rec1);
+        var authReply = UserAuthenticator.Authenticate(SessionActor, message);
 
-        // Check if the session id matches the one we sent. If it doesn't, inform the socket and return.
-        if (sId != SessionActor.SessionID) {
-            // Return an error to the client.
-            SendAuthenFailed(UserAuthenError.AuthenFailed, "Session ID mismatch.");
-            return;
-        }
-
-        // Get the account from database using the given user id. If the account doesn't exist, inform the socket
-        // and return.
-        var matchedAccount = AccountCollection.GetAccount(username);
-        if (matchedAccount == null) {
-            SendAuthenFailed(UserAuthenError.AuthenFailed, "Invalid UserID");
-            return;
-        }
-
-        // Check if the password hash matches the one we sent. If it doesn't, inform the socket and return.
-        var doesPassMatch = ClientKey.VerifyCK1(matchedAccount.PasswordHash, sId, offerTime, offerMilli, ck1);
-        if (doesPassMatch) {
-            // Create a session key and store it in the database.
-            var sessionKey = ClientKey.HashSessionKey(sId, offerTime, offerMilli);
-            ClientKeyCollection.AddSessionKey(matchedAccount.AccountId, message.MachineID, sessionKey);
-
-            // Echo the session key and user id back to the client.
-            var rec1 = Rec1.Encode(sessionKey, sId, offerTime, offerMilli);
-            SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_RSP() {
-                Error = 0,
-                Flags = 0,
-                PayingUser = 1,
-                Reason = "",
-                Rec1 = rec1,
-                TimeStamp = "",
-                UserID = matchedAccount.AccountId
+        // If the authentication reply has a failure, inform the socket and return.
+        if (authReply._result != UserAuthenResult.Success) {
+            SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_RSP {
+                Error = (int) authReply._result,
+                Reason = authReply._result.ToString(),
             });
+            return;
         }
         else {
-            SendAuthenFailed(UserAuthenError.AuthenFailed, "Invalid Password");
-            return;
+            // Otherwise, inform the socket that the authentication was successful.
+            SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_RSP {
+                Error = (int) UserAuthenResult.Success,
+                Reason = "",
+                UserID = authReply._account.AccountId,
+                PayingUser = 1,
+                Rec1 = authReply._rec1,
+            });
         }
 
-        SendClientToLogin(matchedAccount);
+        SendClientToLogin(authReply._account);
     }
 
     private void ValidateUser(LOGIN_7_PROTOCOL.MSG_USER_VALIDATE message) {
-        // Get the account from database using the given user id. If the account doesn't exist,
-        // inform the socket and return.
-        var matchedAccount = AccountCollection.GetAccount(message.UserID);
-        if (matchedAccount == null) {
-            SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_VALIDATE_RSP() {
-                UserID = message.UserID,
-                PayingUser = 1,
-                Error = (int) UserValidateError.ValidateFailed,
-                Reason = "Invalid UserID",
-            });
-            return;
-        }
-
-        // Get the stored session key associated with the user id. If a session key doesn't exist, inform the socket
-        // and return.
-        var sessionKey = ClientKeyCollection.GetSessionKey(message.UserID, message.MachineID);
-        if (string.IsNullOrEmpty(sessionKey)) {
-            SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_VALIDATE_RSP() {
-                UserID = message.UserID,
-                PayingUser = 1,
-                Error = (int) UserValidateError.ValidateFailed,
-                Reason = "Invalid SessionKey",
-            });
-            return;
-        }
-
-        // The client has echoed the session key back to us. We can now verify the passkey.
-        var ps3Raw = message.PassKey3;
-        var sId = SessionActor.SessionID;
-        var offerTime = SessionActor.OfferTime;
-        var offerMilli = SessionActor.OfferMillisecondsIntoSecond;
-        var passKey = PassKey3.VerifyPK3(sessionKey, sId, offerTime, offerMilli, ps3Raw);
-
-        // If the passkey is invalid, inform the socket and return.
-        if (!passKey) {
+        var validationReply = UserValidator.Validate(SessionActor, message);
+        if (validationReply._result != UserValidateResult.Success) {
             SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_VALIDATE_RSP {
-                UserID = message.UserID,
-                PayingUser = 1,
-                Error = (int) UserValidateError.ValidateFailed,
-                Reason = "Invalid PassKey3",
+                Error = (int) validationReply._result,
+                Reason = validationReply._result.ToString(),
             });
-            return;
         }
 
-        // Otherwise, send the client to the login server.
-        SendClientToLogin(matchedAccount);
-
-        // Inform the player that they've been authenticated.
-        SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_VALIDATE_RSP() {
-            UserID = message.UserID,
-            PayingUser = 1,
-            Error = (int) UserValidateError.NoError,
-            Reason = "", // Unclear as to what this field means, but it's most likely an elaboration of an error.
-        });
-    }
-
-    private (ushort, string, string) DecodeRec1(ByteString rec1) {
-        var decoded = Rec1.Decode(rec1, SessionActor.SessionID, SessionActor.OfferTime,
-            SessionActor.OfferMillisecondsIntoSecond);
-        var split = decoded.ToString().Split(' ');
-
-        // Cast the session id to a ushort.
-        if (!ushort.TryParse(split[0], out var sId)) {
-            throw new Exception($"{nameof(LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_V3)} Session ID is not a ushort. " +
-                                $"Expected ushort, got {split[0]}");
-        }
-
-        return (sId, split[1], split[2]);
-    }
-
-    private void SendAuthenFailed(UserAuthenError error, string reason) {
-        SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_RSP {
-            Error = (int) error,
-            Reason = reason
-        });
-    }
-
-    private void SendValidateFailed(UserValidateError error, string reason) {
+        // Inform the socket that they've been validated.
         SendToSocket(new LOGIN_7_PROTOCOL.MSG_USER_VALIDATE_RSP {
-            Error = (int) error,
-            Reason = reason
+            Error = (int) UserValidateResult.Success,
+            Reason = "",
+            UserID = validationReply._account.AccountId,
+            PayingUser = 1,
         });
+
+        SendClientToLogin(validationReply._account);
     }
 
     private void SendClientToLogin(Account account) {
@@ -188,7 +103,27 @@ internal class AuthenticatorService : MessageService {
 
         // Enqueue ourselves to the connected server. Inform the socket if its been placed into a queue and
         // what position it could potentially be in.
-        var serverEnqueueResult = (LOGIN_7_PROTOCOL.MSG_USER_ADMIT_IND) SessionActor.EnqueueToServer();
-        SendToSocket(serverEnqueueResult);
+        var serverEnqueueResult = SessionActor.EnqueueToServer();
+        if (serverEnqueueResult.Failed) {
+            var clientResponse = new LOGIN_7_PROTOCOL.MSG_USER_ADMIT_IND {
+                Status = 0,
+            };
+            SendToSocket(clientResponse);
+
+            // Explicitly inform the socket about this.
+            var clientExplicitFailedResponse = new EXTENDEDBASE_2_PROTOCOL.MSG_SERVERMESSAGE {
+                Message = "This user is currently logged in elsewhere."
+            };
+            SendToSocket(clientExplicitFailedResponse);
+
+            CloseSession();
+        }
+        else {
+            var clientResponse = new LOGIN_7_PROTOCOL.MSG_USER_ADMIT_IND {
+                PositionInQueue = (uint) serverEnqueueResult.PositionInQueue,
+                Status = serverEnqueueResult.Status,
+            };
+            SendToSocket(clientResponse);
+        }
     }
 }

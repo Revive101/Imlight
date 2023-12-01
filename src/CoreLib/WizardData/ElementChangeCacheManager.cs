@@ -8,8 +8,10 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Imlight.Common;
+using Imlight.CoreLib.WizardData.Implementations;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Operations;
+using Raven.Client.Documents.Queries;
 
 namespace Imlight.CoreLib.WizardData;
 
@@ -74,9 +76,13 @@ public class ElementChangeCacheManager : IDisposable {
         var json = Newtonsoft.Json.JsonConvert.SerializeObject(changeCache.Value);
 
         // Patch.
-        var patchRequest = new PatchByQueryOperation($"from \"Characters\" as c " +
-                                                     $"where c.CharId = {_charId} " +
-                                                     $"update {{ c.{changeCache.Key} = {json} }}");
+        var queryOptions = new QueryOperationOptions { AllowStale = true, StaleTimeout = TimeSpan.FromSeconds(2) };
+        var charCollName = CharacterCollection.CollectionName;
+        var patchRequest = new PatchByQueryOperation(new IndexQuery {
+            Query = $"from \"{charCollName}\" as c " +
+                    $"where c.CharId = {_charId} " +
+                    $"update {{ c.{changeCache.Key} = {json} }}"},
+        queryOptions);
 
         try {
             var operation = await _documentStore.Operations.SendAsync(patchRequest);

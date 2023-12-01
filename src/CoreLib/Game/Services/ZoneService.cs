@@ -14,7 +14,7 @@ using Imlight.CoreLib.Shared.Packets;
 namespace Imlight.CoreLib.Game.Services;
 
 public class ZoneService : MessageService {
-    private IActorRef _zoneRef;
+    public IActorRef ZoneActor;
     private bool _isTransferQueued;
 
     public ZoneService(SessionActor sessionActor) : base(sessionActor) { }
@@ -27,11 +27,11 @@ public class ZoneService : MessageService {
         var globalId = GetActiveCoreObject().m_globalID;
 
         // If the zone reference is not null, we'll tell the zone to remove the player.
-        _zoneRef?.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER() {
+        ZoneActor?.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER() {
             Player = SessionActor.ActorRef,
             GlobalId = globalId
         });
-        _zoneRef = null;
+        ZoneActor = null;
 
         base.OnPreDispose();
     }
@@ -90,7 +90,7 @@ public class ZoneService : MessageService {
         // If we're not sending this to client, this is an internal transfer, meaning we can immediately
         // setup the new details.
         if (!message.SendToClient) {
-            _zoneRef = zoneDetails.ZoneActorRef;
+            ZoneActor = zoneDetails.ZoneActorRef;
         }
 
         Sender.Tell(zoneDetails);
@@ -98,11 +98,13 @@ public class ZoneService : MessageService {
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK))]
     private void ReceiveZoneTransferAck(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK message) {
+        // The client has accepted the zone transfer. We can now send the server transfer message.
         DoZoneTransfer();
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ZONETRANSFERNACK))]
     private void ReceiveZoneTransferNack(GAME_5_PROTOCOL.MSG_ZONETRANSFERNACK message) {
+        // The client has denied the zone transfer. We can now send the server transfer message.
         Logger.Debug("Client was not OK with zone transfer! Possibly patching.");
     }
 
@@ -113,29 +115,30 @@ public class ZoneService : MessageService {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
     private void ReceiveAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message) {
-        if (_zoneRef is null) {
-            throw new NullReferenceException(nameof(_zoneRef));
+        // This is an internal message from MSG_ATTACH to add the player to the zone.
+        if (ZoneActor is null) {
+            throw new NullReferenceException(nameof(ZoneActor));
         }
 
-        _zoneRef.Forward(message);
+        ZoneActor.Forward(message);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
     private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message) {
-        if (_zoneRef is null) {
+        if (ZoneActor is null) {
             throw new Exception("Zone Reference was null.");
         }
 
-        _zoneRef.Tell(message);
+        ZoneActor.Tell(message);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_FISHINTERACTION))]
     private void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_FISHINTERACTION message) {
-        if (_zoneRef is null) {
+        if (ZoneActor is null) {
             throw new Exception("Zone Reference was null.");
         }
 
-        _zoneRef.Forward(message);
+        ZoneActor.Forward(message);
     }
 
     private void DoZoneTransfer() {
@@ -149,7 +152,7 @@ public class ZoneService : MessageService {
             GlobalId = GetActiveCoreObject().m_globalID,
             IsPlayerStillConnected = true
         };
-        _ = _zoneRef.Ask(removePlayerMsg).Result;
+        _ = ZoneActor.Ask(removePlayerMsg).Result;
 
         // When we send this message, the client will disconnect from the current zone and reconnect to the next.
         // This means attach will happen again, so this is all we need to do here.

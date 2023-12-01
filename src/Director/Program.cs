@@ -64,7 +64,7 @@ internal static class Program {
         // =============================================================
         // SERVERS
         // =============================================================
-        var LoggerinServer = StartLoggerinServer();
+        var LoggerinServer = StartLoginServer();
         StartGameServer(LoggerinServer);
 
         // Force load dragon database. Create a dud account if the database ends up using the embedded database.
@@ -83,7 +83,7 @@ internal static class Program {
         }
     }
 
-    private static IActorRef StartLoggerinServer() {
+    private static IActorRef StartLoginServer() {
         var LoggerinServerName = ConfigurationManager.Settings.LoginServerName;
         var LoggerinServerPort = ConfigurationManager.Settings.LoginServerPort;
 
@@ -116,20 +116,33 @@ internal static class Program {
     }
 
     private static void CreateEmbeddedDatabaseAccounts() {
-        // Create 9 accounts with the username "admin" and a number from 1 to 9.
+        // Create 9 accounts with the username "admin" and a number from 1 to 20.
         for (int i = 1; i <= 20; i++) {
-            DatabaseUtilities.CreateEmbeddedDatabaseAccount($"admin{i}", $"{i}@r101.com", "debug", AuthLevel.Administrator);
+            DatabaseUtilities.CreateEmbeddedDatabaseAccount($"qa{i}", $"qa{i}@r101.com", "debug", AuthLevel.QualityAssurance);
         }
+
+        // Create 3 hall monitor accounts.
+        for (int i = 1; i < 3; i++) {
+            DatabaseUtilities.CreateEmbeddedDatabaseAccount($"hm{i}", $"hm{i}@r101.com", "hm9999", AuthLevel.HallMonitor);
+        }
+
+        // Create 3 developer accounts.
+        for (int i = 1; i < 3; i++) {
+            DatabaseUtilities.CreateEmbeddedDatabaseAccount($"dev{i}", $"dev{i}@r101.com", "dev9999", AuthLevel.Administrator);
+        }
+
+        // Hard code hall monitor lead accounts. Don't share these passwords!
+        DatabaseUtilities.CreateEmbeddedDatabaseAccount($"mitsu", $"mitsu@r101.com", "2034", AuthLevel.Administrator);
     }
 
     private static void PrintTitle() {
         // Write the title. This is a bit of a mess, but it's the best I could do.
         Console.WriteLine(@" _____           _ _       _     _    ______   ");
         Console.WriteLine(@"|_   _|         | (_)     | |   | |   \ \ \ \  ");
-        Console.WriteLine(@"  | |  _ __ ___ | |_  __ _| |__ | |_   | | | | ");
+        Console.WriteLine(@"  | |  _ __ ___ | |_  __ _| |__ | |_   \ \ \ \ ");
         Console.WriteLine(@"  | | | '_ ` _ \| | |/ _` | '_ \| __|   \ \ \ \");
         Console.WriteLine(@" _| |_| | | | | | | | (_| | | | | |_    / / / /");
-        Console.WriteLine(@"|_____|_| |_| |_|_|_|\__, |_| |_|\__|  | | | | ");
+        Console.WriteLine(@"|_____|_| |_| |_|_|_|\__, |_| |_|\__|  / / / / ");
         Console.WriteLine(@"===================== __/ |===========/_/_/_/  ");
 
         // Write the boot type.
