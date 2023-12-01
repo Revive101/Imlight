@@ -1,3 +1,8 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -14,7 +19,7 @@ public class Logger {
     private static readonly bool s_logsIncludeTimestamp = ConfigurationManager.Settings.LogsIncludeTimestamp;
 
     public static ILogger Log { get; } = new LoggerConfiguration()
-        .MinimumLevel.Information()
+        .MinimumLevel.Debug()
         .Enrich.FromLogContext()
         .WriteTo.Console(outputTemplate: CreateOutputTemplate())
         .WriteTo.File(s_path, rollingInterval: RollingInterval.Day)
