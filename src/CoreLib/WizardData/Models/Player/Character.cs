@@ -25,15 +25,15 @@ public class Character : IDisposable {
     private readonly byte _defaultUploadIntervalInMinutes = ConfigurationManager.Settings.CharacterUploadIntervalInMinutes;
 
     public ulong AccountId { get; set; }
-    public ulong CharId { get; init; }
-    public uint NameIndices { get; init; }
-    public WideByteString NameOverride { get; init; }
-    public int Level { get; private set; }
+    public ulong CharId { get; set; }
+    public uint NameIndices { get; set; }
+    public WideByteString NameOverride { get; set; }
+    public byte Level { get; set; }
     public int TrainingPoints { get; set; }
     public int XpToNextLevel { get; set; }
-    public string Zone { get; private set; }
-    public string ZoneDisplayName { get; private set; }
-    public byte World { get; private set; }
+    public string Zone { get; set; }
+    public string ZoneDisplayName { get; set; }
+    public byte World { get; set; }
     public Vector3 Location {
         get => this.GameObject?.m_location ?? _location;
         set {
@@ -56,9 +56,9 @@ public class Character : IDisposable {
             }
         }
     }
-    public WizardCharacterBehavior WizardAvatar { get; init; }
-    public WizardSchool WizardSchool { get; init; }
-    public WizGameStats GameStats { get; private set; }
+    public WizardCharacterBehavior WizardAvatar { get; set; }
+    public WizardSchool WizardSchool { get; set; }
+    public WizGameStats GameStats { get; set; }
 
     [JsonIgnore] public WizClientObject GameObject;
     [JsonIgnore] public string GameServerIp;
@@ -68,103 +68,24 @@ public class Character : IDisposable {
 
     [JsonIgnore] private Vector3 _location;
     [JsonIgnore] private Vector3 _orientation;
-    [JsonIgnore] private ElementChangeCacheManager _cacheManager;
 
     // Empty constructor for deserialization.
     [JsonConstructor] public Character() { }
 
-    // ctor
-    public Character(WizardCharacterCreationInfo characterCreationInfo) {
-        // If this constructor has been called, then the character is a fresh character.
-        this.CharId = RandomGen.GenerateGUID();
-        this.Level = ConfigurationManager.Settings.StartingLevel;
-        this.Zone = ConfigurationManager.Settings.StartingZone;
-        this.World = ConfigurationManager.Settings.StartingWorld;
-        this.WizardSchool = (WizardSchool) characterCreationInfo.m_schoolOfFocus;
-        this.WizardAvatar = characterCreationInfo.m_avatarBehavior;
-        this.NameIndices = characterCreationInfo.m_nameIndices;
-
-        // Create the game stats and calculate the base stats.
-        var gameStats = new WizGameStats();
-        gameStats = CalculateBaseGameStats(gameStats);
-        this.GameStats = gameStats;
-    }
-
     public void SetLocation(Vector3 loc) {
         this.Location = loc;
-
-        SendCachedChange(nameof(Location), 10, loc);
     }
 
     public void SetOrientation(byte direction) {
         this.Orientation = new Vector3(0, 0, direction * 0.708f);
-
-        SendCachedChange(nameof(Orientation), 10, this.Orientation);
     }
 
     public void SetZone(string zone, string zoneDisplayName) {
         this.Zone = zone;
         this.ZoneDisplayName = zoneDisplayName;
-        SendPersistentChange(nameof(Zone), zone);
-        SendPersistentChange(nameof(ZoneDisplayName), zoneDisplayName);
-    }
-
-    public WizardCharacterCreationInfo GetLoginScreenInfo() {
-        var creationInfo = new WizardCharacterCreationInfo {
-            m_avatarBehavior = this.WizardAvatar,
-            m_nameIndices = this.NameIndices,
-            m_schoolOfFocus = (uint) this.WizardSchool,
-            m_level = this.Level,
-            m_name = this.NameOverride,
-            m_location = this.ZoneDisplayName,
-            m_globalID = (GID) this.CharId,
-            m_templateID = 1,
-            m_userID = (GID) this.AccountId,
-            // TODO: Equipment list
-        };
-        return creationInfo;
-    }
-
-    private WizGameStats CalculateBaseGameStats(WizGameStats existingStats) {
-        var baseHealth = WizardClassData.GetClassHealthAtLevel(WizardSchool, Level);
-        var baseMana = WizardClassData.GetManaAtLevel(Level);
-
-        existingStats.m_baseHitpoints = baseHealth;
-        existingStats.m_currentHitpoints = baseHealth;
-        existingStats.m_baseMana = baseMana;
-        existingStats.m_currentMana = baseMana;
-        existingStats.m_baseGoldPouch = ConfigurationManager.Settings.BaseGoldPouch;
-        existingStats.m_powerPipBase = WizardClassData.GetPowerPipChanceAtLevel(Level);
-        existingStats.m_energyMax = WizardClassData.GetPetEnergyAtLevel(Level);
-
-        // Initialize the lists.
-        existingStats.m_blockPercentBySchool = new List<float>();
-        existingStats.m_blockRatingBySchool = new List<float>();
-        existingStats.m_dmgBonusFlat = new List<float>();
-        existingStats.m_dmgBonusPercent = new List<float>();
-        existingStats.m_dmgBonusFlat = new List<float>();
-        existingStats.m_dmgReduceFlat = new List<float>();
-        existingStats.m_dmgReducePercent = new List<float>();
-
-        return existingStats;
-    }
-
-    private void SendCachedChange<T>(string elementName, byte batchSize, T value) {
-        _cacheManager ??= new ElementChangeCacheManager(PlayerDatabase.Instance.Store, CharId, _defaultUploadIntervalInMinutes);
-        _cacheManager.EnqueueChange(elementName, value);
-    }
-
-    private void SendPersistentChange<T>(string elementName, T value) {
-        _cacheManager ??= new ElementChangeCacheManager(PlayerDatabase.Instance.Store, CharId, _defaultUploadIntervalInMinutes);
-        _cacheManager.EnqueueImmediateChange(elementName, value);
-    }
-
-    private void FlushPersistentChanges() {
-        _cacheManager?.FlushAllChangesAsync().RunSynchronously();
     }
 
     public void Dispose() {
-        FlushPersistentChanges();
-        _cacheManager?.Dispose();
+
     }
 }

@@ -77,7 +77,6 @@ public static class CharacterObjectLoader {
             nameBehavior.m_wsNameOverride = character.NameOverride;
             nameBehavior.m_chatPermissions = 2; // todo: set this to the correct value.
             nameBehavior.m_friendlyPlayer = character.GameStats.m_friendlyPlayer;
-            nameBehavior.m_volunteer = character.IsVolunteer;
         }
         else {
             throw new Exception("Behavior ClientWizPlayerNameBehavior not found!");
