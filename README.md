@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://i.ibb.co/z5JXHDz/2023-09-07-15-31.png" />
+  <img src="https://i.ibb.co/kQT3jSJ/logo-full.png" />
   <h3 align="center">Wizards Rewriting The Rules of Magic</h3>
 </p>
 <p align="center">
@@ -13,8 +13,6 @@
 ## Introduction
 **Imlight** is an independent private server project aimed to reimagine a wizard adventure, written entirely in C#. 
 
-The file hierachy of this project is heavily based on [TrinityCore](https://github.com/TrinityCore/TrinityCore).
-
 ## Requirements
 Imlight has a few running gears, and expects existing tools to be available at specific locations.
 
@@ -23,11 +21,11 @@ Imlight sources game data to run the zones. Imlight should be pointed at the sam
 
 #### Dragon Database
 Imlight uses [RavenDB](https://ravendb.net/) to store its persistent data. There are two databases used by Imlight.
-* `Imlight`: The world data, such as zone transfers and active events. It's recommended that the development party should have access to this database to create the relevant data in unison.
-* `Playerdata`: The users' account and character data. This is incredibly sensitive, and is only recommended to be use in production deployment scenarios.
+* `WorldData`: The world data, such as zone transfers and active events. It's recommended that the development party should have access to this database to create the relevant data in unison.
+* `PlayerData`: The users' account and character data. This is incredibly sensitive, and is only recommended to be use in production deployment scenarios.
 
 If a URL is not present in the configuration, Imlight will instead employ an embedded database for either of the databases.
-If _dragon's_ `Playerdata` database starts in embedded mode, Imlight will create 1-9 debug accounts.
+If _dragon's_ `PlayerData` database starts in embedded mode, Imlight will create 1-9 debug accounts.
 * The username will be `admin[1-9]`.
 * The password will always be `debug`.
 * For example, you may log in with username `admin4` and password `debug`.
@@ -131,7 +129,7 @@ KeepAliveRspWaitTime = 4
 _Note: This configuration is likely not up to date._
 
 ## Information
-* Our [Compendium](https://compendium.onrender.com/) book, relating to game client internals.
+* Our [Documentation](https://revive101.github.io/Imlight-docs/) book.
 
 ## Contributing
 Contributions are welcome and highly encouraged from anyone.

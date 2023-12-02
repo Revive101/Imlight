@@ -1,3 +1,8 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
 using System.Collections.Generic;
 using System.Diagnostics;
 using Akka.Util;
@@ -141,6 +146,8 @@ public static class ServerTypeCache {
 
         public enum RoutingType {
             ROUTING_ACTOR,
+            ROUTING_ZONE,
+            ROUTING_PROXIMITY,
         }
     }
 

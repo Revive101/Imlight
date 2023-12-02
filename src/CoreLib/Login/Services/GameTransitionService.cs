@@ -1,4 +1,4 @@
-﻿/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
  */
@@ -9,9 +9,11 @@ using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.IO;
 using Imlight.Common.ObjectProperty.PropertyReflection;
-using Imlight.CoreLib.Login.Models;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Models.Player;
+using SharpDX;
 
 namespace Imlight.CoreLib.Login.Services;
 
@@ -45,10 +47,21 @@ internal class GameTransitionService : MessageService {
         var serverEnqueueResult = (LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED) SessionActor.EnqueueToServer(gameServer.ActorRef);
         var allocatedKey = CreateSessionKey(gameServer.ActorRef, account);
 
+        var ip = "";
+        #if DEBUG
+        ip = "127.0.0.1";
+        #else
+        ip = gameServer.IP;
+        #endif
+
+        var stringLocation = character.Location == Vector3.Zero
+            ? "Start"
+            : Util.GetCompactStringFromVector(character.Location, character.Orientation);
+
         // Craft a successful message. This will instead be cached if the server is full.
         var charSelectedMsg = new LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED() {
             // Set details about the game server.
-            IP = gameServer.IP,
+            IP = ip,
             TCPPort = gameServer.Port,
             UDPPort = gameServer.Port,
             Key = allocatedKey,                   // Loggerin server -> game server session key.
@@ -61,7 +74,7 @@ internal class GameTransitionService : MessageService {
             CharID = character.CharId,
             ZoneID = new GID((ulong) gameServer.Port),
             ZoneName = character.Zone,
-            Location = character.GetStringLocation(),
+            Location = stringLocation,
         };
 
         // Cache the message if the player is queued.
@@ -75,15 +88,15 @@ internal class GameTransitionService : MessageService {
     }
 
     private SERVER_100_PROTOCOL.MSG_SERVERINFO GetGameServer() {
-        var msg = new SERVER_100_PROTOCOL.MSG_QUERYGAMESERVERS();
+        var msg = new SERVER_100_PROTOCOL.MSG_GETBESTSERVER();
 
 #if DEBUG
         var localEndPoint = (IPEndPoint) SessionActor.Socket.LocalEndPoint;
         var isLocal = localEndPoint.Address.ToString().Contains("127.0.");
-        msg = new SERVER_100_PROTOCOL.MSG_QUERYGAMESERVERS() { IsLocal = isLocal };
+        msg = new SERVER_100_PROTOCOL.MSG_GETBESTSERVER() { IsLocal = isLocal };
 #else
             // Release builds should never be able to connect to their own local server.
-            msg = new SERVER_100_PROTOCOL.MSG_QUERYGAMESERVERS() { IsLocal = false };
+            msg = new SERVER_100_PROTOCOL.MSG_GETBESTSERVER() { IsLocal = false };
 #endif
 
         return AskServer<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg);

@@ -24,13 +24,14 @@ public class WizardZone : ReceiveProtocolDispatcher {
     private const ushort ReservedMobileIdMax = 1000;
 
     public string ZoneName { get; }
+    public string ZoneDisplayName { get; set; }
 
     private readonly uint _dynamicZoneId;
     private readonly IActorRef _objectSupervisorRef;
     private readonly IActorRef _sigilSupervisorRef;
     private readonly IActorRef _duelSupervisorRef;
     private readonly List<Trigger> _triggers;
-    private readonly Dictionary<IActorRef, TypeCache.CoreObject> _zonePlayers;
+    private readonly Dictionary<IActorRef, CoreObject> _zonePlayers;
     private ushort _zoneObjectMobileIdCounter;
 
     // ctor
@@ -105,7 +106,7 @@ public class WizardZone : ReceiveProtocolDispatcher {
     /// </summary>
     /// <returns>The actor reference for the supervisor.</returns>
     private IActorRef CreateDuelSupervisor() {
-        var props = DuelActorSupervisor.Props();
+        var props = DuelActorSupervisor.Props(Self);
         return Context.ActorOf(props);
     }
 
@@ -241,7 +242,8 @@ public class WizardZone : ReceiveProtocolDispatcher {
             ZoneActorRef = Self,
             DynamicZoneId = _dynamicZoneId,
             ErrorCode = 0,
-            MobileId = GenerateMobileId()
+            MobileId = GenerateMobileId(),
+            ZoneDisplayName = ZoneDisplayName
         });
     }
 

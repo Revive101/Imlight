@@ -8,10 +8,11 @@ using Akka.Actor;
 using Imlight.Common.Caches;
 using Imlight.Common.IO;
 using Imlight.Common.ObjectProperty;
-using Imlight.CoreLib.Game.Models;
-using Imlight.CoreLib.Login.Models;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Models.Player;
+using SharpDX;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Services;
@@ -26,6 +27,7 @@ internal class AttachService : MessageService {
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ATTACH))]
     private void ReceiveAttach(GAME_5_PROTOCOL.MSG_ATTACH message) {
         // Use the session key given in the message to ensure that the user didn't bypass our login server.
+        // The key will be associated with the account they're trying to log into.
         if (!ValidateLoginKey(message.LoginKey, message.UserID, out var account)) {
             SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED() {
                 Error = 1,
@@ -50,7 +52,7 @@ internal class AttachService : MessageService {
         SetCharacterInternally(character);
 
         // Tell the game server that the user has attached, and now we need to find a zone process for their
-        // zone, or create a new one.
+        // zone, or create a new one. This is an internal zone transfer that does not involve the client.
         var zoneDetails = SendZoneTransfer(message.ZoneName);
         if (zoneDetails.ErrorCode != 0) {
             SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED { Error = zoneDetails.ErrorCode });
@@ -58,8 +60,17 @@ internal class AttachService : MessageService {
         }
 
         // Set the character's location and zone to the ones given in the message.
-        character.SetZone(message.ZoneName);
-        character.SetLocation(message.Location);
+        character.SetZone(message.ZoneName, zoneDetails.ZoneDisplayName);
+
+        // The location is a string marked with commas. Parse it into a Vector3.
+        // We're compressing the orientation by a factor of 0.708 to fit it into a byte.
+        // This is to remain consistent with the client's representation of orientation.
+        var location = Util.GetVectorFromCompactString(message.Location);
+        var actualLocation = new Vector3(location.X, location.Y, location.Z);
+        var orientation = location.W / 0.708f;
+        character.SetLocation(actualLocation);
+        character.SetOrientation((byte) orientation);
+
         var gameServer = GetGameServer();
         character.GameServerIp = gameServer.IP;
         character.GameServerPort = (ushort) gameServer.Port;

@@ -4,7 +4,7 @@
  */
 
 using Imlight.CoreLib.Shared.Networking;
-using Imlight.CoreLib.Login.Models;
+using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Shared.Packets;
 

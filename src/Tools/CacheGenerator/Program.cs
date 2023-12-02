@@ -1,3 +1,8 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
 ﻿using System.Text;
 using System.Xml;
 using Serilog;
@@ -72,7 +77,7 @@ internal static class Program {
     private static bool EnsureTypeDumpFromArguments(IReadOnlyList<string> args) {
         // The user should provide the path to the ClientTypeDump.xml file in the second argument.
         // Ensure that they've done that.
-        if (args.Count >= 1) {
+        if (args.Count >= 2) {
             var typeDumpPath = args[1];
             if (File.Exists(typeDumpPath)) {
                 return true;

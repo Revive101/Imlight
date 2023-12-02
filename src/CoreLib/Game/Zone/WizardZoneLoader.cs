@@ -14,6 +14,7 @@ using Imlight.Common.Formats;
 using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Implementations;
 using SharpDX;
 using static Imlight.Common.Caches.ServerTypeCache;
@@ -90,6 +91,7 @@ public static class WizardZoneLoader {
 
         var serializer = new FileSerializer();
         s_zoneData = serializer.OpenClass<TypeCache.WizZoneData>(s_wad, ZoneDataFileName);
+        s_zone.ZoneDisplayName = s_zoneData.m_zoneDisplayName;
 
         if (s_zoneData is null) {
             Logger.Error("Zone {ZoneName} could not load {ZoneDataFileName} as it was missing or invalid.",
@@ -218,6 +220,9 @@ public static class WizardZoneLoader {
                 continue;
             }
 
+            // Clipping happens sometimes. Increaase the Z-axis by 1 to prevent this.
+            newObject.m_location.Z += 1;
+
             var message = new ZONE_102_PROTOCOL.MSG_ADDCOMBATSIGIL {
                 CoreObject = newObject,
                 Template = template
@@ -240,7 +245,7 @@ public static class WizardZoneLoader {
 
         foreach (var requirement in info.m_spawnRequirements.m_requirements) {
             if (requirement is TypeCache.ReqGlobalRegistryValue globalReq) {
-                var globalValue = GlobalRegistry.GetRegistryEntry(globalReq.m_entryName);
+                var globalValue = GlobalRegistryCollection.GetRegistryEntry(globalReq.m_entryName);
 
                 switch (globalReq.m_operatorType) {
                     case TypeCache.ReqNumeric.OPERATOR_TYPE.OPERATOR_EQUALS:
@@ -345,9 +350,14 @@ public static class WizardZoneLoader {
             // If there's persistent data associated with this trigger, load it.
             var persistentTriggerData = persistentZoneData?.Teleports
                 .FirstOrDefault(x => x.TriggerName == trigger.m_triggerName);
+
             if (persistentTriggerData is not null) {
                 // Set the trigger results to the results stored in the database.
-                var resultList = new TypeCache.ResultList { m_results = new List<TypeCache.Result> { persistentTriggerData.Teleport } };
+                var resultList = new TypeCache.ResultList {
+                    m_results = new List<TypeCache.Result> {
+                        persistentTriggerData.Teleport
+                    }
+                };
                 trigger.m_results = resultList;
             }
 

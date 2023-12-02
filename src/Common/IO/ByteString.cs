@@ -1,3 +1,8 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
 using System;
 using System.Diagnostics;
 using System.Text;
@@ -25,6 +30,10 @@ public struct ByteString {
     }
 
     public static implicit operator ByteString(string str) {
+        if (str is null) {
+            return new ByteString();
+        }
+
         return new ByteString(Encoding.UTF8.GetBytes(str));
     }
 

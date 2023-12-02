@@ -1,3 +1,8 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
 using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
@@ -50,7 +55,7 @@ public class WizardZoneSigilSupervisor : ReceiveProtocolDispatcher {
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL))]
     private void ReceiveRequestCombatSigil(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL message) {
         // Find the closest sigil to the primary suspect.
-        var primarySuspect = message.Participants.First().Value;
+        var primarySuspect = message.StartingParticipants.First().Value;
         var closestSigilActor = FindClosestSigil(primarySuspect);
 
         // Forward the message to the closest sigil.

@@ -54,7 +54,7 @@ public class CoreObjectSerializer : ObjectSerializer {
             return false;
         }
 
-        var coreObjectData = GetCoreObjectData(propClass);
+        var coreObjectData = GetClassAndNamespace(propClass);
 
         writer.WriteUInt8(coreObjectData.Item1);  // class ID
         writer.WriteUInt8(coreObjectData.Item2);  // Namespace ID
@@ -71,29 +71,23 @@ public class CoreObjectSerializer : ObjectSerializer {
     }
 
     protected override bool PreloadObject(BitReader buffer, out PropertyClass? propClass) {
-        // First, read a temporary hash as if it were a PropertyClass.
-        // If we find a property class from the hash, we know it's not a CoreObject.
-        var startingPos = buffer.BitPos();
-        var tempHash = buffer.ReadUInt32();
-        if (tempHash == 0) {
-            propClass = null;
-            return false;
+        var classId = buffer.ReadUInt8();
+        var namespaceId = buffer.ReadUInt8();
+        var templateOrHash = buffer.ReadUInt32();
+
+        if (classId == 0 && namespaceId == 0) {
+            // This is not a core object. Dispatch the object normally.
+            propClass = TypeCache.Dispatch(templateOrHash);
+            return propClass is not null;
         }
-
-        var tempProp = TypeCache.Dispatch(tempHash);
-        if (tempProp is not null) {
-            propClass = tempProp;
-
-            return true;
+        else {
+            var hash = GetHash(classId, namespaceId);
+            propClass = TypeCache.Dispatch(hash);
+            return propClass is not null;
         }
-
-        buffer.SeekBit(startingPos);
-        propClass = GetCoreObjectFromHeader(buffer);
-
-        return propClass != null;
     }
 
-    private static (byte, byte) GetCoreObjectData(PropertyClass propClass) {
+    private static (byte, byte) GetClassAndNamespace(PropertyClass propClass) {
         if (propClass is null) {
             return (0, 0);
         }
@@ -117,20 +111,16 @@ public class CoreObjectSerializer : ObjectSerializer {
         };
     }
 
-    private static PropertyClass? GetCoreObjectFromHeader(BitReader buffer) {
-        var classId = buffer.ReadUInt8();
-        var namespaceId = buffer.ReadUInt8();
-        var templateId = buffer.ReadUInt32();
-
-        if (classId == 0 && namespaceId == 0) {
-            return TypeCache.Dispatch(templateId);
-        }
-
-        return (classId, namespaceId, templateId) switch {
-            (104, 2, 1) => // WizClientObject
-                new TypeCache.WizClientObject(),
-            _ => null
+    private static uint GetHash(byte classId, byte namespaceId) {
+        return (classId, namespaceId) switch {
+            (2, 2) => 350837933,
+            (104, 2) => 766500222,
+            (115, 9) => 1653772158,
+            (106, 2) => 1167581154,
+            (108, 2) => 2109552587,
+            (132, 9) => 398229815,
+            (131, 131) => 958775582,
+            _ => 0
         };
     }
-
 }

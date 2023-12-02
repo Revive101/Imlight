@@ -6,9 +6,9 @@
 using Akka.Actor;
 using Imlight.Common.Caches;
 using Imlight.Common.ObjectProperty;
-using Imlight.CoreLib.Game.Models;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Implementations;
+using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Login.Services;
 
@@ -41,20 +41,7 @@ internal class CharacterService : MessageService {
             var newCharacter = new Character(charData);
             var createdCharacter = account.AddCharacter(newCharacter);
 
-            // If we had no problems adding the character to the account, save the characters in the database.
-            if (createdCharacter) {
-                var savedCharacterToCollection = CharacterCollection
-                    .AddCharacter(newCharacter);
-                var savedCharacterToAccount = AccountCollection
-                    .AddCharacterToAccount(account.AccountId, newCharacter.CharId);
-
-                if (!savedCharacterToCollection || !savedCharacterToAccount) {
-                    errorCode = 1;
-                }
-            }
-            else {
-                errorCode = 1;
-            }
+            errorCode = createdCharacter ? 0 : 1;
         }
 
         SendToSocket(new LOGIN_7_PROTOCOL.MSG_CREATECHARACTERRESPONSE { ErrorCode = errorCode });
@@ -107,7 +94,7 @@ internal class CharacterService : MessageService {
                 var character = account.Characters[i];
 
                 // Database is document-based. We need to serialize the document to send to the client.
-                var data = serializer.Serialize(character.GetCharacterCreationInfo());
+                var data = serializer.Serialize(character.GetLoginScreenInfo());
                 SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERINFO() { CharacterInfo = data });
             }
         }

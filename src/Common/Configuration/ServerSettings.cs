@@ -1,3 +1,8 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
 namespace Imlight.Common.Configuration;
 
 [IniSection("Global Settings")]
@@ -213,6 +218,18 @@ public sealed class ServerSettings {
     [DefaultValue(4)]
     [Description("The time in seconds the server will wait for a heartbeat response.")]
     public byte KeepAliveRspWaitTime { get; set; }
+
+    [DefaultValue(15)]
+    [Description("How many requests are allowed within the token bucket of the session actor.")]
+    public int SessionTokenBucketMax { get; set; }
+
+    [DefaultValue(10)]
+    [Description("How many new tokens are added to the token bucket per second.")]
+    public int SessionTokenBucketPerSecond { get; set; }
+
+    [DefaultValue(5)]
+    [Description("How many times the session actor will try to acquire a token before failing.")]
+    public byte SessionTokenBucketFailedAcquisitionLimit { get; set; }
 
     #endregion
 }

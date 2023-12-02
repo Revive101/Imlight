@@ -1,3 +1,8 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
 ﻿/* Copyright (C) Revive101 Development Team - All Rights Reserved
 * Unauthorized copying of this file, via any medium is strictly prohibited
 * Proprietary and confidential.
@@ -33,7 +38,7 @@ public static class Program {
             return;
 
         if (userSettingsInput == "y") {
-            DragonDatabaseManager.SetRemoteServer("https://a.worlddata.ravendb.community", "input/worlddata.dev.certificate.pfx");
+            DragonDatabaseManager.SetRemoteServer("https://a.worlddata.ravendb.community", "input/worlddata.client.certificate.pfx");
         }
         else {
 
@@ -62,14 +67,23 @@ public static class Program {
 
     private static void WorkLoop() {
         while (true) {
-            var workingWad = _wadStack.Peek();
+            KiWad workingWad;
+            if (!_wadStack.Any()) {
+                workingWad = DoWadInput();
+                _wadStack.Push(workingWad);
+            }
+            else {
+                workingWad = _wadStack.Peek();
+            }
+
             AnsiConsole.MarkupLine($"You are in [bold]{workingWad.Name}[/].");
 
             // Prompt the user to select a trigger from the current WAD.
             var workingTrigger = DoTriggerInput(workingWad);
 
-            if (workingTrigger == null)
+            if (workingTrigger == null) {
                 continue;
+            }
 
             var result = RebuildZoneTransferResult(workingWad.Name, workingTrigger.m_triggerName);
             DragonDatabaseManager.AddNewTeleport(workingWad.Name, workingTrigger.m_triggerName, result);
@@ -85,6 +99,11 @@ public static class Program {
         // If our wad stack is more than one deep, allow the user to go back.
         if (_wadStack.Count > 1)
             formatTriggers.Add("Crawl back to the previous working zone.");
+
+        if (formatTriggers.Count <= 0) {
+            Console.WriteLine("This zone does not have any triggers.");
+            return null;
+        }
 
         var rawTriggerSelected = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Select a trigger:")
             .PageSize(10)
@@ -174,7 +193,7 @@ public static class Program {
         var triggers = fs.OpenClass<ServerTypeCache.WizZoneTriggers>(wad, TriggerDataFileName);
 
         return triggers?.m_triggers?
-            .Where(trigger => trigger.m_results?.m_results != null)
+            .Where(trigger => trigger?.m_results?.m_results != null)
             .Where(trigger => trigger.m_results.m_results.Any(result => result is TypeCache.ResTeleport))
             .ToArray();
     }
@@ -253,7 +272,7 @@ public static class Program {
                 throw new Exception("Patch server is not available.");
         }
         catch (Exception ex) {
-            Console.WriteLine("Some resource was not available: {Ex}", ex.Message);
+            Console.WriteLine("Some resource was not available: {0}", ex.Message);
             return false;
         }
 

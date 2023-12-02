@@ -1,3 +1,8 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
 ﻿using Imlight.Common.ObjectProperty.JSON;
 using Newtonsoft.Json;
 using System;

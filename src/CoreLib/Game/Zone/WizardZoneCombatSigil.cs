@@ -1,6 +1,14 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Akka.Actor;
+using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Shared.Networking;
@@ -10,6 +18,10 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone;
 
+/// <summary>
+/// This class is responsible for creating a duel actor and spawning the combat sigil object.
+/// It only represents the combat sigil object, not the duel itself.
+/// </summary>
 public class WizardZoneCombatSigil : WizardZoneObject {
     private const uint SigilTemplateId = 1901671683;
 
@@ -20,33 +32,85 @@ public class WizardZoneCombatSigil : WizardZoneObject {
         : base(activeGameObject, template, wizardZoneRef) {
     }
 
-    public static Props Props(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef) {
-        return Akka.Actor.Props.Create(() => new WizardZoneCombatSigil(activeGameObject, template, wizardZoneRef));
+    public static Props Props(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef)
+        => Akka.Actor.Props.Create(() => new WizardZoneCombatSigil(activeGameObject, template, wizardZoneRef));
+
+    protected override void OnPlayerJoin(CoreObject player, IActorRef suspect) {
+        if (_activeDuel is not null) {
+            SpawnCombatSigilObject();
+        }
+    }
+
+    protected override void OnPlayerInteractionEnter(CoreObject player, IActorRef suspect) {
+        if (_activeDuel is null || _activeDuelActor is null) {
+            return;
+        }
+
+        if (IsPlayerSlotAvailable()) {
+            AddParticipant(suspect, player);
+        }
+        else {
+            Logger.Debug("Cannot add player {0} to duel {1} because there are already 4 players.",
+                Logger.Args(player.m_globalID, _activeDuelActor));
+        }
+    }
+
+    protected override void OnCreatureInteractionEnter(CoreObject creature, IActorRef suspect) {
+        if (_activeDuel is null || _activeDuelActor is null) {
+            return;
+        }
+
+        if (IsCreatureSlotAvailable()) {
+            AddParticipant(suspect, creature);
+        }
+        else {
+            Logger.Debug("Cannot add creature {0} to duel {1} is full.",
+                Logger.Args(creature.m_globalID, _activeDuelActor));
+        }
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL))]
-    private void ReceiveSpawnSigil(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL message) {
-        var duelCreated = CreateDuelActor(message.Participants);
-        SpawnCombatSigilObject(duelCreated);
+    private void ReceiveRequestSigil(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL message) {
+        // If there is already an active duel, we'll add them to it.
+        if (_activeDuel is not null) {
+            foreach (var participant in message.StartingParticipants) {
+                var participantActor = participant.Key;
+                var participantObject = participant.Value;
+                var isCreature = participantObject.m_templateID != 1;
+
+                var isSlotAvailable = isCreature ? IsCreatureSlotAvailable() : IsPlayerSlotAvailable();
+
+                if (isSlotAvailable) {
+                    AddParticipant(participantActor, participantObject);
+                }
+            }
+            return;
+        }
+
+        var duel = RequestDuelActor(message.StartingParticipants);
+        _activeDuelActor = duel.Item1;
+        _activeDuel = duel.Item2;
+
+        SpawnCombatSigilObject();
     }
 
-    private Duel CreateDuelActor(Dictionary<IActorRef, CoreObject> participants) {
+    private (IActorRef, Duel) RequestDuelActor(Dictionary<IActorRef, CoreObject> participants) {
         var createMsg = new COMBAT_106_PROTOCOL.MSG_STARTDUEL {
             Participants = participants,
             SigilId = ActiveGameObject.m_globalID,
             SigilLocation = ActiveGameObject.m_location,
             SigilOrientation = ActiveGameObject.m_orientation,
         };
+
+        // The zone is going to be the one to create the duel. Await its reply here.
         var createRsp = WizardZoneRef
             .Ask<COMBAT_106_PROTOCOL.MSG_DUELDETAILS>(createMsg)
             .Result;
 
-        _activeDuelActor = createRsp.DuelActor;
-        _activeDuel = createRsp.Duel;
-        return createRsp.Duel;
+        return (createRsp.DuelActor, createRsp.Duel);
     }
 
-    private void SpawnCombatSigilObject(Duel duel) {
+    private void SpawnCombatSigilObject() {
         if (_activeDuel is null || _activeDuelActor is null) {
             throw new Exception("Duel or DuelActor is null. Cannot spawn combat sigil object.");
         }
@@ -62,6 +126,7 @@ public class WizardZoneCombatSigil : WizardZoneObject {
             throw new Exception("Could not find DuelBehavior on CoreObject.");
         }
 
+        // Serialize the object and broadcast it to the zone.
         var serializer = new CoreObjectSerializer()
             .OnBehaviors(SerializerOptions.Behaviors.None)
             .OnPropertyMask(SerializerOptions.PropertyFlags.Public
@@ -75,5 +140,49 @@ public class WizardZoneCombatSigil : WizardZoneObject {
             Sender = Self,
         };
         base.WizardZoneRef.Tell(broadcastMsg);
+    }
+
+    private bool IsPlayerSlotAvailable() {
+        if (_activeDuel is null || _activeDuelActor is null) {
+            return false;
+        }
+
+        var checkForSlotMsg = new COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLE {
+            Team = Combat.Team.Player
+        };
+        var slotAvailable = _activeDuelActor
+            .Ask<COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLERSP>(checkForSlotMsg)
+            .Result
+            .Available;
+
+        return slotAvailable;
+    }
+
+    private bool IsCreatureSlotAvailable() {
+        if (_activeDuel is null || _activeDuelActor is null) {
+            return false;
+        }
+
+        var checkForSlotMsg = new COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLE {
+            Team = Combat.Team.Creature
+        };
+        var slotAvailable = _activeDuelActor
+            .Ask<COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLERSP>(checkForSlotMsg)
+            .Result
+            .Available;
+
+        return slotAvailable;
+    }
+
+    private void AddParticipant(IActorRef actorRef, CoreObject obj) {
+        if (_activeDuel is null || _activeDuelActor is null) {
+            return;
+        }
+
+        var msg = new COMBAT_106_PROTOCOL.MSG_ADDPARTICIPANT {
+            Participant = actorRef,
+            ParticipantObject = obj,
+        };
+        _activeDuelActor.Tell(msg);
     }
 }

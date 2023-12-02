@@ -7,8 +7,8 @@ using System;
 using System.Collections.Generic;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.Common.Utilities;
-using Imlight.CoreLib.Game.Models;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Models.Player;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game;

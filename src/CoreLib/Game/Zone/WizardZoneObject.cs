@@ -1,9 +1,15 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
 using System.Collections.Generic;
 using Akka.Actor;
 using Imlight.Common.Caches;
 using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using SharpDX;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone;
@@ -33,7 +39,18 @@ public class WizardZoneObject : ReceiveProtocolDispatcher {
         return Akka.Actor.Props.Create(() => new WizardZoneObject(activeGameObject, template, wizardZoneRef));
     }
 
+    /// <summary>
+    /// Called when a player joins the wizard zone. Sends the player the object data and adds the object to the zone.
+    /// </summary>
+    /// <param name="player">The player object that joined the zone.</param>
+    /// <param name="suspect">The actor reference of the player that joined the zone.</param>
     protected virtual void OnPlayerJoin(CoreObject player, IActorRef suspect) {
+        // If the player spawns within this object, add them to the list of objects in radius.
+        if (IsInRadius(player)) {
+            _objsInRadius.Add(player);
+        }
+
+        // When a new player joins, we need to send them the object data.
         var serializer = new CoreObjectSerializer()
             .OnBehaviors(SerializerOptions.Behaviors.None)
             .OnPropertyMask(SerializerOptions.PropertyFlags.Public
@@ -45,11 +62,20 @@ public class WizardZoneObject : ReceiveProtocolDispatcher {
         Sender.Tell(new ZONE_102_PROTOCOL.MSG_ADDOBJECTRSP());
     }
 
-    protected virtual void OnPlayerLeave(IActorRef suspect) {
-        var msg = new GAME_5_PROTOCOL.MSG_REMOVEOBJECT { GameObjectID = ActiveGameObject.m_globalID };
+    /// <summary>
+    /// Called when a player leaves the wizard zone object.
+    /// </summary>
+    /// <param name="suspect">The actor reference of the player who left.</param>
+    protected virtual void OnPlayerLeave(IActorRef suspect, ulong id) {
+        // Tell the player client to remove this object from the world.
+        var msg = new GAME_5_PROTOCOL.MSG_REMOVEOBJECT {
+            GameObjectID = ActiveGameObject.m_globalID
+        };
         suspect.Tell(msg);
-
         Sender.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP());
+
+        // Remove the player object from our radius.
+        _objsInRadius.RemoveAll(x => x.m_globalID == id);
     }
 
     /// <summary>
@@ -70,16 +96,34 @@ public class WizardZoneObject : ReceiveProtocolDispatcher {
 
     }
 
+    /// <summary>
+    /// Called when a creature enters the interaction zone of this object.
+    /// </summary>
+    /// <param name="creature">The CoreObject representing the creature.</param>
+    /// <param name="suspect">The IActorRef representing the suspect.</param>
+    protected virtual void OnCreatureInteractionEnter(CoreObject creature, IActorRef suspect) {
+
+    }
+
+    /// <summary>
+    /// Gets the position of the active game object.
+    /// </summary>
+    /// <returns>The position as a Vector3.</returns>
+    protected virtual Vector3 GetPosition() {
+        return ActiveGameObject.m_location;
+    }
+
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
     protected virtual void ReceiveAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message)
         => OnPlayerJoin(message.PlayerObject, message.Player);
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER))]
     protected virtual void ReceiveRemovePlayer(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message)
-        => OnPlayerLeave(message.Player);
+        => OnPlayerLeave(message.Player, message.GlobalId);
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_FISHINTERACTION))]
     protected void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_FISHINTERACTION message) {
+        // An actor is asking if our current game object is within a certain interaction radius.
         if (IsInRadius(message.CoreObject)) {
             // Keep track of the objects already within radius as to not trigger duplicate events.
             if (_objsInRadius.Contains(message.CoreObject)) {
@@ -88,23 +132,40 @@ public class WizardZoneObject : ReceiveProtocolDispatcher {
 
             // Do enter events.
             _objsInRadius.Add(message.CoreObject);
-            OnPlayerInteractionEnter(message.CoreObject, message.Suspect);
+            if (message.IsCreature) {
+                OnCreatureInteractionEnter(message.CoreObject, message.Suspect);
+            }
+            else {
+                OnPlayerInteractionEnter(message.CoreObject, message.Suspect);
+            }
         }
         else if (_objsInRadius.Contains(message.CoreObject) && !IsInRadius(message.CoreObject)) {
             // Do exit events.
             _objsInRadius.Remove(message.CoreObject);
-            OnPlayerInteractionExit(message.CoreObject, message.Suspect);
+            if (!message.IsCreature) {
+                OnPlayerInteractionExit(message.CoreObject, message.Suspect);
+            }
         }
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_GETCOREOBJECT))]
     protected void ReceiveGetCoreObject(ZONE_102_PROTOCOL.MSG_GETCOREOBJECT message) {
-        var rsp = new ZONE_102_PROTOCOL.MSG_GETCOREOBJECTRSP() { CoreObject = ActiveGameObject };
+        // An actor is asking for our active core object.
+        var rsp = new ZONE_102_PROTOCOL.MSG_GETCOREOBJECTRSP() {
+            CoreObject = ActiveGameObject
+        };
+
         Sender.Tell(rsp);
     }
 
-    protected bool IsInRadius(CoreObject obj1) {
-        var sqrtDist = (obj1.m_location - ActiveGameObject.m_location).LengthSquared();
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
+    protected void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message) {
+        // An actor is broadcasting a message to all players in the zone.
+        WizardZoneRef.Tell(message);
+    }
+
+    private bool IsInRadius(CoreObject obj1) {
+        var sqrtDist = (obj1.m_location - GetPosition()).LengthSquared();
         var sqrtRadius = InteractionRadius * InteractionRadius;
 
         return sqrtDist <= sqrtRadius;
