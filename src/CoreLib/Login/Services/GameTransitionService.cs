@@ -11,7 +11,9 @@ using Imlight.Common.IO;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models.Player;
+using SharpDX;
 
 namespace Imlight.CoreLib.Login.Services;
 
@@ -52,6 +54,10 @@ internal class GameTransitionService : MessageService {
         ip = gameServer.IP;
         #endif
 
+        var stringLocation = character.Location == Vector3.Zero
+            ? "Start"
+            : Util.GetCompactStringFromVector(character.Location, character.Orientation);
+
         // Craft a successful message. This will instead be cached if the server is full.
         var charSelectedMsg = new LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED() {
             // Set details about the game server.
@@ -68,7 +74,7 @@ internal class GameTransitionService : MessageService {
             CharID = character.CharId,
             ZoneID = new GID((ulong) gameServer.Port),
             ZoneName = character.Zone,
-            Location = character.GetStringLocation(),
+            Location = stringLocation,
         };
 
         // Cache the message if the player is queued.

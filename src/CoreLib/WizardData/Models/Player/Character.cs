@@ -100,16 +100,6 @@ public class Character : IDisposable {
         SendCachedChange(nameof(Location), 10, loc);
     }
 
-    public void SetLocation(string loc) {
-        // The only time a string location is given is on attach. In which case, we want to disassemble the string
-        // and immediately persist the location change.
-        var location = Util.GetVectorFromCompactString(loc);
-        this.Location = new Vector3(location.X, location.Y, location.Z);
-        this.Orientation = new Vector3(0, 0, location.W);
-
-        SendPersistentChange(nameof(Location), this.Location);
-    }
-
     public void SetOrientation(byte direction) {
         this.Orientation = new Vector3(0, 0, direction * 0.708f);
 
@@ -117,13 +107,6 @@ public class Character : IDisposable {
     }
 
     public void SetZone(string zone, string zoneDisplayName) {
-        // Check if the zone exists in the AccessPass.
-        if (!AccessPassManager.DoesZoneExist(zone)) {
-            Logger.Error("Character tried to set itself to zone {Zone}, but that zone does not exist.",
-                Logger.Args(zone));
-            return;
-        }
-
         this.Zone = zone;
         this.ZoneDisplayName = zoneDisplayName;
         SendPersistentChange(nameof(Zone), zone);
@@ -143,14 +126,7 @@ public class Character : IDisposable {
         SendPersistentChange(nameof(MarkedLocation), loc);
     }
 
-    public string GetStringLocation() {
-        // If the location is zero, return "Start."
-        return this.Location == Vector3.Zero
-            ? "Start"
-            : Util.GetCompactStringFromVector(this.Location, this.Orientation);
-    }
-
-    public WizardCharacterCreationInfo GetCharacterCreationInfo() {
+    public WizardCharacterCreationInfo GetLoginScreenInfo() {
         var creationInfo = new WizardCharacterCreationInfo {
             m_avatarBehavior = this.WizardAvatar,
             m_nameIndices = this.NameIndices,
@@ -164,11 +140,6 @@ public class Character : IDisposable {
             // TODO: Equipment list
         };
         return creationInfo;
-    }
-
-    public void Dispose() {
-        FlushPersistentChanges();
-        _cacheManager?.Dispose();
     }
 
     private WizGameStats CalculateBaseGameStats(WizGameStats existingStats) {
@@ -205,7 +176,12 @@ public class Character : IDisposable {
         _cacheManager.EnqueueImmediateChange(elementName, value);
     }
 
-    public void FlushPersistentChanges() {
+    private void FlushPersistentChanges() {
         _cacheManager?.FlushAllChangesAsync().RunSynchronously();
+    }
+
+    public void Dispose() {
+        FlushPersistentChanges();
+        _cacheManager?.Dispose();
     }
 }

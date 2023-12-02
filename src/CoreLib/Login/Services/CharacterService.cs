@@ -94,7 +94,7 @@ internal class CharacterService : MessageService {
                 var character = account.Characters[i];
 
                 // Database is document-based. We need to serialize the document to send to the client.
-                var data = serializer.Serialize(character.GetCharacterCreationInfo());
+                var data = serializer.Serialize(character.GetLoginScreenInfo());
                 SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERINFO() { CharacterInfo = data });
             }
         }
