@@ -1,4 +1,4 @@
-﻿/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
  */
@@ -15,7 +15,8 @@ using SharpDX;
 namespace Imlight.CoreLib.Game.Services;
 
 internal class MoveService : MessageService {
-    private const byte MarkManaCostPercent = 10;
+
+    private const byte MarkManaCostPercent = 20;
 
     public MoveService(SessionActor sessionActor) : base(sessionActor) { }
 
@@ -77,7 +78,16 @@ internal class MoveService : MessageService {
 
         character.SetMarkedLocation(character.Location, character.Orientation, character.Zone);
 
-        // Todo: reduce the character's mana here by 10%.
+        var oldMana = character.GameStats.m_currentMana;
+        var newMana = oldMana - (character.GameStats.m_baseMana * ((float) MarkManaCostPercent / 100));
+        character.GameStats.m_currentMana = (int) newMana;
+
+        SendToSocket(new WIZARD_12_PROTOCOL.MSG_UPDATEMANA() {
+            Mana = character.GameStats.m_currentMana,
+            MaxMana = character.GameStats.m_baseMana,
+            DisplayDiff = (byte) (oldMana - newMana)
+        });
+
         var rsp = new GAME_5_PROTOCOL.MSG_MARK_LOCATION_RESPONSE {
             Result = 1,
             ZoneName = character.Zone,

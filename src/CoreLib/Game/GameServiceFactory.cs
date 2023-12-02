@@ -28,7 +28,7 @@ public class GameServiceFactory : ServiceFactory {
         typeof(ChatService),
         typeof(SpellService),
         typeof(InventoryService),
-        typeof(FriendsService),
+        typeof(EquipmentService),
         typeof(CommandService)
     };
 
