@@ -22,8 +22,7 @@ namespace Imlight.CoreLib.WizardData.Models.Player;
 [Serializable]
 public class Character : IDisposable {
     [JsonIgnore]
-    private readonly byte _defaultUploadIntervalInMinutes
-        = ConfigurationManager.Settings.CharacterUploadIntervalInMinutes;
+    private readonly byte _defaultUploadIntervalInMinutes = ConfigurationManager.Settings.CharacterUploadIntervalInMinutes;
 
     public ulong AccountId { get; set; }
     public ulong CharId { get; init; }

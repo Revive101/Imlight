@@ -39,19 +39,19 @@ public class Account {
     [JsonConstructor] public Account() {  }
 
     // ctor
-    public Account(string username, string email, string plaintextPassword) {
+    public Account(string username, string email, string passwordHash) {
         if (string.IsNullOrWhiteSpace(username)) {
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(plaintextPassword)) {
+        if (string.IsNullOrWhiteSpace(passwordHash)) {
             return;
         }
 
         this.AccountId = RandomGen.GenerateGUID();
         this.Username = username;
         this.Email = email;
-        this.PasswordHash = DatabaseUtilities.CreateHashedPassword(plaintextPassword);
+        this.PasswordHash = passwordHash;
         this.CreationTime = DateTime.UtcNow;
     }
 

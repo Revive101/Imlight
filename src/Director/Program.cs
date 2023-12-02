@@ -116,23 +116,15 @@ internal static class Program {
     }
 
     private static void CreateEmbeddedDatabaseAccounts() {
-        // Create 9 accounts with the username "admin" and a number from 1 to 20.
-        for (int i = 1; i <= 20; i++) {
-            DatabaseUtilities.CreateEmbeddedDatabaseAccount($"qa{i}", $"qa{i}@r101.com", "debug", AuthLevel.QualityAssurance);
-        }
-
-        // Create 3 hall monitor accounts.
-        for (int i = 1; i < 3; i++) {
-            DatabaseUtilities.CreateEmbeddedDatabaseAccount($"hm{i}", $"hm{i}@r101.com", "hm9999", AuthLevel.HallMonitor);
-        }
-
         // Create 3 developer accounts.
-        for (int i = 1; i < 3; i++) {
+        for (int i = 1; i <= 3; i++) {
             DatabaseUtilities.CreateEmbeddedDatabaseAccount($"dev{i}", $"dev{i}@r101.com", "dev9999", AuthLevel.Administrator);
         }
 
         // Hard code hall monitor lead accounts. Don't share these passwords!
+        var test = DatabaseUtilities.CreateHashedPassword("test");
         DatabaseUtilities.CreateEmbeddedDatabaseAccount($"mitsu", $"mitsu@r101.com", "2034", AuthLevel.Administrator);
+        DatabaseUtilities.CreateEmbeddedDatabaseAccount($"walta", $"walta@r101.com", "9090", AuthLevel.Administrator);
     }
 
     private static void PrintTitle() {

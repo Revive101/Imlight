@@ -4,6 +4,7 @@
  */
 
 using Imlight.CoreLib.AntiAmbrose;
+using Imlight.CoreLib.WizardData;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System;
@@ -17,7 +18,8 @@ internal class CommandAccountProtocol : CommandProtocol {
     [Command("create")]
     [AuthRequired(AuthLevel.HallMonitor)]
     private void CreateAccountCommand(string username, string password) {
-        var newAccount = new Account(username, "", password);
+        var passwordHash = DatabaseUtilities.CreateHashedPassword(password);
+        var newAccount = new Account(username, "", passwordHash);
         var createdSuccess = AccountCollection.CreateAccount(newAccount);
 
         var reply = createdSuccess ? "Account created successfully." : "Account creation failed.";
