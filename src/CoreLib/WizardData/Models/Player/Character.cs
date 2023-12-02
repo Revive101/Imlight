@@ -26,21 +26,14 @@ public class Character : IDisposable {
 
     public ulong AccountId { get; set; }
     public ulong CharId { get; init; }
-    public WizardCharacterBehavior WizardAvatar { get; init; }
     public uint NameIndices { get; init; }
     public WideByteString NameOverride { get; init; }
-    public WizardSchool WizardSchool { get; init; }
     public int Level { get; private set; }
+    public int TrainingPoints { get; set; }
+    public int XpToNextLevel { get; set; }
     public string Zone { get; private set; }
     public string ZoneDisplayName { get; private set; }
     public byte World { get; private set; }
-    public WizGameStats GameStats { get; private set; }
-    public int TrainingPoints { get; set; }
-    public int XpToNextLevel { get; set; }
-    public bool IsVolunteer { get; private set; }
-    public string MarkedZoneName { get; private set; }
-    public Vector3 MarkedLocation { get; private set; }
-    public Vector3 MarkedLocationOrientation { get; private set; }
     public Vector3 Location {
         get => this.GameObject?.m_location ?? _location;
         set {
@@ -63,6 +56,9 @@ public class Character : IDisposable {
             }
         }
     }
+    public WizardCharacterBehavior WizardAvatar { get; init; }
+    public WizardSchool WizardSchool { get; init; }
+    public WizGameStats GameStats { get; private set; }
 
     [JsonIgnore] public WizClientObject GameObject;
     [JsonIgnore] public string GameServerIp;
@@ -111,19 +107,6 @@ public class Character : IDisposable {
         this.ZoneDisplayName = zoneDisplayName;
         SendPersistentChange(nameof(Zone), zone);
         SendPersistentChange(nameof(ZoneDisplayName), zoneDisplayName);
-    }
-
-    public void SetMarkedLocation(Vector3 loc, Vector3 orientation, string zoneName) {
-        if (zoneName != this.Zone) {
-            Logger.Error($"Character tried to set a marker in a zone ({0}) in a zone it wasn't in {1}",
-                Logger.Args(zoneName, this.Zone));
-            return;
-        }
-
-        this.MarkedLocation = loc;
-        this.MarkedLocationOrientation = orientation;
-        this.MarkedZoneName = zoneName;
-        SendPersistentChange(nameof(MarkedLocation), loc);
     }
 
     public WizardCharacterCreationInfo GetLoginScreenInfo() {
