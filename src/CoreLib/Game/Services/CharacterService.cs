@@ -22,7 +22,7 @@ public class CharacterService : MessageService {
     }
 
     protected override void OnDispose() {
-        _activeCharacter.Dispose();
+        ((System.IDisposable) _activeCharacter).Dispose();
         base.OnDispose();
     }
 

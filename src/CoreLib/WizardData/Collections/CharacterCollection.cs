@@ -7,6 +7,7 @@ using System.Linq;
 using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Raven.Client.Documents;
+using SharpDX;
 
 namespace Imlight.CoreLib.WizardData.Implementations;
 
@@ -69,5 +70,33 @@ public static class CharacterCollection {
         var character = session.Query<Character>()
             .FirstOrDefault(x => x.CharId == id);
         return character;
+    }
+
+    public static void UpdateCharacterZone(Character character, string zoneName, string zoneDisplayName) {
+        using var session = s_store.OpenSession();
+
+        var existingCharacter = session.Query<Character>()
+            .FirstOrDefault(x => x.CharId == character.CharId);
+        if (existingCharacter is null) {
+            return;
+        }
+
+        existingCharacter.Zone = zoneName;
+        existingCharacter.ZoneDisplayName = zoneDisplayName;
+        session.SaveChanges();
+    }
+
+    public static void UpdateCharacterLocation(Character character, Vector3 location, float orientation) {
+        using var session = s_store.OpenSession();
+
+        var existingCharacter = session.Query<Character>()
+            .FirstOrDefault(x => x.CharId == character.CharId);
+        if (existingCharacter is null) {
+            return;
+        }
+
+        existingCharacter.Location = location;
+        existingCharacter.Orientation = new Vector3(0, 0, orientation);
+        session.SaveChanges();
     }
 }

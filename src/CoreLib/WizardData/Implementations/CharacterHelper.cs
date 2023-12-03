@@ -9,6 +9,8 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.WizardData.Implementations;
 
 public static class CharacterHelper {
+    public const float OrientationCompressionFactor = 0.708f;
+
     public static Character CreateCharacterFromCreationInfo(WizardCharacterCreationInfo creationInfo) {
         var character = new Character {
             CharId = RandomGen.GenerateGUID(),

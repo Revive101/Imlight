@@ -21,6 +21,7 @@ namespace Imlight.CoreLib.WizardData.Models.Player;
 
 [Serializable]
 public class Character : IDisposable {
+    private const float OrientationCompressionFactor = CharacterHelper.OrientationCompressionFactor;
     [JsonIgnore]
     private readonly byte _defaultUploadIntervalInMinutes = ConfigurationManager.Settings.CharacterUploadIntervalInMinutes;
 
@@ -74,18 +75,29 @@ public class Character : IDisposable {
 
     public void SetLocation(Vector3 loc) {
         this.Location = loc;
+
+        // Persistent save.
+        CharacterCollection.UpdateCharacterLocation(this, loc, Orientation.Z);
     }
 
     public void SetOrientation(byte direction) {
-        this.Orientation = new Vector3(0, 0, direction * 0.708f);
+        this.Orientation = new Vector3(0, 0, direction * OrientationCompressionFactor);
+
+        // Persistent save.
+        CharacterCollection.UpdateCharacterLocation(this, Location, Orientation.Z);
     }
 
     public void SetZone(string zone, string zoneDisplayName) {
         this.Zone = zone;
         this.ZoneDisplayName = zoneDisplayName;
+
+        // Persistent save.
+        CharacterCollection.UpdateCharacterZone(this, zone, zoneDisplayName);
     }
 
     public void Dispose() {
-
+        // If this object is being disposed, the player probably left the server.
+        // Save the character's location to the database.
+        CharacterCollection.UpdateCharacterLocation(this, Location, Orientation.Z);
     }
 }
