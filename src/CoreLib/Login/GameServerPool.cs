@@ -59,7 +59,7 @@ internal class GameServerPool : ReceiveProtocolDispatcher {
         // Create a list of game servers and query each server for its details
         var gameServers = _gameServers.Values
             .Select(gameServer => {
-                var msg = new SERVER_100_PROTOCOL.MSG_QUERYSERVER() { IsLocal = message.IsLocal };
+                var msg = new SERVER_100_PROTOCOL.MSG_QUERYSERVER();
                 var rsp = gameServer.Ask<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg).Result;
                 return rsp;
             })

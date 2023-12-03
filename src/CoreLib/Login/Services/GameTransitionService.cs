@@ -54,6 +54,9 @@ internal class GameTransitionService : MessageService {
         ip = gameServer.IP;
         #endif
 
+        Logger.Information("Sending login client {ID} to game server {IP}:{Port}.",
+            Logger.Args(SessionActor.SessionID, ip, gameServer.Port));
+
         var stringLocation = character.Location == Vector3.Zero
             ? "Start"
             : Util.GetCompactStringFromVector(character.Location, character.Orientation);
@@ -89,16 +92,6 @@ internal class GameTransitionService : MessageService {
 
     private SERVER_100_PROTOCOL.MSG_SERVERINFO GetGameServer() {
         var msg = new SERVER_100_PROTOCOL.MSG_GETBESTSERVER();
-
-#if DEBUG
-        var localEndPoint = (IPEndPoint) SessionActor.Socket.LocalEndPoint;
-        var isLocal = localEndPoint.Address.ToString().Contains("127.0.");
-        msg = new SERVER_100_PROTOCOL.MSG_GETBESTSERVER() { IsLocal = isLocal };
-#else
-            // Release builds should never be able to connect to their own local server.
-            msg = new SERVER_100_PROTOCOL.MSG_GETBESTSERVER() { IsLocal = false };
-#endif
-
         return AskServer<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg);
     }
 

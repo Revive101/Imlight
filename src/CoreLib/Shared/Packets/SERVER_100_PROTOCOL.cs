@@ -72,8 +72,6 @@ public sealed class SERVER_100_PROTOCOL : IServerProtocol
     {
         public byte MessageOrder { get; } = 7;
         public byte ServiceID { get; } = 100;
-
-        public bool IsLocal;
     }
 
     public class MSG_PLAYERENQUEUED : IServerMessage
