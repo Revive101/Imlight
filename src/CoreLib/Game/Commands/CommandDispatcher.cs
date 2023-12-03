@@ -129,7 +129,11 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
             ExecuteCommand(message.CommandText, context);
         }
         catch (Exception ex) {
-            Logger.Error("Command dispatcher threw exception running command. Exception: {0}", Logger.Args(ex.Message));
+            // Log the exception and inform the client.
+            // Choose which exception to use. If there's an inner exception, use that.
+            var exception = ex.InnerException ?? ex;
+            Logger.Error("Command dispatcher threw exception running command. Exception: {0} {1}",
+                Logger.Args(exception.Message, exception.StackTrace));
         }
     }
 

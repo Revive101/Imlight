@@ -14,6 +14,7 @@ internal class CommandPunishmentProtocol : CommandProtocol {
     public void MuteCommand(string time, [Remainder]string reason) {
         if (Context.SelectedAccount is null) {
             InformSenderClient("You must select a user to use this command.", true);
+            return;
         }
         if (Context.SelectedAccount.InfractionHistory.IsCurrentlyMuted) {
             InformSenderClient("This account is already muted.", true);
@@ -40,6 +41,7 @@ internal class CommandPunishmentProtocol : CommandProtocol {
     public void UnmuteCommand() {
         if (Context.SelectedAccount is null) {
             InformSenderClient("You must select a user to use this command.", true);
+            return;
         }
         if (!Context.SelectedAccount.InfractionHistory.IsCurrentlyMuted) {
             InformSenderClient("This account is not muted.", true);
@@ -57,6 +59,7 @@ internal class CommandPunishmentProtocol : CommandProtocol {
     public void KickCommand([Remainder]string reason) {
         if (Context.SelectedAccount is null) {
             InformSenderClient("You must select a user to use this command.", true);
+            return;
         }
 
         // Kick the player from the game.
@@ -73,6 +76,7 @@ internal class CommandPunishmentProtocol : CommandProtocol {
     public void WarnCommand([Remainder]string reason) {
         if (Context.SelectedAccount is null) {
             InformSenderClient("You must select a user to use this command.", true);
+            return;
         }
 
         var sourceName = Context.Account.Username;
@@ -86,6 +90,7 @@ internal class CommandPunishmentProtocol : CommandProtocol {
     private void GetAccountInfoCommand() {
         if (Context.SelectedAccount is null) {
             InformSenderClient("You must select a user to use this command.", true);
+            return;
         }
 
         // Craft the reply.
