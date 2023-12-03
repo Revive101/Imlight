@@ -72,6 +72,12 @@ public static class CharacterCollection {
         return character;
     }
 
+    /// <summary>
+    /// Updates the zone information for a character.
+    /// </summary>
+    /// <param name="character">The character to update.</param>
+    /// <param name="zoneName">The name of the zone.</param>
+    /// <param name="zoneDisplayName">The display name of the zone.</param>
     public static void UpdateCharacterZone(Character character, string zoneName, string zoneDisplayName) {
         using var session = s_store.OpenSession();
 
@@ -86,6 +92,12 @@ public static class CharacterCollection {
         session.SaveChanges();
     }
 
+    /// <summary>
+    /// Updates the location and orientation of a character.
+    /// </summary>
+    /// <param name="character">The character to update.</param>
+    /// <param name="location">The new location of the character.</param>
+    /// <param name="orientation">The new orientation of the character.</param>
     public static void UpdateCharacterLocation(Character character, Vector3 location, float orientation) {
         using var session = s_store.OpenSession();
 
