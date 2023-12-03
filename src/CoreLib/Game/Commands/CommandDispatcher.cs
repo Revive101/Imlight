@@ -11,15 +11,10 @@ using System.Text;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
-using Imlight.CoreLib.AntiAmbrose;
-using Imlight.CoreLib.Game.Models;
-using Imlight.CoreLib.Login.Models;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
-using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Commands;
 
@@ -130,7 +125,16 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
         };
         CommandLogCollection.AddCommandLog(chatLog);
 
-        ExecuteCommand(message.CommandText, context);
+        try {
+            ExecuteCommand(message.CommandText, context);
+        }
+        catch (Exception ex) {
+            // Log the exception and inform the client.
+            // Choose which exception to use. If there's an inner exception, use that.
+            var exception = ex.InnerException ?? ex;
+            Logger.Error("Command dispatcher threw exception running command. Exception: {0} {1}",
+                Logger.Args(exception.Message, exception.StackTrace));
+        }
     }
 
     private void InformSenderClient(CommandContext context, string reason)
