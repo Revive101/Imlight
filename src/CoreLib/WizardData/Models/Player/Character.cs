@@ -22,16 +22,11 @@ namespace Imlight.CoreLib.WizardData.Models.Player;
 [Serializable]
 public class Character : IDisposable {
     private const float OrientationCompressionFactor = CharacterHelper.OrientationCompressionFactor;
-    [JsonIgnore]
-    private readonly byte _defaultUploadIntervalInMinutes = ConfigurationManager.Settings.CharacterUploadIntervalInMinutes;
 
-    public ulong AccountId { get; set; }
-    public ulong CharId { get; set; }
-    public uint NameIndices { get; set; }
-    public WideByteString NameOverride { get; set; }
-    public byte Level { get; set; }
-    public int TrainingPoints { get; set; }
-    public int XpToNextLevel { get; set; }
+    public ulong AccountId { get; set; }               // <
+    public ulong CharId { get; set; }                  //  | These values are never subject to change.
+    public uint NameIndices { get; set; }              //  |
+    public WideByteString NameOverride { get; set; }   // <
     public string Zone { get; set; }
     public string ZoneDisplayName { get; set; }
     public byte World { get; set; }
@@ -58,7 +53,8 @@ public class Character : IDisposable {
         }
     }
     public WizardCharacterBehavior WizardAvatar { get; set; }
-    public WizardSchool WizardSchool { get; set; }
+    public CharacterInventory Inventory { get; private set; }
+    public WizardSchool School { get; private set; }
     public WizGameStats GameStats { get; set; }
 
     [JsonIgnore] public WizClientObject GameObject;
