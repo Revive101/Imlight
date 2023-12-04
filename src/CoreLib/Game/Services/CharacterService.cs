@@ -12,7 +12,7 @@ using Imlight.CoreLib.WizardData.Models.Player;
 namespace Imlight.CoreLib.Game.Services;
 
 public class CharacterService : MessageService {
-    private Character _activeCharacter;
+    private Wizard _activeCharacter;
     private TypeCache.CoreObject _activeCharacterObject;
 
     public CharacterService(SessionActor sessionActor) : base(sessionActor) { }

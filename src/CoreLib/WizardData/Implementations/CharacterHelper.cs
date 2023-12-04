@@ -11,8 +11,8 @@ namespace Imlight.CoreLib.WizardData.Implementations;
 public static class CharacterHelper {
     public const float OrientationCompressionFactor = 0.708f;
 
-    public static Character CreateCharacterFromCreationInfo(WizardCharacterCreationInfo creationInfo) {
-        var character = new Character {
+    public static Wizard CreateCharacterFromCreationInfo(WizardCharacterCreationInfo creationInfo) {
+        var character = new Wizard {
             CharId = RandomGen.GenerateGUID(),
             Level = ConfigurationManager.Settings.StartingLevel,
             Zone = ConfigurationManager.Settings.StartingZone,
@@ -30,7 +30,7 @@ public static class CharacterHelper {
         return character;
     }
 
-    public static WizardCharacterCreationInfo GetLoginScreenInfo(Character character) {
+    public static WizardCharacterCreationInfo GetLoginScreenInfo(Wizard character) {
         var creationInfo = new WizardCharacterCreationInfo {
             m_avatarBehavior = character.WizardAvatar,
             m_nameIndices = character.NameIndices,

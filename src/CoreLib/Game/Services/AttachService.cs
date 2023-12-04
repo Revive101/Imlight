@@ -125,7 +125,7 @@ internal class AttachService : MessageService {
         TellOtherServices(msg);
     }
 
-    private bool GetCharacterFromAccount(Account account, ulong charId, out Character character) {
+    private bool GetCharacterFromAccount(Account account, ulong charId, out Wizard character) {
         var result = account.GetCharacter(charId);
         character = result;
 
@@ -168,7 +168,7 @@ internal class AttachService : MessageService {
         });
     }
 
-    private void SetCharacterInternally(Character character) {
+    private void SetCharacterInternally(Wizard character) {
         TellOtherServices(new CHARACTER_103_PROTOCOL.MSG_SETACTIVECHARACTER {
             Character = character
         });

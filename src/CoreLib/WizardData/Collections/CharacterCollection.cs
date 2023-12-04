@@ -23,11 +23,11 @@ public static class CharacterCollection {
     /// Creates a character in the database.
     /// </summary>
     /// <param name="character"></param>
-    public static bool AddCharacter(Character character) {
+    public static bool AddCharacter(Wizard character) {
         using var session = s_store.OpenSession();
 
         // Return false if the character already exists in the database.
-        var existingCharacter = session.Query<Character>()
+        var existingCharacter = session.Query<Wizard>()
             .FirstOrDefault(x => x.CharId == character.CharId);
         if (existingCharacter is not null) {
             return false;
@@ -48,7 +48,7 @@ public static class CharacterCollection {
     public static bool DeleteCharacter(ulong id) {
         using var session = s_store.OpenSession();
 
-        var character = session.Query<Character>()
+        var character = session.Query<Wizard>()
             .FirstOrDefault(x => x.CharId == id);
         if (character is null) {
             return false;
@@ -64,10 +64,10 @@ public static class CharacterCollection {
     /// </summary>
     /// <param name="id">The ID of the character to retrieve.</param>
     /// <returns>The character with the specified ID, or null if not found.</returns>
-    public static Character GetCharacter(ulong id) {
+    public static Wizard GetCharacter(ulong id) {
         using var session = s_store.OpenSession();
 
-        var character = session.Query<Character>()
+        var character = session.Query<Wizard>()
             .FirstOrDefault(x => x.CharId == id);
         return character;
     }
@@ -78,10 +78,10 @@ public static class CharacterCollection {
     /// <param name="character">The character to update.</param>
     /// <param name="zoneName">The name of the zone.</param>
     /// <param name="zoneDisplayName">The display name of the zone.</param>
-    public static void UpdateCharacterZone(Character character, string zoneName, string zoneDisplayName) {
+    public static void UpdateCharacterZone(Wizard character, string zoneName, string zoneDisplayName) {
         using var session = s_store.OpenSession();
 
-        var existingCharacter = session.Query<Character>()
+        var existingCharacter = session.Query<Wizard>()
             .FirstOrDefault(x => x.CharId == character.CharId);
         if (existingCharacter is null) {
             return;
@@ -98,10 +98,10 @@ public static class CharacterCollection {
     /// <param name="character">The character to update.</param>
     /// <param name="location">The new location of the character.</param>
     /// <param name="orientation">The new orientation of the character.</param>
-    public static void UpdateCharacterLocation(Character character, Vector3 location, float orientation) {
+    public static void UpdateCharacterLocation(Wizard character, Vector3 location, float orientation) {
         using var session = s_store.OpenSession();
 
-        var existingCharacter = session.Query<Character>()
+        var existingCharacter = session.Query<Wizard>()
             .FirstOrDefault(x => x.CharId == character.CharId);
         if (existingCharacter is null) {
             return;

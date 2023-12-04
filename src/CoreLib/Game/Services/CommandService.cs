@@ -16,7 +16,7 @@ namespace Imlight.CoreLib.Game.Services;
 internal class CommandService : MessageService {
     private readonly IActorRef _dispatcherRef;
 
-    private Character _selectedCharacter;
+    private Wizard _selectedCharacter;
     private Account _selectedAccount;
 
     public CommandService(SessionActor sessionActor) : base(sessionActor) => _dispatcherRef = CommandDispatcher.Instance;

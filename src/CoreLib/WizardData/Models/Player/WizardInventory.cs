@@ -6,10 +6,10 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.WizardData.Models.Player;
 
-public class CharacterInventory {
+public class WizardInventory {
     private readonly List<WizClientObjectItem> _objectItems;
 
-    public CharacterInventory() {
+    public WizardInventory() {
         _objectItems = new List<WizClientObjectItem>();
     }
 

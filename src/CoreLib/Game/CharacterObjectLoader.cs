@@ -14,7 +14,7 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Game;
 
 public static class CharacterObjectLoader {
-    public static WizClientObject GetPlayerGameObject(ref Character character) {
+    public static WizClientObject GetPlayerGameObject(ref Wizard character) {
         var clientObject = CoreObjectFactory.InitializeCoreObjectBehaviors(new WizClientObject(), 1);
 
         // Set the stats on the new object.
@@ -39,7 +39,7 @@ public static class CharacterObjectLoader {
         return clientObject;
     }
 
-    private static void SetWizardAvatarBehavior(WizClientObject clientObject, ref Character character) {
+    private static void SetWizardAvatarBehavior(WizClientObject clientObject, ref Wizard character) {
         if (CoreObjectFactory.FindBehaviorInstance<WizardCharacterBehavior>(clientObject, out var avatarBehavior)) {
             var idx = clientObject.m_inactiveBehaviors.IndexOf(avatarBehavior);
             clientObject.m_inactiveBehaviors[idx] = character.WizardAvatar;
@@ -49,7 +49,7 @@ public static class CharacterObjectLoader {
         }
     }
 
-    private static void SetEquipmentBehavior(WizClientObject clientObject, ref Character character) {
+    private static void SetEquipmentBehavior(WizClientObject clientObject, ref Wizard character) {
         if (CoreObjectFactory.FindBehaviorInstance<ClientWizEquipmentBehavior>(clientObject, out var equipmentBehavior)) {
             var slotList = new List<EquippedSlotInfo>();
             foreach (var slot in (EquipmentSlot[]) Enum.GetValues(typeof(EquipmentSlot))) {
@@ -69,7 +69,7 @@ public static class CharacterObjectLoader {
         }
     }
 
-    private static void SetPlayerNameBehavior(WizClientObject clientObject, ref Character character) {
+    private static void SetPlayerNameBehavior(WizClientObject clientObject, ref Wizard character) {
         if (CoreObjectFactory.FindBehaviorInstance<ClientWizPlayerNameBehavior>(clientObject, out var nameBehavior)) {
             nameBehavior.m_eGender = character.WizardAvatar.m_eGender;
             nameBehavior.m_eRace = character.WizardAvatar.m_eRace;
@@ -83,7 +83,7 @@ public static class CharacterObjectLoader {
         }
     }
 
-    private static void SetInventoryBehavior(WizClientObject clientObject, ref Character character) {
+    private static void SetInventoryBehavior(WizClientObject clientObject, ref Wizard character) {
         if (CoreObjectFactory.FindBehaviorInstance<ClientWizInventoryBehavior>(clientObject, out var inventoryBehavior)) {
             inventoryBehavior.m_numItemsAllowed = 75;
             inventoryBehavior.m_numJewelsAllowed = 100;
@@ -106,7 +106,7 @@ public static class CharacterObjectLoader {
         }
     }
 
-    private static void SetMagicSchoolBehavior(WizClientObject clientObject, ref Character character) {
+    private static void SetMagicSchoolBehavior(WizClientObject clientObject, ref Wizard character) {
         if (CoreObjectFactory.FindBehaviorInstance<ClientMagicSchoolBehavior>(clientObject, out var schoolBehavior)) {
             schoolBehavior.m_equippedTeleportEffect = character.GameStats.m_equippedTeleportEffect;
             schoolBehavior.m_experiencePoints = character.XpToNextLevel;
@@ -119,7 +119,7 @@ public static class CharacterObjectLoader {
         }
     }
 
-    private static void SetSpellbookBehavior(WizClientObject clientObject, ref Character character) {
+    private static void SetSpellbookBehavior(WizClientObject clientObject, ref Wizard character) {
         if (CoreObjectFactory.FindBehaviorInstance<ClientSpellbookBehavior>(clientObject, out var spellbookBehavior)) {
             spellbookBehavior.m_spellIDList = new List<SpellIDTracker>();
         }

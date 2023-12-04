@@ -20,7 +20,7 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.WizardData.Models.Player;
 
 [Serializable]
-public class Character : IDisposable {
+public class Wizard : IDisposable {
     private const float OrientationCompressionFactor = CharacterHelper.OrientationCompressionFactor;
 
     public ulong AccountId { get; set; }               // <
@@ -53,7 +53,7 @@ public class Character : IDisposable {
         }
     }
     public WizardCharacterBehavior WizardAvatar { get; set; }
-    public CharacterInventory Inventory { get; private set; }
+    public WizardInventory Inventory { get; private set; }
     public WizardSchool School { get; private set; }
     public WizGameStats GameStats { get; set; }
 
@@ -67,7 +67,7 @@ public class Character : IDisposable {
     [JsonIgnore] private Vector3 _orientation;
 
     // Empty constructor for deserialization.
-    [JsonConstructor] public Character() { }
+    [JsonConstructor] public Wizard() { }
 
     public void SetLocation(Vector3 loc) {
         this.Location = loc;
