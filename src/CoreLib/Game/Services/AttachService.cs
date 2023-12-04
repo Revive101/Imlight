@@ -80,7 +80,7 @@ internal class AttachService : MessageService {
 
             // Set character data.
             Data = localGameObjectData,
-            IsCSR = (int) account.AuthLevel >= 1 ? 1 : 0,
+            IsCSR = account.AuthLevel > AuthLevel.QualityAssurance ? 1 : 0,
             Permissions = 31679, // @todo: these permissions look like bitflags. Find out what they mean.
 
             // Set zone data.
