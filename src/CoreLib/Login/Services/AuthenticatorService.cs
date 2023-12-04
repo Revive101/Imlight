@@ -70,6 +70,7 @@ internal class AuthenticatorService : MessageService {
                 Reason = "",
                 UserID = authReply._account.AccountId,
                 PayingUser = 1,
+                TimeStamp = "",
                 Rec1 = authReply._rec1,
             });
         }
