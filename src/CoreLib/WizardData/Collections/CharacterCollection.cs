@@ -111,7 +111,7 @@ public static class CharacterCollection {
     public static void UpdateCharacterLocation(Wizard character, Vector3 location, float orientation) {
         using var session = s_store.OpenSession();
 
-        var existingCharacter = session.Query<Wizard>()
+        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
             .FirstOrDefault(x => x.CharId == character.CharId);
         if (existingCharacter is null) {
             return;
@@ -119,6 +119,23 @@ public static class CharacterCollection {
 
         existingCharacter.Location = location;
         existingCharacter.Orientation = new Vector3(0, 0, orientation);
+        session.SaveChanges();
+    }
+
+    /// <summary>
+    /// Updates the equipment of a character in the wizard collection.
+    /// </summary>
+    /// <param name="wizard">The wizard object containing the updated equipment.</param>
+    public static void UpdateCharacterEquipment(Wizard wizard) {
+        using var session = s_store.OpenSession();
+
+        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
+            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        if (existingCharacter is null) {
+            return;
+        }
+
+        existingCharacter.EquippedItems = wizard.EquippedItems;
         session.SaveChanges();
     }
 }

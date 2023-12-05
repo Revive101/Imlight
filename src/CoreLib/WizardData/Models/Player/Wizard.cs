@@ -203,6 +203,11 @@ public class Wizard : IDisposable {
         // Set the item in the equipment list.
         EquippedItems[slot].m_itemID = (GID) itemId;
 
+        // Persistent save.
+        // The equipped items array is a fairly small binary, so we can just save the whole thing.
+        CharacterCollection.UpdateCharacterEquipment(this);
+
+        // Debug log.
         var actualName = CharacterNameBank.GetEnglishName(NameIndices, WizardAvatar.m_eGender);
         Logger.Debug("{0} equips item in slot {1}.", Logger.Args(actualName, slot));
 
@@ -219,6 +224,11 @@ public class Wizard : IDisposable {
 
         RemoveSlotFromEquipmentSlotList(slot);
 
+        // Persistent save.
+        // The equipped items array is a fairly small binary, so we can just save the whole thing.
+        CharacterCollection.UpdateCharacterEquipment(this);
+
+        // Debug log.
         var actualName = CharacterNameBank.GetEnglishName(NameIndices, WizardAvatar.m_eGender);
         Logger.Debug("{0} unequips item in slot {1}.", Logger.Args(actualName, slot));
 
