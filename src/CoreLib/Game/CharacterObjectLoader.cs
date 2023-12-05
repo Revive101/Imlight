@@ -9,6 +9,7 @@ using System.Linq;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.Common.Utilities;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models.Player;
 using static Imlight.Common.Caches.TypeCache;
 
@@ -31,7 +32,7 @@ public static class CharacterObjectLoader {
         clientObject.m_gameStats = character.GameStats;
 
         SetWizardAvatarBehavior(clientObject, ref character);
-        SetEquipmentBehavior(clientObject, character);
+        SetEquipmentBehavior(clientObject, ref character);
         SetPlayerNameBehavior(clientObject, ref character);
         SetInventoryBehavior(clientObject, ref character);
         SetMagicSchoolBehavior(clientObject, ref character);
@@ -61,16 +62,21 @@ public static class CharacterObjectLoader {
         }
     }
 
-    private static void SetEquipmentBehavior(WizClientObject clientObject, Wizard character) {
+    private static void SetEquipmentBehavior(WizClientObject clientObject, ref Wizard character) {
         if (CoreObjectFactory.FindBehaviorInstance<ClientWizEquipmentBehavior>(clientObject, out var equipmentBehavior)) {
             // TODO: Set the equipment list.
             //equipmentBehavior.m_publicItemList = CreationData.m_equipmentInfoList?.m_infoList;
+
+            // Create a local copy of the inventory items.
+            var equipmentCopy = character.EquippedItems.ToList();
+
             equipmentBehavior.m_equipmentSets = new List<EquipmentSet>();
-            equipmentBehavior.m_slotList = character.EquippedItems.ToList();
+            equipmentBehavior.m_slotList = equipmentCopy;
             equipmentBehavior.m_itemList = character.InventoryItems
-                .Where(x => character.EquippedItems.All(y => y.m_itemID != x.m_globalID))
+                .Where(x => equipmentCopy.Any(y => y.m_itemID == x.m_globalID))
                 .ToList()
                 .ConvertAll(item => (CoreObject) item);
+            equipmentBehavior.m_publicItemList = CharacterHelper.GetEquipmentList(character).m_infoList;
         }
         else {
             throw new Exception("Behavior ClientWizEquipmentBehavior not found!");
