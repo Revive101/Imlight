@@ -124,7 +124,7 @@ public static class AccountCollection {
         }
 
         // Load the characters if the account is not null.
-        var characters = session.Query<Wizard>()
+        var characters = session.Query<Wizard>(collectionName: CharacterCollection.CollectionName)
             .Where(c => c.AccountId == account.AccountId)
             .ToList();
         account.Characters = characters;
