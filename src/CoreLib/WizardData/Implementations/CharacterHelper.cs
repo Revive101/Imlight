@@ -44,6 +44,13 @@ public static class CharacterHelper {
         return creationInfo;
     }
 
+    /// <summary>
+    /// Gets the <see cref="EquippedItemInfoList"/> for a <see cref="Wizard"/>. This is a lightweight version of the
+    /// actual equipment that is used to publicly display the character's equipment.
+    /// </summary>
+    /// <param name="character">The Wizard in question.</param>
+    /// <returns>The EquippedItemInfoList that was crafted.</returns>
+    /// <exception cref="Exception"></exception>
     public static EquippedItemInfoList GetEquipmentList(Wizard character) {
         var equipmentList = new EquippedItemInfoList {
             m_infoList = new List<EquippedItemInfo>(),

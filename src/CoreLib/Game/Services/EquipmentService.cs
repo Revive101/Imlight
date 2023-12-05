@@ -58,7 +58,7 @@ public class EquipmentService : MessageService {
         }
 
         // This method will remove any items that are already equipped in the target slot.
-        playerCharacter.EquipmentEquipItem(itemId);
+        var template = playerCharacter.EquipmentEquipItem(itemId);
 
         // Confirm to the player that we've equipped their item server side.
         SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPITEM() {
@@ -68,11 +68,7 @@ public class EquipmentService : MessageService {
         });
 
         SendPublicEquipItem(item);
-
-        // Get the template for this item.
-        //var templateId = item.m_templateID;
-        //var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(templateId);
-        //ApplyItemEffectsToPlayer(coreObject, template);
+        ApplyItemEffectsToPlayer(template);
     }
 
     private void UnEquipItem(GAME_5_PROTOCOL.MSG_EQUIPITEM message) {
@@ -89,18 +85,10 @@ public class EquipmentService : MessageService {
 
         // Get the slot index of the item we're unequipping.
         var slot = playerCharacter.EquipmentGetItemSlotIndex(itemId);
-
-        if (!playerCharacter.EquipmentUnequipItem(itemId)) {
-            Logger.Error("Player does not have the item equipped!");
-            return;
-        }
+        var template = playerCharacter.EquipmentUnequipItem(itemId);
 
         SendPublicUnequipItem((byte) slot, itemId);
-
-        // Get item object and its template.
-        //var templateId = item.m_templateID;
-        //var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(templateId);
-        //RemoveItemEffectsFromPlayer(coreObject, template);
+        RemoveItemEffectsFromPlayer(template);
     }
 
     private void SendPublicEquipItem(WizClientObjectItem item) {
@@ -139,7 +127,8 @@ public class EquipmentService : MessageService {
 
     // Todo: Move the methods below to the Wizard class.
 
-    private void ApplyItemEffectsToPlayer(CoreObject coreObject, WizItemTemplate template) {
+    private void ApplyItemEffectsToPlayer(WizItemTemplate template) {
+        var charObjId = GetActiveCoreObject().m_globalID;
         var effectSerializer = new CoreObjectSerializer()
                     .OnBehaviors(SerializerOptions.Behaviors.None)
                     .OnPropertyMask(SerializerOptions.PropertyFlags.Public
@@ -165,7 +154,7 @@ public class EquipmentService : MessageService {
 
                     var spellData = effectSerializer.Serialize(spellEffectObj);
                     SendToSocket(new GAME_5_PROTOCOL.MSG_ADDEFFECT() {
-                        GameObjectID = coreObject.m_globalID,
+                        GameObjectID = charObjId,
                         EffectData = spellData
                     });
 
@@ -184,7 +173,7 @@ public class EquipmentService : MessageService {
 
                     var pipData = effectSerializer.Serialize(pipEffectObj);
                     SendToSocket(new GAME_5_PROTOCOL.MSG_ADDEFFECT() {
-                        GameObjectID = coreObject.m_globalID,
+                        GameObjectID = charObjId,
                         EffectData = pipData
                     });
 
@@ -202,7 +191,7 @@ public class EquipmentService : MessageService {
 
                     var speedData = effectSerializer.Serialize(speedEffectObj);
                     ZoneBroadcast(new GAME_5_PROTOCOL.MSG_ADDEFFECT() {
-                        GameObjectID = coreObject.m_globalID,
+                        GameObjectID = charObjId,
                         EffectData = speedData
                     }, false);
 
@@ -253,7 +242,7 @@ public class EquipmentService : MessageService {
 
                     var effectData = effectSerializer.Serialize(wSE);
                     SendToSocket(new GAME_5_PROTOCOL.MSG_ADDEFFECT() {
-                        GameObjectID = coreObject.m_globalID,
+                        GameObjectID = charObjId,
                         EffectData = effectData
                     });
 
@@ -263,8 +252,9 @@ public class EquipmentService : MessageService {
         }
     }
 
-    private void RemoveItemEffectsFromPlayer(CoreObject coreObject, WizItemTemplate template) {
+    private void RemoveItemEffectsFromPlayer(WizItemTemplate template) {
         int internalID = 0;
+        var charObjId = GetActiveCoreObject().m_globalID;
 
         foreach (GameEffectInfo it in template.m_equipEffects) {
 
@@ -289,7 +279,7 @@ public class EquipmentService : MessageService {
                     }
 
                     SendToSocket(new GAME_5_PROTOCOL.MSG_REMOVEEFFECT() {
-                        GameObjectID = coreObject.m_globalID,
+                        GameObjectID = charObjId,
                         EffectNameID = StringHash.Compute(it.m_effectName),
                         InternalID = internalID,
                     });
@@ -317,7 +307,7 @@ public class EquipmentService : MessageService {
                     }
 
                     SendToSocket(new GAME_5_PROTOCOL.MSG_REMOVEEFFECT() {
-                        GameObjectID = coreObject.m_globalID,
+                        GameObjectID = charObjId,
                         EffectNameID = StringHash.Compute(it.m_effectName),
                         InternalID = internalID,
                     });
@@ -341,7 +331,7 @@ public class EquipmentService : MessageService {
                     }
 
                     ZoneBroadcast(new GAME_5_PROTOCOL.MSG_REMOVEEFFECT() {
-                        GameObjectID = coreObject.m_globalID,
+                        GameObjectID = charObjId,
                         EffectNameID = StringHash.Compute(it.m_effectName),
                         InternalID = internalID,
                     }, false);
@@ -365,7 +355,7 @@ public class EquipmentService : MessageService {
                     }
 
                     SendToSocket(new GAME_5_PROTOCOL.MSG_REMOVEEFFECT() {
-                        GameObjectID = coreObject.m_globalID,
+                        GameObjectID = charObjId,
                         EffectNameID = StringHash.Compute(it.m_effectName),
                         InternalID = internalID,
                     });

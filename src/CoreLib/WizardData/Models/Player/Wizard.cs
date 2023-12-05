@@ -183,21 +183,23 @@ public class Wizard : IDisposable {
         return EquippedItems.ToList().FindIndex(i => i.m_itemID == itemId);
     }
 
-    public bool EquipmentEquipItem(ulong itemId) {
+    public WizItemTemplate EquipmentEquipItem(ulong itemId) {
         if (!InventoryHasItem(itemId)) {
-            Logger.Debug("Tried to equip item with global id {0} that does not exist in player inventory.", Logger.Args(itemId));
-            return false;
+            Logger.Warning("Tried to equip item with global id {0} that does not exist in player inventory.", Logger.Args(itemId));
+            return null;
         }
 
-        var slot = GetAppropriateEquipmentSlotForItem(itemId);
+        var item = InventoryGetItem(itemId);
+        var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
+        var slot = GetAppropriateEquipmentSlotForItem(template);
         if (slot == -1) {
-            Logger.Debug("Tried to equip item with global id {0} that does not have a slot name adjective.", Logger.Args(itemId));
-            return false;
+            Logger.Warning("Tried to equip item with global id {0} that does not have a slot name adjective.", Logger.Args(itemId));
+            return null;
         }
 
         // Unequip the item currently in that slot.
         if (EquippedItems[slot].m_itemID != 0) {
-            EquipmentUnequipItem(itemId);
+            RemoveItemInEquipmentSlot(slot);
         }
 
         // Set the item in the equipment list.
@@ -211,18 +213,20 @@ public class Wizard : IDisposable {
         var actualName = CharacterNameBank.GetEnglishName(NameIndices, WizardAvatar.m_eGender);
         Logger.Debug("{0} equips item in slot {1}.", Logger.Args(actualName, slot));
 
-        return true;
+        return template;
     }
 
-    public bool EquipmentUnequipItem(ulong itemId) {
+    public WizItemTemplate EquipmentUnequipItem(ulong itemId) {
         // Get the index of the item in the equipment list.
-        var slot = GetAppropriateEquipmentSlotForItem(itemId);
+        var item = InventoryGetItem(itemId);
+        var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
+        var slot = GetAppropriateEquipmentSlotForItem(template);
         if (slot == -1) {
             Logger.Debug("Tried to unequip item with global id {0} that does not have a slot name adjective.", Logger.Args(itemId));
-            return false;
+            return null;
         }
 
-        RemoveSlotFromEquipmentSlotList(slot);
+        RemoveItemInEquipmentSlot(slot);
 
         // Persistent save.
         // The equipped items array is a fairly small binary, so we can just save the whole thing.
@@ -232,7 +236,7 @@ public class Wizard : IDisposable {
         var actualName = CharacterNameBank.GetEnglishName(NameIndices, WizardAvatar.m_eGender);
         Logger.Debug("{0} unequips item in slot {1}.", Logger.Args(actualName, slot));
 
-        return true;
+        return template;
     }
 
     public void Dispose() {
@@ -280,13 +284,8 @@ public class Wizard : IDisposable {
         this.EquippedItems = slotList.ToArray();
     }
 
-    private int GetAppropriateEquipmentSlotForItem(ulong itemId) {
-        // Get the template for the item. It will contain an adjective list that contains the slot name.
-        // We can hash the slot name to get the slot index.
-        var item = InventoryGetItem(itemId);
-        var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
+    private int GetAppropriateEquipmentSlotForItem(WizItemTemplate template) {
         if (template.m_adjectiveList.Count < 2) {
-            Logger.Debug("Tried to equip item with global id {0} that does not have a slot name adjective.", Logger.Args(itemId));
             return -1;
         }
 
@@ -296,7 +295,7 @@ public class Wizard : IDisposable {
         return slot;
     }
 
-    private void RemoveSlotFromEquipmentSlotList(int slot) {
+    private void RemoveItemInEquipmentSlot(int slot) {
         // Zero-out item from slot list and move all items down to fill "empty" zero slots, should they exist.
         var numEquippedItemsInSlots = EquippedItems.Count(slot => slot.m_itemID != 0);
         EquippedItems[slot].m_itemID = (GID) 0;
