@@ -67,8 +67,18 @@ public static class CharacterCollection {
     public static Wizard GetCharacter(ulong id) {
         using var session = s_store.OpenSession();
 
-        var character = session.Query<Wizard>()
+        var character = session.Query<Wizard>(collectionName: CollectionName)
+            .Include(i => i.InventoryItemIds)
             .FirstOrDefault(x => x.CharId == id);
+
+        // Get each of the items for this character.
+        if (character is not null) {
+            var items = session.Query<WorldItem>(collectionName: WorldItemCollection.CollectionName)
+                .Where(x => x.PlayerId == id)
+                .ToList();
+            character.InventoryItems = items.Select(x => x.Item).ToList();
+        }
+
         return character;
     }
 

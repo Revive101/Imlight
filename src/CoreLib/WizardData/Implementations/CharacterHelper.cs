@@ -12,6 +12,7 @@ public static class CharacterHelper {
     public const float OrientationCompressionFactor = 0.708f;
 
     public static Wizard CreateCharacterFromCreationInfo(WizardCharacterCreationInfo creationInfo) {
+        // This method is used to create a character from the character creation screen.
         var school = (MagicSchoolEnum) creationInfo.m_schoolOfFocus;
         var wizardAvatar = creationInfo.m_avatarBehavior;
         var nameIndices = creationInfo.m_nameIndices;

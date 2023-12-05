@@ -90,11 +90,18 @@ public static class AccountCollection {
             return null;
         }
 
-        // Load the characters if the account is not null.
+        // Load the characters.
         var characters = session.Query<Wizard>(collectionName: CharacterCollection.CollectionName)
             .Where(c => c.AccountId == id)
             .ToList();
         account.Characters = characters;
+        foreach (var character in account.Characters) {
+            // Load the character's inventory.
+            var inventory = session.Query<WorldItem>(collectionName: WorldItemCollection.CollectionName)
+                .Where(i => i.PlayerId == character.CharId)
+                .ToList();
+            character.InventoryItems = inventory.Select(i => i.Item).ToList();
+        }
 
         // Load infractions. The constructor will load the action history.
         var infractions = session.Query<Infraction>(collectionName: InfractionCollection.CollectionName)
@@ -128,6 +135,13 @@ public static class AccountCollection {
             .Where(c => c.AccountId == account.AccountId)
             .ToList();
         account.Characters = characters;
+        foreach (var character in account.Characters) {
+            // Load the character's inventory.
+            var inventory = session.Query<WorldItem>(collectionName: WorldItemCollection.CollectionName)
+                .Where(i => i.PlayerId == character.CharId)
+                .ToList();
+            character.InventoryItems = inventory.Select(i => i.Item).ToList();
+        }
 
         // Load infractions. The constructor will load the action history.
         var infractions = session.Query<Infraction>(collectionName: InfractionCollection.CollectionName)
