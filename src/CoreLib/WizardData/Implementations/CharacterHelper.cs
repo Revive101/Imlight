@@ -1,9 +1,11 @@
+using Imlight.Common;
 using Imlight.Common.Configuration;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.Common.Utilities;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.WizardData.Implementations;
@@ -37,9 +39,33 @@ public static class CharacterHelper {
             m_globalID = (GID) character.CharId,
             m_templateID = 1,
             m_userID = (GID) character.AccountId,
-            // TODO: Equipment list
+            m_equipmentInfoList = GetEquipmentList(character),
         };
         return creationInfo;
+    }
+
+    public static EquippedItemInfoList GetEquipmentList(Wizard character) {
+        var equipmentList = new EquippedItemInfoList {
+            m_infoList = new List<EquippedItemInfo>(),
+        };
+        foreach (var equippedItem in character.EquippedItems.Where(x => x.m_itemID != 0)) {
+            // For every equipped item, get the actual item from the inventory.
+            // Then, create a new WizardEquippedItemInfo from the actual item.
+            // This is a smaller version of the item that is used for the character select screen.
+            var itemId = equippedItem.m_itemID;
+            var actualItem = character.InventoryGetItem(itemId)
+                ?? throw new Exception($"Could not find item with ID {itemId} in inventory.");
+            var characterSelectItem = new WizardEquippedItemInfo {
+                m_itemID = (uint) actualItem.m_templateID,
+                m_pattern = (Bui5) actualItem.m_pattern,
+                m_baseColor = (Bui5) actualItem.m_primaryColor,
+                m_trimColor = (Bui5) actualItem.m_secondaryColor,
+            };
+
+            equipmentList.m_infoList.Add(characterSelectItem);
+        }
+
+        return equipmentList;
     }
 
     private static WizGameStats SetCharacterStatsToBase(WizGameStats existingStats, byte level, MagicSchoolEnum school) {
