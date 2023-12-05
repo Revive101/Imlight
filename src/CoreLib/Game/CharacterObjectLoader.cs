@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.Common.Utilities;
 using Imlight.CoreLib.Shared.Resources;
@@ -30,7 +31,7 @@ public static class CharacterObjectLoader {
         clientObject.m_gameStats = character.GameStats;
 
         SetWizardAvatarBehavior(clientObject, ref character);
-        SetEquipmentBehavior(clientObject, ref character);
+        SetEquipmentBehavior(clientObject, character);
         SetPlayerNameBehavior(clientObject, ref character);
         SetInventoryBehavior(clientObject, ref character);
         SetMagicSchoolBehavior(clientObject, ref character);
@@ -49,20 +50,27 @@ public static class CharacterObjectLoader {
         }
     }
 
-    private static void SetEquipmentBehavior(WizClientObject clientObject, ref Wizard character) {
+    private static void SetInventoryBehavior(WizClientObject clientObject, ref Wizard character) {
+        if (CoreObjectFactory.FindBehaviorInstance<ClientWizInventoryBehavior>(clientObject, out var inventoryBehavior)) {
+            inventoryBehavior.m_numItemsAllowed = 75;
+            inventoryBehavior.m_numJewelsAllowed = 100;
+            inventoryBehavior.m_itemList = character.InventoryItems.ConvertAll(item => (CoreObject) item);
+        }
+        else {
+            throw new Exception("Behavior ClientWizInventoryBehavior not found!");
+        }
+    }
+
+    private static void SetEquipmentBehavior(WizClientObject clientObject, Wizard character) {
         if (CoreObjectFactory.FindBehaviorInstance<ClientWizEquipmentBehavior>(clientObject, out var equipmentBehavior)) {
-            var slotList = new List<EquippedSlotInfo>();
-            foreach (var slot in (EquipmentSlot[]) Enum.GetValues(typeof(EquipmentSlot))) {
-                slotList.Add(new EquippedSlotInfo() {
-                    m_itemID = (GID) 0,
-                    m_itemSlotNameID = (uint) slot
-                });
-            }
             // TODO: Set the equipment list.
             //equipmentBehavior.m_publicItemList = CreationData.m_equipmentInfoList?.m_infoList;
             equipmentBehavior.m_equipmentSets = new List<EquipmentSet>();
-            equipmentBehavior.m_slotList = slotList;
-            equipmentBehavior.m_itemList = new List<CoreObject>();
+            equipmentBehavior.m_slotList = character.EquippedItems.ToList();
+            equipmentBehavior.m_itemList = character.InventoryItems
+                .Where(x => character.EquippedItems.All(y => y.m_itemID != x.m_globalID))
+                .ToList()
+                .ConvertAll(item => (CoreObject) item);
         }
         else {
             throw new Exception("Behavior ClientWizEquipmentBehavior not found!");
@@ -80,29 +88,6 @@ public static class CharacterObjectLoader {
         }
         else {
             throw new Exception("Behavior ClientWizPlayerNameBehavior not found!");
-        }
-    }
-
-    private static void SetInventoryBehavior(WizClientObject clientObject, ref Wizard character) {
-        if (CoreObjectFactory.FindBehaviorInstance<ClientWizInventoryBehavior>(clientObject, out var inventoryBehavior)) {
-            inventoryBehavior.m_numItemsAllowed = 75;
-            inventoryBehavior.m_numJewelsAllowed = 100;
-            inventoryBehavior.m_itemList = new List<CoreObject>();
-            new List<ulong>() { 4740, 4705, 5030, 39068, 1363076, 1475149,
-                1472644, 1317133, 1317126, 1317234, 1359455,
-                1392077, 1352341, 87158, 87159, 87160, 1540397 }.ForEach(templateId => {
-                    var template = CoreObjectFactory.GetCoreTemplate(templateId);
-                    var coreObject = template switch {
-                        ItemTemplate => new WizClientObjectItem(),
-                        _ => new ClientObject()
-                    };
-                    coreObject.m_globalID = RandomGen.GenerateGUID();
-                    coreObject.m_templateID = (GID) templateId;
-                    inventoryBehavior.m_itemList.Add(coreObject);
-                });
-        }
-        else {
-            throw new Exception("Behavior ClientWizInventoryBehavior not found!");
         }
     }
 
