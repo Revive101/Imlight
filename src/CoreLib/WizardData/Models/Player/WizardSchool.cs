@@ -3,6 +3,8 @@
  * Proprietary and confidential.
  */
 
+using Imlight.Common.Configuration;
+
 namespace Imlight.CoreLib.WizardData.Models.Player;
 
 public enum WizardSchoolEnum {
@@ -16,7 +18,15 @@ public enum WizardSchoolEnum {
 }
 
 public class WizardSchool {
+    public WizardSchoolEnum Type { get; set; }
     public byte Level { get; set; }
     public int TrainingPoints { get; set; }
     public int XpToNextLevel { get; set; }
+
+    public WizardSchool(WizardSchoolEnum type) {
+        this.Type = type;
+        this.Level = ConfigurationManager.Settings.StartingLevel;
+        this.TrainingPoints = 0;
+        this.XpToNextLevel = 0;
+    }
 }

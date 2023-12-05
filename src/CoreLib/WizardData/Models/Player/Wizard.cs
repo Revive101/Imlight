@@ -69,6 +69,15 @@ public class Wizard : IDisposable {
     // Empty constructor for deserialization.
     [JsonConstructor] public Wizard() { }
 
+    public Wizard(WizardSchoolEnum type) {
+        this.CharId = RandomGen.GenerateGUID();
+        this.Zone = ConfigurationManager.Settings.StartingZone;
+        this.World = ConfigurationManager.Settings.StartingWorld;
+        this.Inventory = new WizardInventory();
+        this.School = new WizardSchool(type);
+        this.GameStats = new WizGameStats();
+    }
+
     public void SetLocation(Vector3 loc) {
         this.Location = loc;
 
