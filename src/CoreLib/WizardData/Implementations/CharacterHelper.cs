@@ -12,14 +12,14 @@ public static class CharacterHelper {
     public const float OrientationCompressionFactor = 0.708f;
 
     public static Wizard CreateCharacterFromCreationInfo(WizardCharacterCreationInfo creationInfo) {
-        var character = new Wizard((WizardSchoolEnum) creationInfo.m_schoolOfFocus) {
-            WizardAvatar = creationInfo.m_avatarBehavior,
-            NameIndices = creationInfo.m_nameIndices,
-        };
+        var school = (MagicSchoolEnum) creationInfo.m_schoolOfFocus;
+        var wizardAvatar = creationInfo.m_avatarBehavior;
+        var nameIndices = creationInfo.m_nameIndices;
+        var character = new Wizard(school, wizardAvatar, nameIndices);
 
         // Create the game stats and calculate the base stats.
         var gameStats = new WizGameStats();
-        gameStats = SetCharacterStatsToBase(gameStats, character.School.Level, character.School.Type);
+        gameStats = SetCharacterStatsToBase(gameStats, character.Level, character.WizardSchool);
         character.GameStats = gameStats;
 
         return character;
@@ -29,8 +29,8 @@ public static class CharacterHelper {
         var creationInfo = new WizardCharacterCreationInfo {
             m_avatarBehavior = character.WizardAvatar,
             m_nameIndices = character.NameIndices,
-            m_schoolOfFocus = (uint) character.School.Type,
-            m_level = character.School.Level,
+            m_schoolOfFocus = (uint) character.WizardSchool,
+            m_level = character.Level,
             m_name = character.NameOverride,
             m_location = character.ZoneDisplayName,
             m_globalID = (GID) character.CharId,
@@ -41,7 +41,7 @@ public static class CharacterHelper {
         return creationInfo;
     }
 
-    private static WizGameStats SetCharacterStatsToBase(WizGameStats existingStats, byte level, WizardSchoolEnum school) {
+    private static WizGameStats SetCharacterStatsToBase(WizGameStats existingStats, byte level, MagicSchoolEnum school) {
         var baseHealth = WizardClassData.GetClassHealthAtLevel(school, level);
         var baseMana = WizardClassData.GetManaAtLevel(level);
 
