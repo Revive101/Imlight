@@ -68,8 +68,8 @@ internal class AttachService : MessageService {
         var location = Util.GetVectorFromCompactString(message.Location);
         var actualLocation = new Vector3(location.X, location.Y, location.Z);
         var orientation = location.W / 0.708f;
-        character.SetLocation(actualLocation);
-        character.SetOrientation((byte) orientation);
+        character.SetPersistentLocation(actualLocation);
+        character.SetPersistentOrientation((byte) orientation);
 
         var gameServer = GetGameServer();
         character.GameServerIp = gameServer.IP;

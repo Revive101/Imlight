@@ -60,8 +60,8 @@ public class CharacterService : MessageService {
             unchecked((short) message.LocationY * 4),
             unchecked((short) message.LocationZ * 4));
 
-        _activeCharacter.SetLocation(position);
-        _activeCharacter.SetOrientation(message.Direction);
+        _activeCharacter.SetCachedLocation(position);
+        _activeCharacter.SetCachedOrientation(message.Direction);
     }
 
     #endregion
