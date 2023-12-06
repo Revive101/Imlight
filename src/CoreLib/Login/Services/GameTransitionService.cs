@@ -47,15 +47,8 @@ internal class GameTransitionService : MessageService {
         var serverEnqueueResult = (LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED) SessionActor.EnqueueToServer(gameServer.ActorRef);
         var allocatedKey = CreateSessionKey(gameServer.ActorRef, account);
 
-        var ip = "";
-        #if DEBUG
-        ip = "127.0.0.1";
-        #else
-        ip = gameServer.IP;
-        #endif
-
         Logger.Information("Sending login client {ID} to game server {IP}:{Port}.",
-            Logger.Args(SessionActor.SessionID, ip, gameServer.Port));
+            Logger.Args(SessionActor.SessionID, gameServer.IP, gameServer.Port));
 
         var stringLocation = character.Location == Vector3.Zero
             ? "Start"
@@ -64,7 +57,7 @@ internal class GameTransitionService : MessageService {
         // Craft a successful message. This will instead be cached if the server is full.
         var charSelectedMsg = new LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED() {
             // Set details about the game server.
-            IP = ip,
+            IP = gameServer.IP,
             TCPPort = gameServer.Port,
             UDPPort = gameServer.Port,
             Key = allocatedKey,                   // Loggerin server -> game server session key.
