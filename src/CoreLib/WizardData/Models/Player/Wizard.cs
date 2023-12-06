@@ -192,7 +192,7 @@ public class Wizard : IDisposable {
         }
 
         var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
-        var slot = GetAppropriateEquipmentSlotForItem(template);
+        var slot = GetAppropriateEquipmentSlotForItem();
         if (slot == -1) {
             Logger.Warning("Tried to equip item with global id {0} that does not have a slot name adjective.", Logger.Args(itemId));
             return null;
@@ -205,6 +205,7 @@ public class Wizard : IDisposable {
 
         // Set the item in the equipment list.
         EquippedItems[slot].m_itemID = (GID) itemId;
+        EquippedItems[slot].m_itemSlotNameID = (uint) slot;
 
         // Persistent save.
         // The equipped items array is a fairly small binary, so we can just save the whole thing.
@@ -226,7 +227,7 @@ public class Wizard : IDisposable {
         }
 
         var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
-        var slot = GetAppropriateEquipmentSlotForItem(template);
+        var slot = GetAppropriateEquipmentSlotForItem();
         if (slot == -1) {
             Logger.Debug("Tried to unequip item with global id {0} that does not have a slot name adjective.", Logger.Args(itemId));
             return null;
@@ -278,27 +279,18 @@ public class Wizard : IDisposable {
         // Initialize the equipment slots.
         // There is a slot for every EquipmentSlot enum value.
         var slotList = new List<EquippedSlotInfo>();
-        foreach (var slot in Enum.GetValues(typeof(EquipmentSlot))) {
-            // Get the name of the slot.
-            var slotName = Enum.GetName(typeof(EquipmentSlot), slot);
-
+        for (uint i = 0; i < Enum.GetValues(typeof(EquipmentSlot)).Length; i++) {
             slotList.Add(new EquippedSlotInfo() {
                 m_itemID = (GID) 0,
-                m_itemSlotNameID = StringHash.Compute(slotName)
+                m_itemSlotNameID = 0
             });
         }
 
         this.EquippedItems = slotList.ToArray();
     }
 
-    private int GetAppropriateEquipmentSlotForItem(WizItemTemplate template) {
-        if (template.m_adjectiveList.Count < 2) {
-            return -1;
-        }
-
-        var slotName = template.m_adjectiveList[1]; // The second adjective is the slot name.
-        var slotHash = StringHash.Compute(slotName);
-        var slot = EquippedItems.ToList().FindIndex(i => i.m_itemSlotNameID == slotHash);
+    private int GetAppropriateEquipmentSlotForItem() {
+        var slot = EquippedItems.ToList().FindIndex(i => i.m_itemID == 0);
         return slot;
     }
 
