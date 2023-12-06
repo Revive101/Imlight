@@ -35,8 +35,11 @@ public abstract class Server : ReceiveProtocolDispatcher {
         this._factoryProps = factoryProps;
 
         // Get outside IP.
+#if !DEBUG
         this.Ip = new HttpClient().GetStringAsync("https://api.ipify.org/").Result;
-        //this.Ip = "127.0.0.1";
+#else
+        this.Ip = "127.0.0.1";
+#endif
 
         CreateTcpListener();
         _actorFactoryRef = CreateActorFactory();
@@ -106,7 +109,7 @@ public abstract class Server : ReceiveProtocolDispatcher {
         // Get a list of strings for the connected IPs.
         var ips = ActiveSessions.Select(x => x.RemoteIp).ToArray();
         var msg = new SERVER_100_PROTOCOL.MSG_SERVERINFO() {
-            IP = message.IsLocal ? "127.0.0.1" : this.Ip,
+            IP = this.Ip,
             Port = Port,
             PlayerCount = (ushort) ActiveSessions.Count,
             ActorRef = Context.Self,

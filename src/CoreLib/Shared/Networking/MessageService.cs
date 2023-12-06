@@ -146,11 +146,11 @@ public abstract class MessageService : ReceiveProtocolDispatcher {
     }
 
     /// <summary>
-    /// Gets the active <see cref="Character"/> of this session. Requires an active
+    /// Gets the active <see cref="Wizard"/> of this session. Requires an active
     /// <see cref="CharacterService"/> as a running service.
     /// </summary>
     /// <returns></returns>
-    protected Character GetActiveCharacter() {
+    protected Wizard GetActiveCharacter() {
         var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
         var response = AskOtherService<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
 

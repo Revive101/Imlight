@@ -72,8 +72,6 @@ public sealed class SERVER_100_PROTOCOL : IServerProtocol
     {
         public byte MessageOrder { get; } = 7;
         public byte ServiceID { get; } = 100;
-
-        public bool IsLocal;
     }
 
     public class MSG_PLAYERENQUEUED : IServerMessage
@@ -165,12 +163,12 @@ public sealed class SERVER_100_PROTOCOL : IServerProtocol
         public WideByteString CommandText;
         public IActorRef ActorRef;
         public CoreObject CoreObject;
-        public Character PlayerCharacter;
+        public Wizard PlayerCharacter;
         public Account Account;
         public IActorRef ZoneActor;
         public IActorRef ServerActor;
         public Account SelectedAccount;
-        public Character SelectedCharacter;
+        public Wizard SelectedCharacter;
     }
 
     public class MSG_COMMANDRSP : IServerMessage

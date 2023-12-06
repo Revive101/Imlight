@@ -34,28 +34,28 @@ public static class WizardClassData {
     private const int DeathHealthPerLevel = 24;
     private const int BalanceHealthPerLevel = 27;
 
-    public static int GetClassStartingHealth(WizardSchool school) {
+    public static int GetClassStartingHealth(MagicSchoolEnum school) {
         return school switch {
-            WizardSchool.Fire => FireStartHealth,
-            WizardSchool.Ice => IceStartHealth,
-            WizardSchool.Storm => StormStartHealth,
-            WizardSchool.Myth => MythStartHealth,
-            WizardSchool.Life => LifeStartHealth,
-            WizardSchool.Death => DeathStartHealth,
-            WizardSchool.Balance => BalanceStartHealth,
+            MagicSchoolEnum.Fire => FireStartHealth,
+            MagicSchoolEnum.Ice => IceStartHealth,
+            MagicSchoolEnum.Storm => StormStartHealth,
+            MagicSchoolEnum.Myth => MythStartHealth,
+            MagicSchoolEnum.Life => LifeStartHealth,
+            MagicSchoolEnum.Death => DeathStartHealth,
+            MagicSchoolEnum.Balance => BalanceStartHealth,
             _ => throw new ArgumentOutOfRangeException(nameof(school), school, null)
         };
     }
 
-    public static int GetClassHealthAtLevel(WizardSchool school, int level) {
+    public static int GetClassHealthAtLevel(MagicSchoolEnum school, int level) {
         return school switch {
-            WizardSchool.Fire => FireStartHealth + (FireHealthPerLevel * (level - 1)),
-            WizardSchool.Ice => IceStartHealth + (IceHealthPerLevel * (level - 1)),
-            WizardSchool.Storm => StormStartHealth + (StormHealthPerLevel * (level - 1)),
-            WizardSchool.Myth => MythStartHealth + (MythHealthPerLevel * (level - 1)),
-            WizardSchool.Life => LifeStartHealth + (MythHealthPerLevel * (level - 1)),
-            WizardSchool.Death => DeathStartHealth + (DeathHealthPerLevel * (level - 1)),
-            WizardSchool.Balance => BalanceStartHealth + (BalanceHealthPerLevel * (level - 1)),
+            MagicSchoolEnum.Fire => FireStartHealth + (FireHealthPerLevel * (level - 1)),
+            MagicSchoolEnum.Ice => IceStartHealth + (IceHealthPerLevel * (level - 1)),
+            MagicSchoolEnum.Storm => StormStartHealth + (StormHealthPerLevel * (level - 1)),
+            MagicSchoolEnum.Myth => MythStartHealth + (MythHealthPerLevel * (level - 1)),
+            MagicSchoolEnum.Life => LifeStartHealth + (MythHealthPerLevel * (level - 1)),
+            MagicSchoolEnum.Death => DeathStartHealth + (DeathHealthPerLevel * (level - 1)),
+            MagicSchoolEnum.Balance => BalanceStartHealth + (BalanceHealthPerLevel * (level - 1)),
             _ => throw new ArgumentOutOfRangeException(nameof(school), school, null)
         };
     }

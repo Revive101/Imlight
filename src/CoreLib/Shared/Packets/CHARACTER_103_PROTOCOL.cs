@@ -21,7 +21,7 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol
         public byte MessageOrder { get; } = 1;
         public byte ServiceID { get; } = 103;
 
-        public Character Character;
+        public Wizard Character;
     }
 
     public class MSG_QUERYACTIVECHARACTER : IServerMessage
@@ -35,7 +35,7 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol
         public byte MessageOrder { get; } = 3;
         public byte ServiceID { get; } = 103;
 
-        public Character Character;
+        public Wizard Character;
         public TypeCache.CoreObject CharacterObject;
     }
 }

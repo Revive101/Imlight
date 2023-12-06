@@ -6,8 +6,8 @@ using Imlight.Common.ObjectProperty;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Resources;
+using System;
 using System.Collections.Generic;
-using System.Linq;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Services;
@@ -25,76 +25,40 @@ public class EquipmentService : MessageService {
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_EQUIPITEM))]
     private void ReceiveEquipItem(GAME_5_PROTOCOL.MSG_EQUIPITEM message) {
-        if (message.IsEquip == 1) {
-            EquipItem(message);
+        try {
+            if (message.IsEquip == 1) {
+                EquipItem(message);
+            }
+            else {
+                UnEquipItem(message);
+            }
         }
-        else {
-            UnEquipItem(message);
+        catch (Exception ex) {
+            Logger.Error("Error while equipping item: {0} {1}", Logger.Args(ex.Message, ex.StackTrace));
         }
     }
 
     private void EquipItem(GAME_5_PROTOCOL.MSG_EQUIPITEM message) {
-        // @TODO: There should be some "AntiAmbrose" logic here. Double check that the player meets the requirements
-        // to equip this item and that the player does not already have an item equipped in its slot.
-        var coreObject = GetActiveCoreObject();
         var playerCharacter = GetActiveCharacter();
+        var itemId = message.ItemID;
 
-        if (!ItemInInventory(message.ItemID, coreObject)) {
-            // @TODO: Respond to client appropriately.
+        var item = playerCharacter.InventoryGetItem(itemId);
+        if (item is null) {
+            // Todo: Log an infraction here.
             Logger.Debug($"Player does not have the item in their inventory!");
             return;
         }
 
-        if (!CoreObjectFactory.FindBehaviorInstance<ClientWizInventoryBehavior>(coreObject,
-                        out var inventoryBehavior)) {
-            return;
+        // Todo: Check if player meets requirements to equip item. If not, log an infraction.
+
+        // Check to see if the player already has this item equipped. If they do, broadcast the removal of it.
+        if (playerCharacter.EquipmentHasEquippedItem(itemId)) {
+            var slot = playerCharacter.EquipmentGetItemSlotIndex(itemId);
+            SendPublicUnequipItem((byte) slot, itemId);
         }
-        if (!CoreObjectFactory.FindBehaviorInstance<ClientWizEquipmentBehavior>(coreObject,
-            out var equipmentBehavior)) {
-            return;
-        }
 
-        // Get item object and its template.
-        var itemObj = inventoryBehavior.m_itemList.First(item => item.m_globalID == message.ItemID);
-        var templateId = itemObj.m_templateID;
-        var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(templateId);
-
-        // Check equipped items to see if player already has an item equipped in the target slot.
-        foreach (CoreObject obj in equipmentBehavior.m_itemList) {
-            var objTemplate = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(obj.m_templateID);
-            if (objTemplate.m_adjectiveList[1] == template.m_adjectiveList[1]) {
-                // Get current equipped item and its slot.
-                var slot = equipmentBehavior.m_slotList.FindIndex(slot => slot.m_itemID == obj.m_globalID);
-                var currentEquippedItem = equipmentBehavior.m_slotList[slot].m_itemID;
-                var oldItemTemplateID = inventoryBehavior.m_itemList.First(item => item.m_globalID == currentEquippedItem).m_templateID;
-                var oldItemTemplate = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(oldItemTemplateID);
-
-                if (currentEquippedItem == 0) {
-                    Logger.Debug("Player somehow has an item with GID: 0!");
-                    return;
-                }
-
-                // Remove item from equipment behavior lists.
-                equipmentBehavior.m_slotList = RemoveSlotFromEquipmentSlotList(slot, equipmentBehavior.m_slotList);
-                equipmentBehavior.m_itemList.RemoveAll(item => item.m_globalID == currentEquippedItem);
-                //equipmentBehavior.m_publicItemList.RemoveAll(item => item.m_itemID == itemObj.m_templateID);
-                //creationEquipment.RemoveAll(item => item.m_itemID == itemObj.m_templateID);
-
-                // Unequip the previous item.
-                SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPITEM() {
-                    ItemID = obj.m_globalID,
-                    SlotName = "",
-                    IsEquip = 0
-                });
-                ZoneBroadcast(new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICUNEQUIPITEM() {
-                    GlobalID = coreObject.m_globalID,
-                    IndexToRemove = (byte) slot
-                }, false);
-
-                RemoveItemEffectsFromPlayer(coreObject, oldItemTemplate);
-                break;
-            }
-        }
+        // This method will remove any items that are already equipped in the target slot.
+        var template = playerCharacter.EquipmentEquipItem(itemId);
 
         // Confirm to the player that we've equipped their item server side.
         SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPITEM() {
@@ -103,115 +67,68 @@ public class EquipmentService : MessageService {
             IsEquip = message.IsEquip
         });
 
-        // Put ID of equipped item in first empty slot in the slot list, and update itemList, creationList, publicItemList.
-        var index = equipmentBehavior.m_slotList.FindIndex(slot => slot.m_itemID == 0);
-        equipmentBehavior.m_slotList[index].m_itemID = (GID) message.ItemID;
+        SendPublicEquipItem(item);
+        ApplyItemEffectsToPlayer(template);
+    }
 
-        equipmentBehavior.m_itemList.Add(itemObj);
-        //equipmentBehavior.m_publicItemList.Add(new EquippedItemInfo() { m_itemID = (uint)itemObj.m_templateID });
-        //creationEquipment.Add(equippedItemInfo);
+    private void UnEquipItem(GAME_5_PROTOCOL.MSG_EQUIPITEM message) {
+        var playerCharacter = GetActiveCharacter();
+        var itemId = message.ItemID;
 
+        // Check to see if the player has this item equipped. If they don't, log an infraction.
+        var item = playerCharacter.InventoryGetItem(itemId);
+        if (item is null) {
+            // Todo: Log an infraction here.
+            Logger.Debug($"Player does not have the item in their inventory!");
+            return;
+        }
+
+        // Get the slot index of the item we're unequipping.
+        var slot = playerCharacter.EquipmentGetItemSlotIndex(itemId);
+        var template = playerCharacter.EquipmentUnequipItem(itemId);
+
+        SendPublicUnequipItem((byte) slot, itemId);
+        RemoveItemEffectsFromPlayer(template);
+    }
+
+    private void SendPublicEquipItem(WizClientObjectItem item) {
         // Serialize item and broadcast equip action to other players.
-        var item = new WizardEquippedItemInfo() {
-            m_itemID = (uint) itemObj.m_templateID,
-            m_pattern = (Bui5) template.m_numPatterns,
-            m_baseColor = (Bui5) template.m_numPrimaryColors,
-            m_trimColor = (Bui5) template.m_numSecondaryColors,
+        var publicItem = new WizardEquippedItemInfo() {
+            m_itemID = (uint) item.m_templateID,
+            m_pattern = (Bui5) item.m_pattern,
+            m_baseColor = (Bui5) item.m_primaryColor,
+            m_trimColor = (Bui5) item.m_secondaryColor,
         };
 
         var serializer = new CoreObjectSerializer()
                     .OnBehaviors(SerializerOptions.Behaviors.None)
                     .OnPropertyMask((SerializerOptions.PropertyFlags) 1);
-        var data = serializer.Serialize(item);
+        var data = serializer.Serialize(publicItem);
         ZoneBroadcast(new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM() {
-            GlobalID = coreObject.m_globalID,
+            GlobalID = GetActiveCoreObject().m_globalID,
             SerializedInfo = data
         }, false);
-
-        ApplyItemEffectsToPlayer(coreObject, template);
     }
 
-    private void UnEquipItem(GAME_5_PROTOCOL.MSG_EQUIPITEM message) {
-        var coreObject = GetActiveCoreObject();
-        var playerCharacter = GetActiveCharacter();
-
-        if (!CoreObjectFactory.FindBehaviorInstance<ClientWizEquipmentBehavior>(coreObject,
-            out var equipmentBehavior)) {
-            return;
-        }
-        if (!CoreObjectFactory.FindBehaviorInstance<ClientWizInventoryBehavior>(coreObject,
-                out var inventoryBehavior)) {
-            return;
-        }
-
-        if (!ItemInInventory(message.ItemID, coreObject)) {
-            // @TODO: Respond to client appropriately.
-            Logger.Debug($"Player does not have the item in their inventory!");
-            return;
-        }
-
-        // Get item object and its template.
-        var itemObj = inventoryBehavior.m_itemList.First(item => item.m_globalID == message.ItemID);
-        var templateId = itemObj.m_templateID;
-        var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(templateId);
-
-        // Confirm to the player that we've unequipped their item server side.
+    private void SendPublicUnequipItem(byte slot, ulong itemId) {
+        // This one goes to the client.
         SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPITEM() {
-            ItemID = message.ItemID,
-            SlotName = message.SlotName,
-            IsEquip = message.IsEquip
+            ItemID = itemId,
+            SlotName = "",
+            IsEquip = 0
         });
 
-        // Get slot index of item to unequip and number of total equipped items.
-        var slot = equipmentBehavior.m_slotList.FindIndex(slot => slot.m_itemID == message.ItemID);
-        var currentEquippedItem = equipmentBehavior.m_slotList[slot].m_itemID;
-
-        if (currentEquippedItem == 0) {
-            Logger.Debug("Player somehow has an item with GID: 0!");
-            return;
-        }
-
-        // Remove item from equipment behavior lists.
-        equipmentBehavior.m_slotList = RemoveSlotFromEquipmentSlotList(slot, equipmentBehavior.m_slotList);
-        equipmentBehavior.m_itemList.RemoveAll(item => item.m_globalID == currentEquippedItem);
-        //equipmentBehavior.m_publicItemList.RemoveAll(item => item.m_itemID == itemObj.m_templateID);
-        //creationEquipment.RemoveAll(item => item.m_itemID == itemObj.m_templateID);
-
+        // This one goes to the zone.
         ZoneBroadcast(new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICUNEQUIPITEM() {
-            GlobalID = coreObject.m_globalID,
-            IndexToRemove = (byte) slot
+            GlobalID = GetActiveCoreObject().m_globalID,
+            IndexToRemove = slot
         }, false);
-
-        RemoveItemEffectsFromPlayer(coreObject, template);
     }
 
-    private bool ItemInInventory(ulong itemId, CoreObject coreObject) {
-        if (!CoreObjectFactory.FindBehaviorInstance<ClientWizInventoryBehavior>(coreObject,
-                out var inventoryBehavior)) {
-            return false;
-        }
+    // Todo: Move the methods below to the Wizard class.
 
-        var invItemList = inventoryBehavior.m_itemList.Any(item => item.m_globalID == itemId);
-        return invItemList;
-    }
-
-    private List<EquippedSlotInfo> RemoveSlotFromEquipmentSlotList(int slot, List<EquippedSlotInfo> slotList) {
-        // Zero-out item from slot list and move all items down to fill "empty" zero slots, should they exist.
-        var numEquippedItemsInSlots = slotList.Count(slot => slot.m_itemID != 0);
-        slotList[slot].m_itemID = (GID) 0;
-
-        if (slot < numEquippedItemsInSlots - 1) {
-            for (int i = slot; i < numEquippedItemsInSlots; i++) {
-                if (slotList[i].m_itemID != 0) {
-                    slotList[i - 1].m_itemID = slotList[i].m_itemID;
-                    slotList[i].m_itemID = (GID) 0;
-                }
-            }
-        }
-        return slotList;
-    }
-
-    private void ApplyItemEffectsToPlayer(CoreObject coreObject, WizItemTemplate template) {
+    private void ApplyItemEffectsToPlayer(WizItemTemplate template) {
+        var charObjId = GetActiveCoreObject().m_globalID;
         var effectSerializer = new CoreObjectSerializer()
                     .OnBehaviors(SerializerOptions.Behaviors.None)
                     .OnPropertyMask(SerializerOptions.PropertyFlags.Public
@@ -237,7 +154,7 @@ public class EquipmentService : MessageService {
 
                     var spellData = effectSerializer.Serialize(spellEffectObj);
                     SendToSocket(new GAME_5_PROTOCOL.MSG_ADDEFFECT() {
-                        GameObjectID = coreObject.m_globalID,
+                        GameObjectID = charObjId,
                         EffectData = spellData
                     });
 
@@ -256,7 +173,7 @@ public class EquipmentService : MessageService {
 
                     var pipData = effectSerializer.Serialize(pipEffectObj);
                     SendToSocket(new GAME_5_PROTOCOL.MSG_ADDEFFECT() {
-                        GameObjectID = coreObject.m_globalID,
+                        GameObjectID = charObjId,
                         EffectData = pipData
                     });
 
@@ -274,7 +191,7 @@ public class EquipmentService : MessageService {
 
                     var speedData = effectSerializer.Serialize(speedEffectObj);
                     ZoneBroadcast(new GAME_5_PROTOCOL.MSG_ADDEFFECT() {
-                        GameObjectID = coreObject.m_globalID,
+                        GameObjectID = charObjId,
                         EffectData = speedData
                     }, false);
 
@@ -325,7 +242,7 @@ public class EquipmentService : MessageService {
 
                     var effectData = effectSerializer.Serialize(wSE);
                     SendToSocket(new GAME_5_PROTOCOL.MSG_ADDEFFECT() {
-                        GameObjectID = coreObject.m_globalID,
+                        GameObjectID = charObjId,
                         EffectData = effectData
                     });
 
@@ -335,8 +252,9 @@ public class EquipmentService : MessageService {
         }
     }
 
-    private void RemoveItemEffectsFromPlayer(CoreObject coreObject, WizItemTemplate template) {
+    private void RemoveItemEffectsFromPlayer(WizItemTemplate template) {
         int internalID = 0;
+        var charObjId = GetActiveCoreObject().m_globalID;
 
         foreach (GameEffectInfo it in template.m_equipEffects) {
 
@@ -361,7 +279,7 @@ public class EquipmentService : MessageService {
                     }
 
                     SendToSocket(new GAME_5_PROTOCOL.MSG_REMOVEEFFECT() {
-                        GameObjectID = coreObject.m_globalID,
+                        GameObjectID = charObjId,
                         EffectNameID = StringHash.Compute(it.m_effectName),
                         InternalID = internalID,
                     });
@@ -389,7 +307,7 @@ public class EquipmentService : MessageService {
                     }
 
                     SendToSocket(new GAME_5_PROTOCOL.MSG_REMOVEEFFECT() {
-                        GameObjectID = coreObject.m_globalID,
+                        GameObjectID = charObjId,
                         EffectNameID = StringHash.Compute(it.m_effectName),
                         InternalID = internalID,
                     });
@@ -413,7 +331,7 @@ public class EquipmentService : MessageService {
                     }
 
                     ZoneBroadcast(new GAME_5_PROTOCOL.MSG_REMOVEEFFECT() {
-                        GameObjectID = coreObject.m_globalID,
+                        GameObjectID = charObjId,
                         EffectNameID = StringHash.Compute(it.m_effectName),
                         InternalID = internalID,
                     }, false);
@@ -437,7 +355,7 @@ public class EquipmentService : MessageService {
                     }
 
                     SendToSocket(new GAME_5_PROTOCOL.MSG_REMOVEEFFECT() {
-                        GameObjectID = coreObject.m_globalID,
+                        GameObjectID = charObjId,
                         EffectNameID = StringHash.Compute(it.m_effectName),
                         InternalID = internalID,
                     });

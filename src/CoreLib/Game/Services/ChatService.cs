@@ -29,7 +29,7 @@ public class ChatService : MessageService {
     private const string CommandPrefix = ".";
     private const string MessageRegex = "[^a-zA-Z0-9\\p{P} ]";
 
-    private Character _selectedCharacter;
+    private Wizard _selectedCharacter;
     private Account _selectedAccount;
 
     private IActorRef _dispatcherRef;

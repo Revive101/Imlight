@@ -38,7 +38,7 @@ internal class CharacterService : MessageService {
             errorCode = 1;
         }
         else {
-            var newCharacter = new Character(charData);
+            var newCharacter = CharacterHelper.CreateCharacterFromCreationInfo(charData);
             var createdCharacter = account.AddCharacter(newCharacter);
 
             errorCode = createdCharacter ? 0 : 1;
@@ -94,7 +94,8 @@ internal class CharacterService : MessageService {
                 var character = account.Characters[i];
 
                 // Database is document-based. We need to serialize the document to send to the client.
-                var data = serializer.Serialize(character.GetLoginScreenInfo());
+                var loginScreenInfo = CharacterHelper.GetLoginScreenInfo(character);
+                var data = serializer.Serialize(loginScreenInfo);
                 SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERINFO() { CharacterInfo = data });
             }
         }
