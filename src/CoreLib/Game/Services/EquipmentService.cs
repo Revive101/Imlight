@@ -44,8 +44,25 @@ public class EquipmentService : MessageService {
         // Send the player's equipment to the client.
         var wizard = GetActiveCharacter();
         var equipment = wizard.EquipmentGetAllItems();
-        foreach (var pieceTemplate in equipment) {
+        foreach (var piece in equipment) {
+            var pieceObj = piece.Item1;
+            var pieceTemplate = piece.Item2;
+
+            // Apply equipment effects.
             ApplyItemEffectsToPlayer(pieceTemplate);
+
+            // todo: This is lazy. Instead of fixing the behavior crafting in the CharacterObjectLoader,
+            // we're just going to manually send the equip messages after attach is complete.
+            if (pieceTemplate.m_adjectiveList.Count < 2) {
+                Logger.Warning("Item {0} template does not have a slot name!", Logger.Args(pieceTemplate.m_templateID));
+                continue;
+            }
+            var slotName = pieceTemplate.m_adjectiveList[1].ToString();
+            SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPITEM() {
+                ItemID = pieceObj.m_globalID,
+                SlotName = slotName,
+                IsEquip = 1
+            });
         }
     }
 

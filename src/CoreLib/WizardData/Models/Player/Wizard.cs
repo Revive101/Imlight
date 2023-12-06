@@ -99,14 +99,22 @@ public class Wizard : IDisposable {
         InitializeEquipmentSlots();
     }
 
-    public void SetLocation(Vector3 loc) {
+    public void SetCachedLocation(Vector3 loc) {
+        this.Location = loc;
+    }
+
+    public void SetCachedOrientation(byte direction) {
+        this.Orientation = new Vector3(0, 0, direction * OrientationCompressionFactor);
+    }
+
+    public void SetPersistentLocation(Vector3 loc) {
         this.Location = loc;
 
         // Persistent save.
         CharacterCollection.UpdateCharacterLocation(this, loc, Orientation.Z);
     }
 
-    public void SetOrientation(byte direction) {
+    public void SetPersistentOrientation(byte direction) {
         this.Orientation = new Vector3(0, 0, direction * OrientationCompressionFactor);
 
         // Persistent save.
@@ -184,13 +192,14 @@ public class Wizard : IDisposable {
         return EquippedItems.ToList().FindIndex(i => i.m_itemID == itemId);
     }
 
-    public IEnumerable<WizItemTemplate> EquipmentGetAllItems() {
-        var items = new List<WizItemTemplate>();
+    public IEnumerable<(WizClientObjectItem, WizItemTemplate)> EquipmentGetAllItems() {
+        var items = new List<(WizClientObjectItem, WizItemTemplate)>();
         foreach (var slot in EquippedItems) {
             if (slot.m_itemID != 0) {
                 var item = InventoryGetItem(slot.m_itemID);
                 if (item is not null) {
-                    items.Add((WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID));
+                    var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
+                    items.Add((item, template));
                 }
             }
         }
@@ -214,7 +223,7 @@ public class Wizard : IDisposable {
         var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
         var slot = GetAppropriateEquipmentSlotForItem();
         if (slot == -1) {
-            Logger.Warning("Tried to equip item with global id {0} that does not have a slot name adjective.", Logger.Args(itemId));
+            Logger.Warning("Could not get slot where item {0} was equipped.", Logger.Args(itemId));
             return null;
         }
 
@@ -246,8 +255,7 @@ public class Wizard : IDisposable {
             return null;
         }
 
-        var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
-        var slot = GetAppropriateEquipmentSlotForItem();
+        var slot = EquipmentGetItemSlotIndex(itemId);
         if (slot == -1) {
             Logger.Debug("Tried to unequip item with global id {0} that does not have a slot name adjective.", Logger.Args(itemId));
             return null;
@@ -263,6 +271,7 @@ public class Wizard : IDisposable {
         var actualName = CharacterNameBank.GetEnglishName(NameIndices, WizardAvatar.m_eGender);
         Logger.Debug("{0} unequips item in slot {1}.", Logger.Args(actualName, slot));
 
+        var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
         return template;
     }
 
@@ -316,15 +325,24 @@ public class Wizard : IDisposable {
 
     private void RemoveItemInEquipmentSlot(int slot) {
         // Zero-out item from slot list and move all items down to fill "empty" zero slots, should they exist.
-        var numEquippedItemsInSlots = EquippedItems.Count(slot => slot.m_itemID != 0);
-        EquippedItems[slot].m_itemID = (GID) 0;
+        var numEquippedItemsInSlots = EquippedItems.Count(item => item.m_itemID != 0);
 
-        if (slot < numEquippedItemsInSlots - 1) {
-            for (int i = slot; i < numEquippedItemsInSlots; i++) {
-                if (EquippedItems[i].m_itemID != 0) {
-                    EquippedItems[i - 1].m_itemID = EquippedItems[i].m_itemID;
-                    EquippedItems[i].m_itemID = (GID) 0;
-                }
+        if (slot < 0 || slot > numEquippedItemsInSlots) {
+            throw new Exception($"Tried to remove item in equipment slot {slot} that does not exist.");
+        }
+
+        EquippedItems[slot].m_itemID = (GID) 0;
+        EquippedItems[slot].m_itemSlotNameID = 0;
+
+        if (numEquippedItemsInSlots == 1) {
+            // There is only one item equipped, so we don't need to move anything down.
+            return;
+        }
+
+        for (int i = slot; i < numEquippedItemsInSlots; i++) {
+            if (EquippedItems[i].m_itemID != 0) {
+                EquippedItems[i - 1].m_itemID = EquippedItems[i].m_itemID;
+                EquippedItems[i].m_itemID = (GID) 0;
             }
         }
     }
