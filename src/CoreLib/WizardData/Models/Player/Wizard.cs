@@ -83,7 +83,7 @@ public class Wizard : IDisposable {
     [JsonIgnore] private Vector3 _location;
     [JsonIgnore] private Vector3 _orientation;
 
-    [JsonConstructor] public Wizard() {  }
+    [JsonConstructor] public Wizard() { }
 
     public Wizard(MagicSchoolEnum wizardSchoolType, WizardCharacterBehavior avatar, uint nameIndices, byte level = 1) {
         this.CharId = RandomGen.GenerateGUID();
@@ -130,10 +130,11 @@ public class Wizard : IDisposable {
             return false;
         }
 
+        item.m_characterId = (GID) CharId;
         InventoryItems.Add(item);
 
         // Persistent save.
-        WorldItemCollection.AddItem(CharId, item);
+        WizardItemCollection.AddItem(item);
 
         return true;
     }
@@ -148,7 +149,7 @@ public class Wizard : IDisposable {
         }
 
         // Persistent save.
-        WorldItemCollection.RemoveItem(CharId, item);
+        WizardItemCollection.RemoveItem(item);
 
         return true;
     }
@@ -162,7 +163,7 @@ public class Wizard : IDisposable {
         InventoryItems.Remove(item);
 
         // Persistent save.
-        WorldItemCollection.RemoveItem(CharId, item);
+        WizardItemCollection.RemoveItem(item);
 
         return true;
     }
@@ -259,17 +260,18 @@ public class Wizard : IDisposable {
         new List<ulong>() { 4740, 4705, 5030, 39068, 1363076, 1475149,
                             1472644, 1317133, 1317126, 1317234, 1359455,
                             1392077, 1352341, 87158, 87159, 87160, 1540397 }.ForEach(templateId => {
-            var template = CoreObjectFactory.GetCoreTemplate(templateId);
-            var coreObject = new WizClientObjectItem {
-                m_globalID = RandomGen.GenerateGUID(),
-                m_templateID = (GID) templateId
-            };
+                                var template = CoreObjectFactory.GetCoreTemplate(templateId);
+                                var coreObject = new WizClientObjectItem {
+                                    m_globalID = RandomGen.GenerateGUID(),
+                                    m_templateID = (GID) templateId,
+                                    m_characterId = (GID) CharId
+                                };
 
-            defaultItems.Add(coreObject);
-            this.InventoryItemIds.Add(coreObject.m_globalID);
-        });
+                                defaultItems.Add(coreObject);
+                                this.InventoryItemIds.Add(coreObject.m_globalID);
+                            });
 
-        WorldItemCollection.AddDefaultItems(CharId, defaultItems);
+        WizardItemCollection.AddDefaultItems(defaultItems);
     }
 
     private void InitializeEquipmentSlots() {

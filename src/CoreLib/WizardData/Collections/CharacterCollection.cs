@@ -8,6 +8,7 @@ using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Raven.Client.Documents;
 using SharpDX;
+using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.WizardData.Implementations;
 
@@ -73,10 +74,10 @@ public static class CharacterCollection {
 
         // Get each of the items for this character.
         if (character is not null) {
-            var items = session.Query<WorldItem>(collectionName: WorldItemCollection.CollectionName)
-                .Where(x => x.PlayerId == id)
+            var items = session.Query<WizClientObjectItem>(collectionName: WizardItemCollection.CollectionName)
+                .Where(x => x.m_characterId == id)
                 .ToList();
-            character.InventoryItems = items.Select(x => x.Item).ToList();
+            character.InventoryItems = items.ToList();
         }
 
         return character;

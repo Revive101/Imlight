@@ -8,6 +8,7 @@ using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Raven.Client.Documents;
+using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.WizardData.Implementations;
 
@@ -97,10 +98,10 @@ public static class AccountCollection {
         account.Characters = characters;
         foreach (var character in account.Characters) {
             // Load the character's inventory.
-            var inventory = session.Query<WorldItem>(collectionName: WorldItemCollection.CollectionName)
-                .Where(i => i.PlayerId == character.CharId)
+            var inventory = session.Query<WizClientObjectItem>(collectionName: WizardItemCollection.CollectionName)
+                .Where(i => i.m_characterId == character.CharId)
                 .ToList();
-            character.InventoryItems = inventory.Select(i => i.Item).ToList();
+            character.InventoryItems = inventory.ToList();
         }
 
         // Load infractions. The constructor will load the action history.
@@ -137,10 +138,10 @@ public static class AccountCollection {
         account.Characters = characters;
         foreach (var character in account.Characters) {
             // Load the character's inventory.
-            var inventory = session.Query<WorldItem>(collectionName: WorldItemCollection.CollectionName)
-                .Where(i => i.PlayerId == character.CharId)
+            var inventory = session.Query<WizClientObjectItem>(collectionName: WizardItemCollection.CollectionName)
+                .Where(i => i.m_characterId == character.CharId)
                 .ToList();
-            character.InventoryItems = inventory.Select(i => i.Item).ToList();
+            character.InventoryItems = inventory.ToList();
         }
 
         // Load infractions. The constructor will load the action history.

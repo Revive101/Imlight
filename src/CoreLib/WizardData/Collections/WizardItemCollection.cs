@@ -14,21 +14,11 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.WizardData.Implementations;
 
-public class WorldItem {
-    public ulong PlayerId { get; set; }
-    public WizClientObjectItem Item { get; set; }
-
-    public WorldItem(ulong playerId, WizClientObjectItem item) {
-        this.PlayerId = playerId;
-        this.Item = item;
-    }
-}
-
-public static class WorldItemCollection {
-    public const string CollectionName = "WorldItems";
+public static class WizardItemCollection {
+    public const string CollectionName = "WizardItems";
     private static readonly IDocumentStore s_store;
 
-    static WorldItemCollection() {
+    static WizardItemCollection() {
         s_store = PlayerDatabase.Instance.Store;
     }
 
@@ -37,22 +27,21 @@ public static class WorldItemCollection {
     /// </summary>
     /// <param name="playerId">The ID of the player.</param>
     /// <param name="item">The item to be added.</param>
-    public static void AddItem(ulong playerId, WizClientObjectItem item) {
+    public static void AddItem(WizClientObjectItem item) {
         using var session = s_store.OpenSession();
 
         // Add the item to the items collection.
-        var worldItem = new WorldItem(playerId, item);
-        session.Store(worldItem);
+        session.Store(item);
 
         // Set the collection name in the metadata.
-        var metadata = session.Advanced.GetMetadataFor(worldItem);
+        var metadata = session.Advanced.GetMetadataFor(item);
         metadata[Raven.Client.Constants.Documents.Metadata.Collection] = CollectionName;
 
         // We're also going to add this item to the character's item list.
         // We don't want to query for the character because it will run the constructor again and we don't want that.
         // Instead, we're going to use a patch request to add the item id to the character's item list.
         var patchRequest = new PatchByQueryOperation(
-            $"from Characters where CharId = '{playerId}'" +
+            $"from Characters where CharId = '{item.m_characterId}'" +
             $"update {{ this.{nameof(Wizard.InventoryItemIds)}.Add('{item.m_globalID}'); }}");
         s_store.Operations.Send(patchRequest);
 
@@ -67,22 +56,17 @@ public static class WorldItemCollection {
     /// </summary>
     /// <param name="playerId">The ID of the player.</param>
     /// <param name="items">The items to be added.</param>
-    public static void AddDefaultItems(ulong playerId, IEnumerable<WizClientObjectItem> items) {
+    public static void AddDefaultItems(IEnumerable<WizClientObjectItem> items) {
         using var session = s_store.OpenSession();
 
-        try {
-            // Add the items to the items collection.
-            foreach (var item in items) {
-                var worldItem = new WorldItem(playerId, item);
-                session.Store(worldItem);
+        // Add the items to the items collection.
+        foreach (var item in items)
+        {
+            session.Store(item);
 
-                // Set the collection name in the metadata.
-                var metadata = session.Advanced.GetMetadataFor(worldItem);
-                metadata[Raven.Client.Constants.Documents.Metadata.Collection] = CollectionName;
-            }
-        }
-        catch (Exception ex) {
-            Console.WriteLine(ex);
+            // Set the collection name in the metadata.
+            var metadata = session.Advanced.GetMetadataFor(item);
+            metadata[Raven.Client.Constants.Documents.Metadata.Collection] = CollectionName;
         }
 
         // Save the changes.
@@ -95,12 +79,12 @@ public static class WorldItemCollection {
     /// <param name="playerId">The ID of the player.</param>
     /// <param name="item">The item to be removed.</param>
     /// <returns>True if the item was successfully removed, false otherwise.</returns>
-    public static bool RemoveItem(ulong playerId, WizClientObjectItem item) {
+    public static bool RemoveItem(WizClientObjectItem item) {
         using var session = s_store.OpenSession();
 
         // Get the item from the items collection.
-        var associatedItem = session.Query<WorldItem>(CollectionName)
-            .FirstOrDefault(x => x.PlayerId == playerId && x.Item == item);
+        var associatedItem = session.Query<WizClientObjectItem>(CollectionName)
+            .FirstOrDefault(x => x.m_characterId == item.m_characterId && x.m_globalID == item.m_globalID);
 
         // If the item was not found, return false.
         if (associatedItem == null) {
@@ -114,7 +98,7 @@ public static class WorldItemCollection {
         // We don't want to query for the character because it will run the constructor again and we don't want that.
         // Instead, we're going to use a patch request to add the item id to the character's item list.
         var patchRequest = new PatchByQueryOperation(
-            $"from Characters where CharId = '{playerId}'" +
+            $"from Characters where CharId = '{item.m_characterId}'" +
             $"update {{ this.{nameof(Wizard.InventoryItemIds)}.Remove('{item.m_globalID}'); }}");
 
         session.SaveChanges();
@@ -125,15 +109,15 @@ public static class WorldItemCollection {
     /// <summary>
     /// Removes an item from the WorldItem collection.
     /// </summary>
-    /// <param name="playerId">The ID of the player.</param>
+    /// <param name="charId">The ID of the player.</param>
     /// <param name="itemId">The ID of the item to remove.</param>
     /// <returns>True if the item was successfully removed, false otherwise.</returns>
-    public static bool RemoveItem(ulong playerId, ulong itemId) {
+    public static bool RemoveItem(ulong charId, ulong itemId) {
         using var session = s_store.OpenSession();
 
         // Get the item from the items collection.
-        var associatedItem = session.Query<WorldItem>(CollectionName)
-            .FirstOrDefault(x => x.PlayerId == playerId && x.Item.m_globalID == itemId);
+        var associatedItem = session.Query<WizClientObjectItem>(CollectionName)
+            .FirstOrDefault(x => x.m_characterId == charId && x.m_globalID == itemId);
 
         // If the item was not found, return false.
         if (associatedItem == null) {
@@ -147,7 +131,7 @@ public static class WorldItemCollection {
         // We don't want to query for the character because it will run the constructor again and we don't want that.
         // Instead, we're going to use a patch request to add the item id to the character's item list.
         var patchRequest = new PatchByQueryOperation(
-            $"from Characters where CharId = '{playerId}'" +
+            $"from Characters where CharId = '{charId}'" +
             $"update {{ this.{nameof(Wizard.InventoryItemIds)}.Remove('{itemId}'); }}");
 
         session.SaveChanges();
@@ -164,8 +148,8 @@ public static class WorldItemCollection {
         using var session = s_store.OpenSession();
 
         // Get the items from the items collection.
-        var items = session.Query<WorldItem>(collectionName: CollectionName)
-            .Where(x => x.PlayerId == playerId)
+        var items = session.Query<WizClientObjectItem>(collectionName: CollectionName)
+            .Where(x => x.m_characterId == playerId)
             .ToList();
 
         // If no items were found, set the WorldItem to null and return false.
@@ -175,7 +159,7 @@ public static class WorldItemCollection {
         }
 
         // Set the WorldItem to the retrieved items.
-        inventory = items.Select(x => x.Item).ToList();
+        inventory = items.ToList();
         return true;
     }
 }
