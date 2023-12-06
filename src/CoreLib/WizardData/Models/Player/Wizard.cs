@@ -184,12 +184,12 @@ public class Wizard : IDisposable {
     }
 
     public WizItemTemplate EquipmentEquipItem(ulong itemId) {
-        if (!InventoryHasItem(itemId)) {
+        var item = InventoryGetItem(itemId);
+        if (item is null) {
             Logger.Warning("Tried to equip item with global id {0} that does not exist in player inventory.", Logger.Args(itemId));
             return null;
         }
 
-        var item = InventoryGetItem(itemId);
         var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
         var slot = GetAppropriateEquipmentSlotForItem(template);
         if (slot == -1) {
@@ -219,6 +219,11 @@ public class Wizard : IDisposable {
     public WizItemTemplate EquipmentUnequipItem(ulong itemId) {
         // Get the index of the item in the equipment list.
         var item = InventoryGetItem(itemId);
+        if (item is null) {
+            Logger.Warning("Tried to unequip item with global id {0} that does not exist in player inventory.", Logger.Args(itemId));
+            return null;
+        }
+
         var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
         var slot = GetAppropriateEquipmentSlotForItem(template);
         if (slot == -1) {

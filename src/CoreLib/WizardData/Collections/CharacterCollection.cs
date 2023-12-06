@@ -91,7 +91,7 @@ public static class CharacterCollection {
     public static void UpdateCharacterZone(Wizard character, string zoneName, string zoneDisplayName) {
         using var session = s_store.OpenSession();
 
-        var existingCharacter = session.Query<Wizard>()
+        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
             .FirstOrDefault(x => x.CharId == character.CharId);
         if (existingCharacter is null) {
             return;
