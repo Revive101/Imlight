@@ -107,6 +107,9 @@ internal class AttachService : MessageService {
 
         SendToSocket(loginCompleteMsg);
         AddPlayerToZone(charGameObject);
+
+        // Inform the other services that attach is complete.
+        TellOtherServices(new SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE());
     }
 
     private ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP SendZoneTransfer(string zoneName) {

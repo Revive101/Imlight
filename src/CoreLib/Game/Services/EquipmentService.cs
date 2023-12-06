@@ -5,6 +5,7 @@ using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using System;
 using System.Collections.Generic;
@@ -38,6 +39,16 @@ public class EquipmentService : MessageService {
         }
     }
 
+    [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE))]
+    private void ReceiveAttachComplete(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE message) {
+        // Send the player's equipment to the client.
+        var wizard = GetActiveCharacter();
+        var equipment = wizard.EquipmentGetAllItems();
+        foreach (var pieceTemplate in equipment) {
+            ApplyItemEffectsToPlayer(pieceTemplate);
+        }
+    }
+
     private void EquipItem(GAME_5_PROTOCOL.MSG_EQUIPITEM message) {
         var playerCharacter = GetActiveCharacter();
         var itemId = message.ItemID;
@@ -59,6 +70,10 @@ public class EquipmentService : MessageService {
 
         // This method will remove any items that are already equipped in the target slot.
         var template = playerCharacter.EquipmentEquipItem(itemId);
+        if (template is null) {
+            Logger.Debug($"EquipmentEquipItem returned null template!");
+            return;
+        }
 
         // Confirm to the player that we've equipped their item server side.
         SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPITEM() {

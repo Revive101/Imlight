@@ -184,7 +184,27 @@ public class Wizard : IDisposable {
         return EquippedItems.ToList().FindIndex(i => i.m_itemID == itemId);
     }
 
+    public IEnumerable<WizItemTemplate> EquipmentGetAllItems() {
+        var items = new List<WizItemTemplate>();
+        foreach (var slot in EquippedItems) {
+            if (slot.m_itemID != 0) {
+                var item = InventoryGetItem(slot.m_itemID);
+                if (item is not null) {
+                    items.Add((WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID));
+                }
+            }
+        }
+
+        return items;
+    }
+
     public WizItemTemplate EquipmentEquipItem(ulong itemId) {
+        // Check to see if we already have this item equipped.
+        if (EquipmentHasEquippedItem(itemId)) {
+            Logger.Warning("Tried to equip item with global id {0} that is already equipped.", Logger.Args(itemId));
+            return null;
+        }
+
         var item = InventoryGetItem(itemId);
         if (item is null) {
             Logger.Warning("Tried to equip item with global id {0} that does not exist in player inventory.", Logger.Args(itemId));
