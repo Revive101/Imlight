@@ -157,8 +157,6 @@ public class EquipmentService : MessageService {
         }, false);
     }
 
-    // Todo: Move the methods below to the Wizard class.
-
     private void ApplyItemEffectsToPlayer(WizItemTemplate template) {
         var charObjId = GetActiveCoreObject().m_globalID;
         var effectSerializer = new CoreObjectSerializer()
