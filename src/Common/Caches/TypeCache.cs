@@ -13,8 +13,8 @@ using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.Common.IO;
 
 namespace Imlight.Common.Caches;
-public static partial class TypeCache {
 
+public static partial class TypeCache {
     public static Imlight.Common.ObjectProperty.PropertyReflection.PropertyClass Dispatch(uint hash) {
         switch (hash) {
             case 725087: return new DerbyLockLane();
@@ -22,6 +22,7 @@ public static partial class TypeCache {
             case 1924843: return new MatchTimerControl();
             case 4737210: return new DeckTemplate();
             case 4740335: return new ProvideSpellEffectInfo();
+            case 4897181: return new GuildMuseumCuratorOption();
             case 5393567: return new SchoolPipPanel();
             case 6006332: return new ExtraHousingZoneBehaviorTemplate();
             case 6636754: return new PvPPenaltyMatchBanInfo();
@@ -236,6 +237,7 @@ public static partial class TypeCache {
             case 228794493: return new ResTeleport();
             case 231446244: return new ClientRenamePipActorsFromResult();
             case 231777453: return new ClientClearHangingEffectsCinematicAction();
+            case 232528293: return new GuildMuseumExhibitInfo();
             case 232827851: return new DerbyModifyPetStat();
             case 236178796: return new TreasureCardVaultBehavior();
             case 236598037: return new BurnAuraCinematicAction();
@@ -522,6 +524,7 @@ public static partial class TypeCache {
             case 535318572: return new AdvPvPLeagueAwardInfo();
             case 535692033: return new ClientTurnIndicatorCinematicAction();
             case 536105006: return new AssociatedWorldsList();
+            case 536812102: return new GuildGalleryEssenceList();
             case 538202429: return new ActorDialogListBase();
             case 538232979: return new WindowStyle();
             case 538644871: return new ClientCombatParticipant();
@@ -612,6 +615,7 @@ public static partial class TypeCache {
             case 623039316: return new MobRankLevel();
             case 623090702: return new JewelVaultBehavior();
             case 623319238: return new HatchmakingPremiumPetsList();
+            case 626385677: return new ReqGetExhibitState();
             case 626500077: return new TieredSpellGroup();
             case 627745655: return new ObstacleCourseObstacleBehavior();
             case 627815761: return new PetTalentControlBase();
@@ -691,6 +695,7 @@ public static partial class TypeCache {
             case 721338176: return new ClientHideShadowCreatureCinematicAction();
             case 722124004: return new ItemFinderBehavior();
             case 722265540: return new FilterSetTemplate();
+            case 725294150: return new GuildMuseumDataList();
             case 725947360: return new ClientPlayerStatueBehavior();
             case 726935928: return new PolymorphBattlegroundsBehavior();
             case 729218845: return new WeightedEntryT_class_SplashCinematicInfo();
@@ -738,6 +743,7 @@ public static partial class TypeCache {
             case 767522421: return new GoldAmountTemplate();
             case 767808974: return new EffectCinematicAction();
             case 769577082: return new ClientCameraCutCinematicAction();
+            case 770633019: return new FurnitureEssenceLootInfo();
             case 771551630: return new PolymorphEffectInfo();
             case 772185668: return new RateMyStitchOption();
             case 772937500: return new ObstacleCoursePendulumBehavior();
@@ -749,9 +755,11 @@ public static partial class TypeCache {
             case 777060197: return new GardeningShedBehaviorBase();
             case 778972366: return new WizDisableItemStatEffectTemplate();
             case 779748765: return new ControlMultiLineEdit();
+            case 780479981: return new GuildMuseumCuratorBehavior();
             case 780639017: return new AdvPvPLeaderboardEntry();
             case 781471912: return new AmbientSoundBehavior();
             case 781595162: return new ChatHistory();
+            case 782690799: return new GuildMuseumCuratorBehaviorBase();
             case 783298687: return new DerbyTerrainEffect();
             case 785208611: return new ContainerEffectInfo();
             case 785304851: return new BattleCardShopOption();
@@ -1207,6 +1215,7 @@ public static partial class TypeCache {
             case 1192136481: return new TargetCritHit();
             case 1192545614: return new CrownShopCategoryMenu();
             case 1193058637: return new MagicSchoolTemplate();
+            case 1193089785: return new GuildMuseumArtifactInfo();
             case 1196545820: return new WizGameStats();
             case 1197475757: return new SG_GamePower();
             case 1200596153: return new RenderBehavior();
@@ -1635,6 +1644,7 @@ public static partial class TypeCache {
             case 1675664000: return new StateEffectTemplate();
             case 1676066464: return new SpeedEffectTemplate();
             case 1676576547: return new ContainerEffect();
+            case 1676673342: return new LunariAmountTemplate();
             case 1677116766: return new SpellDataList();
             case 1678010558: return new SG_GameAction_DetonateBlock();
             case 1678778163: return new ClientMagicSchoolBehavior();
@@ -1723,6 +1733,7 @@ public static partial class TypeCache {
             case 1771496990: return new ColorPickerSWF();
             case 1772012586: return new PvPStatueBehavior();
             case 1774565521: return new CinematicEventInfo();
+            case 1777522679: return new GuildMuseumGalleryInfo();
             case 1778176712: return new TextureRemapBehaviorTemplate();
             case 1778533046: return new ParticipantPipData();
             case 1780966363: return new DdWinAnimMoveMob();
@@ -1971,6 +1982,7 @@ public static partial class TypeCache {
             case 2036045780: return new ReqEnergy();
             case 2038438372: return new AddMatchUpdate();
             case 2040533707: return new PlayerStatueStitchBlob();
+            case 2041281159: return new GuildMuseumCuratorTemplate();
             case 2042186845: return new ClientShadowCreatureIdleCinematicAction();
             case 2044006224: return new ClientFloatingTextCinematicAction();
             case 2044969640: return new TemplateCache();
@@ -2112,6 +2124,11 @@ public static partial class TypeCache {
         [Property(1764750607, 7)] public ByteString m_vFX;
         [Property(1491092359, 7)] public Boolean m_vFXOverride;
         [Property(2307644996, 7)] public ByteString m_sound;
+    }
+
+    public class GuildMuseumCuratorOption : ServiceOptionBase {
+
+        public override uint GetHash() => 4897181;
     }
 
     public class SchoolPipPanel : Window {
@@ -4161,6 +4178,14 @@ public static partial class TypeCache {
     public class ClientClearHangingEffectsCinematicAction : ClearHangingEffectsCinematicAction {
 
         public override uint GetHash() => 231777453;
+    }
+
+    public class GuildMuseumExhibitInfo : PropertyClass {
+
+        public override uint GetHash() => 232528293;
+        [Property(2446900370, 8388615)] public ByteString m_displayName;
+        [Property(1542016824, 7)] public ByteString m_tagName;
+        [Property(768482721, 7)] public List<GuildMuseumArtifactInfo> m_artifactList;
     }
 
     public class DerbyModifyPetStat : DerbyEffect {
@@ -6683,6 +6708,13 @@ public static partial class TypeCache {
         [Property(2747792502, 31)] public List<ByteString> m_associatedWorlds;
     }
 
+    public class GuildGalleryEssenceList : PropertyClass {
+
+        public override uint GetHash() => 536812102;
+        [Property(786797381, 7)] public List<UInt32> m_templateList;
+        [Property(1555680540, 7)] public List<Int32> m_essenceList;
+    }
+
     public class ActorDialogListBase : PropertyClass {
 
         public override uint GetHash() => 538202429;
@@ -7647,6 +7679,14 @@ public static partial class TypeCache {
         [Property(636888858, 7)] public List<UInt32> m_removedPremiumPets;
     }
 
+    public class ReqGetExhibitState : ReqNumeric {
+
+        public override uint GetHash() => 626385677;
+        [Property(3310813907, 31)] public ByteString m_galleryWorld;
+        [Property(1832300681, 31)] public ByteString m_exhibitName;
+        [Property(1624748404, 31)] public Single m_testValue;
+    }
+
     public class TieredSpellGroup : PropertyClass {
 
         public override uint GetHash() => 626500077;
@@ -7961,6 +8001,7 @@ public static partial class TypeCache {
             LOOT_TYPE_JEWEL = 23,
             LOOT_TYPE_PVP_CURRENCY = 26,
             LOOT_TYPE_PVP_CURRENCY_BONUS = 27,
+            LOOT_TYPE_FURNITURE_ESSENCE = 28,
         }
     }
 
@@ -8344,6 +8385,15 @@ public static partial class TypeCache {
         [Property(2539658755, 7)] public List<SoundFilterSetting> m_filters;
     }
 
+    public class GuildMuseumDataList : PropertyClass {
+
+        public override uint GetHash() => 725294150;
+        [Property(2050801310, 7)] public List<UInt32> m_worldIDList;
+        [Property(1339737091, 7)] public List<UInt32> m_exhibitIDList;
+        [Property(1658565962, 7)] public List<UInt32> m_stateList;
+        [Property(1783968669, 7)] public List<UInt32> m_doorList;
+    }
+
     public class ClientPlayerStatueBehavior : PlayerStatueBehavior {
 
         public override uint GetHash() => 725947360;
@@ -8673,6 +8723,11 @@ public static partial class TypeCache {
         public override uint GetHash() => 769577082;
     }
 
+    public class FurnitureEssenceLootInfo : ItemLootInfo {
+
+        public override uint GetHash() => 770633019;
+    }
+
     public class PolymorphEffectInfo : GameEffectInfo {
 
         public override uint GetHash() => 771551630;
@@ -8733,6 +8788,11 @@ public static partial class TypeCache {
         public override uint GetHash() => 779748765;
     }
 
+    public class GuildMuseumCuratorBehavior : GuildMuseumCuratorBehaviorBase {
+
+        public override uint GetHash() => 780479981;
+    }
+
     public class AdvPvPLeaderboardEntry : PropertyClass {
 
         public override uint GetHash() => 780639017;
@@ -8756,6 +8816,11 @@ public static partial class TypeCache {
     public class ChatHistory : PropertyClass {
 
         public override uint GetHash() => 781595162;
+    }
+
+    public class GuildMuseumCuratorBehaviorBase : BehaviorInstance {
+
+        public override uint GetHash() => 782690799;
     }
 
     public class DerbyTerrainEffect : DerbyEffect {
@@ -12134,6 +12199,7 @@ public static partial class TypeCache {
             LOOT_TYPE_EVENT_CURRENCY_2 = 25,
             LOOT_TYPE_PVP_CURRENCY = 26,
             LOOT_TYPE_PVP_CURRENCY_BONUS = 27,
+            LOOT_TYPE_FURNITURE_ESSENCE = 28,
         }
     }
 
@@ -12927,6 +12993,21 @@ public static partial class TypeCache {
         [Property(7119994, 7)] public Int32 m_schoolIndex;
     }
 
+    public class GuildMuseumArtifactInfo : PropertyClass {
+
+        public override uint GetHash() => 1193089785;
+        [Property(1286746870, 33554439)] public UInt32 m_templateID;
+        [Property(1022300786, 7)] public UInt32 m_tier1;
+        [Property(1022300787, 7)] public UInt32 m_tier2;
+        [Property(1022300788, 7)] public UInt32 m_tier3;
+        [Property(1022300789, 7)] public UInt32 m_tier4;
+        [Property(3370041362, 8388615)] public ByteString m_overrideDisplayName;
+        [Property(1649374815, 8388615)] public ByteString m_description;
+        [Property(2091052609, 7)] public Boolean m_foundInCantripChests;
+        [Property(318979600, 7)] public List<UInt32> m_equivalentTemplateIDList;
+        [Property(3616295668, 8388615)] public ByteString m_overrideLocation;
+    }
+
     public class WizGameStats : PropertyClass {
 
         public override uint GetHash() => 1196545820;
@@ -13053,6 +13134,7 @@ public static partial class TypeCache {
         [Property(1240477285, 31)] public Int32 m_highestCharacterWorldOnAccount;
         [Property(369010242, 31)] public UInt32 m_schoolID;
         [Property(1740930910, 31)] public Int32 m_levelScaled;
+        [Property(3602481883, 31)] public ByteString m_currentZoneName;
     }
 
     public class SG_GamePower : PropertyClass {
@@ -14229,6 +14311,8 @@ public static partial class TypeCache {
         [Property(315454743, 7)] public Single m_offsetY;
         [Property(315454744, 7)] public Single m_offsetZ;
         [Property(1824218389, 7)] public ByteString m_locationName;
+        [Property(2893855128, 7)] public ByteString m_housingExtraZone;
+        [Property(3581372079, 7)] public RequirementList m_requirementList;
     }
 
     public class BracketRewardsPlaceMapping : PropertyClass {
@@ -16382,6 +16466,7 @@ public static partial class TypeCache {
         [Property(1263476723, 7)] public UInt32 m_positionXY;
         [Property(837995846, 7)] public Single m_positionZ;
         [Property(904654625, 7)] public Byte m_yaw;
+        [Property(693220060, 7)] public UInt32 m_extraData1;
     }
 
     public class RegisterActorCinematicAction : ActorCinematicAction {
@@ -16959,6 +17044,13 @@ public static partial class TypeCache {
     public class ContainerEffect : GameEffectBase {
 
         public override uint GetHash() => 1676576547;
+    }
+
+    public class LunariAmountTemplate : WizItemTemplate {
+
+        public override uint GetHash() => 1676673342;
+        [Property(474358393, 7)] public Int32 m_lunariAmount;
+        [Property(1764743064, 131079)] public ByteString m_nif;
     }
 
     public class SpellDataList : PropertyClass {
@@ -17682,6 +17774,18 @@ public static partial class TypeCache {
         [Property(2291276253, 7)] public ByteString m_event;
         [Property(2153420230, 7)] public ByteString m_newState;
         [Property(2654559709, 7)] public ByteString m_requiredState;
+    }
+
+    public class GuildMuseumGalleryInfo : PropertyClass {
+
+        public override uint GetHash() => 1777522679;
+        [Property(1846757476, 7)] public ByteString m_worldName;
+        [Property(1255097074, 33554439)] public UInt32 m_worldDoorTemplateID;
+        [Property(1013218162, 7)] public Int32 m_levelScaleLevel;
+        [Property(2919416423, 7)] public ByteString m_galleryZone;
+        [Property(2401157639, 7)] public List<GuildMuseumExhibitInfo> m_exhibitList;
+        [Property(2446900370, 8388615)] public ByteString m_displayName;
+        [Property(3553984419, 7)] public ByteString m_debugName;
     }
 
     public class TextureRemapBehaviorTemplate : BehaviorTemplate {
@@ -19770,6 +19874,13 @@ public static partial class TypeCache {
         [Property(691533780, 31)] public UInt32 m_emoteID;
     }
 
+    public class GuildMuseumCuratorTemplate : BehaviorTemplate {
+
+        public override uint GetHash() => 2041281159;
+        [Property(3310813907, 7)] public ByteString m_galleryWorld;
+        [Property(2399621352, 7)] public ByteString m_exhibit;
+    }
+
     public class ClientShadowCreatureIdleCinematicAction : ShadowCreatureIdleCinematicAction {
 
         public override uint GetHash() => 2042186845;
@@ -19963,6 +20074,12 @@ public static partial class TypeCache {
         [Property(2014197012, 7)] public Int32 m_enabledSeconds;
         [Property(952577945, 7)] public UInt32 m_linkedUnlockTemplateID;
         [Property(1670668641, 7)] public UInt32 m_cooldownSeconds;
+        [Property(2739145597, 7)] public ByteString m_overrideTitle;
+        [Property(2976683384, 7)] public ByteString m_overrideDonateTitle;
+        [Property(2732703966, 7)] public ByteString m_overrideChooseTitle;
+        [Property(2712952390, 7)] public ByteString m_overrideFinalStepText;
+        [Property(2575667685, 7)] public ByteString m_overrideNeedKeyText;
+        [Property(2105029547, 7)] public Boolean m_isExtractor;
     }
 
     public class SavedSetting : PropertyClass {
@@ -23202,10 +23319,46 @@ public static partial class TypeCache {
         PP_SunGobblerBall = 1522469440,
         PP_Sun_GreenGobbler = 1337690394,
         MNT_2P_AutumnTreant = 1063435527,
+        PP_AutumnTreant = 561077291,
         MNT_FlyingMonkey = 490807393,
         PP_BabyPlantMonster = 2076646587,
         MNT_PlantCreature_A = 1802823265,
-        PP_AutumnTreant = 561077291,
+        Transformation_BG_Fairy_Fire = 2065252898,
+        Transformation_BG_Krok_Myth = 277926564,
+        Transformation_BG_RatThief_Life = 1167758651,
+        Transformation_BG_Elf_Balance = 1628238937,
+        Transformation_BG_Colossus_Death = 184392004,
+        Transformation_FortressPod = 139738335,
+        P_Wombat_POLYMORPH = 1132264953,
+        PP_SharkWobbegong = 1994247222,
+        PP_ChineseNYDragon = 1126999021,
+        PP_JingleBellRock = 1076037919,
+        PP_Krok_Mummy_Myth = 438487583,
+        PP_Cyclops_Ice = 1476966187,
+        MNT_OutbackTruckB = 1813299577,
+        MNT_EvilSnowmanBall = 758818712,
+        MNT_ThanksgivingGobbler = 1760011910,
+        Guest_WL_Ghost_LostSoul_A_01 = 1224111704,
+        Guest_WL_Kangaroo_Drover_F_01 = 2025562931,
+        Guest_WL_Spider_WarriorMage_C_01 = 1296557888,
+        Guest_WL_Spider_WarriorMage_C_02 = 1430775616,
+        Guest_WL_Spider_WarriorMage_C_03 = 1564993344,
+        Guest_WL_Spider_WarriorMage_C_04 = 1699211072,
+        Guest_WL_Spider_WarriorMage_C_05 = 1833428800,
+        Guest_WL_Spider_WarriorMage_C_06 = 1967646528,
+        Guest_WL_Spider_WarriorMage_C_07 = 2101864256,
+        Guest_SKB_KR_Lightbane_A_100 = 837930677,
+        Guest_SKB_KR_Lightbane_A_160 = 837930669,
+        Guest_SKB_KR_Lightbane_A_50 = 1309555019,
+        Transformation_WL_Phantasmanian_DevilTemplate = 384891502,
+        MNT_2P_LeaflessTreant = 623083386,
+        PP_Minotaur_Ice = 700151737,
+        MNT_Scooter_G = 737125252,
+        Guest_WL_Frog_Owner_B_01 = 767864686,
+        MNT_SilentKnight = 646654812,
+        Guest_WL_TRex_Base_A_01 = 1842562033,
+        Guest_WL_TRex_Base_B_01 = 304921616,
+        PP_Groundhog = 108643243,
     }
 
     public enum eMountType {
