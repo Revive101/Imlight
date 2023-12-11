@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
 using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.Cryptography;
@@ -21,19 +22,30 @@ public static class CoreObjectFactory {
     private const string TemplateManifestName = "TemplateManifest.xml";
 
     private static readonly Dictionary<ulong, ByteString> s_coreTemplates = new();
+    private static bool s_hasLoaded = false;
 
+    /// <summary>
+    /// Loads the template manifest and populates the core templates.
+    /// </summary>
+    /// <returns>True if the loading is successful; otherwise, false.</returns>
     public static bool Load() {
+        if (s_hasLoaded) {
+            return true;
+        }
+        s_hasLoaded = true;
+
         // Load the TemplateManifest.xml and record the amount of time it takes.
         var timer = new Stopwatch();
         timer.Start();
+
         var manifest = ResourceManager.LoadDeserializedFile<TemplateManifest>(RootWadName, TemplateManifestName);
         if (manifest is null) {
             return false;
         }
 
-        foreach (var templateLocation in manifest.m_serializedTemplates) {
+        Parallel.ForEach(manifest.m_serializedTemplates, templateLocation => {
             if (templateLocation is null) {
-                continue;
+                return;
             }
 
             var id = templateLocation.m_id;
@@ -41,30 +53,44 @@ public static class CoreObjectFactory {
 
             // Drop the MSB from the id.
             id &= 0xFFFFFFFF;
-            s_coreTemplates.Add(id, loc);
-        }
+
+            lock (s_coreTemplates) {
+                s_coreTemplates.Add(id, loc);
+            }
+        });
 
         timer.Stop();
-        Logger.Information("TemplateManifest deserialize took {Em}ms.", Logger.Args(timer.ElapsedMilliseconds));
+        Logger.Debug("{0} {1} load took {Em}ms.",
+            Logger.Args(typeof(CoreObjectFactory), TemplateManifestName, timer.ElapsedMilliseconds));
 
         return true;
     }
 
     /// <summary>
-    /// Initializes a CoreObject by allocating its behaviors from a given Template ID.
+    /// Initializes the behaviors of a core object with the specified ID.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="coreObject"></param>
-    /// <param name="id"></param>
-    /// <returns></returns>
+    /// <typeparam name="T">The type of the core object.</typeparam>
+    /// <param name="coreObject">The core object to initialize.</param>
+    /// <param name="id">The ID of the core object.</param>
+    /// <returns>The initialized core object.</returns>
     public static T InitializeCoreObjectBehaviors<T>(T coreObject, ulong id) where T : CoreObject, new() {
         var template = GetCoreTemplate(id);
         if (template is null) {
-            Logger.Error("Could not initialize CoreObject from TemplateID {Tid}",
-                Logger.Args(coreObject.m_templateID));
+            Logger.Error("Could not initialize CoreObject from TemplateID {Tid}", Logger.Args(coreObject.m_templateID));
             return coreObject;
         }
 
+        return InitializeCoreObjectBehaviors(coreObject, template);
+    }
+
+    /// <summary>
+    /// Initializes the core object behaviors with the specified template.
+    /// </summary>
+    /// <typeparam name="T">The type of the core object.</typeparam>
+    /// <param name="coreObject">The core object to initialize.</param>
+    /// <param name="template">The core template containing behavior templates.</param>
+    /// <returns>The initialized core object.</returns>
+    public static T InitializeCoreObjectBehaviors<T>(T coreObject, CoreTemplate template) where T : CoreObject, new() {
         // The CoreTemplate contains a list of behavior templates. Using the name of the template,
         // we can find the instance of the behavior and add it to the CoreObject.
         coreObject.m_inactiveBehaviors = new List<BehaviorInstance>(template.m_behaviors.Count);
@@ -91,6 +117,13 @@ public static class CoreObjectFactory {
         return coreObject;
     }
 
+    /// <summary>
+    /// Finds an instance of a behavior in a CoreObject.
+    /// </summary>
+    /// <typeparam name="T">The type of behavior instance to find.</typeparam>
+    /// <param name="coreObj">The CoreObject to search in.</param>
+    /// <param name="behaviorInstance">The found behavior instance, if any.</param>
+    /// <returns><c>true</c> if a behavior instance is found; otherwise, <c>false</c>.</returns>
     public static bool FindBehaviorInstance<T>(CoreObject coreObj, out T behaviorInstance) where T : BehaviorInstance {
         foreach (var behavior in coreObj.m_inactiveBehaviors.OfType<T>()) {
             behaviorInstance = behavior;
@@ -101,37 +134,68 @@ public static class CoreObjectFactory {
         return false;
     }
 
-    public static CoreObject CreateObjectFromTemplate(CoreObjectInfo objInfo, CoreTemplate template, ulong templateId) {
-        var obj = CreateCoreObjectFromTemplate(template);
-        obj.m_templateID = templateId;
-        SetCoreObjectStatsFromInfo(obj, ref objInfo);
-
-        return obj;
-    }
-
-    public static CoreObject CreateObjectFromInfo(CoreObjectInfo objInfo, ulong templateId = 0) {
-        // If the template ID is 0, use the one from the object info.
-        if (templateId == 0) {
-            templateId = objInfo.m_templateID;
-        }
-
-        var template = GetCoreTemplate(templateId);
-
-        var obj = CreateObjectFromTemplate(objInfo, template, templateId);
-        return obj;
-    }
-
+    /// <summary>
+    /// Gets the CoreTemplate object with the specified ID.
+    /// </summary>
+    /// <param name="id">The ID of the CoreTemplate.</param>
+    /// <returns>The CoreTemplate object if found; otherwise, null.</returns>
     public static CoreTemplate GetCoreTemplate(ulong id) {
         if (!s_coreTemplates.TryGetValue(id, out var loc)) {
-            Logger.Debug("Could not find CoreTemplate by ID {Tid}", Logger.Args(id));
+            Logger.Error("Could not find CoreTemplate by ID {Tid}", Logger.Args(id));
             return null;
         }
 
         var template = ResourceManager.LoadDeserializedFile<CoreTemplate>("Root.wad", loc);
         if (template is null) {
-            Logger.Warning("Could not load CoreTemplate from {Loc}", Logger.Args(loc));
+            Logger.Error("Could not load CoreTemplate from {Loc}", Logger.Args(loc));
         }
         return template ?? null;
+    }
+
+    /// <summary>
+    /// Finalizes a CoreObject based on the provided CoreObjectInfo.
+    /// </summary>
+    /// <param name="objInfo">The CoreObjectInfo containing the necessary information for finalizing the CoreObject.</param>
+    /// <returns>The finalized CoreObject.</returns>
+    public static CoreObject FinalizeCoreObject(CoreObjectInfo objInfo) {
+        var templateId = objInfo.m_templateID;
+        var template = GetCoreTemplate(templateId);
+
+        return FinalizeCoreObject(objInfo, template);
+    }
+
+    /// <summary>
+    /// Finalizes a core object using the specified object information and template ID.
+    /// </summary>
+    /// <param name="objInfo">The object information.</param>
+    /// <param name="templateId">The template ID.</param>
+    /// <returns>The finalized core object.</returns>
+    public static CoreObject FinalizeCoreObject(CoreObjectInfo objInfo, ulong templateId) {
+        var template = GetCoreTemplate(templateId);
+
+        return FinalizeCoreObject(objInfo, template);
+    }
+
+    /// <summary>
+    /// Finalizes a CoreObject based on the provided CoreObjectInfo.
+    /// </summary>
+    /// <param name="objInfo">The CoreObjectInfo containing the necessary information for finalizing the CoreObject.</param>
+    /// <param name="template">The CoreTemplate containing the behavior templates.</param>
+    /// <returns>The finalized CoreObject.</returns>
+    public static CoreObject FinalizeCoreObject(CoreObjectInfo objInfo, CoreTemplate template) {
+        var obj = CreateCoreObjectFromTemplate(template);
+        obj.m_templateID = objInfo.m_templateID;
+
+        // Set the object properties.
+        obj.m_location = objInfo.m_location;
+        obj.m_orientation = objInfo.m_orientation;
+        obj.m_fScale = objInfo.m_fScale;
+        obj.m_globalID = RandomGen.GenerateGUID();
+        obj.m_permID = RandomGen.GenerateHash($"{obj.m_zoneTagID}{obj.m_templateID}{obj.m_location.X}");
+        obj.m_zoneTagID = StringHash.Compute(objInfo.m_zoneTag);
+        obj.m_debugName = objInfo.m_zoneTag;
+
+        return obj;
     }
 
     private static CoreObject CreateCoreObjectFromTemplate(CoreTemplate template) {
@@ -141,19 +205,5 @@ public static class CoreObjectFactory {
             WizGameObjectTemplate => new WizClientObject(),
             _ => new ClientObject()
         };
-    }
-
-    private static void SetCoreObjectStatsFromInfo(CoreObject obj, ref CoreObjectInfo info) {
-        // Generate a GUID ahead of time.
-        var guid = RandomGen.GenerateGUID();
-
-        // Set the object properties.
-        obj.m_location = info.m_location;
-        obj.m_orientation = info.m_orientation;
-        obj.m_fScale = info.m_fScale;
-        obj.m_globalID = guid;
-        obj.m_permID = RandomGen.GenerateHash($"{obj.m_zoneTagID}{obj.m_templateID}{obj.m_location.X}");
-        obj.m_zoneTagID = StringHash.Compute(info.m_zoneTag);
-        obj.m_debugName = info.m_zoneTag;
     }
 }

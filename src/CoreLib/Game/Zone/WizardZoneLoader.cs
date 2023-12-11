@@ -33,6 +33,7 @@ public static class WizardZoneLoader {
     private const string VolumeDataFileName = "volumes.xml";
     private const string TriggerDataFileName = "triggers.xml";
     private const string ResultCollectionName = "zone_triggers";
+    private const uint VolumeTemplateId = 1700;
     private static readonly object s_lockObject = new();
     private static readonly List<string> s_blacklistedObjectActives = new()
     {
@@ -253,7 +254,7 @@ public static class WizardZoneLoader {
             }
 
             var template = (GameObjectTemplate) CoreObjectFactory.GetCoreTemplate(objectInfo.m_templateID);
-            var newObject = CoreObjectFactory.CreateObjectFromTemplate(objectInfo, template, objectInfo.m_templateID);
+            var newObject = CoreObjectFactory.FinalizeCoreObject(objectInfo, template);
             if (newObject == null) {
                 continue;
             }
@@ -274,7 +275,7 @@ public static class WizardZoneLoader {
                 .Where(info => info != null)
                 .Where(info => info is CombatSigil)) {
             var template = (GameObjectTemplate) CoreObjectFactory.GetCoreTemplate(objectInfo.m_templateID);
-            var newObject = CoreObjectFactory.CreateObjectFromTemplate(objectInfo, template, objectInfo.m_templateID);
+            var newObject = CoreObjectFactory.FinalizeCoreObject(objectInfo, template);
             if (newObject == null) {
                 continue;
             }
@@ -322,7 +323,8 @@ public static class WizardZoneLoader {
         }
 
         foreach (var volume in s_zoneVolumes.m_volumes) {
-            var newObj = CoreObjectFactory.CreateObjectFromInfo(volume, volume.m_templateID);
+            // We have to use this explicit method because the volume has two `m_templateID` fields, but only the duplicate one is used.
+            var newObj = CoreObjectFactory.FinalizeCoreObject(volume, volume.m_templateID);
             if (newObj is null) {
                 continue;
             }
