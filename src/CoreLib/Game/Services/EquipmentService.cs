@@ -7,6 +7,7 @@ using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using System.Collections.Generic;
 using static Imlight.Common.Caches.TypeCache;
@@ -68,12 +69,18 @@ public class EquipmentService : MessageService {
 
     private void EquipItem(GAME_5_PROTOCOL.MSG_EQUIPITEM message) {
         var playerCharacter = GetActiveCharacter();
+        var account = GetActiveAccount();
         var itemId = message.ItemID;
 
         var item = playerCharacter.InventoryGetItem(itemId);
         if (item is null) {
-            // Todo: Log an infraction here.
-            Logger.Debug($"Player does not have the item in their inventory!");
+            var infractionText = $"Player tried to equip item {itemId} that they do not have in their inventory!";
+            account.AddInfraction(InfractionType.SuspiciousBehavior, infractionText);
+
+            Logger.Warning("Player tried to equip item {0} that they do not have in their inventory."
+                        + " This has been logged as a suspicious behavior infraction.",
+                Logger.Args(itemId));
+
             return;
         }
 
@@ -82,7 +89,7 @@ public class EquipmentService : MessageService {
         // Check to see if the player already has this item equipped. If they do, broadcast the removal of it.
         if (playerCharacter.EquipmentHasEquippedItem(itemId)) {
             var slot = playerCharacter.EquipmentGetItemSlotIndex(itemId);
-            SendPublicUnequipItem((byte) slot, itemId);
+            SendUnequipItem((byte) slot, itemId);
         }
 
         // This method will remove any items that are already equipped in the target slot.
@@ -92,26 +99,25 @@ public class EquipmentService : MessageService {
             return;
         }
 
-        // Confirm to the player that we've equipped their item server side.
-        SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPITEM() {
-            ItemID = message.ItemID,
-            SlotName = message.SlotName,
-            IsEquip = message.IsEquip
-        });
-
-        SendPublicEquipItem(item);
+        SendEquipItem(item, message.SlotName);
         ApplyItemEffectsToPlayer(template);
     }
 
     private void UnEquipItem(GAME_5_PROTOCOL.MSG_EQUIPITEM message) {
         var playerCharacter = GetActiveCharacter();
+        var account = GetActiveAccount();
         var itemId = message.ItemID;
 
         // Check to see if the player has this item equipped. If they don't, log an infraction.
         var item = playerCharacter.InventoryGetItem(itemId);
         if (item is null) {
-            // Todo: Log an infraction here.
-            Logger.Debug($"Player does not have the item in their inventory!");
+            var infractionText = $"Player tried to unequip item {itemId} that they do not have in their inventory!";
+            account.AddInfraction(InfractionType.SuspiciousBehavior, infractionText);
+
+            Logger.Warning("Player tried to unequip item {0} that they do not have in their inventory."
+                        + " This has been logged as a suspicious behavior infraction.",
+                Logger.Args(itemId));
+
             return;
         }
 
@@ -119,11 +125,18 @@ public class EquipmentService : MessageService {
         var slot = playerCharacter.EquipmentGetItemSlotIndex(itemId);
         var template = playerCharacter.EquipmentUnequipItem(itemId);
 
-        SendPublicUnequipItem((byte) slot, itemId);
+        SendUnequipItem((byte) slot, itemId);
         RemoveItemEffectsFromPlayer(template);
     }
 
-    private void SendPublicEquipItem(WizClientObjectItem item) {
+    private void SendEquipItem(WizClientObjectItem item, string slotName) {
+        // Confirm to the player that we've equipped their item server side.
+        SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPITEM() {
+            ItemID = item.m_globalID,
+            SlotName = slotName,
+            IsEquip = 1
+        });
+
         // Serialize item and broadcast equip action to other players.
         var publicItem = new WizardEquippedItemInfo() {
             m_itemID = (uint) item.m_templateID,
@@ -142,7 +155,7 @@ public class EquipmentService : MessageService {
         }, false);
     }
 
-    private void SendPublicUnequipItem(byte slot, ulong itemId) {
+    private void SendUnequipItem(byte slot, ulong itemId) {
         // This one goes to the client.
         SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPITEM() {
             ItemID = itemId,
