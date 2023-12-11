@@ -190,6 +190,7 @@ public class WizardZonePath : ReceiveProtocolDispatcher {
             throw new NullReferenceException();
         }
 
+        newObj = CoreObjectFactory.InitializeCoreObjectBehaviors(newObj, spawnInfo.m_templateID);
         newObj.m_location = spawnNode.m_location;
 
         var nodes = _nodes.Keys.ToArray();

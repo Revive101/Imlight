@@ -79,7 +79,6 @@ public static class CoreObjectFactory {
             var behaviorInstance = BehaviorCache.AllocateBehavior(behaviorHash);
 
             if (behaviorInstance is null) {
-                //Logger.Loggerger.Warning($"Could not find behavior instance [{behavior.m_behaviorName}] for CoreObject [{typeof(T)}]");
                 coreObject.m_inactiveBehaviors.Add(null);
                 continue;
             }
