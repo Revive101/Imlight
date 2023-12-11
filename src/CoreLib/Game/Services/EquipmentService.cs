@@ -161,9 +161,8 @@ public class EquipmentService : MessageService {
         var charObjId = GetActiveCoreObject().m_globalID;
         var effectSerializer = new CoreObjectSerializer()
                     .OnBehaviors(SerializerOptions.Behaviors.None)
-                    .OnPropertyMask(SerializerOptions.PropertyFlags.Public
-                              | SerializerOptions.PropertyFlags.Transmit
-                              | SerializerOptions.PropertyFlags.AuthorityTransmit);
+                    .OnPropertyMask(SerializerOptions.PropertyFlags.Transmit
+                                  | SerializerOptions.PropertyFlags.AuthorityTransmit);
 
         foreach (GameEffectInfo it in template.m_equipEffects) {
             int internalID = _effectInternalIDCounter++;
