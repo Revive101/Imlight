@@ -42,6 +42,7 @@ public class EquipmentService : MessageService {
 
     [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE))]
     private void ReceiveAttachComplete(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE message) {
+        return;
         // Send the player's equipment to the client.
         var wizard = GetActiveCharacter();
         var equipment = wizard.EquipmentGetAllItems();
@@ -78,7 +79,7 @@ public class EquipmentService : MessageService {
             account.AddInfraction(InfractionType.SuspiciousBehavior, infractionText);
 
             Logger.Warning("Player tried to equip item {0} that they do not have in their inventory."
-                        + " This has been logged as a suspicious behavior infraction.",
+                        + " This has been logged as suspicious behavior.",
                 Logger.Args(itemId));
 
             return;

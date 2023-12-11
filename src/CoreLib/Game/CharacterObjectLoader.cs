@@ -64,15 +64,16 @@ public static class CharacterObjectLoader {
     private static void SetEquipmentBehavior(WizClientObject clientObject, ref Wizard character) {
         if (CoreObjectFactory.FindBehaviorInstance<ClientWizEquipmentBehavior>(clientObject, out var equipmentBehavior)) {
             // Create a local copy of the inventory items.
-            var equipmentCopy = character.EquippedItems.ToList();
+            //var equipmentCopy = character.EquippedItems.ToList();
 
             equipmentBehavior.m_equipmentSets = new List<EquipmentSet>();
-            equipmentBehavior.m_slotList = equipmentCopy;
-            equipmentBehavior.m_itemList = character.InventoryItems
-                .Where(x => equipmentCopy.Any(y => y is not null && y.m_itemID == x.m_globalID))
-                .ToList()
-                .ConvertAll(item => (CoreObject) item);
             equipmentBehavior.m_publicItemList = CharacterHelper.GetEquipmentList(character).m_infoList;
+            // todo: below
+            //equipmentBehavior.m_slotList = equipmentCopy;
+            //equipmentBehavior.m_itemList = character.InventoryItems
+            //    .Where(x => equipmentCopy.Any(y => y is not null && y.m_itemID == x.m_globalID))
+            //    .ToList()
+            //    .ConvertAll(item => (CoreObject) item);
         }
         else {
             throw new Exception("Behavior ClientWizEquipmentBehavior not found!");

@@ -208,22 +208,23 @@ public class Wizard : IDisposable {
     }
 
     public WizItemTemplate EquipmentEquipItem(ulong itemId) {
-        // Check to see if we already have this item equipped.
+        // These validations also occur in the EquipmentService, where they are properly dealt with.
+        // They must also happen here, as the Wizard does not keep track of the equipment items, only their IDs.
         if (EquipmentHasEquippedItem(itemId)) {
             Logger.Warning("Tried to equip item with global id {0} that is already equipped.", Logger.Args(itemId));
             return null;
         }
 
+        // We're still dealing with just an item ID, so we need to get the actual item from the inventory.
         var item = InventoryGetItem(itemId);
         if (item is null) {
             Logger.Warning("Tried to equip item with global id {0} that does not exist in player inventory.", Logger.Args(itemId));
             return null;
         }
 
-        var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
-        var slot = GetAppropriateEquipmentSlotForItem();
+        var slot = GetEquipmentSlotForNewItem();
         if (slot == -1) {
-            Logger.Warning("Could not get slot where item {0} was equipped.", Logger.Args(itemId));
+            Logger.Warning("Could not get new slot for item {0}.", Logger.Args(itemId));
             return null;
         }
 
@@ -244,6 +245,7 @@ public class Wizard : IDisposable {
         var actualName = CharacterNameBank.GetEnglishName(NameIndices, WizardAvatar.m_eGender);
         Logger.Debug("{0} equips item in slot {1}.", Logger.Args(actualName, slot));
 
+        var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
         return template;
     }
 
@@ -318,7 +320,7 @@ public class Wizard : IDisposable {
         this.EquippedItems = slotList.ToArray();
     }
 
-    private int GetAppropriateEquipmentSlotForItem() {
+    private int GetEquipmentSlotForNewItem() {
         var slot = EquippedItems.ToList().FindIndex(i => i.m_itemID == 0);
         return slot;
     }

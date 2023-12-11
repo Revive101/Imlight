@@ -13,6 +13,11 @@ namespace Imlight.CoreLib.WizardData.Implementations;
 public static class CharacterHelper {
     public const float OrientationCompressionFactor = 0.708f;
 
+    /// <summary>
+    /// Creates a character from the character creation screen.
+    /// </summary>
+    /// <param name="creationInfo">The character creation information.</param>
+    /// <returns>The created Wizard character.</returns>
     public static Wizard CreateCharacterFromCreationInfo(WizardCharacterCreationInfo creationInfo) {
         // This method is used to create a character from the character creation screen.
         var school = (MagicSchoolEnum) creationInfo.m_schoolOfFocus;
@@ -28,6 +33,11 @@ public static class CharacterHelper {
         return character;
     }
 
+    /// <summary>
+    /// Gets the character creation info for an existing <see cref="Wizard"/>.
+    /// </summary>
+    /// <param name="character">The Wizard object.</param>
+    /// <returns>The WizardCharacterCreationInfo for the given Wizard.</returns>
     public static WizardCharacterCreationInfo GetLoginScreenInfo(Wizard character) {
         var creationInfo = new WizardCharacterCreationInfo {
             m_avatarBehavior = character.WizardAvatar,
@@ -62,14 +72,9 @@ public static class CharacterHelper {
             var itemId = equippedItem.m_itemID;
             var actualItem = character.InventoryGetItem(itemId)
                 ?? throw new Exception($"Could not find item with ID {itemId} in inventory.");
-            var characterSelectItem = new WizardEquippedItemInfo {
-                m_itemID = (uint) actualItem.m_templateID,
-                m_pattern = (Bui5) actualItem.m_pattern,
-                m_baseColor = (Bui5) actualItem.m_primaryColor,
-                m_trimColor = (Bui5) actualItem.m_secondaryColor,
-            };
+            var publicItem = ItemHelper.GetPublicItem(actualItem);
 
-            equipmentList.m_infoList.Add(characterSelectItem);
+            equipmentList.m_infoList.Add(publicItem);
         }
 
         return equipmentList;
