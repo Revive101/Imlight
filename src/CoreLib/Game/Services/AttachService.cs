@@ -76,7 +76,7 @@ internal class AttachService : MessageService {
         character.GameServerPort = (ushort) gameServer.Port;
 
         // Serialize the character's game object.
-        var charGameObject = CharacterObjectLoader.GetPlayerGameObject(ref character);
+        var charGameObject = WizardObjectLoader.GetPlayerGameObject(ref character);
         charGameObject.m_nMobileID = zoneDetails.MobileId; // Set the mobile id to the one given by the zone.
         character.GameObject = charGameObject;
         var localGameObjectData = new CoreObjectSerializer().Serialize(charGameObject);

@@ -14,6 +14,7 @@ using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.Common.Utilities;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Implementations;
+using Imlight.CoreLib.Game;
 using Newtonsoft.Json;
 using SharpDX;
 using static Imlight.Common.Caches.TypeCache;
@@ -221,6 +222,9 @@ public class Wizard : IDisposable {
         // The equipped items array is a fairly small binary, so we can just save the whole thing.
         CharacterCollection.UpdateCharacterEquipment(this);
 
+        // Update the actual behavior.
+        WizardObjectLoader.SetEquipmentBehavior(GameObject, this);
+
         // Debug log.
         var actualName = CharacterNameBank.GetEnglishName(NameIndices, WizardAvatar.m_eGender);
         Logger.Debug("{0} equips item in slot {1}.", Logger.Args(actualName, slot));
@@ -262,6 +266,9 @@ public class Wizard : IDisposable {
         // Persistent save.
         // The equipped items array is a fairly small binary, so we can just save the whole thing.
         CharacterCollection.UpdateCharacterEquipment(this);
+
+        // Update the actual behavior.
+        WizardObjectLoader.SetEquipmentBehavior(GameObject, this);
 
         // Debug log.
         var actualName = CharacterNameBank.GetEnglishName(NameIndices, WizardAvatar.m_eGender);

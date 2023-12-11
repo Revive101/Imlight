@@ -14,7 +14,7 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game;
 
-public static class CharacterObjectLoader {
+public static class WizardObjectLoader {
     public static WizClientObject GetPlayerGameObject(ref Wizard character) {
         var clientObject = CoreObjectFactory.InitializeCoreObjectBehaviors(new WizClientObject(), 1);
 
@@ -31,7 +31,7 @@ public static class CharacterObjectLoader {
         clientObject.m_gameStats = character.GameStats;
 
         SetWizardAvatarBehavior(clientObject, ref character);
-        SetEquipmentBehavior(clientObject, ref character);
+        SetEquipmentBehavior(clientObject, character);
         SetPlayerNameBehavior(clientObject, ref character);
         SetInventoryBehavior(clientObject, ref character);
         SetMagicSchoolBehavior(clientObject, ref character);
@@ -40,7 +40,7 @@ public static class CharacterObjectLoader {
         return clientObject;
     }
 
-    private static void SetWizardAvatarBehavior(WizClientObject clientObject, ref Wizard character) {
+    public static void SetWizardAvatarBehavior(WizClientObject clientObject, ref Wizard character) {
         if (CoreObjectFactory.FindBehaviorInstance<WizardCharacterBehavior>(clientObject, out var avatarBehavior)) {
             var idx = clientObject.m_inactiveBehaviors.IndexOf(avatarBehavior);
             clientObject.m_inactiveBehaviors[idx] = character.WizardAvatar;
@@ -50,7 +50,7 @@ public static class CharacterObjectLoader {
         }
     }
 
-    private static void SetInventoryBehavior(WizClientObject clientObject, ref Wizard character) {
+    public static void SetInventoryBehavior(WizClientObject clientObject, ref Wizard character) {
         if (CoreObjectFactory.FindBehaviorInstance<ClientWizInventoryBehavior>(clientObject, out var inventoryBehavior)) {
             // Create a local copy of the inventory items.
             var equipmentCopy = character.EquippedItems.ToList();
@@ -67,7 +67,7 @@ public static class CharacterObjectLoader {
         }
     }
 
-    private static void SetEquipmentBehavior(WizClientObject clientObject, ref Wizard character) {
+    public static void SetEquipmentBehavior(WizClientObject clientObject, Wizard character) {
         if (CoreObjectFactory.FindBehaviorInstance<ClientWizEquipmentBehavior>(clientObject, out var equipmentBehavior)) {
             // Create a local copy of the inventory items.
             var equipmentCopy = character.EquippedItems.ToList();
@@ -86,7 +86,16 @@ public static class CharacterObjectLoader {
         }
     }
 
-    private static void SetPlayerNameBehavior(WizClientObject clientObject, ref Wizard character) {
+    public static void SetGameEffectBehavior(WizClientObject clientObject, ref Wizard character) {
+        if (CoreObjectFactory.FindBehaviorInstance<BaseGameEffectBehavior>(clientObject, out var effectBehavior)) {
+            var effectContainer = new GameEffectContainer();
+        }
+        else {
+            throw new Exception("Behavior ClientGameEffectBehavior not found!");
+        }
+    }
+
+    public static void SetPlayerNameBehavior(WizClientObject clientObject, ref Wizard character) {
         if (CoreObjectFactory.FindBehaviorInstance<ClientWizPlayerNameBehavior>(clientObject, out var nameBehavior)) {
             nameBehavior.m_eGender = character.WizardAvatar.m_eGender;
             nameBehavior.m_eRace = character.WizardAvatar.m_eRace;
@@ -100,7 +109,7 @@ public static class CharacterObjectLoader {
         }
     }
 
-    private static void SetMagicSchoolBehavior(WizClientObject clientObject, ref Wizard character) {
+    public static void SetMagicSchoolBehavior(WizClientObject clientObject, ref Wizard character) {
         if (CoreObjectFactory.FindBehaviorInstance<ClientMagicSchoolBehavior>(clientObject, out var schoolBehavior)) {
             schoolBehavior.m_equippedTeleportEffect = character.GameStats.m_equippedTeleportEffect;
             schoolBehavior.m_experiencePoints = character.XpToNextLevel;
@@ -113,7 +122,7 @@ public static class CharacterObjectLoader {
         }
     }
 
-    private static void SetSpellbookBehavior(WizClientObject clientObject, ref Wizard character) {
+    public static void SetSpellbookBehavior(WizClientObject clientObject, ref Wizard character) {
         if (CoreObjectFactory.FindBehaviorInstance<ClientSpellbookBehavior>(clientObject, out var spellbookBehavior)) {
             spellbookBehavior.m_spellIDList = new List<SpellIDTracker>();
         }
