@@ -163,12 +163,12 @@ public sealed class SERVER_100_PROTOCOL : IServerProtocol
         public WideByteString CommandText;
         public IActorRef ActorRef;
         public CoreObject CoreObject;
-        public Wizard PlayerCharacter;
+        public Wizard Wizard;
         public Account Account;
         public IActorRef ZoneActor;
         public IActorRef ServerActor;
         public Account SelectedAccount;
-        public Wizard SelectedCharacter;
+        public Wizard SelectedWizard;
     }
 
     public class MSG_COMMANDRSP : IServerMessage

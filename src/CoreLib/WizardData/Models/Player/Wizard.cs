@@ -112,14 +112,14 @@ public class Wizard : IDisposable {
         this.Location = loc;
 
         // Persistent save.
-        CharacterCollection.UpdateCharacterLocation(this, loc, Orientation.Z);
+        WizardCollection.UpdateCharacterLocation(this, loc, Orientation.Z);
     }
 
     public void SetPersistentOrientation(byte direction) {
         this.Orientation = new Vector3(0, 0, direction * OrientationCompressionFactor);
 
         // Persistent save.
-        CharacterCollection.UpdateCharacterLocation(this, Location, Orientation.Z);
+        WizardCollection.UpdateCharacterLocation(this, Location, Orientation.Z);
     }
 
     public void SetZone(string zone, string zoneDisplayName) {
@@ -127,7 +127,7 @@ public class Wizard : IDisposable {
         this.ZoneDisplayName = zoneDisplayName;
 
         // Persistent save.
-        CharacterCollection.UpdateCharacterZone(this, zone, zoneDisplayName);
+        WizardCollection.UpdateCharacterZone(this, zone, zoneDisplayName);
     }
 
     public bool InventoryAddItem(WizClientObjectItem item) {
@@ -220,7 +220,7 @@ public class Wizard : IDisposable {
 
         // Persistent save.
         // The equipped items array is a fairly small binary, so we can just save the whole thing.
-        CharacterCollection.UpdateCharacterEquipment(this);
+        WizardCollection.UpdateCharacterEquipment(this);
 
         // Update the actual behavior.
         WizardObjectLoader.SetEquipmentBehavior(GameObject, this);
@@ -265,7 +265,7 @@ public class Wizard : IDisposable {
 
         // Persistent save.
         // The equipped items array is a fairly small binary, so we can just save the whole thing.
-        CharacterCollection.UpdateCharacterEquipment(this);
+        WizardCollection.UpdateCharacterEquipment(this);
 
         // Update the actual behavior.
         WizardObjectLoader.SetEquipmentBehavior(GameObject, this);
@@ -309,7 +309,7 @@ public class Wizard : IDisposable {
     public void Dispose() {
         // If this object is being disposed, the player probably left the server.
         // Save the character's location to the database.
-        CharacterCollection.UpdateCharacterLocation(this, Location, Orientation.Z);
+        WizardCollection.UpdateCharacterLocation(this, Location, Orientation.Z);
     }
 
     private void InitializeDefaultInventory() {

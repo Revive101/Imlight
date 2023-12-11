@@ -172,8 +172,8 @@ internal class AttachService : MessageService {
     }
 
     private void SetCharacterInternally(Wizard character) {
-        TellOtherServices(new CHARACTER_103_PROTOCOL.MSG_SETACTIVECHARACTER {
-            Character = character
+        TellOtherServices(new CHARACTER_103_PROTOCOL.MSG_SETACTIVEWIZARD {
+            Wizard = character
         });
     }
 }

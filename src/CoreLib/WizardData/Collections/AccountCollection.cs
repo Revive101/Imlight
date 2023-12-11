@@ -36,7 +36,7 @@ public static class AccountCollection {
 
         // Foreach character in the account, add it to the database.
         foreach (var character in account.Characters) {
-            CharacterCollection.AddCharacter(character);
+            WizardCollection.AddCharacter(character);
         }
 
         session.Store(account);
@@ -65,7 +65,7 @@ public static class AccountCollection {
 
         // Delete the characters.
         foreach (var characterId in account.CharacterIds) {
-            CharacterCollection.DeleteCharacter(characterId);
+            WizardCollection.DeleteCharacter(characterId);
         }
 
         // Delete the account.
@@ -92,7 +92,7 @@ public static class AccountCollection {
         }
 
         // Load the characters.
-        var characters = session.Query<Wizard>(collectionName: CharacterCollection.CollectionName)
+        var characters = session.Query<Wizard>(collectionName: WizardCollection.CollectionName)
             .Where(c => c.AccountId == id)
             .ToList();
         account.Characters = characters;
@@ -132,7 +132,7 @@ public static class AccountCollection {
         }
 
         // Load the characters if the account is not null.
-        var characters = session.Query<Wizard>(collectionName: CharacterCollection.CollectionName)
+        var characters = session.Query<Wizard>(collectionName: WizardCollection.CollectionName)
             .Where(c => c.AccountId == account.AccountId)
             .ToList();
         account.Characters = characters;

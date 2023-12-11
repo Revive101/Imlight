@@ -12,11 +12,11 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.WizardData.Implementations;
 
-public static class CharacterCollection {
-    public const string CollectionName = "Characters";
+public static class WizardCollection {
+    public const string CollectionName = "Wizards";
     private static readonly IDocumentStore s_store;
 
-    static CharacterCollection() {
+    static WizardCollection() {
         s_store = PlayerDatabase.Instance.Store;
     }
 

@@ -59,7 +59,7 @@ internal class CharacterService : MessageService {
 
             // If we had no problems deleting the character from the account, delete the character from the database.
             if (deletedCharacter) {
-                var deletedCharacterFromCollection = CharacterCollection
+                var deletedCharacterFromCollection = WizardCollection
                     .DeleteCharacter(message.CharID);
                 var deletedCharacterFromAccount = AccountCollection
                     .DeleteCharacterFromAccount(account.AccountId, message.CharID);

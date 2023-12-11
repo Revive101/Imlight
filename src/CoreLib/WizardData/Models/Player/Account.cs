@@ -78,7 +78,7 @@ public class Account {
         this.Characters.Add(character);
 
         // Save the character persistently.
-        var savedCharacterToCollection = CharacterCollection
+        var savedCharacterToCollection = WizardCollection
             .AddCharacter(character);
         var savedCharacterToAccount = AccountCollection
             .AddCharacterToAccount(AccountId, character.CharId);

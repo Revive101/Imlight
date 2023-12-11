@@ -41,8 +41,8 @@ public class ChatService : MessageService {
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_REQUESTRADIALCHAT))]
     private void ReceiveRequestRadialChat(GAME_5_PROTOCOL.MSG_REQUESTRADIALCHAT message) {
-        var charObj = GetActiveCoreObject();
-        var character = GetActiveCharacter();
+        var charObj = GetActiveGameObject();
+        var wizard = GetActiveWizard();
         var account = GetActiveAccount();
 
         if (account.InfractionHistory.IsCurrentlyMuted) {
@@ -51,8 +51,8 @@ public class ChatService : MessageService {
         }
 
         // Craft the wizard name.
-        var nameIndices = character.NameIndices;
-        var gender = character.WizardAvatar.m_eGender;
+        var nameIndices = wizard.NameIndices;
+        var gender = wizard.WizardAvatar.m_eGender;
         var sourceName = CraftSourceNameFromIndices(nameIndices, gender);
 
         var cleanedMessage = CleanMessageTrash(message.Message);
@@ -63,15 +63,15 @@ public class ChatService : MessageService {
             return;
         }
 
-        var actualCharacterName = CharacterNameBank.GetEnglishName(character.NameIndices, character.WizardAvatar.m_eGender);
+        var actualCharacterName = CharacterNameBank.GetEnglishName(wizard.NameIndices, wizard.WizardAvatar.m_eGender);
         Logger.Information("{0} says in chat: {1}", Logger.Args(actualCharacterName, cleanedMessage));
 
         // Add the chat log to the database.
         var chatLog = new ChatLog() {
             TimeStamp = DateTime.UtcNow,
-            ZoneName = character.Zone,
+            ZoneName = wizard.Zone,
             CharacterId = charObj.m_globalID,
-            AccountId = character.AccountId,
+            AccountId = wizard.AccountId,
             Message = cleanedMessage,
         };
         ChatLogCollection.AddChatLog(chatLog);
@@ -94,8 +94,8 @@ public class ChatService : MessageService {
             return;
         }
 
-        var globalId = GetActiveCoreObject().m_globalID;
-        var character = GetActiveCharacter();
+        var globalId = GetActiveGameObject().m_globalID;
+        var character = GetActiveWizard();
         var nameIndices = character.NameIndices;
         var gender = character.WizardAvatar.m_eGender;
         var src = CraftSourceNameFromIndices(nameIndices, gender);
@@ -130,7 +130,7 @@ public class ChatService : MessageService {
         // it using the character ID.
         var id = message.BuddyID;
 
-        var persistentCharacter = CharacterCollection.GetCharacter(id);
+        var persistentCharacter = WizardCollection.GetCharacter(id);
         if (persistentCharacter is null) {
             return;
         }
@@ -180,19 +180,19 @@ public class ChatService : MessageService {
     }
 
     private void SendChatCommand(string input) {
-        var charObj = GetActiveCoreObject();
-        var character = GetActiveCharacter();
+        var charObj = GetActiveGameObject();
+        var character = GetActiveWizard();
         var account = GetActiveAccount();
 
         _dispatcherRef.Tell(new SERVER_100_PROTOCOL.MSG_COMMAND() {
             CommandText = input[1..], // Remove the command prefix
             ActorRef = SessionActor.ActorRef,
             CoreObject = charObj,
-            PlayerCharacter = character,
+            Wizard = character,
             Account = account,
             ZoneActor = SessionActor.GetZoneActor(),
             ServerActor = SessionActor.ServerRef,
-            SelectedCharacter = _selectedCharacter,
+            SelectedWizard = _selectedCharacter,
             SelectedAccount = _selectedAccount
         });
     }

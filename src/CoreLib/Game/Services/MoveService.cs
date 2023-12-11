@@ -36,7 +36,7 @@ internal class MoveService : MessageService {
         var z = unchecked((short) message.LocationZ) * 4.0f;
         var direction = (float) (message.Direction * Math.PI * 2 / 250);
 
-        var activeCharacterObject = GetActiveCoreObject();
+        var activeCharacterObject = GetActiveGameObject();
         activeCharacterObject.m_location = new Vector3(x, y, z);
         activeCharacterObject.m_orientation = new Vector3(0, 0, direction);
 
@@ -47,7 +47,7 @@ internal class MoveService : MessageService {
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVESTATE))]
     private void ReceiveClientMoveState(GAME_5_PROTOCOL.MSG_CLIENTMOVESTATE message) {
-        var globalId = GetActiveCoreObject().m_globalID;
+        var globalId = GetActiveGameObject().m_globalID;
 
         var stateMsg = new GAME_5_PROTOCOL.MSG_MOVESTATE {
             NewState = message.NewState,
@@ -64,7 +64,7 @@ internal class MoveService : MessageService {
 
     private void BroadcastClientMove(GAME_5_PROTOCOL.MSG_CLIENTMOVE message) {
         // Query the mobile ID from the CharacterService
-        var mobileId = GetActiveCoreObject().m_nMobileID;
+        var mobileId = GetActiveGameObject().m_nMobileID;
 
         var serverMoveMsg = new GAME_5_PROTOCOL.MSG_SERVERMOVE {
             LocationX = message.LocationX,
@@ -77,7 +77,7 @@ internal class MoveService : MessageService {
     }
 
     private void SendZoneInteractionFishRequest() {
-        var characterObj = GetActiveCoreObject();
+        var characterObj = GetActiveGameObject();
         var msg = new ZONE_102_PROTOCOL.MSG_FISHINTERACTION() {
             CoreObject = characterObj,
             Suspect = SessionActor.ActorRef

@@ -98,7 +98,7 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
     private void ReceiveCommand(SERVER_100_PROTOCOL.MSG_COMMAND message) {
         // Setup context before parsing any commands.
         var receiverContext = message.ActorRef;
-        var characterContext = message.PlayerCharacter;
+        var characterContext = message.Wizard;
         var accountContext = message.Account;
         var objectContext = message.CoreObject;
         var context = new CommandContext() {
@@ -108,7 +108,7 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
             Account = accountContext,
             ZoneActor = message.ZoneActor,
             ServerActor = message.ServerActor,
-            SelectedCharacter = message.SelectedCharacter,
+            SelectedCharacter = message.SelectedWizard,
             SelectedAccount = message.SelectedAccount
         };
 

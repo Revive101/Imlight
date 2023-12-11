@@ -6,7 +6,6 @@ using Imlight.Common.ObjectProperty;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
-using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System;
@@ -45,7 +44,7 @@ public class EquipmentService : MessageService {
     private void ReceiveAttachComplete(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE message) {
         return;
         // Send the player's equipment to the client.
-        var wizard = GetActiveCharacter();
+        var wizard = GetActiveWizard();
         var equipment = wizard.EquipmentGetAllItems();
         foreach (var piece in equipment) {
             var pieceObj = piece.Item1;
@@ -70,11 +69,11 @@ public class EquipmentService : MessageService {
     }
 
     private void EquipItem(GAME_5_PROTOCOL.MSG_EQUIPITEM message) {
-        var playerCharacter = GetActiveCharacter();
+        var wizard = GetActiveWizard();
         var account = GetActiveAccount();
         var itemId = message.ItemID;
 
-        var item = playerCharacter.InventoryGetItem(itemId);
+        var item = wizard.InventoryGetItem(itemId);
         if (item is null) {
             var infractionText = $"Player tried to equip item {itemId} that they do not have in their inventory!";
             account.AddInfraction(InfractionType.SuspiciousBehavior, infractionText);
@@ -89,12 +88,12 @@ public class EquipmentService : MessageService {
         // Todo: Check if player meets requirements to equip item. If not, log an infraction.
 
         // Check to see if the player already has this item equipped. If they do, broadcast the removal of it.
-        if (playerCharacter.EquipmentHasEquippedItem(itemId)) {
-            var slot = playerCharacter.EquipmentGetItemSlotIndex(itemId);
+        if (wizard.EquipmentHasEquippedItem(itemId)) {
+            var slot = wizard.EquipmentGetItemSlotIndex(itemId);
             SendUnequipItem(slot, itemId);
         }
 
-        playerCharacter.EquipmentEquipItem(itemId);
+        wizard.EquipmentEquipItem(itemId);
 
         var template = ItemHelper.GetItemTemplate(item);
 
@@ -103,7 +102,7 @@ public class EquipmentService : MessageService {
     }
 
     private void UnEquipItem(GAME_5_PROTOCOL.MSG_EQUIPITEM message) {
-        var playerCharacter = GetActiveCharacter();
+        var playerCharacter = GetActiveWizard();
         var account = GetActiveAccount();
         var itemId = message.ItemID;
 
@@ -155,7 +154,7 @@ public class EquipmentService : MessageService {
                     .OnPropertyMask((SerializerOptions.PropertyFlags) 1);
         var data = serializer.Serialize(publicItem);
         ZoneBroadcast(new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM() {
-            GlobalID = GetActiveCoreObject().m_globalID,
+            GlobalID = GetActiveGameObject().m_globalID,
             SerializedInfo = data
         }, false);
     }
@@ -170,13 +169,13 @@ public class EquipmentService : MessageService {
 
         // This one goes to the zone.
         ZoneBroadcast(new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICUNEQUIPITEM() {
-            GlobalID = GetActiveCoreObject().m_globalID,
+            GlobalID = GetActiveGameObject().m_globalID,
             IndexToRemove = slot
         }, false);
     }
 
     private void ApplyItemEffectsToPlayer(WizItemTemplate template) {
-        var charObjId = GetActiveCoreObject().m_globalID;
+        var charObjId = GetActiveGameObject().m_globalID;
         var effectSerializer = new CoreObjectSerializer()
                     .OnBehaviors(SerializerOptions.Behaviors.None)
                     .OnPropertyMask(SerializerOptions.PropertyFlags.Transmit
@@ -301,7 +300,7 @@ public class EquipmentService : MessageService {
 
     private void RemoveItemEffectsFromPlayer(WizItemTemplate template) {
         int internalID = 0;
-        var charObjId = GetActiveCoreObject().m_globalID;
+        var charObjId = GetActiveGameObject().m_globalID;
 
         foreach (GameEffectInfo it in template.m_equipEffects) {
 

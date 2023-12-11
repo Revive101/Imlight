@@ -11,18 +11,18 @@ using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Services;
 
-public class CharacterService : MessageService {
-    private Wizard _activeCharacter;
-    private TypeCache.CoreObject _activeCharacterObject;
+public class WizardService : MessageService {
+    private Wizard _activeWizard;
+    private TypeCache.CoreObject _activeWizardGameObject;
 
-    public CharacterService(SessionActor sessionActor) : base(sessionActor) { }
+    public WizardService(SessionActor sessionActor) : base(sessionActor) { }
 
     protected static Props Props(SessionActor parentActor) {
-        return Akka.Actor.Props.Create(() => new CharacterService(parentActor));
+        return Akka.Actor.Props.Create(() => new WizardService(parentActor));
     }
 
     protected override void OnDispose() {
-        ((System.IDisposable) _activeCharacter).Dispose();
+        ((System.IDisposable) _activeWizard).Dispose();
         base.OnDispose();
     }
 
@@ -30,19 +30,19 @@ public class CharacterService : MessageService {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP))]
     private void ReceiveZoneAddPlayerResponse(ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP message) {
-        _activeCharacterObject = message.PlayerObject;
+        _activeWizardGameObject = message.WizardGameObject;
     }
 
-    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_SETACTIVECHARACTER))]
-    private void ReceiveSetActiveCharacter(CHARACTER_103_PROTOCOL.MSG_SETACTIVECHARACTER message) {
-        _activeCharacter = message.Character;
+    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_SETACTIVEWIZARD))]
+    private void ReceiveSetActiveWizard(CHARACTER_103_PROTOCOL.MSG_SETACTIVEWIZARD message) {
+        _activeWizard = message.Wizard;
     }
 
-    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER))]
-    private void ReceiveQueryActiveCharacter(CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER message) {
+    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD))]
+    private void ReceiveQueryActiveWIzard(CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD message) {
         Sender.Tell(new CHARACTER_103_PROTOCOL.MSG_CHARACTER() {
-            Character = _activeCharacter,
-            CharacterObject = _activeCharacterObject
+            Wizard = _activeWizard,
+            WizardGameObject = _activeWizardGameObject
         });
     }
 
@@ -60,8 +60,8 @@ public class CharacterService : MessageService {
             unchecked((short) message.LocationY * 4),
             unchecked((short) message.LocationZ * 4));
 
-        _activeCharacter.SetCachedLocation(position);
-        _activeCharacter.SetCachedOrientation(message.Direction);
+        _activeWizard.SetCachedLocation(position);
+        _activeWizard.SetCachedOrientation(message.Direction);
     }
 
     #endregion

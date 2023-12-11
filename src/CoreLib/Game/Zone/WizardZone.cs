@@ -266,7 +266,7 @@ public class WizardZone : ReceiveProtocolDispatcher {
 
         // Inform the player that they've been successfully added to the zone. We want to reply to the callee
         // and any services that may be waiting for this reply.
-        var response = new ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP { PlayerObject = message.PlayerObject };
+        var response = new ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP { WizardGameObject = message.PlayerObject };
         Sender.Tell(response);
         message.Player.Tell(response);
 
