@@ -1,4 +1,6 @@
+using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty.PropertyReflection;
+using Imlight.CoreLib.Shared.Resources;
 using System;
 using static Imlight.Common.Caches.TypeCache;
 
@@ -20,5 +22,37 @@ internal static class ItemHelper {
         };
 
         return publicItem;
+    }
+
+    /// <summary>
+    /// Gets the item template for a given <see cref="WizClientObjectItem"/>.
+    /// </summary>
+    /// <param name="item">The item in question.</param>
+    /// <returns>The template for the given item. Null, if it wasn't found.</returns>
+    internal static WizItemTemplate GetItemTemplate(WizClientObjectItem item) {
+        var template = CoreObjectFactory.GetCoreTemplate(item.m_templateID);
+        return (WizItemTemplate) template;
+    }
+
+    /// <summary>
+    /// Gets the slot hash of a WizClientObjectItem.
+    /// </summary>
+    /// <param name="item">The WizClientObjectItem to get the slot hash from.</param>
+    /// <returns>The slot hash of the item, or 0 if the item template is null or the adjective list count is less than 2.</returns>
+    internal static uint GetItemSlotHash(WizClientObjectItem item) {
+        var template = GetItemTemplate(item);
+        if (template == null) {
+            return 0;
+        }
+
+        // Get the slot hash from the item template.
+        if (template.m_adjectiveList.Count < 2) {
+            return 0;
+        }
+        else {
+            // The second adjective is the slot name.
+            var slotName = template.m_adjectiveList[1];
+            return StringHash.Compute(slotName);
+        }
     }
 }

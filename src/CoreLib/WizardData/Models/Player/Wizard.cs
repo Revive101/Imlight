@@ -184,12 +184,94 @@ public class Wizard : IDisposable {
         return InventoryItems.Find(i => i.m_globalID == itemId);
     }
 
-    public bool EquipmentHasEquippedItem(ulong itemId) {
-        return EquippedItems.Any(i => i.m_itemID == itemId);
+    public bool EquipmentEquipItem(ulong itemId) {
+        // These validations also occur in the EquipmentService, where they are properly dealt with.
+        // They must also happen here, as the Wizard does not keep track of the equipment items, only their IDs.
+        if (EquipmentHasEquippedItem(itemId)) {
+            Logger.Warning("Tried to equip item with global id {0} that is already equipped.", Logger.Args(itemId));
+            return false;
+        }
+
+        // We're still dealing with just an item ID, so we need to get the actual item from the inventory.
+        var item = InventoryGetItem(itemId);
+        if (item is null) {
+            Logger.Warning("Tried to equip item with global id {0} that does not exist in player inventory.", Logger.Args(itemId));
+            return false;
+        }
+
+        // Get the slot name hash of the item.
+        var slotNameHash = ItemHelper.GetItemSlotHash(item);
+        if (slotNameHash == 0) {
+            Logger.Warning("Tried to equip item with global id {0} that does not have a slot name adjective.", Logger.Args(itemId));
+            return false;
+        }
+
+        // Get the slot info for the slot we want to place this item in.
+        var slot = GetEquipmentSlotInfo(slotNameHash);
+        if (slot is null) {
+            Logger.Warning("Could not get slot info for item {0}.", Logger.Args(itemId));
+            return false;
+        }
+
+        // Clear the slot and set.
+        ClearEquipmentSlot(slotNameHash);
+        SetEquipmentSlot(slotNameHash, itemId);
+
+        // Persistent save.
+        // The equipped items array is a fairly small binary, so we can just save the whole thing.
+        CharacterCollection.UpdateCharacterEquipment(this);
+
+        // Debug log.
+        var actualName = CharacterNameBank.GetEnglishName(NameIndices, WizardAvatar.m_eGender);
+        Logger.Debug("{0} equips item in slot {1}.", Logger.Args(actualName, slot));
+
+        return true;
     }
 
-    public int EquipmentGetItemSlotIndex(ulong itemId) {
-        return EquippedItems.ToList().FindIndex(i => i.m_itemID == itemId);
+    public bool EquipmentUnequipItem(ulong itemId) {
+        // These validations also occur in the EquipmentService, where they are properly dealt with.
+        // They must also happen here, as the Wizard does not keep track of the equipment items, only their IDs.
+        if (!EquipmentHasEquippedItem(itemId)) {
+            Logger.Warning("Tried to unequip item with global id {0} that is not equipped.", Logger.Args(itemId));
+            return false;
+        }
+
+        // We're still dealing with just an item ID, so we need to get the actual item from the inventory.
+        var item = InventoryGetItem(itemId);
+        if (item is null) {
+            Logger.Warning("Tried to equip item with global id {0} that does not exist in player inventory.", Logger.Args(itemId));
+            return false;
+        }
+
+        // Get the slot name hash of the item.
+        var slotNameHash = ItemHelper.GetItemSlotHash(item);
+        if (slotNameHash == 0) {
+            Logger.Warning("Tried to equip item with global id {0} that does not have a slot name adjective.", Logger.Args(itemId));
+            return false;
+        }
+
+        // Get the slot info for the slot we want to remove from.
+        var slot = GetEquipmentSlotInfo(slotNameHash);
+        if (slot is null) {
+            Logger.Warning("Could not get slot info for item {0}.", Logger.Args(itemId));
+            return false;
+        }
+
+        ClearEquipmentSlot(slotNameHash);
+
+        // Persistent save.
+        // The equipped items array is a fairly small binary, so we can just save the whole thing.
+        CharacterCollection.UpdateCharacterEquipment(this);
+
+        // Debug log.
+        var actualName = CharacterNameBank.GetEnglishName(NameIndices, WizardAvatar.m_eGender);
+        Logger.Debug("{0} unequips item in slot {1}.", Logger.Args(actualName, slot));
+
+        return true;
+    }
+
+    public bool EquipmentHasEquippedItem(ulong itemId) {
+        return EquippedItems.Any(i => i.m_itemID == itemId);
     }
 
     public IEnumerable<(WizClientObjectItem, WizItemTemplate)> EquipmentGetAllItems() {
@@ -207,75 +289,16 @@ public class Wizard : IDisposable {
         return items;
     }
 
-    public WizItemTemplate EquipmentEquipItem(ulong itemId) {
-        // These validations also occur in the EquipmentService, where they are properly dealt with.
-        // They must also happen here, as the Wizard does not keep track of the equipment items, only their IDs.
-        if (EquipmentHasEquippedItem(itemId)) {
-            Logger.Warning("Tried to equip item with global id {0} that is already equipped.", Logger.Args(itemId));
-            return null;
-        }
+    public byte EquipmentGetItemSlotIndex(ulong itemId) {
+        var equippedItemsWithIds = EquippedItems
+            .Where(i => i.m_itemID != 0)
+            .ToList();
 
-        // We're still dealing with just an item ID, so we need to get the actual item from the inventory.
-        var item = InventoryGetItem(itemId);
-        if (item is null) {
-            Logger.Warning("Tried to equip item with global id {0} that does not exist in player inventory.", Logger.Args(itemId));
-            return null;
-        }
+        int index = equippedItemsWithIds.FindIndex(i => i.m_itemID == (GID) itemId);
 
-        var slot = GetEquipmentSlotForNewItem();
-        if (slot == -1) {
-            Logger.Warning("Could not get new slot for item {0}.", Logger.Args(itemId));
-            return null;
-        }
-
-        // Unequip the item currently in that slot.
-        if (EquippedItems[slot].m_itemID != 0) {
-            RemoveItemInEquipmentSlot(slot);
-        }
-
-        // Set the item in the equipment list.
-        EquippedItems[slot].m_itemID = (GID) itemId;
-        EquippedItems[slot].m_itemSlotNameID = (uint) slot;
-
-        // Persistent save.
-        // The equipped items array is a fairly small binary, so we can just save the whole thing.
-        CharacterCollection.UpdateCharacterEquipment(this);
-
-        // Debug log.
-        var actualName = CharacterNameBank.GetEnglishName(NameIndices, WizardAvatar.m_eGender);
-        Logger.Debug("{0} equips item in slot {1}.", Logger.Args(actualName, slot));
-
-        var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
-        return template;
+        return (byte) index;
     }
 
-    public WizItemTemplate EquipmentUnequipItem(ulong itemId) {
-        // Get the index of the item in the equipment list.
-        var item = InventoryGetItem(itemId);
-        if (item is null) {
-            Logger.Warning("Tried to unequip item with global id {0} that does not exist in player inventory.", Logger.Args(itemId));
-            return null;
-        }
-
-        var slot = EquipmentGetItemSlotIndex(itemId);
-        if (slot == -1) {
-            Logger.Debug("Tried to unequip item with global id {0} that does not have a slot name adjective.", Logger.Args(itemId));
-            return null;
-        }
-
-        RemoveItemInEquipmentSlot(slot);
-
-        // Persistent save.
-        // The equipped items array is a fairly small binary, so we can just save the whole thing.
-        CharacterCollection.UpdateCharacterEquipment(this);
-
-        // Debug log.
-        var actualName = CharacterNameBank.GetEnglishName(NameIndices, WizardAvatar.m_eGender);
-        Logger.Debug("{0} unequips item in slot {1}.", Logger.Args(actualName, slot));
-
-        var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
-        return template;
-    }
 
     public void Dispose() {
         // If this object is being disposed, the player probably left the server.
@@ -311,41 +334,37 @@ public class Wizard : IDisposable {
         // There is a slot for every EquipmentSlot enum value.
         var slotList = new List<EquippedSlotInfo>();
         for (uint i = 0; i < Enum.GetValues(typeof(EquipmentSlot)).Length; i++) {
+            // Get the name of the slot.
+            var slotName = Enum.GetName(typeof(EquipmentSlot), i);
+
             slotList.Add(new EquippedSlotInfo() {
                 m_itemID = (GID) 0,
-                m_itemSlotNameID = 0
+                m_itemSlotNameID = StringHash.Compute(slotName)
             });
         }
 
         this.EquippedItems = slotList.ToArray();
     }
 
-    private int GetEquipmentSlotForNewItem() {
-        var slot = EquippedItems.ToList().FindIndex(i => i.m_itemID == 0);
-        return slot;
+    private EquippedSlotInfo GetEquipmentSlotInfo(uint slotNameHash) {
+        return EquippedItems.FirstOrDefault(i => i.m_itemSlotNameID == slotNameHash);
     }
 
-    private void RemoveItemInEquipmentSlot(int slot) {
-        // Zero-out item from slot list and move all items down to fill "empty" zero slots, should they exist.
-        var numEquippedItemsInSlots = EquippedItems.Count(item => item.m_itemID != 0);
-
-        if (slot < 0 || slot > numEquippedItemsInSlots) {
-            throw new Exception($"Tried to remove item in equipment slot {slot} that does not exist.");
+    private void ClearEquipmentSlot(uint slotNameHash) {
+        var slot = GetEquipmentSlotInfo(slotNameHash);
+        if (slot is null) {
+            throw new Exception($"Could not get slot info for slot name hash {slotNameHash}.");
         }
 
-        EquippedItems[slot].m_itemID = (GID) 0;
-        EquippedItems[slot].m_itemSlotNameID = 0;
+        slot.m_itemID = (GID) 0;
+    }
 
-        if (numEquippedItemsInSlots == 1) {
-            // There is only one item equipped, so we don't need to move anything down.
-            return;
+    private void SetEquipmentSlot(uint slotNameHash, ulong itemId) {
+        var slot = GetEquipmentSlotInfo(slotNameHash);
+        if (slot is null) {
+            throw new Exception($"Could not get slot info for slot name hash {slotNameHash}.");
         }
 
-        for (int i = slot; i < numEquippedItemsInSlots; i++) {
-            if (EquippedItems[i].m_itemID != 0) {
-                EquippedItems[i - 1].m_itemID = EquippedItems[i].m_itemID;
-                EquippedItems[i].m_itemID = (GID) 0;
-            }
-        }
+        slot.m_itemID = (GID) itemId;
     }
 }

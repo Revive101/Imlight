@@ -7,6 +7,7 @@ using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using System.Collections.Generic;
@@ -90,15 +91,12 @@ public class EquipmentService : MessageService {
         // Check to see if the player already has this item equipped. If they do, broadcast the removal of it.
         if (playerCharacter.EquipmentHasEquippedItem(itemId)) {
             var slot = playerCharacter.EquipmentGetItemSlotIndex(itemId);
-            SendUnequipItem((byte) slot, itemId);
+            SendUnequipItem(slot, itemId);
         }
 
-        // This method will remove any items that are already equipped in the target slot.
-        var template = playerCharacter.EquipmentEquipItem(itemId);
-        if (template is null) {
-            Logger.Debug($"EquipmentEquipItem returned null template!");
-            return;
-        }
+        playerCharacter.EquipmentEquipItem(itemId);
+
+        var template = ItemHelper.GetItemTemplate(item);
 
         SendEquipItem(item, message.SlotName);
         ApplyItemEffectsToPlayer(template);
@@ -122,11 +120,17 @@ public class EquipmentService : MessageService {
             return;
         }
 
-        // Get the slot index of the item we're unequipping.
         var slot = playerCharacter.EquipmentGetItemSlotIndex(itemId);
-        var template = playerCharacter.EquipmentUnequipItem(itemId);
 
-        SendUnequipItem((byte) slot, itemId);
+        var unequipSuccess = playerCharacter.EquipmentUnequipItem(itemId);
+        if (!unequipSuccess) {
+            Logger.Error("Unequip failed for item {0}!", Logger.Args(itemId));
+            return;
+        }
+
+        var template = ItemHelper.GetItemTemplate(item);
+
+        SendUnequipItem(slot, itemId);
         RemoveItemEffectsFromPlayer(template);
     }
 
