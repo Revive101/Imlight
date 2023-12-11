@@ -299,7 +299,6 @@ public class Wizard : IDisposable {
         return (byte) index;
     }
 
-
     public void Dispose() {
         // If this object is being disposed, the player probably left the server.
         // Save the character's location to the database.
