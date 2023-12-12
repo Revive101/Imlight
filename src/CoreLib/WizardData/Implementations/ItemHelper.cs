@@ -55,4 +55,25 @@ internal static class ItemHelper {
             return StringHash.Compute(slotName);
         }
     }
+
+    /// <summary>
+    /// Calculates the hash value for the slot of an item based on its template.
+    /// </summary>
+    /// <param name="template">The item template.</param>
+    /// <returns>The hash value of the item slot.</returns>
+    internal static uint GetItemSlotHash(WizItemTemplate template) {
+        if (template == null) {
+            return 0;
+        }
+
+        // Get the slot hash from the item template.
+        if (template.m_adjectiveList.Count < 2) {
+            return 0;
+        }
+        else {
+            // The second adjective is the slot name.
+            var slotName = template.m_adjectiveList[1];
+            return StringHash.Compute(slotName);
+        }
+    }
 }

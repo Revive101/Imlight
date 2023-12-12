@@ -15,12 +15,12 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Game.Services;
 
 public class EquipmentService : MessageService {
-    private readonly Dictionary<int, GameEffectInfo> _gameEffects;
-    private int _effectInternalIDCounter = 1;
+    private readonly CoreObjectSerializer _effectSerializer = new CoreObjectSerializer()
+                    .OnBehaviors(SerializerOptions.Behaviors.None)
+                    .OnPropertyMask(SerializerOptions.PropertyFlags.Transmit
+                                  | SerializerOptions.PropertyFlags.AuthorityTransmit);
 
-    public EquipmentService(SessionActor sessionActor) : base(sessionActor) {
-        _gameEffects = new Dictionary<int, GameEffectInfo>();
-    }
+    public EquipmentService(SessionActor sessionActor) : base(sessionActor) { }
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new InventoryService(parentActor));
@@ -42,30 +42,11 @@ public class EquipmentService : MessageService {
 
     [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE))]
     private void ReceiveAttachComplete(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE message) {
-        return;
-        // Send the player's equipment to the client.
-        var wizard = GetActiveWizard();
-        var equipment = wizard.EquipmentGetAllItems();
-        foreach (var piece in equipment) {
-            var pieceObj = piece.Item1;
-            var pieceTemplate = piece.Item2;
-
-            // Apply equipment effects.
-            ApplyItemEffectsToPlayer(pieceTemplate);
-
-            // todo: This is lazy. Instead of fixing the behavior crafting in the CharacterObjectLoader,
-            // we're just going to manually send the equip messages after attach is complete.
-            if (pieceTemplate.m_adjectiveList.Count < 2) {
-                Logger.Warning("Item {0} template does not have a slot name!", Logger.Args(pieceTemplate.m_templateID));
-                continue;
-            }
-            var slotName = pieceTemplate.m_adjectiveList[1].ToString();
-            SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPITEM() {
-                ItemID = pieceObj.m_globalID,
-                SlotName = slotName,
-                IsEquip = 1
-            });
-        }
+        // Send the client every effect that is currently active on the player.
+        var playerCharacter = GetActiveWizard();
+        playerCharacter.ApplyEffectsForAllEquipment();
+        var effects = playerCharacter.GameEffects;
+        SendAddEffects(effects);
     }
 
     private void EquipItem(GAME_5_PROTOCOL.MSG_EQUIPITEM message) {
@@ -93,12 +74,14 @@ public class EquipmentService : MessageService {
             SendUnequipItem(slot, itemId);
         }
 
-        wizard.EquipmentEquipItem(itemId);
-
-        var template = ItemHelper.GetItemTemplate(item);
+        var addedEffects = wizard.EquipmentEquipItem(itemId);
+        if (addedEffects is null) {
+            Logger.Warning("Equip failed on item {0}", Logger.Args(itemId));
+            return;
+        }
 
         SendEquipItem(item, message.SlotName);
-        ApplyItemEffectsToPlayer(template);
+        SendAddEffects(addedEffects);
     }
 
     private void UnEquipItem(GAME_5_PROTOCOL.MSG_EQUIPITEM message) {
@@ -121,16 +104,14 @@ public class EquipmentService : MessageService {
 
         var slot = playerCharacter.EquipmentGetItemSlotIndex(itemId);
 
-        var unequipSuccess = playerCharacter.EquipmentUnequipItem(itemId);
-        if (!unequipSuccess) {
-            Logger.Error("Unequip failed for item {0}!", Logger.Args(itemId));
+        var removedEffects = playerCharacter.EquipmentUnequipItem(itemId);
+        if (removedEffects is null) {
+            Logger.Warning("Unequip failed on item {0}", Logger.Args(itemId));
             return;
         }
 
-        var template = ItemHelper.GetItemTemplate(item);
-
         SendUnequipItem(slot, itemId);
-        RemoveItemEffectsFromPlayer(template);
+        SendRemoveEffects(removedEffects);
     }
 
     private void SendEquipItem(WizClientObjectItem item, string slotName) {
@@ -174,241 +155,27 @@ public class EquipmentService : MessageService {
         }, false);
     }
 
-    private void ApplyItemEffectsToPlayer(WizItemTemplate template) {
+    private void SendAddEffects(List<GameEffectBase> effects) {
         var charObjId = GetActiveGameObject().m_globalID;
-        var effectSerializer = new CoreObjectSerializer()
-                    .OnBehaviors(SerializerOptions.Behaviors.None)
-                    .OnPropertyMask(SerializerOptions.PropertyFlags.Transmit
-                                  | SerializerOptions.PropertyFlags.AuthorityTransmit);
 
-        foreach (GameEffectInfo it in template.m_equipEffects) {
-            int internalID = _effectInternalIDCounter++;
-
-            switch (it.m_effectName) {
-                case "ProvideSpell":
-                    var spellEffect = (ProvideSpellEffectInfo) it;
-                    var spellEffectObj = new ProvideSpellEffect() {
-                        m_spellName = spellEffect.m_spellName,
-                        m_numSpells = spellEffect.m_numSpells,
-                        m_vFX = spellEffect.m_vFX,
-                        m_vFXOverride = spellEffect.m_vFXOverride,
-                        m_sound = spellEffect.m_sound,
-                        m_effectNameID = StringHash.Compute(spellEffect.m_effectName),
-                        m_internalID = internalID,
-                        m_itemSlotID = StringHash.Compute(template.m_adjectiveList[1].ToString())
-                    };
-
-                    var spellData = effectSerializer.Serialize(spellEffectObj);
-                    SendToSocket(new GAME_5_PROTOCOL.MSG_ADDEFFECT() {
-                        GameObjectID = charObjId,
-                        EffectData = spellData
-                    });
-
-                    _gameEffects.Add(internalID, spellEffect);
-                    continue;
-
-                case "StartingPips":
-                    var pipEffect = (StartingPipEffectInfo) it;
-                    var pipEffectObj = new StartingPipEffect() {
-                        m_pipsGiven = pipEffect.m_pipsGiven,
-                        m_powerPipsGiven = pipEffect.m_powerPipsGiven,
-                        m_effectNameID = StringHash.Compute(pipEffect.m_effectName),
-                        m_internalID = internalID,
-                        m_itemSlotID = StringHash.Compute(template.m_adjectiveList[1].ToString())
-                    };
-
-                    var pipData = effectSerializer.Serialize(pipEffectObj);
-                    SendToSocket(new GAME_5_PROTOCOL.MSG_ADDEFFECT() {
-                        GameObjectID = charObjId,
-                        EffectData = pipData
-                    });
-
-                    _gameEffects.Add(internalID, pipEffect);
-                    continue;
-
-                case "SpeedBuff":
-                    var speedEffect = (SpeedEffectInfo) it;
-                    var speedEffectObj = new SpeedEffect() {
-                        m_speedMultiplier = speedEffect.m_speedMultiplier,
-                        m_effectNameID = StringHash.Compute(speedEffect.m_effectName),
-                        m_internalID = internalID,
-                        m_itemSlotID = StringHash.Compute(template.m_adjectiveList[1].ToString())
-                    };
-
-                    var speedData = effectSerializer.Serialize(speedEffectObj);
-                    ZoneBroadcast(new GAME_5_PROTOCOL.MSG_ADDEFFECT() {
-                        GameObjectID = charObjId,
-                        EffectData = speedData
-                    }, false);
-
-                    _gameEffects.Add(internalID, speedEffect);
-                    continue;
-
-                default:
-                    var statEffect = (StatisticEffectInfo) it;
-                    var wSE = new WizStatisticEffect() {
-                        m_lookupIndex = statEffect.m_lookupIndex,
-                        m_effectNameID = StringHash.Compute(statEffect.m_effectName),
-                        m_internalID = internalID,
-                        m_itemSlotID = StringHash.Compute(template.m_adjectiveList[1].ToString())
-                    };
-
-                    // Read it and weep.
-                    var effectName = statEffect.m_effectName.ToString();
-                    switch (effectName) {
-                        case var _ when effectName.Contains("MaxMana"):         wSE.m_manaBonus                 = statEffect.m_lookupIndex + 98; break;
-                        case var _ when effectName.Contains("MaxHealth"):       wSE.m_hitPointBonus             = statEffect.m_lookupIndex + 1;  break;
-                        case var _ when effectName.Contains("MaxEnergy"):       wSE.m_energyBonus               = statEffect.m_lookupIndex + 1;  break;
-                        case var _ when effectName.Contains("FlatReduceDamage"):wSE.m_damageReduceFlat          = statEffect.m_lookupIndex + 1;  break;
-                        case var _ when effectName.Contains("FlatDamage"):      wSE.m_damageBonusFlat           = statEffect.m_lookupIndex + 1;  break;
-                        case var _ when effectName.Contains("CriticalHit"):     wSE.m_criticalHitRating         = statEffect.m_lookupIndex + 1;  break;
-                        case var _ when effectName.Contains("Block"):           wSE.m_blockRating               = statEffect.m_lookupIndex + 1;  break;
-                        case var _ when effectName.Contains("PipConversion"):   wSE.m_pipConversionRating       = statEffect.m_lookupIndex + 1;  break;
-                        case var _ when effectName.Contains("ShadowPipRating"): wSE.m_shadowPipRating           = statEffect.m_lookupIndex + 1;  break;
-                        case var _ when effectName.Contains("PowerPip"):        wSE.m_powerPipBonusPercent      = (statEffect.m_lookupIndex - 99) / 100f; break;
-                        case var _ when effectName.Contains("ReduceDamage"):    wSE.m_damageReducePercent       = (statEffect.m_lookupIndex - 99) / 100f; break;
-                        case var _ when effectName.Contains("Damage"):          wSE.m_damageBonusPercent        = (statEffect.m_lookupIndex - 99) / 100f; break;
-                        case var _ when effectName.Contains("Accuracy"):        wSE.m_accuracyBonusPercent      = (statEffect.m_lookupIndex - 99) / 100f; break;
-                        case var _ when effectName.Contains("ArmorPiercing"):   wSE.m_armorPiercingBonusPercent = (statEffect.m_lookupIndex - 99) / 100f; break;
-                        case var _ when effectName.Contains("FishingLuck"):     wSE.m_fishingLuckBonusPercent   = (statEffect.m_lookupIndex - 99) / 100f; break;
-                        case var _ when effectName.Contains("IncHealing"):      wSE.m_healIncBonusPercent       = (statEffect.m_lookupIndex - 99) / 100f; break;
-                        case var _ when effectName.Contains("LifeHealing"):     wSE.m_healBonusPercent          = (statEffect.m_lookupIndex - 99) / 100f; break;
-                        case var _ when effectName.Contains("StunResistance"):  wSE.m_stunResistancePercent     = (statEffect.m_lookupIndex - 99) / 100f; break;
-                        case var _ when effectName.Contains("XPPercent"):       wSE.m_expPercent                = (statEffect.m_lookupIndex - 99) / 100f; break;
-                        case var _ when effectName.Contains("GoldPercent"):     wSE.m_goldPercent               = (statEffect.m_lookupIndex - 99) / 100f; break;
-                        case "CanonicalStormMastery":   wSE.m_stormMastery = 1;   break;
-                        case "CanonicalFireMastery":    wSE.m_fireMastery = 1;    break;
-                        case "CanonicalIceMastery":     wSE.m_iceMastery = 1;     break;
-                        case "CanonicalLifeMastery":    wSE.m_lifeMastery = 1;    break;
-                        case "CanonicalDeathMastery":   wSE.m_deathMastery = 1;   break;
-                        case "CanonicalMythMastery":    wSE.m_mythMastery = 1;    break;
-                        case "CanonicalBalanceMastery": wSE.m_balanceMastery = 1; break;
-                        default: break;
-                    }
-
-                    var effectData = effectSerializer.Serialize(wSE);
-                    SendToSocket(new GAME_5_PROTOCOL.MSG_ADDEFFECT() {
-                        GameObjectID = charObjId,
-                        EffectData = effectData
-                    });
-
-                    _gameEffects.Add(internalID, statEffect);
-                    continue;
-            }
+        foreach (var effect in effects) {
+            var effectSerializedData = _effectSerializer.Serialize(effect);
+            SendToSocket(new GAME_5_PROTOCOL.MSG_ADDEFFECT() {
+                GameObjectID = charObjId,
+                EffectData = effectSerializedData
+            });
         }
     }
 
-    private void RemoveItemEffectsFromPlayer(WizItemTemplate template) {
-        int internalID = 0;
+    private void SendRemoveEffects(List<GameEffectBase> effects) {
         var charObjId = GetActiveGameObject().m_globalID;
 
-        foreach (GameEffectInfo it in template.m_equipEffects) {
-
-            switch (it.m_effectName) {
-                case "ProvideSpell":
-                    var spellEffect = (ProvideSpellEffectInfo) it;
-
-                    foreach (var effect in _gameEffects) {
-                        if (effect.Value.m_effectName != spellEffect.m_effectName) {
-                            continue;
-                        }
-
-                        if (((ProvideSpellEffectInfo) effect.Value).m_spellName != spellEffect.m_spellName) {
-                            continue;
-                        }
-
-                        if (((ProvideSpellEffectInfo) effect.Value).m_numSpells != spellEffect.m_numSpells) {
-                            continue;
-                        }
-
-                        internalID = effect.Key;
-                    }
-
-                    SendToSocket(new GAME_5_PROTOCOL.MSG_REMOVEEFFECT() {
-                        GameObjectID = charObjId,
-                        EffectNameID = StringHash.Compute(it.m_effectName),
-                        InternalID = internalID,
-                    });
-
-                    _gameEffects.Remove(internalID);
-                    continue;
-
-                case "StartingPips":
-                    var pipEffect = (StartingPipEffectInfo) it;
-
-                    foreach (var effect in _gameEffects) {
-                        if (effect.Value.m_effectName != pipEffect.m_effectName) {
-                            continue;
-                        }
-
-                        if (((StartingPipEffectInfo) effect.Value).m_pipsGiven != pipEffect.m_pipsGiven) {
-                            continue;
-                        }
-
-                        if (((StartingPipEffectInfo) effect.Value).m_powerPipsGiven != pipEffect.m_powerPipsGiven) {
-                            continue;
-                        }
-
-                        internalID = effect.Key;
-                    }
-
-                    SendToSocket(new GAME_5_PROTOCOL.MSG_REMOVEEFFECT() {
-                        GameObjectID = charObjId,
-                        EffectNameID = StringHash.Compute(it.m_effectName),
-                        InternalID = internalID,
-                    });
-
-                    _gameEffects.Remove(internalID);
-                    continue;
-
-                case "SpeedBuff":
-                    var speedEffect = (SpeedEffectInfo) it;
-
-                    foreach (var effect in _gameEffects) {
-                        if (effect.Value.m_effectName != speedEffect.m_effectName) {
-                            continue;
-                        }
-
-                        if (((SpeedEffectInfo) effect.Value).m_speedMultiplier != speedEffect.m_speedMultiplier) {
-                            continue;
-                        }
-
-                        internalID = effect.Key;
-                    }
-
-                    ZoneBroadcast(new GAME_5_PROTOCOL.MSG_REMOVEEFFECT() {
-                        GameObjectID = charObjId,
-                        EffectNameID = StringHash.Compute(it.m_effectName),
-                        InternalID = internalID,
-                    }, false);
-
-                    _gameEffects.Remove(internalID);
-                    continue;
-
-                default:
-                    var statEffect = (StatisticEffectInfo) it;
-
-                    foreach (var effect in _gameEffects) {
-                        if (effect.Value.m_effectName != statEffect.m_effectName) {
-                            continue;
-                        }
-
-                        if (((StatisticEffectInfo) effect.Value).m_lookupIndex != statEffect.m_lookupIndex) {
-                            continue;
-                        }
-
-                        internalID = effect.Key;
-                    }
-
-                    SendToSocket(new GAME_5_PROTOCOL.MSG_REMOVEEFFECT() {
-                        GameObjectID = charObjId,
-                        EffectNameID = StringHash.Compute(it.m_effectName),
-                        InternalID = internalID,
-                    });
-
-                    _gameEffects.Remove(internalID);
-                    continue;
-            }
+        foreach (var effect in effects) {
+            SendToSocket(new GAME_5_PROTOCOL.MSG_REMOVEEFFECT() {
+                GameObjectID = charObjId,
+                EffectNameID = effect.m_effectNameID,
+                InternalID = effect.m_internalID,
+            });
         }
     }
 }

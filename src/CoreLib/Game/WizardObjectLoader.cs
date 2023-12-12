@@ -88,7 +88,11 @@ public static class WizardObjectLoader {
 
     public static void SetGameEffectBehavior(WizClientObject clientObject, ref Wizard character) {
         if (CoreObjectFactory.FindBehaviorInstance<BaseGameEffectBehavior>(clientObject, out var effectBehavior)) {
-            var effectContainer = new GameEffectContainer();
+            var effectContainer = new GameEffectContainer {
+                // m_publicEffects = character.GameEffects
+            };
+
+            effectBehavior.m_gameEffects = effectContainer;
         }
         else {
             throw new Exception("Behavior ClientGameEffectBehavior not found!");

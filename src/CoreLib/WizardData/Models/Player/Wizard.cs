@@ -18,6 +18,7 @@ using Imlight.CoreLib.Game;
 using Newtonsoft.Json;
 using SharpDX;
 using static Imlight.Common.Caches.TypeCache;
+using Imlight.CoreLib.Game.Effects;
 
 namespace Imlight.CoreLib.WizardData.Models.Player;
 
@@ -76,6 +77,7 @@ public class Wizard : IDisposable {
     // Imlight doesn't disassociate the inventory from equipment. An equipped item is still in the inventory.
     [JsonIgnore] public List<WizClientObjectItem> InventoryItems { get; set; }
     [JsonIgnore] public WizClientObject GameObject;
+    [JsonIgnore] public List<GameEffectBase> GameEffects = new();
     [JsonIgnore] public string GameServerIp;
     [JsonIgnore] public ushort GameServerPort;
     [JsonIgnore] public string QueuedZoneName;
@@ -185,33 +187,33 @@ public class Wizard : IDisposable {
         return InventoryItems.Find(i => i.m_globalID == itemId);
     }
 
-    public bool EquipmentEquipItem(ulong itemId) {
+    public List<GameEffectBase> EquipmentEquipItem(ulong itemId) {
         // These validations also occur in the EquipmentService, where they are properly dealt with.
         // They must also happen here, as the Wizard does not keep track of the equipment items, only their IDs.
         if (EquipmentHasEquippedItem(itemId)) {
             Logger.Warning("Tried to equip item with global id {0} that is already equipped.", Logger.Args(itemId));
-            return false;
+            return null;
         }
 
         // We're still dealing with just an item ID, so we need to get the actual item from the inventory.
         var item = InventoryGetItem(itemId);
         if (item is null) {
             Logger.Warning("Tried to equip item with global id {0} that does not exist in player inventory.", Logger.Args(itemId));
-            return false;
+            return null;
         }
 
         // Get the slot name hash of the item.
         var slotNameHash = ItemHelper.GetItemSlotHash(item);
         if (slotNameHash == 0) {
             Logger.Warning("Tried to equip item with global id {0} that does not have a slot name adjective.", Logger.Args(itemId));
-            return false;
+            return null;
         }
 
         // Get the slot info for the slot we want to place this item in.
         var slot = GetEquipmentSlotInfo(slotNameHash);
         if (slot is null) {
             Logger.Warning("Could not get slot info for item {0}.", Logger.Args(itemId));
-            return false;
+            return null;
         }
 
         // Clear the slot and set.
@@ -225,40 +227,44 @@ public class Wizard : IDisposable {
         // Update the actual behavior.
         WizardObjectLoader.SetEquipmentBehavior(GameObject, this);
 
+        // Apply effects.
+        var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
+        var effects = ApplyEffectsFromTemplate(template);
+
         // Debug log.
         var actualName = CharacterNameBank.GetEnglishName(NameIndices, WizardAvatar.m_eGender);
         Logger.Debug("{0} equips item in slot {1}.", Logger.Args(actualName, slot));
 
-        return true;
+        return effects;
     }
 
-    public bool EquipmentUnequipItem(ulong itemId) {
+    public List<GameEffectBase> EquipmentUnequipItem(ulong itemId) {
         // These validations also occur in the EquipmentService, where they are properly dealt with.
         // They must also happen here, as the Wizard does not keep track of the equipment items, only their IDs.
         if (!EquipmentHasEquippedItem(itemId)) {
             Logger.Warning("Tried to unequip item with global id {0} that is not equipped.", Logger.Args(itemId));
-            return false;
+            return null;
         }
 
         // We're still dealing with just an item ID, so we need to get the actual item from the inventory.
         var item = InventoryGetItem(itemId);
         if (item is null) {
             Logger.Warning("Tried to equip item with global id {0} that does not exist in player inventory.", Logger.Args(itemId));
-            return false;
+            return null;
         }
 
         // Get the slot name hash of the item.
         var slotNameHash = ItemHelper.GetItemSlotHash(item);
         if (slotNameHash == 0) {
             Logger.Warning("Tried to equip item with global id {0} that does not have a slot name adjective.", Logger.Args(itemId));
-            return false;
+            return null;
         }
 
         // Get the slot info for the slot we want to remove from.
         var slot = GetEquipmentSlotInfo(slotNameHash);
         if (slot is null) {
             Logger.Warning("Could not get slot info for item {0}.", Logger.Args(itemId));
-            return false;
+            return null;
         }
 
         ClearEquipmentSlot(slotNameHash);
@@ -270,11 +276,15 @@ public class Wizard : IDisposable {
         // Update the actual behavior.
         WizardObjectLoader.SetEquipmentBehavior(GameObject, this);
 
+        // Remove effects.
+        var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
+        var effects = RemoveEffectsFromTemplate(template);
+
         // Debug log.
         var actualName = CharacterNameBank.GetEnglishName(NameIndices, WizardAvatar.m_eGender);
         Logger.Debug("{0} unequips item in slot {1}.", Logger.Args(actualName, slot));
 
-        return true;
+        return effects;
     }
 
     public bool EquipmentHasEquippedItem(ulong itemId) {
@@ -304,6 +314,12 @@ public class Wizard : IDisposable {
         int index = equippedItemsWithIds.FindIndex(i => i.m_itemID == (GID) itemId);
 
         return (byte) index;
+    }
+
+    public void ApplyEffectsForAllEquipment() {
+        foreach (var item in EquipmentGetAllItems()) {
+            ApplyEffectsFromTemplate(item.Item2);
+        }
     }
 
     public void Dispose() {
@@ -372,5 +388,44 @@ public class Wizard : IDisposable {
         }
 
         slot.m_itemID = (GID) itemId;
+    }
+
+    private List<GameEffectBase> ApplyEffectsFromTemplate(WizItemTemplate template) {
+        var addedEffects = new List<GameEffectBase>();
+        var slotHash = ItemHelper.GetItemSlotHash(template);
+
+        // Apply the effects from the template.
+        foreach (var effect in template.m_equipEffects) {
+            var gameEffect = GameEffectFactory.CreateEffectFromInfo(effect, slotHash);
+            gameEffect.m_internalID = GameEffects.Count;
+            addedEffects.Add(gameEffect);
+        }
+
+        GameEffects.AddRange(addedEffects);
+
+        return addedEffects;
+    }
+
+    private List<GameEffectBase> RemoveEffectsFromTemplate(WizItemTemplate template) {
+        var removedEffects = new List<GameEffectBase>();
+        var slotHash = ItemHelper.GetItemSlotHash(template);
+
+        // Apply the effects from the template.
+        foreach (var effectInfo in template.m_equipEffects) {
+            // Find the effect in the player's list of effects.
+            var nameHash = StringHash.Compute(effectInfo.m_effectName);
+            var gameEffect = GameEffects.Find(e => e.m_effectNameID == nameHash && e.m_itemSlotID == slotHash);
+            if (gameEffect is null) {
+                Logger.Warning("Could not find effect {0} in player's list of effects.", Logger.Args(effectInfo.m_effectName));
+                continue;
+            }
+
+            removedEffects.Add(gameEffect);
+
+            // Remove the effect.
+            GameEffects.Remove(gameEffect);
+        }
+
+        return removedEffects;
     }
 }
