@@ -20,11 +20,14 @@ public static class CanonicalStatEffects {
         "StunResistance"
     };
 
-    private static readonly GameEffectTemplateList s_effectTable;
-    private static readonly WizardStatTable[] s_wizardStatTables;
+    private static GameEffectTemplateList s_effectTable;
+    private static WizardStatTable[] s_wizardStatTables;
+    private static bool _isLoaded;
 
-    // Constructor: Initialize the template table from the Root.wad.
-    static CanonicalStatEffects() {
+    /// <summary>
+    /// Loads the canonical stat effects and stat tables.
+    /// </summary>
+    internal static void Load() {
         s_effectTable = ResourceManager.LoadDeserializedFile<GameEffectTemplateList>(ResourceManager.RootWadName, EffectTablePath);
         if (s_effectTable is null) {
             Logger.Error("Could not find effect table {0} in {1}", Logger.Args(EffectTablePath, ResourceManager.RootWadName));
@@ -51,6 +54,8 @@ public static class CanonicalStatEffects {
 
         s_wizardStatTables = statTables.ToArray();
         Logger.Information("Loaded {0} canonical stat tables", Logger.Args(s_wizardStatTables.Length));
+
+        _isLoaded = true;
     }
 
     /// <summary>
@@ -59,6 +64,10 @@ public static class CanonicalStatEffects {
     /// <param name="info">The <see cref="StatisticEffectInfo"/> containing the effect information.</param>
     /// <returns>The calculated canonical stat value.</returns>
     internal static float GetCanonicalStatValue(StatisticEffectInfo info) {
+        if (!_isLoaded) {
+            Load();
+        }
+
         if (s_effectTable is null || s_wizardStatTables is null) {
             Logger.Error("Effect table or stat tables are null. Cannot gather stat value.");
             return 0;

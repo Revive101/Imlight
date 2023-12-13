@@ -17,6 +17,8 @@ using Imlight.Common.Caches;
 using Imlight.Common;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.Game.Commands;
+using Imlight.CoreLib.WizardData.Databases;
+using Imlight.CoreLib.Game.Effects;
 
 namespace Imlight.CoreLib.Game;
 
@@ -46,6 +48,8 @@ public class GameServer : Server {
         _commandDispatcherRef = Context.ActorOf(CommandDispatcher.Props(), commandDispatcherActorName);
         Logger.Verbose("New actor created under {Path}: {Name}",
             Logger.Args(Context.Self.Path, commandDispatcherActorName));
+
+        LoadResources();
 
         // Log
         Logger.Information("Game server created with name {Name} under port {Port}.",
@@ -161,6 +165,13 @@ public class GameServer : Server {
         }
 
         return newId;
+    }
+
+    private void LoadResources() {
+        // Force the world database to load.
+        _ = WorldDatabase.Instance.Store;
+
+        CanonicalStatEffects.Load();
     }
 
     private void ActiveSessionsChangedEvent(object obj, NotifyCollectionChangedEventArgs args) {
