@@ -270,8 +270,8 @@ public class WizardZone : ReceiveProtocolDispatcher {
         Sender.Tell(response);
         message.Player.Tell(response);
 
-        Logger.Debug("Player {Name} added to zone {ZoneName}.",
-            Logger.Args(message.Player.Path.Name, ZoneName));
+        Logger.Debug("{Name} added to zone {ZoneName}.",
+            Logger.Args(message.ActualWizardName, ZoneName));
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER))]

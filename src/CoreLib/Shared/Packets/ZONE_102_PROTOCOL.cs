@@ -49,6 +49,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol
 
 		public IActorRef Player;
 		public TypeCache.CoreObject PlayerObject;
+        public string ActualWizardName;
 	}
 
 	public class MSG_ADDPLAYERRSP : IServerMessage
