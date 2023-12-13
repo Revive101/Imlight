@@ -75,57 +75,57 @@ public static class WizardZoneLoader {
                 benchmarkTimer.Start();
 
                 LoadZoneData();
-                Logger.Debug("Loaded zone data for {ZoneName} in {Time}ms.",
+                Logger.Debug("{0} Loaded zone data in {Time}ms.",
                     Logger.Args(zoneName, benchmarkTimer.ElapsedMilliseconds));
                 benchmarkTimer.Restart();
 
                 LoadSpawnData();
-                Logger.Debug("Loaded spawn data for {ZoneName} in {Time}ms.",
+                Logger.Debug("{0} Loaded spawn data in {Time}ms.",
                     Logger.Args(zoneName, benchmarkTimer.ElapsedMilliseconds));
                 benchmarkTimer.Restart();
 
                 LoadPathData();
-                Logger.Debug("Loaded path data for {ZoneName} in {Time}ms.",
+                Logger.Debug("{0} Loaded path data in {Time}ms.",
                     Logger.Args(zoneName, benchmarkTimer.ElapsedMilliseconds));
                 benchmarkTimer.Restart();
 
                 LoadNodeData();
-                Logger.Debug("Loaded node data for {ZoneName} in {Time}ms.",
+                Logger.Debug("{0} Loaded node data in {Time}ms.",
                     Logger.Args(zoneName, benchmarkTimer.ElapsedMilliseconds));
                 benchmarkTimer.Restart();
 
                 LoadVolumeData();
-                Logger.Debug("Loaded volume data for {ZoneName} in {Time}ms.",
+                Logger.Debug("{0} Loaded volume data in {Time}ms.",
                     Logger.Args(zoneName, benchmarkTimer.ElapsedMilliseconds));
                 benchmarkTimer.Restart();
 
                 LoadTriggerData();
-                Logger.Debug("Loaded trigger data for {ZoneName} in {Time}ms.",
+                Logger.Debug("{0} Loaded trigger data in {Time}ms.",
                     Logger.Args(zoneName, benchmarkTimer.ElapsedMilliseconds));
                 benchmarkTimer.Restart();
 
                 CreateZoneCoreObjects();
-                Logger.Debug("Created core objects for {ZoneName} in {Time}ms.",
+                Logger.Debug("{0} Created core objects in {Time}ms.",
                     Logger.Args(zoneName, benchmarkTimer.ElapsedMilliseconds));
                 benchmarkTimer.Restart();
 
                 CreateZoneCombatSigils();
-                Logger.Debug("Created combat sigils for {ZoneName} in {Time}ms.",
+                Logger.Debug("{0} Created combat sigils in {Time}ms.",
                     Logger.Args(zoneName, benchmarkTimer.ElapsedMilliseconds));
                 benchmarkTimer.Restart();
 
                 CreateZonePaths();
-                Logger.Debug("Created paths for {ZoneName} in {Time}ms.",
+                Logger.Debug("{0} Created paths in {Time}ms.",
                     Logger.Args(zoneName, benchmarkTimer.ElapsedMilliseconds));
                 benchmarkTimer.Restart();
 
                 CreateZoneVolumes();
-                Logger.Debug("Created volumes for {ZoneName} in {Time}ms.",
+                Logger.Debug("{0} Created volumes in {Time}ms.",
                     Logger.Args(zoneName, benchmarkTimer.ElapsedMilliseconds));
                 benchmarkTimer.Restart();
 
                 CreateZoneTriggers();
-                Logger.Debug("Created triggers for {ZoneName} in {Time}ms.",
+                Logger.Debug("{0} Created triggers in {Time}ms.",
                     Logger.Args(zoneName, benchmarkTimer.ElapsedMilliseconds));
 
                 benchmarkTimer.Stop();

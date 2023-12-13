@@ -60,8 +60,7 @@ public static class CoreObjectFactory {
         });
 
         timer.Stop();
-        Logger.Debug("{0} {1} load took {Em}ms.",
-            Logger.Args(typeof(CoreObjectFactory), TemplateManifestName, timer.ElapsedMilliseconds));
+        Logger.Debug("{0} load took {Em}ms.", Logger.Args(TemplateManifestName, timer.ElapsedMilliseconds));
 
         return true;
     }

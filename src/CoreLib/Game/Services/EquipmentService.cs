@@ -15,6 +15,9 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Game.Services;
 
 public class EquipmentService : MessageService {
+    private readonly CoreObjectSerializer _itemSerializer = new CoreObjectSerializer()
+                    .OnBehaviors(SerializerOptions.Behaviors.None)
+                    .OnPropertyMask((SerializerOptions.PropertyFlags) 1);
     private readonly CoreObjectSerializer _effectSerializer = new CoreObjectSerializer()
                     .OnBehaviors(SerializerOptions.Behaviors.None)
                     .OnPropertyMask(SerializerOptions.PropertyFlags.Transmit
@@ -42,11 +45,16 @@ public class EquipmentService : MessageService {
 
     [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE))]
     private void ReceiveAttachComplete(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE message) {
-        // Send the client every effect that is currently active on the player.
-        var playerCharacter = GetActiveWizard();
-        playerCharacter.ApplyEffectsForAllEquipment();
-        var effects = playerCharacter.GameEffects;
-        SendAddEffects(effects);
+        try {
+            // Send the client every effect that is currently active on the player.
+            var playerCharacter = GetActiveWizard();
+            playerCharacter.ApplyEffectsForAllEquipment();
+            var effects = playerCharacter.GameEffects;
+            SendAddEffects(effects);
+        }
+        catch  (Exception ex) {
+            Logger.Error("Error while attaching effects: {0} {1}", Logger.Args(ex.Message, ex.StackTrace));
+        }
     }
 
     private void EquipItem(GAME_5_PROTOCOL.MSG_EQUIPITEM message) {
@@ -130,10 +138,7 @@ public class EquipmentService : MessageService {
             m_trimColor = (Bui5) item.m_secondaryColor,
         };
 
-        var serializer = new CoreObjectSerializer()
-                    .OnBehaviors(SerializerOptions.Behaviors.None)
-                    .OnPropertyMask((SerializerOptions.PropertyFlags) 1);
-        var data = serializer.Serialize(publicItem);
+        var data = _itemSerializer.Serialize(publicItem);
         ZoneBroadcast(new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM() {
             GlobalID = GetActiveGameObject().m_globalID,
             SerializedInfo = data
