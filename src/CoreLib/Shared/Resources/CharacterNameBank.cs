@@ -12,7 +12,7 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Shared.Resources;
 
-public static class CharacterNameBank {
+public static class WizardNameBank {
     private const string EnglishCharacterNamesPath = "Locale/English/CharacterNames.lang";
     private const string CharacterNameTablePath = "CharacterNames.xml";
     private const string FirstNameHumanMaleTableName = "FirstName_HumanMale";
@@ -29,7 +29,8 @@ public static class CharacterNameBank {
     /// <param name="nameIndices">The name indices containing the first name, middle name, and last name.</param>
     /// <param name="gender">The gender of the character.</param>
     /// <returns>The English name composed of the first name, middle name, and last name.</returns>
-    public static string GetEnglishName(uint nameIndices, eGender gender) {
+    public static string GetEnglishName(uint nameIndices, eGender gender)
+    {
         // Drop the uneeded MSB.
         nameIndices &= 0x7FFFFFFF;
 
@@ -40,8 +41,24 @@ public static class CharacterNameBank {
 
         var firstNameTableName = (gender == eGender.Male) ? FirstNameHumanMaleTableName : FirstNameHumanFemaleTableName;
         var firstName = GetEnglishNamePart(firstNameTableName, firstNameIndex);
-        var middleName = GetEnglishNamePart(MiddleNameHumanTableName, middleNameIndex);
-        var lastName = GetEnglishNamePart(LastNameHumanTableName, lastNameIndex);
+
+        string middleName = string.Empty;
+        if (middleNameIndex != 0)
+        {
+            middleName = GetEnglishNamePart(MiddleNameHumanTableName, middleNameIndex);
+        }
+
+        string lastName = string.Empty;
+        if (lastNameIndex != 0)
+        {
+            lastName = GetEnglishNamePart(LastNameHumanTableName, lastNameIndex);
+        }
+
+        if (middleNameIndex == 0 && lastNameIndex == 0)
+        {
+            // If the middle name and last name are both 0, then the first name is the full name.
+            return firstName;
+        }
 
         return $"{firstName} {middleName}{lastName}";
     }

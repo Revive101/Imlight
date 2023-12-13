@@ -63,7 +63,7 @@ public class ChatService : MessageService {
             return;
         }
 
-        var actualCharacterName = CharacterNameBank.GetEnglishName(wizard.NameIndices, wizard.WizardAvatar.m_eGender);
+        var actualCharacterName = WizardNameBank.GetEnglishName(wizard.NameIndices, wizard.WizardAvatar.m_eGender);
         Logger.Information("{0} says in chat: {1}", Logger.Args(actualCharacterName, cleanedMessage));
 
         // Add the chat log to the database.

@@ -86,8 +86,11 @@ public class Wizard : IDisposable {
     [JsonIgnore] private Vector3 _location;
     [JsonIgnore] private Vector3 _orientation;
 
-    [JsonConstructor] public Wizard() { }
+    // Constructor: Used for deserialization. If this is not present, the default constructor will be used.
+    [JsonConstructor]
+    public Wizard() { }
 
+    // Constructor: Used for character creation.
     public Wizard(MagicSchoolEnum wizardSchoolType, WizardCharacterBehavior avatar, uint nameIndices, byte level = 1) {
         this.CharId = RandomGen.GenerateGUID();
         this.WizardSchool = wizardSchoolType;
@@ -232,7 +235,7 @@ public class Wizard : IDisposable {
         var effects = ApplyEffectsFromTemplate(template);
 
         // Debug log.
-        var actualName = CharacterNameBank.GetEnglishName(NameIndices, WizardAvatar.m_eGender);
+        var actualName = WizardNameBank.GetEnglishName(NameIndices, WizardAvatar.m_eGender);
         Logger.Debug("{0} equips item in slot {1}.", Logger.Args(actualName, slot));
 
         return effects;
@@ -281,7 +284,7 @@ public class Wizard : IDisposable {
         var effects = RemoveEffectsFromTemplate(template);
 
         // Debug log.
-        var actualName = CharacterNameBank.GetEnglishName(NameIndices, WizardAvatar.m_eGender);
+        var actualName = WizardNameBank.GetEnglishName(NameIndices, WizardAvatar.m_eGender);
         Logger.Debug("{0} unequips item in slot {1}.", Logger.Args(actualName, slot));
 
         return effects;
@@ -317,8 +320,15 @@ public class Wizard : IDisposable {
     }
 
     public void ApplyEffectsForAllEquipment() {
+        var actualWizardName = WizardNameBank.GetEnglishName(NameIndices, WizardAvatar.m_eGender);
+        Logger.Debug("{0} is applying effects for all equipment.", Logger.Args(actualWizardName));
+
         foreach (var item in EquipmentGetAllItems()) {
-            ApplyEffectsFromTemplate(item.Item2);
+            var template = item.Item2;
+
+            var activatedEffects = ApplyEffectsFromTemplate(template);
+            Logger.Debug("{0} Applied {1} effects for item {2}.",
+                Logger.Args(actualWizardName, activatedEffects.Count, template.m_objectName));
         }
     }
 
@@ -397,7 +407,10 @@ public class Wizard : IDisposable {
         // Apply the effects from the template.
         foreach (var effect in template.m_equipEffects) {
             var gameEffect = GameEffectFactory.CreateEffectFromInfo(effect, slotHash);
+
+            // Set the unique internal ID of the effect.
             gameEffect.m_internalID = GameEffects.Count;
+
             addedEffects.Add(gameEffect);
         }
 
