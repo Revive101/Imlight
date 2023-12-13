@@ -392,7 +392,7 @@ public class WizardZone : ReceiveProtocolDispatcher {
             .ToList();
 
         if (!triggers.Any()) {
-            Logger.Debug("{Volume} {ZoneName} tried to activate trigger " +
+            Logger.Verbose("{Volume} {ZoneName} tried to activate trigger " +
                                "{TriggerName}, but no trigger was found in the zone",
                 Logger.Args(nameof(WizardZoneVolume), ZoneName, message.TriggerName));
             return;
@@ -414,7 +414,7 @@ public class WizardZone : ReceiveProtocolDispatcher {
 
         // Debug log all the triggers that were activated.
         foreach (var trigger in triggers) {
-            Logger.Debug(
+            Logger.Verbose(
                 "{WizardZoneVolume} {ZoneName} activated trigger {TriggerName}",
                 Logger.Args(nameof(WizardZoneVolume), ZoneName, trigger.m_triggerName));
         }

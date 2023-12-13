@@ -236,7 +236,7 @@ public class Wizard : IDisposable {
 
         // Debug log.
         var actualName = WizardNameBank.GetEnglishName(NameIndices, WizardAvatar.m_eGender);
-        Logger.Debug("{0} equips item in slot {1}.", Logger.Args(actualName, slot));
+        Logger.Debug("{0} equips item in slot {1}.", Logger.Args(actualName, slot.m_itemSlotNameID));
 
         return effects;
     }
@@ -285,7 +285,7 @@ public class Wizard : IDisposable {
 
         // Debug log.
         var actualName = WizardNameBank.GetEnglishName(NameIndices, WizardAvatar.m_eGender);
-        Logger.Debug("{0} unequips item in slot {1}.", Logger.Args(actualName, slot));
+        Logger.Debug("{0} unequips item in slot {1}.", Logger.Args(actualName, slot.m_itemSlotNameID));
 
         return effects;
     }

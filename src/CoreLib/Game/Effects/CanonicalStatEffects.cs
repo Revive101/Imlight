@@ -15,9 +15,7 @@ public static class CanonicalStatEffects {
         "Accuracy",
         "Damage",
         "Piercing",
-        "PowerPips",
         "ReduceDamage",
-        "StunResistance"
     };
 
     private static GameEffectTemplateList s_effectTable;

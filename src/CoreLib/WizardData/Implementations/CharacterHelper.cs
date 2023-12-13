@@ -10,15 +10,15 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.WizardData.Implementations;
 
-public static class CharacterHelper {
-    public const float OrientationCompressionFactor = 0.708f;
+internal static class CharacterHelper {
+    internal const float OrientationCompressionFactor = 0.708f;
 
     /// <summary>
     /// Creates a character from the character creation screen.
     /// </summary>
     /// <param name="creationInfo">The character creation information.</param>
     /// <returns>The created Wizard character.</returns>
-    public static Wizard CreateCharacterFromCreationInfo(WizardCharacterCreationInfo creationInfo) {
+    internal static Wizard CreateCharacterFromCreationInfo(WizardCharacterCreationInfo creationInfo) {
         // This method is used to create a character from the character creation screen.
         var school = (MagicSchoolEnum) creationInfo.m_schoolOfFocus;
         var wizardAvatar = creationInfo.m_avatarBehavior;
@@ -38,7 +38,7 @@ public static class CharacterHelper {
     /// </summary>
     /// <param name="character">The Wizard object.</param>
     /// <returns>The WizardCharacterCreationInfo for the given Wizard.</returns>
-    public static WizardCharacterCreationInfo GetLoginScreenInfo(Wizard character) {
+    internal static WizardCharacterCreationInfo GetLoginScreenInfo(Wizard character) {
         var creationInfo = new WizardCharacterCreationInfo {
             m_avatarBehavior = character.WizardAvatar,
             m_nameIndices = character.NameIndices,
@@ -61,7 +61,7 @@ public static class CharacterHelper {
     /// <param name="character">The Wizard in question.</param>
     /// <returns>The EquippedItemInfoList that was crafted.</returns>
     /// <exception cref="Exception"></exception>
-    public static EquippedItemInfoList GetEquipmentList(Wizard character) {
+    internal static EquippedItemInfoList GetEquipmentList(Wizard character) {
         var equipmentList = new EquippedItemInfoList {
             m_infoList = new List<EquippedItemInfo>(),
         };
@@ -78,6 +78,21 @@ public static class CharacterHelper {
         }
 
         return equipmentList;
+    }
+
+    internal static void AddGameEffectToStats(WizGameStats stats, WizStatisticEffect statistic) {
+        // Given a statistic, add it to the stats.
+        stats.m_baseHitpoints += (int) statistic.m_hitPointBonus;
+        stats.m_baseMana += (int) statistic.m_manaBonus;
+        stats.m_energyMax += (int) statistic.m_energyBonus;
+        stats.m_iceMastery = statistic.m_iceMastery;
+        stats.m_fireMastery = statistic.m_fireMastery;
+        stats.m_stormMastery = statistic.m_stormMastery;
+        stats.m_mythMastery = statistic.m_mythMastery;
+        stats.m_lifeMastery = statistic.m_lifeMastery;
+        stats.m_deathMastery = statistic.m_deathMastery;
+        stats.m_balanceMastery = statistic.m_balanceMastery;
+        stats.m_powerPipBonusPercentAll += statistic.m_powerPipBonusPercent;
     }
 
     private static WizGameStats SetCharacterStatsToBase(WizGameStats existingStats, byte level, MagicSchoolEnum school) {
