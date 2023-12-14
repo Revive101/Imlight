@@ -20,7 +20,7 @@ internal static class CharacterHelper {
     /// <returns>The created Wizard character.</returns>
     internal static Wizard CreateCharacterFromCreationInfo(WizardCharacterCreationInfo creationInfo) {
         // This method is used to create a character from the character creation screen.
-        var school = (MagicSchoolEnum) creationInfo.m_schoolOfFocus;
+        var school = (MagicSchool) creationInfo.m_schoolOfFocus;
         var wizardAvatar = creationInfo.m_avatarBehavior;
         var nameIndices = creationInfo.m_nameIndices;
         var character = new Wizard(school, wizardAvatar, nameIndices);
@@ -95,7 +95,7 @@ internal static class CharacterHelper {
         stats.m_powerPipBonusPercentAll += statistic.m_powerPipBonusPercent;
     }
 
-    private static WizGameStats SetCharacterStatsToBase(WizGameStats existingStats, byte level, MagicSchoolEnum school) {
+    private static WizGameStats SetCharacterStatsToBase(WizGameStats existingStats, byte level, MagicSchool school) {
         var baseHealth = WizardClassData.GetClassHealthAtLevel(school, level);
         var baseMana = WizardClassData.GetManaAtLevel(level);
 

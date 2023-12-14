@@ -6,6 +6,7 @@
 using System;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Sockets;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Structures;
@@ -128,12 +129,17 @@ public abstract class Server : ReceiveProtocolDispatcher {
             withinTimeRange: TimeSpan.FromSeconds(30),
             localOnlyDecider: ex => {
                 switch (ex) {
-                    default: {
+                    case SocketException socketEx: {
                             // Client regularly shuts down the socket. No need to log it.
-                            if (ex.Message.ToLower().Contains("failure: shutdown")) {
+                            if (socketEx.Message.ToLower().Contains("failure: shutdown")) {
                                 return Directive.Stop;
                             }
 
+                            Logger.Error("SessionActor {SessionId} has failed with exception {Exception}",
+                                Logger.Args(Context.Self.Path.Name, socketEx));
+                            return Directive.Stop;
+                        }
+                    default: {
                             Logger.Error("SessionActor {SessionId} has failed with exception {Exception}",
                                 Logger.Args(Context.Self.Path.Name, ex));
                             return Directive.Stop;

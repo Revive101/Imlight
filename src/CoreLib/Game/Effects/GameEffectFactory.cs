@@ -5,15 +5,21 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Game.Effects;
 
 internal static class GameEffectFactory {
-    internal static GameEffectBase CreateEffectFromInfo(GameEffectInfo info, uint itemSlotId) {
-        return info switch {
+    /// <summary>
+    /// Creates a game effect from the given effect info.
+    /// </summary>
+    /// <param name="info">The information for the effect.</param>
+    /// <param name="itemSlotId">The slot of equipment this effect is from.</param>
+    /// <returns>The instance of the effect.</returns>
+    /// <exception cref="NotImplementedException"></exception>
+    internal static GameEffectBase CreateEffectFromInfo(GameEffectInfo info, uint itemSlotId)
+        => info switch {
             ProvideSpellEffectInfo provideSpellEffectInfo => CreateProvideSpellEffect(provideSpellEffectInfo, itemSlotId),
-            StartingPipEffectInfo startingPipEffectInfo => CreateStartingPipEffect(startingPipEffectInfo, itemSlotId),
-            SpeedEffectInfo speedEffectInfo => CreateSpeedEffect(speedEffectInfo, itemSlotId),
-            StatisticEffectInfo statisticEffectInfo => CreateWizStatisticEffect(statisticEffectInfo, itemSlotId),
+            StartingPipEffectInfo  startingPipEffectInfo  => CreateStartingPipEffect(startingPipEffectInfo, itemSlotId),
+            SpeedEffectInfo        speedEffectInfo        => CreateSpeedEffect(speedEffectInfo, itemSlotId),
+            StatisticEffectInfo    statisticEffectInfo    => CreateWizStatisticEffect(statisticEffectInfo, itemSlotId),
             _ => throw new NotImplementedException(),
-        };
-    }
+    };
 
     private static ProvideSpellEffect CreateProvideSpellEffect(ProvideSpellEffectInfo info, uint itemSlotId) {
         var effect = new ProvideSpellEffect() {
@@ -51,6 +57,8 @@ internal static class GameEffectFactory {
     }
 
     private static WizStatisticEffect CreateWizStatisticEffect(StatisticEffectInfo info, uint itemSlotId) {
+        // Specific school effects (such as fire damage) are already handled by the client using
+        // the effect name and lookup index.
         var effect = new WizStatisticEffect() {
             m_lookupIndex = info.m_lookupIndex,
             m_effectNameID = StringHash.Compute(info.m_effectName),
@@ -58,7 +66,7 @@ internal static class GameEffectFactory {
         };
         var val = CanonicalStatEffects.GetCanonicalStatValue(info);
 
-        // Read it and weep.
+        // Broad category effects are property specific.
         var effectName = info.m_effectName.ToString();
         switch (effectName) {
             case var _ when effectName.Contains("MaxMana") : effect.m_manaBonus = val; break;

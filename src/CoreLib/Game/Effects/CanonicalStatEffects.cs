@@ -1,5 +1,4 @@
 using Imlight.Common;
-using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Shared.Resources;
 using System;
 using System.Collections.Generic;
@@ -9,9 +8,27 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Game.Effects;
 
 public static class CanonicalStatEffects {
+    /*
+    Recall the docs @ https://revive101.github.io/Imlight-docs/internals/schemas.html#object-creation
+    Effects that are 'canonical' are effects that change numerical player stats, such as health or damage.
+    Canonical effects follow this schema. The template manifest for these effects is the CanonicalStatEffects.xml file.
+
+    The template:
+    Every template in the CanonicalStatEffects.xml file has a corresponding stat table.
+    These tables are located in the GameEffectRuleData directory in the Root.wad file.
+    The stat table name property (m_statTableName) in the template is the path of the table in the Root.wad file.
+
+    The information:
+    The effect information contains only two bits of information: the effect name and the lookup index.
+    The effect name is used to find the effect template in the CanonicalStatEffects.xml file.
+    The lookup index is used to find the stat value in the corresponding stat table.
+
+    Some stats are multiplied by 100.
+    */
+
     private const string EffectTablePath = "GameEffectData/CanonicalStatEffects.xml";
     private const string GameRuleDirectoryPrefix = "GameEffectRuleData/";
-    private static readonly string[] TimesHundredEffectNames = {
+    private static readonly string[] s_timesHundredEffectNames = {
         "Accuracy",
         "Damage",
         "Piercing",
@@ -20,7 +37,7 @@ public static class CanonicalStatEffects {
 
     private static GameEffectTemplateList s_effectTable;
     private static WizardStatTable[] s_wizardStatTables;
-    private static bool _isLoaded;
+    private static bool s_isLoaded;
 
     /// <summary>
     /// Loads the canonical stat effects and stat tables.
@@ -53,7 +70,7 @@ public static class CanonicalStatEffects {
         s_wizardStatTables = statTables.ToArray();
         Logger.Information("Loaded {0} canonical stat tables", Logger.Args(s_wizardStatTables.Length));
 
-        _isLoaded = true;
+        s_isLoaded = true;
     }
 
     /// <summary>
@@ -62,7 +79,7 @@ public static class CanonicalStatEffects {
     /// <param name="info">The <see cref="StatisticEffectInfo"/> containing the effect information.</param>
     /// <returns>The calculated canonical stat value.</returns>
     internal static float GetCanonicalStatValue(StatisticEffectInfo info) {
-        if (!_isLoaded) {
+        if (!s_isLoaded) {
             Load();
         }
 
@@ -111,7 +128,7 @@ public static class CanonicalStatEffects {
         => effectName.ToString().Contains("Flat");
 
     private static float CalculateStatValue(float stat, string category, bool isFlat) {
-        if (TimesHundredEffectNames.Contains(category) && !isFlat) {
+        if (s_timesHundredEffectNames.Contains(category) && !isFlat) {
             return stat * 100f;
         }
         else {

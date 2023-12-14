@@ -22,13 +22,13 @@ using Imlight.CoreLib.Game.Effects;
 
 namespace Imlight.CoreLib.WizardData.Models.Player;
 
-public enum MagicSchoolEnum {
-    Fire = 2343174,
+public enum MagicSchool {
     Ice = 72777,
-    Storm = 83375795,
     Life = 2330892,
+    Fire = 2343174,
     Myth = 2448141,
     Death = 78318724,
+    Storm = 83375795,
     Balance = 1027491821,
 }
 
@@ -40,7 +40,7 @@ public class Wizard : IDisposable {
     public ulong CharId { get; set; }                  //  | These values are never subject to change.
     public uint NameIndices { get; set; }              //  |
     public WideByteString NameOverride { get; set; }   // <
-    public MagicSchoolEnum WizardSchool { get; set; }
+    public MagicSchool WizardSchool { get; set; }
     public byte Level { get; set; }
     public int TrainingPoints { get; set; }
     public int XpToNextLevel { get; set; }
@@ -48,10 +48,10 @@ public class Wizard : IDisposable {
     public string ZoneDisplayName { get; set; }
     public byte World { get; set; }
     public Vector3 Location {
-        get => this.GameObject?.m_location ?? _location;
+        get => GameObject?.m_location ?? _location;
         set {
-            if (this.GameObject is not null) {
-                this.GameObject.m_location = value;
+            if (GameObject is not null) {
+                GameObject.m_location = value;
             }
             else {
                 _location = value;
@@ -59,10 +59,10 @@ public class Wizard : IDisposable {
         }
     }
     public Vector3 Orientation {
-        get => this.GameObject?.m_orientation ?? _orientation;
+        get => GameObject?.m_orientation ?? _orientation;
         set {
-            if (this.GameObject is not null) {
-                this.GameObject.m_orientation = value;
+            if (GameObject is not null) {
+                GameObject.m_orientation = value;
             }
             else {
                 _orientation = value;
@@ -91,55 +91,54 @@ public class Wizard : IDisposable {
     public Wizard() { }
 
     // Constructor: Used for character creation.
-    public Wizard(MagicSchoolEnum wizardSchoolType, WizardCharacterBehavior avatar, uint nameIndices, byte level = 1) {
-        this.CharId = RandomGen.GenerateGUID();
-        this.WizardSchool = wizardSchoolType;
-        this.WizardAvatar = avatar;
-        this.NameIndices = nameIndices;
-        this.Level = level;
-        this.Zone = ConfigurationManager.Settings.StartingZone;
-        this.World = ConfigurationManager.Settings.StartingWorld;
-        this.GameStats = new WizGameStats();
+    public Wizard(MagicSchool wizardSchoolType, WizardCharacterBehavior avatar, uint nameIndices, byte level = 1) {
+        CharId = RandomGen.GenerateGUID();
+        WizardSchool = wizardSchoolType;
+        WizardAvatar = avatar;
+        NameIndices = nameIndices;
+        Level = level;
+        Zone = ConfigurationManager.Settings.StartingZone;
+        World = ConfigurationManager.Settings.StartingWorld;
+        GameStats = new WizGameStats();
 
         InitializeDefaultInventory();
-        InitializeEquipmentSlots();
+        InitializeDefaultEquipmentSlots();
     }
 
-    public void SetCachedLocation(Vector3 loc) {
-        this.Location = loc;
-    }
+    public void SetCachedLocation(Vector3 loc) => Location = loc;
 
-    public void SetCachedOrientation(byte direction) {
-        this.Orientation = new Vector3(0, 0, direction * OrientationCompressionFactor);
-    }
+    public void SetCachedOrientation(byte direction) => Orientation = new Vector3(0, 0, direction * OrientationCompressionFactor);
 
     public void SetPersistentLocation(Vector3 loc) {
-        this.Location = loc;
+        Location = loc;
 
         // Persistent save.
         WizardCollection.UpdateCharacterLocation(this, loc, Orientation.Z);
     }
 
     public void SetPersistentOrientation(byte direction) {
-        this.Orientation = new Vector3(0, 0, direction * OrientationCompressionFactor);
+        Orientation = new Vector3(0, 0, direction * OrientationCompressionFactor);
 
         // Persistent save.
         WizardCollection.UpdateCharacterLocation(this, Location, Orientation.Z);
     }
 
     public void SetZone(string zone, string zoneDisplayName) {
-        this.Zone = zone;
-        this.ZoneDisplayName = zoneDisplayName;
+        Zone = zone;
+        ZoneDisplayName = zoneDisplayName;
 
         // Persistent save.
         WizardCollection.UpdateCharacterZone(this, zone, zoneDisplayName);
     }
 
+    // todo: Regions are a sign of a class becoming monolithic.
+    #region Inventory
+
     public bool InventoryAddItem(WizClientObjectItem item) {
         if (item is null) {
-            return false;
+            throw new NullReferenceException("Item cannot be null.");
         }
-        if (InventoryItems.Any(i => i.m_globalID == item.m_globalID)) {
+        if (InventoryHasItem(item.m_globalID)) {
             Logger.Error("Item with same global id {0} already exists in player inventory.", Logger.Args(item.m_globalID));
             return false;
         }
@@ -148,47 +147,77 @@ public class Wizard : IDisposable {
         InventoryItems.Add(item);
 
         // Persistent save.
-        WizardItemCollection.AddItem(item);
-
-        return true;
-    }
-
-    public bool InventoryRemoveItem(WizClientObjectItem item) {
-        if (item is null) {
+        var persistentSaveSucceeded = WizardItemCollection.AddItem(item);
+        if (!persistentSaveSucceeded) {
+            Logger.Error("Could not save item with global id {0} to database.", Logger.Args(item.m_globalID));
             return false;
         }
-        if (!InventoryItems.Remove(item)) {
-            Logger.Debug("Tried to remove item with global id {0} that does not exist in player inventory.", Logger.Args(item.m_globalID));
-            return false;
-        }
-
-        // Persistent save.
-        WizardItemCollection.RemoveItem(item);
 
         return true;
     }
 
     public bool InventoryRemoveItem(ulong itemId) {
+        // Get the actual item from the inventory.
         var item = InventoryItems.Find(i => i.m_globalID == itemId);
         if (item is null) {
+            Logger.Debug("Tried to remove item with global id {0} that does not exist in player inventory.",
+                Logger.Args(itemId));
             return false;
         }
 
-        InventoryItems.Remove(item);
+        return InventoryItems.Remove(item);
+    }
+
+    public bool InventoryRemoveItem(WizClientObjectItem item) {
+        if (item is null) {
+            throw new NullReferenceException("Item cannot be null.");
+        }
+        if (!InventoryItems.Remove(item)) {
+            Logger.Debug("Tried to remove item with global id {0} that does not exist in player inventory.",
+                Logger.Args(item.m_globalID));
+            return false;
+        }
 
         // Persistent save.
-        WizardItemCollection.RemoveItem(item);
+        var persistentSaveSucceeded = WizardItemCollection.RemoveItem(item);
+        if (!persistentSaveSucceeded) {
+            Logger.Error("Could not remove item with global id {0} from database.", Logger.Args(item.m_globalID));
+            return false;
+        }
 
         return true;
     }
 
-    public bool InventoryHasItem(ulong itemId) {
-        return InventoryItems.Any(i => i.m_globalID == itemId);
+    public bool InventoryHasItem(ulong itemId) => InventoryItems.Any(i => i.m_globalID == itemId);
+
+    public WizClientObjectItem InventoryGetItem(ulong itemId) => InventoryItems.Find(i => i.m_globalID == itemId);
+
+    private void InitializeDefaultInventory() {
+        InventoryItems = new List<WizClientObjectItem>();
+        InventoryItemIds = new List<ulong>();
+
+        // Add default items to the inventory.
+        var defaultItems = new List<WizClientObjectItem>();
+        new List<ulong>() { 4740, 4705, 5030, 39068, 1363076, 1475149,
+                            1472644, 1317133, 1317126, 1317234, 1359455,
+                            1392077, 1352341, 87158, 87159, 87160, 1540397 }.ForEach(templateId => {
+                                var template = CoreObjectFactory.GetCoreTemplate(templateId);
+                                var coreObject = new WizClientObjectItem {
+                                    m_globalID = RandomGen.GenerateGUID(),
+                                    m_templateID = (GID) templateId,
+                                    m_characterId = (GID) CharId
+                                };
+
+                                defaultItems.Add(coreObject);
+                                InventoryItemIds.Add(coreObject.m_globalID);
+                            });
+
+        WizardItemCollection.AddDefaultItems(defaultItems);
     }
 
-    public WizClientObjectItem InventoryGetItem(ulong itemId) {
-        return InventoryItems.Find(i => i.m_globalID == itemId);
-    }
+    #endregion
+
+    #region Equipment
 
     public List<GameEffectBase> EquipmentEquipItem(ulong itemId) {
         // These validations also occur in the EquipmentService, where they are properly dealt with.
@@ -232,7 +261,7 @@ public class Wizard : IDisposable {
 
         // Apply effects.
         var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
-        var effects = ApplyEffectsFromTemplate(template);
+        var effects = AddEffectsFromTemplate(template);
 
         // Debug log.
         var actualName = WizardNameBank.GetEnglishName(NameIndices, WizardAvatar.m_eGender);
@@ -290,9 +319,7 @@ public class Wizard : IDisposable {
         return effects;
     }
 
-    public bool EquipmentHasEquippedItem(ulong itemId) {
-        return EquippedItems.Any(i => i.m_itemID == itemId);
-    }
+    public bool EquipmentHasEquippedItem(ulong itemId) => EquippedItems.Any(i => i.m_itemID == itemId);
 
     public IEnumerable<(WizClientObjectItem, WizItemTemplate)> EquipmentGetAllItems() {
         var items = new List<(WizClientObjectItem, WizItemTemplate)>();
@@ -326,42 +353,13 @@ public class Wizard : IDisposable {
         foreach (var item in EquipmentGetAllItems()) {
             var template = item.Item2;
 
-            var activatedEffects = ApplyEffectsFromTemplate(template);
+            var activatedEffects = AddEffectsFromTemplate(template);
             Logger.Debug("{0} Applied {1} effects for item {2}.",
                 Logger.Args(actualWizardName, activatedEffects.Count, template.m_objectName));
         }
     }
 
-    public void Dispose() {
-        // If this object is being disposed, the player probably left the server.
-        // Save the character's location to the database.
-        WizardCollection.UpdateCharacterLocation(this, Location, Orientation.Z);
-    }
-
-    private void InitializeDefaultInventory() {
-        this.InventoryItems = new List<WizClientObjectItem>();
-        this.InventoryItemIds = new List<ulong>();
-
-        // Add default items to the inventory.
-        var defaultItems = new List<WizClientObjectItem>();
-        new List<ulong>() { 4740, 4705, 5030, 39068, 1363076, 1475149,
-                            1472644, 1317133, 1317126, 1317234, 1359455,
-                            1392077, 1352341, 87158, 87159, 87160, 1540397 }.ForEach(templateId => {
-                                var template = CoreObjectFactory.GetCoreTemplate(templateId);
-                                var coreObject = new WizClientObjectItem {
-                                    m_globalID = RandomGen.GenerateGUID(),
-                                    m_templateID = (GID) templateId,
-                                    m_characterId = (GID) CharId
-                                };
-
-                                defaultItems.Add(coreObject);
-                                this.InventoryItemIds.Add(coreObject.m_globalID);
-                            });
-
-        WizardItemCollection.AddDefaultItems(defaultItems);
-    }
-
-    private void InitializeEquipmentSlots() {
+    private void InitializeDefaultEquipmentSlots() {
         // Initialize the equipment slots.
         // There is a slot for every EquipmentSlot enum value.
         var slotList = new List<EquippedSlotInfo>();
@@ -375,12 +373,11 @@ public class Wizard : IDisposable {
             });
         }
 
-        this.EquippedItems = slotList.ToArray();
+        EquippedItems = slotList.ToArray();
     }
 
-    private EquippedSlotInfo GetEquipmentSlotInfo(uint slotNameHash) {
-        return EquippedItems.FirstOrDefault(i => i.m_itemSlotNameID == slotNameHash);
-    }
+    private EquippedSlotInfo GetEquipmentSlotInfo(uint slotNameHash)
+        => EquippedItems.FirstOrDefault(i => i.m_itemSlotNameID == slotNameHash);
 
     private void ClearEquipmentSlot(uint slotNameHash) {
         var slot = GetEquipmentSlotInfo(slotNameHash);
@@ -400,21 +397,20 @@ public class Wizard : IDisposable {
         slot.m_itemID = (GID) itemId;
     }
 
-    private List<GameEffectBase> ApplyEffectsFromTemplate(WizItemTemplate template) {
+    #endregion
+
+    #region Game Effects
+
+    private List<GameEffectBase> AddEffectsFromTemplate(WizItemTemplate template) {
         var addedEffects = new List<GameEffectBase>();
         var slotHash = ItemHelper.GetItemSlotHash(template);
 
         // Apply the effects from the template.
-        foreach (var effect in template.m_equipEffects) {
-            var gameEffect = GameEffectFactory.CreateEffectFromInfo(effect, slotHash);
-
-            // Set the unique internal ID of the effect.
-            gameEffect.m_internalID = GameEffects.Count;
+        foreach (var effectInfo in template.m_equipEffects) {
+            var gameEffect = GameEffectFactory.CreateEffectFromInfo(effectInfo, slotHash);
 
             addedEffects.Add(gameEffect);
         }
-
-        GameEffects.AddRange(addedEffects);
 
         return addedEffects;
     }
@@ -441,4 +437,23 @@ public class Wizard : IDisposable {
 
         return removedEffects;
     }
+
+    private bool ApplyEffect(GameEffectInfo gameEffectInfo) {
+        // To apply the effects to the player, we need all three parts of the effect:
+        // 1. The effect info, which contains the name of the effect and the lookup index.
+        // 2. The effect template, which tells us what school the effect applies to.
+        // 3. The effect itself, which contains the actual values of the effect.
+        return true;
+    }
+
+    private bool AbstainEffect() {
+        return true;
+    }
+
+    #endregion
+
+    public void Dispose() =>
+        // If this object is being disposed, the player probably left the server.
+        // Save the character's location to the database.
+        WizardCollection.UpdateCharacterLocation(this, Location, Orientation.Z);
 }

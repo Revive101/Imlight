@@ -57,7 +57,7 @@ internal static class ItemHelper {
     }
 
     /// <summary>
-    /// Calculates the hash value for the slot of an item based on its template.
+    /// Returns the slot hash of a given item template.
     /// </summary>
     /// <param name="template">The item template.</param>
     /// <returns>The hash value of the item slot.</returns>

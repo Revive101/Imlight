@@ -27,8 +27,14 @@ public static class WizardItemCollection {
     /// </summary>
     /// <param name="playerId">The ID of the player.</param>
     /// <param name="item">The item to be added.</param>
-    public static void AddItem(WizClientObjectItem item) {
+    public static bool AddItem(WizClientObjectItem item) {
         using var session = s_store.OpenSession();
+
+        // Return false if this item already exists.
+        if (session.Query<WizClientObjectItem>(CollectionName)
+            .Any(x => x.m_characterId == item.m_characterId && x.m_globalID == item.m_globalID)) {
+            return false;
+        }
 
         // Add the item to the items collection.
         session.Store(item);
@@ -46,6 +52,7 @@ public static class WizardItemCollection {
         s_store.Operations.Send(patchRequest);
 
         session.SaveChanges();
+        return true;
     }
 
     /// <summary>
@@ -56,12 +63,18 @@ public static class WizardItemCollection {
     /// </summary>
     /// <param name="playerId">The ID of the player.</param>
     /// <param name="items">The items to be added.</param>
-    public static void AddDefaultItems(IEnumerable<WizClientObjectItem> items) {
+    public static bool AddDefaultItems(IEnumerable<WizClientObjectItem> items) {
         using var session = s_store.OpenSession();
 
         // Add the items to the items collection.
         foreach (var item in items)
         {
+            // Return false if this item already exists.
+            if (session.Query<WizClientObjectItem>(CollectionName)
+                .Any(x => x.m_characterId == item.m_characterId && x.m_globalID == item.m_globalID)) {
+                return false;
+            }
+
             session.Store(item);
 
             // Set the collection name in the metadata.
@@ -71,6 +84,7 @@ public static class WizardItemCollection {
 
         // Save the changes.
         session.SaveChanges();
+        return true;
     }
 
     /// <summary>
