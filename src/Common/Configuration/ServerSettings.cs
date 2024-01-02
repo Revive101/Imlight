@@ -3,6 +3,8 @@
  * Proprietary and confidential.
  */
 
+using System;
+
 namespace Imlight.Common.Configuration;
 
 [IniSection("Global Settings")]
@@ -88,6 +90,9 @@ public sealed class ServerSettings {
 
     [DefaultValue(1000000)]
     public int BaseGoldPouch { get; set; }
+
+    [DefaultValue(Byte.MaxValue)]
+    public byte MaxLevel { get; set; }
 
     #endregion
 

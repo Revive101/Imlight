@@ -107,7 +107,12 @@ public static class CanonicalStatEffects {
         return CalculateStatValue(stat, category, isFlat);
     }
 
-    private static GameEffectTemplate GetEffectTemplate(string effectName)
+    /// <summary>
+    /// Retrieves the effect template based on the provided effect name.
+    /// </summary>
+    /// <param name="effectName"></param>
+    /// <returns></returns>
+    internal static GameEffectTemplate GetEffectTemplate(string effectName)
         => s_effectTable.m_effectTemplates.FirstOrDefault(x => x.m_effectName == effectName);
 
     private static WizardStatTable GetStatTable(GameEffectTemplate effectTemplate) {

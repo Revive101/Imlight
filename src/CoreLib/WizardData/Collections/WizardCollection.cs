@@ -139,4 +139,21 @@ public static class WizardCollection {
         existingCharacter.EquippedItems = wizard.EquippedItems;
         session.SaveChanges();
     }
+
+    /// <summary>
+    /// Updates the character level of a wizard.
+    /// </summary>
+    /// <param name="wizard">The wizard object containing the updated level.</param>
+    public static void UpdateCharacterLevel(Wizard wizard) {
+        using var session = s_store.OpenSession();
+
+        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
+            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        if (existingCharacter is null) {
+            return;
+        }
+
+        existingCharacter.Level = wizard.Level;
+        session.SaveChanges();
+    }
 }

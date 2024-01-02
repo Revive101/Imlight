@@ -46,6 +46,22 @@ public class WizardService : MessageService {
         });
     }
 
+    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_LEVELUP))]
+    private void ReceiveSetLevel(CHARACTER_103_PROTOCOL.MSG_LEVELUP message) {
+        // This is the internal level up message. It most likely happened due to a developer command.
+        var levelUpSuccess = _activeWizard.SetLevel(message.NewLevel);
+        if (!levelUpSuccess) {
+            return;
+        }
+
+        var levelUpMessage = new WIZARD_12_PROTOCOL.MSG_LEVELUP {
+            GlobalID = _activeWizard.CharId,
+            NewLevel = _activeWizard.Level,
+            Data = "0000000000"
+        };
+        ZoneBroadcast(levelUpMessage, false);
+    }
+
     #endregion
 
     #region Game Handlers

@@ -38,4 +38,12 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol
         public Wizard Wizard;
         public TypeCache.CoreObject WizardGameObject;
     }
+
+    public class MSG_LEVELUP : IServerMessage
+    {
+        public byte MessageOrder { get; } = 4;
+        public byte ServiceID { get; } = 103;
+
+        public byte NewLevel;
+    }
 }

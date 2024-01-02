@@ -131,6 +131,20 @@ public class Wizard : IDisposable {
         WizardCollection.UpdateCharacterZone(this, zone, zoneDisplayName);
     }
 
+    public bool SetLevel(byte level) {
+        if (level > ConfigurationManager.Settings.MaxLevel) {
+            Logger.Warning("Tried to set character {0} level to {1}, which is past max level.", Logger.Args(CharId, level));
+            return false;
+        }
+
+        Level = level;
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterLevel(this);
+
+        return true;
+    }
+
     // todo: Regions are a sign of a class becoming monolithic.
     #region Inventory
 
@@ -409,6 +423,11 @@ public class Wizard : IDisposable {
         foreach (var effectInfo in template.m_equipEffects) {
             var gameEffect = GameEffectFactory.CreateEffectFromInfo(effectInfo, slotHash);
 
+            if (gameEffect is WizStatisticEffect canonicalEffect) {
+                var canonicalEffectCategory = CanonicalStatEffects.GetEffectTemplate(effectInfo.m_effectName).m_effectCategory;
+                ApplyEffectToGameStats(canonicalEffectCategory, canonicalEffect);
+            }
+
             addedEffects.Add(gameEffect);
         }
 
@@ -438,15 +457,17 @@ public class Wizard : IDisposable {
         return removedEffects;
     }
 
-    private bool ApplyEffect(GameEffectInfo gameEffectInfo) {
+    private void ApplyEffectToGameStats(string effectCategory, WizStatisticEffect effect) {
         // To apply the effects to the player, we need all three parts of the effect:
-        // 1. The effect info, which contains the name of the effect and the lookup index.
-        // 2. The effect template, which tells us what school the effect applies to.
-        // 3. The effect itself, which contains the actual values of the effect.
-        return true;
+        // 1. The effect template, which tells us what school the effect applies to.
+        // 2. The effect itself, which contains the actual values of the effect.
+        // For example, fire accuracy:
+        // 1. The template has m_effectCategory "FireAccuracy."
+        // 2. The effect iself has m_accuracyBonusPercent "0.01."
+
     }
 
-    private bool AbstainEffect() {
+    private bool AbstainEffectFromGameStats() {
         return true;
     }
 
