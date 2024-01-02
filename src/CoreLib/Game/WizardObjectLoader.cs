@@ -17,6 +17,7 @@ namespace Imlight.CoreLib.Game;
 public static class WizardObjectLoader {
     public static WizClientObject GetPlayerGameObject(ref Wizard character) {
         var clientObject = CoreObjectFactory.InitializeCoreObjectBehaviors(new WizClientObject(), 1);
+        CharacterHelper.ResetStats(character.GameStats, character.Level, character.WizardSchool);
 
         // Set the stats on the new object.
         clientObject.m_templateID = 1;

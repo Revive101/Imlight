@@ -367,9 +367,6 @@ public class Wizard : IDisposable {
         var actualWizardName = WizardNameBank.GetEnglishName(NameIndices, WizardAvatar.m_eGender);
         Logger.Debug("{0} is applying effects for all equipment.", Logger.Args(actualWizardName));
 
-        // Reset all the stats to their base values.
-        CharacterHelper.ResetStats(this.GameStats, Level, WizardSchool);
-
         foreach (var item in EquipmentGetAllItems()) {
             var template = item.Item2;
 
