@@ -226,7 +226,10 @@ public class Wizard : IDisposable {
                                 InventoryItemIds.Add(coreObject.m_globalID);
                             });
 
-        WizardItemCollection.AddDefaultItems(defaultItems);
+        var success = WizardItemCollection.AddDefaultItems(defaultItems);
+        if (!success) {
+            Logger.Error("Could not add default items for Wizard {0} to database.", Logger.Args(CharId));
+        }
     }
 
     #endregion
@@ -425,7 +428,7 @@ public class Wizard : IDisposable {
 
             if (gameEffect is WizStatisticEffect canonicalEffect) {
                 var canonicalEffectCategory = CanonicalStatEffects.GetEffectTemplate(effectInfo.m_effectName).m_effectCategory;
-                ApplyEffectToGameStats(canonicalEffectCategory, canonicalEffect);
+                CharacterHelper.AddGameEffectToStats(this.GameStats, canonicalEffectCategory, canonicalEffect);
             }
 
             addedEffects.Add(gameEffect);
@@ -455,16 +458,6 @@ public class Wizard : IDisposable {
         }
 
         return removedEffects;
-    }
-
-    private void ApplyEffectToGameStats(string effectCategory, WizStatisticEffect effect) {
-        // To apply the effects to the player, we need all three parts of the effect:
-        // 1. The effect template, which tells us what school the effect applies to.
-        // 2. The effect itself, which contains the actual values of the effect.
-        // For example, fire accuracy:
-        // 1. The template has m_effectCategory "FireAccuracy."
-        // 2. The effect iself has m_accuracyBonusPercent "0.01."
-
     }
 
     private bool AbstainEffectFromGameStats() {

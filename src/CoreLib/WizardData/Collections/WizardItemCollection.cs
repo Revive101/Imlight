@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Imlight.Common;
 using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Raven.Client.Documents;
@@ -31,7 +32,7 @@ public static class WizardItemCollection {
         using var session = s_store.OpenSession();
 
         // Return false if this item already exists.
-        if (session.Query<WizClientObjectItem>(CollectionName)
+        if (session.Query<WizClientObjectItem>(collectionName: CollectionName)
             .Any(x => x.m_characterId == item.m_characterId && x.m_globalID == item.m_globalID)) {
             return false;
         }
@@ -70,8 +71,10 @@ public static class WizardItemCollection {
         foreach (var item in items)
         {
             // Return false if this item already exists.
-            if (session.Query<WizClientObjectItem>(CollectionName)
+            if (session
+                .Query<WizClientObjectItem>(collectionName: CollectionName)
                 .Any(x => x.m_characterId == item.m_characterId && x.m_globalID == item.m_globalID)) {
+                Logger.Error("Item {0} already exists in the database.", Logger.Args(item.m_globalID));
                 return false;
             }
 
@@ -97,7 +100,8 @@ public static class WizardItemCollection {
         using var session = s_store.OpenSession();
 
         // Get the item from the items collection.
-        var associatedItem = session.Query<WizClientObjectItem>(CollectionName)
+        var associatedItem = session
+            .Query<WizClientObjectItem>(collectionName: CollectionName)
             .FirstOrDefault(x => x.m_characterId == item.m_characterId && x.m_globalID == item.m_globalID);
 
         // If the item was not found, return false.
@@ -130,7 +134,7 @@ public static class WizardItemCollection {
         using var session = s_store.OpenSession();
 
         // Get the item from the items collection.
-        var associatedItem = session.Query<WizClientObjectItem>(CollectionName)
+        var associatedItem = session.Query<WizClientObjectItem>(collectionName: CollectionName)
             .FirstOrDefault(x => x.m_characterId == charId && x.m_globalID == itemId);
 
         // If the item was not found, return false.
