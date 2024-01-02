@@ -1,3 +1,8 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
 using Imlight.Common;
 using Imlight.Common.Configuration;
 using Imlight.Common.ObjectProperty.PropertyReflection;
@@ -26,8 +31,7 @@ internal static class CharacterHelper {
         var character = new Wizard(school, wizardAvatar, nameIndices);
 
         // Create the game stats and calculate the base stats.
-        var gameStats = new WizGameStats();
-        gameStats = SetCharacterStatsToBase(gameStats, character.Level, character.WizardSchool);
+        var gameStats = GetNewCharacterGameStats(character.Level, character.WizardSchool);
         character.GameStats = gameStats;
 
         return character;
@@ -80,42 +84,56 @@ internal static class CharacterHelper {
         return equipmentList;
     }
 
-    internal static void AddGameEffectToStats(WizGameStats stats, WizStatisticEffect statistic) {
-        // Given a statistic, add it to the stats.
-        stats.m_baseHitpoints += (int) statistic.m_hitPointBonus;
-        stats.m_baseMana += (int) statistic.m_manaBonus;
-        stats.m_energyMax += (int) statistic.m_energyBonus;
-        stats.m_iceMastery = statistic.m_iceMastery;
-        stats.m_fireMastery = statistic.m_fireMastery;
-        stats.m_stormMastery = statistic.m_stormMastery;
-        stats.m_mythMastery = statistic.m_mythMastery;
-        stats.m_lifeMastery = statistic.m_lifeMastery;
-        stats.m_deathMastery = statistic.m_deathMastery;
-        stats.m_balanceMastery = statistic.m_balanceMastery;
-        stats.m_powerPipBonusPercentAll += statistic.m_powerPipBonusPercent;
+    /// <summary>
+    /// Resets the stats of a WizGameStats object based on the provided level and magic school.
+    /// </summary>
+    /// <param name="stats">The WizGameStats object to reset.</param>
+    /// <param name="level">The level of the wizard.</param>
+    /// <param name="school">The magic school of the wizard.</param>
+    internal static void ResetStats(WizGameStats stats, byte level, MagicSchool school) {
+        var baseHealth = WizardClassData.GetClassHealthAtLevel(school, level);
+        var baseMana = WizardClassData.GetManaAtLevel(level);
+        var powerPipChance  = WizardClassData.GetPowerPipChanceAtLevel(level);
+        var energyMax = WizardClassData.GetPetEnergyAtLevel(level);
+
+        stats.m_baseHitpoints = baseHealth;
+        stats.m_baseMana = baseMana;
+        stats.m_baseGoldPouch = ConfigurationManager.Settings.BaseGoldPouch;
+        stats.m_powerPipBase = powerPipChance;
+        stats.m_energyMax = energyMax;
+
+        // Set all the stats to 0.
+        stats.m_dmgBonusFlatAll = 0;
+        stats.m_dmgBonusPercentAll = 0;
+        stats.m_accBonusPercentAll = 0;
+        stats.m_dmgReduceFlatAll = 0;
+        stats.m_dmgReducePercentAll = 0;
+        stats.m_blockPercentBySchool = new List<float>();
+        stats.m_blockRatingBySchool = new List<float>();
+        stats.m_dmgBonusFlat = new List<float>();
+        stats.m_dmgBonusPercent = new List<float>();
+        stats.m_dmgBonusFlat = new List<float>();
+        stats.m_dmgReduceFlat = new List<float>();
+        stats.m_dmgReducePercent = new List<float>();
+        stats.m_accBonusPercent = new List<float>();
+        stats.m_blockPercentBySchool = new List<float>();
+        stats.m_blockRatingBySchool = new List<float>();
     }
 
-    private static WizGameStats SetCharacterStatsToBase(WizGameStats existingStats, byte level, MagicSchool school) {
+    private static WizGameStats GetNewCharacterGameStats(byte level, MagicSchool school) {
+        var stats = new WizGameStats();
+
         var baseHealth = WizardClassData.GetClassHealthAtLevel(school, level);
         var baseMana = WizardClassData.GetManaAtLevel(level);
 
-        existingStats.m_baseHitpoints = baseHealth;
-        existingStats.m_currentHitpoints = baseHealth;
-        existingStats.m_baseMana = baseMana;
-        existingStats.m_currentMana = baseMana;
-        existingStats.m_baseGoldPouch = ConfigurationManager.Settings.BaseGoldPouch;
-        existingStats.m_powerPipBase = WizardClassData.GetPowerPipChanceAtLevel(level);
-        existingStats.m_energyMax = WizardClassData.GetPetEnergyAtLevel(level);
+        stats.m_baseHitpoints = baseHealth;
+        stats.m_currentHitpoints = baseHealth;
+        stats.m_baseMana = baseMana;
+        stats.m_currentMana = baseMana;
+        stats.m_baseGoldPouch = ConfigurationManager.Settings.BaseGoldPouch;
+        stats.m_powerPipBase = WizardClassData.GetPowerPipChanceAtLevel(level);
+        stats.m_energyMax = WizardClassData.GetPetEnergyAtLevel(level);
 
-        // Initialize the lists.
-        existingStats.m_blockPercentBySchool = new List<float>();
-        existingStats.m_blockRatingBySchool = new List<float>();
-        existingStats.m_dmgBonusFlat = new List<float>();
-        existingStats.m_dmgBonusPercent = new List<float>();
-        existingStats.m_dmgBonusFlat = new List<float>();
-        existingStats.m_dmgReduceFlat = new List<float>();
-        existingStats.m_dmgReducePercent = new List<float>();
-
-        return existingStats;
+        return stats;
     }
 }

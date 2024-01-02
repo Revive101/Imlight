@@ -367,6 +367,9 @@ public class Wizard : IDisposable {
         var actualWizardName = WizardNameBank.GetEnglishName(NameIndices, WizardAvatar.m_eGender);
         Logger.Debug("{0} is applying effects for all equipment.", Logger.Args(actualWizardName));
 
+        // Reset all the stats to their base values.
+        CharacterHelper.ResetStats(this.GameStats, Level, WizardSchool);
+
         foreach (var item in EquipmentGetAllItems()) {
             var template = item.Item2;
 
@@ -427,11 +430,12 @@ public class Wizard : IDisposable {
             var gameEffect = GameEffectFactory.CreateEffectFromInfo(effectInfo, slotHash);
 
             if (gameEffect is WizStatisticEffect canonicalEffect) {
-                var canonicalEffectCategory = CanonicalStatEffects.GetEffectTemplate(effectInfo.m_effectName).m_effectCategory;
-                CharacterHelper.AddGameEffectToStats(this.GameStats, canonicalEffectCategory, canonicalEffect);
+                var canonicalEffectName = CanonicalStatEffects.GetEffectTemplate(effectInfo.m_effectName).m_effectName;
+                CharacterEffectHelper.AddGameEffectToStats(this.GameStats, canonicalEffectName, canonicalEffect);
             }
 
             addedEffects.Add(gameEffect);
+            GameEffects.Add(gameEffect);
         }
 
         return addedEffects;
@@ -455,13 +459,14 @@ public class Wizard : IDisposable {
 
             // Remove the effect.
             GameEffects.Remove(gameEffect);
+
+            if (gameEffect is WizStatisticEffect canonicalEffect) {
+                var canonicalEffectName = CanonicalStatEffects.GetEffectTemplate(effectInfo.m_effectName).m_effectName;
+                CharacterEffectHelper.RemoveGameEffectFromStats(this.GameStats, canonicalEffectName, canonicalEffect);
+            }
         }
 
         return removedEffects;
-    }
-
-    private bool AbstainEffectFromGameStats() {
-        return true;
     }
 
     #endregion
