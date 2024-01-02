@@ -36,11 +36,11 @@ public abstract class Server : ReceiveProtocolDispatcher {
         this._factoryProps = factoryProps;
 
         // Get outside IP.
-#if !DEBUG
+        #if !DEBUG
         this.Ip = new HttpClient().GetStringAsync("https://api.ipify.org/").Result;
-#else
+        #else
         this.Ip = "127.0.0.1";
-#endif
+        #endif
 
         CreateTcpListener();
         _actorFactoryRef = CreateActorFactory();

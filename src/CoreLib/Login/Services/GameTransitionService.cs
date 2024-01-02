@@ -12,6 +12,8 @@ using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
+using SharpDX;
+using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models.Player;
 using SharpDX;
 

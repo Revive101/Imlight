@@ -124,9 +124,24 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
         };
         CommandLogCollection.AddCommandLog(chatLog);
 
-        ExecuteCommand(message.CommandText, context);
+        try {
+            ExecuteCommand(message.CommandText, context);
+        }
+        catch (Exception ex) {
+            // Log the exception and inform the client.
+            // Choose which exception to use. If there's an inner exception, use that.
+            var exception = ex.InnerException ?? ex;
+            Logger.Error("Command dispatcher threw exception running command. Exception: {0} {1}",
+                Logger.Args(exception.Message, exception.StackTrace));
+
+            InformSenderClientImportant(context,
+                                        $"An error occurred while executing the command. Exception: {ex.Message} {ex.StackTrace}");
+        }
     }
 
     private void InformSenderClient(CommandContext context, string reason)
         => context.SessionActor.Tell(new EXTENDEDBASE_2_PROTOCOL.MSG_SERVERMESSAGE() {Message = reason});
+
+    private void InformSenderClientImportant(CommandContext context, string reason)
+        => context.SessionActor.Tell(new EXTENDEDBASE_2_PROTOCOL.MSG_SERVERMESSAGE() { Message = reason, Modal = 1 });
 }
