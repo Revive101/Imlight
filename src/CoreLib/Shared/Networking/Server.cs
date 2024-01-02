@@ -130,16 +130,16 @@ public abstract class Server : ReceiveProtocolDispatcher {
             localOnlyDecider: ex => {
                 switch (ex) {
                     case SocketException socketEx: {
-                            // Client regularly shuts down the socket. No need to log it.
-                            if (socketEx.Message.ToLower().Contains("failure: shutdown")) {
-                                return Directive.Stop;
-                            }
-
                             Logger.Error("SessionActor {SessionId} has failed with exception {Exception}",
                                 Logger.Args(Context.Self.Path.Name, socketEx));
                             return Directive.Stop;
                         }
                     default: {
+                            // Client regularly shuts down the socket. No need to log it.
+                            if (ex.Message.ToLower().Contains("shutdown")) {
+                                return Directive.Stop;
+                            }
+
                             Logger.Error("SessionActor {SessionId} has failed with exception {Exception}",
                                 Logger.Args(Context.Self.Path.Name, ex));
                             return Directive.Stop;

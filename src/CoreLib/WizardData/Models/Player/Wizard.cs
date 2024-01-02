@@ -425,6 +425,7 @@ public class Wizard : IDisposable {
         // Apply the effects from the template.
         foreach (var effectInfo in template.m_equipEffects) {
             var gameEffect = GameEffectFactory.CreateEffectFromInfo(effectInfo, slotHash);
+            gameEffect.m_internalID = GameEffects.Count;
 
             if (gameEffect is WizStatisticEffect canonicalEffect) {
                 var canonicalEffectName = CanonicalStatEffects.GetEffectTemplate(effectInfo.m_effectName).m_effectName;
