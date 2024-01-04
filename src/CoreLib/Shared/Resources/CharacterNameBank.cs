@@ -81,6 +81,11 @@ public static class WizardNameBank {
             return "[NOT_FOUND]";
         }
 
+        // Make sure we don't go out of bounds.
+        if (realNameIdIndex + 2 >= _englishNameBank.Length) {
+            return "[NOT_FOUND]";
+        }
+
         return _englishNameBank[realNameIdIndex + 2];
     }
 

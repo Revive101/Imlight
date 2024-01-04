@@ -70,12 +70,10 @@ internal static class CharacterHelper {
             m_infoList = new List<EquippedItemInfo>(),
         };
         foreach (var equippedItem in character.EquippedItems.Where(x => x.m_itemID != 0)) {
-            // For every equipped item, get the actual item from the inventory.
-            // Then, create a new WizardEquippedItemInfo from the actual item.
-            // This is a smaller version of the item that is used for the character select screen.
+            // The equipped items are stored as a list of ItemID's. We need to get the actual item
+            // from the inventory and then convert it to a public item.
             var itemId = equippedItem.m_itemID;
-            var actualItem = character.InventoryGetItem(itemId)
-                ?? throw new Exception($"Could not find item with ID {itemId} in inventory.");
+            var actualItem = character.InventoryGetItem(itemId);
             var publicItem = ItemHelper.GetPublicItem(actualItem);
 
             equipmentList.m_infoList.Add(publicItem);

@@ -45,10 +45,15 @@ public class EquipmentService : MessageService {
 
     [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE))]
     private void ReceiveAttachComplete(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE message) {
+        // This doesn't have to be done in a try/catch.
         try {
-            // Send the client every effect that is currently active on the player.
+            // We don't persistently save equipment effects, so we need to re-apply them on login.
+            // This is the very first step in that process. Start by telling the Wizard to apply
+            // all of the effects for the equipment it has equipped.
             var playerCharacter = GetActiveWizard();
             playerCharacter.ApplyEffectsForAllEquipment();
+
+            // Now that the effects have been applied, we need to tell the client about them.
             var effects = playerCharacter.GameEffects;
             SendAddEffects(effects);
         }
@@ -77,9 +82,10 @@ public class EquipmentService : MessageService {
         // Todo: Check if player meets requirements to equip item. If not, log an infraction.
 
         // Check to see if the player already has this item equipped. If they do, broadcast the removal of it.
+        byte slot = 0;
         if (wizard.EquipmentHasEquippedItem(itemId)) {
-            var slot = wizard.EquipmentGetItemSlotIndex(itemId);
-            SendUnequipItem(slot, itemId);
+            slot = wizard.EquipmentGetItemSlotIndex(itemId);
+            // Don't immediately unequip this item. Wait to see if the Wizard class succeeds.
         }
 
         var addedEffects = wizard.EquipmentEquipItem(itemId);
@@ -88,6 +94,7 @@ public class EquipmentService : MessageService {
             return;
         }
 
+        SendUnequipItem(slot, itemId);
         SendEquipItem(item, message.SlotName);
         SendAddEffects(addedEffects);
     }
@@ -110,6 +117,7 @@ public class EquipmentService : MessageService {
             return;
         }
 
+        // This needs to be done before we unequip the item, because we need to know what slot it was in.
         var slot = playerCharacter.EquipmentGetItemSlotIndex(itemId);
 
         var removedEffects = playerCharacter.EquipmentUnequipItem(itemId);
@@ -131,14 +139,8 @@ public class EquipmentService : MessageService {
         });
 
         // Serialize item and broadcast equip action to other players.
-        var publicItem = new WizardEquippedItemInfo() {
-            m_itemID = (uint) item.m_templateID,
-            m_pattern = (Bui5) item.m_pattern,
-            m_baseColor = (Bui5) item.m_primaryColor,
-            m_trimColor = (Bui5) item.m_secondaryColor,
-        };
-
-        var data = _itemSerializer.Serialize(publicItem);
+        var pubItem = ItemHelper.GetPublicItem(item);
+        var data = _itemSerializer.Serialize(pubItem);
         ZoneBroadcast(new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM() {
             GlobalID = GetActiveGameObject().m_globalID,
             SerializedInfo = data

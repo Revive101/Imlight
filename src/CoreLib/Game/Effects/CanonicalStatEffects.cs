@@ -52,9 +52,15 @@ public static class CanonicalStatEffects {
         // Iterate through each table and find the stat table name.
         // This will be the literal name of the table in the Root.wad file.
         var statTables = new List<WizardStatTable>();
+        var seenTables = new HashSet<string>();
         foreach (var template in s_effectTable.m_effectTemplates) {
             var statEffectTemplate = (WizStatisticEffectTemplate) template;
             var statTableName = statEffectTemplate.m_statTableName;
+
+            // Check for duplicates.
+            if (!seenTables.Add(statTableName)) {
+                continue;
+            }
 
             // Search for this table in the Root.wad file.
             var statTableDirectory = GameRuleDirectoryPrefix + statTableName + ".xml";
@@ -65,6 +71,7 @@ public static class CanonicalStatEffects {
             }
 
             statTables.Add(statTable);
+            seenTables.Add(statTableName);
         }
 
         s_wizardStatTables = statTables.ToArray();
