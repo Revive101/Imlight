@@ -82,11 +82,8 @@ public class EquipmentService : MessageService {
         // Todo: Check if player meets requirements to equip item. If not, log an infraction.
 
         // Check to see if the player already has this item equipped. If they do, broadcast the removal of it.
-        byte slot = 0;
-        if (wizard.EquipmentHasEquippedItem(itemId)) {
-            slot = wizard.EquipmentGetItemSlotIndex(itemId);
-            // Don't immediately unequip this item. Wait to see if the Wizard class succeeds.
-        }
+        var slot = wizard.EquipmentGetItemSlotIndex(itemId);
+        var hasItemEquipped = wizard.EquipmentHasEquippedItem(itemId);
 
         var addedEffects = wizard.EquipmentEquipItem(itemId);
         if (addedEffects is null) {
@@ -94,7 +91,10 @@ public class EquipmentService : MessageService {
             return;
         }
 
-        SendUnequipItem(slot, itemId);
+        if (hasItemEquipped) {
+            SendUnequipItem(slot, itemId);
+        }
+
         SendEquipItem(item, message.SlotName);
         SendAddEffects(addedEffects);
     }
@@ -151,6 +151,7 @@ public class EquipmentService : MessageService {
         // This one goes to the client.
         SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPITEM() {
             ItemID = itemId,
+            // The client doesn't really care about these fields below.
             SlotName = "",
             IsEquip = 0
         });
