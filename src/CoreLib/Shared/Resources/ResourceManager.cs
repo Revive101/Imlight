@@ -17,53 +17,59 @@ using Imlight.CoreLib.WizardData.Implementations;
 namespace Imlight.CoreLib.Shared.Resources;
 
 public static class ResourceManager {
-    public const string RootWadName = "Root.wad";
-    private const uint PatchServerDownloadTimeoutSeconds = 360;
+    private const string RootWadName = RootArchiveLoader.RootWadName;
     private static KiWad s_rootWad;
 
+    static ResourceManager() {
+        // Force load the LocalWadCache class so that it initializes.
+        // This is a hack to make sure the cache is initialized before we try to load anything.
+        // If we don't do this, the cache will be initialized on the first call to TryLoadFile,
+        // which will cause a delay.
+        var localWadCache = typeof(LocalWadCache);
+
+        // Force load the RootArchiveLoader class so that it initializes.
+        var rootArchiveLoader = typeof(RootArchiveLoader);
+    }
+
     /// <summary>
-    /// Gets a WAD file from storage. If it's not found in the local cache, it will instead
-    /// download it from the available patch server endpoint.
+    /// Tries to load an archive with the specified name.
     /// </summary>
-    public static bool TryLoadFile(string wadName, out KiWad wad) {
+    /// <param name="wadName">The name of the archive to load.</param>
+    /// <param name="wad">When this method returns, contains the loaded KiWad object if the archive was successfully loaded; otherwise, the default value.</param>
+    /// <returns><c>true</c> if the archive was successfully loaded; otherwise, <c>false</c>.</returns>
+    public static bool TryLoadArchive(string wadName, out KiWad wad) {
         wad = default;
+
+        // The root.wad is highly prevalent, so we cache it in memory.
         if (wadName == RootWadName) {
-            // Root is always loaded into memory. If it's not, we'll load it.
-            if (s_rootWad is null) {
-                var rootCache = LoadWad(RootWadName);
-                if (rootCache is null) {
-                    Logger.Error("Could not load vital {WadName} into memory!", Logger.Args(RootWadName));
-                    return false;
-                }
-                s_rootWad = rootCache;
-            }
-
-            wad = s_rootWad;
-        }
-        else {
-            var cachedWad = LoadWad(wadName);
-            if (cachedWad is null) {
-                return false;
-            }
-
-            wad = cachedWad;
+            throw new InvalidOperationException("Root.wad should not be loaded directly. Use the RootArchiveLoader class instead.");
         }
 
+        // Otherwise, load it as normal.
+        var cachedWad = LoadWad(wadName);
+        if (cachedWad is null) {
+            return false;
+        }
+
+        wad = cachedWad;
         return true;
     }
 
     /// <summary>
-    /// Gets a file record from a KIWAD in file storage. If it's not found in the local cache, it will instead
-    /// be downloaded from the patch server endpoint.
+    /// Tries to load a file from a specified WAD archive.
     /// </summary>
-    /// <param name="wadName">The name of the KIWAD.</param>
-    /// <param name="fileName">The name of the file record inside the KIWAD.</param>
-    /// <param name="fileStream">The output file stream that will return if the file record is found.</param>
-    /// <returns>True, if the file was found or downloaded; otherwise, false.</returns>
+    /// <param name="wadName">The name of the WAD archive.</param>
+    /// <param name="fileName">The name of the file to load.</param>
+    /// <param name="fileStream">When this method returns, contains the file stream if the file was successfully loaded; otherwise, the default value.</param>
+    /// <returns><c>true</c> if the file was successfully loaded; otherwise, <c>false</c>.</returns>
     public static bool TryLoadFile(string wadName, string fileName, out MemoryStream fileStream) {
         fileStream = default;
 
-        if (!TryLoadFile(wadName, out var wad)) {
+        if (wadName == RootWadName) {
+            throw new InvalidOperationException("Root.wad should not be loaded directly. Use the RootArchiveLoader class instead.");
+        }
+
+        if (!TryLoadArchive(wadName, out var wad)) {
             return false;
         }
 
@@ -73,18 +79,18 @@ public static class ResourceManager {
     }
 
     /// <summary>
-    /// Loads a file from the cache, or downloads it from the patch server as needed, and deserializes the file.
-    /// Any file from root is safe, as root is always loaded into memory.
-    /// Otherwise, load the entire KIWAD using <see cref="TryLoadFile(string,out Wad)"/>
-    /// and use <see cref="FileSerializer"/> to open individual files from it.
+    /// Loads and deserializes a file of type T from a specified WAD archive.
     /// </summary>
-    /// <param name="wadName">The name of the wad.</param>
-    /// <param name="fileName">The name of the file record.</param>
-    /// <typeparam name="T"></typeparam>
-    /// <returns>The deserialized property class. Null if it was not found, could not be downloaded,
-    /// or could not be deserialized.</returns>
+    /// <typeparam name="T">The type of the file to be deserialized.</typeparam>
+    /// <param name="wadName">The name of the WAD archive.</param>
+    /// <param name="fileName">The name of the file to be deserialized.</param>
+    /// <returns>The deserialized file of type T, or null if the file could not be loaded or deserialized.</returns>
     public static T LoadDeserializedFile<T>(string wadName, string fileName) where T : PropertyClass {
-        if (!TryLoadFile(wadName, out var wad)) {
+        if (wadName == RootWadName) {
+            throw new InvalidOperationException("Root.wad should not be loaded directly. Use the RootArchiveLoader class instead.");
+        }
+
+        if (!TryLoadArchive(wadName, out var wad)) {
             return null;
         }
 
@@ -92,11 +98,6 @@ public static class ResourceManager {
         return serializer.OpenClass<T>(wad, fileName);
     }
 
-    /// <summary>
-    /// Loads a wad from the cache, or downloads it from the patch server as needed.
-    /// </summary>
-    /// <param name="wadName"></param>
-    /// <returns></returns>
     private static KiWad LoadWad(string wadName) {
         // Check if the file is already cached. If it is, just return that.
         var cachedWad = LocalWadCache.GetCachedWad(wadName);

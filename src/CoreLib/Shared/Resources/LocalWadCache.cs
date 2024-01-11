@@ -42,6 +42,7 @@ internal static class LocalWadCache {
             Logger.Information("Created local cache file at {Path}", Logger.Args(s_path));
         }
 
+        // If the patch server is available, we'll update the cache.
         if (PatchServer.EndpointReached) {
             Logger.Information("Begin updating local cache..");
             UpdateCache();
@@ -98,6 +99,7 @@ internal static class LocalWadCache {
     }
 
     internal static void DeleteWad(string fileName) {
+        fileName = SanitizeWadName(fileName);
         using var db = new LiteDatabase(s_path);
         var fs = db.GetStorage<FileDefinition>();
 
@@ -155,18 +157,18 @@ internal static class LocalWadCache {
 
         // If the file is Root.wad, we'll also clear the cached version in memory.
         if (file.Filename.Contains("Root")) {
-            s_rootWad = null;
+            RootArchiveLoader.ReloadRootWad();
         }
 
-        var betterWadName = SanitizeWadName(file.Filename);
-        if (!PatchServerFascade.DownloadWadFromPatchServer(betterWadName, out var stream)) {
-            Logger.Error("Failed to update wad {WadName}.", Logger.Args(betterWadName));
+        if (!PatchServerFascade.DownloadWadFromPatchServer(file.Filename, out var stream)) {
+            Logger.Error("Failed to update wad {WadName}.", Logger.Args(file.Filename));
             return;
         }
 
         // If we successfully downloaded it, we'll also cache it so we don't have to do that again.
         stream.Seek(0, SeekOrigin.Begin);
         var wad = new KiWad(stream);
+        var betterWadName = SanitizeWadName(file.Filename);
         CacheWad(betterWadName, wad);
     }
 
