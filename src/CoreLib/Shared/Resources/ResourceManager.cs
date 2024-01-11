@@ -18,17 +18,32 @@ namespace Imlight.CoreLib.Shared.Resources;
 
 public static class ResourceManager {
     private const string RootWadName = RootArchiveLoader.RootWadName;
-    private static KiWad s_rootWad;
+    private static bool s_hasInitialized;
 
-    static ResourceManager() {
+    static ResourceManager() => Initialize();
+
+    /// <summary>
+    /// Initializes the resource manager. This method doesn't have to be called,
+    /// but it can be used to force the initialization to happen at a specific time.
+    /// </summary>
+    public static void Initialize() {
+        if (s_hasInitialized) {
+            return;
+        }
+        s_hasInitialized = true;
+
+        Logger.Information("{0} begin load..", Logger.Args(nameof(ResourceManager)));
+
         // Force load the LocalWadCache class so that it initializes.
         // This is a hack to make sure the cache is initialized before we try to load anything.
         // If we don't do this, the cache will be initialized on the first call to TryLoadFile,
         // which will cause a delay.
-        var localWadCache = typeof(LocalWadCache);
+        LocalWadCache.Initialize();
 
         // Force load the RootArchiveLoader class so that it initializes.
-        var rootArchiveLoader = typeof(RootArchiveLoader);
+        RootArchiveLoader.ReloadRootWad();
+
+        Logger.Information("{0} load complete.", Logger.Args(nameof(ResourceManager)));
     }
 
     /// <summary>
@@ -46,7 +61,7 @@ public static class ResourceManager {
         }
 
         // Otherwise, load it as normal.
-        var cachedWad = LoadWad(wadName);
+        var cachedWad = ResourceWad(wadName);
         if (cachedWad is null) {
             return false;
         }
@@ -98,7 +113,7 @@ public static class ResourceManager {
         return serializer.OpenClass<T>(wad, fileName);
     }
 
-    private static KiWad LoadWad(string wadName) {
+    private static KiWad ResourceWad(string wadName) {
         // Check if the file is already cached. If it is, just return that.
         var cachedWad = LocalWadCache.GetCachedWad(wadName);
         if (cachedWad is not null) {
@@ -107,7 +122,7 @@ public static class ResourceManager {
 
         // Otherwise, download it from the patch server.
         // If Imlight is running without the patch server, we'll just return null.
-        if (!PatchServer.EndpointReached) {
+        if (!PatchServerFascade.EndpointReached) {
             Logger.Warning($"Imlight tried to load an uncached KIWAD while the patch server was not available.");
             return null;
         }

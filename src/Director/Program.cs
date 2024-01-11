@@ -52,13 +52,7 @@ internal static class Program {
         task.Wait();
 
         Logger.Information("Gathering appropriate resources..");
-        var resourceLoadResult = ResourceManager.Initialize();
-        if (!resourceLoadResult) {
-            Logger.Fatal($"Could not load resources!");
-
-            Console.Read();
-            return;
-        }
+        ResourceManager.Initialize();
         Logger.Information("Resources successfully allocated.");
 
         // =============================================================

@@ -2,6 +2,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
  */
+using Imlight.Common;
 using Imlight.Common.Formats;
 
 using Imlight.Common.ObjectProperty;
@@ -20,8 +21,6 @@ namespace Imlight.CoreLib.Shared.Resources;
 internal static class RootArchiveLoader {
     internal const string RootWadName = "Root.wad";
     private static KiWad s_rootWad;
-
-    static RootArchiveLoader() => ReloadRootWad();
 
     internal static KiWad GetRootWad() => s_rootWad;
 
@@ -54,8 +53,37 @@ internal static class RootArchiveLoader {
     /// Reloads the Root.wad file into memory.
     /// </summary>
     internal static void ReloadRootWad() {
-        if (!ResourceManager.TryLoadArchive(RootWadName, out s_rootWad)) {
-            throw new Exception("Could not load Root.wad into memory!");
+        Logger.Information("Loading Root.wad into memory..");
+
+        s_rootWad = ResourceWad();
+
+        Logger.Information("Root.wad successfully loaded into memory.");
+    }
+
+    private static KiWad ResourceWad() {
+        // Check if the file is already cached. If it is, just return that.
+        var cachedWad = LocalWadCache.GetCachedWad(RootWadName);
+        if (cachedWad is not null) {
+            return cachedWad;
         }
+
+        // Otherwise, download it from the patch server.
+        // If Imlight is running without the patch server, we'll just return null.
+        if (!PatchServerFascade.EndpointReached) {
+            Logger.Warning($"Imlight tried to load an uncached KIWAD while the patch server was not available.");
+            return null;
+        }
+
+        if (!PatchServerFascade.DownloadWadFromPatchServer(RootWadName, out var stream)) {
+            Logger.Error("Failed to download wad {WadName} from patch server", Logger.Args(RootWadName));
+            return null;
+        }
+
+        // If we successfully downloaded it, we'll also cache it so we don't have to do that again.
+        stream.Seek(0, SeekOrigin.Begin);
+        var wad = new KiWad(stream);
+        LocalWadCache.CacheWad(RootWadName, wad);
+
+        return wad;
     }
 }

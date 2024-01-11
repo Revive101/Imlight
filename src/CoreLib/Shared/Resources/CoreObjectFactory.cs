@@ -194,6 +194,8 @@ public static class CoreObjectFactory {
         obj.m_zoneTagID = StringHash.Compute(objInfo.m_zoneTag);
         obj.m_debugName = objInfo.m_zoneTag;
 
+        // todo: set a property here for the english name of this object
+
         return obj;
     }
 

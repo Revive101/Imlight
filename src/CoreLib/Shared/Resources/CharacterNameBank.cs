@@ -20,8 +20,8 @@ public static class WizardNameBank {
     private const string MiddleNameHumanTableName = "MiddleName_Human";
     private const string LastNameHumanTableName = "LastName_Human";
 
-    private static readonly string[] _englishNameBank = GetEnglishNameBank();
-    private static readonly Dictionary<string, List<string>> _characterNameTable = GetCharacterNameTable();
+    private static readonly string[] s_englishNameBank = GetEnglishNameBank();
+    private static readonly Dictionary<string, List<string>> s_characterNameTable = GetCharacterNameTable();
 
     /// <summary>
     /// Retrieves the English name based on the given name indices and gender.
@@ -64,7 +64,7 @@ public static class WizardNameBank {
     }
 
     private static string GetEnglishNamePart(string tableName, int index) {
-        if (!_characterNameTable.TryGetValue(tableName, out var characterNames)) {
+        if (!s_characterNameTable.TryGetValue(tableName, out var characterNames)) {
             return "[NOT_FOUND]";
         }
 
@@ -76,21 +76,21 @@ public static class WizardNameBank {
 
         // Search through the English name bank for the name.
         // Find the ID of the name. The actual name will be 2 lines below the ID.
-        var realNameIdIndex = Array.IndexOf(_englishNameBank, _englishNameBank.First(x => x == localeNameid));
+        var realNameIdIndex = Array.IndexOf(s_englishNameBank, s_englishNameBank.First(x => x == localeNameid));
         if (realNameIdIndex == -1) {
             return "[NOT_FOUND]";
         }
 
         // Make sure we don't go out of bounds.
-        if (realNameIdIndex + 2 >= _englishNameBank.Length) {
+        if (realNameIdIndex + 2 >= s_englishNameBank.Length) {
             return "[NOT_FOUND]";
         }
 
-        return _englishNameBank[realNameIdIndex + 2];
+        return s_englishNameBank[realNameIdIndex + 2];
     }
 
     private static string[] GetEnglishNameBank() {
-        if (!ResourceManager.TryLoadFile(ResourceManager.RootWadName, EnglishCharacterNamesPath, out var fileStream)) {
+        if (!ResourceManager.TryLoadFile(RootArchiveLoader.RootWadName, EnglishCharacterNamesPath, out var fileStream)) {
             throw new Exception(EnglishCharacterNamesPath);
         }
 
@@ -107,7 +107,7 @@ public static class WizardNameBank {
     }
 
     private static Dictionary<string, List<string>> GetCharacterNameTable() {
-        if (!ResourceManager.TryLoadFile(ResourceManager.RootWadName, CharacterNameTablePath, out var fileStream)) {
+        if (!ResourceManager.TryLoadFile(RootArchiveLoader.RootWadName, CharacterNameTablePath, out var fileStream)) {
             throw new Exception(EnglishCharacterNamesPath);
         }
 

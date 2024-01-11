@@ -34,8 +34,16 @@ internal static class LocalWadCache {
     private static readonly string s_path = ConfigurationManager.Settings.LocalWadCachePath;
     private static readonly int s_pathServerWait = ConfigurationManager.Settings.LocalWadCacheWaitForPatchServerTimeout;
     private static readonly int s_pathServerDownloadTimeout = ConfigurationManager.Settings.PatchServerDownloadTimeout;
+    private static bool s_hasInitialized;
 
-    static LocalWadCache() {
+    static LocalWadCache() => Initialize();
+
+    internal static void Initialize() {
+        if (s_hasInitialized) {
+            return;
+        }
+        s_hasInitialized = true;
+
         // Create the cache file if it doesn't exist.
         if (!File.Exists(s_path)) {
             File.Create(s_path).Dispose();
