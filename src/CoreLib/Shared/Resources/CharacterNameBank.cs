@@ -90,7 +90,8 @@ public static class WizardNameBank {
     }
 
     private static string[] GetEnglishNameBank() {
-        if (!ResourceManager.TryLoadFile(RootArchiveLoader.RootWadName, EnglishCharacterNamesPath, out var fileStream)) {
+        var fileStream = RootArchiveLoader.GetFileStream(EnglishCharacterNamesPath);
+        if (fileStream is null) {
             throw new Exception(EnglishCharacterNamesPath);
         }
 
@@ -107,7 +108,8 @@ public static class WizardNameBank {
     }
 
     private static Dictionary<string, List<string>> GetCharacterNameTable() {
-        if (!ResourceManager.TryLoadFile(RootArchiveLoader.RootWadName, CharacterNameTablePath, out var fileStream)) {
+        var fileStream = RootArchiveLoader.GetFileStream(CharacterNameTablePath);
+        if (fileStream is null) {
             throw new Exception(EnglishCharacterNamesPath);
         }
 
