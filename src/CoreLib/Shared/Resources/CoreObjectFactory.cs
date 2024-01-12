@@ -12,37 +12,31 @@ using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.Cryptography;
 using Imlight.Common.IO;
+using Imlight.Common.ObjectProperty;
 using Imlight.Common.Utilities;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Shared.Resources;
 
-public static class CoreObjectFactory {
-    private const string RootWadName = "Root.wad";
-    private const string TemplateManifestName = "TemplateManifest.xml";
+public class CoreObjectFactory : RootResourceSingleton<CoreObjectFactory>, IMemoryStreamDisposable {
+    protected override string ResourceName { get; } = "TemplateManifest.xml";
 
     private static readonly Dictionary<ulong, ByteString> s_coreTemplates = new();
     private static bool s_hasLoaded = false;
 
-    /// <summary>
-    /// Loads the template manifest and populates the core templates.
-    /// </summary>
-    /// <returns>True if the loading is successful; otherwise, false.</returns>
-    public static bool Load() {
-        if (s_hasLoaded) {
-            return true;
-        }
-        s_hasLoaded = true;
-
+    protected override void AfterLoad() {
         // Load the TemplateManifest.xml and record the amount of time it takes.
         var timer = new Stopwatch();
         timer.Start();
 
-        var manifest = ResourceManager.LoadDeserializedFile<TemplateManifest>(RootWadName, TemplateManifestName);
+        var fileSerializer = new FileSerializer();
+        var manifest = fileSerializer.OpenClass<TemplateManifest>(Stream);
+
         if (manifest is null) {
-            return false;
+            throw new Exception("Could not deserialize TemplateManifest.xml");
         }
 
+        var templateCount = manifest.m_serializedTemplates.Count;
         Parallel.ForEach(manifest.m_serializedTemplates, templateLocation => {
             if (templateLocation is null) {
                 return;
@@ -59,10 +53,12 @@ public static class CoreObjectFactory {
             }
         });
 
-        timer.Stop();
-        Logger.Debug("{0} load took {Em}ms.", Logger.Args(TemplateManifestName, timer.ElapsedMilliseconds));
+        Logger.Information("Loaded {TCount} CoreTemplates.", Logger.Args(templateCount));
 
-        return true;
+        timer.Stop();
+        Logger.Debug("{0} load took {Em}ms.", Logger.Args(ResourceName, timer.ElapsedMilliseconds));
+
+        this.DisposeStream();
     }
 
     /// <summary>
@@ -206,5 +202,10 @@ public static class CoreObjectFactory {
             WizGameObjectTemplate => new WizClientObject(),
             _ => new ClientObject()
         };
+    }
+
+    public void DisposeStream() {
+        s_coreTemplates.Clear();
+        Stream?.Dispose();
     }
 }

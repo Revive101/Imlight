@@ -10,22 +10,17 @@ using Imlight.Common;
 
 namespace Imlight.CoreLib.Shared.Resources;
 
-public static class AccessPassManager {
-    private const string RootWadName = "Root.wad";
-    private const string AccessPassName = "AccessPass.xml";
+public class AccessPassManager : RootResourceSingleton<AccessPassManager>, IMemoryStreamDisposable {
+    protected override string ResourceName { get; } = "AccessPass.xml";
 
     private static string[] s_zones;
 
-    public static bool Load() {
-        if (!ResourceManager.TryLoadFile(RootWadName, AccessPassName, out var stream)) {
-            return false;
-        }
-
+    protected override void AfterLoad() {
         // Use the XmlReader to read the file. Only the zone names are needed,
         // so we find the <Zone> tags and read the name attribute.
         var zoneList = new HashSet<string>();
         var doc = new XmlDocument();
-        doc.Load(stream);
+        doc.Load(Stream);
 
         foreach (XmlNode zoneNode in doc.GetElementsByTagName("Zone")) {
             var zoneName = zoneNode.InnerText;
@@ -36,8 +31,7 @@ public static class AccessPassManager {
         Logger.Information("AccessPassManager loaded {Count} zones.", Logger.Args(zoneList.Count));
 
         s_zones = zoneList.ToArray();
-
-        return true;
+        ((IMemoryStreamDisposable)this).DisposeStream();
     }
 
     public static bool DoesZoneExist(string zoneName)
@@ -45,4 +39,6 @@ public static class AccessPassManager {
 
     public static string GetContainedZoneName(string partialZoneName)
         => s_zones.FirstOrDefault(zone => zone.ToLower().Contains(partialZoneName.ToLower()));
+
+    void IMemoryStreamDisposable.DisposeStream() => base.Stream?.Dispose();
 }
