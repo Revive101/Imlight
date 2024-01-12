@@ -30,13 +30,13 @@ internal class FileDefinition {
 /// It is not recommended to source files from here. Instead, use <see cref="ResourceManager"/>,
 /// which will automatically source files from the cache or the patch server, whichever is available.
 /// </summary>
-internal static class LocalWadCache {
+public static class LocalWadCache {
     private static readonly string s_path = ConfigurationManager.Settings.LocalWadCachePath;
     private static bool s_hasInitialized;
 
     static LocalWadCache() => Initialize();
 
-    internal static void Initialize() {
+    public static void Initialize() {
         if (s_hasInitialized) {
             return;
         }

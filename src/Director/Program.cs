@@ -21,8 +21,10 @@ namespace Imlight.Director;
 
 internal static class Program {
     private const string ActorSystemName = "Imlight";
+    private const string Version = "1.1.0";
 
-    private static ActorSystem _imlightSystem;
+    private static ActorSystem s_imlightSystem;
+    private static ResourceContainer s_resourceContainer;
 
     private static void Main() {
         // =============================================================
@@ -41,7 +43,7 @@ internal static class Program {
             return;
         }
         Logger.Information("Akka.NET system created.");
-        _imlightSystem = system;
+        s_imlightSystem = system;
 
         // =============================================================
         // RESOURCES
@@ -51,15 +53,15 @@ internal static class Program {
         var task = StartPatchServer();
         task.Wait();
 
-        Logger.Information("Gathering appropriate resources..");
-        ResourceManager.Initialize();
-        Logger.Information("Resources successfully allocated.");
+        Logger.Information("Director is now explicitly loading resources..");
+        s_resourceContainer = new ResourceContainer();
+        Logger.Information("Director has called all resources to load.");
 
         // =============================================================
         // SERVERS
         // =============================================================
-        var LoggerinServer = StartLoginServer();
-        StartGameServer(LoggerinServer);
+        var loginServer = StartLoginServer();
+        StartGameServer(loginServer);
 
         // Force load dragon database. Create a dud account if the database ends up using the embedded database.
         _ = PlayerDatabase.Instance.Store;
@@ -82,10 +84,10 @@ internal static class Program {
         var LoggerinServerPort = ConfigurationManager.Settings.LoginServerPort;
 
         var LoggerinProps = LoginServer.Props(LoggerinServerName, LoggerinServerPort);
-        var LoggerinServer = _imlightSystem.ActorOf(LoggerinProps, LoggerinServerName);
+        var LoggerinServer = s_imlightSystem.ActorOf(LoggerinProps, LoggerinServerName);
 
         Logger.Debug("New actor created under {systemName}: {LoggerinServerName}",
-            Logger.Args(_imlightSystem.Name, LoggerinServerName));
+            Logger.Args(s_imlightSystem.Name, LoggerinServerName));
 
         return LoggerinServer;
     }
@@ -100,10 +102,10 @@ internal static class Program {
         var defaultPatchServerPort = ConfigurationManager.Settings.PatchServerPort;
 
         var patchProps = PatchServer.Props(defaultPatchServerName, defaultPatchServerPort);
-        var actor = _imlightSystem.ActorOf(patchProps, defaultPatchServerName);
+        var actor = s_imlightSystem.ActorOf(patchProps, defaultPatchServerName);
 
         Logger.Debug("New actor created under {systemName}: {patchServerName}",
-            Logger.Args(_imlightSystem.Name, defaultPatchServerName));
+            Logger.Args(s_imlightSystem.Name, defaultPatchServerName));
 
         // Await initialization of the patch server.
         await actor.Ask<SERVER_100_PROTOCOL.MSG_INITIALIZE_COMPLETE>(new SERVER_100_PROTOCOL.MSG_INITIALIZE());
@@ -142,7 +144,7 @@ internal static class Program {
         var buildConfiguration = GetBuildConfiguration();
         Console.Write(@"|___/");
         Console.ForegroundColor = ConsoleColor.DarkGray;
-        Console.Write($"   (NETHRA-v1.0.0 {buildConfiguration})\n");
+        Console.Write($"   (NETHRA-v{Version} {buildConfiguration})\n");
         Console.WriteLine("");
     }
 
