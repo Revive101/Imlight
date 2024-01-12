@@ -12,6 +12,7 @@ using Imlight.Common.ObjectProperty.PropertyReflection;
 using System;
 
 using System.IO;
+using System.Reflection.Metadata.Ecma335;
 
 namespace Imlight.CoreLib.Shared.Resources;
 
@@ -67,7 +68,9 @@ public static class RootArchiveLoader {
         }
 
         // Validate that the file exists.
-        var _ = s_rootWad.OpenFile(fileName) ?? throw new Exception($"Could not find file {fileName} in Root.wad!");
+        if (!s_rootWad.Files.TryGetValue(fileName, out var _)) {
+            return null;
+        }
 
         var serializer = new FileSerializer();
         return serializer.OpenClass<T>(s_rootWad, fileName);

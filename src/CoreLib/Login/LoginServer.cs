@@ -20,6 +20,7 @@ public class LoginServer : Server {
     public LoginServer(string serverName, ushort serverPort)
         : base(serverName, serverPort, LoginServiceFactory.Props()) {
         this._gamePoolServer = CreateGameServerPool();
+
         Logger.Information("Login server created with name {Name} under port {Port}.",
             Logger.Args(serverName, serverPort));
     }

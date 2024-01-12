@@ -43,7 +43,7 @@ public static class CanonicalStatEffects {
     /// Loads the canonical stat effects and stat tables.
     /// </summary>
     internal static void Load() {
-        s_effectTable = ResourceManager.LoadDeserializedFile<GameEffectTemplateList>(RootArchiveLoader.RootWadName, EffectTablePath);
+        s_effectTable = RootArchiveLoader.GetFile<GameEffectTemplateList>(EffectTablePath);
         if (s_effectTable is null) {
             Logger.Error("Could not find effect table {0} in {1}", Logger.Args(EffectTablePath, RootArchiveLoader.RootWadName));
             return;
@@ -64,7 +64,7 @@ public static class CanonicalStatEffects {
 
             // Search for this table in the Root.wad file.
             var statTableDirectory = GameRuleDirectoryPrefix + statTableName + ".xml";
-            var statTable = ResourceManager.LoadDeserializedFile<WizardStatTable>(RootArchiveLoader.RootWadName, statTableDirectory);
+            var statTable = RootArchiveLoader.GetFile<WizardStatTable>(statTableDirectory);
             if (statTable is null) {
                 // There seem to be server side tables here. Not all of them are in the client.
                 // Logger.Error("Could not find stat table {0} in {1}", Logger.Args(statTableName, RootArchiveLoader.RootWadName));
