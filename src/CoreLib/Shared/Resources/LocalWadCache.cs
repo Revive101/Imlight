@@ -32,8 +32,6 @@ internal class FileDefinition {
 /// </summary>
 internal static class LocalWadCache {
     private static readonly string s_path = ConfigurationManager.Settings.LocalWadCachePath;
-    private static readonly int s_pathServerWait = ConfigurationManager.Settings.LocalWadCacheWaitForPatchServerTimeout;
-    private static readonly int s_pathServerDownloadTimeout = ConfigurationManager.Settings.PatchServerDownloadTimeout;
     private static bool s_hasInitialized;
 
     static LocalWadCache() => Initialize();

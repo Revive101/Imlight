@@ -20,6 +20,7 @@ namespace Imlight.CoreLib.Shared.Resources;
 /// </summary>
 internal static class RootArchiveLoader {
     internal const string RootWadName = "Root.wad";
+    internal static bool IsLoaded { get; private set; }
     private static KiWad s_rootWad;
 
     internal static KiWad GetRootWad() => s_rootWad;
@@ -56,6 +57,9 @@ internal static class RootArchiveLoader {
         Logger.Information("Loading Root.wad into memory..");
 
         s_rootWad = ResourceWad();
+        if (s_rootWad is not null) {
+            IsLoaded = true;
+        }
 
         Logger.Information("Root.wad successfully loaded into memory.");
     }

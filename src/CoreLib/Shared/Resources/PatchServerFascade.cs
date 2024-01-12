@@ -44,7 +44,7 @@ internal static class PatchServerFascade {
     }
 
     /// <summary>
-    /// Downloads a WAD (Web Application Distribution) file from the patch server.
+    /// Downloads a WAD archive file from the patch server.
     /// </summary>
     /// <param name="wadName">The name of the WAD file to download.</param>
     /// <param name="fileStream">When this method returns, contains the downloaded WAD file as a <see cref="MemoryStream"/>. This parameter is passed uninitialized.</param>
