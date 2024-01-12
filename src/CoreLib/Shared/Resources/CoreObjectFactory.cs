@@ -21,8 +21,7 @@ namespace Imlight.CoreLib.Shared.Resources;
 public class CoreObjectFactory : RootResourceSingleton<CoreObjectFactory>, IMemoryStreamDisposable {
     protected override string ResourceName { get; } = "TemplateManifest.xml";
 
-    private static readonly Dictionary<ulong, ByteString> s_coreTemplates = new();
-    private static bool s_hasLoaded = false;
+    private static TemplateManifest s_templateManifest;
 
     protected override void AfterLoad() {
         // Load the TemplateManifest.xml and record the amount of time it takes.
@@ -35,25 +34,8 @@ public class CoreObjectFactory : RootResourceSingleton<CoreObjectFactory>, IMemo
         if (manifest is null) {
             throw new Exception("Could not deserialize TemplateManifest.xml");
         }
-
-        var templateCount = manifest.m_serializedTemplates.Count;
-        Parallel.ForEach(manifest.m_serializedTemplates, templateLocation => {
-            if (templateLocation is null) {
-                return;
-            }
-
-            var id = templateLocation.m_id;
-            var loc = templateLocation.m_filename;
-
-            // Drop the MSB from the id.
-            id &= 0xFFFFFFFF;
-
-            lock (s_coreTemplates) {
-                s_coreTemplates.Add(id, loc);
-            }
-        });
-
-        Logger.Information("Loaded {TCount} CoreTemplates.", Logger.Args(templateCount));
+        s_templateManifest = manifest;
+        Logger.Information("Loaded {TCount} CoreTemplates.", Logger.Args(s_templateManifest.m_serializedTemplates.Count));
 
         timer.Stop();
         Logger.Debug("{0} load took {Em}ms.", Logger.Args(ResourceName, timer.ElapsedMilliseconds));
@@ -135,16 +117,17 @@ public class CoreObjectFactory : RootResourceSingleton<CoreObjectFactory>, IMemo
     /// <param name="id">The ID of the CoreTemplate.</param>
     /// <returns>The CoreTemplate object if found; otherwise, null.</returns>
     public static CoreTemplate GetCoreTemplate(ulong id) {
-        if (!s_coreTemplates.TryGetValue(id, out var loc)) {
+        var template = s_templateManifest.m_serializedTemplates.FirstOrDefault(x => x.m_id == id);
+        if (template is null) {
             Logger.Error("Could not find CoreTemplate by ID {Tid}", Logger.Args(id));
             return null;
         }
 
-        var template = ResourceManager.LoadDeserializedFile<CoreTemplate>("Root.wad", loc);
+        var templateObj = RootArchiveLoader.GetFile<CoreTemplate>(template.m_filename);
         if (template is null) {
-            Logger.Error("Could not load CoreTemplate from {Loc}", Logger.Args(loc));
+            Logger.Error("Could not load CoreTemplate from {Loc}", Logger.Args(template.m_filename));
         }
-        return template ?? null;
+        return templateObj ?? null;
     }
 
     /// <summary>
@@ -205,7 +188,6 @@ public class CoreObjectFactory : RootResourceSingleton<CoreObjectFactory>, IMemo
     }
 
     public void DisposeStream() {
-        s_coreTemplates.Clear();
         Stream?.Dispose();
     }
 }
