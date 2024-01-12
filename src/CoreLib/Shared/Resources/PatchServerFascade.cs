@@ -58,6 +58,7 @@ internal static class PatchServerFascade {
 
         try {
             var patchServer = PatchServer.Instance;
+            wadName = wadName.Replace('/', '-');
             var askMsg = new PATCH_105_PROTOCOL.MSG_DOWNLOAD_WAD_REQUEST { WadName = wadName };
             var timeout = TimeSpan.FromSeconds(s_pathServerDownloadTimeout);
             fileStream = patchServer.Ask<PATCH_105_PROTOCOL.MSG_DOWNLOAD_FILE_RESULT>(askMsg, timeout)
