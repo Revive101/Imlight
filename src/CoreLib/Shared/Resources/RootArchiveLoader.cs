@@ -18,7 +18,7 @@ namespace Imlight.CoreLib.Shared.Resources;
 /// <summary>
 /// Loads the Root.wad archive into memory.
 /// </summary>
-internal static class RootArchiveLoader {
+public static class RootArchiveLoader {
     internal const string RootWadName = "Root.wad";
     internal static bool IsLoaded { get; private set; }
     private static KiWad s_rootWad;
@@ -26,11 +26,30 @@ internal static class RootArchiveLoader {
     internal static KiWad GetRootWad() => s_rootWad;
 
     /// <summary>
+    /// Reloads the Root.wad file into memory.
+    /// </summary>
+    public static void ReloadRootWad() {
+        Logger.Information("Loading Root.wad into memory..");
+
+        s_rootWad = ResourceWad();
+        if (s_rootWad is not null) {
+            IsLoaded = true;
+        }
+
+        Logger.Information("Root.wad successfully loaded into memory.");
+    }
+
+    /// <summary>
     /// Gets a <see cref="MemoryStream"/> for the specified file name.
     /// </summary>
     /// <param name="fileName">The name of the file.</param>
     /// <returns>A <see cref="MemoryStream"/> containing the file data.</returns>
     internal static MemoryStream GetFileStream(string fileName) {
+        if (s_rootWad is null) {
+            ReloadRootWad();
+        }
+
+        var t = s_rootWad;
         var file = s_rootWad.OpenFile(fileName) ?? throw new Exception($"Could not find file {fileName} in Root.wad!");
 
         return file;
@@ -43,25 +62,15 @@ internal static class RootArchiveLoader {
     /// <param name="fileName">The name of the file to retrieve.</param>
     /// <returns>The file of type T.</returns>
     internal static T GetFile<T>(string fileName) where T : PropertyClass {
+        if (s_rootWad is null) {
+            ReloadRootWad();
+        }
+
         // Validate that the file exists.
         var _ = s_rootWad.OpenFile(fileName) ?? throw new Exception($"Could not find file {fileName} in Root.wad!");
 
         var serializer = new FileSerializer();
         return serializer.OpenClass<T>(s_rootWad, fileName);
-    }
-
-    /// <summary>
-    /// Reloads the Root.wad file into memory.
-    /// </summary>
-    internal static void ReloadRootWad() {
-        Logger.Information("Loading Root.wad into memory..");
-
-        s_rootWad = ResourceWad();
-        if (s_rootWad is not null) {
-            IsLoaded = true;
-        }
-
-        Logger.Information("Root.wad successfully loaded into memory.");
     }
 
     private static KiWad ResourceWad() {

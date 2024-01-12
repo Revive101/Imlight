@@ -18,33 +18,6 @@ namespace Imlight.CoreLib.Shared.Resources;
 
 public static class ResourceManager {
     private const string RootWadName = RootArchiveLoader.RootWadName;
-    private static bool s_hasInitialized;
-
-    static ResourceManager() => Initialize();
-
-    /// <summary>
-    /// Initializes the resource manager. This method doesn't have to be called,
-    /// but it can be used to force the initialization to happen at a specific time.
-    /// </summary>
-    public static void Initialize() {
-        if (s_hasInitialized) {
-            return;
-        }
-        s_hasInitialized = true;
-
-        Logger.Information("{0} begin load..", Logger.Args(nameof(ResourceManager)));
-
-        // Force load the LocalWadCache class so that it initializes.
-        // This is a hack to make sure the cache is initialized before we try to load anything.
-        // If we don't do this, the cache will be initialized on the first call to TryLoadFile,
-        // which will cause a delay.
-        LocalWadCache.Initialize();
-
-        // Force load the RootArchiveLoader class so that it initializes.
-        RootArchiveLoader.ReloadRootWad();
-
-        Logger.Information("{0} load complete.", Logger.Args(nameof(ResourceManager)));
-    }
 
     /// <summary>
     /// Tries to load an archive with the specified name.
