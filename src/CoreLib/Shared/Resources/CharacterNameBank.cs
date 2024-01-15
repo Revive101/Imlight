@@ -3,6 +3,7 @@
  * Proprietary and confidential.
  */
 
+using Imlight.Common;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -104,6 +105,8 @@ public static class WizardNameBank {
             }
         }
 
+        Logger.Information("Loaded {0} English character names.", Logger.Args(lines.Count));
+
         return lines.ToArray();
     }
 
@@ -130,6 +133,8 @@ public static class WizardNameBank {
 
             result.Add(tableName, characterNames);
         }
+
+        Logger.Information("Loaded {0} character name tables.", Logger.Args(result.Count));
 
         return result;
     }
