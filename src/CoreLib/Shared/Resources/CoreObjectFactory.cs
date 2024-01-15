@@ -173,7 +173,10 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
         obj.m_zoneTagID = StringHash.Compute(objInfo.m_zoneTag);
         obj.m_debugName = objInfo.m_zoneTag;
 
-        // todo: set a property here for the english name of this object
+        if (template is GameObjectTemplate goTemplate) {
+            var englishName = Locale.GetEnglishName(goTemplate.m_displayName);
+            obj.m_displayKey = englishName;
+        }
 
         return obj;
     }
