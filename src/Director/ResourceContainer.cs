@@ -8,24 +8,29 @@ using System.Reflection;
 namespace Imlight.Director;
 
 internal class ResourceContainer {
-    internal ResourceContainer() {
-        var baseType = typeof(RootResourceSingleton<>);
-        var assembly = baseType.Assembly;
+    internal ResourceContainer()
+    {
+        var baseTypes = new Type[] { typeof(RootSingleResourceSingleton<>), typeof(RootDirectoryResourceSingleton<>) };
+        var assembly = baseTypes[0].Assembly;
 
-        foreach (var derivedType in assembly.GetTypes()
-            .Where(t => !t.IsAbstract &&
-                        !t.IsInterface &&
-                        t.BaseType != null &&
-                        t.BaseType.IsGenericType &&
-                        t.BaseType.GetGenericTypeDefinition() == baseType)) {
-            // Instantiate the derived type.
-            var instance = Activator.CreateInstance(derivedType);
+        foreach (var baseType in baseTypes)
+        {
+            foreach (var derivedType in assembly.GetTypes()
+                .Where(t => !t.IsAbstract &&
+                            !t.IsInterface &&
+                            t.BaseType != null &&
+                            t.BaseType.IsGenericType &&
+                            t.BaseType.GetGenericTypeDefinition() == baseType))
+            {
+                // Instantiate the derived type.
+                var instance = Activator.CreateInstance(derivedType);
 
-            // Get a delegate to the method using an expression.
-            var methodDelegate = CreateDelegate<Action>(derivedType, "Initialize");
+                // Get a delegate to the method using an expression.
+                var methodDelegate = CreateDelegate<Action>(derivedType, "Initialize");
 
-            // Invoke the method using the delegate.
-            methodDelegate?.Invoke();
+                // Invoke the method using the delegate.
+                methodDelegate?.Invoke();
+            }
         }
     }
 

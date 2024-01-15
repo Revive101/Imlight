@@ -10,7 +10,7 @@ using Imlight.Common;
 
 namespace Imlight.CoreLib.Shared.Resources;
 
-public class AccessPassManager : RootResourceSingleton<AccessPassManager>, IMemoryStreamDisposable {
+public class AccessPassManager : RootSingleResourceSingleton<AccessPassManager>, IMemoryStreamDisposable {
     protected override string ResourceName { get; } = "AccessPass.xml";
 
     private static string[] s_zones;

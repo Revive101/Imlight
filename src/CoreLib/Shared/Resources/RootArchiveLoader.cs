@@ -10,8 +10,9 @@ using Imlight.Common.ObjectProperty;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 
 using System;
-
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 
 namespace Imlight.CoreLib.Shared.Resources;
@@ -74,6 +75,29 @@ public static class RootArchiveLoader {
 
         var serializer = new FileSerializer();
         return serializer.OpenClass<T>(s_rootWad, fileName);
+    }
+
+    /// <summary>
+    /// Retrieves a dictionary of file records and memory streams for files within a specified directory.
+    /// </summary>
+    /// <param name="directoryName">The name of the directory.</param>
+    /// <returns>A dictionary containing file records as keys and memory streams as values.</returns>
+    internal static Dictionary<FileRecord, MemoryStream> GetDirectoryStream(string directoryName) {
+        if (s_rootWad is null) {
+            ReloadRootWad();
+        }
+
+        var files = new Dictionary<FileRecord, MemoryStream>();
+
+        foreach (var file in s_rootWad.Files.Where(x => x.Key.StartsWith(directoryName) && x.Key != directoryName)) {
+            var fileName = file.Key;
+            var fileRecord = file.Value;
+
+            var stream = s_rootWad.OpenFile(fileName);
+            files.Add(fileRecord, stream);
+        }
+
+        return files;
     }
 
     private static KiWad ResourceWad() {

@@ -18,7 +18,7 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Shared.Resources;
 
-public class CoreObjectFactory : RootResourceSingleton<CoreObjectFactory>, IMemoryStreamDisposable {
+public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>, IMemoryStreamDisposable {
     protected override string ResourceName { get; } = "TemplateManifest.xml";
 
     private static TemplateManifest s_templateManifest;
