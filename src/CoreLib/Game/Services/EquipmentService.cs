@@ -164,6 +164,10 @@ public class EquipmentService : MessageService {
     }
 
     private void SendAddEffects(List<GameEffectBase> effects) {
+        if (effects is null || effects.Count == 0) {
+            return;
+        }
+
         var charObjId = GetActiveGameObject().m_globalID;
 
         foreach (var effect in effects) {

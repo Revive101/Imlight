@@ -54,7 +54,7 @@ internal class AttachService : MessageService {
 
         // Tell the game server that the user has attached, and now we need to find a zone process for their
         // zone, or create a new one. This is an internal zone transfer that does not involve the client.
-        var zoneDetails = SendZoneTransfer(message.ZoneName);
+        var zoneDetails = InternalZoneTransfer(message.ZoneName);
         if (zoneDetails.ErrorCode != 0) {
             SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED { Error = zoneDetails.ErrorCode });
             return;
@@ -113,14 +113,15 @@ internal class AttachService : MessageService {
         };
 
         var actualWizardName = WizardNameBank.GetEnglishName(wizard.NameIndices, wizard.WizardAvatar.m_eGender);
-        SendToSocket(loginCompleteMsg);
         AddPlayerToZone(charGameObject, actualWizardName);
+
+        SendToSocket(loginCompleteMsg);
 
         // Inform the other services that attach is complete.
         TellOtherServices(new SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE());
     }
 
-    private ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP SendZoneTransfer(string zoneName) {
+    private ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP InternalZoneTransfer(string zoneName) {
         var zoneMsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
             DestinationZone = zoneName,
             SendToClient = false
@@ -146,15 +147,6 @@ internal class AttachService : MessageService {
 
     private SERVER_100_PROTOCOL.MSG_SERVERINFO GetGameServer() {
         var msg = new SERVER_100_PROTOCOL.MSG_QUERYSERVER();
-
-#if DEBUG
-        var localEndPoint = (IPEndPoint) SessionActor.Socket.LocalEndPoint;
-        var isLocal = localEndPoint.Address.ToString().Contains("127.0.");
-        msg = new SERVER_100_PROTOCOL.MSG_QUERYSERVER() { IsLocal = isLocal };
-#else
-            // Release builds should never be able to connect to their own local server.
-            msg = new SERVER_100_PROTOCOL.MSG_QUERYSERVER() { IsLocal = false };
-#endif
 
         return AskServer<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg);
     }

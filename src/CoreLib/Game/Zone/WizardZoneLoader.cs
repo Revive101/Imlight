@@ -62,7 +62,7 @@ public static class WizardZoneLoader {
                 s_zone = zone;
                 s_zoneActorRef = zoneActorRef;
 
-                if (!ResourceManager.TryLoadFile(zone.ZoneName, out s_wad)) {
+                if (!ResourceManager.TryLoadArchive(zone.ZoneName, out s_wad)) {
                     Logger.Error("Zone {ZoneName} tried to load its own data, but none was " +
                                  "found in the {Name}. We will continue, but the zone will not " +
                                  "contain any objects, mobs or volumes.",

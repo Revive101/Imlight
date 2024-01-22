@@ -12,57 +12,25 @@ using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.Cryptography;
 using Imlight.Common.IO;
+using Imlight.Common.ObjectProperty;
 using Imlight.Common.Utilities;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Shared.Resources;
 
-public static class CoreObjectFactory {
-    private const string RootWadName = "Root.wad";
-    private const string TemplateManifestName = "TemplateManifest.xml";
+public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>, IMemoryStreamDisposable {
+    protected override string ResourceName { get; } = "TemplateManifest.xml";
 
-    private static readonly Dictionary<ulong, ByteString> s_coreTemplates = new();
-    private static bool s_hasLoaded = false;
+    private static TemplateManifest s_templateManifest;
 
-    /// <summary>
-    /// Loads the template manifest and populates the core templates.
-    /// </summary>
-    /// <returns>True if the loading is successful; otherwise, false.</returns>
-    public static bool Load() {
-        if (s_hasLoaded) {
-            return true;
-        }
-        s_hasLoaded = true;
+    protected override void AfterLoad() {
+        var fileSerializer = new FileSerializer();
+        s_templateManifest = fileSerializer.OpenClass<TemplateManifest>(Stream)
+            ?? throw new Exception("Could not deserialize TemplateManifest.xml");
 
-        // Load the TemplateManifest.xml and record the amount of time it takes.
-        var timer = new Stopwatch();
-        timer.Start();
+        Logger.Information("Loaded {TCount} CoreTemplates.", Logger.Args(s_templateManifest.m_serializedTemplates.Count));
 
-        var manifest = ResourceManager.LoadDeserializedFile<TemplateManifest>(RootWadName, TemplateManifestName);
-        if (manifest is null) {
-            return false;
-        }
-
-        Parallel.ForEach(manifest.m_serializedTemplates, templateLocation => {
-            if (templateLocation is null) {
-                return;
-            }
-
-            var id = templateLocation.m_id;
-            var loc = templateLocation.m_filename;
-
-            // Drop the MSB from the id.
-            id &= 0xFFFFFFFF;
-
-            lock (s_coreTemplates) {
-                s_coreTemplates.Add(id, loc);
-            }
-        });
-
-        timer.Stop();
-        Logger.Debug("{0} load took {Em}ms.", Logger.Args(TemplateManifestName, timer.ElapsedMilliseconds));
-
-        return true;
+        this.DisposeStream();
     }
 
     /// <summary>
@@ -139,16 +107,34 @@ public static class CoreObjectFactory {
     /// <param name="id">The ID of the CoreTemplate.</param>
     /// <returns>The CoreTemplate object if found; otherwise, null.</returns>
     public static CoreTemplate GetCoreTemplate(ulong id) {
-        if (!s_coreTemplates.TryGetValue(id, out var loc)) {
+        var template = s_templateManifest.m_serializedTemplates.FirstOrDefault(x => x.m_id == id);
+        if (template is null) {
             Logger.Error("Could not find CoreTemplate by ID {Tid}", Logger.Args(id));
             return null;
         }
 
-        var template = ResourceManager.LoadDeserializedFile<CoreTemplate>("Root.wad", loc);
+        var templateObj = RootArchiveLoader.GetFile<CoreTemplate>(template.m_filename);
         if (template is null) {
-            Logger.Error("Could not load CoreTemplate from {Loc}", Logger.Args(loc));
+            Logger.Error("Could not load CoreTemplate from {Loc}", Logger.Args(template.m_filename));
         }
-        return template ?? null;
+        return templateObj ?? null;
+    }
+
+    /// <summary>
+    /// Finalizes a CoreObject based on the provided template ID.
+    /// </summary>
+    /// <param name="templateId">The ID of the template associated with the core object.</param>
+    /// <returns>The finalized core object.</returns>
+    public static CoreObject FinalizeCoreObject(ulong templateId) {
+        var template = GetCoreTemplate(templateId);
+
+        // Create a blank CoreObjectInfo.
+        var objInfo = new CoreObjectInfo {
+            m_templateID = templateId,
+            m_fScale = 1.0f,
+        };
+
+        return FinalizeCoreObject(objInfo, template);
     }
 
     /// <summary>
@@ -194,6 +180,14 @@ public static class CoreObjectFactory {
         obj.m_zoneTagID = StringHash.Compute(objInfo.m_zoneTag);
         obj.m_debugName = objInfo.m_zoneTag;
 
+        // Check to see if the template has a field called "m_displayName."
+        // If it does, set the debug name to the English name of the display name.
+        if (template.GetType().GetField("m_displayName") is not null) {
+            var displayNameValue = ((ByteString)template.GetType().GetField("m_displayName").GetValue(template)).ToString();
+            var englishName = Locale.GetEnglishName(displayNameValue);
+            obj.m_debugName = englishName;
+        }
+
         return obj;
     }
 
@@ -204,5 +198,9 @@ public static class CoreObjectFactory {
             WizGameObjectTemplate => new WizClientObject(),
             _ => new ClientObject()
         };
+    }
+
+    public void DisposeStream() {
+        Stream?.Dispose();
     }
 }

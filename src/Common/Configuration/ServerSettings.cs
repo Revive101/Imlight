@@ -120,6 +120,13 @@ public sealed class ServerSettings {
     [Description("The time in seconds that the patch server will wait to reach the endpoint before timing out.")]
     public uint PatchServerInternalTimeout { get; set; }
 
+    [DefaultValue("./cache")]
+    public string LocalWadCachePath { get; set; }
+
+    [DefaultValue(360)]
+    [Description("The time in seconds that any given download will wait before timing out.")]
+    public int PatchServerDownloadTimeout { get; set; }
+
     #endregion
 
     #region Database
@@ -235,6 +242,10 @@ public sealed class ServerSettings {
     [DefaultValue(5)]
     [Description("How many times the session actor will try to acquire a token before failing.")]
     public byte SessionTokenBucketFailedAcquisitionLimit { get; set; }
+
+    [DefaultValue(10)]
+    [Description("The time in seconds that the local wad cache will wait for the patch server to respond.")]
+    public int LocalWadCacheWaitForPatchServerTimeout { get; set; }
 
     #endregion
 }
