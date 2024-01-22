@@ -43,6 +43,11 @@ public class Locale : RootDirectoryResourceSingleton<Locale>, IMemoryStreamDispo
         DisposeStream();
     }
 
+    /// <summary>
+    /// Retrieves the English name associated with the specified key.
+    /// </summary>
+    /// <param name="key">The key used to retrieve the English name.</param>
+    /// <returns>The English name associated with the specified key, or an empty string if the key is not found.</returns>
     public static string GetEnglishName(string key) {
         if (key == "") {
             return "";
@@ -64,6 +69,30 @@ public class Locale : RootDirectoryResourceSingleton<Locale>, IMemoryStreamDispo
 
         // Search for the ID in the table
         if (!table.TryGetValue(id, out var value)) {
+            return "";
+        }
+
+        return value;
+    }
+
+    /// <summary>
+    /// Retrieves the English name from the specified table and key.
+    /// </summary>
+    /// <param name="tableName">The name of the table.</param>
+    /// <param name="key">The key to search for in the table.</param>
+    /// <returns>The English name associated with the specified key in the table, or an empty string if not found.</returns>
+    public static string GetEnglishName(string tableName, string key) {
+        if (key == "" || tableName == "") {
+            return "";
+        }
+
+        // Search for the table by name
+        if (!s_data.TryGetValue(tableName, out var table)) {
+            return "";
+        }
+
+        // Search for the ID in the table
+        if (!table.TryGetValue(key, out var value)) {
             return "";
         }
 

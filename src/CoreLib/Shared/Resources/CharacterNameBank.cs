@@ -13,16 +13,20 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Shared.Resources;
 
-public static class WizardNameBank {
-    private const string EnglishCharacterNamesPath = "Locale/English/CharacterNames.lang";
-    private const string CharacterNameTablePath = "CharacterNames.xml";
+public class WizardNameBank : RootSingleResourceSingleton<WizardNameBank>, IMemoryStreamDisposable {
+    protected override string ResourceName => "CharacterNames.xml";
+    private const string CharacterLocaleTable = "CharacterNames";
     private const string FirstNameHumanMaleTableName = "FirstName_HumanMale";
     private const string FirstNameHumanFemaleTableName = "FirstName_HumanFemale";
     private const string MiddleNameHumanTableName = "MiddleName_Human";
     private const string LastNameHumanTableName = "LastName_Human";
 
-    private static readonly string[] s_englishNameBank = GetEnglishNameBank();
-    private static readonly Dictionary<string, List<string>> s_characterNameTable = GetCharacterNameTable();
+    private static Dictionary<string, List<string>> s_characterNameTable;
+
+    protected override void AfterLoad() {
+        s_characterNameTable = GetCharacterNameTable(Stream);
+        Logger.Information("Loaded {0} character name tables.", Logger.Args(s_characterNameTable.Count));
+    }
 
     /// <summary>
     /// Retrieves the English name based on the given name indices and gender.
@@ -73,49 +77,13 @@ public static class WizardNameBank {
             return "[NOT_FOUND]";
         }
 
+        // The character name table is just a list of locale IDs.
         var localeNameid = characterNames[index];
-
-        // Search through the English name bank for the name.
-        // Find the ID of the name. The actual name will be 2 lines below the ID.
-        var realNameIdIndex = Array.IndexOf(s_englishNameBank, s_englishNameBank.First(x => x == localeNameid));
-        if (realNameIdIndex == -1) {
-            return "[NOT_FOUND]";
-        }
-
-        // Make sure we don't go out of bounds.
-        if (realNameIdIndex + 2 >= s_englishNameBank.Length) {
-            return "[NOT_FOUND]";
-        }
-
-        return s_englishNameBank[realNameIdIndex + 2];
+        var englishName = Locale.GetEnglishName(CharacterLocaleTable, localeNameid);
+        return (englishName == "") ? "[NOT_FOUND]" : englishName;
     }
 
-    private static string[] GetEnglishNameBank() {
-        var fileStream = RootArchiveLoader.GetFileStream(EnglishCharacterNamesPath);
-        if (fileStream is null) {
-            throw new Exception(EnglishCharacterNamesPath);
-        }
-
-        // Convert file stream to a string array of lines.
-        var lines = new List<string>();
-        using (var reader = new StreamReader(fileStream)) {
-            string line;
-            while ((line = reader.ReadLine()) != null) {
-                lines.Add(line);
-            }
-        }
-
-        Logger.Information("Loaded {0} English character names.", Logger.Args(lines.Count));
-
-        return lines.ToArray();
-    }
-
-    private static Dictionary<string, List<string>> GetCharacterNameTable() {
-        var fileStream = RootArchiveLoader.GetFileStream(CharacterNameTablePath);
-        if (fileStream is null) {
-            throw new Exception(EnglishCharacterNamesPath);
-        }
-
+    private static Dictionary<string, List<string>> GetCharacterNameTable(MemoryStream fileStream) {
         // Convert the file stream to an XML document.
         var xmlDocument = new XmlDocument();
         xmlDocument.Load(fileStream);
@@ -134,8 +102,8 @@ public static class WizardNameBank {
             result.Add(tableName, characterNames);
         }
 
-        Logger.Information("Loaded {0} character name tables.", Logger.Args(result.Count));
-
         return result;
     }
+
+    public void DisposeStream() => Stream.Dispose();
 }
