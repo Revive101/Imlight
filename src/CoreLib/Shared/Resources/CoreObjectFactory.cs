@@ -165,7 +165,7 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
 
         if (template is GameObjectTemplate goTemplate) {
             var englishName = Locale.GetEnglishName(goTemplate.m_displayName);
-            obj.m_displayKey = englishName;
+            obj.m_debugName = englishName;
         }
 
         return obj;
