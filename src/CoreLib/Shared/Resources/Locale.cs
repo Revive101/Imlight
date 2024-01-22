@@ -15,6 +15,7 @@ namespace Imlight.CoreLib.Shared.Resources;
 public class Locale : RootDirectoryResourceSingleton<Locale>, IMemoryStreamDisposable {
     protected override string DirectoryName => "Locale/English/";
 
+    private static readonly string s_QustFilePrefix = "WizQst";
     private static Dictionary<string, Dictionary<string, string>> s_data = new();
 
     protected override void AfterLoad() {
@@ -28,6 +29,11 @@ public class Locale : RootDirectoryResourceSingleton<Locale>, IMemoryStreamDispo
         foreach (var file in Files) {
             var stream = file.Value;
             var record = file.Key;
+
+            // We have no reason to keep any of these files in memory.
+            if (record.FileName.StartsWith(s_QustFilePrefix)) {
+                continue;
+            }
 
             var data = ProcessLocaleFile(record, stream);
 
