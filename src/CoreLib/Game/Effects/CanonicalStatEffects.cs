@@ -1,4 +1,10 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
 using Imlight.Common;
+using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Shared.Resources;
 using System;
 using System.Collections.Generic;
@@ -7,7 +13,7 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Effects;
 
-public static class CanonicalStatEffects {
+public class CanonicalStatEffects : RootSingleResourceSingleton<CanonicalStatEffects>, IMemoryStreamDisposable {
     /*
     Recall the docs @ https://revive101.github.io/Imlight-docs/internals/schemas.html#object-creation
     Effects that are 'canonical' are effects that change numerical player stats, such as health or damage.
@@ -26,8 +32,7 @@ public static class CanonicalStatEffects {
     Some stats are multiplied by 100.
     */
 
-    private const string EffectTablePath = "GameEffectData/CanonicalStatEffects.xml";
-    private const string GameRuleDirectoryPrefix = "GameEffectRuleData/";
+    protected override string ResourceName => "GameEffectData/CanonicalStatEffects.xml";
     private static readonly string[] s_timesHundredEffectNames = {
         "Accuracy",
         "Damage",
@@ -36,48 +41,14 @@ public static class CanonicalStatEffects {
     };
 
     private static GameEffectTemplateList s_effectTable;
-    private static WizardStatTable[] s_wizardStatTables;
-    private static bool s_isLoaded;
 
-    /// <summary>
-    /// Loads the canonical stat effects and stat tables.
-    /// </summary>
-    internal static void Load() {
-        s_effectTable = RootArchiveLoader.GetFile<GameEffectTemplateList>(EffectTablePath);
-        if (s_effectTable is null) {
-            Logger.Error("Could not find effect table {0} in {1}", Logger.Args(EffectTablePath, RootArchiveLoader.RootWadName));
-            return;
-        }
+    protected override void AfterLoad() {
+        var serializer = new FileSerializer();
+        var propClass = serializer.OpenClass<GameEffectTemplateList>(Stream);
 
-        // Iterate through each table and find the stat table name.
-        // This will be the literal name of the table in the Root.wad file.
-        var statTables = new List<WizardStatTable>();
-        var seenTables = new HashSet<string>();
-        foreach (var template in s_effectTable.m_effectTemplates) {
-            var statEffectTemplate = (WizStatisticEffectTemplate) template;
-            var statTableName = statEffectTemplate.m_statTableName;
+        s_effectTable = propClass;
 
-            // Check for duplicates.
-            if (!seenTables.Add(statTableName)) {
-                continue;
-            }
-
-            // Search for this table in the Root.wad file.
-            var statTableDirectory = GameRuleDirectoryPrefix + statTableName + ".xml";
-            var statTable = RootArchiveLoader.GetFile<WizardStatTable>(statTableDirectory);
-            if (statTable is null) {
-                // There seem to be server side tables here. Not all of them are in the client.
-                // Logger.Error("Could not find stat table {0} in {1}", Logger.Args(statTableName, RootArchiveLoader.RootWadName));
-            }
-
-            statTables.Add(statTable);
-            seenTables.Add(statTableName);
-        }
-
-        s_wizardStatTables = statTables.ToArray();
-        Logger.Information("Loaded {0} canonical stat tables", Logger.Args(s_wizardStatTables.Length));
-
-        s_isLoaded = true;
+        Logger.Information("Loaded {0} canonical stat effects", Logger.Args(s_effectTable.m_effectTemplates.Count));
     }
 
     /// <summary>
@@ -86,12 +57,8 @@ public static class CanonicalStatEffects {
     /// <param name="info">The <see cref="StatisticEffectInfo"/> containing the effect information.</param>
     /// <returns>The calculated canonical stat value.</returns>
     internal static float GetCanonicalStatValue(StatisticEffectInfo info) {
-        if (!s_isLoaded) {
-            Load();
-        }
-
-        if (s_effectTable is null || s_wizardStatTables is null) {
-            Logger.Error("Effect table or stat tables are null. Cannot gather stat value.");
+        if (s_effectTable is null) {
+            Logger.Error("Effect table was null. Cannot gather stat value.");
             return 0;
         }
 
@@ -101,7 +68,9 @@ public static class CanonicalStatEffects {
             return 0;
         }
 
-        var statTable = GetStatTable(effectTemplate);
+        // Cast to WizStatisticEffectTemplate to access the stat table name property.
+        var castedTemplate = (WizStatisticEffectTemplate)effectTemplate;
+        var statTable = GameEffectRuleData.GetWizardStatTable(castedTemplate.m_statTableName);
         if (statTable is null) {
             Logger.Error("Could not find stat table for template {0}", Logger.Args(effectTemplate.m_effectName));
             return 0;
@@ -121,11 +90,6 @@ public static class CanonicalStatEffects {
     /// <returns></returns>
     internal static GameEffectTemplate GetEffectTemplate(string effectName)
         => s_effectTable.m_effectTemplates.FirstOrDefault(x => x.m_effectName == effectName);
-
-    private static WizardStatTable GetStatTable(GameEffectTemplate effectTemplate) {
-        var tableName = ((WizStatisticEffectTemplate)effectTemplate).m_statTableName;
-        return s_wizardStatTables.FirstOrDefault(x => x is not null && x.m_tableName == tableName);
-    }
 
     private static float GetStatValue(WizardStatTable statTable, int lookupIndex) {
         if (lookupIndex >= statTable.m_statVector.Count) {
@@ -147,4 +111,6 @@ public static class CanonicalStatEffects {
             return stat;
         }
     }
+
+    public void DisposeStream() => Stream.Dispose();
 }

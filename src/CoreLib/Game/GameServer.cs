@@ -170,8 +170,6 @@ public class GameServer : Server {
     private void LoadResources() {
         // Force the world database to load.
         _ = WorldDatabase.Instance.Store;
-
-        CanonicalStatEffects.Load();
     }
 
     private void ActiveSessionsChangedEvent(object obj, NotifyCollectionChangedEventArgs args) {
