@@ -8,10 +8,12 @@ using Akka.Actor;
 using Imlight.Common.Caches;
 using Imlight.Common.IO;
 using Imlight.Common.ObjectProperty;
-using Imlight.CoreLib.Game.Models;
-using Imlight.CoreLib.Login.Models;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Implementations;
+using Imlight.CoreLib.WizardData.Models.Player;
+using SharpDX;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Services;
@@ -26,6 +28,7 @@ internal class AttachService : MessageService {
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ATTACH))]
     private void ReceiveAttach(GAME_5_PROTOCOL.MSG_ATTACH message) {
         // Use the session key given in the message to ensure that the user didn't bypass our login server.
+        // The key will be associated with the account they're trying to log into.
         if (!ValidateLoginKey(message.LoginKey, message.UserID, out var account)) {
             SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED() {
                 Error = 1,
@@ -34,7 +37,7 @@ internal class AttachService : MessageService {
             throw new SessionFatalException(
                 $"User [{message.UserID}] failed to validate login key: {message.LoginKey}.");
         }
-        if (!GetCharacterFromAccount(account, message.CharID, out var character)) {
+        if (!GetWizardFromAccount(account, message.CharID, out var wizard)) {
             SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED() {
                 Error = 1,
                 NoDisconnect = 1, // @todo: find out what these error codes mean.
@@ -47,36 +50,51 @@ internal class AttachService : MessageService {
         // This is the first authentication action the user will send on the game server. Send messages to the
         // other services denoting both the account and character this SessionActor just logged into.
         SetAccountInternally(account);
-        SetCharacterInternally(character);
+        SetCharacterInternally(wizard);
 
         // Tell the game server that the user has attached, and now we need to find a zone process for their
-        // zone, or create a new one.
-        var zoneDetails = SendZoneTransfer(message.ZoneName);
+        // zone, or create a new one. This is an internal zone transfer that does not involve the client.
+        var zoneDetails = InternalZoneTransfer(message.ZoneName);
         if (zoneDetails.ErrorCode != 0) {
             SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED { Error = zoneDetails.ErrorCode });
             return;
         }
 
         // Set the character's location and zone to the ones given in the message.
-        character.SetZone(message.ZoneName, zoneDetails.ZoneDisplayName);
-        character.SetLocation(message.Location);
-        var gameServer = GetGameServer();
-        character.GameServerIp = gameServer.IP;
-        character.GameServerPort = (ushort) gameServer.Port;
+        wizard.SetZone(message.ZoneName, zoneDetails.ZoneDisplayName);
 
-        // Serialize the character's game object.
-        var charGameObject = CharacterObjectLoader.GetPlayerGameObject(ref character);
-        charGameObject.m_nMobileID = zoneDetails.MobileId; // Set the mobile id to the one given by the zone.
-        character.GameObject = charGameObject;
+        // The location is a string marked with commas. Parse it into a Vector3.
+        // We're compressing the orientation by a factor of 0.708 to fit it into a byte.
+        // This is to remain consistent with the client's representation of orientation.
+        var location = Util.GetVectorFromCompactString(message.Location);
+        var actualLocation = new Vector3(location.X, location.Y, location.Z);
+        var orientation = location.W / CharacterHelper.OrientationCompressionFactor;
+        wizard.SetPersistentLocation(actualLocation);
+        wizard.SetPersistentOrientation((byte) orientation);
+
+        // Get the best game server for this user.
+        var gameServer = GetGameServer();
+        wizard.GameServerIp = gameServer.IP;
+        wizard.GameServerPort = (ushort) gameServer.Port;
+
+        // Craft the GameObject for this Wizard.
+        var charGameObject = WizardObjectLoader.GetPlayerGameObject(ref wizard);
+
+        // Set the mobile id to the one given by the zone.
+        charGameObject.m_nMobileID = zoneDetails.MobileId;
+
+        // Set the Wizard's GameObject reference to what we just created.
+        wizard.GameObject = charGameObject;
+
+        // Serialize the GameObject and send it to the client.
         var localGameObjectData = new CoreObjectSerializer().Serialize(charGameObject);
         if (charGameObject is null || string.IsNullOrEmpty(localGameObjectData)) {
             throw new ServiceRetryException($"User {message.UserID} failed to grab or deserialize " +
                                             $"their player object.");
         }
 
-        // Send login complete.
         var loginCompleteMsg = new GAME_5_PROTOCOL.MSG_LOGINCOMPLETE() {
-            RealmName = "Imlight",
+            RealmName = "Centaur",
 
             // Set character data.
             Data = localGameObjectData,
@@ -94,11 +112,16 @@ internal class AttachService : MessageService {
             TestServer = 0
         };
 
+        var actualWizardName = WizardNameBank.GetEnglishName(wizard.NameIndices, wizard.WizardAvatar.m_eGender);
+        AddPlayerToZone(charGameObject, actualWizardName);
+
         SendToSocket(loginCompleteMsg);
-        AddPlayerToZone(charGameObject);
+
+        // Inform the other services that attach is complete.
+        TellOtherServices(new SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE());
     }
 
-    private ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP SendZoneTransfer(string zoneName) {
+    private ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP InternalZoneTransfer(string zoneName) {
         var zoneMsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
             DestinationZone = zoneName,
             SendToClient = false
@@ -106,15 +129,16 @@ internal class AttachService : MessageService {
         return AskOtherService<ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP>(zoneMsg);
     }
 
-    private void AddPlayerToZone(WizClientObject charObj) {
+    private void AddPlayerToZone(WizClientObject charObj, string actualWizardName) {
         var msg = new ZONE_102_PROTOCOL.MSG_ADDPLAYER {
             Player = SessionActor.ActorRef,
-            PlayerObject = charObj
+            PlayerObject = charObj,
+            ActualWizardName = actualWizardName,
         };
         TellOtherServices(msg);
     }
 
-    private bool GetCharacterFromAccount(Account account, ulong charId, out Character character) {
+    private bool GetWizardFromAccount(Account account, ulong charId, out Wizard character) {
         var result = account.GetCharacter(charId);
         character = result;
 
@@ -123,15 +147,6 @@ internal class AttachService : MessageService {
 
     private SERVER_100_PROTOCOL.MSG_SERVERINFO GetGameServer() {
         var msg = new SERVER_100_PROTOCOL.MSG_QUERYSERVER();
-
-#if DEBUG
-        var localEndPoint = (IPEndPoint) SessionActor.Socket.LocalEndPoint;
-        var isLocal = localEndPoint.Address.ToString().Contains("127.0.");
-        msg = new SERVER_100_PROTOCOL.MSG_QUERYSERVER() { IsLocal = isLocal };
-#else
-            // Release builds should never be able to connect to their own local server.
-            msg = new SERVER_100_PROTOCOL.MSG_QUERYSERVER() { IsLocal = false };
-#endif
 
         return AskServer<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg);
     }
@@ -157,9 +172,9 @@ internal class AttachService : MessageService {
         });
     }
 
-    private void SetCharacterInternally(Character character) {
-        TellOtherServices(new CHARACTER_103_PROTOCOL.MSG_SETACTIVECHARACTER {
-            Character = character
+    private void SetCharacterInternally(Wizard character) {
+        TellOtherServices(new CHARACTER_103_PROTOCOL.MSG_SETACTIVEWIZARD {
+            Wizard = character
         });
     }
 }

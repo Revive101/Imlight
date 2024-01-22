@@ -185,11 +185,12 @@ public class WizardZonePath : ReceiveProtocolDispatcher {
         _nodes[spawnNode] = false;
 
         var template = CoreObjectFactory.GetCoreTemplate(spawnInfo.m_templateID);
-        var newObj = CoreObjectFactory.CreateObjectFromTemplate(spawnInfo, template, spawnInfo.m_templateID);
+        var newObj = CoreObjectFactory.FinalizeCoreObject(spawnInfo, template);
         if (newObj is null) {
             throw new NullReferenceException();
         }
 
+        newObj = CoreObjectFactory.InitializeCoreObjectBehaviors(newObj, template);
         newObj.m_location = spawnNode.m_location;
 
         var nodes = _nodes.Keys.ToArray();

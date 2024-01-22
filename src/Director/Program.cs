@@ -10,19 +10,21 @@ using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Configuration;
 using Imlight.CoreLib.Login;
-using Imlight.CoreLib.Login.Models;
 using Imlight.CoreLib.Patch;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData;
-using Imlight.CoreLib.WizardData.Implementations;
+using Imlight.CoreLib.WizardData.Databases;
+using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.Director;
 
 internal static class Program {
     private const string ActorSystemName = "Imlight";
+    private const string Version = "1.1.0";
 
-    private static ActorSystem _imlightSystem;
+    private static ActorSystem s_imlightSystem;
+    private static ResourceContainer s_resourceContainer;
 
     private static void Main() {
         // =============================================================
@@ -41,7 +43,7 @@ internal static class Program {
             return;
         }
         Logger.Information("Akka.NET system created.");
-        _imlightSystem = system;
+        s_imlightSystem = system;
 
         // =============================================================
         // RESOURCES
@@ -51,21 +53,15 @@ internal static class Program {
         var task = StartPatchServer();
         task.Wait();
 
-        Logger.Information("Gathering appropriate resources..");
-        var resourceLoadResult = ResourceManager.Initialize();
-        if (!resourceLoadResult) {
-            Logger.Fatal($"Could not load resources!");
-
-            Console.Read();
-            return;
-        }
-        Logger.Information("Resources successfully allocated.");
+        Logger.Information("Director is now explicitly loading resources..");
+        s_resourceContainer = new ResourceContainer();
+        Logger.Information("Director has called all resources to load.");
 
         // =============================================================
         // SERVERS
         // =============================================================
-        var LoggerinServer = StartLoginServer();
-        StartGameServer(LoggerinServer);
+        var loginServer = StartLoginServer();
+        StartGameServer(loginServer);
 
         // Force load dragon database. Create a dud account if the database ends up using the embedded database.
         _ = PlayerDatabase.Instance.Store;
@@ -88,10 +84,10 @@ internal static class Program {
         var LoggerinServerPort = ConfigurationManager.Settings.LoginServerPort;
 
         var LoggerinProps = LoginServer.Props(LoggerinServerName, LoggerinServerPort);
-        var LoggerinServer = _imlightSystem.ActorOf(LoggerinProps, LoggerinServerName);
+        var LoggerinServer = s_imlightSystem.ActorOf(LoggerinProps, LoggerinServerName);
 
         Logger.Debug("New actor created under {systemName}: {LoggerinServerName}",
-            Logger.Args(_imlightSystem.Name, LoggerinServerName));
+            Logger.Args(s_imlightSystem.Name, LoggerinServerName));
 
         return LoggerinServer;
     }
@@ -106,33 +102,25 @@ internal static class Program {
         var defaultPatchServerPort = ConfigurationManager.Settings.PatchServerPort;
 
         var patchProps = PatchServer.Props(defaultPatchServerName, defaultPatchServerPort);
-        var actor = _imlightSystem.ActorOf(patchProps, defaultPatchServerName);
+        var actor = s_imlightSystem.ActorOf(patchProps, defaultPatchServerName);
 
         Logger.Debug("New actor created under {systemName}: {patchServerName}",
-            Logger.Args(_imlightSystem.Name, defaultPatchServerName));
+            Logger.Args(s_imlightSystem.Name, defaultPatchServerName));
 
         // Await initialization of the patch server.
         await actor.Ask<SERVER_100_PROTOCOL.MSG_INITIALIZE_COMPLETE>(new SERVER_100_PROTOCOL.MSG_INITIALIZE());
     }
 
     private static void CreateEmbeddedDatabaseAccounts() {
-        // Create 9 accounts with the username "admin" and a number from 1 to 20.
-        for (int i = 1; i <= 20; i++) {
-            DatabaseUtilities.CreateEmbeddedDatabaseAccount($"qa{i}", $"qa{i}@r101.com", "debug", AuthLevel.QualityAssurance);
-        }
-
-        // Create 3 hall monitor accounts.
-        for (int i = 1; i < 3; i++) {
-            DatabaseUtilities.CreateEmbeddedDatabaseAccount($"hm{i}", $"hm{i}@r101.com", "hm9999", AuthLevel.HallMonitor);
-        }
-
         // Create 3 developer accounts.
-        for (int i = 1; i < 3; i++) {
+        for (int i = 1; i <= 3; i++) {
             DatabaseUtilities.CreateEmbeddedDatabaseAccount($"dev{i}", $"dev{i}@r101.com", "dev9999", AuthLevel.Administrator);
         }
 
         // Hard code hall monitor lead accounts. Don't share these passwords!
+        var test = DatabaseUtilities.CreateHashedPassword("test");
         DatabaseUtilities.CreateEmbeddedDatabaseAccount($"mitsu", $"mitsu@r101.com", "2034", AuthLevel.Administrator);
+        DatabaseUtilities.CreateEmbeddedDatabaseAccount($"walta", $"walta@r101.com", "9090", AuthLevel.Administrator);
     }
 
     private static void PrintTitle() {
@@ -156,7 +144,7 @@ internal static class Program {
         var buildConfiguration = GetBuildConfiguration();
         Console.Write(@"|___/");
         Console.ForegroundColor = ConsoleColor.DarkGray;
-        Console.Write($"   (NETHRA-v1.0.0 {buildConfiguration})\n");
+        Console.Write($"   (NETHRA-v{Version} {buildConfiguration})\n");
         Console.WriteLine("");
     }
 

@@ -1,3 +1,8 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -20,11 +25,21 @@ namespace Imlight.CoreLib.Game.Zone;
 public class WizardZoneCombatSigil : WizardZoneObject {
     private const uint SigilTemplateId = 1901671683;
 
+    private readonly DuelBehavior _duelBehavior;
     private IActorRef _activeDuelActor;
     private Duel _activeDuel;
 
     public WizardZoneCombatSigil(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef)
         : base(activeGameObject, template, wizardZoneRef) {
+        // Initialize the behaviors on the object. One of them is the DuelBehavior,.
+        CoreObjectFactory.InitializeCoreObjectBehaviors(ActiveGameObject, template);
+        if (CoreObjectFactory.FindBehaviorInstance(ActiveGameObject, out DuelBehavior duelBehavior)) {
+            duelBehavior.m_sigilTemplateID = SigilTemplateId;
+            duelBehavior.m_pDuel = _activeDuel;
+        }
+        else {
+            throw new Exception("Could not find DuelBehavior on CoreObject.");
+        }
     }
 
     public static Props Props(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef)
@@ -110,16 +125,8 @@ public class WizardZoneCombatSigil : WizardZoneObject {
             throw new Exception("Duel or DuelActor is null. Cannot spawn combat sigil object.");
         }
 
-        // Initialize the behaviors on the object. One of them is the DuelBehavior, which we
-        // need to adjust.
-        CoreObjectFactory.InitializeCoreObjectBehaviors(ActiveGameObject, 560);
-        if (CoreObjectFactory.FindBehaviorInstance(ActiveGameObject, out DuelBehavior duelBehavior)) {
-            duelBehavior.m_sigilTemplateID = SigilTemplateId;
-            duelBehavior.m_pDuel = _activeDuel;
-        }
-        else {
-            throw new Exception("Could not find DuelBehavior on CoreObject.");
-        }
+        // Set the DuelBehavior's properties.
+        _duelBehavior.m_pDuel = _activeDuel;
 
         // Serialize the object and broadcast it to the zone.
         var serializer = new CoreObjectSerializer()

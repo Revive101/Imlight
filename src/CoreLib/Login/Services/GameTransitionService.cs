@@ -9,10 +9,12 @@ using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.IO;
 using Imlight.Common.ObjectProperty.PropertyReflection;
-using Imlight.CoreLib.Login.Models;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
+using SharpDX;
+using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Models.Player;
 using SharpDX;
 
 namespace Imlight.CoreLib.Login.Services;
@@ -70,7 +72,7 @@ internal class GameTransitionService : MessageService {
             CharID = character.CharId,
             ZoneID = new GID((ulong) gameServer.Port),
             ZoneName = character.Zone,
-            Location = character.GetStringLocation(),
+            Location = stringLocation,
         };
 
         // Cache the message if the player is queued.

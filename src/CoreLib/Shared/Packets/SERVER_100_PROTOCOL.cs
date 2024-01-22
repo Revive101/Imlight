@@ -7,10 +7,8 @@ using System.Net.Sockets;
 using Akka.Actor;
 using Imlight.Common.IO;
 using Imlight.CoreLib.Shared.Networking;
-using Imlight.CoreLib.Login.Models;
-using Imlight.CoreLib.Game.Models;
 using static Imlight.Common.Caches.TypeCache;
-using System.Collections.Generic;
+using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Shared.Packets;
 
@@ -66,8 +64,6 @@ public sealed class SERVER_100_PROTOCOL : IServerProtocol
     {
         public byte MessageOrder { get; } = 6;
         public byte ServiceID { get; } = 100;
-
-        public bool IsLocal;
     }
 
     public class MSG_GETBESTSERVER : IServerMessage
@@ -165,12 +161,12 @@ public sealed class SERVER_100_PROTOCOL : IServerProtocol
         public WideByteString CommandText;
         public IActorRef ActorRef;
         public CoreObject CoreObject;
-        public Character PlayerCharacter;
+        public Wizard Wizard;
         public Account Account;
         public IActorRef ZoneActor;
         public IActorRef ServerActor;
         public Account SelectedAccount;
-        public Character SelectedCharacter;
+        public Wizard SelectedWizard;
     }
 
     public class MSG_COMMANDRSP : IServerMessage

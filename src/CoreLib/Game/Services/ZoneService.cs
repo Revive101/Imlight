@@ -24,7 +24,7 @@ public class ZoneService : MessageService {
     }
 
     protected override void OnPreDispose() {
-        var globalId = GetActiveCoreObject().m_globalID;
+        var globalId = GetActiveGameObject().m_globalID;
 
         // If the zone reference is not null, we'll tell the zone to remove the player.
         ZoneActor?.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER() {
@@ -47,7 +47,7 @@ public class ZoneService : MessageService {
             return;
         }
 
-        var character = GetActiveCharacter();
+        var character = GetActiveWizard();
 
         // If the zone is ready and we're sending to client, begin the zone transfer handshake with the client.
         var zoneDetails = AskServer<ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP>(message);
@@ -68,7 +68,7 @@ public class ZoneService : MessageService {
                     LocationY = (ushort) destinationCoords.Y,
                     LocationZ = (ushort) destinationCoords.Z,
                     Direction = 0,
-                    MobileID = GetActiveCoreObject().m_nMobileID,
+                    MobileID = GetActiveGameObject().m_nMobileID,
                 };
                 SendToSocket(serverTele);
                 return;
@@ -143,13 +143,13 @@ public class ZoneService : MessageService {
 
     private void DoZoneTransfer() {
         var account = GetSocketAccount();
-        var character = GetActiveCharacter();
+        var character = GetActiveWizard();
 
         // Remove the player from their current zone. We're awaiting a reply so the zone can properly clean up
         // before we continue on potentially a different thread.
         var removePlayerMsg = new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER() {
             Player = SessionActor.ActorRef,
-            GlobalId = GetActiveCoreObject().m_globalID,
+            GlobalId = GetActiveGameObject().m_globalID,
             IsPlayerStillConnected = true
         };
         _ = ZoneActor.Ask(removePlayerMsg).Result;

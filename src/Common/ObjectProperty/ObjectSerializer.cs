@@ -309,7 +309,7 @@ public class ObjectSerializer {
         else {
             // If a hash is here that we don't have a type for, log it.
             // It isn't too worrisome to miss a type. There are a lot of server types.
-            Logger.Debug("Could not find type for hash {hash}", Logger.Args(hash));
+            //Logger.Debug("Could not find type for hash {hash}", Logger.Args(hash));
             return false;
         }
     }

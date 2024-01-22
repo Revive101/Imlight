@@ -1,3 +1,8 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
 using System.Drawing;
 using Akka.Actor;
 using Imlight.Common.Caches;
@@ -9,6 +14,7 @@ using SharpDX;
 using System.Threading.Tasks;
 using static Imlight.Common.Caches.TypeCache;
 using static Imlight.Common.Caches.TypeCache.CombatParticipant;
+using Imlight.CoreLib.Game.Models.World;
 
 namespace Imlight.CoreLib.Game.Combat;
 
@@ -46,10 +52,8 @@ public class DuelActorSubCircle {
         // Get the combat participant and serialize it.
         Participant = GetParticipant();
         var serializer = new ObjectSerializer()
-        .OnBehaviors(SerializerOptions.Behaviors.None)
-        .OnPropertyMask(SerializerOptions.PropertyFlags.Public
-                      | SerializerOptions.PropertyFlags.Transmit
-                      | SerializerOptions.PropertyFlags.AuthorityTransmit);
+            .OnBehaviors(SerializerOptions.Behaviors.None)
+            .OnPropertyMask((SerializerOptions.PropertyFlags) 4);
 
         return serializer.Serialize(Participant);
     }
@@ -97,17 +101,18 @@ public class DuelActorSubCircle {
     private CombatParticipant GetParticipant() {
         if (Team == Team.Player) {
             return GetPlayerParicipant();
-        } else {
+        }
+        else {
             return GetCreatureParticipant();
         }
     }
 
     private CombatParticipant GetPlayerParicipant() {
-        var queryCharacterMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
+        var queryCharacterMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
         var queryCharacterRsp = Actor
             .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryCharacterMsg)
             .Result
-            .Character;
+            .Wizard;
 
         // Get DynamicSigilSymbol enum by value using our SubCircleId. Skip values 5-8.
         var dynamicSigilSymbol = (DynamicSigilSymbol) (SubCircleId < 5 ? SubCircleId : SubCircleId + 4);
@@ -143,8 +148,6 @@ public class DuelActorSubCircle {
         var dynamicSigilSymbol = (DynamicSigilSymbol) (SubCircleId < 5 ? SubCircleId : SubCircleId + 4);
 
         var combatParticipant = new CombatParticipant {
-            m_minionSubCircle = 1,//awesome wizard101 moment settint this to 0 makes mob go to center of the sigil
-
             m_ownerID = ParticipantObject.m_globalID,
             m_templateID = 2199023290637, // Captured 2199023290637 from live
             m_isPlayer = false,
@@ -157,11 +160,6 @@ public class DuelActorSubCircle {
             m_pipCount = new() { m_powerPips = 0, m_genericPips = 1 },
             m_pipRoundRates = new(),
             m_PipsSuspended = false,
-            m_color = (Color3) SharpDX.Color.Red,
-            //m_rotation = Yaw, // This crashes the client when present
-            m_subcircle = 1,
-            m_dynamicSymbol = DynamicSigilSymbol.Dagger,
-            m_planningPhasePipAquiredType = PipAquiredByEnum.AQUIRED_PIP_UNKNOWN
         };
 
         return combatParticipant;

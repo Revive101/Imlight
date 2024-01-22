@@ -78,4 +78,10 @@ public sealed class SERVICE_101_PROTOCOL : IServerProtocol
         public byte MessageOrder { get; } = 10;
         public byte ServiceID { get; } = 101;
     }
+
+    public class MSG_ATTACHCOMPLETE : IServerMessage
+    {
+        public byte MessageOrder { get; } = 11;
+        public byte ServiceID { get; } = 101;
+    }
 }

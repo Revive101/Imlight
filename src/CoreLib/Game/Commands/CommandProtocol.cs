@@ -1,12 +1,17 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.CoreLib.AntiAmbrose;
-using Imlight.CoreLib.Login.Models;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Commands;
 

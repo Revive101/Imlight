@@ -1,3 +1,8 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -68,13 +73,18 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         };
         Sender.Tell(rsp);
 
-        // At this point, there are only two participants. One from each team.
-        // Assign them to the sub circles. Team A will always be the creatures and
-        // team B will always be the players.
-        var teamCreatures = GetAvailableSubCircleTeamCreature();
-        var teamPlayers = GetAvailableSubCircleTeamPlayer();
-        var teamAAssigned = AssignParticipantToSubCircle(Team.Creature, teamCreatures, message.Participants.Keys.Last(), message.Participants.Values.Last());
-        var teamBAssigned = AssignParticipantToSubCircle(Team.Player, teamPlayers, message.Participants.Keys.First(), message.Participants.Values.First());
+        // When the duel is created, it must be created by two suspects: the player and the creature.
+        // The creatures will always be team A and the players will always be team B. Assign the first
+        // participants to their respective sub circles.
+        var startingCreatureActor = message.Participants.Keys.Last();
+        var startingPlayerActor = message.Participants.Keys.First();
+        var startingCreatureObject = message.Participants.Values.Last();
+        var startingPlayerObject = message.Participants.Values.First();
+
+        var availableCreatureSubcircles = GetAvailableSubCircleTeamCreature();
+        var availablePlayerSubcircles = GetAvailableSubCircleTeamPlayer();
+        var teamAAssigned = AssignParticipantToSubCircle(Team.Creature, availableCreatureSubcircles, startingCreatureActor, startingCreatureObject);
+        var teamBAssigned = AssignParticipantToSubCircle(Team.Player, availablePlayerSubcircles, startingPlayerActor, startingPlayerObject);
 
         if (!teamAAssigned || !teamBAssigned) {
             throw new Exception("Failed to assign participants to sub circles.");
@@ -92,12 +102,12 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_GRACEPERIODOVER))]
     private void ReceiveGracePeriodOver(COMBAT_106_PROTOCOL.MSG_GRACEPERIODOVER message) {
         // The grace period for adding participants is now over.
-       RoundStart();
+        Logger.Debug("Duel {0} has started.", Logger.Args(_duel.m_duelID));
+        CombatBegin();
     }
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ADDPARTICIPANT))]
     private void ReceiveAddParticipant(COMBAT_106_PROTOCOL.MSG_ADDPARTICIPANT message) {
-        // In a duel, the players will always be team A and the creatures will always be team B.
         // We can determine if this participant is a player by checking their template ID. If it's
         // 1, then it's a player. Otherwise, it's a creature.
         var isPlayer = message.ParticipantObject.m_templateID == 1;
@@ -113,11 +123,16 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
         if (subCircle is null || !AssignParticipantToSubCircle(team, subCircle, message.Participant, message.ParticipantObject)) {
             Logger.Debug("Player attempted to join duel {0}, but the duel was full.", Logger.Args(_duel.m_duelID));
+            return;
+        }
+        else {
+            Logger.Debug("Participant joined duel {0}.", Logger.Args(_duel.m_duelID));
         }
     }
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_DUELDETAILS))]
     private void ReceiveDuelDetails(COMBAT_106_PROTOCOL.MSG_DUELDETAILS message) {
+        // Received by the DuelActorSupervisor when something is scouting for a duel.
         var rsp = new COMBAT_106_PROTOCOL.MSG_DUELDETAILS {
             DuelActor = Self,
             Duel = _duel,
@@ -129,6 +144,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLE))]
     private void ReceiveSlotAvailable(COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLE message) {
+        // An actor is asking if there are slots available in this duel.
         if (message.Team == Team.Player) {
             var available = PlayerCount < 4;
             var rsp = new COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLERSP {
@@ -146,38 +162,40 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         }
     }
 
-    private void RoundStart() {
+    private void CombatBegin() {
         _duel.m_duelPhase = kDuelPhase.kPhase_PrePlanning;
 
         // Phase 1 of next round
         if (_duel.m_roundNum <= 1) {
-            SendCombatAddForAllParticipants();
+            foreach (var circle in ActiveSubCircles) {
+                var serializedData = circle.GetSerializedCombatParticipant();
+                var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATADD {
+                    DuelID = _sigilId,
+                    ParticipantData = serializedData,
+                };
+                var broadCastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+                    Selfless = false,
+                    Sender = circle.Actor,
+                    Message = msg
+                };
+                _wizardZoneRef.Tell(broadCastMsg);
+            }
         }
+
+        RoundStart();
+    }
+
+    private void RoundStart() {
+        // Phase 1 of next round
+        _duel.m_duelPhase = kDuelPhase.kPhase_PrePlanning;
         SendCombatPhase((byte) _duel.m_duelPhase);
         SendUpFirst(_upFirstTeam, _duel.m_roundNum);
 
-        _duel.m_duelPhase = kDuelPhase.kPhase_Planning;
-
         // Phase 2 of next round
+        _duel.m_duelPhase = kDuelPhase.kPhase_Planning;
         SendCombatPhase((byte) _duel.m_duelPhase);
         if (_duel.m_roundNum <= 1) {
             SendCombatUI(PlanningTime);
-        }
-    }
-
-    private void SendCombatAddForAllParticipants() {
-        foreach (var circle in ActiveSubCircles) {
-            var serializedData = circle.GetSerializedCombatParticipant();
-            var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATADD {
-                DuelID = _sigilId,
-                ParticipantData = serializedData,
-            };
-            var broadCastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-                Selfless = false,
-                Sender = circle.Actor,
-                Message = msg
-            };
-            _wizardZoneRef.Tell(broadCastMsg);
         }
     }
 

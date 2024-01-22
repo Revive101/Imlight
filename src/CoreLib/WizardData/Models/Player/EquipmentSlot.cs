@@ -1,0 +1,19 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
+namespace Imlight.CoreLib.WizardData.Models.Player;
+
+public enum EquipmentSlot {
+    Hat,
+    Robe,
+    Shoes,
+    Weapon,
+    Athame,
+    Amulet,
+    Ring,
+    Pet,
+    Mount,
+    Deck
+}

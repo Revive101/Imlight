@@ -33,4 +33,9 @@ public class ClientService : MessageService {
             CloseSession();
         });
     }
+
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_REQASKSERVER))]
+    private void ReceiveReqServer(GAME_5_PROTOCOL.MSG_REQASKSERVER message) {
+
+    }
 }

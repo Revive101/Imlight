@@ -14,9 +14,9 @@ using Imlight.Common.Caches;
 using Imlight.Common.Configuration;
 using Imlight.Common.MessageLayer;
 using Imlight.CoreLib.Game.Services;
-using Imlight.CoreLib.Login.Models;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Services;
+using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Shared.Networking;
 

@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Akka.Actor;
 using Imlight.Common.Caches;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Resources;
 using SharpDX;
 using static Imlight.Common.Caches.TypeCache;
 
@@ -107,7 +108,7 @@ public class WizardZoneCreature : WizardZoneObject {
 
     protected override void OnPlayerInteractionEnter(CoreObject player, IActorRef suspect) {
         base.OnPlayerInteractionEnter(player, suspect);
-        return; // this is for combat branch.
+        return; // This is for combat branch :)
 
         if (_creatureState == CreatureState.Combat || !_isDuelingCreature) {
             return;
@@ -170,6 +171,10 @@ public class WizardZoneCreature : WizardZoneObject {
         if (duelistBehavior is not null) {
             base.InteractionRadius = duelistBehavior.m_npcProximity;
             this._isDuelingCreature = true;
+        }
+
+        if (CoreObjectFactory.FindBehaviorInstance<NPCBehavior>(ActiveGameObject, out var behavior)) {
+            behavior.m_isMonster = this._isDuelingCreature;
         }
     }
 
