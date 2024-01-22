@@ -24,21 +24,11 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
     private static TemplateManifest s_templateManifest;
 
     protected override void AfterLoad() {
-        // Load the TemplateManifest.xml and record the amount of time it takes.
-        var timer = new Stopwatch();
-        timer.Start();
-
         var fileSerializer = new FileSerializer();
-        var manifest = fileSerializer.OpenClass<TemplateManifest>(Stream);
+        s_templateManifest = fileSerializer.OpenClass<TemplateManifest>(Stream)
+            ?? throw new Exception("Could not deserialize TemplateManifest.xml");
 
-        if (manifest is null) {
-            throw new Exception("Could not deserialize TemplateManifest.xml");
-        }
-        s_templateManifest = manifest;
         Logger.Information("Loaded {TCount} CoreTemplates.", Logger.Args(s_templateManifest.m_serializedTemplates.Count));
-
-        timer.Stop();
-        Logger.Debug("{0} load took {Em}ms.", Logger.Args(ResourceName, timer.ElapsedMilliseconds));
 
         this.DisposeStream();
     }

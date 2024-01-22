@@ -28,7 +28,7 @@ public class AccessPassManager : RootSingleResourceSingleton<AccessPassManager>,
         }
 
         // Log
-        Logger.Information("AccessPassManager loaded {Count} zones.", Logger.Args(zoneList.Count));
+        Logger.Information("Loaded {Count} zones.", Logger.Args(zoneList.Count));
 
         s_zones = zoneList.ToArray();
         ((IMemoryStreamDisposable)this).DisposeStream();
