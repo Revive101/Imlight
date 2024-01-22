@@ -159,6 +159,7 @@ public class Wizard : IDisposable {
 
         item.m_characterId = (GID) CharId;
         InventoryItems.Add(item);
+        InventoryItemIds.Add(item.m_globalID);
 
         // Persistent save.
         var persistentSaveSucceeded = WizardItemCollection.AddItem(item);
@@ -179,7 +180,7 @@ public class Wizard : IDisposable {
             return false;
         }
 
-        return InventoryItems.Remove(item);
+        return InventoryRemoveItem(item);
     }
 
     public bool InventoryRemoveItem(WizClientObjectItem item) {
@@ -187,6 +188,12 @@ public class Wizard : IDisposable {
             throw new NullReferenceException("Item cannot be null.");
         }
         if (!InventoryItems.Remove(item)) {
+            Logger.Debug("Tried to remove item with global id {0} that does not exist in player inventory.",
+                Logger.Args(item.m_globalID));
+            return false;
+        }
+
+        if (!InventoryItemIds.Remove(item.m_globalID)) {
             Logger.Debug("Tried to remove item with global id {0} that does not exist in player inventory.",
                 Logger.Args(item.m_globalID));
             return false;
@@ -215,7 +222,6 @@ public class Wizard : IDisposable {
         new List<ulong>() { 4740, 4705, 5030, 39068, 1363076, 1475149,
                             1472644, 1317133, 1317126, 1317234, 1359455,
                             1392077, 1352341, 87158, 87159, 87160, 1540397 }.ForEach(templateId => {
-                                var template = CoreObjectFactory.GetCoreTemplate(templateId);
                                 var coreObject = new WizClientObjectItem {
                                     m_globalID = RandomGen.GenerateGUID(),
                                     m_templateID = (GID) templateId,

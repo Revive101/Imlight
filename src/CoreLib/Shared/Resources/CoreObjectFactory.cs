@@ -121,6 +121,23 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
     }
 
     /// <summary>
+    /// Finalizes a CoreObject based on the provided template ID.
+    /// </summary>
+    /// <param name="templateId">The ID of the template associated with the core object.</param>
+    /// <returns>The finalized core object.</returns>
+    public static CoreObject FinalizeCoreObject(ulong templateId) {
+        var template = GetCoreTemplate(templateId);
+
+        // Create a blank CoreObjectInfo.
+        var objInfo = new CoreObjectInfo {
+            m_templateID = templateId,
+            m_fScale = 1.0f,
+        };
+
+        return FinalizeCoreObject(objInfo, template);
+    }
+
+    /// <summary>
     /// Finalizes a CoreObject based on the provided CoreObjectInfo.
     /// </summary>
     /// <param name="objInfo">The CoreObjectInfo containing the necessary information for finalizing the CoreObject.</param>
@@ -163,8 +180,11 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
         obj.m_zoneTagID = StringHash.Compute(objInfo.m_zoneTag);
         obj.m_debugName = objInfo.m_zoneTag;
 
-        if (template is GameObjectTemplate goTemplate) {
-            var englishName = Locale.GetEnglishName(goTemplate.m_displayName);
+        // Check to see if the template has a field called "m_displayName."
+        // If it does, set the debug name to the English name of the display name.
+        if (template.GetType().GetField("m_displayName") is not null) {
+            var displayNameValue = ((ByteString)template.GetType().GetField("m_displayName").GetValue(template)).ToString();
+            var englishName = Locale.GetEnglishName(displayNameValue);
             obj.m_debugName = englishName;
         }
 
