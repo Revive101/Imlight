@@ -34,28 +34,28 @@ public static class WizardClassData {
     private const int DeathHealthPerLevel = 24;
     private const int BalanceHealthPerLevel = 27;
 
-    public static int GetClassStartingHealth(WizardSchool school) {
+    public static int GetClassStartingHealth(MagicSchool school) {
         return school switch {
-            WizardSchool.Fire => FireStartHealth,
-            WizardSchool.Ice => IceStartHealth,
-            WizardSchool.Storm => StormStartHealth,
-            WizardSchool.Myth => MythStartHealth,
-            WizardSchool.Life => LifeStartHealth,
-            WizardSchool.Death => DeathStartHealth,
-            WizardSchool.Balance => BalanceStartHealth,
+            MagicSchool.Fire => FireStartHealth,
+            MagicSchool.Ice => IceStartHealth,
+            MagicSchool.Storm => StormStartHealth,
+            MagicSchool.Myth => MythStartHealth,
+            MagicSchool.Life => LifeStartHealth,
+            MagicSchool.Death => DeathStartHealth,
+            MagicSchool.Balance => BalanceStartHealth,
             _ => throw new ArgumentOutOfRangeException(nameof(school), school, null)
         };
     }
 
-    public static int GetClassHealthAtLevel(WizardSchool school, int level) {
+    public static int GetClassHealthAtLevel(MagicSchool school, int level) {
         return school switch {
-            WizardSchool.Fire => FireStartHealth + (FireHealthPerLevel * (level - 1)),
-            WizardSchool.Ice => IceStartHealth + (IceHealthPerLevel * (level - 1)),
-            WizardSchool.Storm => StormStartHealth + (StormHealthPerLevel * (level - 1)),
-            WizardSchool.Myth => MythStartHealth + (MythHealthPerLevel * (level - 1)),
-            WizardSchool.Life => LifeStartHealth + (MythHealthPerLevel * (level - 1)),
-            WizardSchool.Death => DeathStartHealth + (DeathHealthPerLevel * (level - 1)),
-            WizardSchool.Balance => BalanceStartHealth + (BalanceHealthPerLevel * (level - 1)),
+            MagicSchool.Fire => FireStartHealth + (FireHealthPerLevel * (level - 1)),
+            MagicSchool.Ice => IceStartHealth + (IceHealthPerLevel * (level - 1)),
+            MagicSchool.Storm => StormStartHealth + (StormHealthPerLevel * (level - 1)),
+            MagicSchool.Myth => MythStartHealth + (MythHealthPerLevel * (level - 1)),
+            MagicSchool.Life => LifeStartHealth + (MythHealthPerLevel * (level - 1)),
+            MagicSchool.Death => DeathStartHealth + (DeathHealthPerLevel * (level - 1)),
+            MagicSchool.Balance => BalanceStartHealth + (BalanceHealthPerLevel * (level - 1)),
             _ => throw new ArgumentOutOfRangeException(nameof(school), school, null)
         };
     }

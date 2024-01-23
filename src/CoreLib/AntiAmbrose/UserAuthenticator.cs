@@ -34,8 +34,8 @@ internal enum UserAuthenResult {
 internal static class UserAuthenticator {
     internal class AuthenticationDetails {
         internal Account _account;
-        internal string _sessionKey;
-        internal string _rec1;
+        internal ByteString _sessionKey;
+        internal ByteString _rec1;
         internal UserAuthenResult _result;
     }
 
@@ -92,6 +92,7 @@ internal static class UserAuthenticator {
             ClientKeyCollection.AddSessionKey(matchedAccount.AccountId, authMessage.MachineID, sessionKey);
             details._sessionKey = sessionKey;
 
+            // todo: these are only ever cached and not ever persistently saved
             matchedAccount.LastLoginMachineId = authMessage.MachineID;
             matchedAccount.LastLoginTime = DateTime.UtcNow;
             matchedAccount.LastLoginIp = sessionActor.Ip;

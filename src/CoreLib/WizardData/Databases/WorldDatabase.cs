@@ -4,6 +4,7 @@
  */
 
 using System;
+using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using Imlight.Common;
 using Imlight.Common.Configuration;
@@ -23,7 +24,7 @@ public class WorldDatabase : RavenDatabaseSingleton<WorldDatabase> {
     protected override X509Certificate2 Certificate { get; }
         = ConfigurationManager.Settings.WorldDatabaseUrl == string.Empty
             ? null
-            : new X509Certificate2(ConfigurationManager.Settings.WorldDatabaseCertificatePath);
+            : GetCertificate();
     protected override string DatabaseName { get; } = ConfigurationManager.Settings.WorldDatabaseName;
     protected override string Url { get; } = ConfigurationManager.Settings.WorldDatabaseUrl;
 
@@ -53,5 +54,24 @@ public class WorldDatabase : RavenDatabaseSingleton<WorldDatabase> {
     protected override IDocumentStore CreateEmbeddedStore() {
         EmbeddedDatabaseManager.Start();
         return EmbeddedDatabaseManager.GetDocumentStore(DatabaseName);
+    }
+
+    private static X509Certificate2 GetCertificate() {
+        if (ConfigurationManager.Settings.WorldDatabaseUrl == string.Empty) {
+            return null;
+        }
+
+        // The certificate path is relative to the working directory.
+        // We need to get the absolute path.
+        var absolutePath = Path.GetFullPath(ConfigurationManager.Settings.WorldDatabaseCertificatePath);
+
+        // If there is no file at this path, log an error and return null.
+        if (!File.Exists(absolutePath)) {
+            Logger.Error("No certificate found at path {0}",
+                Logger.Args(absolutePath));
+            return null;
+        }
+
+        return new X509Certificate2(absolutePath);
     }
 }

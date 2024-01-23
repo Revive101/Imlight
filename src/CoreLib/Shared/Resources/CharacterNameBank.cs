@@ -3,6 +3,7 @@
  * Proprietary and confidential.
  */
 
+using Imlight.Common;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,16 +13,20 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Shared.Resources;
 
-public static class CharacterNameBank {
-    private const string EnglishCharacterNamesPath = "Locale/English/CharacterNames.lang";
-    private const string CharacterNameTablePath = "CharacterNames.xml";
+public class WizardNameBank : RootSingleResourceSingleton<WizardNameBank>, IMemoryStreamDisposable {
+    protected override string ResourceName => "CharacterNames.xml";
+    private const string CharacterLocaleTable = "CharacterNames";
     private const string FirstNameHumanMaleTableName = "FirstName_HumanMale";
     private const string FirstNameHumanFemaleTableName = "FirstName_HumanFemale";
     private const string MiddleNameHumanTableName = "MiddleName_Human";
     private const string LastNameHumanTableName = "LastName_Human";
 
-    private static readonly string[] _englishNameBank = GetEnglishNameBank();
-    private static readonly Dictionary<string, List<string>> _characterNameTable = GetCharacterNameTable();
+    private static Dictionary<string, List<string>> s_characterNameTable;
+
+    protected override void AfterLoad() {
+        s_characterNameTable = GetCharacterNameTable(Stream);
+        Logger.Information("Loaded {0} character name tables.", Logger.Args(s_characterNameTable.Count));
+    }
 
     /// <summary>
     /// Retrieves the English name based on the given name indices and gender.
@@ -29,7 +34,8 @@ public static class CharacterNameBank {
     /// <param name="nameIndices">The name indices containing the first name, middle name, and last name.</param>
     /// <param name="gender">The gender of the character.</param>
     /// <returns>The English name composed of the first name, middle name, and last name.</returns>
-    public static string GetEnglishName(uint nameIndices, eGender gender) {
+    public static string GetEnglishName(uint nameIndices, eGender gender)
+    {
         // Drop the uneeded MSB.
         nameIndices &= 0x7FFFFFFF;
 
@@ -40,14 +46,30 @@ public static class CharacterNameBank {
 
         var firstNameTableName = (gender == eGender.Male) ? FirstNameHumanMaleTableName : FirstNameHumanFemaleTableName;
         var firstName = GetEnglishNamePart(firstNameTableName, firstNameIndex);
-        var middleName = GetEnglishNamePart(MiddleNameHumanTableName, middleNameIndex);
-        var lastName = GetEnglishNamePart(LastNameHumanTableName, lastNameIndex);
+
+        string middleName = string.Empty;
+        if (middleNameIndex != 0)
+        {
+            middleName = GetEnglishNamePart(MiddleNameHumanTableName, middleNameIndex);
+        }
+
+        string lastName = string.Empty;
+        if (lastNameIndex != 0)
+        {
+            lastName = GetEnglishNamePart(LastNameHumanTableName, lastNameIndex);
+        }
+
+        if (middleNameIndex == 0 && lastNameIndex == 0)
+        {
+            // If the middle name and last name are both 0, then the first name is the full name.
+            return firstName;
+        }
 
         return $"{firstName} {middleName}{lastName}";
     }
 
     private static string GetEnglishNamePart(string tableName, int index) {
-        if (!_characterNameTable.TryGetValue(tableName, out var characterNames)) {
+        if (!s_characterNameTable.TryGetValue(tableName, out var characterNames)) {
             return "[NOT_FOUND]";
         }
 
@@ -55,40 +77,13 @@ public static class CharacterNameBank {
             return "[NOT_FOUND]";
         }
 
+        // The character name table is just a list of locale IDs.
         var localeNameid = characterNames[index];
-
-        // Search through the English name bank for the name.
-        // Find the ID of the name. The actual name will be 2 lines below the ID.
-        var realNameIdIndex = Array.IndexOf(_englishNameBank, _englishNameBank.First(x => x == localeNameid));
-        if (realNameIdIndex == -1) {
-            return "[NOT_FOUND]";
-        }
-
-        return _englishNameBank[realNameIdIndex + 2];
+        var englishName = Locale.GetEnglishName(CharacterLocaleTable, localeNameid);
+        return (englishName == "") ? "[NOT_FOUND]" : englishName;
     }
 
-    private static string[] GetEnglishNameBank() {
-        if (!ResourceManager.TryLoadFile(ResourceManager.RootWadName, EnglishCharacterNamesPath, out var fileStream)) {
-            throw new Exception(EnglishCharacterNamesPath);
-        }
-
-        // Convert file stream to a string array of lines.
-        var lines = new List<string>();
-        using (var reader = new StreamReader(fileStream)) {
-            string line;
-            while ((line = reader.ReadLine()) != null) {
-                lines.Add(line);
-            }
-        }
-
-        return lines.ToArray();
-    }
-
-    private static Dictionary<string, List<string>> GetCharacterNameTable() {
-        if (!ResourceManager.TryLoadFile(ResourceManager.RootWadName, CharacterNameTablePath, out var fileStream)) {
-            throw new Exception(EnglishCharacterNamesPath);
-        }
-
+    private static Dictionary<string, List<string>> GetCharacterNameTable(MemoryStream fileStream) {
         // Convert the file stream to an XML document.
         var xmlDocument = new XmlDocument();
         xmlDocument.Load(fileStream);
@@ -109,4 +104,6 @@ public static class CharacterNameBank {
 
         return result;
     }
+
+    public void DisposeStream() => Stream.Dispose();
 }

@@ -18,6 +18,7 @@ namespace Imlight.CoreLib.Login;
 internal class GameServerPool : ReceiveProtocolDispatcher {
     private readonly byte _maxGameServersAllowed = ConfigurationManager.Settings.MaxGameServersAllowed;
     private readonly ushort _gameServerPlayerCount = ConfigurationManager.Settings.GameServerPlayerLimit;
+    private readonly ushort _gameServerQueryTimeout = 3;
 
     private readonly Dictionary<ushort, IActorRef> _gameServers;
 
@@ -50,28 +51,39 @@ internal class GameServerPool : ReceiveProtocolDispatcher {
 
         _gameServers.Add(message.Port, gameServerRef);
 
-        Logger.Verbose("New actor created under {Path}: {Name}.{Port}",
-            Logger.Args(Context.Self.Path, message.Name, message.Port));
+        Logger.Debug("Game server pool registered new game server {Name} created on port {Port}.",
+            Logger.Args(message.Name, message.Port));
     }
 
     [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_GETBESTSERVER))]
     private void ReceiveQueryGameServer(SERVER_100_PROTOCOL.MSG_GETBESTSERVER message) {
-        // Create a list of game servers and query each server for its details
-        var gameServers = _gameServers.Values
-            .Select(gameServer => {
-                var msg = new SERVER_100_PROTOCOL.MSG_QUERYSERVER() { IsLocal = message.IsLocal };
-                var rsp = gameServer.Ask<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg).Result;
-                return rsp;
-            })
-            .ToList();
+        // Iterate through the game servers we have registered and query them to check if they're still active.
+        var gameServerInfos = new List<SERVER_100_PROTOCOL.MSG_SERVERINFO>();
+        foreach (var gameServer in _gameServers.Values) {
+            try {
+                var msg = new SERVER_100_PROTOCOL.MSG_QUERYSERVER();
+                var timeout = TimeSpan.FromSeconds(_gameServerQueryTimeout);
+                var rsp = gameServer.Ask<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg, timeout).Result;
+                gameServerInfos.Add(rsp);
+            }
+            catch {
+                // The server did not respond in time, so we'll just ignore it.
+                Logger.Error("Failed to query game server {Name}.", Logger.Args(gameServer.Path.Name));
+                continue;
+            }
+        }
+
+        if (gameServerInfos.Count <= 0) {
+            throw new Exception("No game servers were available to query.");
+        }
 
         // Sort the servers by player count in descending order
-        gameServers.Sort((s1, s2) => s2.PlayerCount.CompareTo(s1.PlayerCount));
+        gameServerInfos.Sort((s1, s2) => s2.PlayerCount.CompareTo(s1.PlayerCount));
 
         // Find the first non-full server or choose a random one if all servers are full
-        var chosenServer = gameServers
+        var chosenServer = gameServerInfos
                                .FirstOrDefault(server => server.PlayerCount < _gameServerPlayerCount)
-                           ?? gameServers[new Random().Next(0, gameServers.Count)];
+                           ?? gameServerInfos[new Random().Next(0, gameServerInfos.Count)];
 
         // Send the chosen server details back to the session actor
         Sender.Tell(chosenServer);

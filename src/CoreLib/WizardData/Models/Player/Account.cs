@@ -32,7 +32,7 @@ public class Account {
     public string LastLoginIp { get; set; }
     public bool IsLocked { get; set; }
 
-    [JsonIgnore] public List<Character> Characters = new();
+    [JsonIgnore] public List<Wizard> Characters = new();
     [JsonIgnore] public InfractionHistory InfractionHistory { get; set; }
     [JsonIgnore] public SessionActor SessionActor { get; set; }
 
@@ -60,7 +60,7 @@ public class Account {
     /// </summary>
     /// <param name="character">The character to add.</param>
     /// <returns>True if the character was successfully added, false otherwise.</returns>
-    public bool AddCharacter(Character character) {
+    public bool AddCharacter(Wizard character) {
         // Return false if adding this character would exceed the maximum allowed characters per account.
         // Return false if the character already exists in the account.
         if (this.CharacterIds.Count >= MAX_ALLOWED_CHARACTERS) {
@@ -78,7 +78,7 @@ public class Account {
         this.Characters.Add(character);
 
         // Save the character persistently.
-        var savedCharacterToCollection = CharacterCollection
+        var savedCharacterToCollection = WizardCollection
             .AddCharacter(character);
         var savedCharacterToAccount = AccountCollection
             .AddCharacterToAccount(AccountId, character.CharId);
@@ -112,7 +112,7 @@ public class Account {
     /// </summary>
     /// <param name="id">The ID of the character to retrieve.</param>
     /// <returns>The character with the specified ID.</returns>
-    public Character GetCharacter(ulong id)
+    public Wizard GetCharacter(ulong id)
         => this.Characters.First(c => c.CharId == id);
 
     /// <summary>

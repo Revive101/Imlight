@@ -8,6 +8,7 @@ using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Raven.Client.Documents;
+using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.WizardData.Implementations;
 
@@ -35,7 +36,7 @@ public static class AccountCollection {
 
         // Foreach character in the account, add it to the database.
         foreach (var character in account.Characters) {
-            CharacterCollection.AddCharacter(character);
+            WizardCollection.AddCharacter(character);
         }
 
         session.Store(account);
@@ -64,7 +65,7 @@ public static class AccountCollection {
 
         // Delete the characters.
         foreach (var characterId in account.CharacterIds) {
-            CharacterCollection.DeleteCharacter(characterId);
+            WizardCollection.DeleteCharacter(characterId);
         }
 
         // Delete the account.
@@ -90,11 +91,18 @@ public static class AccountCollection {
             return null;
         }
 
-        // Load the characters if the account is not null.
-        var characters = session.Query<Character>(collectionName: CharacterCollection.CollectionName)
+        // Load the characters.
+        var characters = session.Query<Wizard>(collectionName: WizardCollection.CollectionName)
             .Where(c => c.AccountId == id)
             .ToList();
         account.Characters = characters;
+        foreach (var character in account.Characters) {
+            // Load the character's inventory.
+            var inventory = session.Query<WizClientObjectItem>(collectionName: WizardItemCollection.CollectionName)
+                .Where(i => i.m_characterId == character.CharId)
+                .ToList();
+            character.InventoryItems = inventory.ToList();
+        }
 
         // Load infractions. The constructor will load the action history.
         var infractions = session.Query<Infraction>(collectionName: InfractionCollection.CollectionName)
@@ -124,10 +132,17 @@ public static class AccountCollection {
         }
 
         // Load the characters if the account is not null.
-        var characters = session.Query<Character>()
+        var characters = session.Query<Wizard>(collectionName: WizardCollection.CollectionName)
             .Where(c => c.AccountId == account.AccountId)
             .ToList();
         account.Characters = characters;
+        foreach (var character in account.Characters) {
+            // Load the character's inventory.
+            var inventory = session.Query<WizClientObjectItem>(collectionName: WizardItemCollection.CollectionName)
+                .Where(i => i.m_characterId == character.CharId)
+                .ToList();
+            character.InventoryItems = inventory.ToList();
+        }
 
         // Load infractions. The constructor will load the action history.
         var infractions = session.Query<Infraction>(collectionName: InfractionCollection.CollectionName)

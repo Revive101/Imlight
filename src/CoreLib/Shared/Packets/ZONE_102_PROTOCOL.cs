@@ -49,6 +49,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol
 
 		public IActorRef Player;
 		public TypeCache.CoreObject PlayerObject;
+        public string ActualWizardName;
 	}
 
 	public class MSG_ADDPLAYERRSP : IServerMessage
@@ -56,7 +57,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol
 		public byte MessageOrder { get; } = 4;
 		public byte ServiceID { get; } = 102;
 
-		public TypeCache.CoreObject PlayerObject;
+		public TypeCache.CoreObject WizardGameObject;
 	}
 
 	public class MSG_REMOVEPLAYER : IServerMessage

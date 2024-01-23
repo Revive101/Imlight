@@ -16,7 +16,7 @@ namespace Imlight.CoreLib.Game.Services;
 internal class CommandService : MessageService {
     private readonly IActorRef _dispatcherRef;
 
-    private Character _selectedCharacter;
+    private Wizard _selectedWizard;
     private Account _selectedAccount;
 
     public CommandService(SessionActor sessionActor) : base(sessionActor) => _dispatcherRef = CommandDispatcher.Instance;
@@ -25,19 +25,19 @@ internal class CommandService : MessageService {
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_COMMAND))]
     private void ReceiveCommand(GAME_5_PROTOCOL.MSG_COMMAND message) {
-        var coreObject = GetActiveCoreObject();
-        var playerCharacter = GetActiveCharacter();
+        var coreObject = GetActiveGameObject();
+        var wizard = GetActiveWizard();
         var account = GetActiveAccount();
 
         _dispatcherRef.Tell(new SERVER_100_PROTOCOL.MSG_COMMAND() {
             CommandText = message.Command,
             ActorRef = SessionActor.ActorRef,
             CoreObject = coreObject,
-            PlayerCharacter = playerCharacter,
+            Wizard = wizard,
             Account = account,
             ZoneActor = SessionActor.GetZoneActor(),
             ServerActor = SessionActor.ServerRef,
-            SelectedCharacter = _selectedCharacter,
+            SelectedWizard = _selectedWizard,
             SelectedAccount = _selectedAccount
         });
     }
@@ -48,18 +48,18 @@ internal class CommandService : MessageService {
         // it using the character ID.
         var id = message.BuddyID;
 
-        var persistentCharacter = CharacterCollection.GetCharacter(id);
-        if (persistentCharacter is null) {
+        var persistentWizard = WizardCollection.GetCharacter(id);
+        if (persistentWizard is null) {
             return;
         }
 
-        var account = AccountCollection.GetAccount(persistentCharacter.AccountId);
+        var account = AccountCollection.GetAccount(persistentWizard.AccountId);
         if (account is null) {
             return;
         }
 
         // Cache for our next command.
-        _selectedCharacter = persistentCharacter;
+        _selectedWizard = persistentWizard;
         _selectedAccount = account;
     }
 }

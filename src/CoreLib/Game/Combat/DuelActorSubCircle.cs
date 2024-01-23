@@ -108,11 +108,11 @@ public class DuelActorSubCircle {
     }
 
     private CombatParticipant GetPlayerParicipant() {
-        var queryCharacterMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
+        var queryCharacterMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
         var queryCharacterRsp = Actor
             .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryCharacterMsg)
             .Result
-            .Character;
+            .Wizard;
 
         // Get DynamicSigilSymbol enum by value using our SubCircleId. Skip values 5-8.
         var dynamicSigilSymbol = (DynamicSigilSymbol) (SubCircleId < 5 ? SubCircleId : SubCircleId + 4);

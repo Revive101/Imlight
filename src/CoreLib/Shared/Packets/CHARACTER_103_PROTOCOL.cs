@@ -16,15 +16,15 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol
     public int ProtocolVersion { get; } = 1;
     public string ProtocolDescription { get; } = "Internal Character General Messages.";
 
-    public class MSG_SETACTIVECHARACTER : IServerMessage
+    public class MSG_SETACTIVEWIZARD : IServerMessage
     {
         public byte MessageOrder { get; } = 1;
         public byte ServiceID { get; } = 103;
 
-        public Character Character;
+        public Wizard Wizard;
     }
 
-    public class MSG_QUERYACTIVECHARACTER : IServerMessage
+    public class MSG_QUERYACTIVEWIZARD : IServerMessage
     {
         public byte MessageOrder { get; } = 2;
         public byte ServiceID { get; } = 103;
@@ -35,7 +35,15 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol
         public byte MessageOrder { get; } = 3;
         public byte ServiceID { get; } = 103;
 
-        public Character Character;
-        public TypeCache.CoreObject CharacterObject;
+        public Wizard Wizard;
+        public TypeCache.CoreObject WizardGameObject;
+    }
+
+    public class MSG_LEVELUP : IServerMessage
+    {
+        public byte MessageOrder { get; } = 4;
+        public byte ServiceID { get; } = 103;
+
+        public byte NewLevel;
     }
 }

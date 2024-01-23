@@ -20,6 +20,7 @@ public class LoginServer : Server {
     public LoginServer(string serverName, ushort serverPort)
         : base(serverName, serverPort, LoginServiceFactory.Props()) {
         this._gamePoolServer = CreateGameServerPool();
+
         Logger.Information("Login server created with name {Name} under port {Port}.",
             Logger.Args(serverName, serverPort));
     }
@@ -39,14 +40,14 @@ public class LoginServer : Server {
 
 #if !DEBUG
         // If this IP is already in the login server or any game server, deny entry.
-        var findPlayerMsg = new SERVER_100_PROTOCOL.MSG_FINDPLAYER() { Ip = message.SessionActor.RemoteIp };
-        var foundPlayerRsp = _gamePoolServer.Ask<SERVER_100_PROTOCOL.MSG_PLAYERFOUND>(findPlayerMsg).Result.Found;
-        if (ActiveSessions.Any(x => x.RemoteIp == message.SessionActor.RemoteIp) || foundPlayerRsp) {
-            rsp.Failed = true;
-            Sender.Tell(rsp);
+        //var findPlayerMsg = new SERVER_100_PROTOCOL.MSG_FINDPLAYER() { Ip = message.SessionActor.RemoteIp };
+        //var foundPlayerRsp = _gamePoolServer.Ask<SERVER_100_PROTOCOL.MSG_PLAYERFOUND>(findPlayerMsg).Result.Found;
+        //if (ActiveSessions.Any(x => x.RemoteIp == message.SessionActor.RemoteIp) || foundPlayerRsp) {
+        //    rsp.Failed = true;
+        //    Sender.Tell(rsp);
 
-            return;
-        }
+        //    return;
+        //}
 #endif
 
         // The login server does not have a queue. For now. >:(

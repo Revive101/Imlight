@@ -266,12 +266,12 @@ public class WizardZone : ReceiveProtocolDispatcher {
 
         // Inform the player that they've been successfully added to the zone. We want to reply to the callee
         // and any services that may be waiting for this reply.
-        var response = new ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP { PlayerObject = message.PlayerObject };
+        var response = new ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP { WizardGameObject = message.PlayerObject };
         Sender.Tell(response);
         message.Player.Tell(response);
 
-        Logger.Debug("Player {Name} added to zone {ZoneName}.",
-            Logger.Args(message.Player.Path.Name, ZoneName));
+        Logger.Debug("{Name} added to zone {ZoneName}.",
+            Logger.Args(message.ActualWizardName, ZoneName));
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER))]
@@ -392,7 +392,7 @@ public class WizardZone : ReceiveProtocolDispatcher {
             .ToList();
 
         if (!triggers.Any()) {
-            Logger.Debug("{Volume} {ZoneName} tried to activate trigger " +
+            Logger.Verbose("{Volume} {ZoneName} tried to activate trigger " +
                                "{TriggerName}, but no trigger was found in the zone",
                 Logger.Args(nameof(WizardZoneVolume), ZoneName, message.TriggerName));
             return;
@@ -414,7 +414,7 @@ public class WizardZone : ReceiveProtocolDispatcher {
 
         // Debug log all the triggers that were activated.
         foreach (var trigger in triggers) {
-            Logger.Debug(
+            Logger.Verbose(
                 "{WizardZoneVolume} {ZoneName} activated trigger {TriggerName}",
                 Logger.Args(nameof(WizardZoneVolume), ZoneName, trigger.m_triggerName));
         }

@@ -6,6 +6,7 @@
 using System;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Sockets;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Structures;
@@ -18,9 +19,6 @@ public abstract class Server : ReceiveProtocolDispatcher {
     public string Ip { get; }
     public int Port { get; }
 
-    /// <summary>
-    /// The list of active sessions. A session is only considered active if it has been authenticated.
-    /// </summary>
     protected readonly ObservableHashSet<SessionActor> ActiveSessions;
 
     private readonly IActorRef _actorFactoryRef;
@@ -35,31 +33,18 @@ public abstract class Server : ReceiveProtocolDispatcher {
         this._factoryProps = factoryProps;
 
         // Get outside IP.
+        #if !DEBUG
         this.Ip = new HttpClient().GetStringAsync("https://api.ipify.org/").Result;
-        //this.Ip = "127.0.0.1";
+        #else
+        this.Ip = "127.0.0.1";
+        #endif
 
         CreateTcpListener();
         _actorFactoryRef = CreateActorFactory();
     }
 
-    /// <summary>
-    /// Gets the time in seconds the server has elapsed.
-    /// </summary>
-    /// <returns></returns>
-    public long ServerElapsed() {
-        return DateTimeOffset.Now.ToUnixTimeSeconds() - _serverStartTime;
-    }
-
-    public ushort GetPlayerCount() {
-        return (ushort) ActiveSessions.Count;
-    }
-
-    /// <summary>
-    /// Process and allocate a new incoming socket connection.
-    /// </summary>
-    /// <param name="message"></param>
     [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_ALLOCATESOCKET))]
-    public virtual void ReceiveAllocateSocket(SERVER_100_PROTOCOL.MSG_ALLOCATESOCKET message) {
+    protected virtual void ReceiveAllocateSocket(SERVER_100_PROTOCOL.MSG_ALLOCATESOCKET message) {
         // Create a new child actor, which represents the active socket connection.
         var id = GetNewUniqueId();
         var sessionProps = SessionActor.Props(message.Socket, id, Context.Self);
@@ -70,12 +55,8 @@ public abstract class Server : ReceiveProtocolDispatcher {
             Logger.Args(GetType(), message.Socket.RemoteEndPoint?.ToString(), id));
     }
 
-    /// <summary>
-    /// Deallocate and disconnect and active socket.
-    /// </summary>
-    /// <param name="message"></param>
     [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET))]
-    public virtual void ReceiveDeallocateSocket(SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET message) {
+    protected virtual void ReceiveDeallocateSocket(SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET message) {
         if (!ActiveSessions.Remove(ActiveSessions.FirstOrDefault(x => x.SessionID == message.Id))) {
             // It's fine if no session was found. This is a common occurrence.
         }
@@ -84,12 +65,8 @@ public abstract class Server : ReceiveProtocolDispatcher {
         }
     }
 
-    /// <summary>
-    /// Query the ActorFactory of message services for a SessionActor.
-    /// </summary>
-    /// <param name="message"></param>
     [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_QUERYACTORFACTORY))]
-    public void ReceiveQueryActorFactory(SERVER_100_PROTOCOL.MSG_QUERYACTORFACTORY message) {
+    protected void ReceiveQueryActorFactory(SERVER_100_PROTOCOL.MSG_QUERYACTORFACTORY message) {
         var reply = new SERVER_100_PROTOCOL.MSG_ACTORFACTORYINFO() {
             Reference = _actorFactoryRef
         };
@@ -97,16 +74,12 @@ public abstract class Server : ReceiveProtocolDispatcher {
         Sender.Tell(reply);
     }
 
-    /// <summary>
-    /// Query information about this server.
-    /// </summary>
-    /// <param name="message"></param>
     [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_QUERYSERVER))]
-    public void ReceiveQueryServer(SERVER_100_PROTOCOL.MSG_QUERYSERVER message) {
+    protected void ReceiveQueryServer(SERVER_100_PROTOCOL.MSG_QUERYSERVER message) {
         // Get a list of strings for the connected IPs.
         var ips = ActiveSessions.Select(x => x.RemoteIp).ToArray();
         var msg = new SERVER_100_PROTOCOL.MSG_SERVERINFO() {
-            IP = message.IsLocal ? "127.0.0.1" : this.Ip,
+            IP = this.Ip,
             Port = Port,
             PlayerCount = (ushort) ActiveSessions.Count,
             ActorRef = Context.Self,
@@ -116,29 +89,24 @@ public abstract class Server : ReceiveProtocolDispatcher {
         Sender.Tell(msg);
     }
 
-    protected override SupervisorStrategy SupervisorStrategy() {
+    protected override SupervisorStrategy SupervisorStrategy() =>
         // There is no attempting to stabilize the connection server side. The Wizard101 client will attempt to
         // reconnect on any given failure. This is a good thing, as it allows us to simply stop the session actor
         // and let the client handle the rest.
-        return new OneForOneStrategy(
+        new OneForOneStrategy(
             maxNrOfRetries: 1,
             withinTimeRange: TimeSpan.FromSeconds(30),
             localOnlyDecider: ex => {
-                switch (ex) {
-                    default: {
-                            // Client regularly shuts down the socket. No need to log it.
-                            if (ex.Message.ToLower().Contains("failure: shutdown")) {
-                                return Directive.Stop;
-                            }
-
-                            Logger.Error("SessionActor {SessionId} has failed with exception {Exception}",
-                                Logger.Args(Context.Self.Path.Name, ex));
-                            return Directive.Stop;
-                        }
+                // Client regularly shuts down the socket. No need to log it.
+                if (ex.Message.ToLower().Contains("shutdown")) {
+                    return Directive.Stop;
                 }
+
+                Logger.Error("SessionActor {Source} has failed with exception {Exception}",
+                    Logger.Args(ex.InnerException.Source, ex));
+                return Directive.Stop;
             }
         );
-    }
 
     protected virtual ushort GetNewUniqueId() {
         ushort newId = 0;

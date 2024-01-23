@@ -135,35 +135,35 @@ public abstract class MessageService : ReceiveProtocolDispatcher {
 
     /// <summary>
     /// Gets the active <see cref="TypeCache.CoreObject"/> of this session. Requires an active
-    /// <see cref="CharacterService"/> as a running service.
+    /// <see cref="WizardService"/> as a running service.
     /// </summary>
     /// <returns></returns>
-    protected TypeCache.CoreObject GetActiveCoreObject() {
-        var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
+    protected TypeCache.CoreObject GetActiveGameObject() {
+        var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
         var response = AskOtherService<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
 
-        return response.CharacterObject;
+        return response.WizardGameObject;
     }
 
     /// <summary>
-    /// Gets the active <see cref="Character"/> of this session. Requires an active
-    /// <see cref="CharacterService"/> as a running service.
+    /// Gets the active <see cref="Wizard"/> of this session. Requires an active
+    /// <see cref="WizardService"/> as a running service.
     /// </summary>
     /// <returns></returns>
-    protected Character GetActiveCharacter() {
-        var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVECHARACTER();
+    protected Wizard GetActiveWizard() {
+        var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
         var response = AskOtherService<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
 
-        return response.Character;
+        return response.Wizard;
     }
 
     /// <summary>
     /// Gets the active <see cref="Account"/> of this session. Requires an active
-    /// <see cref="CharacterService"/> as a running service.
+    /// <see cref="WizardService"/> as a running service.
     /// </summary>
     /// <returns></returns>
     protected Account GetActiveAccount() {
-        var character = GetActiveCharacter();
+        var character = GetActiveWizard();
 
         return AccountCollection.GetAccount(character.AccountId);
     }

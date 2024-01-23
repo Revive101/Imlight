@@ -168,6 +168,7 @@ public static class ServerTypeCache {
         [Property(0x3DAC4C0A, 31)] public bool m_unknown_bool_7;
         [Property(0x66ECE9B3, 31)] public ByteString m_unknown_string_3;
         [Property(0xA4092DFC, 31)] public bool m_unknown_bool_8;
+        [Property(0x61437E16, 31)] public bool m_unknown_bool_9;
     }
 
     public class CombatSigil : TypeCache.CoreObjectInfo {

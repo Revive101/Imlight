@@ -73,19 +73,19 @@ internal static class UserValidator {
             return details;
         }
 
-        // Finally, see if the password matches.
+        // Finally, see if the session key matches.
         var passKey = validateMessage.PassKey3;
         var sessionId = sessionActor.SessionID;
         var offerTime = sessionActor.OfferTime;
         var offerMilli = sessionActor.OfferMillisecondsIntoSecond;
-        var doesPasswordMatch = PassKey3.VerifyPK3(sessionKey, sessionId, offerTime, offerMilli, passKey);
+        var doesSessionMatch = PassKey3.VerifyPK3(sessionKey, sessionId, offerTime, offerMilli, passKey);
 
         // Developers get a free pass.
-        #if DEBUG
-        doesPasswordMatch = true;
-        #endif
+#if DEBUG
+        //doesSessionMatch = true;
+#endif
 
-        if (!doesPasswordMatch) {
+        if (!doesSessionMatch) {
             details._result = UserValidateResult.ValidateFailed;
             return details;
         }

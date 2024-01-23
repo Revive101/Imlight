@@ -45,7 +45,7 @@ public class InventoryService : MessageService {
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_TRASHINVENTORYITEM))]
     private void ReceiveTrashInventoryItem(GAME_5_PROTOCOL.MSG_TRASHINVENTORYITEM message) {
-        var coreObject = GetActiveCoreObject();
+        var coreObject = GetActiveGameObject();
 
         // @TODO: Remove this and gather from potential player behavior cache instead.
         if (!CoreObjectFactory.FindBehaviorInstance<ClientWizInventoryBehavior>(coreObject,
@@ -94,8 +94,8 @@ public class InventoryService : MessageService {
           .OnBehaviors(SerializerOptions.Behaviors.None)
           .OnPropertyMask((SerializerOptions.PropertyFlags) 1);
 
-        var coreObject = GetActiveCoreObject();
-        var playerCharacter = GetActiveCharacter();
+        var coreObject = GetActiveGameObject();
+        var playerCharacter = GetActiveWizard();
 
         // @TODO: Remove this and gather from potential player behavior cache instead.
         if (!CoreObjectFactory.FindBehaviorInstance<ClientWizInventoryBehavior>(coreObject,
