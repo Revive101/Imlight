@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 using static Imlight.Common.Caches.TypeCache;
 using static Imlight.Common.Caches.TypeCache.CombatParticipant;
 using Imlight.CoreLib.Game.Models.World;
+using Imlight.CoreLib.Shared.Resources;
 
 namespace Imlight.CoreLib.Game.Combat;
 
@@ -29,10 +30,11 @@ public class DuelActorSubCircle {
     public Vector3 Location { get; set; }
     public byte SubCircleId { get; set; }
     public float Yaw { get; set; } // Useless for now, but client records this for whatever reason
-    public IActorRef ParticipantActor { get; set; }
-    public CoreObject ParticipantObject { get; set; }
     public bool IsOccupied { get; set; }
     public Team Team { get; set; }
+    public IActorRef ParticipantActor { get; private set; }
+    public CoreObject ParticipantObject { get; private set; }
+    public WizGameStats ParticipantGameStats { get; private set; }
 
     private readonly ulong _sigilId;
 
@@ -44,54 +46,17 @@ public class DuelActorSubCircle {
         _sigilId = sigilId;
     }
 
-    internal async Task AssignParticipant(IActorRef actor, CoreObject participantObject) {
+    internal async Task AssignParticipant(IActorRef actor, WizClientObject participantObject) {
         ParticipantActor = actor;
         ParticipantObject = participantObject;
+        ParticipantGameStats = participantObject.m_gameStats;
         Team = participantObject.m_templateID == 1 ? Team.Player : Team.Creature;
         IsOccupied = true;
 
         await PlayEntranceAnimation(participantObject);
     }
 
-    internal ByteString GetSerializedCombatParticipant() {
-        // Get the combat participant and serialize it.
-        var participant = GetParticipant();
-        var serializer = new ObjectSerializer()
-            .OnBehaviors(SerializerOptions.Behaviors.None)
-            .OnPropertyMask((SerializerOptions.PropertyFlags) 4);
-
-        return serializer.Serialize(participant);
-    }
-
-    private async Task PlayEntranceAnimation(CoreObject participantObject) {
-        // Set the state of the participant to entering sigil.
-        DuelActor.DuelBroadcast(new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
-            GameObjectID = participantObject.m_globalID,
-            State = (uint) NPCStates.Sigil
-        });
-
-        // Send aggro to the participant.
-        DuelActor.DuelBroadcast(new WIZARD_12_PROTOCOL.MSG_AGGRO {
-            GlobalID = participantObject.m_globalID,
-            LocX = Location.X,
-            LocY = Location.Y,
-            LocZ = Location.Z,
-            Yaw = Yaw,
-            SigilGID = _sigilId
-        });
-
-        // Wait the amount of time it takes for the actor to enter the sigil, then set
-        // their state to combat idle.
-        await Task.Delay((int) (AggroTimeInSeconds * 1000));
-
-        // Set state to stationary.
-        DuelActor.DuelBroadcast(new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
-            GameObjectID = participantObject.m_globalID,
-            State = (uint) NPCStates.Sigil
-        });
-    }
-
-    private CombatParticipant GetParticipant() {
+    internal CombatParticipant GetParticipant() {
         if (Team == Team.Player) {
             return GetPlayerParicipant();
         }
@@ -157,5 +122,33 @@ public class DuelActorSubCircle {
 
         return combatParticipant;
 
+    }
+
+    private async Task PlayEntranceAnimation(CoreObject participantObject) {
+        // Set the state of the participant to entering sigil.
+        DuelActor.DuelBroadcast(new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
+            GameObjectID = participantObject.m_globalID,
+            State = (uint) NPCStates.Sigil
+        });
+
+        // Send aggro to the participant.
+        DuelActor.DuelBroadcast(new WIZARD_12_PROTOCOL.MSG_AGGRO {
+            GlobalID = participantObject.m_globalID,
+            LocX = Location.X,
+            LocY = Location.Y,
+            LocZ = Location.Z,
+            Yaw = Yaw,
+            SigilGID = _sigilId
+        });
+
+        // Wait the amount of time it takes for the actor to enter the sigil, then set
+        // their state to combat idle.
+        await Task.Delay((int) (AggroTimeInSeconds * 1000));
+
+        // Set state to stationary.
+        DuelActor.DuelBroadcast(new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
+            GameObjectID = participantObject.m_globalID,
+            State = (uint) NPCStates.Sigil
+        });
     }
 }

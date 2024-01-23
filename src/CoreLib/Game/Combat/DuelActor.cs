@@ -12,6 +12,7 @@ using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.MessageLayer;
 using Imlight.Common.ObjectProperty;
+using Imlight.Common.IO;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using SharpDX;
@@ -34,7 +35,13 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     private const float YawErrorCompensation = 1.58f;
 
     public ITimerScheduler Timers { get; set; }
+
     private readonly IActorRef _wizardZoneRef;
+    private readonly ObjectSerializer _serializer = new ObjectSerializer()
+        .OnBehaviors(SerializerOptions.Behaviors.None);
+    private readonly SerializerOptions.PropertyFlags _combatParticipantFlags = (SerializerOptions.PropertyFlags) 4;
+    private readonly SerializerOptions.PropertyFlags _combatParticipantStatFlags = (SerializerOptions.PropertyFlags) 5;
+
     private byte PlayerCount => (byte) _subCircles.Count(x => x.IsOccupied && x.Team == Team.Player);
     private byte CreatureCount => (byte) _subCircles.Count(x => x.IsOccupied && x.Team == Team.Creature);
     private DuelActorSubCircle[] ActiveSubCircles => _subCircles.Where(x => x.IsOccupied).ToArray();
@@ -44,8 +51,6 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     private ulong _sigilId;
     private Vector3 _sigilLocation;
     private Vector3 _sigilOrientation;
-
-    // Variables to keep track of the actual duel.
     private byte _creatureCount;
     private byte _playerCount;
     private Team _upFirstTeam;
@@ -176,17 +181,13 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         _duel.m_duelPhase = kDuelPhase.kPhase_PrePlanning;
 
         foreach (var circle in ActiveSubCircles) {
-            var serializedData = circle.GetSerializedCombatParticipant();
+            var participantData = circle.GetParticipant();
+            var serializedData = SerializeCombatParticipant(participantData);
             var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATADD {
                 DuelID = _sigilId,
                 ParticipantData = serializedData,
             };
-            var broadCastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-                Selfless = false,
-                Sender = circle.ParticipantActor,
-                Message = msg
-            };
-            _wizardZoneRef.Tell(broadCastMsg);
+            DuelBroadcast(msg);
         }
 
         RoundStart();
@@ -225,13 +226,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             Data = phase == 0 ? upFirstData : "",
         };
 
-        // Broadcast the message to the zone.
-        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-            Selfless = false,
-            Sender = Self,
-            Message = msg
-        };
-        _wizardZoneRef.Tell(broadcastMsg);
+        DuelBroadcast(msg);
     }
 
     private void SendUpFirst(Team firstTeamToAct, int roundNum) {
@@ -245,35 +240,20 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             FirstTeamToAct = (byte) (firstTeamToAct == Team.Player ? 0 : 1),
             UpFirst = upFirstSigilSlot,
         };
-        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-            Selfless = false,
-            Sender = Self,
-            Message = upFirstMsg
-        };
-        _wizardZoneRef.Tell(broadcastMsg);
+        DuelBroadcast(upFirstMsg);
     }
 
     private void SendCombatUI(byte planningPhaseTimer) {
         var combatUiMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_SHOWCOMBATUI {
             DuelID = _sigilId
         };
-        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-            Selfless = false,
-            Sender = Self,
-            Message = combatUiMsg
-        };
-        _wizardZoneRef.Tell(broadcastMsg);
+        DuelBroadcast(combatUiMsg);
 
         var planningMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_SETPLANNINGPHASETIMER {
             DuelID = _sigilId,
             Time = planningPhaseTimer,
         };
-        var planningBroadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-            Selfless = false,
-            Sender = Self,
-            Message = planningMsg
-        };
-        _wizardZoneRef.Tell(planningBroadcastMsg);
+        DuelBroadcast(planningMsg);
     }
 
     private Duel CreateDuelWithDefaults(ulong sigilId) {
@@ -363,7 +343,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         return null;
     }
 
-    private bool AssignParticipantToSubCircle(Team team, DuelActorSubCircle subCircle, IActorRef actorRef, CoreObject coreObject) {
+    private bool AssignParticipantToSubCircle(Team team, DuelActorSubCircle subCircle, IActorRef actorRef, WizClientObject coreObject) {
         if (subCircle.ParticipantActor != null) {
             return false;
         }
@@ -378,5 +358,19 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         subCircle.AssignParticipant(actorRef, coreObject);
 
         return true;
+    }
+
+    private ByteString SerializeCombatParticipant(CombatParticipant participant) {
+        _serializer.OnPropertyMask(_combatParticipantFlags);
+        var buffer = _serializer.Serialize(participant);
+
+        return buffer;
+    }
+
+    private ByteString SerializeCombatParticipantStat(WizGameStats participantStat) {
+        _serializer.OnPropertyMask(_combatParticipantStatFlags);
+        var buffer = _serializer.Serialize(participantStat);
+
+        return buffer;
     }
 }
