@@ -18,21 +18,26 @@ using Imlight.CoreLib.Game.Models.World;
 
 namespace Imlight.CoreLib.Game.Combat;
 
+/// <summary>
+/// Represents a sub circle in a duel. Each sub circle has a unique id, location, and yaw.
+/// Each sub circle can be occupied by a player or creature.
+/// </summary>
 public class DuelActorSubCircle {
     private const float AggroTimeInSeconds = 0.75f;
 
+    public DuelActor DuelActor { get; set; }
     public Vector3 Location { get; set; }
     public byte SubCircleId { get; set; }
-    public float Yaw { get; set; }
-    public CombatParticipant Participant { get; set; }
-    public IActorRef Actor { get; set; }
+    public float Yaw { get; set; } // Useless for now, but client records this for whatever reason
+    public IActorRef ParticipantActor { get; set; }
     public CoreObject ParticipantObject { get; set; }
     public bool IsOccupied { get; set; }
     public Team Team { get; set; }
 
     private readonly ulong _sigilId;
 
-    public DuelActorSubCircle(Vector3 location, float yaw, ulong sigilId, byte subCircleId) {
+    public DuelActorSubCircle(DuelActor duelActor, Vector3 location, float yaw, ulong sigilId, byte subCircleId) {
+        DuelActor = duelActor;
         Location = location;
         SubCircleId = subCircleId;
         Yaw = yaw;
@@ -40,62 +45,50 @@ public class DuelActorSubCircle {
     }
 
     internal async Task AssignParticipant(IActorRef actor, CoreObject participantObject) {
-        Actor = actor;
+        ParticipantActor = actor;
         ParticipantObject = participantObject;
         Team = participantObject.m_templateID == 1 ? Team.Player : Team.Creature;
         IsOccupied = true;
 
-        await PlayEntranceAnimation(actor, participantObject);
+        await PlayEntranceAnimation(participantObject);
     }
 
     internal ByteString GetSerializedCombatParticipant() {
         // Get the combat participant and serialize it.
-        Participant = GetParticipant();
+        var participant = GetParticipant();
         var serializer = new ObjectSerializer()
             .OnBehaviors(SerializerOptions.Behaviors.None)
             .OnPropertyMask((SerializerOptions.PropertyFlags) 4);
 
-        return serializer.Serialize(Participant);
+        return serializer.Serialize(participant);
     }
 
-    private async Task PlayEntranceAnimation(IActorRef actor, CoreObject participantObject) {
+    private async Task PlayEntranceAnimation(CoreObject participantObject) {
         // Set the state of the participant to entering sigil.
-        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST() {
-            Selfless = false,
-            Sender = actor,
-            Message = new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
-                GameObjectID = participantObject.m_globalID,
-                State = (uint) NPCStates.Sigil
-            }
-        };
-        actor.Tell(broadcastMsg);
+        DuelActor.DuelBroadcast(new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
+            GameObjectID = participantObject.m_globalID,
+            State = (uint) NPCStates.Sigil
+        });
 
         // Send aggro to the participant.
-        var aggroMsg = new WIZARD_12_PROTOCOL.MSG_AGGRO {
+        DuelActor.DuelBroadcast(new WIZARD_12_PROTOCOL.MSG_AGGRO {
             GlobalID = participantObject.m_globalID,
             LocX = Location.X,
             LocY = Location.Y,
             LocZ = Location.Z,
-            Yaw = this.Yaw,
+            Yaw = Yaw,
             SigilGID = _sigilId
-        };
-        broadcastMsg.Message = aggroMsg;
-        actor.Tell(broadcastMsg);
+        });
 
         // Wait the amount of time it takes for the actor to enter the sigil, then set
         // their state to combat idle.
         await Task.Delay((int) (AggroTimeInSeconds * 1000));
 
         // Set state to stationary.
-        var secondBroadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST() {
-            Selfless = false,
-            Sender = actor,
-            Message = new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
-                GameObjectID = participantObject.m_globalID,
-                State = (uint) NPCStates.Sigil
-            }
-        };
-        actor.Tell(secondBroadcastMsg);
+        DuelActor.DuelBroadcast(new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
+            GameObjectID = participantObject.m_globalID,
+            State = (uint) NPCStates.Sigil
+        });
     }
 
     private CombatParticipant GetParticipant() {
@@ -109,7 +102,7 @@ public class DuelActorSubCircle {
 
     private CombatParticipant GetPlayerParicipant() {
         var queryCharacterMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
-        var queryCharacterRsp = Actor
+        var queryCharacterRsp = ParticipantActor
             .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryCharacterMsg)
             .Result
             .Wizard;

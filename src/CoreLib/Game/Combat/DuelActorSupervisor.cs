@@ -15,7 +15,7 @@ namespace Imlight.CoreLib.Game.Combat;
 /// </summary>
 public class DuelActorSupervisor : ReceiveProtocolDispatcher {
     private readonly IActorRef _wizardZoneRef;
-    private List<IActorRef> _duels;
+    private readonly List<IActorRef> _duels;
 
     public DuelActorSupervisor(IActorRef wizardZoneRef) {
         _wizardZoneRef = wizardZoneRef;

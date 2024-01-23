@@ -45,10 +45,10 @@ public class WizardZoneCreature : WizardZoneObject {
 
     // ctor
     public WizardZoneCreature(CoreObject activeGameObject,
-                                  CoreTemplate template,
-                                  NodeObject[] nodes,
-                                  byte startingNodeIndex,
-                                  IActorRef wizardZoneRef)
+                              CoreTemplate template,
+                              NodeObject[] nodes,
+                              byte startingNodeIndex,
+                              IActorRef wizardZoneRef)
             : base(activeGameObject, template, wizardZoneRef) {
         this._nodes = nodes;
         this._pathMovementCancelToken = new CancellationTokenSource();
@@ -63,10 +63,8 @@ public class WizardZoneCreature : WizardZoneObject {
         }
 
         // Start the movement interval asynchronously as to not block the actor mailbox.
-#pragma warning disable CS4014
         _ = DoMovementInterval();
         _ = DoSigilInteractionInterval();
-#pragma warning restore CS4014
     }
 
     // Akka.NET ctor
@@ -106,23 +104,18 @@ public class WizardZoneCreature : WizardZoneObject {
         }
     }
 
-    protected override void OnPlayerInteractionEnter(CoreObject player, IActorRef suspect) {
-        base.OnPlayerInteractionEnter(player, suspect);
-
+    protected override void OnPlayerInteractionEnter(CoreObject suspectObject, IActorRef suspectActor) {
+        // If I'm a hostile creature and a player just provoked me, then start a duel.
         if (_creatureState == CreatureState.Combat || !_isDuelingCreature) {
             return;
         }
 
-        // Prepare this creature for combat.
-        StopMovement();
-        _creatureState = CreatureState.Combat;
+        StartCombat();
 
-        // If I'm a hostile creature and a player just provoked me, then start a duel.
-        // This message is forwarded to the DuelActorSupervisor of the WizardZone.
         var msg = new ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL {
             StartingParticipants = new Dictionary<IActorRef, CoreObject>
             {
-                { suspect, player },
+                { suspectActor, suspectObject },
                 { Self, ActiveGameObject }
             }
         };
@@ -237,6 +230,11 @@ public class WizardZoneCreature : WizardZoneObject {
 
             await Task.Delay(TimeSpan.FromSeconds(InteractionIntervalInSeconds), _interactionCancelToken.Token);
         }
+    }
+
+    private void StartCombat() {
+        StopMovement();
+        _creatureState = CreatureState.Combat;
     }
 
     private void StopMovement() {
