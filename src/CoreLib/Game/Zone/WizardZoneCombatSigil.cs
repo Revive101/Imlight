@@ -36,6 +36,7 @@ public class WizardZoneCombatSigil : WizardZoneObject {
         if (CoreObjectFactory.FindBehaviorInstance(ActiveGameObject, out DuelBehavior duelBehavior)) {
             duelBehavior.m_sigilTemplateID = SigilTemplateId;
             duelBehavior.m_pDuel = _activeDuel;
+            _duelBehavior = duelBehavior;
         }
         else {
             throw new Exception("Could not find DuelBehavior on CoreObject.");
