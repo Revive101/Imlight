@@ -19,8 +19,12 @@ public sealed class ServerSettings {
     [DefaultValue("./logs/log.txt")]
     public string? LogPath { get; set; }
 
-    [DefaultValue(true)]
-    public bool LogsIncludeTimestamp { get; set; }
+    [DefaultValue("INFO")]
+    [Description("The minimum log level to be written to the log file. Valid values are: TRACE, DEBUG, INFO, WARN, ERROR, FATAL")]
+    public string LogLevel { get; set; }
+
+    [DefaultValue("{Timestamp:yyyy-MM-dd HH:mm:ss.fff} {Level:u3} {CallingSpace} : {Message:lj} {NewLine}{Exception}")]
+    public string LogFormat { get; set; }
 
     #endregion
 
