@@ -1,12 +1,18 @@
+using Imlight.Common;
 using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Shared.Resources;
 using System;
+using System.Linq;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.WizardData.Implementations;
 
 internal static class ItemHelper {
+    private static readonly string[] s_slotNames = {
+        "Hat", "Robe", "Shoes", "Weapon", "Athame", "Amulet", "Ring", "Mount", "Deck",
+    };
+
     /// <summary>
     /// Gets the <see cref="EquippedItemInfoList"/> for a <see cref="Wizard"/>. This is a lightweight version of the
     /// actual equipment that is used to publicly display the character's equipment.
@@ -45,15 +51,18 @@ internal static class ItemHelper {
             return 0;
         }
 
-        // Get the slot hash from the item template.
-        if (template.m_adjectiveList.Count < 2) {
-            return 0;
+        // Iterate through the slot names and return the hash of the first slot name that matches the item's slot.
+        foreach (var slotName in s_slotNames) {
+            if (template.m_adjectiveList.Any(adj => string.Equals(adj, slotName, StringComparison.OrdinalIgnoreCase))) {
+                return StringHash.Compute(slotName);
+            }
         }
-        else {
-            // The second adjective is the slot name.
-            var slotName = template.m_adjectiveList[1];
-            return StringHash.Compute(slotName);
-        }
+
+        // Log that we couldn't find the slot name, and print all the adjectives.
+        Logger.Error($"Couldn't find slot name for item {0} with adjectives: {1}",
+            Logger.Args(item.m_templateID, string.Join(", ", template.m_adjectiveList)));
+
+        return 0;
     }
 
     /// <summary>
