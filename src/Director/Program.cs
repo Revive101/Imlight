@@ -112,15 +112,18 @@ internal static class Program {
     }
 
     private static void CreateEmbeddedDatabaseAccounts() {
-        // Create 3 developer accounts.
+        // Generic developer accounts
+        // Remember to remove these on release builds!
         for (int i = 1; i <= 3; i++) {
             DatabaseUtilities.CreateEmbeddedDatabaseAccount($"dev{i}", $"dev{i}@r101.com", "dev9999", AuthLevel.Administrator);
         }
 
         // Hard code hall monitor lead accounts. Don't share these passwords!
-        var test = DatabaseUtilities.CreateHashedPassword("test");
         DatabaseUtilities.CreateEmbeddedDatabaseAccount($"mitsu", $"mitsu@r101.com", "2034", AuthLevel.Administrator);
         DatabaseUtilities.CreateEmbeddedDatabaseAccount($"walta", $"walta@r101.com", "9090", AuthLevel.Administrator);
+
+        // Hall Monitor accounts.
+        DatabaseUtilities.CreateEmbeddedDatabaseAccount($"pk", "pk@r101.com", "7878", AuthLevel.QualityAssurance);
     }
 
     private static void PrintTitle() {
