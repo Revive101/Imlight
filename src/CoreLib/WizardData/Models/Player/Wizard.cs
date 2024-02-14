@@ -85,6 +85,27 @@ public class Wizard : IDisposable {
 
     [JsonIgnore] private Vector3 _location;
     [JsonIgnore] private Vector3 _orientation;
+    [JsonIgnore] private List<ulong> _defaultItems = new() {
+        // Quality assurance hats, 05-10-25-50-100
+        1317127, 1317128, 1317125, 1317124, 1317126,
+
+        // Quality assurance robes, 05-10-25-50-100
+        1317129, 1317130, 1317131, 1317132, 1317133,
+
+        // Quality assurance boots, 100% speed bost
+        1317234,
+
+        // Weapons, each of different animation
+        87256,   // Antiquated Wand (starting wand)
+        1456120, // Celebration Staff
+
+        180047, // Conumdrum Blade
+        4672,   // Storm Slitherer Gem
+        4757,   // Flawed Opal Band
+        126412, // Black Cat Pet
+        284071, // Swift Gryphon (PERM)
+        126983, // Starter Deck
+    };
 
     // Constructor: Used for deserialization. If this is not present, the default constructor will be used.
     [JsonConstructor]
@@ -218,21 +239,20 @@ public class Wizard : IDisposable {
         InventoryItemIds = new List<ulong>();
 
         // Add default items to the inventory.
-        var defaultItems = new List<WizClientObjectItem>();
-        new List<ulong>() { 4740, 4705, 5030, 39068, 1363076, 1475149,
-                            1472644, 1317133, 1317126, 1317234, 1359455,
-                            1392077, 1352341, 87158, 87159, 87160, 1540397 }.ForEach(templateId => {
-                                var coreObject = new WizClientObjectItem {
-                                    m_globalID = RandomGen.GenerateGUID(),
-                                    m_templateID = (GID) templateId,
-                                    m_characterId = (GID) CharId
-                                };
+        var itemsToAdd = new List<WizClientObjectItem>();
+        _defaultItems.ForEach(templateId => {
+            var coreObject = new WizClientObjectItem {
+                m_globalID = RandomGen.GenerateGUID(),
+                m_templateID = (GID) templateId,
+                m_characterId = (GID) CharId
+            };
 
-                                defaultItems.Add(coreObject);
-                                InventoryItemIds.Add(coreObject.m_globalID);
-                            });
+            itemsToAdd.Add(coreObject);
+            InventoryItemIds.Add(coreObject.m_globalID);
+        });
 
-        var success = WizardItemCollection.AddDefaultItems(defaultItems);
+        // This is a different method that bulk uploads items to the database.
+        var success = WizardItemCollection.AddDefaultItems(itemsToAdd);
         if (!success) {
             Logger.Error("Could not add default items for Wizard {0} to database.", Logger.Args(CharId));
         }
