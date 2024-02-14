@@ -30,7 +30,7 @@ public static class AccountCollection {
 
         // Return false if the account already exists.
         if (session.Query<Account>(collectionName: CollectionName)
-            .Any(c => c.Username == account.Username || c.Email == account.Email)) {
+                   .Any(c => c.Username == account.Username)) {
             return false;
         }
 
