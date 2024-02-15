@@ -72,7 +72,7 @@ public class Wizard : IDisposable {
     public WizardCharacterBehavior WizardAvatar { get; set; }
     public WizGameStats GameStats { get; set; }
     public List<ulong> InventoryItemIds { get; set; }
-    public EquippedSlotInfo[] EquippedItems { get; set; }
+    public List<EquippedSlotInfo> EquippedItems { get; set; }
 
     // Imlight doesn't disassociate the inventory from equipment. An equipped item is still in the inventory.
     [JsonIgnore] public List<WizClientObjectItem> InventoryItems { get; set; }
@@ -85,7 +85,7 @@ public class Wizard : IDisposable {
 
     [JsonIgnore] private Vector3 _location;
     [JsonIgnore] private Vector3 _orientation;
-    [JsonIgnore] private List<ulong> _defaultItems = new() {
+    [JsonIgnore] private readonly List<ulong> _defaultItems = new() {
         // Quality assurance hats, 05-10-25-50-100
         1317127, 1317128, 1317125, 1317124, 1317126,
 
@@ -121,9 +121,9 @@ public class Wizard : IDisposable {
         Zone = ConfigurationManager.Settings.StartingZone;
         World = ConfigurationManager.Settings.StartingWorld;
         GameStats = new WizGameStats();
+        EquippedItems = new List<EquippedSlotInfo>();
 
         InitializeDefaultInventory();
-        InitializeDefaultEquipmentSlots();
     }
 
     public void SetCachedLocation(Vector3 loc) => Location = loc;
@@ -284,15 +284,6 @@ public class Wizard : IDisposable {
             return null;
         }
 
-        // Get the slot info for the slot we want to place this item in.
-        var slot = GetEquipmentSlotInfo(slotNameHash);
-        if (slot is null) {
-            Logger.Warning("Could not get slot info for item {0}.", Logger.Args(itemId));
-            return null;
-        }
-
-        // Clear the slot and set.
-        ClearEquipmentSlot(slotNameHash);
         SetEquipmentSlot(slotNameHash, itemId);
 
         // Persistent save.
@@ -308,7 +299,7 @@ public class Wizard : IDisposable {
 
         // Debug log.
         var actualName = WizardNameBank.GetEnglishName(NameIndices, WizardAvatar.m_eGender);
-        Logger.Debug("{0} equips item in slot {1}.", Logger.Args(actualName, slot.m_itemSlotNameID));
+        Logger.Debug("{0} equips item in slot {1}.", Logger.Args(actualName, slotNameHash));
 
         return effects;
     }
@@ -335,13 +326,6 @@ public class Wizard : IDisposable {
             return null;
         }
 
-        // Get the slot info for the slot we want to remove from.
-        var slot = GetEquipmentSlotInfo(slotNameHash);
-        if (slot is null) {
-            Logger.Warning("Could not get slot info for item {0}.", Logger.Args(itemId));
-            return null;
-        }
-
         ClearEquipmentSlot(slotNameHash);
 
         // Persistent save.
@@ -357,12 +341,20 @@ public class Wizard : IDisposable {
 
         // Debug log.
         var actualName = WizardNameBank.GetEnglishName(NameIndices, WizardAvatar.m_eGender);
-        Logger.Debug("{0} unequips item in slot {1}.", Logger.Args(actualName, slot.m_itemSlotNameID));
+        Logger.Debug("{0} unequips item in slot {1}.", Logger.Args(actualName, slotNameHash));
 
         return effects;
     }
 
     public bool EquipmentHasEquippedItem(ulong itemId) => EquippedItems.Any(i => i.m_itemID == itemId);
+
+    public bool EquipmentSlotInUse(ByteString slotName, out byte index) {
+        var slotHash = StringHash.Compute(slotName);
+        index = (byte) EquippedItems.FindIndex(i => i.m_itemSlotNameID == slotHash);
+        return index != 255;
+    }
+
+    public ulong EquipmentGetItem(byte index) => EquippedItems[index].m_itemID;
 
     public IEnumerable<(WizClientObjectItem, WizItemTemplate)> EquipmentGetAllItems() {
         var items = new List<(WizClientObjectItem, WizItemTemplate)>();
@@ -380,11 +372,7 @@ public class Wizard : IDisposable {
     }
 
     public byte EquipmentGetItemSlotIndex(ulong itemId) {
-        var equippedItemsWithIds = EquippedItems
-            .Where(i => i.m_itemID != 0)
-            .ToList();
-
-        int index = equippedItemsWithIds.FindIndex(i => i.m_itemID == (GID) itemId);
+        int index = EquippedItems.FindIndex(i => i.m_itemID == (GID) itemId);
 
         return (byte) index;
     }
@@ -402,42 +390,26 @@ public class Wizard : IDisposable {
         }
     }
 
-    private void InitializeDefaultEquipmentSlots() {
-        // Initialize the equipment slots.
-        // There is a slot for every EquipmentSlot enum value.
-        var slotList = new List<EquippedSlotInfo>();
-        for (uint i = 0; i < Enum.GetValues(typeof(EquipmentSlot)).Length; i++) {
-            // Get the name of the slot.
-            var slotName = Enum.GetName(typeof(EquipmentSlot), i);
-
-            slotList.Add(new EquippedSlotInfo() {
-                m_itemID = (GID) 0,
-                m_itemSlotNameID = StringHash.Compute(slotName)
-            });
+    private void SetEquipmentSlot(uint slotHash, ulong itemId) {
+        // Find if this slot exists already. If so, remove it.
+        var existingSlot = EquippedItems.Find(i => i.m_itemSlotNameID == slotHash);
+        if (existingSlot is not null) {
+            EquippedItems.Remove(existingSlot);
         }
 
-        EquippedItems = slotList.ToArray();
+        // Create the new slot.
+        var newSlot = new EquippedSlotInfo {
+            m_itemSlotNameID = slotHash,
+            m_itemID = (GID) itemId
+        };
+        EquippedItems.Add(newSlot);
     }
 
-    private EquippedSlotInfo GetEquipmentSlotInfo(uint slotNameHash)
-        => EquippedItems.FirstOrDefault(i => i.m_itemSlotNameID == slotNameHash);
-
-    private void ClearEquipmentSlot(uint slotNameHash) {
-        var slot = GetEquipmentSlotInfo(slotNameHash);
-        if (slot is null) {
-            throw new Exception($"Could not get slot info for slot name hash {slotNameHash}.");
+    private void ClearEquipmentSlot(uint slotHash) {
+        var existingSlot = EquippedItems.Find(i => i.m_itemSlotNameID == slotHash);
+        if (existingSlot is not null) {
+            EquippedItems.Remove(existingSlot);
         }
-
-        slot.m_itemID = (GID) 0;
-    }
-
-    private void SetEquipmentSlot(uint slotNameHash, ulong itemId) {
-        var slot = GetEquipmentSlotInfo(slotNameHash);
-        if (slot is null) {
-            throw new Exception($"Could not get slot info for slot name hash {slotNameHash}.");
-        }
-
-        slot.m_itemID = (GID) itemId;
     }
 
     #endregion

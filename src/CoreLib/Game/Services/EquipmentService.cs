@@ -2,10 +2,12 @@ using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.Cryptography;
+using Imlight.Common.IO;
 using Imlight.Common.ObjectProperty;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System;
@@ -82,17 +84,22 @@ public class EquipmentService : MessageService {
         // Todo: Check if player meets requirements to equip item. If not, log an infraction.
 
         // Check to see if the player already has this item equipped. If they do, broadcast the removal of it.
-        var slot = wizard.EquipmentGetItemSlotIndex(itemId);
-        var hasItemEquipped = wizard.EquipmentHasEquippedItem(itemId);
+        // We don't have to remove it here because the EquipItem method will do that for us.
+        if (wizard.EquipmentSlotInUse(message.SlotName, out var index)) {
+            // Debug log.
+            var wizardName = WizardNameBank.GetEnglishName(wizard.NameIndices, wizard.WizardAvatar.m_eGender);
+            Logger.Debug("{0} tried to equip item {1} in slot {2} that is already in use. Unequipping from index {3}",
+                Logger.Args(wizardName, itemId, message.SlotName, index));
+
+            // Get the item that is currently equipped in this slot.
+            var equippedItemId = wizard.EquipmentGetItem(index);
+            SendUnequipItem(message.SlotName, index, equippedItemId);
+        }
 
         var addedEffects = wizard.EquipmentEquipItem(itemId);
         if (addedEffects is null) {
             Logger.Warning("Equip failed on item {0}", Logger.Args(itemId));
             return;
-        }
-
-        if (hasItemEquipped) {
-            SendUnequipItem(slot, itemId);
         }
 
         SendEquipItem(item, message.SlotName);
@@ -122,11 +129,15 @@ public class EquipmentService : MessageService {
 
         var removedEffects = playerCharacter.EquipmentUnequipItem(itemId);
         if (removedEffects is null) {
+            // If this fails, there is perhaps desync between the server and the client.
+            // Send a message to the client to assure them that the server does not have the item equipped.
+            SendUnequipItem(message.SlotName, slot, itemId);
+
             Logger.Warning("Unequip failed on item {0}", Logger.Args(itemId));
             return;
         }
 
-        SendUnequipItem(slot, itemId);
+        SendUnequipItem(message.SlotName, slot, itemId);
         SendRemoveEffects(removedEffects);
     }
 
@@ -147,12 +158,11 @@ public class EquipmentService : MessageService {
         }, false);
     }
 
-    private void SendUnequipItem(byte slot, ulong itemId) {
+    private void SendUnequipItem(ByteString slotName, byte slot, ulong itemId) {
         // This one goes to the client.
         SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPITEM() {
             ItemID = itemId,
-            // The client doesn't really care about these fields below.
-            SlotName = "",
+            SlotName = slotName,
             IsEquip = 0
         });
 
