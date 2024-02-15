@@ -20,20 +20,17 @@ namespace Imlight.CoreLib.WizardData.Models.Player;
 [Serializable]
 public class ServerWizEquipmentBehavior : BehaviorInstance, IClientBehaviorProvider<ClientWizEquipmentBehavior> {
     public List<EquipmentSlot> SlotList;
-    public List<WizClientObjectItem> EquippedItems;
+    public List<ulong> EquippedItemIds;
 
-    public bool EquipItem(ulong itemId, out WizItemTemplate template) {
+    [JsonIgnore] public List<WizClientObjectItem> EquippedItems;
+
+    public bool EquipItem(WizClientObjectItem item, out WizItemTemplate template, out WizItemTemplate removedTemplate) {
         template = default;
+        removedTemplate = default;
+        var itemId = item.m_globalID;
 
         // Prerequisite checks.
         if (HasItemEquipped(itemId)) {
-            return false;
-        }
-
-        // Get the actual item from this ID.
-        var item = EquippedItems.FirstOrDefault(item => item.m_globalID == itemId);
-        if (item == null) {
-            Logger.Warning("Tried to equip item with global id {0} that does not exist.", Logger.Args(itemId));
             return false;
         }
 
@@ -51,8 +48,17 @@ public class ServerWizEquipmentBehavior : BehaviorInstance, IClientBehaviorProvi
             return false;
         }
 
+        var existingItem = GetItemInSlot(slot.SlotType);
+        if (existingItem is not null) {
+            EquippedItemIds.Remove(existingItem.m_globalID);
+            EquippedItems.Remove(existingItem);
+            removedTemplate = ItemHelper.GetItemTemplate(existingItem);
+        }
+
         // Finally, update the slot.
-        UpdateEquipmentSlot(slot, itemId);
+        UpdateEquipmentSlot(slot, item.m_debugName, itemId);
+        EquippedItemIds.Add(itemId);
+        EquippedItems.Add(item);
         return true;
     }
 
@@ -87,6 +93,8 @@ public class ServerWizEquipmentBehavior : BehaviorInstance, IClientBehaviorProvi
 
         // Finally, update the slot.
         ClearEquipmentSlot(slot);
+        EquippedItemIds.Remove(itemId);
+        EquippedItems.Remove(item);
         return true;
     }
 
@@ -144,13 +152,14 @@ public class ServerWizEquipmentBehavior : BehaviorInstance, IClientBehaviorProvi
         return (byte) slotIndex;
     }
 
-    private void UpdateEquipmentSlot(EquipmentSlot slot, ulong newItemId) {
+    private void UpdateEquipmentSlot(EquipmentSlot slot, string itemName,  ulong newItemId) {
         // Find the slot in the list. If it does, remove it.
         ClearEquipmentSlot(slot);
 
         // Create a new slot and add it to the list.
         var newSlot = new EquipmentSlot {
             SlotType = slot.SlotType,
+            ItemName = itemName,
             ItemId = (GID) newItemId,
             EquippedSince = DateTime.Now,
         };

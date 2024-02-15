@@ -43,14 +43,20 @@ internal static class ItemHelper {
     /// <param name="itemTemplate"></param>
     /// <returns>The EquipmentSlot of the item; null if a matching adjective is not found.</returns>
     internal static EquipmentSlot GetItemSlot(WizItemTemplate itemTemplate) {
+        if (itemTemplate?.m_adjectiveList is null) {
+            throw new InvalidOperationException("Item template does not have an adjective list.");
+        }
+
         // Iterate through the EquipmentSlot enum and return the first slot that matches the item's slot.
-        foreach (var slot in Enum.GetValues(typeof(EquipmentSlot)).Cast<EquipmentSlot>()) {
+        foreach (var slot in Enum.GetValues(typeof(EquipmentSlotType)).Cast<EquipmentSlotType>()) {
             // Sanitize the slot name.
             var slotName = slot.ToString().Split('.')[^1];
 
             // Check if any of the items adjectives match the slot name.
             if (itemTemplate.m_adjectiveList.Any(adj => string.Equals(adj, slotName, StringComparison.OrdinalIgnoreCase))) {
-                return slot;
+                return new EquipmentSlot {
+                    SlotType = slot,
+                };
             }
         }
 

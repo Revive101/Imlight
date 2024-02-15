@@ -95,13 +95,19 @@ public class EquipmentService : MessageService {
             SendUnequipItem(message.SlotName, index, equippedItemId);
         }
 
-        if (!wizard.InventoryToEquipmentTransfer(itemId, out var effects)) {
+        if (!wizard.InventoryToEquipmentTransfer(itemId, out var effects, out var removedEffects)) {
             Logger.Warning("Equip failed on item {0}", Logger.Args(itemId));
             return;
         }
 
         SendEquipItem(item, message.SlotName);
         SendAddEffects(effects);
+
+        // If removedEffects is not null, the Wizard replaced an item with another item that has different effects.
+        // We need to remove the old effects from the client.
+        if (removedEffects is not null) {
+            SendRemoveEffects(removedEffects);
+        }
     }
 
     private void UnEquipItem(GAME_5_PROTOCOL.MSG_EQUIPITEM message) {

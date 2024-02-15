@@ -31,6 +31,7 @@ public enum EquipmentSlotType {
 [Serializable]
 public class EquipmentSlot : IClientTypeProvider<EquippedSlotInfo> {
     public EquipmentSlotType SlotType { get; set; }
+    public string ItemName { get; set; }
     public GID ItemId { get; set; }
     public DateTime EquippedSince { get; set; }
 

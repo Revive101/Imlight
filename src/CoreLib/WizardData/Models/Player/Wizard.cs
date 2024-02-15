@@ -167,18 +167,18 @@ public class Wizard : IDisposable {
         return true;
     }
 
-    public bool InventoryToEquipmentTransfer(ulong itemId, out List<GameEffectBase> equipEffects) {
+    public bool InventoryToEquipmentTransfer(ulong itemId, out List<GameEffectBase> equipEffects, out List<GameEffectBase> unequipEffects) {
         equipEffects = null;
+        unequipEffects = null;
 
         // Remove the item from the inventory.
-        var invRemoveResult = InventoryBehavior.RemoveItem(itemId);
-        if (!invRemoveResult) {
+        if (!InventoryBehavior.RemoveItem(itemId, out var itemRemoved)) {
             Logger.Warning("Tried to equip item with global id {0} that does not exist in player inventory.", Logger.Args(itemId));
             return false;
         }
 
         // Add the item to the equipment.
-        var equipResult = EquipmentBehavior.EquipItem(itemId, out var template);
+        var equipResult = EquipmentBehavior.EquipItem(itemRemoved, out var template, out var removedTemplate);
         if (!equipResult) {
             Logger.Warning("Tried to equip item with global id {0} that is already equipped.", Logger.Args(itemId));
             return false;
@@ -190,6 +190,11 @@ public class Wizard : IDisposable {
         // Debug log.
         var actualName = WizardNameBank.GetEnglishName(NameIndices, WizardAvatar.m_eGender);
         Logger.Debug("{0} equips item {1}", Logger.Args(actualName, itemId));
+
+        // If the equipment behavior removed an item, we need to remove its effects.
+        if (removedTemplate is not null) {
+            unequipEffects = RemoveEffectsFromTemplate(removedTemplate);
+        }
 
         equipEffects = AddEffectsFromTemplate(template);
         return true;
@@ -294,21 +299,18 @@ public class Wizard : IDisposable {
 
     private void InitializeDefaultInventory() {
         InventoryBehavior = new ServerWizInventoryBehavior {
-            InventoryItems = new List<WizClientObjectItem>(),
+            Items = new List<WizClientObjectItem>(),
             InventoryItemIds = new List<ulong>()
         };
 
         // Add default items to the inventory.
         var itemsToAdd = new List<WizClientObjectItem>();
         _defaultItems.ForEach(templateId => {
-            var coreObject = new WizClientObjectItem {
-                m_globalID = RandomGen.GenerateGUID(),
-                m_templateID = (GID) templateId,
-                m_characterId = (GID) CharId
-            };
+            var cObj = (WizClientObjectItem) CoreObjectFactory.FinalizeCoreObject(templateId);
+            cObj.m_characterId = (GID) CharId;
 
-            itemsToAdd.Add(coreObject);
-            InventoryBehavior.InventoryItemIds.Add(coreObject.m_globalID);
+            itemsToAdd.Add(cObj);
+            InventoryBehavior.InventoryItemIds.Add(cObj.m_globalID);
         });
 
         // This is a different method that bulk uploads items to the database.
@@ -321,6 +323,7 @@ public class Wizard : IDisposable {
     private void InitializeDefaultEquipment() {
         EquipmentBehavior = new ServerWizEquipmentBehavior {
             SlotList = new List<EquipmentSlot>(),
+            EquippedItemIds = new List<ulong>(),
             EquippedItems = new List<WizClientObjectItem>(),
         };
     }

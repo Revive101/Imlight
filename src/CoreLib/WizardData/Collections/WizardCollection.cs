@@ -77,7 +77,7 @@ public static class WizardCollection {
             var items = session.Query<WizClientObjectItem>(collectionName: WizardItemCollection.CollectionName)
                 .Where(x => x.m_characterId == id)
                 .ToList();
-            character.InventoryBehavior.InventoryItems = items.ToList();
+            character.InventoryBehavior.Items = items.ToList();
         }
 
         return character;
