@@ -65,16 +65,12 @@ internal static class CharacterHelper {
     /// <param name="character">The Wizard in question.</param>
     /// <returns>The EquippedItemInfoList that was crafted.</returns>
     /// <exception cref="Exception"></exception>
-    internal static EquippedItemInfoList GetEquipmentList(Wizard character) {
+    internal static EquippedItemInfoList GetEquipmentList(ServerWizEquipmentBehavior behavior) {
         var equipmentList = new EquippedItemInfoList {
             m_infoList = new List<EquippedItemInfo>(),
         };
-        foreach (var equippedItem in character.EquippedItems.Where(x => x.m_itemID != 0)) {
-            // The equipped items are stored as a list of ItemID's. We need to get the actual item
-            // from the inventory and then convert it to a public item.
-            var itemId = equippedItem.m_itemID;
-            var actualItem = character.InventoryGetItem(itemId);
-            var publicItem = ItemHelper.GetPublicItem(actualItem);
+        foreach (var equippedItem in behavior.EquippedItems) {
+            var publicItem = ItemHelper.GetPublicItem(equippedItem);
 
             equipmentList.m_infoList.Add(publicItem);
         }

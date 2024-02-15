@@ -102,7 +102,8 @@ public static class AccountCollection {
             var inventory = session.Query<WizClientObjectItem>(collectionName: WizardItemCollection.CollectionName)
                 .Where(i => i.m_characterId == character.CharId)
                 .ToList();
-            character.InventoryItems = inventory.ToList();
+            character.Account = account;
+            character.InventoryBehavior.InventoryItems = inventory.ToList();
         }
 
         // Load infractions. The constructor will load the action history.
@@ -142,7 +143,8 @@ public static class AccountCollection {
             var inventory = session.Query<WizClientObjectItem>(collectionName: WizardItemCollection.CollectionName)
                 .Where(i => i.m_characterId == character.CharId)
                 .ToList();
-            character.InventoryItems = inventory.ToList();
+            character.Account = account;
+            character.InventoryBehavior.InventoryItems = inventory.ToList();
         }
 
         // Load infractions. The constructor will load the action history.

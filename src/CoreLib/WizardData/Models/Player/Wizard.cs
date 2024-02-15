@@ -69,13 +69,13 @@ public class Wizard : IDisposable {
             }
         }
     }
-    public WizardCharacterBehavior WizardAvatar { get; set; }
-    public WizGameStats GameStats { get; set; }
-    public List<ulong> InventoryItemIds { get; set; }
-    public List<EquippedSlotInfo> EquippedItems { get; set; }
 
-    // Imlight doesn't disassociate the inventory from equipment. An equipped item is still in the inventory.
-    [JsonIgnore] public List<WizClientObjectItem> InventoryItems { get; set; }
+    public WizardCharacterBehavior WizardAvatar { get; set; }
+    public ServerWizInventoryBehavior InventoryBehavior { get; set; }
+    public ServerWizEquipmentBehavior EquipmentBehavior { get; set; }
+    public WizGameStats GameStats { get; set; }
+
+    [JsonIgnore] public Account Account;
     [JsonIgnore] public WizClientObject GameObject;
     [JsonIgnore] public List<GameEffectBase> GameEffects = new();
     [JsonIgnore] public string GameServerIp;
@@ -115,15 +115,16 @@ public class Wizard : IDisposable {
     public Wizard(MagicSchool wizardSchoolType, WizardCharacterBehavior avatar, uint nameIndices, byte level = 1) {
         CharId = RandomGen.GenerateGUID();
         WizardSchool = wizardSchoolType;
-        WizardAvatar = avatar;
         NameIndices = nameIndices;
         Level = level;
         Zone = ConfigurationManager.Settings.StartingZone;
         World = ConfigurationManager.Settings.StartingWorld;
-        GameStats = new WizGameStats();
-        EquippedItems = new List<EquippedSlotInfo>();
 
+        // Do behaviors.
+        WizardAvatar = avatar;
         InitializeDefaultInventory();
+        InitializeDefaultEquipment();
+        GameStats = new WizGameStats();
     }
 
     public void SetCachedLocation(Vector3 loc) => Location = loc;
@@ -166,255 +167,83 @@ public class Wizard : IDisposable {
         return true;
     }
 
-    // todo: Regions are a sign of a class becoming monolithic.
-    #region Inventory
+    public bool InventoryToEquipmentTransfer(ulong itemId, out List<GameEffectBase> equipEffects) {
+        equipEffects = null;
 
-    public bool InventoryAddItem(WizClientObjectItem item) {
-        if (item is null) {
-            throw new NullReferenceException("Item cannot be null.");
-        }
-        if (InventoryHasItem(item.m_globalID)) {
-            Logger.Error("Item with same global id {0} already exists in player inventory.", Logger.Args(item.m_globalID));
+        // Remove the item from the inventory.
+        var invRemoveResult = InventoryBehavior.RemoveItem(itemId);
+        if (!invRemoveResult) {
+            Logger.Warning("Tried to equip item with global id {0} that does not exist in player inventory.", Logger.Args(itemId));
             return false;
         }
 
-        item.m_characterId = (GID) CharId;
-        InventoryItems.Add(item);
-        InventoryItemIds.Add(item.m_globalID);
-
-        // Persistent save.
-        var persistentSaveSucceeded = WizardItemCollection.AddItem(item);
-        if (!persistentSaveSucceeded) {
-            Logger.Error("Could not save item with global id {0} to database.", Logger.Args(item.m_globalID));
-            return false;
-        }
-
-        return true;
-    }
-
-    public bool InventoryRemoveItem(ulong itemId) {
-        // Get the actual item from the inventory.
-        var item = InventoryItems.Find(i => i.m_globalID == itemId);
-        if (item is null) {
-            Logger.Debug("Tried to remove item with global id {0} that does not exist in player inventory.",
-                Logger.Args(itemId));
-            return false;
-        }
-
-        return InventoryRemoveItem(item);
-    }
-
-    public bool InventoryRemoveItem(WizClientObjectItem item) {
-        if (item is null) {
-            throw new NullReferenceException("Item cannot be null.");
-        }
-        if (!InventoryItems.Remove(item)) {
-            Logger.Debug("Tried to remove item with global id {0} that does not exist in player inventory.",
-                Logger.Args(item.m_globalID));
-            return false;
-        }
-
-        if (!InventoryItemIds.Remove(item.m_globalID)) {
-            Logger.Debug("Tried to remove item with global id {0} that does not exist in player inventory.",
-                Logger.Args(item.m_globalID));
-            return false;
-        }
-
-        // Persistent save.
-        var persistentSaveSucceeded = WizardItemCollection.RemoveItem(item);
-        if (!persistentSaveSucceeded) {
-            Logger.Error("Could not remove item with global id {0} from database.", Logger.Args(item.m_globalID));
-            return false;
-        }
-
-        return true;
-    }
-
-    public bool InventoryHasItem(ulong itemId) => InventoryItems.Any(i => i.m_globalID == itemId);
-
-    public WizClientObjectItem InventoryGetItem(ulong itemId) => InventoryItems.Find(i => i.m_globalID == itemId);
-
-    private void InitializeDefaultInventory() {
-        InventoryItems = new List<WizClientObjectItem>();
-        InventoryItemIds = new List<ulong>();
-
-        // Add default items to the inventory.
-        var itemsToAdd = new List<WizClientObjectItem>();
-        _defaultItems.ForEach(templateId => {
-            var coreObject = new WizClientObjectItem {
-                m_globalID = RandomGen.GenerateGUID(),
-                m_templateID = (GID) templateId,
-                m_characterId = (GID) CharId
-            };
-
-            itemsToAdd.Add(coreObject);
-            InventoryItemIds.Add(coreObject.m_globalID);
-        });
-
-        // This is a different method that bulk uploads items to the database.
-        var success = WizardItemCollection.AddDefaultItems(itemsToAdd);
-        if (!success) {
-            Logger.Error("Could not add default items for Wizard {0} to database.", Logger.Args(CharId));
-        }
-    }
-
-    #endregion
-
-    #region Equipment
-
-    public List<GameEffectBase> EquipmentEquipItem(ulong itemId) {
-        // These validations also occur in the EquipmentService, where they are properly dealt with.
-        // They must also happen here, as the Wizard does not keep track of the equipment items, only their IDs.
-        if (EquipmentHasEquippedItem(itemId)) {
+        // Add the item to the equipment.
+        var equipResult = EquipmentBehavior.EquipItem(itemId, out var template);
+        if (!equipResult) {
             Logger.Warning("Tried to equip item with global id {0} that is already equipped.", Logger.Args(itemId));
-            return null;
+            return false;
         }
-
-        // We're still dealing with just an item ID, so we need to get the actual item from the inventory.
-        var item = InventoryGetItem(itemId);
-        if (item is null) {
-            Logger.Warning("Tried to equip item with global id {0} that does not exist in player inventory.", Logger.Args(itemId));
-            return null;
-        }
-
-        // Get the slot name hash of the item.
-        var slotNameHash = ItemHelper.GetItemSlotHash(item);
-        if (slotNameHash == 0) {
-            Logger.Warning("Tried to equip item with global id {0} that does not have a slot name adjective.", Logger.Args(itemId));
-            return null;
-        }
-
-        SetEquipmentSlot(slotNameHash, itemId);
 
         // Persistent save.
-        // The equipped items array is a fairly small binary, so we can just save the whole thing.
-        WizardCollection.UpdateCharacterEquipment(this);
-
-        // Update the actual behavior.
-        WizardObjectLoader.SetEquipmentBehavior(GameObject, this);
-
-        // Apply effects.
-        var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
-        var effects = AddEffectsFromTemplate(template);
+        WizardCollection.UpdateCharacterItems(this);
 
         // Debug log.
         var actualName = WizardNameBank.GetEnglishName(NameIndices, WizardAvatar.m_eGender);
-        Logger.Debug("{0} equips item in slot {1}.", Logger.Args(actualName, slotNameHash));
+        Logger.Debug("{0} equips item {1}", Logger.Args(actualName, itemId));
 
-        return effects;
+        equipEffects = AddEffectsFromTemplate(template);
+        return true;
     }
 
-    public List<GameEffectBase> EquipmentUnequipItem(ulong itemId) {
-        // These validations also occur in the EquipmentService, where they are properly dealt with.
-        // They must also happen here, as the Wizard does not keep track of the equipment items, only their IDs.
-        if (!EquipmentHasEquippedItem(itemId)) {
+    public bool EquipmentToInventoryTransfer(ulong itemId, out List<GameEffectBase> unequipEffects) {
+        unequipEffects = null;
+
+        // Get the actual item.
+        var item = EquipmentBehavior.EquippedItems.FirstOrDefault(i => i.m_globalID == itemId);
+
+        // Remove the item from the equipment.
+        var unequipResult = EquipmentBehavior.UnequipItem(itemId, out var template);
+        if (!unequipResult) {
             Logger.Warning("Tried to unequip item with global id {0} that is not equipped.", Logger.Args(itemId));
-            return null;
+            return false;
         }
 
-        // We're still dealing with just an item ID, so we need to get the actual item from the inventory.
-        var item = InventoryGetItem(itemId);
-        if (item is null) {
-            Logger.Warning("Tried to equip item with global id {0} that does not exist in player inventory.", Logger.Args(itemId));
-            return null;
+        // Add the item to the inventory.
+        var invAddResult = InventoryBehavior.AddItem(item);
+        if (!invAddResult) {
+            Logger.Warning("Tried to add item with global id {0} to inventory, but it already exists.", Logger.Args(itemId));
+            return false;
         }
-
-        // Get the slot name hash of the item.
-        var slotNameHash = ItemHelper.GetItemSlotHash(item);
-        if (slotNameHash == 0) {
-            Logger.Warning("Tried to equip item with global id {0} that does not have a slot name adjective.", Logger.Args(itemId));
-            return null;
-        }
-
-        ClearEquipmentSlot(slotNameHash);
 
         // Persistent save.
-        // The equipped items array is a fairly small binary, so we can just save the whole thing.
-        WizardCollection.UpdateCharacterEquipment(this);
-
-        // Update the actual behavior.
-        WizardObjectLoader.SetEquipmentBehavior(GameObject, this);
-
-        // Remove effects.
-        var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
-        var effects = RemoveEffectsFromTemplate(template);
+        WizardCollection.UpdateCharacterItems(this);
 
         // Debug log.
         var actualName = WizardNameBank.GetEnglishName(NameIndices, WizardAvatar.m_eGender);
-        Logger.Debug("{0} unequips item in slot {1}.", Logger.Args(actualName, slotNameHash));
+        Logger.Debug("{0} unequips item {1}", Logger.Args(actualName, itemId));
 
-        return effects;
+        unequipEffects = RemoveEffectsFromTemplate(template);
+        return true;
     }
 
-    public bool EquipmentHasEquippedItem(ulong itemId) => EquippedItems.Any(i => i.m_itemID == itemId);
-
-    public bool EquipmentSlotInUse(ByteString slotName, out byte index) {
-        var slotHash = StringHash.Compute(slotName);
-        index = (byte) EquippedItems.FindIndex(i => i.m_itemSlotNameID == slotHash);
-        return index != 255;
-    }
-
-    public ulong EquipmentGetItem(byte index) => EquippedItems[index].m_itemID;
-
-    public IEnumerable<(WizClientObjectItem, WizItemTemplate)> EquipmentGetAllItems() {
-        var items = new List<(WizClientObjectItem, WizItemTemplate)>();
-        foreach (var slot in EquippedItems) {
-            if (slot.m_itemID != 0) {
-                var item = InventoryGetItem(slot.m_itemID);
-                if (item is not null) {
-                    var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
-                    items.Add((item, template));
-                }
-            }
-        }
-
-        return items;
-    }
-
-    public byte EquipmentGetItemSlotIndex(ulong itemId) {
-        int index = EquippedItems.FindIndex(i => i.m_itemID == (GID) itemId);
-
-        return (byte) index;
-    }
-
-    public void ApplyEffectsForAllEquipment() {
+    public void InitializeGameEffects() {
+        // Debug log.
         var actualWizardName = WizardNameBank.GetEnglishName(NameIndices, WizardAvatar.m_eGender);
         Logger.Debug("{0} is applying effects for all equipment.", Logger.Args(actualWizardName));
 
-        foreach (var item in EquipmentGetAllItems()) {
-            var template = item.Item2;
+        // Get all active effects from what we currently have equipped.
+        foreach (var item in EquipmentBehavior.EquippedItems) {
+            var template = ItemHelper.GetItemTemplate(item);
+            if (template is null) {
+                continue;
+            }
 
             var activatedEffects = AddEffectsFromTemplate(template);
+
             Logger.Debug("{0} Applied {1} effects for item {2}.",
                 Logger.Args(actualWizardName, activatedEffects.Count, template.m_objectName));
         }
     }
-
-    private void SetEquipmentSlot(uint slotHash, ulong itemId) {
-        // Find if this slot exists already. If so, remove it.
-        var existingSlot = EquippedItems.Find(i => i.m_itemSlotNameID == slotHash);
-        if (existingSlot is not null) {
-            EquippedItems.Remove(existingSlot);
-        }
-
-        // Create the new slot.
-        var newSlot = new EquippedSlotInfo {
-            m_itemSlotNameID = slotHash,
-            m_itemID = (GID) itemId
-        };
-        EquippedItems.Add(newSlot);
-    }
-
-    private void ClearEquipmentSlot(uint slotHash) {
-        var existingSlot = EquippedItems.Find(i => i.m_itemSlotNameID == slotHash);
-        if (existingSlot is not null) {
-            EquippedItems.Remove(existingSlot);
-        }
-    }
-
-    #endregion
-
-    #region Game Effects
 
     private List<GameEffectBase> AddEffectsFromTemplate(WizItemTemplate template) {
         var addedEffects = new List<GameEffectBase>();
@@ -430,8 +259,8 @@ public class Wizard : IDisposable {
                 CharacterEffectHelper.AddGameEffectToStats(this.GameStats, canonicalEffectName, canonicalEffect);
             }
 
-            addedEffects.Add(gameEffect);
             GameEffects.Add(gameEffect);
+            addedEffects.Add(gameEffect);
         }
 
         return addedEffects;
@@ -452,8 +281,6 @@ public class Wizard : IDisposable {
             }
 
             removedEffects.Add(gameEffect);
-
-            // Remove the effect.
             GameEffects.Remove(gameEffect);
 
             if (gameEffect is WizStatisticEffect canonicalEffect) {
@@ -465,7 +292,38 @@ public class Wizard : IDisposable {
         return removedEffects;
     }
 
-    #endregion
+    private void InitializeDefaultInventory() {
+        InventoryBehavior = new ServerWizInventoryBehavior {
+            InventoryItems = new List<WizClientObjectItem>(),
+            InventoryItemIds = new List<ulong>()
+        };
+
+        // Add default items to the inventory.
+        var itemsToAdd = new List<WizClientObjectItem>();
+        _defaultItems.ForEach(templateId => {
+            var coreObject = new WizClientObjectItem {
+                m_globalID = RandomGen.GenerateGUID(),
+                m_templateID = (GID) templateId,
+                m_characterId = (GID) CharId
+            };
+
+            itemsToAdd.Add(coreObject);
+            InventoryBehavior.InventoryItemIds.Add(coreObject.m_globalID);
+        });
+
+        // This is a different method that bulk uploads items to the database.
+        var success = WizardItemCollection.AddDefaultItems(itemsToAdd);
+        if (!success) {
+            Logger.Error("Could not add default items for Wizard {0} to database.", Logger.Args(CharId));
+        }
+    }
+
+    private void InitializeDefaultEquipment() {
+        EquipmentBehavior = new ServerWizEquipmentBehavior {
+            SlotList = new List<EquipmentSlot>(),
+            EquippedItems = new List<WizClientObjectItem>(),
+        };
+    }
 
     public void Dispose() =>
         // If this object is being disposed, the player probably left the server.
