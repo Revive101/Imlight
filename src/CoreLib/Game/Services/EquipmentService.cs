@@ -54,7 +54,7 @@ public class EquipmentService : MessageService {
             // This is the very first step in that process. Start by telling the Wizard to apply
             // all of the effects for the equipment it has equipped.
             var playerCharacter = GetActiveWizard();
-            playerCharacter.ApplyEffectsForAllEquipment();
+            playerCharacter.InitializeGameEffects();
 
             // Now that the effects have been applied, we need to tell the client about them.
             var effects = playerCharacter.GameEffects;
@@ -70,7 +70,7 @@ public class EquipmentService : MessageService {
         var account = GetActiveAccount();
         var itemId = message.ItemID;
 
-        var item = wizard.InventoryGetItem(itemId);
+        var item = wizard.InventoryBehavior.GetItem(itemId);
         if (item is null) {
             var infractionText = $"Player tried to equip item {itemId} that they do not have in their inventory!";
             account.AddInfraction(InfractionType.SuspiciousBehavior, infractionText);
@@ -82,39 +82,36 @@ public class EquipmentService : MessageService {
             return;
         }
 
-        // Todo: Check if player meets requirements to equip item. If not, log an infraction.
-
         // Check to see if the player already has this item equipped. If they do, broadcast the removal of it.
         // We don't have to remove it here because the EquipItem method will do that for us.
-        if (wizard.EquipmentSlotInUse(message.SlotName, out var index)) {
+        if (wizard.EquipmentBehavior.SlotInUse(message.SlotName, out var index)) {
             // Debug log.
             var wizardName = WizardNameBank.GetEnglishName(wizard.NameIndices, wizard.WizardAvatar.m_eGender);
             Logger.Debug("{0} tried to equip item {1} in slot {2} that is already in use. Unequipping from index {3}",
                 Logger.Args(wizardName, itemId, message.SlotName, index));
 
             // Get the item that is currently equipped in this slot.
-            var equippedItemId = wizard.EquipmentGetItem(index);
+            var equippedItemId = wizard.EquipmentBehavior.GetItemInSlot(message.SlotName).m_globalID;
             SendUnequipItem(message.SlotName, index, equippedItemId);
         }
 
-        var addedEffects = wizard.EquipmentEquipItem(itemId);
-        if (addedEffects is null) {
+        if (!wizard.EquipmentToInventoryTransfer(itemId, out var effects)) {
             Logger.Warning("Equip failed on item {0}", Logger.Args(itemId));
             return;
         }
 
         SendEquipItem(item, message.SlotName);
-        SendAddEffects(addedEffects);
+        SendAddEffects(effects);
     }
 
     private void UnEquipItem(GAME_5_PROTOCOL.MSG_EQUIPITEM message) {
-        var playerCharacter = GetActiveWizard();
+        var wizard = GetActiveWizard();
+        var wizEquipmentBehavior = wizard.EquipmentBehavior;
         var account = GetActiveAccount();
         var itemId = message.ItemID;
 
         // Check to see if the player has this item equipped. If they don't, log an infraction.
-        var item = playerCharacter.InventoryGetItem(itemId);
-        if (item is null) {
+        if (!wizEquipmentBehavior.HasItemEquipped(itemId)) {
             var infractionText = $"Player tried to unequip item {itemId} that they do not have in their inventory!";
             account.AddInfraction(InfractionType.SuspiciousBehavior, infractionText);
 
@@ -126,10 +123,9 @@ public class EquipmentService : MessageService {
         }
 
         // This needs to be done before we unequip the item, because we need to know what slot it was in.
-        var slot = playerCharacter.EquipmentGetItemSlotIndex(itemId);
+        var slot = wizEquipmentBehavior.GetSlotOfItem(itemId);
 
-        var removedEffects = playerCharacter.EquipmentUnequipItem(itemId);
-        if (removedEffects is null) {
+        if (!wizard.EquipmentToInventoryTransfer(itemId, out var removedEffects)) {
             // If this fails, there is perhaps desync between the server and the client.
             // Send a message to the client to assure them that the server does not have the item equipped.
             SendUnequipItem(message.SlotName, slot, itemId);

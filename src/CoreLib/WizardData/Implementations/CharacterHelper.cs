@@ -53,7 +53,7 @@ internal static class CharacterHelper {
             m_globalID = (GID) character.CharId,
             m_templateID = 1,
             m_userID = (GID) character.AccountId,
-            m_equipmentInfoList = GetEquipmentList(character),
+            m_equipmentInfoList = GetEquipmentList(character.EquipmentBehavior),
         };
         return creationInfo;
     }

@@ -99,7 +99,7 @@ internal class CommandModifyProtocol : CommandProtocol {
         }
 
         var coreObject = (WizClientObjectItem)CoreObjectFactory.FinalizeCoreObject(templateIdLong);
-        var addedItemSuccess = Context.Character.InventoryAddItem(coreObject);
+        var addedItemSuccess = Context.Character.InventoryBehavior.AddItem(coreObject);
 
         if (!addedItemSuccess) {
             InformSenderClient("Could not add item to inventory.");

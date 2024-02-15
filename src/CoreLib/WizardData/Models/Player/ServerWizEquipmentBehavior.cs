@@ -92,6 +92,58 @@ public class ServerWizEquipmentBehavior : BehaviorInstance, IClientBehaviorProvi
 
     public bool HasItemEquipped(ulong itemId) => EquippedItems.Any(item => item.m_globalID == itemId);
 
+    public bool SlotInUse(string slotName, out byte index) {
+        index = 255;
+
+        // Cast the slot name to an enum value.
+        if (!Enum.TryParse(typeof(EquipmentSlotType), slotName, true, out var slot)) {
+            Logger.Error("Could not parse slot name {0} to an enum value.", Logger.Args(slotName));
+            return false;
+        }
+
+        return SlotInUse((EquipmentSlotType) slot, out index);
+    }
+
+    public bool SlotInUse(EquipmentSlotType slotType, out byte index) {
+        index = 255;
+
+        var slotIndex = SlotList.FindIndex(item => item.SlotType == slotType);
+        if (slotIndex == -1) {
+            return false;
+        }
+
+        index = (byte) slotIndex;
+        return true;
+    }
+
+    public WizClientObjectItem GetItemInSlot(string slotName) {
+        // Cast the slot name to an enum value.
+        if (!Enum.TryParse(typeof(EquipmentSlotType), slotName, true, out var slot)) {
+            Logger.Error("Could not parse slot name {0} to an enum value.", Logger.Args(slotName));
+            return null;
+        }
+
+        return GetItemInSlot((EquipmentSlotType) slot);
+    }
+
+    public WizClientObjectItem GetItemInSlot(EquipmentSlotType slotType) {
+        var slotIndex = SlotList.FindIndex(item => item.SlotType == slotType);
+        if (slotIndex == -1) {
+            return null;
+        }
+
+        return EquippedItems.FirstOrDefault(item => item.m_globalID == SlotList[slotIndex].ItemId);
+    }
+
+    public byte GetSlotOfItem(ulong itemId) {
+        var slotIndex = SlotList.FindIndex(item => item.ItemId == itemId);
+        if (slotIndex == -1) {
+            return 255;
+        }
+
+        return (byte) slotIndex;
+    }
+
     private void UpdateEquipmentSlot(EquipmentSlot slot, ulong newItemId) {
         // Find the slot in the list. If it does, remove it.
         ClearEquipmentSlot(slot);
