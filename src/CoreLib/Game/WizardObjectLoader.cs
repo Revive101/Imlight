@@ -37,6 +37,7 @@ public static class WizardObjectLoader {
         SetInventoryBehavior(clientObject, ref character);
         SetMagicSchoolBehavior(clientObject, ref character);
         SetSpellbookBehavior(clientObject, ref character);
+        SetMountOwnerBehavior(clientObject, ref character);
 
         return clientObject;
     }
@@ -53,15 +54,8 @@ public static class WizardObjectLoader {
 
     public static void SetInventoryBehavior(WizClientObject clientObject, ref Wizard character) {
         if (CoreObjectFactory.FindBehaviorInstance<ClientWizInventoryBehavior>(clientObject, out var inventoryBehavior)) {
-            // Create a local copy of the inventory items.
-            var equipmentCopy = character.EquippedItems.ToList();
-
-            inventoryBehavior.m_numItemsAllowed = 75;
-            inventoryBehavior.m_numJewelsAllowed = 100;
-            inventoryBehavior.m_itemList = character.InventoryItems
-                .Where(x => !equipmentCopy.Any(y => y is not null && y.m_itemID == x.m_globalID))
-                .ToList()
-                .ConvertAll(item => (CoreObject) item);
+            var idx = clientObject.m_inactiveBehaviors.IndexOf(inventoryBehavior);
+            clientObject.m_inactiveBehaviors[idx] = character.InventoryBehavior.GetClientBehaviorInstance();
         }
         else {
             throw new Exception("Behavior ClientWizInventoryBehavior not found!");
@@ -70,17 +64,8 @@ public static class WizardObjectLoader {
 
     public static void SetEquipmentBehavior(WizClientObject clientObject, Wizard character) {
         if (CoreObjectFactory.FindBehaviorInstance<ClientWizEquipmentBehavior>(clientObject, out var equipmentBehavior)) {
-            // Create a local copy of the inventory items.
-            var equipmentCopy = character.EquippedItems.ToList();
-            var slotList = equipmentCopy.Where(x => x.m_itemID != 0).ToList();
-
-            equipmentBehavior.m_equipmentSets = new List<EquipmentSet>();
-            equipmentBehavior.m_publicItemList = CharacterHelper.GetEquipmentList(character).m_infoList;
-            equipmentBehavior.m_slotList = slotList;
-            equipmentBehavior.m_itemList = character.InventoryItems
-                .Where(x => equipmentCopy.Any(y => y is not null && y.m_itemID == x.m_globalID))
-                .ToList()
-                .ConvertAll(item => (CoreObject) item);
+            var idx = clientObject.m_inactiveBehaviors.IndexOf(equipmentBehavior);
+            clientObject.m_inactiveBehaviors[idx] = character.EquipmentBehavior.GetClientBehaviorInstance();
         }
         else {
             throw new Exception("Behavior ClientWizEquipmentBehavior not found!");
@@ -133,6 +118,15 @@ public static class WizardObjectLoader {
         }
         else {
             throw new Exception("Behavior ClientSpellbookBehavior not found!");
+        }
+    }
+
+    public static void SetMountOwnerBehavior(WizClientObject clientObject, ref Wizard character) {
+        if (CoreObjectFactory.FindBehaviorInstance<ClientMountOwnerBehavior>(clientObject, out var mountOwnerBehavior)) {
+            mountOwnerBehavior.m_race = (eRace) 1283940943;
+        }
+        else {
+            throw new Exception("Behavior ClientMountOwnerBehavior not found!");
         }
     }
 }

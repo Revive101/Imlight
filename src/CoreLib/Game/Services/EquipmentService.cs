@@ -95,7 +95,7 @@ public class EquipmentService : MessageService {
             SendUnequipItem(message.SlotName, index, equippedItemId);
         }
 
-        if (!wizard.EquipmentToInventoryTransfer(itemId, out var effects)) {
+        if (!wizard.InventoryToEquipmentTransfer(itemId, out var effects)) {
             Logger.Warning("Equip failed on item {0}", Logger.Args(itemId));
             return;
         }
