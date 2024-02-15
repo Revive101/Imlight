@@ -87,6 +87,11 @@ public static class IniSerializer {
 
         foreach (var property in type.GetProperties()) {
             propertyValues.TryGetValue(property.Name, out var value);
+
+            if (value == null) {
+                continue;
+            }
+
             property.SetValue(obj, Convert.ChangeType(value, property.PropertyType));
         }
 

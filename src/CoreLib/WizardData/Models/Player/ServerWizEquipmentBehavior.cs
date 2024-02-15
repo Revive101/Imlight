@@ -45,14 +45,14 @@ public class ServerWizEquipmentBehavior : BehaviorInstance, IClientBehaviorProvi
         }
 
         // The slot name is in the adjectives of the item.
-        var slotNameHash = ItemHelper.GetItemSlot(template);
-        if (slotNameHash is null) {
+        var slot = ItemHelper.GetItemSlot(template);
+        if (slot is null) {
             Logger.Warning("Tried to equip item with global id {0} that does not have a slot name adjective.", Logger.Args(itemId));
             return false;
         }
 
         // Finally, update the slot.
-        UpdateEquipmentSlot(slotNameHash, itemId);
+        UpdateEquipmentSlot(slot, itemId);
         return true;
     }
 
@@ -165,7 +165,7 @@ public class ServerWizEquipmentBehavior : BehaviorInstance, IClientBehaviorProvi
         }
     }
 
-    ClientWizEquipmentBehavior IClientBehaviorProvider<ClientWizEquipmentBehavior>.GetClientBehaviorInstance() {
+    public ClientWizEquipmentBehavior GetClientBehaviorInstance() {
         return new ClientWizEquipmentBehavior {
             m_equipmentSets = new List<EquipmentSet>(),
             m_slotList = SlotList.Select(slot => slot.GetClientTypeAlternative()).ToList(),

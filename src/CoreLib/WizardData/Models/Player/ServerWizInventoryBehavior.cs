@@ -105,7 +105,7 @@ public class ServerWizInventoryBehavior : BehaviorInstance, IClientBehaviorProvi
     /// </summary>
     public WizClientObjectItem GetItem(ulong globalId) => InventoryItems.FirstOrDefault(item => item.m_globalID == globalId);
 
-    ClientWizInventoryBehavior IClientBehaviorProvider<ClientWizInventoryBehavior>.GetClientBehaviorInstance(){
+    public ClientWizInventoryBehavior GetClientBehaviorInstance(){
         return new ClientWizInventoryBehavior {
             m_numItemsAllowed = s_maxItemsAllowed,
             m_numJewelsAllowed = s_maxJewelsAllowed,
