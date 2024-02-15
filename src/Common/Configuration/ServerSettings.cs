@@ -94,6 +94,12 @@ public sealed class ServerSettings {
     [DefaultValue(Byte.MaxValue)]
     public byte MaxLevel { get; set; }
 
+    [DefaultValue(75)]
+    public int MaxInventoryItems { get; set; }
+
+    [DefaultValue(100)]
+    public int MaxJewelsAllowed { get; set;}
+
     #endregion
 
     #region Patch Server
