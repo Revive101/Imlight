@@ -22,26 +22,12 @@ using Imlight.CoreLib.Game.Effects;
 
 namespace Imlight.CoreLib.WizardData.Models.Player;
 
-public enum MagicSchool {
-    Ice = 72777,
-    Life = 2330892,
-    Fire = 2343174,
-    Myth = 2448141,
-    Death = 78318724,
-    Storm = 83375795,
-    Balance = 1027491821,
-}
-
 [Serializable]
 public class Wizard : IDisposable {
     private const float OrientationCompressionFactor = CharacterHelper.OrientationCompressionFactor;
 
     public ulong AccountId { get; set; }
     public ulong CharId { get; set; }
-    public MagicSchool WizardSchool { get; set; }
-    public byte Level { get; set; }
-    public int TrainingPoints { get; set; }
-    public int XpToNextLevel { get; set; }
     public string Zone { get; set; }
     public string ZoneDisplayName { get; set; }
     public byte World { get; set; }
@@ -72,6 +58,8 @@ public class Wizard : IDisposable {
     public ServerWizPlayerNameBehavior PlayerNameBehavior { get; set; }
     public ServerWizInventoryBehavior InventoryBehavior { get; set; }
     public ServerWizEquipmentBehavior EquipmentBehavior { get; set; }
+    public ServerMagicSchoolBehavior MagicSchoolBehavior { get; set; }
+    public ServerSpellbookBehavior SpellbookBehavior { get; set; }
     public WizGameStats GameStats { get; set; }
 
     [JsonIgnore] public Account Account;
@@ -113,8 +101,6 @@ public class Wizard : IDisposable {
     // Constructor: Used for character creation.
     public Wizard(MagicSchool wizardSchoolType, WizardCharacterBehavior avatar, uint nameIndices, byte level = 1) {
         CharId = RandomGen.GenerateGUID();
-        WizardSchool = wizardSchoolType;
-        Level = level;
         Zone = ConfigurationManager.Settings.StartingZone;
         World = ConfigurationManager.Settings.StartingWorld;
 
@@ -123,6 +109,8 @@ public class Wizard : IDisposable {
         InitializeDefaultInventory();
         InitializeDefaultEquipment();
         InitializePlayerName(nameIndices);
+        InitializeMagicSchoolBehavior(wizardSchoolType, level);
+        InitializeSpellbookBehavior();
         GameStats = new WizGameStats();
     }
 
@@ -153,12 +141,9 @@ public class Wizard : IDisposable {
     }
 
     public bool SetLevel(byte level) {
-        if (level > ConfigurationManager.Settings.MaxLevel) {
-            Logger.Warning("Tried to set character {0} level to {1}, which is past max level.", Logger.Args(CharId, level));
+        if (!MagicSchoolBehavior.SetLevel(level)) {
             return false;
         }
-
-        Level = level;
 
         // Persistent save.
         WizardCollection.UpdateCharacterLevel(this);
@@ -335,16 +320,34 @@ public class Wizard : IDisposable {
 
     private void InitializePlayerName(uint nameIndices) {
         PlayerNameBehavior = new ServerWizPlayerNameBehavior {
-            m_nameKeys = nameIndices,
-            m_useRank = false,
-            m_eGender = WizardAvatar.m_eGender,
-            m_eRace = WizardAvatar.m_eRace,
-            m_chatPermissions = 0,
-            m_pvpIconID = 0,
-            m_localeID = 0,
-            m_friendlyPlayer = true,
-            m_volunteer = false,
-            m_guildName = 0,
+            NameIndices = nameIndices,
+            UseRank = false,
+            Gender = WizardAvatar.m_eGender,
+            Race = WizardAvatar.m_eRace,
+            ChatPermissions = 0,
+            PvpIconId = 0,
+            LocaleId = 0,
+            FriendlyPlayer = true,
+            Volunteer = false,
+            GuildName = 0,
+        };
+    }
+
+    private void InitializeMagicSchoolBehavior(MagicSchool school, byte level) {
+        MagicSchoolBehavior = new ServerMagicSchoolBehavior {
+            MagicSchool = school,
+            ExperiencePoints = 0,
+            Level = level,
+            TrainingPoints = 0,
+            OverflowXp = 0,
+            LevelIsLocked = 0,
+            EquippedTeleportEffect = 0,
+        };
+    }
+
+    private void InitializeSpellbookBehavior() {
+        SpellbookBehavior = new ServerSpellbookBehavior {
+            SpellIdList = new List<SpellIDTracker>()
         };
     }
 

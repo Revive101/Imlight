@@ -17,7 +17,7 @@ namespace Imlight.CoreLib.Game;
 public static class WizardObjectLoader {
     public static WizClientObject GetPlayerGameObject(ref Wizard character) {
         var clientObject = CoreObjectFactory.InitializeCoreObjectBehaviors(new WizClientObject(), 1);
-        CharacterHelper.ResetStats(character.GameStats, character.Level, character.WizardSchool);
+        CharacterHelper.ResetStats(character.GameStats, (byte) character.MagicSchoolBehavior.Level, character.MagicSchoolBehavior.MagicSchool);
 
         // Set the stats on the new object.
         clientObject.m_templateID = 1;
@@ -97,11 +97,8 @@ public static class WizardObjectLoader {
 
     public static void SetMagicSchoolBehavior(WizClientObject clientObject, ref Wizard character) {
         if (CoreObjectFactory.FindBehaviorInstance<ClientMagicSchoolBehavior>(clientObject, out var schoolBehavior)) {
-            schoolBehavior.m_equippedTeleportEffect = character.GameStats.m_equippedTeleportEffect;
-            schoolBehavior.m_experiencePoints = character.XpToNextLevel;
-            schoolBehavior.m_level = character.Level;
-            schoolBehavior.m_trainingPoints = character.TrainingPoints;
-            schoolBehavior.m_schoolOfFocus = (uint) character.WizardSchool;
+            var idx = clientObject.m_inactiveBehaviors.IndexOf(schoolBehavior);
+            clientObject.m_inactiveBehaviors[idx] = character.MagicSchoolBehavior.GetClientBehaviorInstance();
         }
         else {
             throw new Exception("Behavior ClientMagicSchoolBehavior not found!");
@@ -110,7 +107,8 @@ public static class WizardObjectLoader {
 
     public static void SetSpellbookBehavior(WizClientObject clientObject, ref Wizard character) {
         if (CoreObjectFactory.FindBehaviorInstance<ClientSpellbookBehavior>(clientObject, out var spellbookBehavior)) {
-            spellbookBehavior.m_spellIDList = new List<SpellIDTracker>();
+            var idx = clientObject.m_inactiveBehaviors.IndexOf(spellbookBehavior);
+            clientObject.m_inactiveBehaviors[idx] = character.SpellbookBehavior.GetClientBehaviorInstance();
         }
         else {
             throw new Exception("Behavior ClientSpellbookBehavior not found!");

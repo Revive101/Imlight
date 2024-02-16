@@ -52,7 +52,7 @@ public class ChatService : MessageService {
         }
 
         // Craft the wizard name.
-        var nameIndices = wizard.NameIndices;
+        var nameIndices = wizard.PlayerNameBehavior.NameIndices;
         var gender = wizard.WizardAvatar.m_eGender;
         var sourceName = CraftSourceNameFromIndices(nameIndices, gender);
 
@@ -64,8 +64,7 @@ public class ChatService : MessageService {
             return;
         }
 
-        var actualCharacterName = WizardNameBank.GetEnglishName(wizard.NameIndices, wizard.WizardAvatar.m_eGender);
-        Logger.Information("{0} says in chat: {1}", Logger.Args(actualCharacterName, cleanedMessage));
+        Logger.Information("{0} says in chat: {1}", Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), cleanedMessage));
 
         // Add the chat log to the database.
         var chatLog = new ChatLog() {
@@ -97,7 +96,7 @@ public class ChatService : MessageService {
 
         var globalId = GetActiveGameObject().m_globalID;
         var character = GetActiveWizard();
-        var nameIndices = character.NameIndices;
+        var nameIndices = character.PlayerNameBehavior.NameIndices;
         var gender = character.WizardAvatar.m_eGender;
         var src = CraftSourceNameFromIndices(nameIndices, gender);
 

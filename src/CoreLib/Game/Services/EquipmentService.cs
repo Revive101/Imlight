@@ -86,9 +86,8 @@ public class EquipmentService : MessageService {
         // We don't have to remove it here because the EquipItem method will do that for us.
         if (wizard.EquipmentBehavior.SlotInUse(message.SlotName, out var index)) {
             // Debug log.
-            var wizardName = WizardNameBank.GetEnglishName(wizard.NameIndices, wizard.WizardAvatar.m_eGender);
             Logger.Debug("{0} tried to equip item {1} in slot {2} that is already in use. Unequipping from index {3}",
-                Logger.Args(wizardName, itemId, message.SlotName, index));
+                Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), itemId, message.SlotName, index));
 
             // Get the item that is currently equipped in this slot.
             var equippedItemId = wizard.EquipmentBehavior.GetItemInSlot(message.SlotName).m_globalID;

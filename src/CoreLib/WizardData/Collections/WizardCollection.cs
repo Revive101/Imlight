@@ -154,7 +154,7 @@ public static class WizardCollection {
             return;
         }
 
-        existingCharacter.Level = wizard.Level;
+        existingCharacter.MagicSchoolBehavior.Level = wizard.MagicSchoolBehavior.Level;
         session.SaveChanges();
     }
 }

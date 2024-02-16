@@ -31,7 +31,7 @@ internal static class CharacterHelper {
         var character = new Wizard(school, wizardAvatar, nameIndices);
 
         // Create the game stats and calculate the base stats.
-        var gameStats = GetNewCharacterGameStats(character.Level, character.WizardSchool);
+        var gameStats = GetNewCharacterGameStats((byte) character.MagicSchoolBehavior.Level, character.MagicSchoolBehavior.MagicSchool);
         character.GameStats = gameStats;
 
         return character;
@@ -45,10 +45,10 @@ internal static class CharacterHelper {
     internal static WizardCharacterCreationInfo GetLoginScreenInfo(Wizard character) {
         var creationInfo = new WizardCharacterCreationInfo {
             m_avatarBehavior = character.WizardAvatar,
-            m_nameIndices = character.NameIndices,
-            m_schoolOfFocus = (uint) character.WizardSchool,
-            m_level = character.Level,
-            m_name = character.NameOverride,
+            m_nameIndices = character.PlayerNameBehavior.NameIndices,
+            m_schoolOfFocus = (uint) character.MagicSchoolBehavior.MagicSchool,
+            m_level = character.MagicSchoolBehavior.Level,
+            m_name = character.PlayerNameBehavior.NameOverride,
             m_location = character.ZoneDisplayName,
             m_globalID = (GID) character.CharId,
             m_templateID = 1,

@@ -28,14 +28,14 @@ internal class CommandModifyProtocol : CommandProtocol {
     [Alias("lvlup")]
     private void LevelUpCommand() {
         // Check to see if the new level would be above the max level.
-        var isOverMax = (Context.Character.Level + 1) > ConfigurationManager.Settings.MaxLevel;
+        var isOverMax = (Context.Character.MagicSchoolBehavior.Level + 1) > ConfigurationManager.Settings.MaxLevel;
         if (isOverMax) {
             InformSenderClient("You cannot level up any further.");
             return;
         }
 
         var msg = new CHARACTER_103_PROTOCOL.MSG_LEVELUP() {
-            NewLevel = (byte) (Context.Character.Level + 1)
+            NewLevel = (byte) (Context.Character.MagicSchoolBehavior.Level + 1)
         };
         Context.SessionActor.Tell(msg, null);
     }
