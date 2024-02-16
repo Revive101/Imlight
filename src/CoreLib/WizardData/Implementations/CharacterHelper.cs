@@ -66,16 +66,26 @@ internal static class CharacterHelper {
     /// <returns>The EquippedItemInfoList that was crafted.</returns>
     /// <exception cref="Exception"></exception>
     internal static EquippedItemInfoList GetEquipmentList(ServerWizEquipmentBehavior behavior) {
-        var equipmentList = new EquippedItemInfoList {
+        var sortedList = new EquippedItemInfoList {
             m_infoList = new List<EquippedItemInfo>(),
         };
-        foreach (var equippedItem in behavior.EquippedItems) {
-            var publicItem = ItemHelper.GetPublicItem(equippedItem);
 
-            equipmentList.m_infoList.Add(publicItem);
+        foreach (var slot in behavior.SlotList) {
+            var equippedItem = behavior.EquippedItems.FirstOrDefault(item => item.m_globalID == slot.ItemId);
+            if (equippedItem != null) {
+                var publicItem = ItemHelper.GetPublicItem(equippedItem);
+                sortedList.m_infoList.Add(publicItem);
+            }
         }
 
-        return equipmentList;
+        // Sorting the list based on the order in which they appear in the SlotList
+        sortedList.m_infoList.Sort((item1, item2) => {
+            var index1 = behavior.SlotList.FindIndex(slot => slot.ItemId == item1.m_itemID);
+            var index2 = behavior.SlotList.FindIndex(slot => slot.ItemId == item2.m_itemID);
+            return index1.CompareTo(index2);
+        });
+
+        return sortedList;
     }
 
     /// <summary>
