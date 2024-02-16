@@ -6,6 +6,7 @@
 using System.Linq;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Databases;
+using Imlight.CoreLib.WizardData.Models.Misc;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Raven.Client.Documents;
 using static Imlight.Common.Caches.TypeCache;
@@ -97,11 +98,20 @@ public static class AccountCollection {
             .ToList();
         account.Characters = characters;
         foreach (var character in account.Characters) {
+            character.Account = account;
+
             // Load the character's inventory.
             var inventory = session.Query<WizClientObjectItem>(collectionName: WizardItemCollection.CollectionName)
                 .Where(i => i.m_characterId == character.CharId)
                 .ToList();
-            character.InventoryItems = inventory.ToList();
+            character.InventoryBehavior.Items = inventory
+                .Where(i => character.InventoryBehavior.InventoryItemIds.Contains(i.m_globalID)).ToList();
+
+            // Load the character's equipment.
+            // The equipped items are stored as global IDs in the character's EquipmentBehavior.
+            // Find any items in the inventory that match the equipped item IDs.
+            character.EquipmentBehavior.EquippedItems = inventory
+                .Where(i => character.EquipmentBehavior.EquippedItemIds.Any(e => i.m_globalID == e)).ToList();
         }
 
         // Load infractions. The constructor will load the action history.
@@ -137,11 +147,20 @@ public static class AccountCollection {
             .ToList();
         account.Characters = characters;
         foreach (var character in account.Characters) {
+            character.Account = account;
+
             // Load the character's inventory.
             var inventory = session.Query<WizClientObjectItem>(collectionName: WizardItemCollection.CollectionName)
                 .Where(i => i.m_characterId == character.CharId)
                 .ToList();
-            character.InventoryItems = inventory.ToList();
+            character.InventoryBehavior.Items = inventory
+                .Where(i => character.InventoryBehavior.InventoryItemIds.Contains(i.m_globalID)).ToList();
+
+            // Load the character's equipment.
+            // The equipped items are stored as global IDs in the character's EquipmentBehavior.
+            // Find any items in the inventory that match the equipped item IDs.
+            character.EquipmentBehavior.EquippedItems = inventory
+                .Where(i => character.EquipmentBehavior.EquippedItemIds.Any(e => i.m_globalID == e)).ToList();
         }
 
         // Load infractions. The constructor will load the action history.
@@ -327,4 +346,5 @@ public static class AccountCollection {
         existingAccount.InfractionIds.Remove(infractionIndex);
         session.SaveChanges();
     }
+
 }

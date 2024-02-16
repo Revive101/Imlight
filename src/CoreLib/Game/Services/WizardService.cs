@@ -56,7 +56,7 @@ public class WizardService : MessageService {
 
         var levelUpMessage = new WIZARD_12_PROTOCOL.MSG_LEVELUP {
             GlobalID = _activeWizard.CharId,
-            NewLevel = _activeWizard.Level,
+            NewLevel = _activeWizard.MagicSchoolBehavior.Level,
             Data = "0000000000"
         };
         ZoneBroadcast(levelUpMessage, false);

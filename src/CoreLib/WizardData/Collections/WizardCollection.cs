@@ -69,7 +69,7 @@ public static class WizardCollection {
         using var session = s_store.OpenSession();
 
         var character = session.Query<Wizard>(collectionName: CollectionName)
-            .Include(i => i.InventoryItemIds)
+            .Include(i => i.InventoryBehavior.InventoryItemIds)
             .FirstOrDefault(x => x.CharId == id);
 
         // Get each of the items for this character.
@@ -77,7 +77,7 @@ public static class WizardCollection {
             var items = session.Query<WizClientObjectItem>(collectionName: WizardItemCollection.CollectionName)
                 .Where(x => x.m_characterId == id)
                 .ToList();
-            character.InventoryItems = items.ToList();
+            character.InventoryBehavior.Items = items.ToList();
         }
 
         return character;
@@ -127,7 +127,7 @@ public static class WizardCollection {
     /// Updates the equipment of a character in the wizard collection.
     /// </summary>
     /// <param name="wizard">The wizard object containing the updated equipment.</param>
-    public static void UpdateCharacterEquipment(Wizard wizard) {
+    public static void UpdateCharacterItems(Wizard wizard) {
         using var session = s_store.OpenSession();
 
         var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
@@ -136,7 +136,8 @@ public static class WizardCollection {
             return;
         }
 
-        existingCharacter.EquippedItems = wizard.EquippedItems;
+        existingCharacter.InventoryBehavior = wizard.InventoryBehavior;
+        existingCharacter.EquipmentBehavior = wizard.EquipmentBehavior;
         session.SaveChanges();
     }
 
@@ -153,7 +154,24 @@ public static class WizardCollection {
             return;
         }
 
-        existingCharacter.Level = wizard.Level;
+        existingCharacter.MagicSchoolBehavior.Level = wizard.MagicSchoolBehavior.Level;
+        session.SaveChanges();
+    }
+
+    /// <summary>
+    /// Updates the character mount for a wizard.
+    /// </summary>
+    /// <param name="wizard">The wizard whose character mount is being updated.</param>
+    public static void UpdateCharacterMount(Wizard wizard) {
+        using var session = s_store.OpenSession();
+
+        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
+            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        if (existingCharacter is null) {
+            return;
+        }
+
+        existingCharacter.MountOwnerBehavior = wizard.MountOwnerBehavior;
         session.SaveChanges();
     }
 }

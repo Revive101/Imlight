@@ -31,7 +31,7 @@ internal static class CharacterHelper {
         var character = new Wizard(school, wizardAvatar, nameIndices);
 
         // Create the game stats and calculate the base stats.
-        var gameStats = GetNewCharacterGameStats(character.Level, character.WizardSchool);
+        var gameStats = GetNewCharacterGameStats((byte) character.MagicSchoolBehavior.Level, character.MagicSchoolBehavior.MagicSchool);
         character.GameStats = gameStats;
 
         return character;
@@ -45,15 +45,15 @@ internal static class CharacterHelper {
     internal static WizardCharacterCreationInfo GetLoginScreenInfo(Wizard character) {
         var creationInfo = new WizardCharacterCreationInfo {
             m_avatarBehavior = character.WizardAvatar,
-            m_nameIndices = character.NameIndices,
-            m_schoolOfFocus = (uint) character.WizardSchool,
-            m_level = character.Level,
-            m_name = character.NameOverride,
+            m_nameIndices = character.PlayerNameBehavior.NameIndices,
+            m_schoolOfFocus = (uint) character.MagicSchoolBehavior.MagicSchool,
+            m_level = character.MagicSchoolBehavior.Level,
+            m_name = character.PlayerNameBehavior.NameOverride,
             m_location = character.ZoneDisplayName,
             m_globalID = (GID) character.CharId,
             m_templateID = 1,
             m_userID = (GID) character.AccountId,
-            m_equipmentInfoList = GetEquipmentList(character),
+            m_equipmentInfoList = GetEquipmentList(character.EquipmentBehavior),
         };
         return creationInfo;
     }
@@ -65,21 +65,27 @@ internal static class CharacterHelper {
     /// <param name="character">The Wizard in question.</param>
     /// <returns>The EquippedItemInfoList that was crafted.</returns>
     /// <exception cref="Exception"></exception>
-    internal static EquippedItemInfoList GetEquipmentList(Wizard character) {
-        var equipmentList = new EquippedItemInfoList {
+    internal static EquippedItemInfoList GetEquipmentList(ServerWizEquipmentBehavior behavior) {
+        var sortedList = new EquippedItemInfoList {
             m_infoList = new List<EquippedItemInfo>(),
         };
-        foreach (var equippedItem in character.EquippedItems.Where(x => x.m_itemID != 0)) {
-            // The equipped items are stored as a list of ItemID's. We need to get the actual item
-            // from the inventory and then convert it to a public item.
-            var itemId = equippedItem.m_itemID;
-            var actualItem = character.InventoryGetItem(itemId);
-            var publicItem = ItemHelper.GetPublicItem(actualItem);
 
-            equipmentList.m_infoList.Add(publicItem);
+        foreach (var slot in behavior.SlotList) {
+            var equippedItem = behavior.EquippedItems.FirstOrDefault(item => item.m_globalID == slot.ItemId);
+            if (equippedItem != null) {
+                var publicItem = ItemHelper.GetPublicItem(equippedItem);
+                sortedList.m_infoList.Add(publicItem);
+            }
         }
 
-        return equipmentList;
+        // Sorting the list based on the order in which they appear in the SlotList
+        sortedList.m_infoList.Sort((item1, item2) => {
+            var index1 = behavior.SlotList.FindIndex(slot => slot.ItemId == item1.m_itemID);
+            var index2 = behavior.SlotList.FindIndex(slot => slot.ItemId == item2.m_itemID);
+            return index1.CompareTo(index2);
+        });
+
+        return sortedList;
     }
 
     /// <summary>

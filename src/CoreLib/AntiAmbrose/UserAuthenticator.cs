@@ -9,6 +9,7 @@ using Imlight.Common.IO;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Implementations;
+using Imlight.CoreLib.WizardData.Models.Misc;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using static Imlight.Common.Caches.LOGIN_7_PROTOCOL;

@@ -1,0 +1,58 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
+using Imlight.Common;
+using Imlight.Common.Configuration;
+using Imlight.Common.IO;
+using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Implementations;
+using System;
+using System.Text.Json.Serialization;
+using static Imlight.Common.Caches.TypeCache;
+
+namespace Imlight.CoreLib.WizardData.Models.Player;
+
+public enum MagicSchool {
+    Ice = 72777,
+    Life = 2330892,
+    Fire = 2343174,
+    Myth = 2448141,
+    Death = 78318724,
+    Storm = 83375795,
+    Balance = 1027491821,
+}
+
+[Serializable]
+public class ServerMagicSchoolBehavior : BehaviorInstance, IClientBehaviorProvider<ClientMagicSchoolBehavior> {
+    public MagicSchool MagicSchool;
+    public int ExperiencePoints;
+    public int Level;
+    public int TrainingPoints;
+    public int OverflowXp;
+    public int LevelIsLocked;
+    public uint EquippedTeleportEffect;
+
+    public bool SetLevel(byte level) {
+        if (level > ConfigurationManager.Settings.MaxLevel) {
+            return false;
+        }
+
+        Level = level;
+
+        return true;
+    }
+
+    public ClientMagicSchoolBehavior GetClientBehaviorInstance() {
+        return new ClientMagicSchoolBehavior {
+            m_schoolOfFocus = (uint)MagicSchool,
+            m_experiencePoints = ExperiencePoints,
+            m_level = Level,
+            m_trainingPoints = TrainingPoints,
+            m_overflowXP = OverflowXp,
+            m_levelLocked = LevelIsLocked,
+            m_equippedTeleportEffect = EquippedTeleportEffect
+        };
+    }
+}

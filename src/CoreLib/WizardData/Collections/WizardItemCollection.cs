@@ -49,7 +49,7 @@ public static class WizardItemCollection {
         // Instead, we're going to use a patch request to add the item id to the character's item list.
         var patchRequest = new PatchByQueryOperation(
             $"from Characters where CharId = '{item.m_characterId}'" +
-            $"update {{ this.{nameof(Wizard.InventoryItemIds)}.Add('{item.m_globalID}'); }}");
+            $"update {{ this.{nameof(Wizard.InventoryBehavior.InventoryItemIds)}.Add('{item.m_globalID}'); }}");
         s_store.Operations.Send(patchRequest);
 
         session.SaveChanges();
@@ -117,7 +117,7 @@ public static class WizardItemCollection {
         // Instead, we're going to use a patch request to add the item id to the character's item list.
         var patchRequest = new PatchByQueryOperation(
             $"from Characters where CharId = '{item.m_characterId}'" +
-            $"update {{ this.{nameof(Wizard.InventoryItemIds)}.Remove('{item.m_globalID}'); }}");
+            $"update {{ this.{nameof(Wizard.InventoryBehavior.InventoryItemIds)}.Remove('{item.m_globalID}'); }}");
 
         session.SaveChanges();
 
@@ -150,7 +150,7 @@ public static class WizardItemCollection {
         // Instead, we're going to use a patch request to add the item id to the character's item list.
         var patchRequest = new PatchByQueryOperation(
             $"from Characters where CharId = '{charId}'" +
-            $"update {{ this.{nameof(Wizard.InventoryItemIds)}.Remove('{itemId}'); }}");
+            $"update {{ this.{nameof(Wizard.InventoryBehavior.InventoryItemIds)}.Remove('{itemId}'); }}");
 
         session.SaveChanges();
         return true;
