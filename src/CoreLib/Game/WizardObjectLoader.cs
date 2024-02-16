@@ -117,7 +117,8 @@ public static class WizardObjectLoader {
 
     public static void SetMountOwnerBehavior(WizClientObject clientObject, ref Wizard character) {
         if (CoreObjectFactory.FindBehaviorInstance<ClientMountOwnerBehavior>(clientObject, out var mountOwnerBehavior)) {
-            mountOwnerBehavior.m_race = (eRace) 1283940943;
+            var idx = clientObject.m_inactiveBehaviors.IndexOf(mountOwnerBehavior);
+            clientObject.m_inactiveBehaviors[idx] = character.MountOwnerBehavior.GetClientBehaviorInstance();
         }
         else {
             throw new Exception("Behavior ClientMountOwnerBehavior not found!");

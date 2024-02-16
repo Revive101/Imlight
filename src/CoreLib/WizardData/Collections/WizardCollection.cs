@@ -157,4 +157,21 @@ public static class WizardCollection {
         existingCharacter.MagicSchoolBehavior.Level = wizard.MagicSchoolBehavior.Level;
         session.SaveChanges();
     }
+
+    /// <summary>
+    /// Updates the character mount for a wizard.
+    /// </summary>
+    /// <param name="wizard">The wizard whose character mount is being updated.</param>
+    public static void UpdateCharacterMount(Wizard wizard) {
+        using var session = s_store.OpenSession();
+
+        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
+            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        if (existingCharacter is null) {
+            return;
+        }
+
+        existingCharacter.MountOwnerBehavior = wizard.MountOwnerBehavior;
+        session.SaveChanges();
+    }
 }

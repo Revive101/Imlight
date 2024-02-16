@@ -60,6 +60,7 @@ public class Wizard : IDisposable {
     public ServerWizEquipmentBehavior EquipmentBehavior { get; set; }
     public ServerMagicSchoolBehavior MagicSchoolBehavior { get; set; }
     public ServerSpellbookBehavior SpellbookBehavior { get; set; }
+    public ServerMountOwnerBehavior MountOwnerBehavior { get; set; }
     public WizGameStats GameStats { get; set; }
 
     [JsonIgnore] public Account Account;
@@ -111,6 +112,7 @@ public class Wizard : IDisposable {
         InitializePlayerName(nameIndices);
         InitializeMagicSchoolBehavior(wizardSchoolType, level);
         InitializeSpellbookBehavior();
+        InitializeMountOwnerBehavior();
         GameStats = new WizGameStats();
     }
 
@@ -181,6 +183,18 @@ public class Wizard : IDisposable {
             return false;
         }
 
+        // If this object is a mount, we'll also want to update the mount owner behavior.
+        if (slot.SlotType == EquipmentSlotType.Mount) {
+            var mountEquipSuccess = MountOwnerBehavior.EquipMount(template, inventoryItem);
+            if (!mountEquipSuccess) {
+                Logger.Warning("Could not equip mount {0} to player {1}.", Logger.Args(template.m_objectName, PlayerNameBehavior.GetWizardName()));
+                return false;
+            }
+
+            // Persistent save.
+            WizardCollection.UpdateCharacterMount(this);
+        }
+
         // Persistent save.
         WizardCollection.UpdateCharacterItems(this);
 
@@ -197,6 +211,7 @@ public class Wizard : IDisposable {
         // Get the actual item. We'll also grab the template to remove the effects from the wizard.
         var item = EquipmentBehavior.EquippedItems.FirstOrDefault(i => i.m_globalID == itemId);
         var template = ItemHelper.GetItemTemplate(item);
+        var slot = ItemHelper.GetItemSlot(template);
 
         // Remove the item from the equipment.
         var unequipResult = EquipmentBehavior.UnequipItem(itemId);
@@ -210,6 +225,14 @@ public class Wizard : IDisposable {
         if (!invAddResult) {
             Logger.Warning("Tried to add item with global id {0} to inventory, but it already exists.", Logger.Args(itemId));
             return false;
+        }
+
+        // If this object is a mount, we'll also want to update the mount owner behavior.
+        if (slot.SlotType == EquipmentSlotType.Mount) {
+            MountOwnerBehavior.UnequipMount();
+
+            // Persistent save.
+            WizardCollection.UpdateCharacterMount(this);
         }
 
         // Persistent save.
@@ -349,6 +372,10 @@ public class Wizard : IDisposable {
         SpellbookBehavior = new ServerSpellbookBehavior {
             SpellIdList = new List<SpellIDTracker>()
         };
+    }
+
+    private void InitializeMountOwnerBehavior() {
+        MountOwnerBehavior = new ServerMountOwnerBehavior();
     }
 
     public void Dispose() =>
