@@ -69,8 +69,8 @@ internal static class ItemHelper {
     /// <param name="template">The item template.</param>
     /// <returns>The hash value of the item slot.</returns>
     internal static uint GetItemSlotHash(WizItemTemplate template) {
-        var slot = GetItemSlot(template);
-        var slotName = slot?.ToString().Split('.')[^1];
-        return slot is null ? 0 : StringHash.Compute(slotName);
+        var slotType = GetItemSlot(template).SlotType;
+        var slotName = slotType.ToString().Split('.')[^1];
+        return StringHash.Compute(slotName);
     }
 }
