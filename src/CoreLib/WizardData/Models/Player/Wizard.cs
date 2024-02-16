@@ -36,10 +36,8 @@ public enum MagicSchool {
 public class Wizard : IDisposable {
     private const float OrientationCompressionFactor = CharacterHelper.OrientationCompressionFactor;
 
-    public ulong AccountId { get; set; }               // <
-    public ulong CharId { get; set; }                  //  | These values are never subject to change.
-    public uint NameIndices { get; set; }              //  |
-    public WideByteString NameOverride { get; set; }   // <
+    public ulong AccountId { get; set; }
+    public ulong CharId { get; set; }
     public MagicSchool WizardSchool { get; set; }
     public byte Level { get; set; }
     public int TrainingPoints { get; set; }
@@ -71,6 +69,7 @@ public class Wizard : IDisposable {
     }
 
     public WizardCharacterBehavior WizardAvatar { get; set; }
+    public ServerWizPlayerNameBehavior PlayerNameBehavior { get; set; }
     public ServerWizInventoryBehavior InventoryBehavior { get; set; }
     public ServerWizEquipmentBehavior EquipmentBehavior { get; set; }
     public WizGameStats GameStats { get; set; }
@@ -115,7 +114,6 @@ public class Wizard : IDisposable {
     public Wizard(MagicSchool wizardSchoolType, WizardCharacterBehavior avatar, uint nameIndices, byte level = 1) {
         CharId = RandomGen.GenerateGUID();
         WizardSchool = wizardSchoolType;
-        NameIndices = nameIndices;
         Level = level;
         Zone = ConfigurationManager.Settings.StartingZone;
         World = ConfigurationManager.Settings.StartingWorld;
@@ -124,6 +122,7 @@ public class Wizard : IDisposable {
         WizardAvatar = avatar;
         InitializeDefaultInventory();
         InitializeDefaultEquipment();
+        InitializePlayerName(nameIndices);
         GameStats = new WizGameStats();
     }
 
@@ -201,8 +200,7 @@ public class Wizard : IDisposable {
         WizardCollection.UpdateCharacterItems(this);
 
         // Debug log.
-        var actualName = WizardNameBank.GetEnglishName(NameIndices, WizardAvatar.m_eGender);
-        Logger.Debug("{0} equips item {1}", Logger.Args(actualName, itemId));
+        Logger.Debug("{0} equips item {1}", Logger.Args(PlayerNameBehavior.GetWizardName(), itemId));
 
         equipEffects = AddEffectsFromTemplate(template);
         return true;
@@ -233,8 +231,7 @@ public class Wizard : IDisposable {
         WizardCollection.UpdateCharacterItems(this);
 
         // Debug log.
-        var actualName = WizardNameBank.GetEnglishName(NameIndices, WizardAvatar.m_eGender);
-        Logger.Debug("{0} unequips item {1}", Logger.Args(actualName, itemId));
+        Logger.Debug("{0} unequips item {1}", Logger.Args(PlayerNameBehavior.GetWizardName(), itemId));
 
         unequipEffects = RemoveEffectsFromTemplate(template);
         return true;
@@ -242,8 +239,7 @@ public class Wizard : IDisposable {
 
     public void InitializeGameEffects() {
         // Debug log.
-        var actualWizardName = WizardNameBank.GetEnglishName(NameIndices, WizardAvatar.m_eGender);
-        Logger.Debug("{0} is applying effects for all equipment.", Logger.Args(actualWizardName));
+        Logger.Debug("{0} is applying effects for all equipment.", Logger.Args(PlayerNameBehavior.GetWizardName()));
 
         // Get all active effects from what we currently have equipped.
         foreach (var item in EquipmentBehavior.EquippedItems) {
@@ -255,7 +251,7 @@ public class Wizard : IDisposable {
             var activatedEffects = AddEffectsFromTemplate(template);
 
             Logger.Debug("{0} Applied {1} effects for item {2}.",
-                Logger.Args(actualWizardName, activatedEffects.Count, template.m_objectName));
+                Logger.Args(PlayerNameBehavior.GetWizardName(), activatedEffects.Count, template.m_objectName));
         }
     }
 
@@ -334,6 +330,21 @@ public class Wizard : IDisposable {
             SlotList = new List<EquipmentSlot>(),
             EquippedItemIds = new List<ulong>(),
             EquippedItems = new List<WizClientObjectItem>(),
+        };
+    }
+
+    private void InitializePlayerName(uint nameIndices) {
+        PlayerNameBehavior = new ServerWizPlayerNameBehavior {
+            m_nameKeys = nameIndices,
+            m_useRank = false,
+            m_eGender = WizardAvatar.m_eGender,
+            m_eRace = WizardAvatar.m_eRace,
+            m_chatPermissions = 0,
+            m_pvpIconID = 0,
+            m_localeID = 0,
+            m_friendlyPlayer = true,
+            m_volunteer = false,
+            m_guildName = 0,
         };
     }
 

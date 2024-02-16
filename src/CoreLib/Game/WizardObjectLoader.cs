@@ -87,12 +87,8 @@ public static class WizardObjectLoader {
 
     public static void SetPlayerNameBehavior(WizClientObject clientObject, ref Wizard character) {
         if (CoreObjectFactory.FindBehaviorInstance<ClientWizPlayerNameBehavior>(clientObject, out var nameBehavior)) {
-            nameBehavior.m_eGender = character.WizardAvatar.m_eGender;
-            nameBehavior.m_eRace = character.WizardAvatar.m_eRace;
-            nameBehavior.m_nameKeys = character.NameIndices;
-            nameBehavior.m_wsNameOverride = character.NameOverride;
-            nameBehavior.m_chatPermissions = 2; // todo: set this to the correct value.
-            nameBehavior.m_friendlyPlayer = character.GameStats.m_friendlyPlayer;
+            var idx = clientObject.m_inactiveBehaviors.IndexOf(nameBehavior);
+            clientObject.m_inactiveBehaviors[idx] = character.PlayerNameBehavior.GetClientBehaviorInstance();
         }
         else {
             throw new Exception("Behavior ClientWizPlayerNameBehavior not found!");
