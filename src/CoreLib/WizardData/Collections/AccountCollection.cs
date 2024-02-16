@@ -104,7 +104,8 @@ public static class AccountCollection {
             var inventory = session.Query<WizClientObjectItem>(collectionName: WizardItemCollection.CollectionName)
                 .Where(i => i.m_characterId == character.CharId)
                 .ToList();
-            character.InventoryBehavior.Items = inventory.ToList();
+            character.InventoryBehavior.Items = inventory
+                .Where(i => character.InventoryBehavior.InventoryItemIds.Contains(i.m_globalID)).ToList();
 
             // Load the character's equipment.
             // The equipped items are stored as global IDs in the character's EquipmentBehavior.
@@ -152,7 +153,8 @@ public static class AccountCollection {
             var inventory = session.Query<WizClientObjectItem>(collectionName: WizardItemCollection.CollectionName)
                 .Where(i => i.m_characterId == character.CharId)
                 .ToList();
-            character.InventoryBehavior.Items = inventory.ToList();
+            character.InventoryBehavior.Items = inventory
+                .Where(i => character.InventoryBehavior.InventoryItemIds.Contains(i.m_globalID)).ToList();
 
             // Load the character's equipment.
             // The equipped items are stored as global IDs in the character's EquipmentBehavior.

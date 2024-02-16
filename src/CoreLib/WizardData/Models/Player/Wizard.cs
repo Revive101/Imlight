@@ -172,13 +172,26 @@ public class Wizard : IDisposable {
         unequipEffects = null;
 
         // Remove the item from the inventory.
-        if (!InventoryBehavior.RemoveItem(itemId, out var itemRemoved)) {
+        if (!InventoryBehavior.RemoveItem(itemId, out var inventoryItem)) {
             Logger.Warning("Tried to equip item with global id {0} that does not exist in player inventory.", Logger.Args(itemId));
             return false;
         }
 
+        // Get the template for this item. Using this template we can get the slot this object should be on.
+        var template = ItemHelper.GetItemTemplate(inventoryItem);
+        var slot = ItemHelper.GetItemSlot(template);
+
+        // Get the item that is currently in the slot, if there is one. We want to remove its effects.
+        var replacedItem = EquipmentBehavior.GetItemInSlot(slot.SlotType);
+        if (replacedItem != null) {
+            if (!EquipmentToInventoryTransfer(replacedItem.m_globalID, out unequipEffects)) {
+                Logger.Warning("Could not replace item {0} from slot {1}.", Logger.Args(replacedItem.m_globalID, slot.SlotType));
+                return false;
+            }
+        }
+
         // Add the item to the equipment.
-        var equipResult = EquipmentBehavior.EquipItem(itemRemoved, out var template, out var removedTemplate);
+        var equipResult = EquipmentBehavior.EquipItem(inventoryItem, slot.SlotType);
         if (!equipResult) {
             Logger.Warning("Tried to equip item with global id {0} that is already equipped.", Logger.Args(itemId));
             return false;
@@ -191,11 +204,6 @@ public class Wizard : IDisposable {
         var actualName = WizardNameBank.GetEnglishName(NameIndices, WizardAvatar.m_eGender);
         Logger.Debug("{0} equips item {1}", Logger.Args(actualName, itemId));
 
-        // If the equipment behavior removed an item, we need to remove its effects.
-        if (removedTemplate is not null) {
-            unequipEffects = RemoveEffectsFromTemplate(removedTemplate);
-        }
-
         equipEffects = AddEffectsFromTemplate(template);
         return true;
     }
@@ -203,11 +211,12 @@ public class Wizard : IDisposable {
     public bool EquipmentToInventoryTransfer(ulong itemId, out List<GameEffectBase> unequipEffects) {
         unequipEffects = null;
 
-        // Get the actual item.
+        // Get the actual item. We'll also grab the template to remove the effects from the wizard.
         var item = EquipmentBehavior.EquippedItems.FirstOrDefault(i => i.m_globalID == itemId);
+        var template = ItemHelper.GetItemTemplate(item);
 
         // Remove the item from the equipment.
-        var unequipResult = EquipmentBehavior.UnequipItem(itemId, out var template);
+        var unequipResult = EquipmentBehavior.UnequipItem(itemId);
         if (!unequipResult) {
             Logger.Warning("Tried to unequip item with global id {0} that is not equipped.", Logger.Args(itemId));
             return false;

@@ -24,9 +24,7 @@ public class ServerWizEquipmentBehavior : BehaviorInstance, IClientBehaviorProvi
 
     [JsonIgnore] public List<WizClientObjectItem> EquippedItems;
 
-    public bool EquipItem(WizClientObjectItem item, out WizItemTemplate template, out WizItemTemplate removedTemplate) {
-        template = default;
-        removedTemplate = default;
+    public bool EquipItem(WizClientObjectItem item, EquipmentSlotType slotType) {
         var itemId = item.m_globalID;
 
         // Prerequisite checks.
@@ -34,65 +32,30 @@ public class ServerWizEquipmentBehavior : BehaviorInstance, IClientBehaviorProvi
             return false;
         }
 
-        // Get the template for this item.
-        template = ItemHelper.GetItemTemplate(item);
-        if (template == null) {
-            Logger.Warning("Tried to equip item with global id {0} that does not have a template.", Logger.Args(itemId));
-            return false;
-        }
-
-        // The slot name is in the adjectives of the item.
-        var slot = ItemHelper.GetItemSlot(template);
-        if (slot is null) {
-            Logger.Warning("Tried to equip item with global id {0} that does not have a slot name adjective.", Logger.Args(itemId));
-            return false;
-        }
-
-        var existingItem = GetItemInSlot(slot.SlotType);
+        var existingItem = GetItemInSlot(slotType);
         if (existingItem is not null) {
             EquippedItemIds.Remove(existingItem.m_globalID);
             EquippedItems.Remove(existingItem);
-            removedTemplate = ItemHelper.GetItemTemplate(existingItem);
         }
 
         // Finally, update the slot.
-        UpdateEquipmentSlot(slot, item.m_debugName, itemId);
+        UpdateEquipmentSlot(slotType, item.m_debugName, itemId);
         EquippedItemIds.Add(itemId);
         EquippedItems.Add(item);
         return true;
     }
 
-    public bool UnequipItem(ulong itemId, out WizItemTemplate template) {
-        template = default;
-
+    public bool UnequipItem(ulong itemId) {
         // Prerequisite checks.
         if (!HasItemEquipped(itemId)) {
             return false;
         }
 
-        // Get the actual item from this ID.
         var item = EquippedItems.FirstOrDefault(item => item.m_globalID == itemId);
-        if (item == null) {
-            Logger.Warning("Tried to unequip item with global id {0} that does not exist.", Logger.Args(itemId));
-            return false;
-        }
-
-        // Get the template for this item.
-        template = ItemHelper.GetItemTemplate(item);
-        if (template == null) {
-            Logger.Warning("Tried to unequip item with global id {0} that does not have a template.", Logger.Args(itemId));
-            return false;
-        }
-
-        // The slot name is in the adjectives of the item.
-        var slot = ItemHelper.GetItemSlot(template);
-        if (slot is null) {
-            Logger.Warning("Tried to unequip item with global id {0} that does not have a slot name adjective.", Logger.Args(itemId));
-            return false;
-        }
+        var slot = SlotList.Find(eSlot => eSlot.ItemId == itemId);
 
         // Finally, update the slot.
-        ClearEquipmentSlot(slot);
+        ClearEquipmentSlot(slot.SlotType);
         EquippedItemIds.Remove(itemId);
         EquippedItems.Remove(item);
         return true;
@@ -143,6 +106,25 @@ public class ServerWizEquipmentBehavior : BehaviorInstance, IClientBehaviorProvi
         return EquippedItems.FirstOrDefault(item => item.m_globalID == SlotList[slotIndex].ItemId);
     }
 
+    public WizItemTemplate GetTemplateInSlot(string slotName) {
+        // Cast the slot name to an enum value.
+        if (!Enum.TryParse(typeof(EquipmentSlotType), slotName, true, out var slot)) {
+            Logger.Error("Could not parse slot name {0} to an enum value.", Logger.Args(slotName));
+            return null;
+        }
+
+        return GetTemplateInSlot((EquipmentSlotType) slot);
+    }
+
+    public WizItemTemplate GetTemplateInSlot(EquipmentSlotType slotType) {
+        var slotIndex = SlotList.FindIndex(item => item.SlotType == slotType);
+        if (slotIndex == -1) {
+            return null;
+        }
+
+        return ItemHelper.GetItemTemplate(EquippedItems.FirstOrDefault(item => item.m_globalID == SlotList[slotIndex].ItemId));
+    }
+
     public byte GetSlotOfItem(ulong itemId) {
         var slotIndex = SlotList.FindIndex(item => item.ItemId == itemId);
         if (slotIndex == -1) {
@@ -152,13 +134,13 @@ public class ServerWizEquipmentBehavior : BehaviorInstance, IClientBehaviorProvi
         return (byte) slotIndex;
     }
 
-    private void UpdateEquipmentSlot(EquipmentSlot slot, string itemName,  ulong newItemId) {
+    private void UpdateEquipmentSlot(EquipmentSlotType slotType, string itemName,  ulong newItemId) {
         // Find the slot in the list. If it does, remove it.
-        ClearEquipmentSlot(slot);
+        ClearEquipmentSlot(slotType);
 
         // Create a new slot and add it to the list.
         var newSlot = new EquipmentSlot {
-            SlotType = slot.SlotType,
+            SlotType = slotType,
             ItemName = itemName,
             ItemId = (GID) newItemId,
             EquippedSince = DateTime.Now,
@@ -166,9 +148,9 @@ public class ServerWizEquipmentBehavior : BehaviorInstance, IClientBehaviorProvi
         SlotList.Add(newSlot);
     }
 
-    private void ClearEquipmentSlot(EquipmentSlot slot) {
+    private void ClearEquipmentSlot(EquipmentSlotType slotType) {
         // Find the slot in the list. If it does, remove it.
-        var slotIndex = SlotList.FindIndex(eSlot => eSlot.SlotType == slot.SlotType);
+        var slotIndex = SlotList.FindIndex(eSlot => eSlot.SlotType == slotType);
         if (slotIndex != -1) {
             SlotList.RemoveAt(slotIndex);
         }

@@ -41,6 +41,7 @@ public class ServerWizInventoryBehavior : BehaviorInstance, IClientBehaviorProvi
             return false;
         }
 
+        InventoryItemIds.Add(item.m_globalID);
         Items.Add(item);
         return true;
     }
