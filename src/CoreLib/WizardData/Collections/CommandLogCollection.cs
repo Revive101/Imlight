@@ -4,7 +4,7 @@
  */
 
 using Imlight.CoreLib.WizardData.Databases;
-using Imlight.CoreLib.WizardData.Models.Player;
+using Imlight.CoreLib.WizardData.Models.Misc;
 using Raven.Client.Documents;
 
 namespace Imlight.CoreLib.WizardData.Collections;

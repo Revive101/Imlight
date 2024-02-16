@@ -2,11 +2,14 @@ using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.Cryptography;
+using Imlight.Common.IO;
 using Imlight.Common.ObjectProperty;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Implementations;
+using Imlight.CoreLib.WizardData.Models.Misc;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using System.Collections.Generic;
@@ -51,7 +54,7 @@ public class EquipmentService : MessageService {
             // This is the very first step in that process. Start by telling the Wizard to apply
             // all of the effects for the equipment it has equipped.
             var playerCharacter = GetActiveWizard();
-            playerCharacter.ApplyEffectsForAllEquipment();
+            playerCharacter.InitializeGameEffects();
 
             // Now that the effects have been applied, we need to tell the client about them.
             var effects = playerCharacter.GameEffects;
@@ -67,7 +70,7 @@ public class EquipmentService : MessageService {
         var account = GetActiveAccount();
         var itemId = message.ItemID;
 
-        var item = wizard.InventoryGetItem(itemId);
+        var item = wizard.InventoryBehavior.GetItem(itemId);
         if (item is null) {
             var infractionText = $"Player tried to equip item {itemId} that they do not have in their inventory!";
             account.AddInfraction(InfractionType.SuspiciousBehavior, infractionText);
@@ -79,34 +82,41 @@ public class EquipmentService : MessageService {
             return;
         }
 
-        // Todo: Check if player meets requirements to equip item. If not, log an infraction.
-
         // Check to see if the player already has this item equipped. If they do, broadcast the removal of it.
-        var slot = wizard.EquipmentGetItemSlotIndex(itemId);
-        var hasItemEquipped = wizard.EquipmentHasEquippedItem(itemId);
+        // We don't have to remove it here because the EquipItem method will do that for us.
+        if (wizard.EquipmentBehavior.SlotInUse(message.SlotName, out var index)) {
+            // Debug log.
+            Logger.Debug("{0} tried to equip item {1} in slot {2} that is already in use. Unequipping from index {3}",
+                Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), itemId, message.SlotName, index));
 
-        var addedEffects = wizard.EquipmentEquipItem(itemId);
-        if (addedEffects is null) {
+            // Get the item that is currently equipped in this slot.
+            var equippedItemId = wizard.EquipmentBehavior.GetItemInSlot(message.SlotName).m_globalID;
+            SendUnequipItem(message.SlotName, index, equippedItemId);
+        }
+
+        if (!wizard.InventoryToEquipmentTransfer(itemId, out var effects, out var removedEffects)) {
             Logger.Warning("Equip failed on item {0}", Logger.Args(itemId));
             return;
         }
 
-        if (hasItemEquipped) {
-            SendUnequipItem(slot, itemId);
-        }
-
         SendEquipItem(item, message.SlotName);
-        SendAddEffects(addedEffects);
+        SendAddEffects(effects);
+
+        // If removedEffects is not null, the Wizard replaced an item with another item that has different effects.
+        // We need to remove the old effects from the client.
+        if (removedEffects is not null) {
+            SendRemoveEffects(removedEffects);
+        }
     }
 
     private void UnEquipItem(GAME_5_PROTOCOL.MSG_EQUIPITEM message) {
-        var playerCharacter = GetActiveWizard();
+        var wizard = GetActiveWizard();
+        var wizEquipmentBehavior = wizard.EquipmentBehavior;
         var account = GetActiveAccount();
         var itemId = message.ItemID;
 
         // Check to see if the player has this item equipped. If they don't, log an infraction.
-        var item = playerCharacter.InventoryGetItem(itemId);
-        if (item is null) {
+        if (!wizEquipmentBehavior.HasItemEquipped(itemId)) {
             var infractionText = $"Player tried to unequip item {itemId} that they do not have in their inventory!";
             account.AddInfraction(InfractionType.SuspiciousBehavior, infractionText);
 
@@ -118,15 +128,18 @@ public class EquipmentService : MessageService {
         }
 
         // This needs to be done before we unequip the item, because we need to know what slot it was in.
-        var slot = playerCharacter.EquipmentGetItemSlotIndex(itemId);
+        var slot = wizEquipmentBehavior.GetSlotOfItem(itemId);
 
-        var removedEffects = playerCharacter.EquipmentUnequipItem(itemId);
-        if (removedEffects is null) {
+        if (!wizard.EquipmentToInventoryTransfer(itemId, out var removedEffects)) {
+            // If this fails, there is perhaps desync between the server and the client.
+            // Send a message to the client to assure them that the server does not have the item equipped.
+            SendUnequipItem(message.SlotName, slot, itemId);
+
             Logger.Warning("Unequip failed on item {0}", Logger.Args(itemId));
             return;
         }
 
-        SendUnequipItem(slot, itemId);
+        SendUnequipItem(message.SlotName, slot, itemId);
         SendRemoveEffects(removedEffects);
     }
 
@@ -147,12 +160,11 @@ public class EquipmentService : MessageService {
         }, false);
     }
 
-    private void SendUnequipItem(byte slot, ulong itemId) {
+    private void SendUnequipItem(ByteString slotName, byte slot, ulong itemId) {
         // This one goes to the client.
         SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPITEM() {
             ItemID = itemId,
-            // The client doesn't really care about these fields below.
-            SlotName = "",
+            SlotName = slotName,
             IsEquip = 0
         });
 

@@ -368,7 +368,6 @@ public class SessionActor : ReceiveActor, IDisposable {
 
     private void ReceiveException(Exception ex) {
         Dispose();
-        throw ex;
     }
 
     private void SendOldContextException(Exception ex) {

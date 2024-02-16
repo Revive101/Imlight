@@ -112,7 +112,7 @@ internal class AttachService : MessageService {
             TestServer = 0
         };
 
-        var actualWizardName = WizardNameBank.GetEnglishName(wizard.NameIndices, wizard.WizardAvatar.m_eGender);
+        var actualWizardName = WizardNameBank.GetEnglishName(wizard.PlayerNameBehavior.NameIndices, wizard.WizardAvatar.m_eGender);
         AddPlayerToZone(charGameObject, actualWizardName);
 
         SendToSocket(loginCompleteMsg);

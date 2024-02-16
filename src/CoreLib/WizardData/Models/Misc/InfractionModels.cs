@@ -7,7 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Imlight.CoreLib.WizardData.Models.Player;
+namespace Imlight.CoreLib.WizardData.Models.Misc;
 
 public enum InfractionType {
     SuspiciousBehavior,

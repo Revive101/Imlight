@@ -5,7 +5,7 @@
 
 using System;
 
-namespace Imlight.CoreLib.WizardData.Models.Player;
+namespace Imlight.CoreLib.WizardData.Models.Misc;
 
 public class ChatLog {
     public DateTime TimeStamp { get; set; }

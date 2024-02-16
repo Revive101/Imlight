@@ -12,6 +12,7 @@ using Imlight.Common.Configuration;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Collections;
+using Imlight.CoreLib.WizardData.Models.Misc;
 
 namespace Imlight.CoreLib.WizardData.Models.Player;
 

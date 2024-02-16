@@ -1,3 +1,4 @@
+using Imlight.Common;
 using Imlight.Common.Cryptography;
 using System;
 using static Imlight.Common.Caches.TypeCache;
@@ -13,13 +14,22 @@ internal static class GameEffectFactory {
     /// <returns>The instance of the effect.</returns>
     /// <exception cref="NotImplementedException"></exception>
     internal static GameEffectBase CreateEffectFromInfo(GameEffectInfo info, uint itemSlotId)
-        => info switch {
-            ProvideSpellEffectInfo provideSpellEffectInfo => CreateProvideSpellEffect(provideSpellEffectInfo, itemSlotId),
-            StartingPipEffectInfo  startingPipEffectInfo  => CreateStartingPipEffect(startingPipEffectInfo, itemSlotId),
-            SpeedEffectInfo        speedEffectInfo        => CreateSpeedEffect(speedEffectInfo, itemSlotId),
-            StatisticEffectInfo    statisticEffectInfo    => CreateWizStatisticEffect(statisticEffectInfo, itemSlotId),
-            _ => throw new NotImplementedException(),
-    };
+    {
+        switch (info)
+        {
+            case ProvideSpellEffectInfo provideSpellEffectInfo:
+                return CreateProvideSpellEffect(provideSpellEffectInfo, itemSlotId);
+            case StartingPipEffectInfo startingPipEffectInfo:
+                return CreateStartingPipEffect(startingPipEffectInfo, itemSlotId);
+            case SpeedEffectInfo speedEffectInfo:
+                return CreateSpeedEffect(speedEffectInfo, itemSlotId);
+            case StatisticEffectInfo statisticEffectInfo:
+                return CreateWizStatisticEffect(statisticEffectInfo, itemSlotId);
+            default:
+                Logger.Warning("Unknown effect type: {1}", Logger.Args(info.GetType().Name));
+                return null;
+        }
+    }
 
     private static ProvideSpellEffect CreateProvideSpellEffect(ProvideSpellEffectInfo info, uint itemSlotId) {
         var effect = new ProvideSpellEffect() {

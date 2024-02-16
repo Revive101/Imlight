@@ -1,7 +1,10 @@
+using Imlight.Common;
 using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Models.Player;
 using System;
+using System.Linq;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.WizardData.Implementations;
@@ -35,25 +38,29 @@ internal static class ItemHelper {
     }
 
     /// <summary>
-    /// Gets the slot hash of a WizClientObjectItem.
+    /// Gets the slot of a WizClientObjectItem from the template adjectives.
     /// </summary>
-    /// <param name="item">The WizClientObjectItem to get the slot hash from.</param>
-    /// <returns>The slot hash of the item, or 0 if the item template is null or the adjective list count is less than 2.</returns>
-    internal static uint GetItemSlotHash(WizClientObjectItem item) {
-        var template = GetItemTemplate(item);
-        if (template == null) {
-            return 0;
+    /// <param name="itemTemplate"></param>
+    /// <returns>The EquipmentSlot of the item; null if a matching adjective is not found.</returns>
+    internal static EquipmentSlot GetItemSlot(WizItemTemplate itemTemplate) {
+        if (itemTemplate?.m_adjectiveList is null) {
+            throw new InvalidOperationException("Item template does not have an adjective list.");
         }
 
-        // Get the slot hash from the item template.
-        if (template.m_adjectiveList.Count < 2) {
-            return 0;
+        // Iterate through the EquipmentSlot enum and return the first slot that matches the item's slot.
+        foreach (var slot in Enum.GetValues(typeof(EquipmentSlotType)).Cast<EquipmentSlotType>()) {
+            // Sanitize the slot name.
+            var slotName = slot.ToString().Split('.')[^1];
+
+            // Check if any of the items adjectives match the slot name.
+            if (itemTemplate.m_adjectiveList.Any(adj => string.Equals(adj, slotName, StringComparison.OrdinalIgnoreCase))) {
+                return new EquipmentSlot {
+                    SlotType = slot,
+                };
+            }
         }
-        else {
-            // The second adjective is the slot name.
-            var slotName = template.m_adjectiveList[1];
-            return StringHash.Compute(slotName);
-        }
+
+        return null;
     }
 
     /// <summary>
@@ -62,18 +69,8 @@ internal static class ItemHelper {
     /// <param name="template">The item template.</param>
     /// <returns>The hash value of the item slot.</returns>
     internal static uint GetItemSlotHash(WizItemTemplate template) {
-        if (template == null) {
-            return 0;
-        }
-
-        // Get the slot hash from the item template.
-        if (template.m_adjectiveList.Count < 2) {
-            return 0;
-        }
-        else {
-            // The second adjective is the slot name.
-            var slotName = template.m_adjectiveList[1];
-            return StringHash.Compute(slotName);
-        }
+        var slotType = GetItemSlot(template).SlotType;
+        var slotName = slotType.ToString().Split('.')[^1];
+        return StringHash.Compute(slotName);
     }
 }
