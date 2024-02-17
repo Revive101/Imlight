@@ -37,6 +37,12 @@ internal class CommandTeleport : CommandProtocol {
             }
         }
         else if (s_gmIslandShortcutNames.Any(x => x == zone)) {
+            // Check the account auth level to see if they can teleport to the GM Island.
+            if (Context.Account.AuthLevel < AuthLevel.HallMonitor) {
+                InformSenderClient($"Zone {zone} does not exist.");
+                return;
+            }
+
             actualZoneName = s_gmIslandZoneName;
         }
 
