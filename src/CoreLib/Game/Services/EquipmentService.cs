@@ -180,6 +180,12 @@ public class EquipmentService : MessageService {
             return;
         }
 
+        // Sometimes when a Wizard has no effects, this is null and throws exception.
+        var wizardObj = GetActiveWizard();
+        if (wizardObj is null) {
+            return;
+        }
+
         var charObjId = GetActiveGameObject().m_globalID;
 
         foreach (var effect in effects) {
