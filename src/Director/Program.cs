@@ -20,8 +20,13 @@ using Imlight.CoreLib.WizardData.Models.Player;
 namespace Imlight.Director;
 
 internal static class Program {
+    // Major versions in order:
+    // Imlight - PROTO
+    // Imlight - NETHRA
+    // Imlight - KALI (?) - Not yet released.
     private const string ActorSystemName = "Imlight";
-    private const string Version = "1.1.0";
+    private const string MajorVersion = "NETHRA";
+    private const string Version = "1.2.0";
 
     private static ActorSystem s_imlightSystem;
     private static ResourceContainer s_resourceContainer;
@@ -147,7 +152,7 @@ internal static class Program {
         var buildConfiguration = GetBuildConfiguration();
         Console.Write(@"|___/");
         Console.ForegroundColor = ConsoleColor.DarkGray;
-        Console.Write($"   (NETHRA-v{Version} {buildConfiguration})\n");
+        Console.Write($"   ({MajorVersion}-v{Version} {buildConfiguration})\n");
         Console.WriteLine("");
     }
 
