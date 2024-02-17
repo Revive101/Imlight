@@ -34,6 +34,23 @@ internal static class CharacterHelper {
         var gameStats = GetNewCharacterGameStats((byte) character.MagicSchoolBehavior.Level, character.MagicSchoolBehavior.MagicSchool);
         character.GameStats = gameStats;
 
+        // Set all the stats to 0.
+        gameStats.m_dmgBonusFlatAll = 0;
+        gameStats.m_dmgBonusPercentAll = 0;
+        gameStats.m_accBonusPercentAll = 0;
+        gameStats.m_dmgReduceFlatAll = 0;
+        gameStats.m_dmgReducePercentAll = 0;
+        gameStats.m_blockPercentBySchool = new List<float>();
+        gameStats.m_blockRatingBySchool = new List<float>();
+        gameStats.m_dmgBonusFlat = new List<float>();
+        gameStats.m_dmgBonusPercent = new List<float>();
+        gameStats.m_dmgBonusFlat = new List<float>();
+        gameStats.m_dmgReduceFlat = new List<float>();
+        gameStats.m_dmgReducePercent = new List<float>();
+        gameStats.m_accBonusPercent = new List<float>();
+        gameStats.m_blockPercentBySchool = new List<float>();
+        gameStats.m_blockRatingBySchool = new List<float>();
+
         return character;
     }
 
@@ -89,12 +106,12 @@ internal static class CharacterHelper {
     }
 
     /// <summary>
-    /// Resets the stats of a WizGameStats object based on the provided level and magic school.
+    /// Resets the base stats of a WizGameStats object based on the provided level and magic school.
     /// </summary>
     /// <param name="stats">The WizGameStats object to reset.</param>
     /// <param name="level">The level of the wizard.</param>
     /// <param name="school">The magic school of the wizard.</param>
-    internal static void ResetStats(WizGameStats stats, byte level, MagicSchool school) {
+    internal static void SetBaseStats(WizGameStats stats, byte level, MagicSchool school) {
         var baseHealth = WizardClassData.GetClassHealthAtLevel(school, level);
         var baseMana = WizardClassData.GetManaAtLevel(level);
         var powerPipChance  = WizardClassData.GetPowerPipChanceAtLevel(level);
@@ -105,23 +122,6 @@ internal static class CharacterHelper {
         stats.m_baseGoldPouch = ConfigurationManager.Settings.BaseGoldPouch;
         stats.m_powerPipBase = powerPipChance;
         stats.m_energyMax = energyMax;
-
-        // Set all the stats to 0.
-        stats.m_dmgBonusFlatAll = 0;
-        stats.m_dmgBonusPercentAll = 0;
-        stats.m_accBonusPercentAll = 0;
-        stats.m_dmgReduceFlatAll = 0;
-        stats.m_dmgReducePercentAll = 0;
-        stats.m_blockPercentBySchool = new List<float>();
-        stats.m_blockRatingBySchool = new List<float>();
-        stats.m_dmgBonusFlat = new List<float>();
-        stats.m_dmgBonusPercent = new List<float>();
-        stats.m_dmgBonusFlat = new List<float>();
-        stats.m_dmgReduceFlat = new List<float>();
-        stats.m_dmgReducePercent = new List<float>();
-        stats.m_accBonusPercent = new List<float>();
-        stats.m_blockPercentBySchool = new List<float>();
-        stats.m_blockRatingBySchool = new List<float>();
     }
 
     private static WizGameStats GetNewCharacterGameStats(byte level, MagicSchool school) {

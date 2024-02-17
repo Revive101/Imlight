@@ -17,6 +17,7 @@ using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.MessageLayer;
 using Imlight.Common.ObjectProperty;
+using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Zone;
 
@@ -31,14 +32,14 @@ public class WizardZone : ReceiveProtocolDispatcher {
     private readonly IActorRef _sigilSupervisorRef;
     private readonly IActorRef _duelSupervisorRef;
     private readonly List<Trigger> _triggers;
-    private readonly Dictionary<IActorRef, CoreObject> _zonePlayers;
+    private readonly Dictionary<IActorRef, Wizard> _zonePlayers;
     private ushort _zoneObjectMobileIdCounter;
 
     // ctor
     public WizardZone(string zoneName) {
         ZoneName = zoneName;
         _dynamicZoneId = GenerateDynamicZoneId();
-        _zonePlayers = new Dictionary<IActorRef, CoreObject>();
+        _zonePlayers = new Dictionary<IActorRef, Wizard>();
         _triggers = new List<Trigger>();
 
         // Create supervisor children. This just helps offload most of the work.
@@ -162,7 +163,8 @@ public class WizardZone : ReceiveProtocolDispatcher {
                 | SerializerOptions.PropertyFlags.Transmit
                 | SerializerOptions.PropertyFlags.AuthorityTransmit);
         foreach (var obj in _zonePlayers.Values) {
-            var msg = new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = serializer.Serialize(obj) };
+            var playerObj = WizardObjectLoader.GetPlayerGameObject(obj);
+            var msg = new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = serializer.Serialize(playerObj) };
             client.Tell(msg);
         }
     }
@@ -186,7 +188,7 @@ public class WizardZone : ReceiveProtocolDispatcher {
         var r = new Random();
         while (true) {
             test = (ushort) r.Next(ReservedMobileIdMax, ushort.MaxValue);
-            if (_zonePlayers.Values.Any(x => x.m_nMobileID == test)) {
+            if (_zonePlayers.Values.Any(x => x.GameObject.m_nMobileID == test)) {
                 continue;
             }
 
@@ -262,7 +264,7 @@ public class WizardZone : ReceiveProtocolDispatcher {
         SpawnPlayersForNewClient(message.Player);
 
         // Now we add the player, so they don't end up creating themselves when we spawn each zone object.
-        _zonePlayers.Add(message.Player, message.PlayerObject);
+        _zonePlayers.Add(message.Player, message.Wizard);
 
         // Inform the player that they've been successfully added to the zone. We want to reply to the callee
         // and any services that may be waiting for this reply.
@@ -270,8 +272,7 @@ public class WizardZone : ReceiveProtocolDispatcher {
         Sender.Tell(response);
         message.Player.Tell(response);
 
-        Logger.Debug("{Name} added to zone {ZoneName}.",
-            Logger.Args(message.ActualWizardName, ZoneName));
+        Logger.Debug("{Name} added to zone {ZoneName}.", Logger.Args(message.ActualWizardName, ZoneName));
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER))]

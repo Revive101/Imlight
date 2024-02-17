@@ -15,9 +15,9 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Game;
 
 public static class WizardObjectLoader {
-    public static WizClientObject GetPlayerGameObject(ref Wizard character) {
-        var clientObject = CoreObjectFactory.InitializeCoreObjectBehaviors(new WizClientObject(), 1);
-        CharacterHelper.ResetStats(character.GameStats, (byte) character.MagicSchoolBehavior.Level, character.MagicSchoolBehavior.MagicSchool);
+    public static WizClientObject GetPlayerGameObject(Wizard character) {
+        // Get the character's game object or create a new one.
+        var clientObject = character.GameObject ?? CoreObjectFactory.InitializeCoreObjectBehaviors(new WizClientObject(), 1);
 
         // Set the stats on the new object.
         clientObject.m_templateID = 1;

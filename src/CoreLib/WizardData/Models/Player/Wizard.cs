@@ -146,6 +146,7 @@ public class Wizard : IDisposable {
         if (!MagicSchoolBehavior.SetLevel(level)) {
             return false;
         }
+        CharacterHelper.SetBaseStats(GameStats, level, MagicSchoolBehavior.MagicSchool);
 
         // Persistent save.
         WizardCollection.UpdateCharacterLevel(this);
