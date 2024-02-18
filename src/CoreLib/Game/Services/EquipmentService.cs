@@ -5,6 +5,7 @@ using Imlight.Common.Cryptography;
 using Imlight.Common.IO;
 using Imlight.Common.ObjectProperty;
 using Imlight.Common.ObjectProperty.PropertyReflection;
+using Imlight.CoreLib.Game.Effects;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
@@ -13,6 +14,7 @@ using Imlight.CoreLib.WizardData.Models.Misc;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Services;
@@ -54,10 +56,10 @@ public class EquipmentService : MessageService {
             // This is the very first step in that process. Start by telling the Wizard to apply
             // all of the effects for the equipment it has equipped.
             var playerCharacter = GetActiveWizard();
-            playerCharacter.InitializeGameEffects();
+            CharacterEffectHelper.RecalculateGameStats(playerCharacter);
 
             // Now that the effects have been applied, we need to tell the client about them.
-            var effects = playerCharacter.GameEffects;
+            var effects = playerCharacter.GameEffects.Where(x => x.GetType() == typeof(SpeedEffect)).ToList();
             SendAddEffects(effects);
         }
         catch  (Exception ex) {

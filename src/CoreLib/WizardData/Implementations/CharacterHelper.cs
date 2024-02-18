@@ -15,7 +15,7 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.WizardData.Implementations;
 
-internal static class CharacterHelper {
+public static class CharacterHelper {
     internal const float OrientationCompressionFactor = 0.708f;
 
     /// <summary>
@@ -23,7 +23,7 @@ internal static class CharacterHelper {
     /// </summary>
     /// <param name="creationInfo">The character creation information.</param>
     /// <returns>The created Wizard character.</returns>
-    internal static Wizard CreateCharacterFromCreationInfo(WizardCharacterCreationInfo creationInfo) {
+    public static Wizard CreateCharacterFromCreationInfo(WizardCharacterCreationInfo creationInfo) {
         // This method is used to create a character from the character creation screen.
         var school = (MagicSchool) creationInfo.m_schoolOfFocus;
         var wizardAvatar = creationInfo.m_avatarBehavior;

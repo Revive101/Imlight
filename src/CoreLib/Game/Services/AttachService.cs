@@ -8,6 +8,7 @@ using Akka.Actor;
 using Imlight.Common.Caches;
 using Imlight.Common.IO;
 using Imlight.Common.ObjectProperty;
+using Imlight.CoreLib.Game.Effects;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
@@ -71,6 +72,8 @@ internal class AttachService : MessageService {
         var orientation = location.W / CharacterHelper.OrientationCompressionFactor;
         wizard.SetPersistentLocation(actualLocation);
         wizard.SetPersistentOrientation((byte) orientation);
+
+        CharacterEffectHelper.RecalculateGameStats(wizard);
 
         // Get the best game server for this user.
         var gameServer = GetGameServer();
