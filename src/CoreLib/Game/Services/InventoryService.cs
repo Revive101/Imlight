@@ -45,24 +45,12 @@ public class InventoryService : MessageService {
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_TRASHINVENTORYITEM))]
     private void ReceiveTrashInventoryItem(GAME_5_PROTOCOL.MSG_TRASHINVENTORYITEM message) {
-        var coreObject = GetActiveGameObject();
+        var wizard = GetActiveWizard();
 
-        // @TODO: Remove this and gather from potential player behavior cache instead.
-        if (!CoreObjectFactory.FindBehaviorInstance<ClientWizInventoryBehavior>(coreObject,
-                out var inventoryBehavior)) {
-            return;
-        }
-
-        if (!CoreObjectFactory.FindBehaviorInstance<ClientWizEquipmentBehavior>(coreObject,
-            out var equipmentBehavior)) {
-            return;
-        }
-
-        inventoryBehavior.m_itemList.RemoveAll(item => item.m_globalID == message.GlobalID);
-        equipmentBehavior.m_itemList.RemoveAll(item => item.m_globalID == message.GlobalID);
+        wizard.RemoveItemFromInventory(message.GlobalID);
 
         SendToSocket(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_REMOVEITEM() {
-            GlobalID = coreObject.m_globalID,
+            GlobalID = wizard.GameObject.m_globalID,
             ItemID = message.GlobalID
         });
     }
