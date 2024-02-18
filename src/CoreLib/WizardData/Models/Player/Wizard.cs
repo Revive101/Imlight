@@ -154,6 +154,23 @@ public class Wizard : IDisposable {
         return true;
     }
 
+    public bool AddItemToInventory(ulong itemId, out WizClientObjectItem item) {
+        item = (WizClientObjectItem) CoreObjectFactory.FinalizeCoreObject(itemId);
+        item.m_characterId = (GID) CharId;
+
+        var success = InventoryBehavior.AddItem(item);
+        if (!success) {
+            Logger.Warning("Could not add item {0} to player {1}'s inventory.", Logger.Args(itemId, PlayerNameBehavior.GetWizardName()));
+            item = null;
+            return false;
+        }
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterItems(this);
+
+        return true;
+    }
+
     public bool InventoryToEquipmentTransfer(ulong itemId, out List<GameEffectBase> equipEffects, out List<GameEffectBase> unequipEffects) {
         equipEffects = null;
         unequipEffects = null;
