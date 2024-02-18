@@ -20,17 +20,17 @@ internal static class CharacterEffectHelper {
 
         // Reset the base stats to the default values.
         // Note that this method does *not* set the current health/mana/energy, only the base values.
-        CharacterHelper.SetBaseStats(wizard.GameStats, (byte) wizard.MagicSchoolBehavior.Level, wizard.MagicSchoolBehavior.MagicSchool);
+        wizard.GameStats = CharacterHelper.GetBaseStats((byte) wizard.MagicSchoolBehavior.Level, wizard.MagicSchoolBehavior.MagicSchool);
+        wizard.GameEffects = new List<GameEffectBase>();
 
         // Iterate through the equipped items and apply their effects.
-        wizard.GameEffects = new List<GameEffectBase>();
         foreach (var item in wizard.EquipmentBehavior.EquippedItems) {
             var template = ItemHelper.GetItemTemplate(item);
             if (template is null) {
                 continue;
             }
 
-            var activatedEffects = AddEffectsFromTemplate(wizard, template);
+            var activatedEffects = AddEffectsToWizard(wizard, template);
 
             Logger.Debug("{0} Applied {1} effects for item {2}.",
                 Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), activatedEffects.Count, template.m_objectName));
@@ -95,7 +95,7 @@ internal static class CharacterEffectHelper {
         }
     }
 
-    internal static List<GameEffectBase> AddEffectsFromTemplate(Wizard wizard, WizItemTemplate template) {
+    internal static List<GameEffectBase> AddEffectsToWizard(Wizard wizard, WizItemTemplate template) {
         var addedEffects = new List<GameEffectBase>();
         var slotHash = ItemHelper.GetItemSlotHash(template);
 
@@ -116,7 +116,7 @@ internal static class CharacterEffectHelper {
         return addedEffects;
     }
 
-    internal static List<GameEffectBase> RemoveEffectsFromTemplate(Wizard wizard, WizItemTemplate template) {
+    internal static List<GameEffectBase> RemoveEffectsFromWizard(Wizard wizard, WizItemTemplate template) {
         var removedEffects = new List<GameEffectBase>();
         var slotHash = ItemHelper.GetItemSlotHash(template);
 

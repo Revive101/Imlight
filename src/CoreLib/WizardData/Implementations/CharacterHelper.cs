@@ -111,17 +111,21 @@ public static class CharacterHelper {
     /// <param name="stats">The WizGameStats object to reset.</param>
     /// <param name="level">The level of the wizard.</param>
     /// <param name="school">The magic school of the wizard.</param>
-    internal static void SetBaseStats(WizGameStats stats, byte level, MagicSchool school) {
+    internal static WizGameStats GetBaseStats(byte level, MagicSchool school) {
         var baseHealth = WizardClassData.GetClassHealthAtLevel(school, level);
         var baseMana = WizardClassData.GetManaAtLevel(level);
         var powerPipChance  = WizardClassData.GetPowerPipChanceAtLevel(level);
         var energyMax = WizardClassData.GetPetEnergyAtLevel(level);
 
-        stats.m_baseHitpoints = baseHealth;
-        stats.m_baseMana = baseMana;
-        stats.m_baseGoldPouch = ConfigurationManager.Settings.BaseGoldPouch;
-        stats.m_powerPipBase = powerPipChance;
-        stats.m_energyMax = energyMax;
+        var stats = new WizGameStats {
+            m_baseHitpoints = baseHealth,
+            m_baseMana = baseMana,
+            m_baseGoldPouch = ConfigurationManager.Settings.BaseGoldPouch,
+            m_powerPipBase = powerPipChance,
+            m_energyMax = energyMax
+        };
+
+        return stats;
     }
 
     private static WizGameStats GetNewCharacterGameStats(byte level, MagicSchool school) {

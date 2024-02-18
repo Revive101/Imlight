@@ -50,16 +50,11 @@ public class EquipmentService : MessageService {
 
     [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE))]
     private void ReceiveAttachComplete(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE message) {
-        // This doesn't have to be done in a try/catch.
         try {
-            // We don't persistently save equipment effects, so we need to re-apply them on login.
-            // This is the very first step in that process. Start by telling the Wizard to apply
-            // all of the effects for the equipment it has equipped.
-            var playerCharacter = GetActiveWizard();
-            CharacterEffectHelper.RecalculateGameStats(playerCharacter);
 
-            // Now that the effects have been applied, we need to tell the client about them.
-            var effects = playerCharacter.GameEffects.Where(x => x.GetType() == typeof(SpeedEffect)).ToList();
+            var playerCharacter = GetActiveWizard();
+            var effects = playerCharacter.GameEffects;
+
             SendAddEffects(effects);
         }
         catch  (Exception ex) {
@@ -182,10 +177,16 @@ public class EquipmentService : MessageService {
             return;
         }
 
-        // Sometimes when a Wizard has no effects, this is null and throws exception.
-        var wizardObj = GetActiveWizard();
+        // This may fail since it is accessed immediately after attach. This means the CharacterService
+        // hasn't had enough time to set its Wizard reference yet.
+        var wizardObj = GetActiveGameObject();
         if (wizardObj is null) {
-            return;
+            wizardObj = GetActiveWizard().GameObject;
+
+            if (wizardObj is null) {
+                Logger.Error("Failed to get wizard object for adding effects.");
+                return;
+            }
         }
 
         var charObjId = GetActiveGameObject().m_globalID;

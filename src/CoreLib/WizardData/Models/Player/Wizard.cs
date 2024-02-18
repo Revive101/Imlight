@@ -113,7 +113,9 @@ public class Wizard : IDisposable {
         InitializeMagicSchoolBehavior(wizardSchoolType, level);
         InitializeSpellbookBehavior();
         InitializeMountOwnerBehavior();
-        GameStats = new WizGameStats();
+        GameStats = CharacterHelper.GetBaseStats(level, wizardSchoolType);
+        GameStats.m_currentHitpoints = GameStats.m_baseHitpoints;
+        GameStats.m_currentMana = GameStats.m_baseMana;
     }
 
     public void SetCachedLocation(Vector3 loc) => Location = loc;
@@ -146,7 +148,9 @@ public class Wizard : IDisposable {
         if (!MagicSchoolBehavior.SetLevel(level)) {
             return false;
         }
-        CharacterHelper.SetBaseStats(GameStats, level, MagicSchoolBehavior.MagicSchool);
+
+        // todo: fixme. This doesn't work because equipment effects would disappear.
+        this.GameStats = CharacterHelper.GetBaseStats(level, MagicSchoolBehavior.MagicSchool);
 
         // Persistent save.
         WizardCollection.UpdateCharacterLevel(this);
@@ -233,7 +237,7 @@ public class Wizard : IDisposable {
         // Debug log.
         Logger.Debug("{0} equips item {1}", Logger.Args(PlayerNameBehavior.GetWizardName(), itemId));
 
-        equipEffects = CharacterEffectHelper.AddEffectsFromTemplate(this, template);
+        equipEffects = CharacterEffectHelper.AddEffectsToWizard(this, template);
         return true;
     }
 
@@ -273,7 +277,7 @@ public class Wizard : IDisposable {
         // Debug log.
         Logger.Debug("{0} unequips item {1}", Logger.Args(PlayerNameBehavior.GetWizardName(), itemId));
 
-        unequipEffects = CharacterEffectHelper.RemoveEffectsFromTemplate(this, template);
+        unequipEffects = CharacterEffectHelper.RemoveEffectsFromWizard(this, template);
         return true;
     }
 
