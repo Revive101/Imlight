@@ -166,6 +166,7 @@ public class Wizard : IDisposable {
         }
 
         // Persistent save.
+        WizardItemCollection.AddItem(item);
         WizardCollection.UpdateCharacterItems(this);
 
         return true;

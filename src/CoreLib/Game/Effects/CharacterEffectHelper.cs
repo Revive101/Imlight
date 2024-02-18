@@ -19,9 +19,11 @@ internal static class CharacterEffectHelper {
         Logger.Debug("Recalculating game stats for {0}.", Logger.Args(wizard.PlayerNameBehavior.GetWizardName()));
 
         // Reset the base stats to the default values.
+        // Note that this method does *not* set the current health/mana/energy, only the base values.
         CharacterHelper.SetBaseStats(wizard.GameStats, (byte) wizard.MagicSchoolBehavior.Level, wizard.MagicSchoolBehavior.MagicSchool);
 
         // Iterate through the equipped items and apply their effects.
+        wizard.GameEffects = new List<GameEffectBase>();
         foreach (var item in wizard.EquipmentBehavior.EquippedItems) {
             var template = ItemHelper.GetItemTemplate(item);
             if (template is null) {
