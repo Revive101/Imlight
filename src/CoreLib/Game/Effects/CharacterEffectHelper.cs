@@ -3,6 +3,9 @@
  * Proprietary and confidential.
  */
 
+using Imlight.Common;
+using Imlight.Common.Cryptography;
+using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using System.Collections.Generic;
@@ -12,6 +15,28 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Game.Effects;
 
 internal static class CharacterEffectHelper {
+    internal static void RecalculateGameStats(Wizard wizard) {
+        Logger.Debug("Recalculating game stats for {0}.", Logger.Args(wizard.PlayerNameBehavior.GetWizardName()));
+
+        // Reset the base stats to the default values.
+        CharacterHelper.SetBaseStats(wizard.GameStats, (byte) wizard.MagicSchoolBehavior.Level, wizard.MagicSchoolBehavior.MagicSchool);
+
+        // Iterate through the equipped items and apply their effects.
+        foreach (var item in wizard.EquipmentBehavior.EquippedItems) {
+            var template = ItemHelper.GetItemTemplate(item);
+            if (template is null) {
+                continue;
+            }
+
+            var activatedEffects = AddEffectsFromTemplate(wizard, template);
+
+            Logger.Debug("{0} Applied {1} effects for item {2}.",
+                Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), activatedEffects.Count, template.m_objectName));
+        }
+
+        Logger.Debug("Game stats recalculated for {0}.", Logger.Args(wizard.PlayerNameBehavior.GetWizardName()));
+    }
+
     /// <summary>
     /// Adds a game effect to the specified game statistics.
     /// </summary>
@@ -66,6 +91,53 @@ internal static class CharacterEffectHelper {
         else if (effectName.Contains("Mastery")) {
             RemoveSchoolMastery(stats, effectName);
         }
+    }
+
+    internal static List<GameEffectBase> AddEffectsFromTemplate(Wizard wizard, WizItemTemplate template) {
+        var addedEffects = new List<GameEffectBase>();
+        var slotHash = ItemHelper.GetItemSlotHash(template);
+
+        // Apply the effects from the template.
+        foreach (var effectInfo in template.m_equipEffects) {
+            var gameEffect = GameEffectFactory.CreateEffectFromInfo(effectInfo, slotHash);
+            gameEffect.m_internalID = wizard.GameEffects.Count;
+
+            if (gameEffect is WizStatisticEffect canonicalEffect) {
+                var canonicalEffectName = CanonicalStatEffects.GetEffectTemplate(effectInfo.m_effectName).m_effectName;
+                AddGameEffectToStats(wizard.GameStats, canonicalEffectName, canonicalEffect);
+            }
+
+            wizard.GameEffects.Add(gameEffect);
+            addedEffects.Add(gameEffect);
+        }
+
+        return addedEffects;
+    }
+
+    internal static List<GameEffectBase> RemoveEffectsFromTemplate(Wizard wizard, WizItemTemplate template) {
+        var removedEffects = new List<GameEffectBase>();
+        var slotHash = ItemHelper.GetItemSlotHash(template);
+
+        // Apply the effects from the template.
+        foreach (var effectInfo in template.m_equipEffects) {
+            // Find the effect in the player's list of effects.
+            var nameHash = StringHash.Compute(effectInfo.m_effectName);
+            var gameEffect = wizard.GameEffects.Find(e => e.m_effectNameID == nameHash && e.m_itemSlotID == slotHash);
+            if (gameEffect is null) {
+                Logger.Warning("Could not find effect {0} in player's list of effects.", Logger.Args(effectInfo.m_effectName));
+                continue;
+            }
+
+            removedEffects.Add(gameEffect);
+            wizard.GameEffects.Remove(gameEffect);
+
+            if (gameEffect is WizStatisticEffect canonicalEffect) {
+                var canonicalEffectName = CanonicalStatEffects.GetEffectTemplate(effectInfo.m_effectName).m_effectName;
+                RemoveGameEffectFromStats(wizard.GameStats, canonicalEffectName, canonicalEffect);
+            }
+        }
+
+        return removedEffects;
     }
 
     private static void ApplySchoolEffect(ref List<float> effectList, string schoolName, float value) {

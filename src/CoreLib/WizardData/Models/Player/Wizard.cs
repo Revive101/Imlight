@@ -171,6 +171,19 @@ public class Wizard : IDisposable {
         return true;
     }
 
+    public bool RemoveItemFromInventory(ulong itemId) {
+        var success = InventoryBehavior.RemoveItem(itemId, out var item);
+        if (!success) {
+            Logger.Warning("Could not remove item {0} from player {1}'s inventory.", Logger.Args(itemId, PlayerNameBehavior.GetWizardName()));
+            return false;
+        }
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterItems(this);
+
+        return true;
+    }
+
     public bool InventoryToEquipmentTransfer(ulong itemId, out List<GameEffectBase> equipEffects, out List<GameEffectBase> unequipEffects) {
         equipEffects = null;
         unequipEffects = null;
@@ -219,7 +232,7 @@ public class Wizard : IDisposable {
         // Debug log.
         Logger.Debug("{0} equips item {1}", Logger.Args(PlayerNameBehavior.GetWizardName(), itemId));
 
-        equipEffects = AddEffectsFromTemplate(template);
+        equipEffects = CharacterEffectHelper.AddEffectsFromTemplate(this, template);
         return true;
     }
 
@@ -259,73 +272,8 @@ public class Wizard : IDisposable {
         // Debug log.
         Logger.Debug("{0} unequips item {1}", Logger.Args(PlayerNameBehavior.GetWizardName(), itemId));
 
-        unequipEffects = RemoveEffectsFromTemplate(template);
+        unequipEffects = CharacterEffectHelper.RemoveEffectsFromTemplate(this, template);
         return true;
-    }
-
-    public void InitializeGameEffects() {
-        // Debug log.
-        Logger.Debug("{0} is applying effects for all equipment.", Logger.Args(PlayerNameBehavior.GetWizardName()));
-
-        // Get all active effects from what we currently have equipped.
-        foreach (var item in EquipmentBehavior.EquippedItems) {
-            var template = ItemHelper.GetItemTemplate(item);
-            if (template is null) {
-                continue;
-            }
-
-            var activatedEffects = AddEffectsFromTemplate(template);
-
-            Logger.Debug("{0} Applied {1} effects for item {2}.",
-                Logger.Args(PlayerNameBehavior.GetWizardName(), activatedEffects.Count, template.m_objectName));
-        }
-    }
-
-    private List<GameEffectBase> AddEffectsFromTemplate(WizItemTemplate template) {
-        var addedEffects = new List<GameEffectBase>();
-        var slotHash = ItemHelper.GetItemSlotHash(template);
-
-        // Apply the effects from the template.
-        foreach (var effectInfo in template.m_equipEffects) {
-            var gameEffect = GameEffectFactory.CreateEffectFromInfo(effectInfo, slotHash);
-            gameEffect.m_internalID = GameEffects.Count;
-
-            if (gameEffect is WizStatisticEffect canonicalEffect) {
-                var canonicalEffectName = CanonicalStatEffects.GetEffectTemplate(effectInfo.m_effectName).m_effectName;
-                CharacterEffectHelper.AddGameEffectToStats(this.GameStats, canonicalEffectName, canonicalEffect);
-            }
-
-            GameEffects.Add(gameEffect);
-            addedEffects.Add(gameEffect);
-        }
-
-        return addedEffects;
-    }
-
-    private List<GameEffectBase> RemoveEffectsFromTemplate(WizItemTemplate template) {
-        var removedEffects = new List<GameEffectBase>();
-        var slotHash = ItemHelper.GetItemSlotHash(template);
-
-        // Apply the effects from the template.
-        foreach (var effectInfo in template.m_equipEffects) {
-            // Find the effect in the player's list of effects.
-            var nameHash = StringHash.Compute(effectInfo.m_effectName);
-            var gameEffect = GameEffects.Find(e => e.m_effectNameID == nameHash && e.m_itemSlotID == slotHash);
-            if (gameEffect is null) {
-                Logger.Warning("Could not find effect {0} in player's list of effects.", Logger.Args(effectInfo.m_effectName));
-                continue;
-            }
-
-            removedEffects.Add(gameEffect);
-            GameEffects.Remove(gameEffect);
-
-            if (gameEffect is WizStatisticEffect canonicalEffect) {
-                var canonicalEffectName = CanonicalStatEffects.GetEffectTemplate(effectInfo.m_effectName).m_effectName;
-                CharacterEffectHelper.RemoveGameEffectFromStats(this.GameStats, canonicalEffectName, canonicalEffect);
-            }
-        }
-
-        return removedEffects;
     }
 
     private void InitializeDefaultInventory() {
