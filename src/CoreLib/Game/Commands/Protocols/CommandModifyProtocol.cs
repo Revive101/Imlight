@@ -105,16 +105,13 @@ internal class CommandModifyProtocol : CommandProtocol {
             return;
         }
 
-        // todo: Why doesn't this work? No changes on client. I checked disasembly and we have the right flags here.
-        //var serializer = new CoreObjectSerializer()
-        //    .OnBehaviors(SerializerOptions.Behaviors.None)
-        //    .OnPropertyMask((SerializerOptions.PropertyFlags)24);
-        //var networkMessage = new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
-        //    GlobalID = coreObject.m_globalID,
-        //    SerializedItem = serializer.Serialize(coreObject)
-        //};
-        //Context.SessionActor.Tell(networkMessage, null);
-
-        InformSenderClient($"Added item {coreObject.m_debugName} to inventory. Relog to see changes.");
+        var serializer = new CoreObjectSerializer()
+            .OnBehaviors(SerializerOptions.Behaviors.None)
+            .OnPropertyMask((SerializerOptions.PropertyFlags)24);
+        var networkMessage = new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
+            GlobalID = Context.Character.CharId,
+            SerializedItem = serializer.Serialize(coreObject)
+        };
+        Context.SessionActor.Tell(networkMessage, null);
     }
 }
