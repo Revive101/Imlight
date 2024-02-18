@@ -113,5 +113,7 @@ internal class CommandModifyProtocol : CommandProtocol {
             SerializedItem = serializer.Serialize(coreObject)
         };
         Context.SessionActor.Tell(networkMessage, null);
+
+        InformSenderClient($"Added item {coreObject.m_debugName} to inventory.");
     }
 }
