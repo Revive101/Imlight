@@ -22,11 +22,8 @@ using static Imlight.Common.ObjectProperty.SerializerOptions;
 namespace Imlight.CoreLib.Game.Services;
 
 public class InventoryService : MessageService {
-    private Dictionary<int, GameEffectInfo> _gameEffects;
-    private int _effectInternalIDCounter = 1;
 
-    public InventoryService(SessionActor sessionActor) : base(sessionActor)
-        => _gameEffects = new Dictionary<int, GameEffectInfo>();
+    public InventoryService(SessionActor sessionActor) : base(sessionActor) { }
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new InventoryService(parentActor));
