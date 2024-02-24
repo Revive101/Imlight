@@ -112,6 +112,8 @@ public static class AccountCollection {
             // Find any items in the inventory that match the equipped item IDs.
             character.EquipmentBehavior.EquippedItems = inventory
                 .Where(i => character.EquipmentBehavior.EquippedItemIds.Any(e => i.m_globalID == e)).ToList();
+
+            character.RefurbishReferences();
         }
 
         // Load infractions. The constructor will load the action history.
@@ -161,6 +163,8 @@ public static class AccountCollection {
             // Find any items in the inventory that match the equipped item IDs.
             character.EquipmentBehavior.EquippedItems = inventory
                 .Where(i => character.EquipmentBehavior.EquippedItemIds.Any(e => i.m_globalID == e)).ToList();
+
+            character.RefurbishReferences();
         }
 
         // Load infractions. The constructor will load the action history.

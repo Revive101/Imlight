@@ -61,7 +61,7 @@ public class Wizard : IDisposable {
     public ServerMagicSchoolBehavior MagicSchoolBehavior { get; set; }
     public ServerSpellbookBehavior SpellbookBehavior { get; set; }
     public ServerMountOwnerBehavior MountOwnerBehavior { get; set; }
-    public WizGameStats GameStats { get; set; }
+    public ServerWizGameStats GameStats { get; set; }
 
     [JsonIgnore] public Account Account;
     [JsonIgnore] public WizClientObject GameObject;
@@ -113,9 +113,7 @@ public class Wizard : IDisposable {
         InitializeMagicSchoolBehavior(wizardSchoolType, level);
         InitializeSpellbookBehavior();
         InitializeMountOwnerBehavior();
-        GameStats = CharacterHelper.GetBaseStats(level, wizardSchoolType);
-        GameStats.m_currentHitpoints = GameStats.m_baseHitpoints;
-        GameStats.m_currentMana = GameStats.m_baseMana;
+        InitializeWizardGameStats(wizardSchoolType, level);
     }
 
     public void SetCachedLocation(Vector3 loc) => Location = loc;
@@ -149,8 +147,11 @@ public class Wizard : IDisposable {
             return false;
         }
 
-        // todo: fixme. This doesn't work because equipment effects would disappear.
-        this.GameStats = CharacterHelper.GetBaseStats(level, MagicSchoolBehavior.MagicSchool);
+        GameStats.Level = level;
+
+        // todo: fixme. We want to add/subtract rather than totally resetting the base. If we reset the base,
+        // equipped items will not be recalculated.
+        //CharacterHelper.SetBaseStats(level, MagicSchoolBehavior.MagicSchool);
 
         // Persistent save.
         WizardCollection.UpdateCharacterLevel(this);
@@ -281,6 +282,11 @@ public class Wizard : IDisposable {
         return true;
     }
 
+    internal void RefurbishReferences() {
+        GameStats.Level = MagicSchoolBehavior.Level;
+        GameStats.MagicSchool = MagicSchoolBehavior.MagicSchool;
+    }
+
     private void InitializeDefaultInventory() {
         InventoryBehavior = new ServerWizInventoryBehavior {
             Items = new List<WizClientObjectItem>(),
@@ -347,6 +353,14 @@ public class Wizard : IDisposable {
 
     private void InitializeMountOwnerBehavior() {
         MountOwnerBehavior = new ServerMountOwnerBehavior();
+    }
+
+    private void InitializeWizardGameStats(MagicSchool school, byte level) {
+        GameStats = new ServerWizGameStats(school, level);
+        CharacterHelper.RecalculateGameStats(this);
+
+        GameStats.m_currentHitpoints = GameStats.m_baseHitpoints;
+        GameStats.m_currentMana = GameStats.m_baseMana;
     }
 
     public void Dispose() =>

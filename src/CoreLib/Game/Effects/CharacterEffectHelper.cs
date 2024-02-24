@@ -15,37 +15,13 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Game.Effects;
 
 internal static class CharacterEffectHelper {
-    internal static void RecalculateGameStats(Wizard wizard) {
-        Logger.Debug("Recalculating game stats for {0}.", Logger.Args(wizard.PlayerNameBehavior.GetWizardName()));
-
-        // Reset the base stats to the default values.
-        // Note that this method does *not* set the current health/mana/energy, only the base values.
-        wizard.GameStats = CharacterHelper.GetBaseStats((byte) wizard.MagicSchoolBehavior.Level, wizard.MagicSchoolBehavior.MagicSchool);
-        wizard.GameEffects = new List<GameEffectBase>();
-
-        // Iterate through the equipped items and apply their effects.
-        foreach (var item in wizard.EquipmentBehavior.EquippedItems) {
-            var template = ItemHelper.GetItemTemplate(item);
-            if (template is null) {
-                continue;
-            }
-
-            var activatedEffects = AddEffectsToWizard(wizard, template);
-
-            Logger.Debug("{0} Applied {1} effects for item {2}.",
-                Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), activatedEffects.Count, template.m_objectName));
-        }
-
-        Logger.Debug("Game stats recalculated for {0}.", Logger.Args(wizard.PlayerNameBehavior.GetWizardName()));
-    }
-
     /// <summary>
     /// Adds a game effect to the specified game statistics.
     /// </summary>
     /// <param name="stats">The game statistics to modify.</param>
     /// <param name="effectName">The category of the game effect.</param>
     /// <param name="statistic">The specific game effect to apply.</param>
-    internal static void AddGameEffectToStats(WizGameStats stats, string effectName, WizStatisticEffect statistic) {
+    internal static void AddGameEffectToStats(ServerWizGameStats stats, string effectName, WizStatisticEffect statistic) {
         // Apply effects that don't require a school.
         stats.m_baseHitpoints += (int) statistic.m_hitPointBonus;
         stats.m_baseMana += (int) statistic.m_manaBonus;
@@ -73,7 +49,7 @@ internal static class CharacterEffectHelper {
     /// <param name="stats">The game statistics to remove the effect from.</param>
     /// <param name="effectName">The name of the effect to remove.</param>
     /// <param name="statistic">The statistic effect to remove.</param>
-    internal static void RemoveGameEffectFromStats(WizGameStats stats, string effectName, WizStatisticEffect statistic) {
+    internal static void RemoveGameEffectFromStats(ServerWizGameStats stats, string effectName, WizStatisticEffect statistic) {
         // Remove effects that don't require a school.
         stats.m_baseHitpoints -= (int) statistic.m_hitPointBonus;
         stats.m_baseMana -= (int) statistic.m_manaBonus;
@@ -169,7 +145,7 @@ internal static class CharacterEffectHelper {
         }
     }
 
-    private static void ApplySchoolMastery(WizGameStats stats, string effectCategory) {
+    private static void ApplySchoolMastery(ServerWizGameStats stats, string effectCategory) {
         switch (effectCategory) {
             case var category when category.Contains("Ice"):
                 stats.m_iceMastery = 1;
@@ -195,7 +171,7 @@ internal static class CharacterEffectHelper {
         }
     }
 
-    private static void ApplyDamageIncrease(WizGameStats stats, string effectName, WizStatisticEffect statistic) {
+    private static void ApplyDamageIncrease(ServerWizGameStats stats, string effectName, WizStatisticEffect statistic) {
         if (effectName.Contains("Flat")) {
             // Flat damage increase
             if (effectName.Contains("All")) {
@@ -220,7 +196,7 @@ internal static class CharacterEffectHelper {
         }
     }
 
-    private static void ApplyAccuracyIncrease(WizGameStats stats, string effectName, WizStatisticEffect statistic) {
+    private static void ApplyAccuracyIncrease(ServerWizGameStats stats, string effectName, WizStatisticEffect statistic) {
         // Percent accuracy increase
         if (effectName.Contains("All")) {
             stats.m_accBonusPercentAll += statistic.m_accuracyBonusPercent;
@@ -232,7 +208,7 @@ internal static class CharacterEffectHelper {
         }
     }
 
-    private static void ApplyReduceDamageIncrease(WizGameStats stats, string effectName, WizStatisticEffect statistic) {
+    private static void ApplyReduceDamageIncrease(ServerWizGameStats stats, string effectName, WizStatisticEffect statistic) {
         if (effectName.Contains("Flat")) {
             // Flat damage increase
             if (effectName.Contains("All")) {
@@ -274,7 +250,7 @@ internal static class CharacterEffectHelper {
         }
     }
 
-    private static void RemoveSchoolMastery(WizGameStats stats, string effectCategory) {
+    private static void RemoveSchoolMastery(ServerWizGameStats stats, string effectCategory) {
         switch (effectCategory) {
             case var category when category.Contains("Ice"):
                 stats.m_iceMastery = 0;
@@ -300,7 +276,7 @@ internal static class CharacterEffectHelper {
         }
     }
 
-    private static void RemoveDamageIncrease(WizGameStats stats, string effectName, WizStatisticEffect statistic) {
+    private static void RemoveDamageIncrease(ServerWizGameStats stats, string effectName, WizStatisticEffect statistic) {
         if (effectName.Contains("Flat")) {
             if (effectName.Contains("All")) {
                 stats.m_dmgBonusFlatAll -= statistic.m_damageBonusFlat;
@@ -321,7 +297,7 @@ internal static class CharacterEffectHelper {
         }
     }
 
-    private static void RemoveAccuracyIncrease(WizGameStats stats, string effectName, WizStatisticEffect statistic) {
+    private static void RemoveAccuracyIncrease(ServerWizGameStats stats, string effectName, WizStatisticEffect statistic) {
         if (effectName.Contains("All")) {
             stats.m_accBonusPercentAll -= statistic.m_accuracyBonusPercent;
         }
@@ -331,7 +307,7 @@ internal static class CharacterEffectHelper {
         }
     }
 
-    private static void RemoveReduceDamageIncrease(WizGameStats stats, string effectName, WizStatisticEffect statistic) {
+    private static void RemoveReduceDamageIncrease(ServerWizGameStats stats, string effectName, WizStatisticEffect statistic) {
         if (effectName.Contains("Flat")) {
             if (effectName.Contains("All")) {
                 stats.m_dmgReduceFlatAll -= statistic.m_damageReduceFlat;

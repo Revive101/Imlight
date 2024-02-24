@@ -73,7 +73,8 @@ internal class AttachService : MessageService {
         wizard.SetPersistentLocation(actualLocation);
         wizard.SetPersistentOrientation((byte) orientation);
 
-        CharacterEffectHelper.RecalculateGameStats(wizard);
+        // Tiny anti-cheat measure. When the character object is created, we recalculate the game stats.
+        CharacterHelper.RecalculateGameStats(wizard);
 
         // Get the best game server for this user.
         var gameServer = GetGameServer();

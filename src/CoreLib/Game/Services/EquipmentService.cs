@@ -189,7 +189,7 @@ public class EquipmentService : MessageService {
             }
         }
 
-        var charObjId = GetActiveGameObject().m_globalID;
+        var charObjId = wizardObj.m_globalID;
 
         foreach (var effect in effects) {
             var effectSerializedData = _effectSerializer.Serialize(effect);

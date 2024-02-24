@@ -55,23 +55,7 @@ public static class WizardObjectLoader {
         // We want *only* base level/magic school stats here. The Wizard has already calculated it's own game stats.
         // We can't send the character game stats because the EquipmentService will broadcast the equipment effects,
         // causing each stat to duplicate.
-        var clientFriendlyStats = CharacterHelper.GetBaseStats((byte) character.MagicSchoolBehavior.Level, character.MagicSchoolBehavior.MagicSchool);
-        var wizGS = character.GameStats;
-
-        // Set the stats on the new object.
-        clientFriendlyStats.m_currentHitpoints = wizGS.m_currentHitpoints;
-        clientFriendlyStats.m_currentMana = wizGS.m_currentMana;
-        clientFriendlyStats.m_baseGoldPouch = wizGS.m_baseGoldPouch;
-        clientFriendlyStats.m_currentHitpoints = wizGS.m_currentHitpoints;
-        clientFriendlyStats.m_currentGold = wizGS.m_currentGold;
-        clientFriendlyStats.m_currentEventCurrency1 = wizGS.m_currentEventCurrency1;
-        clientFriendlyStats.m_currentEventCurrency2 = wizGS.m_currentEventCurrency2;
-        clientFriendlyStats.m_currentPvPCurrency = wizGS.m_currentPvPCurrency;
-        clientFriendlyStats.m_currentMana = wizGS.m_currentMana;
-        clientFriendlyStats.m_fishingLevel = wizGS.m_fishingLevel;
-        clientFriendlyStats.m_fishingXP = wizGS.m_fishingXP;
-
-        clientObject.m_gameStats = clientFriendlyStats;
+        clientObject.m_gameStats = character.GameStats.GetClientTypeAlternative();
     }
 
     public static void SetInventoryBehavior(WizClientObject clientObject, ref Wizard character) {
