@@ -282,6 +282,13 @@ public class Wizard : IDisposable {
         return true;
     }
 
+    public void SetNameOverride(string newName) {
+        PlayerNameBehavior.NameOverride = newName;
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterNameOverride(this);
+    }
+
     internal void RefurbishReferences() {
         GameStats.Level = MagicSchoolBehavior.Level;
         GameStats.MagicSchool = MagicSchoolBehavior.MagicSchool;

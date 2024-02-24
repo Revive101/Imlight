@@ -27,6 +27,10 @@ public class ServerWizPlayerNameBehavior : BehaviorInstance, IClientBehaviorProv
     public WideByteString NameOverride;
 
     public string GetWizardName() {
+        if (NameOverride.Length > 0) {
+            return NameOverride.ToString();
+        }
+
         var actualName = WizardNameBank.GetEnglishName(NameIndices, Gender);
         return actualName;
     }
