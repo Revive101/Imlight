@@ -3,11 +3,14 @@
  * Proprietary and confidential.
  */
 
+using Newtonsoft.Json;
+using System;
 using System.Diagnostics;
 using System.Text;
 
 namespace Imlight.Common.IO;
 
+[JsonConverter(typeof(WideByteStringConverter))]
 [DebuggerDisplay("{ToString()}")]
 public readonly struct WideByteString {
     private readonly byte[] _bytes;
@@ -47,4 +50,24 @@ public readonly struct WideByteString {
     }
 
     public int Length => _bytes?.Length ?? 0;
+}
+
+
+public class WideByteStringConverter : JsonConverter<WideByteString> {
+    public override void WriteJson(JsonWriter writer, WideByteString value, JsonSerializer serializer) {
+        string stringValue = value;
+        writer.WriteValue(stringValue);
+    }
+
+    public override WideByteString ReadJson(JsonReader reader, Type objectType, WideByteString existingValue, bool hasExistingValue, JsonSerializer serializer) {
+        if (reader.Value is string stringValue) {
+            return new WideByteString(stringValue);
+        }
+
+        throw new JsonSerializationException("Unable to deserialize WideByteString.");
+    }
+
+    public override bool CanRead => true;
+
+    public override bool CanWrite => true;
 }
