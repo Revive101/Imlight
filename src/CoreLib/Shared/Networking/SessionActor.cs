@@ -563,7 +563,14 @@ public class SessionActor : ReceiveActor, IDisposable {
     }
 
     private bool IsKIPacket(byte[] buffer)
-        => buffer.AsSpan()[..2].SequenceEqual(stackalloc byte[2] { 0x0D, 0xF0 });
+    {
+        if (buffer.Length < 2)
+        {
+            return false;
+        }
+
+        return buffer.AsSpan()[..2].SequenceEqual(stackalloc byte[2] { 0x0D, 0xF0 });
+    }
 
     private SocketAsyncEventArgs GetReceiveEventArgsFromPool() {
         lock (_receiveEventArgPool) {
