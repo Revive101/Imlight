@@ -174,6 +174,7 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
             m_baseMana = WizardClassData.GetManaAtLevel(Level),
             m_energyMax = WizardClassData.GetPetEnergyAtLevel(Level),
             m_powerPipBase = WizardClassData.GetPowerPipChanceAtLevel(Level),
+            m_baseGoldPouch = ConfigurationManager.Settings.BaseGoldPouch,
 
             m_currentHitpoints = m_currentHitpoints,
             m_currentGold = m_currentGold,
