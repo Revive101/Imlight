@@ -116,4 +116,13 @@ internal class CommandModifyProtocol : CommandProtocol {
 
         InformSenderClient($"Added item {coreObject.m_debugName} to inventory.");
     }
+
+    [Command("name")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void SetNameCommand(string name) {
+        // Set the name of the character.
+        Context.Character.SetNameOverride(name);
+
+        InformSenderClient($"Set name to {name}. Relog to see changes.");
+    }
 }
