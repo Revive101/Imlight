@@ -213,6 +213,12 @@ public class ObjectSerializer {
 
     private void SerializeObjectValue(BitWriter writer, FieldInfo field, object value) {
         var type = field.FieldType;
+
+        // If this is a list, change the type to be the inner type.
+        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>)) {
+            type = type.GetGenericArguments()[0];
+        }
+
         var flags = (PropertyFlags) field.GetCustomAttribute<PropertyAttribute>()!.Flags;
         var writerFunc = ClassElementWriters.TryGetWriter(type);
 

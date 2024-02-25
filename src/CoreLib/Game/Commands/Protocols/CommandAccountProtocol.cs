@@ -28,7 +28,7 @@ internal class CommandAccountProtocol : CommandProtocol {
     }
 
     [Command("delete")]
-    [AuthRequired(AuthLevel.HallMonitor)]
+    [AuthRequired(AuthLevel.Administrator)]
     private void DeleteAccountCommand(string username) {
         var account = AccountCollection.GetAccount(username);
         if (account is null) {

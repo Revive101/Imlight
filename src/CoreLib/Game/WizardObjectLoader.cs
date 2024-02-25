@@ -16,8 +16,7 @@ namespace Imlight.CoreLib.Game;
 
 public static class WizardObjectLoader {
     public static WizClientObject GetPlayerGameObject(Wizard character) {
-        // Get the character's game object or create a new one.
-        var clientObject = character.GameObject ?? CoreObjectFactory.InitializeCoreObjectBehaviors(new WizClientObject(), 1);
+        var clientObject = CoreObjectFactory.InitializeCoreObjectBehaviors(new WizClientObject(), 1);
 
         // Set the stats on the new object.
         clientObject.m_templateID = 1;
@@ -29,9 +28,9 @@ public static class WizardObjectLoader {
         // Create the object at the location set in the character.
         clientObject.m_location = character.Location;
         clientObject.m_orientation = character.Orientation;
-        clientObject.m_gameStats = character.GameStats;
 
         SetWizardAvatarBehavior(clientObject, ref character);
+        SetWizardGameStats(clientObject, ref character);
         SetEquipmentBehavior(clientObject, character);
         SetPlayerNameBehavior(clientObject, ref character);
         SetInventoryBehavior(clientObject, ref character);
@@ -50,6 +49,13 @@ public static class WizardObjectLoader {
         else {
             throw new Exception($"Behavior WizardCharacterBehavior was not found!");
         }
+    }
+
+    public static void SetWizardGameStats(WizClientObject clientObject, ref Wizard character) {
+        // We want *only* base level/magic school stats here. The Wizard has already calculated it's own game stats.
+        // We can't send the character game stats because the EquipmentService will broadcast the equipment effects,
+        // causing each stat to duplicate.
+        clientObject.m_gameStats = character.GameStats.GetClientTypeAlternative();
     }
 
     public static void SetInventoryBehavior(WizClientObject clientObject, ref Wizard character) {

@@ -61,7 +61,7 @@ public class Wizard : IDisposable {
     public ServerMagicSchoolBehavior MagicSchoolBehavior { get; set; }
     public ServerSpellbookBehavior SpellbookBehavior { get; set; }
     public ServerMountOwnerBehavior MountOwnerBehavior { get; set; }
-    public WizGameStats GameStats { get; set; }
+    public ServerWizGameStats GameStats { get; set; }
 
     [JsonIgnore] public Account Account;
     [JsonIgnore] public WizClientObject GameObject;
@@ -113,7 +113,7 @@ public class Wizard : IDisposable {
         InitializeMagicSchoolBehavior(wizardSchoolType, level);
         InitializeSpellbookBehavior();
         InitializeMountOwnerBehavior();
-        GameStats = new WizGameStats();
+        InitializeWizardGameStats(wizardSchoolType, level);
     }
 
     public void SetCachedLocation(Vector3 loc) => Location = loc;
@@ -146,10 +146,46 @@ public class Wizard : IDisposable {
         if (!MagicSchoolBehavior.SetLevel(level)) {
             return false;
         }
-        CharacterHelper.SetBaseStats(GameStats, level, MagicSchoolBehavior.MagicSchool);
+
+        GameStats.Level = level;
+
+        // todo: fixme. We want to add/subtract rather than totally resetting the base. If we reset the base,
+        // equipped items will not be recalculated.
+        //CharacterHelper.SetBaseStats(level, MagicSchoolBehavior.MagicSchool);
 
         // Persistent save.
         WizardCollection.UpdateCharacterLevel(this);
+
+        return true;
+    }
+
+    public bool AddItemToInventory(ulong itemId, out WizClientObjectItem item) {
+        item = (WizClientObjectItem) CoreObjectFactory.FinalizeCoreObject(itemId);
+        item.m_characterId = (GID) CharId;
+
+        var success = InventoryBehavior.AddItem(item);
+        if (!success) {
+            Logger.Warning("Could not add item {0} to player {1}'s inventory.", Logger.Args(itemId, PlayerNameBehavior.GetWizardName()));
+            item = null;
+            return false;
+        }
+
+        // Persistent save.
+        WizardItemCollection.AddItem(item);
+        WizardCollection.UpdateCharacterItems(this);
+
+        return true;
+    }
+
+    public bool RemoveItemFromInventory(ulong itemId) {
+        var success = InventoryBehavior.RemoveItem(itemId, out var item);
+        if (!success) {
+            Logger.Warning("Could not remove item {0} from player {1}'s inventory.", Logger.Args(itemId, PlayerNameBehavior.GetWizardName()));
+            return false;
+        }
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterItems(this);
 
         return true;
     }
@@ -202,7 +238,7 @@ public class Wizard : IDisposable {
         // Debug log.
         Logger.Debug("{0} equips item {1}", Logger.Args(PlayerNameBehavior.GetWizardName(), itemId));
 
-        equipEffects = AddEffectsFromTemplate(template);
+        equipEffects = CharacterEffectHelper.AddEffectsToWizard(this, template);
         return true;
     }
 
@@ -242,73 +278,20 @@ public class Wizard : IDisposable {
         // Debug log.
         Logger.Debug("{0} unequips item {1}", Logger.Args(PlayerNameBehavior.GetWizardName(), itemId));
 
-        unequipEffects = RemoveEffectsFromTemplate(template);
+        unequipEffects = CharacterEffectHelper.RemoveEffectsFromWizard(this, template);
         return true;
     }
 
-    public void InitializeGameEffects() {
-        // Debug log.
-        Logger.Debug("{0} is applying effects for all equipment.", Logger.Args(PlayerNameBehavior.GetWizardName()));
+    public void SetNameOverride(string newName) {
+        PlayerNameBehavior.NameOverride = newName;
 
-        // Get all active effects from what we currently have equipped.
-        foreach (var item in EquipmentBehavior.EquippedItems) {
-            var template = ItemHelper.GetItemTemplate(item);
-            if (template is null) {
-                continue;
-            }
-
-            var activatedEffects = AddEffectsFromTemplate(template);
-
-            Logger.Debug("{0} Applied {1} effects for item {2}.",
-                Logger.Args(PlayerNameBehavior.GetWizardName(), activatedEffects.Count, template.m_objectName));
-        }
+        // Persistent save.
+        WizardCollection.UpdateCharacterNameOverride(this);
     }
 
-    private List<GameEffectBase> AddEffectsFromTemplate(WizItemTemplate template) {
-        var addedEffects = new List<GameEffectBase>();
-        var slotHash = ItemHelper.GetItemSlotHash(template);
-
-        // Apply the effects from the template.
-        foreach (var effectInfo in template.m_equipEffects) {
-            var gameEffect = GameEffectFactory.CreateEffectFromInfo(effectInfo, slotHash);
-            gameEffect.m_internalID = GameEffects.Count;
-
-            if (gameEffect is WizStatisticEffect canonicalEffect) {
-                var canonicalEffectName = CanonicalStatEffects.GetEffectTemplate(effectInfo.m_effectName).m_effectName;
-                CharacterEffectHelper.AddGameEffectToStats(this.GameStats, canonicalEffectName, canonicalEffect);
-            }
-
-            GameEffects.Add(gameEffect);
-            addedEffects.Add(gameEffect);
-        }
-
-        return addedEffects;
-    }
-
-    private List<GameEffectBase> RemoveEffectsFromTemplate(WizItemTemplate template) {
-        var removedEffects = new List<GameEffectBase>();
-        var slotHash = ItemHelper.GetItemSlotHash(template);
-
-        // Apply the effects from the template.
-        foreach (var effectInfo in template.m_equipEffects) {
-            // Find the effect in the player's list of effects.
-            var nameHash = StringHash.Compute(effectInfo.m_effectName);
-            var gameEffect = GameEffects.Find(e => e.m_effectNameID == nameHash && e.m_itemSlotID == slotHash);
-            if (gameEffect is null) {
-                Logger.Warning("Could not find effect {0} in player's list of effects.", Logger.Args(effectInfo.m_effectName));
-                continue;
-            }
-
-            removedEffects.Add(gameEffect);
-            GameEffects.Remove(gameEffect);
-
-            if (gameEffect is WizStatisticEffect canonicalEffect) {
-                var canonicalEffectName = CanonicalStatEffects.GetEffectTemplate(effectInfo.m_effectName).m_effectName;
-                CharacterEffectHelper.RemoveGameEffectFromStats(this.GameStats, canonicalEffectName, canonicalEffect);
-            }
-        }
-
-        return removedEffects;
+    internal void RefurbishReferences() {
+        GameStats.Level = MagicSchoolBehavior.Level;
+        GameStats.MagicSchool = MagicSchoolBehavior.MagicSchool;
     }
 
     private void InitializeDefaultInventory() {
@@ -377,6 +360,14 @@ public class Wizard : IDisposable {
 
     private void InitializeMountOwnerBehavior() {
         MountOwnerBehavior = new ServerMountOwnerBehavior();
+    }
+
+    private void InitializeWizardGameStats(MagicSchool school, byte level) {
+        GameStats = new ServerWizGameStats(school, level);
+        CharacterHelper.RecalculateGameStats(this);
+
+        GameStats.m_currentHitpoints = GameStats.m_baseHitpoints;
+        GameStats.m_currentMana = GameStats.m_baseMana;
     }
 
     public void Dispose() =>

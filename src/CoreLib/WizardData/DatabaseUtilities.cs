@@ -32,7 +32,10 @@ public static class DatabaseUtilities {
         var acc = new Account(username, email, passwordHash) { AuthLevel = auth };
 
         // Save the account to the database.
-        var _ = AccountCollection.CreateAccount(acc);
+        var sucess = AccountCollection.CreateAccount(acc);
+        if (!sucess) {
+            return null;
+        }
 
         return acc;
     }

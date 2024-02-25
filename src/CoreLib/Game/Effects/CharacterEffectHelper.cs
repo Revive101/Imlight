@@ -3,6 +3,9 @@
  * Proprietary and confidential.
  */
 
+using Imlight.Common;
+using Imlight.Common.Cryptography;
+using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using System.Collections.Generic;
@@ -18,7 +21,7 @@ internal static class CharacterEffectHelper {
     /// <param name="stats">The game statistics to modify.</param>
     /// <param name="effectName">The category of the game effect.</param>
     /// <param name="statistic">The specific game effect to apply.</param>
-    internal static void AddGameEffectToStats(WizGameStats stats, string effectName, WizStatisticEffect statistic) {
+    internal static void AddGameEffectToStats(ServerWizGameStats stats, string effectName, WizStatisticEffect statistic) {
         // Apply effects that don't require a school.
         stats.m_baseHitpoints += (int) statistic.m_hitPointBonus;
         stats.m_baseMana += (int) statistic.m_manaBonus;
@@ -46,7 +49,7 @@ internal static class CharacterEffectHelper {
     /// <param name="stats">The game statistics to remove the effect from.</param>
     /// <param name="effectName">The name of the effect to remove.</param>
     /// <param name="statistic">The statistic effect to remove.</param>
-    internal static void RemoveGameEffectFromStats(WizGameStats stats, string effectName, WizStatisticEffect statistic) {
+    internal static void RemoveGameEffectFromStats(ServerWizGameStats stats, string effectName, WizStatisticEffect statistic) {
         // Remove effects that don't require a school.
         stats.m_baseHitpoints -= (int) statistic.m_hitPointBonus;
         stats.m_baseMana -= (int) statistic.m_manaBonus;
@@ -66,6 +69,53 @@ internal static class CharacterEffectHelper {
         else if (effectName.Contains("Mastery")) {
             RemoveSchoolMastery(stats, effectName);
         }
+    }
+
+    internal static List<GameEffectBase> AddEffectsToWizard(Wizard wizard, WizItemTemplate template) {
+        var addedEffects = new List<GameEffectBase>();
+        var slotHash = ItemHelper.GetItemSlotHash(template);
+
+        // Apply the effects from the template.
+        foreach (var effectInfo in template.m_equipEffects) {
+            var gameEffect = GameEffectFactory.CreateEffectFromInfo(effectInfo, slotHash);
+            gameEffect.m_internalID = wizard.GameEffects.Count;
+
+            if (gameEffect is WizStatisticEffect canonicalEffect) {
+                var canonicalEffectName = CanonicalStatEffects.GetEffectTemplate(effectInfo.m_effectName).m_effectName;
+                AddGameEffectToStats(wizard.GameStats, canonicalEffectName, canonicalEffect);
+            }
+
+            wizard.GameEffects.Add(gameEffect);
+            addedEffects.Add(gameEffect);
+        }
+
+        return addedEffects;
+    }
+
+    internal static List<GameEffectBase> RemoveEffectsFromWizard(Wizard wizard, WizItemTemplate template) {
+        var removedEffects = new List<GameEffectBase>();
+        var slotHash = ItemHelper.GetItemSlotHash(template);
+
+        // Apply the effects from the template.
+        foreach (var effectInfo in template.m_equipEffects) {
+            // Find the effect in the player's list of effects.
+            var nameHash = StringHash.Compute(effectInfo.m_effectName);
+            var gameEffect = wizard.GameEffects.Find(e => e.m_effectNameID == nameHash && e.m_itemSlotID == slotHash);
+            if (gameEffect is null) {
+                Logger.Warning("Could not find effect {0} in player's list of effects.", Logger.Args(effectInfo.m_effectName));
+                continue;
+            }
+
+            removedEffects.Add(gameEffect);
+            wizard.GameEffects.Remove(gameEffect);
+
+            if (gameEffect is WizStatisticEffect canonicalEffect) {
+                var canonicalEffectName = CanonicalStatEffects.GetEffectTemplate(effectInfo.m_effectName).m_effectName;
+                RemoveGameEffectFromStats(wizard.GameStats, canonicalEffectName, canonicalEffect);
+            }
+        }
+
+        return removedEffects;
     }
 
     private static void ApplySchoolEffect(ref List<float> effectList, string schoolName, float value) {
@@ -95,7 +145,7 @@ internal static class CharacterEffectHelper {
         }
     }
 
-    private static void ApplySchoolMastery(WizGameStats stats, string effectCategory) {
+    private static void ApplySchoolMastery(ServerWizGameStats stats, string effectCategory) {
         switch (effectCategory) {
             case var category when category.Contains("Ice"):
                 stats.m_iceMastery = 1;
@@ -121,7 +171,7 @@ internal static class CharacterEffectHelper {
         }
     }
 
-    private static void ApplyDamageIncrease(WizGameStats stats, string effectName, WizStatisticEffect statistic) {
+    private static void ApplyDamageIncrease(ServerWizGameStats stats, string effectName, WizStatisticEffect statistic) {
         if (effectName.Contains("Flat")) {
             // Flat damage increase
             if (effectName.Contains("All")) {
@@ -146,7 +196,7 @@ internal static class CharacterEffectHelper {
         }
     }
 
-    private static void ApplyAccuracyIncrease(WizGameStats stats, string effectName, WizStatisticEffect statistic) {
+    private static void ApplyAccuracyIncrease(ServerWizGameStats stats, string effectName, WizStatisticEffect statistic) {
         // Percent accuracy increase
         if (effectName.Contains("All")) {
             stats.m_accBonusPercentAll += statistic.m_accuracyBonusPercent;
@@ -158,7 +208,7 @@ internal static class CharacterEffectHelper {
         }
     }
 
-    private static void ApplyReduceDamageIncrease(WizGameStats stats, string effectName, WizStatisticEffect statistic) {
+    private static void ApplyReduceDamageIncrease(ServerWizGameStats stats, string effectName, WizStatisticEffect statistic) {
         if (effectName.Contains("Flat")) {
             // Flat damage increase
             if (effectName.Contains("All")) {
@@ -200,7 +250,7 @@ internal static class CharacterEffectHelper {
         }
     }
 
-    private static void RemoveSchoolMastery(WizGameStats stats, string effectCategory) {
+    private static void RemoveSchoolMastery(ServerWizGameStats stats, string effectCategory) {
         switch (effectCategory) {
             case var category when category.Contains("Ice"):
                 stats.m_iceMastery = 0;
@@ -226,7 +276,7 @@ internal static class CharacterEffectHelper {
         }
     }
 
-    private static void RemoveDamageIncrease(WizGameStats stats, string effectName, WizStatisticEffect statistic) {
+    private static void RemoveDamageIncrease(ServerWizGameStats stats, string effectName, WizStatisticEffect statistic) {
         if (effectName.Contains("Flat")) {
             if (effectName.Contains("All")) {
                 stats.m_dmgBonusFlatAll -= statistic.m_damageBonusFlat;
@@ -247,7 +297,7 @@ internal static class CharacterEffectHelper {
         }
     }
 
-    private static void RemoveAccuracyIncrease(WizGameStats stats, string effectName, WizStatisticEffect statistic) {
+    private static void RemoveAccuracyIncrease(ServerWizGameStats stats, string effectName, WizStatisticEffect statistic) {
         if (effectName.Contains("All")) {
             stats.m_accBonusPercentAll -= statistic.m_accuracyBonusPercent;
         }
@@ -257,7 +307,7 @@ internal static class CharacterEffectHelper {
         }
     }
 
-    private static void RemoveReduceDamageIncrease(WizGameStats stats, string effectName, WizStatisticEffect statistic) {
+    private static void RemoveReduceDamageIncrease(ServerWizGameStats stats, string effectName, WizStatisticEffect statistic) {
         if (effectName.Contains("Flat")) {
             if (effectName.Contains("All")) {
                 stats.m_dmgReduceFlatAll -= statistic.m_damageReduceFlat;
