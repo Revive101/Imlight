@@ -27,13 +27,14 @@ internal abstract class EmbeddedAccount {
         this.Password = plaintextPassword;
         this.Email = Email;
         this.AuthLevel = AuthLevel;
-        DefaultWizard = CreateDefaultWizard();
 
         // Create the account in the database. This may return failure, but it's fine.
         Account = DatabaseUtilities.CreateEmbeddedDatabaseAccount(Username, Email, Password, AuthLevel);
         if (Account is null) {
             return;
         }
+
+        DefaultWizard = CreateDefaultWizard();
 
         Logger.Information("Created embedded account {0}.", Logger.Args(Username));
         _ = Account.AddCharacter(DefaultWizard);
