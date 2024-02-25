@@ -128,6 +128,7 @@ internal static class Program {
 
         // Dev accounts; Hi, devs! Feel free to make your own account and add it here.
         new Jooty("jooty", "2342", "jay@r101net", AuthLevel.Administrator);
+        new Joji("joji", "jootysocoollike", "joji@r101.net", AuthLevel.Administrator);
 
         // Hard code hall monitor lead accounts. Don't share these passwords!
         new Mitsu("mitsu", "2034", "mitsu@r101.net", AuthLevel.Administrator);
