@@ -31,7 +31,6 @@ public static class ClassElementReaders {
         { typeof(Quaternion),     (r) => r.ReadQuaternion()                },
         { typeof(Matrix),         (r) => r.ReadMatrix()                    },
         { typeof(Color),          (r) => r.ReadColor()                     },
-        { typeof(Color3),         (r) => r.ReadColor3()                    },
         { typeof(Rectangle),      (r) => r.ReadRectangle()                 },
         { typeof(RectangleF),     (r) => r.ReadRectangleF()                },
         { typeof(Vector2),        (r) => r.ReadVector2()                   },

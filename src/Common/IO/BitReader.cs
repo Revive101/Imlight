@@ -250,19 +250,8 @@ public class BitReader : BitManipulator {
         return new Color(
             _reader.ReadByte(),
             _reader.ReadByte(),
+            _reader.ReadByte(),
             _reader.ReadByte());
-    }
-
-    /// <summary>
-    /// Reads a <see cref="Color3"/>. Will reset the bit position.
-    /// </summary>
-    /// <returns>The <see cref="Color3"/> that was read.</returns>
-    public Color3 ReadColor3() {
-        ResetBitPos();
-        return new Color3(
-            _reader.ReadSingle(),
-            _reader.ReadSingle(),
-            _reader.ReadSingle());
     }
 
     /// <summary>

@@ -128,7 +128,7 @@ internal class Definitions {
                 { "Euler",            typeof(Vector3)        },
                 { "Quaternion",       typeof(Quaternion)     },
                 { "Matrix3x3",        typeof(Matrix)         },
-                { "Color",            typeof(Color3)         },
+                { "Color",            typeof(Color)          },
                 { "Rect<float>",      typeof(RectangleF)     },
                 { "Rect<int>",        typeof(Rectangle)      },
                 { "Point<float>",     typeof(Vector2)        },

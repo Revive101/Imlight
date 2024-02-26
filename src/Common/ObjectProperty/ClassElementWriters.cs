@@ -31,7 +31,6 @@ public static class ClassElementWriters {
         { typeof(Quaternion),     (r, v) => r.WriteQuaternion((Quaternion)v)     },
         { typeof(Matrix),         (r, v) => r.WriteMatrix((Matrix)v)             },
         { typeof(Color),          (r, v) => r.WriteColor((Color)v)               },
-        { typeof(Color3),         (r, v) => r.WriteColor3((Color3)v)             },
         { typeof(Rectangle),      (r, v) => r.WriteRectangle((Rectangle)v)       },
         { typeof(RectangleF),     (r, v) => r.WriteRectangleF((RectangleF)v)     },
         { typeof(Vector2),        (r, v) => r.WriteVector2((Vector2)v)           },
