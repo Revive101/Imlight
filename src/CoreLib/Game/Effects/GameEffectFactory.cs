@@ -26,7 +26,7 @@ internal static class GameEffectFactory {
             case StatisticEffectInfo statisticEffectInfo:
                 return CreateWizStatisticEffect(statisticEffectInfo, itemSlotId);
             default:
-                Logger.Warning("Unknown effect type: {1}", Logger.Args(info.GetType().Name));
+                Logger.Warning("Unknown effect type: {0}", Logger.Args(info.GetType().Name));
                 return null;
         }
     }
