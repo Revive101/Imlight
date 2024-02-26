@@ -5,8 +5,6 @@
 
 using Imlight.Common;
 using Imlight.Common.Configuration;
-using Imlight.Common.ObjectProperty.PropertyReflection;
-using Imlight.Common.Utilities;
 using Imlight.CoreLib.WizardData.Implementations;
 using Newtonsoft.Json;
 using System;
@@ -18,8 +16,9 @@ namespace Imlight.CoreLib.WizardData.Models.Player;
 
 [Serializable]
 public class ServerWizInventoryBehavior : BehaviorInstance, IClientBehaviorProvider<ClientWizInventoryBehavior> {
-    private static readonly int s_maxItemsAllowed = ConfigurationManager.Settings.MaxInventoryItems;
+    private static int s_maxItemsAllowed = ConfigurationManager.Settings.MaxInventoryItems;
     private static readonly int s_maxJewelsAllowed = ConfigurationManager.Settings.MaxJewelsAllowed;
+    private static readonly int s_maxItemsAllowedFallback = 20;
 
     public List<ulong> InventoryItemIds { get; set; }
 
@@ -31,6 +30,14 @@ public class ServerWizInventoryBehavior : BehaviorInstance, IClientBehaviorProvi
     /// <param name="item">The item to be added.</param>
     /// <returns>True if the item was successfully added, false otherwise.</returns>
     public bool AddItem(WizClientObjectItem item) {
+        if (s_maxItemsAllowed <= 0) {
+            Logger.Warning("Configuration states that {0} is not allowed to have any items in their inventory! "
+                + "This is not possible, and causes many game-breaking bugs. Defaulting to {1} items.",
+                Logger.Args(nameof(ServerSettings.MaxInventoryItems), s_maxItemsAllowedFallback));
+
+            s_maxItemsAllowed = s_maxItemsAllowedFallback;
+        }
+
         if (Items.Count >= s_maxItemsAllowed) {
             Logger.Debug("Player inventory is full. Cannot add item with global id {0}.", Logger.Args(item.m_globalID));
             return false;

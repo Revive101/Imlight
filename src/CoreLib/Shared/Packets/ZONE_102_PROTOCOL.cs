@@ -10,6 +10,7 @@ using Imlight.Common.IO;
 using Imlight.Common.MessageLayer;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Shared.Packets;
 
@@ -49,6 +50,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol
 
 		public IActorRef Player;
 		public TypeCache.CoreObject PlayerObject;
+        public Wizard Wizard;
         public string ActualWizardName;
 	}
 

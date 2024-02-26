@@ -8,6 +8,7 @@ using Akka.Actor;
 using Imlight.Common.Caches;
 using Imlight.Common.IO;
 using Imlight.Common.ObjectProperty;
+using Imlight.CoreLib.Game.Effects;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
@@ -72,13 +73,16 @@ internal class AttachService : MessageService {
         wizard.SetPersistentLocation(actualLocation);
         wizard.SetPersistentOrientation((byte) orientation);
 
+        // Tiny anti-cheat measure. When the character object is created, we recalculate the game stats.
+        CharacterHelper.RecalculateGameStats(wizard);
+
         // Get the best game server for this user.
         var gameServer = GetGameServer();
         wizard.GameServerIp = gameServer.IP;
         wizard.GameServerPort = (ushort) gameServer.Port;
 
         // Craft the GameObject for this Wizard.
-        var charGameObject = WizardObjectLoader.GetPlayerGameObject(ref wizard);
+        var charGameObject = WizardObjectLoader.GetPlayerGameObject(wizard);
 
         // Set the mobile id to the one given by the zone.
         charGameObject.m_nMobileID = zoneDetails.MobileId;
@@ -113,7 +117,7 @@ internal class AttachService : MessageService {
         };
 
         var actualWizardName = WizardNameBank.GetEnglishName(wizard.PlayerNameBehavior.NameIndices, wizard.WizardAvatar.m_eGender);
-        AddPlayerToZone(charGameObject, actualWizardName);
+        AddPlayerToZone(charGameObject, wizard);
 
         SendToSocket(loginCompleteMsg);
 
@@ -129,11 +133,12 @@ internal class AttachService : MessageService {
         return AskOtherService<ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP>(zoneMsg);
     }
 
-    private void AddPlayerToZone(WizClientObject charObj, string actualWizardName) {
+    private void AddPlayerToZone(WizClientObject charObj, Wizard wizard) {
         var msg = new ZONE_102_PROTOCOL.MSG_ADDPLAYER {
             Player = SessionActor.ActorRef,
             PlayerObject = charObj,
-            ActualWizardName = actualWizardName,
+            Wizard = wizard,
+            ActualWizardName = wizard.PlayerNameBehavior.GetWizardName(),
         };
         TellOtherServices(msg);
     }

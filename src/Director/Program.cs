@@ -20,8 +20,13 @@ using Imlight.CoreLib.WizardData.Models.Player;
 namespace Imlight.Director;
 
 internal static class Program {
+    // Major versions in order:
+    // Imlight - PROTO   -- Marks the beginning of the project. Very early serialization and networking.
+    // Imlight - NETHRA  -- We are in-game. The game is playable and mostly stable, but not feature complete.
+    // Imlight - KALI    -- We feel very confident in the stability of previous systems. We are now focusing on combat.
     private const string ActorSystemName = "Imlight";
-    private const string Version = "1.1.0";
+    private const string MajorVersion = "NETHRA";
+    private const string Version = "1.2.0";
 
     private static ActorSystem s_imlightSystem;
     private static ResourceContainer s_resourceContainer;
@@ -112,18 +117,37 @@ internal static class Program {
     }
 
     private static void CreateEmbeddedDatabaseAccounts() {
+        Logger.Information("Creating embedded database accounts. If you don't see anything, they already exist!");
+
+#if DEBUG
         // Generic developer accounts
-        // Remember to remove these on release builds!
         for (int i = 1; i <= 3; i++) {
             DatabaseUtilities.CreateEmbeddedDatabaseAccount($"dev{i}", $"dev{i}@r101.com", "dev9999", AuthLevel.Administrator);
         }
+#endif
+
+        // Dev accounts; Hi, devs! Feel free to make your own account and add it here.
+        new Jooty("jooty", "2342", "jay@r101net", AuthLevel.Administrator);
+        new Joji("joji", "jootysocoollike", "joji@r101.net", AuthLevel.Administrator);
 
         // Hard code hall monitor lead accounts. Don't share these passwords!
-        DatabaseUtilities.CreateEmbeddedDatabaseAccount($"mitsu", $"mitsu@r101.com", "2034", AuthLevel.Administrator);
-        DatabaseUtilities.CreateEmbeddedDatabaseAccount($"walta", $"walta@r101.com", "9090", AuthLevel.Administrator);
+        new Mitsu("mitsu", "2034", "mitsu@r101.net", AuthLevel.Administrator);
 
         // Hall Monitor accounts.
-        DatabaseUtilities.CreateEmbeddedDatabaseAccount($"pk", "pk@r101.com", "7878", AuthLevel.QualityAssurance);
+        new PokemonHacker("pk", "7878", "pk@r101.net", AuthLevel.HallMonitor);
+        new Tilr("tilr", "8080", "tilr@r101.net", AuthLevel.HallMonitor);
+
+        // Quality Assurance accounts
+        new B("b", "1121", "b@r101.net", AuthLevel.QualityAssurance);
+        new Dalnakii("dalnakii", "0091", "b@r101.net", AuthLevel.QualityAssurance);
+        new DarkLegend("darklegend", "1041", "darklegend@r101.net", AuthLevel.QualityAssurance);
+        new FangYaoban("fangyaobang", "2290", "fang@r101.net", AuthLevel.QualityAssurance);
+        new Griz("grizzly", "9142", "griz@r101.net", AuthLevel.QualityAssurance);
+        new Nyakua("nyakua", "6142", "nyakua@r101.net", AuthLevel.QualityAssurance);
+        new Pluto("pluto", "1224", "pluto@r101.net", AuthLevel.QualityAssurance);
+        new Socks("socks", "8723", "socks@r101.net", AuthLevel.QualityAssurance);
+
+        Logger.Information("Embedded database accounts created.");
     }
 
     private static void PrintTitle() {
@@ -147,7 +171,7 @@ internal static class Program {
         var buildConfiguration = GetBuildConfiguration();
         Console.Write(@"|___/");
         Console.ForegroundColor = ConsoleColor.DarkGray;
-        Console.Write($"   (NETHRA-v{Version} {buildConfiguration})\n");
+        Console.Write($"   ({MajorVersion}-v{Version} {buildConfiguration})\n");
         Console.WriteLine("");
     }
 

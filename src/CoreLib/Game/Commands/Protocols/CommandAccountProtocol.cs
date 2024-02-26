@@ -28,7 +28,7 @@ internal class CommandAccountProtocol : CommandProtocol {
     }
 
     [Command("delete")]
-    [AuthRequired(AuthLevel.HallMonitor)]
+    [AuthRequired(AuthLevel.Administrator)]
     private void DeleteAccountCommand(string username) {
         var account = AccountCollection.GetAccount(username);
         if (account is null) {
@@ -39,6 +39,12 @@ internal class CommandAccountProtocol : CommandProtocol {
         var authorityReason = $"{Context.Account.Username} wants to delete account {username}.";
         if (!AuthorityRequester.RequestAuthority(account.AuthLevel, Context.Account, authorityReason)) {
             InformSenderClient("You cannot delete an account with a higher auth level than you.");
+            return;
+        }
+
+        // Yeah, you can't delete your own account.
+        if (username == Context.Account.Username) {
+            InformSenderClient("You cannot delete your own account.");
             return;
         }
 
@@ -108,6 +114,19 @@ internal class CommandAccountProtocol : CommandProtocol {
         var account = AccountCollection.GetAccount(username);
         if (account is null) {
             InformSenderClient("Account not found.");
+            return;
+        }
+
+        // You cannot change the auth level of an account with a higher auth level than you.
+        var authorityReason = $"{Context.Account.Username} wants to change the auth level of account {username}.";
+        if (!AuthorityRequester.RequestAuthority(account.AuthLevel, Context.Account, authorityReason)) {
+            InformSenderClient("You cannot change the auth level of an account with a higher auth level than you.");
+            return;
+        }
+
+        // You cannot change the auth level of your own account.
+        if (username == Context.Account.Username) {
+            InformSenderClient("You cannot change the auth level of your own account.");
             return;
         }
 

@@ -174,4 +174,21 @@ public static class WizardCollection {
         existingCharacter.MountOwnerBehavior = wizard.MountOwnerBehavior;
         session.SaveChanges();
     }
+
+    /// <summary>
+    /// Updates the character name override for a wizard.
+    /// </summary>
+    /// <param name="wizard">The wizard object containing the updated character name override.</param>
+    public static void UpdateCharacterNameOverride(Wizard wizard) {
+        using var session = s_store.OpenSession();
+
+        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
+            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        if (existingCharacter is null) {
+            return;
+        }
+
+        existingCharacter.PlayerNameBehavior.NameOverride = wizard.PlayerNameBehavior.NameOverride;
+        session.SaveChanges();
+    }
 }

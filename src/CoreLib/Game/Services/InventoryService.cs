@@ -22,11 +22,8 @@ using static Imlight.Common.ObjectProperty.SerializerOptions;
 namespace Imlight.CoreLib.Game.Services;
 
 public class InventoryService : MessageService {
-    private Dictionary<int, GameEffectInfo> _gameEffects;
-    private int _effectInternalIDCounter = 1;
 
-    public InventoryService(SessionActor sessionActor) : base(sessionActor)
-        => _gameEffects = new Dictionary<int, GameEffectInfo>();
+    public InventoryService(SessionActor sessionActor) : base(sessionActor) { }
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new InventoryService(parentActor));
@@ -45,24 +42,12 @@ public class InventoryService : MessageService {
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_TRASHINVENTORYITEM))]
     private void ReceiveTrashInventoryItem(GAME_5_PROTOCOL.MSG_TRASHINVENTORYITEM message) {
-        var coreObject = GetActiveGameObject();
+        var wizard = GetActiveWizard();
 
-        // @TODO: Remove this and gather from potential player behavior cache instead.
-        if (!CoreObjectFactory.FindBehaviorInstance<ClientWizInventoryBehavior>(coreObject,
-                out var inventoryBehavior)) {
-            return;
-        }
-
-        if (!CoreObjectFactory.FindBehaviorInstance<ClientWizEquipmentBehavior>(coreObject,
-            out var equipmentBehavior)) {
-            return;
-        }
-
-        inventoryBehavior.m_itemList.RemoveAll(item => item.m_globalID == message.GlobalID);
-        equipmentBehavior.m_itemList.RemoveAll(item => item.m_globalID == message.GlobalID);
+        wizard.RemoveItemFromInventory(message.GlobalID);
 
         SendToSocket(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_REMOVEITEM() {
-            GlobalID = coreObject.m_globalID,
+            GlobalID = wizard.GameObject.m_globalID,
             ItemID = message.GlobalID
         });
     }
@@ -90,51 +75,38 @@ public class InventoryService : MessageService {
 
     [MessageHandler(typeof(WIZARD2_53_PROTOCOL.MSG_QUICKSELLREQUEST))]
     private void ReceiveQuickSellRequest(WIZARD2_53_PROTOCOL.MSG_QUICKSELLREQUEST message) {
-        var serializer = new CoreObjectSerializer()
+        var serializer = new ObjectSerializer()
           .OnBehaviors(SerializerOptions.Behaviors.None)
-          .OnPropertyMask((SerializerOptions.PropertyFlags) 1);
+          .OnPropertyMask((SerializerOptions.PropertyFlags) 4);
 
-        var coreObject = GetActiveGameObject();
-        var playerCharacter = GetActiveWizard();
-
-        // @TODO: Remove this and gather from potential player behavior cache instead.
-        if (!CoreObjectFactory.FindBehaviorInstance<ClientWizInventoryBehavior>(coreObject,
-            out var inventoryBehavior)) {
-            return;
-        }
-
-        if (!CoreObjectFactory.FindBehaviorInstance<ClientWizEquipmentBehavior>(coreObject,
-            out var equipmentBehavior)) {
-            return;
-        }
+        var wizard = GetActiveWizard();
 
         var quickSellItemList = (QuickSellItemList) serializer.Deserialize(message.Data);
         int goldSum = 0;
 
         // Remove items from inventory and equipment, tally up gold sum.
         foreach (QuickSellItem quickSellItem in quickSellItemList.m_quickSellItemList) {
-            var item = inventoryBehavior.m_itemList.First(item => item.m_globalID == quickSellItem.m_sellItemGID);
+            var item = wizard.InventoryBehavior.GetItem(quickSellItem.m_sellItemGID);
             var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
 
-            inventoryBehavior.m_itemList.Remove(item);
-            equipmentBehavior.m_itemList.Remove(item);
+            wizard.RemoveItemFromInventory(item.m_globalID);
 
             // Some items (snack, reagents) are stackable.
             for (int i = 0; i < quickSellItem.m_quantity; i++) {
                 SendToSocket(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_REMOVEITEM() {
-                    GlobalID = coreObject.m_globalID,
+                    GlobalID = wizard.CharId,
                     ItemID = quickSellItem.m_sellItemGID
                 });
 
-                goldSum += (int) Math.Ceiling(template.m_baseCost * 0.05f); // @TODO: Fix payout, slightly less than client calculation.
+                goldSum += (int) Math.Ceiling(template.m_baseCost * 0.05f);
             }
         }
 
         // Update player with their new gold balance.
-        playerCharacter.GameStats.m_currentGold += goldSum;
+        wizard.GameStats.m_currentGold += goldSum;
         SendToSocket(new WIZARD_12_PROTOCOL.MSG_UPDATEGOLD() {
-            Gold = playerCharacter.GameStats.m_currentGold,
-            MaxGold = playerCharacter.GameStats.m_baseGoldPouch,
+            Gold = wizard.GameStats.m_currentGold,
+            MaxGold = wizard.GameStats.m_baseGoldPouch,
         });
 
         // End quicksell process with empty message.

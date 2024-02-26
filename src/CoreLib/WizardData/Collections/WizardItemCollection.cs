@@ -157,6 +157,58 @@ public static class WizardItemCollection {
     }
 
     /// <summary>
+    /// Applies the primary dye color to a WizClientObjectItem.
+    /// </summary>
+    /// <param name="item">The WizClientObjectItem to apply the dye to.</param>
+    /// <param name="primaryColor">The primary dye color to apply.</param>
+    /// <returns>True if the dye was successfully applied, false otherwise.</returns>
+    public static bool ApplyPrimaryDye(WizClientObjectItem item, int primaryColor) {
+        using var session = s_store.OpenSession();
+
+        // Get the item from the items collection.
+        var associatedItem = session.Query<WizClientObjectItem>(collectionName: CollectionName)
+            .FirstOrDefault(x => x.m_globalID == item.m_globalID && x.m_characterId == item.m_characterId);
+
+        // If the item was not found, return false.
+        if (associatedItem == null) {
+            return false;
+        }
+
+        // Apply the primary dye to the item.
+        associatedItem.m_primaryColor = primaryColor;
+
+        // Save the changes.
+        session.SaveChanges();
+        return true;
+    }
+
+    /// <summary>
+    /// Applies the secondary dye to a WizClientObjectItem.
+    /// </summary>
+    /// <param name="item">The WizClientObjectItem to apply the secondary dye to.</param>
+    /// <param name="secondaryColor">The secondary color to apply.</param>
+    /// <returns>True if the secondary dye was successfully applied, false otherwise.</returns>
+    public static bool ApplySecondaryDye(WizClientObjectItem item, int secondaryColor) {
+        using var session = s_store.OpenSession();
+
+        // Get the item from the items collection.
+        var associatedItem = session.Query<WizClientObjectItem>(collectionName: CollectionName)
+            .FirstOrDefault(x => x.m_globalID == item.m_globalID && x.m_characterId == item.m_characterId);
+
+        // If the item was not found, return false.
+        if (associatedItem == null) {
+            return false;
+        }
+
+        // Apply the secondary dye to the item.
+        associatedItem.m_secondaryColor = secondaryColor;
+
+        // Save the changes.
+        session.SaveChanges();
+        return true;
+    }
+
+    /// <summary>
     /// Tries to retrieve the entire inventory of a player.
     /// </summary>
     /// <param name="playerId">The ID of the player.</param>
