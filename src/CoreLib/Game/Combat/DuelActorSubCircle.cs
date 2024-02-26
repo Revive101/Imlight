@@ -49,9 +49,18 @@ public class DuelActorSubCircle {
     internal async Task AssignParticipant(IActorRef actor, CoreObject participantObject) {
         ParticipantActor = actor;
         ParticipantObject = participantObject;
-        ParticipantGameStats = ((WizClientObject)participantObject).m_gameStats ?? new WizGameStats();
         Team = participantObject.m_templateID == 1 ? Team.Player : Team.Creature;
         IsOccupied = true;
+
+        if (((WizClientObject) participantObject).m_gameStats is null) {
+            ParticipantGameStats = new WizGameStats() {
+                m_currentHitpoints = 55,
+                m_baseHitpoints = 55,
+            };
+        }
+        else {
+            ParticipantGameStats = ((WizClientObject) participantObject).m_gameStats;
+        }
 
         await PlayEntranceAnimation(participantObject);
     }

@@ -78,5 +78,13 @@ namespace Imlight.CoreLib.Shared.Packets {
 
             public bool Available;
         }
+
+        public sealed class MSG_NEWROUND : IServerMessage
+        {
+            public byte MessageOrder => 8;
+            public byte ServiceID => 106;
+
+            public int Round;
+        }
 	}
 }

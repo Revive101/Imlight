@@ -20,6 +20,7 @@ using static Imlight.Common.Caches.TypeCache;
 using static Imlight.Common.Caches.TypeCache.Duel;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.Common.ObjectProperty.PropertyReflection;
+using System.Threading.Tasks;
 
 namespace Imlight.CoreLib.Game.Combat;
 
@@ -35,6 +36,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     private const float FirstSubCircleAngle = 145.3f;
     private const float DuelStartedGracePeriodInSeconds = 3.0f;
     private const float YawErrorCompensation = 1.58f;
+    private const int DelayAfterCombatAddInMs = 1000;
 
     public ITimerScheduler Timers { get; set; }
 
@@ -122,7 +124,40 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     private void ReceiveGracePeriodOver(COMBAT_106_PROTOCOL.MSG_GRACEPERIODOVER message) {
         // The grace period for adding participants is now over.
         Logger.Debug("Duel {0} has started.", Logger.Args(_duel.m_duelID));
-        CombatBegin();
+
+        _duel.m_duelPhase = kDuelPhase.kPhase_PrePlanning;
+
+        EnactActionOnSubCircles(circle => {
+            var participantData = circle.GetParticipant();
+            var serializedData = SerializeCombatParticipant(participantData);
+            var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATADD {
+                DuelID = _sigilId,
+                ParticipantData = serializedData,
+            };
+            DuelBroadcast(msg);
+        });
+
+        // Imlight moves too fast for the client. Give some time to the client to catch up.
+        var delay = TimeSpan.FromMilliseconds(DelayAfterCombatAddInMs);
+        Timers.StartSingleTimer("newround", new COMBAT_106_PROTOCOL.MSG_NEWROUND(), delay);
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_NEWROUND))]
+    private void ReceiveNewRound(COMBAT_106_PROTOCOL.MSG_NEWROUND message) {
+        // Pre-planning phase just wants to send who is up first.
+        _duel.m_duelPhase = kDuelPhase.kPhase_PrePlanning;
+        SendCombatPhase((byte) _duel.m_duelPhase);
+        SendUpFirst(_duel.m_roundNum);
+
+        // Planning phase is when each participant notices their new stats and "plans" accordingly.
+        _duel.m_duelPhase = kDuelPhase.kPhase_Planning;
+        SendCombatPhase((byte) _duel.m_duelPhase);
+        SendCombatStats();
+        //SendCombatHand();
+        SendCombatPips();
+        SendCombatHealth();
+
+        SendCombatUI(PlanningTime);
     }
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ADDPARTICIPANT))]
@@ -181,69 +216,47 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         return random.Next(0, 2) == 0 ? Team.Player : Team.Creature;
     }
 
-    private void CombatBegin() {
-        _duel.m_duelPhase = kDuelPhase.kPhase_PrePlanning;
-
-        EnactActionOnSubCircles(circle => {
-            var participantData = circle.GetParticipant();
-            var serializedData = SerializeCombatParticipant(participantData);
-            var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATADD {
-                DuelID = _sigilId,
-                ParticipantData = serializedData,
-            };
-            DuelBroadcast(msg);
-        });
-
-        NewRoundStart();
-        SendCombatUI(PlanningTime);
-    }
-
-    private void NewRoundStart() {
-        // Pre-planning phase just wants to send who is up first.
-        _duel.m_duelPhase = kDuelPhase.kPhase_PrePlanning;
-        SendCombatPhase((byte) _duel.m_duelPhase);
-        SendUpFirst(_upFirstTeam, _duel.m_roundNum);
-
-        // Planning phase is when each participant notices their new stats and "plans" accordingly.
-        _duel.m_duelPhase = kDuelPhase.kPhase_Planning;
-        SendCombatPhase((byte) _duel.m_duelPhase);
-        SendCombatStats();
-        //SendCombatHand();
-        SendCombatPips();
-        SendCombatHealth();
-    }
-
     private void SendCombatPhase(byte phase) {
+        var upFirstSigilSlot = (byte) (_upFirstTeam == Team.Player ? 4 : 0);
+
+        // Don't remove this serializer. I don't know why the class serializer fails for this, but it does.
         var serializer = new ObjectSerializer()
                 .OnBehaviors(SerializerOptions.Behaviors.None)
                 .OnPropertyMask(SerializerOptions.PropertyFlags.Public
                               | SerializerOptions.PropertyFlags.Transmit
                               | SerializerOptions.PropertyFlags.AuthorityTransmit);
-
-        // Unsure what any of this is for. It's just copied from the client.
         var upFirstData = serializer.Serialize(new UpFirstData() {
+            /*
+            Record from client. Keeping it here because it's probably important.
+
+            m_resultType = 1884669703,
+            m_roundNum = 96,
+            m_upFirst = 320,
+            */
+
             m_resultType = 0,
             m_roundNum = _duel.m_roundNum,
-            m_upFirst = 4,
+            m_upFirst = upFirstSigilSlot,
         });
 
         var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATPHASE() {
             DuelID = _sigilId,
             NewPhase = phase,
             PlayerID = 0, // Always recorded as 0
-            Data = phase == 0 ? upFirstData : "",
+            // todo: unsure why, but client fails to deserialize this
+            //Data = phase == 1 ? upFirstData : "",
         };
 
         DuelBroadcast(msg);
     }
 
-    private void SendUpFirst(Team firstTeamToAct, int roundNum) {
-        var upFirstSigilSlot = (byte) (firstTeamToAct == Team.Player ? 4 : 0);
+    private void SendUpFirst(int roundNum) {
+        var upFirstSigilSlot = (byte) (_upFirstTeam == Team.Player ? 4 : 0);
 
         var upFirstMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATUPFIRST {
             DuelID = _sigilId,
             RoundNum = (ushort) roundNum,
-            FirstTeamToAct = (byte) (firstTeamToAct == Team.Player ? 1 : 0),
+            FirstTeamToAct = (byte) (_upFirstTeam == Team.Player ? 1 : 0),
             UpFirst = upFirstSigilSlot,
         };
         DuelBroadcast(upFirstMsg);
