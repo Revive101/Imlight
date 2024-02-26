@@ -99,8 +99,20 @@ internal class CommandModifyProtocol : CommandProtocol {
             return;
         }
 
-        var addedItemSuccess = Context.Character.AddItemToInventory(templateIdLong, out var coreObject);
+        // Check to see if this template exists.
+        var template = CoreObjectFactory.GetCoreTemplate(templateIdLong);
+        if (template is null) {
+            InformSenderClient("Invalid item id.");
+            return;
+        }
 
+        // We can't add game objects to the inventory.
+        if (template is not WizItemTemplate) {
+            InformSenderClient($"Cannot add objects of type {template.GetType().Name} to inventory.");
+            return;
+        }
+
+        var addedItemSuccess = Context.Character.AddItemToInventory(templateIdLong, out var coreObject);
         if (!addedItemSuccess) {
             InformSenderClient("Could not add item to inventory.");
             return;
