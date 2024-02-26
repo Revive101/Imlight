@@ -222,9 +222,9 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
         // Unsure what any of this is for. It's just copied from the client.
         var upFirstData = serializer.Serialize(new UpFirstData() {
-            m_resultType = 1884669703,
+            m_resultType = 0,
             m_roundNum = _duel.m_roundNum,
-            m_upFirst = 320,
+            m_upFirst = 4,
         });
 
         var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATPHASE() {
@@ -238,14 +238,12 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     private void SendUpFirst(Team firstTeamToAct, int roundNum) {
-        // The client counts the sigils in reverse order.
-        // If creatures are first, the sigil is 4. If players are first, the sigil is 8.
-        var upFirstSigilSlot = (byte) (firstTeamToAct == Team.Player ? 1 : 1);
+        var upFirstSigilSlot = (byte) (firstTeamToAct == Team.Player ? 4 : 0);
 
         var upFirstMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATUPFIRST {
             DuelID = _sigilId,
             RoundNum = (ushort) roundNum,
-            FirstTeamToAct = (byte) (firstTeamToAct == Team.Player ? 4 : 0),
+            FirstTeamToAct = (byte) (firstTeamToAct == Team.Player ? 1 : 0),
             UpFirst = upFirstSigilSlot,
         };
         DuelBroadcast(upFirstMsg);
