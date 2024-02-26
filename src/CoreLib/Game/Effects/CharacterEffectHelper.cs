@@ -78,6 +78,11 @@ internal static class CharacterEffectHelper {
         // Apply the effects from the template.
         foreach (var effectInfo in template.m_equipEffects) {
             var gameEffect = GameEffectFactory.CreateEffectFromInfo(effectInfo, slotHash);
+            if (gameEffect is null) {
+                Logger.Warning("Could not create effect {0} from effect info.", Logger.Args(effectInfo.m_effectName));
+                continue;
+            }
+
             gameEffect.m_internalID = wizard.GameEffects.Count;
 
             if (gameEffect is WizStatisticEffect canonicalEffect) {

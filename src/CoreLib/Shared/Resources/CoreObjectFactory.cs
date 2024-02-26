@@ -168,6 +168,11 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
     /// <param name="template">The CoreTemplate containing the behavior templates.</param>
     /// <returns>The finalized CoreObject.</returns>
     public static CoreObject FinalizeCoreObject(CoreObjectInfo objInfo, CoreTemplate template) {
+        if (template is null) {
+            Logger.Error("Could not finalize CoreObject from TemplateID {Tid}", Logger.Args(objInfo.m_templateID));
+            return null;
+        }
+
         var obj = CreateCoreObjectFromTemplate(template);
         obj.m_templateID = objInfo.m_templateID;
 

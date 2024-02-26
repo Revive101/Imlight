@@ -15,7 +15,7 @@ namespace Imlight.CoreLib.Game.Commands.Protocols;
 internal class CommandTeleport : CommandProtocol {
     internal override string Group { get; set; } = "";
 
-    private static readonly string s_gmIslandZoneName = "Housing/CardPromo/GS_Fantasy_Castle";
+    private static readonly string s_gmIslandZoneName = "Housing_FarmHouse/Exterior";
     private static readonly string[] s_gmIslandShortcutNames = new[] {
         "gm", "gmisland", "gm_island", "gmis", "gm_is", "gm_isl", "gm_isla", "gm_islan", "gm_island"
     };
@@ -25,8 +25,7 @@ internal class CommandTeleport : CommandProtocol {
     [AuthRequired(AuthLevel.QualityAssurance)]
     private void TeleportCommand(string zone) {
         var actualZoneName = zone;
-        var hasZone = AccessPassManager.DoesZoneExist(zone);
-        if (!hasZone && !s_gmIslandShortcutNames.Any(x => x == zone)) {
+        if (!s_gmIslandShortcutNames.Any(x => x == zone)) {
             // Fallback to the zone name that is contained in the zone name.
             actualZoneName = AccessPassManager.GetContainedZoneName(zone);
 

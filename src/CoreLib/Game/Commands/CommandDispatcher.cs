@@ -135,8 +135,12 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
             Logger.Error("Command dispatcher threw exception running command. Exception: {0} {1}",
                 Logger.Args(exception.Message, exception.StackTrace));
 
+            // Inform the client of the error. We'll want to prettify the exception message and stack trace.
+            var prettyTrace = PrettifyStackTrace(exception.StackTrace);
+
             InformSenderClientImportant(context,
-                                        $"An error occurred while executing the command. Exception: {ex.Message} {ex.StackTrace}");
+                                        $"An error occurred while executing the command. " +
+                                        $"Exception: {exception.Message}<br><br> {prettyTrace}");
         }
     }
 
@@ -145,4 +149,14 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
 
     private void InformSenderClientImportant(CommandContext context, string reason)
         => context.SessionActor.Tell(new EXTENDEDBASE_2_PROTOCOL.MSG_SERVERMESSAGE() { Message = reason, Modal = 1 });
+
+    private static string PrettifyStackTrace(string stackTrace) {
+        // "   at Imlight.CoreLib.WizardData.Models.Player.Wizard.AddItemToInventory(UInt64 itemId, WizClientObjectItem& item)
+        // "   in /home/jay/Projects/Imlight/src/CoreLib/WizardData/Models/Player/Wizard.cs:line 163"
+        var lines = stackTrace.Split('\n');
+        var narrowedTrace = lines[0].TrimStart();
+
+        // Return the narrowed trace.
+        return narrowedTrace;
+    }
 }
