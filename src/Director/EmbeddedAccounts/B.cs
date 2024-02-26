@@ -33,10 +33,10 @@ internal sealed class B : EmbeddedAccount {
             },
             m_nameIndices = 6481693,
             m_schoolOfFocus = (uint) MagicSchool.Fire,
-            m_name = "B",
+            m_name = "Bo",
         };
         var newCharacter = CharacterHelper.CreateCharacterFromCreationInfo(charCreationinfo);
-        newCharacter.SetNameOverride("B");
+        newCharacter.SetNameOverride("Bo");
 
         return newCharacter;
     }
