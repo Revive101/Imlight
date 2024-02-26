@@ -19,7 +19,9 @@ using Imlight.Common.IO;
 
 namespace Imlight.Common.Caches;
 
+
 public static partial class TypeCache {
+
     public static Imlight.Common.ObjectProperty.PropertyReflection.PropertyClass Dispatch(uint hash) {
         switch (hash) {
             case 725087: return new DerbyLockLane();
@@ -1722,6 +1724,7 @@ public static partial class TypeCache {
             case 1749171433: return new RaidTeleportBehaviorBase();
             case 1749405042: return new InclusiveRange();
             case 1749710800: return new WinAnimScaleTime();
+            case 1750319716: return new ControlTextAlert();
             case 1750389220: return new ClientShadowSelfCinematicAction();
             case 1751417967: return new RemoveCameraMappingCinematicAction();
             case 1752903624: return new ClientRecreateNPCActorCinematicAction();
@@ -4454,7 +4457,7 @@ public static partial class TypeCache {
         [Property(2701225082, 2097159)] public VisualAttributeType m_visualAttributeType;
         [Property(2304987980, 131079)] public ByteString m_sourceFile;
         [Property(1866483306, 131079)] public ByteString m_referenceFile;
-        [Property(1791663549, 262151)] public Color3 m_color;
+        [Property(1791663549, 262151)] public Color m_color;
         [Property(1920035708, 131079)] public ByteString m_equipmentIcon;
 
         public enum VisualAttributeType {
@@ -4986,7 +4989,7 @@ public static partial class TypeCache {
         [Property(1990646723, 135)] public Rectangle m_labelOffset;
         [Property(1543855875, 135)] public Material m_pButton;
         [Property(3326355333, 135)] public UInt64 m_HotKey;
-        [Property(1753714077, 262279)] public Color3 m_Color;
+        [Property(1753714077, 262279)] public Color m_Color;
         [Property(283981103, 135)] public Boolean m_bCursorOver;
         [Property(325405258, 135)] public Boolean m_bAbortWhenCursorNotOver;
         [Property(616989185, 135)] public Boolean m_bHotKeyDown;
@@ -5904,7 +5907,7 @@ public static partial class TypeCache {
         [Property(1734031816, 7)] public ByteString m_geometryName;
         [Property(1878140043, 7)] public ByteString m_materialName;
         [Property(2700602974, 1048583)] public Flags m_flags;
-        [Property(1791663549, 262151)] public Color3 m_color;
+        [Property(1791663549, 262151)] public Color m_color;
         [Property(2644168661, 7)] public UInt16 m_id;
 
         [System.FlagsAttribute()]
@@ -6689,10 +6692,10 @@ public static partial class TypeCache {
     public class GradientWidgetBackground : WidgetBackground {
 
         public override uint GetHash() => 534151307;
-        [Property(2827413723, 262151)] public Color3 m_TopLeftColor;
-        [Property(1853016654, 262151)] public Color3 m_TopRightColor;
-        [Property(1172117245, 262151)] public Color3 m_BottomLeftColor;
-        [Property(3062807728, 262151)] public Color3 m_BottomRightColor;
+        [Property(2827413723, 262151)] public Color m_TopLeftColor;
+        [Property(1853016654, 262151)] public Color m_TopRightColor;
+        [Property(1172117245, 262151)] public Color m_BottomLeftColor;
+        [Property(3062807728, 262151)] public Color m_BottomRightColor;
     }
 
     public class AdvPvPLeagueAwardInfo : PropertyClass {
@@ -6732,13 +6735,13 @@ public static partial class TypeCache {
         [Property(1067686307, 135)] public Font m_pFont;
         [Property(1523900782, 135)] public Font m_pLargeFont;
         [Property(2363252956, 135)] public Font m_pSmallFont;
-        [Property(1753714077, 262279)] public Color3 m_Color;
-        [Property(2310527421, 262279)] public Color3 m_HighColor;
-        [Property(2792529213, 262279)] public Color3 m_SelectColor;
-        [Property(1470576795, 262279)] public Color3 m_BorderColor;
-        [Property(1070928782, 262279)] public Color3 m_BackColor;
-        [Property(1180747361, 262279)] public Color3 m_ScrollBarColor;
-        [Property(1034892323, 262279)] public Color3 m_ScrollTabColor;
+        [Property(1753714077, 262279)] public Color m_Color;
+        [Property(2310527421, 262279)] public Color m_HighColor;
+        [Property(2792529213, 262279)] public Color m_SelectColor;
+        [Property(1470576795, 262279)] public Color m_BorderColor;
+        [Property(1070928782, 262279)] public Color m_BackColor;
+        [Property(1180747361, 262279)] public Color m_ScrollBarColor;
+        [Property(1034892323, 262279)] public Color m_ScrollTabColor;
         [Property(2016376897, 135)] public Int32 m_nBorderSize;
         [Property(632681746, 135)] public Int32 m_nScrollSize;
         [Property(2662773595, 131207)] public ByteString m_sHoverSound;
@@ -6771,7 +6774,7 @@ public static partial class TypeCache {
 
         public override uint GetHash() => 544875989;
         [Property(2204742880, 135)] public Material m_pDecal;
-        [Property(2053465718, 262279)] public Color3 m_DecalColor;
+        [Property(2053465718, 262279)] public Color m_DecalColor;
         [Property(1942612892, 135)] public Rectangle m_DecalOffset;
         [Property(1430510752, 135)] public ControlButtonState m_pGreyedDecalState;
         [Property(1908952105, 135)] public ControlButtonState m_pNormalDecalState;
@@ -7009,7 +7012,7 @@ public static partial class TypeCache {
         public class Tile : PropertyClass {
 
             public override uint GetHash() => 2146780822;
-            [Property(1753714077, 262279)] public Color3 m_Color;
+            [Property(1753714077, 262279)] public Color m_Color;
             [Property(3479277078, 135)] public Material m_pMaterial;
             [Property(3810095225, 135)] public RectangleF m_UV;
             [Property(1012895541, 135)] public Int32 m_nNextTile;
@@ -7266,9 +7269,9 @@ public static partial class TypeCache {
     public class ControlList : ControlText {
 
         public override uint GetHash() => 596429743;
-        [Property(2267136674, 135)] public Color3 m_TextColor;
-        [Property(2792529213, 135)] public Color3 m_SelectColor;
-        [Property(1047198101, 135)] public Color3 m_HighlightColor;
+        [Property(2267136674, 135)] public Color m_TextColor;
+        [Property(2792529213, 135)] public Color m_SelectColor;
+        [Property(1047198101, 135)] public Color m_HighlightColor;
         [Property(24009764, 135)] public Boolean m_bSortEnable;
         [Property(1829537401, 135)] public Int32 m_nSortByColumn;
         [Property(1369222793, 135)] public Boolean m_bSortAscending;
@@ -7309,7 +7312,7 @@ public static partial class TypeCache {
 
             public override uint GetHash() => 1725394077;
             [Property(730982536, 135)] public Int32 m_nWidth;
-            [Property(1753714077, 135)] public Color3 m_Color;
+            [Property(1753714077, 135)] public Color m_Color;
         }
 
         public class ListItemState : PropertyClass {
@@ -7343,14 +7346,14 @@ public static partial class TypeCache {
 
             public override uint GetHash() => 770328692;
             [Property(2475294668, 135)] public Point m_Point;
-            [Property(1753714077, 135)] public Color3 m_Color;
+            [Property(1753714077, 135)] public Color m_Color;
         }
 
         public class Line : PropertyClass {
 
             public override uint GetHash() => 1222542841;
             [Property(2358246150, 135)] public List<Point> m_PointData;
-            [Property(1753714077, 135)] public Color3 m_Color;
+            [Property(1753714077, 135)] public Color m_Color;
         }
     }
 
@@ -7365,7 +7368,7 @@ public static partial class TypeCache {
     public class ControlLine : Window {
 
         public override uint GetHash() => 597500847;
-        [Property(1753714077, 262279)] public Color3 m_Color;
+        [Property(1753714077, 262279)] public Color m_Color;
     }
 
     public class ControlTree : Window {
@@ -7380,7 +7383,7 @@ public static partial class TypeCache {
         public class Item : PropertyClass {
 
             public override uint GetHash() => 383531978;
-            [Property(1753714077, 262279)] public Color3 m_Color;
+            [Property(1753714077, 262279)] public Color m_Color;
             [Property(2207009163, 135)] public WideByteString m_sLabel;
             [Property(2662653502, 1048583)] public Flags m_Flags;
             [Property(1558446980, 135)] public List<ControlTree.Item> m_Children;
@@ -7455,8 +7458,8 @@ public static partial class TypeCache {
 
         public override uint GetHash() => 601407923;
         [Property(1808212114, 135)] public Single m_fPosition;
-        [Property(2172251096, 262279)] public Color3 m_BaseColor;
-        [Property(2259916498, 262279)] public Color3 m_BarColor;
+        [Property(2172251096, 262279)] public Color m_BaseColor;
+        [Property(2259916498, 262279)] public Color m_BarColor;
         [Property(1359621189, 135)] public Boolean m_bDisplayVertical;
         [Property(2481929515, 135)] public Material m_pBarMaterial;
         [Property(3248096916, 135)] public Material m_pTopLeftMaterial;
@@ -9854,7 +9857,7 @@ public static partial class TypeCache {
         [Property(2817699507, 7)] public ByteString m_locationPreference;
         [Property(1497468551, 7)] public Single m_rotation;
         [Property(989410271, 7)] public Single m_radius;
-        [Property(1791663549, 7)] public Color3 m_color;
+        [Property(1791663549, 7)] public Color m_color;
         [Property(2715542772, 7)] public List<SigilCamera> m_cameras;
     }
 
@@ -10520,6 +10523,7 @@ public static partial class TypeCache {
         [Property(2877219372, 31)] public List<ActorMadlib> m_madlibs;
         [Property(2778675200, 7)] public List<ByteString> m_dialogEvents;
         [Property(1753481610, 7)] public Boolean m_noAggroWhileDialogIsUp;
+        [Property(1784936140, 7)] public Boolean m_noAggroNoDelay;
     }
 
     public class ReqCanSummonHenchman : Requirement {
@@ -11194,8 +11198,8 @@ public static partial class TypeCache {
         public override uint GetHash() => 1024574928;
         [Property(3479277078, 135)] public Material m_pMaterial;
         [Property(1175400173, 135)] public Single m_fRotation;
-        [Property(1753714077, 262279)] public Color3 m_Color;
-        [Property(2528109250, 262279)] public Color3 m_textColor;
+        [Property(1753714077, 262279)] public Color m_Color;
+        [Property(2528109250, 262279)] public Color m_textColor;
         [Property(3491704390, 135)] public TextComponent m_textComponent;
     }
 
@@ -11326,7 +11330,7 @@ public static partial class TypeCache {
         [Property(1599533644, 1)] public WizGameStats m_pSavedGameStats;
         [Property(983035431, 1)] public Int32 m_savedPrimaryMagicSchoolID;
         [Property(3522102873, 31)] public WizGameStats m_pGameStats;
-        [Property(1791663549, 31)] public Color3 m_color;
+        [Property(1791663549, 31)] public Color m_color;
         [Property(1497468551, 31)] public Single m_rotation;
         [Property(989410271, 31)] public Single m_radius;
         [Property(1748202326, 31)] public Int32 m_subcircle;
@@ -17250,7 +17254,7 @@ public static partial class TypeCache {
         [Property(717812768, 7)] public Int32 m_nLevel;
         [Property(1871176720, 7)] public Single m_fIntelligence;
         [Property(1823445130, 7)] public Single m_fSelfishFactor;
-        [Property(3103779710, 7)] public Color3 m_nameColor;
+        [Property(3103779710, 7)] public Color m_nameColor;
         [Property(986129576, 7)] public Boolean m_bossMob;
         [Property(1881705133, 7)] public Boolean m_turnTowardsPlayer;
         [Property(2205905992, 2097159)] public TITLE_TYPE m_mobTitle;
@@ -17641,6 +17645,42 @@ public static partial class TypeCache {
         public override uint GetHash() => 1749710800;
         [Property(661225456, 135)] public Single m_fTimeTotal;
         [Property(1591443014, 135)] public Single m_fTimeRemaining;
+    }
+
+    public class ControlTextAlert : ControlText {
+
+        public override uint GetHash() => 1750319716;
+        [Property(770484100, 135)] public Single m_fadeInDuration;
+        [Property(383632219, 135)] public Single m_idleDuration;
+        [Property(666963557, 135)] public Single m_fadeOutDuration;
+        [Property(2357207404, 2097159)] public EaseInFunction m_easeInFunction;
+        [Property(3869010445, 2097159)] public EaseOutFunction m_easeOutFunction;
+
+        [System.FlagsAttribute()]
+        public enum EaseInFunction {
+
+            Linear = 0,
+            Quadratic = 1,
+            Cubic = 2,
+            Quartic = 3,
+            Quintic = 4,
+            Trigonometric = 5,
+            Exponential = 6,
+            Circular = 7,
+        }
+
+        [System.FlagsAttribute()]
+        public enum EaseOutFunction {
+
+            Linear = 0,
+            Quadratic = 1,
+            Cubic = 2,
+            Quartic = 3,
+            Quintic = 4,
+            Trigonometric = 5,
+            Exponential = 6,
+            Circular = 7,
+        }
     }
 
     public class ClientShadowSelfCinematicAction : ShadowSelfCinematicAction {
@@ -18746,9 +18786,9 @@ public static partial class TypeCache {
         [Property(4008975679, 135)] public Texture m_pDiffuseMap;
         [Property(3411451405, 135)] public Texture m_pAlphaMask;
         [Property(284727287, 135)] public Single m_fLastAlpha;
-        [Property(1644364836, 262279)] public Color3 m_Diffuse;
-        [Property(2216816350, 262279)] public Color3 m_Ambient;
-        [Property(2645528957, 262279)] public Color3 m_Specular;
+        [Property(1644364836, 262279)] public Color m_Diffuse;
+        [Property(2216816350, 262279)] public Color m_Ambient;
+        [Property(2645528957, 262279)] public Color m_Specular;
         [Property(539146057, 135)] public Single m_fSpecularPower;
         [Property(3064301836, 65671)] public List<RectangleF> m_Frames;
         [Property(45308854, 135)] public Int32 m_nCurrentFrame;
@@ -23364,6 +23404,10 @@ public static partial class TypeCache {
         Guest_WL_TRex_Base_A_01 = 1842562033,
         Guest_WL_TRex_Base_B_01 = 304921616,
         PP_Groundhog = 108643243,
+        MNT_EmuPunk = 647315080,
+        MNT_HeartBalloon = 798826551,
+        PP_ValentineHoppers = 968693964,
+        MNT_SpringSOF2024_Heckhound = 453640548,
     }
 
     public enum eMountType {
