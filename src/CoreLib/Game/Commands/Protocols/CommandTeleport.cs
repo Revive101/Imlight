@@ -25,8 +25,7 @@ internal class CommandTeleport : CommandProtocol {
     [AuthRequired(AuthLevel.QualityAssurance)]
     private void TeleportCommand(string zone) {
         var actualZoneName = zone;
-        var hasZone = AccessPassManager.DoesZoneExist(zone);
-        if (!hasZone && !s_gmIslandShortcutNames.Any(x => x == zone)) {
+        if (!s_gmIslandShortcutNames.Any(x => x == zone)) {
             // Fallback to the zone name that is contained in the zone name.
             actualZoneName = AccessPassManager.GetContainedZoneName(zone);
 
