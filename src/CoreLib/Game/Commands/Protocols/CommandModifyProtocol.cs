@@ -49,7 +49,8 @@ internal class CommandModifyProtocol : CommandProtocol {
             return;
         }
 
-        var maxLevel = ConfigurationManager.Settings.MaxLevel;
+        //var maxLevel = ConfigurationManager.Settings.MaxLevel;
+        var maxLevel = byte.MaxValue;
         var isOverMax = levelByte > maxLevel;
         if (isOverMax) {
             InformSenderClient($"You cannot set level higher than the max level ({maxLevel}).");
