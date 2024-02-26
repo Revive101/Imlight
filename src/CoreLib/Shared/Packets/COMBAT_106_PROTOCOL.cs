@@ -23,7 +23,7 @@ namespace Imlight.CoreLib.Shared.Packets {
 			public byte MessageOrder => 1;
 			public byte ServiceID => 106;
 
-			public Dictionary<IActorRef, WizClientObject> Participants;
+			public Dictionary<IActorRef, CoreObject> Participants;
 			public ulong SigilId;
 			public Vector3 SigilLocation;
 			public Vector3 SigilOrientation;
@@ -34,7 +34,7 @@ namespace Imlight.CoreLib.Shared.Packets {
 			public byte MessageOrder => 2;
 			public byte ServiceID => 106;
 
-			public Dictionary<IActorRef, WizClientObject> Participants;
+			public Dictionary<IActorRef, CoreObject> Participants;
 		}
 
 		public sealed class MSG_DUELDETAILS : IServerMessage
@@ -54,7 +54,7 @@ namespace Imlight.CoreLib.Shared.Packets {
             public byte ServiceID => 106;
 
             public IActorRef Participant;
-            public WizClientObject ParticipantObject;
+            public CoreObject ParticipantObject;
         }
 
         public sealed class MSG_GRACEPERIODOVER : IServerMessage
