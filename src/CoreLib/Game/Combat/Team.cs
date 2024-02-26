@@ -6,6 +6,6 @@
 namespace Imlight.CoreLib.Game.Combat;
 
 public enum Team {
-    Creature,
-    Player
+    Player = 0,
+    Creature = 1
 }
