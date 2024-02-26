@@ -46,10 +46,10 @@ public class DuelActorSubCircle {
         _sigilId = sigilId;
     }
 
-    internal async Task AssignParticipant(IActorRef actor, WizClientObject participantObject) {
+    internal async Task AssignParticipant(IActorRef actor, CoreObject participantObject) {
         ParticipantActor = actor;
         ParticipantObject = participantObject;
-        ParticipantGameStats = participantObject.m_gameStats;
+        ParticipantGameStats = ((WizClientObject)participantObject).m_gameStats ?? new WizGameStats();
         Team = participantObject.m_templateID == 1 ? Team.Player : Team.Creature;
         IsOccupied = true;
 
@@ -72,52 +72,44 @@ public class DuelActorSubCircle {
             .Result
             .Wizard;
 
-        // Get DynamicSigilSymbol enum by value using our SubCircleId. Skip values 5-8.
-        var dynamicSigilSymbol = (DynamicSigilSymbol) (SubCircleId < 5 ? SubCircleId : SubCircleId + 4);
-
         var combatParticipant = new CombatParticipant {
             m_ownerID = ParticipantObject.m_globalID,
             m_templateID = 2199023255553, // Captued 2199023255553 from live
             m_isPlayer = true,
-            m_zoneID = 0,
             m_teamID = 0,
             m_primaryMagicSchoolID = 83375795,
             m_pipCount = new() { m_powerPips = 0, m_genericPips = 1 },
             m_pipRoundRates = new(),
-            m_PipsSuspended = false,
             m_originalTeam = 0,
             m_maxHandSize = 7,
             m_playerHealth = queryCharacterRsp.GameStats.m_currentHitpoints,
             m_maxPlayerHealth = queryCharacterRsp.GameStats.m_baseHitpoints,
-            m_color = (Color3) SharpDX.Color.Green,
-            //m_rotation = Yaw, // This crashes the client if present
-            m_subcircle = -256,
-            m_dynamicSymbol = DynamicSigilSymbol.NotSet,
+            m_myTeamTurn = true,
 
-            // todo: this causes client to fail deserialization
-            //m_pGameStats = queryCharacterRsp.GameStats,
+            m_subcircle = 4,
+            m_dynamicSymbol = DynamicSigilSymbol.Sun,
         };
 
         return combatParticipant;
     }
 
     private CombatParticipant GetCreatureParticipant() {
-        // Get DynamicSigilSymbol enum by value using our SubCircleId. Skip values 5-8.
-        var dynamicSigilSymbol = (DynamicSigilSymbol) (SubCircleId < 5 ? SubCircleId : SubCircleId + 4);
-
         var combatParticipant = new CombatParticipant {
             m_ownerID = ParticipantObject.m_globalID,
             m_templateID = 2199023290637, // Captured 2199023290637 from live
             m_isPlayer = false,
             m_isMonster = 1u,
-            m_zoneID = 0,
             m_teamID = 1,
             m_originalTeam = 1,
             m_maxHandSize = 7,
             m_primaryMagicSchoolID = 83375795,
             m_pipCount = new() { m_powerPips = 0, m_genericPips = 1 },
             m_pipRoundRates = new(),
-            m_PipsSuspended = false,
+            m_playerHealth = 55,
+            m_maxPlayerHealth = 55,
+
+            m_subcircle = 0,
+            m_dynamicSymbol = DynamicSigilSymbol.Dagger,
         };
 
         return combatParticipant;
@@ -148,7 +140,7 @@ public class DuelActorSubCircle {
         // Set state to stationary.
         DuelActor.DuelBroadcast(new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
             GameObjectID = participantObject.m_globalID,
-            State = (uint) NPCStates.Sigil
+            State = (uint) NPCStates.Stationary
         });
     }
 }

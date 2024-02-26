@@ -18,6 +18,8 @@ using Imlight.CoreLib.Shared.Packets;
 using SharpDX;
 using static Imlight.Common.Caches.TypeCache;
 using static Imlight.Common.Caches.TypeCache.Duel;
+using Imlight.CoreLib.WizardData.Models.Player;
+using Imlight.Common.ObjectProperty.PropertyReflection;
 
 namespace Imlight.CoreLib.Game.Combat;
 
@@ -30,7 +32,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     private const byte NumOfSubCircles = 8;
     private const byte PlanningTime = 30;
     private const float AngleBetweenSubCircles = 36.8f;
-    private const float FirstSubCircleAngle = 145.0f;
+    private const float FirstSubCircleAngle = 145.3f;
     private const float DuelStartedGracePeriodInSeconds = 3.0f;
     private const float YawErrorCompensation = 1.58f;
 
@@ -41,6 +43,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         .OnBehaviors(SerializerOptions.Behaviors.None);
     private readonly SerializerOptions.PropertyFlags _combatParticipantFlags = (SerializerOptions.PropertyFlags) 4;
     private readonly SerializerOptions.PropertyFlags _combatParticipantStatFlags = (SerializerOptions.PropertyFlags) 5;
+    private readonly SerializerOptions.PropertyFlags _combatParticipantHandFlags = (SerializerOptions.PropertyFlags) 5;
 
     private byte PlayerCount => (byte) _subCircles.Count(x => x.IsOccupied && x.Team == Team.Player);
     private byte CreatureCount => (byte) _subCircles.Count(x => x.IsOccupied && x.Team == Team.Creature);
@@ -75,6 +78,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     private void ReceiveStartDuel(COMBAT_106_PROTOCOL.MSG_STARTDUEL message) {
         // Remember that a duel is *not* a sigil. A sigil is a physical object in the world.
         // A duel is a virtual object that is assigned to a sigil.
+        // When this is called, it means a sigil has been activated and a duel is about to start.
         this._sigilId = message.SigilId;
         this._sigilLocation = message.SigilLocation;
         this._sigilOrientation = message.SigilOrientation;
@@ -180,7 +184,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     private void CombatBegin() {
         _duel.m_duelPhase = kDuelPhase.kPhase_PrePlanning;
 
-        foreach (var circle in ActiveSubCircles) {
+        EnactActionOnSubCircles(circle => {
             var participantData = circle.GetParticipant();
             var serializedData = SerializeCombatParticipant(participantData);
             var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATADD {
@@ -188,21 +192,25 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
                 ParticipantData = serializedData,
             };
             DuelBroadcast(msg);
-        }
+        });
 
-        RoundStart();
+        NewRoundStart();
         SendCombatUI(PlanningTime);
     }
 
-    private void RoundStart() {
-        // Phase 1 of next round
+    private void NewRoundStart() {
+        // Pre-planning phase just wants to send who is up first.
         _duel.m_duelPhase = kDuelPhase.kPhase_PrePlanning;
         SendCombatPhase((byte) _duel.m_duelPhase);
         SendUpFirst(_upFirstTeam, _duel.m_roundNum);
 
-        // Phase 2 of next round
+        // Planning phase is when each participant notices their new stats and "plans" accordingly.
         _duel.m_duelPhase = kDuelPhase.kPhase_Planning;
         SendCombatPhase((byte) _duel.m_duelPhase);
+        SendCombatStats();
+        //SendCombatHand();
+        SendCombatPips();
+        SendCombatHealth();
     }
 
     private void SendCombatPhase(byte phase) {
@@ -215,7 +223,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         // Unsure what any of this is for. It's just copied from the client.
         var upFirstData = serializer.Serialize(new UpFirstData() {
             m_resultType = 1884669703,
-            m_roundNum = 1,
+            m_roundNum = _duel.m_roundNum,
             m_upFirst = 320,
         });
 
@@ -232,12 +240,12 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     private void SendUpFirst(Team firstTeamToAct, int roundNum) {
         // The client counts the sigils in reverse order.
         // If creatures are first, the sigil is 4. If players are first, the sigil is 8.
-        var upFirstSigilSlot = (byte) (firstTeamToAct == Team.Player ? 4 : 1);
+        var upFirstSigilSlot = (byte) (firstTeamToAct == Team.Player ? 1 : 1);
 
         var upFirstMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATUPFIRST {
             DuelID = _sigilId,
             RoundNum = (ushort) roundNum,
-            FirstTeamToAct = (byte) (firstTeamToAct == Team.Player ? 0 : 1),
+            FirstTeamToAct = (byte) (firstTeamToAct == Team.Player ? 4 : 0),
             UpFirst = upFirstSigilSlot,
         };
         DuelBroadcast(upFirstMsg);
@@ -254,6 +262,128 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             Time = planningPhaseTimer,
         };
         DuelBroadcast(planningMsg);
+    }
+
+    private void SendCombatStats() {
+        EnactActionOnSubCircles(circle => {
+            var participantStats = circle.ParticipantGameStats;
+            var serializedStats = SerializeCombatParticipantStat(participantStats);
+            var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATSTATS {
+                DuelID = _sigilId,
+                PartID = circle.ParticipantObject.m_globalID,
+                StatsData = serializedStats,
+            };
+            DuelBroadcast(msg);
+        });
+    }
+
+    private void SendCombatHand() {
+        var spellTest = new Spell() {
+            m_templateID = 100422,
+            m_pipCost = new SpellRank() {
+                m_spellRank = 1,
+                m_firePips = 1,
+            }
+        };
+        var spellTest2 = new Spell() {
+            m_templateID = 1552060,
+            m_pipCost = new SpellRank() {
+                m_spellRank = 1,
+                m_firePips = 1,
+            }
+        };
+        var hand = new Hand {
+            m_spellList = new List<Spell> ()
+        };
+
+        _serializer.OnPropertyMask(_combatParticipantHandFlags);
+        var buffer = _serializer.Serialize(hand);
+
+        // Serialize the combat hand and send it to the participant, locally.
+        // Skip the creatures, as they don't have a hand.
+        EnactActionOnSubCircles(circle => {
+            var participantActor = circle.ParticipantActor;
+            var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATHAND {
+                DeckCount = 7,
+                TotalDeckCount = 7,
+                ParticipantID = circle.ParticipantObject.m_globalID,
+                HandData = buffer,
+            };
+
+            participantActor.Tell(msg);
+        });
+    }
+
+    private void SendCombatPips() {
+        // Create the pip list object.
+        var pips = new CombatPipListObj {
+            m_duelID = _sigilId,
+            m_pipList = new List<ParticipantPipData>()
+        };
+
+        // Iterate through each sub circle and add the participant's pips to the list.
+        EnactActionOnSubCircles(circle => {
+            var participantPipData = new ParticipantPipData {
+                m_acq = 1,
+                m_arch = (uint) MagicSchool.Fire,
+                m_archPoints = 0,
+                m_partID = (GID) circle.ParticipantObject.m_globalID,
+                m_pips = new PipCount() {
+                    m_genericPips = 1
+                }
+            };
+            pips.m_pipList.Add(participantPipData);
+
+            var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATPIPS {
+                DuelID = _sigilId,
+            };
+        });
+
+        // Serialize the combat pips and send it to each participant.
+        _serializer.OnPropertyMask(_combatParticipantStatFlags);
+        var buffer = _serializer.Serialize(pips);
+
+        EnactActionOnSubCircles(circle => {
+            var participantActor = circle.ParticipantActor;
+            var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATPIPS {
+                DuelID = _sigilId,
+                PipData = buffer,
+            };
+            participantActor.Tell(msg);
+        });
+    }
+
+    private void SendCombatHealth() {
+        // Create the new health list object.
+        var healthList = new CombatHealthListObj {
+            m_duelID = _sigilId,
+            m_healthList = new List<ParticipantParameter>()
+        };
+
+        // Iterate through each sub circle and add the participant's health to the list.
+        EnactActionOnSubCircles(circle => {
+            var participantHealth = new ParticipantParameter {
+                m_data = 55, // todo: change
+                m_partID = (GID) circle.ParticipantObject.m_globalID,
+            };
+            healthList.m_healthList.Add(participantHealth);
+        });
+
+        // Serialize the combat health and send it to each participant.
+        _serializer.OnPropertyMask(_combatParticipantStatFlags);
+        var buffer = _serializer.Serialize(healthList);
+
+        var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATHEALTH {
+            DuelID = _sigilId,
+            HealthData = buffer,
+        };
+        DuelBroadcast(msg);
+    }
+
+    private void EnactActionOnSubCircles(Action<DuelActorSubCircle> action) {
+        foreach (var subCircle in ActiveSubCircles) {
+            action(subCircle);
+        }
     }
 
     private Duel CreateDuelWithDefaults(ulong sigilId) {
@@ -343,7 +473,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         return null;
     }
 
-    private bool AssignParticipantToSubCircle(Team team, DuelActorSubCircle subCircle, IActorRef actorRef, WizClientObject coreObject) {
+    private bool AssignParticipantToSubCircle(Team team, DuelActorSubCircle subCircle, IActorRef actorRef, CoreObject coreObject) {
         if (subCircle.ParticipantActor != null) {
             return false;
         }
