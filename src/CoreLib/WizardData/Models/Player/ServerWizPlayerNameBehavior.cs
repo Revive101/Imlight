@@ -36,6 +36,13 @@ public class ServerWizPlayerNameBehavior : BehaviorInstance, IClientBehaviorProv
     }
 
     public ClientWizPlayerNameBehavior GetClientBehaviorInstance() {
+        // If the name override is set, we want to add the friendly player icon to the name
+        // since the client won't do it automatically anymore.
+        var nameOverride = new WideByteString();
+        if (NameOverride.Length > 0 && FriendlyPlayer) {
+            nameOverride = $"<image;FriendlyPlayer> {NameOverride} <image;FriendlyPlayer>";
+        }
+
         return new ClientWizPlayerNameBehavior {
             m_nameKeys = NameIndices,
             m_useRank = UseRank,
@@ -48,7 +55,7 @@ public class ServerWizPlayerNameBehavior : BehaviorInstance, IClientBehaviorProv
             m_friendlyPlayer = FriendlyPlayer,
             m_volunteer = Volunteer,
             m_guildName = GuildName,
-            m_wsNameOverride = NameOverride
+            m_wsNameOverride = nameOverride
         };
     }
 }
