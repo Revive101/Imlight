@@ -94,6 +94,9 @@ public class DuelActorSubCircle {
             m_playerHealth = queryCharacterRsp.GameStats.m_currentHitpoints,
             m_maxPlayerHealth = queryCharacterRsp.GameStats.m_baseHitpoints,
             m_myTeamTurn = true,
+            m_pGameStats = queryCharacterRsp.GameStats.GetClientTypeAlternative(),
+            //m_pHand = new Hand(),
+            //m_pPlayDeck = new PlayDeck(),
 
             m_subcircle = 4,
             m_dynamicSymbol = DynamicSigilSymbol.Sun,
@@ -116,6 +119,12 @@ public class DuelActorSubCircle {
             m_pipRoundRates = new(),
             m_playerHealth = 55,
             m_maxPlayerHealth = 55,
+            m_pGameStats = new WizGameStats() {
+                m_currentHitpoints = 55,
+                m_baseHitpoints = 55,
+            },
+            m_pHand = new Hand(),
+            m_pPlayDeck = new PlayDeck(),
 
             m_subcircle = 0,
             m_dynamicSymbol = DynamicSigilSymbol.Dagger,

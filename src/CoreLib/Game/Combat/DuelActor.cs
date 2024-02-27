@@ -34,9 +34,9 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     private const byte PlanningTime = 30;
     private const float AngleBetweenSubCircles = 36.8f;
     private const float FirstSubCircleAngle = 145.3f;
-    private const float DuelStartedGracePeriodInSeconds = 3.0f;
+    private const float DuelStartedGracePeriodInSeconds = 3.75f;
     private const float YawErrorCompensation = 1.58f;
-    private const int DelayAfterCombatAddInMs = 1000;
+    private const int DelayAfterCombatAddInMs = 0;
 
     public ITimerScheduler Timers { get; set; }
 
@@ -125,8 +125,6 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         // The grace period for adding participants is now over.
         Logger.Debug("Duel {0} has started.", Logger.Args(_duel.m_duelID));
 
-        _duel.m_duelPhase = kDuelPhase.kPhase_PrePlanning;
-
         EnactActionOnSubCircles(circle => {
             var participantData = circle.GetParticipant();
             var serializedData = SerializeCombatParticipant(participantData);
@@ -147,13 +145,26 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         // Pre-planning phase just wants to send who is up first.
         _duel.m_duelPhase = kDuelPhase.kPhase_PrePlanning;
         SendCombatPhase((byte) _duel.m_duelPhase);
+
+        // Inform the combat participants that they may or may not be considered AFK.
+        EnactActionOnSubCircles(circle => {
+            var participantActor = circle.ParticipantActor;
+            var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATAFK {
+                DuelID = _sigilId,
+                IsCombatAFK = 0
+            };
+            participantActor.Tell(msg);
+        });
+
         SendUpFirst(_duel.m_roundNum);
 
         // Planning phase is when each participant notices their new stats and "plans" accordingly.
+        // Sending the "planning" phase will cause the client to finally enact the combat cinematic camera.
         _duel.m_duelPhase = kDuelPhase.kPhase_Planning;
         SendCombatPhase((byte) _duel.m_duelPhase);
+
         SendCombatStats();
-        //SendCombatHand();
+        SendCombatHand();
         SendCombatPips();
         SendCombatHealth();
 
@@ -219,7 +230,6 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     private void SendCombatPhase(byte phase) {
         var upFirstSigilSlot = (byte) (_upFirstTeam == Team.Player ? 4 : 0);
 
-        // Don't remove this serializer. I don't know why the class serializer fails for this, but it does.
         var serializer = new ObjectSerializer()
                 .OnBehaviors(SerializerOptions.Behaviors.None)
                 .OnPropertyMask(SerializerOptions.PropertyFlags.Public
@@ -244,13 +254,15 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             NewPhase = phase,
             PlayerID = 0, // Always recorded as 0
             // todo: unsure why, but client fails to deserialize this
-            //Data = phase == 1 ? upFirstData : "",
+            Data = phase == 1 ? upFirstData : "",
         };
 
         DuelBroadcast(msg);
     }
 
     private void SendUpFirst(int roundNum) {
+        // This serialized data is used for nearby players to see the combat phase.
+        // Unsure the wording, but it sounds like it's used for spectators.
         var upFirstSigilSlot = (byte) (_upFirstTeam == Team.Player ? 4 : 0);
 
         var upFirstMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATUPFIRST {
@@ -290,21 +302,15 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
     private void SendCombatHand() {
         var spellTest = new Spell() {
-            m_templateID = 100422,
-            m_pipCost = new SpellRank() {
-                m_spellRank = 1,
-                m_firePips = 1,
-            }
-        };
-        var spellTest2 = new Spell() {
-            m_templateID = 1552060,
+            m_templateID = 1552021,
+            m_spellID = 1552021,
             m_pipCost = new SpellRank() {
                 m_spellRank = 1,
                 m_firePips = 1,
             }
         };
         var hand = new Hand {
-            m_spellList = new List<Spell> ()
+            m_spellList = new List<Spell>()
         };
 
         _serializer.OnPropertyMask(_combatParticipantHandFlags);
@@ -313,10 +319,14 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         // Serialize the combat hand and send it to the participant, locally.
         // Skip the creatures, as they don't have a hand.
         EnactActionOnSubCircles(circle => {
+            if (circle.Team == Team.Creature) {
+                return;
+            }
+
             var participantActor = circle.ParticipantActor;
             var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATHAND {
-                DeckCount = 7,
-                TotalDeckCount = 7,
+                DeckCount = 0,
+                TotalDeckCount = 0,
                 ParticipantID = circle.ParticipantObject.m_globalID,
                 HandData = buffer,
             };
@@ -340,7 +350,8 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
                 m_archPoints = 0,
                 m_partID = (GID) circle.ParticipantObject.m_globalID,
                 m_pips = new PipCount() {
-                    m_genericPips = 1
+                    m_genericPips = 1,
+                    m_powerPips = 1,
                 }
             };
             pips.m_pipList.Add(participantPipData);
@@ -374,7 +385,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         // Iterate through each sub circle and add the participant's health to the list.
         EnactActionOnSubCircles(circle => {
             var participantHealth = new ParticipantParameter {
-                m_data = 55, // todo: change
+                m_data = 1000,
                 m_partID = (GID) circle.ParticipantObject.m_globalID,
             };
             healthList.m_healthList.Add(participantHealth);
