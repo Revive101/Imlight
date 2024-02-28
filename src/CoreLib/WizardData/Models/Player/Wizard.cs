@@ -30,6 +30,7 @@ public class Wizard : IDisposable {
     public ulong CharId { get; set; }
     public string Zone { get; set; }
     public string ZoneDisplayName { get; set; }
+    public string MarkedZone { get; set; }
     public byte World { get; set; }
     public Vector3 Location {
         get => GameObject?.m_location ?? _location;
@@ -53,6 +54,9 @@ public class Wizard : IDisposable {
             }
         }
     }
+
+    public Vector3 MarkedLocation { get; set; }
+    public Vector3 MarkedOrientation { get; set; }
 
     public WizardCharacterBehavior WizardAvatar { get; set; }
     public ServerWizPlayerNameBehavior PlayerNameBehavior { get; set; }
@@ -157,6 +161,15 @@ public class Wizard : IDisposable {
         WizardCollection.UpdateCharacterLevel(this);
 
         return true;
+    }
+
+    public void SetMarkedLocation(Vector3 loc, Vector3 orientation, string zone) {
+        MarkedLocation = loc;
+        MarkedOrientation = orientation;
+        MarkedZone = zone;
+
+        // Persistent save.
+        WizardCollection.UpdateCharcterMarkedLocation(this, loc, orientation, zone);
     }
 
     public void SetMaxGold(int maxGold) {
