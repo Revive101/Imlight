@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using Akka.Actor;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone;
 
@@ -30,6 +31,19 @@ public class WizardZoneObjectSupervisor : ReceiveProtocolDispatcher {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDOBJECT))]
     private void ReceiveAddObject(ZONE_102_PROTOCOL.MSG_ADDOBJECT message) {
+        var objBehaviors = message.Template.m_behaviors;
+
+        // Check to see if any of the behaviors are of type NPCBehavior.
+        if (objBehaviors != null) {
+            foreach (var behavior in objBehaviors) {
+                if (behavior is NPCBehaviorTemplate) {
+                    var npcProps = WizardZoneNpc.Props(message.CoreObject, message.Template, _wizardZoneRef);
+                    CreateActorAndRespond(npcProps);
+                    return;
+                }
+            }
+        }
+
         var props = WizardZoneObject.Props(message.CoreObject, message.Template, _wizardZoneRef);
         CreateActorAndRespond(props);
     }
