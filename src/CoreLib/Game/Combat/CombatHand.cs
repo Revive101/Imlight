@@ -12,6 +12,7 @@ namespace Imlight.CoreLib.Game.Combat;
 
 internal class CombatHand {
     internal List<Spell> Spells;
+    internal List<Spell> AvailableSpells => Spells.Where(spell => !_exhaustedSpellIds.Contains(spell.m_spellID)).ToList();
 
     private readonly byte _handSize;
     private readonly List<uint> _exhaustedSpellIds;
@@ -23,26 +24,30 @@ internal class CombatHand {
         _exhaustedSpellIds = new List<uint>();
     }
 
-    internal List<Spell> GetHand() {
+    internal Hand GetHand() {
         // Randomly pick 7 cards from the spellbook, minus the ones we've exhausted.
         var hand = new List<Spell>();
         var random = new Random();
-        var availableSpells = Spells.Where(spell => !_exhaustedSpellIds.Contains(spell.m_spellID)).ToList();
+        var _availableCache = AvailableSpells;
 
         for (var i = 0; i < _handSize; i++) {
             // Spells exhausted!
-            if (i > availableSpells.Count) {
+            if (_availableCache.Count == 0) {
                 break;
             }
 
-            var randomIndex = random.Next(0, availableSpells.Count);
-            var spell = availableSpells[randomIndex];
+            var randomIndex = random.Next(0, _availableCache.Count);
+            var spell = AvailableSpells[randomIndex];
 
             hand.Add(spell);
-            availableSpells.Remove(spell);
+            _availableCache.Remove(spell);
             _exhaustedSpellIds.Add(spell.m_spellID);
         }
 
-        return hand;
+        var handObject = new Hand() {
+            m_spellList = new List<Spell>(hand)
+        };
+
+        return handObject;
     }
 }

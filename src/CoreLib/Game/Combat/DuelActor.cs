@@ -126,7 +126,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         Logger.Debug("Duel {0} has started.", Logger.Args(_duel.m_duelID));
 
         EnactActionOnSubCircles(circle => {
-            var participantData = circle.GetParticipant();
+            var participantData = circle.CombatParticipant;
             var serializedData = SerializeCombatParticipant(participantData);
             var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATADD {
                 DuelID = _sigilId,
@@ -309,16 +309,14 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             if (circle.Team == Team.Creature) {
                 return;
             }
-
-            var combatHand = circle.CombatHand;
-            var newHand = combatHand.GetHand();
-            var hand = new Hand() { m_spellList = newHand };
-            var buffer = _serializer.Serialize(hand);
+;
+            var newHand = circle.DrawHand();
+            var buffer = _serializer.Serialize(newHand);
 
             var participantActor = circle.ParticipantActor;
             var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATHAND {
-                DeckCount = (byte) newHand.Count,
-                TotalDeckCount = (ushort) combatHand.Spells.Count,
+                DeckCount = (byte) circle.AvailableSpells,
+                TotalDeckCount = (ushort) circle.TotalSpells,
                 ParticipantID = circle.ParticipantObject.m_globalID,
                 HandData = buffer,
             };

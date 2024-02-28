@@ -36,9 +36,24 @@ internal class DuelActorSubCircle {
     public IActorRef ParticipantActor { get; private set; }
     public CoreObject ParticipantObject { get; private set; }
     public WizGameStats ParticipantGameStats { get; private set; }
-    public CombatHand CombatHand { get; private set; }
+    public CombatParticipant CombatParticipant { get; private set;}
+    public uint AvailableSpells { get {
+        if (_combatHand is null) {
+            return 0;
+        }
+
+        return (uint) _combatHand.AvailableSpells.Count;
+    }}
+    public uint TotalSpells { get {
+        if (_combatHand is null) {
+            return 0;
+        }
+
+        return (uint) _combatHand.Spells.Count;
+    }}
 
     private readonly ulong _sigilId;
+    private CombatHand _combatHand;
 
     public DuelActorSubCircle(DuelActor duelActor, Vector3 location, float yaw, ulong sigilId, byte subCircleId) {
         DuelActor = duelActor;
@@ -64,38 +79,29 @@ internal class DuelActorSubCircle {
         await PlayEntranceAnimation(participantObject);
     }
 
-    internal CombatParticipant GetParticipant() {
-        if (Team == Team.Player) {
-            return GetPlayerParicipant();
-        }
-        else {
-            return GetCreatureParticipant();
-        }
+    internal Hand DrawHand() {
+        var newHand = _combatHand.GetHand();
+        CombatParticipant.m_pHand = newHand;
+
+        return newHand;
     }
 
     private void InitializePlayerSubCircle() {
         var queryCharacterMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
-        var queryCharacterRsp = ParticipantActor
+        var wizard = ParticipantActor
             .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryCharacterMsg)
             .Result
             .Wizard;
 
-        ParticipantGameStats = queryCharacterRsp.GameStats.GetClientTypeAlternative();
-        CombatHand = new CombatHand(queryCharacterRsp.SpellbookBehavior.Spells, 7);
-    }
+        ParticipantGameStats = wizard.GameStats.GetClientTypeAlternative();
+        _combatHand = new CombatHand(wizard.SpellbookBehavior.Spells, 7);
 
-    private void InitializeCreatureSubCircle() {
-        // todo: implement
-        ParticipantGameStats = new WizGameStats();
-    }
-
-    private CombatParticipant GetPlayerParicipant() {
-        var combatParticipant = new CombatParticipant {
+        CombatParticipant = new CombatParticipant {
             m_ownerID = ParticipantObject.m_globalID,
-            m_templateID = 2199023255553, // Captued 2199023255553 from live
+            m_templateID = 1,
             m_isPlayer = true,
             m_teamID = 0,
-            m_primaryMagicSchoolID = 83375795,
+            m_primaryMagicSchoolID = (int) wizard.MagicSchoolBehavior.MagicSchool,
             m_pipCount = new() { m_powerPips = 0, m_genericPips = 1 },
             m_pipRoundRates = new(),
             m_originalTeam = 0,
@@ -104,18 +110,16 @@ internal class DuelActorSubCircle {
             m_maxPlayerHealth = ParticipantGameStats.m_baseHitpoints,
             m_myTeamTurn = true,
             m_pGameStats = ParticipantGameStats,
-            //m_pHand = new Hand(),
-            //m_pPlayDeck = new PlayDeck(),
-
+            m_pPlayDeck = new PlayDeck(),
             m_subcircle = 4,
             m_dynamicSymbol = DynamicSigilSymbol.Sun,
         };
-
-        return combatParticipant;
     }
 
-    private CombatParticipant GetCreatureParticipant() {
-        var combatParticipant = new CombatParticipant {
+    private void InitializeCreatureSubCircle() {
+        // todo: implement
+        ParticipantGameStats = new WizGameStats();
+        CombatParticipant = new CombatParticipant {
             m_ownerID = ParticipantObject.m_globalID,
             m_templateID = 2199023290637, // Captured 2199023290637 from live
             m_isPlayer = false,
@@ -132,15 +136,10 @@ internal class DuelActorSubCircle {
                 m_currentHitpoints = 55,
                 m_baseHitpoints = 55,
             },
-            m_pHand = new Hand(),
-            m_pPlayDeck = new PlayDeck(),
 
             m_subcircle = 0,
             m_dynamicSymbol = DynamicSigilSymbol.Dagger,
         };
-
-        return combatParticipant;
-
     }
 
     private async Task PlayEntranceAnimation(CoreObject participantObject) {
