@@ -5,6 +5,8 @@
 
 using Imlight.Common;
 using Imlight.Common.Cryptography;
+using Imlight.Common.ObjectProperty;
+using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System;
@@ -89,6 +91,21 @@ internal static class CharacterEffectHelper {
                 var canonicalEffectName = CanonicalStatEffects.GetEffectTemplate(effectInfo.m_effectName).m_effectName;
                 AddGameEffectToStats(wizard.GameStats, canonicalEffectName, canonicalEffect);
             }
+            else if (gameEffect is ProvideSpellEffect provideSpellEffect) {
+                // This is a little confusing. We need both the template and the template ID.
+                // The template is used to create the spell, and the template ID is used to add the spell to the player's spellbook.
+                var spellTemplatePath = $"Spells/{provideSpellEffect.m_spellName}.xml";
+                var spellTemplate = RootArchiveLoader.GetFile<SpellTemplate>(spellTemplatePath);
+                if (spellTemplate is null) {
+                    Logger.Warning("Could not find spell template {0} in spell bank.", Logger.Args(provideSpellEffect.m_spellName));
+                    continue;
+                }
+                var spellTemplateId = CoreObjectFactory.GetCoreTemplateID(spellTemplatePath);
+
+                for (var i = 0; i < provideSpellEffect.m_numSpells; i++) {
+                    wizard.AddSpell(spellTemplateId);
+                }
+            }
 
             wizard.GameEffects.Add(gameEffect);
             addedEffects.Add(gameEffect);
@@ -117,6 +134,16 @@ internal static class CharacterEffectHelper {
             if (gameEffect is WizStatisticEffect canonicalEffect) {
                 var canonicalEffectName = CanonicalStatEffects.GetEffectTemplate(effectInfo.m_effectName).m_effectName;
                 RemoveGameEffectFromStats(wizard.GameStats, canonicalEffectName, canonicalEffect);
+            }
+            else if (gameEffect is ProvideSpellEffect provideSpellEffect) {
+                // This is a little confusing. We need both the template and the template ID.
+                // The template is used to create the spell, and the template ID is used to add the spell to the player's spellbook.
+                var spellTemplatePath = $"Spells/{provideSpellEffect.m_spellName}.xml";
+                var spellTemplateId = CoreObjectFactory.GetCoreTemplateID(spellTemplatePath);
+
+                for (var i = 0; i < provideSpellEffect.m_numSpells; i++) {
+                    wizard.RemoveSpell(spellTemplateId);
+                }
             }
         }
 

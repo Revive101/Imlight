@@ -121,6 +121,21 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
     }
 
     /// <summary>
+    /// Retrieves the ID of a core template based on its name.
+    /// </summary>
+    /// <param name="templateName">The name of the template.</param>
+    /// <returns>The ID of the core template.</returns>
+    public static uint GetCoreTemplateID(string templateName) {
+        var template = s_templateManifest.m_serializedTemplates.FirstOrDefault(x => x.m_filename == templateName);
+        if (template is null) {
+            Logger.Error("Could not find CoreTemplate by name {TName}", Logger.Args(templateName));
+            return 0;
+        }
+
+        return (uint)template.m_id;
+    }
+
+    /// <summary>
     /// Finalizes a CoreObject based on the provided template ID.
     /// </summary>
     /// <param name="templateId">The ID of the template associated with the core object.</param>
