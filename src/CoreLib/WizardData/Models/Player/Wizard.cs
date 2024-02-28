@@ -167,7 +167,11 @@ public class Wizard : IDisposable {
     }
 
     public void AddGold(int gold) {
-        GameStats.m_currentGold += gold;
+        if (GameStats.m_currentGold + gold > GameStats.m_baseGoldPouch) {
+            GameStats.m_currentGold = GameStats.m_baseGoldPouch; // Do not exceed gold pouch.
+        } else {
+            GameStats.m_currentGold += gold;
+        }
 
         // Persistent save.
         WizardCollection.UpdateCharacterGameStats(this);

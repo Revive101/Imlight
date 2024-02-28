@@ -162,7 +162,7 @@ internal class CommandModifyProtocol : CommandProtocol {
 
     [Command("addgold")]
     [AuthRequired(AuthLevel.QualityAssurance)]
-    private void SetGoldCommand(string gold) {
+    private void AddGoldCommand(string gold) {
         // Try to parse the gold.
         if (!int.TryParse(gold, out var goldInt)) {
             InformSenderClient("Invalid gold amount.");
