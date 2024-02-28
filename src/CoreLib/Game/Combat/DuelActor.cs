@@ -29,11 +29,11 @@ namespace Imlight.CoreLib.Game.Combat;
 /// <see cref="DuelActorSupervisor"/> and is a child of it.
 /// </summary>
 public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
-    private const float DuelRadius = 584.0f;
-    private const byte NumOfSubCircles = 8;
-    private const byte PlanningTime = 30;
-    private const float AngleBetweenSubCircles = 36.8f;
-    private const float FirstSubCircleAngle = 145.3f;
+    public const float DuelRadius = 584.0f;
+    public const byte NumOfSubCircles = 8;
+    public const byte PlanningTime = 30;
+    public const float AngleBetweenSubCircles = 36.8f;
+    public const float FirstSubCircleAngle = 145.3f;
     private const float DuelStartedGracePeriodInSeconds = 3.75f;
     private const float YawErrorCompensation = 1.58f;
     private const int DelayAfterCombatAddInMs = 0;
@@ -418,14 +418,14 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         var subCircles = new DuelActorSubCircle[8];
         var workingAngle = FirstSubCircleAngle;
 
+        // The sigil rotation is stored between -pi and pi. We need to convert it to 0-2PI.
+        var sigilRotation = _sigilOrientation.Z;
+        if (sigilRotation < 0) {
+            sigilRotation = (2 * MathF.PI) + sigilRotation;
+        }
+
         for (int i = 0; i < NumOfSubCircles / 2; i++) {
             var angleRadians = workingAngle * (MathF.PI / 180f);
-
-            // The sigil rotation is stored between -pi and pi. We need to convert it to 0-2PI.
-            var sigilRotation = _sigilOrientation.Z;
-            if (sigilRotation < 0) {
-                sigilRotation = (2 * MathF.PI) + sigilRotation;
-            }
 
             // The sigil is rotated by some degree. We need to find our x and y coordinates based on this rotation.
             var rotatedX = DuelRadius * MathF.Cos(angleRadians - sigilRotation);
@@ -434,30 +434,31 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             var y = _sigilLocation.Y + rotatedY;
             var sigilPosition = new Vector3(x, y, _sigilLocation.Z);
 
-            // Now we know where the sigil is located, we need to calculate the yaw for the sub circle.
+            // Now we know where the sigil is located, we need to calculate the facing direction of the sub circle.
             // Calculate the direction vector towards the center of the duel (only Z-axis in radians)
-            var directionVector = new Vector3(_sigilLocation.X - x, _sigilLocation.Y - y, 0);
-            var yaw = MathF.Atan2(directionVector.Y, directionVector.X);
+            var duelCenter = new Vector3(_sigilLocation.X - x, _sigilLocation.Y - y, 0);
+            var faceTowardsYaw = MathF.Atan2(duelCenter.Y, duelCenter.X);
             // The yaw must be between 0 and 2PI. It must also be reversed as the client rotates clockwise.
             // The translation isn't perfect because of Gamebyro engine bullshit. We need to compensate for this.
-            yaw = (2 * MathF.PI) - yaw - YawErrorCompensation;
-            if (yaw < 0) {
-                yaw += 2 * MathF.PI;
+            faceTowardsYaw = (2 * MathF.PI) - faceTowardsYaw - YawErrorCompensation;
+            if (faceTowardsYaw < 0) {
+                faceTowardsYaw += 2 * MathF.PI;
             }
 
             // Create the sub circle and add it to the array of sub circles.
             var subCircleId = (byte)(i + 1);
-            subCircles[i] = new DuelActorSubCircle(this, sigilPosition, yaw, _sigilId, subCircleId);
+            subCircles[i] = new DuelActorSubCircle(this, sigilPosition, workingAngle, faceTowardsYaw, _sigilId, subCircleId);
 
             // Mirror for the bottom hemisphere (mirrored on both X and Y axes)
             var mirroredX = _sigilLocation.X - rotatedX;
             var mirroredY = _sigilLocation.Y - rotatedY;
             var mirroredPos = new Vector3(mirroredX, mirroredY, _sigilLocation.Z);
-            var mirroredYaw = yaw + MathF.PI;
+            var mirroredYaw = faceTowardsYaw + MathF.PI;
+            var mirroredRot = workingAngle + MathF.PI;
             mirroredYaw = (mirroredYaw < 0) ? (2 * MathF.PI) + mirroredYaw : mirroredYaw; // Normalize to 0-2PI
 
             subCircleId = (byte)(i + 4);
-            subCircles[i + 4] = new DuelActorSubCircle(this, mirroredPos, mirroredYaw, _sigilId, subCircleId);
+            subCircles[i + 4] = new DuelActorSubCircle(this, mirroredPos, mirroredRot, mirroredYaw, _sigilId, subCircleId);
 
             // Update initial angle for the next sub-circle
             workingAngle -= AngleBetweenSubCircles;

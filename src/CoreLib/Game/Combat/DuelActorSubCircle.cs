@@ -17,6 +17,7 @@ using static Imlight.Common.Caches.TypeCache.CombatParticipant;
 using Imlight.CoreLib.Game.Models.World;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models.Player;
+using System;
 
 namespace Imlight.CoreLib.Game.Combat;
 
@@ -31,33 +32,39 @@ internal class DuelActorSubCircle {
     public Vector3 Location { get; set; }
     public byte SubCircleId { get; set; }
     public float Yaw { get; set; }
+    public float CircleRotation { get; set; }
     public bool IsOccupied { get; set; }
     public Team Team { get; set; }
     public IActorRef ParticipantActor { get; private set; }
     public CoreObject ParticipantObject { get; private set; }
     public WizGameStats ParticipantGameStats { get; private set; }
-    public CombatParticipant CombatParticipant { get; private set;}
-    public uint AvailableSpells { get {
-        if (_combatHand is null) {
-            return 0;
-        }
+    public CombatParticipant CombatParticipant { get; private set; }
+    public uint AvailableSpells {
+        get {
+            if (_combatHand is null) {
+                return 0;
+            }
 
-        return (uint) _combatHand.AvailableSpells.Count;
-    }}
-    public uint TotalSpells { get {
-        if (_combatHand is null) {
-            return 0;
+            return (uint) _combatHand.AvailableSpells.Count;
         }
+    }
+    public uint TotalSpells {
+        get {
+            if (_combatHand is null) {
+                return 0;
+            }
 
-        return (uint) _combatHand.Spells.Count;
-    }}
+            return (uint) _combatHand.Spells.Count;
+        }
+    }
 
     private readonly ulong _sigilId;
     private CombatHand _combatHand;
 
-    public DuelActorSubCircle(DuelActor duelActor, Vector3 location, float yaw, ulong sigilId, byte subCircleId) {
+    public DuelActorSubCircle(DuelActor duelActor, Vector3 location, float relativeRotation, float yaw, ulong sigilId, byte subCircleId) {
         DuelActor = duelActor;
         Location = location;
+        CircleRotation = relativeRotation;
         SubCircleId = subCircleId;
         Yaw = yaw;
         _sigilId = sigilId;
@@ -140,12 +147,12 @@ internal class DuelActorSubCircle {
 
             m_subcircle = 0,
             m_dynamicSymbol = DynamicSigilSymbol.Dagger,
+
+            // No effect?
             m_color = SharpDX.Color.Red,
-            m_rotation = Yaw,
-            m_radius = -584,
-            m_isMinion = false,
-            m_minionSubCircle = 0,
-            m_side = "Monster",
+
+            m_rotation = CircleRotation,
+            m_radius = DuelActor.DuelRadius,
         };
     }
 
