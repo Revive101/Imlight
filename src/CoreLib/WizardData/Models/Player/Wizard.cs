@@ -159,6 +159,13 @@ public class Wizard : IDisposable {
         return true;
     }
 
+    public void SetMaxGold(int maxGold) {
+        GameStats.m_baseGoldPouch = maxGold;
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterGameStats(this);
+    }
+
     public bool AddItemToInventory(ulong itemId, out WizClientObjectItem item) {
         item = (WizClientObjectItem) CoreObjectFactory.FinalizeCoreObject(itemId);
         item.m_characterId = (GID) CharId;
