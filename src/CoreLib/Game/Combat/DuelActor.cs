@@ -301,32 +301,24 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     private void SendCombatHand() {
-        var spellTest = new Spell() {
-            m_templateID = 1552021,
-            m_spellID = 1552021,
-            m_pipCost = new SpellRank() {
-                m_spellRank = 1,
-                m_firePips = 1,
-            }
-        };
-        var hand = new Hand {
-            m_spellList = new List<Spell>()
-        };
-
         _serializer.OnPropertyMask(_combatParticipantHandFlags);
-        var buffer = _serializer.Serialize(hand);
 
         // Serialize the combat hand and send it to the participant, locally.
-        // Skip the creatures, as they don't have a hand.
+        // We're skipping creatures for now.
         EnactActionOnSubCircles(circle => {
             if (circle.Team == Team.Creature) {
                 return;
             }
 
+            var combatHand = circle.CombatHand;
+            var newHand = combatHand.GetHand();
+            var hand = new Hand() { m_spellList = newHand };
+            var buffer = _serializer.Serialize(hand);
+
             var participantActor = circle.ParticipantActor;
             var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATHAND {
-                DeckCount = 0,
-                TotalDeckCount = 0,
+                DeckCount = (byte) newHand.Count,
+                TotalDeckCount = (ushort) combatHand.Spells.Count,
                 ParticipantID = circle.ParticipantObject.m_globalID,
                 HandData = buffer,
             };

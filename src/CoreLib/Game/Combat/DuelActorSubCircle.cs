@@ -16,6 +16,7 @@ using static Imlight.Common.Caches.TypeCache;
 using static Imlight.Common.Caches.TypeCache.CombatParticipant;
 using Imlight.CoreLib.Game.Models.World;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Combat;
 
@@ -29,7 +30,7 @@ internal class DuelActorSubCircle {
     public DuelActor DuelActor { get; set; }
     public Vector3 Location { get; set; }
     public byte SubCircleId { get; set; }
-    public float Yaw { get; set; } // Useless for now, but client records this for whatever reason
+    public float Yaw { get; set; }
     public bool IsOccupied { get; set; }
     public Team Team { get; set; }
     public IActorRef ParticipantActor { get; private set; }
@@ -53,14 +54,11 @@ internal class DuelActorSubCircle {
         Team = participantObject.m_templateID == 1 ? Team.Player : Team.Creature;
         IsOccupied = true;
 
-        if (((WizClientObject) participantObject).m_gameStats is null) {
-            ParticipantGameStats = new WizGameStats() {
-                m_currentHitpoints = 55,
-                m_baseHitpoints = 55,
-            };
+        if (Team == Team.Player) {
+            InitializePlayerSubCircle();
         }
         else {
-            ParticipantGameStats = ((WizClientObject) participantObject).m_gameStats;
+            InitializeCreatureSubCircle();
         }
 
         await PlayEntranceAnimation(participantObject);
@@ -75,13 +73,23 @@ internal class DuelActorSubCircle {
         }
     }
 
-    private CombatParticipant GetPlayerParicipant() {
+    private void InitializePlayerSubCircle() {
         var queryCharacterMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
         var queryCharacterRsp = ParticipantActor
             .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryCharacterMsg)
             .Result
             .Wizard;
 
+        ParticipantGameStats = queryCharacterRsp.GameStats.GetClientTypeAlternative();
+        CombatHand = new CombatHand(queryCharacterRsp.SpellbookBehavior.Spells, 7);
+    }
+
+    private void InitializeCreatureSubCircle() {
+        // todo: implement
+        ParticipantGameStats = new WizGameStats();
+    }
+
+    private CombatParticipant GetPlayerParicipant() {
         var combatParticipant = new CombatParticipant {
             m_ownerID = ParticipantObject.m_globalID,
             m_templateID = 2199023255553, // Captued 2199023255553 from live
@@ -92,10 +100,10 @@ internal class DuelActorSubCircle {
             m_pipRoundRates = new(),
             m_originalTeam = 0,
             m_maxHandSize = 7,
-            m_playerHealth = queryCharacterRsp.GameStats.m_currentHitpoints,
-            m_maxPlayerHealth = queryCharacterRsp.GameStats.m_baseHitpoints,
+            m_playerHealth = ParticipantGameStats.m_currentHitpoints,
+            m_maxPlayerHealth = ParticipantGameStats.m_baseHitpoints,
             m_myTeamTurn = true,
-            m_pGameStats = queryCharacterRsp.GameStats.GetClientTypeAlternative(),
+            m_pGameStats = ParticipantGameStats,
             //m_pHand = new Hand(),
             //m_pPlayDeck = new PlayDeck(),
 
