@@ -23,7 +23,7 @@ namespace Imlight.CoreLib.Game.Combat;
 /// Represents a sub circle in a duel. Each sub circle has a unique id, location, and yaw.
 /// Each sub circle can be occupied by a player or creature.
 /// </summary>
-public class DuelActorSubCircle {
+internal class DuelActorSubCircle {
     private const float AggroTimeInSeconds = 0.75f;
 
     public DuelActor DuelActor { get; set; }
@@ -35,6 +35,7 @@ public class DuelActorSubCircle {
     public IActorRef ParticipantActor { get; private set; }
     public CoreObject ParticipantObject { get; private set; }
     public WizGameStats ParticipantGameStats { get; private set; }
+    public CombatHand CombatHand { get; private set; }
 
     private readonly ulong _sigilId;
 

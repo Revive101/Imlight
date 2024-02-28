@@ -1,0 +1,43 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using static Imlight.Common.Caches.TypeCache;
+
+namespace Imlight.CoreLib.Game.Combat;
+
+internal class CombatHand {
+    internal List<Spell> Spells;
+
+    private readonly byte _handSize;
+    private readonly List<uint> _exhaustedSpellIds;
+
+    // ctor
+    internal CombatHand(List<Spell> spells, byte handSize) {
+        _handSize = handSize;
+        Spells = spells;
+        _exhaustedSpellIds = new List<uint>();
+    }
+
+    internal Spell[] GetHand() {
+        // Randomly pick 7 cards from the spellbook, minus the ones we've exhausted.
+        var hand = new List<Spell>();
+        var availableSpells = Spells.Where(x => !_exhaustedSpellIds.Contains(x.m_spellID)).ToList();
+        var random = new Random();
+
+        for (var i = 0; i < _handSize; i++) {
+            var randomIndex = random.Next(0, availableSpells.Count);
+            var spell = availableSpells[randomIndex];
+
+            hand.Add(spell);
+            availableSpells.Remove(spell);
+            _exhaustedSpellIds.Add(spell.m_spellID);
+        }
+
+        return hand.ToArray();
+    }
+}
