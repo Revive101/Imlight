@@ -159,4 +159,25 @@ internal class CommandModifyProtocol : CommandProtocol {
 
         InformSenderClient($"Set max gold to {goldInt}.");
     }
+
+    [Command("addgold")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void SetGoldCommand(string gold) {
+        // Try to parse the gold.
+        if (!int.TryParse(gold, out var goldInt)) {
+            InformSenderClient("Invalid gold amount.");
+            return;
+        }
+
+        // Set the gold amount.
+        Context.Character.AddGold(goldInt);
+
+        var networkMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEGOLD() {
+            Gold = Context.Character.GameStats.m_currentGold,
+            MaxGold = Context.Character.GameStats.m_baseGoldPouch
+        };
+        Context.SessionActor.Tell(networkMessage, null);
+
+        InformSenderClient($"Added {goldInt} gold.");
+    }
 }

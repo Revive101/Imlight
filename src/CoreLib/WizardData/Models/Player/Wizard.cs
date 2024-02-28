@@ -166,6 +166,13 @@ public class Wizard : IDisposable {
         WizardCollection.UpdateCharacterGameStats(this);
     }
 
+    public void AddGold(int gold) {
+        GameStats.m_currentGold += gold;
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterGameStats(this);
+    }   
+
     public bool AddItemToInventory(ulong itemId, out WizClientObjectItem item) {
         item = (WizClientObjectItem) CoreObjectFactory.FinalizeCoreObject(itemId);
         item.m_characterId = (GID) CharId;
