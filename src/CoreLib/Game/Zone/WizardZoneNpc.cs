@@ -19,8 +19,12 @@ namespace Imlight.CoreLib.Game.Zone;
 public class WizardZoneNpc : WizardZoneObject {
     private static readonly string[] s_shopKeeperNameGiveaways = new string[] {
         "shop",
-        "explorer",        // Zeke
-        "crown_furniture"  // Eliose
+    };
+    private static readonly string[] s_explorerNames = new string[] {
+        "prospector zeke",
+        "eloise merryweather",
+        "elik silverfist",
+
     };
 
     // ctor
@@ -40,8 +44,10 @@ public class WizardZoneNpc : WizardZoneObject {
         }
 
         // If the NPC is a shopkeeper, send a WIZBANG message to the client.
+        // We also have "explorer" names to keep track of Zeke and Eliose, who don't have consistent names.
         var npcName = gameObjTemplate.m_objectName.ToString().ToLower();
-        if (s_shopKeeperNameGiveaways.Any(npcName.Contains)) {
+        var debugName = ActiveGameObject.m_debugName.ToString().ToLower();
+        if (s_shopKeeperNameGiveaways.Any(npcName.Contains) || s_explorerNames.Any(n => debugName == n)) {
             var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG {
                 WizBangID = StringHash.Compute("Shopping"),
                 GameObjectID = ActiveGameObject.m_globalID
