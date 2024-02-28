@@ -39,6 +39,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     private const int DelayAfterCombatAddInMs = 0;
 
     public ITimerScheduler Timers { get; set; }
+    public Team TeamUpFirst { get; private set; }
 
     private readonly IActorRef _wizardZoneRef;
     private readonly ObjectSerializer _serializer = new ObjectSerializer()
@@ -58,7 +59,6 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     private Vector3 _sigilOrientation;
     private byte _creatureCount;
     private byte _playerCount;
-    private Team _upFirstTeam;
 
     public DuelActor(IActorRef wizardZoneRef) {
         this._wizardZoneRef = wizardZoneRef;
@@ -113,7 +113,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             throw new Exception("Failed to assign participants to sub circles.");
         }
 
-        _upFirstTeam = DetermineFirstTeam();
+        TeamUpFirst = DetermineFirstTeam();
 
         // Fire a message to self to start the duel after the grace period has ended.
         var delay = TimeSpan.FromSeconds(DuelStartedGracePeriodInSeconds);
@@ -228,7 +228,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     private void SendCombatPhase(byte phase) {
-        var upFirstSigilSlot = (byte) (_upFirstTeam == Team.Player ? 4 : 0);
+        var upFirstSigilSlot = (byte) (TeamUpFirst == Team.Player ? 4 : 0);
 
         var serializer = new ObjectSerializer()
                 .OnBehaviors(SerializerOptions.Behaviors.None)
@@ -263,12 +263,12 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     private void SendUpFirst(int roundNum) {
         // This serialized data is used for nearby players to see the combat phase.
         // Unsure the wording, but it sounds like it's used for spectators.
-        var upFirstSigilSlot = (byte) (_upFirstTeam == Team.Player ? 4 : 0);
+        var upFirstSigilSlot = (byte) (TeamUpFirst == Team.Player ? 4 : 0);
 
         var upFirstMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATUPFIRST {
             DuelID = _sigilId,
             RoundNum = (ushort) roundNum,
-            FirstTeamToAct = (byte) (_upFirstTeam == Team.Player ? 1 : 0),
+            FirstTeamToAct = (byte) (TeamUpFirst == Team.Player ? 1 : 0),
             UpFirst = upFirstSigilSlot,
         };
         DuelBroadcast(upFirstMsg);
@@ -317,6 +317,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATHAND {
                 DeckCount = (byte) circle.AvailableSpells,
                 TotalDeckCount = (ushort) circle.TotalSpells,
+                TreasureCardCount = 0,
                 ParticipantID = circle.ParticipantObject.m_globalID,
                 HandData = buffer,
             };

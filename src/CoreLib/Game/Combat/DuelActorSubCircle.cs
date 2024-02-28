@@ -98,7 +98,7 @@ internal class DuelActorSubCircle {
 
         CombatParticipant = new CombatParticipant {
             m_ownerID = ParticipantObject.m_globalID,
-            m_templateID = 1,
+            m_templateID = 219902325553, // recorded from live
             m_isPlayer = true,
             m_teamID = 0,
             m_primaryMagicSchoolID = (int) wizard.MagicSchoolBehavior.MagicSchool,
@@ -108,7 +108,7 @@ internal class DuelActorSubCircle {
             m_maxHandSize = 7,
             m_playerHealth = ParticipantGameStats.m_currentHitpoints,
             m_maxPlayerHealth = ParticipantGameStats.m_baseHitpoints,
-            m_myTeamTurn = true,
+            m_myTeamTurn = DuelActor.TeamUpFirst == Team.Player,
             m_pGameStats = ParticipantGameStats,
             m_pPlayDeck = new PlayDeck(),
             m_subcircle = 4,
@@ -132,6 +132,7 @@ internal class DuelActorSubCircle {
             m_pipRoundRates = new(),
             m_playerHealth = 55,
             m_maxPlayerHealth = 55,
+            m_myTeamTurn = DuelActor.TeamUpFirst == Team.Creature,
             m_pGameStats = new WizGameStats() {
                 m_currentHitpoints = 55,
                 m_baseHitpoints = 55,
@@ -139,6 +140,12 @@ internal class DuelActorSubCircle {
 
             m_subcircle = 0,
             m_dynamicSymbol = DynamicSigilSymbol.Dagger,
+            m_color = SharpDX.Color.Red,
+            m_rotation = Yaw,
+            m_radius = -584,
+            m_isMinion = false,
+            m_minionSubCircle = 0,
+            m_side = "Monster",
         };
     }
 
