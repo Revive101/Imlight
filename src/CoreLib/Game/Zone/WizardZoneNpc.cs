@@ -132,4 +132,17 @@ public class WizardZoneNpc : WizardZoneObject {
             suspect.Tell(npcOptionsMsg);
         }
     }
+
+    protected override void OnPlayerInteractionExit(CoreObject player, IActorRef suspect) {
+        base.OnPlayerInteractionExit(player, suspect);
+
+        if (Template is not GameObjectTemplate gameObjTemplate) {
+            return;
+        }
+
+        var leaveServiceRangeMsg = new GAME_5_PROTOCOL.MSG_LEAVESERVICERANGE {
+            MobileID = ActiveGameObject.m_globalID
+        };
+        suspect.Tell(leaveServiceRangeMsg);
+    }
 }
