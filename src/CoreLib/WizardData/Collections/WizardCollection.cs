@@ -191,4 +191,21 @@ public static class WizardCollection {
         existingCharacter.PlayerNameBehavior.NameOverride = wizard.PlayerNameBehavior.NameOverride;
         session.SaveChanges();
     }
+
+    /// <summary>
+    /// Updates the character game stats for a wizard.
+    /// </summary>
+    /// <param name="wizard">The wizard object containing the updated game stats</param>
+    public static void UpdateCharacterGameStats(Wizard wizard) {
+        using var session = s_store.OpenSession();
+
+        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
+            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        if (existingCharacter is null) {
+            return;
+        }
+
+        existingCharacter.GameStats = wizard.GameStats;
+        session.SaveChanges();
+    }
 }
