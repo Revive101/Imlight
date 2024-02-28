@@ -70,11 +70,11 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
     public byte m_cantripLevel;
     public int m_cantripXP;
     public int m_levelScaled;
+    public int m_baseGoldPouch;
 
     // These are stats that we can calculate from other data, and don't need to be stored in the player's character data.
     [JsonIgnore] public int m_baseHitpoints;
     [JsonIgnore] public int m_baseMana;
-    [JsonIgnore] public int m_baseGoldPouch;
     [JsonIgnore] public int m_baseEventCurrency1Pouch;
     [JsonIgnore] public int m_baseEventCurrency2Pouch;
     [JsonIgnore] public int m_basePvPCurrencyPouch;
@@ -150,6 +150,8 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
     public ServerWizGameStats(MagicSchool magicSchool, int level) {
         MagicSchool = magicSchool;
         Level = level;
+
+        m_baseGoldPouch = ConfigurationManager.Settings.BaseGoldPouch;
     }
 
     internal void SetBaseStats() {
@@ -160,7 +162,6 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
 
         this.m_baseHitpoints = baseHealth;
         this.m_baseMana = baseMana;
-        this.m_baseGoldPouch = ConfigurationManager.Settings.BaseGoldPouch;
         this.m_powerPipBase = powerPipChance;
         this.m_energyMax = energyMax;
     }
@@ -174,8 +175,8 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
             m_baseMana = WizardClassData.GetManaAtLevel(Level),
             m_energyMax = WizardClassData.GetPetEnergyAtLevel(Level),
             m_powerPipBase = WizardClassData.GetPowerPipChanceAtLevel(Level),
-            m_baseGoldPouch = ConfigurationManager.Settings.BaseGoldPouch,
 
+            m_baseGoldPouch = m_baseGoldPouch,
             m_currentHitpoints = m_currentHitpoints,
             m_currentGold = m_currentGold,
             m_currentEventCurrency1 = m_currentEventCurrency1,
