@@ -11,6 +11,8 @@ using Imlight.CoreLib.Shared.Packets;
 using System.Linq;
 using System.Collections.Generic;
 using static Imlight.Common.Caches.TypeCache;
+using Imlight.CoreLib.Shared.Resources;
+using Imlight.Common;
 
 namespace Imlight.CoreLib.Game.Zone;
 
@@ -27,6 +29,7 @@ public class WizardZoneNpc : WizardZoneObject {
         "elik silverfist",
     };
     private readonly bool _areWeShopkeeper;
+    private readonly bool _turnTowardsPlayer;
 
     // ctor
     public WizardZoneNpc(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef)
@@ -39,6 +42,14 @@ public class WizardZoneNpc : WizardZoneObject {
         var debugName = ActiveGameObject.m_debugName.ToString().ToLower();
         if (s_shopKeeperNameGiveaways.Any(npcName.Contains) || s_explorerNames.Any(n => debugName == n)) {
             _areWeShopkeeper = true;
+
+            if (template.m_behaviors.Any(x => x.m_behaviorName == nameof(NPCBehaviorTemplate))) {
+                var npcBehavior = (NPCBehaviorTemplate)template.m_behaviors.First(x => x.m_behaviorName == nameof(NPCBehavior));
+                _turnTowardsPlayer = npcBehavior.m_turnTowardsPlayer;
+            }
+            else {
+                Logger.Error("NPC {0} is a shopkeeper but has no NPCBehaviorTemplate", Logger.Args(ActiveGameObject.m_debugName));
+            }
         }
     }
 
@@ -66,6 +77,8 @@ public class WizardZoneNpc : WizardZoneObject {
         var serializer = new ObjectSerializer()
             .OnBehaviors(SerializerOptions.Behaviors.None)
             .OnPropertyMask((SerializerOptions.PropertyFlags) 4);
+
+        var gameObjTemplate = Template as GameObjectTemplate;
 
         if (_areWeShopkeeper) {
             var madlibList = new List<MadlibArg> {
@@ -102,11 +115,11 @@ public class WizardZoneNpc : WizardZoneObject {
             };
 
             var serviceMementoBase = new ServiceMementoBase() {
-                m_bTurnPlayerToFace = true,
+                m_bTurnPlayerToFace = _turnTowardsPlayer,
                 m_clickToInteractOnly = false,
                 m_npcFarewellSound = "",
                 m_npcGreetingSound = "",
-                m_npcIcon = "GUI/NpcPortraits/Art_Portrait_Unknown.dds",
+                m_npcIcon = gameObjTemplate.m_sIcon,
                 m_npcNameKey = "NPCFormats_First_Last",
                 m_npcTextKey = "GUI_NPCInteractText",
                 m_personaMadlibs = new MadlibBlock() {
