@@ -22,7 +22,7 @@ public class WizardZoneObject : ReceiveProtocolDispatcher {
     protected readonly CoreTemplate Template;
     protected readonly IActorRef WizardZoneRef;
 
-    protected float InteractionRadius = 600f;
+    protected float InteractionRadius = 300f;
 
     private readonly List<CoreObject> _objsInRadius;
 
