@@ -13,6 +13,7 @@ using Imlight.Common.Caches;
 using Imlight.Common.Utilities;
 using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.Shared.Resources;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Services;
@@ -51,6 +52,32 @@ internal class ShopService : MessageService {
 
         // Seems to do nothing; followed by MSG_ITEMACQUISITION in live servers, but where is TemplateID?
         SendToSocket(addItemMsg);
+    }
+
+    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_SHOPSELLREQUEST))]
+    private void ReceiveShopSellRequest(WIZARD_12_PROTOCOL.MSG_SHOPSELLREQUEST message) {
+        var wizard = GetActiveWizard();
+
+        if (!wizard.InventoryBehavior.RemoveItem(message.GlobalID, out var item)) {
+            return;
+        }
+
+        var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
+        var gold = (int) (template.m_baseCost * 0.05f);
+
+        wizard.AddGold(gold);
+
+        var updateGoldMsg = new WIZARD_12_PROTOCOL.MSG_UPDATEGOLD {
+            Gold = wizard.GameStats.m_currentGold,
+            MaxGold = wizard.GameStats.m_baseGoldPouch
+        };
+        SendToSocket(updateGoldMsg);
+
+        var removeItemMsg = new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_REMOVEITEM {
+            GlobalID = wizard.CharId,
+            ItemID = message.GlobalID
+        };
+        SendToSocket(removeItemMsg);
     }
 
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_DONESHOPPING))]
