@@ -49,9 +49,21 @@ internal class ShopService : MessageService {
             GlobalID = wizard.CharId,
             SerializedItem = data,
         };
-
-        // Seems to do nothing; followed by MSG_ITEMACQUISITION in live servers, but where is TemplateID?
         SendToSocket(addItemMsg);
+
+        var itemAcqMsg = new WIZARD2_53_PROTOCOL.MSG_ITEMACQUISITION {
+            ItemGlobalID = gid,
+            ItemTemplateID = 87777, // Has no effect ??
+            ItemLocation = 1,
+        };
+        SendToSocket(itemAcqMsg);
+
+        var shopConfirmMsg = new WIZARD_12_PROTOCOL.MSG_SHOPBUYCONFIRM {
+            Failure = 0,
+            WebFailure = 0,
+            Credits = 0
+        };
+        SendToSocket(shopConfirmMsg);
     }
 
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_SHOPSELLREQUEST))]
