@@ -20,6 +20,10 @@ namespace Imlight.CoreLib.Game.Zone;
 /// This is a zone NPC which manages itself as an actor.
 /// </summary>
 public class WizardZoneNpc : WizardZoneObject {
+    private readonly ObjectSerializer _serializer = new ObjectSerializer()
+            .OnBehaviors(SerializerOptions.Behaviors.None)
+            .OnPropertyMask((SerializerOptions.PropertyFlags) 4);
+
     private static readonly string[] s_shopKeeperNameGiveaways = new string[] {
         "shop",
     };
@@ -70,10 +74,6 @@ public class WizardZoneNpc : WizardZoneObject {
     }
 
     protected override void OnPlayerInteractionEnter(CoreObject player, IActorRef suspect) {
-        var serializer = new ObjectSerializer()
-            .OnBehaviors(SerializerOptions.Behaviors.None)
-            .OnPropertyMask((SerializerOptions.PropertyFlags) 4);
-
         if (_areWeShopkeeper) {
             var gameObjTemplate = Template as GameObjectTemplate;
 
@@ -99,7 +99,7 @@ public class WizardZoneNpc : WizardZoneObject {
                 m_serviceOptions = serviceOptions
             };
 
-            var data = serializer.Serialize(serviceMementoBase);
+            var data = _serializer.Serialize(serviceMementoBase);
 
             var npcOptionsMsg = new QUEST_MESSAGES_52_PROTOCOL.MSG_SENDNPCOPTIONS {
                 MobileID = ActiveGameObject.m_globalID,
