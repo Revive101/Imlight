@@ -34,7 +34,7 @@ public class WizardZoneSigilSupervisor : ReceiveProtocolDispatcher {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDCOMBATSIGIL))]
     private void ReceiveAddCombatSigil(ZONE_102_PROTOCOL.MSG_ADDCOMBATSIGIL message) {
-        var props = WizardZoneCombatSigil.Props(message.CoreObject, message.Template, _wizardZoneRef);
+        var props = WizardZoneCombatSigil.Props(message.CoreObject, message.SigilType, message.Template, _wizardZoneRef);
         var actorCreated = CreateChildActor(props);
 
         // We need to actually store the CoreObject so we can use it later.

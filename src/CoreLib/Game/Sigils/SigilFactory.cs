@@ -15,7 +15,7 @@ namespace Imlight.CoreLib.Game.Sigils;
 internal class SigilFactory : RootDirectoryResourceSingleton<SigilFactory>, IMemoryStreamDisposable {
     protected override string DirectoryName => "Sigils/";
 
-    private readonly Dictionary<uint, CombatSigilTemplate> _combatSigils = new();
+    private readonly Dictionary<string, SigilTemplate> _combatSigils = new();
 
     protected override void AfterLoad() {
         var serializer = new FileSerializer();
@@ -25,29 +25,21 @@ internal class SigilFactory : RootDirectoryResourceSingleton<SigilFactory>, IMem
             var fileRecord = file.Key;
             var fileStream = file.Value;
 
-            var sigil = serializer.OpenClass<CombatSigilTemplate>(fileStream);
+            var sigil = serializer.OpenClass<SigilTemplate>(fileStream);
             if (sigil is null) {
                 Logger.Error("Could not deserialize {0} as {1}", Logger.Args(fileRecord.FileName, nameof(CombatSigilTemplate)));
                 continue;
             }
 
-            // todo: add the rest of the sigil types
-            uint templateId = 0;
-            switch (sigil.m_sigilName) {
-                case "CombatSigil8Actor":
-                    templateId = 560;
-                    break;
-            }
-
-            _combatSigils.Add(templateId, sigil);
+            _combatSigils.Add(sigil.m_sigilName, sigil);
             counter++;
         }
 
-        Logger.Information("Loaded {0} combat sigils.", Logger.Args(counter));
+        Logger.Information("Loaded {0} sigils.", Logger.Args(counter));
     }
 
-    internal static CombatSigilTemplate GetSigilTemplate(uint templateId) {
-        if (Instance._combatSigils.TryGetValue(templateId, out var sigil)) {
+    internal static SigilTemplate GetSigilTemplate(string sigilName) {
+        if (Instance._combatSigils.TryGetValue(sigilName, out var sigil)) {
             return sigil;
         }
 

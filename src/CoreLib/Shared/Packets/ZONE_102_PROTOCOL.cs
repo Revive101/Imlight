@@ -178,6 +178,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol
 
 		public TypeCache.CoreObject CoreObject;
 		public TypeCache.CoreTemplate Template;
+        public string SigilType;
 	}
 
 	public class MSG_ADDCOMBATSIGILRSP : IServerMessage

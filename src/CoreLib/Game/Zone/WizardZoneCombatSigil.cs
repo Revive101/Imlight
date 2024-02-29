@@ -29,10 +29,10 @@ public class WizardZoneCombatSigil : WizardZoneObject {
     private IActorRef _activeDuelActor;
     private Duel _activeDuel;
 
-    public WizardZoneCombatSigil(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef)
+    public WizardZoneCombatSigil(CoreObject activeGameObject, string sigilType, CoreTemplate template, IActorRef wizardZoneRef)
         : base(activeGameObject, template, wizardZoneRef) {
         // Load the combat sigil template.
-        _combatSigilTemplate = SigilFactory.GetSigilTemplate(SigilTemplateId);
+        _combatSigilTemplate = (CombatSigilTemplate) SigilFactory.GetSigilTemplate(sigilType);
         if (_combatSigilTemplate is null) {
             Logger.Error("Could not find combat sigil template with ID {0}.", Logger.Args(SigilTemplateId));
         }
@@ -49,8 +49,8 @@ public class WizardZoneCombatSigil : WizardZoneObject {
         }
     }
 
-    public static Props Props(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef)
-        => Akka.Actor.Props.Create(() => new WizardZoneCombatSigil(activeGameObject, template, wizardZoneRef));
+    public static Props Props(CoreObject activeGameObject, string sigilType, CoreTemplate template, IActorRef wizardZoneRef)
+        => Akka.Actor.Props.Create(() => new WizardZoneCombatSigil(activeGameObject, sigilType, template, wizardZoneRef));
 
     protected override void OnPlayerJoin(CoreObject player, IActorRef suspect) {
         if (_activeDuel is not null) {
