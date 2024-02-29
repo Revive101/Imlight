@@ -5,12 +5,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.ObjectProperty;
+using Imlight.CoreLib.Game.Sigils;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
@@ -26,11 +25,18 @@ public class WizardZoneCombatSigil : WizardZoneObject {
     private const uint SigilTemplateId = 1901671683;
 
     private readonly DuelBehavior _duelBehavior;
+    private readonly CombatSigilTemplate _combatSigilTemplate;
     private IActorRef _activeDuelActor;
     private Duel _activeDuel;
 
     public WizardZoneCombatSigil(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef)
         : base(activeGameObject, template, wizardZoneRef) {
+        // Load the combat sigil template.
+        _combatSigilTemplate = SigilFactory.GetSigilTemplate(SigilTemplateId);
+        if (_combatSigilTemplate is null) {
+            Logger.Error("Could not find combat sigil template with ID {0}.", Logger.Args(SigilTemplateId));
+        }
+
         // Initialize the behaviors on the object. One of them is the DuelBehavior,.
         CoreObjectFactory.InitializeCoreObjectBehaviors(ActiveGameObject, template);
         if (CoreObjectFactory.FindBehaviorInstance(ActiveGameObject, out DuelBehavior duelBehavior)) {
@@ -111,6 +117,7 @@ public class WizardZoneCombatSigil : WizardZoneObject {
             SigilId = ActiveGameObject.m_globalID,
             SigilLocation = ActiveGameObject.m_location,
             SigilOrientation = ActiveGameObject.m_orientation,
+            SigilTemplate = _combatSigilTemplate,
         };
 
         // The zone is going to be the one to create the duel. Await its reply here.

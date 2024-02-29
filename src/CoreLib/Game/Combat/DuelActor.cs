@@ -32,14 +32,13 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     public const float DuelRadius = 584.0f;
     public const byte NumOfSubCircles = 8;
     public const byte PlanningTime = 30;
-    public const float AngleBetweenSubCircles = 36.8f;
-    public const float FirstSubCircleAngle = 145.3f;
+    public const float AngleBetweenSubCircles = 36f;
+    public const float FirstSubCircleAngle = 144f;
     private const float DuelStartedGracePeriodInSeconds = 3.75f;
     private const float YawErrorCompensation = 1.58f;
     private const int DelayAfterCombatAddInMs = 0;
 
     public ITimerScheduler Timers { get; set; }
-    public Team TeamUpFirst { get; private set; }
 
     private readonly IActorRef _wizardZoneRef;
     private readonly ObjectSerializer _serializer = new ObjectSerializer()
@@ -53,6 +52,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     private DuelActorSubCircle[] ActiveSubCircles => _subCircles.Where(x => x.IsOccupied).ToArray();
 
     private Duel _duel;
+    private CombatSigilTemplate _combatSigilTemplate;
     private DuelActorSubCircle[] _subCircles = new DuelActorSubCircle[8];
     private ulong _sigilId;
     private Vector3 _sigilLocation;
@@ -81,6 +81,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         // Remember that a duel is *not* a sigil. A sigil is a physical object in the world.
         // A duel is a virtual object that is assigned to a sigil.
         // When this is called, it means a sigil has been activated and a duel is about to start.
+        this._combatSigilTemplate = message.SigilTemplate;
         this._sigilId = message.SigilId;
         this._sigilLocation = message.SigilLocation;
         this._sigilOrientation = message.SigilOrientation;
@@ -113,7 +114,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             throw new Exception("Failed to assign participants to sub circles.");
         }
 
-        TeamUpFirst = DetermineFirstTeam();
+        _duel.m_firstTeamToAct = DetermineFirstTeam();
 
         // Fire a message to self to start the duel after the grace period has ended.
         var delay = TimeSpan.FromSeconds(DuelStartedGracePeriodInSeconds);
@@ -221,14 +222,14 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         Sender.Tell(rsp);
     }
 
-    private static Team DetermineFirstTeam() {
+    private static int DetermineFirstTeam() {
         // Flip a coin to determine which team goes first
         var random = new Random();
-        return random.Next(0, 2) == 0 ? Team.Player : Team.Creature;
+        return (int) (random.Next(0, 2) == 0 ? Team.Player : Team.Creature);
     }
 
     private void SendCombatPhase(byte phase) {
-        var upFirstSigilSlot = (byte) (TeamUpFirst == Team.Player ? 4 : 0);
+        var upFirstSigilSlot = (byte) (_duel.m_firstTeamToAct == (int) Team.Player ? 4 : 0);
 
         var serializer = new ObjectSerializer()
                 .OnBehaviors(SerializerOptions.Behaviors.None)
@@ -263,12 +264,12 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     private void SendUpFirst(int roundNum) {
         // This serialized data is used for nearby players to see the combat phase.
         // Unsure the wording, but it sounds like it's used for spectators.
-        var upFirstSigilSlot = (byte) (TeamUpFirst == Team.Player ? 4 : 0);
+        var upFirstSigilSlot = (byte) (_duel.m_firstTeamToAct == (int) Team.Player ? 4 : 0);
 
         var upFirstMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATUPFIRST {
             DuelID = _sigilId,
             RoundNum = (ushort) roundNum,
-            FirstTeamToAct = (byte) (TeamUpFirst == Team.Player ? 1 : 0),
+            FirstTeamToAct = (byte) _duel.m_firstTeamToAct,
             UpFirst = upFirstSigilSlot,
         };
         DuelBroadcast(upFirstMsg);
