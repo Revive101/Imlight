@@ -25,12 +25,22 @@ public class WizardZoneNpc : WizardZoneObject {
         "prospector zeke",
         "eloise merryweather",
         "elik silverfist",
-
     };
+    private readonly bool _areWeShopkeeper;
 
     // ctor
     public WizardZoneNpc(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef)
-        : base(activeGameObject, template, wizardZoneRef) { }
+        : base(activeGameObject, template, wizardZoneRef) {
+        if (Template is not GameObjectTemplate gameObjTemplate) {
+            return;
+        }
+
+        var npcName = gameObjTemplate.m_objectName.ToString().ToLower();
+        var debugName = ActiveGameObject.m_debugName.ToString().ToLower();
+        if (s_shopKeeperNameGiveaways.Any(npcName.Contains) || s_explorerNames.Any(n => debugName == n)) {
+            _areWeShopkeeper = true;
+        }
+    }
 
     // Akka.NET ctor
     public static Props Props(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef)
@@ -39,16 +49,7 @@ public class WizardZoneNpc : WizardZoneObject {
     protected override void OnPlayerJoin(CoreObject player, IActorRef suspect) {
         base.OnPlayerJoin(player, suspect);
 
-        // Not sure if this can ever occur. Template for a ZoneObject should always be of this type.
-        if (Template is not GameObjectTemplate gameObjTemplate) {
-            return;
-        }
-
-        // If the NPC is a shopkeeper, send a WIZBANG message to the client.
-        // We also have "explorer" names to keep track of Zeke and Eliose, who don't have consistent names.
-        var npcName = gameObjTemplate.m_objectName.ToString().ToLower();
-        var debugName = ActiveGameObject.m_debugName.ToString().ToLower();
-        if (s_shopKeeperNameGiveaways.Any(npcName.Contains) || s_explorerNames.Any(n => debugName == n)) {
+        if (_areWeShopkeeper) {
             var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG {
                 WizBangID = StringHash.Compute("Shopping"),
                 GameObjectID = ActiveGameObject.m_globalID
@@ -62,17 +63,11 @@ public class WizardZoneNpc : WizardZoneObject {
     protected override void OnPlayerInteractionEnter(CoreObject player, IActorRef suspect) {
         base.OnPlayerInteractionEnter(player, suspect);
 
-        if (Template is not GameObjectTemplate gameObjTemplate) {
-            return;
-        }
-
         var serializer = new ObjectSerializer()
-          .OnBehaviors(SerializerOptions.Behaviors.None)
-          .OnPropertyMask((SerializerOptions.PropertyFlags) 4);
+            .OnBehaviors(SerializerOptions.Behaviors.None)
+            .OnPropertyMask((SerializerOptions.PropertyFlags) 4);
 
-        var npcName = gameObjTemplate.m_objectName.ToString().ToLower();
-        var debugName = ActiveGameObject.m_debugName.ToString().ToLower();
-        if (s_shopKeeperNameGiveaways.Any(npcName.Contains) || s_explorerNames.Any(n => debugName == n)) {
+        if (_areWeShopkeeper) {
             var madlibList = new List<MadlibArg> {
                 new MadlibArgT_std_string() {
                     m_madlibArgument = "Persona,First_00000039",
