@@ -45,7 +45,7 @@ internal class ShopService : MessageService {
         var data = _itemSerializer.Serialize(item);
 
         var addItemMsg = new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
-            GlobalID = wizard.GameObject.m_globalID,
+            GlobalID = wizard.CharId,
             SerializedItem = data,
         };
 
@@ -58,7 +58,7 @@ internal class ShopService : MessageService {
         var wizard = GetActiveWizard();
 
         var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG() {
-            GameObjectID = wizard.GameObject.m_globalID,
+            GameObjectID = wizard.CharId,
             WizBangID = 0
         };
         ZoneBroadcast(wizBangMsg, false);

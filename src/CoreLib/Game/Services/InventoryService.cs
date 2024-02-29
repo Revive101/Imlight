@@ -47,7 +47,7 @@ public class InventoryService : MessageService {
         wizard.RemoveItemFromInventory(message.GlobalID);
 
         SendToSocket(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_REMOVEITEM() {
-            GlobalID = wizard.GameObject.m_globalID,
+            GlobalID = wizard.CharId,
             ItemID = message.GlobalID
         });
     }
@@ -143,13 +143,13 @@ public class InventoryService : MessageService {
         switch (message.StateName) {
             case "SpellbookWizbang":
                 ZoneBroadcast(new GAME_5_PROTOCOL.MSG_WIZBANG() {
-                    GameObjectID = wizard.GameObject.m_globalID,
+                    GameObjectID = wizard.CharId,
                     WizBangID = StringHash.Compute("Registrar")
                 }, false);
                 break;
             default:
                 ZoneBroadcast(new GAME_5_PROTOCOL.MSG_WIZBANG() {
-                    GameObjectID = wizard.GameObject.m_globalID,
+                    GameObjectID = wizard.CharId,
                     WizBangID = 0
                 }, false);
                 break;

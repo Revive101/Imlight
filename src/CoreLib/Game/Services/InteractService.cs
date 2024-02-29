@@ -57,7 +57,7 @@ internal class InteractService : MessageService {
                 SendToSocket(shopListMsg);
 
                 var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG() {
-                    GameObjectID = wizard.GameObject.m_globalID,
+                    GameObjectID = wizard.CharId,
                     WizBangID = StringHash.Compute("Registrar")
                 };
                 ZoneBroadcast(wizBangMsg, false);
