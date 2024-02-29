@@ -1,4 +1,4 @@
-﻿/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
  */
@@ -16,6 +16,7 @@ using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData;
 using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.Player;
+using Imlight.Director.EmbeddedAccounts;
 
 namespace Imlight.Director;
 
@@ -129,6 +130,7 @@ internal static class Program {
         // Dev accounts; Hi, devs! Feel free to make your own account and add it here.
         new Jooty("jooty", "2342", "jay@r101net", AuthLevel.Administrator);
         new Joji("joji", "jootysocoollike", "joji@r101.net", AuthLevel.Administrator);
+        new Phill("phill", "is that guy even a dev?", "phill@r101.net", AuthLevel.Administrator);
         new Rocket("rocket", "7969", "rocket@r101.net", AuthLevel.Developer);
 
         // Hard code hall monitor lead accounts. Don't share these passwords!
