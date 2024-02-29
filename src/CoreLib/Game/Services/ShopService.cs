@@ -58,7 +58,8 @@ internal class ShopService : MessageService {
     private void ReceiveShopSellRequest(WIZARD_12_PROTOCOL.MSG_SHOPSELLREQUEST message) {
         var wizard = GetActiveWizard();
 
-        if (!wizard.InventoryBehavior.RemoveItem(message.GlobalID, out var item)) {
+        var removedItemSuccess = wizard.InventoryBehavior.RemoveItem(message.GlobalID, out var item);
+        if (!removedItemSuccess) {
             return;
         }
 
