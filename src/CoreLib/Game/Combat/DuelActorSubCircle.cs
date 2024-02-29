@@ -3,42 +3,33 @@
  * Proprietary and confidential.
  */
 
-using System.Drawing;
 using Akka.Actor;
 using Imlight.Common.Caches;
-using Imlight.Common.IO;
-using Imlight.Common.ObjectProperty;
-using Imlight.CoreLib.Game.Models;
+using Imlight.CoreLib.Game.Models.World;
 using Imlight.CoreLib.Shared.Packets;
 using SharpDX;
 using System.Threading.Tasks;
 using static Imlight.Common.Caches.TypeCache;
 using static Imlight.Common.Caches.TypeCache.CombatParticipant;
-using Imlight.CoreLib.Game.Models.World;
-using Imlight.CoreLib.Shared.Resources;
-using Imlight.CoreLib.WizardData.Models.Player;
-using System;
 
 namespace Imlight.CoreLib.Game.Combat;
 
-/// <summary>
-/// Represents a sub circle in a duel. Each sub circle has a unique id, location, and yaw.
-/// Each sub circle can be occupied by a player or creature.
-/// </summary>
+internal enum SlotType {
+    Monster,
+    Player
+}
+
 internal class DuelActorSubCircle {
     private const float AggroTimeInSeconds = 0.75f;
 
-    public DuelActor DuelActor { get; set; }
-    public Vector3 Location { get; set; }
-    public byte SubCircleId { get; set; }
-    public float Yaw { get; set; }
-    public float CircleRotation { get; set; }
-    public bool IsOccupied { get; set; }
-    public Team Team { get; set; }
-    public IActorRef ParticipantActor { get; private set; }
-    public CoreObject ParticipantObject { get; private set; }
-    public WizGameStats ParticipantGameStats { get; private set; }
-    public CombatParticipant CombatParticipant { get; private set; }
+    internal string SlotName { get; set; }
+    internal SlotType SlotType { get; set; }
+    internal Vector3 WorldPosition { get; set; }
+    internal float WorldRotation { get; set; }
+    internal IActorRef ParticipantActor { get; private set; }
+    internal CoreObject ParticipantObject { get; private set; }
+    internal WizGameStats ParticipantGameStats { get; private set; }
+    internal CombatParticipant CombatParticipant { get; private set; }
     public uint AvailableSpells {
         get {
             if (_combatHand is null) {
@@ -57,26 +48,38 @@ internal class DuelActorSubCircle {
             return (uint) _combatHand.Spells.Count;
         }
     }
+    internal bool Occupied => ParticipantObject is not null;
+    internal Team OccupiedTeam {
+        get {
+            if (ParticipantObject is null) {
+                return Team.Player;
+            }
 
-    private readonly ulong _sigilId;
+            return ParticipantObject.m_templateID == 1 ? Team.Player : Team.Monster;
+        }
+    }
+
+    private readonly DuelActor _duelActor;
+    private readonly float _radius;
+    private readonly float _rotation;
+    private readonly Color _color;
     private CombatHand _combatHand;
 
-    public DuelActorSubCircle(DuelActor duelActor, Vector3 location, float relativeRotation, float yaw, ulong sigilId, byte subCircleId) {
-        DuelActor = duelActor;
-        Location = location;
-        CircleRotation = relativeRotation;
-        SubCircleId = subCircleId;
-        Yaw = yaw;
-        _sigilId = sigilId;
+    // ctor
+    internal DuelActorSubCircle(DuelActor duelActor, float radius, float rotation, Color color) {
+        _duelActor = duelActor;
+        _radius = radius;
+        _rotation = rotation;
+        _color = color;
     }
 
     internal async Task AssignParticipant(IActorRef actor, CoreObject participantObject) {
         ParticipantActor = actor;
         ParticipantObject = participantObject;
-        Team = participantObject.m_templateID == 1 ? Team.Player : Team.Creature;
-        IsOccupied = true;
+        var team = participantObject.m_templateID == 1 ? Team.Player : Team.Monster;
 
-        if (Team == Team.Player) {
+        // Set the CombatParticipant based on what team they are.
+        if (team == Team.Player) {
             InitializePlayerSubCircle();
         }
         else {
@@ -115,11 +118,15 @@ internal class DuelActorSubCircle {
             m_maxHandSize = 7,
             m_playerHealth = ParticipantGameStats.m_currentHitpoints,
             m_maxPlayerHealth = ParticipantGameStats.m_baseHitpoints,
-            m_myTeamTurn = DuelActor.TeamUpFirst == Team.Player,
+            m_myTeamTurn = _duelActor.Duel.m_firstTeamToAct == 0,
             m_pGameStats = ParticipantGameStats,
             m_pPlayDeck = new PlayDeck(),
             m_subcircle = 4,
             m_dynamicSymbol = DynamicSigilSymbol.Sun,
+
+            m_color = _color,
+            m_rotation = _rotation,
+            m_radius = _radius,
         };
     }
 
@@ -139,7 +146,7 @@ internal class DuelActorSubCircle {
             m_pipRoundRates = new(),
             m_playerHealth = 55,
             m_maxPlayerHealth = 55,
-            m_myTeamTurn = DuelActor.TeamUpFirst == Team.Creature,
+            m_myTeamTurn = _duelActor.Duel.m_firstTeamToAct == 1,
             m_pGameStats = new WizGameStats() {
                 m_currentHitpoints = 55,
                 m_baseHitpoints = 55,
@@ -148,29 +155,27 @@ internal class DuelActorSubCircle {
             m_subcircle = 0,
             m_dynamicSymbol = DynamicSigilSymbol.Dagger,
 
-            // No effect?
-            m_color = SharpDX.Color.Red,
-
-            m_rotation = CircleRotation,
-            m_radius = DuelActor.DuelRadius,
+            m_color = _color,
+            m_rotation = _rotation,
+            m_radius = _radius,
         };
     }
 
     private async Task PlayEntranceAnimation(CoreObject participantObject) {
         // Set the state of the participant to entering sigil.
-        DuelActor.DuelBroadcast(new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
+        _duelActor.DuelBroadcast(new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
             GameObjectID = participantObject.m_globalID,
             State = (uint) NPCStates.Sigil
         });
 
         // Send aggro to the participant.
-        DuelActor.DuelBroadcast(new WIZARD_12_PROTOCOL.MSG_AGGRO {
+        _duelActor.DuelBroadcast(new WIZARD_12_PROTOCOL.MSG_AGGRO {
             GlobalID = participantObject.m_globalID,
-            LocX = Location.X,
-            LocY = Location.Y,
-            LocZ = Location.Z,
-            Yaw = Yaw,
-            SigilGID = _sigilId
+            LocX = WorldPosition.X,
+            LocY = WorldPosition.Y,
+            LocZ = WorldPosition.Z,
+            Yaw = WorldRotation,
+            SigilGID = _duelActor.SigilId
         });
 
         // Wait the amount of time it takes for the actor to enter the sigil, then set
@@ -178,7 +183,7 @@ internal class DuelActorSubCircle {
         await Task.Delay((int) (AggroTimeInSeconds * 1000));
 
         // Set state to stationary.
-        DuelActor.DuelBroadcast(new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
+        _duelActor.DuelBroadcast(new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
             GameObjectID = participantObject.m_globalID,
             State = (uint) NPCStates.Stationary
         });
