@@ -104,16 +104,8 @@ public class WizardZoneCombatSigil : WizardZoneObject {
             return;
         }
 
-        var duel = RequestDuelActor(message.StartingParticipants);
-        _activeDuelActor = duel.Item1;
-        _activeDuel = duel.Item2;
-
-        SpawnCombatSigilObject();
-    }
-
-    private (IActorRef, Duel) RequestDuelActor(Dictionary<IActorRef, CoreObject> participants) {
         var createMsg = new COMBAT_106_PROTOCOL.MSG_STARTDUEL {
-            Participants = participants,
+            Participants = message.StartingParticipants,
             SigilId = ActiveGameObject.m_globalID,
             SigilLocation = ActiveGameObject.m_location,
             SigilOrientation = ActiveGameObject.m_orientation,
@@ -125,7 +117,11 @@ public class WizardZoneCombatSigil : WizardZoneObject {
             .Ask<COMBAT_106_PROTOCOL.MSG_DUELDETAILS>(createMsg)
             .Result;
 
-        return (createRsp.DuelActor, createRsp.Duel);
+        _activeDuelActor = createRsp.DuelActor;
+        _activeDuel = createRsp.Duel;
+        base.InteractionRadius = _combatSigilTemplate.m_engageRadius;;
+
+        SpawnCombatSigilObject();
     }
 
     private void SpawnCombatSigilObject() {
