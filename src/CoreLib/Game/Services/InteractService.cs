@@ -17,6 +17,9 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Services;
 internal class InteractService : MessageService {
+    private readonly ObjectSerializer _serializer = new ObjectSerializer()
+          .OnBehaviors(SerializerOptions.Behaviors.None)
+          .OnPropertyMask((SerializerOptions.PropertyFlags) 4);
 
     public InteractService(SessionActor sessionActor) : base(sessionActor) { }
 
@@ -26,10 +29,6 @@ internal class InteractService : MessageService {
     [MessageHandler(typeof(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC))]
     private void ReceiveNpcInteract(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC message) {
         var wizard = GetActiveWizard();
-
-        var serializer = new ObjectSerializer()
-          .OnBehaviors(SerializerOptions.Behaviors.None)
-          .OnPropertyMask((SerializerOptions.PropertyFlags) 4);
 
         switch (message.ServiceName) {
             case "WizShoppingService":
@@ -47,7 +46,7 @@ internal class InteractService : MessageService {
                     m_shopType = 0,
                     m_shopList = shopItems
                 };
-                var data = serializer.Serialize(shopOffering);
+                var data = _serializer.Serialize(shopOffering);
 
                 var shopListMsg = new WIZARD_12_PROTOCOL.MSG_SHOPLIST() {
                     GlobalID = message.GlobalID,
