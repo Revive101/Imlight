@@ -9,10 +9,10 @@ using System.Collections.Generic;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
-using Imlight.CoreLib.Shared.Networking;
-using Imlight.CoreLib.Shared.Resources;
+using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty;
 using Imlight.Common.ObjectProperty.PropertyReflection;
+using Imlight.CoreLib.Shared.Networking;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Services;
@@ -56,6 +56,12 @@ internal class InteractService : MessageService {
                     WebFailure = 0,
                 };
                 SendToSocket(shopListMsg);
+
+                var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG() {
+                    GameObjectID = wizard.GameObject.m_globalID,
+                    WizBangID = StringHash.Compute("Registrar")
+                };
+                ZoneBroadcast(wizBangMsg, false);
                 break;
             default:
                 break;
