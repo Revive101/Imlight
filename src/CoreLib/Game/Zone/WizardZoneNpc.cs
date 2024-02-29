@@ -28,8 +28,11 @@ public class WizardZoneNpc : WizardZoneObject {
         "eloise merryweather",
         "elik silverfist",
     };
-    private readonly bool _areWeShopkeeper;
-    private readonly bool _turnTowardsPlayer;
+
+    private readonly string _npcNameKey = "NPCFormats_Name";
+    private MadlibBlock _madlibBlock;
+    private bool _areWeShopkeeper;
+    private bool _turnTowardsPlayer;
 
     // ctor
     public WizardZoneNpc(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef)
@@ -38,18 +41,13 @@ public class WizardZoneNpc : WizardZoneObject {
             return;
         }
 
+        SetMadLibBlock();
+
+        // Check to see if we're a shopkeeper. If we are, set the shopkeeper properties.
         var npcName = gameObjTemplate.m_objectName.ToString().ToLower();
         var debugName = ActiveGameObject.m_debugName.ToString().ToLower();
         if (s_shopKeeperNameGiveaways.Any(npcName.Contains) || s_explorerNames.Any(n => debugName == n)) {
-            _areWeShopkeeper = true;
-
-            if (template.m_behaviors.Any(x => x.m_behaviorName == nameof(NPCBehaviorTemplate))) {
-                var npcBehavior = (NPCBehaviorTemplate)template.m_behaviors.First(x => x.m_behaviorName == nameof(NPCBehavior));
-                _turnTowardsPlayer = npcBehavior.m_turnTowardsPlayer;
-            }
-            else {
-                Logger.Error("NPC {0} is a shopkeeper but has no NPCBehaviorTemplate", Logger.Args(ActiveGameObject.m_debugName));
-            }
+            SetShopkeeper();
         }
     }
 
@@ -72,37 +70,12 @@ public class WizardZoneNpc : WizardZoneObject {
     }
 
     protected override void OnPlayerInteractionEnter(CoreObject player, IActorRef suspect) {
-        base.OnPlayerInteractionEnter(player, suspect);
-
         var serializer = new ObjectSerializer()
             .OnBehaviors(SerializerOptions.Behaviors.None)
             .OnPropertyMask((SerializerOptions.PropertyFlags) 4);
 
-        var gameObjTemplate = Template as GameObjectTemplate;
-
         if (_areWeShopkeeper) {
-            var madlibList = new List<MadlibArg> {
-                new MadlibArgT_std_string() {
-                    m_madlibArgument = "Persona,First_00000039",
-                    m_madlibToken = "FIRSTNAME"
-                },
-                new MadlibArgT_std_string() {
-                    m_madlibArgument = "Persona,Last_00000033",
-                    m_madlibToken = "LASTNAME"
-                },
-                new MadlibArgT_std_string() {
-                    m_madlibArgument = "Title_00000018",
-                    m_madlibToken = "TITLE"
-                },
-                new MadlibArgT_std_string() {
-                    m_madlibArgument = "",
-                    m_madlibToken = "NICKNAME"
-                },
-                new MadlibArgT_std_string() {
-                    m_madlibArgument = "NPCFormats_First_Last",
-                    m_madlibToken = "FULLNAME"
-                },
-            };
+            var gameObjTemplate = Template as GameObjectTemplate;
 
             var serviceOptions = new List<ServiceOptionBase> {
                 new EquipmentShopOption() {
@@ -120,12 +93,9 @@ public class WizardZoneNpc : WizardZoneObject {
                 m_npcFarewellSound = "",
                 m_npcGreetingSound = "",
                 m_npcIcon = gameObjTemplate.m_sIcon,
-                m_npcNameKey = "NPCFormats_First_Last",
+                m_npcNameKey = _npcNameKey,
                 m_npcTextKey = "GUI_NPCInteractText",
-                m_personaMadlibs = new MadlibBlock() {
-                    m_blockToken = "NPC",
-                    m_madlibs = madlibList
-                },
+                m_personaMadlibs = _madlibBlock,
                 m_serviceOptions = serviceOptions
             };
 
@@ -152,5 +122,37 @@ public class WizardZoneNpc : WizardZoneObject {
             MobileID = ActiveGameObject.m_globalID
         };
         suspect.Tell(leaveServiceRangeMsg);
+    }
+
+    private void SetMadLibBlock() {
+        var gameObjTemplate = Template as GameObjectTemplate;
+        if (gameObjTemplate is null) {
+            return;
+        }
+
+        var madlibList = new List<MadlibArg> {
+            new MadlibArgT_std_string() {
+                m_madlibArgument = gameObjTemplate.m_displayName,
+                m_madlibToken = "NAME"
+            },
+        };
+
+        _madlibBlock = new MadlibBlock() {
+            m_blockToken = "NPC",
+            m_madlibs = madlibList
+        };
+    }
+
+    private void SetShopkeeper() {
+        _areWeShopkeeper = true;
+        var gameObjTemplate = Template as GameObjectTemplate;
+
+        // What a funny line, C# pattern matching.
+        if (Template.m_behaviors.FirstOrDefault(x => x is NPCBehaviorTemplate) is NPCBehaviorTemplate npcBehavior) {
+            _turnTowardsPlayer = npcBehavior.m_turnTowardsPlayer;
+        }
+        else {
+            Logger.Error("NPC {0} is a shopkeeper but has no NPCBehaviorTemplate", Logger.Args(ActiveGameObject.m_debugName));
+        }
     }
 }
