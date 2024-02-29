@@ -29,11 +29,7 @@ namespace Imlight.CoreLib.Game.Combat;
 /// <see cref="DuelActorSupervisor"/> and is a child of it.
 /// </summary>
 public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
-    public const float DuelRadius = 584.0f;
-    public const byte NumOfSubCircles = 8;
     public const byte PlanningTime = 30;
-    public const float AngleBetweenSubCircles = 36f;
-    public const float FirstSubCircleAngle = 144f;
     private const float DuelStartedGracePeriodInSeconds = 3.75f;
     private const float YawErrorCompensation = 1.58f;
     private const int DelayAfterCombatAddInMs = 0;
@@ -426,7 +422,10 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         var subCircleObjs = new DuelActorSubCircle[8];
 
         // The sigil rotation is stored between -pi and pi. We need it to be between 0 and 2pi.
-        var sigilRotation = _sigilOrientation.Z + MathF.PI;
+        var sigilRotation = _sigilOrientation.Z;
+        if (sigilRotation < 0) {
+            sigilRotation = (2 * MathF.PI) + sigilRotation;
+        }
 
         for (int i = 0; i < subCircles.Count; i++) {
             var rotation = subCircles[i].m_rotation;
@@ -435,8 +434,8 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             var rotationRadians = rotation * (MathF.PI / 180f);
 
             // The sigil is rotated by some degree. We need to find our x and y coordinates based on this rotation.
-            var rotatedX = DuelRadius * MathF.Cos(rotationRadians - sigilRotation);
-            var rotatedY = DuelRadius * MathF.Sin(rotationRadians - sigilRotation);
+            var rotatedX = radius * MathF.Cos(rotationRadians - sigilRotation);
+            var rotatedY = radius * MathF.Sin(rotationRadians - sigilRotation);
             var x = _sigilLocation.X + rotatedX;
             var y = _sigilLocation.Y + rotatedY;
             var rotatedSigilPos = new Vector3(x, y, _sigilLocation.Z);
@@ -453,7 +452,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             }
 
             // Cretae the sub circle object and add it to the array.
-            var subCircle = new DuelActorSubCircle(this, radius, faceTowardsYaw, color) {
+            var subCircle = new DuelActorSubCircle(this, radius, rotation, color) {
                 WorldPosition = rotatedSigilPos,
                 WorldRotation = faceTowardsYaw,
                 SlotName = subCircles[i].m_locationPreference,
