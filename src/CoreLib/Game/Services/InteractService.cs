@@ -15,6 +15,8 @@ using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Shared.Networking;
 using static Imlight.Common.Caches.TypeCache;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Game.Zone;
+using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Services;
 internal class InteractService : MessageService {
@@ -31,48 +33,73 @@ internal class InteractService : MessageService {
     private void ReceiveNpcInteract(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC message) {
         var wizard = GetActiveWizard();
 
-        // Todo: Search the WizardZone to find the interactable. That object should return the code below.
+        // Search for the interaction object.
         var npc = GetZoneObject(message.GlobalID);
         if (npc == null) {
-            Logger.Error("{0} searched for NPC by global ID {1} but one was not found", Logger.Args(wizard.CharId, message.GlobalID));
+            Logger.Error("{0} searched for NPC by global ID {1} but one was not found",
+                Logger.Args(wizard.CharId, message.GlobalID));
+            return;
+        }
+
+        // Check if the object is a shopkeeper.
+        if (npc is not WizardZoneNpc zoneNpc) {
+            Logger.Error("{0} searched for NPC by global ID {1} but the object found was not a {2}",
+                Logger.Args(wizard.CharId, message.GlobalID, nameof(WizardZoneNpc)));
+            return;
+        }
+
+        // Check to see if this NPC is capable of providing the service.
+        if (zoneNpc.ServiceMomentoBase.m_serviceOptions.Any(x => x.m_serviceName == message.ServiceName)) {
+            Logger.Error("{0} interacted with NPC by global ID {1} but the service {2} was not found",
+                Logger.Args(wizard.CharId, message.GlobalID, message.ServiceName));
             return;
         }
 
         switch (message.ServiceName) {
             case "WizShoppingService":
-                var shopItems = new List<GID> {
-                    new GID(87226), new GID(87220), new GID(87232), new GID(87196), new GID(87203), new GID(87208), new GID(87214),
-                    new GID(87237), new GID(87890), new GID(87885), new GID(87886), new GID(87887), new GID(87888), new GID(87891)
-                };
-
-                var shopOffering = new WizShopOffering() {
-                    m_CSRTestShop = false,
-                    m_activeHolidayList = null,
-                    m_furnitureShop = 0,
-                    m_recipeList = null,
-                    m_sellModifier = 0.05f,
-                    m_shopTitle = "KrocNPC_00000013",
-                    m_shopType = 0,
-                    m_shopList = shopItems
-                };
-                var data = _serializer.Serialize(shopOffering);
-
-                var shopListMsg = new WIZARD_12_PROTOCOL.MSG_SHOPLIST() {
-                    GlobalID = message.GlobalID,
-                    Data = data,
-                    Credits = 0,
-                    WebFailure = 0,
-                };
-                SendToSocket(shopListMsg);
-
-                var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG() {
-                    GameObjectID = wizard.CharId,
-                    WizBangID = StringHash.Compute("Registrar")
-                };
-                ZoneBroadcast(wizBangMsg, false);
+                InteractShopkeeper(message, wizard, zoneNpc);
                 break;
             default:
                 break;
         }
+    }
+
+    private void InteractShopkeeper(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC message, Wizard wizard, WizardZoneNpc zoneNpc) {
+        if (!zoneNpc.IsShopkeeper) {
+            Logger.Error("{0} interacted with NPC by global ID {1} but the object found was not a shopkeeper",
+                Logger.Args(wizard.CharId, message.GlobalID));
+            return;
+        }
+
+        var shopItems = new List<GID> {
+                    new GID(87226), new GID(87220), new GID(87232), new GID(87196), new GID(87203), new GID(87208), new GID(87214),
+                    new GID(87237), new GID(87890), new GID(87885), new GID(87886), new GID(87887), new GID(87888), new GID(87891)
+                };
+
+        var shopOffering = new WizShopOffering() {
+            m_CSRTestShop = false,
+            m_activeHolidayList = null,
+            m_furnitureShop = 0,
+            m_recipeList = null,
+            m_sellModifier = 0.05f,
+            m_shopTitle = "KrocNPC_00000013",
+            m_shopType = 0,
+            m_shopList = shopItems
+        };
+        var data = _serializer.Serialize(shopOffering);
+
+        var shopListMsg = new WIZARD_12_PROTOCOL.MSG_SHOPLIST() {
+            GlobalID = message.GlobalID,
+            Data = data,
+            Credits = 0,
+            WebFailure = 0,
+        };
+        SendToSocket(shopListMsg);
+
+        var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG() {
+            GameObjectID = wizard.CharId,
+            WizBangID = StringHash.Compute("Registrar")
+        };
+        ZoneBroadcast(wizBangMsg, false);
     }
 }
