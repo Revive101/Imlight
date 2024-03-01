@@ -37,15 +37,14 @@ public class ServerSpellbookBehavior : BehaviorInstance, IClientBehaviorProvider
         }
     }
 
-    public void LearnSpell(uint templateId) {
+    public void LearnSpell(Spell spell) {
         if (Spells is null) {
             Spells = new List<Spell>();
         }
 
-        var spell = SpellFactory.CreateSpellFromTemplate(templateId);
         if (spell != null) {
             Spells.Add(spell);
-            SpellTemplateIdList.Add(templateId);
+            SpellTemplateIdList.Add(spell.m_templateID);
         }
     }
 
@@ -61,15 +60,14 @@ public class ServerSpellbookBehavior : BehaviorInstance, IClientBehaviorProvider
         }
     }
 
-    public void AddSpell(uint templateId) {
+    public void AddSpell(Spell spell) {
         if (Spells is null) {
             Spells = new List<Spell>();
         }
 
-        var spell = SpellFactory.CreateSpellFromTemplate(templateId);
         if (spell != null) {
             Spells.Add(spell);
-            TemporarySpellTemplateIdList.Add(templateId);
+            TemporarySpellTemplateIdList.Add(spell.m_templateID);
         }
     }
 
@@ -81,7 +79,7 @@ public class ServerSpellbookBehavior : BehaviorInstance, IClientBehaviorProvider
         var spell = Spells.Find(x => x.m_templateID == templateId);
         if (spell != null) {
             Spells.Remove(spell);
-            SpellTemplateIdList.Remove(templateId);
+            SpellTemplateIdList.Remove(spell.m_templateID);
         }
     }
 

@@ -37,7 +37,7 @@ internal class CombatHand {
             }
 
             var randomIndex = random.Next(0, _availableCache.Count);
-            var spell = AvailableSpells[randomIndex];
+            var spell = _availableCache[randomIndex];
 
             hand.Add(spell);
             _availableCache.Remove(spell);

@@ -294,17 +294,17 @@ public class Wizard : IDisposable {
         WizardCollection.UpdateCharacterNameOverride(this);
     }
 
-    public bool LearnSpell(uint spellTemplateId) {
-        if (SpellbookBehavior.SpellTemplateIdList.Contains(spellTemplateId)) {
+    public bool LearnSpell(Spell spell) {
+        if (SpellbookBehavior.SpellTemplateIdList.Contains(spell.m_templateID)) {
             Logger.Warning("{0} Tried to learn spell with template ID {1} that is already known.",
-                Logger.Args(PlayerNameBehavior.GetWizardName(), spellTemplateId));
+                Logger.Args(PlayerNameBehavior.GetWizardName(), spell.m_templateID));
             return false;
         }
 
-        SpellbookBehavior.LearnSpell(spellTemplateId);
+        SpellbookBehavior.LearnSpell(spell);
 
         // Persistent save.
-        WizardCollection.AddCharacterSpell(this, spellTemplateId);
+        WizardCollection.AddCharacterSpell(this, spell.m_templateID);
 
         return true;
     }
@@ -324,8 +324,8 @@ public class Wizard : IDisposable {
         return true;
     }
 
-    public void AddSpell(uint spellTemplateId) {
-        SpellbookBehavior.AddSpell(spellTemplateId);
+    public void AddSpell(Spell spell) {
+        SpellbookBehavior.AddSpell(spell);
     }
 
     public void RemoveSpell(uint spellTemplateId) {
