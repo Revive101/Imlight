@@ -18,10 +18,14 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Services;
 internal class ShopService : MessageService {
+    // Notice: It is currently unknown where this constant originates from. It is used on MSG_SHOPBUYREQUEST
+    // to know which item a player has purchased. That being, this constant + the template ID of the item.
+    // If you see it change, please let us know.
+    private const long ShopOffset = 9895604649984;
+
     private readonly CoreObjectSerializer _itemSerializer = new CoreObjectSerializer()
                     .OnBehaviors(SerializerOptions.Behaviors.None)
                     .OnPropertyMask((SerializerOptions.PropertyFlags) 1);
-    private const long _shopOffset = 9895604649984;
 
     public ShopService(SessionActor sessionActor) : base(sessionActor) { }
 
@@ -32,9 +36,13 @@ internal class ShopService : MessageService {
     private void ReceiveShopBuyRequest(WIZARD_12_PROTOCOL.MSG_SHOPBUYREQUEST message) {
         var wizard = GetActiveWizard();
 
-        var itemTemplateID = message.ShopID - _shopOffset; // Do this, for some reason
+        // Todo: query the WizardZone to find the shopkeeper NPC. That object should return the code below.
+
+        var itemTemplateID = message.ShopID - ShopOffset; // Do this, for some reason
         var primaryDye = message.texture; // TODO: Store dyes properly
         var secondaryDye = message.decal;
+
+        // Todo: should double check here to make sure this shopkeeper even sells this object.
 
         var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(itemTemplateID);
         var goldCost = (int) Math.Ceiling(template.m_baseCost * 1.2275f); // Necessary to match client values, Wizard101 taxes?
@@ -120,6 +128,7 @@ internal class ShopService : MessageService {
 
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_DONESHOPPING))]
     private void ReceiveDoneShopping(WIZARD_12_PROTOCOL.MSG_DONESHOPPING message) {
+        // A wizard has complete shopping and is leaving the shop.
         var wizard = GetActiveWizard();
 
         var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG() {

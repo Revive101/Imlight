@@ -30,6 +30,8 @@ internal class InteractService : MessageService {
     private void ReceiveNpcInteract(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC message) {
         var wizard = GetActiveWizard();
 
+        // Todo: Search the WizardZone to find the interactable. That object should return the code below.
+
         switch (message.ServiceName) {
             case "WizShoppingService":
                 var shopItems = new List<GID> {
