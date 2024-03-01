@@ -18,10 +18,10 @@ namespace Imlight.CoreLib.Game.Zone;
 /// This is a zone object which manages itself as an actor.
 /// </summary>
 public class WizardZoneObject : ReceiveProtocolDispatcher {
-    protected readonly CoreObject ActiveGameObject;
-    protected readonly CoreTemplate Template;
-    protected readonly IActorRef WizardZoneRef;
+    public readonly CoreObject ActiveGameObject;
+    public readonly CoreTemplate Template;
 
+    protected readonly IActorRef WizardZoneRef;
     protected float InteractionRadius = 300f;
 
     private readonly List<CoreObject> _objsInRadius;

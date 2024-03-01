@@ -141,6 +141,15 @@ public class ZoneService : MessageService {
         ZoneActor.Forward(message);
     }
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT))]
+    private void ReceiveQueryZoneObject(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT message) {
+        if (ZoneActor is null) {
+            throw new Exception("Zone Reference was null.");
+        }
+
+        ZoneActor.Forward(message);
+    }
+
     private void DoZoneTransfer() {
         var account = GetSocketAccount();
         var character = GetActiveWizard();

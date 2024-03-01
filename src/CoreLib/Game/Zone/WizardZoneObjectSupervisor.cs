@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Networking;
@@ -87,6 +88,14 @@ public class WizardZoneObjectSupervisor : ReceiveProtocolDispatcher {
                 obj.Key.Forward(msg);
             }
         }
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT))]
+    private void ReceiveQueryObject(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT message) {
+        var obj = _objects.Values.First(x => x.ActiveGameObject.m_globalID == message.GlobalID);
+        var rsp = new ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECTRSP { ZoneObject = obj };
+
+        Sender.Tell(rsp);
     }
 
     private void CreateActorAndRespond(Props props) {

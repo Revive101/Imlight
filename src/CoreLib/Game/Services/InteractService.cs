@@ -14,6 +14,7 @@ using Imlight.Common.ObjectProperty;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Shared.Networking;
 using static Imlight.Common.Caches.TypeCache;
+using Imlight.CoreLib.Shared.Packets;
 
 namespace Imlight.CoreLib.Game.Services;
 internal class InteractService : MessageService {
@@ -31,6 +32,11 @@ internal class InteractService : MessageService {
         var wizard = GetActiveWizard();
 
         // Todo: Search the WizardZone to find the interactable. That object should return the code below.
+        var npc = GetZoneObject(message.GlobalID);
+        if (npc == null) {
+            Logger.Error("{0} searched for NPC by global ID {1} but one was not found", Logger.Args(wizard.CharId, message.GlobalID));
+            return;
+        }
 
         switch (message.ServiceName) {
             case "WizShoppingService":

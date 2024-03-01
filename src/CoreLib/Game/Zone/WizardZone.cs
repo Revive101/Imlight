@@ -441,5 +441,10 @@ public class WizardZone : ReceiveProtocolDispatcher {
         _duelSupervisorRef.Forward(message);
     }
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT))]
+    private void ReceiveObjectQuery(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT message) {
+        _objectSupervisorRef.Forward(message);
+    }
+
     #endregion
 }
