@@ -3,6 +3,7 @@
  * Proprietary and confidential.
  */
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
@@ -20,6 +21,7 @@ namespace Imlight.CoreLib.Game.Zone;
 public class WizardZoneSigilSupervisor : ReceiveProtocolDispatcher {
     private readonly IActorRef _wizardZoneRef;
     private readonly Dictionary<IActorRef, CoreObject> _sigils;
+    private readonly TimeSpan _statusCheckTimeout = TimeSpan.FromSeconds(5);
 
     // ctor
     public WizardZoneSigilSupervisor(IActorRef wizardZoneRef) {
@@ -38,14 +40,13 @@ public class WizardZoneSigilSupervisor : ReceiveProtocolDispatcher {
         var actorCreated = CreateChildActor(props);
 
         // We need to actually store the CoreObject so we can use it later.
-        var getCoreObjectMsg = new ZONE_102_PROTOCOL.MSG_GETCOREOBJECT();
-        var getCoreObjectRsp = actorCreated
-            .Ask<ZONE_102_PROTOCOL.MSG_GETCOREOBJECTRSP>(getCoreObjectMsg)
-            .Result
-            .CoreObject;
+        var statusCheckMsg = new ZONE_102_PROTOCOL.MSG_OBJECTSTATUSCHECK();
+        var statusCheckRsp = actorCreated.
+            Ask<ZONE_102_PROTOCOL.MSG_OBJECTSTATUSCHECKRSP>(statusCheckMsg, _statusCheckTimeout)
+            .Result;
 
         // Add the sigil locally.
-        _sigils.Add(actorCreated, getCoreObjectRsp);
+        _sigils.Add(actorCreated, statusCheckRsp.CoreObject);
 
         // Tell the sender that the object was created.
         var rsp = new ZONE_102_PROTOCOL.MSG_ADDCOMBATSIGILRSP { ActorRef = actorCreated };
