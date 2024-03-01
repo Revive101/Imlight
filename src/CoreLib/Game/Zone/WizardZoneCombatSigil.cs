@@ -54,7 +54,7 @@ public class WizardZoneCombatSigil : WizardZoneObject {
 
     protected override void OnPlayerJoin(CoreObject player, IActorRef suspect) {
         if (_activeDuel is not null) {
-            SpawnCombatSigilObject();
+            base.OnPlayerJoin(player, suspect);
         }
     }
 

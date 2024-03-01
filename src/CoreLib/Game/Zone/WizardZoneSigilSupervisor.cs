@@ -62,6 +62,15 @@ public class WizardZoneSigilSupervisor : ReceiveProtocolDispatcher {
         closestSigilActor.Forward(message);
     }
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST))]
+    private void ReceiveZoneObjectBroadcast(ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST message) {
+        foreach (var sigilActor in _sigils.Keys) {
+            foreach (var msg in message.Messages) {
+                sigilActor.Forward(msg);
+            }
+        }
+    }
+
     private IActorRef CreateChildActor(Props props) => Context.ActorOf(props);
 
     private IActorRef FindClosestSigil(CoreObject primarySuspect) {
