@@ -21,6 +21,7 @@ internal class ShopService : MessageService {
     private readonly CoreObjectSerializer _itemSerializer = new CoreObjectSerializer()
                     .OnBehaviors(SerializerOptions.Behaviors.None)
                     .OnPropertyMask((SerializerOptions.PropertyFlags) 1);
+    private const long _shopOffset = 9895604649984;
 
     public ShopService(SessionActor sessionActor) : base(sessionActor) { }
 
@@ -31,15 +32,31 @@ internal class ShopService : MessageService {
     private void ReceiveShopBuyRequest(WIZARD_12_PROTOCOL.MSG_SHOPBUYREQUEST message) {
         var wizard = GetActiveWizard();
 
-        var primaryDye = message.texture;
+        var itemTemplateID = message.ShopID - _shopOffset; // Do this, for some reason
+        var primaryDye = message.texture; // TODO: Store dyes properly
         var secondaryDye = message.decal;
 
-        var gid = RandomGen.GenerateGUID();
+        var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(itemTemplateID);
+        var goldCost = (int) Math.Ceiling(template.m_baseCost * 1.2275f); // Necessary to match client values, Wizard101 taxes?
+
+        // Deny transaction if player cannot afford item
+        if (goldCost > wizard.GameStats.m_currentGold) {
+            var shopDenyMsg = new WIZARD_12_PROTOCOL.MSG_SHOPBUYCONFIRM {
+                Failure = 1,
+                WebFailure = 0,
+                Credits = 0
+            };
+            SendToSocket(shopDenyMsg);
+            return;
+        }
+
+        wizard.AddItemToInventory(itemTemplateID, out var itemObject);
+
         var inactiveBehaviors = new List<BehaviorInstance>() { null };
         var item = new WizClientObjectItem() {
             m_templateID = message.ShopID,
-            m_globalID = gid,
-            m_permID = gid,
+            m_globalID = itemObject.m_globalID,
+            m_permID = itemObject.m_globalID,
             m_inactiveBehaviors = inactiveBehaviors,
             m_fScale = 1
         };
@@ -52,11 +69,19 @@ internal class ShopService : MessageService {
         SendToSocket(addItemMsg);
 
         var itemAcqMsg = new WIZARD2_53_PROTOCOL.MSG_ITEMACQUISITION {
-            ItemGlobalID = gid,
-            ItemTemplateID = 87777, // Has no effect ??
+            ItemGlobalID = itemObject.m_globalID,
+            ItemTemplateID = (uint) itemTemplateID,
             ItemLocation = 1,
         };
         SendToSocket(itemAcqMsg);
+
+        // Update and inform of new gold balance
+        wizard.RemoveGold(goldCost);
+        var goldUpdateMsg = new WIZARD_12_PROTOCOL.MSG_UPDATEGOLD {
+            Gold = wizard.GameStats.m_currentGold,
+            MaxGold = wizard.GameStats.m_baseGoldPouch
+        };
+        SendToSocket(goldUpdateMsg);
 
         var shopConfirmMsg = new WIZARD_12_PROTOCOL.MSG_SHOPBUYCONFIRM {
             Failure = 0,

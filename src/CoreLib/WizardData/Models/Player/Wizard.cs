@@ -190,7 +190,7 @@ public class Wizard : IDisposable {
         WizardCollection.UpdateCharacterGameStats(this);
     }
 
-    public void RemovedGold(int gold) {
+    public void RemoveGold(int gold) {
         GameStats.m_currentGold -= gold;
 
         // Persistent save.
