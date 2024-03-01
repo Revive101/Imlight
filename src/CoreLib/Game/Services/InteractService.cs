@@ -33,7 +33,8 @@ internal class InteractService : MessageService {
         switch (message.ServiceName) {
             case "WizShoppingService":
                 var shopItems = new List<GID> {
-                    new GID(87226), new GID(87220), new GID(87232), new GID(87196), new GID(87203), new GID(87208), new GID(87214)
+                    new GID(87226), new GID(87220), new GID(87232), new GID(87196), new GID(87203), new GID(87208), new GID(87214),
+                    new GID(87237), new GID(87890), new GID(87885), new GID(87886), new GID(87887), new GID(87888), new GID(87891)
                 };
 
                 var shopOffering = new WizShopOffering() {
