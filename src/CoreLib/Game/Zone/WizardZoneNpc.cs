@@ -20,10 +20,6 @@ namespace Imlight.CoreLib.Game.Zone;
 /// This is a zone NPC which manages itself as an actor.
 /// </summary>
 public class WizardZoneNpc : WizardZoneObject {
-    private readonly ObjectSerializer _serializer = new ObjectSerializer()
-            .OnBehaviors(SerializerOptions.Behaviors.None)
-            .OnPropertyMask((SerializerOptions.PropertyFlags) 4);
-
     private static readonly string[] s_shopKeeperNameGiveaways = new string[] {
         "shop",
     };
@@ -33,9 +29,14 @@ public class WizardZoneNpc : WizardZoneObject {
         "elik silverfist",
     };
 
+    public bool IsShopkeeper { get; set; }
+    public ServiceMementoBase ServiceMomentoBase { get; private set; }
+
+    private readonly ObjectSerializer _serializer = new ObjectSerializer()
+            .OnBehaviors(SerializerOptions.Behaviors.None)
+            .OnPropertyMask((SerializerOptions.PropertyFlags) 4);
     private readonly string _npcNameKey = "NPCFormats_Name";
     private MadlibBlock _madlibBlock;
-    private bool _areWeShopkeeper;
     private bool _turnTowardsPlayer;
 
     // ctor
@@ -46,6 +47,7 @@ public class WizardZoneNpc : WizardZoneObject {
         }
 
         SetMadLibBlock();
+        SetServiceMomentoBase();
 
         // Check to see if we're a shopkeeper. If we are, set the shopkeeper properties.
         var npcName = gameObjTemplate.m_objectName.ToString().ToLower();
@@ -62,7 +64,7 @@ public class WizardZoneNpc : WizardZoneObject {
     protected override void OnPlayerJoin(CoreObject player, IActorRef suspect) {
         base.OnPlayerJoin(player, suspect);
 
-        if (_areWeShopkeeper) {
+        if (IsShopkeeper) {
             var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG {
                 WizBangID = StringHash.Compute("Shopping"),
                 GameObjectID = ActiveGameObject.m_globalID
@@ -74,32 +76,8 @@ public class WizardZoneNpc : WizardZoneObject {
     }
 
     protected override void OnPlayerInteractionEnter(CoreObject player, IActorRef suspect) {
-        if (_areWeShopkeeper) {
-            var gameObjTemplate = Template as GameObjectTemplate;
-
-            var serviceOptions = new List<ServiceOptionBase> {
-                new EquipmentShopOption() {
-                    m_displayKey = "GUI_ShopOptionEquipment",
-                    m_forceInteract = false,
-                    m_iconKey = "Shopping",
-                    m_serviceIndex = 0,
-                    m_serviceName = "WizShoppingService"
-                }
-            };
-
-            var serviceMementoBase = new ServiceMementoBase() {
-                m_bTurnPlayerToFace = _turnTowardsPlayer,
-                m_clickToInteractOnly = false,
-                m_npcFarewellSound = "",
-                m_npcGreetingSound = "",
-                m_npcIcon = gameObjTemplate.m_sIcon,
-                m_npcNameKey = _npcNameKey,
-                m_npcTextKey = "GUI_NPCInteractText",
-                m_personaMadlibs = _madlibBlock,
-                m_serviceOptions = serviceOptions
-            };
-
-            var data = _serializer.Serialize(serviceMementoBase);
+        if (IsShopkeeper) {
+            var data = _serializer.Serialize(ServiceMomentoBase);
 
             var npcOptionsMsg = new QUEST_MESSAGES_52_PROTOCOL.MSG_SENDNPCOPTIONS {
                 MobileID = ActiveGameObject.m_globalID,
@@ -143,8 +121,23 @@ public class WizardZoneNpc : WizardZoneObject {
         };
     }
 
+    private void SetServiceMomentoBase() {
+        var gameObjTemplate = Template as GameObjectTemplate;
+
+        ServiceMomentoBase = new ServiceMementoBase() {
+            m_bTurnPlayerToFace = _turnTowardsPlayer,
+            m_clickToInteractOnly = false,
+            m_npcFarewellSound = "",
+            m_npcGreetingSound = "",
+            m_npcIcon = gameObjTemplate.m_sIcon,
+            m_npcNameKey = _npcNameKey,
+            m_npcTextKey = "GUI_NPCInteractText",
+            m_personaMadlibs = _madlibBlock,
+        };
+    }
+
     private void SetShopkeeper() {
-        _areWeShopkeeper = true;
+        IsShopkeeper = true;
         var gameObjTemplate = Template as GameObjectTemplate;
 
         // What a funny line, C# pattern matching.
@@ -154,5 +147,14 @@ public class WizardZoneNpc : WizardZoneObject {
         else {
             Logger.Error("NPC {0} is a shopkeeper but has no NPCBehaviorTemplate", Logger.Args(ActiveGameObject.m_debugName));
         }
+
+        var shopService = new EquipmentShopOption() {
+            m_displayKey = "GUI_ShopOptionEquipment",
+            m_forceInteract = false,
+            m_iconKey = "Shopping",
+            m_serviceIndex = 0,
+            m_serviceName = "WizShoppingService"
+        };
+        ServiceMomentoBase.m_serviceOptions.Add(shopService);
     }
 }
