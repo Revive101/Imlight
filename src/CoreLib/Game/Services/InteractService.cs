@@ -49,7 +49,7 @@ internal class InteractService : MessageService {
         }
 
         // Check to see if this NPC is capable of providing the service.
-        if (zoneNpc.ServiceMomentoBase.m_serviceOptions.Any(x => x.m_serviceName == message.ServiceName)) {
+        if (!zoneNpc.ServiceMomentoBase.m_serviceOptions.Any(x => x.m_serviceName == message.ServiceName)) {
             Logger.Error("{0} interacted with NPC by global ID {1} but the service {2} was not found",
                 Logger.Args(wizard.CharId, message.GlobalID, message.ServiceName));
             return;

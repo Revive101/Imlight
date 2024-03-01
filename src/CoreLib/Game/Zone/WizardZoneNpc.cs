@@ -133,6 +133,7 @@ public class WizardZoneNpc : WizardZoneObject {
             m_npcNameKey = _npcNameKey,
             m_npcTextKey = "GUI_NPCInteractText",
             m_personaMadlibs = _madlibBlock,
+            m_serviceOptions = new List<ServiceOptionBase>()
         };
     }
 
