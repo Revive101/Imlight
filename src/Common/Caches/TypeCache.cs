@@ -19,9 +19,7 @@ using Imlight.Common.IO;
 
 namespace Imlight.Common.Caches;
 
-
 public static partial class TypeCache {
-
     public static Imlight.Common.ObjectProperty.PropertyReflection.PropertyClass Dispatch(uint hash) {
         switch (hash) {
             case 725087: return new DerbyLockLane();
@@ -4313,11 +4311,7 @@ public static partial class TypeCache {
 
         public override uint GetHash() => 248609871;
         [Property(3206441047, 31)] public ByteString m_sReqName;
-        [Property(1334217449, 31)] public OPERATOR_TYPE m_reqOperatorType;
         [Property(2058248243, 31)] public ByteString m_sReqValue;
-
-        public enum OPERATOR_TYPE {
-        }
     }
 
     public class ClientPlayerStatueStitchBlob : PlayerStatueStitchBlob {
@@ -11032,11 +11026,7 @@ public static partial class TypeCache {
         [Property(1944101106, 31)] public List<SpellSubEffectMetadata> m_subEffectMeta;
         [Property(191336919, 287)] public Boolean m_delayEnchantment;
         [Property(269492350, 287)] public Boolean m_PvE;
-        [Property(2526055263, 287)] public kDelayOrder m_delayEnchantmentOrder;
         [Property(112365451, 31)] public Int32 m_roundAddedTC;
-
-        public enum kDelayOrder {
-        }
     }
 
     public class LevelScaledEffectTemplate : StatisticEffectTemplate {
@@ -12799,15 +12789,10 @@ public static partial class TypeCache {
     public class DdWinAnimMovePlayer : WindowAnimation {
 
         public override uint GetHash() => 1172757019;
-        [Property(591537519, 135)] public DdDirection m_facing;
-        [Property(1599953256, 135)] public DdDirection m_direction;
         [Property(503609006, 135)] public Single m_fSpeed;
         [Property(3670997758, 135)] public Vector3 m_currentLocation;
         [Property(2653859938, 135)] public Vector3 m_targetLocation;
         [Property(2212758093, 135)] public DoodleDoug m_myBoard;
-
-        public enum DdDirection {
-        }
     }
 
     public class HideActorCinematicAction : ActorCinematicAction {
@@ -14418,7 +14403,6 @@ public static partial class TypeCache {
 
         public override uint GetHash() => 1343615589;
         [Property(1862714304, 2097159)] public PlayerStatusEnum m_status;
-        [Property(1426706772, 2097159)] public PlayerTeamEnum m_team;
         [Property(1805208228, 7)] public ByteString m_packedName;
         [Property(1774633426, 7)] public GID m_playerID;
         [Property(702888164, 7)] public UInt32 m_polymorphID;
@@ -14437,9 +14421,6 @@ public static partial class TypeCache {
             MISSING = 3,
             RED_TEAM = 0,
             BLUE_TEAM = 1,
-        }
-
-        public enum PlayerTeamEnum {
         }
     }
 
@@ -17851,13 +17832,8 @@ public static partial class TypeCache {
     public class DdWinAnimMoveMob : WinAnimMoveToLocationSpeed {
 
         public override uint GetHash() => 1780966363;
-        [Property(591537519, 135)] public DdDirection m_facing;
-        [Property(1071209393, 135)] public DdDirection m_cameFrom;
         [Property(2346187452, 135)] public Point m_nextWaypoint;
         [Property(2212758093, 135)] public DoodleDoug m_myBoard;
-
-        public enum DdDirection {
-        }
     }
 
     public class ScriptBehaviorTemplate : BehaviorTemplate {
@@ -18434,10 +18410,6 @@ public static partial class TypeCache {
 
         public override uint GetHash() => 1850272972;
         [Property(569545460, 7)] public GID m_itemID;
-        [Property(405352622, 2097159)] public CurrencyTab m_currencyType;
-
-        public enum CurrencyTab {
-        }
     }
 
     public class EquippedItemInfo : PropertyClass {
@@ -18578,7 +18550,6 @@ public static partial class TypeCache {
         [Property(403022326, 263)] public UInt32 m_maxCopies;
         [Property(176502472, 263)] public Int32 m_levelRestriction;
         [Property(191336919, 287)] public Boolean m_delayEnchantment;
-        [Property(2526055263, 287)] public kDelayOrder m_delayEnchantmentOrder;
         [Property(2903322585, 268435463)] public ByteString m_previousSpellName;
         [Property(3557598526, 131359)] public ByteString m_cardFront;
         [Property(668817544, 287)] public Boolean m_useGloss;
@@ -18593,9 +18564,6 @@ public static partial class TypeCache {
             kShadowCreature = 2,
             kWeapon = 3,
             kEquipment = 4,
-        }
-
-        public enum kDelayOrder {
         }
     }
 
