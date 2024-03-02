@@ -87,5 +87,15 @@ namespace Imlight.CoreLib.Shared.Packets {
 
             public int Round;
         }
+
+        public sealed class MSG_ACTORADDEDTODUEL : IServerMessage
+        {
+            public byte MessageOrder => 9;
+            public byte ServiceID => 106;
+
+            public IActorRef DuelActor;
+            public Vector3 SlotPosition;
+            public float SlotOrientation;
+        }
 	}
 }

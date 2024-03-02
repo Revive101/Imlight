@@ -37,6 +37,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     public ITimerScheduler Timers { get; set; }
     public Duel Duel { get; private set; }
     public ulong SigilId { get; private set; }
+    public IActorRef ActorRef => Self;
 
     private readonly IActorRef _wizardZoneRef;
     private readonly ObjectSerializer _serializer = new ObjectSerializer()

@@ -86,6 +86,14 @@ internal class DuelActorSubCircle {
             InitializeCreatureSubCircle();
         }
 
+        // Inform the actor that they've been added to a duel.
+        var msg = new COMBAT_106_PROTOCOL.MSG_ACTORADDEDTODUEL {
+            DuelActor = _duelActor.ActorRef,
+            SlotPosition = WorldPosition,
+            SlotOrientation = WorldRotation
+        };
+        ParticipantActor.Tell(msg);
+
         await PlayEntranceAnimation(participantObject);
     }
 

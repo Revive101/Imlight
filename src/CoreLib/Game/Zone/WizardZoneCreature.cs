@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Imlight.Common.Caches;
+using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using SharpDX;
@@ -87,7 +88,7 @@ public class WizardZoneCreature : WizardZoneObject {
         // MOVESTATE: 0 = stopped, 1 = moving.
         var msgMoveState = new GAME_5_PROTOCOL.MSG_MOVESTATE {
             GlobalID = ActiveGameObject.m_globalID,
-            NewState = (sbyte) (_creatureState == CreatureState.Wandering ? 0 : 1)
+            NewState = (sbyte) (_creatureState == CreatureState.Wandering ? 1 : 0)
         };
         playerActor.Tell(msgMoveState);
 
@@ -110,8 +111,6 @@ public class WizardZoneCreature : WizardZoneObject {
             return;
         }
 
-        StartCombat();
-
         var msg = new ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL {
             StartingParticipants = new Dictionary<IActorRef, CoreObject>
             {
@@ -124,7 +123,7 @@ public class WizardZoneCreature : WizardZoneObject {
 
     protected override Vector3 GetPosition() {
         // If the creature is not moving, then return the current position.
-        if (!_isMovingCreature) {
+        if (!_isMovingCreature || _creatureState != CreatureState.Wandering) {
             return ActiveGameObject.m_location;
         }
 
@@ -146,6 +145,20 @@ public class WizardZoneCreature : WizardZoneObject {
         var z = lastNodeReached.Z + t * (targetNode.Z - lastNodeReached.Z);
 
         return new Vector3((float) x, (float) y, (float) z);
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ACTORADDEDTODUEL))]
+    private void ReceiveDuelAdd(COMBAT_106_PROTOCOL.MSG_ACTORADDEDTODUEL message) {
+        StartCombat();
+
+        ActiveGameObject.m_location = message.SlotPosition;
+
+        // Set the orientation of the creature to the orientation of the slot.
+        // The orientation is in radians, so convert it to degrees.
+        var orientationInRadians = message.SlotOrientation;
+        var orientationInDegrees = orientationInRadians * (180 / Math.PI);
+        var orientationVector = new Vector3(0, 0, (float) orientationInDegrees);
+        ActiveGameObject.m_orientation = orientationVector;
     }
 
     private void SetPropertiesFromTemplate() {
