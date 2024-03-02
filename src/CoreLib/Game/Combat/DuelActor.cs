@@ -21,6 +21,7 @@ using static Imlight.Common.Caches.TypeCache.Duel;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using System.Threading.Tasks;
+using Imlight.CoreLib.Game.Models.World;
 
 namespace Imlight.CoreLib.Game.Combat;
 
@@ -31,6 +32,7 @@ namespace Imlight.CoreLib.Game.Combat;
 public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     public const byte PlanningTime = 5;
     private const float DuelStartedGracePeriodInSeconds = 3.75f;
+    private const float ExecutionTime = 10.0f;
     private const float YawErrorCompensation = 1.58f;
     private const int DelayAfterCombatAddInMs = 0;
 
@@ -192,6 +194,30 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         DuelBroadcast(msg);
 
         Director.EndRound();
+
+        var delay = TimeSpan.FromSeconds(ExecutionTime);
+        Timers.StartSingleTimer("roundresolution", new COMBAT_106_PROTOCOL.MSG_ROUNDRESOLUTION(), delay);
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ROUNDRESOLUTION))]
+    private void ReceiveRoundResolution(COMBAT_106_PROTOCOL.MSG_ROUNDRESOLUTION message) {
+        EnactActionOnSubCircles(circle => {
+            var participantActor = circle.ParticipantActor;
+            var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATREMOVE {
+                DuelID = SigilId,
+                ParticipantID = circle.ParticipantObject.m_globalID
+            };
+            participantActor.Tell(msg);
+
+            var stateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
+                GameObjectID = circle.ParticipantObject.m_globalID,
+                State = (uint) NPCStates.Idle
+            };
+            participantActor.Tell(stateMsg);
+        });
+
+        Duel.m_duelPhase = kDuelPhase.kPhase_Resolution;
+        SendCombatPhase((byte) Duel.m_duelPhase);
     }
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ADDPARTICIPANT))]

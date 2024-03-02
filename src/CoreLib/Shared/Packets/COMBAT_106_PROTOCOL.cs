@@ -115,5 +115,11 @@ namespace Imlight.CoreLib.Shared.Packets {
             public byte MessageOrder => 11;
             public byte ServiceID => 106;
         }
+
+        public sealed class MSG_ROUNDRESOLUTION : IServerMessage
+        {
+            public byte MessageOrder => 12;
+            public byte ServiceID => 106;
+        }
 	}
 }
