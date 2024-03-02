@@ -34,4 +34,20 @@ public class CombatService : MessageService {
         var orientation = (byte)(orientationDegrees / 360 * 256);
         wizard.SetPersistentOrientation(orientation);
     }
+
+    [MessageHandler(typeof(WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATMOVE))]
+    private void ReceiveCombatMove(WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATMOVE message) {
+        if (_currentDuelActor == null) {
+            throw new Exception("Combat move received without a duel actor.");
+        }
+
+        var msg = new COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE {
+            Actor = SessionActor.ActorRef,
+            MoveType = message.MoveType,
+            SpellSelection = message.SpellSelection,
+            SpellTarget = message.SpellTarget,
+            TimeLeft = message.TimeLeft
+        };
+        _currentDuelActor.Tell(msg);
+    }
 }

@@ -29,7 +29,7 @@ namespace Imlight.CoreLib.Game.Combat;
 /// <see cref="DuelActorSupervisor"/> and is a child of it.
 /// </summary>
 public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
-    public const byte PlanningTime = 30;
+    public const byte PlanningTime = 5;
     private const float DuelStartedGracePeriodInSeconds = 3.75f;
     private const float YawErrorCompensation = 1.58f;
     private const int DelayAfterCombatAddInMs = 0;
@@ -60,8 +60,6 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
     public DuelActor(IActorRef wizardZoneRef) {
         this._wizardZoneRef = wizardZoneRef;
-
-        Director = new CombatDirector();
     }
 
     public static Props Props(IActorRef wizardZoneRef)
@@ -114,7 +112,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             throw new Exception("Failed to assign participants to sub circles.");
         }
 
-        Duel.m_firstTeamToAct = (int) Director.DetermineFirstTeam();
+        Director = new CombatDirector(Duel);
 
         // Fire a message to self to start the duel after the grace period has ended.
         var delay = TimeSpan.FromSeconds(DuelStartedGracePeriodInSeconds);
@@ -143,6 +141,8 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_NEWROUND))]
     private void ReceiveNewRound(COMBAT_106_PROTOCOL.MSG_NEWROUND message) {
+        Director.StartRound();
+
         // Pre-planning phase just wants to send who is up first.
         Duel.m_duelPhase = kDuelPhase.kPhase_PrePlanning;
         SendCombatPhase((byte) Duel.m_duelPhase);
@@ -170,6 +170,28 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         SendCombatHealth();
 
         SendCombatUI(PlanningTime);
+
+        var delay = TimeSpan.FromSeconds(PlanningTime);
+        Timers.StartSingleTimer("roundover", new COMBAT_106_PROTOCOL.MSG_ROUNDOVER(), delay);
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ROUNDOVER))]
+    private void ReceiveRoundOver(COMBAT_106_PROTOCOL.MSG_ROUNDOVER message) {
+        // The planning phase is over. The client will now be able to send combat moves.
+        Duel.m_duelPhase = kDuelPhase.kPhase_Execution;
+        SendCombatPhase((byte) Duel.m_duelPhase);
+
+        var combatActionList = Director.GetCombatActionList();
+        _serializer.OnPropertyMask(_combatParticipantHandFlags);
+        var buffer = _serializer.Serialize(combatActionList);
+
+        var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATACTIONS {
+            DuelID = SigilId,
+            ActionData = buffer,
+        };
+        DuelBroadcast(msg);
+
+        Director.EndRound();
     }
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ADDPARTICIPANT))]
@@ -220,6 +242,23 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             : CreatureCount < (PlayerCount * 2) && CreatureCount < 4;
         var rsp = new COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLERSP { Available = slotAvailable };
         Sender.Tell(rsp);
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE))]
+    private void ReceiveCombatMove(COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE message) {
+        // Find which sub circle this is.
+        var subCircle = _subCircles.FirstOrDefault(x => x.ParticipantActor == message.Actor);
+        if (subCircle is null) {
+            throw new Exception("Combat move received from an actor that is not in the duel.");
+        }
+
+        // Find which sub circle they were targeting.
+        var targetSubCircle = _subCircles[message.SpellTarget - 1];
+
+        // Find what spell they were casting.
+        var spell = subCircle.GetSpellFromLastHand(message.SpellSelection);
+
+        Director.AddCombatMove(subCircle, targetSubCircle, spell);
     }
 
     private void SendCombatPhase(byte phase) {
@@ -450,7 +489,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             }
 
             // Cretae the sub circle object and add it to the array.
-            var subCircle = new DuelActorSubCircle(this, radius, rotation, color) {
+            var subCircle = new DuelActorSubCircle(this, radius, rotation, color, i) {
                 WorldPosition = rotatedSigilPos,
                 WorldRotation = faceTowardsYaw,
                 SlotName = subCircles[i].m_locationPreference,

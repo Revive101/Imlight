@@ -97,5 +97,23 @@ namespace Imlight.CoreLib.Shared.Packets {
             public Vector3 SlotPosition;
             public float SlotOrientation;
         }
+
+        public sealed class MSG_ACTORCOMBATMOVE : IServerMessage
+        {
+            public byte MessageOrder => 10;
+            public byte ServiceID => 106;
+
+            public IActorRef Actor;
+            public byte MoveType;
+            public byte SpellSelection;
+            public uint SpellTarget;
+            public int TimeLeft;
+        }
+
+        public sealed class MSG_ROUNDOVER : IServerMessage
+        {
+            public byte MessageOrder => 11;
+            public byte ServiceID => 106;
+        }
 	}
 }

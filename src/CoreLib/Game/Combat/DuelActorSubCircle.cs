@@ -19,11 +19,12 @@ internal enum SlotType {
     Player
 }
 
-internal class DuelActorSubCircle {
+public class DuelActorSubCircle {
     private const float AggroTimeInSeconds = 0.75f;
 
     internal string SlotName { get; set; }
     internal SlotType SlotType { get; set; }
+    internal int SlotIndex { get; private set; }
     internal Vector3 WorldPosition { get; set; }
     internal float WorldRotation { get; set; }
     internal IActorRef ParticipantActor { get; private set; }
@@ -66,11 +67,12 @@ internal class DuelActorSubCircle {
     private CombatHand _combatHand;
 
     // ctor
-    internal DuelActorSubCircle(DuelActor duelActor, float radius, float rotation, Color color) {
+    internal DuelActorSubCircle(DuelActor duelActor, float radius, float rotation, Color color, int index) {
         _duelActor = duelActor;
         _radius = radius;
         _rotation = rotation;
         _color = color;
+        SlotIndex = index;
     }
 
     internal async Task AssignParticipant(IActorRef actor, CoreObject participantObject) {
@@ -102,6 +104,10 @@ internal class DuelActorSubCircle {
         CombatParticipant.m_pHand = newHand;
 
         return newHand;
+    }
+
+    internal Spell GetSpellFromLastHand(byte index) {
+        return _combatHand.LastGivenHand[index];
     }
 
     private void InitializePlayerSubCircle() {
