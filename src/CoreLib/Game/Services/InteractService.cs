@@ -11,12 +11,10 @@ using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty;
-using Imlight.Common.ObjectProperty.PropertyReflection;
-using Imlight.CoreLib.Shared.Networking;
-using static Imlight.Common.Caches.TypeCache;
-using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Game.Zone;
+using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Models.Player;
+using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Services;
 internal class InteractService : MessageService {
@@ -71,11 +69,6 @@ internal class InteractService : MessageService {
             return;
         }
 
-        var shopItems = new List<GID> {
-                    new GID(87226), new GID(87220), new GID(87232), new GID(87196), new GID(87203), new GID(87208), new GID(87214),
-                    new GID(87237), new GID(87890), new GID(87885), new GID(87886), new GID(87887), new GID(87888), new GID(87891)
-                };
-
         var shopOffering = new WizShopOffering() {
             m_CSRTestShop = false,
             m_activeHolidayList = null,
@@ -84,7 +77,7 @@ internal class InteractService : MessageService {
             m_sellModifier = 0.05f,
             m_shopTitle = "KrocNPC_00000013",
             m_shopType = 0,
-            m_shopList = shopItems
+            m_shopList = zoneNpc.Inventory
         };
         var data = _serializer.Serialize(shopOffering);
 

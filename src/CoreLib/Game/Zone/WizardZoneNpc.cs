@@ -4,15 +4,16 @@
  */
 
 using Akka.Actor;
+using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty;
+using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.WizardData.Collections;
 using System.Linq;
 using System.Collections.Generic;
 using static Imlight.Common.Caches.TypeCache;
-using Imlight.CoreLib.Shared.Resources;
-using Imlight.Common;
 
 namespace Imlight.CoreLib.Game.Zone;
 
@@ -31,6 +32,7 @@ public class WizardZoneNpc : WizardZoneObject {
 
     public bool IsShopkeeper { get; set; }
     public ServiceMementoBase ServiceMomentoBase { get; private set; }
+    public List<GID> Inventory { get; set; } = new();
 
     private readonly ObjectSerializer _serializer = new ObjectSerializer()
             .OnBehaviors(SerializerOptions.Behaviors.None)
@@ -54,6 +56,15 @@ public class WizardZoneNpc : WizardZoneObject {
         var debugName = ActiveGameObject.m_debugName.ToString().ToLower();
         if (s_shopKeeperNameGiveaways.Any(npcName.Contains) || s_explorerNames.Any(n => debugName == n)) {
             SetShopkeeper();
+
+            // Get inventory from WorldDatabase
+            var getInventorySuccess = NpcInventoryCollection.TryGetNpcInventory(ActiveGameObject.m_templateID, out var npcInventory);
+            if (!getInventorySuccess) {
+                Inventory = new List<GID>() { new GID(1363076) }; // Default to selling One Ring
+                return;
+            }
+
+            Inventory = npcInventory.Inventory;
         }
     }
 
