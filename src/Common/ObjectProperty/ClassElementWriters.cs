@@ -15,7 +15,7 @@ public static class ClassElementWriters {
     private static readonly Dictionary<Type, Action<BitWriter, object>> s_primitiveWriters = new()
     {
         { typeof(byte),           (r, v) => r.WriteUInt8((byte)v)                },
-        { typeof(char),           (r, v) => r.WriteUInt8((byte)v)                },
+        { typeof(char),           (r, v) => r.WriteUInt8(Convert.ToByte(v))      },
         { typeof(bool),           (r, v) => r.WriteBit((bool)v)                  },
         { typeof(short),          (r, v) => r.WriteInt16((short)v)               },
         { typeof(ushort),         (r, v) => r.WriteUInt16((ushort)v)             },
