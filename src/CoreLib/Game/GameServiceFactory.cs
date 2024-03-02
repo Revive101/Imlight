@@ -29,7 +29,8 @@ public class GameServiceFactory : ServiceFactory {
         typeof(SpellService),
         typeof(InventoryService),
         typeof(EquipmentService),
-        typeof(CommandService)
+        typeof(CommandService),
+        typeof(CombatService),
     };
 
     public static Props Props() {
