@@ -88,7 +88,7 @@ public class WizardZoneCreature : WizardZoneObject {
         // MOVESTATE: 0 = stopped, 1 = moving.
         var msgMoveState = new GAME_5_PROTOCOL.MSG_MOVESTATE {
             GlobalID = ActiveGameObject.m_globalID,
-            NewState = (sbyte) (_creatureState == CreatureState.Wandering ? 1 : 0)
+            NewState = (sbyte) (_creatureState == CreatureState.Wandering ? 0 : 1)
         };
         playerActor.Tell(msgMoveState);
 

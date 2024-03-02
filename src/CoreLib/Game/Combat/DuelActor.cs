@@ -37,6 +37,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     public ITimerScheduler Timers { get; set; }
     public Duel Duel { get; private set; }
     public ulong SigilId { get; private set; }
+    public CombatDirector Director { get; private set; }
     public IActorRef ActorRef => Self;
 
     private readonly IActorRef _wizardZoneRef;
@@ -59,6 +60,8 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
     public DuelActor(IActorRef wizardZoneRef) {
         this._wizardZoneRef = wizardZoneRef;
+
+        Director = new CombatDirector();
     }
 
     public static Props Props(IActorRef wizardZoneRef)
@@ -111,7 +114,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             throw new Exception("Failed to assign participants to sub circles.");
         }
 
-        Duel.m_firstTeamToAct = DetermineFirstTeam();
+        Duel.m_firstTeamToAct = (int) Director.DetermineFirstTeam();
 
         // Fire a message to self to start the duel after the grace period has ended.
         var delay = TimeSpan.FromSeconds(DuelStartedGracePeriodInSeconds);
@@ -217,12 +220,6 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             : CreatureCount < (PlayerCount * 2) && CreatureCount < 4;
         var rsp = new COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLERSP { Available = slotAvailable };
         Sender.Tell(rsp);
-    }
-
-    private static int DetermineFirstTeam() {
-        // Flip a coin to determine which team goes first
-        var random = new Random();
-        return (int) (random.Next(0, 2) == 0 ? Team.Player : Team.Monster);
     }
 
     private void SendCombatPhase(byte phase) {

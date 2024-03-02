@@ -13,6 +13,7 @@ namespace Imlight.CoreLib.Game.Combat;
 internal class CombatHand {
     internal List<Spell> Spells;
     internal List<Spell> AvailableSpells => Spells.Where(spell => !_exhaustedSpellIds.Contains(spell.m_spellID)).ToList();
+    internal List<Spell> LastGivenHand { get; private set; }
 
     private readonly byte _handSize;
     private readonly List<uint> _exhaustedSpellIds;
@@ -47,6 +48,8 @@ internal class CombatHand {
         var handObject = new Hand() {
             m_spellList = new List<Spell>(hand)
         };
+
+        LastGivenHand = hand;
 
         return handObject;
     }
