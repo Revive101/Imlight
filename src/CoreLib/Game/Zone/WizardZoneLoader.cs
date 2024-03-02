@@ -280,7 +280,8 @@ public static class WizardZoneLoader {
 
             var message = new ZONE_102_PROTOCOL.MSG_ADDCOMBATSIGIL {
                 CoreObject = newObject,
-                Template = template
+                Template = template,
+                SigilType = ((CombatSigil) objectInfo).m_sigilType
             };
             s_zoneActorRef.Tell(message);
         }

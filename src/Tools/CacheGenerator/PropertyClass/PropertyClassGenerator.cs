@@ -347,15 +347,8 @@ public static class PropertyClassGenerator {
                     continue;
                 }
 
-                // Otherwise, create a new empty enum definition on the property.
-                // Change the rest of the occurrences of this data type in this class def.
-                var check = prop.Type;
-                foreach (var t in def.Properties.Where(t => t.Type == check)) {
-                    t.Type = typeName;
-                }
-                prop.Options = new Definitions.EnumDef(typeName);
-
-                Log.Warning("Created empty enum under class definition [{Name}] at name [{TypeName}]", scopedTypeDef.Name, typeName);
+                // If this enum isn't defined anywhere, remove the property that uses it.
+                def.Properties.Remove(prop);
             }
         }
     }

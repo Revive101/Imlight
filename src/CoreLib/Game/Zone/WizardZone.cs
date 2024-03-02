@@ -100,11 +100,14 @@ public class WizardZone : ReceiveProtocolDispatcher {
     }
 
     private void InformZoneObjectsOfJoin(ZONE_102_PROTOCOL.MSG_ADDPLAYER message) {
-        // Forward the new player message to every zone object so that they may personally deal with this situation.
-        _objectSupervisorRef.Tell(new ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST {
+        var msg = new ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST {
             Source = message.Player,
             Messages = new IServerMessage[] { message }
-        });
+        };
+
+        // Forward the new player message to every zone object so that they may personally deal with this situation.
+        _objectSupervisorRef.Tell(msg);
+        _sigilSupervisorRef.Tell(msg);
 
         // Broadcast this new player to each existing player in the zone.
         BroadcastObjectCreation(message.PlayerObject);

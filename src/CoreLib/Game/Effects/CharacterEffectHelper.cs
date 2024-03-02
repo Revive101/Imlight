@@ -5,6 +5,9 @@
 
 using Imlight.Common;
 using Imlight.Common.Cryptography;
+using Imlight.Common.ObjectProperty;
+using Imlight.CoreLib.Game.Spells;
+using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System;
@@ -15,6 +18,87 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Game.Effects;
 
 internal static class CharacterEffectHelper {
+    /// <summary>
+    /// Adds effects to a wizard based on a given template.
+    /// </summary>
+    /// <param name="wizard">The wizard to add effects to.</param>
+    /// <param name="template">The template containing the effects to be added.</param>
+    /// <returns>A list of the added effects.</returns>
+    internal static List<GameEffectBase> AddEffectsToWizard(Wizard wizard, WizItemTemplate template) {
+        var addedEffects = new List<GameEffectBase>();
+        var slotHash = ItemHelper.GetItemSlotHash(template);
+
+        // Apply the effects from the template.
+        foreach (var effectInfo in template.m_equipEffects) {
+            var gameEffect = GameEffectFactory.CreateEffectFromInfo(effectInfo, slotHash);
+            if (gameEffect is null) {
+                Logger.Warning("Could not create effect {0} from effect info.", Logger.Args(effectInfo.m_effectName));
+                continue;
+            }
+
+            gameEffect.m_internalID = wizard.GameEffects.Count;
+
+            if (gameEffect is WizStatisticEffect canonicalEffect) {
+                var canonicalEffectName = CanonicalStatEffects.GetEffectTemplate(effectInfo.m_effectName).m_effectName;
+                AddGameEffectToStats(wizard.GameStats, canonicalEffectName, canonicalEffect);
+            }
+            else if (gameEffect is ProvideSpellEffect provideSpellEffect) {
+                var spells = SpellFactory.CreateSpellsFromEffect(provideSpellEffect);
+
+                foreach (var spell in spells) {
+                    wizard.AddSpell(spell);
+                }
+            }
+
+            wizard.GameEffects.Add(gameEffect);
+            addedEffects.Add(gameEffect);
+        }
+
+        return addedEffects;
+    }
+
+    /// <summary>
+    /// Removes the effects from a wizard based on a given WizItemTemplate.
+    /// </summary>
+    /// <param name="wizard">The wizard to remove effects from.</param>
+    /// <param name="template">The WizItemTemplate containing the effects to be removed.</param>
+    /// <returns>A list of GameEffectBase objects that were removed from the wizard.</returns>
+    internal static List<GameEffectBase> RemoveEffectsFromWizard(Wizard wizard, WizItemTemplate template) {
+        var removedEffects = new List<GameEffectBase>();
+        var slotHash = ItemHelper.GetItemSlotHash(template);
+
+        // Apply the effects from the template.
+        foreach (var effectInfo in template.m_equipEffects) {
+            // Find the effect in the player's list of effects.
+            var nameHash = StringHash.Compute(effectInfo.m_effectName);
+            var gameEffect = wizard.GameEffects.Find(e => e.m_effectNameID == nameHash && e.m_itemSlotID == slotHash);
+            if (gameEffect is null) {
+                Logger.Warning("Could not find effect {0} in player's list of effects.", Logger.Args(effectInfo.m_effectName));
+                continue;
+            }
+
+            removedEffects.Add(gameEffect);
+            wizard.GameEffects.Remove(gameEffect);
+
+            if (gameEffect is WizStatisticEffect canonicalEffect) {
+                var canonicalEffectName = CanonicalStatEffects.GetEffectTemplate(effectInfo.m_effectName).m_effectName;
+                RemoveGameEffectFromStats(wizard.GameStats, canonicalEffectName, canonicalEffect);
+            }
+            else if (gameEffect is ProvideSpellEffect provideSpellEffect) {
+                // This is a little confusing. We need both the template and the template ID.
+                // The template is used to create the spell, and the template ID is used to add the spell to the player's spellbook.
+                var spellTemplatePath = $"Spells/{provideSpellEffect.m_spellName}.xml";
+                var spellTemplateId = CoreObjectFactory.GetCoreTemplateID(spellTemplatePath);
+
+                for (var i = 0; i < provideSpellEffect.m_numSpells; i++) {
+                    wizard.RemoveSpell(spellTemplateId);
+                }
+            }
+        }
+
+        return removedEffects;
+    }
+
     /// <summary>
     /// Adds a game effect to the specified game statistics.
     /// </summary>
@@ -69,58 +153,6 @@ internal static class CharacterEffectHelper {
         else if (effectName.Contains("Mastery")) {
             RemoveSchoolMastery(stats, effectName);
         }
-    }
-
-    internal static List<GameEffectBase> AddEffectsToWizard(Wizard wizard, WizItemTemplate template) {
-        var addedEffects = new List<GameEffectBase>();
-        var slotHash = ItemHelper.GetItemSlotHash(template);
-
-        // Apply the effects from the template.
-        foreach (var effectInfo in template.m_equipEffects) {
-            var gameEffect = GameEffectFactory.CreateEffectFromInfo(effectInfo, slotHash);
-            if (gameEffect is null) {
-                Logger.Warning("Could not create effect {0} from effect info.", Logger.Args(effectInfo.m_effectName));
-                continue;
-            }
-
-            gameEffect.m_internalID = wizard.GameEffects.Count;
-
-            if (gameEffect is WizStatisticEffect canonicalEffect) {
-                var canonicalEffectName = CanonicalStatEffects.GetEffectTemplate(effectInfo.m_effectName).m_effectName;
-                AddGameEffectToStats(wizard.GameStats, canonicalEffectName, canonicalEffect);
-            }
-
-            wizard.GameEffects.Add(gameEffect);
-            addedEffects.Add(gameEffect);
-        }
-
-        return addedEffects;
-    }
-
-    internal static List<GameEffectBase> RemoveEffectsFromWizard(Wizard wizard, WizItemTemplate template) {
-        var removedEffects = new List<GameEffectBase>();
-        var slotHash = ItemHelper.GetItemSlotHash(template);
-
-        // Apply the effects from the template.
-        foreach (var effectInfo in template.m_equipEffects) {
-            // Find the effect in the player's list of effects.
-            var nameHash = StringHash.Compute(effectInfo.m_effectName);
-            var gameEffect = wizard.GameEffects.Find(e => e.m_effectNameID == nameHash && e.m_itemSlotID == slotHash);
-            if (gameEffect is null) {
-                Logger.Warning("Could not find effect {0} in player's list of effects.", Logger.Args(effectInfo.m_effectName));
-                continue;
-            }
-
-            removedEffects.Add(gameEffect);
-            wizard.GameEffects.Remove(gameEffect);
-
-            if (gameEffect is WizStatisticEffect canonicalEffect) {
-                var canonicalEffectName = CanonicalStatEffects.GetEffectTemplate(effectInfo.m_effectName).m_effectName;
-                RemoveGameEffectFromStats(wizard.GameStats, canonicalEffectName, canonicalEffect);
-            }
-        }
-
-        return removedEffects;
     }
 
     private static void ApplySchoolEffect(ref List<float> effectList, string schoolName, float value) {

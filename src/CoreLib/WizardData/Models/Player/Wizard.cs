@@ -294,9 +294,48 @@ public class Wizard : IDisposable {
         WizardCollection.UpdateCharacterNameOverride(this);
     }
 
-    internal void RefurbishReferences() {
+    public bool LearnSpell(Spell spell) {
+        if (SpellbookBehavior.SpellTemplateIdList.Contains(spell.m_templateID)) {
+            Logger.Warning("{0} Tried to learn spell with template ID {1} that is already known.",
+                Logger.Args(PlayerNameBehavior.GetWizardName(), spell.m_templateID));
+            return false;
+        }
+
+        SpellbookBehavior.LearnSpell(spell);
+
+        // Persistent save.
+        WizardCollection.AddCharacterSpell(this, spell.m_templateID);
+
+        return true;
+    }
+
+    public bool UnlearnSpell(uint spellTemplateId) {
+        if (!SpellbookBehavior.SpellTemplateIdList.Contains(spellTemplateId)) {
+            Logger.Warning("{0} Tried to unlearn spell with template ID {1} that is not known.",
+                Logger.Args(PlayerNameBehavior.GetWizardName(), spellTemplateId));
+            return false;
+        }
+
+        SpellbookBehavior.UnlearnSpell(spellTemplateId);
+
+        // Persistent save.
+        WizardCollection.RemoveCharacterSpell(this, spellTemplateId);
+
+        return true;
+    }
+
+    public void AddSpell(Spell spell) {
+        SpellbookBehavior.AddSpell(spell);
+    }
+
+    public void RemoveSpell(uint spellTemplateId) {
+        SpellbookBehavior.RemoveSpell(spellTemplateId);
+    }
+
+    internal void RefurbishBehaviors() {
         GameStats.Level = MagicSchoolBehavior.Level;
         GameStats.MagicSchool = MagicSchoolBehavior.MagicSchool;
+        SpellbookBehavior.Initialize();
     }
 
     private void InitializeDefaultInventory() {
@@ -358,9 +397,7 @@ public class Wizard : IDisposable {
     }
 
     private void InitializeSpellbookBehavior() {
-        SpellbookBehavior = new ServerSpellbookBehavior {
-            SpellIdList = new List<SpellIDTracker>()
-        };
+        SpellbookBehavior = new ServerSpellbookBehavior();
     }
 
     private void InitializeMountOwnerBehavior() {

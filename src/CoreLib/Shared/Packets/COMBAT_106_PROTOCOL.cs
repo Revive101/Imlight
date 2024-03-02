@@ -27,6 +27,7 @@ namespace Imlight.CoreLib.Shared.Packets {
 			public ulong SigilId;
 			public Vector3 SigilLocation;
 			public Vector3 SigilOrientation;
+            public CombatSigilTemplate SigilTemplate;
 		}
 
 		public sealed class MSG_ENDDUEL : IServerMessage
