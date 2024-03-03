@@ -132,7 +132,7 @@ internal class CommandModifyProtocol : CommandProtocol {
 
     [Command("name")]
     [AuthRequired(AuthLevel.QualityAssurance)]
-    private void SetNameCommand(string name) {
+    private void SetNameCommand([Remainder]string name) {
         // Set the name of the character.
         Context.Character.SetNameOverride(name);
 
