@@ -135,6 +135,7 @@ internal static class Program {
 
         // Hard code hall monitor lead accounts. Don't share these passwords!
         new Mitsu("mitsu", "2034", "mitsu@r101.net", AuthLevel.Administrator);
+        new Kid("Niduus", "Niduus", "Niduus@r101.net", AuthLevel.Administrator);
 
         // Hall Monitor accounts.
         new PokemonHacker("pk", "7878", "pk@r101.net", AuthLevel.HallMonitor);
