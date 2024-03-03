@@ -201,15 +201,22 @@ public class Wizard : IDisposable {
         item = (WizClientObjectItem) CoreObjectFactory.FinalizeCoreObject(itemId);
         item.m_characterId = (GID) CharId;
 
+        return AddItemToInventory(item);
+    }
+
+    public bool AddItemToInventory(WizClientObjectItem item) {
         if (item is null) {
-            Logger.Warning("Cannot add item to inventory with ID {0} because that item does not exist.", Logger.Args(itemId));
+            Logger.Warning("Cannot add item to inventory because that item does not exist.");
             return false;
         }
 
+        // Ensure that the item is associated with this Wizard.
+        item.m_characterId = (GID) CharId;
+
         var success = InventoryBehavior.AddItem(item);
         if (!success) {
-            Logger.Warning("Could not add item {0} to player {1}'s inventory.", Logger.Args(itemId, PlayerNameBehavior.GetWizardName()));
-            item = null;
+            Logger.Warning("Could not add item {0} to player {1}'s inventory.",
+                Logger.Args(item.m_globalID, PlayerNameBehavior.GetWizardName()));
             return false;
         }
 

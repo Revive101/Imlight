@@ -36,15 +36,15 @@ internal class ShopService : MessageService {
     private void ReceiveShopBuyRequest(WIZARD_12_PROTOCOL.MSG_SHOPBUYREQUEST message) {
         var wizard = GetActiveWizard();
 
-        // Todo: query the WizardZone to find the shopkeeper NPC. That object should return the code below.
-
         var itemTemplateID = message.ShopID - ShopOffset; // Do this, for some reason
-        var primaryDye = message.texture; // TODO: Store dyes properly
-        var secondaryDye = message.decal;
 
         // Todo: should double check here to make sure this shopkeeper even sells this object.
 
         var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(itemTemplateID);
+        var item = (WizClientObjectItem) CoreObjectFactory.FinalizeCoreObject(itemTemplateID);
+        item.m_primaryColor = message.texture;
+        item.m_secondaryColor = message.decal;
+
         var goldCost = (int) Math.Ceiling(template.m_baseCost * 1.2275f); // Necessary to match client values, Wizard101 taxes?
 
         // Deny transaction if player cannot afford item
@@ -58,26 +58,19 @@ internal class ShopService : MessageService {
             return;
         }
 
-        wizard.AddItemToInventory(itemTemplateID, out var itemObject);
+        wizard.AddItemToInventory(item);
 
-        var inactiveBehaviors = new List<BehaviorInstance>() { null };
-        var item = new WizClientObjectItem() {
-            m_templateID = message.ShopID,
-            m_globalID = itemObject.m_globalID,
-            m_permID = itemObject.m_globalID,
-            m_inactiveBehaviors = inactiveBehaviors,
-            m_fScale = 1
-        };
+        // Add the item to the player's inventory
         var data = _itemSerializer.Serialize(item);
-
         var addItemMsg = new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
             GlobalID = wizard.CharId,
             SerializedItem = data,
         };
         SendToSocket(addItemMsg);
 
+        // Inform the client of the new item
         var itemAcqMsg = new WIZARD2_53_PROTOCOL.MSG_ITEMACQUISITION {
-            ItemGlobalID = itemObject.m_globalID,
+            ItemGlobalID = item.m_globalID,
             ItemTemplateID = (uint) itemTemplateID,
             ItemLocation = 1,
         };
@@ -91,6 +84,7 @@ internal class ShopService : MessageService {
         };
         SendToSocket(goldUpdateMsg);
 
+        // Inform the client that all previous transactions were successful
         var shopConfirmMsg = new WIZARD_12_PROTOCOL.MSG_SHOPBUYCONFIRM {
             Failure = 0,
             WebFailure = 0,
