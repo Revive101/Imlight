@@ -261,7 +261,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         Director.AddCombatMove(subCircle, targetSubCircle, spell);
     }
 
-    private void SendCombatPhase(byte phase) {
+        private void SendCombatPhase(byte phase) {
         var upFirstSigilSlot = (byte) (Duel.m_firstTeamToAct == (int) Team.Player ? 4 : 0);
 
         var serializer = new ObjectSerializer()
