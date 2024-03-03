@@ -62,6 +62,9 @@ internal class InteractService : MessageService {
             case "WizShoppingService":
                 InteractShopkeeper(message, wizard, zoneNpc);
                 break;
+            case "DyeShopService":
+                InteractDyeShop(message, wizard, zoneNpc);
+                break;
             default:
                 break;
         }
@@ -97,6 +100,26 @@ internal class InteractService : MessageService {
             WebFailure = 0,
         };
         SendToSocket(shopListMsg);
+
+        var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG() {
+            GameObjectID = wizard.CharId,
+            WizBangID = StringHash.Compute("Registrar")
+        };
+        ZoneBroadcast(wizBangMsg, false);
+    }
+
+    private void InteractDyeShop(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC message, Wizard wizard, WizardZoneNpc zoneNpc) {
+        if (!zoneNpc.IsShopkeeper) {
+            Logger.Error("{0} interacted with NPC by global ID {1} but the object found was not a shopkeeper",
+                Logger.Args(wizard.CharId, message.GlobalID));
+            return;
+        }
+
+        var dyeShopOpen = new WIZARD_12_PROTOCOL.MSG_DYESHOPOPEN() {
+            GlobalID = message.GlobalID,
+            Title = "WC-NPCs_00000718"
+        };
+        SendToSocket(dyeShopOpen);
 
         var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG() {
             GameObjectID = wizard.CharId,

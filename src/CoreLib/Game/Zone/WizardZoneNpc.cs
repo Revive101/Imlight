@@ -24,6 +24,9 @@ public class WizardZoneNpc : WizardZoneObject {
     private static readonly string[] s_shopKeeperNameGiveaways = new string[] {
         "shop",
     };
+    private static readonly string[] s_dyeShopNameGiveaways = new string[] {
+        "dye",
+    };
     private static readonly string[] s_explorerNames = new string[] {
         "prospector zeke",
         "eloise merryweather",
@@ -54,7 +57,10 @@ public class WizardZoneNpc : WizardZoneObject {
         // Check to see if we're a shopkeeper. If we are, set the shopkeeper properties.
         var npcName = gameObjTemplate.m_objectName.ToString().ToLower();
         var debugName = ActiveGameObject.m_debugName.ToString().ToLower();
-        if (s_shopKeeperNameGiveaways.Any(npcName.Contains) || s_explorerNames.Any(n => debugName == n)) {
+        if (s_dyeShopNameGiveaways.Any(npcName.Contains)) {
+            SetDyeShop();
+        }
+        else if (s_shopKeeperNameGiveaways.Any(npcName.Contains) || s_explorerNames.Any(n => debugName == n)) {
             SetShopkeeper();
 
             // Get inventory from WorldDatabase
@@ -168,5 +174,27 @@ public class WizardZoneNpc : WizardZoneObject {
             m_serviceName = "WizShoppingService"
         };
         ServiceMomentoBase.m_serviceOptions.Add(shopService);
+    }
+
+    private void SetDyeShop() {
+        IsShopkeeper = true;
+        var gameObjTemplate = Template as GameObjectTemplate;
+
+        // What a funny line, C# pattern matching.
+        if (Template.m_behaviors.FirstOrDefault(x => x is NPCBehaviorTemplate) is NPCBehaviorTemplate npcBehavior) {
+            _turnTowardsPlayer = npcBehavior.m_turnTowardsPlayer;
+        }
+        else {
+            Logger.Error("NPC {0} is a shopkeeper but has no NPCBehaviorTemplate", Logger.Args(ActiveGameObject.m_debugName));
+        }
+
+        var dyeService = new DyeShopOption() {
+            m_displayKey = "GUI_DyeShop",
+            m_forceInteract = false,
+            m_iconKey = "DyeShop",
+            m_serviceIndex = 0,
+            m_serviceName = "DyeShopService"
+        };
+        ServiceMomentoBase.m_serviceOptions.Add(dyeService);
     }
 }
