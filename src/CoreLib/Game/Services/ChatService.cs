@@ -81,7 +81,7 @@ public class ChatService : MessageService {
             Message = message.Message,
             SourceID = charObj.m_globalID,
             SourceName = sourceName,
-            Filter = 0
+            Filter = 2,
         };
         ZoneBroadcast(msg);
     }
