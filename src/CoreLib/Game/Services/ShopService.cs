@@ -163,7 +163,7 @@ internal class ShopService : MessageService {
 
         // Apply the dyes
         var texture = (DyeColor) message.texture;
-        var decal = (DyeColor) message.decal2;
+        var decal = (DyeColor) message.decal;
         var decal2 = (DyeColor) message.decal2;
         DyeMapper.ApplyAllDye(item, texture, decal, decal2);
 
