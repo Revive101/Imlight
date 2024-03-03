@@ -31,6 +31,11 @@ internal class InteractService : MessageService {
     private void ReceiveNpcInteract(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC message) {
         var wizard = GetActiveWizard();
 
+        // A player is closing their shop
+        if (message.ServiceName == "") {
+            return;
+        }
+
         // Search for the interaction object.
         var npc = GetZoneObject(message.GlobalID);
         if (npc == null) {
@@ -76,8 +81,12 @@ internal class InteractService : MessageService {
             m_recipeList = null,
             m_sellModifier = 0.05f,
             m_shopTitle = "KrocNPC_00000013",
+            m_shopList = zoneNpc.Inventory,
+
+            // Changes the type of currency that is used
+            // 0 - Gold
+            // 1 - PvP tickets
             m_shopType = 0,
-            m_shopList = zoneNpc.Inventory
         };
         var data = _serializer.Serialize(shopOffering);
 
