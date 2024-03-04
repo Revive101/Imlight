@@ -150,7 +150,7 @@ public class DuelActorSubCircle {
             .Ask<COMBAT_106_PROTOCOL.MSG_CREATURESTATS>(queryGameStatsMsg)
             .Result;
 
-        ParticipantGameStats = new WizGameStats();
+        ParticipantGameStats = creatureStats.GameStats;
         CombatParticipant = new CombatParticipant {
             m_ownerID = ParticipantObject.m_globalID,
             m_templateID = 2199023290637, // Captured 2199023290637 from live

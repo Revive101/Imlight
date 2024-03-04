@@ -34,6 +34,7 @@ public class WizardZoneCreature : WizardZoneObject {
     public float CombatAggressiveFactor { get; private set; }
     public int CombatLevel { get; private set; }
     public int StartingHealth { get; private set; }
+    public WizGameStats GameStats { get; private set; }
 
     private const int MovementDelayWithoutMobileId = 300;
     private const int MinimumMovementspeedDelayInMilli = 500;
@@ -169,14 +170,8 @@ public class WizardZoneCreature : WizardZoneObject {
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_QUERYCREATURESTATS))]
     private void ReceiveQueryGameStats(COMBAT_106_PROTOCOL.MSG_QUERYCREATURESTATS message) {
-        // todo: source other game stats like resistences here. Unsure if client ships with this information.
-        var stats = new WizGameStats {
-            m_currentHitpoints = this.StartingHealth,
-            m_baseHitpoints = this.StartingHealth,
-        };
-
         var msg = new COMBAT_106_PROTOCOL.MSG_CREATURESTATS {
-            GameStats = stats,
+            GameStats = this.GameStats,
             CombatIntelligence = this.CombatIntelligence,
             CombatSelfishFactor = this.CombatSelfishFactor,
             CombatAggressionFactor = this.CombatAggressiveFactor,
@@ -210,6 +205,12 @@ public class WizardZoneCreature : WizardZoneObject {
             this.CombatAggressiveFactor = npcBehavior.m_nAggressiveFactor;
             this.CombatLevel = npcBehavior.m_nLevel;
             this.StartingHealth = npcBehavior.m_nStartingHealth;
+
+            // todo: source other game stats like resistences here. Unsure if client ships with this information.
+            this.GameStats = new WizGameStats {
+                m_currentHitpoints = this.StartingHealth,
+                m_baseHitpoints = this.StartingHealth,
+            };
         }
 
         if (CoreObjectFactory.FindBehaviorInstance<NPCBehavior>(ActiveGameObject, out var behavior)) {
