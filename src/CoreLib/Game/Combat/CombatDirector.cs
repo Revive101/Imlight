@@ -55,7 +55,6 @@ public class CombatDirector {
             m_targetSubcircleList = new List<int> { caster.SlotIndex },
             m_showCast = true,
             m_spellHits = (char) 255,
-            m_spell = spell,
         };
         _combatActionList.m_actionList.Add(combatAction);
         _combatActionList.m_actionList.Add(combatAction2);

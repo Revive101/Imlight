@@ -29,6 +29,12 @@ public class WizardZoneCreature : WizardZoneObject {
         Combat
     }
 
+    public float CombatIntelligence { get; private set; }
+    public float CombatSelfishFactor { get; private set; }
+    public float CombatAggressiveFactor { get; private set; }
+    public int CombatLevel { get; private set; }
+    public int StartingHealth { get; private set; }
+
     private const int MovementDelayWithoutMobileId = 300;
     private const int MinimumMovementspeedDelayInMilli = 500;
     private const int InteractionIntervalInSeconds = 2;
@@ -161,11 +167,31 @@ public class WizardZoneCreature : WizardZoneObject {
         ActiveGameObject.m_orientation = orientationVector;
     }
 
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_QUERYCREATURESTATS))]
+    private void ReceiveQueryGameStats(COMBAT_106_PROTOCOL.MSG_QUERYCREATURESTATS message) {
+        // todo: source other game stats like resistences here. Unsure if client ships with this information.
+        var stats = new WizGameStats {
+            m_currentHitpoints = this.StartingHealth,
+            m_baseHitpoints = this.StartingHealth,
+        };
+
+        var msg = new COMBAT_106_PROTOCOL.MSG_CREATURESTATS {
+            GameStats = stats,
+            CombatIntelligence = this.CombatIntelligence,
+            CombatSelfishFactor = this.CombatSelfishFactor,
+            CombatAggressionFactor = this.CombatAggressiveFactor,
+            CombatLevel = this.CombatLevel
+        };
+        Sender.Tell(msg);
+    }
+
     private void SetPropertiesFromTemplate() {
         var pathBehavior = Template.m_behaviors
             .FirstOrDefault(x => x is PathMovementBehaviorTemplate) as PathMovementBehaviorTemplate;
         var duelistBehavior = Template.m_behaviors
             .FirstOrDefault(x => x is DuelistBehaviorTemplate) as DuelistBehaviorTemplate;
+        var npcBehavior = Template.m_behaviors
+            .FirstOrDefault(x => x is NPCBehaviorTemplate) as NPCBehaviorTemplate;
 
         if (pathBehavior is not null) {
             this._movementSpeed = pathBehavior.m_movementSpeed;
@@ -176,6 +202,14 @@ public class WizardZoneCreature : WizardZoneObject {
         if (duelistBehavior is not null) {
             base.InteractionRadius = duelistBehavior.m_npcProximity;
             this._isDuelingCreature = true;
+        }
+
+        if (npcBehavior is not null) {
+            this.CombatIntelligence = npcBehavior.m_fIntelligence;
+            this.CombatSelfishFactor = npcBehavior.m_fSelfishFactor;
+            this.CombatAggressiveFactor = npcBehavior.m_nAggressiveFactor;
+            this.CombatLevel = npcBehavior.m_nLevel;
+            this.StartingHealth = npcBehavior.m_nStartingHealth;
         }
 
         if (CoreObjectFactory.FindBehaviorInstance<NPCBehavior>(ActiveGameObject, out var behavior)) {

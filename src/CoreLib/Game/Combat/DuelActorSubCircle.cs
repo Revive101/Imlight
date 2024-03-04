@@ -117,7 +117,7 @@ public class DuelActorSubCircle {
             .Result
             .Wizard;
 
-        ParticipantGameStats = wizard.GameStats.GetClientTypeAlternative();
+        ParticipantGameStats = wizard.GameStats.GetCombatGameStats();
         _combatHand = new CombatHand(wizard.SpellbookBehavior.Spells, 7);
 
         CombatParticipant = new CombatParticipant {
@@ -145,7 +145,11 @@ public class DuelActorSubCircle {
     }
 
     private void InitializeCreatureSubCircle() {
-        // todo: implement
+        var queryGameStatsMsg = new COMBAT_106_PROTOCOL.MSG_QUERYCREATURESTATS();
+        var creatureStats = ParticipantActor
+            .Ask<COMBAT_106_PROTOCOL.MSG_CREATURESTATS>(queryGameStatsMsg)
+            .Result;
+
         ParticipantGameStats = new WizGameStats();
         CombatParticipant = new CombatParticipant {
             m_ownerID = ParticipantObject.m_globalID,
@@ -158,13 +162,11 @@ public class DuelActorSubCircle {
             m_primaryMagicSchoolID = 83375795,
             m_pipCount = new() { m_powerPips = 0, m_genericPips = 1 },
             m_pipRoundRates = new(),
-            m_playerHealth = 55,
-            m_maxPlayerHealth = 55,
+            m_playerHealth = creatureStats.GameStats.m_currentHitpoints,
+            m_maxPlayerHealth = creatureStats.GameStats.m_baseHitpoints,
             m_myTeamTurn = _duelActor.Duel.m_firstTeamToAct == 1,
-            m_pGameStats = new WizGameStats() {
-                m_currentHitpoints = 55,
-                m_baseHitpoints = 55,
-            },
+            m_pGameStats = creatureStats.GameStats,
+            m_mobLevel = creatureStats.CombatLevel,
 
             m_subcircle = 0,
             m_dynamicSymbol = DynamicSigilSymbol.Dagger,

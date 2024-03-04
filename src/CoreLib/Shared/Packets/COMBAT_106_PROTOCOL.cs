@@ -121,5 +121,23 @@ namespace Imlight.CoreLib.Shared.Packets {
             public byte MessageOrder => 12;
             public byte ServiceID => 106;
         }
+
+        public sealed class MSG_QUERYCREATURESTATS : IServerMessage
+        {
+            public byte MessageOrder => 13;
+            public byte ServiceID => 106;
+        }
+
+        public sealed class MSG_CREATURESTATS : IServerMessage
+        {
+            public byte MessageOrder => 14;
+            public byte ServiceID => 106;
+
+            public WizGameStats GameStats;
+            public float CombatIntelligence;
+            public float CombatSelfishFactor;
+            public float CombatAggressionFactor;
+            public int CombatLevel;
+        }
 	}
 }
