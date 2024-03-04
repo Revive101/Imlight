@@ -43,8 +43,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     public IActorRef ActorRef => Self;
 
     private readonly IActorRef _wizardZoneRef;
-    private readonly ObjectSerializer _serializer = new ObjectSerializer()
-        .OnBehaviors(SerializerOptions.Behaviors.None);
+    private readonly ObjectSerializer _serializer = new ObjectSerializer().OnBehaviors(SerializerOptions.Behaviors.None);
     private readonly SerializerOptions.PropertyFlags _combatParticipantFlags = (SerializerOptions.PropertyFlags) 4;
     private readonly SerializerOptions.PropertyFlags _combatParticipantStatFlags = (SerializerOptions.PropertyFlags) 5;
     private readonly SerializerOptions.PropertyFlags _combatParticipantHandFlags = (SerializerOptions.PropertyFlags) 5;
@@ -114,7 +113,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             throw new Exception("Failed to assign participants to sub circles.");
         }
 
-        Director = new CombatDirector(Duel);
+        Director = new CombatDirector(Duel, _subCircles);
 
         // Fire a message to self to start the duel after the grace period has ended.
         var delay = TimeSpan.FromSeconds(DuelStartedGracePeriodInSeconds);
@@ -387,35 +386,15 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     private void SendCombatPips() {
-        // Create the pip list object.
-        var pips = new CombatPipListObj {
-            m_duelID = SigilId,
-            m_pipList = new List<ParticipantPipData>()
-        };
-
-        // Iterate through each sub circle and add the participant's pips to the list.
-        EnactActionOnSubCircles(circle => {
-            var participantPipData = new ParticipantPipData {
-                m_acq = 1,
-                m_arch = (uint) MagicSchool.Fire,
-                m_archPoints = 0,
-                m_partID = (GID) circle.ParticipantObject.m_globalID,
-                m_pips = new PipCount() {
-                    m_genericPips = 1,
-                    m_powerPips = 1,
-                }
-            };
-            pips.m_pipList.Add(participantPipData);
-
-            var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATPIPS {
-                DuelID = SigilId,
-            };
-        });
+        var combatPips = Director.GetCombatParticipantsPips();
+        combatPips.m_duelID = SigilId;
 
         // Serialize the combat pips and send it to each participant.
         _serializer.OnPropertyMask(_combatParticipantStatFlags);
-        var buffer = _serializer.Serialize(pips);
+        var buffer = _serializer.Serialize(combatPips);
 
+        // This doesn't need to be broadcasted because the object we've serialized contains the pips
+        // for all participants, not just this one.
         EnactActionOnSubCircles(circle => {
             var participantActor = circle.ParticipantActor;
             var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATPIPS {
@@ -427,20 +406,8 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     private void SendCombatHealth() {
-        // Create the new health list object.
-        var healthList = new CombatHealthListObj {
-            m_duelID = SigilId,
-            m_healthList = new List<ParticipantParameter>()
-        };
-
-        // Iterate through each sub circle and add the participant's health to the list.
-        EnactActionOnSubCircles(circle => {
-            var participantHealth = new ParticipantParameter {
-                m_data = 1000,
-                m_partID = (GID) circle.ParticipantObject.m_globalID,
-            };
-            healthList.m_healthList.Add(participantHealth);
-        });
+        var healthList = Director.GetCombatParticipantsHealth();
+        healthList.m_duelID = SigilId;
 
         // Serialize the combat health and send it to each participant.
         _serializer.OnPropertyMask(_combatParticipantStatFlags);
