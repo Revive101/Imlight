@@ -182,9 +182,10 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         Duel.m_duelPhase = kDuelPhase.kPhase_Execution;
         SendCombatPhase((byte) Duel.m_duelPhase);
 
-        var combatActionList = Director.GetCombatActionList();
+        // Apply the queued actions and send them to the client.
+        var actions = Director.ApplyQueuedCombatActions();
         _serializer.OnPropertyMask(_combatParticipantHandFlags);
-        var buffer = _serializer.Serialize(combatActionList);
+        var buffer = _serializer.Serialize(actions);
 
         var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATACTIONS {
             DuelID = SigilId,
@@ -277,13 +278,13 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             throw new Exception("Combat move received from an actor that is not in the duel.");
         }
 
-        // Find which sub circle they were targeting.
-        var targetSubCircle = _subCircles[message.SpellTarget - 1];
+        // Find which sub circle they were targeting. If the target is 0, it's self.
+        var targetOrSelf = message.SpellTarget == 0 ? subCircle : _subCircles[message.SpellTarget - 1];
 
         // Find what spell they were casting.
         var spell = subCircle.GetSpellFromLastHand(message.SpellSelection);
 
-        Director.AddCombatMove(subCircle, targetSubCircle, spell);
+        Director.AddCombatMove(subCircle, targetOrSelf, spell);
     }
 
     private void SendCombatPhase(byte phase) {
