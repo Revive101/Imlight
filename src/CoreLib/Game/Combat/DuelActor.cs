@@ -146,6 +146,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
         // Pre-planning phase just wants to send who is up first.
         Duel.m_duelPhase = kDuelPhase.kPhase_PrePlanning;
+        Duel.m_roundNum++;
         SendCombatPhase((byte) Duel.m_duelPhase);
 
         // Inform the combat participants that they may or may not be considered AFK.
@@ -201,23 +202,55 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ROUNDRESOLUTION))]
     private void ReceiveRoundResolution(COMBAT_106_PROTOCOL.MSG_ROUNDRESOLUTION message) {
-        EnactActionOnSubCircles(circle => {
-            var participantActor = circle.ParticipantActor;
-            var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATREMOVE {
-                DuelID = SigilId,
-                ParticipantID = circle.ParticipantObject.m_globalID
-            };
-            participantActor.Tell(msg);
-
-            var stateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
-                GameObjectID = circle.ParticipantObject.m_globalID,
-                State = (uint) NPCStates.Idle
-            };
-            participantActor.Tell(stateMsg);
-        });
-
+        // All spells have been called. Inform the client whether this duel continues or ends.
         Duel.m_duelPhase = kDuelPhase.kPhase_Resolution;
         SendCombatPhase((byte) Duel.m_duelPhase);
+
+        var playersWin = HavePlayersWon();
+        var creaturesWin = HaveCreaturesWon();
+        if (!playersWin && !creaturesWin) {
+            // Continue. Start a new round.
+            Self.Tell(new COMBAT_106_PROTOCOL.MSG_NEWROUND());
+        }
+
+        if (playersWin) {
+            var combatVictoryMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATVICTORY();
+            EnactActionOnSubCircles(circle => circle.ParticipantActor.Tell(combatVictoryMsg));
+        }
+
+        // Broadcast to the zone of the result.
+        var combatMatchResult = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATMATCHRESULT {
+            DuelID = SigilId,
+            WinningTeam = playersWin ? (byte) Team.Player : (byte) Team.Monster,
+        };
+        DuelBroadcast(combatMatchResult);
+
+        // A team has won the duel.
+        Duel.m_duelPhase = kDuelPhase.kPhase_Victory;
+        SendCombatPhase((byte) Duel.m_duelPhase);
+
+        // Duplicate winning message, for some reason.
+        if (playersWin) {
+            var combatVictoryMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATVICTORY();
+            EnactActionOnSubCircles(circle => {
+                circle.ParticipantActor.Tell(combatVictoryMsg);
+
+                // Get the players back into the idle state, so they can move around again.
+                var stateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
+                    GameObjectID = circle.ParticipantObject.m_globalID,
+                    State = (uint) NPCStates.Idle
+                };
+                circle.ParticipantActor.Tell(stateMsg);
+            });
+        }
+
+        Duel.m_duelPhase = kDuelPhase.kPhase_Ended;
+        SendCombatPhase((byte) Duel.m_duelPhase);
+
+        var duelEndedMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_ENDDUEL {
+            DuelID = SigilId
+        };
+        DuelBroadcast(duelEndedMsg);
     }
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ADDPARTICIPANT))]
@@ -284,7 +317,10 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         // Find what spell they were casting.
         var spell = subCircle.GetSpellFromLastHand(message.SpellSelection);
 
-        Director.AddCombatMove(subCircle, targetOrSelf, spell);
+        // Parse the MoveType as an enum.
+        var moveType = (MoveType) message.MoveType;
+
+        Director.AddCombatMove(moveType, subCircle, targetOrSelf, spell);
     }
 
     private void SendCombatPhase(byte phase) {
@@ -433,7 +469,6 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             m_duelID = sigilId,
             m_planningTimer = PlanningTime,
             m_executionPhaseTimer = 3.4078238f,
-            m_roundNum = 1,
             m_scalarDamage = _combatSigilTemplate.m_scalarDamagePvE,
             m_scalarResist = _combatSigilTemplate.m_scalarResistPvE,
             m_scalarPierce = _combatSigilTemplate.m_scalarPiercePvE,
@@ -530,6 +565,16 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         subCircle.AssignParticipant(actorRef, coreObject);
 
         return true;
+    }
+
+    private bool HavePlayersWon() {
+        var creaturesAlive = _subCircles.Count(x => x.Occupied && x.OccupiedTeam == Team.Monster && x.IsAlive);
+        return creaturesAlive <= 0;
+    }
+
+    private bool HaveCreaturesWon() {
+        var playersAlive = _subCircles.Count(x => x.Occupied && x.OccupiedTeam == Team.Player && x.IsAlive);
+        return playersAlive <= 0;
     }
 
     private ByteString SerializeCombatParticipant(CombatParticipant participant) {

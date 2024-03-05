@@ -59,6 +59,7 @@ public class DuelActorSubCircle {
             return ParticipantObject.m_templateID == 1 ? Team.Player : Team.Monster;
         }
     }
+    internal bool IsAlive => ParticipantGameStats.m_currentHitpoints > 0;
 
     private readonly DuelActor _duelActor;
     private readonly float _radius;

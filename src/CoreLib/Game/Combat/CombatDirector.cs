@@ -102,7 +102,7 @@ public class CombatDirector {
         return healthList;
     }
 
-    public void AddCombatMove(DuelActorSubCircle caster, DuelActorSubCircle target, Spell spell) {
+    public void AddCombatMove(MoveType type, DuelActorSubCircle caster, DuelActorSubCircle target, Spell spell) {
         if (!_awaitingCombatMoves) {
             throw new InvalidOperationException("Combat moves are not being accepted at this time.");
         }
@@ -117,7 +117,7 @@ public class CombatDirector {
         var queuedAction = new QueuedCombatAction {
             SpellCaster = caster,
             TargetSubcircle = target,
-            Spell = spell,
+            Spell = type == MoveType.Spell ? spell : null,
         };
         _queuedCombatActions.Add(queuedAction);
     }
@@ -144,20 +144,22 @@ public class CombatDirector {
     private CombatAction ApplyCombatAction(QueuedCombatAction action) {
         var effectStack = new EffectStack();
 
-        foreach (var spellEffect in action.Spell.m_spellEffects) {
-            var effect = spellEffect;
+        if (action.Spell is not null) {
+            foreach (var spellEffect in action.Spell.m_spellEffects) {
+                var effect = spellEffect;
 
-            // If this is a random spell effect, we need to determine which effect to use.
-            if (spellEffect is RandomSpellEffect randomSpellEffect) {
-                var count = randomSpellEffect.m_effectList.Count;
-                var randomEffectIndex = new Random().Next(0, count);
-                effect = randomSpellEffect.m_effectList[randomEffectIndex];
+                // If this is a random spell effect, we need to determine which effect to use.
+                if (spellEffect is RandomSpellEffect randomSpellEffect) {
+                    var count = randomSpellEffect.m_effectList.Count;
+                    var randomEffectIndex = new Random().Next(0, count);
+                    effect = randomSpellEffect.m_effectList[randomEffectIndex];
 
-                // Push the random effect choice onto the stack.
-                effectStack.PushRandomEffectChoice(randomEffectIndex);
+                    // Push the random effect choice onto the stack.
+                    effectStack.PushRandomEffectChoice(randomEffectIndex);
+                }
+
+                ApplyEffect(effect, action.SpellCaster, action.TargetSubcircle);
             }
-
-            ApplyEffect(effect, action.SpellCaster, action.TargetSubcircle);
         }
 
         return new CombatAction {
