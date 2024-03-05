@@ -1,4 +1,4 @@
-﻿/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
  */
@@ -25,8 +25,7 @@ internal static class Program {
     // Imlight - NETHRA  -- We are in-game. The game is playable and mostly stable, but not feature complete.
     // Imlight - KALI    -- We feel very confident in the stability of previous systems. We are now focusing on combat.
     private const string ActorSystemName = "Imlight";
-    private const string MajorVersion = "NETHRA";
-    private const string Version = "1.2.0";
+    private const string MajorVersion = "KALI";
 
     private static ActorSystem s_imlightSystem;
     private static ResourceContainer s_resourceContainer;
@@ -128,6 +127,7 @@ internal static class Program {
 
         // Dev accounts; Hi, devs! Feel free to make your own account and add it here.
         new Jooty("jooty", "2342", "jay@r101net", AuthLevel.Administrator);
+        new MoMi("MoMi", "joji1", "MoMi@r101net", AuthLevel.Administrator);
         new Joji("joji", "jootysocoollike", "joji@r101.net", AuthLevel.Administrator);
 
         // Hard code hall monitor lead accounts. Don't share these passwords!
@@ -171,7 +171,7 @@ internal static class Program {
         var buildConfiguration = GetBuildConfiguration();
         Console.Write(@"|___/");
         Console.ForegroundColor = ConsoleColor.DarkGray;
-        Console.Write($"   ({MajorVersion}-v{Version} {buildConfiguration})\n");
+        Console.Write($"   ({MajorVersion} {buildConfiguration})\n");
         Console.WriteLine("");
     }
 

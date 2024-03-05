@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Imlight.Common.Caches;
+using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using SharpDX;
@@ -27,6 +28,13 @@ public class WizardZoneCreature : WizardZoneObject {
         Wandering,
         Combat
     }
+
+    public float CombatIntelligence { get; private set; }
+    public float CombatSelfishFactor { get; private set; }
+    public float CombatAggressiveFactor { get; private set; }
+    public int CombatLevel { get; private set; }
+    public int StartingHealth { get; private set; }
+    public WizGameStats GameStats { get; private set; }
 
     private const int MovementDelayWithoutMobileId = 300;
     private const int MinimumMovementspeedDelayInMilli = 500;
@@ -110,8 +118,6 @@ public class WizardZoneCreature : WizardZoneObject {
             return;
         }
 
-        StartCombat();
-
         var msg = new ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL {
             StartingParticipants = new Dictionary<IActorRef, CoreObject>
             {
@@ -124,7 +130,7 @@ public class WizardZoneCreature : WizardZoneObject {
 
     protected override Vector3 GetPosition() {
         // If the creature is not moving, then return the current position.
-        if (!_isMovingCreature) {
+        if (!_isMovingCreature || _creatureState != CreatureState.Wandering) {
             return ActiveGameObject.m_location;
         }
 
@@ -148,11 +154,39 @@ public class WizardZoneCreature : WizardZoneObject {
         return new Vector3((float) x, (float) y, (float) z);
     }
 
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ACTORADDEDTODUEL))]
+    private void ReceiveDuelAdd(COMBAT_106_PROTOCOL.MSG_ACTORADDEDTODUEL message) {
+        StartCombat();
+
+        ActiveGameObject.m_location = message.SlotPosition;
+
+        // Set the orientation of the creature to the orientation of the slot.
+        // The orientation is in radians, so convert it to degrees.
+        var orientationInRadians = message.SlotOrientation;
+        var orientationInDegrees = orientationInRadians * (180 / Math.PI);
+        var orientationVector = new Vector3(0, 0, (float) orientationInDegrees);
+        ActiveGameObject.m_orientation = orientationVector;
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_QUERYCREATURESTATS))]
+    private void ReceiveQueryGameStats(COMBAT_106_PROTOCOL.MSG_QUERYCREATURESTATS message) {
+        var msg = new COMBAT_106_PROTOCOL.MSG_CREATURESTATS {
+            GameStats = this.GameStats,
+            CombatIntelligence = this.CombatIntelligence,
+            CombatSelfishFactor = this.CombatSelfishFactor,
+            CombatAggressionFactor = this.CombatAggressiveFactor,
+            CombatLevel = this.CombatLevel
+        };
+        Sender.Tell(msg);
+    }
+
     private void SetPropertiesFromTemplate() {
         var pathBehavior = Template.m_behaviors
             .FirstOrDefault(x => x is PathMovementBehaviorTemplate) as PathMovementBehaviorTemplate;
         var duelistBehavior = Template.m_behaviors
             .FirstOrDefault(x => x is DuelistBehaviorTemplate) as DuelistBehaviorTemplate;
+        var npcBehavior = Template.m_behaviors
+            .FirstOrDefault(x => x is NPCBehaviorTemplate) as NPCBehaviorTemplate;
 
         if (pathBehavior is not null) {
             this._movementSpeed = pathBehavior.m_movementSpeed;
@@ -163,6 +197,20 @@ public class WizardZoneCreature : WizardZoneObject {
         if (duelistBehavior is not null) {
             base.InteractionRadius = duelistBehavior.m_npcProximity;
             this._isDuelingCreature = true;
+        }
+
+        if (npcBehavior is not null) {
+            this.CombatIntelligence = npcBehavior.m_fIntelligence;
+            this.CombatSelfishFactor = npcBehavior.m_fSelfishFactor;
+            this.CombatAggressiveFactor = npcBehavior.m_nAggressiveFactor;
+            this.CombatLevel = npcBehavior.m_nLevel;
+            this.StartingHealth = npcBehavior.m_nStartingHealth;
+
+            // todo: source other game stats like resistences here. Unsure if client ships with this information.
+            this.GameStats = new WizGameStats {
+                m_currentHitpoints = this.StartingHealth,
+                m_baseHitpoints = this.StartingHealth,
+            };
         }
 
         if (CoreObjectFactory.FindBehaviorInstance<NPCBehavior>(ActiveGameObject, out var behavior)) {

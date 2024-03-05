@@ -21,6 +21,7 @@ using static Imlight.Common.Caches.TypeCache.Duel;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using System.Threading.Tasks;
+using Imlight.CoreLib.Game.Models.World;
 
 namespace Imlight.CoreLib.Game.Combat;
 
@@ -29,18 +30,20 @@ namespace Imlight.CoreLib.Game.Combat;
 /// <see cref="DuelActorSupervisor"/> and is a child of it.
 /// </summary>
 public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
-    public const byte PlanningTime = 30;
+    public const byte PlanningTime = 5;
     private const float DuelStartedGracePeriodInSeconds = 3.75f;
+    private const float ExecutionTime = 10.0f;
     private const float YawErrorCompensation = 1.58f;
     private const int DelayAfterCombatAddInMs = 0;
 
     public ITimerScheduler Timers { get; set; }
     public Duel Duel { get; private set; }
     public ulong SigilId { get; private set; }
+    public CombatDirector Director { get; private set; }
+    public IActorRef ActorRef => Self;
 
     private readonly IActorRef _wizardZoneRef;
-    private readonly ObjectSerializer _serializer = new ObjectSerializer()
-        .OnBehaviors(SerializerOptions.Behaviors.None);
+    private readonly ObjectSerializer _serializer = new ObjectSerializer().OnBehaviors(SerializerOptions.Behaviors.None);
     private readonly SerializerOptions.PropertyFlags _combatParticipantFlags = (SerializerOptions.PropertyFlags) 4;
     private readonly SerializerOptions.PropertyFlags _combatParticipantStatFlags = (SerializerOptions.PropertyFlags) 5;
     private readonly SerializerOptions.PropertyFlags _combatParticipantHandFlags = (SerializerOptions.PropertyFlags) 5;
@@ -110,7 +113,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             throw new Exception("Failed to assign participants to sub circles.");
         }
 
-        Duel.m_firstTeamToAct = DetermineFirstTeam();
+        Director = new CombatDirector(Duel, _subCircles);
 
         // Fire a message to self to start the duel after the grace period has ended.
         var delay = TimeSpan.FromSeconds(DuelStartedGracePeriodInSeconds);
@@ -139,6 +142,8 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_NEWROUND))]
     private void ReceiveNewRound(COMBAT_106_PROTOCOL.MSG_NEWROUND message) {
+        Director.StartRound();
+
         // Pre-planning phase just wants to send who is up first.
         Duel.m_duelPhase = kDuelPhase.kPhase_PrePlanning;
         SendCombatPhase((byte) Duel.m_duelPhase);
@@ -166,6 +171,53 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         SendCombatHealth();
 
         SendCombatUI(PlanningTime);
+
+        var delay = TimeSpan.FromSeconds(PlanningTime);
+        Timers.StartSingleTimer("roundover", new COMBAT_106_PROTOCOL.MSG_ROUNDOVER(), delay);
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ROUNDOVER))]
+    private void ReceiveRoundOver(COMBAT_106_PROTOCOL.MSG_ROUNDOVER message) {
+        // The planning phase is over. The client will now be able to send combat moves.
+        Duel.m_duelPhase = kDuelPhase.kPhase_Execution;
+        SendCombatPhase((byte) Duel.m_duelPhase);
+
+        // Apply the queued actions and send them to the client.
+        var actions = Director.ApplyQueuedCombatActions();
+        _serializer.OnPropertyMask(_combatParticipantHandFlags);
+        var buffer = _serializer.Serialize(actions);
+
+        var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATACTIONS {
+            DuelID = SigilId,
+            ActionData = buffer,
+        };
+        DuelBroadcast(msg);
+
+        Director.EndRound();
+
+        var delay = TimeSpan.FromSeconds(ExecutionTime);
+        Timers.StartSingleTimer("roundresolution", new COMBAT_106_PROTOCOL.MSG_ROUNDRESOLUTION(), delay);
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ROUNDRESOLUTION))]
+    private void ReceiveRoundResolution(COMBAT_106_PROTOCOL.MSG_ROUNDRESOLUTION message) {
+        EnactActionOnSubCircles(circle => {
+            var participantActor = circle.ParticipantActor;
+            var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATREMOVE {
+                DuelID = SigilId,
+                ParticipantID = circle.ParticipantObject.m_globalID
+            };
+            participantActor.Tell(msg);
+
+            var stateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
+                GameObjectID = circle.ParticipantObject.m_globalID,
+                State = (uint) NPCStates.Idle
+            };
+            participantActor.Tell(stateMsg);
+        });
+
+        Duel.m_duelPhase = kDuelPhase.kPhase_Resolution;
+        SendCombatPhase((byte) Duel.m_duelPhase);
     }
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ADDPARTICIPANT))]
@@ -218,10 +270,21 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         Sender.Tell(rsp);
     }
 
-    private static int DetermineFirstTeam() {
-        // Flip a coin to determine which team goes first
-        var random = new Random();
-        return (int) (random.Next(0, 2) == 0 ? Team.Player : Team.Monster);
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE))]
+    private void ReceiveCombatMove(COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE message) {
+        // Find which sub circle this is.
+        var subCircle = _subCircles.FirstOrDefault(x => x.ParticipantActor == message.Actor);
+        if (subCircle is null) {
+            throw new Exception("Combat move received from an actor that is not in the duel.");
+        }
+
+        // Find which sub circle they were targeting. If the target is 0, it's self.
+        var targetOrSelf = message.SpellTarget == 0 ? subCircle : _subCircles[message.SpellTarget - 1];
+
+        // Find what spell they were casting.
+        var spell = subCircle.GetSpellFromLastHand(message.SpellSelection);
+
+        Director.AddCombatMove(subCircle, targetOrSelf, spell);
     }
 
     private void SendCombatPhase(byte phase) {
@@ -324,35 +387,15 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     private void SendCombatPips() {
-        // Create the pip list object.
-        var pips = new CombatPipListObj {
-            m_duelID = SigilId,
-            m_pipList = new List<ParticipantPipData>()
-        };
-
-        // Iterate through each sub circle and add the participant's pips to the list.
-        EnactActionOnSubCircles(circle => {
-            var participantPipData = new ParticipantPipData {
-                m_acq = 1,
-                m_arch = (uint) MagicSchool.Fire,
-                m_archPoints = 0,
-                m_partID = (GID) circle.ParticipantObject.m_globalID,
-                m_pips = new PipCount() {
-                    m_genericPips = 1,
-                    m_powerPips = 1,
-                }
-            };
-            pips.m_pipList.Add(participantPipData);
-
-            var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATPIPS {
-                DuelID = SigilId,
-            };
-        });
+        var combatPips = Director.GetCombatParticipantsPips();
+        combatPips.m_duelID = SigilId;
 
         // Serialize the combat pips and send it to each participant.
         _serializer.OnPropertyMask(_combatParticipantStatFlags);
-        var buffer = _serializer.Serialize(pips);
+        var buffer = _serializer.Serialize(combatPips);
 
+        // This doesn't need to be broadcasted because the object we've serialized contains the pips
+        // for all participants, not just this one.
         EnactActionOnSubCircles(circle => {
             var participantActor = circle.ParticipantActor;
             var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATPIPS {
@@ -364,20 +407,8 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     private void SendCombatHealth() {
-        // Create the new health list object.
-        var healthList = new CombatHealthListObj {
-            m_duelID = SigilId,
-            m_healthList = new List<ParticipantParameter>()
-        };
-
-        // Iterate through each sub circle and add the participant's health to the list.
-        EnactActionOnSubCircles(circle => {
-            var participantHealth = new ParticipantParameter {
-                m_data = 1000,
-                m_partID = (GID) circle.ParticipantObject.m_globalID,
-            };
-            healthList.m_healthList.Add(participantHealth);
-        });
+        var healthList = Director.GetCombatParticipantsHealth();
+        healthList.m_duelID = SigilId;
 
         // Serialize the combat health and send it to each participant.
         _serializer.OnPropertyMask(_combatParticipantStatFlags);
@@ -452,7 +483,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             }
 
             // Cretae the sub circle object and add it to the array.
-            var subCircle = new DuelActorSubCircle(this, radius, rotation, color) {
+            var subCircle = new DuelActorSubCircle(this, radius, rotation, color, i) {
                 WorldPosition = rotatedSigilPos,
                 WorldRotation = faceTowardsYaw,
                 SlotName = subCircles[i].m_locationPreference,

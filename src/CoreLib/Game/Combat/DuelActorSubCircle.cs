@@ -19,11 +19,12 @@ internal enum SlotType {
     Player
 }
 
-internal class DuelActorSubCircle {
+public class DuelActorSubCircle {
     private const float AggroTimeInSeconds = 0.75f;
 
     internal string SlotName { get; set; }
     internal SlotType SlotType { get; set; }
+    internal int SlotIndex { get; private set; }
     internal Vector3 WorldPosition { get; set; }
     internal float WorldRotation { get; set; }
     internal IActorRef ParticipantActor { get; private set; }
@@ -66,11 +67,12 @@ internal class DuelActorSubCircle {
     private CombatHand _combatHand;
 
     // ctor
-    internal DuelActorSubCircle(DuelActor duelActor, float radius, float rotation, Color color) {
+    internal DuelActorSubCircle(DuelActor duelActor, float radius, float rotation, Color color, int index) {
         _duelActor = duelActor;
         _radius = radius;
         _rotation = rotation;
         _color = color;
+        SlotIndex = index;
     }
 
     internal async Task AssignParticipant(IActorRef actor, CoreObject participantObject) {
@@ -86,6 +88,14 @@ internal class DuelActorSubCircle {
             InitializeCreatureSubCircle();
         }
 
+        // Inform the actor that they've been added to a duel.
+        var msg = new COMBAT_106_PROTOCOL.MSG_ACTORADDEDTODUEL {
+            DuelActor = _duelActor.ActorRef,
+            SlotPosition = WorldPosition,
+            SlotOrientation = WorldRotation
+        };
+        ParticipantActor.Tell(msg);
+
         await PlayEntranceAnimation(participantObject);
     }
 
@@ -96,6 +106,10 @@ internal class DuelActorSubCircle {
         return newHand;
     }
 
+    internal Spell GetSpellFromLastHand(byte index) {
+        return _combatHand.LastGivenHand[index];
+    }
+
     private void InitializePlayerSubCircle() {
         var queryCharacterMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
         var wizard = ParticipantActor
@@ -103,7 +117,7 @@ internal class DuelActorSubCircle {
             .Result
             .Wizard;
 
-        ParticipantGameStats = wizard.GameStats.GetClientTypeAlternative();
+        ParticipantGameStats = wizard.GameStats.GetCombatGameStats();
         _combatHand = new CombatHand(wizard.SpellbookBehavior.Spells, 7);
 
         CombatParticipant = new CombatParticipant {
@@ -112,7 +126,7 @@ internal class DuelActorSubCircle {
             m_isPlayer = true,
             m_teamID = 0,
             m_primaryMagicSchoolID = (int) wizard.MagicSchoolBehavior.MagicSchool,
-            m_pipCount = new() { m_powerPips = 0, m_genericPips = 1 },
+            m_pipCount = new() { m_powerPips = 0, m_genericPips = 0 },
             m_pipRoundRates = new(),
             m_originalTeam = 0,
             m_maxHandSize = 7,
@@ -131,8 +145,12 @@ internal class DuelActorSubCircle {
     }
 
     private void InitializeCreatureSubCircle() {
-        // todo: implement
-        ParticipantGameStats = new WizGameStats();
+        var queryGameStatsMsg = new COMBAT_106_PROTOCOL.MSG_QUERYCREATURESTATS();
+        var creatureStats = ParticipantActor
+            .Ask<COMBAT_106_PROTOCOL.MSG_CREATURESTATS>(queryGameStatsMsg)
+            .Result;
+
+        ParticipantGameStats = creatureStats.GameStats;
         CombatParticipant = new CombatParticipant {
             m_ownerID = ParticipantObject.m_globalID,
             m_templateID = 2199023290637, // Captured 2199023290637 from live
@@ -142,15 +160,13 @@ internal class DuelActorSubCircle {
             m_originalTeam = 1,
             m_maxHandSize = 7,
             m_primaryMagicSchoolID = 83375795,
-            m_pipCount = new() { m_powerPips = 0, m_genericPips = 1 },
+            m_pipCount = new() { m_powerPips = 0, m_genericPips = 0 },
             m_pipRoundRates = new(),
-            m_playerHealth = 55,
-            m_maxPlayerHealth = 55,
+            m_playerHealth = creatureStats.GameStats.m_currentHitpoints,
+            m_maxPlayerHealth = creatureStats.GameStats.m_baseHitpoints,
             m_myTeamTurn = _duelActor.Duel.m_firstTeamToAct == 1,
-            m_pGameStats = new WizGameStats() {
-                m_currentHitpoints = 55,
-                m_baseHitpoints = 55,
-            },
+            m_pGameStats = creatureStats.GameStats,
+            m_mobLevel = creatureStats.CombatLevel,
 
             m_subcircle = 0,
             m_dynamicSymbol = DynamicSigilSymbol.Dagger,

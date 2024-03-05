@@ -87,5 +87,57 @@ namespace Imlight.CoreLib.Shared.Packets {
 
             public int Round;
         }
+
+        public sealed class MSG_ACTORADDEDTODUEL : IServerMessage
+        {
+            public byte MessageOrder => 9;
+            public byte ServiceID => 106;
+
+            public IActorRef DuelActor;
+            public Vector3 SlotPosition;
+            public float SlotOrientation;
+        }
+
+        public sealed class MSG_ACTORCOMBATMOVE : IServerMessage
+        {
+            public byte MessageOrder => 10;
+            public byte ServiceID => 106;
+
+            public IActorRef Actor;
+            public byte MoveType;
+            public byte SpellSelection;
+            public uint SpellTarget;
+            public int TimeLeft;
+        }
+
+        public sealed class MSG_ROUNDOVER : IServerMessage
+        {
+            public byte MessageOrder => 11;
+            public byte ServiceID => 106;
+        }
+
+        public sealed class MSG_ROUNDRESOLUTION : IServerMessage
+        {
+            public byte MessageOrder => 12;
+            public byte ServiceID => 106;
+        }
+
+        public sealed class MSG_QUERYCREATURESTATS : IServerMessage
+        {
+            public byte MessageOrder => 13;
+            public byte ServiceID => 106;
+        }
+
+        public sealed class MSG_CREATURESTATS : IServerMessage
+        {
+            public byte MessageOrder => 14;
+            public byte ServiceID => 106;
+
+            public WizGameStats GameStats;
+            public float CombatIntelligence;
+            public float CombatSelfishFactor;
+            public float CombatAggressionFactor;
+            public int CombatLevel;
+        }
 	}
 }
