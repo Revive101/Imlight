@@ -26,7 +26,6 @@ internal static class Program {
     // Imlight - KALI    -- We feel very confident in the stability of previous systems. We are now focusing on combat.
     private const string ActorSystemName = "Imlight";
     private const string MajorVersion = "KALI";
-    private const string Version = "1.2.0";
 
     private static ActorSystem s_imlightSystem;
     private static ResourceContainer s_resourceContainer;
@@ -172,7 +171,7 @@ internal static class Program {
         var buildConfiguration = GetBuildConfiguration();
         Console.Write(@"|___/");
         Console.ForegroundColor = ConsoleColor.DarkGray;
-        Console.Write($"   ({MajorVersion}-v{Version} {buildConfiguration})\n");
+        Console.Write($"   ({MajorVersion} {buildConfiguration})\n");
         Console.WriteLine("");
     }
 

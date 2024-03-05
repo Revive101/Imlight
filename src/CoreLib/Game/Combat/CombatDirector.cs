@@ -4,6 +4,7 @@
  */
 
 using Imlight.Common.ObjectProperty.PropertyReflection;
+using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -174,29 +175,84 @@ public class CombatDirector {
 
         if (effectTarget == SpellEffect.kEffectTarget.kEnemySingle
          || effectTarget == SpellEffect.kEffectTarget.kFriendlySingle) {
-            ApplyEffectSingle(effect, target);
+            ApplyEffectSingle(effect, caster, target);
         }
     }
 
-    private void ApplyEffectSingle(SpellEffect effect, DuelActorSubCircle target)
+    private void ApplyEffectSingle(SpellEffect effect, DuelActorSubCircle caster, DuelActorSubCircle target)
     {
         var effectType = effect.m_effectType;
 
         switch (effectType)
         {
             case SpellEffect.kSpellEffects.kDamage:
-                ApplyEffectDamage(effect, new[] { target });
+                ApplyEffectDamage(effect, caster, new[] { target });
                 break;
             default:
                 break;
         }
     }
 
-    private void ApplyEffectDamage(SpellEffect effect, DuelActorSubCircle[] targets) {
-        var damage = effect.m_effectParam;
+    private void ApplyEffectDamage(SpellEffect effect, DuelActorSubCircle caster, DuelActorSubCircle[] targets) {
+        int damage = effect.m_effectParam;
 
+        // Try to parse the string to an enum
+        if (!Enum.TryParse(typeof(MagicSchool), effect.m_sDamageType, out var damageTypeObj)) {
+            throw new ArgumentException("Invalid damage type");
+        }
+        var damageType = (MagicSchool) damageTypeObj;
+
+        // Calculate damage increase
+        double damageFlatIncrease = GetFlatDamageIncrease(caster, damageType);
+        double damagePercentIncrease = GetPercentDamageIncrease(caster, damageType);
+        damage = (int) Math.Ceiling(damage * (1 + damagePercentIncrease) + damageFlatIncrease);
+
+        // Apply damage to each target
         foreach (var target in targets) {
+            // Calculate damage reduction
+            double damageReductionFlat = GetFlatDamageReduction(target, damageType);
+            double damageReductionPercent = GetPercentDamageReduction(target, damageType);
+            damage = (int) Math.Ceiling(damage * (1 - damageReductionPercent) - damageReductionFlat);
+
             target.ParticipantGameStats.m_currentHitpoints -= damage;
         }
+    }
+
+    private double GetFlatDamageIncrease(DuelActorSubCircle caster, MagicSchool damageType) {
+        double damageFlatIncrease = GetValueAtIndex(caster.ParticipantGameStats.m_dmgBonusFlat, damageType);
+        return damageFlatIncrease + caster.ParticipantGameStats.m_dmgBonusFlatAll;
+    }
+
+    private double GetPercentDamageIncrease(DuelActorSubCircle caster, MagicSchool damageType) {
+        double damagePercentIncrease = GetValueAtIndex(caster.ParticipantGameStats.m_dmgBonusPercent, damageType);
+        return damagePercentIncrease + caster.ParticipantGameStats.m_dmgBonusPercentAll;
+    }
+
+    private double GetFlatDamageReduction(DuelActorSubCircle target, MagicSchool damageType) {
+        double damageReductionFlat = GetValueAtIndex(target.ParticipantGameStats.m_dmgReduceFlat, damageType);
+        return damageReductionFlat + target.ParticipantGameStats.m_dmgReduceFlatAll;
+    }
+
+    private double GetPercentDamageReduction(DuelActorSubCircle target, MagicSchool damageType) {
+        double damageReductionPercent = GetValueAtIndex(target.ParticipantGameStats.m_dmgReducePercent, damageType);
+        return damageReductionPercent + target.ParticipantGameStats.m_dmgReducePercentAll;
+    }
+
+    private static T GetValueAtIndex<T>(List<T> list, Enum enumValue) {
+        if (list is null || list.Count <= 0) {
+            return default;
+        }
+
+        if (!typeof(T).IsPrimitive && !typeof(T).IsEnum) {
+            throw new ArgumentException("List items must be primitive types or enums");
+        }
+
+        int index = Array.IndexOf(Enum.GetValues(enumValue.GetType()), enumValue);
+
+        if (index == -1 || list.Count <= index) {
+            return default;
+        }
+
+        return list[index];
     }
 }
