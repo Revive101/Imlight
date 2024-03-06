@@ -3,6 +3,7 @@
  * Proprietary and confidential.
  */
 
+using Imlight.Common;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System;
@@ -68,14 +69,26 @@ public class CombatDirector {
         foreach (var subCircle in ActiveSubCircles) {
             if (!seenCasters.Contains(subCircle)) {
                 var combatAction = new CombatAction {
-                    m_effectChosen = 0,
                     m_spellCaster = subCircle.SlotIndex,
-                    m_targetSubcircleList = new List<int>(),
-                    m_showCast = true,
-                    m_spellHits = (char) 0,
-                    m_spell = null,
                 };
                 combatActionList.m_actionList.Add(combatAction);
+            }
+        }
+
+        // Log the combat actions.
+        Logger.Debug("Duel {0} | Combat actions round {1}: ", Logger.Args(_duel.m_duelID, _duel.m_roundNum));
+        foreach (var action in combatActionList.m_actionList)
+        {
+            var duelId = _duel.m_duelID;
+            var slot = action.m_spellCaster;
+            var spell = action.m_spell != null ? action.m_spell.m_templateID.ToString() : "None";
+            var target = string.Join(",", action.m_targetSubcircleList ?? new List<int>());
+
+            if (action.m_spell == null) {
+                Logger.Debug("Duel {0} | Slot {1} | Passes the turn", Logger.Args(duelId, slot));
+            }
+            else {
+                Logger.Debug("Duel {0} | Slot {1} | Casts spell {2} towards target(s) {3}", Logger.Args(duelId, slot, spell, target));
             }
         }
 
@@ -130,13 +143,12 @@ public class CombatDirector {
         var existingQueuedAction = _queuedCombatActions.FirstOrDefault(x => x.SpellCaster == caster);
         if (existingQueuedAction != null) {
             _queuedCombatActions.Remove(existingQueuedAction);
-            return;
         }
 
         var queuedAction = new QueuedCombatAction {
             SpellCaster = caster,
             TargetSubcircle = target,
-            Spell = type == MoveType.Spell ? spell : null,
+            Spell = type == MoveType.Attack ? spell : null,
         };
         _queuedCombatActions.Add(queuedAction);
     }

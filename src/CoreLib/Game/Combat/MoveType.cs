@@ -6,7 +6,9 @@
 namespace Imlight.CoreLib.Game.Combat;
 
 public enum MoveType {
-    Spell = 0,
+    Attack = 0,
+    Spell = 1,
     Discard = 2,
-    Pass = 3
+    Pass = 3,
+    ChangeMind = 4,
 }
