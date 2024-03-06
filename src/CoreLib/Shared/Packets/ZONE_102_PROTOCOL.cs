@@ -211,4 +211,22 @@ public class ZONE_102_PROTOCOL : IServerProtocol
 
 		public TypeCache.CoreObject CoreObject;
 	}
+
+    public sealed class MSG_CREATURESPAWNINTERVAL : IServerMessage
+    {
+        public byte MessageOrder { get; } = 20;
+        public byte ServiceID { get; } = 102;
+
+        public TypeCache.SpawnObject SpawnObject;
+    }
+
+    public sealed class MSG_CREATURESPAWNONPATH : IServerMessage
+    {
+        public byte MessageOrder { get; } = 21;
+        public byte ServiceID { get; } = 102;
+
+        public TypeCache.SpawnObject SpawnObject;
+        public int Count;
+        public int SpawnRate;
+    }
 }

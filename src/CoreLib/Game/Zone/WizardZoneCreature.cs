@@ -47,6 +47,8 @@ public class WizardZoneCreature : WizardZoneObject {
     private byte _targetNodeIndex;
     private float _movementSpeed = 0.0f;
     private float _movementSpeedMultiplier = 1.0f;
+    private uint _pauseChance = 0;
+    private float _pauseTime = 6.0f;
     private DateTime _lastMoveTime;
     private bool _isMovingCreature;
     private bool _isDuelingCreature;
@@ -182,6 +184,8 @@ public class WizardZoneCreature : WizardZoneObject {
 
     private void SetPropertiesFromTemplate() {
         var pathBehavior = Template.m_behaviors
+            .FirstOrDefault(x => x is PathBehaviorTemplate) as PathBehaviorTemplate;
+        var pathMovementBehavior = Template.m_behaviors
             .FirstOrDefault(x => x is PathMovementBehaviorTemplate) as PathMovementBehaviorTemplate;
         var duelistBehavior = Template.m_behaviors
             .FirstOrDefault(x => x is DuelistBehaviorTemplate) as DuelistBehaviorTemplate;
@@ -189,9 +193,14 @@ public class WizardZoneCreature : WizardZoneObject {
             .FirstOrDefault(x => x is NPCBehaviorTemplate) as NPCBehaviorTemplate;
 
         if (pathBehavior is not null) {
-            this._movementSpeed = pathBehavior.m_movementSpeed;
-            this._movementSpeedMultiplier = pathBehavior.m_movementScale;
-            this._isMovingCreature = true && pathBehavior.m_movementSpeed > 0.0f;
+            this._pauseChance = pathBehavior.m_pauseChance;
+            this._pauseTime = pathBehavior.m_timeToPause;
+        }
+
+        if (pathMovementBehavior is not null) {
+            this._movementSpeed = pathMovementBehavior.m_movementSpeed;
+            this._movementSpeedMultiplier = pathMovementBehavior.m_movementScale;
+            this._isMovingCreature = true && pathMovementBehavior.m_movementSpeed > 0.0f;
         }
 
         if (duelistBehavior is not null) {
