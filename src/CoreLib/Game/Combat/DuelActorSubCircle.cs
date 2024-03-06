@@ -112,6 +112,10 @@ public class DuelActorSubCircle {
     }
 
     internal Spell GetSpellFromLastHand(byte index) {
+        if (_combatHand.LastGivenHand is null || index >= _combatHand.LastGivenHand.Count) {
+            return null;
+        }
+
         return _combatHand.LastGivenHand[index];
     }
 

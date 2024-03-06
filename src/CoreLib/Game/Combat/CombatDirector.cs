@@ -53,11 +53,30 @@ public class CombatDirector {
 
     public CombatActionListObj ApplyQueuedCombatActions() {
         var combatActionList = new CombatActionListObj { m_actionList = new List<CombatAction>() };
+        var seenCasters = new List<DuelActorSubCircle>();
 
         // Iterate through each queued combat action and apply the spell effects.
         foreach (var action in _queuedCombatActions) {
             var combatAction = ApplyCombatAction(action);
             combatActionList.m_actionList.Add(combatAction);
+
+            seenCasters.Add(action.SpellCaster);
+        }
+
+        // Any casters not seen in the queued actions list will be added to the combat action list with a null spell.
+        // This signifies that they are passing their turn.
+        foreach (var subCircle in ActiveSubCircles) {
+            if (!seenCasters.Contains(subCircle)) {
+                var combatAction = new CombatAction {
+                    m_effectChosen = 0,
+                    m_spellCaster = subCircle.SlotIndex,
+                    m_targetSubcircleList = new List<int>(),
+                    m_showCast = true,
+                    m_spellHits = (char) 0,
+                    m_spell = null,
+                };
+                combatActionList.m_actionList.Add(combatAction);
+            }
         }
 
         return combatActionList;
