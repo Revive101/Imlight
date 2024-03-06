@@ -59,6 +59,7 @@ public class DuelActorSubCircle {
             return ParticipantObject.m_templateID == 1 ? Team.Player : Team.Monster;
         }
     }
+    internal bool IsAlive => ParticipantGameStats.m_currentHitpoints > 0;
 
     private readonly DuelActor _duelActor;
     private readonly float _radius;
@@ -106,7 +107,18 @@ public class DuelActorSubCircle {
         return newHand;
     }
 
+    internal Spell DiscardCard(byte index) {
+        var spell = _combatHand.LastGivenHand[index];
+        _combatHand.Discard(index);
+
+        return spell;
+    }
+
     internal Spell GetSpellFromLastHand(byte index) {
+        if (_combatHand.LastGivenHand is null || index >= _combatHand.LastGivenHand.Count) {
+            return null;
+        }
+
         return _combatHand.LastGivenHand[index];
     }
 

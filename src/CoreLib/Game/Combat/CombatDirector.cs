@@ -3,6 +3,7 @@
  * Proprietary and confidential.
  */
 
+using Imlight.Common;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System;
@@ -53,11 +54,42 @@ public class CombatDirector {
 
     public CombatActionListObj ApplyQueuedCombatActions() {
         var combatActionList = new CombatActionListObj { m_actionList = new List<CombatAction>() };
+        var seenCasters = new List<DuelActorSubCircle>();
 
         // Iterate through each queued combat action and apply the spell effects.
         foreach (var action in _queuedCombatActions) {
             var combatAction = ApplyCombatAction(action);
             combatActionList.m_actionList.Add(combatAction);
+
+            seenCasters.Add(action.SpellCaster);
+        }
+
+        // Any casters not seen in the queued actions list will be added to the combat action list with a null spell.
+        // This signifies that they are passing their turn.
+        foreach (var subCircle in ActiveSubCircles) {
+            if (!seenCasters.Contains(subCircle)) {
+                var combatAction = new CombatAction {
+                    m_spellCaster = subCircle.SlotIndex,
+                };
+                combatActionList.m_actionList.Add(combatAction);
+            }
+        }
+
+        // Log the combat actions.
+        Logger.Debug("Duel {0} | Combat actions round {1}: ", Logger.Args(_duel.m_duelID, _duel.m_roundNum));
+        foreach (var action in combatActionList.m_actionList)
+        {
+            var duelId = _duel.m_duelID;
+            var slot = action.m_spellCaster;
+            var spell = action.m_spell != null ? action.m_spell.m_templateID.ToString() : "None";
+            var target = string.Join(",", action.m_targetSubcircleList ?? new List<int>());
+
+            if (action.m_spell == null) {
+                Logger.Debug("Duel {0} | Slot {1} | Passes the turn", Logger.Args(duelId, slot));
+            }
+            else {
+                Logger.Debug("Duel {0} | Slot {1} | Casts spell {2} towards target(s) {3}", Logger.Args(duelId, slot, spell, target));
+            }
         }
 
         return combatActionList;
@@ -102,22 +134,18 @@ public class CombatDirector {
         return healthList;
     }
 
-    public void AddCombatMove(DuelActorSubCircle caster, DuelActorSubCircle target, Spell spell) {
+    public void AddCombatMove(MoveType type, DuelActorSubCircle caster, DuelActorSubCircle target, Spell spell) {
         if (!_awaitingCombatMoves) {
             throw new InvalidOperationException("Combat moves are not being accepted at this time.");
         }
 
-        // If this spell is already queued by the same caster, remove their current queued action.
-        var existingQueuedAction = _queuedCombatActions.FirstOrDefault(x => x.SpellCaster == caster);
-        if (existingQueuedAction != null) {
-            _queuedCombatActions.Remove(existingQueuedAction);
-            return;
-        }
+        // If this spell is already queued by the same caster, remove all of their queued actions.
+        _queuedCombatActions.RemoveAll(x => x.SpellCaster == caster);
 
         var queuedAction = new QueuedCombatAction {
             SpellCaster = caster,
             TargetSubcircle = target,
-            Spell = spell,
+            Spell = type == MoveType.Attack ? spell : null,
         };
         _queuedCombatActions.Add(queuedAction);
     }
@@ -144,20 +172,22 @@ public class CombatDirector {
     private CombatAction ApplyCombatAction(QueuedCombatAction action) {
         var effectStack = new EffectStack();
 
-        foreach (var spellEffect in action.Spell.m_spellEffects) {
-            var effect = spellEffect;
+        if (action.Spell is not null) {
+            foreach (var spellEffect in action.Spell.m_spellEffects) {
+                var effect = spellEffect;
 
-            // If this is a random spell effect, we need to determine which effect to use.
-            if (spellEffect is RandomSpellEffect randomSpellEffect) {
-                var count = randomSpellEffect.m_effectList.Count;
-                var randomEffectIndex = new Random().Next(0, count);
-                effect = randomSpellEffect.m_effectList[randomEffectIndex];
+                // If this is a random spell effect, we need to determine which effect to use.
+                if (spellEffect is RandomSpellEffect randomSpellEffect) {
+                    var count = randomSpellEffect.m_effectList.Count;
+                    var randomEffectIndex = new Random().Next(0, count);
+                    effect = randomSpellEffect.m_effectList[randomEffectIndex];
 
-                // Push the random effect choice onto the stack.
-                effectStack.PushRandomEffectChoice(randomEffectIndex);
+                    // Push the random effect choice onto the stack.
+                    effectStack.PushRandomEffectChoice(randomEffectIndex);
+                }
+
+                ApplyEffect(effect, action.SpellCaster, action.TargetSubcircle);
             }
-
-            ApplyEffect(effect, action.SpellCaster, action.TargetSubcircle);
         }
 
         return new CombatAction {

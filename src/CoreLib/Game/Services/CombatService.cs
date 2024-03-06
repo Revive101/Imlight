@@ -63,24 +63,13 @@ public class CombatService : MessageService {
     private void UnEquipMount() {
         var wizard = GetActiveWizard();
         var wizEquipmentBehavior = wizard.EquipmentBehavior;
-        var account = GetActiveAccount();
         ulong itemId;
+
         try {
             itemId = wizEquipmentBehavior.GetItemInSlot(WizardData.Models.Player.EquipmentSlotType.Mount).m_globalID;
         }
         catch (Exception ex) {
-            Logger.Warning("Player Has no mount equipped good to go");
-            return; }
-
-        // Check to see if the player has this item equipped. If they don't, log an infraction.
-        if (!wizEquipmentBehavior.HasItemEquipped(itemId)) {
-            var infractionText = $"Player tried to unequip item {itemId} that they do not have in their inventory!";
-            account.AddInfraction(InfractionType.SuspiciousBehavior, infractionText);
-
-            Logger.Warning("Player tried to unequip item {0} that they do not have in their inventory."
-                        + " This has been logged as a suspicious behavior infraction.",
-                Logger.Args(itemId));
-
+            Logger.Debug("Player Has no mount equipped good to go");
             return;
         }
 
@@ -99,6 +88,7 @@ public class CombatService : MessageService {
         SendUnequipItem("Mount", slot, itemId);
         SendRemoveEffects(removedEffects);
     }
+
     private void SendUnequipItem(Common.IO.ByteString slotName, byte slot, ulong itemId) {
         // This one goes to the client.
         SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPITEM() {
@@ -113,6 +103,7 @@ public class CombatService : MessageService {
             IndexToRemove = slot
         }, false);
     }
+
     private void SendRemoveEffects(List<GameEffectBase> effects) {
         var charObjId = GetActiveGameObject().m_globalID;
 

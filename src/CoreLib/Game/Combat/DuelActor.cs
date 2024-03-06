@@ -115,6 +115,8 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
         Director = new CombatDirector(Duel, _subCircles);
 
+        Logger.Debug("Duel {0} | Created", Logger.Args(Duel.m_duelID));
+
         // Fire a message to self to start the duel after the grace period has ended.
         var delay = TimeSpan.FromSeconds(DuelStartedGracePeriodInSeconds);
         Timers.StartSingleTimer("graceover", new COMBAT_106_PROTOCOL.MSG_GRACEPERIODOVER(), delay);
@@ -123,7 +125,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_GRACEPERIODOVER))]
     private void ReceiveGracePeriodOver(COMBAT_106_PROTOCOL.MSG_GRACEPERIODOVER message) {
         // The grace period for adding participants is now over.
-        Logger.Debug("Duel {0} has started.", Logger.Args(Duel.m_duelID));
+        Logger.Debug("Duel {0} | Grace period over, no longer accepting participants", Logger.Args(Duel.m_duelID));
 
         EnactActionOnSubCircles(circle => {
             var participantData = circle.CombatParticipant;
@@ -142,10 +144,14 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_NEWROUND))]
     private void ReceiveNewRound(COMBAT_106_PROTOCOL.MSG_NEWROUND message) {
+        Logger.Debug("Duel {0} | New round {1} at {2}",
+            Logger.Args(Duel.m_duelID, Duel.m_roundNum, DateTime.Now.ToString("HH:mm:ss")));
+
         Director.StartRound();
 
         // Pre-planning phase just wants to send who is up first.
         Duel.m_duelPhase = kDuelPhase.kPhase_PrePlanning;
+        Duel.m_roundNum++;
         SendCombatPhase((byte) Duel.m_duelPhase);
 
         // Inform the combat participants that they may or may not be considered AFK.
@@ -178,6 +184,9 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ROUNDOVER))]
     private void ReceiveRoundOver(COMBAT_106_PROTOCOL.MSG_ROUNDOVER message) {
+        Logger.Debug("Duel {0} | Round {1} over at {2}",
+            Logger.Args(Duel.m_duelID, Duel.m_roundNum, DateTime.Now.ToString("HH:mm:ss")));
+
         // The planning phase is over. The client will now be able to send combat moves.
         Duel.m_duelPhase = kDuelPhase.kPhase_Execution;
         SendCombatPhase((byte) Duel.m_duelPhase);
@@ -201,23 +210,54 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ROUNDRESOLUTION))]
     private void ReceiveRoundResolution(COMBAT_106_PROTOCOL.MSG_ROUNDRESOLUTION message) {
-        EnactActionOnSubCircles(circle => {
-            var participantActor = circle.ParticipantActor;
-            var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATREMOVE {
-                DuelID = SigilId,
-                ParticipantID = circle.ParticipantObject.m_globalID
-            };
-            participantActor.Tell(msg);
-
-            var stateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
-                GameObjectID = circle.ParticipantObject.m_globalID,
-                State = (uint) NPCStates.Idle
-            };
-            participantActor.Tell(stateMsg);
-        });
-
+        // All spells have been called. Inform the client whether this duel continues or ends.
         Duel.m_duelPhase = kDuelPhase.kPhase_Resolution;
         SendCombatPhase((byte) Duel.m_duelPhase);
+
+        var playersWin = HavePlayersWon();
+        var creaturesWin = HaveCreaturesWon();
+        if (!playersWin && !creaturesWin) {
+            // Continue. Start a new round.
+            Self.Tell(new COMBAT_106_PROTOCOL.MSG_NEWROUND());
+            return;
+        }
+
+        Logger.Debug("Duel {0} | Duel ended. Players win: {1}, Creatures win: {2}",
+            Logger.Args(Duel.m_duelID, playersWin, creaturesWin));
+
+        // Broadcast to the zone of the result.
+        var combatMatchResult = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATMATCHRESULT {
+            DuelID = SigilId,
+            WinningTeam = playersWin ? (byte) Team.Player : (byte) Team.Monster,
+        };
+        DuelBroadcast(combatMatchResult);
+
+        // A team has won the duel.
+        Duel.m_duelPhase = kDuelPhase.kPhase_Victory;
+        SendCombatPhase((byte) Duel.m_duelPhase);
+
+        // Duplicate winning message, for some reason.
+        if (playersWin) {
+            var combatVictoryMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATVICTORY();
+            EnactActionOnSubCircles(circle => {
+                circle.ParticipantActor.Tell(combatVictoryMsg);
+
+                // Get the players back into the idle state, so they can move around again.
+                var stateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
+                    GameObjectID = circle.ParticipantObject.m_globalID,
+                    State = (uint) NPCStates.Idle
+                };
+                circle.ParticipantActor.Tell(stateMsg);
+            });
+        }
+
+        Duel.m_duelPhase = kDuelPhase.kPhase_Ended;
+        SendCombatPhase((byte) Duel.m_duelPhase);
+
+        var duelEndedMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_ENDDUEL {
+            DuelID = SigilId
+        };
+        DuelBroadcast(duelEndedMsg);
     }
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ADDPARTICIPANT))]
@@ -281,10 +321,24 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         // Find which sub circle they were targeting. If the target is 0, it's self.
         var targetOrSelf = message.SpellTarget == 0 ? subCircle : _subCircles[message.SpellTarget - 1];
 
-        // Find what spell they were casting.
-        var spell = subCircle.GetSpellFromLastHand(message.SpellSelection);
+        // Parse the MoveType as an enum.
+        var moveType = (MoveType) message.MoveType;
 
-        Director.AddCombatMove(subCircle, targetOrSelf, spell);
+        // If this is a discard, we don't want to send the event to the director
+        if (moveType == MoveType.Discard) {
+            var discarded = subCircle.DiscardCard(message.SpellSelection);
+
+            Logger.Debug("Duel {0} | Slot {1} | Discarded a card: {2}",
+                Logger.Args(Duel.m_duelID, subCircle.SlotIndex, discarded?.m_templateID.ToString() ?? "None"));
+        }
+        else {
+            // Find what spell they were casting.
+            var spell = subCircle.GetSpellFromLastHand(message.SpellSelection);
+            Director.AddCombatMove(moveType, subCircle, targetOrSelf, spell);
+
+            Logger.Debug("Duel {0} | Slot {1} | Gave combat move type {2}: {3}",
+                Logger.Args(Duel.m_duelID, subCircle.SlotIndex, moveType, spell?.m_templateID.ToString() ?? "Pass"));
+        }
     }
 
     private void SendCombatPhase(byte phase) {
@@ -433,7 +487,6 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             m_duelID = sigilId,
             m_planningTimer = PlanningTime,
             m_executionPhaseTimer = 3.4078238f,
-            m_roundNum = 1,
             m_scalarDamage = _combatSigilTemplate.m_scalarDamagePvE,
             m_scalarResist = _combatSigilTemplate.m_scalarResistPvE,
             m_scalarPierce = _combatSigilTemplate.m_scalarPiercePvE,
@@ -530,6 +583,16 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         subCircle.AssignParticipant(actorRef, coreObject);
 
         return true;
+    }
+
+    private bool HavePlayersWon() {
+        var creaturesAlive = _subCircles.Count(x => x.Occupied && x.OccupiedTeam == Team.Monster && x.IsAlive);
+        return creaturesAlive <= 0;
+    }
+
+    private bool HaveCreaturesWon() {
+        var playersAlive = _subCircles.Count(x => x.Occupied && x.OccupiedTeam == Team.Player && x.IsAlive);
+        return playersAlive <= 0;
     }
 
     private ByteString SerializeCombatParticipant(CombatParticipant participant) {
