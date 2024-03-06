@@ -107,6 +107,10 @@ public class DuelActorSubCircle {
         return newHand;
     }
 
+    internal void DiscardCard(byte index) {
+        _combatHand.Discard(index);
+    }
+
     internal Spell GetSpellFromLastHand(byte index) {
         return _combatHand.LastGivenHand[index];
     }

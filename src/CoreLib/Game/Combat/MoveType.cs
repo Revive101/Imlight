@@ -7,5 +7,6 @@ namespace Imlight.CoreLib.Game.Combat;
 
 public enum MoveType {
     Spell = 0,
+    Discard = 2,
     Pass = 3
 }

@@ -211,11 +211,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         if (!playersWin && !creaturesWin) {
             // Continue. Start a new round.
             Self.Tell(new COMBAT_106_PROTOCOL.MSG_NEWROUND());
-        }
-
-        if (playersWin) {
-            var combatVictoryMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATVICTORY();
-            EnactActionOnSubCircles(circle => circle.ParticipantActor.Tell(combatVictoryMsg));
+            return;
         }
 
         // Broadcast to the zone of the result.
@@ -314,11 +310,17 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         // Find which sub circle they were targeting. If the target is 0, it's self.
         var targetOrSelf = message.SpellTarget == 0 ? subCircle : _subCircles[message.SpellTarget - 1];
 
-        // Find what spell they were casting.
-        var spell = subCircle.GetSpellFromLastHand(message.SpellSelection);
-
         // Parse the MoveType as an enum.
         var moveType = (MoveType) message.MoveType;
+
+        // If this is a discard, we don't want to send the event to the director
+        if (moveType == MoveType.Discard) {
+            subCircle.DiscardCard(message.SpellSelection);
+            return;
+        }
+
+        // Find what spell they were casting.
+        var spell = subCircle.GetSpellFromLastHand(message.SpellSelection);
 
         Director.AddCombatMove(moveType, subCircle, targetOrSelf, spell);
     }

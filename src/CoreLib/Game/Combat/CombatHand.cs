@@ -17,40 +17,60 @@ internal class CombatHand {
 
     private readonly byte _handSize;
     private readonly List<uint> _exhaustedSpellIds;
+    private readonly List<byte> _discardedCardIndices;
 
     // ctor
     internal CombatHand(List<Spell> spells, byte handSize) {
         _handSize = handSize;
         Spells = spells;
         _exhaustedSpellIds = new List<uint>();
+        LastGivenHand = new List<Spell>();
+        _discardedCardIndices = new List<byte>();
     }
 
     internal Hand GetHand() {
-        // Randomly pick 7 cards from the spellbook, minus the ones we've exhausted.
-        var hand = new List<Spell>();
+        var newCards = new List<Spell>();
         var random = new Random();
         var _availableCache = AvailableSpells;
 
-        for (var i = 0; i < _handSize; i++) {
-            // Spells exhausted!
+        // Remove discarded cards
+        for (int i = _discardedCardIndices.Count - 1; i >= 0; i--) {
+            var index = _discardedCardIndices[i];
+            LastGivenHand.RemoveAt(index); // Remove from hand
+            _discardedCardIndices.RemoveAt(i); // Clear tracked index
+        }
+
+        // Calculate how many cards need to be refilled
+        var cardsToRefill = _handSize - LastGivenHand.Count;
+
+        for (var i = 0; i < cardsToRefill; i++) {
             if (_availableCache.Count == 0) {
-                break;
+                break; // No more spells available
             }
 
             var randomIndex = random.Next(0, _availableCache.Count);
             var spell = _availableCache[randomIndex];
 
-            hand.Add(spell);
+            newCards.Add(spell);
             _availableCache.Remove(spell);
             _exhaustedSpellIds.Add(spell.m_spellID);
         }
 
-        var handObject = new Hand() {
-            m_spellList = new List<Spell>(hand)
+        // Update the LastGivenHand
+        LastGivenHand.AddRange(newCards);
+
+        return new Hand() {
+            m_spellList = new List<Spell>(LastGivenHand) // Return the full hand
         };
+    }
 
-        LastGivenHand = hand;
-
-        return handObject;
+    internal void Discard(byte index) {
+        if (index >= 0 && index < LastGivenHand.Count) {
+            _discardedCardIndices.Add(index);
+        }
+        else {
+            throw new ArgumentOutOfRangeException(nameof(index), "Index out of range.");
+        }
     }
 }
+
