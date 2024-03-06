@@ -139,11 +139,8 @@ public class CombatDirector {
             throw new InvalidOperationException("Combat moves are not being accepted at this time.");
         }
 
-        // If this spell is already queued by the same caster, remove their current queued action.
-        var existingQueuedAction = _queuedCombatActions.FirstOrDefault(x => x.SpellCaster == caster);
-        if (existingQueuedAction != null) {
-            _queuedCombatActions.Remove(existingQueuedAction);
-        }
+        // If this spell is already queued by the same caster, remove all of their queued actions.
+        _queuedCombatActions.RemoveAll(x => x.SpellCaster == caster);
 
         var queuedAction = new QueuedCombatAction {
             SpellCaster = caster,
