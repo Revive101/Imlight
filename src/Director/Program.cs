@@ -132,6 +132,7 @@ internal static class Program {
         new Joji("joji", "jootysocoollike", "joji@r101.net", AuthLevel.Administrator);
         new Phill("phill", "isthatguyevenadev?", "phill@r101.net", AuthLevel.Administrator);
         new Rocket("rocket", "7969", "rocket@r101.net", AuthLevel.Developer);
+        new Jeff("jeff", "jefffakename", "jeff@r101.net", AuthLevel.Administrator);
 
         // Hard code hall monitor lead accounts. Don't share these passwords!
         new Mitsu("mitsu", "2034", "mitsu@r101.net", AuthLevel.Administrator);
