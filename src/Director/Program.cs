@@ -140,7 +140,7 @@ internal static class Program {
         // Hall Monitor accounts.
         new PokemonHacker("pk", "7878", "pk@r101.net", AuthLevel.HallMonitor);
         new Tilr("tilr", "8080", "tilr@r101.net", AuthLevel.HallMonitor);
-
+        
         // Quality Assurance accounts
         new B("b", "1121", "b@r101.net", AuthLevel.QualityAssurance);
         new Dalnakii("dalnakii", "0091", "b@r101.net", AuthLevel.QualityAssurance);
@@ -150,6 +150,7 @@ internal static class Program {
         new Nyakua("nyakua", "6142", "nyakua@r101.net", AuthLevel.QualityAssurance);
         new Pluto("pluto", "1224", "pluto@r101.net", AuthLevel.QualityAssurance);
         new Socks("socks", "8723", "socks@r101.net", AuthLevel.QualityAssurance);
+        new Tommyw3b("tommyw3b", "9871", "Tommyw3b@r101.net", AuthLevel.QualityAssurance);
 
         Logger.Information("Embedded database accounts created.");
     }
