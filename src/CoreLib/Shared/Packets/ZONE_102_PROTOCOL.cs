@@ -229,4 +229,10 @@ public class ZONE_102_PROTOCOL : IServerProtocol
         public int Count;
         public int SpawnRate;
     }
+
+    public sealed class MSG_CREATUREMOVEINTERVAL : IServerMessage
+    {
+        public byte MessageOrder { get; } = 22;
+        public byte ServiceID { get; } = 102;
+    }
 }

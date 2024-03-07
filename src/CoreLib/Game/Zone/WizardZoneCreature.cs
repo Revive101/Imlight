@@ -22,7 +22,10 @@ namespace Imlight.CoreLib.Game.Zone;
 /// An extension of <see cref="WizardZoneObject" /> that adds implementations to move along
 /// a given <see cref="WizardZonePath" />.
 /// </summary>
-public class WizardZoneCreature : WizardZoneObject {
+public class WizardZoneCreature : WizardZoneObject, IWithTimers {
+    private const int MINIMUM_MOVEMENT_DELAY_IN_SECONDS = 1;
+    private const int MOVEMENT_INTERVAL_START_DELAY_IN_SECONDS = 1;
+
     internal enum CreatureState {
         Stopped,
         Wandering,
@@ -35,13 +38,10 @@ public class WizardZoneCreature : WizardZoneObject {
     public int CombatLevel { get; private set; }
     public int StartingHealth { get; private set; }
     public WizGameStats GameStats { get; private set; }
+    public ITimerScheduler Timers { get; set; }
 
-    private const int MovementDelayWithoutMobileId = 300;
-    private const int MinimumMovementspeedDelayInMilli = 500;
-    private const int InteractionIntervalInSeconds = 2;
-
-    private readonly CancellationTokenSource _pathMovementCancelToken;
-    private readonly CancellationTokenSource _interactionCancelToken;
+    private readonly TimeSpan _startingDelay = TimeSpan.FromSeconds(MOVEMENT_INTERVAL_START_DELAY_IN_SECONDS);
+    private readonly TimeSpan _minimumMovementIntervalDelay = TimeSpan.FromSeconds(MINIMUM_MOVEMENT_DELAY_IN_SECONDS);
     private readonly NodeObject[] _nodes;
     private CreatureState _creatureState;
     private byte _targetNodeIndex;
@@ -61,8 +61,6 @@ public class WizardZoneCreature : WizardZoneObject {
                               IActorRef wizardZoneRef)
             : base(activeGameObject, template, wizardZoneRef) {
         this._nodes = nodes;
-        this._pathMovementCancelToken = new CancellationTokenSource();
-        this._interactionCancelToken = new CancellationTokenSource();
         this._targetNodeIndex = startingNodeIndex;
         this._creatureState = CreatureState.Stopped;
 
@@ -72,9 +70,10 @@ public class WizardZoneCreature : WizardZoneObject {
             return;
         }
 
-        // Start the movement interval asynchronously as to not block the actor mailbox.
-        _ = DoMovementInterval();
-        _ = DoSigilInteractionInterval();
+        // Start the movement interval.
+        _creatureState = CreatureState.Wandering;
+        var msg = new ZONE_102_PROTOCOL.MSG_CREATUREMOVEINTERVAL();
+        Timers.StartSingleTimer("movementInterval", msg, _startingDelay);
     }
 
     // Akka.NET ctor
@@ -182,6 +181,50 @@ public class WizardZoneCreature : WizardZoneObject {
         Sender.Tell(msg);
     }
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_CREATUREMOVEINTERVAL))]
+    private void ReceiveMoveInterval(ZONE_102_PROTOCOL.MSG_CREATUREMOVEINTERVAL message) {
+        if (_creatureState != CreatureState.Wandering) {
+            return;
+        }
+
+        if (CurrentTargetNode is not null) {
+            UpdateGameObjectPosition(CurrentTargetNode);
+        }
+
+        // Target a new node.
+        _targetNodeIndex = GetNextNodeIndex();
+
+        var currentPosition = ActiveGameObject.m_location;
+        var distance = Vector3.Distance(currentPosition, CurrentTargetNode.m_location);
+
+        // If the distance is zero, then the mob is already at the target node.
+        if (distance == 0) {
+            var msg2 = new ZONE_102_PROTOCOL.MSG_CREATUREMOVEINTERVAL();
+            Timers.StartSingleTimer("movementInterval", msg2, _minimumMovementIntervalDelay);
+
+            return;
+        }
+
+        // Calculate the delay based on the distance between the current position
+        // and the target node position, and the movement speed of the creature.
+        var travelTimeInSeconds = distance / (_movementSpeed * _movementSpeedMultiplier);
+        var travelTimeInMilli = (int) travelTimeInSeconds * 1000;
+
+        // Clamp the delay to a minimum.
+        if (travelTimeInMilli < 500) {
+            travelTimeInMilli = 500;
+        }
+
+        // Begin traveling to the target node.
+        _lastMoveTime = DateTime.Now;
+        BroadcastMovement(CurrentTargetNode);
+
+        // Call the movement interval again after the delay.
+        var delay = TimeSpan.FromMilliseconds(travelTimeInMilli);
+        var msg = new ZONE_102_PROTOCOL.MSG_CREATUREMOVEINTERVAL();
+        Timers.StartSingleTimer("movementInterval", msg, delay);
+    }
+
     private void SetPropertiesFromTemplate() {
         var pathBehavior = Template.m_behaviors
             .FirstOrDefault(x => x is PathBehaviorTemplate) as PathBehaviorTemplate;
@@ -227,76 +270,12 @@ public class WizardZoneCreature : WizardZoneObject {
         }
     }
 
-    private async Task DoMovementInterval() {
-        _creatureState = CreatureState.Wandering;
-
-        while (!_pathMovementCancelToken.IsCancellationRequested) {
-            // Wait until this object officially has a mobile ID from the zone.
-            if (ActiveGameObject.m_nMobileID == 0) {
-                await Task.Delay(MovementDelayWithoutMobileId);
-                continue;
-            }
-
-            // Target a new node.
-            _targetNodeIndex = GetNextNodeIndex();
-
-            var currentPosition = ActiveGameObject.m_location;
-            var distance = Vector3.Distance(currentPosition, CurrentTargetNode.m_location);
-
-            // If the distance is zero, then the mob is already at the target node.
-            if (distance == 0) {
-                await Task.Delay(MinimumMovementspeedDelayInMilli);
-                continue;
-            }
-
-            // Calculate the delay based on the distance between the current position
-            // and the target node position, and the movement speed of the creature.
-            var travelTimeInSeconds = distance / (_movementSpeed * _movementSpeedMultiplier);
-            var travelTimeInMilli = (int) travelTimeInSeconds * 1000;
-
-            // Clamp the delay to a minimum.
-            if (travelTimeInMilli < MinimumMovementspeedDelayInMilli) {
-                travelTimeInMilli = MinimumMovementspeedDelayInMilli;
-            }
-
-            // Begin traveling to the target node.
-            _lastMoveTime = DateTime.Now;
-            BroadcastMovement(CurrentTargetNode);
-            await Task.Delay(travelTimeInMilli, _pathMovementCancelToken.Token);
-
-            // Update the game object position to the target node position once we've reached it.
-            UpdateGameObjectPosition(CurrentTargetNode);
-        }
-    }
-
-    private async Task DoSigilInteractionInterval() {
-        // todo: fix me
-        // On interval, tell the zone to check if this creature is interacting with a sigil object.
-        while (!_pathMovementCancelToken.IsCancellationRequested) {
-            if (_creatureState == CreatureState.Combat || !_isMovingCreature) {
-                break;
-            }
-
-            ActiveGameObject.m_location = GetPosition();
-            var fishMsg = new ZONE_102_PROTOCOL.MSG_FISHINTERACTION() {
-                CoreObject = ActiveGameObject,
-                Suspect = Self,
-                IsCreature = true
-            };
-            WizardZoneRef.Tell(fishMsg);
-
-            await Task.Delay(TimeSpan.FromSeconds(InteractionIntervalInSeconds), _interactionCancelToken.Token);
-        }
-    }
-
     private void StartCombat() {
         StopMovement();
         _creatureState = CreatureState.Combat;
     }
 
     private void StopMovement() {
-        _pathMovementCancelToken.Cancel();
-        _interactionCancelToken.Cancel();
         _creatureState = CreatureState.Stopped;
 
         // Broadcast the new move state to all players.
@@ -320,6 +299,17 @@ public class WizardZoneCreature : WizardZoneObject {
     }
 
     private void BroadcastMovement(NodeObject targetNode) {
+        // Broadcast the new move state to all players.
+        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+            Message = new GAME_5_PROTOCOL.MSG_MOVESTATE {
+                GlobalID = ActiveGameObject.m_globalID,
+                NewState = 0
+            },
+            Selfless = true,
+            Sender = Self
+        };
+        WizardZoneRef.Tell(broadcastMsg);
+
         var msg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
             Message = new GAME_5_PROTOCOL.MSG_SERVERMOVE {
                 // Compress fields by a factor of 4.
