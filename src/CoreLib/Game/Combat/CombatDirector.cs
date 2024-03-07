@@ -41,6 +41,10 @@ public class CombatDirector {
 
         // Determine the power pip gain for each participant.
         EnactActionOnSubCircles(circle => {
+            if (!circle.AddedToDuel) {
+                return;
+            }
+
             var participant = circle.CombatParticipant;
             var gainedPowerPip = DeterminePowerPipGain(participant);
             if (gainedPowerPip) {
@@ -62,8 +66,8 @@ public class CombatDirector {
             }
         }
 
-        // Every pass takes 2 seconds.
-        count += (ActiveSubCircles.Length - _queuedCombatActions.Count) * 2;
+        // Every pass takes 1 seconds.
+        count += (ActiveSubCircles.Where(x => x.IsAlive).Count() - _queuedCombatActions.Count) * 1;
 
         return (uint) count;
     }
@@ -73,6 +77,10 @@ public class CombatDirector {
 
         // Any caster that has not queued an action will pass their turn.
         foreach (var subCircle in ActiveSubCircles) {
+            if (!subCircle.AddedToDuel || !subCircle.IsAlive) {
+                continue;
+            }
+
             if (!_queuedCombatActions.Any(x => x.SpellCaster == subCircle)) {
                 var queuedAction = new QueuedCombatAction {
                     SpellCaster = subCircle,
@@ -137,6 +145,10 @@ public class CombatDirector {
         var pips = new CombatPipListObj { m_pipList = new List<ParticipantPipData>() };
 
         EnactActionOnSubCircles(circle => {
+            if (!circle.AddedToDuel || !circle.IsAlive) {
+                return;
+            }
+
             var participantPipData = new ParticipantPipData {
                 m_acq = 1,
                 m_partID = (GID) circle.ParticipantObject.m_globalID,
@@ -157,6 +169,10 @@ public class CombatDirector {
 
         // Iterate through each sub circle and add the participant's health to the list.
         EnactActionOnSubCircles(circle => {
+            if (!circle.AddedToDuel || !circle.IsAlive) {
+                return;
+            }
+
             var participantHealth = new ParticipantParameter {
                 m_data = (uint) circle.ParticipantGameStats.m_currentHitpoints,
                 m_partID = (GID) circle.ParticipantObject.m_globalID,
@@ -170,6 +186,12 @@ public class CombatDirector {
     public void AddCombatMove(CombatMoveType type, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target, Spell spell) {
         if (!_awaitingCombatMoves) {
             throw new InvalidOperationException("Combat moves are not being accepted at this time.");
+        }
+        if (!caster.AddedToDuel || !target.AddedToDuel) {
+            throw new InvalidOperationException("Both the caster and target must be added to the duel.");
+        }
+        if (!caster.IsAlive) {
+            throw new InvalidOperationException("The caster must be alive.");
         }
 
         // If this spell is already queued by the same caster, remove all of their queued actions.

@@ -31,6 +31,7 @@ public class CombatDuelActorSubCircle {
     internal CoreObject ParticipantObject { get; private set; }
     internal WizGameStats ParticipantGameStats { get; private set; }
     internal CombatParticipant CombatParticipant { get; private set; }
+    internal bool AddedToDuel { get; set;}
     public uint AvailableSpells {
         get {
             if (_combatHand is null) {
@@ -129,6 +130,9 @@ public class CombatDuelActorSubCircle {
             .Result
             .Wizard;
 
+        // Dyanmic symbols start at 9 for players.
+        var dynamicSymbol = (DynamicSigilSymbol) (SlotIndex + 9);
+
         ParticipantGameStats = wizard.GameStats.GetCombatGameStats();
         _combatHand = new CombatHand(wizard.SpellbookBehavior.Spells, 7);
 
@@ -147,8 +151,8 @@ public class CombatDuelActorSubCircle {
             m_myTeamTurn = _duelActor.Duel.m_firstTeamToAct == 0,
             m_pGameStats = ParticipantGameStats,
             m_pPlayDeck = new PlayDeck(),
-            m_subcircle = 4,
-            m_dynamicSymbol = DynamicSigilSymbol.Sun,
+            m_subcircle = SlotIndex,
+            m_dynamicSymbol = dynamicSymbol,
 
             m_color = _color,
             m_rotation = _rotation,
@@ -161,6 +165,9 @@ public class CombatDuelActorSubCircle {
         var creatureStats = ParticipantActor
             .Ask<COMBAT_106_PROTOCOL.MSG_CREATURESTATS>(queryGameStatsMsg)
             .Result;
+
+        // Dynamic symbols start 1-4 for creatures.
+        var dynamicSymbol = (DynamicSigilSymbol) (SlotIndex + 1);
 
         ParticipantGameStats = creatureStats.GameStats;
         CombatParticipant = new CombatParticipant {
@@ -180,8 +187,8 @@ public class CombatDuelActorSubCircle {
             m_pGameStats = creatureStats.GameStats,
             m_mobLevel = creatureStats.CombatLevel,
 
-            m_subcircle = 0,
-            m_dynamicSymbol = DynamicSigilSymbol.Dagger,
+            m_subcircle = SlotIndex,
+            m_dynamicSymbol = dynamicSymbol,
 
             m_color = _color,
             m_rotation = _rotation,

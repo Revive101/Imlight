@@ -30,11 +30,9 @@ namespace Imlight.CoreLib.Game.Combat;
 /// <see cref="CombatDuelActorSupervisor"/> and is a child of it.
 /// </summary>
 public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
-    public const byte PlanningTime = 5;
-    private const float DuelStartedGracePeriodInSeconds = 3.75f;
-    private const float ExecutionTime = 10.0f;
-    private const float YawErrorCompensation = 1.58f;
-    private const int DelayAfterCombatAddInMs = 0;
+    private const byte PLANNING_TIME = 5;
+    private const float DUEL_GRACE_PERIOD_IN_SECONDS = 3.75f;
+    private const float YAW_ERROR_COMPENSATION = 1.58f;
 
     public ITimerScheduler Timers { get; set; }
     public Duel Duel { get; private set; }
@@ -130,8 +128,8 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
         var availableCreatureSubcircles = GetAvailableSubCircleTeamCreature();
         var availablePlayerSubcircles = GetAvailableSubCircleTeamPlayer();
-        var teamAAssigned = AssignParticipantToSubCircle(CombatTeam.Monster, availableCreatureSubcircles, startingCreatureActor, startingCreatureObject);
-        var teamBAssigned = AssignParticipantToSubCircle(CombatTeam.Player, availablePlayerSubcircles, startingPlayerActor, startingPlayerObject);
+        var teamAAssigned = AssignParticipantToSubCircle(availableCreatureSubcircles, startingCreatureActor, startingCreatureObject);
+        var teamBAssigned = AssignParticipantToSubCircle(availablePlayerSubcircles, startingPlayerActor, startingPlayerObject);
 
         if (!teamAAssigned || !teamBAssigned) {
             throw new Exception("Failed to assign participants to sub circles.");
@@ -139,37 +137,20 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
         Director = new CombatDirector(Duel, _subCircles);
 
-        Logger.Debug("Duel {0} | Created", Logger.Args(Duel.m_duelID));
+        Logger.Debug("Duel {0} | Created. Grace period over in {1}", Logger.Args(Duel.m_duelID, DUEL_GRACE_PERIOD_IN_SECONDS));
 
         // Fire a message to self to start the duel after the grace period has ended.
-        var delay = TimeSpan.FromSeconds(DuelStartedGracePeriodInSeconds);
-        Timers.StartSingleTimer("graceover", new COMBAT_106_PROTOCOL.MSG_GRACEPERIODOVER(), delay);
-    }
-
-    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_GRACEPERIODOVER))]
-    private void ReceiveGracePeriodOver(COMBAT_106_PROTOCOL.MSG_GRACEPERIODOVER message) {
-        // The grace period for adding participants is now over.
-        Logger.Debug("Duel {0} | Grace period over, no longer accepting participants", Logger.Args(Duel.m_duelID));
-
-        EnactActionOnSubCircles(circle => {
-            var participantData = circle.CombatParticipant;
-            var serializedData = SerializeCombatParticipant(participantData);
-            var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATADD {
-                DuelID = SigilId,
-                ParticipantData = serializedData,
-            };
-            ZoneBroadcast(msg);
-        });
-
-        // Imlight moves too fast for the client. Give some time to the client to catch up.
-        var delay = TimeSpan.FromMilliseconds(DelayAfterCombatAddInMs);
-        Timers.StartSingleTimer("newround", new COMBAT_106_PROTOCOL.MSG_NEWROUND(), delay);
+        var delay = TimeSpan.FromSeconds(DUEL_GRACE_PERIOD_IN_SECONDS);
+        Timers.StartSingleTimer("graceover", new COMBAT_106_PROTOCOL.MSG_NEWROUND(), delay);
     }
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_NEWROUND))]
     private void ReceiveNewRound(COMBAT_106_PROTOCOL.MSG_NEWROUND message) {
         Logger.Debug("Duel {0} | New round {1} at {2}",
             Logger.Args(Duel.m_duelID, Duel.m_roundNum, DateTime.Now.ToString("HH:mm:ss")));
+
+        // Add the circles to combat if they are not already.
+        SendCombatParticipants();
 
         Director.StartRound();
 
@@ -196,9 +177,9 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         SendCombatPips();
         SendCombatHealth();
 
-        SendCombatUI(PlanningTime);
+        SendCombatUI(PLANNING_TIME);
 
-        var delay = TimeSpan.FromSeconds(PlanningTime);
+        var delay = TimeSpan.FromSeconds(PLANNING_TIME);
         Timers.StartSingleTimer("planningphaseover", new COMBAT_106_PROTOCOL.MSG_PLANNINGPHASEOVER(), delay);
     }
 
@@ -269,7 +250,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         var subCircle = isPlayer ? GetAvailableSubCircleTeamPlayer() : GetAvailableSubCircleTeamCreature();
         var team = isPlayer ? CombatTeam.Monster : CombatTeam.Player;
 
-        if (subCircle is null || !AssignParticipantToSubCircle(team, subCircle, message.Participant, message.ParticipantObject)) {
+        if (subCircle is null || !AssignParticipantToSubCircle(subCircle, message.Participant, message.ParticipantObject)) {
             var debugMessage = "Player attempted to join duel {0}, but there were no available sub circles. " +
                                 "This should never happen. Send {1} to the duel actor first to check if there are slots available.";
             Logger.Debug(debugMessage, Logger.Args(Duel.m_duelID, nameof(COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLE)));
@@ -334,6 +315,24 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             Logger.Debug("Duel {0} | Slot {1} | Gave combat move type {2}: {3}",
                 Logger.Args(Duel.m_duelID, subCircle.SlotIndex, moveType, spell?.m_templateID.ToString() ?? "Pass"));
         }
+    }
+
+    private void SendCombatParticipants() {
+        EnactActionOnSubCircles(circle => {
+            if (circle.AddedToDuel) {
+                return;
+            }
+
+            var participantData = circle.CombatParticipant;
+            var serializedData = SerializeCombatParticipant(participantData);
+            var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATADD {
+                DuelID = SigilId,
+                ParticipantData = serializedData,
+            };
+            ZoneBroadcast(msg);
+
+            circle.AddedToDuel = true;
+        });
     }
 
     private void SendCombatPhase(byte phase) {
@@ -543,7 +542,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         // todo: source planning time from config
         var duel = new Duel() {
             m_duelID = sigilId,
-            m_planningTimer = PlanningTime,
+            m_planningTimer = PLANNING_TIME,
             m_executionPhaseTimer = 3.4078238f,
             m_scalarDamage = _combatSigilTemplate.m_scalarDamagePvE,
             m_scalarResist = _combatSigilTemplate.m_scalarResistPvE,
@@ -588,7 +587,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             var faceTowardsYaw = MathF.Atan2(duelCenter.Y, duelCenter.X);
             // The yaw must be between 0 and 2PI. It must also be reversed as the client rotates clockwise.
             // The translation isn't perfect because of Gamebyro engine bullshit. We need to compensate for this.
-            faceTowardsYaw = (2 * MathF.PI) - faceTowardsYaw - YawErrorCompensation;
+            faceTowardsYaw = (2 * MathF.PI) - faceTowardsYaw - YAW_ERROR_COMPENSATION;
             if (faceTowardsYaw < 0) {
                 faceTowardsYaw += 2 * MathF.PI;
             }
@@ -626,11 +625,12 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         return null;
     }
 
-    private bool AssignParticipantToSubCircle(CombatTeam team, CombatDuelActorSubCircle subCircle, IActorRef actorRef, CoreObject coreObject) {
+    private bool AssignParticipantToSubCircle(CombatDuelActorSubCircle subCircle, IActorRef actorRef, CoreObject coreObject) {
         if (subCircle.ParticipantActor != null) {
             return false;
         }
 
+        var team = coreObject.m_templateID == 1 ? CombatTeam.Player : CombatTeam.Monster;
         if (team == CombatTeam.Monster) {
             _creatureCount++;
         }

@@ -23,7 +23,7 @@ namespace Imlight.CoreLib.Game.Zone;
 public class WizardZoneCreature : WizardZoneObject, IWithTimers {
     private const int MINIMUM_MOVEMENT_DELAY_IN_SECONDS = 1;
     private const int MOVEMENT_INTERVAL_START_DELAY_IN_SECONDS = 1;
-    private const int LOCATION_UPDATE_INTERVAL = 2;
+    private const int LOCATION_UPDATE_INTERVAL = 1;
 
     internal enum CreatureState {
         Stopped,
