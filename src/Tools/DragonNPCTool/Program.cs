@@ -31,7 +31,7 @@ public static class Program {
             return;
 
         if (userSettingsInput == "y") {
-            DragonDatabaseManager.SetRemoteServer("https://a.worlddata.ravendb.community", "input/worlddata.client.certificate.pfx");
+            DragonDatabaseManager.SetRemoteServer("https://a.worlddata.ravendb.community", "input/worlddata.dev.certificate.pfx");
         }
         else {
 
