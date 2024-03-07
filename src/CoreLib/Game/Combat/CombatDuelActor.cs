@@ -276,7 +276,8 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             return;
         }
         else {
-            Logger.Debug("Participant joined duel {0}.", Logger.Args(Duel.m_duelID));
+            Logger.Debug("Duel {0} | Participant {1} joined}.",
+                Logger.Args(Duel.m_duelID, message.ParticipantObject.m_displayKey));
         }
     }
 

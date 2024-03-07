@@ -23,6 +23,7 @@ namespace Imlight.CoreLib.Game.Zone;
 public class WizardZoneCreature : WizardZoneObject, IWithTimers {
     private const int MINIMUM_MOVEMENT_DELAY_IN_SECONDS = 1;
     private const int MOVEMENT_INTERVAL_START_DELAY_IN_SECONDS = 1;
+    private const int LOCATION_UPDATE_INTERVAL = 2;
 
     internal enum CreatureState {
         Stopped,
@@ -41,6 +42,7 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
     private readonly WizardZonePath _path;
     private readonly TimeSpan _startingDelay = TimeSpan.FromSeconds(MOVEMENT_INTERVAL_START_DELAY_IN_SECONDS);
     private readonly TimeSpan _minimumMovementIntervalDelay = TimeSpan.FromSeconds(MINIMUM_MOVEMENT_DELAY_IN_SECONDS);
+    private readonly TimeSpan _fishInteractionInterval = TimeSpan.FromSeconds(LOCATION_UPDATE_INTERVAL);
     private readonly NodeObject[] _nodes;
     private CreatureState _creatureState;
     private byte _targetNodeIndex;
@@ -71,10 +73,15 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
             return;
         }
 
-        // Start the movement interval.
         _creatureState = CreatureState.Wandering;
+
+        // Start the movement interval.
         var msg = new ZONE_102_PROTOCOL.MSG_CREATUREMOVEINTERVAL();
         Timers.StartSingleTimer("movementInterval", msg, _startingDelay);
+
+        // Start the fish interaction interval.
+        var msg2 = new ZONE_102_PROTOCOL.MSG_CREATUREFISHINTERACTIONINTERVAL();
+        Timers.StartPeriodicTimer("fishInteractionInterval", msg2, TimeSpan.Zero,  _fishInteractionInterval);
     }
 
     // Akka.NET ctor
@@ -200,7 +207,7 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
 
         // Creatures have a chance to pause at each node. This stops them from clumping together.
         // If the creature is already paused, then don't pause again.
-        if (ShouldPause()&& !_justPaused) {
+        if (ShouldPause() && !_justPaused) {
             var pauseDelay = TimeSpan.FromSeconds(_pauseTime);
             var pauseMsg = new ZONE_102_PROTOCOL.MSG_CREATUREMOVEINTERVAL();
             Timers.StartSingleTimer("movementInterval", pauseMsg, pauseDelay);
@@ -242,6 +249,18 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
         var delay = TimeSpan.FromMilliseconds(travelTimeInMilli);
         var msg = new ZONE_102_PROTOCOL.MSG_CREATUREMOVEINTERVAL();
         Timers.StartSingleTimer("movementInterval", msg, delay);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_CREATUREFISHINTERACTIONINTERVAL))]
+    private void ReceiveFishInteractionInterval(ZONE_102_PROTOCOL.MSG_CREATUREFISHINTERACTIONINTERVAL message) {
+        ActiveGameObject.m_location = GetPosition();
+
+        var msg = new ZONE_102_PROTOCOL.MSG_FISHINTERACTION() {
+            CoreObject = ActiveGameObject,
+            Suspect = Self,
+            IsCreature = true
+        };
+        WizardZoneRef.Tell(msg);
     }
 
     private void SetPropertiesFromTemplate() {

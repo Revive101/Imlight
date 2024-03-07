@@ -382,7 +382,14 @@ public class WizardZone : ReceiveProtocolDispatcher {
             Source = Sender,
             Messages = new IServerMessage[] { message }
         };
-        _objectSupervisorRef.Tell(msgBroadcast);
+
+        // Creatures can only collide with sigils.
+        if (message.IsCreature) {
+            _sigilSupervisorRef.Tell(msgBroadcast);
+        }
+        else {
+            _objectSupervisorRef.Tell(msgBroadcast);
+        }
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL))]

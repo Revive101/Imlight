@@ -81,8 +81,11 @@ public class WizardZoneSigil : WizardZoneObject {
             AddParticipant(suspect, creature);
         }
         else {
-            Logger.Debug("Cannot add creature {0} to duel {1} is full.",
-                Logger.Args(creature.m_globalID, _activeDuelActor));
+            Logger.Debug("Duel {0} | Cannot add creature participant {1} because creature max is hit.",
+                Logger.Args(ActiveGameObject.m_globalID, creature.m_displayKey));
+
+            var combatDeathMsg = new COMBAT_106_PROTOCOL.MSG_COMBATDEATH();
+            suspect.Tell(combatDeathMsg);
         }
     }
 
@@ -121,7 +124,7 @@ public class WizardZoneSigil : WizardZoneObject {
 
         _activeDuelActor = createRsp.DuelActor;
         _activeDuel = createRsp.Duel;
-        base.InteractionRadius = _combatSigilTemplate.m_engageRadius;;
+        base.InteractionRadius = _combatSigilTemplate.m_engageRadius;
 
         SpawnCombatSigilObject();
     }
@@ -176,9 +179,7 @@ public class WizardZoneSigil : WizardZoneObject {
             return false;
         }
 
-        var checkForSlotMsg = new COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLE {
-            Team = Combat.CombatTeam.Player
-        };
+        var checkForSlotMsg = new COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLE { Team = Combat.CombatTeam.Player };
         var slotAvailable = _activeDuelActor
             .Ask<COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLERSP>(checkForSlotMsg)
             .Result
@@ -192,9 +193,7 @@ public class WizardZoneSigil : WizardZoneObject {
             return false;
         }
 
-        var checkForSlotMsg = new COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLE {
-            Team = Combat.CombatTeam.Monster
-        };
+        var checkForSlotMsg = new COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLE { Team = Combat.CombatTeam.Monster };
         var slotAvailable = _activeDuelActor
             .Ask<COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLERSP>(checkForSlotMsg)
             .Result
