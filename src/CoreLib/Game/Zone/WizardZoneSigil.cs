@@ -21,7 +21,7 @@ namespace Imlight.CoreLib.Game.Zone;
 /// This class is responsible for creating a duel actor and spawning the combat sigil object.
 /// It only represents the combat sigil object, not the duel itself.
 /// </summary>
-public class WizardZoneCombatSigil : WizardZoneObject {
+public class WizardZoneSigil : WizardZoneObject {
     private const uint SigilTemplateId = 1901671683;
 
     private readonly DuelBehavior _duelBehavior;
@@ -29,7 +29,7 @@ public class WizardZoneCombatSigil : WizardZoneObject {
     private IActorRef _activeDuelActor;
     private Duel _activeDuel;
 
-    public WizardZoneCombatSigil(CoreObject activeGameObject, string sigilType, CoreTemplate template, IActorRef wizardZoneRef)
+    public WizardZoneSigil(CoreObject activeGameObject, string sigilType, CoreTemplate template, IActorRef wizardZoneRef)
         : base(activeGameObject, template, wizardZoneRef) {
         // Load the combat sigil template.
         _combatSigilTemplate = (CombatSigilTemplate) SigilFactory.GetSigilTemplate(sigilType);
@@ -50,7 +50,7 @@ public class WizardZoneCombatSigil : WizardZoneObject {
     }
 
     public static Props Props(CoreObject activeGameObject, string sigilType, CoreTemplate template, IActorRef wizardZoneRef)
-        => Akka.Actor.Props.Create(() => new WizardZoneCombatSigil(activeGameObject, sigilType, template, wizardZoneRef));
+        => Akka.Actor.Props.Create(() => new WizardZoneSigil(activeGameObject, sigilType, template, wizardZoneRef));
 
     protected override void OnPlayerJoin(CoreObject player, IActorRef suspect) {
         if (_activeDuel is not null) {
