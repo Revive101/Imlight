@@ -70,25 +70,42 @@ public class CombatDirector {
 
     public CombatActionListObj ApplyQueuedCombatActions() {
         var combatActionList = new CombatActionListObj { m_actionList = new List<CombatAction>() };
-        var seenCasters = new List<DuelActorSubCircle>();
+
+        // Any caster that has not queued an action will pass their turn.
+        foreach (var subCircle in ActiveSubCircles) {
+            if (!_queuedCombatActions.Any(x => x.SpellCaster == subCircle)) {
+                var queuedAction = new QueuedCombatAction {
+                    SpellCaster = subCircle,
+                    TargetSubcircle = subCircle,
+                    Spell = null,
+                };
+                _queuedCombatActions.Add(queuedAction);
+            }
+        }
+
+        // Sort the queued actions by the caster's slot index. We'll also want to take into account
+        // the team that's going first.
+        _queuedCombatActions.Sort((a, b) =>
+        {
+            var aSlot = a.SpellCaster.SlotIndex;
+            var bSlot = b.SpellCaster.SlotIndex;
+
+            if ((int) a.SpellCaster.OccupiedTeam == _duel.m_firstTeamToAct) {
+                return -1; // Starting team goes first
+            }
+            else if ((int) b.SpellCaster.OccupiedTeam == _duel.m_firstTeamToAct) {
+                return 1;
+            }
+            else {
+                // Within the same team, sort by slot index.
+                return aSlot.CompareTo(bSlot);
+            }
+        });
 
         // Iterate through each queued combat action and apply the spell effects.
         foreach (var action in _queuedCombatActions) {
             var combatAction = ApplyCombatAction(action);
             combatActionList.m_actionList.Add(combatAction);
-
-            seenCasters.Add(action.SpellCaster);
-        }
-
-        // Any casters not seen in the queued actions list will be added to the combat action list with a null spell.
-        // This signifies that they are passing their turn.
-        foreach (var subCircle in ActiveSubCircles) {
-            if (!seenCasters.Contains(subCircle)) {
-                var combatAction = new CombatAction {
-                    m_spellCaster = subCircle.SlotIndex,
-                };
-                combatActionList.m_actionList.Add(combatAction);
-            }
         }
 
         // Log the combat actions.
