@@ -66,13 +66,35 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     public static Props Props(IActorRef wizardZoneRef)
         => Akka.Actor.Props.Create(() => new DuelActor(wizardZoneRef));
 
-    internal void DuelBroadcast(IMessage message) {
+    internal void ZoneBroadcast(IMessage message) {
         var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
             Selfless = false,
             Sender = Self,
             Message = message
         };
         _wizardZoneRef.Tell(broadcastMsg);
+    }
+
+    internal void DuelBroadcast(IMessage message) {
+        EnactActionOnSubCircles(circle => {
+            circle.ParticipantActor.Tell(message);
+        });
+    }
+
+    internal void CreatureBroadcast(IMessage message) {
+        EnactActionOnSubCircles(circle => {
+            if (circle.OccupiedTeam == Team.Monster) {
+                circle.ParticipantActor.Tell(message);
+            }
+        });
+    }
+
+    internal void PlayerBroadcast(IMessage message) {
+        EnactActionOnSubCircles(circle => {
+            if (circle.OccupiedTeam == Team.Player) {
+                circle.ParticipantActor.Tell(message);
+            }
+        });
     }
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_STARTDUEL))]
@@ -134,7 +156,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
                 DuelID = SigilId,
                 ParticipantData = serializedData,
             };
-            DuelBroadcast(msg);
+            ZoneBroadcast(msg);
         });
 
         // Imlight moves too fast for the client. Give some time to the client to catch up.
@@ -155,13 +177,9 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         SendCombatPhase((byte) Duel.m_duelPhase);
 
         // Inform the combat participants that they may or may not be considered AFK.
-        EnactActionOnSubCircles(circle => {
-            var participantActor = circle.ParticipantActor;
-            var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATAFK {
-                DuelID = SigilId,
-                IsCombatAFK = 0
-            };
-            participantActor.Tell(msg);
+        PlayerBroadcast(new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATAFK {
+            DuelID = SigilId,
+            IsCombatAFK = 0
         });
 
         SendUpFirst(Duel.m_roundNum);
@@ -200,7 +218,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             DuelID = SigilId,
             ActionData = buffer,
         };
-        DuelBroadcast(msg);
+        ZoneBroadcast(msg);
 
         Director.EndRound();
 
@@ -222,6 +240,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             return;
         }
 
+        // The duel has ended. Inform the clients of the result.
         Logger.Debug("Duel {0} | Duel ended. Players win: {1}, Creatures win: {2}",
             Logger.Args(Duel.m_duelID, playersWin, creaturesWin));
 
@@ -230,17 +249,24 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             DuelID = SigilId,
             WinningTeam = playersWin ? (byte) Team.Player : (byte) Team.Monster,
         };
-        DuelBroadcast(combatMatchResult);
+        ZoneBroadcast(combatMatchResult);
 
-        // A team has won the duel.
+        // The player team has won the duel.
         Duel.m_duelPhase = kDuelPhase.kPhase_Victory;
         SendCombatPhase((byte) Duel.m_duelPhase);
 
-        // Duplicate winning message, for some reason.
+        // Send the final messages to the participants.
         if (playersWin) {
             var combatVictoryMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATVICTORY();
             EnactActionOnSubCircles(circle => {
                 circle.ParticipantActor.Tell(combatVictoryMsg);
+
+                // Inform the player that they've been removed from this duel.
+                var removeMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATREMOVE {
+                    DuelID = SigilId,
+                    ParticipantID = circle.ParticipantObject.m_globalID,
+                };
+                ZoneBroadcast(removeMsg);
 
                 // Get the players back into the idle state, so they can move around again.
                 var stateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
@@ -254,10 +280,10 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         Duel.m_duelPhase = kDuelPhase.kPhase_Ended;
         SendCombatPhase((byte) Duel.m_duelPhase);
 
-        var duelEndedMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_ENDDUEL {
-            DuelID = SigilId
-        };
-        DuelBroadcast(duelEndedMsg);
+        var duelEndedMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_ENDDUEL { DuelID = SigilId };
+        ZoneBroadcast(duelEndedMsg);
+
+        Context.Stop(Self);
     }
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ADDPARTICIPANT))]
@@ -371,7 +397,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             Data = phase == 1 ? upFirstData : "",
         };
 
-        DuelBroadcast(msg);
+        ZoneBroadcast(msg);
     }
 
     private void SendUpFirst(int roundNum) {
@@ -385,20 +411,20 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             FirstTeamToAct = (byte) Duel.m_firstTeamToAct,
             UpFirst = upFirstSigilSlot,
         };
-        DuelBroadcast(upFirstMsg);
+        ZoneBroadcast(upFirstMsg);
     }
 
     private void SendCombatUI(byte planningPhaseTimer) {
         var combatUiMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_SHOWCOMBATUI {
             DuelID = SigilId
         };
-        DuelBroadcast(combatUiMsg);
-
         var planningMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_SETPLANNINGPHASETIMER {
             DuelID = SigilId,
             Time = planningPhaseTimer,
         };
-        DuelBroadcast(planningMsg);
+
+        PlayerBroadcast(combatUiMsg);
+        PlayerBroadcast(planningMsg);
     }
 
     private void SendCombatStats() {
@@ -410,6 +436,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
                 PartID = circle.ParticipantObject.m_globalID,
                 StatsData = serializedStats,
             };
+
             DuelBroadcast(msg);
         });
     }
@@ -448,15 +475,9 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         _serializer.OnPropertyMask(_combatParticipantStatFlags);
         var buffer = _serializer.Serialize(combatPips);
 
-        // This doesn't need to be broadcasted because the object we've serialized contains the pips
-        // for all participants, not just this one.
-        EnactActionOnSubCircles(circle => {
-            var participantActor = circle.ParticipantActor;
-            var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATPIPS {
-                DuelID = SigilId,
-                PipData = buffer,
-            };
-            participantActor.Tell(msg);
+        ZoneBroadcast(new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATPIPS {
+            DuelID = SigilId,
+            PipData = buffer,
         });
     }
 
@@ -472,7 +493,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             DuelID = SigilId,
             HealthData = buffer,
         };
-        DuelBroadcast(msg);
+        ZoneBroadcast(msg);
     }
 
     private void EnactActionOnSubCircles(Action<DuelActorSubCircle> action) {
