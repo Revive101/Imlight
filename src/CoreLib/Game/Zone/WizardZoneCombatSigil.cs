@@ -104,8 +104,10 @@ public class WizardZoneCombatSigil : WizardZoneObject {
             return;
         }
 
+        // Otherwise, request a new duel from the WizardZone's duel supervisor.
         var createMsg = new COMBAT_106_PROTOCOL.MSG_STARTDUEL {
             Participants = message.StartingParticipants,
+            SigilActor = Self,
             SigilId = ActiveGameObject.m_globalID,
             SigilLocation = ActiveGameObject.m_location,
             SigilOrientation = ActiveGameObject.m_orientation,
@@ -124,6 +126,17 @@ public class WizardZoneCombatSigil : WizardZoneObject {
         SpawnCombatSigilObject();
     }
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVECOMBATSIGIL))]
+    private void ReceiveRemoveCombatSigil(ZONE_102_PROTOCOL.MSG_REMOVECOMBATSIGIL message) {
+        // The duel is over. Despawn the combat sigil object.
+        DespawnCombatSigilObject();
+
+        // Clear the active duel and duel actor.
+        _activeDuel = null;
+        _activeDuelActor = null;
+        _duelBehavior.m_pDuel = null;
+    }
+
     private void SpawnCombatSigilObject() {
         if (_activeDuel is null || _activeDuelActor is null) {
             throw new Exception("Duel or DuelActor is null. Cannot spawn combat sigil object.");
@@ -140,6 +153,16 @@ public class WizardZoneCombatSigil : WizardZoneObject {
                 | SerializerOptions.PropertyFlags.AuthorityTransmit);
         var msg = new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = serializer.Serialize(ActiveGameObject) };
 
+        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+            Selfless = true,
+            Message = msg,
+            Sender = Self,
+        };
+        base.WizardZoneRef.Tell(broadcastMsg);
+    }
+
+    private void DespawnCombatSigilObject() {
+        var msg = new GAME_5_PROTOCOL.MSG_REMOVEOBJECT { GameObjectID = ActiveGameObject.m_globalID };
         var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
             Selfless = true,
             Message = msg,

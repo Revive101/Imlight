@@ -235,4 +235,10 @@ public class ZONE_102_PROTOCOL : IServerProtocol
         public byte MessageOrder { get; } = 22;
         public byte ServiceID { get; } = 102;
     }
+
+    public sealed class MSG_REMOVECOMBATSIGIL : IServerMessage
+    {
+        public byte MessageOrder { get; } = 23;
+        public byte ServiceID { get; } = 102;
+    }
 }

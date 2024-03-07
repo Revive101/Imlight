@@ -52,6 +52,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     private byte CreatureCount => (byte) _subCircles.Count(x => x.Occupied && x.OccupiedTeam == Team.Monster);
     private DuelActorSubCircle[] ActiveSubCircles => _subCircles.Where(x => x.Occupied).ToArray();
 
+    private IActorRef _sigilActorRef;
     private CombatSigilTemplate _combatSigilTemplate;
     private DuelActorSubCircle[] _subCircles = new DuelActorSubCircle[8];
     private Vector3 _sigilLocation;
@@ -106,6 +107,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         this.SigilId = message.SigilId;
         this._sigilLocation = message.SigilLocation;
         this._sigilOrientation = message.SigilOrientation;
+        this._sigilActorRef = message.SigilActor;
 
         // Create duel object and the 8 subcircles.
         Duel = CreateDuelWithDefaults(message.SigilId);
@@ -486,6 +488,10 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
         var duelEndedMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_ENDDUEL { DuelID = SigilId };
         ZoneBroadcast(duelEndedMsg);
+
+        // Inform the sigil object to despawn itself.
+        var removeSigilMsg = new ZONE_102_PROTOCOL.MSG_REMOVECOMBATSIGIL();
+        _sigilActorRef.Tell(removeSigilMsg);
 
         Context.Stop(Self);
     }

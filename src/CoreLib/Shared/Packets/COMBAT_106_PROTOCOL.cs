@@ -24,6 +24,7 @@ namespace Imlight.CoreLib.Shared.Packets {
 			public byte ServiceID => 106;
 
 			public Dictionary<IActorRef, CoreObject> Participants;
+            public IActorRef SigilActor;
 			public ulong SigilId;
 			public Vector3 SigilLocation;
 			public Vector3 SigilOrientation;
