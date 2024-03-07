@@ -49,6 +49,7 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
     private float _movementSpeedMultiplier = 1.0f;
     private uint _pauseChance = 0;
     private float _pauseTime = 6.0f;
+    private bool _justPaused;
     private DateTime _lastMoveTime;
     private bool _isMovingCreature;
     private bool _isDuelingCreature;
@@ -191,6 +192,18 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
             UpdateGameObjectPosition(CurrentTargetNode);
         }
 
+        // Creatures have a chance to pause at each node. This stops them from clumping together.
+        // If the creature is already paused, then don't pause again.
+        if (ShouldPause()&& !_justPaused) {
+            var pauseDelay = TimeSpan.FromSeconds(_pauseTime);
+            var pauseMsg = new ZONE_102_PROTOCOL.MSG_CREATUREMOVEINTERVAL();
+            Timers.StartSingleTimer("movementInterval", pauseMsg, pauseDelay);
+            _justPaused = true;
+
+            return;
+        }
+        _justPaused = false;
+
         // Target a new node.
         _targetNodeIndex = GetNextNodeIndex();
 
@@ -328,6 +341,10 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
             targetNode.m_location.X,
             targetNode.m_location.Y,
             targetNode.m_location.Z);
+    }
+
+    private bool ShouldPause() {
+        return _pauseChance > 0 && new Random().Next(0, 100) < _pauseChance;
     }
 
     private NodeObject CurrentTargetNode => _nodes[_targetNodeIndex];
