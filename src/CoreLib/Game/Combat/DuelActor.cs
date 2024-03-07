@@ -232,6 +232,15 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         Duel.m_duelPhase = kDuelPhase.kPhase_Resolution;
         SendCombatPhase((byte) Duel.m_duelPhase);
 
+        // Iterate through dead creature participants and remove them from the duel.
+        // Players can be healed and therefore don't need to be removed.
+        EnactActionOnSubCircles(circle => {
+            if (circle.OccupiedTeam == Team.Monster && !circle.IsAlive) {
+                var removeMsg = new COMBAT_106_PROTOCOL.MSG_COMBATDEATH();
+                circle.ParticipantActor.Tell(removeMsg);
+            }
+        });
+
         var playersWin = HavePlayersWon();
         var creaturesWin = HaveCreaturesWon();
         if (!playersWin && !creaturesWin) {
@@ -240,50 +249,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             return;
         }
 
-        // The duel has ended. Inform the clients of the result.
-        Logger.Debug("Duel {0} | Duel ended. Players win: {1}, Creatures win: {2}",
-            Logger.Args(Duel.m_duelID, playersWin, creaturesWin));
-
-        // Broadcast to the zone of the result.
-        var combatMatchResult = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATMATCHRESULT {
-            DuelID = SigilId,
-            WinningTeam = playersWin ? (byte) Team.Player : (byte) Team.Monster,
-        };
-        ZoneBroadcast(combatMatchResult);
-
-        // The player team has won the duel.
-        Duel.m_duelPhase = kDuelPhase.kPhase_Victory;
-        SendCombatPhase((byte) Duel.m_duelPhase);
-
-        // Send the final messages to the participants.
-        if (playersWin) {
-            var combatVictoryMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATVICTORY();
-            EnactActionOnSubCircles(circle => {
-                circle.ParticipantActor.Tell(combatVictoryMsg);
-
-                // Inform the player that they've been removed from this duel.
-                var removeMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATREMOVE {
-                    DuelID = SigilId,
-                    ParticipantID = circle.ParticipantObject.m_globalID,
-                };
-                ZoneBroadcast(removeMsg);
-
-                // Get the players back into the idle state, so they can move around again.
-                var stateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
-                    GameObjectID = circle.ParticipantObject.m_globalID,
-                    State = (uint) NPCStates.Idle
-                };
-                circle.ParticipantActor.Tell(stateMsg);
-            });
-        }
-
-        Duel.m_duelPhase = kDuelPhase.kPhase_Ended;
-        SendCombatPhase((byte) Duel.m_duelPhase);
-
-        var duelEndedMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_ENDDUEL { DuelID = SigilId };
-        ZoneBroadcast(duelEndedMsg);
-
-        Context.Stop(Self);
+        EndDuel();
     }
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ADDPARTICIPANT))]
@@ -494,6 +460,70 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             HealthData = buffer,
         };
         ZoneBroadcast(msg);
+    }
+
+    private void EndDuel() {
+        // The duel has ended. Inform the clients of the result.
+        var playersWin = HavePlayersWon();
+        var creaturesWin = HaveCreaturesWon();
+
+        // Broadcast to the zone of the result.
+        var combatMatchResult = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATMATCHRESULT {
+            DuelID = SigilId,
+            WinningTeam = playersWin ? (byte) Team.Player : (byte) Team.Monster,
+        };
+        ZoneBroadcast(combatMatchResult);
+
+        if (playersWin) {
+            PlayerWin();
+        }
+        else if (creaturesWin) {
+            CreatureWin();
+        }
+
+        Duel.m_duelPhase = kDuelPhase.kPhase_Ended;
+        SendCombatPhase((byte) Duel.m_duelPhase);
+
+        var duelEndedMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_ENDDUEL { DuelID = SigilId };
+        ZoneBroadcast(duelEndedMsg);
+
+        Context.Stop(Self);
+    }
+
+    private void PlayerWin() {
+        Logger.Debug("Duel {0} | Duel ended. Players win.", Logger.Args(Duel.m_duelID));
+
+        Duel.m_duelPhase = kDuelPhase.kPhase_Victory;
+        SendCombatPhase((byte) Duel.m_duelPhase);
+
+        // Send the final messages to the participants.
+        var combatVictoryMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATVICTORY();
+        EnactActionOnSubCircles(circle => {
+            if (circle.OccupiedTeam == Team.Monster) {
+                return;
+            }
+
+            circle.ParticipantActor.Tell(combatVictoryMsg);
+
+            // Inform the player that they've been removed from this duel.
+            var removeMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATREMOVE {
+                DuelID = SigilId,
+                ParticipantID = circle.ParticipantObject.m_globalID,
+            };
+            ZoneBroadcast(removeMsg);
+
+            // Get the players back into the idle state, so they can move around again.
+            var stateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
+                GameObjectID = circle.ParticipantObject.m_globalID,
+                State = (uint) NPCStates.Idle
+            };
+            circle.ParticipantActor.Tell(stateMsg);
+        });
+    }
+
+    private void CreatureWin() {
+        // todo: implement
+        Logger.Debug("Duel {0} | Duel ended. Creatures win.", Logger.Args(Duel.m_duelID));
     }
 
     private void EnactActionOnSubCircles(Action<DuelActorSubCircle> action) {

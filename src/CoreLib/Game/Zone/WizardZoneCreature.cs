@@ -6,8 +6,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Akka.Actor;
 using Imlight.Common.Caches;
 using Imlight.CoreLib.Shared.Networking;
@@ -40,6 +38,7 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
     public WizGameStats GameStats { get; private set; }
     public ITimerScheduler Timers { get; set; }
 
+    private readonly WizardZonePath _path;
     private readonly TimeSpan _startingDelay = TimeSpan.FromSeconds(MOVEMENT_INTERVAL_START_DELAY_IN_SECONDS);
     private readonly TimeSpan _minimumMovementIntervalDelay = TimeSpan.FromSeconds(MINIMUM_MOVEMENT_DELAY_IN_SECONDS);
     private readonly NodeObject[] _nodes;
@@ -57,11 +56,12 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
     // ctor
     public WizardZoneCreature(CoreObject activeGameObject,
                               CoreTemplate template,
-                              NodeObject[] nodes,
+                              WizardZonePath path,
                               byte startingNodeIndex,
                               IActorRef wizardZoneRef)
             : base(activeGameObject, template, wizardZoneRef) {
-        this._nodes = nodes;
+        this._path = path;
+        this._nodes = path.Nodes.Keys.ToArray();
         this._targetNodeIndex = startingNodeIndex;
         this._creatureState = CreatureState.Stopped;
 
@@ -80,11 +80,11 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
     // Akka.NET ctor
     public static Props Props(CoreObject activeGameObject,
                               CoreTemplate template,
-                              NodeObject[] nodes,
+                              WizardZonePath path,
                               byte startingNodeIndex,
                               IActorRef wizardZoneRef) {
         return Akka.Actor.Props.Create(()
-            => new WizardZoneCreature(activeGameObject, template, nodes, startingNodeIndex, wizardZoneRef));
+            => new WizardZoneCreature(activeGameObject, template, path, startingNodeIndex, wizardZoneRef));
     }
 
     protected override void OnPlayerJoin(CoreObject player, IActorRef playerActor) {
@@ -180,6 +180,12 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
             CombatLevel = this.CombatLevel
         };
         Sender.Tell(msg);
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_COMBATDEATH))]
+    private void ReceiveCombatDeath(COMBAT_106_PROTOCOL.MSG_COMBATDEATH message) {
+        // This creature has been defeated in a duel.
+        Die();
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_CREATUREMOVEINTERVAL))]
@@ -345,6 +351,23 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
 
     private bool ShouldPause() {
         return _pauseChance > 0 && new Random().Next(0, 100) < _pauseChance;
+    }
+
+    private void Die() {
+        // Broadcast the death of this creature to all players.
+        var broadcastMSg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+            Message = new GAME_5_PROTOCOL.MSG_REMOVEOBJECT {
+                GameObjectID = ActiveGameObject.m_globalID
+            },
+            Selfless = true,
+            Sender = Self
+        };
+        WizardZoneRef.Tell(broadcastMSg);
+
+        // Inform the path that this creature has died.
+        _path.RemoveCreature(ActiveGameObject.m_templateID);
+
+        Context.Stop(Self);
     }
 
     private NodeObject CurrentTargetNode => _nodes[_targetNodeIndex];

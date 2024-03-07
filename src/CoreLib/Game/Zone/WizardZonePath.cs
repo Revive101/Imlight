@@ -34,14 +34,12 @@ public class WizardZonePath : ReceiveProtocolDispatcher, IWithTimers {
     public GID Id { get; init; }
     public ByteString Name { get; init; }
     public ITimerScheduler Timers { get; set; }
+    public readonly Dictionary<NodeObject, bool> Nodes;
 
     private readonly TimeSpan _spawnIntervalStartDelay = TimeSpan.FromSeconds(SPAWN_INTERVAL_START_DELAY);
     private readonly List<IActorRef> _creatures;
-    private readonly Dictionary<GID, byte> _creatureCount;
+    private readonly Dictionary<SpawnObject, byte> _creatureCount;
     private readonly List<SpawnObject> _creatureSpawnData;
-
-    // The the value represents if the NodeObject is available.
-    private readonly Dictionary<NodeObject, bool> _nodes;
     private readonly IActorRef _zoneActorRef;
 
     // ctor
@@ -53,11 +51,11 @@ public class WizardZonePath : ReceiveProtocolDispatcher, IWithTimers {
         IActorRef zoneActorRef) {
         this.Id = id;
         this.Name = name;
+        this.Nodes = nodes.ToDictionary(x => x, _ => true);
         this._creatures = new List<IActorRef>();
-        this._nodes = nodes.ToDictionary(x => x, _ => true);
         this._creatureSpawnData = creatures;
+        this._creatureCount = new Dictionary<SpawnObject, byte>();
         this._zoneActorRef = zoneActorRef;
-        this._creatureCount = new Dictionary<GID, byte>();
 
         StartSpawnInterval();
     }
@@ -72,9 +70,27 @@ public class WizardZonePath : ReceiveProtocolDispatcher, IWithTimers {
         return Akka.Actor.Props.Create(() => new WizardZonePath(id, name, nodes, creatures, zoneActorRef));
     }
 
+    public void RemoveCreature(ulong templateId) {
+        var creature = _creatureSpawnData.First(x => x.m_spawnList.Any(y => y.m_objectInfo.m_templateID == templateId));
+        if (creature == null) {
+            Logger.Error("Creature with template ID {0} was not found in the creature spawn data.",
+                Logger.Args(templateId));
+            return;
+        }
+
+        var count = CreatureCount(creature);
+        if (count <= 0) {
+            Logger.Error("Creature {0} has no spawns to remove.",
+                Logger.Args(creature.m_name));
+            return;
+        }
+
+        SetCreatureCount(creature, count - 1);
+    }
+
     private void StartSpawnInterval() {
         foreach (var spawnObject in _creatureSpawnData.Where(x => x.m_active)) {
-            _creatureCount.Add(spawnObject.m_id, 0);
+            _creatureCount.Add(spawnObject, 0);
 
             var msg = new ZONE_102_PROTOCOL.MSG_CREATURESPAWNINTERVAL { SpawnObject = spawnObject };
 
@@ -112,7 +128,8 @@ public class WizardZonePath : ReceiveProtocolDispatcher, IWithTimers {
         var obj = message.SpawnObject;
 
         if (CanSpawn(obj)) {
-            var spawnsAvailable = obj.m_maxNumberOfSpawns - CreatureCount(obj);
+            var currentCount = CreatureCount(obj);
+            var spawnsAvailable = obj.m_maxNumberOfSpawns - currentCount;
 
             // We've determined that this object must spawn.
             if (spawnsAvailable == 0) {
@@ -128,7 +145,7 @@ public class WizardZonePath : ReceiveProtocolDispatcher, IWithTimers {
             Self.Tell(msg);
 
             // Increment the creature count.
-            SetCreatureCount(obj, (int) spawnsAvailable);
+            SetCreatureCount(obj, currentCount + (int) spawnsAvailable);
         }
     }
 
@@ -152,8 +169,8 @@ public class WizardZonePath : ReceiveProtocolDispatcher, IWithTimers {
 
         // The spawn info declares what type of node to spawn on.
         var spawnNode = GetRelevantNode(spawnInfo);
-        var nodeIndex = _nodes.Keys.ToList().IndexOf(spawnNode);
-        _nodes[spawnNode] = false;
+        var nodeIndex = Nodes.Keys.ToList().IndexOf(spawnNode);
+        Nodes[spawnNode] = false;
 
         // Create the creature object.
         var template = CoreObjectFactory.GetCoreTemplate(spawnInfo.m_templateID);
@@ -163,8 +180,7 @@ public class WizardZonePath : ReceiveProtocolDispatcher, IWithTimers {
 
         // Create the creature actor. This will also add the creature to the zone.
         // The creature actor will be responsible for updating the zone with its presence.
-        var nodes = _nodes.Keys.ToArray();
-        var props = WizardZoneCreature.Props(newObj, template, nodes, (byte) nodeIndex, _zoneActorRef);
+        var props = WizardZoneCreature.Props(newObj, template, this, (byte) nodeIndex, _zoneActorRef);
         var actorRef = Context.ActorOf(props);
         _creatures.Add(actorRef);
 
@@ -184,7 +200,7 @@ public class WizardZonePath : ReceiveProtocolDispatcher, IWithTimers {
     #endregion
 
     private bool CanSpawn(SpawnObject spawnObject) {
-        if (!_creatureCount.TryGetValue(spawnObject.m_id, out var count)) {
+        if (!_creatureCount.TryGetValue(spawnObject, out var count)) {
             throw new Exception("Somehow, this SpawnObject was not found in the creature count dictionary?");
         }
 
@@ -204,18 +220,18 @@ public class WizardZonePath : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     private int CreatureCount(SpawnObject spawnObject) {
-        var count = _creatureCount[spawnObject.m_id];
+        var count = _creatureCount[spawnObject];
 
         if (count >= MAX_SPAWNS_ALLOWED) {
             Logger.Error("Creature {0} has reached the maximum number of spawns allowed ({1}).",
                 Logger.Args(spawnObject.m_name, MAX_SPAWNS_ALLOWED));
         }
 
-        return _creatureCount[spawnObject.m_id];
+        return _creatureCount[spawnObject];
     }
 
     private void SetCreatureCount(SpawnObject spawnObject, int count) {
-        _creatureCount[spawnObject.m_id] = (byte) count;
+        _creatureCount[spawnObject] = (byte) count;
     }
 
     private SpawnItem PickRandomSpawnObject(List<SpawnItem> spawnItems) {
@@ -237,19 +253,19 @@ public class WizardZonePath : ReceiveProtocolDispatcher, IWithTimers {
         switch (spawnInfo.m_kStartNodeType) {
             case SpawnObjectInfo.StartNodeType.SNT_RANDOM:
                 var rng = new Random();
-                var rngIndex = rng.Next(0, _nodes.Count);
-                return _nodes.ElementAt(rngIndex).Key;
+                var rngIndex = rng.Next(0, Nodes.Count);
+                return Nodes.ElementAt(rngIndex).Key;
             case TypeCache.SpawnObjectInfo.StartNodeType.SNT_RANDOM_UNIQUE:
-                var selection = _nodes.Where(x => x.Value).ToArray();
+                var selection = Nodes.Where(x => x.Value).ToArray();
                 var rng2 = new Random();
                 var rngIndex2 = rng2.Next(0, selection.Length);
-                return _nodes.ElementAt(rngIndex2).Key;
+                return Nodes.ElementAt(rngIndex2).Key;
             case TypeCache.SpawnObjectInfo.StartNodeType.SNT_FIRST:
-                return _nodes.First().Key;
+                return Nodes.First().Key;
             case TypeCache.SpawnObjectInfo.StartNodeType.SNT_LAST:
-                return _nodes.Last().Key;
+                return Nodes.Last().Key;
             case TypeCache.SpawnObjectInfo.StartNodeType.SNT_SPECIFIC:
-                return _nodes.FirstOrDefault().Key;
+                return Nodes.FirstOrDefault().Key;
             default:
                 throw new ArgumentOutOfRangeException(nameof(spawnInfo.m_kStartNodeType),
                     spawnInfo.m_kStartNodeType,
