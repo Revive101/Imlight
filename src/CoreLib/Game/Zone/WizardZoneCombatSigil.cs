@@ -177,7 +177,7 @@ public class WizardZoneCombatSigil : WizardZoneObject {
         }
 
         var checkForSlotMsg = new COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLE {
-            Team = Combat.Team.Player
+            Team = Combat.CombatTeam.Player
         };
         var slotAvailable = _activeDuelActor
             .Ask<COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLERSP>(checkForSlotMsg)
@@ -193,7 +193,7 @@ public class WizardZoneCombatSigil : WizardZoneObject {
         }
 
         var checkForSlotMsg = new COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLE {
-            Team = Combat.Team.Monster
+            Team = Combat.CombatTeam.Monster
         };
         var slotAvailable = _activeDuelActor
             .Ask<COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLERSP>(checkForSlotMsg)

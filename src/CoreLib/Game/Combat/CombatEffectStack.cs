@@ -29,10 +29,10 @@ using System;
 
 namespace Imlight.CoreLib.Game.Combat;
 
-public class EffectStack {
+public class CombatEffectStack {
     private uint _stack;
 
-    public EffectStack() {
+    public CombatEffectStack() {
         _stack = 0xFFFFFFFF;
     }
 

@@ -5,7 +5,7 @@
 
 namespace Imlight.CoreLib.Game.Combat;
 
-public enum Team {
+public enum CombatTeam {
     Player = 0,
     Monster = 1
 }

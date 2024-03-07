@@ -14,21 +14,21 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Game.Combat;
 
 public class QueuedCombatAction {
-    public DuelActorSubCircle SpellCaster;
-    public DuelActorSubCircle TargetSubcircle;
+    public CombatDuelActorSubCircle SpellCaster;
+    public CombatDuelActorSubCircle TargetSubcircle;
     public Spell Spell;
 }
 
 public class CombatDirector {
     private readonly Duel _duel;
 
-    private DuelActorSubCircle[] _subCircles = new DuelActorSubCircle[8];
-    private DuelActorSubCircle[] ActiveSubCircles => _subCircles.Where(x => x.Occupied).ToArray();
+    private CombatDuelActorSubCircle[] _subCircles = new CombatDuelActorSubCircle[8];
+    private CombatDuelActorSubCircle[] ActiveSubCircles => _subCircles.Where(x => x.Occupied).ToArray();
     private bool _awaitingCombatMoves;
     private List<QueuedCombatAction> _queuedCombatActions;
 
     // ctor
-    public CombatDirector(Duel duel, DuelActorSubCircle[] actorSubCircles) {
+    public CombatDirector(Duel duel, CombatDuelActorSubCircle[] actorSubCircles) {
         _duel = duel;
         _subCircles = actorSubCircles;
         _duel.m_firstTeamToAct = (int) DetermineFirstTeam();
@@ -167,7 +167,7 @@ public class CombatDirector {
         return healthList;
     }
 
-    public void AddCombatMove(MoveType type, DuelActorSubCircle caster, DuelActorSubCircle target, Spell spell) {
+    public void AddCombatMove(CombatMoveType type, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target, Spell spell) {
         if (!_awaitingCombatMoves) {
             throw new InvalidOperationException("Combat moves are not being accepted at this time.");
         }
@@ -178,16 +178,16 @@ public class CombatDirector {
         var queuedAction = new QueuedCombatAction {
             SpellCaster = caster,
             TargetSubcircle = target,
-            Spell = type == MoveType.Attack ? spell : null,
+            Spell = type == CombatMoveType.Attack ? spell : null,
         };
         _queuedCombatActions.Add(queuedAction);
     }
 
-    private Team DetermineFirstTeam() {
+    private CombatTeam DetermineFirstTeam() {
         // Flip a coin.
         var random = new Random();
         var result = random.Next(0, 2);
-        return (Team) result;
+        return (CombatTeam) result;
     }
 
     private bool DeterminePowerPipGain(CombatParticipant participant) {
@@ -196,14 +196,14 @@ public class CombatDirector {
         return powerPipChance <= powerPipProbability;
     }
 
-    private void EnactActionOnSubCircles(Action<DuelActorSubCircle> action) {
+    private void EnactActionOnSubCircles(Action<CombatDuelActorSubCircle> action) {
         foreach (var subCircle in ActiveSubCircles) {
             action(subCircle);
         }
     }
 
     private CombatAction ApplyCombatAction(QueuedCombatAction action) {
-        var effectStack = new EffectStack();
+        var effectStack = new CombatEffectStack();
 
         if (action.Spell is not null) {
             foreach (var spellEffect in action.Spell.m_spellEffects) {
@@ -233,7 +233,7 @@ public class CombatDirector {
         };
     }
 
-    private void ApplyEffect(SpellEffect effect, DuelActorSubCircle caster, DuelActorSubCircle target) {
+    private void ApplyEffect(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target) {
         var effectTarget = effect.m_effectTarget;
 
         if (effectTarget == SpellEffect.kEffectTarget.kEnemySingle
@@ -242,7 +242,7 @@ public class CombatDirector {
         }
     }
 
-    private void ApplyEffectSingle(SpellEffect effect, DuelActorSubCircle caster, DuelActorSubCircle target)
+    private void ApplyEffectSingle(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target)
     {
         var effectType = effect.m_effectType;
 
@@ -256,7 +256,7 @@ public class CombatDirector {
         }
     }
 
-    private void ApplyEffectDamage(SpellEffect effect, DuelActorSubCircle caster, DuelActorSubCircle[] targets) {
+    private void ApplyEffectDamage(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets) {
         int damage = effect.m_effectParam;
 
         // Try to parse the string to an enum
@@ -281,22 +281,22 @@ public class CombatDirector {
         }
     }
 
-    private double GetFlatDamageIncrease(DuelActorSubCircle caster, MagicSchool damageType) {
+    private double GetFlatDamageIncrease(CombatDuelActorSubCircle caster, MagicSchool damageType) {
         double damageFlatIncrease = GetValueAtIndex(caster.ParticipantGameStats.m_dmgBonusFlat, damageType);
         return damageFlatIncrease + caster.ParticipantGameStats.m_dmgBonusFlatAll;
     }
 
-    private double GetPercentDamageIncrease(DuelActorSubCircle caster, MagicSchool damageType) {
+    private double GetPercentDamageIncrease(CombatDuelActorSubCircle caster, MagicSchool damageType) {
         double damagePercentIncrease = GetValueAtIndex(caster.ParticipantGameStats.m_dmgBonusPercent, damageType);
         return damagePercentIncrease + caster.ParticipantGameStats.m_dmgBonusPercentAll;
     }
 
-    private double GetFlatDamageReduction(DuelActorSubCircle target, MagicSchool damageType) {
+    private double GetFlatDamageReduction(CombatDuelActorSubCircle target, MagicSchool damageType) {
         double damageReductionFlat = GetValueAtIndex(target.ParticipantGameStats.m_dmgReduceFlat, damageType);
         return damageReductionFlat + target.ParticipantGameStats.m_dmgReduceFlatAll;
     }
 
-    private double GetPercentDamageReduction(DuelActorSubCircle target, MagicSchool damageType) {
+    private double GetPercentDamageReduction(CombatDuelActorSubCircle target, MagicSchool damageType) {
         double damageReductionPercent = GetValueAtIndex(target.ParticipantGameStats.m_dmgReducePercent, damageType);
         return damageReductionPercent + target.ParticipantGameStats.m_dmgReducePercentAll;
     }

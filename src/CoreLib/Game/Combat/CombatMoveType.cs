@@ -5,7 +5,7 @@
 
 namespace Imlight.CoreLib.Game.Combat;
 
-public enum MoveType {
+public enum CombatMoveType {
     Attack = 0,
     Spell = 1,
     Discard = 2,

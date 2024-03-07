@@ -14,16 +14,16 @@ using static Imlight.Common.Caches.TypeCache.CombatParticipant;
 
 namespace Imlight.CoreLib.Game.Combat;
 
-internal enum SlotType {
+internal enum CombatSlotType {
     Monster,
     Player
 }
 
-public class DuelActorSubCircle {
+public class CombatDuelActorSubCircle {
     private const float AggroTimeInSeconds = 0.75f;
 
     internal string SlotName { get; set; }
-    internal SlotType SlotType { get; set; }
+    internal CombatSlotType SlotType { get; set; }
     internal int SlotIndex { get; private set; }
     internal Vector3 WorldPosition { get; set; }
     internal float WorldRotation { get; set; }
@@ -50,25 +50,25 @@ public class DuelActorSubCircle {
         }
     }
     internal bool Occupied => ParticipantObject is not null;
-    internal Team OccupiedTeam {
+    internal CombatTeam OccupiedTeam {
         get {
             if (ParticipantObject is null) {
-                return Team.Player;
+                return CombatTeam.Player;
             }
 
-            return ParticipantObject.m_templateID == 1 ? Team.Player : Team.Monster;
+            return ParticipantObject.m_templateID == 1 ? CombatTeam.Player : CombatTeam.Monster;
         }
     }
     internal bool IsAlive => ParticipantGameStats.m_currentHitpoints > 0;
 
-    private readonly DuelActor _duelActor;
+    private readonly CombatDuelActor _duelActor;
     private readonly float _radius;
     private readonly float _rotation;
     private readonly Color _color;
     private CombatHand _combatHand;
 
     // ctor
-    internal DuelActorSubCircle(DuelActor duelActor, float radius, float rotation, Color color, int index) {
+    internal CombatDuelActorSubCircle(CombatDuelActor duelActor, float radius, float rotation, Color color, int index) {
         _duelActor = duelActor;
         _radius = radius;
         _rotation = rotation;
@@ -79,10 +79,10 @@ public class DuelActorSubCircle {
     internal async Task AssignParticipant(IActorRef actor, CoreObject participantObject) {
         ParticipantActor = actor;
         ParticipantObject = participantObject;
-        var team = participantObject.m_templateID == 1 ? Team.Player : Team.Monster;
+        var team = participantObject.m_templateID == 1 ? CombatTeam.Player : CombatTeam.Monster;
 
         // Set the CombatParticipant based on what team they are.
-        if (team == Team.Player) {
+        if (team == CombatTeam.Player) {
             InitializePlayerSubCircle();
         }
         else {

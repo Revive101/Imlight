@@ -86,7 +86,7 @@ public class WizardZone : ReceiveProtocolDispatcher {
     }
 
     private IActorRef CreateDuelSupervisor() {
-        var props = DuelActorSupervisor.Props(Self);
+        var props = CombatDuelActorSupervisor.Props(Self);
         return Context.ActorOf(props);
     }
 

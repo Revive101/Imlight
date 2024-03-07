@@ -27,9 +27,9 @@ namespace Imlight.CoreLib.Game.Combat;
 
 /// <summary>
 /// Represents a duel. This is the actor that manages the duel. It is created by the
-/// <see cref="DuelActorSupervisor"/> and is a child of it.
+/// <see cref="CombatDuelActorSupervisor"/> and is a child of it.
 /// </summary>
-public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
+public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
     public const byte PlanningTime = 5;
     private const float DuelStartedGracePeriodInSeconds = 3.75f;
     private const float ExecutionTime = 10.0f;
@@ -48,24 +48,24 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     private readonly SerializerOptions.PropertyFlags _combatParticipantStatFlags = (SerializerOptions.PropertyFlags) 5;
     private readonly SerializerOptions.PropertyFlags _combatParticipantHandFlags = (SerializerOptions.PropertyFlags) 5;
 
-    private byte PlayerCount => (byte) _subCircles.Count(x => x.Occupied && x.OccupiedTeam == Team.Player);
-    private byte CreatureCount => (byte) _subCircles.Count(x => x.Occupied && x.OccupiedTeam == Team.Monster);
-    private DuelActorSubCircle[] ActiveSubCircles => _subCircles.Where(x => x.Occupied).ToArray();
+    private byte PlayerCount => (byte) _subCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Player);
+    private byte CreatureCount => (byte) _subCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Monster);
+    private CombatDuelActorSubCircle[] ActiveSubCircles => _subCircles.Where(x => x.Occupied).ToArray();
 
     private IActorRef _sigilActorRef;
     private CombatSigilTemplate _combatSigilTemplate;
-    private DuelActorSubCircle[] _subCircles = new DuelActorSubCircle[8];
+    private CombatDuelActorSubCircle[] _subCircles = new CombatDuelActorSubCircle[8];
     private Vector3 _sigilLocation;
     private Vector3 _sigilOrientation;
     private byte _creatureCount;
     private byte _playerCount;
 
-    public DuelActor(IActorRef wizardZoneRef) {
+    public CombatDuelActor(IActorRef wizardZoneRef) {
         this._wizardZoneRef = wizardZoneRef;
     }
 
     public static Props Props(IActorRef wizardZoneRef)
-        => Akka.Actor.Props.Create(() => new DuelActor(wizardZoneRef));
+        => Akka.Actor.Props.Create(() => new CombatDuelActor(wizardZoneRef));
 
     internal void ZoneBroadcast(IMessage message) {
         var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
@@ -84,7 +84,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
     internal void CreatureBroadcast(IMessage message) {
         EnactActionOnSubCircles(circle => {
-            if (circle.OccupiedTeam == Team.Monster) {
+            if (circle.OccupiedTeam == CombatTeam.Monster) {
                 circle.ParticipantActor.Tell(message);
             }
         });
@@ -92,7 +92,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
     internal void PlayerBroadcast(IMessage message) {
         EnactActionOnSubCircles(circle => {
-            if (circle.OccupiedTeam == Team.Player) {
+            if (circle.OccupiedTeam == CombatTeam.Player) {
                 circle.ParticipantActor.Tell(message);
             }
         });
@@ -130,8 +130,8 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
         var availableCreatureSubcircles = GetAvailableSubCircleTeamCreature();
         var availablePlayerSubcircles = GetAvailableSubCircleTeamPlayer();
-        var teamAAssigned = AssignParticipantToSubCircle(Team.Monster, availableCreatureSubcircles, startingCreatureActor, startingCreatureObject);
-        var teamBAssigned = AssignParticipantToSubCircle(Team.Player, availablePlayerSubcircles, startingPlayerActor, startingPlayerObject);
+        var teamAAssigned = AssignParticipantToSubCircle(CombatTeam.Monster, availableCreatureSubcircles, startingCreatureActor, startingCreatureObject);
+        var teamBAssigned = AssignParticipantToSubCircle(CombatTeam.Player, availablePlayerSubcircles, startingPlayerActor, startingPlayerObject);
 
         if (!teamAAssigned || !teamBAssigned) {
             throw new Exception("Failed to assign participants to sub circles.");
@@ -237,7 +237,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         // Iterate through dead creature participants and remove them from the duel.
         // Players can be healed and therefore don't need to be removed.
         EnactActionOnSubCircles(circle => {
-            if (circle.OccupiedTeam == Team.Monster && !circle.IsAlive) {
+            if (circle.OccupiedTeam == CombatTeam.Monster && !circle.IsAlive) {
                 var removeMsg = new COMBAT_106_PROTOCOL.MSG_COMBATDEATH();
                 circle.ParticipantActor.Tell(removeMsg);
             }
@@ -267,7 +267,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         }
 
         var subCircle = isPlayer ? GetAvailableSubCircleTeamPlayer() : GetAvailableSubCircleTeamCreature();
-        var team = isPlayer ? Team.Monster : Team.Player;
+        var team = isPlayer ? CombatTeam.Monster : CombatTeam.Player;
 
         if (subCircle is null || !AssignParticipantToSubCircle(team, subCircle, message.Participant, message.ParticipantObject)) {
             var debugMessage = "Player attempted to join duel {0}, but there were no available sub circles. " +
@@ -297,7 +297,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         // An actor is checking to see if there are slots available in the duel.
         // Players can only join if there are less than 4 players in the duel.
         // There are 2 creatures per player in the duel. There can only be 4 creatures in the duel.
-        var slotAvailable = (message.Team == Team.Player)
+        var slotAvailable = (message.Team == CombatTeam.Player)
             ? PlayerCount   < 4
             : CreatureCount < (PlayerCount * 2) && CreatureCount < 4;
         var rsp = new COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLERSP { Available = slotAvailable };
@@ -316,10 +316,10 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         var targetOrSelf = message.SpellTarget == 0 ? subCircle : _subCircles[message.SpellTarget - 1];
 
         // Parse the MoveType as an enum.
-        var moveType = (MoveType) message.MoveType;
+        var moveType = (CombatMoveType) message.MoveType;
 
         // If this is a discard, we don't want to send the event to the director
-        if (moveType == MoveType.Discard) {
+        if (moveType == CombatMoveType.Discard) {
             var discarded = subCircle.DiscardCard(message.SpellSelection);
 
             Logger.Debug("Duel {0} | Slot {1} | Discarded a card: {2}",
@@ -336,7 +336,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     private void SendCombatPhase(byte phase) {
-        var upFirstSigilSlot = (byte) (Duel.m_firstTeamToAct == (int) Team.Player ? 4 : 0);
+        var upFirstSigilSlot = (byte) (Duel.m_firstTeamToAct == (int) CombatTeam.Player ? 4 : 0);
 
         var serializer = new ObjectSerializer()
                 .OnBehaviors(SerializerOptions.Behaviors.None)
@@ -371,7 +371,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     private void SendUpFirst(int roundNum) {
         // This serialized data is used for nearby players to see the combat phase.
         // Unsure the wording, but it sounds like it's used for spectators.
-        var upFirstSigilSlot = (byte) (Duel.m_firstTeamToAct == (int) Team.Player ? 4 : 0);
+        var upFirstSigilSlot = (byte) (Duel.m_firstTeamToAct == (int) CombatTeam.Player ? 4 : 0);
 
         var upFirstMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATUPFIRST {
             DuelID = SigilId,
@@ -415,7 +415,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         // Serialize the combat hand and send it to the participant, locally.
         // We're skipping creatures for now.
         EnactActionOnSubCircles(circle => {
-            if (circle.OccupiedTeam == Team.Monster) {
+            if (circle.OccupiedTeam == CombatTeam.Monster) {
                 return;
             }
 ;
@@ -472,7 +472,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         // Broadcast to the zone of the result.
         var combatMatchResult = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATMATCHRESULT {
             DuelID = SigilId,
-            WinningTeam = playersWin ? (byte) Team.Player : (byte) Team.Monster,
+            WinningTeam = playersWin ? (byte) CombatTeam.Player : (byte) CombatTeam.Monster,
         };
         ZoneBroadcast(combatMatchResult);
 
@@ -505,7 +505,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         // Send the final messages to the participants.
         var combatVictoryMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATVICTORY();
         EnactActionOnSubCircles(circle => {
-            if (circle.OccupiedTeam == Team.Monster) {
+            if (circle.OccupiedTeam == CombatTeam.Monster) {
                 return;
             }
 
@@ -532,7 +532,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         Logger.Debug("Duel {0} | Duel ended. Creatures win.", Logger.Args(Duel.m_duelID));
     }
 
-    private void EnactActionOnSubCircles(Action<DuelActorSubCircle> action) {
+    private void EnactActionOnSubCircles(Action<CombatDuelActorSubCircle> action) {
         foreach (var subCircle in ActiveSubCircles) {
             action(subCircle);
         }
@@ -558,9 +558,9 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         return duel;
     }
 
-    private DuelActorSubCircle[] CreateDuelActorSubCircles(CombatSigilTemplate template) {
+    private CombatDuelActorSubCircle[] CreateDuelActorSubCircles(CombatSigilTemplate template) {
         var subCircles = template.m_subCircles;
-        var subCircleObjs = new DuelActorSubCircle[8];
+        var subCircleObjs = new CombatDuelActorSubCircle[8];
 
         // The sigil rotation is stored between -pi and pi. We need it to be between 0 and 2pi.
         var sigilRotation = _sigilOrientation.Z;
@@ -593,11 +593,11 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
             }
 
             // Cretae the sub circle object and add it to the array.
-            var subCircle = new DuelActorSubCircle(this, radius, rotation, color, i) {
+            var subCircle = new CombatDuelActorSubCircle(this, radius, rotation, color, i) {
                 WorldPosition = rotatedSigilPos,
                 WorldRotation = faceTowardsYaw,
                 SlotName = subCircles[i].m_locationPreference,
-                SlotType = subCircles[i].m_locationType == "MonsterCircle" ? SlotType.Monster : SlotType.Player
+                SlotType = subCircles[i].m_locationType == "MonsterCircle" ? CombatSlotType.Monster : CombatSlotType.Player
             };
             subCircleObjs[i] = subCircle;
         }
@@ -605,7 +605,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         return subCircleObjs;
     }
 
-    private DuelActorSubCircle GetAvailableSubCircleTeamCreature() {
+    private CombatDuelActorSubCircle GetAvailableSubCircleTeamCreature() {
         for (int i = 0; i < 4; i++) {
             if (!_subCircles[i].Occupied) {
                 return _subCircles[i];
@@ -615,7 +615,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         return null;
     }
 
-    private DuelActorSubCircle GetAvailableSubCircleTeamPlayer() {
+    private CombatDuelActorSubCircle GetAvailableSubCircleTeamPlayer() {
         for (int i = 4; i < 8; i++) {
             if (!_subCircles[i].Occupied) {
                 return _subCircles[i];
@@ -625,12 +625,12 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         return null;
     }
 
-    private bool AssignParticipantToSubCircle(Team team, DuelActorSubCircle subCircle, IActorRef actorRef, CoreObject coreObject) {
+    private bool AssignParticipantToSubCircle(CombatTeam team, CombatDuelActorSubCircle subCircle, IActorRef actorRef, CoreObject coreObject) {
         if (subCircle.ParticipantActor != null) {
             return false;
         }
 
-        if (team == Team.Monster) {
+        if (team == CombatTeam.Monster) {
             _creatureCount++;
         }
         else {
@@ -643,12 +643,12 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     private bool HavePlayersWon() {
-        var creaturesAlive = _subCircles.Count(x => x.Occupied && x.OccupiedTeam == Team.Monster && x.IsAlive);
+        var creaturesAlive = _subCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Monster && x.IsAlive);
         return creaturesAlive <= 0;
     }
 
     private bool HaveCreaturesWon() {
-        var playersAlive = _subCircles.Count(x => x.Occupied && x.OccupiedTeam == Team.Player && x.IsAlive);
+        var playersAlive = _subCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Player && x.IsAlive);
         return playersAlive <= 0;
     }
 
