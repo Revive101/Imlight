@@ -82,7 +82,7 @@ public class WizardZoneSigil : WizardZoneObject {
         }
         else {
             Logger.Debug("Duel {0} | Cannot add creature participant {1} because creature max is hit.",
-                Logger.Args(ActiveGameObject.m_globalID, creature.m_displayKey));
+                Logger.Args(ActiveGameObject.m_globalID, creature.m_debugName));
 
             var combatDeathMsg = new COMBAT_106_PROTOCOL.MSG_COMBATDEATH();
             suspect.Tell(combatDeathMsg);

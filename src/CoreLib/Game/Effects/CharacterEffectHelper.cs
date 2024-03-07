@@ -45,6 +45,10 @@ internal static class CharacterEffectHelper {
             else if (gameEffect is ProvideSpellEffect provideSpellEffect) {
                 var spells = SpellFactory.CreateSpellsFromEffect(provideSpellEffect);
 
+                if (spells is null) {
+                    continue;
+                }
+
                 foreach (var spell in spells) {
                     wizard.AddSpell(spell);
                 }
