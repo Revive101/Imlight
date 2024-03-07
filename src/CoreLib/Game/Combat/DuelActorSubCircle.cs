@@ -191,13 +191,13 @@ public class DuelActorSubCircle {
 
     private async Task PlayEntranceAnimation(CoreObject participantObject) {
         // Set the state of the participant to entering sigil.
-        _duelActor.DuelBroadcast(new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
+        _duelActor.ZoneBroadcast(new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
             GameObjectID = participantObject.m_globalID,
             State = (uint) NPCStates.Sigil
         });
 
         // Send aggro to the participant.
-        _duelActor.DuelBroadcast(new WIZARD_12_PROTOCOL.MSG_AGGRO {
+        _duelActor.ZoneBroadcast(new WIZARD_12_PROTOCOL.MSG_AGGRO {
             GlobalID = participantObject.m_globalID,
             LocX = WorldPosition.X,
             LocY = WorldPosition.Y,
@@ -211,7 +211,7 @@ public class DuelActorSubCircle {
         await Task.Delay((int) (AggroTimeInSeconds * 1000));
 
         // Set state to stationary.
-        _duelActor.DuelBroadcast(new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
+        _duelActor.ZoneBroadcast(new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
             GameObjectID = participantObject.m_globalID,
             State = (uint) NPCStates.Stationary
         });

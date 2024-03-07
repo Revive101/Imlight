@@ -110,7 +110,7 @@ namespace Imlight.CoreLib.Shared.Packets {
             public int TimeLeft;
         }
 
-        public sealed class MSG_ROUNDOVER : IServerMessage
+        public sealed class MSG_PLANNINGPHASEOVER : IServerMessage
         {
             public byte MessageOrder => 11;
             public byte ServiceID => 106;
@@ -138,6 +138,11 @@ namespace Imlight.CoreLib.Shared.Packets {
             public float CombatSelfishFactor;
             public float CombatAggressionFactor;
             public int CombatLevel;
+        }
+
+        public sealed class MSG_COMBATDEATH : IServerMessage {
+            public byte MessageOrder => 15;
+            public byte ServiceID => 106;
         }
 	}
 }

@@ -197,11 +197,11 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         SendCombatUI(PlanningTime);
 
         var delay = TimeSpan.FromSeconds(PlanningTime);
-        Timers.StartSingleTimer("roundover", new COMBAT_106_PROTOCOL.MSG_ROUNDOVER(), delay);
+        Timers.StartSingleTimer("planningphaseover", new COMBAT_106_PROTOCOL.MSG_PLANNINGPHASEOVER(), delay);
     }
 
-    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ROUNDOVER))]
-    private void ReceiveRoundOver(COMBAT_106_PROTOCOL.MSG_ROUNDOVER message) {
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_PLANNINGPHASEOVER))]
+    private void ReceivePlanningPhaseOver(COMBAT_106_PROTOCOL.MSG_PLANNINGPHASEOVER message) {
         Logger.Debug("Duel {0} | Round {1} over at {2}",
             Logger.Args(Duel.m_duelID, Duel.m_roundNum, DateTime.Now.ToString("HH:mm:ss")));
 
