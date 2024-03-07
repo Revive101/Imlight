@@ -52,6 +52,22 @@ public class CombatDirector {
         });
     }
 
+    public uint GetQueuedCombatActionsTime() {
+        var count = 0;
+
+        // Every spell takes 10 seconds.
+        foreach (var action in _queuedCombatActions) {
+            if (action.Spell != null) {
+                count += 10;
+            }
+        }
+
+        // Every pass takes 2 seconds.
+        count += (ActiveSubCircles.Length - _queuedCombatActions.Count) * 2;
+
+        return (uint) count;
+    }
+
     public CombatActionListObj ApplyQueuedCombatActions() {
         var combatActionList = new CombatActionListObj { m_actionList = new List<CombatAction>() };
         var seenCasters = new List<DuelActorSubCircle>();

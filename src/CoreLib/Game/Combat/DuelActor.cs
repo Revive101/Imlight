@@ -210,6 +210,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
         SendCombatPhase((byte) Duel.m_duelPhase);
 
         // Apply the queued actions and send them to the client.
+        var actionExecutionTime = TimeSpan.FromSeconds(Director.GetQueuedCombatActionsTime());
         var actions = Director.ApplyQueuedCombatActions();
         _serializer.OnPropertyMask(_combatParticipantHandFlags);
         var buffer = _serializer.Serialize(actions);
@@ -222,8 +223,7 @@ public class DuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
         Director.EndRound();
 
-        var delay = TimeSpan.FromSeconds(ExecutionTime);
-        Timers.StartSingleTimer("roundresolution", new COMBAT_106_PROTOCOL.MSG_ROUNDRESOLUTION(), delay);
+        Timers.StartSingleTimer("roundresolution", new COMBAT_106_PROTOCOL.MSG_ROUNDRESOLUTION(), actionExecutionTime);
     }
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ROUNDRESOLUTION))]
