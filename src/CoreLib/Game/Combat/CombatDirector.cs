@@ -112,8 +112,18 @@ public class CombatDirector {
 
         // Iterate through each queued combat action and apply the spell effects.
         foreach (var action in _queuedCombatActions) {
-            var combatAction = ApplyCombatAction(action);
+            var combatAction = CombatEffectApplicator.ApplyCombatAction(action);
             combatActionList.m_actionList.Add(combatAction);
+
+            if (action.Spell is null) {
+                continue;
+            }
+
+            var caster = action.SpellCaster.CombatParticipant;
+            var spell = action.Spell;
+
+            // Remove the caster's pips.
+            caster.m_pipCount.m_genericPips -= spell.m_pipCost.m_spellRank;
         }
 
         // Log the combat actions.
@@ -197,6 +207,12 @@ public class CombatDirector {
         // If this spell is already queued by the same caster, remove all of their queued actions.
         _queuedCombatActions.RemoveAll(x => x.SpellCaster == caster);
 
+        if (!spell.m_pipCost.m_xPipSpell && caster.CombatParticipant.m_pipCount.m_genericPips < spell.m_pipCost.m_spellRank) {
+            Logger.Error("Duel {0} | Slot {1} | Not enough pips to cast spell {2}",
+                Logger.Args(_duel.m_duelID, caster.SlotIndex, spell.m_templateID));
+            return;
+        }
+
         var queuedAction = new QueuedCombatAction {
             SpellCaster = caster,
             TargetSubcircle = target,
@@ -222,122 +238,5 @@ public class CombatDirector {
         foreach (var subCircle in ActiveSubCircles) {
             action(subCircle);
         }
-    }
-
-    private CombatAction ApplyCombatAction(QueuedCombatAction action) {
-        var effectStack = new CombatEffectStack();
-
-        if (action.Spell is not null) {
-            foreach (var spellEffect in action.Spell.m_spellEffects) {
-                var effect = spellEffect;
-
-                // If this is a random spell effect, we need to determine which effect to use.
-                if (spellEffect is RandomSpellEffect randomSpellEffect) {
-                    var count = randomSpellEffect.m_effectList.Count;
-                    var randomEffectIndex = new Random().Next(0, count);
-                    effect = randomSpellEffect.m_effectList[randomEffectIndex];
-
-                    // Push the random effect choice onto the stack.
-                    effectStack.PushRandomEffectChoice(randomEffectIndex);
-                }
-
-                ApplyEffect(effect, action.SpellCaster, action.TargetSubcircle);
-            }
-        }
-
-        return new CombatAction {
-            m_effectChosen = effectStack.GetStackAsUint(),
-            m_spellCaster = action.SpellCaster.SlotIndex,
-            m_targetSubcircleList = new List<int> { action.TargetSubcircle.SlotIndex },
-            m_showCast = true,
-            m_spellHits = (char) 1, // Determines spell fizzel. 0 = fizzel, >=1 = hit
-            m_spell = action.Spell,
-        };
-    }
-
-    private void ApplyEffect(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target) {
-        var effectTarget = effect.m_effectTarget;
-
-        if (effectTarget == SpellEffect.kEffectTarget.kEnemySingle
-         || effectTarget == SpellEffect.kEffectTarget.kFriendlySingle) {
-            ApplyEffectSingle(effect, caster, target);
-        }
-    }
-
-    private void ApplyEffectSingle(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target)
-    {
-        var effectType = effect.m_effectType;
-
-        switch (effectType)
-        {
-            case SpellEffect.kSpellEffects.kDamage:
-                ApplyEffectDamage(effect, caster, new[] { target });
-                break;
-            default:
-                break;
-        }
-    }
-
-    private void ApplyEffectDamage(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets) {
-        int damage = effect.m_effectParam;
-
-        // Try to parse the string to an enum
-        if (!Enum.TryParse(typeof(MagicSchool), effect.m_sDamageType, out var damageTypeObj)) {
-            throw new ArgumentException("Invalid damage type");
-        }
-        var damageType = (MagicSchool) damageTypeObj;
-
-        // Calculate damage increase
-        double damageFlatIncrease = GetFlatDamageIncrease(caster, damageType);
-        double damagePercentIncrease = GetPercentDamageIncrease(caster, damageType);
-        damage = (int) Math.Ceiling(damage * (1 + damagePercentIncrease) + damageFlatIncrease);
-
-        // Apply damage to each target
-        foreach (var target in targets) {
-            // Calculate damage reduction
-            double damageReductionFlat = GetFlatDamageReduction(target, damageType);
-            double damageReductionPercent = GetPercentDamageReduction(target, damageType);
-            damage = (int) Math.Ceiling(damage * (1 - damageReductionPercent) - damageReductionFlat);
-
-            target.ParticipantGameStats.m_currentHitpoints -= damage;
-        }
-    }
-
-    private double GetFlatDamageIncrease(CombatDuelActorSubCircle caster, MagicSchool damageType) {
-        double damageFlatIncrease = GetValueAtIndex(caster.ParticipantGameStats.m_dmgBonusFlat, damageType);
-        return damageFlatIncrease + caster.ParticipantGameStats.m_dmgBonusFlatAll;
-    }
-
-    private double GetPercentDamageIncrease(CombatDuelActorSubCircle caster, MagicSchool damageType) {
-        double damagePercentIncrease = GetValueAtIndex(caster.ParticipantGameStats.m_dmgBonusPercent, damageType);
-        return damagePercentIncrease + caster.ParticipantGameStats.m_dmgBonusPercentAll;
-    }
-
-    private double GetFlatDamageReduction(CombatDuelActorSubCircle target, MagicSchool damageType) {
-        double damageReductionFlat = GetValueAtIndex(target.ParticipantGameStats.m_dmgReduceFlat, damageType);
-        return damageReductionFlat + target.ParticipantGameStats.m_dmgReduceFlatAll;
-    }
-
-    private double GetPercentDamageReduction(CombatDuelActorSubCircle target, MagicSchool damageType) {
-        double damageReductionPercent = GetValueAtIndex(target.ParticipantGameStats.m_dmgReducePercent, damageType);
-        return damageReductionPercent + target.ParticipantGameStats.m_dmgReducePercentAll;
-    }
-
-    private static T GetValueAtIndex<T>(List<T> list, Enum enumValue) {
-        if (list is null || list.Count <= 0) {
-            return default;
-        }
-
-        if (!typeof(T).IsPrimitive && !typeof(T).IsEnum) {
-            throw new ArgumentException("List items must be primitive types or enums");
-        }
-
-        int index = Array.IndexOf(Enum.GetValues(enumValue.GetType()), enumValue);
-
-        if (index == -1 || list.Count <= index) {
-            return default;
-        }
-
-        return list[index];
     }
 }
