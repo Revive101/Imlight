@@ -27,7 +27,7 @@ public class CombatDirector {
 
     private readonly Duel _duel;
 
-    private CombatDuelActorSubCircle[] _subCircles = new CombatDuelActorSubCircle[8];
+    private readonly CombatDuelActorSubCircle[] _subCircles = new CombatDuelActorSubCircle[8];
     private CombatDuelActorSubCircle[] ActiveSubCircles => _subCircles.Where(x => x.Occupied).ToArray();
     private bool _awaitingCombatMoves;
     private List<QueuedCombatAction> _queuedCombatActions;
@@ -61,6 +61,11 @@ public class CombatDirector {
         });
     }
 
+    public void EndRound() {
+        _awaitingCombatMoves = false;
+        _queuedCombatActions = null;
+    }
+
     public uint GetQueuedCombatActionsTime() {
         var count = 0;
 
@@ -83,100 +88,12 @@ public class CombatDirector {
 
         var combatActionList = new CombatActionListObj { m_actionList = new List<CombatAction>() };
 
-        // Any caster that has not queued an action will pass their turn.
-        foreach (var subCircle in ActiveSubCircles) {
-            if (!subCircle.AddedToDuel || !subCircle.IsAlive) {
-                continue;
-            }
-
-            if (!_queuedCombatActions.Any(x => x.SpellCaster == subCircle)) {
-                var queuedAction = new QueuedCombatAction {
-                    SpellCaster = subCircle,
-                    TargetSubcircle = subCircle,
-                    Spell = null,
-                };
-                _queuedCombatActions.Add(queuedAction);
-            }
-        }
-
-        // Sort the queued actions by the caster's slot index. We'll also want to take into account
-        // the team that's going first.
-        _queuedCombatActions.Sort((a, b) =>
-        {
-            var aSlot = a.SpellCaster.SlotIndex;
-            var bSlot = b.SpellCaster.SlotIndex;
-
-            if ((int) a.SpellCaster.OccupiedTeam == _duel.m_firstTeamToAct) {
-                return -1; // Starting team goes first
-            }
-            else if ((int) b.SpellCaster.OccupiedTeam == _duel.m_firstTeamToAct) {
-                return 1;
-            }
-            else {
-                // Within the same team, sort by slot index.
-                return aSlot.CompareTo(bSlot);
-            }
-        });
-
-        // Iterate through each queued combat action and apply the spell effects.
-        foreach (var action in _queuedCombatActions) {
-            if (!action.PredeterminedSuccess && action.Spell is not null) {
-                Logger.Debug("Duel {0} | Slot {1} | Spell {2} fizzles",
-                    Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex, action.Spell.m_templateID));
-
-                var fizzleAction = new CombatAction {
-                    m_spellCaster = action.SpellCaster.SlotIndex,
-                    m_targetSubcircleList = new List<int> { action.TargetSubcircle.SlotIndex },
-                    m_showCast = true,
-                    m_spellHits = (char) 0,
-                    m_spell = action.Spell,
-                };
-                combatActionList.m_actionList.Add(fizzleAction);
-
-                continue;
-            }
-
-            var combatAction = CombatEffectApplicator.ApplyCombatAction(action);
-            combatActionList.m_actionList.Add(combatAction);
-
-            if (action.Spell is null) {
-                continue;
-            }
-
-            var combatParticipant = action.SpellCaster.CombatParticipant;
-            var spell = action.Spell;
-
-            // Remove the caster's pips.
-            combatParticipant.m_pipCount.m_genericPips -= spell.m_pipCost.m_spellRank;
-        }
-
-        // Log the combat actions.
-        foreach (var action in combatActionList.m_actionList)
-        {
-            // Spell fizzled. Do not log.
-            if (action.m_spellHits == (char) 0) {
-                continue;
-            }
-
-            var duelId = _duel.m_duelID;
-            var slot = action.m_spellCaster;
-            var spell = action.m_spell != null ? action.m_spell.m_templateID.ToString() : "None";
-            var target = string.Join(",", action.m_targetSubcircleList ?? new List<int>());
-
-            if (action.m_spell == null) {
-                Logger.Debug("Duel {0} | Slot {1} | Passes the turn", Logger.Args(duelId, slot));
-            }
-            else {
-                Logger.Debug("Duel {0} | Slot {1} | Casts spell {2} towards target(s) {3}", Logger.Args(duelId, slot, spell, target));
-            }
-        }
+        EnsureAllCastersHaveQueuedActions();
+        SortQueuedActions();
+        ProcessQueuedActions(combatActionList);
+        LogCombatActions(combatActionList);
 
         return combatActionList;
-    }
-
-    public void EndRound() {
-        _awaitingCombatMoves = false;
-        _queuedCombatActions = null;
     }
 
     public CombatPipListObj GetCombatParticipantsPips() {
@@ -251,6 +168,102 @@ public class CombatDirector {
             PredeterminedSuccess = spellHits,
         };
         _queuedCombatActions.Add(queuedAction);
+    }
+
+    private void EnsureAllCastersHaveQueuedActions() {
+        foreach (var subCircle in ActiveSubCircles) {
+            if (!subCircle.AddedToDuel || !subCircle.IsAlive) {
+                continue;
+            }
+
+            if (!_queuedCombatActions.Any(x => x.SpellCaster == subCircle)) {
+                var queuedAction = new QueuedCombatAction {
+                    SpellCaster = subCircle,
+                    TargetSubcircle = subCircle,
+                    Spell = null,
+                };
+                _queuedCombatActions.Add(queuedAction);
+            }
+        }
+    }
+
+    private void SortQueuedActions() {
+        _queuedCombatActions.Sort((a, b) => {
+            var aSlot = a.SpellCaster.SlotIndex;
+            var bSlot = b.SpellCaster.SlotIndex;
+
+            if ((int) a.SpellCaster.OccupiedTeam == _duel.m_firstTeamToAct) {
+                return -1; // Starting team goes first
+            }
+            else if ((int) b.SpellCaster.OccupiedTeam == _duel.m_firstTeamToAct) {
+                return 1;
+            }
+            else {
+                // Within the same team, sort by slot index.
+                return aSlot.CompareTo(bSlot);
+            }
+        });
+    }
+
+    private void ProcessQueuedActions(CombatActionListObj combatActionList) {
+        foreach (var action in _queuedCombatActions) {
+            if (!action.PredeterminedSuccess && action.Spell is not null) {
+                HandleFizzleAction(action, combatActionList);
+            }
+            else {
+                HandleSuccessfulAction(action, combatActionList);
+            }
+        }
+    }
+
+    private void HandleFizzleAction(QueuedCombatAction action, CombatActionListObj combatActionList) {
+        Logger.Debug("Duel {0} | Slot {1} | Spell {2} fizzles",
+            Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex, action.Spell.m_templateID));
+
+        var fizzleAction = new CombatAction {
+            m_spellCaster = action.SpellCaster.SlotIndex,
+            m_targetSubcircleList = new List<int> { action.TargetSubcircle.SlotIndex },
+            m_showCast = true,
+            m_spellHits = (char) 0,
+            m_spell = action.Spell,
+        };
+        combatActionList.m_actionList.Add(fizzleAction);
+    }
+
+    private void HandleSuccessfulAction(QueuedCombatAction action, CombatActionListObj combatActionList) {
+        var combatAction = CombatEffectApplicator.ApplyCombatAction(action);
+        combatActionList.m_actionList.Add(combatAction);
+
+        if (action.Spell is null) {
+            return;
+        }
+
+        var combatParticipant = action.SpellCaster.CombatParticipant;
+        var spell = action.Spell;
+
+        // Remove the caster's pips.
+        combatParticipant.m_pipCount.m_genericPips -= spell.m_pipCost.m_spellRank;
+    }
+
+    private void LogCombatActions(CombatActionListObj combatActionList) {
+        foreach (var action in combatActionList.m_actionList) {
+            // Spell fizzled. Do not log.
+            if (action.m_spellHits == (char) 0) {
+                continue;
+            }
+
+            var duelId = _duel.m_duelID;
+            var slot = action.m_spellCaster;
+            var spell = action.m_spell != null ? action.m_spell.m_templateID.ToString() : "None";
+            var target = string.Join(",", action.m_targetSubcircleList ?? new List<int>());
+
+            if (action.m_spell == null) {
+                Logger.Debug("Duel {0} | Slot {1} | Passes the turn", Logger.Args(duelId, slot));
+            }
+            else {
+                Logger.Debug("Duel {0} | Slot {1} | Casts spell {2} towards target(s) {3}", Logger.Args(duelId, slot, spell, target));
+            }
+        }
     }
 
     private CombatTeam DetermineFirstTeam() {
