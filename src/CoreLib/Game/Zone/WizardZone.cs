@@ -389,6 +389,7 @@ public class WizardZone : ReceiveProtocolDispatcher {
         }
         else {
             _objectSupervisorRef.Tell(msgBroadcast);
+            _sigilSupervisorRef.Tell(msgBroadcast);
         }
     }
 
