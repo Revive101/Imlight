@@ -17,9 +17,14 @@ public class QueuedCombatAction {
     public CombatDuelActorSubCircle SpellCaster;
     public CombatDuelActorSubCircle TargetSubcircle;
     public Spell Spell;
+    public bool PredeterminedSuccess;
 }
 
 public class CombatDirector {
+    private const int SPELL_ACTION_TIME = 10;
+    private const int SPELL_FIZZLE_TIME = 4;
+    private const int SPELL_PASS_TIME = 1;
+
     private readonly Duel _duel;
 
     private CombatDuelActorSubCircle[] _subCircles = new CombatDuelActorSubCircle[8];
@@ -62,17 +67,20 @@ public class CombatDirector {
         // Every spell takes 10 seconds.
         foreach (var action in _queuedCombatActions) {
             if (action.Spell != null) {
-                count += 10;
+                // Add time depending if the spell is casted or fizzles.
+                count += action.PredeterminedSuccess ? SPELL_ACTION_TIME : SPELL_FIZZLE_TIME;
             }
         }
 
-        // Every pass takes 1 seconds.
-        count += (ActiveSubCircles.Where(x => x.IsAlive).Count() - _queuedCombatActions.Count) * 1;
+        // Add how many subcircles are alive and passing their turn.
+        count += (ActiveSubCircles.Where(x => x.IsAlive).Count() - _queuedCombatActions.Count) * SPELL_PASS_TIME;
 
         return (uint) count;
     }
 
     public CombatActionListObj ApplyQueuedCombatActions() {
+        Logger.Debug("Duel {0} | Combat actions round {1}: ", Logger.Args(_duel.m_duelID, _duel.m_roundNum));
+
         var combatActionList = new CombatActionListObj { m_actionList = new List<CombatAction>() };
 
         // Any caster that has not queued an action will pass their turn.
@@ -112,6 +120,22 @@ public class CombatDirector {
 
         // Iterate through each queued combat action and apply the spell effects.
         foreach (var action in _queuedCombatActions) {
+            if (!action.PredeterminedSuccess && action.Spell is not null) {
+                Logger.Debug("Duel {0} | Slot {1} | Spell {2} fizzles",
+                    Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex, action.Spell.m_templateID));
+
+                var fizzleAction = new CombatAction {
+                    m_spellCaster = action.SpellCaster.SlotIndex,
+                    m_targetSubcircleList = new List<int> { action.TargetSubcircle.SlotIndex },
+                    m_showCast = true,
+                    m_spellHits = (char) 0,
+                    m_spell = action.Spell,
+                };
+                combatActionList.m_actionList.Add(fizzleAction);
+
+                continue;
+            }
+
             var combatAction = CombatEffectApplicator.ApplyCombatAction(action);
             combatActionList.m_actionList.Add(combatAction);
 
@@ -119,17 +143,21 @@ public class CombatDirector {
                 continue;
             }
 
-            var caster = action.SpellCaster.CombatParticipant;
+            var combatParticipant = action.SpellCaster.CombatParticipant;
             var spell = action.Spell;
 
             // Remove the caster's pips.
-            caster.m_pipCount.m_genericPips -= spell.m_pipCost.m_spellRank;
+            combatParticipant.m_pipCount.m_genericPips -= spell.m_pipCost.m_spellRank;
         }
 
         // Log the combat actions.
-        Logger.Debug("Duel {0} | Combat actions round {1}: ", Logger.Args(_duel.m_duelID, _duel.m_roundNum));
         foreach (var action in combatActionList.m_actionList)
         {
+            // Spell fizzled. Do not log.
+            if (action.m_spellHits == (char) 0) {
+                continue;
+            }
+
             var duelId = _duel.m_duelID;
             var slot = action.m_spellCaster;
             var spell = action.m_spell != null ? action.m_spell.m_templateID.ToString() : "None";
@@ -213,10 +241,14 @@ public class CombatDirector {
             return;
         }
 
+        // Determine if the spell fizzles.
+        var spellHits = spell is not null && SpellHits(caster, spell);
+
         var queuedAction = new QueuedCombatAction {
             SpellCaster = caster,
             TargetSubcircle = target,
             Spell = type == CombatMoveType.Attack ? spell : null,
+            PredeterminedSuccess = spellHits,
         };
         _queuedCombatActions.Add(queuedAction);
     }
@@ -238,5 +270,23 @@ public class CombatDirector {
         foreach (var subCircle in ActiveSubCircles) {
             action(subCircle);
         }
+    }
+
+    private bool SpellHits(CombatDuelActorSubCircle caster, Spell spell) {
+        var spellAccuracy = (int) spell.m_accuracy;
+        var stats = caster.CombatParticipant.m_pGameStats;
+        var school = (MagicSchool) spell.m_magicSchoolID;
+
+        var percentIncrease = caster.GetStatBySchool(stats.m_accBonusPercent, school);
+        var percentIncreaseAll = stats.m_accBonusPercentAll;
+        var percentDecrease = caster.GetStatBySchool(stats.m_accReducePercent, school);
+        var percentDecreaseAll = stats.m_accReducePercentAll;
+        var totalIncrease = percentIncrease + percentIncreaseAll;
+        var totalDecrease = percentDecrease + percentDecreaseAll;
+
+        var newSpellAccuracy = spellAccuracy * (1 + totalIncrease / 100.0) * (1 - totalDecrease / 100.0);
+
+        var hitChance = new Random().Next(0, 100);
+        return hitChance <= newSpellAccuracy;
     }
 }
