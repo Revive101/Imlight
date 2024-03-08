@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
@@ -74,6 +75,9 @@ public class WizardZoneSigil : WizardZoneObject {
 
     protected override void OnCreatureInteractionEnter(CoreObject creature, IActorRef suspect) {
         if (_activeDuel is null || _activeDuelActor is null) {
+            return;
+        }
+        if (_activeDuel.m_flatParticipantList.Any(x => x.m_ownerID == ActiveGameObject.m_globalID)) {
             return;
         }
 

@@ -69,7 +69,7 @@ public class CombatService : MessageService {
             itemId = wizEquipmentBehavior.GetItemInSlot(WizardData.Models.Player.EquipmentSlotType.Mount).m_globalID;
         }
         catch (Exception ex) {
-            Logger.Debug("Player Has no mount equipped good to go");
+            //Logger.Debug("Player Has no mount equipped good to go");
             return;
         }
 

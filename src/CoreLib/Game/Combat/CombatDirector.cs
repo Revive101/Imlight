@@ -88,7 +88,9 @@ public class CombatDirector {
 
         var combatActionList = new CombatActionListObj { m_actionList = new List<CombatAction>() };
 
+        // Some subcircles may not have queued actions. Ensure they do by adding a pass action.
         EnsureAllCastersHaveQueuedActions();
+
         SortQueuedActions();
         ProcessQueuedActions(combatActionList);
         LogCombatActions(combatActionList);
@@ -140,10 +142,12 @@ public class CombatDirector {
 
     public void AddCombatMove(CombatMoveType type, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target, Spell spell) {
         if (!_awaitingCombatMoves) {
-            throw new InvalidOperationException("Combat moves are not being accepted at this time.");
+            Logger.Debug("Duel {0} | Combat moves are not being accepted at this time", Logger.Args(_duel.m_duelID));
+            return;
         }
         if (!caster.AddedToDuel || !target.AddedToDuel) {
-            throw new InvalidOperationException("Both the caster and target must be added to the duel.");
+            //throw new InvalidOperationException("Both the caster and target must be added to the duel.");
+            return;
         }
         if (!caster.IsAlive) {
             throw new InvalidOperationException("The caster must be alive.");

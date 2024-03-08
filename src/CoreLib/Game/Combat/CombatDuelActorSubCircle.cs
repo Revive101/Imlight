@@ -101,6 +101,8 @@ public class CombatDuelActorSubCircle {
         };
         ParticipantActor.Tell(msg);
 
+        _duelActor.Duel.m_flatParticipantList.Add(CombatParticipant);
+
         await PlayEntranceAnimation(participantObject);
     }
 

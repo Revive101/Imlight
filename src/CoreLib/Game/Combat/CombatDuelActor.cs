@@ -195,6 +195,8 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         // Apply the queued actions and send them to the client.
         var actionExecutionTime = TimeSpan.FromSeconds(Director.GetQueuedCombatActionsTime());
         var actions = Director.ApplyQueuedCombatActions();
+        Duel.m_executionPhaseTimer = (float) actionExecutionTime.TotalSeconds;
+
         _serializer.OnPropertyMask(_combatParticipantHandFlags);
         var buffer = _serializer.Serialize(actions);
 
@@ -248,17 +250,16 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         }
 
         var subCircle = isPlayer ? GetAvailableSubCircleTeamPlayer() : GetAvailableSubCircleTeamCreature();
-        var team = isPlayer ? CombatTeam.Monster : CombatTeam.Player;
 
         if (subCircle is null || !AssignParticipantToSubCircle(subCircle, message.Participant, message.ParticipantObject)) {
             var debugMessage = "Player attempted to join duel {0}, but there were no available sub circles. " +
                                 "This should never happen. Send {1} to the duel actor first to check if there are slots available.";
-            Logger.Debug(debugMessage, Logger.Args(Duel.m_duelID, nameof(COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLE)));
+            Logger.Error(debugMessage, Logger.Args(Duel.m_duelID, nameof(COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLE)));
             return;
         }
         else {
-            Logger.Debug("Duel {0} | Participant {1} joined}.",
-                Logger.Args(Duel.m_duelID, message.ParticipantObject.m_displayKey));
+            Logger.Debug("Duel {0} | Slot {1} | Participant {2} joined",
+                Logger.Args(Duel.m_duelID, subCircle.SlotIndex,  message.ParticipantObject.m_debugName));
         }
     }
 
@@ -545,7 +546,6 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         var duel = new Duel() {
             m_duelID = sigilId,
             m_planningTimer = PLANNING_TIME,
-            m_executionPhaseTimer = 3.4078238f,
             m_scalarDamage = _combatSigilTemplate.m_scalarDamagePvE,
             m_scalarResist = _combatSigilTemplate.m_scalarResistPvE,
             m_scalarPierce = _combatSigilTemplate.m_scalarPiercePvE,
@@ -555,6 +555,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             m_resistLimit = _combatSigilTemplate.m_resistLimitPvE,
             m_rK0 = _combatSigilTemplate.m_rK0PvE,
             m_rN0 = _combatSigilTemplate.m_rN0PvE,
+            m_flatParticipantList = new List<CombatParticipant>(),
         };
 
         return duel;
