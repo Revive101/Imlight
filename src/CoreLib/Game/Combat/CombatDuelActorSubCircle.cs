@@ -63,7 +63,7 @@ public class CombatDuelActorSubCircle {
             return ParticipantObject.m_templateID == 1 ? CombatTeam.Player : CombatTeam.Monster;
         }
     }
-    internal bool IsAlive => ParticipantGameStats.m_currentHitpoints > 0;
+    internal bool IsAlive => ParticipantGameStats?.m_currentHitpoints > 0;
 
     private readonly CombatDuelActor _duelActor;
     private readonly float _radius;
@@ -145,7 +145,6 @@ public class CombatDuelActorSubCircle {
 
         return list[index];
     }
-
 
     private void InitializePlayerSubCircle() {
         var queryCharacterMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();

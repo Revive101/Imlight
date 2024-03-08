@@ -336,13 +336,17 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     private void SendCombatPhase(byte phase) {
-        var upFirstSigilSlot = (byte) (Duel.m_firstTeamToAct == (int) CombatTeam.Player ? 4 : 0);
+        // Determine what sigil slot is up first.
+        var upFirstSigilSlot = GetUpFirstSigilSlot();
 
         var serializer = new ObjectSerializer()
                 .OnBehaviors(SerializerOptions.Behaviors.None)
                 .OnPropertyMask(SerializerOptions.PropertyFlags.Public
                               | SerializerOptions.PropertyFlags.Transmit
                               | SerializerOptions.PropertyFlags.AuthorityTransmit);
+
+        // This serialized data is used for nearby players to see the combat phase.
+        // Unsure the wording, but it sounds like it's used for spectators.
         var upFirstData = serializer.Serialize(new UpFirstData() {
             /*
             Record from client. Keeping it here because it's probably important.
@@ -369,9 +373,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     private void SendUpFirst(int roundNum) {
-        // This serialized data is used for nearby players to see the combat phase.
-        // Unsure the wording, but it sounds like it's used for spectators.
-        var upFirstSigilSlot = (byte) (Duel.m_firstTeamToAct == (int) CombatTeam.Player ? 4 : 0);
+        var upFirstSigilSlot = GetUpFirstSigilSlot();
 
         var upFirstMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATUPFIRST {
             DuelID = SigilId,
@@ -651,6 +653,24 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
     private bool HaveCreaturesWon() {
         var playersAlive = _subCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Player && x.IsAlive);
         return playersAlive <= 0;
+    }
+
+    private byte GetUpFirstSigilSlot() {
+        var upFirstSigilSlot = 0;
+
+        // Define the relevant CombatSlotType
+        var targetType = Duel.m_firstTeamToAct == (int) CombatTeam.Player
+                                     ? CombatSlotType.Player
+                                     : CombatSlotType.Monster;
+
+        for (int i = 0; i < _subCircles.Length; i++) {
+            if (_subCircles[i].SlotType == targetType && _subCircles[i].IsAlive) {
+                upFirstSigilSlot = _subCircles[i].SlotIndex;
+                break;
+            }
+        }
+
+        return (byte) upFirstSigilSlot;
     }
 
     private ByteString SerializeCombatParticipant(CombatParticipant participant) {
