@@ -96,8 +96,7 @@ public class WizardZonePath : ReceiveProtocolDispatcher, IWithTimers {
 
             var interval = TimeSpan.FromSeconds(spawnObject.m_spawnTime);
             if (interval <= TimeSpan.Zero) {
-                Logger.Warning("Creature {0} has a spawn interval of 0 seconds. This is not allowed.",
-                    Logger.Args(spawnObject.m_name));
+                Timers.StartSingleTimer("spawninterval", msg, TimeSpan.Zero);
                 continue;
             }
 
