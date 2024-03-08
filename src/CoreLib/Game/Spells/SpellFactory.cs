@@ -23,8 +23,14 @@ public static class SpellFactory {
         var spellTemplatePath = $"Spells/{effect.m_spellName}.xml";
         var spellTemplate = RootArchiveLoader.GetFile<SpellTemplate>(spellTemplatePath);
         if (spellTemplate is null) {
-            Logger.Warning("Could not find spell template {0}.", Logger.Args(effect.m_spellName));
-            return null;
+            // The spell may be in tiered spells directory.
+            spellTemplatePath = $"Spells/Tiered Spells/{effect.m_spellName}.xml";
+            spellTemplate = RootArchiveLoader.GetFile<SpellTemplate>(spellTemplatePath);
+
+            if (spellTemplate is null) {
+                Logger.Warning("Could not find spell template {0}.", Logger.Args(effect.m_spellName));
+                return null;
+            }
         }
 
         var spellTemplateId = CoreObjectFactory.GetCoreTemplateID(spellTemplatePath);
