@@ -4,6 +4,7 @@
  */
 
 using Imlight.Common;
+using Imlight.Common.Cryptography;
 using Imlight.CoreLib.Shared.Resources;
 using System;
 using System.Collections.Generic;
@@ -69,6 +70,7 @@ public static class SpellFactory {
             m_treasureCard = template.m_Treasure,
             m_spellID = spellId,
             m_itemCard = true,
+            m_magicSchoolID = StringHash.Compute(spellTemplate.m_sMagicSchoolName),
         };
 
         return spell;

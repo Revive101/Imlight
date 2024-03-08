@@ -89,40 +89,22 @@ internal static class CombatEffectApplicator {
     }
 
     private static double GetFlatDamageIncrease(CombatDuelActorSubCircle caster, MagicSchool damageType) {
-        double damageFlatIncrease = GetValueAtIndex(caster.ParticipantGameStats.m_dmgBonusFlat, damageType);
+        double damageFlatIncrease = caster.GetStatBySchool(caster.ParticipantGameStats.m_dmgBonusFlat, damageType);
         return damageFlatIncrease + caster.ParticipantGameStats.m_dmgBonusFlatAll;
     }
 
     private static double GetPercentDamageIncrease(CombatDuelActorSubCircle caster, MagicSchool damageType) {
-        double damagePercentIncrease = GetValueAtIndex(caster.ParticipantGameStats.m_dmgBonusPercent, damageType);
+        double damagePercentIncrease = caster.GetStatBySchool(caster.ParticipantGameStats.m_dmgBonusPercent, damageType);
         return damagePercentIncrease + caster.ParticipantGameStats.m_dmgBonusPercentAll;
     }
 
     private static double GetFlatDamageReduction(CombatDuelActorSubCircle target, MagicSchool damageType) {
-        double damageReductionFlat = GetValueAtIndex(target.ParticipantGameStats.m_dmgReduceFlat, damageType);
+        double damageReductionFlat = target.GetStatBySchool(target.ParticipantGameStats.m_dmgReduceFlat, damageType);
         return damageReductionFlat + target.ParticipantGameStats.m_dmgReduceFlatAll;
     }
 
     private static double GetPercentDamageReduction(CombatDuelActorSubCircle target, MagicSchool damageType) {
-        double damageReductionPercent = GetValueAtIndex(target.ParticipantGameStats.m_dmgReducePercent, damageType);
+        double damageReductionPercent = target.GetStatBySchool(target.ParticipantGameStats.m_dmgReducePercent, damageType);
         return damageReductionPercent + target.ParticipantGameStats.m_dmgReducePercentAll;
-    }
-
-    private static T GetValueAtIndex<T>(List<T> list, Enum enumValue) {
-        if (list is null || list.Count <= 0) {
-            return default;
-        }
-
-        if (!typeof(T).IsPrimitive && !typeof(T).IsEnum) {
-            throw new ArgumentException("List items must be primitive types or enums");
-        }
-
-        int index = Array.IndexOf(Enum.GetValues(enumValue.GetType()), enumValue);
-
-        if (index == -1 || list.Count <= index) {
-            return default;
-        }
-
-        return list[index];
     }
 }

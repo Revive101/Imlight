@@ -7,7 +7,10 @@ using Akka.Actor;
 using Imlight.Common.Caches;
 using Imlight.CoreLib.Game.Models.World;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.WizardData.Models.Player;
 using SharpDX;
+using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using static Imlight.Common.Caches.TypeCache;
 using static Imlight.Common.Caches.TypeCache.CombatParticipant;
@@ -122,6 +125,27 @@ public class CombatDuelActorSubCircle {
 
         return _combatHand.LastGivenHand[index];
     }
+
+    internal T GetStatBySchool<T>(List<T> list, MagicSchool enumValue) {
+        if (list is null || list.Count <= 0) {
+            return default;
+        }
+
+        if (!typeof(T).IsPrimitive && !typeof(T).IsEnum) {
+            throw new ArgumentException("List items must be primitive types or enums");
+        }
+
+        var names = Enum.GetNames(typeof(MagicSchool));
+        var val = enumValue.ToString();
+        int index = Array.IndexOf(Enum.GetNames(typeof(MagicSchool)), enumValue.ToString());
+
+        if (index == -1 || list.Count <= index) {
+            return default;
+        }
+
+        return list[index];
+    }
+
 
     private void InitializePlayerSubCircle() {
         var queryCharacterMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
