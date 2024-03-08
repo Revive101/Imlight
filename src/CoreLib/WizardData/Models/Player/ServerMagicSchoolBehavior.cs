@@ -22,6 +22,10 @@ public enum MagicSchool {
     Death = 78318724,
     Storm = 83375795,
     Balance = 1027491821,
+    Sun = 78483,
+    Star = 2625203,
+    Moon = 2504141,
+    Shadow = 1429009101,
 }
 
 [Serializable]
