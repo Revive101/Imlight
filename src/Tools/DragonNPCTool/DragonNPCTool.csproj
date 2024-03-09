@@ -17,7 +17,6 @@
 
     <ItemGroup>
         <ProjectReference Include="..\..\Common\Imlight.Common.csproj" />
-        <ProjectReference Include="..\..\CoreLib\Imlight.CoreLib.csproj" />
     </ItemGroup>
 
 
