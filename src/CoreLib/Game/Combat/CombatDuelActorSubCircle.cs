@@ -101,7 +101,7 @@ public class CombatDuelActorSubCircle {
         };
         ParticipantActor.Tell(msg);
 
-        _duelActor.Duel.m_flatParticipantList.Add(CombatParticipant);
+        //_duelActor.Duel.m_flatParticipantList.Add(CombatParticipant);
 
         await PlayEntranceAnimation(participantObject);
     }
@@ -168,7 +168,7 @@ public class CombatDuelActorSubCircle {
             m_teamID = 0,
             m_primaryMagicSchoolID = (int) wizard.MagicSchoolBehavior.MagicSchool,
             m_pipCount = new() { m_powerPips = 0, m_genericPips = 0 },
-            m_pipRoundRates = new(),
+            m_pipRoundRates = new() { new ModifyPipRoundRateData { m_delta = 1, m_rounds = 1 } },
             m_originalTeam = 0,
             m_maxHandSize = 7,
             m_playerHealth = ParticipantGameStats.m_currentHitpoints,
@@ -205,7 +205,7 @@ public class CombatDuelActorSubCircle {
             m_maxHandSize = 7,
             m_primaryMagicSchoolID = 83375795,
             m_pipCount = new() { m_powerPips = 0, m_genericPips = 0 },
-            m_pipRoundRates = new(),
+            m_pipRoundRates = new() { new ModifyPipRoundRateData { m_delta = 1, m_rounds = 1 } },
             m_playerHealth = creatureStats.GameStats.m_currentHitpoints,
             m_maxPlayerHealth = creatureStats.GameStats.m_baseHitpoints,
             m_myTeamTurn = _duelActor.Duel.m_firstTeamToAct == 1,

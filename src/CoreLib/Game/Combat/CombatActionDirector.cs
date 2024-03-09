@@ -20,7 +20,7 @@ public class QueuedCombatAction {
     public bool PredeterminedSuccess;
 }
 
-public class CombatDirector {
+public class CombatActionDirector {
     private const int SPELL_ACTION_TIME = 10;
     private const int SPELL_FIZZLE_TIME = 4;
     private const int SPELL_PASS_TIME = 1;
@@ -33,7 +33,7 @@ public class CombatDirector {
     private List<QueuedCombatAction> _queuedCombatActions;
 
     // ctor
-    public CombatDirector(Duel duel, CombatDuelActorSubCircle[] actorSubCircles) {
+    public CombatActionDirector(Duel duel, CombatDuelActorSubCircle[] actorSubCircles) {
         _duel = duel;
         _subCircles = actorSubCircles;
         _duel.m_firstTeamToAct = (int) DetermineFirstTeam();
@@ -180,7 +180,7 @@ public class CombatDirector {
                 continue;
             }
 
-            if (!_queuedCombatActions.Any(x => x.SpellCaster == subCircle)) {
+            if (!_queuedCombatActions.Any(x => x.SpellCaster.SlotIndex == subCircle.SlotIndex)) {
                 var queuedAction = new QueuedCombatAction {
                     SpellCaster = subCircle,
                     TargetSubcircle = subCircle,
