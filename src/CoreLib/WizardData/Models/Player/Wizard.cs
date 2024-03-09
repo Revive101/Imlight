@@ -169,7 +169,7 @@ public class Wizard : IDisposable {
         MarkedZone = zone;
 
         // Persistent save.
-        WizardCollection.UpdateCharcterMarkedLocation(this, loc, orientation, zone);
+        WizardCollection.UpdateCharacterMarkedLocation(this, loc, orientation, zone);
     }
 
     public void SetMaxGold(int maxGold) {
