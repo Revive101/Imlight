@@ -124,10 +124,11 @@ public static class WizardCollection {
     }
 
     public static void UpdateCharcterMarkedLocation(Wizard characrer, Vector3 location, Vector3 orientation, string ZoneName) {
+    public static void UpdateCharacterMarkedLocation(Wizard character, Vector3 location, Vector3 orientation, string ZoneName) {
         using var session = s_store.OpenSession();
 
         var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
-            .FirstOrDefault(x => x.CharId == characrer.CharId);
+            .FirstOrDefault(x => x.CharId == character.CharId);
         if (existingCharacter is null) {
             return;
         }
