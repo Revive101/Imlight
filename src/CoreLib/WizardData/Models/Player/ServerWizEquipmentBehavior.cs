@@ -87,6 +87,10 @@ public class ServerWizEquipmentBehavior : BehaviorInstance, IClientBehaviorProvi
         return true;
     }
 
+    public WizClientObjectItem GetItem(ulong globalId) {
+        return EquippedItems.FirstOrDefault(item => item.m_globalID == globalId);
+    }
+
     public WizClientObjectItem GetItemInSlot(string slotName) {
         // Cast the slot name to an enum value.
         if (!Enum.TryParse(typeof(EquipmentSlotType), slotName, true, out var slot)) {
@@ -133,6 +137,7 @@ public class ServerWizEquipmentBehavior : BehaviorInstance, IClientBehaviorProvi
 
         return (byte) slotIndex;
     }
+
 
     private void UpdateEquipmentSlot(EquipmentSlotType slotType, string itemName,  ulong newItemId) {
         // Find the slot in the list. If it does, remove it.

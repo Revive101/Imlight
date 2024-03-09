@@ -30,6 +30,7 @@ public class Wizard : IDisposable {
     public ulong CharId { get; set; }
     public string Zone { get; set; }
     public string ZoneDisplayName { get; set; }
+    public string MarkedZone { get; set; }
     public byte World { get; set; }
     public Vector3 Location {
         get => GameObject?.m_location ?? _location;
@@ -53,6 +54,9 @@ public class Wizard : IDisposable {
             }
         }
     }
+
+    public Vector3 MarkedLocation { get; set; }
+    public Vector3 MarkedOrientation { get; set; }
 
     public WizardCharacterBehavior WizardAvatar { get; set; }
     public ServerWizPlayerNameBehavior PlayerNameBehavior { get; set; }
@@ -159,19 +163,60 @@ public class Wizard : IDisposable {
         return true;
     }
 
+    public void SetMarkedLocation(Vector3 loc, Vector3 orientation, string zone) {
+        MarkedLocation = loc;
+        MarkedOrientation = orientation;
+        MarkedZone = zone;
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterMarkedLocation(this, loc, orientation, zone);
+    }
+
+    public void SetMaxGold(int maxGold) {
+        GameStats.m_baseGoldPouch = maxGold;
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterGameStats(this);
+    }
+
+    public void AddGold(int gold) {
+        if (GameStats.m_currentGold + gold > GameStats.m_baseGoldPouch) {
+            GameStats.m_currentGold = GameStats.m_baseGoldPouch; // Do not exceed gold pouch.
+        } else {
+            GameStats.m_currentGold += gold;
+        }
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterGameStats(this);
+    }
+
+    public void RemoveGold(int gold) {
+        GameStats.m_currentGold -= gold;
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterGameStats(this);
+    }
+
     public bool AddItemToInventory(ulong itemId, out WizClientObjectItem item) {
         item = (WizClientObjectItem) CoreObjectFactory.FinalizeCoreObject(itemId);
         item.m_characterId = (GID) CharId;
 
+        return AddItemToInventory(item);
+    }
+
+    public bool AddItemToInventory(WizClientObjectItem item) {
         if (item is null) {
-            Logger.Warning("Cannot add item to inventory with ID {0} because that item does not exist.", Logger.Args(itemId));
+            Logger.Warning("Cannot add item to inventory because that item does not exist.");
             return false;
         }
 
+        // Ensure that the item is associated with this Wizard.
+        item.m_characterId = (GID) CharId;
+
         var success = InventoryBehavior.AddItem(item);
         if (!success) {
-            Logger.Warning("Could not add item {0} to player {1}'s inventory.", Logger.Args(itemId, PlayerNameBehavior.GetWizardName()));
-            item = null;
+            Logger.Warning("Could not add item {0} to player {1}'s inventory.",
+                Logger.Args(item.m_globalID, PlayerNameBehavior.GetWizardName()));
             return false;
         }
 

@@ -53,7 +53,7 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
     public static Props Props() => Akka.Actor.Props.Create(() => new CommandDispatcher());
 
     private void ExecuteCommand(string commandName, CommandContext context) {
-        commandName = commandName.Trim().ToLower();
+        commandName = commandName.Trim();
 
         // The group name will be the first word in the command.
         var split = commandName.Split(' ');
@@ -63,8 +63,8 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
             return;
         }
 
-        var protocolName = split[0];
-        var command = split.Length > 1 ? split[1] : "";
+        var protocolName = split[0].ToLower();
+        var command = split.Length > 1 ? split[1].ToLower() : "";
 
         if (s_protocols.TryGetValue(protocolName, out var protocol)) {
             // Create new parameters with the first two words removed.

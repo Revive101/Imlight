@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net7.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="FuzzySharp" Version="2.0.2" />
+        <PackageReference Include="RavenDB.Client" Version="5.4.109" />
+        <PackageReference Include="RavenDB.Embedded" Version="5.4.109" />
+        <PackageReference Include="SharpDX.Mathematics" Version="4.2.0" />
+        <PackageReference Include="Spectre.Console" Version="0.47.1-preview.0.27" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\Common\Imlight.Common.csproj" />
+    </ItemGroup>
+
+
+
+</Project>

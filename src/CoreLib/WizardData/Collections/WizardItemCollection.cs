@@ -209,6 +209,36 @@ public static class WizardItemCollection {
     }
 
     /// <summary>
+    /// Applies the specified dye colors and pattern to the given WizClientObjectItem.
+    /// </summary>
+    /// <param name="item">The WizClientObjectItem to apply the dye to.</param>
+    /// <param name="texture">The primary color texture to apply.</param>
+    /// <param name="decal">The secondary color decal to apply.</param>
+    /// <param name="decal2">The pattern decal to apply.</param>
+    /// <returns>True if the dye was successfully applied, false otherwise.</returns>
+    public static bool ApplyAllDye(WizClientObjectItem item, int texture, int decal, int decal2) {
+        using var session = s_store.OpenSession();
+
+        // Get the item from the items collection.
+        var associatedItem = session.Query<WizClientObjectItem>(collectionName: CollectionName)
+            .FirstOrDefault(x => x.m_globalID == item.m_globalID && x.m_characterId == item.m_characterId);
+
+        // If the item was not found, return false.
+        if (associatedItem == null) {
+            return false;
+        }
+
+        // Apply the primary and secondary dye to the item.
+        associatedItem.m_primaryColor = texture;
+        associatedItem.m_secondaryColor = decal;
+        associatedItem.m_pattern = decal2;
+
+        // Save the changes.
+        session.SaveChanges();
+        return true;
+    }
+
+    /// <summary>
     /// Tries to retrieve the entire inventory of a player.
     /// </summary>
     /// <param name="playerId">The ID of the player.</param>
