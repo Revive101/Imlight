@@ -144,11 +144,13 @@ internal class CommandModifyProtocol : CommandProtocol {
     [Command("spell")]
     [AuthRequired(AuthLevel.QualityAssurance)]
     private void SetSpellCommand(string action, string spellId) {
+        var convertedSpellId = Convert.ToInt32(spellId);
+
         switch (action) {
             case "add":
             case "a":
                 Context.SessionActor.Tell(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTOBOOK() {
-                    SpellID = Convert.ToInt32(spellId)
+                    SpellID = convertedSpellId
                 }, null);
 
                 break;
@@ -156,7 +158,7 @@ internal class CommandModifyProtocol : CommandProtocol {
             case "rem":
             case "r":
                 Context.SessionActor.Tell(new WIZARD_12_PROTOCOL.MSG_REMOVESPELLFROMBOOK() {
-                    SpellID = Convert.ToInt32(spellId)
+                    SpellID = convertedSpellId
                 }, null);
                 break;
         }
