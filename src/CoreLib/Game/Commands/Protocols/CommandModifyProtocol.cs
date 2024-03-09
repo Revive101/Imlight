@@ -182,4 +182,27 @@ internal class CommandModifyProtocol : CommandProtocol {
 
         InformSenderClient($"Added {goldInt} gold.");
     }
+  
+    [Command("spell")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void SetSpellCommand(string action, string spellId) {
+        var convertedSpellId = Convert.ToInt32(spellId);
+
+        switch (action) {
+            case "add":
+            case "a":
+                Context.SessionActor.Tell(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTOBOOK() {
+                    SpellID = convertedSpellId
+                }, null);
+
+                break;
+            case "remove":
+            case "rem":
+            case "r":
+                Context.SessionActor.Tell(new WIZARD_12_PROTOCOL.MSG_REMOVESPELLFROMBOOK() {
+                    SpellID = convertedSpellId
+                }, null);
+                break;
+        }
+    }
 }
