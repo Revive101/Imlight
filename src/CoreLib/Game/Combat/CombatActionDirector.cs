@@ -172,22 +172,24 @@ public class CombatActionDirector {
             PredeterminedSuccess = spellHits,
         };
         _queuedCombatActions.Add(queuedAction);
+
+        Logger.Information("Duel {0} | Slot {1} | Queued spell {2} towards target {3}",
+            Logger.Args(_duel.m_duelID, caster.SlotIndex, spell.m_templateID, target.SlotIndex));
     }
 
     private void EnsureAllCastersHaveQueuedActions() {
-        foreach (var subCircle in ActiveSubCircles) {
-            if (!subCircle.AddedToDuel || !subCircle.IsAlive) {
-                continue;
-            }
+        var castersWithoutActions = ActiveSubCircles
+            .Where(subCircle => subCircle.AddedToDuel && subCircle.IsAlive)
+            .Except(_queuedCombatActions.Select(action => action.SpellCaster))
+            .ToList();
 
-            if (!_queuedCombatActions.Any(x => x.SpellCaster.SlotIndex == subCircle.SlotIndex)) {
-                var queuedAction = new QueuedCombatAction {
-                    SpellCaster = subCircle,
-                    TargetSubcircle = subCircle,
-                    Spell = null,
-                };
-                _queuedCombatActions.Add(queuedAction);
-            }
+        foreach (var subCircle in castersWithoutActions) {
+            var queuedAction = new QueuedCombatAction {
+                SpellCaster = subCircle,
+                TargetSubcircle = subCircle,
+                Spell = null
+            };
+            _queuedCombatActions.Add(queuedAction);
         }
     }
 

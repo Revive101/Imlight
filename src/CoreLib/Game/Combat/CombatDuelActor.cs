@@ -279,6 +279,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         var slotAvailable = (message.Team == CombatTeam.Player)
             ? PlayerCount   < 4
             : CreatureCount < (PlayerCount * 2) && CreatureCount < 4;
+            //: CreatureCount < 4;
         var rsp = new COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLERSP { Available = slotAvailable };
         Sender.Tell(rsp);
     }
@@ -308,15 +309,12 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             // Find what spell they were casting.
             var spell = subCircle.GetSpellFromLastHand(message.SpellSelection);
             Director.AddCombatMove(moveType, subCircle, targetOrSelf, spell);
-
-            Logger.Debug("Duel {0} | Slot {1} | Gave combat move type {2}: {3}",
-                Logger.Args(Duel.m_duelID, subCircle.SlotIndex, moveType, spell?.m_templateID.ToString() ?? "Pass"));
         }
     }
 
     private void SendCombatParticipants() {
         EnactActionOnSubCircles(circle => {
-            if (circle.AddedToDuel) {
+            if (circle.AddedToDuel || !circle.Occupied) {
                 return;
             }
 
@@ -637,7 +635,8 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             _playerCount++;
         }
 
-        subCircle.AssignParticipant(actorRef, coreObject);
+        var combatParticipant = subCircle.AssignParticipant(actorRef, coreObject);
+        Duel.m_flatParticipantList.Add(combatParticipant);
 
         return true;
     }

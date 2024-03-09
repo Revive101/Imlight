@@ -80,7 +80,7 @@ public class CombatDuelActorSubCircle {
         SlotIndex = index;
     }
 
-    internal async Task AssignParticipant(IActorRef actor, CoreObject participantObject) {
+    internal CombatParticipant AssignParticipant(IActorRef actor, CoreObject participantObject) {
         ParticipantActor = actor;
         ParticipantObject = participantObject;
         var team = participantObject.m_templateID == 1 ? CombatTeam.Player : CombatTeam.Monster;
@@ -101,9 +101,9 @@ public class CombatDuelActorSubCircle {
         };
         ParticipantActor.Tell(msg);
 
-        //_duelActor.Duel.m_flatParticipantList.Add(CombatParticipant);
+        PlayEntranceAnimation(participantObject);
 
-        await PlayEntranceAnimation(participantObject);
+        return this.CombatParticipant;
     }
 
     internal Hand DrawHand() {
@@ -165,10 +165,11 @@ public class CombatDuelActorSubCircle {
             m_ownerID = ParticipantObject.m_globalID,
             m_templateID = 219902325553, // recorded from live
             m_isPlayer = true,
+            m_isMonster = 0,
             m_teamID = 0,
             m_primaryMagicSchoolID = (int) wizard.MagicSchoolBehavior.MagicSchool,
-            m_pipCount = new() { m_powerPips = 0, m_genericPips = 0 },
-            m_pipRoundRates = new() { new ModifyPipRoundRateData { m_delta = 1, m_rounds = 1 } },
+            m_pipCount = new() { m_powerPips = 0, m_genericPips = 1 },
+            m_pipRoundRates = new(),
             m_originalTeam = 0,
             m_maxHandSize = 7,
             m_playerHealth = ParticipantGameStats.m_currentHitpoints,
@@ -177,7 +178,7 @@ public class CombatDuelActorSubCircle {
             m_pGameStats = ParticipantGameStats,
             m_pPlayDeck = new PlayDeck(),
             m_subcircle = SlotIndex,
-            m_dynamicSymbol = dynamicSymbol,
+            m_dynamicSymbol = DynamicSigilSymbol.NotSet,
 
             m_color = _color,
             m_rotation = _rotation,
@@ -199,7 +200,7 @@ public class CombatDuelActorSubCircle {
             m_ownerID = ParticipantObject.m_globalID,
             m_templateID = 2199023290637, // Captured 2199023290637 from live
             m_isPlayer = false,
-            m_isMonster = 1u,
+            //m_isMonster = 1u, // Doesn't seem to be used.
             m_teamID = 1,
             m_originalTeam = 1,
             m_maxHandSize = 7,
@@ -213,7 +214,7 @@ public class CombatDuelActorSubCircle {
             m_mobLevel = creatureStats.CombatLevel,
 
             m_subcircle = SlotIndex,
-            m_dynamicSymbol = dynamicSymbol,
+            m_dynamicSymbol = DynamicSigilSymbol.NotSet,
 
             m_color = _color,
             m_rotation = _rotation,
