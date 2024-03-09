@@ -28,16 +28,6 @@ public class InventoryService : MessageService {
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new InventoryService(parentActor));
 
-    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_REQUESTRADIALQUICKCHAT))]
-    private void ReceiveRequestRadialQuickChat(GAME_5_PROTOCOL.MSG_REQUESTRADIALQUICKCHAT message) {
-        // todo: make this a chat command
-        new int[] { 2066, 860841451, 2537945, 203556948 }.ForEach(spellId => {
-            SendToSocket(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTOBOOK() {
-                SpellID = spellId
-            });
-        });
-    }
-
     #region Destroy/Feed Inventoryitem
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_TRASHINVENTORYITEM))]
