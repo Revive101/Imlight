@@ -18,6 +18,7 @@ using static Imlight.Common.Caches.TypeCache;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.Common;
+using Imlight.CoreLib.WizardData.Models.World;
 
 namespace Imlight.CoreLib.Game.Services;
 internal class ShopService : MessageService {
@@ -187,7 +188,7 @@ internal class ShopService : MessageService {
 
         var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG() {
             GameObjectID = wizard.CharId,
-            WizBangID = 0
+            WizBangID = (uint) WizBangs.None
         };
         ZoneBroadcast(wizBangMsg, false);
     }

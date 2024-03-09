@@ -15,6 +15,7 @@ using Imlight.CoreLib.Game.Zone;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Models.Player;
 using static Imlight.Common.Caches.TypeCache;
+using Imlight.CoreLib.WizardData.Models.World;
 
 namespace Imlight.CoreLib.Game.Services;
 internal class InteractService : MessageService {
@@ -103,7 +104,7 @@ internal class InteractService : MessageService {
 
         var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG() {
             GameObjectID = wizard.CharId,
-            WizBangID = StringHash.Compute("Registrar")
+            WizBangID = (uint) WizBangs.Registrar
         };
         ZoneBroadcast(wizBangMsg, false);
     }
@@ -123,7 +124,7 @@ internal class InteractService : MessageService {
 
         var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG() {
             GameObjectID = wizard.CharId,
-            WizBangID = StringHash.Compute("Registrar")
+            WizBangID = (uint) WizBangs.Registrar
         };
         ZoneBroadcast(wizBangMsg, false);
     }
