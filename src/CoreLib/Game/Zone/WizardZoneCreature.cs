@@ -375,7 +375,7 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
     private void Die() {
         // Broadcast the death of this creature to all players.
         var broadcastMSg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-            Message = new GAME_5_PROTOCOL.MSG_REMOVEOBJECT {
+            Message = new GAME_5_PROTOCOL.MSG_DELETEOBJECT {
                 GameObjectID = ActiveGameObject.m_globalID
             },
             Selfless = true,
