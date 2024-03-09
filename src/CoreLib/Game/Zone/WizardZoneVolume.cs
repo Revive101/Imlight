@@ -50,4 +50,19 @@ public class WizardZoneVolume : WizardZoneObject {
             WizardZoneRef.Tell(msg);
         }
     }
+
+    protected override void OnStatusCheck() {
+        // Volumes don't have templates like normal zone objects do.
+        var failure = ActiveGameObject == null;
+        var reason = failure ? "Object or template is null." : null;
+
+        var rsp = new ZONE_102_PROTOCOL.MSG_OBJECTSTATUSCHECKRSP {
+            ZoneObject = this,
+            CoreObject = ActiveGameObject,
+            Failure = failure,
+            Error = reason
+        };
+
+        Sender.Tell(rsp);
+    }
 }

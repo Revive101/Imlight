@@ -132,10 +132,52 @@ internal class CommandModifyProtocol : CommandProtocol {
 
     [Command("name")]
     [AuthRequired(AuthLevel.QualityAssurance)]
-    private void SetNameCommand(string name) {
+    private void SetNameCommand([Remainder]string name) {
         // Set the name of the character.
         Context.Character.SetNameOverride(name);
 
         InformSenderClient($"Set name to {name}. Relog to see changes.");
+    }
+
+    [Command("maxgold")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void SetMaxGoldCommand(string gold) {
+        // Try to parse the gold.
+        if (!int.TryParse(gold, out var goldInt)) {
+            InformSenderClient("Invalid maximum gold amount.");
+            return;
+        }
+
+        // Set the max gold amount.
+        Context.Character.SetMaxGold(goldInt);
+
+        var networkMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEGOLD() {
+            Gold = Context.Character.GameStats.m_currentGold,
+            MaxGold = goldInt
+        };
+        Context.SessionActor.Tell(networkMessage, null);
+
+        InformSenderClient($"Set max gold to {goldInt}.");
+    }
+
+    [Command("addgold")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void AddGoldCommand(string gold) {
+        // Try to parse the gold.
+        if (!int.TryParse(gold, out var goldInt)) {
+            InformSenderClient("Invalid gold amount.");
+            return;
+        }
+
+        // Set the gold amount.
+        Context.Character.AddGold(goldInt);
+
+        var networkMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEGOLD() {
+            Gold = Context.Character.GameStats.m_currentGold,
+            MaxGold = Context.Character.GameStats.m_baseGoldPouch
+        };
+        Context.SessionActor.Tell(networkMessage, null);
+
+        InformSenderClient($"Added {goldInt} gold.");
     }
 }

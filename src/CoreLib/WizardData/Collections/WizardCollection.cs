@@ -124,6 +124,27 @@ public static class WizardCollection {
     }
 
     /// <summary>
+    /// Updates the marked location, orientation, and zone of a character.
+    /// <paramref name="character"/>The character to update.</param>
+    /// <param name="location">The new location of the character.</param>
+    /// <param name="orientation">The new orientation of the character.</param>
+    /// <param name="ZoneName">The new zone of the character.</param>
+    public static void UpdateCharacterMarkedLocation(Wizard character, Vector3 location, Vector3 orientation, string ZoneName) {
+        using var session = s_store.OpenSession();
+
+        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
+            .FirstOrDefault(x => x.CharId == character.CharId);
+        if (existingCharacter is null) {
+            return;
+        }
+
+        existingCharacter.MarkedLocation = location;
+        existingCharacter.MarkedOrientation = orientation;
+        existingCharacter.MarkedZone = ZoneName;
+        session.SaveChanges();
+    }
+
+    /// <summary>
     /// Updates the equipment of a character in the wizard collection.
     /// </summary>
     /// <param name="wizard">The wizard object containing the updated equipment.</param>
@@ -189,6 +210,23 @@ public static class WizardCollection {
         }
 
         existingCharacter.PlayerNameBehavior.NameOverride = wizard.PlayerNameBehavior.NameOverride;
+        session.SaveChanges();
+    }
+
+    /// <summary>
+    /// Updates the character game stats for a wizard.
+    /// </summary>
+    /// <param name="wizard">The wizard object containing the updated game stats</param>
+    public static void UpdateCharacterGameStats(Wizard wizard) {
+        using var session = s_store.OpenSession();
+
+        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
+            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        if (existingCharacter is null) {
+            return;
+        }
+
+        existingCharacter.GameStats = wizard.GameStats;
         session.SaveChanges();
     }
 }

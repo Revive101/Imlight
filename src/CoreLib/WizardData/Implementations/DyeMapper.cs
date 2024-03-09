@@ -16,8 +16,6 @@ public static class DyeMapper {
     /// <param name="item">The WizClientObjectItem to apply the dye color to.</param>
     /// <param name="primaryColor">The primary dye color to apply.</param>
     public static void ApplyPrimaryDye(WizClientObjectItem item, DyeColor primaryColor) {
-        // todo: check if the item is dyeable
-        // todo: check if the item has this dye as an option
         item.m_primaryColor = (int) primaryColor;
 
         var persistentSaveSuccess = WizardItemCollection.ApplyPrimaryDye(item, (int) primaryColor);
@@ -33,13 +31,30 @@ public static class DyeMapper {
     /// <param name="item">The WizClientObjectItem to apply the secondary dye color to.</param>
     /// <param name="secondaryColor">The secondary dye color to apply.</param>
     public static void ApplySecondaryDye(WizClientObjectItem item, DyeColor secondaryColor) {
-        // todo: check if the item is dyeable
-        // todo: check if the item has this dye as an option
         item.m_secondaryColor = (int) secondaryColor;
 
         var persistentSaveSuccess = WizardItemCollection.ApplySecondaryDye(item, (int) secondaryColor);
         if (!persistentSaveSuccess) {
             Logger.Error("Failed to save secondary dye {0} for item {1}", Logger.Args(secondaryColor, item.m_globalID));
+            return;
+        }
+    }
+
+    /// <summary>
+    /// Applies the specified dye colors to the given WizClientObjectItem.
+    /// </summary>
+    /// <param name="item">The WizClientObjectItem to apply the dye colors to.</param>
+    /// <param name="texture">The primary dye color.</param>
+    /// <param name="decal">The secondary dye color.</param>
+    /// <param name="decal2">The tertiary dye color.</param>
+    public static void ApplyAllDye(WizClientObjectItem item, DyeColor texture, DyeColor decal, DyeColor decal2) {
+        item.m_primaryColor = (int) texture;
+        item.m_secondaryColor = (int) decal;
+        item.m_pattern = (int) decal2;
+
+        var persistentSaveSuccess = WizardItemCollection.ApplyAllDye(item, (int) texture, (int) decal, (int) decal2);
+        if (!persistentSaveSuccess) {
+            Logger.Error("Failed to save all dye {0} for item {1}", Logger.Args(texture, item.m_globalID));
             return;
         }
     }

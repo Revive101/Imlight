@@ -19,38 +19,39 @@ internal class Joji : EmbeddedAccount {
                 m_eGender = eGender.Male,
                 m_eRace = eRace.Human,
                 m_extendedHairColor = 0,
-                m_nFeetColor = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5) 0,
-                m_nFeetDecal = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5) 8,
-                m_nHairColor = (Imlight.Common.ObjectProperty.PropertyReflection.Bui7) 40,
-                m_nHairModel = (Imlight.Common.ObjectProperty.PropertyReflection.Bui4) 4,
-                m_nHatColor = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5) 6,
-                m_nHatDecal = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5) 6,
+                m_nFeetColor = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5) 5,
+                m_nFeetDecal = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5) 2,
+                m_nHairColor = (Imlight.Common.ObjectProperty.PropertyReflection.Bui7) 60,
+                m_nHairModel = (Imlight.Common.ObjectProperty.PropertyReflection.Bui4) 6,
+                m_nHatColor = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5) 5,
+                m_nHatDecal = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5) 2,
                 m_nSkinColor = (Imlight.Common.ObjectProperty.PropertyReflection.Bui4) 0,
                 m_nSkinDecal2 = 0,
-                m_nTorsoColor = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5) 0,
-                m_nTorsoDecal = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5) 8,
-                m_newPlayerOptions = 58759169,
-                m_newPlayerOptions2 = 3
+                m_nTorsoColor = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5) 5,
+                m_nTorsoDecal = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5) 2,
+                m_newPlayerOptions = 402654785,
+                m_newPlayerOptions2 = 1
             },
-            m_nameIndices = 6481693,
+            m_nameIndices = 11272192,
             m_schoolOfFocus = (uint) MagicSchool.Storm,
-            m_name = "Joji",
+            m_name = "Joji"
         };
         var newCharacter = CharacterHelper.CreateCharacterFromCreationInfo(charCreationinfo);
         newCharacter.SetNameOverride("Joji");
+        newCharacter.PlayerNameBehavior.BadgeTitle = "QuestTitle_00000001";
 
         // Add default items.
-        newCharacter.AddItemToInventory(1523097, out var hat);
-        newCharacter.AddItemToInventory(1577261, out var robe);
-        newCharacter.AddItemToInventory(1577277, out var boots);
-        newCharacter.AddItemToInventory(1302115, out var staff);
+        newCharacter.AddItemToInventory(532298, out var hat);
+        newCharacter.AddItemToInventory(97330, out var robe);
+        newCharacter.AddItemToInventory(97931, out var boots);
+        newCharacter.AddItemToInventory(191223, out var staff);
 
         // Dye the items black.
-        DyeMapper.ApplyPrimaryDye(hat, DyeColor.LightPurple);
-        DyeMapper.ApplySecondaryDye(hat, DyeColor.Black);
-        DyeMapper.ApplyPrimaryDye(robe, DyeColor.LightPurple);
+        DyeMapper.ApplyPrimaryDye(hat, DyeColor.Black);
+        DyeMapper.ApplySecondaryDye(hat, DyeColor.LightPurple);
+        DyeMapper.ApplyPrimaryDye(robe, DyeColor.DarkPurple);
         DyeMapper.ApplySecondaryDye(robe, DyeColor.Black);
-        DyeMapper.ApplyPrimaryDye(boots, DyeColor.LightPurple);
+        DyeMapper.ApplyPrimaryDye(boots, DyeColor.DarkPurple);
         DyeMapper.ApplySecondaryDye(boots, DyeColor.Black);
 
         // Now equip the items.
