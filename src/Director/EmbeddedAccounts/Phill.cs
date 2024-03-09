@@ -16,7 +16,7 @@ internal sealed class Phill : EmbeddedAccount {
     protected override Wizard CreateDefaultWizard() {
         var charCreationinfo = new WizardCharacterCreationInfo {
             m_avatarBehavior = new WizardCharacterBehavior {
-                m_eGender = eGender.Female,
+                m_eGender = eGender.Male,
                 m_eRace = eRace.Human,
                 m_extendedHairColor = 0,
                 m_nFeetColor = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5) 0,
