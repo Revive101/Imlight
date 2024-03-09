@@ -24,6 +24,7 @@ public class CombatActionDirector {
     private const int SPELL_ACTION_TIME = 10;
     private const int SPELL_FIZZLE_TIME = 4;
     private const int SPELL_PASS_TIME = 1;
+    private const ulong DEQUEUE_SPELL_TEMPLATE_ID = 661258515;
 
     private readonly Duel _duel;
 
@@ -173,8 +174,7 @@ public class CombatActionDirector {
         };
         _queuedCombatActions.Add(queuedAction);
 
-        Logger.Information("Duel {0} | Slot {1} | Queued spell {2} towards target {3}",
-            Logger.Args(_duel.m_duelID, caster.SlotIndex, spell.m_templateID, target.SlotIndex));
+        LogCombatAction(caster, target, spell);
     }
 
     private void EnsureAllCastersHaveQueuedActions() {
@@ -249,6 +249,18 @@ public class CombatActionDirector {
 
         // Remove the caster's pips.
         combatParticipant.m_pipCount.m_genericPips -= spell.m_pipCost.m_spellRank;
+    }
+
+    private void LogCombatAction(CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target, Spell spell) {
+        if (spell.m_templateID == DEQUEUE_SPELL_TEMPLATE_ID) {
+            Logger.Information("Duel {0} | Slot {1} | Caster changed their mind and is not casting a spell",
+                Logger.Args(_duel.m_duelID, caster.SlotIndex));
+            return;
+        }
+
+        var targetOrSelf = target.SlotIndex == caster.SlotIndex ? "self" : target.SlotIndex.ToString();
+        Logger.Information("Duel {0} | Slot {1} | Queued spell {2} towards target {3}",
+            Logger.Args(_duel.m_duelID, caster.SlotIndex, spell.m_templateID, targetOrSelf));
     }
 
     private void LogCombatActions(CombatActionListObj combatActionList) {
