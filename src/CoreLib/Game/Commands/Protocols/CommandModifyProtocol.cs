@@ -143,7 +143,7 @@ internal class CommandModifyProtocol : CommandProtocol {
 
     [Command("spell")]
     [AuthRequired(AuthLevel.QualityAssurance)]
-    private void SetSpell(string action, string spellId) {
+    private void SetSpellCommand(string action, string spellId) {
         switch (action) {
             case "add":
             case "a":
