@@ -3,6 +3,7 @@
  * Proprietary and confidential.
  */
 
+using Akka.Util.Internal;
 using Imlight.Common.Caches;
 using Imlight.Common.Configuration;
 using Imlight.Common.Cryptography;
@@ -10,6 +11,7 @@ using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models.Player;
+using System;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Commands.Protocols;
