@@ -233,7 +233,7 @@ public static class Program {
 
                 if (!ulong.TryParse(input, out var index)) {
                     AnsiConsole.MarkupLine("Invalid input. Please input a valid index.");
-                } 
+                }
                 else {
                     var val = inventory[(int) index];
                     inventory.RemoveAt((int) index - 1);
@@ -243,7 +243,7 @@ public static class Program {
                     for (int i = 0; i < inventory.Count; i++) {
                         AnsiConsole.MarkupLine($"\t[bold]{i + 1} | {Convert.ToUInt64(inventory[i])}[/]");
                     }
-                }   
+                }
             }
         }
     }
@@ -357,7 +357,10 @@ public static class Program {
                                              .Where(info => info is not CombatSigil)
                                              .Where(info => info is not SoundEmitterInfo)
                                              .Where(info => info is not PositionalSoundEmitterInfo)) {
-            if (objectInfo.m_zoneTag.ToString().ToLower().Contains("shop")) {
+            var name = objectInfo.m_zoneTag.ToString();
+
+            // Check to see if the name contains either "shop" or "npc".
+            if (name.Contains("shop", StringComparison.OrdinalIgnoreCase) || name.Contains("npc", StringComparison.OrdinalIgnoreCase)) {
                 shopSuspectObjects.Add(objectInfo);
             }
         }
