@@ -235,7 +235,7 @@ public static class Program {
                     AnsiConsole.MarkupLine("Invalid input. Please input a valid index.");
                 }
                 else {
-                    var val = inventory[(int) index];
+                    var val = inventory[(int) index - 1];
                     inventory.RemoveAt((int) index - 1);
                     AnsiConsole.MarkupLine($"Removed item {Convert.ToUInt64(val)}. New inventory:");
 
