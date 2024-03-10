@@ -132,7 +132,11 @@ public static class Program {
 
             if (!npcFound)
             {
-                AnsiConsole.MarkupLine("No shopkeepers found in this zone.");
+                AnsiConsole.MarkupLine("No shopkeepers found in this zone. Dumping all possible NPCs instead.");
+
+                foreach (var obj in objectList) {
+                    AnsiConsole.MarkupLine($"[bold]{obj.m_templateID}[/] - {obj.m_zoneTag}");
+                }
             }
         }
     }
@@ -174,20 +178,34 @@ public static class Program {
     private static List<GID> CreateNewInventory(ulong templateId) {
         List<GID> inventory = new List<GID>();
 
-        AnsiConsole.MarkupLine("\nInput the TemplateID of an item to add to the inventory:");
+        AnsiConsole.Markup("\nInput the TemplateID of an item to add to the inventory: ");
         var input = Console.ReadLine();
 
-        var itemID = (GID) Convert.ToUInt64(input);
-        inventory.Add(itemID);
+        if (!ulong.TryParse(input, out var itemID)) {
+            AnsiConsole.MarkupLine("Invalid input. Please input a valid TemplateID.");
+        } else {
+            inventory.Add((GID) itemID);
+        }
 
         while (true) {
-            AnsiConsole.MarkupLine($"Added item {input}. Input the next item, or type 'y' to finalize.");
-
+            AnsiConsole.Markup("\nInput the next item, type 'undo' to remove the last item, or type 'y' to finalize: ");
             input = Console.ReadLine();
+
             if (input == "y") break;
 
-            itemID = (GID) Convert.ToUInt64(input);
-            inventory.Add(itemID);
+            if (input == "undo") {
+                inventory.RemoveAt(inventory.Count - 1);
+                AnsiConsole.MarkupLine($"Removed previous item {itemID}.");
+                continue;
+            }
+
+            if (!ulong.TryParse(input, out itemID)) {
+                AnsiConsole.MarkupLine("Invalid input. Please input a valid TemplateID.");
+            }
+            else {
+                inventory.Add((GID) itemID);
+                AnsiConsole.Markup($"Added item {itemID}.");
+            }
         }
 
         return inventory;
@@ -202,14 +220,30 @@ public static class Program {
 
             if (input.Contains("add")) {
                 input = input.Replace("add ", "");
-                var itemID = (GID) Convert.ToUInt64(input);
-                inventory.Add(itemID);
-                AnsiConsole.MarkupLine($"Added item {input}.");
+
+                if (!ulong.TryParse(input, out var itemID)) {
+                    AnsiConsole.MarkupLine("Invalid input. Please input a valid TemplateID.");
+                }
+                else {
+                    inventory.Add((GID) itemID);
+                    AnsiConsole.MarkupLine($"Added item {itemID}.");
+                }
             } else {
-                var index = Convert.ToInt32(input) - 1;
-                var val = inventory[index];
-                inventory.RemoveAt(index);
-                AnsiConsole.MarkupLine($"Removed item {val}.");
+                input = input.Replace("remove ", "");
+
+                if (!ulong.TryParse(input, out var index)) {
+                    AnsiConsole.MarkupLine("Invalid input. Please input a valid index.");
+                } 
+                else {
+                    var val = inventory[(int) index];
+                    inventory.RemoveAt((int) index - 1);
+                    AnsiConsole.MarkupLine($"Removed item {Convert.ToUInt64(val)}. New inventory:");
+
+                    AnsiConsole.MarkupLine("      idx | template ID");
+                    for (int i = 0; i < inventory.Count; i++) {
+                        AnsiConsole.MarkupLine($"\t[bold]{i + 1} | {Convert.ToUInt64(inventory[i])}[/]");
+                    }
+                }   
             }
         }
     }
