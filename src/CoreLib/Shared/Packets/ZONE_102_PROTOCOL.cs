@@ -9,6 +9,7 @@ using Imlight.Common.Caches;
 using Imlight.Common.IO;
 using Imlight.Common.MessageLayer;
 using Imlight.Common.ObjectProperty.PropertyReflection;
+using Imlight.CoreLib.Game.Zone;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Models.Player;
 
@@ -198,16 +199,13 @@ public class ZONE_102_PROTOCOL : IServerProtocol
 		public Dictionary<IActorRef, TypeCache.CoreObject> StartingParticipants;
 	}
 
-	public class MSG_GETCOREOBJECT : IServerMessage
-	{
-		public byte MessageOrder { get; } = 18;
-		public byte ServiceID { get; } = 102;
-	}
+    public class MSG_QUERYZONEOBJECT : IServerMessage
+    {
+        public byte MessageOrder { get; } = 18;
+        public byte ServiceID { get; } = 102;
 
-	public class MSG_GETCOREOBJECTRSP : IServerMessage
-	{
-		public byte MessageOrder { get; } = 19;
-		public byte ServiceID { get; } = 102;
+        public ulong GlobalID;
+    }
 
 		public TypeCache.CoreObject CoreObject;
 	}

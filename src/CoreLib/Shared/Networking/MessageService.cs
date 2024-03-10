@@ -9,6 +9,7 @@ using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.MessageLayer;
 using Imlight.CoreLib.Game.Services;
+using Imlight.CoreLib.Game.Zone;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models.Player;
@@ -166,6 +167,23 @@ public abstract class MessageService : ReceiveProtocolDispatcher {
         var character = GetActiveWizard();
 
         return AccountCollection.GetAccount(character.AccountId);
+    }
+
+    /// <summary>
+    /// Retrieves the WizardZoneObject associated with the specified global ID.
+    /// </summary>
+    /// <param name="globalId">The global ID of the WizardZoneObject.</param>
+    /// <returns>The WizardZoneObject associated with the specified global ID. Null, if none was found.</returns>
+    protected WizardZoneObject GetZoneObject(ulong globalId) {
+        var msg = new ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT {
+            GlobalID = globalId
+        };
+        var response = AskOtherService<ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECTRSP>(msg);
+        if (response is null) {
+            return null;
+        }
+
+        return response.ZoneObject;
     }
 
     /// <summary>

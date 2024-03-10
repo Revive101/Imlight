@@ -28,16 +28,6 @@ public class InventoryService : MessageService {
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new InventoryService(parentActor));
 
-    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_REQUESTRADIALQUICKCHAT))]
-    private void ReceiveRequestRadialQuickChat(GAME_5_PROTOCOL.MSG_REQUESTRADIALQUICKCHAT message) {
-        // todo: make this a chat command
-        new int[] { 2066, 860841451, 2537945, 203556948 }.ForEach(spellId => {
-            SendToSocket(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTOBOOK() {
-                SpellID = spellId
-            });
-        });
-    }
-
     #region Destroy/Feed Inventoryitem
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_TRASHINVENTORYITEM))]
@@ -47,7 +37,7 @@ public class InventoryService : MessageService {
         wizard.RemoveItemFromInventory(message.GlobalID);
 
         SendToSocket(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_REMOVEITEM() {
-            GlobalID = wizard.GameObject.m_globalID,
+            GlobalID = wizard.CharId,
             ItemID = message.GlobalID
         });
     }
@@ -135,4 +125,25 @@ public class InventoryService : MessageService {
     }
 
     #endregion
+
+    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_PLAYERWIZBANG))]
+    private void ReceivePlayerWizbang(WIZARD_12_PROTOCOL.MSG_PLAYERWIZBANG message) {
+        var wizard = GetActiveWizard();
+
+        switch (message.StateName) {
+            case "SpellbookWizbang":
+                ZoneBroadcast(new GAME_5_PROTOCOL.MSG_WIZBANG() {
+                    GameObjectID = wizard.CharId,
+                    WizBangID = StringHash.Compute("Registrar")
+                }, false);
+                break;
+            default:
+                ZoneBroadcast(new GAME_5_PROTOCOL.MSG_WIZBANG() {
+                    GameObjectID = wizard.CharId,
+                    WizBangID = 0
+                }, false);
+                break;
+        }
+    }
+
 }

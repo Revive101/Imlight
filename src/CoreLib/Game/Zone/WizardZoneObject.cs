@@ -18,11 +18,11 @@ namespace Imlight.CoreLib.Game.Zone;
 /// This is a zone object which manages itself as an actor.
 /// </summary>
 public class WizardZoneObject : ReceiveProtocolDispatcher {
-    protected readonly CoreObject ActiveGameObject;
-    protected readonly CoreTemplate Template;
-    protected readonly IActorRef WizardZoneRef;
+    public readonly CoreObject ActiveGameObject;
+    public readonly CoreTemplate Template;
 
-    protected float InteractionRadius = 600f;
+    protected readonly IActorRef WizardZoneRef;
+    protected float InteractionRadius = 300f;
 
     private readonly List<CoreObject> _objsInRadius;
 
@@ -35,9 +35,7 @@ public class WizardZoneObject : ReceiveProtocolDispatcher {
     }
 
     // Akka.NET ctor
-    public static Props Props(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef) {
-        return Akka.Actor.Props.Create(() => new WizardZoneObject(activeGameObject, template, wizardZoneRef));
-    }
+    public static Props Props(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef) => Akka.Actor.Props.Create(() => new WizardZoneObject(activeGameObject, template, wizardZoneRef));
 
     /// <summary>
     /// Called when a player joins the wizard zone. Sends the player the object data and adds the object to the zone.
@@ -106,12 +104,27 @@ public class WizardZoneObject : ReceiveProtocolDispatcher {
     }
 
     /// <summary>
+    /// Something has queried the status of this object.
+    /// </summary>
+    protected virtual void OnStatusCheck() {
+        var failure = ActiveGameObject == null || Template == null;
+        var reason = failure ? "Object or template is null." : null;
+
+        var rsp = new ZONE_102_PROTOCOL.MSG_OBJECTSTATUSCHECKRSP {
+            ZoneObject = this,
+            CoreObject = ActiveGameObject,
+            Failure = failure,
+            Error = reason
+        };
+
+        Sender.Tell(rsp);
+    }
+
+    /// <summary>
     /// Gets the position of the active game object.
     /// </summary>
     /// <returns>The position as a Vector3.</returns>
-    protected virtual Vector3 GetPosition() {
-        return ActiveGameObject.m_location;
-    }
+    protected virtual Vector3 GetPosition() => ActiveGameObject.m_location;
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
     protected virtual void ReceiveAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message)
@@ -148,21 +161,13 @@ public class WizardZoneObject : ReceiveProtocolDispatcher {
         }
     }
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_GETCOREOBJECT))]
-    protected void ReceiveGetCoreObject(ZONE_102_PROTOCOL.MSG_GETCOREOBJECT message) {
-        // An actor is asking for our active core object.
-        var rsp = new ZONE_102_PROTOCOL.MSG_GETCOREOBJECTRSP() {
-            CoreObject = ActiveGameObject
-        };
-
-        Sender.Tell(rsp);
-    }
-
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
-    protected void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message) {
-        // An actor is broadcasting a message to all players in the zone.
+    protected void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message) =>
         WizardZoneRef.Tell(message);
-    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_OBJECTSTATUSCHECK))]
+    protected void ReceiveStatusCheck(ZONE_102_PROTOCOL.MSG_OBJECTSTATUSCHECK message) =>
+        OnStatusCheck();
 
     private bool IsInRadius(CoreObject obj1) {
         var sqrtDist = (obj1.m_location - GetPosition()).LengthSquared();

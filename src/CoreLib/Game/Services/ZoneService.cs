@@ -10,6 +10,7 @@ using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Resources;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -96,6 +97,21 @@ public class ZoneService : MessageService {
         Sender.Tell(zoneDetails);
     }
 
+    [MessageHandler(typeof(WIZARD2_53_PROTOCOL.MSG_ZONEHOP))]
+    private void ReceiveZoneHop(WIZARD2_53_PROTOCOL.MSG_ZONEHOP message) {
+        var character = GetActiveWizard();
+
+        _isTransferQueued = true;
+        var zoneTransferRequestMessage = new GAME_5_PROTOCOL.MSG_ZONETRANSFERREQUEST {
+            ZoneName = character.Zone,
+            SendAck = 0
+        };
+        SendToSocket(zoneTransferRequestMessage);
+
+        character.QueuedZoneName = character.Zone;
+        character.QueuedZoneLocation = Util.GetCompactStringFromVector(character.Location, character.Orientation);
+    }
+
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK))]
     private void ReceiveZoneTransferAck(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK message) {
         // The client has accepted the zone transfer. We can now send the server transfer message.
@@ -134,6 +150,15 @@ public class ZoneService : MessageService {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_FISHINTERACTION))]
     private void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_FISHINTERACTION message) {
+        if (ZoneActor is null) {
+            throw new Exception("Zone Reference was null.");
+        }
+
+        ZoneActor.Forward(message);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT))]
+    private void ReceiveQueryZoneObject(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT message) {
         if (ZoneActor is null) {
             throw new Exception("Zone Reference was null.");
         }
