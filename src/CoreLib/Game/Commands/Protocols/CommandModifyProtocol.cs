@@ -3,6 +3,7 @@
  * Proprietary and confidential.
  */
 
+using Akka.Util.Internal;
 using Imlight.Common.Caches;
 using Imlight.Common.Configuration;
 using Imlight.Common.Cryptography;
@@ -10,6 +11,7 @@ using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models.Player;
+using System;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Commands.Protocols;
@@ -179,5 +181,28 @@ internal class CommandModifyProtocol : CommandProtocol {
         Context.SessionActor.Tell(networkMessage, null);
 
         InformSenderClient($"Added {goldInt} gold.");
+    }
+  
+    [Command("spell")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void SetSpellCommand(string action, string spellId) {
+        var convertedSpellId = Convert.ToInt32(spellId);
+
+        switch (action) {
+            case "add":
+            case "a":
+                Context.SessionActor.Tell(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTOBOOK() {
+                    SpellID = convertedSpellId
+                }, null);
+
+                break;
+            case "remove":
+            case "rem":
+            case "r":
+                Context.SessionActor.Tell(new WIZARD_12_PROTOCOL.MSG_REMOVESPELLFROMBOOK() {
+                    SpellID = convertedSpellId
+                }, null);
+                break;
+        }
     }
 }

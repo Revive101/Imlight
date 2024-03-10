@@ -103,7 +103,12 @@ internal class AttachService : MessageService {
             // Set character data.
             Data = localGameObjectData,
             IsCSR = account.AuthLevel > AuthLevel.QualityAssurance ? 1 : 0,
-            Permissions = 31679, // @todo: these permissions look like bitflags. Find out what they mean.
+
+            // 0b0   - None
+            // 0b1   - Chat enabled
+            // 0b10  - Filtered chat
+            // ob100 - Open chat
+            Permissions = 0b1100_1111,
 
             // Set zone data.
             ZoneName = message.ZoneName,
