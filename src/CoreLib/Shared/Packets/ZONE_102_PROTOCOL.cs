@@ -205,10 +205,14 @@ public class ZONE_102_PROTOCOL : IServerProtocol
         public byte ServiceID { get; } = 102;
 
         public ulong GlobalID;
-    }
-
-		public TypeCache.CoreObject CoreObject;
 	}
+
+    public class MSG_QUERYZONEOBJECTRSP : IServerMessage {
+        public byte MessageOrder { get; } = 19;
+        public byte ServiceID { get; } = 102;
+
+        public WizardZoneObject ZoneObject;
+    }
 
     public sealed class MSG_CREATURESPAWNINTERVAL : IServerMessage
     {
@@ -244,5 +248,20 @@ public class ZONE_102_PROTOCOL : IServerProtocol
     {
         public byte MessageOrder { get; } = 24;
         public byte ServiceID { get; } = 102;
+    }
+
+    public class MSG_OBJECTSTATUSCHECK : IServerMessage {
+        public byte MessageOrder { get; } = 25;
+        public byte ServiceID { get; } = 102;
+    }
+
+    public class MSG_OBJECTSTATUSCHECKRSP : IServerMessage {
+        public byte MessageOrder { get; } = 26;
+        public byte ServiceID { get; } = 102;
+
+        public WizardZoneObject ZoneObject;
+        public TypeCache.CoreObject CoreObject;
+        public bool Failure;
+        public string Error;
     }
 }

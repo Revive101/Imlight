@@ -229,4 +229,40 @@ public static class WizardCollection {
         existingCharacter.GameStats = wizard.GameStats;
         session.SaveChanges();
     }
+
+    /// <summary>
+    /// Adds a spell to the spellbook of a wizard.
+    /// </summary>
+    /// <param name="wizard">The wizard to add the spell to.</param>
+    /// <param name="spellTemplateId">The ID of the spell template to add.</param>
+    public static void AddCharacterSpell(Wizard wizard, uint spellTemplateId) {
+        using var session = s_store.OpenSession();
+
+        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
+            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        if (existingCharacter is null) {
+            return;
+        }
+
+        existingCharacter.SpellbookBehavior.SpellTemplateIdList.Add(spellTemplateId);
+        session.SaveChanges();
+    }
+
+    /// <summary>
+    /// Removes a spell from the spellbook of a wizard.
+    /// </summary>
+    /// <param name="wizard">The wizard whose spellbook will be modified.</param>
+    /// <param name="spellTemplateId">The ID of the spell template to be removed.</param>
+    public static void RemoveCharacterSpell(Wizard wizard, uint spellTemplateId) {
+        using var session = s_store.OpenSession();
+
+        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
+            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        if (existingCharacter is null) {
+            return;
+        }
+
+        existingCharacter.SpellbookBehavior.SpellTemplateIdList.Remove(spellTemplateId);
+        session.SaveChanges();
+    }
 }
