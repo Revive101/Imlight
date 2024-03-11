@@ -11,6 +11,7 @@ using Imlight.Common.MessageLayer;
 using Imlight.CoreLib.Game.Services;
 using Imlight.CoreLib.Game.Zone;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models.Player;
 
@@ -184,6 +185,16 @@ public abstract class MessageService : ReceiveProtocolDispatcher {
         }
 
         return response.ZoneObject;
+    }
+
+    protected void DoZoneTransfer(string destinationZone, string destinationLocation = "") {
+        // If the destination location is nothing, default it to "Start."
+        var zoneTransfer = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
+            DestinationLocation = destinationLocation == "" ? "Start" : destinationLocation,
+            DestinationZone = destinationZone,
+            SendToClient = true,
+        };
+        TellOtherServices(zoneTransfer);
     }
 
     /// <summary>
