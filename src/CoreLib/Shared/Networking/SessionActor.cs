@@ -260,7 +260,7 @@ public class SessionActor : ReceiveActor, IDisposable {
         SendDisposeToServices();
 
         // Dispose self.
-        Context.Stop(Self);
+        ActorRef.Tell(PoisonPill.Instance);
         Socket?.Close();
         _cts.Cancel();
 
@@ -410,6 +410,8 @@ public class SessionActor : ReceiveActor, IDisposable {
 
     private void OnReceiveCompleted(SocketAsyncEventArgs e) {
         if (!_tokenBucket.TryAcquire()) {
+            Logger.Warning("SessionActor {SessionId} failed to acquire token.", Logger.Args(SessionID));
+
             // The rate limit was reached.
             var failedAcquisitionCount = _tokenBucket.GetFailedAcquisitionCount();
             if (failedAcquisitionCount >= _tokenBucketFailedAcquisitionLimit) {
@@ -436,6 +438,8 @@ public class SessionActor : ReceiveActor, IDisposable {
             return;
         }
         if (e.BytesTransferred <= 0) {
+            // If the bytes transferred is 0, the socket has disconnected.
+            this.Dispose();
             return;
         }
 
@@ -449,6 +453,9 @@ public class SessionActor : ReceiveActor, IDisposable {
             // If the session still isn't created, cache all non-control messages for later processing.
             foreach (var message in packet) {
                 _preInitMessages.Add(message);
+
+                Logger.Verbose("SessionActor {Id} cached message {MessageName} for later processing.",
+                    Logger.Args(SessionID, message.GetType().Name));
             }
         }
 
