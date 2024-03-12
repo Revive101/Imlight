@@ -22,9 +22,7 @@ namespace Imlight.CoreLib.Game.Services;
 internal class AttachService : MessageService {
     public AttachService(SessionActor sessionActor) : base(sessionActor) { }
 
-    protected static Props Props(SessionActor parentActor) {
-        return Akka.Actor.Props.Create(() => new AttachService(parentActor));
-    }
+    protected static Props Props(SessionActor parentActor) => Akka.Actor.Props.Create(() => new AttachService(parentActor));
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ATTACH))]
     private void ReceiveAttach(GAME_5_PROTOCOL.MSG_ATTACH message) {
@@ -148,13 +146,6 @@ internal class AttachService : MessageService {
         TellOtherServices(msg);
     }
 
-    private bool GetWizardFromAccount(Account account, ulong charId, out Wizard character) {
-        var result = account.GetCharacter(charId);
-        character = result;
-
-        return result is not null;
-    }
-
     private SERVER_100_PROTOCOL.MSG_SERVERINFO GetGameServer() {
         var msg = new SERVER_100_PROTOCOL.MSG_QUERYSERVER();
 
@@ -175,8 +166,14 @@ internal class AttachService : MessageService {
         return rsp.ErrorCode == 0;
     }
 
+    private bool GetWizardFromAccount(Account account, ulong charId, out Wizard character) {
+        var result = account.GetCharacter(charId);
+        character = result;
+
+        return result is not null;
+    }
+
     private void SetAccountInternally(Account account) {
-        // Tell the SessionActor to set the account.
         TellOtherServices(new ACCOUNT_104_PROTOCOL.MSG_ACCOUNT() {
             Account = account
         });

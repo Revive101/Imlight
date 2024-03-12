@@ -5,6 +5,7 @@
 
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
@@ -15,14 +16,17 @@ using Imlight.CoreLib.Shared.Resources;
 namespace Imlight.CoreLib.Game.Services;
 
 public class ZoneService : MessageService {
+    private const int ZONE_REMOVAL_WAIT_TIME_IN_SECONDS = 4;
+    private const int ZONE_TRANSFER_CLEANUP_WAIT_TIME_IN_SECONDS = 1;
+
     public IActorRef ZoneActor;
+
+    private readonly TimeSpan _zoneRemovalWaitTime = TimeSpan.FromSeconds(ZONE_REMOVAL_WAIT_TIME_IN_SECONDS);
     private bool _isTransferQueued;
 
     public ZoneService(SessionActor sessionActor) : base(sessionActor) { }
 
-    protected static Props Props(SessionActor parentActor) {
-        return Akka.Actor.Props.Create(() => new ZoneService(parentActor));
-    }
+    protected static Props Props(SessionActor parentActor) => Akka.Actor.Props.Create(() => new ZoneService(parentActor));
 
     protected override void OnPreDispose() {
         var globalId = GetActiveGameObject().m_globalID;
@@ -99,6 +103,7 @@ public class ZoneService : MessageService {
 
     [MessageHandler(typeof(WIZARD2_53_PROTOCOL.MSG_ZONEHOP))]
     private void ReceiveZoneHop(WIZARD2_53_PROTOCOL.MSG_ZONEHOP message) {
+        // This message is sent when the client has enabled classic mode and wants to reload their current zone.
         var character = GetActiveWizard();
 
         _isTransferQueued = true;
@@ -120,7 +125,7 @@ public class ZoneService : MessageService {
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ZONETRANSFERNACK))]
     private void ReceiveZoneTransferNack(GAME_5_PROTOCOL.MSG_ZONETRANSFERNACK message) {
-        // The client has denied the zone transfer. We can now send the server transfer message.
+        // The client has denied the zone transfer.
         Logger.Debug("Client was not OK with zone transfer! Possibly patching.");
     }
 
@@ -172,29 +177,40 @@ public class ZoneService : MessageService {
 
         // Remove the player from their current zone. We're awaiting a reply so the zone can properly clean up
         // before we continue on potentially a different thread.
-        var removePlayerMsg = new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER() {
-            Player = SessionActor.ActorRef,
-            GlobalId = GetActiveGameObject().m_globalID,
-            IsPlayerStillConnected = true
-        };
-        _ = ZoneActor.Ask(removePlayerMsg).Result;
+        try {
+            var removePlayerMsg = new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER() {
+                Player = SessionActor.ActorRef,
+                GlobalId = GetActiveGameObject().m_globalID,
+                IsPlayerStillConnected = true
+            };
+            _ = ZoneActor.Ask(removePlayerMsg, _zoneRemovalWaitTime).Result;
+        }
+        catch {
+            Logger.Warning("Zone removal timeout of {0} seconds exceeded.", Logger.Args(ZONE_REMOVAL_WAIT_TIME_IN_SECONDS));
+        }
+        finally {
+            // The zone has removed the player, but the client may not have had time to clean up
+            // all the zone items. We'll wait a short time here before we send zone transfer.
+            var delay = TimeSpan.FromSeconds(ZONE_TRANSFER_CLEANUP_WAIT_TIME_IN_SECONDS);
+            Task.Run(async () => await Task.Delay(delay)).Wait();
 
-        // When we send this message, the client will disconnect from the current zone and reconnect to the next.
-        // This means attach will happen again, so this is all we need to do here.
-        var serverTransfer = new GAME_5_PROTOCOL.MSG_SERVERTRANSFER() {
-            IP = character.GameServerIp,
-            TCPPort = character.GameServerPort,
-            UDPPort = character.GameServerPort,
-            UserID = account.AccountId,
-            CharID = character.CharId,
-            ZoneName = character.QueuedZoneName,
-            Location = character.QueuedZoneLocation,
-            Slot = 0,
-            SessionSlot = 0,
-            SessionID = 0,
-            TargetPlayerID = character.CharId,
-            TransitionID = 1
-        };
-        SendToSocket(serverTransfer);
+            // When we send this message, the client will disconnect from the current zone and reconnect to the next.
+            // This means attach will happen again, so this is all we need to do here.
+            var serverTransfer = new GAME_5_PROTOCOL.MSG_SERVERTRANSFER() {
+                IP = character.GameServerIp,
+                TCPPort = character.GameServerPort,
+                UDPPort = character.GameServerPort,
+                UserID = account.AccountId,
+                CharID = character.CharId,
+                ZoneName = character.QueuedZoneName,
+                Location = character.QueuedZoneLocation,
+                Slot = 0,
+                SessionSlot = 0,
+                SessionID = 0,
+                TargetPlayerID = character.CharId,
+                TransitionID = 1
+            };
+            SendToSocket(serverTransfer);
+        }
     }
 }
