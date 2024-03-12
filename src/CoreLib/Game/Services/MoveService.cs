@@ -18,14 +18,18 @@ namespace Imlight.CoreLib.Game.Services;
 internal class MoveService : MessageService, IWithTimers {
     private const byte MARK_MANA_COST_PERCENT = 20;
     private const int FISH_INTERACTION_INTERVAL_IN_MILLI = 250;
+    private const int MOVE_THRESHOLD_IN_MILLI = 1000;
 
     public ITimerScheduler Timers { get; set; }
 
     private readonly TimeSpan _fishInteractionInterval
         = TimeSpan.FromMilliseconds(FISH_INTERACTION_INTERVAL_IN_MILLI);
+    private readonly TimeSpan _moveThreshold
+        = TimeSpan.FromMilliseconds(MOVE_THRESHOLD_IN_MILLI);
     private TypeCache.CoreObject _activeCoreObject;
     private Wizard _wizard;
     private DateTime _lastMoveTime;
+    private bool _sentStopMoveState;
 
     public MoveService(SessionActor sessionActor) : base(sessionActor) {
         // Instead of fishing for zone interactions per move, we'll start an interval of x milliseconds
@@ -48,6 +52,7 @@ internal class MoveService : MessageService, IWithTimers {
 
         // Update the last move time.
         _lastMoveTime = DateTime.Now;
+        _sentStopMoveState = false;
 
         // Broadcast the move to all other players in the zone.
         BroadcastClientMove(message);
@@ -55,14 +60,31 @@ internal class MoveService : MessageService, IWithTimers {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PLAYERMOVEINTERVAL))]
     private void ReceiveZoneInteractionInterval(ZONE_102_PROTOCOL.MSG_PLAYERMOVEINTERVAL message) {
+        if (_activeCoreObject is null) {
+            return;
+        }
+
         // Fish for interactions within the zone.
         SendZoneInteractionFishRequest();
+
+        // While we're here, we're going to check to see if the player has been idle for
+        // too long. In such a case, we'll send a move state message to the client.
+        if (DateTime.Now - _lastMoveTime > _moveThreshold && !_sentStopMoveState) {
+            var moveStateMsg = new GAME_5_PROTOCOL.MSG_CLIENTMOVESTATE { NewState = 0 };
+            BroadcastClientMoveState(moveStateMsg);
+
+            // Set the flag to true so we don't send the move state message again.
+            // This will be reset the next time we notice the client move again.
+            _sentStopMoveState = true;
+        }
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVESTATE))]
     private void ReceiveClientMoveState(GAME_5_PROTOCOL.MSG_CLIENTMOVESTATE message) {
         _activeCoreObject ??= GetActiveGameObject();
         BroadcastClientMoveState(message);
+
+        _lastMoveTime = DateTime.Now;
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_JUMP))]
