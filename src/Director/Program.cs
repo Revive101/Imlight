@@ -6,6 +6,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Globalization;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Configuration;
@@ -120,12 +121,12 @@ internal static class Program {
     private static void CreateEmbeddedDatabaseAccounts() {
         Logger.Information("Creating embedded database accounts. If you don't see anything, they already exist!");
 
-#if DEBUG
+        #if DEBUG
         // Generic developer accounts
         for (int i = 1; i <= 3; i++) {
             DatabaseUtilities.CreateEmbeddedDatabaseAccount($"dev{i}", $"dev{i}@r101.com", "dev9999", AuthLevel.Administrator);
         }
-#endif
+        #endif
 
         // Dev accounts; Hi, devs! Feel free to make your own account and add it here.
         new Jooty("jooty", "2342", "jay@r101net", AuthLevel.Administrator);
@@ -142,7 +143,7 @@ internal static class Program {
         // Hall Monitor accounts.
         new PokemonHacker("pk", "7878", "pk@r101.net", AuthLevel.HallMonitor);
         new Tilr("tilr", "8080", "tilr@r101.net", AuthLevel.HallMonitor);
-        
+
         // Quality Assurance accounts
         new B("b", "1121", "b@r101.net", AuthLevel.QualityAssurance);
         new Dalnakii("dalnakii", "0091", "b@r101.net", AuthLevel.QualityAssurance);
@@ -169,24 +170,37 @@ internal static class Program {
 
         // Write the boot type.
         // Soon in the future Imlight will actually have different boot types. For now, it's just L&G, which stands
-        // for Loggerin & Game.
+        // for Login & Game server.
         Console.ForegroundColor = ConsoleColor.DarkCyan;
         Console.Write("   :: L&G Boot ::    ");
         Console.ForegroundColor = ConsoleColor.White;
 
-        // Write version.
+        // Write the version. Our schema is NNyWWc, where NN is the two-digit year, and WW is the week of the year.
+        // c is the build configuration, which is either DEBUG or RELEASE.
         var buildConfiguration = GetBuildConfiguration();
         Console.Write(@"|___/");
         Console.ForegroundColor = ConsoleColor.DarkGray;
-        Console.Write($"   ({MajorVersion}-v{Version} {buildConfiguration})\n");
+
+        // Get the current year and week of the year.
+        var year = DateTime.Now.Year.ToString().Substring(2);
+        DateTime today = DateTime.Now;
+        int quarter = (today.Month - 1) / 3 + 1;
+        // Get the ISO week number
+        int week = CultureInfo.InvariantCulture.Calendar.GetWeekOfYear(
+                        today,
+                        CalendarWeekRule.FirstDay,
+                        DayOfWeek.Monday);
+
+        Console.Write($"   ({buildConfiguration} {year}Q{quarter}.{week}c)\n");
         Console.WriteLine("");
     }
 
     private static string GetBuildConfiguration() {
-#if DEBUG
-        return "DEBUG";
-#else
-			return "RELEASE";
-#endif
+        #if DEBUG
+            return "dev";
+        #else
+            // We're calling release builds canary since we're not public and deploying to QA instead.
+		    return "canary";
+        #endif
     }
 }
