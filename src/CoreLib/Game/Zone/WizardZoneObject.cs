@@ -136,6 +136,10 @@ public class WizardZoneObject : ReceiveProtocolDispatcher {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_FISHINTERACTION))]
     protected void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_FISHINTERACTION message) {
+        if (message.CoreObject is null) {
+            return;
+        }
+
         // An actor is asking if our current game object is within a certain interaction radius.
         if (IsInRadius(message.CoreObject)) {
             // Keep track of the objects already within radius as to not trigger duplicate events.

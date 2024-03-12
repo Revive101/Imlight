@@ -10,45 +10,60 @@ using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Models.Player;
 using SharpDX;
 
 namespace Imlight.CoreLib.Game.Services;
 
-internal class MoveService : MessageService {
+internal class MoveService : MessageService, IWithTimers {
     private const byte MARK_MANA_COST_PERCENT = 20;
+    private const int FISH_INTERACTION_INTERVAL_IN_MILLI = 250;
 
+    public ITimerScheduler Timers { get; set; }
+
+    private readonly TimeSpan _fishInteractionInterval
+        = TimeSpan.FromMilliseconds(FISH_INTERACTION_INTERVAL_IN_MILLI);
     private TypeCache.CoreObject _activeCoreObject;
+    private Wizard _wizard;
+    private DateTime _lastMoveTime;
 
-    public MoveService(SessionActor sessionActor) : base(sessionActor) { }
+    public MoveService(SessionActor sessionActor) : base(sessionActor) {
+        // Instead of fishing for zone interactions per move, we'll start an interval of x milliseconds
+        // to check for zone interactions. This will enable the player to interact with the zone
+        // even if they aren't moving.
+        var intervalMsg = new ZONE_102_PROTOCOL.MSG_PLAYERMOVEINTERVAL();
+        Timers.StartPeriodicTimer("interaction", intervalMsg, _fishInteractionInterval, _fishInteractionInterval);
+    }
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new MoveService(parentActor));
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVE))]
     private void ReceiveClientMove(GAME_5_PROTOCOL.MSG_CLIENTMOVE message) {
-        // MoveService saves the location of the player's game object.
-        // CharacterService saves the location of the player's character persistently.
+        // WizardService saves the location and orientation of the wizard.
+        // MoveService will broadcast the move to all other players in the zone and
+        // deals with interactions.
+        _activeCoreObject ??= GetActiveGameObject();
+        _wizard ??= GetActiveWizard();
 
-        this._activeCoreObject ??= GetActiveGameObject();
-
-        // Restore actual location information, as it is compressed by a factor of 4 and unsigned.
-        // Yaw is represented in radians in the client, but transmitted to the server as degrees.
-        var deflatedPos = new Vector3(message.LocationX, message.LocationY, message.LocationZ);
-        var deflatedDir = message.Direction;
-        var inflatedPos = DecompressLocation(deflatedPos);
-        var inflatedDir = DecompressDirection(deflatedDir);
-
-        _activeCoreObject.m_location = inflatedPos;
-        _activeCoreObject.m_orientation = new Vector3(0, 0, inflatedDir);
+        // Update the last move time.
+        _lastMoveTime = DateTime.Now;
 
         // Broadcast the move to all other players in the zone.
         BroadcastClientMove(message);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PLAYERMOVEINTERVAL))]
+    private void ReceiveZoneInteractionInterval(ZONE_102_PROTOCOL.MSG_PLAYERMOVEINTERVAL message) {
+        // Fish for interactions within the zone.
         SendZoneInteractionFishRequest();
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVESTATE))]
-    private void ReceiveClientMoveState(GAME_5_PROTOCOL.MSG_CLIENTMOVESTATE message)
-        => BroadcastClientMoveState(message);
+    private void ReceiveClientMoveState(GAME_5_PROTOCOL.MSG_CLIENTMOVESTATE message) {
+        _activeCoreObject ??= GetActiveGameObject();
+        BroadcastClientMoveState(message);
+    }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_JUMP))]
     private void ReceiveClientJump(GAME_5_PROTOCOL.MSG_JUMP message) {
@@ -144,8 +159,6 @@ internal class MoveService : MessageService {
     }
 
     private void BroadcastClientMove(GAME_5_PROTOCOL.MSG_CLIENTMOVE message) {
-        this._activeCoreObject ??= GetActiveGameObject();
-
         var serverMoveMsg = new GAME_5_PROTOCOL.MSG_SERVERMOVE {
             LocationX = message.LocationX,
             LocationY = message.LocationY,
@@ -157,8 +170,6 @@ internal class MoveService : MessageService {
     }
 
     private void BroadcastClientMoveState(GAME_5_PROTOCOL.MSG_CLIENTMOVESTATE message) {
-        this._activeCoreObject ??= GetActiveGameObject();
-
         var stateMsg = new GAME_5_PROTOCOL.MSG_MOVESTATE {
             NewState = message.NewState,
             GlobalID = _activeCoreObject.m_globalID
@@ -183,15 +194,4 @@ internal class MoveService : MessageService {
 
     private static byte CompressDirection(float direction)
         => (byte) Math.Round(direction / Math.PI / 2 * 250);
-
-    private static Vector3 DecompressLocation(Vector3 location) {
-        var x = unchecked((short) location.X) * 4.0f;
-        var y = unchecked((short) location.Y) * 4.0f;
-        var z = unchecked((short) location.Z) * 4.0f;
-
-        return new Vector3(x, y, z);
-    }
-
-    private static float DecompressDirection(float direction)
-        => (float) (direction * Math.PI * 2 / 250);
 }
