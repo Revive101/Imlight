@@ -51,14 +51,12 @@ public class SessionActor : ReceiveActor, IDisposable {
     private readonly IActorRef _actorFactoryRef;
     private readonly Dictionary<IActorRef, MessageService> _services;
     private readonly SocketAsyncEventArgs _socketSendArgs = new();
-    private readonly CancellationTokenSource _cts = new();
-    private bool _isSending;
-    private bool _isDisposed;
     private List<IMessage> _preInitMessages;
     private readonly TokenBucket _tokenBucket;
-
     private readonly Stack<SocketAsyncEventArgs> _receiveEventArgPool = new();
     private readonly List<Type> _suppressedPackets;
+    private bool _isSending;
+    private bool _isDisposed;
 
     // ctor
     public SessionActor(Socket socket, ushort sessionId, IActorRef server) {
@@ -262,10 +260,8 @@ public class SessionActor : ReceiveActor, IDisposable {
         // Dispose self.
         ActorRef.Tell(PoisonPill.Instance);
         Socket?.Close();
-        _cts.Cancel();
 
         _socketSendArgs?.Dispose();
-        _cts?.Dispose();
         Socket?.Dispose();
     }
 
@@ -459,15 +455,12 @@ public class SessionActor : ReceiveActor, IDisposable {
             }
         }
 
-        // Reset the buffer before putting it back into the pool.
-        e.SetBuffer(null, 0, 0);
-        _receiveEventArgPool.Push(e);
-
-        var newArgs = new SocketAsyncEventArgs();
-        newArgs.Completed += (_, e) => OnReceiveCompleted(e);
-        newArgs.SetBuffer(new byte[_bufferSize], 0, _bufferSize);
-        newArgs.AcceptSocket = this.Socket;
+        var newArgs = GetReceiveEventArgsFromPool();
         ProcessReceive(newArgs);
+
+        // Reset the buffer before putting it back into the pool.
+        e.SetBuffer(new byte[_bufferSize], 0, _bufferSize);
+        _receiveEventArgPool.Push(e);
     }
 
     private void SendToSocket(IMessage message) {
@@ -481,6 +474,9 @@ public class SessionActor : ReceiveActor, IDisposable {
                       "Asynchronous send operation already in progress.", Logger.Args(SessionID));
             return;
         }
+        if (_isDisposed) {
+            return;
+        }
 
         var data = MessageSerializer.Encode(message);
         _isSending = true;
@@ -491,16 +487,12 @@ public class SessionActor : ReceiveActor, IDisposable {
         if (!willRaiseEvent) {
             OnSendCompleted(_socketSendArgs);
         }
-
-        var scopedMessageName = message
-            .GetType()
-            .ToString()
-            .Split('.')[^1]
-            .Replace('+', '.');
-        if (!_suppressedPackets.Contains(message.GetType())) {
-            Logger.Verbose("SessionActor {Id} sent message {MessageName}",
-                Logger.Args(SessionID, scopedMessageName));
+        else {
+            Logger.Warning("SessionActor {Id} sent message {MessageName} synchronously.",
+                Logger.Args(SessionID, message.GetType().Name));
         }
+
+        LogSentPacket(message);
     }
 
     private void OnSendCompleted(SocketAsyncEventArgs e) {
@@ -512,16 +504,7 @@ public class SessionActor : ReceiveActor, IDisposable {
     }
 
     private void HandlePacket(IMessage packet) {
-        // Logger the incoming packet.
-        var scopedMessageName = packet
-            .GetType()
-            .ToString()
-            .Split('.')[^1]
-            .Replace('+', '.');
-        if (!_suppressedPackets.Contains(packet.GetType())) {
-            Logger.Verbose("SessionActor {SessionId} received KiNP packet {ScopedMessageName}",
-                Logger.Args(SessionID, scopedMessageName));
-        }
+        LogReceivedPacket(packet);
 
         // Iterate through services and forward the message to any service that can handle the message.
         var wasDispatched = false;
@@ -580,25 +563,47 @@ public class SessionActor : ReceiveActor, IDisposable {
     }
 
     private SocketAsyncEventArgs GetReceiveEventArgsFromPool() {
-        lock (_receiveEventArgPool) {
-            if (_receiveEventArgPool.Count > 0) {
-                return _receiveEventArgPool.Pop();
-            }
-            else if (_receiveEventArgPool.Count < 5) {
-                // Create a new SocketAsyncEventArgs if the pool is empty and the pool limit has not been reached.
-                var receiveEventArgs = new SocketAsyncEventArgs();
-                receiveEventArgs.Completed += (_, e) => OnReceiveCompleted(e);
-                receiveEventArgs.AcceptSocket = Socket;
-                receiveEventArgs.SetBuffer(new byte[_bufferSize], 0, _bufferSize);
+        if (_receiveEventArgPool.Count > 0) {
+            return _receiveEventArgPool.Pop();
+        }
+        else if (_receiveEventArgPool.Count < 5) {
+            // Create a new SocketAsyncEventArgs if the pool is empty and the pool limit has not been reached.
+            var receiveEventArgs = new SocketAsyncEventArgs();
+            receiveEventArgs.Completed += (_, e) => OnReceiveCompleted(e);
+            receiveEventArgs.AcceptSocket = Socket;
+            receiveEventArgs.SetBuffer(new byte[_bufferSize], 0, _bufferSize);
 
-                return receiveEventArgs;
-            }
+            return receiveEventArgs;
         }
 
         SendOldContextException(new SessionFatalException($"SessionActor [{SessionID}] receive argument " +
                                                           $"pool over maximum allowed count " +
                                                           $"of {_asyncReceivePoolCount}."));
         return null;
+    }
+
+    private void LogReceivedPacket(IMessage packet) {
+        var scopedMessageName = packet
+            .GetType()
+            .ToString()
+            .Split('.')[^1]
+            .Replace('+', '.');
+        if (!_suppressedPackets.Contains(packet.GetType())) {
+            Logger.Verbose("SessionActor {SessionId} received KiNP packet {ScopedMessageName}",
+                Logger.Args(SessionID, scopedMessageName));
+        }
+    }
+
+    private void LogSentPacket(IMessage packet) {
+        var scopedMessageName = packet
+            .GetType()
+            .ToString()
+            .Split('.')[^1]
+            .Replace('+', '.');
+        if (!_suppressedPackets.Contains(packet.GetType())) {
+            Logger.Verbose("SessionActor {SessionId} sent KiNP packet {ScopedMessageName}",
+                Logger.Args(SessionID, scopedMessageName));
+        }
     }
 
     #endregion
