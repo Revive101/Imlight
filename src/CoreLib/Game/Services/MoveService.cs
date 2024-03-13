@@ -18,7 +18,7 @@ namespace Imlight.CoreLib.Game.Services;
 internal class MoveService : MessageService, IWithTimers {
     private const byte MARK_MANA_COST_PERCENT = 20;
     private const int FISH_INTERACTION_INTERVAL_IN_MILLI = 250;
-    private const int MOVE_THRESHOLD_IN_MILLI = 1000;
+    private const int MOVE_THRESHOLD_IN_MILLI = FISH_INTERACTION_INTERVAL_IN_MILLI * 2;
 
     public ITimerScheduler Timers { get; set; }
 
