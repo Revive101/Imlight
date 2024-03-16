@@ -12,14 +12,15 @@ using Imlight.CoreLib.WizardData.Models.Player;
 namespace Imlight.CoreLib.Game.Services;
 
 public class WizardService : MessageService {
+    private const float ORIENTATION_TOLERANCE = 1.035f;
+
     private Wizard _activeWizard;
     private TypeCache.CoreObject _activeWizardGameObject;
 
     public WizardService(SessionActor sessionActor) : base(sessionActor) { }
 
-    protected static Props Props(SessionActor parentActor) {
-        return Akka.Actor.Props.Create(() => new WizardService(parentActor));
-    }
+    protected static Props Props(SessionActor parentActor)
+        => Akka.Actor.Props.Create(() => new WizardService(parentActor));
 
     protected override void OnDispose() {
         ((System.IDisposable) _activeWizard).Dispose();
@@ -75,9 +76,13 @@ public class WizardService : MessageService {
             unchecked((short) message.LocationX * 4),
             unchecked((short) message.LocationY * 4),
             unchecked((short) message.LocationZ * 4));
-
         _activeWizard.SetCachedLocation(position);
-        _activeWizard.SetCachedOrientation(message.Direction);
+
+        // Direction is a byte and it's packed. Unpack it and convert it to radians.
+        var initDir = message.Direction;
+        var degrees = initDir * (360f / byte.MaxValue) * ORIENTATION_TOLERANCE;
+        var radians = degrees * (System.Math.PI / 180f);
+        _activeWizard.SetCachedOrientation((byte) radians);
     }
 
     #endregion
