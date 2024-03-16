@@ -155,8 +155,9 @@ public class ZoneService : MessageService {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_FISHINTERACTION))]
     private void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_FISHINTERACTION message) {
+        // This is an exception. Sometimes the MoveService interval happens as we zone transfer.
         if (ZoneActor is null) {
-            throw new Exception("Zone Reference was null.");
+            return;
         }
 
         ZoneActor.Forward(message);
