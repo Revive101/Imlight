@@ -131,8 +131,13 @@ public class Wizard : IDisposable {
         WizardCollection.UpdateCharacterLocation(this, loc, Orientation.Z);
     }
 
-    public void SetPersistentOrientation(byte direction) {
-        Orientation = new Vector3(0, 0, direction * OrientationCompressionFactor);
+    public void SetPersistentOrientation(float orientation) {
+        Orientation = new Vector3(0, 0, orientation);
+        SetPersistentOrientation(Orientation);
+    }
+
+    private void SetPersistentOrientation(Vector3 orientation) {
+        Orientation = orientation;
 
         // Persistent save.
         WizardCollection.UpdateCharacterLocation(this, Location, Orientation.Z);

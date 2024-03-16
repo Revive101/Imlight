@@ -50,9 +50,8 @@ internal class AttachService : MessageService {
         // This is to remain consistent with the client's representation of orientation.
         var location = Util.GetVectorFromCompactString(message.Location);
         var actualLocation = new Vector3(location.X, location.Y, location.Z);
-        var orientation = location.W / CharacterHelper.OrientationCompressionFactor;
-        _wizard.SetCachedLocation(actualLocation);
-        _wizard.SetCachedOrientation((byte) orientation);
+        _wizard.SetPersistentLocation(actualLocation);
+        _wizard.SetPersistentOrientation(location.W);
 
         // Tiny anti-cheat measure. When the character object is created, we recalculate the game stats.
         CharacterHelper.RecalculateGameStats(_wizard);
