@@ -43,78 +43,28 @@ public class ZoneService : MessageService {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]
     private void ReceiveZoneTransferRequest(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message) {
-        // This is an internal zone transfer message. It's meant to be the very first message sent to the
-        // SessionActor in regards to a zone transfer. We're going to cache the destination zone and location,
-        // then start the zone transfer handshake with the client.
-
-        // Avoid duplicate transfer requests.
         if (_isTransferQueued) {
             return;
         }
 
-        var character = GetActiveWizard();
-
-        // If the zone is ready and we're sending to client, begin the zone transfer handshake with the client.
+        // Sending the server transfer request to the server will allocate and load the zone.
         var zoneDetails = AskServer<ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP>(message);
-        if (zoneDetails.ErrorCode == 0 && message.SendToClient) {
-            // Check if the destination zone is the same as the current zone. If so, we move the player to the
-            // destination coordinates using a SERVERTELEPORT.
-            if (message.DestinationZone == character.Zone) {
-                // Split coordinate string by commas.
-                var coords = message.DestinationLocation.Split(',').ToArray();
-                // Put split string coordinates into Vector3.
-                var destinationCoords = new SharpDX.Vector3(
-                    float.Parse(coords[0]) / 4,
-                    float.Parse(coords[1]) / 4,
-                    float.Parse(coords[2]) / 4);
-
-                var serverTele = new GAME_5_PROTOCOL.MSG_SERVERTELEPORT() {
-                    LocationX = (ushort) destinationCoords.X,
-                    LocationY = (ushort) destinationCoords.Y,
-                    LocationZ = (ushort) destinationCoords.Z,
-                    Direction = 0,
-                    MobileID = GetActiveGameObject().m_nMobileID,
-                };
-                SendToSocket(serverTele);
+        if (message.SendToClient && zoneDetails.ErrorCode == 0) {
+            // Check if the destination zone is the same as the current zone. If so, just teleport the player.
+            if (message.DestinationZone == GetActiveWizard().Zone) {
+                DoTeleport(message.DestinationLocation);
                 return;
             }
 
-            _isTransferQueued = true;
-
-            // Ask the client if it's okay with being transferred.
-            var msg = new GAME_5_PROTOCOL.MSG_ZONETRANSFERREQUEST {
-                ZoneName = message.DestinationZone,
-                SendAck = 1
-            };
-            SendToSocket(msg);
-
-            character.QueuedZoneName = message.DestinationZone;
-            character.QueuedZoneLocation = message.DestinationLocation;
+            ReadyClientForZoneTransfer(message);
         }
-
-        // If we're not sending this to client, this is an internal transfer, meaning we can immediately
-        // setup the new details.
-        if (!message.SendToClient) {
-            ZoneActor = zoneDetails.ZoneActorRef;
+        else {
+            // If we're not sending this message to the client, it means the zone is being loaded
+            // for MSG_ATTACH. In which case, the client is already prepared for the zone transfer.
+            SetZone(zoneDetails.ZoneActorRef);
         }
 
         Sender.Tell(zoneDetails);
-    }
-
-    [MessageHandler(typeof(WIZARD2_53_PROTOCOL.MSG_ZONEHOP))]
-    private void ReceiveZoneHop(WIZARD2_53_PROTOCOL.MSG_ZONEHOP message) {
-        // This message is sent when the client has enabled classic mode and wants to reload their current zone.
-        var character = GetActiveWizard();
-
-        _isTransferQueued = true;
-        var zoneTransferRequestMessage = new GAME_5_PROTOCOL.MSG_ZONETRANSFERREQUEST {
-            ZoneName = character.Zone,
-            SendAck = 0
-        };
-        SendToSocket(zoneTransferRequestMessage);
-
-        character.QueuedZoneName = character.Zone;
-        character.QueuedZoneLocation = Util.GetCompactStringFromVector(character.Location, character.Orientation);
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK))]
@@ -132,6 +82,22 @@ public class ZoneService : MessageService {
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_RETRYTELEPORT))]
     private void ReceiveRetryTeleport(GAME_5_PROTOCOL.MSG_RETRYTELEPORT message) {
         DoZoneTransfer();
+    }
+
+    [MessageHandler(typeof(WIZARD2_53_PROTOCOL.MSG_ZONEHOP))]
+    private void ReceiveZoneHop(WIZARD2_53_PROTOCOL.MSG_ZONEHOP message) {
+        // This message is sent when the client has enabled classic mode and wants to reload their current zone.
+        var character = GetActiveWizard();
+
+        _isTransferQueued = true;
+        var zoneTransferRequestMessage = new GAME_5_PROTOCOL.MSG_ZONETRANSFERREQUEST {
+            ZoneName = character.Zone,
+            SendAck = 0
+        };
+        SendToSocket(zoneTransferRequestMessage);
+
+        character.QueuedZoneName = character.Zone;
+        character.QueuedZoneLocation = Util.GetCompactStringFromVector(character.Location, character.Orientation);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
@@ -170,6 +136,25 @@ public class ZoneService : MessageService {
         }
 
         ZoneActor.Forward(message);
+    }
+
+    private void SetZone(IActorRef actorRef) {
+        ZoneActor = actorRef;
+    }
+
+    private void ReadyClientForZoneTransfer(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message) {
+        var character = GetActiveWizard();
+        _isTransferQueued = true;
+
+        // Ask the client if it's okay with being transferred.
+        var msg = new GAME_5_PROTOCOL.MSG_ZONETRANSFERREQUEST {
+            ZoneName = message.DestinationZone,
+            SendAck = 1
+        };
+        SendToSocket(msg);
+
+        character.QueuedZoneName = message.DestinationZone;
+        character.QueuedZoneLocation = message.DestinationLocation;
     }
 
     private void DoZoneTransfer() {
@@ -213,5 +198,17 @@ public class ZoneService : MessageService {
             };
             SendToSocket(serverTransfer);
         }
+    }
+
+    private void DoTeleport(string location) {
+        var coords = Util.GetVectorFromCompactString(location);
+        var serverTele = new GAME_5_PROTOCOL.MSG_SERVERTELEPORT() {
+            LocationX = (ushort) coords.X,
+            LocationY = (ushort) coords.Y,
+            LocationZ = (ushort) coords.Z,
+            Direction = 0,
+            MobileID = GetActiveGameObject().m_nMobileID,
+        };
+        SendToSocket(serverTele);
     }
 }
