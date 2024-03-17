@@ -712,7 +712,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         }
 
         var combatParticipant = subCircle.AssignParticipant(actorRef, coreObject);
-        Duel.m_flatParticipantList.Add(combatParticipant);
+        //Duel.m_flatParticipantList.Add(combatParticipant);
 
         return true;
     }

@@ -35,6 +35,5 @@ public class CombatDuelActorSupervisor : ReceiveProtocolDispatcher {
         duelActor.Forward(message);
     }
 
-    // Todo: move this to base class
     private IActorRef CreateChildActor(Props props) => Context.ActorOf(props);
 }
