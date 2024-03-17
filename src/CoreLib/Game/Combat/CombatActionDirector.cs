@@ -76,22 +76,8 @@ public class CombatActionDirector {
     }
 
     public void AddCombatMove(CombatMoveType type, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target, Spell spell) {
-        if (!caster.AddedToDuel || !target.AddedToDuel) {
-            //throw new InvalidOperationException("Both the caster and target must be added to the duel.");
-            return;
-        }
-        if (!caster.IsAlive) {
-            throw new InvalidOperationException("The caster must be alive.");
-        }
-
         // If this spell is already queued by the same caster, remove all of their queued actions.
         _queuedCombatActions.RemoveAll(x => x.SpellCaster == caster);
-
-        if (!spell.m_pipCost.m_xPipSpell && caster.CombatParticipant.m_pipCount.m_genericPips < spell.m_pipCost.m_spellRank) {
-            Logger.Error("Duel {0} | Slot {1} | Not enough pips to cast spell {2}",
-                Logger.Args(_duel.m_duelID, caster.SlotIndex, spell.m_templateID));
-            return;
-        }
 
         // Determine if the spell fizzles.
         var spellHits = spell is not null && SpellHits(caster, spell);
@@ -153,9 +139,6 @@ public class CombatActionDirector {
     }
 
     private void HandleFizzleAction(QueuedCombatAction action, CombatActionListObj combatActionList) {
-        Logger.Debug("Duel {0} | Slot {1} | Spell {2} fizzles",
-            Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex, action.Spell.m_templateID));
-
         var fizzleAction = new CombatAction {
             m_spellCaster = action.SpellCaster.SlotIndex,
             m_targetSubcircleList = new List<int> { action.TargetSubcircle.SlotIndex },
@@ -174,11 +157,30 @@ public class CombatActionDirector {
             return;
         }
 
-        var combatParticipant = action.SpellCaster.CombatParticipant;
+        // Remove the caster's pips. If the spell is mastered, power pips count as 2 pips.
+        // Remove power pips before generic pips.
         var spell = action.Spell;
+        var isMastered = action.SpellCaster.HasSchoolMastery(spell.m_magicSchoolID);
+        var pipCount = action.SpellCaster.CombatParticipant.m_pipCount;
+        int pipsToDeduct = spell.m_pipCost.m_spellRank;
 
-        // Remove the caster's pips.
-        combatParticipant.m_pipCount.m_genericPips -= spell.m_pipCost.m_spellRank;
+        while (pipsToDeduct > 0) {
+            if (isMastered && pipCount.m_powerPips > 0) {
+                pipCount.m_powerPips--;
+                pipsToDeduct -= 2;
+            }
+            else if (!isMastered && pipCount.m_powerPips > 0) {
+                pipCount.m_powerPips--;
+                pipsToDeduct--;
+            }
+            else if (pipCount.m_powerPips == 0 && pipCount.m_genericPips > 0) {
+                pipCount.m_genericPips--;
+                pipsToDeduct--;
+            }
+            else if (pipCount.m_powerPips == 0 && pipCount.m_genericPips == 0) {
+                throw new InvalidOperationException("Not enough pips to cast the spell.");
+            }
+        }
     }
 
     private void LogCombatAction(CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target, Spell spell) {
@@ -197,6 +199,7 @@ public class CombatActionDirector {
         foreach (var action in combatActionList.m_actionList) {
             // Spell fizzled. Do not log.
             if (action.m_spellHits == (char) 0) {
+                Logger.Debug("Duel {0} | Slot {1} | Spell fizzles", Logger.Args(_duel.m_duelID, action.m_spellCaster));
                 continue;
             }
 

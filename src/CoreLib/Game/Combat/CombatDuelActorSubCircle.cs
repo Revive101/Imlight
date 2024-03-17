@@ -147,6 +147,23 @@ public class CombatDuelActorSubCircle {
         }
     }
 
+    internal bool HasSchoolMastery(uint magicSchoolID) {
+        if (ParticipantGameStats.m_schoolID == magicSchoolID) {
+            return true;
+        }
+
+        return (MagicSchool) magicSchoolID switch {
+            MagicSchool.Storm   => ParticipantGameStats.m_stormMastery   > 0,
+            MagicSchool.Fire    => ParticipantGameStats.m_fireMastery    > 0,
+            MagicSchool.Ice     => ParticipantGameStats.m_iceMastery     > 0,
+            MagicSchool.Myth    => ParticipantGameStats.m_mythMastery    > 0,
+            MagicSchool.Life    => ParticipantGameStats.m_lifeMastery    > 0,
+            MagicSchool.Death   => ParticipantGameStats.m_deathMastery   > 0,
+            MagicSchool.Balance => ParticipantGameStats.m_balanceMastery > 0,
+            _ => false,
+        };
+    }
+
     internal T GetStatBySchool<T>(List<T> list, MagicSchool enumValue) {
         if (list is null || list.Count <= 0) {
             return default;
@@ -271,8 +288,10 @@ public class CombatDuelActorSubCircle {
     }
 
     private bool DeterminePowerPipGain(CombatParticipant participant) {
-        var powerPipProbability = participant.m_pGameStats.m_powerPipBase;
-        var powerPipChance = new Random().Next(0, 100);
-        return powerPipChance <= powerPipProbability;
+        var stats = participant.m_pGameStats;
+        var powerPipChance = 100 * (stats.m_powerPipBase + stats.m_powerPipBonusPercentAll);
+
+        var powerPipRoll = new Random().Next(0, 100);
+        return powerPipRoll <= powerPipChance;
     }
 }

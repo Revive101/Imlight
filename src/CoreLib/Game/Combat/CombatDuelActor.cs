@@ -271,8 +271,8 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         // There are 2 creatures per player in the duel. There can only be 4 creatures in the duel.
         var slotAvailable = (message.Team == CombatTeam.Player)
             ? PlayerCount   < 4
-            : CreatureCount < (PlayerCount * 2) && CreatureCount < 4;
-            //: CreatureCount < 4;
+            //: CreatureCount < (PlayerCount * 2) && CreatureCount < 4;
+            : CreatureCount < 2;
         var rsp = new COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLERSP { Available = slotAvailable };
         Sender.Tell(rsp);
     }
@@ -291,8 +291,13 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
         // Find which sub circle they were targeting. If the target is 0, it's self.
         var targetOrSelf = message.SpellTarget == 0 ? subCircle : _subCircles[message.SpellTarget - 1];
+        if (!targetOrSelf.AddedToDuel) {
+            throw new InvalidOperationException("Both the caster and target must be added to the duel.");
+        }
+        if (!targetOrSelf.IsAlive) {
+            throw new InvalidOperationException("The caster must be alive.");
+        }
 
-        // Parse the MoveType as an enum.
         var moveType = (CombatMoveType) message.MoveType;
 
         // If this is a discard, we don't want to send the event to the director
@@ -305,6 +310,10 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         else {
             // Find what spell they were casting.
             var spell = subCircle.GetSpellFromLastHand(message.SpellSelection);
+            if (!DoesParticipantHavePipsForSpell(subCircle, spell)) {
+                throw new InvalidOperationException("The participant does not have enough pips for this spell.");
+            }
+
             ActionDirector.AddCombatMove(moveType, subCircle, targetOrSelf, spell);
         }
     }
@@ -323,6 +332,8 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
                 ParticipantData = serializedData,
             };
             ZoneBroadcast(msg);
+
+            Logger.Debug("Duel {0} | Slot {1} | Serialized participant sent", Logger.Args(Duel.m_duelID, circle.SlotIndex));
 
             circle.AddedToDuel = true;
         });
@@ -578,6 +589,20 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
             circle.DoPipGain();
         });
+    }
+
+    private bool DoesParticipantHavePipsForSpell(CombatDuelActorSubCircle circle, Spell spell) {
+        var spellRank = spell.m_pipCost.m_spellRank;
+        var genericPips = circle.CombatParticipant.m_pipCount.m_genericPips;
+        var powerPips = circle.CombatParticipant.m_pipCount.m_powerPips;
+        var isMastered = circle.HasSchoolMastery(spell.m_magicSchoolID);
+
+        // Power pips count as 2 generic pips if the spell is mastered.
+        var totalPips = isMastered
+            ? genericPips + (powerPips * 2)
+            : genericPips + powerPips;
+
+        return totalPips >= spellRank;
     }
 
     private void EnactActionOnSubCircles(Action<CombatDuelActorSubCircle> action) {
