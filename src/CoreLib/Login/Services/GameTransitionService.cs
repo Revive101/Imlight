@@ -3,7 +3,6 @@
  * Proprietary and confidential.
  */
 
-using System.Net;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
@@ -11,8 +10,6 @@ using Imlight.Common.IO;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
-using Imlight.CoreLib.Shared.Resources;
-using SharpDX;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models.Player;
 using SharpDX;
@@ -22,9 +19,8 @@ namespace Imlight.CoreLib.Login.Services;
 internal class GameTransitionService : MessageService {
     public GameTransitionService(SessionActor sessionActor) : base(sessionActor) { }
 
-    protected static Props Props(SessionActor parentActor) {
-        return Akka.Actor.Props.Create(() => new GameTransitionService(parentActor));
-    }
+    protected static Props Props(SessionActor parentActor)
+        => Akka.Actor.Props.Create(() => new GameTransitionService(parentActor));
 
     [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_SELECTCHARACTER))]
     private void ReceiveSelectCharacter(LOGIN_7_PROTOCOL.MSG_SELECTCHARACTER message) {
@@ -49,23 +45,26 @@ internal class GameTransitionService : MessageService {
         var serverEnqueueResult = (LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED) SessionActor.EnqueueToServer(gameServer.ActorRef);
         var allocatedKey = CreateSessionKey(gameServer.ActorRef, account);
 
-        Logger.Information("Sending login client {ID} to game server {IP}:{Port}.",
-            Logger.Args(SessionActor.SessionID, gameServer.IP, gameServer.Port));
+        var wizardNAme = character.PlayerNameBehavior.GetWizardName();
+        Logger.Information("Sending wizard {name} to game server {IP}:{Port}.",
+            Logger.Args(wizardNAme, gameServer.IP, gameServer.Port));
 
+        // If this character was just made, their default location is Vector3.Zero.
+        // In such a case, we'll default them to a location called "Start," which the game client
+        // usually has a location for.
         var stringLocation = character.Location == Vector3.Zero
             ? "Start"
             : Util.GetCompactStringFromVector(character.Location, character.Orientation);
 
-        // Craft a successful message. This will instead be cached if the server is full.
         var charSelectedMsg = new LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED() {
             // Set details about the game server.
             IP = gameServer.IP,
             TCPPort = gameServer.Port,
             UDPPort = gameServer.Port,
-            Key = allocatedKey,                   // Loggerin server -> game server session key.
+            Key = allocatedKey,                   // Login server -> game server session key.
             PrepPhase = 0,                        // (0|1): Player is in queue.
             Slot = 0,                             // The player's position in said queue.
-            LoginServer = "Imlight.Login",       // TODO: This should be sourced from elsewhere.
+            LoginServer = "Imlight.Login",        // TODO: This should be sourced from elsewhere.
 
             // Set details about the character.
             UserID = account.AccountId,

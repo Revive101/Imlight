@@ -264,4 +264,10 @@ public class ZONE_102_PROTOCOL : IServerProtocol
         public bool Failure;
         public string Error;
     }
+
+    public class MSG_PLAYERMOVEINTERVAL : IServerMessage
+    {
+        public byte MessageOrder { get; } = 22;
+        public byte ServiceID { get; } = 102;
+    }
 }

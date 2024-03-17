@@ -247,13 +247,8 @@ public class WizardZone : ReceiveProtocolDispatcher {
 
         _zonePlayers.Remove(message.Player);
 
-        // Wait a little while until sending the reply back, just in case the zone objects have not yet been cleaned.
-        var s = Sender;
-        Task.Run(async () => {
-            await Task.Delay(TimeSpan.FromSeconds(1));
-            var rsp = new ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP();
-            s.Tell(rsp);
-        }).Wait();
+        var rsp = new ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP();
+        Sender.Tell(rsp);
 
         Logger.Debug("Player {Name} removed from zone {ZoneName}.",
             Logger.Args(message.Player.Path.Name, ZoneName));

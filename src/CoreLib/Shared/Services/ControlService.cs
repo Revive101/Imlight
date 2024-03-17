@@ -29,9 +29,7 @@ public class ControlService : MessageService {
         SendSessionOffer();
     }
 
-    protected static Props Props(SessionActor parentActor) {
-        return Akka.Actor.Props.Create(() => new ControlService(parentActor));
-    }
+    protected static Props Props(SessionActor parentActor) => Akka.Actor.Props.Create(() => new ControlService(parentActor));
 
     protected override void ConfigureReceivers() {
         // These are sent from self on interval to remind the actor of the session heartbeat.
@@ -43,6 +41,7 @@ public class ControlService : MessageService {
     }
 
     private void SendSessionOffer() {
+        // Ask the game client for a session.
         var currentUnixTimestamp = (uint) (DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
         var timestampUpper = (int) (currentUnixTimestamp >> 32);
         var timestampLower = (int) (currentUnixTimestamp & uint.MaxValue);
@@ -74,6 +73,7 @@ public class ControlService : MessageService {
 
     [MessageHandler(typeof(ControlMessageProtocol.SessionAccept))]
     private void ReceiveSessionAccept(ControlMessageProtocol.SessionAccept message) {
+        // The game client approves of the agreed upon session.
         _responseStopwatch.Stop();
         if (message.SessionId != SessionActor.SessionID) {
             throw new Exception($"SessionActor [{SessionActor.SessionID}] misaligned Session ID.");
@@ -181,7 +181,7 @@ public class ControlService : MessageService {
             return;
         }
 
-        Logger.Debug("SessionActor {SessionID} " +
+        Logger.Verbose("SessionActor {SessionID} " +
                   "did not return a SessionAccept message in time", Logger.Args(SessionActor.SessionID));
         CloseSession();
     }
