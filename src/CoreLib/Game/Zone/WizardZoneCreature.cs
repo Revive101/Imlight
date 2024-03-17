@@ -253,6 +253,10 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_CREATUREFISHINTERACTIONINTERVAL))]
     private void ReceiveFishInteractionInterval(ZONE_102_PROTOCOL.MSG_CREATUREFISHINTERACTIONINTERVAL message) {
+        if (_creatureState == CreatureState.Combat) {
+            return;
+        }
+
         ActiveGameObject.m_location = GetPosition();
 
         var msg = new ZONE_102_PROTOCOL.MSG_FISHINTERACTION() {

@@ -77,9 +77,6 @@ public class WizardZoneSigil : WizardZoneObject {
         if (_activeDuel is null || _activeDuelActor is null) {
             return;
         }
-        if (_activeDuel.m_flatParticipantList.Any(x => x.m_ownerID == ActiveGameObject.m_globalID)) {
-            return;
-        }
 
         if (IsCreatureSlotAvailable()) {
             AddParticipant(suspect, creature);
