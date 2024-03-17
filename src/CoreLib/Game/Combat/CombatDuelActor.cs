@@ -107,7 +107,15 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
         // Create duel object and the 8 subcircles.
         Duel = CreateDuelWithDefaults(message.SigilId);
+        Duel.m_firstTeamToAct = (int) DetermineFirstTeam();
         _subCircles = CreateDuelActorSubCircles(message.SigilTemplate);
+
+        // Return the duel details to the sender. This is sent back to the sigil that requested the duel.
+        var rsp = new COMBAT_106_PROTOCOL.MSG_DUELDETAILS {
+            DuelActor = Self,
+            Duel = Duel
+        };
+        Sender.Tell(rsp);
 
         // When the duel is created, it must be created by two suspects: the player and the creature.
         // The creatures will always be team A and the players will always be team B. Assign the first
@@ -125,15 +133,6 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         ActionDirector = new CombatActionDirector(Duel, _subCircles);
 
         Logger.Debug("Duel {0} | Created. Grace period over in {1}", Logger.Args(Duel.m_duelID, DUEL_GRACE_PERIOD_IN_SECONDS));
-
-        // Return the duel details to the sender. This is sent back to the sigil that requested the duel.
-        var rsp = new COMBAT_106_PROTOCOL.MSG_DUELDETAILS {
-            DuelActor = Self,
-            Duel = Duel
-        };
-        Sender.Tell(rsp);
-
-        Duel.m_firstTeamToAct = (int) DetermineFirstTeam();
 
         // Fire a message to self to start the duel after the grace period has ended.
         var delay = TimeSpan.FromSeconds(DUEL_GRACE_PERIOD_IN_SECONDS);

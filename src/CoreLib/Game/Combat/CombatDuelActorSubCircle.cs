@@ -187,7 +187,7 @@ public class CombatDuelActorSubCircle {
             m_isMonster = 0,
             m_teamID = 0,
             m_primaryMagicSchoolID = (int) wizard.MagicSchoolBehavior.MagicSchool,
-            m_pipCount = new() { m_powerPips = 0, m_genericPips = 1 },
+            m_pipCount = new() { m_powerPips = 0, m_genericPips = 0 },
             m_pipRoundRates = new(),
             m_originalTeam = 0,
             m_maxHandSize = 7,
@@ -197,7 +197,7 @@ public class CombatDuelActorSubCircle {
             m_pGameStats = ParticipantGameStats,
             m_pPlayDeck = new PlayDeck(),
             m_subcircle = SlotIndex,
-            m_dynamicSymbol = DynamicSigilSymbol.NotSet,
+            m_dynamicSymbol = dynamicSymbol,
             m_PipsSuspended = false,
 
             m_color = _color,
@@ -220,13 +220,13 @@ public class CombatDuelActorSubCircle {
             m_ownerID = ParticipantObject.m_globalID,
             m_templateID = 2199023290637, // Captured 2199023290637 from live
             m_isPlayer = false,
-            //m_isMonster = 1u, // Doesn't seem to be used.
+            m_isMonster = 1, // Doesn't seem to be used.
             m_teamID = 1,
             m_originalTeam = 1,
             m_maxHandSize = 7,
             m_primaryMagicSchoolID = 83375795,
             m_pipCount = new() { m_powerPips = 0, m_genericPips = 0 },
-            m_pipRoundRates = new() { new ModifyPipRoundRateData { m_delta = 1, m_rounds = 1 } },
+            m_pipRoundRates = new(),
             m_playerHealth = creatureStats.GameStats.m_currentHitpoints,
             m_maxPlayerHealth = creatureStats.GameStats.m_baseHitpoints,
             m_myTeamTurn = _duelActor.Duel.m_firstTeamToAct == 1,
@@ -234,7 +234,7 @@ public class CombatDuelActorSubCircle {
             m_mobLevel = creatureStats.CombatLevel,
 
             m_subcircle = SlotIndex,
-            m_dynamicSymbol = DynamicSigilSymbol.NotSet,
+            m_dynamicSymbol = dynamicSymbol,
 
             m_color = _color,
             m_rotation = _rotation,
