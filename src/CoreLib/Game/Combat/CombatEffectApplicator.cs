@@ -78,6 +78,9 @@ internal class CombatEffectApplicator {
             case SpellEffect.kSpellEffects.kDamage:
                 ApplyEffectDamage(effect, caster, targets);
                 break;
+            case SpellEffect.kSpellEffects.kHeal:
+                ApplyEffectHeal(effect, caster, targets);
+                break;
             default:
                 break;
         }
@@ -112,23 +115,47 @@ internal class CombatEffectApplicator {
         }
     }
 
-    private static double GetFlatDamageIncrease(CombatDuelActorSubCircle caster, MagicSchool damageType) {
-        double damageFlatIncrease = caster.GetStatBySchool(caster.ParticipantGameStats.m_dmgBonusFlat, damageType);
+    private static void ApplyEffectHeal(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets) {
+        int heal = effect.m_effectParam;
+
+        // Calculate heal increase
+        var percentOutgoingHealIncrease = GetPercentOutgoingHealIncrease(caster);
+        heal = (int) Math.Ceiling(heal * (1 + percentOutgoingHealIncrease));
+
+        // Apply heal to each target
+        foreach (var target in targets) {
+            var percentIncomingHealIncrease = GetPercentIncomingHealIncrease(target);
+            heal = (int) Math.Ceiling(heal * (1 + percentIncomingHealIncrease));
+
+            target.ParticipantGameStats.m_currentHitpoints += heal;
+        }
+    }
+
+    private static float GetFlatDamageIncrease(CombatDuelActorSubCircle caster, MagicSchool damageType) {
+        var damageFlatIncrease = caster.GetStatBySchool(caster.ParticipantGameStats.m_dmgBonusFlat, damageType);
         return damageFlatIncrease + caster.ParticipantGameStats.m_dmgBonusFlatAll;
     }
 
-    private static double GetPercentDamageIncrease(CombatDuelActorSubCircle caster, MagicSchool damageType) {
-        double damagePercentIncrease = caster.GetStatBySchool(caster.ParticipantGameStats.m_dmgBonusPercent, damageType);
+    private static float GetPercentDamageIncrease(CombatDuelActorSubCircle caster, MagicSchool damageType) {
+        var damagePercentIncrease = caster.GetStatBySchool(caster.ParticipantGameStats.m_dmgBonusPercent, damageType);
         return damagePercentIncrease + caster.ParticipantGameStats.m_dmgBonusPercentAll;
     }
 
-    private static double GetFlatDamageReduction(CombatDuelActorSubCircle target, MagicSchool damageType) {
-        double damageReductionFlat = target.GetStatBySchool(target.ParticipantGameStats.m_dmgReduceFlat, damageType);
+    private static float GetFlatDamageReduction(CombatDuelActorSubCircle target, MagicSchool damageType) {
+        var damageReductionFlat = target.GetStatBySchool(target.ParticipantGameStats.m_dmgReduceFlat, damageType);
         return damageReductionFlat + target.ParticipantGameStats.m_dmgReduceFlatAll;
     }
 
-    private static double GetPercentDamageReduction(CombatDuelActorSubCircle target, MagicSchool damageType) {
-        double damageReductionPercent = target.GetStatBySchool(target.ParticipantGameStats.m_dmgReducePercent, damageType);
+    private static float GetPercentDamageReduction(CombatDuelActorSubCircle target, MagicSchool damageType) {
+        var damageReductionPercent = target.GetStatBySchool(target.ParticipantGameStats.m_dmgReducePercent, damageType);
         return damageReductionPercent + target.ParticipantGameStats.m_dmgReducePercentAll;
+    }
+
+    private static float GetPercentOutgoingHealIncrease(CombatDuelActorSubCircle caster) {
+        return caster.ParticipantGameStats.m_healBonusPercentAll;;
+    }
+
+    private static float GetPercentIncomingHealIncrease(CombatDuelActorSubCircle target) {
+        return target.ParticipantGameStats.m_healIncBonusPercentAll;
     }
 }
