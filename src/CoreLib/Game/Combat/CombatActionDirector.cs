@@ -75,50 +75,6 @@ public class CombatActionDirector {
         return combatActionList;
     }
 
-    public CombatPipListObj GetCombatParticipantsPips() {
-        var pips = new CombatPipListObj { m_pipList = new List<ParticipantPipData>() };
-
-        EnactActionOnSubCircles(circle => {
-            if (!circle.AddedToDuel || !circle.IsAlive) {
-                return;
-            }
-
-            var genericPips = circle.CombatParticipant.m_pipCount.m_genericPips;
-            var powerPips = circle.CombatParticipant.m_pipCount.m_powerPips;
-            var participantPipData = new ParticipantPipData {
-                m_acq = 1,
-                m_partID = (GID) circle.ParticipantObject.m_globalID,
-                m_pips = new PipCount() {
-                    m_genericPips = genericPips,
-                    m_powerPips = powerPips,
-                }
-            };
-            pips.m_pipList.Add(participantPipData);
-        });
-
-        return pips;
-    }
-
-    public CombatHealthListObj GetCombatParticipantsHealth() {
-        // Create the new health list object.
-        var healthList = new CombatHealthListObj { m_healthList = new List<ParticipantParameter>() };
-
-        // Iterate through each sub circle and add the participant's health to the list.
-        EnactActionOnSubCircles(circle => {
-            if (!circle.AddedToDuel || !circle.IsAlive) {
-                return;
-            }
-
-            var participantHealth = new ParticipantParameter {
-                m_data = (uint) circle.ParticipantGameStats.m_currentHitpoints,
-                m_partID = (GID) circle.ParticipantObject.m_globalID,
-            };
-            healthList.m_healthList.Add(participantHealth);
-        });
-
-        return healthList;
-    }
-
     public void AddCombatMove(CombatMoveType type, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target, Spell spell) {
         if (!caster.AddedToDuel || !target.AddedToDuel) {
             //throw new InvalidOperationException("Both the caster and target must be added to the duel.");
@@ -258,12 +214,6 @@ public class CombatActionDirector {
         }
     }
 
-    private void EnactActionOnSubCircles(Action<CombatDuelActorSubCircle> action) {
-        foreach (var subCircle in ActiveSubCircles) {
-            action(subCircle);
-        }
-    }
-
     private bool SpellHits(CombatDuelActorSubCircle caster, Spell spell) {
         var spellAccuracy = (int) spell.m_accuracy;
         var stats = caster.CombatParticipant.m_pGameStats;
@@ -273,9 +223,12 @@ public class CombatActionDirector {
         var percentIncreaseAll = stats.m_accBonusPercentAll;
         var percentDecrease = caster.GetStatBySchool(stats.m_accReducePercent, school);
         var percentDecreaseAll = stats.m_accReducePercentAll;
-        var totalIncrease = percentIncrease + percentIncreaseAll;
-        var totalDecrease = percentDecrease + percentDecreaseAll;
 
+        // Convert to percentages for calculation
+        var totalIncrease = (percentIncrease + percentIncreaseAll) * 100;
+        var totalDecrease = (percentDecrease + percentDecreaseAll) * 100;
+
+        // Apply percentages to the spell accuracy
         var newSpellAccuracy = spellAccuracy * (1 + totalIncrease / 100.0) * (1 - totalDecrease / 100.0);
 
         var hitChance = new Random().Next(0, 100);
