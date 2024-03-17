@@ -27,6 +27,7 @@ public class CombatActionDirector {
     private const ulong DEQUEUE_SPELL_TEMPLATE_ID = 661258515;
 
     private readonly Duel _duel;
+    private readonly CombatEffectApplicator _effects;
 
     private readonly CombatDuelActorSubCircle[] _subCircles = new CombatDuelActorSubCircle[8];
     private CombatDuelActorSubCircle[] ActiveSubCircles => _subCircles.Where(x => x.Occupied).ToArray();
@@ -36,6 +37,7 @@ public class CombatActionDirector {
     public CombatActionDirector(Duel duel, CombatDuelActorSubCircle[] actorSubCircles) {
         _duel = duel;
         _subCircles = actorSubCircles;
+        _effects = new CombatEffectApplicator(actorSubCircles);
     }
 
     public void Reset() {
@@ -150,7 +152,7 @@ public class CombatActionDirector {
     }
 
     private void HandleSuccessfulAction(QueuedCombatAction action, CombatActionListObj combatActionList) {
-        var combatAction = CombatEffectApplicator.ApplyCombatAction(action);
+        var combatAction = _effects.ApplyCombatAction(action);
         combatActionList.m_actionList.Add(combatAction);
 
         if (action.Spell is null) {

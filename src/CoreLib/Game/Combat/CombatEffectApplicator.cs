@@ -6,14 +6,23 @@
 using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Combat;
 
-internal static class CombatEffectApplicator {
+internal class CombatEffectApplicator {
     private const float DAMAGE_PERCENT_MAX = 2.0f;
 
-    internal static CombatAction ApplyCombatAction(QueuedCombatAction action) {
+    private readonly CombatDuelActorSubCircle[] _subCircles;
+    private CombatDuelActorSubCircle[] _activeSubCircles => _subCircles.Where(x => x.AddedToDuel && x.IsAlive).ToArray();
+
+    // ctor
+    public CombatEffectApplicator(CombatDuelActorSubCircle[] actorSubCircles) {
+        _subCircles = actorSubCircles;
+    }
+
+    internal CombatAction ApplyCombatAction(QueuedCombatAction action) {
         var effectStack = new CombatEffectStack();
 
         if (action.Spell is not null) {
@@ -44,13 +53,23 @@ internal static class CombatEffectApplicator {
         };
     }
 
-    private static void ApplyEffect(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target) {
-        var effectTarget = effect.m_effectTarget;
-
+    private void ApplyEffect(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target) {
         var targets = new CombatDuelActorSubCircle[] { target };
-        if (effectTarget == SpellEffect.kEffectTarget.kEnemySingle
-         || effectTarget == SpellEffect.kEffectTarget.kFriendlySingle) {
-            targets = new[] { target };
+        switch (effect.m_effectTarget)
+        {
+            case SpellEffect.kEffectTarget.kEnemySingle:
+            case SpellEffect.kEffectTarget.kFriendlySingle:
+            case SpellEffect.kEffectTarget.kSelf:
+                targets = new[] { target };
+                break;
+            case SpellEffect.kEffectTarget.kFriendlyTeam:
+            case SpellEffect.kEffectTarget.kFriendlyTeamAllAtOnce:
+                targets = _activeSubCircles.Where(x => x.OccupiedTeam == caster.OccupiedTeam).ToArray();
+                break;
+            case SpellEffect.kEffectTarget.kEnemyTeam:
+            case SpellEffect.kEffectTarget.kEnemyTeamAllAtOnce:
+                targets = _activeSubCircles.Where(x => x.OccupiedTeam != caster.OccupiedTeam).ToArray();
+                break;
         }
 
         var effectType = effect.m_effectType;
