@@ -36,6 +36,7 @@ public class CombatDuelActorSubCircle {
     internal WizGameStats ParticipantGameStats { get; private set; }
     internal CombatParticipant CombatParticipant { get; private set; }
     internal bool AddedToDuel { get; set;}
+    internal readonly List<SpellEffect> HangingEffects = new();
     public uint AvailableSpells {
         get {
             if (_combatHand is null) {
