@@ -271,8 +271,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         // There are 2 creatures per player in the duel. There can only be 4 creatures in the duel.
         var slotAvailable = (message.Team == CombatTeam.Player)
             ? PlayerCount   < 4
-            //: CreatureCount < (PlayerCount * 2) && CreatureCount < 4;
-            : CreatureCount < 2;
+            : CreatureCount < (PlayerCount * 2) && CreatureCount < 4;
         var rsp = new COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLERSP { Available = slotAvailable };
         Sender.Tell(rsp);
     }
@@ -289,12 +288,12 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             return;
         }
 
-        // Find which sub circle they were targeting. If the target is 0, it's self.
-        var targetOrSelf = message.SpellTarget == 0 ? subCircle : _subCircles[message.SpellTarget - 1];
-        if (!targetOrSelf.AddedToDuel) {
+        // Find which sub circle they were targeting. If the target is null, it's self.
+        var target = GetTargetFromCombatSelection(message.SpellTarget) ?? subCircle;
+        if (!target.AddedToDuel) {
             throw new InvalidOperationException("Both the caster and target must be added to the duel.");
         }
-        if (!targetOrSelf.IsAlive) {
+        if (!target.IsAlive) {
             throw new InvalidOperationException("The caster must be alive.");
         }
 
@@ -314,7 +313,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
                 throw new InvalidOperationException("The participant does not have enough pips for this spell.");
             }
 
-            ActionDirector.AddCombatMove(moveType, subCircle, targetOrSelf, spell);
+            ActionDirector.AddCombatMove(moveType, subCircle, target, spell);
         }
     }
 
@@ -603,6 +602,17 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             : genericPips + powerPips;
 
         return totalPips >= spellRank;
+    }
+
+    private CombatDuelActorSubCircle GetTargetFromCombatSelection(uint selection) {
+        // A selection of 0 means a target of self.
+        if (selection == 0) {
+            return null;
+        }
+
+        // The selection we're given is a power of 2. We can use this to find the index of the sub circle.
+        var targetIndex = (int) Math.Log(selection, 2);
+        return _subCircles[targetIndex];
     }
 
     private void EnactActionOnSubCircles(Action<CombatDuelActorSubCircle> action) {

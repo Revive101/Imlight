@@ -37,6 +37,9 @@ internal class MoveService : MessageService {
         var direction = (float) (message.Direction * Math.PI * 2 / 250);
 
         var activeCharacterObject = GetActiveGameObject();
+        if (activeCharacterObject is null) {
+            return;
+        }
         activeCharacterObject.m_location = new Vector3(x, y, z);
         activeCharacterObject.m_orientation = new Vector3(0, 0, direction);
 
