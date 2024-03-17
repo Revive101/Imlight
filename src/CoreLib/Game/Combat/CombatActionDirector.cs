@@ -30,41 +30,17 @@ public class CombatActionDirector {
 
     private readonly CombatDuelActorSubCircle[] _subCircles = new CombatDuelActorSubCircle[8];
     private CombatDuelActorSubCircle[] ActiveSubCircles => _subCircles.Where(x => x.Occupied).ToArray();
-    private bool _awaitingCombatMoves;
     private List<QueuedCombatAction> _queuedCombatActions;
 
     // ctor
     public CombatActionDirector(Duel duel, CombatDuelActorSubCircle[] actorSubCircles) {
         _duel = duel;
         _subCircles = actorSubCircles;
-        _duel.m_firstTeamToAct = (int) DetermineFirstTeam();
     }
 
-    public void StartRound() {
+    public void Reset() {
         // Reset the rounds combat action list.
-        _awaitingCombatMoves = true;
         _queuedCombatActions = new List<QueuedCombatAction>();
-
-        // Determine the power pip gain for each participant.
-        EnactActionOnSubCircles(circle => {
-            if (!circle.AddedToDuel) {
-                return;
-            }
-
-            var participant = circle.CombatParticipant;
-            var gainedPowerPip = DeterminePowerPipGain(participant);
-            if (gainedPowerPip) {
-                participant.m_pipCount.m_powerPips++;
-            }
-            else {
-                participant.m_pipCount.m_genericPips++;
-            }
-        });
-    }
-
-    public void EndRound() {
-        _awaitingCombatMoves = false;
-        _queuedCombatActions = null;
     }
 
     public uint GetQueuedCombatActionsTime() {
@@ -107,12 +83,14 @@ public class CombatActionDirector {
                 return;
             }
 
+            var genericPips = circle.CombatParticipant.m_pipCount.m_genericPips;
+            var powerPips = circle.CombatParticipant.m_pipCount.m_powerPips;
             var participantPipData = new ParticipantPipData {
                 m_acq = 1,
                 m_partID = (GID) circle.ParticipantObject.m_globalID,
                 m_pips = new PipCount() {
-                    m_genericPips = circle.CombatParticipant.m_pipCount.m_genericPips,
-                    m_powerPips = circle.CombatParticipant.m_pipCount.m_powerPips,
+                    m_genericPips = genericPips,
+                    m_powerPips = powerPips,
                 }
             };
             pips.m_pipList.Add(participantPipData);
@@ -142,10 +120,6 @@ public class CombatActionDirector {
     }
 
     public void AddCombatMove(CombatMoveType type, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target, Spell spell) {
-        if (!_awaitingCombatMoves) {
-            Logger.Debug("Duel {0} | Combat moves are not being accepted at this time", Logger.Args(_duel.m_duelID));
-            return;
-        }
         if (!caster.AddedToDuel || !target.AddedToDuel) {
             //throw new InvalidOperationException("Both the caster and target must be added to the duel.");
             return;
@@ -282,19 +256,6 @@ public class CombatActionDirector {
                 Logger.Debug("Duel {0} | Slot {1} | Casts spell {2} towards target(s) {3}", Logger.Args(duelId, slot, spell, target));
             }
         }
-    }
-
-    private CombatTeam DetermineFirstTeam() {
-        // Flip a coin.
-        var random = new Random();
-        var result = random.Next(0, 2);
-        return (CombatTeam) result;
-    }
-
-    private bool DeterminePowerPipGain(CombatParticipant participant) {
-        var powerPipProbability = participant.m_pGameStats.m_powerPipBase;
-        var powerPipChance = new Random().Next(0, 100);
-        return powerPipChance <= powerPipProbability;
     }
 
     private void EnactActionOnSubCircles(Action<CombatDuelActorSubCircle> action) {

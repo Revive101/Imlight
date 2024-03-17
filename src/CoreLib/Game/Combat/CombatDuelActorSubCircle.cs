@@ -179,6 +179,7 @@ public class CombatDuelActorSubCircle {
             m_pPlayDeck = new PlayDeck(),
             m_subcircle = SlotIndex,
             m_dynamicSymbol = DynamicSigilSymbol.NotSet,
+            m_PipsSuspended = false,
 
             m_color = _color,
             m_rotation = _rotation,
