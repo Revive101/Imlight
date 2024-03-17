@@ -23,7 +23,8 @@ internal enum CombatSlotType {
 }
 
 public class CombatDuelActorSubCircle {
-    private const float AggroTimeInSeconds = 0.75f;
+    private const float AGGRO_TIME_IN_SECONDS = 0.75f;
+    private const byte MAX_PIP_COUNT = 7;
 
     internal string SlotName { get; set; }
     internal CombatSlotType SlotType { get; set; }
@@ -126,6 +127,24 @@ public class CombatDuelActorSubCircle {
         }
 
         return _combatHand.LastGivenHand[index];
+    }
+
+    internal void DoPipGain() {
+        // If the participant has the maximum amount of pips, do not gain any more.
+        var genericPips = CombatParticipant.m_pipCount.m_genericPips;
+        var powerPips = CombatParticipant.m_pipCount.m_powerPips;
+        if (genericPips + powerPips >= MAX_PIP_COUNT) {
+            return;
+        }
+
+        var participant = CombatParticipant;
+        var gainedPowerPip = DeterminePowerPipGain(participant);
+        if (gainedPowerPip) {
+            participant.m_pipCount.m_powerPips++;
+        }
+        else {
+            participant.m_pipCount.m_genericPips++;
+        }
     }
 
     internal T GetStatBySchool<T>(List<T> list, MagicSchool enumValue) {
@@ -242,12 +261,18 @@ public class CombatDuelActorSubCircle {
 
         // Wait the amount of time it takes for the actor to enter the sigil, then set
         // their state to combat idle.
-        await Task.Delay((int) (AggroTimeInSeconds * 1000));
+        await Task.Delay((int) (AGGRO_TIME_IN_SECONDS * 1000));
 
         // Set state to stationary.
         _duelActor.ZoneBroadcast(new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
             GameObjectID = participantObject.m_globalID,
             State = (uint) NPCStates.Stationary
         });
+    }
+
+    private bool DeterminePowerPipGain(CombatParticipant participant) {
+        var powerPipProbability = participant.m_pGameStats.m_powerPipBase;
+        var powerPipChance = new Random().Next(0, 100);
+        return powerPipChance <= powerPipProbability;
     }
 }
