@@ -11,6 +11,8 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Game.Combat;
 
 internal static class CombatEffectApplicator {
+    private const float DAMAGE_PERCENT_MAX = 2.0f;
+
     internal static CombatAction ApplyCombatAction(QueuedCombatAction action) {
         var effectStack = new CombatEffectStack();
 
@@ -45,18 +47,17 @@ internal static class CombatEffectApplicator {
     private static void ApplyEffect(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target) {
         var effectTarget = effect.m_effectTarget;
 
+        var targets = new CombatDuelActorSubCircle[] { target };
         if (effectTarget == SpellEffect.kEffectTarget.kEnemySingle
          || effectTarget == SpellEffect.kEffectTarget.kFriendlySingle) {
-            ApplyEffectSingle(effect, caster, target);
+            targets = new[] { target };
         }
-    }
 
-    private static void ApplyEffectSingle(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target) {
         var effectType = effect.m_effectType;
 
         switch (effectType) {
             case SpellEffect.kSpellEffects.kDamage:
-                ApplyEffectDamage(effect, caster, new[] { target });
+                ApplyEffectDamage(effect, caster, targets);
                 break;
             default:
                 break;
@@ -75,6 +76,10 @@ internal static class CombatEffectApplicator {
         // Calculate damage increase
         double damageFlatIncrease = GetFlatDamageIncrease(caster, damageType);
         double damagePercentIncrease = GetPercentDamageIncrease(caster, damageType);
+
+        // Clamp percent increase
+        damagePercentIncrease = Math.Min(damagePercentIncrease, DAMAGE_PERCENT_MAX);
+
         damage = (int) Math.Ceiling(damage * (1 + damagePercentIncrease) + damageFlatIncrease);
 
         // Apply damage to each target
