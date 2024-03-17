@@ -27,9 +27,10 @@ namespace Imlight.CoreLib.Game.Combat;
 /// <see cref="CombatDuelActorSupervisor"/> and is a child of it.
 /// </summary>
 public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
-    private const byte PLANNING_TIME = 5;
+    private const byte PLANNING_TIME = 30;
     private const float DUEL_GRACE_PERIOD_IN_SECONDS = 3.75f;
     private const float YAW_ERROR_COMPENSATION = 1.58f;
+    private const string PLANNING_TIME_KEY = "PlanningPhase";
 
     public ITimerScheduler Timers { get; set; }
     public Duel Duel { get; private set; }
@@ -45,6 +46,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
     private byte PlayerCount => (byte) _subCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Player);
     private byte CreatureCount => (byte) _subCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Monster);
+    private byte AlivePlayerCount => (byte) _subCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Player && x.IsAlive);
     private CombatDuelActorSubCircle[] ActiveSubCircles => _subCircles.Where(x => x.Occupied).ToArray();
 
     private IActorRef _sigilActorRef;
@@ -170,7 +172,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         SendCombatUI(PLANNING_TIME);
 
         var delay = TimeSpan.FromSeconds(PLANNING_TIME);
-        Timers.StartSingleTimer("planningphaseover", new COMBAT_106_PROTOCOL.MSG_PLANNINGPHASEOVER(), delay);
+        Timers.StartSingleTimer(PLANNING_TIME_KEY, new COMBAT_106_PROTOCOL.MSG_PLANNINGPHASEOVER(), delay);
     }
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_PLANNINGPHASEOVER))]
@@ -323,6 +325,13 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             }
 
             ActionDirector.AddCombatMove(moveType, subCircle, target, spell);
+        }
+
+        // If by this point all participants have inputted their moves, we can start the next phase.
+        if (ActionDirector.HaveAllPlayersEnqueuedActions(AlivePlayerCount)) {
+            // Adding a new timer will cancel the old one.
+            var delay = TimeSpan.FromSeconds(1);
+            Timers.StartSingleTimer(PLANNING_TIME_KEY, new COMBAT_106_PROTOCOL.MSG_PLANNINGPHASEOVER(), delay);
         }
     }
 

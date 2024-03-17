@@ -24,7 +24,6 @@ public class CombatActionDirector {
     private const int SPELL_ACTION_TIME = 10;
     private const int SPELL_FIZZLE_TIME = 4;
     private const int SPELL_PASS_TIME = 1;
-    private const ulong DEQUEUE_SPELL_TEMPLATE_ID = 661258515;
 
     private readonly Duel _duel;
     private readonly CombatEffectApplicator _effects;
@@ -81,6 +80,10 @@ public class CombatActionDirector {
         // If this spell is already queued by the same caster, remove all of their queued actions.
         _queuedCombatActions.RemoveAll(x => x.SpellCaster == caster);
 
+        if (type == CombatMoveType.ChangeMind) {
+            return;
+        }
+
         // Determine if the spell fizzles.
         var spellHits = spell is not null && SpellHits(caster, spell);
 
@@ -92,7 +95,15 @@ public class CombatActionDirector {
         };
         _queuedCombatActions.Add(queuedAction);
 
-        LogCombatAction(caster, target, spell);
+        LogCombatAction(type, caster, target, spell);
+    }
+
+    public bool HaveAllPlayersEnqueuedActions(int playerCount) {
+        var enqueuedPlayers = _queuedCombatActions.Select(action => action.SpellCaster)
+                                                  .Where(subCircle => subCircle.OccupiedTeam == CombatTeam.Player)
+                                                  .Distinct();
+
+        return enqueuedPlayers.Count() == playerCount;
     }
 
     private void EnsureAllCastersHaveQueuedActions() {
@@ -185,8 +196,8 @@ public class CombatActionDirector {
         }
     }
 
-    private void LogCombatAction(CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target, Spell spell) {
-        if (spell.m_templateID == DEQUEUE_SPELL_TEMPLATE_ID) {
+    private void LogCombatAction(CombatMoveType type, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target, Spell spell) {
+        if (type == CombatMoveType.ChangeMind) {
             Logger.Debug("Duel {0} | Slot {1} | Caster changed their mind and is not casting a spell",
                 Logger.Args(_duel.m_duelID, caster.SlotIndex));
             return;
