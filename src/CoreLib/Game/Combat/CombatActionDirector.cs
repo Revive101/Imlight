@@ -3,8 +3,10 @@
  * Proprietary and confidential.
  */
 
+using Imlgiht.CoreLib.Game.Spells;
 using Imlight.Common;
 using Imlight.Common.ObjectProperty.PropertyReflection;
+using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using System.Collections.Generic;
@@ -24,6 +26,8 @@ public class CombatActionDirector {
     private const int SPELL_ACTION_TIME = 10;
     private const int SPELL_FIZZLE_TIME = 4;
     private const int SPELL_PASS_TIME = 1;
+    private const float SPELL_CAST_TIME = 4.0f;
+    private const float DAMAGE_OVER_TIME_CINEMATIC_TIME = 2.0f;
 
     private readonly Duel _duel;
     private readonly CombatEffectApplicator _effects;
@@ -45,13 +49,18 @@ public class CombatActionDirector {
     }
 
     public uint GetQueuedCombatActionsTime() {
-        var count = 0;
+        var count = 0.0f;
 
         // Every spell takes 10 seconds.
         foreach (var action in _queuedCombatActions) {
             if (action.Spell != null) {
-                // Add time depending if the spell is casted or fizzles.
-                count += action.PredeterminedSuccess ? SPELL_ACTION_TIME : SPELL_FIZZLE_TIME;
+                if (!action.PredeterminedSuccess) {
+                    count += SPELL_FIZZLE_TIME;
+                    continue;
+                }
+
+                count += SPELL_CAST_TIME;
+                count += GetActionCinematicTime(action);
             }
         }
 
@@ -194,6 +203,36 @@ public class CombatActionDirector {
                 throw new InvalidOperationException("Not enough pips to cast the spell.");
             }
         }
+    }
+
+    private float GetActionCinematicTime(QueuedCombatAction action) {
+        if (action.Spell is null) {
+            return SPELL_PASS_TIME;
+        }
+
+        var spellName = SpellFactory.GetBaseSpellName(action.Spell.m_templateID);
+        var cinematicFactory = SpellCinematics.Instance;
+
+        // All spells will always have a summon time.
+        var count = cinematicFactory.GetSpellSummonTime(spellName);
+
+        // Check to see if the spell has an act time. If it does, add it to the total time.
+        // Otherwise, return the total time.
+        var actTime = cinematicFactory.GetSpellActTime(spellName);
+        if (actTime <= 0.1f) {
+            return cinematicFactory.GetSpellTotalTime(spellName);
+        }
+
+        count += actTime;
+
+        // There is a certain amount of hanging effects (traps/shields/blades/prisms) on both the caster and the target.
+        // Each of these hanging effects takes 1 second to resolve.
+        var casterHangingEffects = action.SpellCaster.HangingEffects;
+        var targetHangingEffects = action.TargetSubcircle.HangingEffects;
+        var totalHangingEffects = casterHangingEffects.Count + targetHangingEffects.Count;
+        count += totalHangingEffects;
+
+        return count;
     }
 
     private void LogCombatAction(CombatMoveType type, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target, Spell spell) {

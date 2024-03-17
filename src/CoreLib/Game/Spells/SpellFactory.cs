@@ -81,4 +81,24 @@ public static class SpellFactory {
 
         return spell;
     }
+
+    /// <summary>
+    /// Retrieves the name of a spell based on its template ID.
+    /// </summary>
+    /// <param name="templateId">The template ID of the spell.</param>
+    /// <returns>The name of the spell, or null if the template is not found.</returns>
+    public static string GetSpellName(uint templateId) {
+        var template = (SpellTemplate) CoreObjectFactory.GetCoreTemplate(templateId);
+        return template?.m_name;
+    }
+
+    /// <summary>
+    /// Retrieves the base spell name for a given template ID.
+    /// </summary>
+    /// <param name="templateId">The ID of the spell template.</param>
+    /// <returns>The base spell name, or null if the template is not found.</returns>
+    public static string GetBaseSpellName(uint templateId) {
+        var template = (SpellTemplate) CoreObjectFactory.GetCoreTemplate(templateId);
+        return template?.m_spellBase;
+    }
 }
