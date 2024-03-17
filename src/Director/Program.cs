@@ -191,7 +191,7 @@ internal static class Program {
                         CalendarWeekRule.FirstDay,
                         DayOfWeek.Monday);
 
-        Console.Write($"   ({buildConfiguration} {year}Q{quarter}.{week}c)\n");
+        Console.Write($" ({MajorVersion} {year}Q{quarter}.{week}c {buildConfiguration})\n");
         Console.WriteLine("");
     }
 
