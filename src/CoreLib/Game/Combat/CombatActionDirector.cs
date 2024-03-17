@@ -185,13 +185,13 @@ public class CombatActionDirector {
 
     private void LogCombatAction(CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target, Spell spell) {
         if (spell.m_templateID == DEQUEUE_SPELL_TEMPLATE_ID) {
-            Logger.Information("Duel {0} | Slot {1} | Caster changed their mind and is not casting a spell",
+            Logger.Debug("Duel {0} | Slot {1} | Caster changed their mind and is not casting a spell",
                 Logger.Args(_duel.m_duelID, caster.SlotIndex));
             return;
         }
 
         var targetOrSelf = target.SlotIndex == caster.SlotIndex ? "self" : target.SlotIndex.ToString();
-        Logger.Information("Duel {0} | Slot {1} | Queued spell {2} towards target {3}",
+        Logger.Debug("Duel {0} | Slot {1} | Queued spell {2} towards target {3}",
             Logger.Args(_duel.m_duelID, caster.SlotIndex, spell.m_templateID, targetOrSelf));
     }
 

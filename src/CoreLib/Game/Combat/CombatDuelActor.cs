@@ -267,11 +267,20 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLE))]
     private void ReceiveSlotAvailable(COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLE message) {
         // An actor is checking to see if there are slots available in the duel.
-        // Players can only join if there are less than 4 players in the duel.
-        // There are 2 creatures per player in the duel. There can only be 4 creatures in the duel.
+
+        // todo: keep these variables in the zone
+        var IsNewbieZone = false;
+        var IsDangerousZone = false;
+
+        // Newbie zones (like Unicorn Way) can only have 1 creature as a base.
+        // Dangerous zones (like Sunken City) can have 3 creatures as a base.
+        // Every player in the duel also allocates 1 more creature slot.
+        var baseCreatureCount = IsNewbieZone ? 1 : IsDangerousZone ? 3 : 2;
+        var maxCreatures = baseCreatureCount + (PlayerCount - 1);
+
         var slotAvailable = (message.Team == CombatTeam.Player)
             ? PlayerCount   < 4
-            : CreatureCount < (PlayerCount * 2) && CreatureCount < 4;
+            : CreatureCount < 4 && (CreatureCount < maxCreatures);
         var rsp = new COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLERSP { Available = slotAvailable };
         Sender.Tell(rsp);
     }
