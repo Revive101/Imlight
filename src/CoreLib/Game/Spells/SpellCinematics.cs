@@ -94,6 +94,30 @@ internal class SpellCinematics : RootDirectoryResourceSingleton<SpellCinematics>
             if (act is ActCinematicStageTemplate actCinematicStageTemplate) {
                 return actCinematicStageTemplate.m_duration;
             }
+            else if (act.m_name == "Act") {
+                return act.m_duration;
+            }
+        }
+
+        return 0.0f;
+    }
+
+    /// <summary>
+    /// Retrieves the casting time of a spell based on its name.
+    /// </summary>
+    /// <param name="name">The name of the spell.</param>
+    /// <returns>The casting time of the spell.</returns>
+    public float GetSpellCastingTime(string name) {
+        var cinematicTemplate = GetCinematicTemplate(name);
+        if (cinematicTemplate is null) {
+            return 0.0f;
+        }
+
+        // Search the acts of the template to find type `CastingCinematicStageTemplate`.
+        foreach (var act in cinematicTemplate.m_stages) {
+            if (act.m_name == "Casting") {
+                return act.m_duration;
+            }
         }
 
         return 0.0f;
