@@ -4,18 +4,16 @@
  */
 
 using Imlight.Common;
-using Imlight.Common.Configuration;
 using Imlight.Common.ObjectProperty.PropertyReflection;
-using Imlight.Common.Utilities;
-using Imlight.CoreLib.Game.Effects;
 using Imlight.CoreLib.WizardData.Implementations;
+using Imlight.CoreLib.WizardData.Models.Player;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using static Imlight.Common.Caches.TypeCache;
 
-namespace Imlight.CoreLib.WizardData.Models.Player;
+namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
 public class ServerWizEquipmentBehavior : BehaviorInstance, IClientBehaviorProvider<ClientWizEquipmentBehavior> {

@@ -3,15 +3,14 @@
  * Proprietary and confidential.
  */
 
-using Imlight.Common.ObjectProperty.PropertyReflection;
-using Imlight.CoreLib.Shared.Resources;
-using Imlight.CoreLib.WizardData.Implementations;
 using System;
 using System.Linq;
 using System.Text.Json.Serialization;
+using Imlight.Common.ObjectProperty.PropertyReflection;
+using Imlight.CoreLib.WizardData.Implementations;
 using static Imlight.Common.Caches.TypeCache;
 
-namespace Imlight.CoreLib.WizardData.Models.Player;
+namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
 public class ServerMountOwnerBehavior : BehaviorInstance, IClientBehaviorProvider<ClientMountOwnerBehavior> {

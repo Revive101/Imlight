@@ -19,6 +19,7 @@ using Newtonsoft.Json;
 using SharpDX;
 using static Imlight.Common.Caches.TypeCache;
 using Imlight.CoreLib.Game.Effects;
+using Imlight.CoreLib.Shared.Behaviors;
 
 namespace Imlight.CoreLib.WizardData.Models.Player;
 

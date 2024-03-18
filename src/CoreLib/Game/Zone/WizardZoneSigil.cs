@@ -38,9 +38,7 @@ public class WizardZoneSigil : WizardZoneObject {
             Logger.Error("Could not find combat sigil template with ID {0}.", Logger.Args(SigilTemplateId));
         }
 
-        // Initialize the behaviors on the object. One of them is the DuelBehavior,.
-        CoreObjectFactory.InitializeCoreObjectBehaviors(ActiveGameObject, template);
-        if (CoreObjectFactory.FindBehaviorInstance(ActiveGameObject, out DuelBehavior duelBehavior)) {
+        if (TryGetBehavior<DuelBehavior>(out var duelBehavior)) {
             duelBehavior.m_sigilTemplateID = SigilTemplateId;
             duelBehavior.m_pDuel = _activeDuel;
             _duelBehavior = duelBehavior;

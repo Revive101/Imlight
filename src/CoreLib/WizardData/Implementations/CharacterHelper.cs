@@ -8,6 +8,7 @@ using Imlight.Common.Configuration;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.Common.Utilities;
 using Imlight.CoreLib.Game.Effects;
+using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using System.Collections.Generic;

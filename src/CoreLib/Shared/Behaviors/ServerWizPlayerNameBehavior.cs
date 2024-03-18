@@ -3,13 +3,13 @@
  * Proprietary and confidential.
  */
 
+using System;
 using Imlight.Common.IO;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Implementations;
-using System;
 using static Imlight.Common.Caches.TypeCache;
 
-namespace Imlight.CoreLib.WizardData.Models.Player;
+namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
 public class ServerWizPlayerNameBehavior : BehaviorInstance, IClientBehaviorProvider<ClientWizPlayerNameBehavior> {

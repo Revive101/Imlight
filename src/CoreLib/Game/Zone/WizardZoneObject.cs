@@ -4,11 +4,13 @@
  */
 
 using System.Collections.Generic;
+using System.Linq;
 using Akka.Actor;
 using Imlight.Common.Caches;
 using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Resources;
 using SharpDX;
 using static Imlight.Common.Caches.TypeCache;
 
@@ -22,6 +24,7 @@ public class WizardZoneObject : ReceiveProtocolDispatcher {
     public readonly CoreTemplate Template;
 
     protected readonly IActorRef WizardZoneRef;
+    protected readonly List<BehaviorInstance> Behaviors = new();
     protected float InteractionRadius = 300f;
 
     private readonly List<CoreObject> _objsInRadius;
@@ -32,10 +35,36 @@ public class WizardZoneObject : ReceiveProtocolDispatcher {
         this.Template = template;
         this.WizardZoneRef = wizardZoneRef;
         this._objsInRadius = new List<CoreObject>();
+
+        CoreObjectFactory.InitializeCoreObjectBehaviors(ActiveGameObject, template);
+        if (ActiveGameObject.m_inactiveBehaviors is not null) {
+            this.Behaviors = ActiveGameObject.m_inactiveBehaviors
+                .Where(x => x != null)
+                .ToList();
+        }
     }
 
     // Akka.NET ctor
-    public static Props Props(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef) => Akka.Actor.Props.Create(() => new WizardZoneObject(activeGameObject, template, wizardZoneRef));
+    public static Props Props(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef)
+        => Akka.Actor.Props.Create(() => new WizardZoneObject(activeGameObject, template, wizardZoneRef));
+
+    /// <summary>
+    /// Tries to retrieve the behavior of type T from the list of behaviors.
+    /// </summary>
+    /// <typeparam name="T">The type of behavior to retrieve.</typeparam>
+    /// <param name="behavior">The behavior of type T if found, otherwise null.</param>
+    /// <returns>True if the behavior of type T is found, otherwise false.</returns>
+    public bool TryGetBehavior<T>(out T behavior) where T : BehaviorInstance {
+        foreach (var b in Behaviors) {
+            if (b is T t) {
+                behavior = t;
+                return true;
+            }
+        }
+
+        behavior = null;
+        return false;
+    }
 
     /// <summary>
     /// Called when a player joins the wizard zone. Sends the player the object data and adds the object to the zone.

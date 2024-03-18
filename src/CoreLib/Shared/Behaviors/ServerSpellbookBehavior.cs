@@ -3,14 +3,14 @@
  * Proprietary and confidential.
  */
 
-using Imlight.CoreLib.WizardData.Implementations;
 using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
+using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.Game.Spells;
 using static Imlight.Common.Caches.TypeCache;
-using Newtonsoft.Json;
 
-namespace Imlight.CoreLib.WizardData.Models.Player;
+namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
 public class ServerSpellbookBehavior : BehaviorInstance, IClientBehaviorProvider<ClientSpellbookBehavior> {

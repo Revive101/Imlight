@@ -307,7 +307,7 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
             };
         }
 
-        if (CoreObjectFactory.FindBehaviorInstance<NPCBehavior>(ActiveGameObject, out var behavior)) {
+        if (TryGetBehavior<NPCBehavior>(out var behavior)) {
             behavior.m_isMonster = this._isDuelingCreature;
         }
     }

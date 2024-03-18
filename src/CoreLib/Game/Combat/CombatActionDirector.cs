@@ -9,6 +9,7 @@ using System.Linq;
 using Imlgiht.CoreLib.Game.Spells;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Spells;
+using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.WizardData.Models.Player;
 using static Imlight.Common.Caches.TypeCache;
 

@@ -5,13 +5,13 @@
 
 using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 using Imlight.Common.Configuration;
 using Imlight.Common.IO;
 using Imlight.CoreLib.WizardData.Implementations;
-using Newtonsoft.Json;
 using static Imlight.Common.Caches.TypeCache;
 
-namespace Imlight.CoreLib.WizardData.Models.Player;
+namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
 public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {

@@ -58,6 +58,10 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
     /// <param name="template">The core template containing behavior templates.</param>
     /// <returns>The initialized core object.</returns>
     public static T InitializeCoreObjectBehaviors<T>(T coreObject, CoreTemplate template) where T : CoreObject, new() {
+        if (template is null) {
+            return coreObject;
+        }
+
         // The CoreTemplate contains a list of behavior templates. Using the name of the template,
         // we can find the instance of the behavior and add it to the CoreObject.
         coreObject.m_inactiveBehaviors = new List<BehaviorInstance>(template.m_behaviors.Count);

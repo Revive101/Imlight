@@ -3,16 +3,16 @@
  * Proprietary and confidential.
  */
 
-using Imlight.Common;
-using Imlight.Common.Configuration;
-using Imlight.CoreLib.WizardData.Implementations;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json;
+using Imlight.Common;
+using Imlight.Common.Configuration;
+using Imlight.CoreLib.WizardData.Implementations;
 using static Imlight.Common.Caches.TypeCache;
 
-namespace Imlight.CoreLib.WizardData.Models.Player;
+namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
 public class ServerWizInventoryBehavior : BehaviorInstance, IClientBehaviorProvider<ClientWizInventoryBehavior> {
@@ -108,7 +108,7 @@ public class ServerWizInventoryBehavior : BehaviorInstance, IClientBehaviorProvi
     /// </summary>
     public WizClientObjectItem GetItem(ulong globalId) => Items.FirstOrDefault(item => item.m_globalID == globalId);
 
-    public ClientWizInventoryBehavior GetClientBehaviorInstance(){
+    public ClientWizInventoryBehavior GetClientBehaviorInstance() {
         return new ClientWizInventoryBehavior {
             m_numItemsAllowed = s_maxItemsAllowed,
             m_numJewelsAllowed = s_maxJewelsAllowed,

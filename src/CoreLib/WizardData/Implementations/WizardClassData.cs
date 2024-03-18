@@ -4,6 +4,7 @@
  */
 
 using System;
+using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.WizardData.Implementations;

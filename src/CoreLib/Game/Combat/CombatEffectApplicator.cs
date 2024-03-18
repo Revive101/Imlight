@@ -3,6 +3,7 @@
  * Proprietary and confidential.
  */
 
+using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using System.Collections.Generic;

@@ -6,6 +6,7 @@
 using Akka.Actor;
 using Imlight.Common.Caches;
 using Imlight.CoreLib.Game.Models.World;
+using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
 using SharpDX;

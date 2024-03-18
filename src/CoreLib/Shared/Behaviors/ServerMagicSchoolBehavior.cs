@@ -3,16 +3,12 @@
  * Proprietary and confidential.
  */
 
-using Imlight.Common;
-using Imlight.Common.Configuration;
-using Imlight.Common.IO;
-using Imlight.CoreLib.Shared.Resources;
-using Imlight.CoreLib.WizardData.Implementations;
 using System;
-using System.Text.Json.Serialization;
+using Imlight.Common.Configuration;
+using Imlight.CoreLib.WizardData.Implementations;
 using static Imlight.Common.Caches.TypeCache;
 
-namespace Imlight.CoreLib.WizardData.Models.Player;
+namespace Imlight.CoreLib.Shared.Behaviors;
 
 public enum MagicSchool {
     Ice = 72777,
@@ -50,7 +46,7 @@ public class ServerMagicSchoolBehavior : BehaviorInstance, IClientBehaviorProvid
 
     public ClientMagicSchoolBehavior GetClientBehaviorInstance() {
         return new ClientMagicSchoolBehavior {
-            m_schoolOfFocus = (uint)MagicSchool,
+            m_schoolOfFocus = (uint) MagicSchool,
             m_experiencePoints = ExperiencePoints,
             m_level = Level,
             m_trainingPoints = TrainingPoints,
