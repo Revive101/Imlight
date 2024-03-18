@@ -3,14 +3,13 @@
  * Proprietary and confidential.
  */
 
-using Imlgiht.CoreLib.Game.Spells;
-using Imlight.Common;
-using Imlight.Common.ObjectProperty.PropertyReflection;
-using Imlight.CoreLib.Game.Spells;
-using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Imlgiht.CoreLib.Game.Spells;
+using Imlight.Common;
+using Imlight.CoreLib.Game.Spells;
+using Imlight.CoreLib.WizardData.Models.Player;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Combat;
@@ -23,10 +22,9 @@ public class QueuedCombatAction {
 }
 
 public class CombatActionDirector {
-    private const int SPELL_ACTION_TIME = 10;
     private const int SPELL_FIZZLE_TIME = 4;
     private const int SPELL_PASS_TIME = 1;
-    private const float SPELL_CAST_TIME = 4.0f;
+    private const float SPELL_CAST_TIME = 5.0f;
     private const float DAMAGE_OVER_TIME_CINEMATIC_TIME = 2.0f;
 
     private readonly Duel _duel;
@@ -59,7 +57,6 @@ public class CombatActionDirector {
                     continue;
                 }
 
-                count += SPELL_CAST_TIME;
                 count += GetActionCinematicTime(action);
             }
         }
@@ -216,17 +213,22 @@ public class CombatActionDirector {
         // All spells will always have a summon time.
         var count = cinematicFactory.GetSpellSummonTime(spellName);
 
+        // Check if this spell has a special casting time. If not, just add the default casting time.
+        var castTime = cinematicFactory.GetSpellCastingTime(spellName);
+        count += castTime > 0.1f ? castTime : SPELL_CAST_TIME;
+
         // Check to see if the spell has an act time. If it does, add it to the total time.
         // Otherwise, return the total time.
         var actTime = cinematicFactory.GetSpellActTime(spellName);
         if (actTime <= 0.1f) {
-            return cinematicFactory.GetSpellTotalTime(spellName);
+            return count + cinematicFactory.GetSpellTotalTime(spellName);
         }
 
         count += actTime;
 
         // There is a certain amount of hanging effects (traps/shields/blades/prisms) on both the caster and the target.
         // Each of these hanging effects takes 1 second to resolve.
+        // todo: this is wrong
         var casterHangingEffects = action.SpellCaster.HangingEffects;
         var targetHangingEffects = action.TargetSubcircle.HangingEffects;
         var totalHangingEffects = casterHangingEffects.Count + targetHangingEffects.Count;

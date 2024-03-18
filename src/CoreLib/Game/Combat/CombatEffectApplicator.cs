@@ -72,9 +72,7 @@ internal class CombatEffectApplicator {
                 break;
         }
 
-        var effectType = effect.m_effectType;
-
-        switch (effectType) {
+        switch (effect.m_effectType) {
             case SpellEffect.kSpellEffects.kDamage:
                 ApplyEffectDamage(effect, caster, targets);
                 break;
@@ -104,7 +102,7 @@ internal class CombatEffectApplicator {
         damagePercentIncrease = Math.Min(damagePercentIncrease, DAMAGE_PERCENT_MAX);
 
         // Calcualte damage changes from hanging effects.
-        damage = ApplyBlades(damage, caster);
+        damage = ApplyBlades(effect.m_sDamageType, damage, caster);
 
         damage = (int) Math.Ceiling(damage * (1 + damagePercentIncrease) + damageFlatIncrease);
 
@@ -116,7 +114,7 @@ internal class CombatEffectApplicator {
             damage = (int) Math.Ceiling(damage * (1 - damageReductionPercent) - damageReductionFlat);
 
             // Calculate damage changes from target hanging effects.
-            damage = ApplyWards(damage, target);
+            damage = ApplyWards(effect.m_sDamageType, damage, target);
 
             target.ParticipantGameStats.m_currentHitpoints -= damage;
         }
@@ -142,18 +140,15 @@ internal class CombatEffectApplicator {
         target.HangingEffects.Add(effect);
     }
 
-    private static int ApplyBlades(int damage, CombatDuelActorSubCircle caster) {
+    private static int ApplyBlades(string school, int damage, CombatDuelActorSubCircle caster) {
         var blades = caster.HangingEffects
             .Where(x => x.m_effectType == SpellEffect.kSpellEffects.kModifyOutgoingDamage)
             .ToList();
 
-        foreach (var blade in blades) {
-            if (blade.m_effectParam < 0) {
-                continue;
-            }
-
-            var damageIncrease = blade.m_effectParam / 100.0f;
-            damage = (int) Math.Ceiling(damage * (1 + damageIncrease));
+        foreach (var blade in blades
+            .Where(x => x.m_sDamageType == school || x.m_sDamageType == "All")) {
+            var damageChange = blade.m_effectParam / 100.0f;
+            damage = (int) Math.Ceiling(damage * (1 + damageChange));
 
             caster.HangingEffects.Remove(blade);
         }
@@ -161,18 +156,15 @@ internal class CombatEffectApplicator {
         return damage;
     }
 
-    private static int ApplyWards(int damage, CombatDuelActorSubCircle caster) {
+    private static int ApplyWards(string school, int damage, CombatDuelActorSubCircle caster) {
         var wards = caster.HangingEffects
             .Where(x => x.m_effectType == SpellEffect.kSpellEffects.kModifyIncomingDamage)
             .ToList();
 
-        foreach (var ward in wards) {
-            if (ward.m_effectParam < 0) {
-                continue;
-            }
-
-            var damageReduction = ward.m_effectParam / 100.0f;
-            damage = (int) Math.Ceiling(damage * (1 + damageReduction));
+        foreach (var ward in wards
+            .Where(x => x.m_sDamageType == school || x.m_sDamageType == "All")) {
+            var damageChange = ward.m_effectParam / 100.0f;
+            damage = (int) Math.Ceiling(damage * (1 + damageChange));
 
             caster.HangingEffects.Remove(ward);
         }
