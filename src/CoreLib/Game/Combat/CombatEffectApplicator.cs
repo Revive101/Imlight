@@ -105,14 +105,14 @@ internal class CombatEffectApplicator {
         // Calcualte damage changes from hanging effects.
         damage = ApplyBlades(effect.m_sDamageType, damage, caster);
 
-        damage = (int) Math.Ceiling(damage * (1 + damagePercentIncrease) + damageFlatIncrease);
+        damage = (int) Math.Floor(damage * (1 + damagePercentIncrease) + damageFlatIncrease);
 
         // Apply damage to each target
         foreach (var target in targets) {
             // Calculate damage reduction from target stats
             double damageReductionFlat = GetFlatDamageReduction(target, damageType);
             double damageReductionPercent = GetPercentDamageReduction(target, damageType);
-            damage = (int) Math.Ceiling(damage * (1 - damageReductionPercent) - damageReductionFlat);
+            damage = (int) Math.Floor(damage * (1 - damageReductionPercent) - damageReductionFlat);
 
             // Calculate damage changes from target hanging effects.
             damage = ApplyWards(effect.m_sDamageType, damage, target);
@@ -149,7 +149,7 @@ internal class CombatEffectApplicator {
         foreach (var blade in blades
             .Where(x => x.m_sDamageType == school || x.m_sDamageType == "All")) {
             var damageChange = blade.m_effectParam / 100.0f;
-            damage = (int) Math.Ceiling(damage * (1 + damageChange));
+            damage = (int) Math.Floor(damage * (1 + damageChange));
 
             caster.HangingEffects.Remove(blade);
         }
@@ -165,7 +165,7 @@ internal class CombatEffectApplicator {
         foreach (var ward in wards
             .Where(x => x.m_sDamageType == school || x.m_sDamageType == "All")) {
             var damageChange = ward.m_effectParam / 100.0f;
-            damage = (int) Math.Ceiling(damage * (1 + damageChange));
+            damage = (int) Math.Floor(damage * (1 + damageChange));
 
             caster.HangingEffects.Remove(ward);
         }

@@ -43,6 +43,12 @@ public class ServerWizEquipmentBehavior : BehaviorInstance, IClientBehaviorProvi
         return true;
     }
 
+    public void ForceEquipItem(WizClientObjectItem item) {
+        var itemId = item.m_globalID;
+        EquippedItemIds.Add(itemId);
+        EquippedItems.Add(item);
+    }
+
     public bool UnequipItem(ulong itemId) {
         // Prerequisite checks.
         if (!HasItemEquipped(itemId)) {
@@ -136,7 +142,6 @@ public class ServerWizEquipmentBehavior : BehaviorInstance, IClientBehaviorProvi
         return (byte) slotIndex;
     }
 
-
     private void UpdateEquipmentSlot(EquipmentSlotType slotType, string itemName,  ulong newItemId) {
         // Find the slot in the list. If it does, remove it.
         ClearEquipmentSlot(slotType);
@@ -162,8 +167,8 @@ public class ServerWizEquipmentBehavior : BehaviorInstance, IClientBehaviorProvi
     public ClientWizEquipmentBehavior GetClientBehaviorInstance() {
         return new ClientWizEquipmentBehavior {
             m_equipmentSets = new List<EquipmentSet>(),
-            m_slotList = SlotList.Select(slot => slot.GetClientTypeAlternative()).ToList(),
-            m_itemList = EquippedItems.ConvertAll(item => item as CoreObject),
+            m_slotList = SlotList?.Select(slot => slot.GetClientTypeAlternative()).ToList(),
+            m_itemList = EquippedItems?.ConvertAll(item => item as CoreObject),
             m_publicItemList = CharacterHelper.GetEquipmentList(this).m_infoList,
         };
     }

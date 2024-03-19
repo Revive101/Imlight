@@ -6,6 +6,7 @@
 using System.Collections.Generic;
 using Akka.Actor;
 using Imlight.CoreLib.Game.Combat;
+using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Networking;
 using SharpDX;
 using static Imlight.Common.Caches.TypeCache;
@@ -138,6 +139,7 @@ namespace Imlight.CoreLib.Shared.Packets {
             public float CombatSelfishFactor;
             public float CombatAggressionFactor;
             public int CombatLevel;
+            public MagicSchool MagicSchool;
         }
 	}
 }

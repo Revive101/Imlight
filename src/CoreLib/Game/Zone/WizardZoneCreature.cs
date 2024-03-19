@@ -10,10 +10,12 @@ using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.ObjectProperty;
+using Imlight.CoreLib.Game.Effects;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Implementations;
 using SharpDX;
 using static Imlight.Common.Caches.TypeCache;
 
@@ -34,12 +36,7 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
         Combat
     }
 
-    public float CombatIntelligence { get; private set; }
-    public float CombatSelfishFactor { get; private set; }
-    public float CombatAggressiveFactor { get; private set; }
-    public int CombatLevel { get; private set; }
-    public int StartingHealth { get; private set; }
-    public WizGameStats GameStats { get; private set; }
+    public ServerWizGameStats GameStats { get; private set; }
     public ITimerScheduler Timers { get; set; }
 
     private readonly WizardZonePath _path;
@@ -179,12 +176,24 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_QUERYCREATURESTATS))]
     private void ReceiveQueryGameStats(COMBAT_106_PROTOCOL.MSG_QUERYCREATURESTATS message) {
+        if (this.GameStats is null) {
+            Logger.Error("Creature {0} was sourced for game stats, but no {1} is set.",
+                Logger.Args(ActiveGameObject.m_globalID, nameof(ServerWizGameStats)));
+            return;
+        }
+        if (!TryGetBehavior<ServerNPCBehavior>(out var _npcBehavior)) {
+            Logger.Error("Creature {0} was sourced for game stats, but no {1} is in the list of behaviors.",
+                Logger.Args(ActiveGameObject.m_globalID, nameof(ServerNPCBehavior)));
+            return;
+        }
+
         var msg = new COMBAT_106_PROTOCOL.MSG_CREATURESTATS {
-            GameStats = this.GameStats,
-            CombatIntelligence = this.CombatIntelligence,
-            CombatSelfishFactor = this.CombatSelfishFactor,
-            CombatAggressionFactor = this.CombatAggressiveFactor,
-            CombatLevel = this.CombatLevel
+            GameStats = this.GameStats.GetCombatGameStats(),
+            CombatIntelligence = _npcBehavior.Intelligence,
+            CombatSelfishFactor = _npcBehavior.SelfishFactor,
+            CombatAggressionFactor = _npcBehavior.AggressiveFactor,
+            CombatLevel = _npcBehavior.Level,
+            MagicSchool = _npcBehavior.School,
         };
         Sender.Tell(msg);
     }
@@ -276,15 +285,12 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
             .FirstOrDefault(x => x is DuelistBehaviorTemplate) as DuelistBehaviorTemplate;
         var npcBehaviorTemplate = Template.m_behaviors
             .FirstOrDefault(x => x is NPCBehaviorTemplate) as NPCBehaviorTemplate;
+        var equipmentBehaviorTemplate = Template.m_behaviors
+            .FirstOrDefault(x => x is EquipmentBehaviorTemplate) as EquipmentBehaviorTemplate;
 
         CreatePathBehavior(pathBehaviorTemplate, pathMovementBehavior);
         CreateNPCBehavior(npcBehaviorTemplate, duelistBehaviorTemplate);
-
-        // todo: source other game stats like resistences here.
-        this.GameStats = new WizGameStats {
-            m_currentHitpoints = 55,
-            m_baseHitpoints = 55,
-        };
+        CreateEquipmentBehavior(equipmentBehaviorTemplate);
     }
 
     private void CreatePathBehavior(PathBehaviorTemplate pathTemplate, PathMovementBehaviorTemplate movementTemplate) {
@@ -322,7 +328,7 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
         InteractionRadius = duelistTemplate?.m_npcProximity ?? base.InteractionRadius;
 
         // Try to parse the npcBehaviorTemplate.m_schoolOfFocus to a MagicSchool.
-        var school = MagicSchool.None;
+        var school = MagicSchool.Balance;
         if (npcTemplate.m_schoolOfFocus != "" && !Enum.TryParse(npcTemplate.m_schoolOfFocus, out school)) {
             Logger.Error("Failed to parse magic school {0} for creature {1}.",
                 Logger.Args(npcTemplate.m_schoolOfFocus, ActiveGameObject.m_globalID));
@@ -342,6 +348,43 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
         };
         this.Behaviors.Add(npcBehaviorInstance);
         this._npcBehavior = npcBehaviorInstance;
+
+        this.GameStats = new ServerWizGameStats(school, npcTemplate.m_nLevel) {
+            m_currentHitpoints = npcTemplate.m_nStartingHealth,
+            m_baseHitpoints = npcTemplate.m_nStartingHealth,
+        };
+    }
+
+    private void CreateEquipmentBehavior(EquipmentBehaviorTemplate equipmentTemplate) {
+        if (equipmentTemplate is null) {
+            return;
+        }
+
+        var equipmentBehaviorInstance = new ServerWizEquipmentBehavior {
+            EquippedItems = new List<WizClientObjectItem>(),
+            SlotList = new List<WizardData.Models.Player.EquipmentSlot>(),
+            EquippedItemIds = new List<ulong>()
+        };
+
+        this.Behaviors.Add(equipmentBehaviorInstance);
+
+        foreach (var itemTemplateId in equipmentTemplate.m_itemList) {
+            EquipItem(itemTemplateId);
+        }
+    }
+
+    private void EquipItem(ulong templateId) {
+        if (!TryGetBehavior<ServerWizEquipmentBehavior>(out var equipmentBehavior)) {
+            Logger.Warning("Creature {0} tried to equip item {1} but has no equipment behavior.",
+                Logger.Args(ActiveGameObject.m_globalID, templateId));
+            return;
+        }
+
+        var item = (WizClientObjectItem) CoreObjectFactory.FinalizeCoreObject(templateId);
+        var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(templateId);
+        equipmentBehavior.ForceEquipItem(item);
+
+        CharacterEffectHelper.AddEffectsToGameStats(GameStats, template);
     }
 
     private void StartCombat() {

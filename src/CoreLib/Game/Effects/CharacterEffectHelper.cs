@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Imlight.Common;
 using Imlight.Common.Cryptography;
@@ -19,6 +20,8 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Game.Effects;
 
 internal static class CharacterEffectHelper {
+    private const int SCHOOL_COUNT = 7;
+
     /// <summary>
     /// Adds effects to a wizard based on a given template.
     /// </summary>
@@ -60,6 +63,26 @@ internal static class CharacterEffectHelper {
         }
 
         return addedEffects;
+    }
+
+    /// <summary>
+    /// Adds the effects from a WizItemTemplate to the ServerWizGameStats.
+    /// </summary>
+    /// <param name="stats">The ServerWizGameStats to add the effects to.</param>
+    /// <param name="template">The WizItemTemplate containing the effects.</param>
+    internal static void AddEffectsToGameStats(ServerWizGameStats stats, WizItemTemplate template) {
+        foreach (var effectInfo in template.m_equipEffects) {
+            var gameEffect = GameEffectFactory.CreateEffectFromInfo(effectInfo, 0);
+            if (gameEffect is null) {
+                Logger.Warning("Could not create effect {0} from effect info.", Logger.Args(effectInfo.m_effectName));
+                continue;
+            }
+
+            if (gameEffect is WizStatisticEffect canonicalEffect) {
+                var canonicalEffectName = CanonicalStatEffects.GetEffectTemplate(effectInfo.m_effectName).m_effectName;
+                AddGameEffectToStats(stats, canonicalEffectName, canonicalEffect);
+            }
+        }
     }
 
     /// <summary>
@@ -161,29 +184,37 @@ internal static class CharacterEffectHelper {
     }
 
     private static void ApplySchoolEffect(ref List<float> effectList, string schoolName, float value) {
-        // To apply the effects to the player, we need two parts of the effect:
-        // 1. The effect template, which tells us what school the effect applies to.
-        // 2. The effect itself, which contains the actual values of the effect.
-        // For example, fire accuracy:
-        // 1. The template has m_effectCategory "FireAccuracy."
-        // 2. The effect iself has m_accuracyBonusPercent "0.01."
-
         // Set the list if it doesn't exist. Give it a count equal to how many schools there are.
-        var schools = Enum.GetValues(typeof(MagicSchool));
-        effectList ??= new List<float>(new float[schools.Length]);
+        effectList ??= Enumerable.Repeat(0f, SCHOOL_COUNT).ToList();
 
         // Ensure that the effect list is the same length as the number of schools.
-        if (effectList.Count != schools.Length) {
-            effectList = new List<float>(new float[schools.Length]);
+        if (effectList.Count != SCHOOL_COUNT) {
+            var compensationRequired = SCHOOL_COUNT - effectList.Count;
+            effectList.AddRange(Enumerable.Repeat(0f, compensationRequired));
         }
 
-        // For each school, check if the effect category contains the school name.
-        for (var i = 0; i < schools.Length; i++) {
-            var school = (MagicSchool) schools.GetValue(i);
-            if (schoolName == school.ToString()) {
-                effectList[i] += value;
+        switch (schoolName) {
+            case "Fire":
+                effectList[0] += value;
                 break;
-            }
+            case "Ice":
+                effectList[1] += value;
+                break;
+            case "Storm":
+                effectList[2] += value;
+                break;
+            case "Myth":
+                effectList[3] += value;
+                break;
+            case "Life":
+                effectList[4] += value;
+                break;
+            case "Death":
+                effectList[5] += value;
+                break;
+            case "Balance":
+                effectList[6] += value;
+                break;
         }
     }
 

@@ -167,23 +167,26 @@ public class CombatDuelActorSubCircle {
     }
 
     internal T GetStatBySchool<T>(List<T> list, MagicSchool enumValue) {
-        if (list is null || list.Count <= 0) {
+        if (list is null) {
             return default;
         }
-
+        if (list.Count < 7) {
+            throw new ArgumentException("List must have at least 7 items");
+        }
         if (!typeof(T).IsPrimitive && !typeof(T).IsEnum) {
             throw new ArgumentException("List items must be primitive types or enums");
         }
 
-        var names = Enum.GetNames(typeof(MagicSchool));
-        var val = enumValue.ToString();
-        int index = Array.IndexOf(Enum.GetNames(typeof(MagicSchool)), enumValue.ToString());
-
-        if (index == -1 || list.Count <= index) {
-            return default;
-        }
-
-        return list[index];
+        return enumValue switch {
+            MagicSchool.Fire    => list[0],
+            MagicSchool.Ice     => list[1],
+            MagicSchool.Storm   => list[2],
+            MagicSchool.Myth    => list[3],
+            MagicSchool.Life    => list[4],
+            MagicSchool.Death   => list[5],
+            MagicSchool.Balance => list[6],
+            _ => default,
+        };
     }
 
     private void InitializePlayerSubCircle() {
@@ -243,7 +246,7 @@ public class CombatDuelActorSubCircle {
             m_teamID = 1,
             m_originalTeam = 1,
             m_maxHandSize = 7,
-            m_primaryMagicSchoolID = 83375795,
+            m_primaryMagicSchoolID = (int) creatureStats.MagicSchool,
             m_pipCount = new() { m_powerPips = 0, m_genericPips = 0 },
             m_pipRoundRates = new(),
             m_playerHealth = creatureStats.GameStats.m_currentHitpoints,
