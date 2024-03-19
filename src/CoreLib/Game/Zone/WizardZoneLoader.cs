@@ -271,6 +271,7 @@ public static class WizardZoneLoader {
                 .Where(info => info is CombatSigil)) {
             var template = (GameObjectTemplate) CoreObjectFactory.GetCoreTemplate(objectInfo.m_templateID);
             var newObject = CoreObjectFactory.FinalizeCoreObject(objectInfo, template);
+            CoreObjectFactory.InitializeCoreObjectBehaviors(newObject, template);
             if (newObject == null) {
                 continue;
             }

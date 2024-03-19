@@ -4,16 +4,12 @@
  */
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
-using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Game.Sigils;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
-using Imlight.CoreLib.Shared.Resources;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone;
@@ -25,8 +21,8 @@ namespace Imlight.CoreLib.Game.Zone;
 public class WizardZoneSigil : WizardZoneObject {
     private const uint SigilTemplateId = 1901671683;
 
-    private readonly DuelBehavior _duelBehavior;
     private readonly CombatSigilTemplate _combatSigilTemplate;
+    private WizardClientDuelBehavior _duelBehavior;
     private IActorRef _activeDuelActor;
     private Duel _activeDuel;
 
@@ -38,14 +34,7 @@ public class WizardZoneSigil : WizardZoneObject {
             Logger.Error("Could not find combat sigil template with ID {0}.", Logger.Args(SigilTemplateId));
         }
 
-        if (TryGetBehavior<DuelBehavior>(out var duelBehavior)) {
-            duelBehavior.m_sigilTemplateID = SigilTemplateId;
-            duelBehavior.m_pDuel = _activeDuel;
-            _duelBehavior = duelBehavior;
-        }
-        else {
-            throw new Exception("Could not find DuelBehavior on CoreObject.");
-        }
+        InitializeDuelBehavior();
     }
 
     public static Props Props(CoreObject activeGameObject, string sigilType, CoreTemplate template, IActorRef wizardZoneRef)
@@ -139,6 +128,16 @@ public class WizardZoneSigil : WizardZoneObject {
         _duelBehavior.m_pDuel = null;
     }
 
+    private void InitializeDuelBehavior() {
+        var duelBehavior = new WizardClientDuelBehavior() {
+            m_sigilTemplateID = SigilTemplateId,
+            m_pDuel = _activeDuel,
+        };
+
+        base.Behaviors.Add(duelBehavior);
+        this._duelBehavior = duelBehavior;
+    }
+
     private void SpawnCombatSigilObject() {
         if (_activeDuel is null || _activeDuelActor is null) {
             throw new Exception("Duel or DuelActor is null. Cannot spawn combat sigil object.");
@@ -147,20 +146,7 @@ public class WizardZoneSigil : WizardZoneObject {
         // Set the DuelBehavior's properties.
         _duelBehavior.m_pDuel = _activeDuel;
 
-        // Serialize the object and broadcast it to the zone.
-        var serializer = new CoreObjectSerializer()
-            .OnBehaviors(SerializerOptions.Behaviors.None)
-            .OnPropertyMask(SerializerOptions.PropertyFlags.Public
-                | SerializerOptions.PropertyFlags.Transmit
-                | SerializerOptions.PropertyFlags.AuthorityTransmit);
-        var msg = new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = serializer.Serialize(ActiveGameObject) };
-
-        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-            Selfless = true,
-            Message = msg,
-            Sender = Self,
-        };
-        base.WizardZoneRef.Tell(broadcastMsg);
+        SpawnSelf();
     }
 
     private void DespawnCombatSigilObject() {

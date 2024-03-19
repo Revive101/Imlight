@@ -53,9 +53,8 @@ public class WizardZone : ReceiveProtocolDispatcher {
     }
 
     // Akka.NET ctor
-    public static Props Props(string zoneName) {
-        return Akka.Actor.Props.Create(() => new WizardZone(zoneName));
-    }
+    public static Props Props(string zoneName)
+        => Akka.Actor.Props.Create(() => new WizardZone(zoneName));
 
     protected override void PreRestart(Exception reason, object message) {
         Logger.Error("Zone {ZoneName} restarts for: {Exception}", Logger.Args(ZoneName, reason));
@@ -276,7 +275,6 @@ public class WizardZone : ReceiveProtocolDispatcher {
         // b. Broadcast its creation to every player in the zone.
         var id = GenerateReservedMobileId();
         message.CoreObject.m_nMobileID = id;
-        BroadcastObjectCreation(message.CoreObject);
 
         // Inform the object supervisor to create an actor representation and add it to our zone objects list.
         var rsp = _objectSupervisorRef
@@ -310,7 +308,6 @@ public class WizardZone : ReceiveProtocolDispatcher {
         // b. Broadcast its creation to every player in the zone.
         var id = GenerateReservedMobileId();
         message.CoreObject.m_nMobileID = id;
-        BroadcastObjectCreation(message.CoreObject);
 
         // Inform the object supervisor to create an actor representation and the it to our zone objects list.
         _objectSupervisorRef.Tell(message);

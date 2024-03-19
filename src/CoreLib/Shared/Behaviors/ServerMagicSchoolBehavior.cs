@@ -11,6 +11,7 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Shared.Behaviors;
 
 public enum MagicSchool {
+    None = 0,
     Ice = 72777,
     Life = 2330892,
     Fire = 2343174,

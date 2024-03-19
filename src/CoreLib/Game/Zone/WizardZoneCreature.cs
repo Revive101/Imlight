@@ -7,7 +7,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
+using Imlight.Common;
 using Imlight.Common.Caches;
+using Imlight.Common.ObjectProperty;
+using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
@@ -46,14 +49,10 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
     private readonly NodeObject[] _nodes;
     private CreatureState _creatureState;
     private byte _targetNodeIndex;
-    private float _movementSpeed = 0.0f;
-    private float _movementSpeedMultiplier = 1.0f;
-    private uint _pauseChance = 0;
-    private float _pauseTime = 6.0f;
     private bool _justPaused;
     private DateTime _lastMoveTime;
-    private bool _isMovingCreature;
-    private bool _isDuelingCreature;
+    private ServerNPCBehavior _npcBehavior;
+    private ServerPathBehavior _pathBehavior;
 
     // ctor
     public WizardZoneCreature(CoreObject activeGameObject,
@@ -67,9 +66,10 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
         this._targetNodeIndex = startingNodeIndex;
         this._creatureState = CreatureState.Stopped;
 
-        SetPropertiesFromTemplate();
+        CreateBehaviorsFromTemplate();
+        SpawnSelf();
 
-        if (!this._isMovingCreature) {
+        if (!IsMovingCreature()) {
             return;
         }
 
@@ -123,7 +123,7 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
 
     protected override void OnPlayerInteractionEnter(CoreObject suspectObject, IActorRef suspectActor) {
         // If I'm a hostile creature and a player just provoked me, then start a duel.
-        if (_creatureState == CreatureState.Combat || !_isDuelingCreature) {
+        if (_creatureState == CreatureState.Combat || !IsDuelingCreature()) {
             return;
         }
 
@@ -139,7 +139,7 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
 
     protected override Vector3 GetPosition() {
         // If the creature is not moving, then return the current position.
-        if (!_isMovingCreature || _creatureState != CreatureState.Wandering) {
+        if (_pathBehavior is null || !_pathBehavior.IsMovingCreature || _creatureState != CreatureState.Wandering) {
             return ActiveGameObject.m_location;
         }
 
@@ -149,7 +149,7 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
         var targetNode = CurrentTargetNode.m_location;
         var totalDistance = Vector3.Distance(lastNodeReached, targetNode);
         var elapsedTimeInSeconds = (DateTime.Now - _lastMoveTime).TotalSeconds;
-        var distanceTraveled = elapsedTimeInSeconds * _movementSpeed * _movementSpeedMultiplier;
+        var distanceTraveled = elapsedTimeInSeconds * _pathBehavior.MovementSpeed * _pathBehavior.MovementMultiplier;
 
         if (distanceTraveled >= totalDistance) {
             return targetNode;
@@ -208,7 +208,7 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
         // Creatures have a chance to pause at each node. This stops them from clumping together.
         // If the creature is already paused, then don't pause again.
         if (ShouldPause() && !_justPaused) {
-            var pauseDelay = TimeSpan.FromSeconds(_pauseTime);
+            var pauseDelay = TimeSpan.FromSeconds(_pathBehavior.PauseTime);
             var pauseMsg = new ZONE_102_PROTOCOL.MSG_CREATUREMOVEINTERVAL();
             Timers.StartSingleTimer("movementInterval", pauseMsg, pauseDelay);
             _justPaused = true;
@@ -233,7 +233,7 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
 
         // Calculate the delay based on the distance between the current position
         // and the target node position, and the movement speed of the creature.
-        var travelTimeInSeconds = distance / (_movementSpeed * _movementSpeedMultiplier);
+        var travelTimeInSeconds = distance / (_pathBehavior.MovementSpeed * _pathBehavior.MovementMultiplier);
         var travelTimeInMilli = (int) travelTimeInSeconds * 1000;
 
         // Clamp the delay to a minimum.
@@ -267,49 +267,81 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
         WizardZoneRef.Tell(msg);
     }
 
-    private void SetPropertiesFromTemplate() {
-        var pathBehavior = Template.m_behaviors
+    private void CreateBehaviorsFromTemplate() {
+        var pathBehaviorTemplate = Template.m_behaviors
             .FirstOrDefault(x => x is PathBehaviorTemplate) as PathBehaviorTemplate;
         var pathMovementBehavior = Template.m_behaviors
             .FirstOrDefault(x => x is PathMovementBehaviorTemplate) as PathMovementBehaviorTemplate;
-        var duelistBehavior = Template.m_behaviors
+        var duelistBehaviorTemplate = Template.m_behaviors
             .FirstOrDefault(x => x is DuelistBehaviorTemplate) as DuelistBehaviorTemplate;
-        var npcBehavior = Template.m_behaviors
+        var npcBehaviorTemplate = Template.m_behaviors
             .FirstOrDefault(x => x is NPCBehaviorTemplate) as NPCBehaviorTemplate;
 
-        if (pathBehavior is not null) {
-            this._pauseChance = pathBehavior.m_pauseChance;
-            this._pauseTime = pathBehavior.m_timeToPause;
+        CreatePathBehavior(pathBehaviorTemplate, pathMovementBehavior);
+        CreateNPCBehavior(npcBehaviorTemplate, duelistBehaviorTemplate);
+
+        // todo: source other game stats like resistences here.
+        this.GameStats = new WizGameStats {
+            m_currentHitpoints = 55,
+            m_baseHitpoints = 55,
+        };
+    }
+
+    private void CreatePathBehavior(PathBehaviorTemplate pathTemplate, PathMovementBehaviorTemplate movementTemplate) {
+        if (pathTemplate is null) {
+            return;
         }
 
-        if (pathMovementBehavior is not null) {
-            this._movementSpeed = pathMovementBehavior.m_movementSpeed;
-            this._movementSpeedMultiplier = pathMovementBehavior.m_movementScale;
-            this._isMovingCreature = true && pathMovementBehavior.m_movementSpeed > 0.0f;
+        var pathBehaviorInstance = new ServerPathBehavior {
+            PathType = pathTemplate.m_kPathType,
+            PathId = pathTemplate.m_pathID,
+            PathDirection = pathTemplate.m_nPathDirection,
+            Actions = pathTemplate.m_actionList,
+            PauseChance = pathTemplate.m_pauseChance,
+            PauseTime = pathTemplate.m_timeToPause
+        };
+
+        if (movementTemplate is not null) {
+            pathBehaviorInstance.MovementSpeed = movementTemplate.m_movementSpeed;
+            pathBehaviorInstance.MovementMultiplier = movementTemplate.m_movementScale;
+        }
+        else {
+            Logger.Error("PathMovementBehaviorTemplate not found for creature {0}.",
+                Logger.Args(ActiveGameObject.m_globalID));
         }
 
-        if (duelistBehavior is not null) {
-            base.InteractionRadius = duelistBehavior.m_npcProximity;
-            this._isDuelingCreature = true;
+        this.Behaviors.Add(pathBehaviorInstance);
+        this._pathBehavior = pathBehaviorInstance;
+    }
+
+    private void CreateNPCBehavior(NPCBehaviorTemplate npcTemplate, DuelistBehaviorTemplate duelistTemplate) {
+        if (npcTemplate is null) {
+            return;
         }
 
-        if (npcBehavior is not null) {
-            this.CombatIntelligence = npcBehavior.m_fIntelligence;
-            this.CombatSelfishFactor = npcBehavior.m_fSelfishFactor;
-            this.CombatAggressiveFactor = npcBehavior.m_nAggressiveFactor;
-            this.CombatLevel = npcBehavior.m_nLevel;
-            this.StartingHealth = npcBehavior.m_nStartingHealth;
+        InteractionRadius = duelistTemplate?.m_npcProximity ?? base.InteractionRadius;
 
-            // todo: source other game stats like resistences here. Unsure if client ships with this information.
-            this.GameStats = new WizGameStats {
-                m_currentHitpoints = this.StartingHealth,
-                m_baseHitpoints = this.StartingHealth,
-            };
+        // Try to parse the npcBehaviorTemplate.m_schoolOfFocus to a MagicSchool.
+        var school = MagicSchool.None;
+        if (npcTemplate.m_schoolOfFocus != "" && !Enum.TryParse(npcTemplate.m_schoolOfFocus, out school)) {
+            Logger.Error("Failed to parse magic school {0} for creature {1}.",
+                Logger.Args(npcTemplate.m_schoolOfFocus, ActiveGameObject.m_globalID));
+            return;
         }
 
-        if (TryGetBehavior<NPCBehavior>(out var behavior)) {
-            behavior.m_isMonster = this._isDuelingCreature;
-        }
+        var npcBehaviorInstance = new ServerNPCBehavior {
+            BossMob = npcTemplate.m_bossMob,
+            Intelligence = npcTemplate.m_fIntelligence,
+            SelfishFactor = npcTemplate.m_fSelfishFactor,
+            AggressiveFactor = npcTemplate.m_nAggressiveFactor,
+            StartingHealth = npcTemplate.m_nStartingHealth,
+            School = school,
+            Level = npcTemplate.m_nLevel,
+            TurnTowardsPlayer = npcTemplate.m_turnTowardsPlayer,
+            IsMonster = duelistTemplate is not null,
+        };
+        this.Behaviors.Add(npcBehaviorInstance);
+        this._npcBehavior = npcBehaviorInstance;
     }
 
     private void StartCombat() {
@@ -372,8 +404,28 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
             targetNode.m_location.Z);
     }
 
+    private bool IsMovingCreature() {
+        if (TryGetBehavior<ServerPathBehavior>(out var pathBehavior)) {
+            return pathBehavior.IsMovingCreature;
+        }
+
+        return false;
+    }
+
+    private bool IsDuelingCreature() {
+        if (_npcBehavior is not null && _npcBehavior.IsMonster) {
+            return true;
+        }
+
+        return false;
+    }
+
     private bool ShouldPause() {
-        return _pauseChance > 0 && new Random().Next(0, 100) < _pauseChance;
+        if (_pathBehavior is null) {
+            return false;
+        }
+
+        return _pathBehavior.PauseChance > 0 && new Random().Next(0, 100) < _pathBehavior.PauseChance;
     }
 
     private void Die() {
