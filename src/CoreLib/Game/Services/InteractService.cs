@@ -16,6 +16,7 @@ using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Models.Player;
 using static Imlight.Common.Caches.TypeCache;
 using Imlight.CoreLib.WizardData.Models.World;
+using Imlight.Common.IO;
 
 namespace Imlight.CoreLib.Game.Services;
 internal class InteractService : MessageService {
@@ -45,29 +46,35 @@ internal class InteractService : MessageService {
             return;
         }
 
-        // Check if the object is a shopkeeper.
-        if (npc is not WizardZoneNpc zoneNpc) {
-            Logger.Error("{0} searched for NPC by global ID {1} but the object found was not a {2}",
-                Logger.Args(wizard.CharId, message.GlobalID, nameof(WizardZoneNpc)));
-            return;
-        }
+        // Check if the object is a shopkeeper or teleport door.
+        if (npc is WizardZoneNpc zoneNpc) {
+            if (!zoneNpc.ServiceMomentoBase.m_serviceOptions.Any(x => x.m_serviceName == message.ServiceName)) {
+                Logger.Error("{0} interacted with NPC by global ID {1} but the service {2} was not found",
+                    Logger.Args(wizard.CharId, message.GlobalID, message.ServiceName));
+                return;
+            }
 
-        // Check to see if this NPC is capable of providing the service.
-        if (!zoneNpc.ServiceMomentoBase.m_serviceOptions.Any(x => x.m_serviceName == message.ServiceName)) {
-            Logger.Error("{0} interacted with NPC by global ID {1} but the service {2} was not found",
-                Logger.Args(wizard.CharId, message.GlobalID, message.ServiceName));
-            return;
-        }
+            // Check to see if this NPC is capable of providing the service.
+            
 
-        switch (message.ServiceName) {
-            case "WizShoppingService":
-                InteractShopkeeper(message, wizard, zoneNpc);
-                break;
-            case "DyeShopService":
-                InteractDyeShop(message, wizard, zoneNpc);
-                break;
-            default:
-                break;
+            switch (message.ServiceName) {
+                case "WizShoppingService":
+                    InteractShopkeeper(message, wizard, zoneNpc);
+                    break;
+                case "DyeShopService":
+                    InteractDyeShop(message, wizard, zoneNpc);
+                    break;
+                default:
+                    break;
+            }
+        }
+        else if (npc is WizardZoneTeleportDoor zoneDoor) {
+            InteractTeleportDoor(message, wizard, zoneDoor);
+        }
+        else {
+            Logger.Error("{0} searched for NPC by global ID {1} but the object found was not a {2} or {3}",
+                Logger.Args(wizard.CharId, message.GlobalID, nameof(WizardZoneNpc), nameof(WizardZoneTeleportDoor)));
+            return;
         }
     }
 
@@ -126,6 +133,34 @@ internal class InteractService : MessageService {
             GameObjectID = wizard.CharId,
             WizBangID = (uint) WizBangs.Registrar
         };
+        ZoneBroadcast(wizBangMsg, false);
+    }
+
+    private void InteractTeleportDoor(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC message, Wizard wizard, WizardZoneTeleportDoor zoneNpc) {
+        if (!zoneNpc.IsWorldTeleporter) {
+            Logger.Error("{0} interacted with NPC by global ID {1} but the object found was not a teleport door",
+                Logger.Args(wizard.CharId, message.GlobalID));
+            return;
+        }
+
+        var teleportDoorOptions = new WorldTeleportOptions {
+            m_worldList = new List<ByteString> { // TODO: fetch available worlds for user to teleport to from db
+                "WizardCity",
+                "Krokotopia",
+            }
+        };
+
+        var teleportDoorOpen = new WIZARD_12_PROTOCOL.MSG_WORLDTELEPORTLIST {
+            GlobalID = message.GlobalID,
+            Data = _serializer.Serialize(teleportDoorOptions)
+        };
+        SendToSocket(teleportDoorOpen);
+
+        var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG() {
+            GameObjectID = wizard.CharId,
+            WizBangID = (uint) WizBangs.Registrar
+        };
+
         ZoneBroadcast(wizBangMsg, false);
     }
 }
