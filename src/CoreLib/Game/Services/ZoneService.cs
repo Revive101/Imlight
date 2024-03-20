@@ -112,6 +112,25 @@ public class ZoneService : MessageService {
         character.QueuedZoneLocation = Util.GetCompactStringFromVector(character.Location, character.Orientation);
     }
 
+    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_WORLDTELEPORTREQUEST))]
+    private void ReceiveWorldTeleportRequest(WIZARD_12_PROTOCOL.MSG_WORLDTELEPORTREQUEST message) {
+        var zoneName = message.World;
+
+        // WizardCity goes to that tutorial place
+        if (zoneName == "WizardCity") {
+            zoneName = "WizardCity/WC_Ravenwood_Teleporter";
+        } else {
+            zoneName = AccessPassManager.GetContainedZoneName(zoneName);
+        }
+    
+        var msg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER() {
+            DestinationZone = zoneName,
+            DestinationLocation = "Start",
+            SendToClient = true
+        };
+        TellOtherServices(msg);
+    }
+
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK))]
     private void ReceiveZoneTransferAck(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK message) {
         // The client has accepted the zone transfer. We can now send the server transfer message.
