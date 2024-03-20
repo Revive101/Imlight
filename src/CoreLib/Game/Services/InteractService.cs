@@ -147,6 +147,9 @@ internal class InteractService : MessageService {
             m_worldList = new List<ByteString> { // TODO: fetch available worlds for user to teleport to from db
                 "WizardCity",
                 "Krokotopia",
+                "Marleybone",
+                "MooShu",
+                "Grizzleheim",
             }
         };
 
