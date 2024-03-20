@@ -115,6 +115,9 @@ public class ZoneService : MessageService {
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_WORLDTELEPORTREQUEST))]
     private void ReceiveWorldTeleportRequest(WIZARD_12_PROTOCOL.MSG_WORLDTELEPORTREQUEST message) {
         var zoneName = message.World;
+        if (zoneName.Length == 0) { // user clicked "exit", do nothing
+            return;
+        }
 
         // WizardCity goes to that tutorial place
         if (zoneName == "WizardCity") {
