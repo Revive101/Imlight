@@ -150,6 +150,7 @@ internal class InteractService : MessageService {
                 "Marleybone",
                 "MooShu",
                 "Grizzleheim",
+                "Dragonspyre" // has no icon. why?
             }
         };
 
