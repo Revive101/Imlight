@@ -46,9 +46,8 @@ public class WizardZoneObjectSupervisor : ReceiveProtocolDispatcher {
                     return;
                 }
                 else if (behavior is ObjectStateBehaviorTemplate) {
-                    // TODO make a more generalized WizardZoneObjectState because im sure the teleporter is not the only one
-                    var objectProps = WizardZoneTeleportDoor.Props(message.CoreObject, message.Template, _wizardZoneRef);
-                    CreateActorAndRespond(objectProps);
+                    var objectStateProps = WizardZoneObjectState.Props(message.CoreObject, message.Template, _wizardZoneRef);
+                    CreateActorAndRespond(objectStateProps);
                     return;
                 }
             }
