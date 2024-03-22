@@ -25,6 +25,11 @@ public static class WizardObjectLoader {
         clientObject.m_characterId = (GID) character.CharId;
         clientObject.m_permID = 0; // What is this?
 
+        // If the mobile ID isn't null, this game object currently exists in a wizard zone.
+        if (character.GameObject is not null) {
+            clientObject.m_nMobileID = character.GameObject.m_nMobileID;
+        }
+
         // Create the object at the location set in the character.
         clientObject.m_location = character.Location;
         clientObject.m_orientation = character.Orientation;
