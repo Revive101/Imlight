@@ -52,14 +52,6 @@ public class WizardZoneTeleportDoor : WizardZoneObject {
     protected override void OnPlayerJoin(CoreObject player, IActorRef suspect) {
         base.OnPlayerJoin(player, suspect);
 
-        if (IsWorldTeleporter) {
-            var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG {
-                WizBangID = 382121735,
-                GameObjectID = ActiveGameObject.m_globalID
-            };
-            suspect.Tell(wizBangMsg);
-        }
-
         Sender.Tell(new ZONE_102_PROTOCOL.MSG_ADDOBJECTRSP());
     }
 
