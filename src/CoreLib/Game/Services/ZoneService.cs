@@ -126,7 +126,7 @@ public class ZoneService : MessageService {
             return;
         }
 
-        var zoneName = WorldHubZones.GetWorldUniverseTPLocation(message.World);
+        var zoneName = WorldHubZones.GetHubZoneMapping(message.World).m_universeTPZone;
     
         var msg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER() {
             DestinationZone = zoneName,
