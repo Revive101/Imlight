@@ -194,7 +194,11 @@ public class ZoneService : MessageService {
                 SessionSlot = 0,
                 SessionID = 0,
                 TargetPlayerID = character.CharId,
-                TransitionID = 1
+                TransitionID = 1,
+                FallbackIP = character.GameServerIp,
+                FallbackTCPPort = character.GameServerPort,
+                FallbackUDPPort = character.GameServerPort,
+                FallbackZone = character.Zone
             };
             SendToSocket(serverTransfer);
         }
