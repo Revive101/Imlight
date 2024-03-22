@@ -16,7 +16,7 @@ public static class Util {
         => $"{vector.X},{vector.Y},{vector.Z},{orientation.Z}";
 
     public static Vector4 GetVectorFromCompactString(string loc) {
-        if (!loc.Contains(',')) {
+        if (loc.Split(',').Length != 4) {
             return Vector4.Zero;
         }
 
