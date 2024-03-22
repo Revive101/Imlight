@@ -12,6 +12,7 @@ using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Game.Zone;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Models.Player;
+using SharpDX;
 
 namespace Imlight.CoreLib.Shared.Packets;
 
@@ -41,6 +42,8 @@ public class ZONE_102_PROTOCOL : IServerProtocol
 		public ushort MobileId;
 		public uint DynamicZoneId;
         public string ZoneDisplayName;
+        public Vector3 Location;
+        public float Orientation;
 		public uint ErrorCode;
 	}
 
@@ -229,5 +232,11 @@ public class ZONE_102_PROTOCOL : IServerProtocol
         public TypeCache.CoreObject CoreObject;
         public bool Failure;
         public string Error;
+    }
+
+    public class MSG_PLAYERMOVEINTERVAL : IServerMessage
+    {
+        public byte MessageOrder { get; } = 22;
+        public byte ServiceID { get; } = 102;
     }
 }

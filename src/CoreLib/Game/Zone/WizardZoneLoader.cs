@@ -153,6 +153,8 @@ public static class WizardZoneLoader {
             Logger.Error("Zone {ZoneName} could not load {ZoneDataFileName} as it was missing or invalid.",
                 Logger.Args(s_zone.ZoneName, ZoneDataFileName));
         }
+
+        s_zone.ZoneData = s_zoneData;
     }
 
     /// <summary>

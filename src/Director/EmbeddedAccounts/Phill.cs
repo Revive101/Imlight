@@ -41,10 +41,10 @@ internal sealed class Phill : EmbeddedAccount {
         newCharacter.PlayerNameBehavior.BadgeTitle = "Title_1";
 
         // Add default items.
-        newCharacter.AddItemToInventory(1359664, out var hat);
-        newCharacter.AddItemToInventory(1591141, out var robe);
-        newCharacter.AddItemToInventory(1591260, out var boots);
-        newCharacter.AddItemToInventory(1302115, out var staff);
+        newCharacter.AddItemToInventory(1519294, out var hat);
+        newCharacter.AddItemToInventory(1519309, out var robe);
+        newCharacter.AddItemToInventory(1519324, out var boots);
+        newCharacter.AddItemToInventory(1628448, out var staff);
 
         // Dye the items orange.
         DyeMapper.ApplyPrimaryDye(hat, DyeColor.Orange);

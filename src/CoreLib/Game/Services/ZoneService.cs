@@ -5,27 +5,38 @@
 
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
+using Imlight.CoreLib.Game.Zone;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Models.World;
 
 namespace Imlight.CoreLib.Game.Services;
 
 public class ZoneService : MessageService {
+    private const int ZONE_REMOVAL_WAIT_TIME_IN_SECONDS = 4;
+    private const int ZONE_TRANSFER_CLEANUP_WAIT_TIME_IN_SECONDS = 1;
+
     public IActorRef ZoneActor;
+
+    private readonly TimeSpan _zoneRemovalWaitTime = TimeSpan.FromSeconds(ZONE_REMOVAL_WAIT_TIME_IN_SECONDS);
     private bool _isTransferQueued;
 
     public ZoneService(SessionActor sessionActor) : base(sessionActor) { }
 
-    protected static Props Props(SessionActor parentActor) {
-        return Akka.Actor.Props.Create(() => new ZoneService(parentActor));
-    }
+    protected static Props Props(SessionActor parentActor) => Akka.Actor.Props.Create(() => new ZoneService(parentActor));
 
     protected override void OnPreDispose() {
-        var globalId = GetActiveGameObject().m_globalID;
+        var gameObj = GetActiveGameObject();
+        if (gameObj is null) {
+            return;
+        }
+
+        var globalId = gameObj.m_globalID;
 
         // If the zone reference is not null, we'll tell the zone to remove the player.
         ZoneActor?.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER() {
@@ -39,66 +50,50 @@ public class ZoneService : MessageService {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]
     private void ReceiveZoneTransferRequest(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message) {
-        // This is an internal zone transfer message. It's meant to be the very first message sent to the
-        // SessionActor in regards to a zone transfer. We're going to cache the destination zone and location,
-        // then start the zone transfer handshake with the client.
-
-        // Avoid duplicate transfer requests.
         if (_isTransferQueued) {
             return;
         }
 
-        var character = GetActiveWizard();
-
-        // If the zone is ready and we're sending to client, begin the zone transfer handshake with the client.
+        // Sending the server transfer request to the server will allocate and load the zone.
         var zoneDetails = AskServer<ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP>(message);
-        if (zoneDetails.ErrorCode == 0 && message.SendToClient) {
-            // Check if the destination zone is the same as the current zone. If so, we move the player to the
-            // destination coordinates using a SERVERTELEPORT.
-            if (message.DestinationZone == character.Zone) {
-                // Split coordinate string by commas.
-                var coords = message.DestinationLocation.Split(',').ToArray();
-                // Put split string coordinates into Vector3.
-                var destinationCoords = new SharpDX.Vector3(
-                    float.Parse(coords[0]) / 4,
-                    float.Parse(coords[1]) / 4,
-                    float.Parse(coords[2]) / 4);
-
-                var serverTele = new GAME_5_PROTOCOL.MSG_SERVERTELEPORT() {
-                    LocationX = (ushort) destinationCoords.X,
-                    LocationY = (ushort) destinationCoords.Y,
-                    LocationZ = (ushort) destinationCoords.Z,
-                    Direction = 0,
-                    MobileID = GetActiveGameObject().m_nMobileID,
-                };
-                SendToSocket(serverTele);
+        if (message.SendToClient && zoneDetails.ErrorCode == 0) {
+            // Check if the destination zone is the same as the current zone. If so, just teleport the player.
+            if (message.DestinationZone == GetActiveWizard().Zone) {
+                DoTeleport(message.DestinationLocation);
                 return;
             }
 
-            _isTransferQueued = true;
-
-            // Ask the client if it's okay with being transferred.
-            var msg = new GAME_5_PROTOCOL.MSG_ZONETRANSFERREQUEST {
-                ZoneName = message.DestinationZone,
-                SendAck = 1
-            };
-            SendToSocket(msg);
-
-            character.QueuedZoneName = message.DestinationZone;
-            character.QueuedZoneLocation = message.DestinationLocation;
+            ReadyClientForZoneTransfer(message);
         }
-
-        // If we're not sending this to client, this is an internal transfer, meaning we can immediately
-        // setup the new details.
-        if (!message.SendToClient) {
-            ZoneActor = zoneDetails.ZoneActorRef;
+        else {
+            // If we're not sending this message to the client, it means the zone is being loaded
+            // for MSG_ATTACH. In which case, the client is already prepared for the zone transfer.
+            SetZone(zoneDetails.ZoneActorRef);
         }
 
         Sender.Tell(zoneDetails);
     }
 
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK))]
+    private void ReceiveZoneTransferAck(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK message) {
+        // The client has accepted the zone transfer. We can now send the server transfer message.
+        DoZoneTransfer();
+    }
+
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ZONETRANSFERNACK))]
+    private void ReceiveZoneTransferNack(GAME_5_PROTOCOL.MSG_ZONETRANSFERNACK message) {
+        // The client has denied the zone transfer.
+        Logger.Debug("Client was not OK with zone transfer! Possibly patching.");
+    }
+
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_RETRYTELEPORT))]
+    private void ReceiveRetryTeleport(GAME_5_PROTOCOL.MSG_RETRYTELEPORT message) {
+        DoZoneTransfer();
+    }
+
     [MessageHandler(typeof(WIZARD2_53_PROTOCOL.MSG_ZONEHOP))]
     private void ReceiveZoneHop(WIZARD2_53_PROTOCOL.MSG_ZONEHOP message) {
+        // This message is sent when the client has enabled classic mode and wants to reload their current zone.
         var character = GetActiveWizard();
 
         _isTransferQueued = true;
@@ -112,21 +107,33 @@ public class ZoneService : MessageService {
         character.QueuedZoneLocation = Util.GetCompactStringFromVector(character.Location, character.Orientation);
     }
 
-    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK))]
-    private void ReceiveZoneTransferAck(GAME_5_PROTOCOL.MSG_ZONETRANSFERACK message) {
-        // The client has accepted the zone transfer. We can now send the server transfer message.
-        DoZoneTransfer();
-    }
+    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_WORLDTELEPORTREQUEST))]
+    private void ReceiveWorldTeleportRequest(WIZARD_12_PROTOCOL.MSG_WORLDTELEPORTREQUEST message) {
+        if (message.World.Length == 0) { // user clicked "exit", remove the wizbang
+            var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG() {
+                GameObjectID = GetActiveWizard().CharId,
+                WizBangID = (uint) WizBangs.None
+            };
 
-    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ZONETRANSFERNACK))]
-    private void ReceiveZoneTransferNack(GAME_5_PROTOCOL.MSG_ZONETRANSFERNACK message) {
-        // The client has denied the zone transfer. We can now send the server transfer message.
-        Logger.Debug("Client was not OK with zone transfer! Possibly patching.");
-    }
+            ZoneBroadcast(wizBangMsg, false);
+            return;
+        }
 
-    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_RETRYTELEPORT))]
-    private void ReceiveRetryTeleport(GAME_5_PROTOCOL.MSG_RETRYTELEPORT message) {
-        DoZoneTransfer();
+        var zoneMap = WorldHubZones.GetHubZoneMapping(message.World);
+        if (zoneMap is null) {
+            Logger.Error("{0} tried to teleport to an invalid world: {1}", Logger.Args(GetActiveWizard().CharId, message.World));
+            return;
+        }
+
+        var zoneName = zoneMap.m_universeTPZone;
+        var zoneLocation = zoneMap.m_universeTPLocation;
+
+        var msg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER() {
+            DestinationZone = zoneName,
+            DestinationLocation = zoneLocation,
+            SendToClient = true
+        };
+        ReceiveZoneTransferRequest(msg);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
@@ -150,8 +157,9 @@ public class ZoneService : MessageService {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_FISHINTERACTION))]
     private void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_FISHINTERACTION message) {
+        // This is an exception. Sometimes the MoveService interval happens as we zone transfer.
         if (ZoneActor is null) {
-            throw new Exception("Zone Reference was null.");
+            return;
         }
 
         ZoneActor.Forward(message);
@@ -166,35 +174,81 @@ public class ZoneService : MessageService {
         ZoneActor.Forward(message);
     }
 
+    private void SetZone(IActorRef actorRef) {
+        ZoneActor = actorRef;
+    }
+
+    private void ReadyClientForZoneTransfer(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message) {
+        var character = GetActiveWizard();
+        _isTransferQueued = true;
+
+        // Ask the client if it's okay with being transferred.
+        var msg = new GAME_5_PROTOCOL.MSG_ZONETRANSFERREQUEST {
+            ZoneName = message.DestinationZone,
+            SendAck = 1
+        };
+        SendToSocket(msg);
+
+        character.QueuedZoneName = message.DestinationZone;
+        character.QueuedZoneLocation = message.DestinationLocation;
+    }
+
     private void DoZoneTransfer() {
         var account = GetSocketAccount();
         var character = GetActiveWizard();
 
         // Remove the player from their current zone. We're awaiting a reply so the zone can properly clean up
         // before we continue on potentially a different thread.
-        var removePlayerMsg = new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER() {
-            Player = SessionActor.ActorRef,
-            GlobalId = GetActiveGameObject().m_globalID,
-            IsPlayerStillConnected = true
-        };
-        _ = ZoneActor.Ask(removePlayerMsg).Result;
+        try {
+            var removePlayerMsg = new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER() {
+                Player = SessionActor.ActorRef,
+                GlobalId = GetActiveGameObject().m_globalID,
+                IsPlayerStillConnected = true
+            };
+            _ = ZoneActor.Ask(removePlayerMsg, _zoneRemovalWaitTime).Result;
+        }
+        catch {
+            Logger.Warning("Zone removal timeout of {0} seconds exceeded.", Logger.Args(ZONE_REMOVAL_WAIT_TIME_IN_SECONDS));
+        }
+        finally {
+            // The zone has removed the player, but the client may not have had time to clean up
+            // all the zone items. We'll wait a short time here before we send zone transfer.
+            var delay = TimeSpan.FromSeconds(ZONE_TRANSFER_CLEANUP_WAIT_TIME_IN_SECONDS);
+            Task.Run(async () => await Task.Delay(delay)).Wait();
 
-        // When we send this message, the client will disconnect from the current zone and reconnect to the next.
-        // This means attach will happen again, so this is all we need to do here.
-        var serverTransfer = new GAME_5_PROTOCOL.MSG_SERVERTRANSFER() {
-            IP = character.GameServerIp,
-            TCPPort = character.GameServerPort,
-            UDPPort = character.GameServerPort,
-            UserID = account.AccountId,
-            CharID = character.CharId,
-            ZoneName = character.QueuedZoneName,
-            Location = character.QueuedZoneLocation,
-            Slot = 0,
-            SessionSlot = 0,
-            SessionID = 0,
-            TargetPlayerID = character.CharId,
-            TransitionID = 1
+            // When we send this message, the client will disconnect from the current zone and reconnect to the next.
+            // This means attach will happen again, so this is all we need to do here.
+            var serverTransfer = new GAME_5_PROTOCOL.MSG_SERVERTRANSFER() {
+                IP = character.GameServerIp,
+                TCPPort = character.GameServerPort,
+                UDPPort = character.GameServerPort,
+                UserID = account.AccountId,
+                CharID = character.CharId,
+                ZoneName = character.QueuedZoneName,
+                Location = character.QueuedZoneLocation,
+                Slot = 0,
+                SessionSlot = 0,
+                SessionID = 0,
+                TargetPlayerID = character.CharId,
+                TransitionID = 1,
+                FallbackIP = character.GameServerIp,
+                FallbackTCPPort = character.GameServerPort,
+                FallbackUDPPort = character.GameServerPort,
+                FallbackZone = character.Zone
+            };
+            SendToSocket(serverTransfer);
+        }
+    }
+
+    private void DoTeleport(string location) {
+        var coords = Util.GetVectorFromCompactString(location);
+        var serverTele = new GAME_5_PROTOCOL.MSG_SERVERTELEPORT() {
+            LocationX = (ushort) coords.X,
+            LocationY = (ushort) coords.Y,
+            LocationZ = (ushort) coords.Z,
+            Direction = 0,
+            MobileID = GetActiveGameObject().m_nMobileID,
         };
-        SendToSocket(serverTransfer);
+        SendToSocket(serverTele);
     }
 }
