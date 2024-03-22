@@ -8,6 +8,7 @@ using System.Linq;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
+using Imlight.CoreLib.Game.Zone;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
@@ -115,8 +116,7 @@ public class ZoneService : MessageService {
 
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_WORLDTELEPORTREQUEST))]
     private void ReceiveWorldTeleportRequest(WIZARD_12_PROTOCOL.MSG_WORLDTELEPORTREQUEST message) {
-        var zoneName = message.World;
-        if (zoneName.Length == 0) { // user clicked "exit", remove the wizbang
+        if (message.World.Length == 0) { // user clicked "exit", remove the wizbang
             var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG() {
                 GameObjectID = GetActiveWizard().CharId,
                 WizBangID = (uint) WizBangs.None
@@ -126,12 +126,7 @@ public class ZoneService : MessageService {
             return;
         }
 
-        // WizardCity goes to that tutorial place
-        if (zoneName == "WizardCity") {
-            zoneName = "WizardCity/WC_Ravenwood_Teleporter";
-        } else {
-            zoneName = AccessPassManager.GetContainedZoneName(zoneName);
-        }
+        var zoneName = WorldHubZones.GetWorldHubLocation(message.World);
     
         var msg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER() {
             DestinationZone = zoneName,
