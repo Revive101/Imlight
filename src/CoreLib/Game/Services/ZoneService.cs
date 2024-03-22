@@ -133,7 +133,7 @@ public class ZoneService : MessageService {
             DestinationLocation = zoneLocation,
             SendToClient = true
         };
-        TellOtherServices(msg);
+        ReceiveZoneTransferRequest(msg);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
