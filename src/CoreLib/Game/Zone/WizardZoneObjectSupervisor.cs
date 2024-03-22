@@ -46,7 +46,7 @@ public class WizardZoneObjectSupervisor : ReceiveProtocolDispatcher {
                     return;
                 }
                 else if (behavior is ObjectStateBehaviorTemplate) {
-                    var objectStateProps = WizardZoneObjectState.Props(message.CoreObject, message.Template, _wizardZoneRef);
+                    var objectStateProps = WizardZoneStatefulObject.Props(message.CoreObject, message.Template, _wizardZoneRef);
                     CreateActorAndRespond(objectStateProps);
                     return;
                 }

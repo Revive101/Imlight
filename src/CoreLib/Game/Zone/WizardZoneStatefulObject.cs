@@ -17,7 +17,7 @@ namespace Imlight.CoreLib.Game.Zone;
 /// An ObjectState are typically objects that the wizard can interact with, ie the universe teleport door.
 /// This acts similar to an NPC.
 /// </summary>
-public class WizardZoneObjectState : WizardZoneObject {
+public class WizardZoneStatefulObject : WizardZoneObject {
     private static readonly string UniverseTeleportName = "UniverseTeleport";
     private static readonly uint UniverseTeleportId = 84113;
 
@@ -31,7 +31,7 @@ public class WizardZoneObjectState : WizardZoneObject {
     private readonly string _npcTextKey = "GUI_ObjectInteract";
 
     // ctor
-    public WizardZoneObjectState(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef)
+    public WizardZoneStatefulObject(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef)
         : base(activeGameObject, template, wizardZoneRef) {
         if (Template is not GameObjectTemplate gameObjTemplate) {
             return;
@@ -49,7 +49,7 @@ public class WizardZoneObjectState : WizardZoneObject {
 
     // Akka.NET ctor
     public static Props Props(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef)
-        => Akka.Actor.Props.Create(() => new WizardZoneObjectState(activeGameObject, template, wizardZoneRef));
+        => Akka.Actor.Props.Create(() => new WizardZoneStatefulObject(activeGameObject, template, wizardZoneRef));
 
     protected override void OnPlayerJoin(CoreObject player, IActorRef suspect) {
         base.OnPlayerJoin(player, suspect);
