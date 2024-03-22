@@ -9,9 +9,11 @@ using System.Threading.Tasks;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
+using Imlight.CoreLib.Game.Zone;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Models.World;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -29,7 +31,12 @@ public class ZoneService : MessageService {
     protected static Props Props(SessionActor parentActor) => Akka.Actor.Props.Create(() => new ZoneService(parentActor));
 
     protected override void OnPreDispose() {
-        var globalId = GetActiveGameObject().m_globalID;
+        var gameObj = GetActiveGameObject();
+        if (gameObj is null) {
+            return;
+        }
+
+        var globalId = gameObj.m_globalID;
 
         // If the zone reference is not null, we'll tell the zone to remove the player.
         ZoneActor?.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER() {
@@ -98,6 +105,35 @@ public class ZoneService : MessageService {
 
         character.QueuedZoneName = character.Zone;
         character.QueuedZoneLocation = Util.GetCompactStringFromVector(character.Location, character.Orientation);
+    }
+
+    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_WORLDTELEPORTREQUEST))]
+    private void ReceiveWorldTeleportRequest(WIZARD_12_PROTOCOL.MSG_WORLDTELEPORTREQUEST message) {
+        if (message.World.Length == 0) { // user clicked "exit", remove the wizbang
+            var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG() {
+                GameObjectID = GetActiveWizard().CharId,
+                WizBangID = (uint) WizBangs.None
+            };
+
+            ZoneBroadcast(wizBangMsg, false);
+            return;
+        }
+
+        var zoneMap = WorldHubZones.GetHubZoneMapping(message.World);
+        if (zoneMap is null) {
+            Logger.Error("{0} tried to teleport to an invalid world: {1}", Logger.Args(GetActiveWizard().CharId, message.World));
+            return;
+        }
+
+        var zoneName = zoneMap.m_universeTPZone;
+        var zoneLocation = zoneMap.m_universeTPLocation;
+
+        var msg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER() {
+            DestinationZone = zoneName,
+            DestinationLocation = zoneLocation,
+            SendToClient = true
+        };
+        ReceiveZoneTransferRequest(msg);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
@@ -194,7 +230,11 @@ public class ZoneService : MessageService {
                 SessionSlot = 0,
                 SessionID = 0,
                 TargetPlayerID = character.CharId,
-                TransitionID = 1
+                TransitionID = 1,
+                FallbackIP = character.GameServerIp,
+                FallbackTCPPort = character.GameServerPort,
+                FallbackUDPPort = character.GameServerPort,
+                FallbackZone = character.Zone
             };
             SendToSocket(serverTransfer);
         }

@@ -36,7 +36,7 @@ internal class AttachService : MessageService {
 
         // Tell the game server that the user has attached, and now we need to find a zone process for their
         // zone, or create a new one. This is an internal zone transfer that does not involve the client.
-        var zoneDetails = InternalZoneTransfer(message.ZoneName);
+        var zoneDetails = InternalZoneTransfer(message.ZoneName, message.Location);
         if (zoneDetails.ErrorCode != 0) {
             SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED { Error = zoneDetails.ErrorCode });
             return;
@@ -44,14 +44,8 @@ internal class AttachService : MessageService {
 
         // Set the character's location and zone to the ones given in the message.
         _wizard.SetZone(message.ZoneName, zoneDetails.ZoneDisplayName);
-
-        // The location is a string marked with commas. Parse it into a Vector3.
-        // We're compressing the orientation by a factor of 0.708 to fit it into a byte.
-        // This is to remain consistent with the client's representation of orientation.
-        var location = Util.GetVectorFromCompactString(message.Location);
-        var actualLocation = new Vector3(location.X, location.Y, location.Z);
-        _wizard.SetPersistentLocation(actualLocation);
-        _wizard.SetPersistentOrientation(location.W);
+        _wizard.SetPersistentLocation(zoneDetails.Location);
+        _wizard.SetPersistentOrientation(zoneDetails.Orientation);
 
         // Tiny anti-cheat measure. When the character object is created, we recalculate the game stats.
         CharacterHelper.RecalculateGameStats(_wizard);
@@ -98,7 +92,7 @@ internal class AttachService : MessageService {
 
             // Misc
             ShowSubscriberIcon = 0,
-            TestServer = 0
+            TestServer = 1
         };
 
         AddPlayerToZone(charGameObject, _wizard);
@@ -168,9 +162,10 @@ internal class AttachService : MessageService {
         this._wizard = character;
     }
 
-    private ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP InternalZoneTransfer(string zoneName) {
+    private ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP InternalZoneTransfer(string zoneName, string location) {
         var zoneMsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
             DestinationZone = zoneName,
+            DestinationLocation = location,
             SendToClient = false
         };
         return AskOtherService<ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP>(zoneMsg);

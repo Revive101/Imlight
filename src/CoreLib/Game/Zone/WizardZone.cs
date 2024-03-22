@@ -18,6 +18,8 @@ using Imlight.Common.Caches;
 using Imlight.Common.MessageLayer;
 using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.WizardData.Models.Player;
+using Imlight.CoreLib.Shared.Resources;
+using SharpDX;
 
 namespace Imlight.CoreLib.Game.Zone;
 
@@ -26,6 +28,7 @@ public class WizardZone : ReceiveProtocolDispatcher {
 
     public string ZoneName { get; }
     public string ZoneDisplayName { get; set; }
+    public WizZoneData ZoneData { get; set; }
 
     private readonly uint _dynamicZoneId;
     private readonly IActorRef _objectSupervisorRef;
@@ -190,16 +193,46 @@ public class WizardZone : ReceiveProtocolDispatcher {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]
     private void ReceiveZoneTransfer(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message) {
-        // This is step 1 of the zone transfer process.
-        // There's nothing we need to do here except for telling the sender the zone details and allocating a dynamic
-        // zone ID for them.
-        Sender.Tell(new ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP {
+        var rsp = new ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP {
             ZoneActorRef = Self,
             DynamicZoneId = _dynamicZoneId,
             ErrorCode = 0,
             MobileId = GenerateMobileId(),
             ZoneDisplayName = ZoneDisplayName
-        });
+        };
+
+        // The location given is a ByteString. If it's coordinates, then we need to parse it.
+        // Otherwise, it's a location within this zone. Search through locations to see if we can find it.
+        var actualLocation = Vector3.Zero;
+        var actualOrientation = 0.0f;
+
+        var location = Util.GetVectorFromCompactString(message.DestinationLocation);
+        if (location.X != 0 || location.Y != 0 || location.Z != 0) {
+            actualLocation = new Vector3(location.X, location.Y, location.Z);
+            actualOrientation = location.W;
+        }
+        else {
+            // We need to find the location in this zone.
+            var searchedLoc = ZoneData.m_locationList.FirstOrDefault(x => x.m_locName == message.DestinationLocation);
+            if (searchedLoc is null) {
+                // We weren't able to find the location. This is an error.
+                Logger.Error("Zone {ZoneName} tried to transfer to an unknown location: {Location}",
+                    Logger.Args(ZoneName, message.DestinationLocation));
+
+                rsp.ErrorCode = 1;
+            }
+            else {
+                // We found the location. Set the actual location and orientation.
+                var locPos = searchedLoc.m_location;
+                var locOri = searchedLoc.m_direction;
+                actualLocation = locPos;
+                actualOrientation = locOri;
+            }
+        }
+
+        rsp.Location = actualLocation;
+        rsp.Orientation = actualOrientation;
+        Sender.Tell(rsp);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
