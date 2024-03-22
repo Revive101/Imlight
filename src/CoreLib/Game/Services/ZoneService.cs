@@ -121,16 +121,23 @@ public class ZoneService : MessageService {
                 GameObjectID = GetActiveWizard().CharId,
                 WizBangID = (uint) WizBangs.None
             };
-            
+
             ZoneBroadcast(wizBangMsg, false);
             return;
         }
 
-        var zoneName = WorldHubZones.GetHubZoneMapping(message.World).m_universeTPZone;
-    
+        var zoneMap = WorldHubZones.GetHubZoneMapping(message.World);
+        if (zoneMap is null) {
+            Logger.Error("{0} tried to teleport to an invalid world: {1}", Logger.Args(GetActiveWizard().CharId, message.World));
+            return;
+        }
+
+        var zoneName = zoneMap.m_universeTPZone;
+        var zoneLocation = zoneMap.m_universeTPLocation;
+
         var msg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER() {
             DestinationZone = zoneName,
-            DestinationLocation = "Start",
+            DestinationLocation = zoneLocation,
             SendToClient = true
         };
         TellOtherServices(msg);
