@@ -21,16 +21,8 @@ namespace Imlight.CoreLib.Game.Zone;
 /// This is a zone NPC which manages itself as an actor.
 /// </summary>
 public class WizardZoneNpc : WizardZoneObject {
-    private static readonly string[] s_shopKeeperNameGiveaways = new string[] {
-        "shop",
-    };
     private static readonly string[] s_dyeShopNameGiveaways = new string[] {
         "dye",
-    };
-    private static readonly string[] s_explorerNames = new string[] {
-        "prospector zeke",
-        "eloise merryweather",
-        "elik silverfist",
     };
 
     public bool IsShopkeeper { get; set; }
@@ -55,22 +47,13 @@ public class WizardZoneNpc : WizardZoneObject {
         SetServiceMomentoBase();
 
         // Check to see if we're a shopkeeper. If we are, set the shopkeeper properties.
+        // For some reason, dye shops are not included in the world vendor locations.
         var npcName = gameObjTemplate.m_objectName.ToString().ToLower();
-        var debugName = ActiveGameObject.m_debugName.ToString().ToLower();
         if (s_dyeShopNameGiveaways.Any(npcName.Contains)) {
             SetDyeShop();
         }
-        else if (s_shopKeeperNameGiveaways.Any(npcName.Contains) || s_explorerNames.Any(n => debugName == n)) {
+        else if (WorldVendorLocations.IsVendor(gameObjTemplate.m_templateID)) {
             SetShopkeeper();
-
-            // Get inventory from WorldDatabase
-            var getInventorySuccess = NpcInventoryCollection.TryGetNpcInventory(ActiveGameObject.m_templateID, out var npcInventory);
-            if (!getInventorySuccess) {
-                Inventory = new List<GID>() { new GID(1363076) }; // Default to selling One Ring
-                return;
-            }
-
-            Inventory = npcInventory.Inventory;
         }
     }
 
@@ -157,6 +140,15 @@ public class WizardZoneNpc : WizardZoneObject {
     private void SetShopkeeper() {
         IsShopkeeper = true;
         var gameObjTemplate = Template as GameObjectTemplate;
+
+        // Get inventory from WorldDatabase
+        var getInventorySuccess = NpcInventoryCollection.TryGetNpcInventory(ActiveGameObject.m_templateID, out var npcInventory);
+        if (!getInventorySuccess) {
+            Inventory = new List<GID>() { new GID(1363076) }; // Default to selling One Ring
+            return;
+        }
+
+        Inventory = npcInventory.Inventory;
 
         // What a funny line, C# pattern matching.
         if (Template.m_behaviors.FirstOrDefault(x => x is NPCBehaviorTemplate) is NPCBehaviorTemplate npcBehavior) {
