@@ -29,7 +29,12 @@ public class ZoneService : MessageService {
     protected static Props Props(SessionActor parentActor) => Akka.Actor.Props.Create(() => new ZoneService(parentActor));
 
     protected override void OnPreDispose() {
-        var globalId = GetActiveGameObject().m_globalID;
+        var gameObj = GetActiveGameObject();
+        if (gameObj is null) {
+            return;
+        }
+
+        var globalId = gameObj.m_globalID;
 
         // If the zone reference is not null, we'll tell the zone to remove the player.
         ZoneActor?.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER() {
