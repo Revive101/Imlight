@@ -320,14 +320,6 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
     }
 
     private void InitializeActiveSession(SERVICE_101_PROTOCOL.MSG_GETALLSERVICES message) {
-        // Ask the ActorFactory for this actor's message services.
-        var msg = new SERVICE_101_PROTOCOL.MSG_QUERYLOADEDSERVICES();
-        var services = _actorFactoryRef
-            .Ask<SERVICE_101_PROTOCOL.MSG_SERVICESLIST>(msg)
-            .Result
-            .Services;
-
-        SetServices(services);
         SessionValid = true;
 
         Logger.Debug("SessionActor {Id} initialized with all services.", Logger.Args(SessionID));
