@@ -390,7 +390,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             Data = phase == 1 ? upFirstData : "",
         };
 
-        ZoneBroadcast(msg);
+        DuelBroadcast(msg);
     }
 
     private void SendUpFirst(int roundNum) {
