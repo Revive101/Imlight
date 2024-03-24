@@ -108,6 +108,7 @@ public class CombatActionDirector {
     public bool HaveAllPlayersEnqueuedActions(int playerCount) {
         var enqueuedPlayers = _queuedCombatActions.Select(action => action.SpellCaster)
                                                   .Where(subCircle => subCircle.OccupiedTeam == CombatTeam.Player)
+                                                  .Where(subCircle => subCircle.AddedToDuel)
                                                   .Distinct();
 
         return enqueuedPlayers.Count() == playerCount;
@@ -129,23 +130,31 @@ public class CombatActionDirector {
         }
     }
 
-    private void SortQueuedActions() {
-        _queuedCombatActions.Sort((a, b) => {
-            var aSlot = a.SpellCaster.SlotIndex;
-            var bSlot = b.SpellCaster.SlotIndex;
+    private void SortQueuedActions() => _queuedCombatActions.Sort((a, b) => {
+        var aSlot = a.SpellCaster.SlotIndex;
+        var bSlot = b.SpellCaster.SlotIndex;
 
-            if ((int) a.SpellCaster.OccupiedTeam == _duel.m_firstTeamToAct) {
-                return -1; // Starting team goes first
+        var aTeam = (int) a.SpellCaster.OccupiedTeam;
+        var bTeam = (int) b.SpellCaster.OccupiedTeam;
+
+        // Check if both actions belong to the same team
+        if (aTeam == bTeam) {
+            // Within the same team, sort by slot index (ascending)
+            return aSlot.CompareTo(bSlot);
+        }
+        else {
+            // Teams are different, prioritize team who acts first
+            if (aTeam == _duel.m_firstTeamToAct) {
+                return -1; // Team a acts first
             }
-            else if ((int) b.SpellCaster.OccupiedTeam == _duel.m_firstTeamToAct) {
-                return 1;
+            else if (bTeam == _duel.m_firstTeamToAct) {
+                return 1; // Team b acts first
             }
             else {
-                // Within the same team, sort by slot index.
-                return aSlot.CompareTo(bSlot);
+                return 0; // This should not happen.
             }
-        });
-    }
+        }
+    });
 
     private void ProcessQueuedActions(CombatActionListObj combatActionList) {
         foreach (var action in _queuedCombatActions) {
