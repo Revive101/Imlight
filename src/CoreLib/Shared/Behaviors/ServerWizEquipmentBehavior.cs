@@ -17,7 +17,7 @@ namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
 public class ServerWizEquipmentBehavior : ServerBehaviorInstance {
-    public override bool NoTransfer { get; set; } = false;
+    [JsonIgnore] public override bool NoTransfer { get; set; } = false;
 
     public List<EquipmentSlot> SlotList;
     public List<ulong> EquippedItemIds;

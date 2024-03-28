@@ -7,13 +7,14 @@ using System;
 using Imlight.Common.IO;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Implementations;
+using Newtonsoft.Json;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
 public class ServerWizPlayerNameBehavior : ServerBehaviorInstance {
-    public override bool NoTransfer { get; set; } = false;
+    [JsonIgnore] public override bool NoTransfer { get; set; } = false;
 
     public uint NameIndices;
     public bool UseRank;

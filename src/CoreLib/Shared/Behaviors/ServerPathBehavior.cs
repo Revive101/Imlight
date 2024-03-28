@@ -7,13 +7,14 @@ using System;
 using System.Collections.Generic;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.WizardData.Implementations;
+using Newtonsoft.Json;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
 public class ServerPathBehavior : ServerBehaviorInstance {
-    public override bool NoTransfer { get; set; } = false;
+    [JsonIgnore] public override bool NoTransfer { get; set; } = false;
 
     public PathBehaviorTemplate.PathType PathType { get; set; }
     public GID PathId { get; set; }

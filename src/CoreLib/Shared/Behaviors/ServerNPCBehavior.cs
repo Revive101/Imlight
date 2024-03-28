@@ -5,13 +5,14 @@
 
 using System;
 using Imlight.CoreLib.WizardData.Implementations;
+using Newtonsoft.Json;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
 public class ServerNPCBehavior : ServerBehaviorInstance {
-    public override bool NoTransfer { get; set; } = false;
+    [JsonIgnore] public override bool NoTransfer { get; set; } = false;
 
     public bool BossMob { get; set; }
     public float Intelligence { get; set; }

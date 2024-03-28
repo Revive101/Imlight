@@ -14,11 +14,10 @@ namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
 public class ServerWizSpellbookBehavior : ServerSpellbookBehavior {
-    public override bool NoTransfer { get; set; } = false;
+    [JsonIgnore] public override bool NoTransfer { get; set; } = false;
 
+    // This is all we need to store in the database.
     public List<uint> SpellTemplateIdList;
-
-    [JsonIgnore] public List<uint> TemporarySpellTemplateIdList = new(); // Spells gained from equipment
 
     public void Initialize() {
         // Dragon database only keeps track of spell template IDs. It's up to this
@@ -33,23 +32,35 @@ public class ServerWizSpellbookBehavior : ServerSpellbookBehavior {
     }
 
     public void AddSpell(Spell spell) {
-        Spells ??= new List<Spell>();
+        TemporarySpells ??= new List<Spell>();
 
         if (spell != null) {
-            Spells.Add(spell);
-            TemporarySpellTemplateIdList.Add(spell.m_templateID);
+            TemporarySpells.Add(spell);
         }
     }
 
     public void RemoveSpell(uint templateId) {
-        if (Spells is null) {
+        if (TemporarySpells is null) {
             return;
         }
 
-        var spell = Spells.Find(x => x.m_templateID == templateId);
+        var spell = TemporarySpells.Find(x => x.m_templateID == templateId);
         if (spell != null) {
-            Spells.Remove(spell);
-            SpellTemplateIdList.Remove(spell.m_templateID);
+            TemporarySpells.Remove(spell);
         }
+    }
+
+    public override ClientSpellbookBehavior GetClientBehaviorInstance() {
+        var spellIdList = new List<SpellIDTracker>();
+        foreach (var spell in Spells) {
+            spellIdList.Add(new SpellIDTracker {
+                m_isRetired = false,
+                m_spellID = spell.m_templateID,
+            });
+        }
+
+        return new ClientSpellbookBehavior {
+            m_spellIDList = spellIdList
+        };
     }
 }

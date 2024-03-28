@@ -14,7 +14,7 @@ namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
 public class ServerMountOwnerBehavior : ServerBehaviorInstance {
-    public override bool NoTransfer { get; set; } = false;
+    [JsonIgnore] public override bool NoTransfer { get; set; } = false;
 
     public eGender MountGender;
     public eRace MountRace;

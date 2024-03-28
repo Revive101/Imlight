@@ -16,7 +16,7 @@ namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
 public class ServerWizInventoryBehavior : ServerBehaviorInstance {
-    public override bool NoTransfer { get; set; } = false;
+    [JsonIgnore] public override bool NoTransfer { get; set; } = false;
 
     private static int s_maxItemsAllowed = ConfigurationManager.Settings.MaxInventoryItems;
     private static readonly int s_maxJewelsAllowed = ConfigurationManager.Settings.MaxJewelsAllowed;

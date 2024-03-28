@@ -6,6 +6,7 @@
 using System;
 using Imlight.Common.Configuration;
 using Imlight.CoreLib.WizardData.Implementations;
+using Newtonsoft.Json;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Shared.Behaviors;
@@ -27,7 +28,7 @@ public enum MagicSchool {
 
 [Serializable]
 public class ServerMagicSchoolBehavior : ServerBehaviorInstance {
-    public override bool NoTransfer { get; set; } = false;
+    [JsonIgnore] public override bool NoTransfer { get; set; } = false;
 
     public MagicSchool MagicSchool;
     public int ExperiencePoints;

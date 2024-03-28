@@ -13,9 +13,10 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Shared.Behaviors;
 
 public class ServerSpellbookBehavior : ServerBehaviorInstance {
-    public override bool NoTransfer { get; set; } = false;
+    [JsonIgnore] public override bool NoTransfer { get; set; } = false;
 
     [JsonIgnore] public List<Spell> Spells = new();
+    [JsonIgnore] public List<Spell> TemporarySpells = new(); // Spells gained from equipment
 
     public void LearnSpell(Spell spell) {
         Spells ??= new List<Spell>();
@@ -41,7 +42,7 @@ public class ServerSpellbookBehavior : ServerBehaviorInstance {
         foreach (var spell in Spells) {
             spellIdList.Add(new SpellIDTracker {
                 m_isRetired = false,
-                m_spellID = spell.m_spellID,
+                m_spellID = spell.m_templateID,
             });
         }
 
