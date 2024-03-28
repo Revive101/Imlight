@@ -10,12 +10,11 @@ using Imlight.CoreLib.Shared.Networking;
 
 namespace Imlight.CoreLib.Game.Services;
 
-public class SpellService : MessageService {
-    public SpellService(SessionActor sessionActor) : base(sessionActor) { }
+public class SpellbookService : MessageService {
+    public SpellbookService(SessionActor sessionActor) : base(sessionActor) { }
 
-    protected static Props Props(SessionActor parentActor) {
-        return Akka.Actor.Props.Create(() => new SpellService(parentActor));
-    }
+    protected static Props Props(SessionActor parentActor)
+        => Akka.Actor.Props.Create(() => new SpellbookService(parentActor));
 
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_ADDSPELLTODECK))]
     private void ReceiveAddSpellToDeck(WIZARD_12_PROTOCOL.MSG_ADDSPELLTODECK message) {
