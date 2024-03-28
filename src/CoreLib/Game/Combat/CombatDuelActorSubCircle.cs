@@ -200,7 +200,13 @@ public class CombatDuelActorSubCircle {
         var dynamicSymbol = (DynamicSigilSymbol) (SlotIndex + 9);
 
         ParticipantGameStats = wizard.GameStats.GetCombatGameStats();
-        _combatHand = new CombatHand(wizard.SpellbookBehavior.Spells, 7);
+
+        // Collage spells the player has learned and temporary spells (perhaps from equipment)
+        // into one list to create the combat hand.
+        var allSpells = new List<Spell>();
+        allSpells.AddRange(wizard.SpellbookBehavior.Spells);
+        allSpells.AddRange(wizard.SpellbookBehavior.TemporarySpells);
+        _combatHand = new CombatHand(allSpells, 7);
 
         CombatParticipant = new CombatParticipant {
             m_ownerID = ParticipantObject.m_globalID,
