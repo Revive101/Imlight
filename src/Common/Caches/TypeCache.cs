@@ -1740,7 +1740,6 @@ public static partial class TypeCache {
             case 1749405042: return new InclusiveRange();
             case 1749710800: return new WinAnimScaleTime();
             case 1750319716: return new ControlTextAlert();
-            case 1750319716: return new ControlTextAlert();
             case 1750389220: return new ClientShadowSelfCinematicAction();
             case 1751417967: return new RemoveCameraMappingCinematicAction();
             case 1752903624: return new ClientRecreateNPCActorCinematicAction();
