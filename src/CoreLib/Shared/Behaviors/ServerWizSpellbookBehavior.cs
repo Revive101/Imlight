@@ -22,6 +22,10 @@ public class ServerWizSpellbookBehavior : ServerSpellbookBehavior {
     public void Initialize() {
         // Dragon database only keeps track of spell template IDs. It's up to this
         // behavior to convert those IDs into actual spell objects.
+        if (SpellTemplateIdList is null) {
+            return;
+        }
+
         Spells = new List<Spell>();
         foreach (var templateId in SpellTemplateIdList) {
             var spell = SpellFactory.CreateSpellFromTemplate(templateId);

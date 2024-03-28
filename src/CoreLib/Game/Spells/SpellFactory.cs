@@ -72,7 +72,6 @@ public static class SpellFactory {
             m_templateID = templateId,
             m_pipCost = template.m_spellRank,
             m_accuracy = (byte) template.m_accuracy,
-            m_spellEffects = template.m_effects,
             m_treasureCard = template.m_Treasure,
             m_spellID = spellId,
             m_itemCard = true,

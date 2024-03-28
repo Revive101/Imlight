@@ -10,6 +10,7 @@ using Imlgiht.CoreLib.Game.Spells;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.Shared.Behaviors;
+using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models.Player;
 using static Imlight.Common.Caches.TypeCache;
 
@@ -19,6 +20,7 @@ public class QueuedCombatAction {
     public CombatDuelActorSubCircle SpellCaster;
     public CombatDuelActorSubCircle TargetSubcircle;
     public Spell Spell;
+    public SpellTemplate SpellTemplate;
     public bool PredeterminedSuccess;
 }
 
@@ -83,7 +85,10 @@ public class CombatActionDirector {
         return combatActionList;
     }
 
-    public void AddCombatMove(CombatMoveType type, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target, Spell spell) {
+    public void AddCombatMove(CombatMoveType type,
+                              CombatDuelActorSubCircle caster,
+                              CombatDuelActorSubCircle target,
+                              Spell spell) {
         // If this spell is already queued by the same caster, remove all of their queued actions.
         _queuedCombatActions.RemoveAll(x => x.SpellCaster == caster);
 
@@ -93,11 +98,13 @@ public class CombatActionDirector {
 
         // Determine if the spell fizzles.
         var spellHits = spell is not null && SpellHits(caster, spell);
+        var spellTemplate = (SpellTemplate) CoreObjectFactory.GetCoreTemplate(spell.m_templateID);
 
         var queuedAction = new QueuedCombatAction {
             SpellCaster = caster,
             TargetSubcircle = target,
             Spell = type == CombatMoveType.Attack ? spell : null,
+            SpellTemplate = spellTemplate,
             PredeterminedSuccess = spellHits,
         };
         _queuedCombatActions.Add(queuedAction);

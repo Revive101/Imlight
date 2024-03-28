@@ -27,7 +27,7 @@ internal class CombatEffectApplicator {
         var effectStack = new CombatEffectStack();
 
         if (action.Spell is not null) {
-            foreach (var spellEffect in action.Spell.m_spellEffects) {
+            foreach (var spellEffect in action.SpellTemplate.m_effects) {
                 var effect = spellEffect;
 
                 // If this is a random spell effect, we need to determine which effect to use.
