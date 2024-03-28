@@ -131,7 +131,7 @@ public class DuelActorSubCircle {
             m_maxHandSize = 7,
             m_playerHealth = queryCharacterRsp.GameStats.m_currentHitpoints,
             m_maxPlayerHealth = queryCharacterRsp.GameStats.m_baseHitpoints,
-            m_color = (Color3) SharpDX.Color.Green,
+            //m_color = (Color3) SharpDX.Color.Green,
             //m_rotation = Yaw, // This crashes the client if present
             m_subcircle = -256,
             m_dynamicSymbol = DynamicSigilSymbol.NotSet,
