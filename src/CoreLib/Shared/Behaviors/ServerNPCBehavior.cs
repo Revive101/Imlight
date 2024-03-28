@@ -10,7 +10,9 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
-public class ServerNPCBehavior : BehaviorInstance, IClientBehaviorProvider<NPCBehavior> {
+public class ServerNPCBehavior : ServerBehaviorInstance {
+    public override bool NoTransfer { get; set; } = false;
+
     public bool BossMob { get; set; }
     public float Intelligence { get; set; }
     public float SelfishFactor { get; set; }
@@ -22,10 +24,8 @@ public class ServerNPCBehavior : BehaviorInstance, IClientBehaviorProvider<NPCBe
     public bool IsMonster { get; set; }
     public string NameOveride { get; set; }
 
-    public NPCBehavior GetClientBehaviorInstance() {
-        return new NPCBehavior {
-            m_isMonster = IsMonster,
-            m_wsNameOverride = NameOveride,
-        };
-    }
+    public override NPCBehavior GetClientBehaviorInstance() => new() {
+        m_isMonster = IsMonster,
+        m_wsNameOverride = NameOveride,
+    };
 }

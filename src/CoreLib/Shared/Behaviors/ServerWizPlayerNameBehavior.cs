@@ -12,7 +12,9 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
-public class ServerWizPlayerNameBehavior : BehaviorInstance, IClientBehaviorProvider<ClientWizPlayerNameBehavior> {
+public class ServerWizPlayerNameBehavior : ServerBehaviorInstance {
+    public override bool NoTransfer { get; set; } = false;
+
     public uint NameIndices;
     public bool UseRank;
     public eGender Gender;
@@ -35,7 +37,7 @@ public class ServerWizPlayerNameBehavior : BehaviorInstance, IClientBehaviorProv
         return actualName;
     }
 
-    public ClientWizPlayerNameBehavior GetClientBehaviorInstance() {
+    public override ClientWizPlayerNameBehavior GetClientBehaviorInstance() {
         // If the name override is set, we want to add the friendly player icon to the name
         // since the client won't do it automatically anymore.
         var nameOverride = new WideByteString();

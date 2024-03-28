@@ -26,7 +26,9 @@ public enum MagicSchool {
 }
 
 [Serializable]
-public class ServerMagicSchoolBehavior : BehaviorInstance, IClientBehaviorProvider<ClientMagicSchoolBehavior> {
+public class ServerMagicSchoolBehavior : ServerBehaviorInstance {
+    public override bool NoTransfer { get; set; } = false;
+
     public MagicSchool MagicSchool;
     public int ExperiencePoints;
     public int Level;
@@ -45,15 +47,13 @@ public class ServerMagicSchoolBehavior : BehaviorInstance, IClientBehaviorProvid
         return true;
     }
 
-    public ClientMagicSchoolBehavior GetClientBehaviorInstance() {
-        return new ClientMagicSchoolBehavior {
-            m_schoolOfFocus = (uint) MagicSchool,
-            m_experiencePoints = ExperiencePoints,
-            m_level = Level,
-            m_trainingPoints = TrainingPoints,
-            m_overflowXP = OverflowXp,
-            m_levelLocked = LevelIsLocked,
-            m_equippedTeleportEffect = EquippedTeleportEffect
-        };
-    }
+    public override ClientMagicSchoolBehavior GetClientBehaviorInstance() => new() {
+        m_schoolOfFocus = (uint) MagicSchool,
+        m_experiencePoints = ExperiencePoints,
+        m_level = Level,
+        m_trainingPoints = TrainingPoints,
+        m_overflowXP = OverflowXp,
+        m_levelLocked = LevelIsLocked,
+        m_equippedTeleportEffect = EquippedTeleportEffect
+    };
 }

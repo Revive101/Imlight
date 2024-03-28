@@ -12,7 +12,9 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Shared.Behaviors;
 
-public class ServerSpellbookBehavior : BehaviorInstance {
+public class ServerSpellbookBehavior : ServerBehaviorInstance {
+    public override bool NoTransfer { get; set; } = false;
+
     [JsonIgnore] public List<Spell> Spells = new();
 
     public void LearnSpell(Spell spell) {
@@ -32,5 +34,19 @@ public class ServerSpellbookBehavior : BehaviorInstance {
         if (spell != null) {
             Spells.Remove(spell);
         }
+    }
+
+    public override ClientSpellbookBehavior GetClientBehaviorInstance() {
+        var spellIdList = new List<SpellIDTracker>();
+        foreach (var spell in Spells) {
+            spellIdList.Add(new SpellIDTracker {
+                m_isRetired = false,
+                m_spellID = spell.m_spellID,
+            });
+        }
+
+        return new ClientSpellbookBehavior {
+            m_spellIDList = spellIdList
+        };
     }
 }

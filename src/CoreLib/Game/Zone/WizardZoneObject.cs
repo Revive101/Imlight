@@ -9,6 +9,7 @@ using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.ObjectProperty;
+using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
@@ -234,20 +235,17 @@ public class WizardZoneObject : ReceiveProtocolDispatcher, IClientTypeProvider<W
             m_inactiveBehaviors = ActiveGameObject.m_inactiveBehaviors ?? new(),
         };
 
-        foreach (var behavior in this.Behaviors) {
-            BehaviorInstance instance = behavior;
+        foreach (var behaviorInstance in this.Behaviors) {
+            BehaviorInstance instance = behaviorInstance;
 
-            // There may be a client type alternative for this behavior.
-            // If there is, we need to use that instead. Use reflection to get the client type alternative.
-            var method = behavior.GetType().GetMethod("GetClientBehaviorInstance");
-            if (method != null) {
-                // Invoke the interface method to get the client type alternative.
-                instance = (BehaviorInstance)method.Invoke(behavior, null);
-                if (instance is null) {
-                    Logger.Error("{0} contains behavior {1} that does not have a client type.",
-                        Logger.Args(ActiveGameObject.m_debugName, behavior.GetType().Name));
+            // If this is a server behavior, it may not play nicely in the client when we serialize it.
+            // We need to convert it to a client behavior.
+            if (instance is ServerBehaviorInstance serverBehaviorInstance) {
+                if (serverBehaviorInstance.NoTransfer) {
                     continue;
                 }
+
+                instance = serverBehaviorInstance.GetClientBehaviorInstance();
             }
 
             // Check to see if there is already a behavior of this type in the list.
@@ -262,7 +260,7 @@ public class WizardZoneObject : ReceiveProtocolDispatcher, IClientTypeProvider<W
             else {
                 // This will cause the client to crash if the behavior does not exist in the template.
                 Logger.Fatal("{0} contains behavior {1} that does not exist in the template.",
-                    Logger.Args(ActiveGameObject.m_debugName, behavior.GetType().Name));
+                    Logger.Args(ActiveGameObject.m_debugName, behaviorInstance.GetType().Name));
             }
         }
 

@@ -13,7 +13,9 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
-public class ServerMountOwnerBehavior : BehaviorInstance, IClientBehaviorProvider<ClientMountOwnerBehavior> {
+public class ServerMountOwnerBehavior : ServerBehaviorInstance {
+    public override bool NoTransfer { get; set; } = false;
+
     public eGender MountGender;
     public eRace MountRace;
     public int MountPrimaryColor;
@@ -56,17 +58,15 @@ public class ServerMountOwnerBehavior : BehaviorInstance, IClientBehaviorProvide
         MountPatternColor = 0;
     }
 
-    public ClientMountOwnerBehavior GetClientBehaviorInstance() {
-        return new ClientMountOwnerBehavior {
-            m_gender = MountGender,
-            m_race = MountRace,
-            m_eMountType = MountType,
-            m_primaryColor = MountPrimaryColor,
-            m_secondaryColor = MountSecondaryColor,
-            m_patternColor = MountPatternColor,
-            m_adjustableAnimationRate = MountHasAdjustableAnimationRate,
-            m_geometryOption = MountGeometryOption,
-            m_lastMountID = LastMountId
-        };
-    }
+    public override ClientMountOwnerBehavior GetClientBehaviorInstance() => new() {
+        m_gender = MountGender,
+        m_race = MountRace,
+        m_eMountType = MountType,
+        m_primaryColor = MountPrimaryColor,
+        m_secondaryColor = MountSecondaryColor,
+        m_patternColor = MountPatternColor,
+        m_adjustableAnimationRate = MountHasAdjustableAnimationRate,
+        m_geometryOption = MountGeometryOption,
+        m_lastMountID = LastMountId
+    };
 }

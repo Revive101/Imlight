@@ -13,7 +13,9 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
-public class ServerWizSpellbookBehavior : ServerSpellbookBehavior, IClientBehaviorProvider<ClientSpellbookBehavior> {
+public class ServerWizSpellbookBehavior : ServerSpellbookBehavior {
+    public override bool NoTransfer { get; set; } = false;
+
     public List<uint> SpellTemplateIdList;
 
     [JsonIgnore] public List<uint> TemporarySpellTemplateIdList = new(); // Spells gained from equipment
@@ -49,19 +51,5 @@ public class ServerWizSpellbookBehavior : ServerSpellbookBehavior, IClientBehavi
             Spells.Remove(spell);
             SpellTemplateIdList.Remove(spell.m_templateID);
         }
-    }
-
-    public ClientSpellbookBehavior GetClientBehaviorInstance() {
-        var spellIdList = new List<SpellIDTracker>();
-        foreach (var spell in Spells) {
-            spellIdList.Add(new SpellIDTracker {
-                m_isRetired = false,
-                m_spellID = spell.m_spellID,
-            });
-        }
-
-        return new ClientSpellbookBehavior {
-            m_spellIDList = spellIdList
-        };
     }
 }

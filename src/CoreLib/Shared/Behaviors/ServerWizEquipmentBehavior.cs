@@ -16,7 +16,9 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
-public class ServerWizEquipmentBehavior : BehaviorInstance, IClientBehaviorProvider<ClientWizEquipmentBehavior> {
+public class ServerWizEquipmentBehavior : ServerBehaviorInstance {
+    public override bool NoTransfer { get; set; } = false;
+
     public List<EquipmentSlot> SlotList;
     public List<ulong> EquippedItemIds;
 
@@ -164,12 +166,10 @@ public class ServerWizEquipmentBehavior : BehaviorInstance, IClientBehaviorProvi
         }
     }
 
-    public ClientWizEquipmentBehavior GetClientBehaviorInstance() {
-        return new ClientWizEquipmentBehavior {
-            m_equipmentSets = new List<EquipmentSet>(),
-            m_slotList = SlotList?.Select(slot => slot.GetClientTypeAlternative()).ToList(),
-            m_itemList = EquippedItems?.ConvertAll(item => item as CoreObject),
-            m_publicItemList = CharacterHelper.GetEquipmentList(this).m_infoList,
-        };
-    }
+    public override ClientWizEquipmentBehavior GetClientBehaviorInstance() => new() {
+        m_equipmentSets = new List<EquipmentSet>(),
+        m_slotList = SlotList?.Select(slot => slot.GetClientTypeAlternative()).ToList(),
+        m_itemList = EquippedItems?.ConvertAll(item => item as CoreObject),
+        m_publicItemList = CharacterHelper.GetEquipmentList(this).m_infoList,
+    };
 }

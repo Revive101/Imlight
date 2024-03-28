@@ -15,6 +15,8 @@ using Imlight.Common;
 namespace Imlight.CoreLib.Shared.Behaviors;
 
 public class ServerCreatureSpellbookBehavior : ServerSpellbookBehavior {
+    public override bool NoTransfer { get; set; } = true;
+
     private readonly string _deckName;
 
     // ctor
