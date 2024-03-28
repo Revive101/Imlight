@@ -369,19 +369,37 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
         this.Behaviors.Add(equipmentBehaviorInstance);
 
         foreach (var itemTemplateId in equipmentTemplate.m_itemList) {
-            EquipItem(itemTemplateId);
+            var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(itemTemplateId);
+            if (template is null) {
+                Logger.Error("Failed to get item template {0} for creature {1}.",
+                    Logger.Args(itemTemplateId, ActiveGameObject.m_globalID));
+                continue;
+            }
+
+            // Check if the item has a deck behavior.
+            var deckBehaviorTemplate = template.m_behaviors
+                .FirstOrDefault(x => x is DeckBehaviorTemplate) as DeckBehaviorTemplate;
+            if (deckBehaviorTemplate is not null) {
+                CreateDeckBehavior(deckBehaviorTemplate);
+            }
+
+            EquipItem(template);
         }
     }
 
-    private void EquipItem(ulong templateId) {
+    private void CreateDeckBehavior(DeckBehaviorTemplate deckBehaviorTemplate) {
+        var deckBehaviorInstance = new ServerCreatureSpellbookBehavior(deckBehaviorTemplate);
+        this.Behaviors.Add(deckBehaviorInstance);
+    }
+
+    private void EquipItem(WizItemTemplate template) {
         if (!TryGetBehavior<ServerWizEquipmentBehavior>(out var equipmentBehavior)) {
             Logger.Warning("Creature {0} tried to equip item {1} but has no equipment behavior.",
-                Logger.Args(ActiveGameObject.m_globalID, templateId));
+                Logger.Args(ActiveGameObject.m_globalID, template.m_templateID));
             return;
         }
 
-        var item = (WizClientObjectItem) CoreObjectFactory.FinalizeCoreObject(templateId);
-        var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(templateId);
+        var item = (WizClientObjectItem) CoreObjectFactory.FinalizeCoreObject(template.m_templateID);
         equipmentBehavior.ForceEquipItem(item);
 
         CharacterEffectHelper.AddEffectsToGameStats(GameStats, template);

@@ -23,7 +23,7 @@ public class WizardService : MessageService {
         => Akka.Actor.Props.Create(() => new WizardService(parentActor));
 
     protected override void OnDispose() {
-        ((System.IDisposable) _activeWizard).Dispose();
+        ((System.IDisposable) _activeWizard)?.Dispose();
         base.OnDispose();
     }
 
