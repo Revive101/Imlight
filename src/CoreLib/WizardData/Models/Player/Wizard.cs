@@ -64,7 +64,7 @@ public class Wizard : IDisposable {
     public ServerWizInventoryBehavior InventoryBehavior { get; set; }
     public ServerWizEquipmentBehavior EquipmentBehavior { get; set; }
     public ServerMagicSchoolBehavior MagicSchoolBehavior { get; set; }
-    public ServerSpellbookBehavior SpellbookBehavior { get; set; }
+    public ServerWizSpellbookBehavior SpellbookBehavior { get; set; }
     public ServerMountOwnerBehavior MountOwnerBehavior { get; set; }
     public ServerWizGameStats GameStats { get; set; }
 
@@ -443,7 +443,7 @@ public class Wizard : IDisposable {
     }
 
     private void InitializeSpellbookBehavior() {
-        SpellbookBehavior = new ServerSpellbookBehavior();
+        SpellbookBehavior = new ServerWizSpellbookBehavior();
     }
 
     private void InitializeMountOwnerBehavior() {
