@@ -37,6 +37,12 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
     public ulong SigilId { get; private set; }
     public CombatActionDirector ActionDirector { get; private set; }
     public IActorRef ActorRef;
+    public CombatDuelActorSubCircle[] SubCircles = new CombatDuelActorSubCircle[8];
+    public CombatDuelActorSubCircle[] ActiveSubCircles => SubCircles.Where(x => x.Occupied).ToArray();
+    public byte PlayerCount => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Player);
+    public byte CreatureCount => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Monster);
+    public byte AlivePlayerCount => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Player && x.IsAlive);
+    public byte AliveCreatureCount => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Monster && x.IsAlive);
 
     private readonly IActorRef _wizardZoneRef;
     private readonly ObjectSerializer _serializer = new ObjectSerializer().OnBehaviors(SerializerOptions.Behaviors.None);
@@ -44,15 +50,8 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
     private readonly SerializerOptions.PropertyFlags _combatParticipantStatFlags = (SerializerOptions.PropertyFlags) 5;
     private readonly SerializerOptions.PropertyFlags _combatParticipantHandFlags = (SerializerOptions.PropertyFlags) 5;
 
-    private byte PlayerCount => (byte) _subCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Player);
-    private byte CreatureCount => (byte) _subCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Monster);
-    private byte AlivePlayerCount => (byte) _subCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Player && x.IsAlive);
-    private byte AliveCreatureCount => (byte) _subCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Monster && x.IsAlive);
-    private CombatDuelActorSubCircle[] ActiveSubCircles => _subCircles.Where(x => x.Occupied).ToArray();
-
     private IActorRef _sigilActorRef;
     private CombatSigilTemplate _combatSigilTemplate;
-    private CombatDuelActorSubCircle[] _subCircles = new CombatDuelActorSubCircle[8];
     private Vector3 _sigilLocation;
     private Vector3 _sigilOrientation;
     private byte _creatureCount;
@@ -112,7 +111,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         // Create duel object and the 8 subcircles.
         Duel = CreateDuelWithDefaults(message.SigilId);
         Duel.m_firstTeamToAct = (int) DetermineFirstTeam();
-        _subCircles = CreateDuelActorSubCircles(message.SigilTemplate);
+        SubCircles = CreateDuelActorSubCircles(message.SigilTemplate);
 
         // Return the duel details to the sender. This is sent back to the sigil that requested the duel.
         var rsp = new COMBAT_106_PROTOCOL.MSG_DUELDETAILS {
@@ -134,7 +133,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         var teamAAssigned = AssignParticipantToSubCircle(availableCreatureSubcircles, startingCreatureActor, startingCreatureObject);
         var teamBAssigned = AssignParticipantToSubCircle(availablePlayerSubcircles, startingPlayerActor, startingPlayerObject);
 
-        ActionDirector = new CombatActionDirector(Duel, _subCircles);
+        ActionDirector = new CombatActionDirector(Duel, SubCircles);
 
         Logger.Debug("Duel {0} | Created. Grace period over in {1}", Logger.Args(Duel.m_duelID, DUEL_GRACE_PERIOD_IN_SECONDS));
 
@@ -240,7 +239,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         var isPlayer = message.ParticipantObject.m_templateID == 1;
 
         // Check to see if the participant actor is already in the duel. If so, we don't need to do anything.
-        var isAlreadyInDuel = _subCircles.Any(x => x.ParticipantActor == message.Participant);
+        var isAlreadyInDuel = SubCircles.Any(x => x.ParticipantActor == message.Participant);
         if (isAlreadyInDuel) {
             return;
         }
@@ -295,7 +294,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE))]
     private void ReceiveCombatMove(COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE message) {
         // Find which sub circle this is.
-        var caster = _subCircles.FirstOrDefault(x => x.ParticipantActor == message.Actor)
+        var caster = SubCircles.FirstOrDefault(x => x.ParticipantActor == message.Actor)
             ?? throw new Exception("Combat move received from an actor that is not in the duel.");
 
         if (!_awaitingCombatMoves) {
@@ -305,7 +304,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         }
 
         // Find which sub circle they were targeting. If the target is null, it's self.
-        var target = GetTargetFromCombatSelection(message.SpellTarget) ?? caster;
+        var target = SubCircles[message.SpellTarget];
         if (!target.AddedToDuel) {
             throw new InvalidOperationException("Both the caster and target must be added to the duel.");
         }
@@ -614,17 +613,6 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         });
     }
 
-    private CombatDuelActorSubCircle GetTargetFromCombatSelection(uint selection) {
-        // A selection of 0 means a target of self.
-        if (selection == 0) {
-            return null;
-        }
-
-        // The selection we're given is a power of 2. We can use this to find the index of the sub circle.
-        var targetIndex = (int) Math.Log(selection, 2);
-        return _subCircles[targetIndex];
-    }
-
     private void EnactActionOnSubCircles(Action<CombatDuelActorSubCircle> action) {
         foreach (var subCircle in ActiveSubCircles) {
             action(subCircle);
@@ -700,8 +688,8 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
     private CombatDuelActorSubCircle GetAvailableSubCircleTeamCreature() {
         for (int i = 0; i < 4; i++) {
-            if (!_subCircles[i].Occupied) {
-                return _subCircles[i];
+            if (!SubCircles[i].Occupied) {
+                return SubCircles[i];
             }
         }
 
@@ -710,8 +698,8 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
     private CombatDuelActorSubCircle GetAvailableSubCircleTeamPlayer() {
         for (int i = 4; i < 8; i++) {
-            if (!_subCircles[i].Occupied) {
-                return _subCircles[i];
+            if (!SubCircles[i].Occupied) {
+                return SubCircles[i];
             }
         }
 
@@ -738,12 +726,12 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     private bool HavePlayersWon() {
-        var creaturesAlive = _subCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Monster && x.IsAlive);
+        var creaturesAlive = SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Monster && x.IsAlive);
         return creaturesAlive <= 0;
     }
 
     private bool HaveCreaturesWon() {
-        var playersAlive = _subCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Player && x.IsAlive);
+        var playersAlive = SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Player && x.IsAlive);
         return playersAlive <= 0;
     }
 
@@ -755,9 +743,9 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
                                      ? CombatSlotType.Player
                                      : CombatSlotType.Creature;
 
-        for (int i = 0; i < _subCircles.Length; i++) {
-            if (_subCircles[i].SlotType == targetType && _subCircles[i].IsAlive) {
-                upFirstSigilSlot = _subCircles[i].SlotIndex;
+        for (int i = 0; i < SubCircles.Length; i++) {
+            if (SubCircles[i].SlotType == targetType && SubCircles[i].IsAlive) {
+                upFirstSigilSlot = SubCircles[i].SlotIndex;
                 break;
             }
         }
