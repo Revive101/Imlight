@@ -245,6 +245,9 @@ public class CombatDuelActorSubCircle {
         // Dynamic symbols start 1-4 for creatures.
         var dynamicSymbol = (DynamicSigilSymbol) (SlotIndex + 1);
 
+        var spells = creatureStats.Spells;
+        _combatHand = new CombatHand(spells, byte.MaxValue);
+
         ParticipantGameStats = creatureStats.GameStats;
         CombatParticipant = new CombatParticipant {
             m_ownerID = ParticipantObject.m_globalID,

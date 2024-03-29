@@ -47,6 +47,17 @@ internal class CombatAIActor : ReceiveProtocolDispatcher {
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_NEWROUND))]
     private void ReceiveNewCombatRound(COMBAT_106_PROTOCOL.MSG_NEWROUND message) {
+        // For now, randomly select a card from the hand and play it.
         var hand = _mySubcircle.DrawHand();
+        var randomIdx = new Random().Next(hand.m_spellList.Count);
+
+        // Send the spell to the duel actor
+        var msg = new COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE {
+            Actor = _creatureActorRef,
+            MoveType = (byte) CombatMoveType.Attack,
+            SpellSelection = (byte) randomIdx,
+            SpellTarget = 16,
+        };
+        _duelActor.ActorRef.Tell(msg);
     }
 }

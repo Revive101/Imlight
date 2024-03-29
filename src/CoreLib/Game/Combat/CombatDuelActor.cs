@@ -36,7 +36,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
     public Duel Duel { get; private set; }
     public ulong SigilId { get; private set; }
     public CombatActionDirector ActionDirector { get; private set; }
-    public IActorRef ActorRef => Self;
+    public IActorRef ActorRef;
 
     private readonly IActorRef _wizardZoneRef;
     private readonly ObjectSerializer _serializer = new ObjectSerializer().OnBehaviors(SerializerOptions.Behaviors.None);
@@ -47,6 +47,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
     private byte PlayerCount => (byte) _subCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Player);
     private byte CreatureCount => (byte) _subCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Monster);
     private byte AlivePlayerCount => (byte) _subCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Player && x.IsAlive);
+    private byte AliveCreatureCount => (byte) _subCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Monster && x.IsAlive);
     private CombatDuelActorSubCircle[] ActiveSubCircles => _subCircles.Where(x => x.Occupied).ToArray();
 
     private IActorRef _sigilActorRef;
@@ -60,6 +61,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
     public CombatDuelActor(IActorRef wizardZoneRef) {
         this._wizardZoneRef = wizardZoneRef;
+        this.ActorRef = Self;
     }
 
     public static Props Props(IActorRef wizardZoneRef)
@@ -293,17 +295,17 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE))]
     private void ReceiveCombatMove(COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE message) {
         // Find which sub circle this is.
-        var subCircle = _subCircles.FirstOrDefault(x => x.ParticipantActor == message.Actor)
+        var caster = _subCircles.FirstOrDefault(x => x.ParticipantActor == message.Actor)
             ?? throw new Exception("Combat move received from an actor that is not in the duel.");
 
         if (!_awaitingCombatMoves) {
             Logger.Warning("Duel {0} | Slot {1} | Received combat move while not expecting it.",
-                Logger.Args(Duel.m_duelID, subCircle.SlotIndex));
+                Logger.Args(Duel.m_duelID, caster.SlotIndex));
             return;
         }
 
         // Find which sub circle they were targeting. If the target is null, it's self.
-        var target = GetTargetFromCombatSelection(message.SpellTarget) ?? subCircle;
+        var target = GetTargetFromCombatSelection(message.SpellTarget) ?? caster;
         if (!target.AddedToDuel) {
             throw new InvalidOperationException("Both the caster and target must be added to the duel.");
         }
@@ -315,23 +317,24 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
         // If this is a discard, we don't want to send the event to the director
         if (moveType == CombatMoveType.Discard) {
-            var discarded = subCircle.DiscardCard(message.SpellSelection);
+            var discarded = caster.DiscardCard(message.SpellSelection);
 
             Logger.Debug("Duel {0} | Slot {1} | Discarded a card: {2}",
-                Logger.Args(Duel.m_duelID, subCircle.SlotIndex, discarded?.m_templateID.ToString() ?? "None"));
+                Logger.Args(Duel.m_duelID, caster.SlotIndex, discarded?.m_templateID.ToString() ?? "None"));
         }
         else {
             // Find what spell they were casting.
-            var spell = subCircle.GetSpellFromLastHand(message.SpellSelection);
-            if (!DoesParticipantHavePipsForSpell(subCircle, spell)) {
+            var spell = caster.GetSpellFromLastHand(message.SpellSelection);
+            if (!DoesParticipantHavePipsForSpell(caster, spell)) {
                 throw new InvalidOperationException("The participant does not have enough pips for this spell.");
             }
 
-            ActionDirector.AddCombatMove(moveType, subCircle, target, spell);
+            ActionDirector.AddCombatMove(moveType, caster, target, spell);
         }
 
         // If by this point all participants have inputted their moves, we can start the next phase.
-        if (ActionDirector.HaveAllPlayersEnqueuedActions(AlivePlayerCount)) {
+        var participantCount = AlivePlayerCount + AliveCreatureCount;
+        if (ActionDirector.HaveAllParticipantsEnqueuedActions(participantCount)) {
             // Adding a new timer will cancel the old one.
             var delay = TimeSpan.FromSeconds(1);
             Timers.StartSingleTimer(PLANNING_TIME_KEY, new COMBAT_106_PROTOCOL.MSG_PLANNINGPHASEOVER(), delay);

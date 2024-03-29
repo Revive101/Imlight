@@ -112,13 +112,12 @@ public class CombatActionDirector {
         LogCombatAction(type, caster, target, spell);
     }
 
-    public bool HaveAllPlayersEnqueuedActions(int playerCount) {
+    public bool HaveAllParticipantsEnqueuedActions(int participantCount) {
         var enqueuedPlayers = _queuedCombatActions.Select(action => action.SpellCaster)
-                                                  .Where(subCircle => subCircle.OccupiedTeam == CombatTeam.Player)
                                                   .Where(subCircle => subCircle.AddedToDuel)
                                                   .Distinct();
 
-        return enqueuedPlayers.Count() == playerCount;
+        return enqueuedPlayers.Count() == participantCount;
     }
 
     private void EnsureAllCastersHaveQueuedActions() {

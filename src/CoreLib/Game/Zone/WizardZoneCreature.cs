@@ -188,6 +188,11 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
                 Logger.Args(ActiveGameObject.m_globalID, nameof(ServerNPCBehavior)));
             return;
         }
+        if (!TryGetBehavior<ServerCreatureSpellbookBehavior>(out var _spellbookBehavior)) {
+            Logger.Error("Creature {0} was sourced for game stats, but no {1} is in the list of behaviors.",
+                Logger.Args(ActiveGameObject.m_globalID, nameof(ServerCreatureSpellbookBehavior)));
+            return;
+        }
 
         var msg = new COMBAT_106_PROTOCOL.MSG_CREATURESTATS {
             GameStats = this.GameStats.GetCombatGameStats(),
@@ -196,12 +201,13 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
             CombatAggressionFactor = _npcBehavior.AggressiveFactor,
             CombatLevel = _npcBehavior.Level,
             MagicSchool = _npcBehavior.School,
+            Spells = _spellbookBehavior.Spells,
         };
         Sender.Tell(msg);
     }
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_NEWROUND))]
-    private void ReceiveNewCombatROund(COMBAT_106_PROTOCOL.MSG_NEWROUND message) {
+    private void ReceiveNewCombatRound(COMBAT_106_PROTOCOL.MSG_NEWROUND message) {
         _combatAiActor.Forward(message);
     }
 
