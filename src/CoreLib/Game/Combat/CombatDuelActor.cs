@@ -325,7 +325,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         else {
             // Find what spell they were casting.
             var spell = caster.GetSpellFromLastHand(message.SpellSelection);
-            if (!DoesParticipantHavePipsForSpell(caster, spell)) {
+            if (!caster.HasPipsForSpell(spell)) {
                 throw new InvalidOperationException("The participant does not have enough pips for this spell.");
             }
 
@@ -612,20 +612,6 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
             circle.DoPipGain();
         });
-    }
-
-    private bool DoesParticipantHavePipsForSpell(CombatDuelActorSubCircle circle, Spell spell) {
-        var spellRank = spell.m_pipCost.m_spellRank;
-        var genericPips = circle.CombatParticipant.m_pipCount.m_genericPips;
-        var powerPips = circle.CombatParticipant.m_pipCount.m_powerPips;
-        var isMastered = circle.HasSchoolMastery(spell.m_magicSchoolID);
-
-        // Power pips count as 2 generic pips if the spell is mastered.
-        var totalPips = isMastered
-            ? genericPips + (powerPips * 2)
-            : genericPips + powerPips;
-
-        return totalPips >= spellRank;
     }
 
     private CombatDuelActorSubCircle GetTargetFromCombatSelection(uint selection) {

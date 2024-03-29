@@ -191,6 +191,20 @@ public class CombatDuelActorSubCircle {
         };
     }
 
+    internal bool HasPipsForSpell(Spell spell) {
+        var spellRank = spell.m_pipCost.m_spellRank;
+        var genericPips = CombatParticipant.m_pipCount.m_genericPips;
+        var powerPips = CombatParticipant.m_pipCount.m_powerPips;
+        var isMastered = HasSchoolMastery(spell.m_magicSchoolID);
+
+        // Power pips count as 2 generic pips if the spell is mastered.
+        var totalPips = isMastered
+            ? genericPips + (powerPips * 2)
+            : genericPips + powerPips;
+
+        return totalPips >= spellRank;
+    }
+
     private void InitializePlayerSubCircle() {
         var queryCharacterMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
         var wizard = ParticipantActor
