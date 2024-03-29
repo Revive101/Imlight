@@ -10,6 +10,7 @@ using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.ObjectProperty;
+using Imlight.CoreLib.Game.Combat;
 using Imlight.CoreLib.Game.Effects;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Networking;
@@ -50,6 +51,7 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
     private DateTime _lastMoveTime;
     private ServerNPCBehavior _npcBehavior;
     private ServerPathBehavior _pathBehavior;
+    private IActorRef _combatAiActor;
 
     // ctor
     public WizardZoneCreature(CoreObject activeGameObject,
@@ -162,7 +164,7 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ACTORADDEDTODUEL))]
     private void ReceiveDuelAdd(COMBAT_106_PROTOCOL.MSG_ACTORADDEDTODUEL message) {
-        StartCombat();
+        StartCombat(message.Duel, message.SubCircle);
 
         ActiveGameObject.m_location = message.SlotPosition;
 
@@ -198,8 +200,15 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
         Sender.Tell(msg);
     }
 
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_NEWROUND))]
+    private void ReceiveNewCombatROund(COMBAT_106_PROTOCOL.MSG_NEWROUND message) {
+        _combatAiActor.Forward(message);
+    }
+
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_COMBATDEATH))]
     private void ReceiveCombatDeath(COMBAT_106_PROTOCOL.MSG_COMBATDEATH message) {
+        _combatAiActor.Forward(message);
+
         // This creature has been defeated in a duel.
         Die();
     }
@@ -405,9 +414,19 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
         CharacterEffectHelper.AddEffectsToGameStats(GameStats, template);
     }
 
-    private void StartCombat() {
+    private void StartCombat(CombatDuelActor duel, CombatDuelActorSubCircle subCircle) {
+        CreateCombatAIActor(duel, subCircle);
         StopMovement();
         _creatureState = CreatureState.Combat;
+    }
+
+    private void CreateCombatAIActor(CombatDuelActor duel, CombatDuelActorSubCircle subCircle) {
+        if (_combatAiActor is not null) {
+            return;
+        }
+
+        var props = CombatAIActor.Props(Self, duel, subCircle);
+        _combatAiActor = Context.ActorOf(props, $"combatAIActor_{ActiveGameObject.m_globalID}");
     }
 
     private void StopMovement() {

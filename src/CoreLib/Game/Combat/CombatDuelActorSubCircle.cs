@@ -19,7 +19,7 @@ using static Imlight.Common.Caches.TypeCache.CombatParticipant;
 namespace Imlight.CoreLib.Game.Combat;
 
 internal enum CombatSlotType {
-    Monster,
+    Creature,
     Player
 }
 
@@ -99,6 +99,8 @@ public class CombatDuelActorSubCircle {
         // Inform the actor that they've been added to a duel.
         var msg = new COMBAT_106_PROTOCOL.MSG_ACTORADDEDTODUEL {
             DuelActor = _duelActor.ActorRef,
+            Duel = _duelActor,
+            SubCircle = this,
             SlotPosition = WorldPosition,
             SlotOrientation = WorldRotation
         };

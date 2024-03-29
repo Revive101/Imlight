@@ -151,6 +151,9 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         ActionDirector.Reset();
         _awaitingCombatMoves = true;
 
+        // Echo the new round message to all actors.
+        EnactActionOnSubCircles(circle => circle.ParticipantActor.Tell(message));
+
         // Pre-planning phase just wants to send who is up first.
         Duel.m_duelPhase = kDuelPhase.kPhase_PrePlanning;
         Duel.m_roundNum++;
@@ -698,7 +701,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
                 WorldPosition = rotatedSigilPos,
                 WorldRotation = faceTowardsYaw,
                 SlotName = subCircles[i].m_locationPreference,
-                SlotType = subCircles[i].m_locationType == "MonsterCircle" ? CombatSlotType.Monster : CombatSlotType.Player
+                SlotType = subCircles[i].m_locationType == "MonsterCircle" ? CombatSlotType.Creature : CombatSlotType.Player
             };
             subCircleObjs[i] = subCircle;
         }
@@ -761,7 +764,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         // Define the relevant CombatSlotType
         var targetType = Duel.m_firstTeamToAct == (int) CombatTeam.Player
                                      ? CombatSlotType.Player
-                                     : CombatSlotType.Monster;
+                                     : CombatSlotType.Creature;
 
         for (int i = 0; i < _subCircles.Length; i++) {
             if (_subCircles[i].SlotType == targetType && _subCircles[i].IsAlive) {

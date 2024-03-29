@@ -95,6 +95,8 @@ namespace Imlight.CoreLib.Shared.Packets {
             public byte ServiceID => 106;
 
             public IActorRef DuelActor;
+            public CombatDuelActor Duel;
+            public CombatDuelActorSubCircle SubCircle;
             public Vector3 SlotPosition;
             public float SlotOrientation;
         }
