@@ -296,7 +296,7 @@ internal class CombatAIActor : ReceiveProtocolDispatcher {
         var myIdx = _mySubcircle.SlotIndex;
         var target = _duelActor.ActiveSubCircles.FirstOrDefault(x => x.SlotIndex > 3 && x.IsAlive);
         if (target is null) {
-            throw new Exception("No valid target found for creature.");
+            return;
         }
 
         var targetIdx = target.SlotIndex;
@@ -305,7 +305,12 @@ internal class CombatAIActor : ReceiveProtocolDispatcher {
 
     private int GetMostHatedTarget() {
         var maxHate = _hateTable.Values.Max();
-        return _hateTable.FirstOrDefault(x => x.Value == maxHate).Key;
+        var mostHatedTarget = _hateTable.FirstOrDefault(x => x.Value == maxHate && x.Key >= 4).Key;
+        if (mostHatedTarget < 4) {
+            mostHatedTarget = _duelActor.ActiveSubCircles
+                .FirstOrDefault(x => x.SlotIndex >= 4 && x.IsAlive)?.SlotIndex ?? mostHatedTarget;
+        }
+        return mostHatedTarget;
     }
 
     private void UpdateHateTable(int targetIdx, int hateValue) {
