@@ -72,5 +72,15 @@ internal class CombatHand {
             throw new ArgumentOutOfRangeException(nameof(index), "Index out of range.");
         }
     }
+
+    internal void Discard(Spell spell) {
+        var index = LastGivenHand.FindIndex(s => s.m_spellID == spell.m_spellID);
+        if (index != -1) {
+            _discardedCardIndices.Add((byte) index);
+        }
+        else {
+            throw new ArgumentException("Spell not found in hand.", nameof(spell));
+        }
+    }
 }
 
