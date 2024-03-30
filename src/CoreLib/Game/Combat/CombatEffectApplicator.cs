@@ -14,6 +14,7 @@ namespace Imlight.CoreLib.Game.Combat;
 
 internal class CombatEffectApplicator {
     private const float DAMAGE_PERCENT_MAX = 2.0f;
+    private const float HANGING_EFFECT_CONSUME_TIME = 1.0f;
 
     private readonly CombatDuelActorSubCircle[] _subCircles;
     private CombatDuelActorSubCircle[] _activeSubCircles => _subCircles.Where(x => x.AddedToDuel && x.IsAlive).ToArray();
@@ -23,8 +24,9 @@ internal class CombatEffectApplicator {
         _subCircles = actorSubCircles;
     }
 
-    internal CombatAction ApplyCombatAction(QueuedCombatAction action) {
+    internal float ApplyCombatAction(QueuedCombatAction action, out CombatAction combatAction) {
         var effectStack = new CombatEffectStack();
+        var cinematicTime = 0.0f;
 
         if (action.Spell is not null) {
             foreach (var spellEffect in action.SpellTemplate.m_effects) {
@@ -40,11 +42,11 @@ internal class CombatEffectApplicator {
                     effectStack.PushRandomEffectChoice(randomEffectIndex);
                 }
 
-                ApplyEffect(effect, action.SpellCaster, action.TargetSubcircle);
+                cinematicTime += ApplyEffect(effect, action.SpellCaster, action.TargetSubcircle);
             }
         }
 
-        return new CombatAction {
+        combatAction = new CombatAction {
             m_effectChosen = effectStack.GetStackAsUint(),
             m_spellCaster = action.SpellCaster.SlotIndex,
             m_targetSubcircleList = new List<int> { action.TargetSubcircle.SlotIndex },
@@ -52,10 +54,14 @@ internal class CombatEffectApplicator {
             m_spellHits = (char) 1, // Determines spell fizzel. 0 = fizzel, >=1 = hit
             m_spell = action.Spell,
         };
+
+        return cinematicTime;
     }
 
-    private void ApplyEffect(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target) {
+    private float ApplyEffect(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target) {
         var targets = new CombatDuelActorSubCircle[] { target };
+        var cinematicTime = 0.0f;
+
         switch (effect.m_effectTarget)
         {
             case SpellEffect.kEffectTarget.kEnemySingle:
@@ -75,7 +81,7 @@ internal class CombatEffectApplicator {
 
         switch (effect.m_effectType) {
             case SpellEffect.kSpellEffects.kDamage:
-                ApplyEffectDamage(effect, caster, targets);
+                cinematicTime += ApplyEffectDamage(effect, caster, targets);
                 break;
             case SpellEffect.kSpellEffects.kHeal:
                 ApplyEffectHeal(effect, caster, targets);
@@ -87,10 +93,13 @@ internal class CombatEffectApplicator {
             default:
                 break;
         }
+
+        return cinematicTime;
     }
 
-    private static void ApplyEffectDamage(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets) {
+    private static float ApplyEffectDamage(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets) {
         int damage = effect.m_effectParam;
+        var cinematicTime = 0.0f;
 
         if (!Enum.TryParse(typeof(MagicSchool), effect.m_sDamageType, out var damageTypeObj)) {
             throw new ArgumentException("Invalid damage type");
@@ -102,7 +111,8 @@ internal class CombatEffectApplicator {
         double damagePercentIncrease = GetPercentDamageIncrease(caster, damageType);
         damagePercentIncrease = Math.Min(damagePercentIncrease, DAMAGE_PERCENT_MAX);
 
-        // Calcualte damage changes from hanging effects.
+        // Calculate damage changes from hanging effects.
+        cinematicTime += CalculateBladeCinematicTime(effect.m_sDamageType, caster);
         damage = ApplyBlades(effect.m_sDamageType, damage, caster);
 
         damage = (int) Math.Floor(damage * (1 + damagePercentIncrease) + damageFlatIncrease);
@@ -115,10 +125,13 @@ internal class CombatEffectApplicator {
             damage = (int) Math.Floor(damage * (1 - damageReductionPercent) - damageReductionFlat);
 
             // Calculate damage changes from target hanging effects.
+            cinematicTime += CalculateWardCinematicTime(effect.m_sDamageType, target);
             damage = ApplyWards(effect.m_sDamageType, damage, target);
 
             target.ParticipantGameStats.m_currentHitpoints -= damage;
         }
+
+        return cinematicTime;
     }
 
     private static void ApplyEffectHeal(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets) {
@@ -146,8 +159,7 @@ internal class CombatEffectApplicator {
             .Where(x => x.m_effectType == SpellEffect.kSpellEffects.kModifyOutgoingDamage)
             .ToList();
 
-        foreach (var blade in blades
-            .Where(x => x.m_sDamageType == school || x.m_sDamageType == "All")) {
+        foreach (var blade in blades.Where(x => x.m_sDamageType == school || x.m_sDamageType == "All")) {
             var damageChange = blade.m_effectParam / 100.0f;
             damage = (int) Math.Floor(damage * (1 + damageChange));
 
@@ -162,8 +174,7 @@ internal class CombatEffectApplicator {
             .Where(x => x.m_effectType == SpellEffect.kSpellEffects.kModifyIncomingDamage)
             .ToList();
 
-        foreach (var ward in wards
-            .Where(x => x.m_sDamageType == school || x.m_sDamageType == "All")) {
+        foreach (var ward in wards.Where(x => x.m_sDamageType == school || x.m_sDamageType == "All")) {
             var damageChange = ward.m_effectParam / 100.0f;
             damage = (int) Math.Floor(damage * (1 + damageChange));
 
@@ -171,6 +182,32 @@ internal class CombatEffectApplicator {
         }
 
         return damage;
+    }
+
+    private static float CalculateBladeCinematicTime(string school, CombatDuelActorSubCircle caster) {
+        var wards = caster.HangingEffects
+            .Where(x => x.m_effectType == SpellEffect.kSpellEffects.kModifyIncomingDamage)
+            .ToList();
+        var cinematicTime = 0.0f;
+
+        foreach (var ward in wards.Where(x => x.m_sDamageType == school || x.m_sDamageType == "All")) {
+            cinematicTime += HANGING_EFFECT_CONSUME_TIME;
+        }
+
+        return cinematicTime;
+    }
+
+    private static float CalculateWardCinematicTime(string school, CombatDuelActorSubCircle caster) {
+        var wards = caster.HangingEffects
+            .Where(x => x.m_effectType == SpellEffect.kSpellEffects.kModifyIncomingDamage)
+            .ToList();
+        var cinematicTime = 0.0f;
+
+        foreach (var ward in wards.Where(x => x.m_sDamageType == school || x.m_sDamageType == "All")) {
+            cinematicTime += HANGING_EFFECT_CONSUME_TIME;
+        }
+
+        return cinematicTime;
     }
 
     private static float GetFlatDamageIncrease(CombatDuelActorSubCircle caster, MagicSchool damageType) {

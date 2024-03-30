@@ -184,19 +184,19 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         Logger.Debug("Duel {0} | Round {1} over at {2}",
             Logger.Args(Duel.m_duelID, Duel.m_roundNum, DateTime.Now.ToString("HH:mm:ss")));
 
-        // The planning phase is over. The client will now be able to send combat moves.
+        // The execution phase begins. This is where combat actions take place and we actually see spell cinematics.
         _awaitingCombatMoves = false;
         Duel.m_duelPhase = kDuelPhase.kPhase_Execution;
         SendCombatPhase((byte) Duel.m_duelPhase);
 
-        // Apply the queued actions and send them to the client.
-        var actionExecutionTime = TimeSpan.FromSeconds(ActionDirector.GetQueuedCombatActionsTime());
-        var actions = ActionDirector.ApplyQueuedCombatActions();
+        // Determine how long the cinematics will take.
+        var cinematicTimeInSeconds = ActionDirector.ApplyQueuedCombatActions(out var actions);
+        var actionExecutionTime = TimeSpan.FromSeconds(cinematicTimeInSeconds);
         Duel.m_executionPhaseTimer = (float) actionExecutionTime.TotalSeconds;
 
+        // Serialize the combat actions and send them to the clients.
         _serializer.OnPropertyMask(_combatParticipantHandFlags);
         var buffer = _serializer.Serialize(actions);
-
         var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATACTIONS {
             DuelID = SigilId,
             ActionData = buffer,

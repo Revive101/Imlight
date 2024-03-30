@@ -49,40 +49,17 @@ public class CombatActionDirector {
         _queuedCombatActions = new List<QueuedCombatAction>();
     }
 
-    public uint GetQueuedCombatActionsTime() {
-        var count = 0.0f;
+    public float ApplyQueuedCombatActions(out CombatActionListObj combatActionListObj) {
+        Logger.Debug("Duel {0} | Applying combat actions..", Logger.Args(_duel.m_duelID, _duel.m_roundNum));
 
-        // Every spell takes 10 seconds.
-        foreach (var action in _queuedCombatActions) {
-            if (action.Spell != null) {
-                if (!action.PredeterminedSuccess) {
-                    count += SPELL_FIZZLE_TIME;
-                    continue;
-                }
-
-                count += GetActionCinematicTime(action);
-            }
-        }
-
-        // Add how many subcircles are alive and passing their turn.
-        count += (ActiveSubCircles.Where(x => x.IsAlive).Count() - _queuedCombatActions.Count) * SPELL_PASS_TIME;
-
-        return (uint) count;
-    }
-
-    public CombatActionListObj ApplyQueuedCombatActions() {
-        Logger.Debug("Duel {0} | Combat actions round {1}: ", Logger.Args(_duel.m_duelID, _duel.m_roundNum));
-
-        var combatActionList = new CombatActionListObj { m_actionList = new List<CombatAction>() };
+        combatActionListObj = new CombatActionListObj { m_actionList = new List<CombatAction>() };
 
         // Some subcircles may not have queued actions. Ensure they do by adding a pass action.
         EnsureAllCastersHaveQueuedActions();
-
         SortQueuedActions();
-        ProcessQueuedActions(combatActionList);
-        LogCombatActions(combatActionList);
 
-        return combatActionList;
+        var cinematicTime = ProcessQueuedActions(combatActionListObj);
+        return cinematicTime;
     }
 
     public void AddCombatMove(CombatMoveType type,
@@ -109,7 +86,7 @@ public class CombatActionDirector {
         };
         _queuedCombatActions.Add(queuedAction);
 
-        LogCombatAction(type, caster, target, spell);
+        LogQueuedCombatAction(type, caster, target, spell);
     }
 
     public bool HaveAllParticipantsEnqueuedActions(int participantCount) {
@@ -162,18 +139,34 @@ public class CombatActionDirector {
         }
     });
 
-    private void ProcessQueuedActions(CombatActionListObj combatActionList) {
+    private float ProcessQueuedActions(CombatActionListObj combatActionList) {
+        var cinematicTime = 0.0f;
+
         foreach (var action in _queuedCombatActions) {
+            // If the caster or target is dead, skip this action.
+            if (!action.SpellCaster.IsAlive || !action.TargetSubcircle.IsAlive) {
+                Logger.Debug("Duel {0} | Slot {1} | Caster or target is dead. Skipping action.",
+                    Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex));
+                continue;
+            }
+
             if (!action.PredeterminedSuccess && action.Spell is not null) {
-                HandleFizzleAction(action, combatActionList);
+                Logger.Debug("Duel {0} | Slot {1} | Spell fizzles", Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex));
+
+                cinematicTime += HandleFizzleAction(action, combatActionList);
             }
             else {
-                HandleSuccessfulAction(action, combatActionList);
+                Logger.Debug("Duel {0} | Slot {1} | Spell hits against target {2}",
+                    Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex, action.TargetSubcircle.SlotIndex));
+
+                cinematicTime += HandleSuccessfulAction(action, combatActionList);
             }
         }
+
+        return cinematicTime;
     }
 
-    private void HandleFizzleAction(QueuedCombatAction action, CombatActionListObj combatActionList) {
+    private float HandleFizzleAction(QueuedCombatAction action, CombatActionListObj combatActionList) {
         var fizzleAction = new CombatAction {
             m_spellCaster = action.SpellCaster.SlotIndex,
             m_targetSubcircleList = new List<int> { action.TargetSubcircle.SlotIndex },
@@ -182,14 +175,16 @@ public class CombatActionDirector {
             m_spell = action.Spell,
         };
         combatActionList.m_actionList.Add(fizzleAction);
+
+        return SPELL_FIZZLE_TIME;
     }
 
-    private void HandleSuccessfulAction(QueuedCombatAction action, CombatActionListObj combatActionList) {
-        var combatAction = _effects.ApplyCombatAction(action);
+    private float HandleSuccessfulAction(QueuedCombatAction action, CombatActionListObj combatActionList) {
+        var effectCinematicTime = _effects.ApplyCombatAction(action, out var combatAction);
         combatActionList.m_actionList.Add(combatAction);
 
         if (action.Spell is null) {
-            return;
+            return SPELL_PASS_TIME;
         }
 
         // Remove the caster's pips. If the spell is mastered, power pips count as 2 pips.
@@ -216,6 +211,9 @@ public class CombatActionDirector {
                 throw new InvalidOperationException("Not enough pips to cast the spell.");
             }
         }
+
+        // Return how long the cinematic will take to play out.
+        return GetActionCinematicTime(action) + effectCinematicTime;
     }
 
     private float GetActionCinematicTime(QueuedCombatAction action) {
@@ -242,18 +240,10 @@ public class CombatActionDirector {
 
         count += actTime;
 
-        // There is a certain amount of hanging effects (traps/shields/blades/prisms) on both the caster and the target.
-        // Each of these hanging effects takes 1 second to resolve.
-        // todo: this is wrong
-        var casterHangingEffects = action.SpellCaster.HangingEffects;
-        var targetHangingEffects = action.TargetSubcircle.HangingEffects;
-        var totalHangingEffects = casterHangingEffects.Count + targetHangingEffects.Count;
-        count += totalHangingEffects;
-
         return count;
     }
 
-    private void LogCombatAction(CombatMoveType type, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target, Spell spell) {
+    private void LogQueuedCombatAction(CombatMoveType type, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target, Spell spell) {
         if (type == CombatMoveType.ChangeMind) {
             Logger.Debug("Duel {0} | Slot {1} | Caster changed their mind and is not casting a spell",
                 Logger.Args(_duel.m_duelID, caster.SlotIndex));
@@ -263,28 +253,6 @@ public class CombatActionDirector {
         var targetOrSelf = target.SlotIndex == caster.SlotIndex ? "self" : target.SlotIndex.ToString();
         Logger.Debug("Duel {0} | Slot {1} | Queued spell {2} towards target {3}",
             Logger.Args(_duel.m_duelID, caster.SlotIndex, spell.m_templateID, targetOrSelf));
-    }
-
-    private void LogCombatActions(CombatActionListObj combatActionList) {
-        foreach (var action in combatActionList.m_actionList) {
-            // Spell fizzled. Do not log.
-            if (action.m_spellHits == (char) 0) {
-                Logger.Debug("Duel {0} | Slot {1} | Spell fizzles", Logger.Args(_duel.m_duelID, action.m_spellCaster));
-                continue;
-            }
-
-            var duelId = _duel.m_duelID;
-            var slot = action.m_spellCaster;
-            var spell = action.m_spell != null ? action.m_spell.m_templateID.ToString() : "None";
-            var target = string.Join(",", action.m_targetSubcircleList ?? new List<int>());
-
-            if (action.m_spell == null) {
-                Logger.Debug("Duel {0} | Slot {1} | Passes the turn", Logger.Args(duelId, slot));
-            }
-            else {
-                Logger.Debug("Duel {0} | Slot {1} | Casts spell {2} towards target(s) {3}", Logger.Args(duelId, slot, spell, target));
-            }
-        }
     }
 
     private bool SpellHits(CombatDuelActorSubCircle caster, Spell spell) {
