@@ -303,14 +303,14 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             return;
         }
 
-        // Find which sub circle they were targeting. If the target is null, it's self.
-        var target = SubCircles[message.SpellTarget];
-        if (!target.AddedToDuel) {
-            throw new InvalidOperationException("Both the caster and target must be added to the duel.");
+        // Find which sub circle they were targeting.
+        if (message.SpellTarget < 0 || message.SpellTarget > SubCircles.Length) {
+            // Regularly produced by the client when they cancel a spell.
+            return;
         }
-        if (!target.IsAlive) {
-            throw new InvalidOperationException("The caster must be alive.");
-        }
+
+        var targetIdx = message.SpellTarget;
+        var target = SubCircles[targetIdx];
 
         var moveType = (CombatMoveType) message.MoveType;
 

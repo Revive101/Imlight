@@ -18,7 +18,7 @@ public class ServerSpellbookBehavior : ServerBehaviorInstance {
     [JsonIgnore] public List<Spell> Spells = new();
     [JsonIgnore] public List<Spell> TemporarySpells = new(); // Spells gained from equipment
 
-    public void LearnSpell(Spell spell) {
+    public virtual void LearnSpell(Spell spell) {
         Spells ??= new List<Spell>();
 
         if (spell != null) {
@@ -26,7 +26,7 @@ public class ServerSpellbookBehavior : ServerBehaviorInstance {
         }
     }
 
-    public void UnlearnSpell(uint templateId) {
+    public virtual void UnlearnSpell(uint templateId) {
         if (Spells is null) {
             return;
         }

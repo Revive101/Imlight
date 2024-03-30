@@ -213,7 +213,9 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_COMBATDEATH))]
     private void ReceiveCombatDeath(COMBAT_106_PROTOCOL.MSG_COMBATDEATH message) {
-        _combatAiActor.Forward(message);
+        if (_combatAiActor is not null) {
+            _combatAiActor.Forward(message);
+        }
 
         // This creature has been defeated in a duel.
         Die();

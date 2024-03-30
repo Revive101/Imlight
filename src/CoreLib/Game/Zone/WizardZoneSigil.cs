@@ -54,10 +54,6 @@ public class WizardZoneSigil : WizardZoneObject {
         if (IsPlayerSlotAvailable()) {
             AddParticipant(suspect, player);
         }
-        else {
-            Logger.Debug("Cannot add player {0} to duel {1} because there are already 4 players.",
-                Logger.Args(player.m_globalID, _activeDuelActor));
-        }
     }
 
     protected override void OnCreatureInteractionEnter(CoreObject creature, IActorRef suspect) {
@@ -69,9 +65,6 @@ public class WizardZoneSigil : WizardZoneObject {
             AddParticipant(suspect, creature);
         }
         else {
-            Logger.Debug("Duel {0} | Cannot add creature participant {1} because creature max is hit.",
-                Logger.Args(ActiveGameObject.m_globalID, creature.m_debugName));
-
             var combatDeathMsg = new COMBAT_106_PROTOCOL.MSG_COMBATDEATH();
             suspect.Tell(combatDeathMsg);
         }

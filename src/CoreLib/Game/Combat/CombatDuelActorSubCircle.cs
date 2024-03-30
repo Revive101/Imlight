@@ -40,20 +40,20 @@ public class CombatDuelActorSubCircle {
     internal readonly List<SpellEffect> HangingEffects = new();
     public uint AvailableSpells {
         get {
-            if (_combatHand is null) {
+            if (CombatHand is null) {
                 return 0;
             }
 
-            return (uint) _combatHand.AvailableSpells.Count;
+            return (uint) CombatHand.AvailableSpells.Count;
         }
     }
     public uint TotalSpells {
         get {
-            if (_combatHand is null) {
+            if (CombatHand is null) {
                 return 0;
             }
 
-            return (uint) _combatHand.Spells.Count;
+            return (uint) CombatHand.Spells.Count;
         }
     }
     internal bool Occupied => ParticipantObject is not null;
@@ -67,12 +67,12 @@ public class CombatDuelActorSubCircle {
         }
     }
     internal bool IsAlive => ParticipantGameStats?.m_currentHitpoints > 0;
+    internal CombatHand CombatHand;
 
     private readonly CombatDuelActor _duelActor;
     private readonly float _radius;
     private readonly float _rotation;
     private readonly Color _color;
-    private CombatHand _combatHand;
 
     // ctor
     internal CombatDuelActorSubCircle(CombatDuelActor duelActor, float radius, float rotation, Color color, int index) {
@@ -112,25 +112,29 @@ public class CombatDuelActorSubCircle {
     }
 
     internal Hand DrawHand() {
-        var newHand = _combatHand.GetHand();
+        var newHand = CombatHand.GetHand();
         CombatParticipant.m_pHand = newHand;
 
         return newHand;
     }
 
     internal Spell DiscardCard(byte index) {
-        var spell = _combatHand.LastGivenHand[index];
-        _combatHand.Discard(index);
+        var spell = CombatHand.LastGivenHand[index];
+        CombatHand.Discard(index);
 
         return spell;
     }
 
+    internal void DiscardCard(Spell spell) {
+        CombatHand.Discard(spell);
+    }
+
     internal Spell GetSpellFromLastHand(byte index) {
-        if (_combatHand.LastGivenHand is null || index >= _combatHand.LastGivenHand.Count) {
+        if (CombatHand.LastGivenHand is null || index >= CombatHand.LastGivenHand.Count) {
             return null;
         }
 
-        return _combatHand.LastGivenHand[index];
+        return CombatHand.LastGivenHand[index];
     }
 
     internal void DoPipGain() {
@@ -222,7 +226,7 @@ public class CombatDuelActorSubCircle {
         var allSpells = new List<Spell>();
         allSpells.AddRange(wizard.SpellbookBehavior.Spells);
         allSpells.AddRange(wizard.SpellbookBehavior.TemporarySpells);
-        _combatHand = new CombatHand(allSpells, 7);
+        CombatHand = new CombatHand(allSpells, 7);
 
         CombatParticipant = new CombatParticipant {
             m_ownerID = ParticipantObject.m_globalID,
@@ -260,7 +264,7 @@ public class CombatDuelActorSubCircle {
         var dynamicSymbol = (DynamicSigilSymbol) (SlotIndex + 1);
 
         var spells = creatureStats.Spells;
-        _combatHand = new CombatHand(spells, byte.MaxValue);
+        CombatHand = new CombatHand(spells, byte.MaxValue);
 
         ParticipantGameStats = creatureStats.GameStats;
         CombatParticipant = new CombatParticipant {

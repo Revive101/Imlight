@@ -50,21 +50,15 @@ public class CombatService : MessageService {
             throw new Exception("Combat move received without a duel actor.");
         }
 
-        // The spell selection given by the client is logarithmic. We need to convert it to a linear scale.
+        // The spell target given by the client is logarithmic. We need to convert it to a linear scale.
         // A selection of 0 means a target of self.
-        int actualSelection;
-        if (message.SpellSelection == 0) {
-            actualSelection = 0;
-        }
-        else {
-            actualSelection = (int) Math.Log(message.SpellSelection, 2);
-        }
+        int actualSelection = (int) Math.Log(message.SpellTarget, 2);
 
         var msg = new COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE {
             Actor = SessionActor.ActorRef,
             MoveType = message.MoveType,
-            SpellSelection = (byte) actualSelection,
-            SpellTarget = message.SpellTarget,
+            SpellSelection = message.SpellSelection,
+            SpellTarget = (uint) actualSelection,
             TimeLeft = message.TimeLeft
         };
         _currentDuelActor.Tell(msg);

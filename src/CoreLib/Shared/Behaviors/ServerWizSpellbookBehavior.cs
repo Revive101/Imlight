@@ -17,7 +17,7 @@ public class ServerWizSpellbookBehavior : ServerSpellbookBehavior {
     [JsonIgnore] public override bool NoTransfer { get; set; } = false;
 
     // This is all we need to store in the database.
-    public List<uint> SpellTemplateIdList;
+    public List<uint> SpellTemplateIdList = new();
 
     public void Initialize() {
         // Dragon database only keeps track of spell template IDs. It's up to this
@@ -33,6 +33,23 @@ public class ServerWizSpellbookBehavior : ServerSpellbookBehavior {
                 Spells.Add(spell);
             }
         }
+    }
+
+    public override void LearnSpell(Spell spell) {
+        base.LearnSpell(spell);
+
+        SpellTemplateIdList ??= new List<uint>();
+        SpellTemplateIdList.Add(spell.m_templateID);
+    }
+
+    public override void UnlearnSpell(uint templateId) {
+        base.UnlearnSpell(templateId);
+
+        if (SpellTemplateIdList is null) {
+            return;
+        }
+
+        SpellTemplateIdList.Remove(templateId);
     }
 
     public void AddSpell(Spell spell) {
