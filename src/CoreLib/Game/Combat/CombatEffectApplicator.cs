@@ -128,6 +128,9 @@ internal class CombatEffectApplicator {
             cinematicTime += CalculateWardCinematicTime(effect.m_sDamageType, target);
             damage = ApplyWards(effect.m_sDamageType, damage, target);
 
+            // Ensure that damage isn't negative.
+            damage = Math.Max(damage, 0);
+
             target.ParticipantGameStats.m_currentHitpoints -= damage;
         }
 
