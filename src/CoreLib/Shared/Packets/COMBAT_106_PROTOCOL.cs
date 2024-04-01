@@ -142,7 +142,7 @@ namespace Imlight.CoreLib.Shared.Packets {
             public float CombatAggressionFactor;
             public int CombatLevel;
             public MagicSchool MagicSchool;
-            public List<Spell> Spells;
+            public List<SpellData> SpellList;
         }
 	}
 }

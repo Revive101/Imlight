@@ -18,21 +18,27 @@ public class SpellbookService : MessageService {
 
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_ADDSPELLTODECK))]
     private void ReceiveAddSpellToDeck(WIZARD_12_PROTOCOL.MSG_ADDSPELLTODECK message) {
+        var wizard = GetActiveWizard();
+        var deckAddSucess = wizard.AddSpellToDeck((uint) message.SpellID, message.DeckID);
+
         Logger.Debug("SpellID: " + message.SpellID + ", DeckID: " + message.DeckID + ", Success: " + message.Success);
         SendToSocket(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTODECK() {
             SpellID = message.SpellID,
             DeckID = message.DeckID,
-            Success = 1
+            Success = (byte) (deckAddSucess ? 1 : 0)
         });
     }
 
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_REMOVESPELLFROMDECK))]
     private void ReceiveRemoveSpellFromDeck(WIZARD_12_PROTOCOL.MSG_REMOVESPELLFROMDECK message) {
+        var wizard = GetActiveWizard();
+        var deckRemoveSuccess = wizard.RemoveSpellFromDeck((uint) message.SpellID, message.DeckID);
+
         Logger.Debug("SpellID: " + message.SpellID + ", DeckID: " + message.DeckID + ", Success: " + message.Success);
         SendToSocket(new WIZARD_12_PROTOCOL.MSG_REMOVESPELLFROMDECK() {
             SpellID = message.SpellID,
             DeckID = message.DeckID,
-            Success = 1
+            Success = (byte) (deckRemoveSuccess ? 1 : 0)
         });
     }
 }

@@ -26,6 +26,8 @@ internal enum CombatSlotType {
 public class CombatDuelActorSubCircle {
     private const float AGGRO_TIME_IN_SECONDS = 0.75f;
     private const byte MAX_PIP_COUNT = 7;
+    private const byte PLAYER_HAND_SIZE = 7;
+    private const int CREATURE_SPELL_COUNT = 1000;
 
     internal string SlotName { get; set; }
     internal CombatSlotType SlotType { get; set; }
@@ -40,20 +42,20 @@ public class CombatDuelActorSubCircle {
     internal readonly List<SpellEffect> HangingEffects = new();
     public uint AvailableSpells {
         get {
-            if (CombatHand is null) {
+            if (CombatDeck is null) {
                 return 0;
             }
 
-            return (uint) CombatHand.AvailableSpells.Count;
+            return (uint) CombatDeck.RemainingCardCount;
         }
     }
     public uint TotalSpells {
         get {
-            if (CombatHand is null) {
+            if (CombatDeck is null) {
                 return 0;
             }
 
-            return (uint) CombatHand.Spells.Count;
+            return (uint) CombatDeck.TotalCardCount;
         }
     }
     internal bool Occupied => ParticipantObject is not null;
@@ -67,7 +69,7 @@ public class CombatDuelActorSubCircle {
         }
     }
     internal bool IsAlive => ParticipantGameStats?.m_currentHitpoints > 0;
-    internal CombatHand CombatHand;
+    internal CombatDeck CombatDeck;
 
     private readonly CombatDuelActor _duelActor;
     private readonly float _radius;
@@ -112,29 +114,29 @@ public class CombatDuelActorSubCircle {
     }
 
     internal Hand DrawHand() {
-        var newHand = CombatHand.GetHand();
+        var newHand = CombatDeck.GetHand();
         CombatParticipant.m_pHand = newHand;
 
         return newHand;
     }
 
     internal Spell DiscardCard(byte index) {
-        var spell = CombatHand.LastGivenHand[index];
-        CombatHand.Discard(index);
+        var spell = CombatDeck.LastGivenHand[index];
+        CombatDeck.Discard(index);
 
         return spell;
     }
 
     internal void DiscardCard(Spell spell) {
-        CombatHand.Discard(spell);
+        CombatDeck.Discard(spell);
     }
 
     internal Spell GetSpellFromLastHand(byte index) {
-        if (CombatHand.LastGivenHand is null || index >= CombatHand.LastGivenHand.Count) {
+        if (CombatDeck.LastGivenHand is null || index >= CombatDeck.LastGivenHand.Count) {
             return null;
         }
 
-        return CombatHand.LastGivenHand[index];
+        return CombatDeck.LastGivenHand[index];
     }
 
     internal void DoPipGain() {
@@ -223,10 +225,17 @@ public class CombatDuelActorSubCircle {
 
         // Collage spells the player has learned and temporary spells (perhaps from equipment)
         // into one list to create the combat hand.
-        var allSpells = new List<Spell>();
-        allSpells.AddRange(wizard.SpellbookBehavior.Spells);
-        allSpells.AddRange(wizard.SpellbookBehavior.TemporarySpells);
-        CombatHand = new CombatHand(allSpells, 7);
+        var allSpells = new List<SpellData>();
+        allSpells.AddRange(wizard.SpellbookBehavior.SpellList);
+        foreach (var tempSpell in wizard.SpellbookBehavior.TemporarySpells) {
+            var spellData = new SpellData {
+                m_templateID = tempSpell.m_templateID,
+                m_quantity = 1
+            };
+            allSpells.Add(spellData);
+        }
+
+        CombatDeck = new CombatDeck(allSpells, PLAYER_HAND_SIZE);
 
         CombatParticipant = new CombatParticipant {
             m_ownerID = ParticipantObject.m_globalID,
@@ -238,7 +247,7 @@ public class CombatDuelActorSubCircle {
             m_pipCount = new() { m_powerPips = 0, m_genericPips = 0 },
             m_pipRoundRates = new(),
             m_originalTeam = 0,
-            m_maxHandSize = 7,
+            m_maxHandSize = PLAYER_HAND_SIZE,
             m_playerHealth = ParticipantGameStats.m_currentHitpoints,
             m_maxPlayerHealth = ParticipantGameStats.m_baseHitpoints,
             m_myTeamTurn = _duelActor.Duel.m_firstTeamToAct == 0,
@@ -263,8 +272,7 @@ public class CombatDuelActorSubCircle {
         // Dynamic symbols start 1-4 for creatures.
         var dynamicSymbol = (DynamicSigilSymbol) (SlotIndex + 1);
 
-        var spells = creatureStats.Spells;
-        CombatHand = new CombatHand(spells, byte.MaxValue);
+        CombatDeck = new CombatDeck(creatureStats.SpellList, PLAYER_HAND_SIZE);
 
         ParticipantGameStats = creatureStats.GameStats;
         CombatParticipant = new CombatParticipant {
@@ -274,7 +282,7 @@ public class CombatDuelActorSubCircle {
             m_isMonster = 1, // Doesn't seem to be used.
             m_teamID = 1,
             m_originalTeam = 1,
-            m_maxHandSize = 7,
+            m_maxHandSize = PLAYER_HAND_SIZE,
             m_primaryMagicSchoolID = (int) creatureStats.MagicSchool,
             m_pipCount = new() { m_powerPips = 0, m_genericPips = 0 },
             m_pipRoundRates = new(),

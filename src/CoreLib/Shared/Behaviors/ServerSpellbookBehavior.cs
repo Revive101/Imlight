@@ -5,9 +5,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Newtonsoft.Json;
-using Imlight.CoreLib.WizardData.Implementations;
-using Imlight.CoreLib.Game.Spells;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Shared.Behaviors;
@@ -15,39 +14,68 @@ namespace Imlight.CoreLib.Shared.Behaviors;
 public class ServerSpellbookBehavior : ServerBehaviorInstance {
     [JsonIgnore] public override bool NoTransfer { get; set; } = false;
 
-    [JsonIgnore] public List<Spell> Spells = new();
-    [JsonIgnore] public List<Spell> TemporarySpells = new(); // Spells gained from equipment
+    public List<uint> LearnedSpellTemplateIds = new();
+    [JsonIgnore] public List<SpellData> SpellList = new();
+    [JsonIgnore] public List<Spell> TemporarySpells = new();
 
-    public virtual void LearnSpell(Spell spell) {
-        Spells ??= new List<Spell>();
-
-        if (spell != null) {
-            Spells.Add(spell);
-        }
-    }
-
-    public virtual void UnlearnSpell(uint templateId) {
-        if (Spells is null) {
+    public virtual void AddSpellToBook(Spell spell) {
+        if (LearnedSpellTemplateIds.Contains(spell.m_templateID)) {
             return;
         }
 
-        var spell = Spells.Find(x => x.m_templateID == templateId);
+        LearnedSpellTemplateIds.Add(spell.m_templateID);
+    }
+
+    public virtual void RemoveSpellFromBook(uint templateId) {
+        LearnedSpellTemplateIds.Remove(templateId);
+
+        if (LearnedSpellTemplateIds is null) {
+            return;
+        }
+
+        var spellTemplateId = LearnedSpellTemplateIds.Find(x => x == templateId);
+        if (spellTemplateId != 0) {
+            LearnedSpellTemplateIds.Remove(spellTemplateId);
+        }
+    }
+
+    public void AddTemporarySpellToBook(Spell spell) {
+        TemporarySpells ??= new List<Spell>();
+
         if (spell != null) {
-            Spells.Remove(spell);
+            TemporarySpells.Add(spell);
+        }
+    }
+
+    public void RemoveTemporarySpellFromBook(uint templateId) {
+        if (TemporarySpells is null) {
+            return;
+        }
+
+        var spell = TemporarySpells.Find(x => x.m_templateID == templateId);
+        if (spell != null) {
+            TemporarySpells.Remove(spell);
         }
     }
 
     public override ClientSpellbookBehavior GetClientBehaviorInstance() {
         var spellIdList = new List<SpellIDTracker>();
-        foreach (var spell in Spells) {
+        foreach (var spellTemplateId in LearnedSpellTemplateIds) {
             spellIdList.Add(new SpellIDTracker {
-                m_isRetired = false,
-                m_spellID = spell.m_templateID,
+                m_spellID = spellTemplateId
             });
         }
 
         return new ClientSpellbookBehavior {
             m_spellIDList = spellIdList
         };
+    }
+
+    public int TotalSpellCount() {
+        if (SpellList is null) {
+            return 0;
+        }
+
+        return SpellList.Sum(spellData => (int) spellData.m_quantity);
     }
 }

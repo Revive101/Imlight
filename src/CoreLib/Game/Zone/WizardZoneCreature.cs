@@ -201,7 +201,7 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
             CombatAggressionFactor = _npcBehavior.AggressiveFactor,
             CombatLevel = _npcBehavior.Level,
             MagicSchool = _npcBehavior.School,
-            Spells = _spellbookBehavior.Spells,
+            SpellList = _spellbookBehavior.SpellList,
         };
         Sender.Tell(msg);
     }

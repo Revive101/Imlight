@@ -17,11 +17,13 @@ namespace Imlight.CoreLib.Shared.Behaviors;
 public class ServerCreatureSpellbookBehavior : ServerSpellbookBehavior {
     [JsonIgnore] public override bool NoTransfer { get; set; } = true;
 
+    [JsonIgnore] public readonly int SpellInstanceCount;
     private readonly string _deckName;
 
     // ctor
     public ServerCreatureSpellbookBehavior(DeckBehaviorTemplate deckBehaviorTemplate) {
         _deckName = deckBehaviorTemplate.m_defaultDeck;
+        SpellInstanceCount = deckBehaviorTemplate.m_genericMaxInstances;
         var creatureSpellbook = GetCreatureSpellbook(_deckName);
 
         if (creatureSpellbook is null) {
@@ -43,8 +45,11 @@ public class ServerCreatureSpellbookBehavior : ServerSpellbookBehavior {
                 continue;
             }
 
-            // Otherwise, add the spell to the spellbook.
-            LearnSpell(spell);
+            var spellData = new SpellData() {
+                m_templateID = spellId,
+                m_quantity = (uint) SpellInstanceCount
+            };
+            SpellList.Add(spellData);
         }
     }
 

@@ -235,7 +235,7 @@ public static class WizardCollection {
     /// </summary>
     /// <param name="wizard">The wizard to add the spell to.</param>
     /// <param name="spellTemplateId">The ID of the spell template to add.</param>
-    public static void AddCharacterSpell(Wizard wizard, uint spellTemplateId) {
+    public static void LearnSpell(Wizard wizard, uint spellTemplateId) {
         using var session = s_store.OpenSession();
 
         var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
@@ -244,7 +244,7 @@ public static class WizardCollection {
             return;
         }
 
-        existingCharacter.SpellbookBehavior.SpellTemplateIdList.Add(spellTemplateId);
+        existingCharacter.SpellbookBehavior.LearnedSpellTemplateIds.Add(spellTemplateId);
         session.SaveChanges();
     }
 
@@ -253,7 +253,7 @@ public static class WizardCollection {
     /// </summary>
     /// <param name="wizard">The wizard whose spellbook will be modified.</param>
     /// <param name="spellTemplateId">The ID of the spell template to be removed.</param>
-    public static void RemoveCharacterSpell(Wizard wizard, uint spellTemplateId) {
+    public static void UnlearnSpell(Wizard wizard, uint spellTemplateId) {
         using var session = s_store.OpenSession();
 
         var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
@@ -262,7 +262,7 @@ public static class WizardCollection {
             return;
         }
 
-        existingCharacter.SpellbookBehavior.SpellTemplateIdList.Remove(spellTemplateId);
+        existingCharacter.SpellbookBehavior.LearnedSpellTemplateIds.Remove(spellTemplateId);
         session.SaveChanges();
     }
 }

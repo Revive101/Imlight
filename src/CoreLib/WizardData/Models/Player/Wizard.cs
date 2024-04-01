@@ -20,6 +20,7 @@ using SharpDX;
 using static Imlight.Common.Caches.TypeCache;
 using Imlight.CoreLib.Game.Effects;
 using Imlight.CoreLib.Shared.Behaviors;
+using Imlight.CoreLib.WizardData.Collections;
 
 namespace Imlight.CoreLib.WizardData.Models.Player;
 
@@ -211,6 +212,8 @@ public class Wizard : IDisposable {
             return false;
         }
 
+        CoreObjectFactory.InitializeCoreObjectBehaviors(item, item.m_templateID);
+
         // Ensure that the item is associated with this Wizard.
         item.m_characterId = (GID) CharId;
 
@@ -273,14 +276,10 @@ public class Wizard : IDisposable {
 
         // If this object is a mount, we'll also want to update the mount owner behavior.
         if (slot.SlotType == EquipmentSlotType.Mount) {
-            var mountEquipSuccess = MountOwnerBehavior.EquipMount(template, inventoryItem);
-            if (!mountEquipSuccess) {
-                Logger.Warning("Could not equip mount {0} to player {1}.", Logger.Args(template.m_objectName, PlayerNameBehavior.GetWizardName()));
-                return false;
-            }
-
-            // Persistent save.
-            WizardCollection.UpdateCharacterMount(this);
+            EquipMount(template, inventoryItem);
+        }
+        if (slot.SlotType == EquipmentSlotType.Deck) {
+            InformSpellbookOfNewDeck(template, inventoryItem.m_globalID);
         }
 
         // Persistent save.
@@ -317,10 +316,7 @@ public class Wizard : IDisposable {
 
         // If this object is a mount, we'll also want to update the mount owner behavior.
         if (slot.SlotType == EquipmentSlotType.Mount) {
-            MountOwnerBehavior.UnequipMount();
-
-            // Persistent save.
-            WizardCollection.UpdateCharacterMount(this);
+            UnequipMount();
         }
 
         // Persistent save.
@@ -341,47 +337,170 @@ public class Wizard : IDisposable {
     }
 
     public bool LearnSpell(Spell spell) {
-        if (SpellbookBehavior.SpellTemplateIdList.Contains(spell.m_templateID)) {
+        if (SpellbookBehavior.LearnedSpellTemplateIds.Contains(spell.m_templateID)) {
             Logger.Warning("{0} Tried to learn spell with template ID {1} that is already known.",
                 Logger.Args(PlayerNameBehavior.GetWizardName(), spell.m_templateID));
             return false;
         }
 
-        SpellbookBehavior.LearnSpell(spell);
+        SpellbookBehavior.AddSpellToBook(spell);
 
         // Persistent save.
-        WizardCollection.AddCharacterSpell(this, spell.m_templateID);
+        WizardCollection.LearnSpell(this, spell.m_templateID);
 
         return true;
     }
 
     public bool UnlearnSpell(uint spellTemplateId) {
-        if (!SpellbookBehavior.SpellTemplateIdList.Contains(spellTemplateId)) {
+        if (!SpellbookBehavior.LearnedSpellTemplateIds.Contains(spellTemplateId)) {
             Logger.Warning("{0} Tried to unlearn spell with template ID {1} that is not known.",
                 Logger.Args(PlayerNameBehavior.GetWizardName(), spellTemplateId));
             return false;
         }
 
-        SpellbookBehavior.UnlearnSpell(spellTemplateId);
+        SpellbookBehavior.RemoveSpellFromBook(spellTemplateId);
 
         // Persistent save.
-        WizardCollection.RemoveCharacterSpell(this, spellTemplateId);
+        WizardCollection.UnlearnSpell(this, spellTemplateId);
 
         return true;
     }
 
-    public void AddSpell(Spell spell) {
-        SpellbookBehavior.AddSpell(spell);
+    public void AddTemporarySpell(Spell spell) {
+        SpellbookBehavior.AddTemporarySpellToBook(spell);
     }
 
-    public void RemoveSpell(uint spellTemplateId) {
-        SpellbookBehavior.RemoveSpell(spellTemplateId);
+    public void RemoveTemporarySpell(uint spellTemplateId) {
+        SpellbookBehavior.RemoveTemporarySpellFromBook(spellTemplateId);
     }
 
-    internal void RefurbishBehaviors() {
-        GameStats.Level = MagicSchoolBehavior.Level;
-        GameStats.MagicSchool = MagicSchoolBehavior.MagicSchool;
-        SpellbookBehavior.Initialize();
+    public bool AddSpellToDeck(uint spellTemplateId, ulong deckId) {
+        // Find the actual item in the inventory.
+        var item = InventoryBehavior.Items.FirstOrDefault(i => i.m_globalID == deckId);
+        if (item is null) {
+            // The item may be equipped instead.
+            item = EquipmentBehavior.EquippedItems.FirstOrDefault(i => i.m_globalID == deckId);
+            if (item is null) {
+                Logger.Warning("Could not find item with global ID {0} in player {1}'s inventory or equipment.",
+                    Logger.Args(deckId, PlayerNameBehavior.GetWizardName()));
+                return false;
+            }
+
+            // If the item is equipped, we'll also want to update the spellbook behavior.
+            var addedSuccess = SpellbookBehavior.AddSpellToDeck(spellTemplateId);
+            if (!addedSuccess) {
+                Logger.Debug("Could not add spell with template ID {0} to player {1}'s deck.",
+                    Logger.Args(spellTemplateId, PlayerNameBehavior.GetWizardName()));
+                return false;
+            }
+        }
+
+        // Regardless, we'll want to add this spell to the deck item's DeckBehavior.
+        if (!CoreObjectFactory.FindBehaviorInstance<DeckBehavior>(item, out var deckBehavior)) {
+            Logger.Error("Could not find deck behavior for item with global ID {0}.", Logger.Args(spellTemplateId));
+            return false;
+        }
+
+        var spellList = deckBehavior.m_spellList ?? new List<SpellData>();
+        var spellDeckData = spellList.FirstOrDefault(s => s.m_templateID == spellTemplateId);
+        if (spellDeckData is null) {
+            // It may not be included yet. We'll add another entry.
+            var newSpellDeckData = new SpellData {
+                m_templateID = spellTemplateId,
+                m_quantity = 1
+            };
+            spellList.Add(newSpellDeckData);
+        }
+        else {
+            // Otherwise, we'll just increment the quantity.
+            spellDeckData.m_quantity++;
+        }
+
+        // Persistent save.
+        WizardItemCollection.AddSpellToDeck(deckId, spellTemplateId);
+
+        return true;
+    }
+
+    public bool RemoveSpellFromDeck(uint spellTemplateId, ulong deckId) {
+        // Find the actual item in the inventory.
+        var item = InventoryBehavior.Items.FirstOrDefault(i => i.m_globalID == deckId);
+        if (item is null) {
+            // The item may be equipped instead.
+            item = EquipmentBehavior.EquippedItems.FirstOrDefault(i => i.m_globalID == deckId);
+            if (item is null) {
+                Logger.Warning("Could not find item with global ID {0} in player {1}'s inventory or equipment.",
+                    Logger.Args(deckId, PlayerNameBehavior.GetWizardName()));
+                return false;
+            }
+
+            // If the item is equipped, we'll also want to update the spellbook behavior.
+            var removedSuccess = SpellbookBehavior.RemoveSpellFromDeck(spellTemplateId);
+            if (!removedSuccess) {
+                Logger.Warning("Could not remove spell with template ID {0} from player {1}'s deck.",
+                    Logger.Args(spellTemplateId, PlayerNameBehavior.GetWizardName()));
+                return false;
+            }
+        }
+
+        // Regardless, we'll want to remove this spell from the deck item's DeckBehavior.
+        if (!CoreObjectFactory.FindBehaviorInstance<DeckBehavior>(item, out var deckBehavior)) {
+            Logger.Error("Could not find deck behavior for item with global ID {0}.", Logger.Args(spellTemplateId));
+            return false;
+        }
+
+        var spellList = deckBehavior.m_spellList ?? new List<SpellData>();
+        var spellDeckData = spellList.FirstOrDefault(s => s.m_templateID == spellTemplateId);
+        if (spellDeckData is null) {
+            Logger.Warning("Could not find spell with template ID {0} in player {1}'s deck.",
+                Logger.Args(spellTemplateId, PlayerNameBehavior.GetWizardName()));
+            return false;
+        }
+
+        if (spellDeckData.m_quantity > 1) {
+            spellDeckData.m_quantity--;
+        }
+        else {
+            spellList.Remove(spellDeckData);
+        }
+
+        // Persistent save.
+        WizardItemCollection.RemoveSpellFromDeck(deckId, spellTemplateId);
+
+        return true;
+    }
+
+    internal void AfterDatabaseLoad() {
+        AfterDatabaseLoadWizardGameStats();
+        AfterDatabaseLoadSpellbookBehavior();
+    }
+
+    private void EquipMount(WizItemTemplate template, WizClientObjectItem item) {
+        var mountEquipSuccess = MountOwnerBehavior.EquipMount(template, item);
+        if (!mountEquipSuccess) {
+            Logger.Warning("Could not equip mount {0} to player {1}.", Logger.Args(template.m_objectName, PlayerNameBehavior.GetWizardName()));
+            return;
+        }
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterMount(this);
+    }
+
+    private void UnequipMount() {
+        MountOwnerBehavior.UnequipMount();
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterMount(this);
+    }
+
+    private void InformSpellbookOfNewDeck(WizItemTemplate template, ulong deckGlobalId) {
+        // The caller of this method has already equipped the deck to the player.
+        // This method just updates the spellbook behavior to reflect the new deck.
+        var deckEquipSuccess = SpellbookBehavior.EquipDeck(template);
+        if (!deckEquipSuccess) {
+            Logger.Warning("Could not equip deck {0} to player {1}.", Logger.Args(template.m_objectName, PlayerNameBehavior.GetWizardName()));
+            return;
+        }
     }
 
     private void InitializeDefaultInventory() {
@@ -394,6 +513,7 @@ public class Wizard : IDisposable {
         var itemsToAdd = new List<WizClientObjectItem>();
         _defaultItems.ForEach(templateId => {
             var cObj = (WizClientObjectItem) CoreObjectFactory.FinalizeCoreObject(templateId);
+            CoreObjectFactory.InitializeCoreObjectBehaviors(cObj, templateId);
             cObj.m_characterId = (GID) CharId;
 
             itemsToAdd.Add(cObj);
@@ -446,6 +566,45 @@ public class Wizard : IDisposable {
         SpellbookBehavior = new ServerWizSpellbookBehavior();
     }
 
+    private void AfterDatabaseLoadSpellbookBehavior() {
+        // Find the deck in our equipment.
+        var idInSlot = EquipmentBehavior.SlotList.FirstOrDefault(s => s.SlotType == EquipmentSlotType.Deck)?.ItemId;
+        if (idInSlot is null) {
+            // Normal behavior; we just don't have a deck equipped.
+            return;
+        }
+
+        // Get the actual item.
+        var deckItem = EquipmentBehavior.EquippedItems.FirstOrDefault(i => i.m_globalID == idInSlot);
+        if (deckItem is null) {
+            Logger.Error("Could not find deck item with global ID {0}.", Logger.Args(idInSlot));
+            return;
+        }
+
+        // Get the deck behavior.
+        if (!CoreObjectFactory.FindBehaviorInstance<DeckBehavior>(deckItem, out var deckBehavior)) {
+            Logger.Error("Could not find deck behavior for item with global ID {0}.", Logger.Args(idInSlot));
+            return;
+        }
+
+        // Get the template. This gives us information like the max instance count, what school the deck is, etc.
+        var deckTemplate = CoreObjectFactory.GetCoreTemplate(deckItem.m_templateID);
+        if (deckTemplate is null) {
+            Logger.Error("Could not find deck template with global ID {0}.", Logger.Args(idInSlot));
+            return;
+        }
+
+        // Get the DeckBehaviorTemplate within the deck template.
+        if (deckTemplate.m_behaviors.FirstOrDefault(b => b is DeckBehaviorTemplate) is not DeckBehaviorTemplate deckBehaviorTemplate) {
+            Logger.Error("Could not find deck behavior template within deck template with global ID {0}.", Logger.Args(idInSlot));
+            return;
+        }
+
+        // Finally, initialize the spellbook behavior with the deck behavior.
+        SpellbookBehavior.InitializeProperties(deckBehaviorTemplate);
+        SpellbookBehavior.InitializeSpells(deckBehavior);
+    }
+
     private void InitializeMountOwnerBehavior() {
         MountOwnerBehavior = new ServerMountOwnerBehavior();
     }
@@ -456,6 +615,11 @@ public class Wizard : IDisposable {
 
         GameStats.m_currentHitpoints = GameStats.m_baseHitpoints;
         GameStats.m_currentMana = GameStats.m_baseMana;
+    }
+
+    private void AfterDatabaseLoadWizardGameStats() {
+        GameStats.Level = MagicSchoolBehavior.Level;
+        GameStats.MagicSchool = MagicSchoolBehavior.MagicSchool;
     }
 
     public void Dispose() =>

@@ -54,7 +54,7 @@ internal static class CharacterEffectHelper {
                 }
 
                 foreach (var spell in spells) {
-                    wizard.AddSpell(spell);
+                    wizard.AddTemporarySpell(spell);
                 }
             }
 
@@ -119,7 +119,7 @@ internal static class CharacterEffectHelper {
                 var spellTemplateId = CoreObjectFactory.GetCoreTemplateID(spellTemplatePath);
 
                 for (var i = 0; i < provideSpellEffect.m_numSpells; i++) {
-                    wizard.RemoveSpell(spellTemplateId);
+                    wizard.RemoveTemporarySpell(spellTemplateId);
                 }
             }
         }
