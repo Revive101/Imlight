@@ -3,6 +3,7 @@
  * Proprietary and confidential.
  */
 
+using Akka.Actor;
 using Akka.Util.Internal;
 using Imlight.Common.Caches;
 using Imlight.Common.Configuration;
@@ -29,6 +30,13 @@ internal class CommandSpellbookProtocol : CommandProtocol {
             return;
         }
 
+        var spellTemplate = (SpellTemplate) CoreObjectFactory.GetCoreTemplate(spellTemplateIdUint);
+        if (spellTemplate == null) {
+            InformSenderClient("Invalid spell template ID.");
+            return;
+        }
+        var spellName = spellTemplate.m_name;
+
         var spell = SpellFactory.CreateSpellFromTemplate(spellTemplateIdUint);
         if (spell == null) {
             InformSenderClient("Invalid spell template ID.");
@@ -39,8 +47,13 @@ internal class CommandSpellbookProtocol : CommandProtocol {
             InformSenderClient("Failed to learn spell. You may already know this spell.");
         }
         else {
-            InformSenderClient("You have learned the spell.");
+            InformSenderClient($"You have learned the spell {spellName}.");
         }
+
+        var clientMsg = new WIZARD_12_PROTOCOL.MSG_ADDSPELLTOBOOK {
+            SpellID = (int) spellTemplateIdUint
+        };
+        Context.SessionActor.Tell(clientMsg);
     }
 
     [Command("unlearn")]
@@ -52,6 +65,13 @@ internal class CommandSpellbookProtocol : CommandProtocol {
             return;
         }
 
+        var spellTemplate = (SpellTemplate) CoreObjectFactory.GetCoreTemplate(spellTemplateIdUint);
+        if (spellTemplate == null) {
+            InformSenderClient("Invalid spell template ID.");
+            return;
+        }
+        var spellName = spellTemplate.m_name;
+
         var spell = SpellFactory.CreateSpellFromTemplate(spellTemplateIdUint);
         if (spell == null) {
             InformSenderClient("Invalid spell template ID.");
@@ -62,8 +82,13 @@ internal class CommandSpellbookProtocol : CommandProtocol {
             InformSenderClient("Failed to unlearn spell. You may not know this spell.");
         }
         else {
-            InformSenderClient("You have unlearned the spell.");
+            InformSenderClient($"You have unlearned the spell {spellName}.");
         }
+
+        var clientMsg = new WIZARD_12_PROTOCOL.MSG_REMOVESPELLFROMBOOK {
+            SpellID = (int) spellTemplateIdUint
+        };
+        Context.SessionActor.Tell(clientMsg);
     }
 
     [Command("add")]
@@ -81,7 +106,7 @@ internal class CommandSpellbookProtocol : CommandProtocol {
             return;
         }
 
-        Context.Character.AddSpell(spell);
+        Context.Character.AddTemporarySpell(spell);
         InformSenderClient("You have added the spell.");
     }
 
@@ -100,7 +125,7 @@ internal class CommandSpellbookProtocol : CommandProtocol {
             return;
         }
 
-        Context.Character.RemoveSpell(spellTemplateIdUint);
+        Context.Character.RemoveTemporarySpell(spellTemplateIdUint);
         InformSenderClient("You have removed the spell.");
     }
 }
