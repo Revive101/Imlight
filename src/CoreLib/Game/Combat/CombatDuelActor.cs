@@ -41,8 +41,10 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
     public CombatDuelActorSubCircle[] ActiveSubCircles => SubCircles.Where(x => x.Occupied).ToArray();
     public byte PlayerCount => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Player);
     public byte CreatureCount => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Monster);
-    public byte AlivePlayerCount => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Player && x.IsAlive);
-    public byte AliveCreatureCount => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Monster && x.IsAlive);
+    public byte AlivePlayerCount
+        => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Player && x.IsAlive && x.AddedToDuel);
+    public byte AliveCreatureCount
+        => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Monster && x.IsAlive && x.AddedToDuel);
 
     private readonly IActorRef _wizardZoneRef;
     private readonly ObjectSerializer _serializer = new ObjectSerializer().OnBehaviors(SerializerOptions.Behaviors.None);
@@ -254,7 +256,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         }
         else {
             Logger.Debug("Duel {0} | Slot {1} | Participant {2} joined",
-                Logger.Args(Duel.m_duelID, subCircle.SlotIndex,  message.ParticipantObject.m_debugName));
+                Logger.Args(Duel.m_duelID, subCircle.SlotIndex, message.ParticipantObject.m_debugName));
         }
     }
 
@@ -285,7 +287,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         var maxCreatures = baseCreatureCount + (PlayerCount - 1);
 
         var slotAvailable = (message.Team == CombatTeam.Player)
-            ? PlayerCount   < 4
+            ? PlayerCount < 4
             : CreatureCount < 4 && (CreatureCount < maxCreatures);
         var rsp = new COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLERSP { Available = slotAvailable };
         Sender.Tell(rsp);
@@ -305,33 +307,23 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
         var moveType = (CombatMoveType) message.MoveType;
 
-        // If this is a discard, we don't want to send the event to the director
-        if (moveType == CombatMoveType.Discard) {
-            var spell = caster.GetSpellFromLastHand(message.SpellSelection);
-            caster.DiscardCard(spell);
-
-            Logger.Debug("Duel {0} | Slot {1} | Discarded a card: {2}",
-                Logger.Args(Duel.m_duelID, caster.SlotIndex, spell.m_templateID.ToString() ?? "None"));
-        }
-        else if (moveType == CombatMoveType.Pass) {
-            // If the participant passes, we don't need to know what spell they were casting.
-            ActionDirector.AddCombatMove(moveType, caster, null, null);
-        }
-        else if (moveType == CombatMoveType.Spell || moveType == CombatMoveType.Attack) {
-            // Find what spell they were casting.
-            var spell = caster.GetSpellFromLastHand(message.SpellSelection);
-            if (!caster.HasPipsForSpell(spell)) {
-                throw new InvalidOperationException("The participant does not have enough pips for this spell.");
-            }
-
-            // AoE spells may give us a SpellTarget of integer cap.
-            var targetIdx = message.SpellTarget;
-            var target = SubCircles[0];
-            if (targetIdx > 0 && targetIdx < SubCircles.Length) {
-                target = SubCircles[targetIdx];
-            }
-
-            ActionDirector.AddCombatMove(moveType, caster, target, spell);
+        switch (moveType) {
+            case CombatMoveType.Discard:
+                HandleDiscardMove(caster, message.SpellSelection);
+                break;
+            case CombatMoveType.Pass:
+                HandlePassMove(caster);
+                break;
+            case CombatMoveType.Attack:
+                HandleAttackMove(caster, message.SpellSelection, message.SpellTarget);
+                break;
+            case CombatMoveType.Flee:
+                HandleFleeAction(caster);
+                break;
+            default:
+                Logger.Warning("Duel {0} | Slot {1} | Invalid combat move type: {2}",
+                    Logger.Args(Duel.m_duelID, caster.SlotIndex, moveType));
+                break;
         }
 
         // If by this point all participants have inputted their moves, we can start the next phase.
@@ -340,6 +332,47 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             // Adding a new timer will cancel the old one.
             var delay = TimeSpan.FromSeconds(1);
             Timers.StartSingleTimer(PLANNING_TIME_KEY, new COMBAT_106_PROTOCOL.MSG_PLANNINGPHASEOVER(), delay);
+        }
+    }
+
+    private void HandleDiscardMove(CombatDuelActorSubCircle caster, int spellSelection) {
+        var spell = caster.GetSpellFromLastHand((byte) spellSelection);
+        caster.DiscardCard(spell);
+
+        Logger.Debug("Duel {0} | Slot {1} | Discarded a card: {2}",
+            Logger.Args(Duel.m_duelID, caster.SlotIndex, spell.m_templateID.ToString() ?? "None"));
+    }
+
+    private void HandlePassMove(CombatDuelActorSubCircle caster) {
+        // If the participant passes, we don't need to know what spell they were casting.
+        ActionDirector.AddCombatMove(CombatMoveType.Pass, caster, null, null);
+    }
+
+    private void HandleAttackMove(CombatDuelActorSubCircle caster, int spellSelection, uint spellTarget) {
+        var spell = caster.GetSpellFromLastHand((byte) spellSelection);
+        if (!caster.HasPipsForSpell(spell)) {
+            throw new InvalidOperationException("The participant does not have enough pips for this spell.");
+        }
+
+        var targetIdx = spellTarget;
+        var target = SubCircles[0];
+        if (targetIdx > 0 && targetIdx < SubCircles.Length) {
+            target = SubCircles[targetIdx];
+        }
+
+        ActionDirector.AddCombatMove(CombatMoveType.Attack, caster, target, spell);
+    }
+
+    private void HandleFleeAction(CombatDuelActorSubCircle caster) {
+        caster.AddedToDuel = false;
+
+        // Inform the client that they've been removed from this duel.
+        var defeatMsg = new COMBAT_106_PROTOCOL.MSG_COMBATDEFEAT();
+        caster.ParticipantActor.Tell(defeatMsg);
+
+        // If no more players are left in the duel because of this, end the duel.
+        if (AlivePlayerCount == 0) {
+            EndDuel();
         }
     }
 
@@ -595,8 +628,21 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     private void CreatureWin() {
-        // todo: implement
         Logger.Debug("Duel {0} | Duel ended. Creatures win.", Logger.Args(Duel.m_duelID));
+
+        // Send combat death to all creatures anyways. This will get rid of their game object.
+        var deathMsg = new COMBAT_106_PROTOCOL.MSG_COMBATDEATH();
+        EnactActionOnSubCircles(circle => circle.ParticipantActor.Tell(deathMsg));
+
+        // Inform each player that they've been defeated.
+        var defeatMsg = new COMBAT_106_PROTOCOL.MSG_COMBATDEFEAT();
+        EnactActionOnSubCircles(circle => {
+            if (!circle.AddedToDuel) {
+                return;
+            }
+
+            circle.ParticipantActor.Tell(defeatMsg);
+        });
     }
 
     private CombatTeam DetermineFirstTeam() {

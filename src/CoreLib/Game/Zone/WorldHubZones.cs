@@ -22,11 +22,17 @@ public class WorldHubZones : RootSingleResourceSingleton<WorldHubZones>, IMemory
 
         s_worldHubZoneMap = propClass;
 
-        Logger.Information("Loaded {0} World Hub Zones", Logger.Args(s_worldHubZoneMap.m_hubZoneMapping.Count()));
+        Logger.Information("Loaded {0} world hub zones", Logger.Args(s_worldHubZoneMap.m_hubZoneMapping.Count));
     }
 
     internal static HubZoneMapping GetHubZoneMapping(string worldName) {
-        return s_worldHubZoneMap.m_hubZoneMapping.FirstOrDefault(x => x.m_world == worldName);
+        // Get the world name, which should be the first element if we split the zone name by '/'.
+        var worldNameSplits = worldName.Split('/');
+        if (worldNameSplits.Length > 1) {
+            worldName = worldNameSplits[0];
+        }
+
+        return s_worldHubZoneMap.m_hubZoneMapping.FirstOrDefault(hubMap => hubMap.m_world == worldName);
     }
 
     public void DisposeStream() => Stream.Dispose();

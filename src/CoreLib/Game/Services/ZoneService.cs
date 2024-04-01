@@ -174,6 +174,29 @@ public class ZoneService : MessageService {
         ZoneActor.Forward(message);
     }
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_SENDTOHUB))]
+    private void ReceiveBootToHub(ZONE_102_PROTOCOL.MSG_SENDTOHUB message) {
+        var wizard = GetActiveWizard();
+        var zoneName = wizard.Zone;
+
+        var worldHubMap = WorldHubZones.GetHubZoneMapping(zoneName);
+        if (worldHubMap is null) {
+            Logger.Error("Could not find world hub mapping for zone {0}", Logger.Args(zoneName));
+            return;
+        }
+
+        var destinationZoneName = worldHubMap.m_hubZone;
+        var destinationZoneLocation = worldHubMap.m_location;
+
+        var msg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER() {
+            DestinationZone = destinationZoneName,
+            DestinationLocation = destinationZoneLocation,
+            SendToClient = true
+        };
+
+        ReceiveZoneTransferRequest(msg);
+    }
+
     private void SetZone(IActorRef actorRef) {
         ZoneActor = actorRef;
     }

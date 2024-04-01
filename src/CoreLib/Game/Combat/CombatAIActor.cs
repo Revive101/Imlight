@@ -157,7 +157,7 @@ internal class CombatAIActor : ReceiveProtocolDispatcher {
         // We want to prepare.
         var msg = new COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE {
             Actor = _creatureActorRef,
-            MoveType = (byte) CombatMoveType.Spell,
+            MoveType = (byte) CombatMoveType.Attack,
             SpellSelection = 0,
             SpellTarget = 0,
         };
@@ -193,7 +193,7 @@ internal class CombatAIActor : ReceiveProtocolDispatcher {
         var castableHealingSpells = GetCastableHealingSpells(_roundHand.m_spellList);
         var msg = new COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE {
             Actor = _creatureActorRef,
-            MoveType = (byte) CombatMoveType.Spell,
+            MoveType = (byte) CombatMoveType.Attack,
             SpellSelection = 0,
             SpellTarget = 0,
         };

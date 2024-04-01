@@ -11,6 +11,7 @@ using Akka.IO;
 using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.IO;
+using Imlight.CoreLib.Game.Zone;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Misc;
@@ -42,6 +43,13 @@ public class CombatService : MessageService {
         var orientationDegrees = (float)(orientationRadians * (180 / Math.PI));
         var orientation = (byte)(orientationDegrees / 360 * 256);
         wizard.SetPersistentOrientation(orientation);
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_COMBATDEFEAT))]
+    private void ReceiveCombatDefeat(COMBAT_106_PROTOCOL.MSG_COMBATDEFEAT message) {
+        // We've fled or have been defeated in this duel. Send us back to the world hub.
+        var hubMsg = new ZONE_102_PROTOCOL.MSG_SENDTOHUB();
+        TellOtherServices(hubMsg);
     }
 
     [MessageHandler(typeof(WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATMOVE))]
