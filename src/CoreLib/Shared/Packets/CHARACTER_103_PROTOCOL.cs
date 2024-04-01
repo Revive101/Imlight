@@ -9,29 +9,25 @@ using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Shared.Packets;
 
-public class CHARACTER_103_PROTOCOL : IServerProtocol
-{
+public class CHARACTER_103_PROTOCOL : IServerProtocol {
     public byte ServiceID { get; } = 103;
     public string ProtocolType { get; } = "CHARACTER";
     public int ProtocolVersion { get; } = 1;
     public string ProtocolDescription { get; } = "Internal Character General Messages.";
 
-    public class MSG_SETACTIVEWIZARD : IServerMessage
-    {
+    public class MSG_SETACTIVEWIZARD : IServerMessage {
         public byte MessageOrder { get; } = 1;
         public byte ServiceID { get; } = 103;
 
         public Wizard Wizard;
     }
 
-    public class MSG_QUERYACTIVEWIZARD : IServerMessage
-    {
+    public class MSG_QUERYACTIVEWIZARD : IServerMessage {
         public byte MessageOrder { get; } = 2;
         public byte ServiceID { get; } = 103;
     }
 
-    public class MSG_CHARACTER : IServerMessage
-    {
+    public class MSG_CHARACTER : IServerMessage {
         public byte MessageOrder { get; } = 3;
         public byte ServiceID { get; } = 103;
 
@@ -39,8 +35,7 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol
         public TypeCache.CoreObject WizardGameObject;
     }
 
-    public class MSG_LEVELUP : IServerMessage
-    {
+    public class MSG_LEVELUP : IServerMessage {
         public byte MessageOrder { get; } = 4;
         public byte ServiceID { get; } = 103;
 
