@@ -162,7 +162,12 @@ internal class CombatEffectApplicator {
             .Where(x => x.m_effectType == SpellEffect.kSpellEffects.kModifyOutgoingDamage)
             .ToList();
 
+        var seen = new HashSet<uint>();
         foreach (var blade in blades.Where(x => x.m_sDamageType == school || x.m_sDamageType == "All")) {
+            if (!seen.Add(blade.m_spellTemplateID)) {
+                continue;
+            }
+
             var damageChange = blade.m_effectParam / 100.0f;
             damage = (int) Math.Floor(damage * (1 + damageChange));
 
@@ -177,7 +182,12 @@ internal class CombatEffectApplicator {
             .Where(x => x.m_effectType == SpellEffect.kSpellEffects.kModifyIncomingDamage)
             .ToList();
 
+        var seen = new HashSet<uint>();
         foreach (var ward in wards.Where(x => x.m_sDamageType == school || x.m_sDamageType == "All")) {
+            if (!seen.Add(ward.m_spellTemplateID)) {
+                continue;
+            }
+
             var damageChange = ward.m_effectParam / 100.0f;
             damage = (int) Math.Floor(damage * (1 + damageChange));
 
@@ -193,7 +203,12 @@ internal class CombatEffectApplicator {
             .ToList();
         var cinematicTime = 0.0f;
 
+        var seen = new HashSet<uint>();
         foreach (var ward in wards.Where(x => x.m_sDamageType == school || x.m_sDamageType == "All")) {
+            if (!seen.Add(ward.m_spellTemplateID)) {
+                continue;
+            }
+
             cinematicTime += HANGING_EFFECT_CONSUME_TIME;
         }
 
@@ -206,7 +221,12 @@ internal class CombatEffectApplicator {
             .ToList();
         var cinematicTime = 0.0f;
 
+        var seen = new HashSet<uint>();
         foreach (var ward in wards.Where(x => x.m_sDamageType == school || x.m_sDamageType == "All")) {
+            if (!seen.Add(ward.m_spellTemplateID)) {
+                continue;
+            }
+
             cinematicTime += HANGING_EFFECT_CONSUME_TIME;
         }
 
