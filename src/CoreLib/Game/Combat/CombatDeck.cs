@@ -1,0 +1,97 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
+using Imlight.CoreLib.Game.Spells;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using static Imlight.Common.Caches.TypeCache;
+
+namespace Imlight.CoreLib.Game.Combat;
+
+internal class CombatDeck {
+    internal List<Spell> LastGivenHand { get; private set; }
+    internal int TotalCardCount => (int) _spellData.Sum(s => s.m_quantity);
+    internal int RemainingCardCount => (int) _usedUpSpellData.Sum(s => s.m_quantity);
+
+    private readonly List<SpellData> _spellData;
+    private readonly byte _handSize;
+    private readonly List<SpellData> _usedUpSpellData;
+    private readonly List<Spell> _discardedCards;
+
+    // ctor
+    internal CombatDeck(List<SpellData> spellDatas, byte handSize) {
+        this._spellData = spellDatas;
+        this._handSize = handSize;
+        this.LastGivenHand = new List<Spell>();
+        this._discardedCards = new List<Spell>();
+
+        // Clone the spell data into used up spell data.
+        this._usedUpSpellData = new List<SpellData>();
+        foreach (var originalSpellData in _spellData) {
+            _usedUpSpellData.Add(new SpellData() {
+                m_templateID = originalSpellData.m_templateID,
+                m_quantity = originalSpellData.m_quantity
+            });
+        }
+    }
+
+    internal Hand GetHand() {
+        var newCards = new List<Spell>();
+        var random = new Random();
+
+        // Discard the cards that were used up or discarded.
+        foreach (var spell in _discardedCards) {
+            LastGivenHand.Remove(spell);
+
+            var spellData = _usedUpSpellData.FirstOrDefault(s => s.m_templateID == spell.m_templateID);
+            if (spellData == null) {
+                // The spell may not be in this list if the previous hand used them all.
+                continue;
+            }
+
+            // Decrement the quantity of the spell, or remove it if the quantity is 0
+            if (spellData.m_quantity - 1 <= 0) {
+                _usedUpSpellData.Remove(spellData);
+            }
+            else {
+                spellData.m_quantity--;
+            }
+        }
+
+        // Refill the hand with new cards
+        var cardsToRefill = _handSize - LastGivenHand.Count;
+        for (var i = 0; i < cardsToRefill; i++) {
+            if (RemainingCardCount <= 0) {
+                break; // No more spells available
+            }
+
+            var randomIndex = random.Next(0, _usedUpSpellData.Count);
+            var spellData = _usedUpSpellData[randomIndex];
+            var spellTemplateId = spellData.m_templateID;
+
+            // Create a new spell from the template id
+            var spell = SpellFactory.CreateSpellFromTemplate(spellTemplateId)
+                ?? throw new InvalidOperationException("Spell could not be created from template id.");
+            newCards.Add(spell);
+
+            // Decrement the quantity of the spell, or remove it if the quantity is 0
+            if (spellData.m_quantity - 1 <= 0) {
+                _usedUpSpellData.RemoveAt(randomIndex);
+            }
+            else {
+                spellData.m_quantity--;
+            }
+        }
+
+        // Update the LastGivenHand
+        LastGivenHand.AddRange(newCards);
+
+        return new Hand() { m_spellList = LastGivenHand };
+    }
+
+    internal void Discard(Spell spell) => _discardedCards.Add(spell);
+}
+

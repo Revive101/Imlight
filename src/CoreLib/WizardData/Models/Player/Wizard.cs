@@ -393,6 +393,9 @@ public class Wizard : IDisposable {
                     Logger.Args(spellTemplateId, PlayerNameBehavior.GetWizardName()));
                 return false;
             }
+
+            WizardItemCollection.AddSpellToDeck(deckId, spellTemplateId);
+            return true;
         }
 
         // Regardless, we'll want to add this spell to the deck item's DeckBehavior.
@@ -441,6 +444,9 @@ public class Wizard : IDisposable {
                     Logger.Args(spellTemplateId, PlayerNameBehavior.GetWizardName()));
                 return false;
             }
+
+            WizardItemCollection.RemoveSpellFromDeck(deckId, spellTemplateId);
+            return true;
         }
 
         // Regardless, we'll want to remove this spell from the deck item's DeckBehavior.
@@ -496,7 +502,21 @@ public class Wizard : IDisposable {
     private void InformSpellbookOfNewDeck(WizItemTemplate template, ulong deckGlobalId) {
         // The caller of this method has already equipped the deck to the player.
         // This method just updates the spellbook behavior to reflect the new deck.
-        var deckEquipSuccess = SpellbookBehavior.EquipDeck(template);
+
+        // Get the actual item from equipment.
+        var deckItem = EquipmentBehavior.EquippedItems.FirstOrDefault(i => i.m_globalID == deckGlobalId);
+        if (deckItem is null) {
+            Logger.Error("Could not find deck item with global ID {0}.", Logger.Args(deckGlobalId));
+            return;
+        }
+
+        // Get the deck behavior.
+        if (!CoreObjectFactory.FindBehaviorInstance<DeckBehavior>(deckItem, out var deckBehavior)) {
+            Logger.Error("Could not find deck behavior for item with global ID {0}.", Logger.Args(deckGlobalId));
+            return;
+        }
+
+        var deckEquipSuccess = SpellbookBehavior.EquipDeck(template, deckBehavior);
         if (!deckEquipSuccess) {
             Logger.Warning("Could not equip deck {0} to player {1}.", Logger.Args(template.m_objectName, PlayerNameBehavior.GetWizardName()));
             return;

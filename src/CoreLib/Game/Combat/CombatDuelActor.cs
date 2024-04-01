@@ -303,29 +303,32 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             return;
         }
 
-        // Find which sub circle they were targeting.
-        if (message.SpellTarget < 0 || message.SpellTarget > SubCircles.Length) {
-            // Regularly produced by the client when they cancel a spell.
-            return;
-        }
-
-        var targetIdx = message.SpellTarget;
-        var target = SubCircles[targetIdx];
-
         var moveType = (CombatMoveType) message.MoveType;
 
         // If this is a discard, we don't want to send the event to the director
         if (moveType == CombatMoveType.Discard) {
-            var discarded = caster.DiscardCard(message.SpellSelection);
+            var spell = caster.GetSpellFromLastHand(message.SpellSelection);
+            caster.DiscardCard(spell);
 
             Logger.Debug("Duel {0} | Slot {1} | Discarded a card: {2}",
-                Logger.Args(Duel.m_duelID, caster.SlotIndex, discarded?.m_templateID.ToString() ?? "None"));
+                Logger.Args(Duel.m_duelID, caster.SlotIndex, spell.m_templateID.ToString() ?? "None"));
         }
-        else {
+        else if (moveType == CombatMoveType.Pass) {
+            // If the participant passes, we don't need to know what spell they were casting.
+            ActionDirector.AddCombatMove(moveType, caster, null, null);
+        }
+        else if (moveType == CombatMoveType.Spell || moveType == CombatMoveType.Attack) {
             // Find what spell they were casting.
             var spell = caster.GetSpellFromLastHand(message.SpellSelection);
             if (!caster.HasPipsForSpell(spell)) {
                 throw new InvalidOperationException("The participant does not have enough pips for this spell.");
+            }
+
+            // AoE spells may give us a SpellTarget of integer cap.
+            var targetIdx = message.SpellTarget;
+            var target = SubCircles[0];
+            if (targetIdx > 0 && targetIdx < SubCircles.Length) {
+                target = SubCircles[targetIdx];
             }
 
             ActionDirector.AddCombatMove(moveType, caster, target, spell);

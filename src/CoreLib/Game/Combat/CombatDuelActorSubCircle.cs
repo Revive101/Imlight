@@ -120,13 +120,6 @@ public class CombatDuelActorSubCircle {
         return newHand;
     }
 
-    internal Spell DiscardCard(byte index) {
-        var spell = CombatDeck.LastGivenHand[index];
-        CombatDeck.Discard(index);
-
-        return spell;
-    }
-
     internal void DiscardCard(Spell spell) {
         CombatDeck.Discard(spell);
     }
@@ -227,13 +220,23 @@ public class CombatDuelActorSubCircle {
         // into one list to create the combat hand.
         var allSpells = new List<SpellData>();
         allSpells.AddRange(wizard.SpellbookBehavior.SpellList);
+
+        // Count temporary spells as 1 quantity.
+        var temporarySpells = new List<SpellData>();
         foreach (var tempSpell in wizard.SpellbookBehavior.TemporarySpells) {
-            var spellData = new SpellData {
-                m_templateID = tempSpell.m_templateID,
-                m_quantity = 1
-            };
-            allSpells.Add(spellData);
+            // If the spell data already exists, increase the quantity.. otherwise add it.
+            var existingSpell = temporarySpells.Find(s => s.m_templateID == tempSpell.m_templateID);
+            if (existingSpell is not null) {
+                existingSpell.m_quantity++;
+            }
+            else {
+                temporarySpells.Add(new SpellData {
+                    m_templateID = tempSpell.m_templateID,
+                    m_quantity = 1
+                });
+            }
         }
+        allSpells.AddRange(temporarySpells);
 
         CombatDeck = new CombatDeck(allSpells, PLAYER_HAND_SIZE);
 

@@ -74,8 +74,12 @@ public class CombatActionDirector {
         }
 
         // Determine if the spell fizzles.
-        var spellHits = spell is not null && SpellHits(caster, spell);
-        var spellTemplate = (SpellTemplate) CoreObjectFactory.GetCoreTemplate(spell.m_templateID);
+        var spellHits = false;
+        SpellTemplate spellTemplate = null;
+        if (spell is not null) {
+            spellHits = spell is not null && SpellHits(caster, spell);
+            spellTemplate = (SpellTemplate) CoreObjectFactory.GetCoreTemplate(spell.m_templateID);
+        }
 
         var queuedAction = new QueuedCombatAction {
             SpellCaster = caster,
@@ -90,11 +94,8 @@ public class CombatActionDirector {
     }
 
     public bool HaveAllParticipantsEnqueuedActions(int participantCount) {
-        var enqueuedPlayers = _queuedCombatActions.Select(action => action.SpellCaster)
-                                                  .Where(subCircle => subCircle.AddedToDuel)
-                                                  .Distinct();
-
-        return enqueuedPlayers.Count() == participantCount;
+        var enqueuedPlayers = _subCircles.Where(circle => circle.AddedToDuel && circle.IsAlive);
+        return enqueuedPlayers.Count() == _queuedCombatActions.Count;
     }
 
     private void EnsureAllCastersHaveQueuedActions() {
@@ -143,6 +144,17 @@ public class CombatActionDirector {
         var cinematicTime = 0.0f;
 
         foreach (var action in _queuedCombatActions) {
+            if (action.TargetSubcircle is null) {
+                combatActionList.m_actionList.Add(new CombatAction {
+                    m_spellCaster = action.SpellCaster.SlotIndex,
+                    m_targetSubcircleList = new List<int> { action.SpellCaster.SlotIndex },
+                    m_showCast = true,
+                    m_spellHits = (char) 0,
+                    m_spell = null,
+                });
+                continue;
+            }
+
             // If the caster or target is dead, skip this action.
             if (!action.SpellCaster.IsAlive || !action.TargetSubcircle.IsAlive) {
                 Logger.Debug("Duel {0} | Slot {1} | Caster or target is dead. Skipping action.",
@@ -185,6 +197,11 @@ public class CombatActionDirector {
 
         if (action.Spell is null) {
             return SPELL_PASS_TIME;
+        }
+
+        // If this spell action us successful, remove it from the combat deck of the caster.
+        if (action.PredeterminedSuccess) {
+            action.SpellCaster.DiscardCard(action.Spell);
         }
 
         // Remove the caster's pips. If the spell is mastered, power pips count as 2 pips.
@@ -250,9 +267,11 @@ public class CombatActionDirector {
             return;
         }
 
-        var targetOrSelf = target.SlotIndex == caster.SlotIndex ? "self" : target.SlotIndex.ToString();
-        Logger.Debug("Duel {0} | Slot {1} | Queued spell {2} towards target {3}",
-            Logger.Args(_duel.m_duelID, caster.SlotIndex, spell.m_templateID, targetOrSelf));
+        var targetOrSelf = target is null
+            ? "null" : (target.SlotIndex == caster.SlotIndex ? "self" : target.SlotIndex.ToString());
+        var spellOrPass = spell is null ? "pass" : spell.m_templateID.ToString();
+        Logger.Debug("Duel {0} | Slot {1} | Caster is casting spell {2} against target {3}",
+            Logger.Args(_duel.m_duelID, caster.SlotIndex, spellOrPass, targetOrSelf));
     }
 
     private bool SpellHits(CombatDuelActorSubCircle caster, Spell spell) {

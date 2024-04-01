@@ -38,18 +38,20 @@ public class ServerWizSpellbookBehavior : ServerSpellbookBehavior {
         base.SpellList = deckBehavior.m_spellList;
     }
 
-    public bool EquipDeck(WizItemTemplate template) {
+    public bool EquipDeck(WizItemTemplate template, DeckBehavior deckBehavior) {
         if (template is null) {
             return false;
         }
 
         // Search for a deck behavior template within the item template.
         foreach (var behaviorTemplate in template.m_behaviors) {
-            if (behaviorTemplate is not DeckBehaviorTemplate deckBehavior) {
+            if (behaviorTemplate is not DeckBehaviorTemplate deckBehaviorTemplate) {
                 continue;
             }
 
-            SetPropertiesFromDeckTemplate(deckBehavior);
+            // We've found what we're looking for. Set the deck behavior properties.
+            SetPropertiesFromDeckTemplate(deckBehaviorTemplate);
+            base.SpellList = deckBehavior.m_spellList;
 
             return true;
         }
@@ -107,10 +109,11 @@ public class ServerWizSpellbookBehavior : ServerSpellbookBehavior {
             return false;
         }
 
-        if (spellData.m_quantity > 1) {
-            spellData.m_quantity--;
-        } else {
+        // Decrease the quantity, if we can. Otherwise, remove the spell data.
+        if (spellData.m_quantity - 1 <= 0) {
             SpellList.Remove(spellData);
+        } else {
+            spellData.m_quantity--;
         }
 
         return true;

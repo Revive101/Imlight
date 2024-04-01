@@ -77,13 +77,16 @@ public class WizardZoneObjectSupervisor : ReceiveProtocolDispatcher {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDCREATURE))]
     private void ReceiveAddCreature(ZONE_102_PROTOCOL.MSG_ADDCREATURE message) {
-        var statusCheckMsg = new ZONE_102_PROTOCOL.MSG_OBJECTSTATUSCHECK();
-        var statusCheckRsp = message.ObjectIdentity.
-            Ask<ZONE_102_PROTOCOL.MSG_OBJECTSTATUSCHECKRSP>(statusCheckMsg, _statusCheckTimeout)
-            .Result;
+        try {
+            var statusCheckMsg = new ZONE_102_PROTOCOL.MSG_OBJECTSTATUSCHECK();
+            var statusCheckRsp = message.ObjectIdentity
+                .Ask<ZONE_102_PROTOCOL.MSG_OBJECTSTATUSCHECKRSP>(statusCheckMsg, _statusCheckTimeout)
+                .Result;
 
-        // Creatures are not child actors of this supervisor, but instead are children of the path they belong to.
-        _objects.Add(message.ObjectIdentity, statusCheckRsp.ZoneObject);
+            // Creatures are not child actors of this supervisor, but instead are children of the path they belong to.
+            _objects.Add(message.ObjectIdentity, statusCheckRsp.ZoneObject);
+        }
+        catch  { }
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST))]
