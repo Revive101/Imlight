@@ -19,7 +19,7 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Game.Commands.Protocols;
 
 internal class CommandSpellbookProtocol : CommandProtocol {
-    internal override string Group { get; set; } = "deck";
+    internal override string Group { get; set; } = "spellbook";
 
     [Command("learn")]
     [AuthRequired(AuthLevel.QualityAssurance)]
