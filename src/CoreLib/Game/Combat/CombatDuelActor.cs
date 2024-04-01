@@ -223,8 +223,8 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             }
         });
 
-        var playersWin = HavePlayersWon();
-        var creaturesWin = HaveCreaturesWon();
+        var playersWin = AliveCreatureCount <= 0;
+        var creaturesWin = AlivePlayerCount <= 0;
         if (!playersWin && !creaturesWin) {
             // Continue. Start a new round.
             Self.Tell(new COMBAT_106_PROTOCOL.MSG_NEWROUND());
@@ -369,6 +369,9 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         // Inform the client that they've been removed from this duel.
         var defeatMsg = new COMBAT_106_PROTOCOL.MSG_COMBATDEFEAT();
         caster.ParticipantActor.Tell(defeatMsg);
+
+        Logger.Debug("Duel {0} | Slot {1} | Participant fled",
+            Logger.Args(Duel.m_duelID, caster.SlotIndex));
 
         // If no more players are left in the duel because of this, end the duel.
         if (AlivePlayerCount == 0) {
@@ -566,8 +569,8 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
     private void EndDuel() {
         // The duel has ended. Inform the clients of the result.
-        var playersWin = HavePlayersWon();
-        var creaturesWin = HaveCreaturesWon();
+        var playersWin = AliveCreatureCount <= 0;
+        var creaturesWin = AlivePlayerCount <= 0;
 
         // Broadcast to the zone of the result.
         var combatMatchResult = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATMATCHRESULT {
@@ -772,16 +775,6 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         //Duel.m_flatParticipantList.Add(combatParticipant);
 
         return true;
-    }
-
-    private bool HavePlayersWon() {
-        var creaturesAlive = SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Monster && x.IsAlive);
-        return creaturesAlive <= 0;
-    }
-
-    private bool HaveCreaturesWon() {
-        var playersAlive = SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Player && x.IsAlive);
-        return playersAlive <= 0;
     }
 
     private byte GetUpFirstSigilSlot() {
