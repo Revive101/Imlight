@@ -466,7 +466,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         EnactActionOnSubCircles(circle => {
             var participantStats = circle.ParticipantGameStats;
             _serializer.OnPropertyMask(_combatParticipantStatFlags);
-            var serializedStats = _serializer.Serialize(participantStats);
+            var serializedStats = _serializer.Serialize(participantStats.GetCombatGameStats());
             var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATSTATS {
                 DuelID = SigilId,
                 PartID = circle.ParticipantObject.m_globalID,

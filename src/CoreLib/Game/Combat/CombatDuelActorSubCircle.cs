@@ -36,7 +36,7 @@ public class CombatDuelActorSubCircle {
     internal float WorldRotation { get; set; }
     internal IActorRef ParticipantActor { get; private set; }
     internal CoreObject ParticipantObject { get; private set; }
-    internal WizGameStats ParticipantGameStats { get; private set; }
+    internal ServerWizGameStats ParticipantGameStats { get; private set; }
     internal CombatParticipant CombatParticipant { get; private set; }
     internal bool AddedToDuel { get; set;}
     internal readonly List<SpellEffect> HangingEffects = new();
@@ -214,7 +214,7 @@ public class CombatDuelActorSubCircle {
         // Dyanmic symbols start at 9 for players.
         var dynamicSymbol = (DynamicSigilSymbol) (SlotIndex + 9);
 
-        ParticipantGameStats = wizard.GameStats.GetCombatGameStats();
+        ParticipantGameStats = wizard.GameStats;
 
         // Collage spells the player has learned and temporary spells (perhaps from equipment)
         // into one list to create the combat hand.
@@ -247,14 +247,17 @@ public class CombatDuelActorSubCircle {
             m_isMonster = 0,
             m_teamID = 0,
             m_primaryMagicSchoolID = (int) wizard.MagicSchoolBehavior.MagicSchool,
-            m_pipCount = new() { m_powerPips = 0, m_genericPips = 0 },
+            m_pipCount = new() {
+                m_powerPips = ParticipantGameStats.m_startingPowerPips,
+                m_genericPips = ParticipantGameStats.m_startingPips
+            },
             m_pipRoundRates = new(),
             m_originalTeam = 0,
             m_maxHandSize = PLAYER_HAND_SIZE,
             m_playerHealth = ParticipantGameStats.m_currentHitpoints,
             m_maxPlayerHealth = ParticipantGameStats.m_baseHitpoints,
             m_myTeamTurn = _duelActor.Duel.m_firstTeamToAct == 0,
-            m_pGameStats = ParticipantGameStats,
+            m_pGameStats = ParticipantGameStats.GetCombatGameStats(),
             m_pPlayDeck = new PlayDeck(),
             m_subcircle = SlotIndex,
             m_dynamicSymbol = dynamicSymbol,
@@ -287,12 +290,15 @@ public class CombatDuelActorSubCircle {
             m_originalTeam = 1,
             m_maxHandSize = PLAYER_HAND_SIZE,
             m_primaryMagicSchoolID = (int) creatureStats.MagicSchool,
-            m_pipCount = new() { m_powerPips = 0, m_genericPips = 0 },
+            m_pipCount = new() {
+                m_powerPips = ParticipantGameStats.m_startingPowerPips,
+                m_genericPips = ParticipantGameStats.m_startingPips
+            },
             m_pipRoundRates = new(),
             m_playerHealth = creatureStats.GameStats.m_currentHitpoints,
             m_maxPlayerHealth = creatureStats.GameStats.m_baseHitpoints,
             m_myTeamTurn = _duelActor.Duel.m_firstTeamToAct == 1,
-            m_pGameStats = creatureStats.GameStats,
+            m_pGameStats = creatureStats.GameStats.GetCombatGameStats(),
             m_mobLevel = creatureStats.CombatLevel,
 
             m_subcircle = SlotIndex,

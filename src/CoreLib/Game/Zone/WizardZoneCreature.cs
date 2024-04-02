@@ -195,7 +195,7 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
         }
 
         var msg = new COMBAT_106_PROTOCOL.MSG_CREATURESTATS {
-            GameStats = this.GameStats.GetCombatGameStats(),
+            GameStats = this.GameStats,
             CombatIntelligence = _npcBehavior.Intelligence,
             CombatSelfishFactor = _npcBehavior.SelfishFactor,
             CombatAggressionFactor = _npcBehavior.AggressiveFactor,

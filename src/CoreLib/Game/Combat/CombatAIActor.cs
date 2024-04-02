@@ -32,7 +32,7 @@ internal class CombatAIActor : ReceiveProtocolDispatcher {
     private readonly IActorRef _creatureActorRef;
     private readonly CombatDuelActor _duelActor;
     private readonly CombatDuelActorSubCircle _mySubcircle;
-    private readonly WizGameStats _stats;
+    private readonly ServerWizGameStats _stats;
     private readonly MagicSchool _magicSchool;
     private readonly int _level;
     private readonly Random _random = new();
