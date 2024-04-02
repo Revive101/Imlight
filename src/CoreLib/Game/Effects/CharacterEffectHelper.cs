@@ -41,12 +41,9 @@ internal static class CharacterEffectHelper {
             }
 
             gameEffect.m_internalID = wizard.GameEffects.Count;
+            var effect = AddGameEffectToStats(wizard.GameStats, effectInfo);
 
-            if (gameEffect is WizStatisticEffect canonicalEffect) {
-                var canonicalEffectName = CanonicalStatEffects.GetEffectTemplate(effectInfo.m_effectName).m_effectName;
-                AddGameEffectToStats(wizard.GameStats, canonicalEffectName, canonicalEffect);
-            }
-            else if (gameEffect is ProvideSpellEffect provideSpellEffect) {
+            if (gameEffect is ProvideSpellEffect provideSpellEffect) {
                 var spells = SpellFactory.CreateSpellsFromEffect(provideSpellEffect);
 
                 if (spells is null) {
@@ -72,16 +69,18 @@ internal static class CharacterEffectHelper {
     /// <param name="template">The WizItemTemplate containing the effects.</param>
     internal static void AddEffectsToGameStats(ServerWizGameStats stats, WizItemTemplate template) {
         foreach (var effectInfo in template.m_equipEffects) {
-            var gameEffect = GameEffectFactory.CreateEffectFromInfo(effectInfo, 0);
-            if (gameEffect is null) {
-                Logger.Warning("Could not create effect {0} from effect info.", Logger.Args(effectInfo.m_effectName));
-                continue;
-            }
+            AddGameEffectToStats(stats, effectInfo);
+        }
+    }
 
-            if (gameEffect is WizStatisticEffect canonicalEffect) {
-                var canonicalEffectName = CanonicalStatEffects.GetEffectTemplate(effectInfo.m_effectName).m_effectName;
-                AddGameEffectToStats(stats, canonicalEffectName, canonicalEffect);
-            }
+    /// <summary>
+    /// Removes the effects from the game stats based on the given template.
+    /// </summary>
+    /// <param name="stats">The game stats to remove the effects from.</param>
+    /// <param name="template">The template containing the effects to be removed.</param>
+    internal static void RemoveEffectsFromGameStats(ServerWizGameStats stats, WizItemTemplate template) {
+        foreach (var effectInfo in template.m_equipEffects) {
+            RemoveGameEffectFromStats(stats, effectInfo);
         }
     }
 
@@ -107,12 +106,9 @@ internal static class CharacterEffectHelper {
 
             removedEffects.Add(gameEffect);
             wizard.GameEffects.Remove(gameEffect);
+            RemoveGameEffectFromStats(wizard.GameStats, effectInfo);
 
-            if (gameEffect is WizStatisticEffect canonicalEffect) {
-                var canonicalEffectName = CanonicalStatEffects.GetEffectTemplate(effectInfo.m_effectName).m_effectName;
-                RemoveGameEffectFromStats(wizard.GameStats, canonicalEffectName, canonicalEffect);
-            }
-            else if (gameEffect is ProvideSpellEffect provideSpellEffect) {
+            if (gameEffect is ProvideSpellEffect provideSpellEffect) {
                 // This is a little confusing. We need both the template and the template ID.
                 // The template is used to create the spell, and the template ID is used to add the spell to the player's spellbook.
                 var spellTemplatePath = $"Spells/{provideSpellEffect.m_spellName}.xml";
@@ -127,13 +123,51 @@ internal static class CharacterEffectHelper {
         return removedEffects;
     }
 
+    internal static GameEffectBase AddGameEffectToStats(ServerWizGameStats stats, GameEffectInfo effectInfo) {
+        var gameEffect = GameEffectFactory.CreateEffectFromInfo(effectInfo, 0);
+        if (gameEffect is null) {
+            Logger.Warning("Could not create effect {0} from effect info.", Logger.Args(effectInfo.m_effectName));
+            return null;
+        }
+
+        if (gameEffect is WizStatisticEffect canonicalEffect) {
+            var canonicalEffectName = CanonicalStatEffects.GetEffectTemplate(effectInfo.m_effectName).m_effectName;
+            AddStatisticEffectToStats(stats, canonicalEffectName, canonicalEffect);
+        }
+        else if (gameEffect is StartingPipEffect pipEffect) {
+            stats.m_startingPips += (byte) pipEffect.m_pipsGiven;
+            stats.m_startingPowerPips += (byte) pipEffect.m_powerPipsGiven;
+        }
+
+        return gameEffect;
+    }
+
+    internal static GameEffectBase RemoveGameEffectFromStats(ServerWizGameStats stats, GameEffectInfo effectInfo) {
+        var gameEffect = GameEffectFactory.CreateEffectFromInfo(effectInfo, 0);
+        if (gameEffect is null) {
+            Logger.Warning("Could not create effect {0} from effect info.", Logger.Args(effectInfo.m_effectName));
+            return null;
+        }
+
+        if (gameEffect is WizStatisticEffect canonicalEffect) {
+            var canonicalEffectName = CanonicalStatEffects.GetEffectTemplate(effectInfo.m_effectName).m_effectName;
+            RemoveStatisticEffectFromStats(stats, canonicalEffectName, canonicalEffect);
+        }
+        else if (gameEffect is StartingPipEffect pipEffect) {
+            stats.m_startingPips -= (byte) pipEffect.m_pipsGiven;
+            stats.m_startingPowerPips -= (byte) pipEffect.m_powerPipsGiven;
+        }
+
+        return gameEffect;
+    }
+
     /// <summary>
     /// Adds a game effect to the specified game statistics.
     /// </summary>
     /// <param name="stats">The game statistics to modify.</param>
     /// <param name="effectName">The category of the game effect.</param>
     /// <param name="statistic">The specific game effect to apply.</param>
-    internal static void AddGameEffectToStats(ServerWizGameStats stats, string effectName, WizStatisticEffect statistic) {
+    internal static void AddStatisticEffectToStats(ServerWizGameStats stats, string effectName, WizStatisticEffect statistic) {
         // Apply effects that don't require a school.
         stats.m_baseHitpoints += (int) statistic.m_hitPointBonus;
         stats.m_baseMana += (int) statistic.m_manaBonus;
@@ -161,7 +195,7 @@ internal static class CharacterEffectHelper {
     /// <param name="stats">The game statistics to remove the effect from.</param>
     /// <param name="effectName">The name of the effect to remove.</param>
     /// <param name="statistic">The statistic effect to remove.</param>
-    internal static void RemoveGameEffectFromStats(ServerWizGameStats stats, string effectName, WizStatisticEffect statistic) {
+    internal static void RemoveStatisticEffectFromStats(ServerWizGameStats stats, string effectName, WizStatisticEffect statistic) {
         // Remove effects that don't require a school.
         stats.m_baseHitpoints -= (int) statistic.m_hitPointBonus;
         stats.m_baseMana -= (int) statistic.m_manaBonus;
