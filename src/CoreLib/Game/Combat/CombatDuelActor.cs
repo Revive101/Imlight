@@ -354,6 +354,10 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
     private void HandlePassMove(CombatDuelActorSubCircle caster) {
         // If the participant passes, we don't need to know what spell they were casting.
         ActionDirector.AddCombatMove(CombatMoveType.Pass, caster, null, null);
+
+        if (caster.OccupiedTeam == CombatTeam.Player) {
+            SendCombatMoveSelection(caster.ParticipantObject.m_globalID, (byte) CombatMoveType.Pass, null, 0);
+        }
     }
 
     private void HandleAttackMove(CombatDuelActorSubCircle caster, int spellSelection, uint spellTarget) {
@@ -369,6 +373,10 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         }
 
         ActionDirector.AddCombatMove(CombatMoveType.Attack, caster, target, spell);
+
+        if (caster.OccupiedTeam == CombatTeam.Player) {
+            SendCombatMoveSelection(caster.ParticipantObject.m_globalID, (byte) CombatMoveType.Attack, spell, (byte) targetIdx);
+        }
     }
 
     private void HandleFleeAction(CombatDuelActorSubCircle caster) {
@@ -573,6 +581,25 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             HealthData = buffer,
         };
         ZoneBroadcast(msg);
+    }
+
+    private void SendCombatMoveSelection(ulong participantId, byte moveType, Spell spell, byte targetIndex) {
+        // That's a lot of casting!
+        byte isItemCard = spell.m_itemCard ? (byte)1 : (byte)0;
+        byte isTreasureCard = spell.m_treasureCard ? (byte)1 : (byte)0;
+        byte isBattleCard = spell.m_battleCard ? (byte)1 : (byte)0;
+
+        var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATMOVESELECTION {
+            DuelID = SigilId,
+            ParticipantID = participantId,
+            MoveType = moveType,
+            SpellID = (int)spell.m_templateID,
+            SpellTargetIndex = targetIndex,
+            IsItemCard = isItemCard,
+            IsTreasureCard = isTreasureCard,
+            IsBattleCard = isBattleCard,
+        };
+        PlayerBroadcast(msg);
     }
 
     private void EndDuel() {
