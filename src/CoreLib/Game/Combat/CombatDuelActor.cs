@@ -584,16 +584,15 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     private void SendCombatMoveSelection(ulong participantId, byte moveType, Spell spell, byte targetIndex) {
-        // That's a lot of casting!
-        byte isItemCard = spell.m_itemCard ? (byte)1 : (byte)0;
-        byte isTreasureCard = spell.m_treasureCard ? (byte)1 : (byte)0;
-        byte isBattleCard = spell.m_battleCard ? (byte)1 : (byte)0;
+        byte isItemCard = (byte)(spell?.m_itemCard ?? false ? 1 : 0);
+        byte isTreasureCard = (byte)(spell?.m_treasureCard ?? false ? 1 : 0);
+        byte isBattleCard = (byte)(spell?.m_battleCard ?? false ? 1 : 0);
 
         var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATMOVESELECTION {
             DuelID = SigilId,
             ParticipantID = participantId,
             MoveType = moveType,
-            SpellID = (int)spell.m_templateID,
+            SpellID = (int)(spell?.m_templateID ?? 0),
             SpellTargetIndex = targetIndex,
             IsItemCard = isItemCard,
             IsTreasureCard = isTreasureCard,
@@ -606,6 +605,18 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         // The duel has ended. Inform the clients of the result.
         var playersWin = AliveAndInDuelCreatureCount <= 0;
         var creaturesWin = AliveAndInDuelPlayerCount <= 0;
+
+        // Inform any dead players that they've been defeated.
+        EnactActionOnSubCircles(circle => {
+            if (!circle.AddedToDuel) {
+                return;
+            }
+
+            if (circle.OccupiedTeam == CombatTeam.Player && !circle.IsAlive) {
+                var defeatMsg = new COMBAT_106_PROTOCOL.MSG_COMBATDEFEAT();
+                circle.ParticipantActor.Tell(defeatMsg);
+            }
+        });
 
         // Broadcast to the zone of the result.
         var combatMatchResult = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATMATCHRESULT {
