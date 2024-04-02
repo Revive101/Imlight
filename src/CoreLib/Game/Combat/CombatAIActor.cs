@@ -27,7 +27,7 @@ namespace Imlight.CoreLib.Game.Combat;
 internal class CombatAIActor : ReceiveProtocolDispatcher {
     private const float HEALING_THRESHOLD = 0.75f;
     private const float HEALING_PERCENT_CHANCE = 0.5f;
-    private const float PREPARE_PASS_CHANCE = 0.05f;
+    private const float PREPARE_PASS_CHANCE = 0.33f;
 
     private readonly IActorRef _creatureActorRef;
     private readonly CombatDuelActor _duelActor;
@@ -105,7 +105,8 @@ internal class CombatAIActor : ReceiveProtocolDispatcher {
     }
 
     private COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE DetermineTurnAction() {
-        if (_determinedAggressiveThisTurn) {
+        // If we want to be aggressive and we have something to cast, do it.
+        if (_determinedAggressiveThisTurn && GetCastableDamageSpells(_roundHand.m_spellList).Count > 0) {
             return DetermineAggressiveBehavior();
         }
         else {
@@ -138,7 +139,9 @@ internal class CombatAIActor : ReceiveProtocolDispatcher {
 
         // Are we smart enough to use our highest pip spell?
         if (_determinedSmartThisTurn) {
-            var highestPipSpell = GetHighestPipSpell(castableDamageSpells);
+            var highestPipSpell = castableDamageSpells
+                .OrderByDescending(x => x.m_pipCost.m_spellRank)
+                .FirstOrDefault();
             if (highestPipSpell is not null) {
                 msg.SpellSelection = (byte) _roundHand.m_spellList.IndexOf(highestPipSpell);
                 return msg;
@@ -183,6 +186,36 @@ internal class CombatAIActor : ReceiveProtocolDispatcher {
         if (buffSpells.Count == 0 && debuffSpells.Count == 0) {
             // If we have no buff or debuff spells, we'll just pass.
             msg.MoveType = (byte) CombatMoveType.Pass;
+            return msg;
+        }
+
+        // Flip a coin to either cast a buff or a debuff.
+        var coinFlip = _random.NextDouble();
+        if (coinFlip < 0.5 && buffSpells.Count > 0) {
+            // cast a buff.
+            var randomIdx = _random.Next(buffSpells.Count);
+            var selectedSpell = buffSpells[randomIdx];
+            msg.SpellSelection = (byte) _roundHand.m_spellList.IndexOf(selectedSpell);
+
+            // Are we selfish? If so, cast it on ourselves. Otherwise, cast it on a teammate.
+            if (_determinedSelfishThisTurn) {
+                msg.SpellTarget = (uint) _mySubcircle.SlotIndex;
+            }
+            else {
+                // Otherwise, select a random teammate.
+                var randomTeammate = _friendlySubcircles[_random.Next(_friendlySubcircles.Length)];
+                msg.SpellTarget = (byte) (randomTeammate.SlotIndex + 1);
+            }
+        }
+        else if (debuffSpells.Count > 0) {
+            // cast a debuff.
+            var randomIdx = _random.Next(debuffSpells.Count);
+            var selectedSpell = debuffSpells[randomIdx];
+            msg.SpellSelection = (byte) _roundHand.m_spellList.IndexOf(selectedSpell);
+
+            // Select our most hated enemy.
+            var targetIdx = GetMostHatedTarget();
+            msg.SpellTarget = (byte) targetIdx;
         }
 
         return msg;
@@ -200,7 +233,9 @@ internal class CombatAIActor : ReceiveProtocolDispatcher {
 
         // Determine if we're smart enough to use the highest pip healing spell.
         if (_determinedSmartThisTurn) {
-            var highestPipHealingSpell = GetHighestPipSpell(castableHealingSpells);
+            var highestPipHealingSpell = castableHealingSpells
+                .OrderByDescending(x => x.m_pipCost.m_spellRank)
+                .FirstOrDefault();
             if (highestPipHealingSpell is not null) {
                 msg.SpellSelection = (byte) _roundHand.m_spellList.IndexOf(highestPipHealingSpell);
             }
@@ -265,25 +300,6 @@ internal class CombatAIActor : ReceiveProtocolDispatcher {
     private List<Spell> GetCastableDebuffSpells(List<Spell> spells) {
         var castableSpells = GetCastableSpells(spells);
         return SpellEffectFilter.FilterSpellsByDebuff(castableSpells);
-    }
-
-    private Spell GetHighestPipSpell(List<Spell> spells) {
-        if (_roundHand is null || _roundHand.m_spellList.Count == 0) {
-            return null;
-        }
-
-        // Order the spells by pip cost, descending.
-        // Then iterate through the list and return the first spell that we have pips for.
-        var orderedSpells = _roundHand.m_spellList.OrderByDescending(x => x.m_pipCost.m_spellRank);
-        foreach (var spell in orderedSpells) {
-            if (!_mySubcircle.HasPipsForSpell(spell)) {
-                continue;
-            }
-
-            return spell;
-        }
-
-        return null;
     }
 
     private void InitiatizeHateTable() {

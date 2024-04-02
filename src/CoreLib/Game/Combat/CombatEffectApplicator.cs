@@ -107,8 +107,8 @@ internal class CombatEffectApplicator {
         var damageType = (MagicSchool) damageTypeObj;
 
         // Calculate damage increase from caster stats.
-        double damageFlatIncrease = GetFlatDamageIncrease(caster, damageType);
-        double damagePercentIncrease = GetPercentDamageIncrease(caster, damageType);
+        var damageFlatIncrease = GetFlatDamageIncrease(caster, damageType);
+        var damagePercentIncrease = GetPercentDamageIncrease(caster, damageType);
         damagePercentIncrease = Math.Min(damagePercentIncrease, DAMAGE_PERCENT_MAX);
 
         // Calculate damage changes from hanging effects.
@@ -120,8 +120,8 @@ internal class CombatEffectApplicator {
         // Apply damage to each target
         foreach (var target in targets) {
             // Calculate damage reduction from target stats
-            double damageReductionFlat = GetFlatDamageReduction(target, damageType);
-            double damageReductionPercent = GetPercentDamageReduction(target, damageType);
+            var damageReductionFlat = GetFlatDamageReduction(target, damageType);
+            var damageReductionPercent = GetPercentDamageReduction(target, damageType);
             damage = (int) Math.Floor(damage * (1 - damageReductionPercent) - damageReductionFlat);
 
             // Calculate damage changes from target hanging effects.

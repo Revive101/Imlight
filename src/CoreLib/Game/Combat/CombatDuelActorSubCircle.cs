@@ -215,6 +215,7 @@ public class CombatDuelActorSubCircle {
         var dynamicSymbol = (DynamicSigilSymbol) (SlotIndex + 9);
 
         ParticipantGameStats = wizard.GameStats;
+        var combatStats = ParticipantGameStats.GetCombatGameStats();
 
         // Collage spells the player has learned and temporary spells (perhaps from equipment)
         // into one list to create the combat hand.
@@ -257,7 +258,7 @@ public class CombatDuelActorSubCircle {
             m_playerHealth = ParticipantGameStats.m_currentHitpoints,
             m_maxPlayerHealth = ParticipantGameStats.m_baseHitpoints,
             m_myTeamTurn = _duelActor.Duel.m_firstTeamToAct == 0,
-            m_pGameStats = ParticipantGameStats.GetCombatGameStats(),
+            m_pGameStats = combatStats,
             m_pPlayDeck = new PlayDeck(),
             m_subcircle = SlotIndex,
             m_dynamicSymbol = dynamicSymbol,

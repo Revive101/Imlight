@@ -42,8 +42,16 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
     public byte PlayerCount => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Player);
     public byte CreatureCount => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Monster);
     public byte AlivePlayerCount
-        => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Player && x.IsAlive && x.AddedToDuel);
+        => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Player && x.IsAlive);
     public byte AliveCreatureCount
+        => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Monster && x.IsAlive);
+    public byte PlayersInDuel
+        => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Player && x.AddedToDuel);
+    public byte CreaturesInDuel
+        => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Monster && x.AddedToDuel);
+    public byte AliveAndInDuelPlayerCount
+        => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Player && x.IsAlive && x.AddedToDuel);
+    public byte AliveAndInDuelCreatureCount
         => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Monster && x.IsAlive && x.AddedToDuel);
 
     private readonly IActorRef _wizardZoneRef;
@@ -374,7 +382,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             Logger.Args(Duel.m_duelID, caster.SlotIndex));
 
         // If no more players are left in the duel because of this, end the duel.
-        if (AlivePlayerCount == 0) {
+        if (PlayersInDuel <= 0) {
             EndDuel();
         }
     }
@@ -569,8 +577,8 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
     private void EndDuel() {
         // The duel has ended. Inform the clients of the result.
-        var playersWin = AliveCreatureCount <= 0;
-        var creaturesWin = AlivePlayerCount <= 0;
+        var playersWin = AliveAndInDuelCreatureCount <= 0;
+        var creaturesWin = AliveAndInDuelPlayerCount <= 0;
 
         // Broadcast to the zone of the result.
         var combatMatchResult = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATMATCHRESULT {

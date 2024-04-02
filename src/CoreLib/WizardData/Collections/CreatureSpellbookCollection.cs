@@ -23,7 +23,7 @@ public static class CreatureSpellbookCollection {
     };
 
     static CreatureSpellbookCollection() {
-        s_store = PlayerDatabase.Instance.Store;
+        s_store = WorldDatabase.Instance.Store;
     }
 
     /// <summary>
