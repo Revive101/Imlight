@@ -40,6 +40,28 @@ internal class CommandModifyProtocol : CommandProtocol {
             NewLevel = (byte) (Context.Character.MagicSchoolBehavior.Level + 1)
         };
         Context.SessionActor.Tell(msg, null);
+
+        // Update the character's health
+        var stats = Context.Character.GameStats;
+        stats.m_currentHitpoints = stats.m_baseHitpoints;
+
+        var healthMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH() {
+            CharacterID = Context.CharacterObject.m_globalID,
+            NewHealth = stats.m_currentHitpoints,
+            NewHealthMax = stats.m_baseHitpoints,
+            DisplayDiff = 1,
+        };
+        Context.SessionActor.Tell(healthMessage, null);
+
+        // Update the character's mana
+        stats.m_currentMana = stats.m_baseMana;
+
+        var manaMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEMANA() {
+            Mana = stats.m_currentMana,
+            MaxMana = stats.m_baseMana,
+            DisplayDiff = 1,
+        };
+        Context.SessionActor.Tell(manaMessage, null);
     }
 
     [Command("level")]
@@ -63,6 +85,26 @@ internal class CommandModifyProtocol : CommandProtocol {
             NewLevel = levelByte
         };
         Context.SessionActor.Tell(msg, null);
+
+        // Update the character's health
+        var stats = Context.Character.GameStats;
+        var healthMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH() {
+            CharacterID = Context.CharacterObject.m_globalID,
+            NewHealth = stats.m_currentHitpoints,
+            NewHealthMax = stats.m_baseHitpoints,
+            DisplayDiff = 1,
+        };
+        Context.SessionActor.Tell(healthMessage, null);
+
+        // Update the character's mana
+        stats.m_currentMana = stats.m_baseMana;
+
+        var manaMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEMANA() {
+            Mana = stats.m_currentMana,
+            MaxMana = stats.m_baseMana,
+            DisplayDiff = 1,
+        };
+        Context.SessionActor.Tell(manaMessage, null);
     }
 
     [Command("speed")]
@@ -182,27 +224,37 @@ internal class CommandModifyProtocol : CommandProtocol {
 
         InformSenderClient($"Added {goldInt} gold.");
     }
-  
-    [Command("spell")]
+
+    [Command("maxhealth")]
     [AuthRequired(AuthLevel.QualityAssurance)]
-    private void SetSpellCommand(string action, string spellId) {
-        var convertedSpellId = Convert.ToInt32(spellId);
+    private void MaxHealthCommand() {
+        var stats = Context.Character.GameStats;
+        var maxHealth = stats.m_baseHitpoints;
 
-        switch (action) {
-            case "add":
-            case "a":
-                Context.SessionActor.Tell(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTOBOOK() {
-                    SpellID = convertedSpellId
-                }, null);
+        stats.m_currentHitpoints = maxHealth;
 
-                break;
-            case "remove":
-            case "rem":
-            case "r":
-                Context.SessionActor.Tell(new WIZARD_12_PROTOCOL.MSG_REMOVESPELLFROMBOOK() {
-                    SpellID = convertedSpellId
-                }, null);
-                break;
-        }
+        var networkMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH() {
+            CharacterID = Context.CharacterObject.m_globalID,
+            NewHealth = maxHealth,
+            NewHealthMax = maxHealth,
+            DisplayDiff = 1,
+        };
+        Context.SessionActor.Tell(networkMessage, null);
+    }
+
+    [Command("maxmana")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void MaxManaCommand() {
+        var stats = Context.Character.GameStats;
+        var maxMana = stats.m_baseMana;
+
+        stats.m_currentMana = maxMana;
+
+        var networkMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEMANA() {
+            Mana = maxMana,
+            MaxMana = maxMana,
+            DisplayDiff = 1,
+        };
+        Context.SessionActor.Tell(networkMessage, null);
     }
 }
