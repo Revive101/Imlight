@@ -226,6 +226,95 @@ internal class CommandModifyProtocol : CommandProtocol {
     }
 
     [Command("maxhealth")]
+    [Alias("maxhp")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void SetMaxHealthCommand(string health) {
+        // Try to parse the health.
+        if (!int.TryParse(health, out var healthInt)) {
+            InformSenderClient("Invalid maximum health amount.");
+            return;
+        }
+
+        Context.Character.GameStats.m_baseHitpoints = healthInt;
+
+        var networkMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH() {
+            CharacterID = Context.CharacterObject.m_globalID,
+            NewHealth = Context.Character.GameStats.m_currentHitpoints,
+            NewHealthMax = healthInt,
+            DisplayDiff = 1,
+        };
+        Context.SessionActor.Tell(networkMessage, null);
+
+        InformSenderClient($"Set max health to {healthInt}.");
+    }
+
+    [Command("maxmana")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void SetMaxManaCommand(string mana) {
+        // Try to parse the mana.
+        if (!int.TryParse(mana, out var manaInt)) {
+            InformSenderClient("Invalid maximum mana amount.");
+            return;
+        }
+
+        Context.Character.GameStats.m_baseMana = manaInt;
+
+        var networkMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEMANA() {
+            Mana = Context.Character.GameStats.m_currentMana,
+            MaxMana = manaInt,
+            DisplayDiff = 1,
+        };
+        Context.SessionActor.Tell(networkMessage, null);
+
+        InformSenderClient($"Set max mana to {manaInt}.");
+    }
+
+    [Command("currenthealth")]
+    [Alias("currenthp")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void SetCurrentHealthCommand(string health) {
+        // Try to parse the health.
+        if (!int.TryParse(health, out var healthInt)) {
+            InformSenderClient("Invalid current health amount.");
+            return;
+        }
+
+        Context.Character.GameStats.m_currentHitpoints = Math.Min(healthInt, Context.Character.GameStats.m_baseHitpoints);
+
+        var networkMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH() {
+            CharacterID = Context.CharacterObject.m_globalID,
+            NewHealth = healthInt,
+            NewHealthMax = Context.Character.GameStats.m_baseHitpoints,
+            DisplayDiff = 1,
+        };
+        Context.SessionActor.Tell(networkMessage, null);
+
+        InformSenderClient($"Set current health to {healthInt}.");
+    }
+
+    [Command("currentmana")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void SetCurrentManaCommand(string mana) {
+        // Try to parse the mana.
+        if (!int.TryParse(mana, out var manaInt)) {
+            InformSenderClient("Invalid current mana amount.");
+            return;
+        }
+
+        Context.Character.GameStats.m_currentMana = Math.Min(manaInt, Context.Character.GameStats.m_baseMana);
+
+        var networkMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEMANA() {
+            Mana = manaInt,
+            MaxMana = Context.Character.GameStats.m_baseMana,
+            DisplayDiff = 1,
+        };
+        Context.SessionActor.Tell(networkMessage, null);
+
+        InformSenderClient($"Set current mana to {manaInt}.");
+    }
+
+    [Command("refillhealth")]
+    [Alias("refillhp", "heal")]
     [AuthRequired(AuthLevel.QualityAssurance)]
     private void MaxHealthCommand() {
         var stats = Context.Character.GameStats;
@@ -242,7 +331,7 @@ internal class CommandModifyProtocol : CommandProtocol {
         Context.SessionActor.Tell(networkMessage, null);
     }
 
-    [Command("maxmana")]
+    [Command("refillmana")]
     [AuthRequired(AuthLevel.QualityAssurance)]
     private void MaxManaCommand() {
         var stats = Context.Character.GameStats;
