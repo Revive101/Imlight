@@ -9,6 +9,7 @@ using Imlight.Common.IO;
 using Imlight.CoreLib.Shared.Networking;
 using static Imlight.Common.Caches.TypeCache;
 using Imlight.CoreLib.WizardData.Models.Player;
+using Imlight.Common.MessageLayer;
 
 namespace Imlight.CoreLib.Shared.Packets;
 
@@ -212,5 +213,12 @@ public sealed class SERVER_100_PROTOCOL : IServerProtocol
         public byte ServiceID { get; } = 100;
 
         public ulong AccountID;
+    }
+
+    public class MSG_RECEIVEDPACKET : IServerMessage {
+        public byte MessageOrder { get; } = 23;
+        public byte ServiceID { get; } = 100;
+
+        public IMessage Packet;
     }
 }

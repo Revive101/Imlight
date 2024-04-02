@@ -13,12 +13,9 @@ using Imlight.CoreLib.Shared.Services;
 namespace Imlight.CoreLib.Game;
 
 public class GameServiceFactory : ServiceFactory {
-    protected override HashSet<Type> UnloadedServiceTypes { get; set; } = new HashSet<Type>()
+    protected override HashSet<Type> ServiceTypes { get; set; } = new HashSet<Type>()
     {
         typeof(ControlService),
-    };
-    protected override HashSet<Type> LoadedServiceTypes { get; set; } = new HashSet<Type>()
-    {
         typeof(AttachService),
         typeof(AccountService),
         typeof(ClientService),
