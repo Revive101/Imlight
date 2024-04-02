@@ -370,6 +370,13 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
             m_currentHitpoints = npcTemplate.m_nStartingHealth,
             m_baseHitpoints = npcTemplate.m_nStartingHealth,
         };
+
+        // Boss mobs have a number of base effects.
+        if (npcTemplate.m_baseEffects.Count > 0) {
+            foreach (var effect in npcTemplate.m_baseEffects) {
+                CharacterEffectHelper.AddGameEffectToStats(GameStats, effect);
+            }
+        }
     }
 
     private void CreateEquipmentBehavior(EquipmentBehaviorTemplate equipmentTemplate) {

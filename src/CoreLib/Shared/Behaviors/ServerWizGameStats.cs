@@ -142,6 +142,8 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
     [JsonIgnore] public float m_shadowPipBonusPercent;
     [JsonIgnore] public float m_wispBonusPercent;
     [JsonIgnore] public float m_pipConversionRatingAll;
+    [JsonIgnore] public byte m_startingPips;
+    [JsonIgnore] public byte m_startingPowerPips;
 
     [JsonIgnore] public MagicSchool MagicSchool;
     [JsonIgnore] public int Level;
