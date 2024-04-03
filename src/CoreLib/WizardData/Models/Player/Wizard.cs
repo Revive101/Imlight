@@ -640,6 +640,7 @@ public class Wizard : IDisposable {
     private void AfterDatabaseLoadWizardGameStats() {
         GameStats.Level = MagicSchoolBehavior.Level;
         GameStats.MagicSchool = MagicSchoolBehavior.MagicSchool;
+        GameStats.m_schoolID = (uint) MagicSchoolBehavior.MagicSchool;
     }
 
     public void Dispose() =>
