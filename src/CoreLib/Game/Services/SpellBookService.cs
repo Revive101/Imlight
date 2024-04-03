@@ -19,13 +19,13 @@ public class SpellbookService : MessageService {
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_ADDSPELLTODECK))]
     private void ReceiveAddSpellToDeck(WIZARD_12_PROTOCOL.MSG_ADDSPELLTODECK message) {
         var wizard = GetActiveWizard();
-        var deckAddSucess = wizard.AddSpellToDeck((uint) message.SpellID, message.DeckID);
+        var deckAddSuccess = wizard.AddSpellToDeck((uint) message.SpellID, message.DeckID);
 
         Logger.Debug("SpellID: " + message.SpellID + ", DeckID: " + message.DeckID + ", Success: " + message.Success);
         SendToSocket(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTODECK() {
             SpellID = message.SpellID,
             DeckID = message.DeckID,
-            Success = (byte) (deckAddSucess ? 1 : 0)
+            Success = (byte) (deckAddSuccess ? 1 : 0)
         });
     }
 
