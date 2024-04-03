@@ -10,6 +10,7 @@ using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using static Imlight.Common.Caches.TypeCache;
@@ -281,10 +282,15 @@ internal class CommandModifyProtocol : CommandProtocol {
 
         Context.Character.GameStats.m_currentHitpoints = Math.Min(healthInt, Context.Character.GameStats.m_baseHitpoints);
 
+        // The client has a max health increase effect applied, so sending it here would double the health client side.
+        var magicSchool = Context.Character.MagicSchoolBehavior.MagicSchool;
+        var level = Context.Character.MagicSchoolBehavior.Level;
+        var normMaxHealth = WizardClassData.GetClassHealthAtLevel(magicSchool, level);
+
         var networkMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH() {
             CharacterID = Context.CharacterObject.m_globalID,
             NewHealth = healthInt,
-            NewHealthMax = Context.Character.GameStats.m_baseHitpoints,
+            NewHealthMax = normMaxHealth,
             DisplayDiff = 1,
         };
         Context.SessionActor.Tell(networkMessage, null);
@@ -322,10 +328,15 @@ internal class CommandModifyProtocol : CommandProtocol {
 
         stats.m_currentHitpoints = maxHealth;
 
+        // The client has a max health increase effect applied, so sending it here would double the health client side.
+        var magicSchool = Context.Character.MagicSchoolBehavior.MagicSchool;
+        var level = Context.Character.MagicSchoolBehavior.Level;
+        var normMaxHealth = WizardClassData.GetClassHealthAtLevel(magicSchool, level);
+
         var networkMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH() {
             CharacterID = Context.CharacterObject.m_globalID,
             NewHealth = maxHealth,
-            NewHealthMax = maxHealth,
+            NewHealthMax = normMaxHealth,
             DisplayDiff = 1,
         };
         Context.SessionActor.Tell(networkMessage, null);
