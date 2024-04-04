@@ -328,6 +328,9 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             case CombatMoveType.Flee:
                 HandleFleeAction(caster);
                 break;
+            case CombatMoveType.ChangeMind:
+                HandleChangeMindAction(caster);
+                break;
             default:
                 Logger.Warning("Duel {0} | Slot {1} | Invalid combat move type: {2}",
                     Logger.Args(Duel.m_duelID, caster.SlotIndex, moveType));
@@ -377,6 +380,11 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         if (caster.OccupiedTeam == CombatTeam.Player) {
             SendCombatMoveSelection(caster.ParticipantObject.m_globalID, (byte) CombatMoveType.Attack, spell, (byte) targetIdx);
         }
+    }
+
+    private void HandleChangeMindAction(CombatDuelActorSubCircle caster) {
+        // Send the action director a null spell to indicate that the participant has changed their mind.
+        ActionDirector.AddCombatMove(CombatMoveType.ChangeMind, caster, null, null);
     }
 
     private void HandleFleeAction(CombatDuelActorSubCircle caster) {

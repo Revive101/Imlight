@@ -238,7 +238,6 @@ public class CombatDuelActorSubCircle {
             }
         }
         allSpells.AddRange(temporarySpells);
-
         CombatDeck = new CombatDeck(allSpells, PLAYER_HAND_SIZE);
 
         CombatParticipant = new CombatParticipant {
