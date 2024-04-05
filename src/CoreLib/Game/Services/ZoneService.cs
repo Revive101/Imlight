@@ -9,11 +9,14 @@ using System.Threading.Tasks;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
+using Imlight.Common.ObjectProperty;
+using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Game.Zone;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models.World;
+using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -25,6 +28,11 @@ public class ZoneService : MessageService {
 
     private readonly TimeSpan _zoneRemovalWaitTime = TimeSpan.FromSeconds(ZONE_REMOVAL_WAIT_TIME_IN_SECONDS);
     private bool _isTransferQueued;
+
+    private readonly CoreObjectSerializer _effectSerializer = new CoreObjectSerializer()
+                    .OnBehaviors(SerializerOptions.Behaviors.None)
+                    .OnPropertyMask(SerializerOptions.PropertyFlags.Transmit
+                                  | SerializerOptions.PropertyFlags.AuthorityTransmit);
 
     public ZoneService(SessionActor sessionActor) : base(sessionActor) { }
 
@@ -105,6 +113,50 @@ public class ZoneService : MessageService {
 
         character.QueuedZoneName = character.Zone;
         character.QueuedZoneLocation = Util.GetCompactStringFromVector(character.Location, character.Orientation);
+    }
+
+    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_GOHOME))]
+    private void ReceiveGoHome(WIZARD_12_PROTOCOL.MSG_GOHOME message) {
+        // this teleports the wizard to the world hub, NOT their home/dorm. for that you want MSG_GOTODORM. goofy ahh naming scheme
+
+        NamedEffect effect = new NamedEffect {
+            m_bIsOnPet = false,
+            m_currentTickCount = 0,
+            m_effectNameID = 1672224911,
+            m_endTime = (uint) DateTime.UtcNow.AddSeconds(15).Ticks,
+            m_internalID = GetActiveWizard().GameEffects.Count,
+            m_itemSlotID = 0,
+            m_originatorID = new GID { Value = 0 },
+            m_overrideName = ""
+        };
+        var serializedEffect = _effectSerializer.Serialize(effect);
+        GetActiveWizard().GameEffects.Add(effect);
+
+        var addeffect = new GAME_5_PROTOCOL.MSG_ADDEFFECT {
+            GameObjectID = GetActiveGameObject().m_globalID,
+            EffectData = serializedEffect
+        };
+        
+        SendToSocket(addeffect);
+
+        NamedEffect effect2 = new NamedEffect {
+            m_bIsOnPet = false,
+            m_currentTickCount = 0,
+            m_effectNameID = 1662424096,
+            m_endTime = (uint) DateTime.UtcNow.AddSeconds(200).Ticks,
+            m_internalID = GetActiveWizard().GameEffects.Count,
+            m_itemSlotID = 0,
+            m_originatorID = new GID { Value = 0 },
+            m_overrideName = ""
+        };
+        
+        GetActiveWizard().GameEffects.Add(effect2);
+        var serializedEffect2 = _effectSerializer.Serialize(effect2);
+        var addeffect2 = new GAME_5_PROTOCOL.MSG_ADDEFFECT {
+            GameObjectID = GetActiveGameObject().m_globalID,
+            EffectData = serializedEffect2
+        };
+        SendToSocket(addeffect2);
     }
 
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_WORLDTELEPORTREQUEST))]
