@@ -158,6 +158,17 @@ public class ZoneService : MessageService {
             EffectData = serializedEffect2
         };
         SendToSocket(addeffect2);
+
+        var currentZone = GetActiveWizard().Zone;
+        var zoneMap = WorldHubZones.GetHubZoneMapping(currentZone);
+        var tpmsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
+            DestinationZone = zoneMap.m_hubZone,
+            DestinationLocation = zoneMap.m_location,
+            SendToClient = true
+        };
+
+        Task.Run(async () => await Task.Delay(TimeSpan.FromSeconds(2))).Wait();
+        ReceiveZoneTransferRequest(tpmsg);
     }
 
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_WORLDTELEPORTREQUEST))]
