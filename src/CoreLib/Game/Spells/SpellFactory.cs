@@ -74,7 +74,7 @@ public static class SpellFactory {
             m_accuracy = (byte) template.m_accuracy,
             m_treasureCard = template.m_Treasure,
             m_spellID = spellId,
-            m_itemCard = true,
+            m_itemCard = false, // todo: bad
             m_magicSchoolID = StringHash.Compute(spellTemplate.m_sMagicSchoolName),
         };
 

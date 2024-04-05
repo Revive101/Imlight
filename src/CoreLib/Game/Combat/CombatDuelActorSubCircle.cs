@@ -220,7 +220,9 @@ public class CombatDuelActorSubCircle {
         // Collage spells the player has learned and temporary spells (perhaps from equipment)
         // into one list to create the combat hand.
         var allSpells = new List<SpellData>();
-        allSpells.AddRange(wizard.SpellbookBehavior.SpellList);
+        if (wizard.SpellbookBehavior.SpellList is not null) {
+            allSpells.AddRange(wizard.SpellbookBehavior.SpellList);
+        }
 
         // Count temporary spells as 1 quantity.
         var temporarySpells = new List<SpellData>();
