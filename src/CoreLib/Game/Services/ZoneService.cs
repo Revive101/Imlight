@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
+using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Game.Zone;
@@ -122,8 +123,8 @@ public class ZoneService : MessageService {
         NamedEffect effect = new NamedEffect {
             m_bIsOnPet = false,
             m_currentTickCount = 0,
-            m_effectNameID = 1672224911,
-            m_endTime = (uint) DateTime.UtcNow.AddSeconds(15).Ticks,
+            m_effectNameID = StringHash.Compute("CantGoHome"),
+            m_endTime = (uint) DateTime.UtcNow.AddSeconds(30).Ticks,
             m_internalID = GetActiveWizard().GameEffects.Count,
             m_itemSlotID = 0,
             m_originatorID = new GID { Value = 0 },
@@ -142,7 +143,7 @@ public class ZoneService : MessageService {
         NamedEffect effect2 = new NamedEffect {
             m_bIsOnPet = false,
             m_currentTickCount = 0,
-            m_effectNameID = 1662424096,
+            m_effectNameID = StringHash.Compute("RecallHome"),
             m_endTime = (uint) DateTime.UtcNow.AddSeconds(200).Ticks,
             m_internalID = GetActiveWizard().GameEffects.Count,
             m_itemSlotID = 0,
