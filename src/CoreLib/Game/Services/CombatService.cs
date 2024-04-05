@@ -72,6 +72,12 @@ public class CombatService : MessageService {
         _currentDuelActor.Tell(msg);
     }
 
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT))]
+    private void ReceiveClientDisconnect(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT message) => _currentDuelActor?.Tell(message ,SessionActor.ActorRef);
+
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT))]
+    private void ReceiveQueryLogout(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT message) => _currentDuelActor?.Tell(message, SessionActor.ActorRef);
+
     private void UnEquipMount() {
         var wizard = GetActiveWizard();
         var wizEquipmentBehavior = wizard.EquipmentBehavior;

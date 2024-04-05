@@ -346,6 +346,30 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         }
     }
 
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT))]
+    private void ReceiveClientDisconnect(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT message) {
+        // Find the sub circle that the client was in and remove them from the duel.
+        var subCircle = SubCircles.FirstOrDefault(x => x.ParticipantActor == Sender);
+        if (subCircle is null) {
+            return;
+        }
+
+        // Handle this as if it were the flee action.
+        HandleFleeAction(subCircle);
+    }
+
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT))]
+    private void ReceiveQueryLogout(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT message) {
+        // Find the sub circle that the client was in and remove them from the duel.
+        var subCircle = SubCircles.FirstOrDefault(x => x.ParticipantActor == Sender);
+        if (subCircle is null) {
+            return;
+        }
+
+        // Handle this as if it were the flee action.
+        HandleFleeAction(subCircle);
+    }
+
     private void HandleDiscardMove(CombatDuelActorSubCircle caster, int spellSelection) {
         var spell = caster.GetSpellFromLastHand((byte) spellSelection);
         caster.DiscardCard(spell);

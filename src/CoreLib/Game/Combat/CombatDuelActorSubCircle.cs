@@ -29,7 +29,6 @@ public class CombatDuelActorSubCircle {
     private const float AGGRO_TIME_IN_SECONDS = 0.75f;
     private const byte MAX_PIP_COUNT = 7;
     private const byte PLAYER_HAND_SIZE = 7;
-    private const int CREATURE_SPELL_COUNT = 1000;
 
     internal string SlotName { get; set; }
     internal CombatSlotType SlotType { get; set; }
@@ -113,6 +112,13 @@ public class CombatDuelActorSubCircle {
         PlayEntranceAnimation(participantObject);
 
         return this.CombatParticipant;
+    }
+
+    internal void RemoveParticipant() {
+        ParticipantActor = null;
+        ParticipantObject = null;
+        CombatParticipant = null;
+        AddedToDuel = false;
     }
 
     internal Hand DrawHand() {
