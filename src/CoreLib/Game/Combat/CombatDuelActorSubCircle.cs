@@ -6,12 +6,14 @@
 using Akka.Actor;
 using Imlight.Common.Caches;
 using Imlight.CoreLib.Game.Models.World;
+using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
 using SharpDX;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using static Imlight.Common.Caches.TypeCache;
 using static Imlight.Common.Caches.TypeCache.CombatParticipant;
@@ -219,23 +221,31 @@ public class CombatDuelActorSubCircle {
 
         // Collage spells the player has learned and temporary spells (perhaps from equipment)
         // into one list to create the combat hand.
-        var allSpells = new List<SpellData>();
+        var allSpells = new List<CombatDeckSpellData>();
         if (wizard.SpellbookBehavior.SpellList is not null) {
-            allSpells.AddRange(wizard.SpellbookBehavior.SpellList);
+            // We want to convert the spell data to the server spell data.
+            var convertedSpells = wizard.SpellbookBehavior.SpellList
+                .Select(spell => new CombatDeckSpellData {
+                    TemplateId = spell.m_templateID,
+                    Quantity = spell.m_quantity,
+                })
+                .ToList();
+            allSpells.AddRange(convertedSpells);
         }
 
         // Count temporary spells as 1 quantity.
-        var temporarySpells = new List<SpellData>();
+        var temporarySpells = new List<CombatDeckSpellData>();
         foreach (var tempSpell in wizard.SpellbookBehavior.TemporarySpells) {
             // If the spell data already exists, increase the quantity.. otherwise add it.
-            var existingSpell = temporarySpells.Find(s => s.m_templateID == tempSpell.m_templateID);
+            var existingSpell = temporarySpells.Find(s => s.TemplateId == tempSpell.m_templateID);
             if (existingSpell is not null) {
-                existingSpell.m_quantity++;
+                existingSpell.Quantity++;
             }
             else {
-                temporarySpells.Add(new SpellData {
-                    m_templateID = tempSpell.m_templateID,
-                    m_quantity = 1
+                temporarySpells.Add(new CombatDeckSpellData {
+                    TemplateId = tempSpell.m_templateID,
+                    Quantity = 1,
+                    IsItemCard = true
                 });
             }
         }
@@ -280,7 +290,20 @@ public class CombatDuelActorSubCircle {
         // Dynamic symbols start 1-4 for creatures.
         var dynamicSymbol = (DynamicSigilSymbol) (SlotIndex + 1);
 
-        CombatDeck = new CombatDeck(creatureStats.SpellList, PLAYER_HAND_SIZE);
+        // Convert the creature stats to a combat deck.
+        var spellData = new List<CombatDeckSpellData>();
+        foreach (var spell in creatureStats.SpellList) {
+            if (spell is null) {
+                continue;
+            }
+
+            spellData.Add(new CombatDeckSpellData {
+                TemplateId = spell.m_templateID,
+                Quantity = spell.m_quantity
+            });
+        }
+
+        CombatDeck = new CombatDeck(spellData, PLAYER_HAND_SIZE);
 
         ParticipantGameStats = creatureStats.GameStats;
         CombatParticipant = new CombatParticipant {
