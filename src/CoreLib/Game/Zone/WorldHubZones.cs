@@ -25,7 +25,8 @@ public class WorldHubZones : RootSingleResourceSingleton<WorldHubZones>, IMemory
         Logger.Information("Loaded {0} World Hub Zones", Logger.Args(s_worldHubZoneMap.m_hubZoneMapping.Count()));
     }
 
-    internal static HubZoneMapping GetHubZoneMapping(string worldName) {
+    internal static HubZoneMapping GetHubZoneMapping(string zoneName) {
+        var worldName = zoneName.Split("/")[0];
         return s_worldHubZoneMap.m_hubZoneMapping.FirstOrDefault(x => x.m_world == worldName);
     }
 
