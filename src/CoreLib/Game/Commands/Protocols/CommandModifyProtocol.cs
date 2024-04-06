@@ -186,7 +186,7 @@ internal class CommandModifyProtocol : CommandProtocol {
     [Command("spell")]
     [AuthRequired(AuthLevel.QualityAssurance)]
     private void SetSpellCommand(string action, string spellId) {
-        var convertedSpellId = Convert.ToInt32(spellId);
+        int.TryParse(spellId, out int convertedSpellId);
 
         switch (action) {
             case "add":
