@@ -56,7 +56,7 @@ public class CombatActionDirector {
 
         // Some subcircles may not have queued actions. Ensure they do by adding a pass action.
         EnsureAllCastersHaveQueuedActions();
-        RemoveEmptySubCircleActions();
+        RemoveEmptyTargetActions();
         SortQueuedActions();
 
         var cinematicTime = ProcessQueuedActions(combatActionListObj);
@@ -115,8 +115,9 @@ public class CombatActionDirector {
         }
     }
 
-    private void RemoveEmptySubCircleActions() {
-        _queuedCombatActions.RemoveAll(action => !action.SpellCaster.Occupied);
+    private void RemoveEmptyTargetActions() {
+        // Remove any queued actions that have a target that is not in the duel.
+        _queuedCombatActions.RemoveAll(action => !action.TargetSubcircle.AddedToDuel);
     }
 
     private void SortQueuedActions() => _queuedCombatActions.Sort((a, b) => {
