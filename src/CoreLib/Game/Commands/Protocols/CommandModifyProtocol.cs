@@ -194,7 +194,6 @@ internal class CommandModifyProtocol : CommandProtocol {
                 Context.SessionActor.Tell(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTOBOOK() {
                     SpellID = convertedSpellId
                 }, null);
-
                 break;
             case "remove":
             case "rem":
