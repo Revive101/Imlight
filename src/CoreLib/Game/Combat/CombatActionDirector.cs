@@ -56,6 +56,7 @@ public class CombatActionDirector {
 
         // Some subcircles may not have queued actions. Ensure they do by adding a pass action.
         EnsureAllCastersHaveQueuedActions();
+        RemoveEmptySubCircleActions();
         SortQueuedActions();
 
         var cinematicTime = ProcessQueuedActions(combatActionListObj);
@@ -112,6 +113,10 @@ public class CombatActionDirector {
             };
             _queuedCombatActions.Add(queuedAction);
         }
+    }
+
+    private void RemoveEmptySubCircleActions() {
+        _queuedCombatActions.RemoveAll(action => !action.SpellCaster.Occupied);
     }
 
     private void SortQueuedActions() => _queuedCombatActions.Sort((a, b) => {

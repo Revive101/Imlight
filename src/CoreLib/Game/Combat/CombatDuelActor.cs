@@ -409,20 +409,33 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
     private void HandleChangeMindAction(CombatDuelActorSubCircle caster) {
         // Send the action director a null spell to indicate that the participant has changed their mind.
         ActionDirector.AddCombatMove(CombatMoveType.ChangeMind, caster, null, null);
+
+        // Echo the change mind action to each player participant
+        if (caster.OccupiedTeam == CombatTeam.Player) {
+            SendCombatMoveSelection(caster.ParticipantObject.m_globalID, (byte) CombatMoveType.ChangeMind, null, 0);
+        }
     }
 
     private void HandleFleeAction(CombatDuelActorSubCircle caster) {
-        caster.AddedToDuel = false;
+        var actor = caster.ParticipantActor;
+        var participantObjId = caster.ParticipantObject.m_globalID;
 
         // Inform the client that they've been removed from this duel.
         var defeatMsg = new COMBAT_106_PROTOCOL.MSG_COMBATDEFEAT();
-        caster.ParticipantActor.Tell(defeatMsg);
+        actor.Tell(defeatMsg);
+
+        caster.RemoveParticipant();
 
         Logger.Debug("Duel {0} | Slot {1} | Participant fled",
             Logger.Args(Duel.m_duelID, caster.SlotIndex));
 
+        ZoneBroadcast(new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATREMOVE {
+            DuelID = SigilId,
+            ParticipantID = participantObjId,
+        });
+
         // If no more players are left in the duel because of this, end the duel.
-        if (PlayersInDuel <= 0) {
+        if (AliveAndInDuelPlayerCount <= 0) {
             EndDuel();
         }
     }
@@ -620,12 +633,14 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         byte isTreasureCard = (byte)(spell?.m_treasureCard ?? false ? 1 : 0);
         byte isBattleCard = (byte)(spell?.m_battleCard ?? false ? 1 : 0);
 
+        var actualIndex = (byte) Math.Pow(2, targetIndex);
+
         var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATMOVESELECTION {
             DuelID = SigilId,
             ParticipantID = participantId,
             MoveType = moveType,
             SpellID = (int)(spell?.m_templateID ?? 0),
-            SpellTargetIndex = targetIndex,
+            SpellTargetIndex = actualIndex,
             IsItemCard = isItemCard,
             IsTreasureCard = isTreasureCard,
             IsBattleCard = isBattleCard,
