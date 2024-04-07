@@ -117,7 +117,7 @@ public class CombatActionDirector {
 
     private void RemoveEmptyTargetActions() {
         // Remove any queued actions that have a target that is not in the duel.
-        _queuedCombatActions.RemoveAll(action => !action.TargetSubcircle.AddedToDuel);
+        _queuedCombatActions.RemoveAll(action => action.TargetSubcircle is not null && !action.TargetSubcircle.AddedToDuel);
     }
 
     private void SortQueuedActions() => _queuedCombatActions.Sort((a, b) => {
