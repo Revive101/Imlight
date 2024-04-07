@@ -158,7 +158,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             Logger.Args(Duel.m_duelID, Duel.m_roundNum, DateTime.Now.ToString("HH:mm:ss")));
 
         // Add the circles to combat if they are not already.
-        SendCombatParticipants();
+        AddWaitingCombatParticipants();
         ActionDirector.Reset();
         _awaitingCombatMoves = true;
 
@@ -440,15 +440,15 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         }
     }
 
-    private void SendCombatParticipants() {
+    private void AddWaitingCombatParticipants() {
         EnactActionOnSubCircles(circle => {
             if (circle.AddedToDuel || !circle.Occupied) {
                 return;
             }
 
-            var participantData = circle.CombatParticipant;
+            var participant = circle.CombatParticipant;
             _serializer.OnPropertyMask(_combatParticipantFlags);
-            var serializedData = _serializer.Serialize(participantData);
+            var serializedData = _serializer.Serialize(participant);
             var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATADD {
                 DuelID = SigilId,
                 ParticipantData = serializedData,
@@ -458,6 +458,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             Logger.Debug("Duel {0} | Slot {1} | Serialized participant sent", Logger.Args(Duel.m_duelID, circle.SlotIndex));
 
             circle.AddedToDuel = true;
+            Duel.m_flatParticipantList.Add(participant);
         });
     }
 
@@ -864,8 +865,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             _playerCount++;
         }
 
-        var combatParticipant = subCircle.AssignParticipant(actorRef, coreObject);
-        //Duel.m_flatParticipantList.Add(combatParticipant);
+        subCircle.AssignParticipant(actorRef, coreObject);
 
         return true;
     }
