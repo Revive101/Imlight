@@ -68,19 +68,17 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
         CreateBehaviorsFromTemplate();
         SpawnSelf();
 
-        if (!IsMovingCreature()) {
-            return;
-        }
-
-        _creatureState = CreatureState.Wandering;
-
-        // Start the movement interval.
-        var msg = new ZONE_102_PROTOCOL.MSG_CREATUREMOVEINTERVAL();
-        Timers.StartSingleTimer("movementInterval", msg, _startingDelay);
-
         // Start the fish interaction interval.
-        var msg2 = new ZONE_102_PROTOCOL.MSG_CREATUREFISHINTERACTIONINTERVAL();
-        Timers.StartPeriodicTimer("fishInteractionInterval", msg2, TimeSpan.Zero,  _fishInteractionInterval);
+        var fishIntervalMsg = new ZONE_102_PROTOCOL.MSG_CREATUREFISHINTERACTIONINTERVAL();
+        Timers.StartPeriodicTimer("fishInteractionInterval", fishIntervalMsg, TimeSpan.Zero,  _fishInteractionInterval);
+
+        if (IsMovingCreature()) {
+            _creatureState = CreatureState.Wandering;
+
+            // Start the movement interval.
+            var movementIntervalMsg = new ZONE_102_PROTOCOL.MSG_CREATUREMOVEINTERVAL();
+            Timers.StartSingleTimer("movementInterval", movementIntervalMsg, _startingDelay);
+        }
     }
 
     // Akka.NET ctor
@@ -103,7 +101,7 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
         // MOVESTATE: 0 = stopped, 1 = moving.
         var msgMoveState = new GAME_5_PROTOCOL.MSG_MOVESTATE {
             GlobalID = ActiveGameObject.m_globalID,
-            NewState = (sbyte) (_creatureState == CreatureState.Wandering ? 0 : 1)
+            NewState = (sbyte) (_creatureState == CreatureState.Wandering ? 1 : 0)
         };
         playerActor.Tell(msgMoveState);
 
@@ -138,7 +136,7 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
 
     protected override Vector3 GetPosition() {
         // If the creature is not moving, then return the current position.
-        if (_pathBehavior is null || !_pathBehavior.IsMovingCreature || _creatureState != CreatureState.Wandering) {
+        if (_pathBehavior is null || !IsMovingCreature() || _creatureState != CreatureState.Wandering) {
             return ActiveGameObject.m_location;
         }
 
@@ -501,7 +499,7 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
 
     private bool IsMovingCreature() {
         if (TryGetBehavior<ServerPathBehavior>(out var pathBehavior)) {
-            return pathBehavior.IsMovingCreature;
+            return pathBehavior.MovementSpeed > 0.0f && _nodes.Length > 1;
         }
 
         return false;

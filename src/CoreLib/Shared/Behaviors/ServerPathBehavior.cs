@@ -24,7 +24,6 @@ public class ServerPathBehavior : ServerBehaviorInstance {
     public float PauseTime { get; set; }
     public float MovementSpeed { get; set; }
     public float MovementMultiplier { get; set; }
-    public bool IsMovingCreature => MovementSpeed > 0.0f;
 
     public override PathBehaviorClient GetClientBehaviorInstance() => new() {
         // Nothing here for client.
