@@ -265,11 +265,13 @@ public class ZoneService : MessageService {
 
     private void DoTeleport(string location) {
         var coords = Util.GetVectorFromCompactString(location);
+        var compressedCoords = coords / 4;
+
         var serverTele = new GAME_5_PROTOCOL.MSG_SERVERTELEPORT() {
-            LocationX = (ushort) coords.X,
-            LocationY = (ushort) coords.Y,
-            LocationZ = (ushort) coords.Z,
-            Direction = 0,
+            LocationX = (ushort)compressedCoords.X,
+            LocationY = (ushort)compressedCoords.Y,
+            LocationZ = (ushort)compressedCoords.Z,
+            Direction = (byte) coords.W,
             MobileID = GetActiveGameObject().m_nMobileID,
         };
         SendToSocket(serverTele);
