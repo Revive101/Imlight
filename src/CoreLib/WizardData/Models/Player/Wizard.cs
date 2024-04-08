@@ -479,6 +479,7 @@ public class Wizard : IDisposable {
     internal void AfterDatabaseLoad() {
         AfterDatabaseLoadWizardGameStats();
         AfterDatabaseLoadSpellbookBehavior();
+        AfterDatabaseloadMountOwnerBehavior();
     }
 
     private void EquipMount(WizItemTemplate template, WizClientObjectItem item) {
@@ -627,6 +628,27 @@ public class Wizard : IDisposable {
 
     private void InitializeMountOwnerBehavior() {
         MountOwnerBehavior = new ServerMountOwnerBehavior();
+    }
+
+    private void AfterDatabaseloadMountOwnerBehavior() {
+        // FOund our mount in the equipment.
+        var idInSlot = EquipmentBehavior.SlotList.FirstOrDefault(s => s.SlotType == EquipmentSlotType.Mount)?.ItemId;
+        if (idInSlot is null) {
+            // Normal behavior; we just don't have a mount equipped.
+            return;
+        }
+
+        // Get the actual item.
+        var mountItem = EquipmentBehavior.EquippedItems.FirstOrDefault(i => i.m_globalID == idInSlot);
+        if (mountItem is null) {
+            Logger.Error("Could not find mount item with global ID {0}.", Logger.Args(idInSlot));
+            return;
+        }
+
+        // Get the template for this item.
+        var mountTemplate = ItemHelper.GetItemTemplate(mountItem);
+
+        MountOwnerBehavior.EquipMount(mountTemplate, mountItem);
     }
 
     private void InitializeWizardGameStats(MagicSchool school, byte level) {

@@ -16,12 +16,11 @@ namespace Imlight.CoreLib.Shared.Behaviors;
 public class ServerMountOwnerBehavior : ServerBehaviorInstance {
     [JsonIgnore] public override bool NoTransfer { get; set; } = false;
 
-    public eGender MountGender;
-    public eRace MountRace;
-    public int MountPrimaryColor;
-    public int MountSecondaryColor;
-    public int MountPatternColor;
-
+    [JsonIgnore] public eGender MountGender;
+    [JsonIgnore] public eRace MountRace;
+    [JsonIgnore] public int MountPrimaryColor;
+    [JsonIgnore] public int MountSecondaryColor;
+    [JsonIgnore] public int MountPatternColor;
     [JsonIgnore] public GID LastMountId;
     [JsonIgnore] public eMountType MountType;
     [JsonIgnore] public bool MountHasAdjustableAnimationRate;
@@ -41,9 +40,29 @@ public class ServerMountOwnerBehavior : ServerBehaviorInstance {
             MountType = mountBehavior.m_eMountType;
             MountHasAdjustableAnimationRate = mountBehavior.m_adjustableAnimationRate;
             MountGeometryOption = mountBehavior.m_geometryOption;
-            MountPrimaryColor = item.m_primaryColor;
-            MountSecondaryColor = item.m_secondaryColor;
-            MountPatternColor = item.m_pattern;
+
+            // If the mount has a different texture rather than color, use that instead.
+            // Otherwise, use the color given from the item.
+            if (mountBehavior.m_patternToTexture is not null && mountBehavior.m_patternToTexture.Count > 0) {
+                MountPatternColor = mountBehavior.m_patternToTexture[0].m_texture;
+            }
+            else {
+                MountPatternColor = item.m_pattern;
+            }
+
+            if (mountBehavior.m_primaryDyeToTexture is not null && mountBehavior.m_primaryDyeToTexture.Count > 0) {
+                MountPrimaryColor = mountBehavior.m_primaryDyeToTexture[0].m_texture;
+            }
+            else {
+                MountPrimaryColor = item.m_primaryColor;
+            }
+
+            if (mountBehavior.m_secondaryDyeToTexture is not null && mountBehavior.m_secondaryDyeToTexture.Count > 0) {
+                MountSecondaryColor = mountBehavior.m_secondaryDyeToTexture[0].m_texture;
+            }
+            else {
+                MountSecondaryColor = item.m_secondaryColor;
+            }
         }
 
         return true;
