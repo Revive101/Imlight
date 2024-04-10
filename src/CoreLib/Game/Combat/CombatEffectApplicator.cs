@@ -86,6 +86,9 @@ internal class CombatEffectApplicator {
             case SpellEffect.kSpellEffects.kHeal:
                 ApplyEffectHeal(effect, caster, targets);
                 break;
+            case SpellEffect.kSpellEffects.kStealHealth:
+                ApplyEffectStealHealth(effect, caster, targets);
+                break;
             case SpellEffect.kSpellEffects.kModifyOutgoingDamage:
             case SpellEffect.kSpellEffects.kModifyIncomingDamage:
                 ApplyHangingEffect(effect, caster, target);
@@ -98,7 +101,53 @@ internal class CombatEffectApplicator {
     }
 
     private static float ApplyEffectDamage(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets) {
-        int damage = effect.m_effectParam;
+        int damageFromCaster = effect.m_effectParam;
+        var cinematicTime = 0.0f;
+
+        if (!Enum.TryParse(typeof(MagicSchool), effect.m_sDamageType, out var damageTypeObj)) {
+            throw new ArgumentException("Invalid damage type");
+        }
+        var damageType = (MagicSchool) damageTypeObj;
+
+        // Calculate damage increase from caster stats.
+        var damageFlatIncrease = GetFlatDamageIncrease(caster, damageType);
+        var damagePercentIncrease = GetPercentDamageIncrease(caster, damageType);
+        damagePercentIncrease = Math.Min(damagePercentIncrease, DAMAGE_PERCENT_MAX);
+        damageFromCaster = (int) Math.Floor(damageFromCaster * (1 + damagePercentIncrease) + damageFlatIncrease);
+
+        // Calculate damage changes from hanging effects.
+        cinematicTime += CalculateBladeCinematicTime(effect.m_sDamageType, caster);
+        damageFromCaster = ApplyBlades(effect.m_sDamageType, damageFromCaster, caster);
+
+        // Apply damage to each target
+        foreach (var target in targets) {
+            var damage = damageFromCaster;
+
+            // Calculate damage changes from target hanging effects.
+            cinematicTime += CalculateWardCinematicTime(effect.m_sDamageType, target);
+            damage = ApplyWards(effect.m_sDamageType, damage, target);
+
+            DoDamageToTarget(target, damage, damageType);
+        }
+
+        return cinematicTime;
+    }
+
+    private static void ApplyEffectHeal(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets) {
+        int healFromCaster = effect.m_effectParam;
+
+        // Calculate heal increase
+        var percentOutgoingHealIncrease = GetPercentOutgoingHealIncrease(caster);
+        healFromCaster = (int) Math.Ceiling(healFromCaster * (1 + percentOutgoingHealIncrease));
+
+        // Apply heal to each target
+        foreach (var target in targets) {
+            DoHealToTarget(target, healFromCaster);
+        }
+    }
+
+    private static float ApplyEffectStealHealth(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets) {
+        int damageFromCaster = effect.m_effectParam;
         var cinematicTime = 0.0f;
 
         if (!Enum.TryParse(typeof(MagicSchool), effect.m_sDamageType, out var damageTypeObj)) {
@@ -113,48 +162,31 @@ internal class CombatEffectApplicator {
 
         // Calculate damage changes from hanging effects.
         cinematicTime += CalculateBladeCinematicTime(effect.m_sDamageType, caster);
-        damage = ApplyBlades(effect.m_sDamageType, damage, caster);
+        damageFromCaster = ApplyBlades(effect.m_sDamageType, damageFromCaster, caster);
 
-        damage = (int) Math.Floor(damage * (1 + damagePercentIncrease) + damageFlatIncrease);
+        damageFromCaster = (int) Math.Floor(damageFromCaster * (1 + damagePercentIncrease) + damageFlatIncrease);
 
         // Apply damage to each target
+        var damageDealt = 0;
         foreach (var target in targets) {
-            // Calculate damage reduction from target stats
-            var damageReductionFlat = GetFlatDamageReduction(target, damageType);
-            var damageReductionPercent = GetPercentDamageReduction(target, damageType);
-            damage = (int) Math.Floor(damage * (1 - damageReductionPercent) - damageReductionFlat);
+            var damage = damageFromCaster;
 
             // Calculate damage changes from target hanging effects.
             cinematicTime += CalculateWardCinematicTime(effect.m_sDamageType, target);
-            damage = ApplyWards(effect.m_sDamageType, damage, target);
+            damage = ApplyWards(effect.m_sDamageType, damageFromCaster, target);
 
-            // Ensure that damage isn't negative.
-            damage = Math.Max(damage, 0);
-
-            target.ParticipantGameStats.m_currentHitpoints -= damage;
+            damageDealt += DoDamageToTarget(target, damage, damageType);
         }
+
+        var casterHealTotal = (int) Math.Floor(damageDealt * effect.m_healModifier);
+        DoHealToTarget(caster, casterHealTotal);
 
         return cinematicTime;
     }
 
-    private static void ApplyEffectHeal(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets) {
-        int heal = effect.m_effectParam;
-
-        // Calculate heal increase
-        var percentOutgoingHealIncrease = GetPercentOutgoingHealIncrease(caster);
-        heal = (int) Math.Ceiling(heal * (1 + percentOutgoingHealIncrease));
-
-        // Apply heal to each target
-        foreach (var target in targets) {
-            var percentIncomingHealIncrease = GetPercentIncomingHealIncrease(target);
-            heal = (int) Math.Ceiling(heal * (1 + percentIncomingHealIncrease));
-
-            target.ParticipantGameStats.m_currentHitpoints += heal;
-        }
-    }
-
     private static void ApplyHangingEffect(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target) {
         target.HangingEffects.Add(effect);
+        target.PublicHangingEffects.Add(effect);
     }
 
     private static int ApplyBlades(string school, int damage, CombatDuelActorSubCircle caster) {
@@ -172,6 +204,7 @@ internal class CombatEffectApplicator {
             damage = (int) Math.Floor(damage * (1 + damageChange));
 
             caster.HangingEffects.Remove(blade);
+            caster.PublicHangingEffects.Remove(blade);
         }
 
         return damage;
@@ -192,13 +225,14 @@ internal class CombatEffectApplicator {
             damage = (int) Math.Floor(damage * (1 + damageChange));
 
             caster.HangingEffects.Remove(ward);
+            caster.PublicHangingEffects.Remove(ward);
         }
 
         return damage;
     }
 
     private static float CalculateBladeCinematicTime(string school, CombatDuelActorSubCircle caster) {
-        var wards = caster.HangingEffects
+        var wards = caster.PublicHangingEffects
             .Where(x => x.m_effectType == SpellEffect.kSpellEffects.kModifyIncomingDamage)
             .ToList();
         var cinematicTime = 0.0f;
@@ -216,7 +250,7 @@ internal class CombatEffectApplicator {
     }
 
     private static float CalculateWardCinematicTime(string school, CombatDuelActorSubCircle caster) {
-        var wards = caster.HangingEffects
+        var wards = caster.PublicHangingEffects
             .Where(x => x.m_effectType == SpellEffect.kSpellEffects.kModifyIncomingDamage)
             .ToList();
         var cinematicTime = 0.0f;
@@ -231,6 +265,27 @@ internal class CombatEffectApplicator {
         }
 
         return cinematicTime;
+    }
+
+    private static int DoDamageToTarget(CombatDuelActorSubCircle target, int damage, MagicSchool damageType) {
+        // Calculate damage reduction from target stats
+        var damageReductionFlat = GetFlatDamageReduction(target, damageType);
+        var damageReductionPercent = GetPercentDamageReduction(target, damageType);
+        var reducedDamage = (int) Math.Floor(damage * (1 - damageReductionPercent) - damageReductionFlat);
+
+        // Ensure that damage isn't negative.
+        reducedDamage = Math.Max(reducedDamage, 0);
+
+        target.ParticipantGameStats.m_currentHitpoints -= reducedDamage;
+        return reducedDamage;
+    }
+
+    private static int DoHealToTarget(CombatDuelActorSubCircle target, int heal) {
+        var percentIncomingHealIncrease = GetPercentIncomingHealIncrease(target);
+        heal = (int) Math.Ceiling(heal * (1 + percentIncomingHealIncrease));
+
+        target.ParticipantGameStats.m_currentHitpoints += heal;
+        return heal;
     }
 
     private static float GetFlatDamageIncrease(CombatDuelActorSubCircle caster, MagicSchool damageType) {
