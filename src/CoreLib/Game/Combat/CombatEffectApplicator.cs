@@ -66,8 +66,10 @@ internal class CombatEffectApplicator {
         {
             case SpellEffect.kEffectTarget.kEnemySingle:
             case SpellEffect.kEffectTarget.kFriendlySingle:
-            case SpellEffect.kEffectTarget.kSelf:
                 targets = new[] { target };
+                break;
+            case SpellEffect.kEffectTarget.kSelf:
+                targets = new[] { caster };
                 break;
             case SpellEffect.kEffectTarget.kFriendlyTeam:
             case SpellEffect.kEffectTarget.kFriendlyTeamAllAtOnce:
@@ -84,10 +86,10 @@ internal class CombatEffectApplicator {
                 cinematicTime += ApplyEffectDamage(effect, caster, targets);
                 break;
             case SpellEffect.kSpellEffects.kHeal:
-                ApplyEffectHeal(effect, caster, targets);
+                cinematicTime += ApplyEffectHeal(effect, caster, targets);
                 break;
             case SpellEffect.kSpellEffects.kStealHealth:
-                ApplyEffectStealHealth(effect, caster, targets);
+                cinematicTime += ApplyEffectStealHealth(effect, caster, targets);
                 break;
             case SpellEffect.kSpellEffects.kModifyOutgoingDamage:
             case SpellEffect.kSpellEffects.kModifyIncomingDamage:
@@ -133,8 +135,9 @@ internal class CombatEffectApplicator {
         return cinematicTime;
     }
 
-    private static void ApplyEffectHeal(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets) {
+    private static float ApplyEffectHeal(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets) {
         int healFromCaster = effect.m_effectParam;
+        var cinematicTime = 0.0f;
 
         // Calculate heal increase
         var percentOutgoingHealIncrease = GetPercentOutgoingHealIncrease(caster);
@@ -144,6 +147,8 @@ internal class CombatEffectApplicator {
         foreach (var target in targets) {
             DoHealToTarget(target, healFromCaster);
         }
+
+        return cinematicTime;
     }
 
     private static float ApplyEffectStealHealth(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets) {
