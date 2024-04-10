@@ -343,6 +343,7 @@ internal class CommandModifyProtocol : CommandProtocol {
     }
 
     [Command("refillmana")]
+    [Alias("refillmp", "rejuvenate", "rejuv")]
     [AuthRequired(AuthLevel.QualityAssurance)]
     private void MaxManaCommand() {
         var stats = Context.Character.GameStats;
