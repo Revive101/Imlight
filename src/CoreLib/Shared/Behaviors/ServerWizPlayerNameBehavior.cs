@@ -45,6 +45,9 @@ public class ServerWizPlayerNameBehavior : ServerBehaviorInstance {
         if (NameOverride.Length > 0 && FriendlyPlayer) {
             nameOverride = $"<image;FriendlyPlayer> {NameOverride} <image;FriendlyPlayer>";
         }
+        else {
+            nameOverride = NameOverride;
+        }
 
         return new ClientWizPlayerNameBehavior {
             m_nameKeys = NameIndices,

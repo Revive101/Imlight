@@ -191,7 +191,6 @@ internal class CombatEffectApplicator {
 
     private static void ApplyHangingEffect(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target) {
         target.HangingEffects.Add(effect);
-        target.PublicHangingEffects.Add(effect);
     }
 
     private static int ApplyBlades(string school, int damage, CombatDuelActorSubCircle caster) {
@@ -209,7 +208,6 @@ internal class CombatEffectApplicator {
             damage = (int) Math.Floor(damage * (1 + damageChange));
 
             caster.HangingEffects.Remove(blade);
-            caster.PublicHangingEffects.Remove(blade);
         }
 
         return damage;
@@ -230,14 +228,13 @@ internal class CombatEffectApplicator {
             damage = (int) Math.Floor(damage * (1 + damageChange));
 
             caster.HangingEffects.Remove(ward);
-            caster.PublicHangingEffects.Remove(ward);
         }
 
         return damage;
     }
 
     private static float CalculateBladeCinematicTime(string school, CombatDuelActorSubCircle caster) {
-        var wards = caster.PublicHangingEffects
+        var wards = caster.HangingEffects
             .Where(x => x.m_effectType == SpellEffect.kSpellEffects.kModifyIncomingDamage)
             .ToList();
         var cinematicTime = 0.0f;
@@ -255,7 +252,7 @@ internal class CombatEffectApplicator {
     }
 
     private static float CalculateWardCinematicTime(string school, CombatDuelActorSubCircle caster) {
-        var wards = caster.PublicHangingEffects
+        var wards = caster.HangingEffects
             .Where(x => x.m_effectType == SpellEffect.kSpellEffects.kModifyIncomingDamage)
             .ToList();
         var cinematicTime = 0.0f;
