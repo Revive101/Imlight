@@ -38,16 +38,6 @@ public class ServerMagicSchoolBehavior : ServerBehaviorInstance {
     public int LevelIsLocked;
     public uint EquippedTeleportEffect;
 
-    public bool SetLevel(byte level) {
-        if (level > ConfigurationManager.Settings.MaxLevel) {
-            return false;
-        }
-
-        Level = level;
-
-        return true;
-    }
-
     public override ClientMagicSchoolBehavior GetClientBehaviorInstance() => new() {
         m_schoolOfFocus = (uint) MagicSchool,
         m_experiencePoints = ExperiencePoints,

@@ -151,15 +151,21 @@ public class Wizard : IDisposable {
     }
 
     public bool SetLevel(byte level) {
-        if (!MagicSchoolBehavior.SetLevel(level)) {
-            return false;
-        }
+        var school = MagicSchoolBehavior.MagicSchool;
+        var currentLevel = MagicSchoolBehavior.Level;
+        var oldBaseStats = MagicLevelsConfig.GetPlayerLevelInfo(school, currentLevel);
 
+        MagicSchoolBehavior.Level = level;
         GameStats.Level = level;
 
-        // todo: fixme. We want to add/subtract rather than totally resetting the base. If we reset the base,
-        // equipped items will not be recalculated.
-        //CharacterHelper.SetBaseStats(level, MagicSchoolBehavior.MagicSchool);
+        var newBaseStats = MagicLevelsConfig.GetPlayerLevelInfo(school, level);
+        var healthDifference = newBaseStats.m_hitpoints - oldBaseStats.m_hitpoints;
+        var manaDifference = newBaseStats.m_mana - oldBaseStats.m_mana;
+        var powerPipDifference = newBaseStats.m_pipChance - oldBaseStats.m_pipChance;
+
+        GameStats.m_baseHitpoints += healthDifference;
+        GameStats.m_baseMana += manaDifference;
+        GameStats.m_powerPipBase += powerPipDifference;
 
         // Persistent save.
         WizardCollection.UpdateCharacterLevel(this);

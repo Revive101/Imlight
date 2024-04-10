@@ -31,39 +31,15 @@ internal class CommandModifyProtocol : CommandProtocol {
     [AuthRequired(AuthLevel.QualityAssurance)]
     [Alias("lvlup")]
     private void LevelUpCommand() {
-        // Check to see if the new level would be above the max level.
-        var isOverMax = (Context.Character.MagicSchoolBehavior.Level + 1) > ConfigurationManager.Settings.MaxLevel;
-        if (isOverMax) {
-            InformSenderClient("You cannot level up any further.");
+        // Inform the user of failure if the new level would be above the max level.
+        var newLevel = (byte)(Context.Character.MagicSchoolBehavior.Level + 1);
+        if (newLevel > MagicLevelsConfig.MaxLevel) {
+            InformSenderClient($"You cannot set level higher than the max level ({MagicLevelsConfig.MaxLevel}).");
             return;
         }
 
-        var msg = new CHARACTER_103_PROTOCOL.MSG_LEVELUP() {
-            NewLevel = (byte) (Context.Character.MagicSchoolBehavior.Level + 1)
-        };
+        var msg = new CHARACTER_103_PROTOCOL.MSG_LEVELUP() { NewLevel = newLevel };
         Context.SessionActor.Tell(msg, null);
-
-        // Update the character's health
-        var stats = Context.Character.GameStats;
-        stats.m_currentHitpoints = stats.m_baseHitpoints;
-
-        var healthMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH() {
-            CharacterID = Context.CharacterObject.m_globalID,
-            NewHealth = stats.m_currentHitpoints,
-            NewHealthMax = stats.m_baseHitpoints,
-            DisplayDiff = 1,
-        };
-        Context.SessionActor.Tell(healthMessage, null);
-
-        // Update the character's mana
-        stats.m_currentMana = stats.m_baseMana;
-
-        var manaMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEMANA() {
-            Mana = stats.m_currentMana,
-            MaxMana = stats.m_baseMana,
-            DisplayDiff = 1,
-        };
-        Context.SessionActor.Tell(manaMessage, null);
     }
 
     [Command("level")]
@@ -75,38 +51,14 @@ internal class CommandModifyProtocol : CommandProtocol {
             return;
         }
 
-        //var maxLevel = ConfigurationManager.Settings.MaxLevel;
-        var maxLevel = byte.MaxValue;
-        var isOverMax = levelByte > maxLevel;
-        if (isOverMax) {
-            InformSenderClient($"You cannot set level higher than the max level ({maxLevel}).");
+        // Inform the user of failure if the new level would be above the max level.
+        if (levelByte > MagicLevelsConfig.MaxLevel) {
+            InformSenderClient($"You cannot set level higher than the max level ({MagicLevelsConfig.MaxLevel}).");
             return;
         }
 
-        var msg = new CHARACTER_103_PROTOCOL.MSG_LEVELUP() {
-            NewLevel = levelByte
-        };
+        var msg = new CHARACTER_103_PROTOCOL.MSG_LEVELUP() { NewLevel = levelByte };
         Context.SessionActor.Tell(msg, null);
-
-        // Update the character's health
-        var stats = Context.Character.GameStats;
-        var healthMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH() {
-            CharacterID = Context.CharacterObject.m_globalID,
-            NewHealth = stats.m_currentHitpoints,
-            NewHealthMax = stats.m_baseHitpoints,
-            DisplayDiff = 1,
-        };
-        Context.SessionActor.Tell(healthMessage, null);
-
-        // Update the character's mana
-        stats.m_currentMana = stats.m_baseMana;
-
-        var manaMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEMANA() {
-            Mana = stats.m_currentMana,
-            MaxMana = stats.m_baseMana,
-            DisplayDiff = 1,
-        };
-        Context.SessionActor.Tell(manaMessage, null);
     }
 
     [Command("speed")]
