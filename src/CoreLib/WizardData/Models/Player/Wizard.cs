@@ -565,7 +565,7 @@ public class Wizard : IDisposable {
             ChatPermissions = 0,
             PvpIconId = 0,
             LocaleId = 0,
-            FriendlyPlayer = true,
+            FriendlyPlayer = false,
             Volunteer = false,
             GuildName = 0,
         };
