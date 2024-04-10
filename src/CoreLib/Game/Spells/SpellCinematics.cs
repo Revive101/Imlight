@@ -13,6 +13,8 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlgiht.CoreLib.Game.Spells;
 
 internal class SpellCinematics : RootDirectoryResourceSingleton<SpellCinematics>, IMemoryStreamDisposable {
+    private const float HANGING_EFFECT_ADD_TIME = 1.0f;
+
     protected override string DirectoryName => "Cinematics";
 
     private readonly Dictionary<string, CinematicTemplate> _cinematicTemplates = new();
@@ -136,6 +138,12 @@ internal class SpellCinematics : RootDirectoryResourceSingleton<SpellCinematics>
 
         float totalTime = 0.0f;
         foreach (var act in cinematicTemplate.m_stages) {
+            // Add 1 second to the total time if the act is a hanging effect.
+            if (act.m_name.ToString().Contains("AddHanging")) {
+                totalTime += HANGING_EFFECT_ADD_TIME;
+                continue;
+            }
+
             totalTime += act.m_duration;
         }
 
