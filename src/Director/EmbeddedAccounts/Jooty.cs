@@ -33,26 +33,26 @@ internal sealed class Jooty : EmbeddedAccount {
                 m_newPlayerOptions2 = 3
             },
             m_nameIndices = 6481693,
-            m_schoolOfFocus = (uint) MagicSchool.Fire,
-            m_name = "Jooty",
+            m_schoolOfFocus = (uint) MagicSchool.Life,
+            m_name = "Jay",
         };
         var newCharacter = CharacterHelper.CreateCharacterFromCreationInfo(charCreationinfo);
-        newCharacter.SetNameOverride("Jooty");
+        newCharacter.SetNameOverride("Jay");
         newCharacter.PlayerNameBehavior.BadgeTitle = "Title_1";
 
         // Add default items.
-        newCharacter.AddItemToInventory(1359664, out var hat);
-        newCharacter.AddItemToInventory(1591141, out var robe);
-        newCharacter.AddItemToInventory(1591260, out var boots);
-        newCharacter.AddItemToInventory(1302115, out var staff);
+        newCharacter.AddItemToInventory(1414535, out var hat);
+        newCharacter.AddItemToInventory(191286, out var robe);
+        newCharacter.AddItemToInventory(191296, out var boots);
+        newCharacter.AddItemToInventory(1561150, out var staff);
 
         // Dye the items black.
-        DyeMapper.ApplyPrimaryDye(hat, DyeColor.DarkPurple);
-        DyeMapper.ApplySecondaryDye(hat, DyeColor.DarkPurple);
-        DyeMapper.ApplyPrimaryDye(robe, DyeColor.DarkPurple);
-        DyeMapper.ApplySecondaryDye(robe, DyeColor.DarkPurple);
-        DyeMapper.ApplyPrimaryDye(boots, DyeColor.DarkPurple);
-        DyeMapper.ApplySecondaryDye(boots, DyeColor.DarkPurple);
+        DyeMapper.ApplyPrimaryDye(hat, DyeColor.Black);
+        DyeMapper.ApplySecondaryDye(hat, DyeColor.Black);
+        DyeMapper.ApplyPrimaryDye(robe, DyeColor.Black);
+        DyeMapper.ApplySecondaryDye(robe, DyeColor.Black);
+        DyeMapper.ApplyPrimaryDye(boots, DyeColor.Black);
+        DyeMapper.ApplySecondaryDye(boots, DyeColor.Black);
 
         // Now equip the items.
         newCharacter.InventoryToEquipmentTransfer(hat.m_globalID, out var _, out var _);
