@@ -286,7 +286,8 @@ internal class CommandModifyProtocol : CommandProtocol {
         // The client has a max health increase effect applied, so sending it here would double the health client side.
         var magicSchool = Context.Character.MagicSchoolBehavior.MagicSchool;
         var level = Context.Character.MagicSchoolBehavior.Level;
-        var normMaxHealth = WizardClassData.GetClassHealthAtLevel(magicSchool, level);
+        var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(magicSchool, level);
+        var normMaxHealth = baseStats.m_hitpoints;
 
         var networkMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH() {
             CharacterID = Context.CharacterObject.m_globalID,
@@ -332,7 +333,8 @@ internal class CommandModifyProtocol : CommandProtocol {
         // The client has a max health increase effect applied, so sending it here would double the health client side.
         var magicSchool = Context.Character.MagicSchoolBehavior.MagicSchool;
         var level = Context.Character.MagicSchoolBehavior.Level;
-        var normMaxHealth = WizardClassData.GetClassHealthAtLevel(magicSchool, level);
+        var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(magicSchool, level);
+        var normMaxHealth = baseStats.m_hitpoints;
 
         var networkMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH() {
             CharacterID = Context.CharacterObject.m_globalID,

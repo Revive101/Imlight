@@ -158,15 +158,12 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
     }
 
     internal void SetBaseStats() {
-        var baseHealth = WizardClassData.GetClassHealthAtLevel(MagicSchool, Level);
-        var baseMana = WizardClassData.GetManaAtLevel(Level);
-        var powerPipChance = WizardClassData.GetPowerPipChanceAtLevel(Level);
-        var energyMax = WizardClassData.GetPetEnergyAtLevel(Level);
+        var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(MagicSchool, Level);
 
-        this.m_baseHitpoints = baseHealth;
-        this.m_baseMana = baseMana;
-        this.m_powerPipBase = powerPipChance;
-        this.m_energyMax = energyMax;
+        this.m_baseHitpoints = baseStats.m_hitpoints;
+        this.m_baseMana = baseStats.m_mana;
+        this.m_powerPipBase = baseStats.m_pipChance;
+        this.m_energyMax = baseStats.m_petEnergy;
     }
 
     /// <summary>
@@ -215,14 +212,16 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
     /// </summary>
     /// <returns></returns>
     public WizGameStats GetClientTypeAlternative() {
+        var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(MagicSchool, Level);
+
         return new WizGameStats() {
             // We want *only* base level/magic school stats here.
             // We can't send the character game stats because the EquipmentService will broadcast the equipment effects,
             // causing each stat to duplicate.
-            m_baseHitpoints = WizardClassData.GetClassHealthAtLevel(MagicSchool, Level),
-            m_baseMana = WizardClassData.GetManaAtLevel(Level),
-            m_energyMax = WizardClassData.GetPetEnergyAtLevel(Level),
-            m_powerPipBase = WizardClassData.GetPowerPipChanceAtLevel(Level),
+            m_baseHitpoints = baseStats.m_hitpoints,
+            m_baseMana = baseStats.m_mana,
+            m_energyMax = baseStats.m_petEnergy,
+            m_powerPipBase = baseStats.m_pipChance,
 
             m_baseGoldPouch = m_baseGoldPouch,
             m_currentHitpoints = m_currentHitpoints,
