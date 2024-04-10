@@ -12,6 +12,7 @@ using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.Shared.Behaviors;
+using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models.Player;

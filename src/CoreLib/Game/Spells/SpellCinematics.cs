@@ -10,7 +10,7 @@ using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Shared.Resources;
 using static Imlight.Common.Caches.TypeCache;
 
-namespace Imlgiht.CoreLib.Game.Spells;
+namespace Imlight.CoreLib.Game.Spells;
 
 internal class SpellCinematics : RootDirectoryResourceSingleton<SpellCinematics>, IMemoryStreamDisposable {
     private const float HANGING_EFFECT_ADD_TIME = 1.0f;

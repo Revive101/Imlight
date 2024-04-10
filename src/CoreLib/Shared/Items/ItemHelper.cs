@@ -1,3 +1,8 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
 using Imlight.Common;
 using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty.PropertyReflection;
@@ -7,7 +12,7 @@ using System;
 using System.Linq;
 using static Imlight.Common.Caches.TypeCache;
 
-namespace Imlight.CoreLib.WizardData.Implementations;
+namespace Imlight.CoreLib.Shared.Items;
 
 internal static class ItemHelper {
     /// <summary>

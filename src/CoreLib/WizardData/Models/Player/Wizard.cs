@@ -21,6 +21,8 @@ using static Imlight.Common.Caches.TypeCache;
 using Imlight.CoreLib.Game.Effects;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.WizardData.Collections;
+using Imlight.CoreLib.Shared.Character;
+using Imlight.CoreLib.Shared.Items;
 
 namespace Imlight.CoreLib.WizardData.Models.Player;
 

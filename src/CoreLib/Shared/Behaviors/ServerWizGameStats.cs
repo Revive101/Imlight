@@ -10,6 +10,7 @@ using Imlight.Common.Configuration;
 using Imlight.Common.IO;
 using Imlight.CoreLib.WizardData.Implementations;
 using static Imlight.Common.Caches.TypeCache;
+using Imlight.CoreLib.Shared.Character;
 
 namespace Imlight.CoreLib.Shared.Behaviors;
 

@@ -19,6 +19,7 @@ using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.Common;
 using Imlight.CoreLib.WizardData.Models.World;
+using Imlight.CoreLib.Shared.Items;
 
 namespace Imlight.CoreLib.Game.Services;
 internal class ShopService : MessageService {

@@ -5,6 +5,8 @@
 
 using Imlight.Common;
 using Imlight.Common.ObjectProperty.PropertyReflection;
+using Imlight.CoreLib.Shared.Character;
+using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Newtonsoft.Json;

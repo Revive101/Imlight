@@ -8,6 +8,7 @@ using Imlight.Common.Caches;
 using Imlight.Common.Configuration;
 using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty;
+using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Implementations;
