@@ -19,7 +19,7 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Game.Commands.Protocols;
 
 internal class CommandSpellbookProtocol : CommandProtocol {
-    internal override string Group { get; set; } = "spellbook";
+    internal override string Group { get; set; } = "sb";
 
     [Command("learn")]
     [AuthRequired(AuthLevel.QualityAssurance)]
@@ -30,8 +30,12 @@ internal class CommandSpellbookProtocol : CommandProtocol {
             return;
         }
 
-        var spellTemplate = (SpellTemplate) CoreObjectFactory.GetCoreTemplate(spellTemplateIdUint);
-        if (spellTemplate == null) {
+        var template = CoreObjectFactory.GetCoreTemplate(spellTemplateIdUint);
+        if (template == null) {
+            InformSenderClient("Invalid spell template ID.");
+            return;
+        }
+        if (template is not SpellTemplate spellTemplate) {
             InformSenderClient("Invalid spell template ID.");
             return;
         }
@@ -65,8 +69,12 @@ internal class CommandSpellbookProtocol : CommandProtocol {
             return;
         }
 
-        var spellTemplate = (SpellTemplate) CoreObjectFactory.GetCoreTemplate(spellTemplateIdUint);
-        if (spellTemplate == null) {
+        var template = CoreObjectFactory.GetCoreTemplate(spellTemplateIdUint);
+        if (template == null) {
+            InformSenderClient("Invalid spell template ID.");
+            return;
+        }
+        if (template is not SpellTemplate spellTemplate) {
             InformSenderClient("Invalid spell template ID.");
             return;
         }
