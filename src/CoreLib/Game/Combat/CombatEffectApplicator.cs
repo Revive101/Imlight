@@ -93,7 +93,10 @@ internal class CombatEffectApplicator {
                 break;
             case SpellEffect.kSpellEffects.kModifyOutgoingDamage:
             case SpellEffect.kSpellEffects.kModifyIncomingDamage:
-                ApplyHangingEffect(effect, caster, target);
+                ApplyHangingEffect(effect, targets);
+                break;
+            case SpellEffect.kSpellEffects.kStun:
+                ApplyStunEffect(effect, targets);
                 break;
             default:
                 break;
@@ -189,8 +192,14 @@ internal class CombatEffectApplicator {
         return cinematicTime;
     }
 
-    private static void ApplyHangingEffect(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target) {
-        target.HangingEffects.Add(effect);
+    private static void ApplyHangingEffect(SpellEffect effect, CombatDuelActorSubCircle[] targets) {
+        foreach (var target in targets) {
+            target.HangingEffects.Add(effect);
+        }
+    }
+
+    private static void ApplyStunEffect(SpellEffect effect, CombatDuelActorSubCircle[] targets) {
+
     }
 
     private static int ApplyBlades(string school, int damage, CombatDuelActorSubCircle caster) {
