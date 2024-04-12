@@ -238,6 +238,29 @@ public class ZoneService : MessageService {
         ZoneActor.Forward(message);
     }
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_SENDTOHUB))]
+    private void ReceiveBootToHub(ZONE_102_PROTOCOL.MSG_SENDTOHUB message) {
+        var wizard = GetActiveWizard();
+        var zoneName = wizard.Zone;
+
+        var worldHubMap = WorldHubZones.GetHubZoneMapping(zoneName);
+        if (worldHubMap is null) {
+            Logger.Error("Could not find world hub mapping for zone {0}", Logger.Args(zoneName));
+            return;
+        }
+
+        var destinationZoneName = worldHubMap.m_hubZone;
+        var destinationZoneLocation = worldHubMap.m_location;
+
+        var msg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER() {
+            DestinationZone = destinationZoneName,
+            DestinationLocation = destinationZoneLocation,
+            SendToClient = true
+        };
+
+        ReceiveZoneTransferRequest(msg);
+    }
+
     private void SetZone(IActorRef actorRef) {
         ZoneActor = actorRef;
     }
@@ -306,11 +329,13 @@ public class ZoneService : MessageService {
 
     private void DoTeleport(string location) {
         var coords = Util.GetVectorFromCompactString(location);
+        var compressedCoords = coords / 4;
+
         var serverTele = new GAME_5_PROTOCOL.MSG_SERVERTELEPORT() {
-            LocationX = (ushort) coords.X,
-            LocationY = (ushort) coords.Y,
-            LocationZ = (ushort) coords.Z,
-            Direction = 0,
+            LocationX = (ushort)compressedCoords.X,
+            LocationY = (ushort)compressedCoords.Y,
+            LocationZ = (ushort)compressedCoords.Z,
+            Direction = (byte) coords.W,
             MobileID = GetActiveGameObject().m_nMobileID,
         };
         SendToSocket(serverTele);

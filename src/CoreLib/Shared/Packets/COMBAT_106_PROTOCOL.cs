@@ -6,50 +6,48 @@
 using System.Collections.Generic;
 using Akka.Actor;
 using Imlight.CoreLib.Game.Combat;
+using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Networking;
 using SharpDX;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Shared.Packets {
-    public sealed class COMBAT_106_PROTOCOL : IServerProtocol
-	{
-		public byte ServiceID => 106;
-		public string ProtocolType => "Wizard dueling messages";
-		public int ProtocolVersion => 1;
-		public string ProtocolDescription => "Internal messages for dueling.";
+    public sealed class COMBAT_106_PROTOCOL : IServerProtocol {
+        public byte ServiceID => 106;
+        public string ProtocolType => "Wizard dueling messages";
+        public int ProtocolVersion => 1;
+        public string ProtocolDescription => "Internal messages for dueling.";
 
-		public sealed class MSG_STARTDUEL : IServerMessage
-		{
-			public byte MessageOrder => 1;
-			public byte ServiceID => 106;
+        public sealed class MSG_STARTDUEL : IServerMessage {
+            public byte MessageOrder => 1;
+            public byte ServiceID => 106;
 
-			public Dictionary<IActorRef, CoreObject> Participants;
-			public ulong SigilId;
-			public Vector3 SigilLocation;
-			public Vector3 SigilOrientation;
-		}
+            public Dictionary<IActorRef, CoreObject> Participants;
+            public IActorRef SigilActor;
+            public ulong SigilId;
+            public Vector3 SigilLocation;
+            public Vector3 SigilOrientation;
+            public CombatSigilTemplate SigilTemplate;
+        }
 
-		public sealed class MSG_ENDDUEL : IServerMessage
-		{
-			public byte MessageOrder => 2;
-			public byte ServiceID => 106;
+        public sealed class MSG_ENDDUEL : IServerMessage {
+            public byte MessageOrder => 2;
+            public byte ServiceID => 106;
 
-			public Dictionary<IActorRef, CoreObject> Participants;
-		}
+            public Dictionary<IActorRef, CoreObject> Participants;
+        }
 
-		public sealed class MSG_DUELDETAILS : IServerMessage
-		{
-			public byte MessageOrder => 3;
-			public byte ServiceID => 106;
+        public sealed class MSG_DUELDETAILS : IServerMessage {
+            public byte MessageOrder => 3;
+            public byte ServiceID => 106;
 
-			public IActorRef DuelActor;
-			public Duel Duel;
+            public IActorRef DuelActor;
+            public Duel Duel;
             public byte CreatureCount;
             public byte PlayerCount;
-		}
+        }
 
-        public sealed class MSG_ADDPARTICIPANT : IServerMessage
-        {
+        public sealed class MSG_ADDPARTICIPANT : IServerMessage {
             public byte MessageOrder => 4;
             public byte ServiceID => 106;
 
@@ -57,26 +55,85 @@ namespace Imlight.CoreLib.Shared.Packets {
             public CoreObject ParticipantObject;
         }
 
-        public sealed class MSG_GRACEPERIODOVER : IServerMessage
-        {
+        public sealed class MSG_COMBATDEATH : IServerMessage {
             public byte MessageOrder => 5;
             public byte ServiceID => 106;
         }
 
-        public sealed class MSG_SLOTAVAILABLE : IServerMessage
-        {
+        public sealed class MSG_SLOTAVAILABLE : IServerMessage {
             public byte MessageOrder => 6;
             public byte ServiceID => 106;
 
-            public Team Team;
+            public CombatTeam Team;
         }
 
-        public sealed class MSG_SLOTAVAILABLERSP : IServerMessage
-        {
+        public sealed class MSG_SLOTAVAILABLERSP : IServerMessage {
             public byte MessageOrder => 7;
             public byte ServiceID => 106;
 
             public bool Available;
         }
-	}
+
+        public sealed class MSG_NEWROUND : IServerMessage {
+            public byte MessageOrder => 8;
+            public byte ServiceID => 106;
+
+            public int Round;
+        }
+
+        public sealed class MSG_ACTORADDEDTODUEL : IServerMessage {
+            public byte MessageOrder => 9;
+            public byte ServiceID => 106;
+
+            public IActorRef DuelActor;
+            public CombatDuelActor Duel;
+            public CombatDuelActorSubCircle SubCircle;
+            public Vector3 SlotPosition;
+            public float SlotOrientation;
+        }
+
+        public sealed class MSG_ACTORCOMBATMOVE : IServerMessage {
+            public byte MessageOrder => 10;
+            public byte ServiceID => 106;
+
+            public IActorRef Actor;
+            public byte MoveType;
+            public byte SpellSelection;
+            public uint SpellTarget;
+            public int TimeLeft;
+        }
+
+        public sealed class MSG_PLANNINGPHASEOVER : IServerMessage {
+            public byte MessageOrder => 11;
+            public byte ServiceID => 106;
+        }
+
+        public sealed class MSG_ROUNDRESOLUTION : IServerMessage {
+            public byte MessageOrder => 12;
+            public byte ServiceID => 106;
+        }
+
+        public sealed class MSG_QUERYCREATURESTATS : IServerMessage {
+            public byte MessageOrder => 13;
+            public byte ServiceID => 106;
+        }
+
+        public sealed class MSG_CREATURESTATS : IServerMessage {
+            public byte MessageOrder => 14;
+            public byte ServiceID => 106;
+
+            public ServerWizGameStats GameStats;
+            public float CombatIntelligence;
+            public float CombatSelfishFactor;
+            public float CombatAggressionFactor;
+            public int CombatLevel;
+            public MagicSchool MagicSchool;
+            public List<SpellData> SpellList;
+        }
+
+        public sealed class MSG_COMBATDEFEAT : IServerMessage {
+            public byte MessageOrder => 15;
+            public byte ServiceID => 106;
+        }
+    }
 }

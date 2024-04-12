@@ -8,6 +8,7 @@ using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.Common.Caches;
 using Imlight.CoreLib.WizardData.Models.Player;
+using Imlight.CoreLib.Shared.Character;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -23,7 +24,7 @@ public class WizardService : MessageService {
         => Akka.Actor.Props.Create(() => new WizardService(parentActor));
 
     protected override void OnDispose() {
-        ((System.IDisposable) _activeWizard).Dispose();
+        ((System.IDisposable) _activeWizard)?.Dispose();
         base.OnDispose();
     }
 
@@ -61,6 +62,38 @@ public class WizardService : MessageService {
             Data = "0000000000"
         };
         ZoneBroadcast(levelUpMessage, false);
+
+        // Leveling up the player will set their new stats and heal them.
+        // We need to do the code below to echo those changes to the client.
+        var magicSchool = _activeWizard.MagicSchoolBehavior.MagicSchool;
+        var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(magicSchool, message.NewLevel);
+
+        // Update health.
+        var healthMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH() {
+            CharacterID = _activeWizardGameObject.m_globalID,
+            NewHealth = baseStats.m_hitpoints,
+            NewHealthMax = baseStats.m_hitpoints,
+            DisplayDiff = 1,
+        };
+        SendToSocket(healthMessage);
+
+        // Update mana.
+        var manaMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEMANA() {
+            Mana = baseStats.m_mana,
+            MaxMana = baseStats.m_mana,
+            DisplayDiff = 1,
+        };
+        SendToSocket(manaMessage);
+
+        // Update power pips
+        var powerPipsMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEPOWERPIP() { PowerPip = baseStats.m_pipChance };
+        SendToSocket(powerPipsMessage);
+
+        // Update energy.
+        var petEnergyMessage = new PET_9_PROTOCOL.MSG_PETENERGYMAX() {
+            MaxEnergy = baseStats.m_petEnergy
+        };
+        SendToSocket(petEnergyMessage);
     }
 
     #endregion

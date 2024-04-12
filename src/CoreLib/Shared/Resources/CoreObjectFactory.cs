@@ -21,14 +21,14 @@ namespace Imlight.CoreLib.Shared.Resources;
 public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>, IMemoryStreamDisposable {
     protected override string ResourceName { get; } = "TemplateManifest.xml";
 
-    private static TemplateManifest s_templateManifest;
+    public static TemplateManifest TemplateManifest;
 
     protected override void AfterLoad() {
         var fileSerializer = new FileSerializer();
-        s_templateManifest = fileSerializer.OpenClass<TemplateManifest>(Stream)
+        TemplateManifest = fileSerializer.OpenClass<TemplateManifest>(Stream)
             ?? throw new Exception("Could not deserialize TemplateManifest.xml");
 
-        Logger.Information("Loaded {TCount} CoreTemplates.", Logger.Args(s_templateManifest.m_serializedTemplates.Count));
+        Logger.Information("Loaded {TCount} CoreTemplates.", Logger.Args(TemplateManifest.m_serializedTemplates.Count));
 
         this.DisposeStream();
     }
@@ -58,6 +58,10 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
     /// <param name="template">The core template containing behavior templates.</param>
     /// <returns>The initialized core object.</returns>
     public static T InitializeCoreObjectBehaviors<T>(T coreObject, CoreTemplate template) where T : CoreObject, new() {
+        if (template is null) {
+            return coreObject;
+        }
+
         // The CoreTemplate contains a list of behavior templates. Using the name of the template,
         // we can find the instance of the behavior and add it to the CoreObject.
         coreObject.m_inactiveBehaviors = new List<BehaviorInstance>(template.m_behaviors.Count);
@@ -107,7 +111,7 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
     /// <param name="id">The ID of the CoreTemplate.</param>
     /// <returns>The CoreTemplate object if found; otherwise, null.</returns>
     public static CoreTemplate GetCoreTemplate(ulong id) {
-        var template = s_templateManifest.m_serializedTemplates.FirstOrDefault(x => x.m_id == id);
+        var template = TemplateManifest.m_serializedTemplates.FirstOrDefault(x => x.m_id == id);
         if (template is null) {
             Logger.Error("Could not find CoreTemplate by ID {Tid}", Logger.Args(id));
             return null;
@@ -118,6 +122,21 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
             Logger.Error("Could not load CoreTemplate from {Loc}", Logger.Args(template.m_filename));
         }
         return templateObj ?? null;
+    }
+
+    /// <summary>
+    /// Retrieves the ID of a core template based on its name.
+    /// </summary>
+    /// <param name="templateName">The name of the template.</param>
+    /// <returns>The ID of the core template.</returns>
+    public static uint GetCoreTemplateID(string templateName) {
+        var template = TemplateManifest.m_serializedTemplates.FirstOrDefault(x => x.m_filename == templateName);
+        if (template is null) {
+            Logger.Error("Could not find CoreTemplate by name {TName}", Logger.Args(templateName));
+            return 0;
+        }
+
+        return (uint)template.m_id;
     }
 
     /// <summary>

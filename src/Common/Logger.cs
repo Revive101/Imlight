@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using Imlight.Common.Configuration;
 using Serilog;
 using Serilog.Context;
+using Serilog.Core;
 using Serilog.Events;
 
 namespace Imlight.Common;
@@ -16,12 +17,13 @@ namespace Imlight.Common;
 public class Logger {
     private const byte MaxCallerNameLength = 40;
     private static readonly string s_path = ConfigurationManager.Settings.LogPath;
-    private static readonly bool s_logsIncludeTimestamp = ConfigurationManager.Settings.LogsIncludeTimestamp;
+    private static readonly string s_logFormat = ConfigurationManager.Settings.LogFormat;
+    private static readonly string s_logLevel = ConfigurationManager.Settings.LogLevel;
 
     public static ILogger Log { get; } = new LoggerConfiguration()
-        .MinimumLevel.Debug()
+        .MinimumLevel.ControlledBy(new LoggingLevelSwitch { MinimumLevel = GetLogLevel(s_logLevel) })
         .Enrich.FromLogContext()
-        .WriteTo.Console(outputTemplate: CreateOutputTemplate())
+        .WriteTo.Console(outputTemplate: s_logFormat)
         .WriteTo.File(s_path, rollingInterval: RollingInterval.Day)
         .CreateLogger();
 
@@ -149,11 +151,19 @@ public class Logger {
         Log.Write(logLevel, message, values);
     }
 
-    private static string CreateOutputTemplate() {
-        return s_logsIncludeTimestamp
-            ? "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} {Level:u3} {CallingSpace} " +
-              ": {Message:lj} {NewLine}{Exception}"
-            : "{Level:u3} {CallingSpace} : {Message:lj} {NewLine}{Exception}";
+    private static LogEventLevel GetLogLevel(string logLevelString) {
+        // Clean the log level string.
+        logLevelString = logLevelString.Trim();
+        logLevelString = logLevelString.Replace("\"", string.Empty);
+        return logLevelString.ToUpper() switch {
+            "TRACE" => LogEventLevel.Verbose,
+            "DEBUG" => LogEventLevel.Debug,
+            "INFO" => LogEventLevel.Information,
+            "WARNING" => LogEventLevel.Warning,
+            "ERROR" => LogEventLevel.Error,
+            "FATAL" => LogEventLevel.Fatal,
+            _ => throw new Exception($"Invalid log level: {logLevelString}"),
+        };
     }
 
     private static string TrimCallingClass(string filePath) {
