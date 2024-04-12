@@ -390,7 +390,10 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
     private void HandleAttackMove(CombatDuelActorSubCircle caster, int spellSelection, uint spellTarget) {
         var spell = caster.GetSpellFromLastHand((byte) spellSelection);
         if (!caster.HasPipsForSpell(spell)) {
-            throw new InvalidOperationException("The participant does not have enough pips for this spell.");
+            Logger.Warning("Duel {0} | Slot {1} | Participant does not have enough pips for spell {2}",
+                Logger.Args(Duel.m_duelID, caster.SlotIndex, spell.m_templateID));
+
+            ActionDirector.AddCombatMove(CombatMoveType.Pass, caster, null, null);
         }
 
         var targetIdx = spellTarget;

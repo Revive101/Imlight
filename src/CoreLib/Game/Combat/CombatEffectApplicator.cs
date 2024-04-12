@@ -98,7 +98,7 @@ internal class CombatEffectApplicator {
                 ApplyHangingEffect(effect, targets);
                 break;
             case SpellEffect.kSpellEffects.kStun:
-                ApplyStunEffect(effect, targets);
+                cinematicTime += ApplyStunEffect(effect, targets);
                 break;
             default:
                 break;
@@ -200,8 +200,36 @@ internal class CombatEffectApplicator {
         }
     }
 
-    private static void ApplyStunEffect(SpellEffect effect, CombatDuelActorSubCircle[] targets) {
+    private static float ApplyStunEffect(SpellEffect effect, CombatDuelActorSubCircle[] targets) {
+        var cinematicTime = 0.0f;
 
+        foreach (var target in targets) {
+            // If this target is dead, do nothing.
+            if (!target.IsAlive) {
+                continue;
+            }
+
+            // Check to see if this target has a stun block.
+            var spellBlock = target.HangingEffects.FirstOrDefault(x => x.m_effectType == SpellEffect.kSpellEffects.kStunBlock);
+            if (spellBlock is not null) {
+                // Remove the stun block and do nothing else.
+                target.HangingEffects.Remove(spellBlock);
+                cinematicTime += HANGING_EFFECT_CONSUME_TIME;
+                continue;
+            }
+
+            if (target.TryStun()) {
+                // Creature was stunned. Add a stun block hanging effect.
+                var stunBlockEffect = new SpellEffect {
+                    m_effectType = SpellEffect.kSpellEffects.kStunBlock,
+                    m_spellTemplateID = effect.m_spellTemplateID,
+                };
+
+                target.HangingEffects.Add(stunBlockEffect);
+            }
+        }
+
+        return cinematicTime;
     }
 
     private static int ApplyBlades(string school, int damage, CombatDuelActorSubCircle caster) {

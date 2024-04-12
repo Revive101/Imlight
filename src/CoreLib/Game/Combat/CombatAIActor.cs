@@ -105,6 +105,21 @@ internal class CombatAIActor : ReceiveProtocolDispatcher {
     }
 
     private COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE DetermineTurnAction() {
+        // If I'm stunned, pass.
+        if (_mySubcircle.CombatParticipant.m_stunned > 0) {
+            _mySubcircle.CombatParticipant.m_stunned--;
+
+            Logger.Debug("Duel {0} | Slot {1} | Stunned. Passing.",
+                Logger.Args(_duelActor.SigilId, _mySubcircle.SlotIndex));
+
+            return new COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE {
+                Actor = _creatureActorRef,
+                MoveType = (byte) CombatMoveType.Pass,
+                SpellSelection = 0,
+                SpellTarget = 0,
+            };
+        }
+
         // If we want to be aggressive and we have something to cast, do it.
         if (_determinedAggressiveThisTurn && GetCastableDamageSpells(_roundHand.m_spellList).Count > 0) {
             return DetermineAggressiveBehavior();
@@ -261,12 +276,6 @@ internal class CombatAIActor : ReceiveProtocolDispatcher {
         }
 
         return msg;
-    }
-
-    private void DiscardSpells(List<Spell> spells) {
-        foreach (var spell in spells) {
-            _mySubcircle.DiscardCard(spell);
-        }
     }
 
     private List<Spell> GetCastableSpells(List<Spell> spells) {

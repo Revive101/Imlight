@@ -146,7 +146,10 @@ public class CombatActionDirector {
         var cinematicTime = 0.0f;
 
         foreach (var action in _queuedCombatActions) {
-            if (action.TargetSubcircle is null) {
+            // If our target is gone or we're stunned, pass the turn.
+            if (action.TargetSubcircle is null || action.SpellCaster.CombatParticipant.m_stunned > 0) {
+                action.SpellCaster.CombatParticipant.m_stunned--;
+
                 combatActionList.m_actionList.Add(new CombatAction {
                     m_spellCaster = action.SpellCaster.SlotIndex,
                     m_targetSubcircleList = new List<int> { action.SpellCaster.SlotIndex },
@@ -154,6 +157,10 @@ public class CombatActionDirector {
                     m_spellHits = (char) 0,
                     m_spell = null,
                 });
+
+                Logger.Debug("Duel {0} | Slot {1} | Target is gone or caster is stunned. Passing turn.",
+                    Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex));
+
                 continue;
             }
 

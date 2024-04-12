@@ -212,6 +212,13 @@ public class CombatDuelActorSubCircle {
         return totalPips >= spellRank;
     }
 
+    internal bool TryStun() {
+        // todo: check if this creature can be stunned.
+        CombatParticipant.m_stunned = 1;
+
+        return true;
+    }
+
     private void InitializePlayerSubCircle() {
         var queryCharacterMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
         var wizard = ParticipantActor
