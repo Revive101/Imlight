@@ -216,17 +216,6 @@ public class BitWriter : BitManipulator {
     }
 
     /// <summary>
-    /// Writes a <see cref="Color3"/> to the stream. The bits will be flushed prior.
-    /// </summary>
-    /// <param name="col">The <see cref="Color3"/> to write to the stream.</param>
-    public void WriteColor3(Color3 col) {
-        FlushBits();
-        WriteFloat(col.Red);
-        WriteFloat(col.Green);
-        WriteFloat(col.Blue);
-    }
-
-    /// <summary>
     /// Writes a <see cref="Vector3"/> to the stream. The bits will be flushed prior.
     /// </summary>
     /// <param name="vec">The <see cref="Vector3"/> to write to the stream.</param>

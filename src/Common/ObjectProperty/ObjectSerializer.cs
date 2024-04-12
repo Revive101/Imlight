@@ -441,12 +441,19 @@ public class ObjectSerializer {
                 return reader.ReadUInt32();
             }
 
-            var str = reader.ReadString();
+            // String enums may contain c++ jargon.
+            var str = reader.ReadString().ToString();
+            str = str.Split("::")[^1];
+
+            if (str == "*" || str == "") {
+                return 0;
+            }
+
             if (Enum.TryParse(type, str, out var obj)) {
                 return obj;
             }
 
-            Logger.Error("Could not parse string enum of {0}", Logger.Args(str));
+            //Logger.Error("Could not parse string enum of {0}", Logger.Args(str));
             return 0;
         }
 

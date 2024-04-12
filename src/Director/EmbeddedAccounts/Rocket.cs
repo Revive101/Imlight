@@ -3,7 +3,9 @@
  * Proprietary and confidential.
  */
 
-using Imlight.CoreLib.WizardData.Implementations;
+using Imlight.CoreLib.Shared.Behaviors;
+using Imlight.CoreLib.Shared.Character;
+using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.Director.EmbeddedAccounts;
 using static Imlight.Common.Caches.TypeCache;

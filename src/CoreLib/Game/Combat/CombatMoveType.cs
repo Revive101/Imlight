@@ -5,7 +5,10 @@
 
 namespace Imlight.CoreLib.Game.Combat;
 
-public enum Team {
-    Creature,
-    Player
+public enum CombatMoveType {
+    Attack = 0,
+    Flee = 1,
+    Discard = 2,
+    Pass = 3,
+    ChangeMind = 4,
 }

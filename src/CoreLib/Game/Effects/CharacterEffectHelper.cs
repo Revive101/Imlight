@@ -3,25 +3,172 @@
  * Proprietary and confidential.
  */
 
-using Imlight.Common;
-using Imlight.Common.Cryptography;
-using Imlight.CoreLib.WizardData.Implementations;
-using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
+using Imlight.Common;
+using Imlight.Common.Cryptography;
+using Imlight.Common.ObjectProperty;
+using Imlight.CoreLib.Game.Spells;
+using Imlight.CoreLib.Shared.Behaviors;
+using Imlight.CoreLib.Shared.Items;
+using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Implementations;
+using Imlight.CoreLib.WizardData.Models.Player;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Effects;
 
 internal static class CharacterEffectHelper {
+    private const int SCHOOL_COUNT = 7;
+
+    /// <summary>
+    /// Adds effects to a wizard based on a given template.
+    /// </summary>
+    /// <param name="wizard">The wizard to add effects to.</param>
+    /// <param name="template">The template containing the effects to be added.</param>
+    /// <returns>A list of the added effects.</returns>
+    internal static List<GameEffectBase> AddEffectsToWizard(Wizard wizard, WizItemTemplate template) {
+        var addedEffects = new List<GameEffectBase>();
+        var slotHash = ItemHelper.GetItemSlotHash(template);
+
+        // Apply the effects from the template.
+        foreach (var effectInfo in template.m_equipEffects) {
+            var gameEffect = GameEffectFactory.CreateEffectFromInfo(effectInfo, slotHash);
+            if (gameEffect is null) {
+                Logger.Warning("Could not create effect {0} from effect info.", Logger.Args(effectInfo.m_effectName));
+                continue;
+            }
+
+            gameEffect.m_internalID = wizard.GameEffects.Count;
+            var effect = AddGameEffectToStats(wizard.GameStats, effectInfo);
+
+            if (gameEffect is ProvideSpellEffect provideSpellEffect) {
+                var spells = SpellFactory.CreateSpellsFromEffect(provideSpellEffect);
+
+                if (spells is null) {
+                    continue;
+                }
+
+                foreach (var spell in spells) {
+                    wizard.AddTemporarySpell(spell);
+                }
+            }
+
+            wizard.GameEffects.Add(gameEffect);
+            addedEffects.Add(gameEffect);
+        }
+
+        return addedEffects;
+    }
+
+    /// <summary>
+    /// Adds the effects from a WizItemTemplate to the ServerWizGameStats.
+    /// </summary>
+    /// <param name="stats">The ServerWizGameStats to add the effects to.</param>
+    /// <param name="template">The WizItemTemplate containing the effects.</param>
+    internal static void AddEffectsToGameStats(ServerWizGameStats stats, WizItemTemplate template) {
+        foreach (var effectInfo in template.m_equipEffects) {
+            AddGameEffectToStats(stats, effectInfo);
+        }
+    }
+
+    /// <summary>
+    /// Removes the effects from the game stats based on the given template.
+    /// </summary>
+    /// <param name="stats">The game stats to remove the effects from.</param>
+    /// <param name="template">The template containing the effects to be removed.</param>
+    internal static void RemoveEffectsFromGameStats(ServerWizGameStats stats, WizItemTemplate template) {
+        foreach (var effectInfo in template.m_equipEffects) {
+            RemoveGameEffectFromStats(stats, effectInfo);
+        }
+    }
+
+    /// <summary>
+    /// Removes the effects from a wizard based on a given WizItemTemplate.
+    /// </summary>
+    /// <param name="wizard">The wizard to remove effects from.</param>
+    /// <param name="template">The WizItemTemplate containing the effects to be removed.</param>
+    /// <returns>A list of GameEffectBase objects that were removed from the wizard.</returns>
+    internal static List<GameEffectBase> RemoveEffectsFromWizard(Wizard wizard, WizItemTemplate template) {
+        var removedEffects = new List<GameEffectBase>();
+        var slotHash = ItemHelper.GetItemSlotHash(template);
+
+        // Apply the effects from the template.
+        foreach (var effectInfo in template.m_equipEffects) {
+            // Find the effect in the player's list of effects.
+            var nameHash = StringHash.Compute(effectInfo.m_effectName);
+            var gameEffect = wizard.GameEffects.Find(e => e.m_effectNameID == nameHash && e.m_itemSlotID == slotHash);
+            if (gameEffect is null) {
+                Logger.Warning("Could not find effect {0} in player's list of effects.", Logger.Args(effectInfo.m_effectName));
+                continue;
+            }
+
+            removedEffects.Add(gameEffect);
+            wizard.GameEffects.Remove(gameEffect);
+            RemoveGameEffectFromStats(wizard.GameStats, effectInfo);
+
+            if (gameEffect is ProvideSpellEffect provideSpellEffect) {
+                // This is a little confusing. We need both the template and the template ID.
+                // The template is used to create the spell, and the template ID is used to add the spell to the player's spellbook.
+                var spellTemplatePath = $"Spells/{provideSpellEffect.m_spellName}.xml";
+                var spellTemplateId = CoreObjectFactory.GetCoreTemplateID(spellTemplatePath);
+
+                for (var i = 0; i < provideSpellEffect.m_numSpells; i++) {
+                    wizard.RemoveTemporarySpell(spellTemplateId);
+                }
+            }
+        }
+
+        return removedEffects;
+    }
+
+    internal static GameEffectBase AddGameEffectToStats(ServerWizGameStats stats, GameEffectInfo effectInfo) {
+        var gameEffect = GameEffectFactory.CreateEffectFromInfo(effectInfo, 0);
+        if (gameEffect is null) {
+            Logger.Warning("Could not create effect {0} from effect info.", Logger.Args(effectInfo.m_effectName));
+            return null;
+        }
+
+        if (gameEffect is WizStatisticEffect canonicalEffect) {
+            var canonicalEffectName = CanonicalStatEffects.GetEffectTemplate(effectInfo.m_effectName).m_effectName;
+            AddStatisticEffectToStats(stats, canonicalEffectName, canonicalEffect);
+        }
+        else if (gameEffect is StartingPipEffect pipEffect) {
+            stats.m_startingPips += (byte) pipEffect.m_pipsGiven;
+            stats.m_startingPowerPips += (byte) pipEffect.m_powerPipsGiven;
+        }
+
+        return gameEffect;
+    }
+
+    internal static GameEffectBase RemoveGameEffectFromStats(ServerWizGameStats stats, GameEffectInfo effectInfo) {
+        var gameEffect = GameEffectFactory.CreateEffectFromInfo(effectInfo, 0);
+        if (gameEffect is null) {
+            Logger.Warning("Could not create effect {0} from effect info.", Logger.Args(effectInfo.m_effectName));
+            return null;
+        }
+
+        if (gameEffect is WizStatisticEffect canonicalEffect) {
+            var canonicalEffectName = CanonicalStatEffects.GetEffectTemplate(effectInfo.m_effectName).m_effectName;
+            RemoveStatisticEffectFromStats(stats, canonicalEffectName, canonicalEffect);
+        }
+        else if (gameEffect is StartingPipEffect pipEffect) {
+            stats.m_startingPips -= (byte) pipEffect.m_pipsGiven;
+            stats.m_startingPowerPips -= (byte) pipEffect.m_powerPipsGiven;
+        }
+
+        return gameEffect;
+    }
+
     /// <summary>
     /// Adds a game effect to the specified game statistics.
     /// </summary>
     /// <param name="stats">The game statistics to modify.</param>
     /// <param name="effectName">The category of the game effect.</param>
     /// <param name="statistic">The specific game effect to apply.</param>
-    internal static void AddGameEffectToStats(ServerWizGameStats stats, string effectName, WizStatisticEffect statistic) {
+    internal static void AddStatisticEffectToStats(ServerWizGameStats stats, string effectName, WizStatisticEffect statistic) {
         // Apply effects that don't require a school.
         stats.m_baseHitpoints += (int) statistic.m_hitPointBonus;
         stats.m_baseMana += (int) statistic.m_manaBonus;
@@ -49,7 +196,7 @@ internal static class CharacterEffectHelper {
     /// <param name="stats">The game statistics to remove the effect from.</param>
     /// <param name="effectName">The name of the effect to remove.</param>
     /// <param name="statistic">The statistic effect to remove.</param>
-    internal static void RemoveGameEffectFromStats(ServerWizGameStats stats, string effectName, WizStatisticEffect statistic) {
+    internal static void RemoveStatisticEffectFromStats(ServerWizGameStats stats, string effectName, WizStatisticEffect statistic) {
         // Remove effects that don't require a school.
         stats.m_baseHitpoints -= (int) statistic.m_hitPointBonus;
         stats.m_baseMana -= (int) statistic.m_manaBonus;
@@ -71,82 +218,38 @@ internal static class CharacterEffectHelper {
         }
     }
 
-    internal static List<GameEffectBase> AddEffectsToWizard(Wizard wizard, WizItemTemplate template) {
-        var addedEffects = new List<GameEffectBase>();
-        var slotHash = ItemHelper.GetItemSlotHash(template);
-
-        // Apply the effects from the template.
-        foreach (var effectInfo in template.m_equipEffects) {
-            var gameEffect = GameEffectFactory.CreateEffectFromInfo(effectInfo, slotHash);
-            if (gameEffect is null) {
-                Logger.Warning("Could not create effect {0} from effect info.", Logger.Args(effectInfo.m_effectName));
-                continue;
-            }
-
-            gameEffect.m_internalID = wizard.GameEffects.Count;
-
-            if (gameEffect is WizStatisticEffect canonicalEffect) {
-                var canonicalEffectName = CanonicalStatEffects.GetEffectTemplate(effectInfo.m_effectName).m_effectName;
-                AddGameEffectToStats(wizard.GameStats, canonicalEffectName, canonicalEffect);
-            }
-
-            wizard.GameEffects.Add(gameEffect);
-            addedEffects.Add(gameEffect);
-        }
-
-        return addedEffects;
-    }
-
-    internal static List<GameEffectBase> RemoveEffectsFromWizard(Wizard wizard, WizItemTemplate template) {
-        var removedEffects = new List<GameEffectBase>();
-        var slotHash = ItemHelper.GetItemSlotHash(template);
-
-        // Apply the effects from the template.
-        foreach (var effectInfo in template.m_equipEffects) {
-            // Find the effect in the player's list of effects.
-            var nameHash = StringHash.Compute(effectInfo.m_effectName);
-            var gameEffect = wizard.GameEffects.Find(e => e.m_effectNameID == nameHash && e.m_itemSlotID == slotHash);
-            if (gameEffect is null) {
-                Logger.Warning("Could not find effect {0} in player's list of effects.", Logger.Args(effectInfo.m_effectName));
-                continue;
-            }
-
-            removedEffects.Add(gameEffect);
-            wizard.GameEffects.Remove(gameEffect);
-
-            if (gameEffect is WizStatisticEffect canonicalEffect) {
-                var canonicalEffectName = CanonicalStatEffects.GetEffectTemplate(effectInfo.m_effectName).m_effectName;
-                RemoveGameEffectFromStats(wizard.GameStats, canonicalEffectName, canonicalEffect);
-            }
-        }
-
-        return removedEffects;
-    }
-
     private static void ApplySchoolEffect(ref List<float> effectList, string schoolName, float value) {
-        // To apply the effects to the player, we need two parts of the effect:
-        // 1. The effect template, which tells us what school the effect applies to.
-        // 2. The effect itself, which contains the actual values of the effect.
-        // For example, fire accuracy:
-        // 1. The template has m_effectCategory "FireAccuracy."
-        // 2. The effect iself has m_accuracyBonusPercent "0.01."
-
         // Set the list if it doesn't exist. Give it a count equal to how many schools there are.
-        var schools = Enum.GetValues(typeof(MagicSchool));
-        effectList ??= new List<float>(new float[schools.Length]);
+        effectList ??= Enumerable.Repeat(0f, SCHOOL_COUNT).ToList();
 
         // Ensure that the effect list is the same length as the number of schools.
-        if (effectList.Count != schools.Length) {
-            effectList = new List<float>(new float[schools.Length]);
+        if (effectList.Count != SCHOOL_COUNT) {
+            var compensationRequired = SCHOOL_COUNT - effectList.Count;
+            effectList.AddRange(Enumerable.Repeat(0f, compensationRequired));
         }
 
-        // For each school, check if the effect category contains the school name.
-        for (var i = 0; i < schools.Length; i++) {
-            var school = (MagicSchool) schools.GetValue(i);
-            if (schoolName == school.ToString()) {
-                effectList[i] += value;
+        switch (schoolName) {
+            case "Fire":
+                effectList[0] += value;
                 break;
-            }
+            case "Ice":
+                effectList[1] += value;
+                break;
+            case "Storm":
+                effectList[2] += value;
+                break;
+            case "Myth":
+                effectList[3] += value;
+                break;
+            case "Life":
+                effectList[4] += value;
+                break;
+            case "Death":
+                effectList[5] += value;
+                break;
+            case "Balance":
+                effectList[6] += value;
+                break;
         }
     }
 

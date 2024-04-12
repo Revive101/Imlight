@@ -4,21 +4,23 @@
  */
 
 using Imlight.Common;
-using Imlight.Common.Configuration;
 using Imlight.Common.ObjectProperty.PropertyReflection;
-using Imlight.Common.Utilities;
-using Imlight.CoreLib.Game.Effects;
+using Imlight.CoreLib.Shared.Character;
+using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.WizardData.Implementations;
+using Imlight.CoreLib.WizardData.Models.Player;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using static Imlight.Common.Caches.TypeCache;
 
-namespace Imlight.CoreLib.WizardData.Models.Player;
+namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
-public class ServerWizEquipmentBehavior : BehaviorInstance, IClientBehaviorProvider<ClientWizEquipmentBehavior> {
+public class ServerWizEquipmentBehavior : ServerBehaviorInstance {
+    [JsonIgnore] public override bool NoTransfer { get; set; } = false;
+
     public List<EquipmentSlot> SlotList;
     public List<ulong> EquippedItemIds;
 
@@ -43,6 +45,12 @@ public class ServerWizEquipmentBehavior : BehaviorInstance, IClientBehaviorProvi
         EquippedItemIds.Add(itemId);
         EquippedItems.Add(item);
         return true;
+    }
+
+    public void ForceEquipItem(WizClientObjectItem item) {
+        var itemId = item.m_globalID;
+        EquippedItemIds.Add(itemId);
+        EquippedItems.Add(item);
     }
 
     public bool UnequipItem(ulong itemId) {
@@ -138,7 +146,6 @@ public class ServerWizEquipmentBehavior : BehaviorInstance, IClientBehaviorProvi
         return (byte) slotIndex;
     }
 
-
     private void UpdateEquipmentSlot(EquipmentSlotType slotType, string itemName,  ulong newItemId) {
         // Find the slot in the list. If it does, remove it.
         ClearEquipmentSlot(slotType);
@@ -161,12 +168,10 @@ public class ServerWizEquipmentBehavior : BehaviorInstance, IClientBehaviorProvi
         }
     }
 
-    public ClientWizEquipmentBehavior GetClientBehaviorInstance() {
-        return new ClientWizEquipmentBehavior {
-            m_equipmentSets = new List<EquipmentSet>(),
-            m_slotList = SlotList.Select(slot => slot.GetClientTypeAlternative()).ToList(),
-            m_itemList = EquippedItems.ConvertAll(item => item as CoreObject),
-            m_publicItemList = CharacterHelper.GetEquipmentList(this).m_infoList,
-        };
-    }
+    public override ClientWizEquipmentBehavior GetClientBehaviorInstance() => new() {
+        m_equipmentSets = new List<EquipmentSet>(),
+        m_slotList = SlotList?.Select(slot => slot.GetClientTypeAlternative()).ToList(),
+        m_itemList = EquippedItems?.ConvertAll(item => item as CoreObject),
+        m_publicItemList = CharacterHelper.GetEquipmentList(this).m_infoList,
+    };
 }

@@ -8,17 +8,23 @@ using Imlight.Common.Configuration;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.Common.Utilities;
 using Imlight.CoreLib.Game.Effects;
+using Imlight.CoreLib.Shared.Behaviors;
+using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using static Imlight.Common.Caches.TypeCache;
 
-namespace Imlight.CoreLib.WizardData.Implementations;
+namespace Imlight.CoreLib.Shared.Character;
 
 public static class CharacterHelper {
     internal const float OrientationCompressionFactor = 0.708f;
 
+    /// <summary>
+    /// Recalculates the game stats for a wizard.
+    /// </summary>
+    /// <param name="wizard">The wizard whose game stats need to be recalculated.</param>
     internal static void RecalculateGameStats(Wizard wizard) {
         Logger.Debug("Recalculation of game stats for {0}.", Logger.Args(wizard.PlayerNameBehavior.GetWizardName()));
 

@@ -15,7 +15,7 @@ public static class ConfigurationManager {
         Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
         ?? string.Empty, "Config/Imlight.ini");
 
-    private static readonly ServerSettings? s_settings;
+    private static ServerSettings? s_settings;
     public static ServerSettings Settings => s_settings ?? LoadOrCreateServerSettings();
 
     private static ServerSettings LoadOrCreateServerSettings() {
@@ -25,6 +25,8 @@ public static class ConfigurationManager {
 
         var iniData = File.ReadAllText(_path);
         var deserializedData = IniSerializer.Deserialize<ServerSettings>(iniData);
+
+        s_settings = deserializedData;
 
         return deserializedData;
     }

@@ -27,8 +27,7 @@ internal static class Program {
     // Imlight - NETHRA  -- We are in-game. The game is playable and mostly stable, but not feature complete.
     // Imlight - KALI    -- We feel very confident in the stability of previous systems. We are now focusing on combat.
     private const string ActorSystemName = "Imlight";
-    private const string MajorVersion = "NETHRA";
-    private const string Version = "1.2.0";
+    private const string MajorVersion = "KALI";
 
     private static ActorSystem s_imlightSystem;
     private static ResourceContainer s_resourceContainer;
@@ -130,6 +129,7 @@ internal static class Program {
 
         // Dev accounts; Hi, devs! Feel free to make your own account and add it here.
         new Jooty("jooty", "2342", "jay@r101net", AuthLevel.Administrator);
+        new MoMi("MoMi", "joji1", "MoMi@r101net", AuthLevel.Administrator);
         new Joji("joji", "jootysocoollike", "joji@r101.net", AuthLevel.Administrator);
         new MoMi("MoMi", "2109", "MoMi@r101.net", AuthLevel.Administrator);
         new Phill("phill", "gay", "phill@r101.net", AuthLevel.Administrator);
@@ -191,7 +191,7 @@ internal static class Program {
                         CalendarWeekRule.FirstDay,
                         DayOfWeek.Monday);
 
-        Console.Write($"   ({MajorVersion} {year}Q{quarter}.{week}c {buildConfiguration})\n");
+        Console.Write($" ({MajorVersion} {year}Q{quarter}.{week}c {buildConfiguration})\n");
         Console.WriteLine("");
     }
 
