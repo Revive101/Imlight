@@ -95,6 +95,10 @@ internal class CombatEffectApplicator {
             case SpellEffect.kSpellEffects.kModifyIncomingDamage:
             case SpellEffect.kSpellEffects.kDispel:
             case SpellEffect.kSpellEffects.kModifyAccuracy:
+            case SpellEffect.kSpellEffects.kModifyOutgoingHeal:
+            case SpellEffect.kSpellEffects.kModifyOutgoingHealFlat:
+            case SpellEffect.kSpellEffects.kModifyIncomingHeal:
+            case SpellEffect.kSpellEffects.kModifyIncomingHealFlat:
                 ApplyHangingEffect(effect, targets);
                 break;
             case SpellEffect.kSpellEffects.kStun:
@@ -235,6 +239,7 @@ internal class CombatEffectApplicator {
     private static int ApplyBlades(string school, int damage, CombatDuelActorSubCircle caster) {
         var blades = caster.HangingEffects
             .Where(x => x.m_effectType == SpellEffect.kSpellEffects.kModifyOutgoingDamage)
+            .Reverse()
             .ToList();
 
         var seen = new HashSet<uint>();
