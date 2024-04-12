@@ -93,6 +93,8 @@ internal class CombatEffectApplicator {
                 break;
             case SpellEffect.kSpellEffects.kModifyOutgoingDamage:
             case SpellEffect.kSpellEffects.kModifyIncomingDamage:
+            case SpellEffect.kSpellEffects.kDispel:
+            case SpellEffect.kSpellEffects.kModifyAccuracy:
                 ApplyHangingEffect(effect, targets);
                 break;
             case SpellEffect.kSpellEffects.kStun:

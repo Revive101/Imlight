@@ -12,6 +12,7 @@ using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models.Player;
 using static Imlight.Common.Caches.TypeCache;
+using Imlight.Common.Cryptography;
 
 namespace Imlight.CoreLib.Game.Combat;
 
@@ -20,7 +21,6 @@ public class QueuedCombatAction {
     public CombatDuelActorSubCircle TargetSubcircle;
     public Spell Spell;
     public SpellTemplate SpellTemplate;
-    public bool PredeterminedSuccess;
 }
 
 public class CombatActionDirector {
@@ -73,11 +73,9 @@ public class CombatActionDirector {
             return;
         }
 
-        // Determine if the spell fizzles.
-        var spellHits = false;
+        // Get the spell template.
         SpellTemplate spellTemplate = null;
         if (spell is not null) {
-            spellHits = spell is not null && SpellHits(caster, spell);
             spellTemplate = (SpellTemplate) CoreObjectFactory.GetCoreTemplate(spell.m_templateID);
         }
 
@@ -86,7 +84,6 @@ public class CombatActionDirector {
             TargetSubcircle = target,
             Spell = type == CombatMoveType.Attack ? spell : null,
             SpellTemplate = spellTemplate,
-            PredeterminedSuccess = spellHits,
         };
         _queuedCombatActions.Add(queuedAction);
 
@@ -167,7 +164,9 @@ public class CombatActionDirector {
                 continue;
             }
 
-            if (!action.PredeterminedSuccess && action.Spell is not null) {
+            // Determine if this spell hits or fizzles.
+            var spellHits = SpellHits(action.SpellCaster, action.Spell);
+            if (!spellHits && action.Spell is not null) {
                 Logger.Debug("Duel {0} | Slot {1} | Spell fizzles", Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex));
 
                 cinematicTime += HandleFizzleAction(action, combatActionList);
@@ -205,9 +204,7 @@ public class CombatActionDirector {
         }
 
         // If this spell action us successful, remove it from the combat deck of the caster.
-        if (action.PredeterminedSuccess) {
-            action.SpellCaster.DiscardCard(action.Spell);
-        }
+        action.SpellCaster.DiscardCard(action.Spell);
 
         // Remove the caster's pips. If the spell is mastered, power pips count as 2 pips.
         // Remove power pips before generic pips.
@@ -230,7 +227,7 @@ public class CombatActionDirector {
                 pipsToDeduct--;
             }
             else if (pipCount.m_powerPips == 0 && pipCount.m_genericPips == 0) {
-                throw new InvalidOperationException("Not enough pips to cast the spell.");
+                combatAction.m_spell = null;
             }
         }
 
@@ -280,6 +277,10 @@ public class CombatActionDirector {
     }
 
     private bool SpellHits(CombatDuelActorSubCircle caster, Spell spell) {
+        if (ConsumeDispell(caster, spell.m_magicSchoolID)) {
+            return false;
+        }
+
         var spellAccuracy = (int) spell.m_accuracy;
         var stats = caster.CombatParticipant.m_pGameStats;
         var school = (MagicSchool) spell.m_magicSchoolID;
@@ -294,9 +295,39 @@ public class CombatActionDirector {
         var totalDecrease = (percentDecrease + percentDecreaseAll) * 100;
 
         // Apply percentages to the spell accuracy
-        var newSpellAccuracy = spellAccuracy * (1 + totalIncrease / 100.0) * (1 - totalDecrease / 100.0);
+        spellAccuracy *= (int) Math.Floor((1 + totalIncrease / 100.0) * (1 - totalDecrease / 100.0));
+
+        // Apply any hanging accuracy effects
+        spellAccuracy = ConsumeHangingAccuracyEffects(spellAccuracy, caster, spell.m_magicSchoolID);
 
         var hitChance = new Random().Next(0, 100);
-        return hitChance <= newSpellAccuracy;
+        return hitChance <= spellAccuracy;
+    }
+
+    private static bool ConsumeDispell(CombatDuelActorSubCircle caster, uint magicSchoolId) {
+        var dispellHangingEffect = caster.HangingEffects
+            .FirstOrDefault(x => x.m_effectType == SpellEffect.kSpellEffects.kDispel
+                     && StringHash.Compute(x.m_sDamageType) == magicSchoolId);
+
+        if (dispellHangingEffect is not null) {
+            caster.HangingEffects.Remove(dispellHangingEffect);
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    private static int ConsumeHangingAccuracyEffects(int startingAccuracy, CombatDuelActorSubCircle caster, uint magicSchoolId) {
+        var accuracyHangingEffects = caster.HangingEffects
+            .Where(x => x.m_effectType == SpellEffect.kSpellEffects.kModifyAccuracy)
+            .Where(x => x.m_damageType == magicSchoolId);
+
+        foreach (var effect in accuracyHangingEffects) {
+            startingAccuracy += (int) Math.Floor(1 + effect.m_effectParam / 100.0);
+            caster.HangingEffects.Remove(effect);
+        }
+
+        return startingAccuracy;
     }
 }
