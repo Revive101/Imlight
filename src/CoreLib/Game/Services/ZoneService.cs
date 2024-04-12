@@ -140,6 +140,15 @@ public class ZoneService : MessageService {
         
         SendToSocket(addeffect);
 
+        var enterState = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
+            GameObjectID = GetActiveGameObject().m_globalID,
+            State = 455326240,
+            Data = "",
+            IgnoreIfCurrentStateIsOff = 0
+        };
+
+        SendToSocket(enterState);
+
         NamedEffect effect2 = new NamedEffect {
             m_bIsOnPet = false,
             m_currentTickCount = 0,
