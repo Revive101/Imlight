@@ -330,24 +330,7 @@ public class ZoneService : MessageService {
 
         SendToSocket(enterState);
 
-        NamedEffect effect = new NamedEffect {
-            m_bIsOnPet = false,
-            m_currentTickCount = 0,
-            m_effectNameID = StringHash.Compute("RecallHome"),
-            m_endTime = (uint) now.AddSeconds(200).ToUnixTimeSeconds(),
-            m_internalID = wizard.GameEffects.Count,
-            m_itemSlotID = 0,
-            m_originatorID = new GID { Value = 0 },
-            m_overrideName = ""
-        };
-        
-        wizard.GameEffects.Add(effect);
-        var serializedEffect = _effectSerializer.Serialize(effect);
-        var addEffect = new GAME_5_PROTOCOL.MSG_ADDEFFECT {
-            GameObjectID = wizard.GameObject.m_globalID,
-            EffectData = serializedEffect
-        };
-        SendToSocket(addEffect);
+        SendRecallHomeEffect(now);
     }
 
     private void SendCantGoHomeEffect(DateTimeOffset unixTimeStart) {
@@ -370,6 +353,28 @@ public class ZoneService : MessageService {
             EffectData = serializedEffect
         };
         
+        SendToSocket(addEffect);
+    }
+
+    private void SendRecallHomeEffect(DateTimeOffset time) {
+        var wizard = GetActiveWizard();
+        NamedEffect effect = new NamedEffect {
+            m_bIsOnPet = false,
+            m_currentTickCount = 0,
+            m_effectNameID = StringHash.Compute("RecallHome"),
+            m_endTime = (uint) time.AddSeconds(2).ToUnixTimeSeconds(),
+            m_internalID = wizard.GameEffects.Count,
+            m_itemSlotID = 0,
+            m_originatorID = new GID { Value = 0 },
+            m_overrideName = ""
+        };
+        
+        wizard.GameEffects.Add(effect);
+        var serializedEffect = _effectSerializer.Serialize(effect);
+        var addEffect = new GAME_5_PROTOCOL.MSG_ADDEFFECT {
+            GameObjectID = wizard.GameObject.m_globalID,
+            EffectData = serializedEffect
+        };
         SendToSocket(addEffect);
     }
 }
