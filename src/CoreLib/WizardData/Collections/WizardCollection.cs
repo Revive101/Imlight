@@ -231,6 +231,24 @@ public static class WizardCollection {
     }
 
     /// <summary>
+    /// Updates the character's last time they clicked the "go to ___ (ex. commons)" button.
+    /// Confusingly, Kingsisle calls this the home button, while the wizard's house is called their dorm.
+    /// </summary>
+    /// <param name="wizard">The wizard to update the time for</param>
+    public static void UpdateCharacterTimeWentHome(Wizard wizard, long time) {
+        using var session = s_store.OpenSession();
+
+        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
+            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        if (existingCharacter is null) {
+            return;
+        }
+
+        existingCharacter.TimeHomeLastClicked = time;
+        session.SaveChanges();
+    }
+
+    /// <summary>
     /// Adds a spell to the spellbook of a wizard.
     /// </summary>
     /// <param name="wizard">The wizard to add the spell to.</param>

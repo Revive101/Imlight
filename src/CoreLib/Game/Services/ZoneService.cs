@@ -4,7 +4,6 @@
  */
 
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Imlight.Common;
@@ -177,9 +176,39 @@ public class ZoneService : MessageService {
             DestinationLocation = zoneMap.m_location,
             SendToClient = true
         };
-
+        
+        wizard.SetTimeHomeLastClicked(now.ToUnixTimeSeconds());
         Task.Run(async () => await Task.Delay(TimeSpan.FromSeconds(2))).Wait();
         ReceiveZoneTransferRequest(tpmsg);
+    }
+
+    [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE))]
+    private void ReceiveAttachComplete(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE message) {
+        var wizard = GetActiveWizard();
+        var time_home_last_clicked = DateTimeOffset.FromUnixTimeSeconds(wizard.TimeHomeLastClicked);
+        var time_difference = DateTimeOffset.UtcNow.Subtract(time_home_last_clicked);
+        
+        if (time_difference.TotalSeconds < 30) {
+            NamedEffect effect = new NamedEffect {
+                m_bIsOnPet = false,
+                m_currentTickCount = 0,
+                m_effectNameID = StringHash.Compute("CantGoHome"),
+                m_endTime = (uint) time_home_last_clicked.AddSeconds(30).ToUnixTimeSeconds(),
+                m_internalID = wizard.GameEffects.Count,
+                m_itemSlotID = 0,
+                m_originatorID = new GID { Value = 0 },
+                m_overrideName = ""
+            };
+            var serializedEffect = _effectSerializer.Serialize(effect);
+            wizard.GameEffects.Add(effect);
+
+            var addeffect = new GAME_5_PROTOCOL.MSG_ADDEFFECT {
+                GameObjectID = GetActiveWizard().GameObject.m_globalID,
+                EffectData = serializedEffect
+            };
+            
+            SendToSocket(addeffect);
+        }
     }
 
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_WORLDTELEPORTREQUEST))]
