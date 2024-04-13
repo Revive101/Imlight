@@ -19,12 +19,18 @@ public class Logger {
     private static readonly string s_path = ConfigurationManager.Settings.LogPath;
     private static readonly string s_logFormat = ConfigurationManager.Settings.LogFormat;
     private static readonly string s_logLevel = ConfigurationManager.Settings.LogLevel;
+    private static readonly string s_seqUrl = ConfigurationManager.Settings.SeqSinkUrl;
 
     public static ILogger Log { get; } = new LoggerConfiguration()
         .MinimumLevel.ControlledBy(new LoggingLevelSwitch { MinimumLevel = GetLogLevel(s_logLevel) })
         .Enrich.FromLogContext()
+        .Enrich.WithThreadId()
+        .Enrich.WithThreadName()
+        .Enrich.WithEnvironmentName()
+        .Enrich.WithMachineName()
         .WriteTo.Console(outputTemplate: s_logFormat)
         .WriteTo.File(s_path, rollingInterval: RollingInterval.Day)
+        .WriteTo.Seq(s_seqUrl)
         .CreateLogger();
 
     /// <summary>

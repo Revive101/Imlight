@@ -26,6 +26,10 @@ public sealed class ServerSettings {
     [DefaultValue("{Timestamp:yyyy-MM-dd HH:mm:ss.fff} {Level:u3} {CallingSpace} : {Message:lj} {NewLine}{Exception}")]
     public string LogFormat { get; set; }
 
+    [DefaultValue("http://localhost:5341")]
+    [Description("The URL to the Seq sink.")]
+    public string SeqSinkUrl { get; set; }
+
     #endregion
 
     #region Login Server
