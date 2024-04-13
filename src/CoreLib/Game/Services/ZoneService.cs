@@ -119,19 +119,21 @@ public class ZoneService : MessageService {
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_GOHOME))]
     private void ReceiveGoHome(WIZARD_12_PROTOCOL.MSG_GOHOME message) {
         // this teleports the wizard to the world hub, NOT their home/dorm. for that you want MSG_GOTODORM. goofy ahh naming scheme
+        var wizard = GetActiveWizard();
+        var now = DateTimeOffset.UtcNow;
 
         NamedEffect effect = new NamedEffect {
             m_bIsOnPet = false,
             m_currentTickCount = 0,
             m_effectNameID = StringHash.Compute("CantGoHome"),
-            m_endTime = (uint) DateTime.UtcNow.AddSeconds(30).Ticks,
-            m_internalID = GetActiveWizard().GameEffects.Count,
+            m_endTime = (uint) now.AddSeconds(30).ToUnixTimeSeconds(),
+            m_internalID = wizard.GameEffects.Count,
             m_itemSlotID = 0,
             m_originatorID = new GID { Value = 0 },
             m_overrideName = ""
         };
         var serializedEffect = _effectSerializer.Serialize(effect);
-        GetActiveWizard().GameEffects.Add(effect);
+        wizard.GameEffects.Add(effect);
 
         var addeffect = new GAME_5_PROTOCOL.MSG_ADDEFFECT {
             GameObjectID = GetActiveGameObject().m_globalID,
@@ -153,14 +155,14 @@ public class ZoneService : MessageService {
             m_bIsOnPet = false,
             m_currentTickCount = 0,
             m_effectNameID = StringHash.Compute("RecallHome"),
-            m_endTime = (uint) DateTime.UtcNow.AddSeconds(200).Ticks,
-            m_internalID = GetActiveWizard().GameEffects.Count,
+            m_endTime = (uint) now.AddSeconds(200).ToUnixTimeSeconds(),
+            m_internalID = wizard.GameEffects.Count,
             m_itemSlotID = 0,
             m_originatorID = new GID { Value = 0 },
             m_overrideName = ""
         };
         
-        GetActiveWizard().GameEffects.Add(effect2);
+        wizard.GameEffects.Add(effect2);
         var serializedEffect2 = _effectSerializer.Serialize(effect2);
         var addeffect2 = new GAME_5_PROTOCOL.MSG_ADDEFFECT {
             GameObjectID = GetActiveGameObject().m_globalID,
@@ -168,7 +170,7 @@ public class ZoneService : MessageService {
         };
         SendToSocket(addeffect2);
 
-        var currentZone = GetActiveWizard().Zone;
+        var currentZone = wizard.Zone;
         var zoneMap = WorldHubZones.GetHubZoneMapping(currentZone);
         var tpmsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
             DestinationZone = zoneMap.m_hubZone,
