@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Imlight.Common;
+using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Raven.Client.Documents;
@@ -236,6 +237,94 @@ public static class WizardItemCollection {
         // Save the changes.
         session.SaveChanges();
         return true;
+    }
+
+    /// <summary>
+    /// Adds an item to the deck with the specified deck ID and spell template ID.
+    /// </summary>
+    /// <param name="deckId">The ID of the deck.</param>
+    /// <param name="spellTemplateId">The ID of the spell template.</param>
+    /// <returns>True if the item was successfully added to the deck, false otherwise.</returns>
+    public static bool AddSpellToDeck(ulong deckId, uint spellTemplateId) {
+        using var session = s_store.OpenSession();
+
+        // Get the deck from the items collection.
+        var associatedDeck = session.Query<WizClientObjectItem>(collectionName: CollectionName)
+            .FirstOrDefault(x => x.m_globalID == deckId);
+
+        // If the deck was not found, return false.
+        if (associatedDeck == null) {
+            return false;
+        }
+
+        // Search through the item behaviors to find the deck behavior.
+        if (!CoreObjectFactory.FindBehaviorInstance<DeckBehavior>(associatedDeck, out var deckBehavior)) {
+            Logger.Error("Failed to find the deck behavior for item {0}.", Logger.Args(associatedDeck.m_globalID));
+            return false;
+        }
+
+        // Add the spell to the deck.
+        var spellList = deckBehavior.m_spellList ?? new List<SpellData>();
+        var spellDeckData = spellList.Find(x => x.m_templateID == spellTemplateId);
+        if (spellDeckData is null) {
+            // It may not be included yet. We'll add another entry.
+            var newSpellDeckData = new SpellData {
+                m_templateID = spellTemplateId,
+                m_quantity = 1
+            };
+            spellList.Add(newSpellDeckData);
+        }
+        else {
+            // Otherwise, we'll just increment the quantity.
+            spellDeckData.m_quantity++;
+        }
+
+        // Save the changes.
+        deckBehavior.m_spellList = spellList;
+        session.SaveChanges();
+        return true;
+    }
+
+    /// <summary>
+    /// Removes a spell from a deck.
+    /// </summary>
+    /// <param name="deckId">The ID of the deck.</param>
+    /// <param name="spellTemplateId">The ID of the spell template to remove.</param>
+    public static void RemoveSpellFromDeck(ulong deckId, uint spellTemplateId) {
+        using var session = s_store.OpenSession();
+
+        // Get the deck from the items collection.
+        var associatedDeck = session.Query<WizClientObjectItem>(collectionName: CollectionName)
+            .FirstOrDefault(x => x.m_globalID == deckId);
+
+        // If the deck was not found, return false.
+        if (associatedDeck == null) {
+            return;
+        }
+
+        // Search through the item behaviors to find the deck behavior.
+        if (!CoreObjectFactory.FindBehaviorInstance<DeckBehavior>(associatedDeck, out var deckBehavior)) {
+            Logger.Error("Failed to find the deck behavior for item {0}.", Logger.Args(associatedDeck.m_globalID));
+            return;
+        }
+
+        // Remove the spell from the deck.
+        var spellList = deckBehavior.m_spellList ?? new List<SpellData>();
+        var spellDeckData = spellList.Find(x => x.m_templateID == spellTemplateId);
+        if (spellDeckData is null) {
+            return;
+        }
+
+        if (spellDeckData.m_quantity > 1) {
+            spellDeckData.m_quantity--;
+        }
+        else {
+            spellList.Remove(spellDeckData);
+        }
+
+        // Save the changes.
+        deckBehavior.m_spellList = spellList;
+        session.SaveChanges();
     }
 
     /// <summary>

@@ -4,11 +4,16 @@
  */
 
 using System.Collections.Generic;
+using System.Linq;
 using Akka.Actor;
+using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.ObjectProperty;
+using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Implementations;
 using SharpDX;
 using static Imlight.Common.Caches.TypeCache;
 
@@ -17,11 +22,12 @@ namespace Imlight.CoreLib.Game.Zone;
 /// <summary>
 /// This is a zone object which manages itself as an actor.
 /// </summary>
-public class WizardZoneObject : ReceiveProtocolDispatcher {
+public class WizardZoneObject : ReceiveProtocolDispatcher, IClientTypeProvider<WizClientObject> {
     public readonly CoreObject ActiveGameObject;
     public readonly CoreTemplate Template;
 
     protected readonly IActorRef WizardZoneRef;
+    protected readonly List<BehaviorInstance> Behaviors = new();
     protected float InteractionRadius = 300f;
 
     private readonly List<CoreObject> _objsInRadius;
@@ -35,7 +41,26 @@ public class WizardZoneObject : ReceiveProtocolDispatcher {
     }
 
     // Akka.NET ctor
-    public static Props Props(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef) => Akka.Actor.Props.Create(() => new WizardZoneObject(activeGameObject, template, wizardZoneRef));
+    public static Props Props(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef)
+        => Akka.Actor.Props.Create(() => new WizardZoneObject(activeGameObject, template, wizardZoneRef));
+
+    /// <summary>
+    /// Tries to retrieve the behavior of type T from the list of behaviors.
+    /// </summary>
+    /// <typeparam name="T">The type of behavior to retrieve.</typeparam>
+    /// <param name="behavior">The behavior of type T if found, otherwise null.</param>
+    /// <returns>True if the behavior of type T is found, otherwise false.</returns>
+    public bool TryGetBehavior<T>(out T behavior) where T : BehaviorInstance {
+        foreach (var b in Behaviors) {
+            if (b is T t) {
+                behavior = t;
+                return true;
+            }
+        }
+
+        behavior = null;
+        return false;
+    }
 
     /// <summary>
     /// Called when a player joins the wizard zone. Sends the player the object data and adds the object to the zone.
@@ -54,7 +79,7 @@ public class WizardZoneObject : ReceiveProtocolDispatcher {
             .OnPropertyMask(SerializerOptions.PropertyFlags.Public
                 | SerializerOptions.PropertyFlags.Transmit
                 | SerializerOptions.PropertyFlags.AuthorityTransmit);
-        var msg = new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = serializer.Serialize(ActiveGameObject) };
+        var msg = new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = serializer.Serialize(GetClientTypeAlternative()) };
         suspect.Tell(msg);
 
         Sender.Tell(new ZONE_102_PROTOCOL.MSG_ADDOBJECTRSP());
@@ -173,10 +198,72 @@ public class WizardZoneObject : ReceiveProtocolDispatcher {
     protected void ReceiveStatusCheck(ZONE_102_PROTOCOL.MSG_OBJECTSTATUSCHECK message) =>
         OnStatusCheck();
 
+    protected void SpawnSelf() {
+        var serializer = new CoreObjectSerializer()
+                    .OnBehaviors(SerializerOptions.Behaviors.None)
+                    .OnPropertyMask(SerializerOptions.PropertyFlags.Public
+                        | SerializerOptions.PropertyFlags.Transmit
+                        | SerializerOptions.PropertyFlags.AuthorityTransmit);
+        var msg = new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = serializer.Serialize(GetClientTypeAlternative()) };
+
+        // Broadcast the spawn of this creature to all players.
+        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+            Message = msg,
+            Selfless = true,
+            Sender = Self
+        };
+        WizardZoneRef.Tell(broadcastMsg);
+    }
+
     private bool IsInRadius(CoreObject obj1) {
         var sqrtDist = (obj1.m_location - GetPosition()).LengthSquared();
         var sqrtRadius = InteractionRadius * InteractionRadius;
 
         return sqrtDist <= sqrtRadius;
+    }
+
+    public WizClientObject GetClientTypeAlternative() {
+        var gameObj = new WizClientObject() {
+            m_debugName = ActiveGameObject.m_debugName,
+            m_globalID = ActiveGameObject.m_globalID,
+            m_location = ActiveGameObject.m_location,
+            m_nMobileID = ActiveGameObject.m_nMobileID,
+            m_orientation = ActiveGameObject.m_orientation,
+            m_permID = ActiveGameObject.m_permID,
+            m_templateID = ActiveGameObject.m_templateID,
+            m_zoneTagID = ActiveGameObject.m_zoneTagID,
+            m_inactiveBehaviors = ActiveGameObject.m_inactiveBehaviors ?? new(),
+        };
+
+        foreach (var behaviorInstance in this.Behaviors) {
+            BehaviorInstance instance = behaviorInstance;
+
+            // If this is a server behavior, it may not play nicely in the client when we serialize it.
+            // We need to convert it to a client behavior.
+            if (instance is ServerBehaviorInstance serverBehaviorInstance) {
+                if (serverBehaviorInstance.NoTransfer) {
+                    continue;
+                }
+
+                instance = serverBehaviorInstance.GetClientBehaviorInstance();
+            }
+
+            // Check to see if there is already a behavior of this type in the list.
+            // If there is, replace it.
+            var existing = gameObj.m_inactiveBehaviors
+                .Where(x => x is not null)
+                .FirstOrDefault(x => x.GetType() == instance.GetType());
+            if (existing != null) {
+                var idx = gameObj.m_inactiveBehaviors.IndexOf(existing);
+                gameObj.m_inactiveBehaviors[idx] = instance;
+            }
+            else {
+                // This will cause the client to crash if the behavior does not exist in the template.
+                Logger.Fatal("{0} contains behavior {1} that does not exist in the template.",
+                    Logger.Args(ActiveGameObject.m_debugName, behaviorInstance.GetType().Name));
+            }
+        }
+
+        return gameObj;
     }
 }

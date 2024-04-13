@@ -4,10 +4,11 @@
  */
 
 using Imlight.Common;
+using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models.Player;
 using static Imlight.Common.Caches.TypeCache;
 
-namespace Imlight.CoreLib.WizardData.Implementations;
+namespace Imlight.CoreLib.Shared.Items;
 
 public static class DyeMapper {
     /// <summary>

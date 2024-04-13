@@ -3,16 +3,19 @@
  * Proprietary and confidential.
  */
 
+using System;
 using Imlight.Common.IO;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Implementations;
-using System;
+using Newtonsoft.Json;
 using static Imlight.Common.Caches.TypeCache;
 
-namespace Imlight.CoreLib.WizardData.Models.Player;
+namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
-public class ServerWizPlayerNameBehavior : BehaviorInstance, IClientBehaviorProvider<ClientWizPlayerNameBehavior> {
+public class ServerWizPlayerNameBehavior : ServerBehaviorInstance {
+    [JsonIgnore] public override bool NoTransfer { get; set; } = false;
+
     public uint NameIndices;
     public bool UseRank;
     public eGender Gender;
@@ -35,12 +38,15 @@ public class ServerWizPlayerNameBehavior : BehaviorInstance, IClientBehaviorProv
         return actualName;
     }
 
-    public ClientWizPlayerNameBehavior GetClientBehaviorInstance() {
+    public override ClientWizPlayerNameBehavior GetClientBehaviorInstance() {
         // If the name override is set, we want to add the friendly player icon to the name
         // since the client won't do it automatically anymore.
         var nameOverride = new WideByteString();
         if (NameOverride.Length > 0 && FriendlyPlayer) {
             nameOverride = $"<image;FriendlyPlayer> {NameOverride} <image;FriendlyPlayer>";
+        }
+        else {
+            nameOverride = NameOverride;
         }
 
         return new ClientWizPlayerNameBehavior {

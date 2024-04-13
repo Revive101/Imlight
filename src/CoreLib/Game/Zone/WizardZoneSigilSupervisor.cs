@@ -16,7 +16,7 @@ namespace Imlight.CoreLib.Game.Zone;
 
 /// <summary>
 /// Exists as a child of <see cref="WizardZone"/> and supervises
-/// a bunch of child <see cref="WizardZoneCombatSigil"/> actors.
+/// a bunch of child <see cref="WizardZoneSigil"/> actors.
 /// </summary>
 public class WizardZoneSigilSupervisor : ReceiveProtocolDispatcher {
     private readonly IActorRef _wizardZoneRef;
@@ -36,7 +36,7 @@ public class WizardZoneSigilSupervisor : ReceiveProtocolDispatcher {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDCOMBATSIGIL))]
     private void ReceiveAddCombatSigil(ZONE_102_PROTOCOL.MSG_ADDCOMBATSIGIL message) {
-        var props = WizardZoneCombatSigil.Props(message.CoreObject, message.Template, _wizardZoneRef);
+        var props = WizardZoneSigil.Props(message.CoreObject, message.SigilType, message.Template, _wizardZoneRef);
         var actorCreated = CreateChildActor(props);
 
         // We need to actually store the CoreObject so we can use it later.
@@ -61,6 +61,15 @@ public class WizardZoneSigilSupervisor : ReceiveProtocolDispatcher {
 
         // Forward the message to the closest sigil.
         closestSigilActor.Forward(message);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST))]
+    private void ReceiveZoneObjectBroadcast(ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST message) {
+        foreach (var sigilActor in _sigils.Keys) {
+            foreach (var msg in message.Messages) {
+                sigilActor.Forward(msg);
+            }
+        }
     }
 
     private IActorRef CreateChildActor(Props props) => Context.ActorOf(props);

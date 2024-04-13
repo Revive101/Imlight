@@ -23,21 +23,13 @@ namespace Imlight.CoreLib.Shared.Networking;
 /// <summary>
 /// Represents a connected socket as a ReceiveActor.
 /// </summary>
-public class SessionActor : ReceiveActor, IDisposable {
-    private readonly int _bufferSize                         = ConfigurationManager.Settings.SessionActorBufferSize;
-    private readonly byte _asyncSendPoolCount                = ConfigurationManager.Settings.SessionActorSendPoolSize;
-    private readonly byte _asyncReceivePoolCount             = ConfigurationManager.Settings.SessionActorReceivePoolSize;
-    private readonly bool _closeOnSocketException            = ConfigurationManager.Settings.SessionActorCloseOnException;
+public sealed class SessionActor : ReceiveActor, IDisposable {
     private readonly byte _serviceRetryCount                 = ConfigurationManager.Settings.SessionActorServiceRetryCount;
     private readonly byte _serviceTimeRangeRetryInSeconds    = ConfigurationManager.Settings.SessionActorServiceRangeRetry;
-    private readonly int _tokenBucketMax                     = ConfigurationManager.Settings.SessionTokenBucketMax;
-    private readonly int _tokenBucketPerSecond               = ConfigurationManager.Settings.SessionTokenBucketPerSecond;
-    private readonly byte _tokenBucketFailedAcquisitionLimit = ConfigurationManager.Settings.SessionTokenBucketFailedAcquisitionLimit;
 
     public ushort SessionID                                  { get; }
     public uint OfferTime                                    { get; set; }
     public uint OfferMillisecondsIntoSecond                  { get; set; }
-    public Socket Socket                                     { get; }
     public IActorRef ActorRef                                { get; }
     public IActorRef ServerRef                               { get; }
     public bool SessionValid                                 { get; private set; }
@@ -45,36 +37,26 @@ public class SessionActor : ReceiveActor, IDisposable {
     public ushort QueuePosition                              { get; private set; }
     public IMessage CachedDequeueMessage                     { get; set; }
     public long Ping                                         { get; private set; }
-    public string Ip => Socket?.RemoteEndPoint?.ToString();
-    public string RemoteIp => Socket?.RemoteEndPoint?.ToString().Split(':')[0];
+
+    public string Ip;
+    public string RemoteIp;
 
     private readonly IActorRef _actorFactoryRef;
     private readonly Dictionary<IActorRef, MessageService> _services;
-    private readonly SocketAsyncEventArgs _socketSendArgs = new();
-    private List<IMessage> _preInitMessages;
-    private readonly TokenBucket _tokenBucket;
-    private readonly Stack<SocketAsyncEventArgs> _receiveEventArgPool = new();
-    private readonly List<Type> _suppressedPackets;
-    private bool _isSending;
+    private readonly Socket _socket;
+    private readonly List<IMessage> _preInitMessages = new();
+    private IActorRef _socketListenerRef;
+    private IActorRef _socketSenderRef;
     private bool _isDisposed;
 
     // ctor
     public SessionActor(Socket socket, ushort sessionId, IActorRef server) {
-        this.Socket = socket;
+        this._socket = socket;
+        this.Ip = socket.RemoteEndPoint.ToString();
+        this.RemoteIp = socket.RemoteEndPoint.ToString().Split(':')[0];
         this.SessionID = sessionId;
         this._services = new Dictionary<IActorRef, MessageService>();
-        this._preInitMessages = new List<IMessage>();
         this.ServerRef = server;
-        this._suppressedPackets = new List<Type>
-        {
-            typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVE),
-            typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVESTATE),
-            typeof(GAME_5_PROTOCOL.MSG_SERVERMOVE),
-            typeof(LOGIN_7_PROTOCOL.MSG_LOGIN_NOT_AFK),
-            typeof(ControlMessageProtocol.KeepAlive),
-            typeof(ControlMessageProtocol.KeepAliveResponse)
-        };
-        this._tokenBucket = new TokenBucket(_tokenBucketMax, _tokenBucketPerSecond);
 
         // To get the actor factory reference, we'll ask the server.
         var query = new SERVER_100_PROTOCOL.MSG_QUERYACTORFACTORY();
@@ -84,8 +66,8 @@ public class SessionActor : ReceiveActor, IDisposable {
 
         ActorRef = Context.Self;
 
+        CreateSocketActors(socket);
         ConfigureReceivers();
-        ProcessReceive(GetReceiveEventArgsFromPool());
     }
 
     // Akka.NET ctor
@@ -106,7 +88,7 @@ public class SessionActor : ReceiveActor, IDisposable {
     /// </summary>
     public void Dequeue() {
         // Send the dequeue message to the socket.
-        SendToSocket(CachedDequeueMessage);
+        _socketListenerRef.Tell(CachedDequeueMessage);
     }
 
     /// <summary>
@@ -243,26 +225,27 @@ public class SessionActor : ReceiveActor, IDisposable {
             return;
         }
 
+        Logger.Debug("SessionActor {Id} disposing.", Logger.Args(SessionID));
         _isDisposed = true;
 
         // Send a message to the server to deallocate this SessionActor.
         var msg = new SERVER_100_PROTOCOL.MSG_DEALLOCATESOCKET() {
             Id = SessionID,
-            Socket = this.Socket,
+            Socket = this._socket,
             Ip = this.RemoteIp
         };
         ServerRef.Tell(msg);
+
+        _socketListenerRef.Tell("Close");
 
         // Dispose services.
         SendPreDisposeToServices();
         SendDisposeToServices();
 
+        Sender.Tell("DoneDisposing");
+
         // Dispose self.
         ActorRef.Tell(PoisonPill.Instance);
-        Socket?.Close();
-
-        _socketSendArgs?.Dispose();
-        Socket?.Dispose();
     }
 
     protected override SupervisorStrategy SupervisorStrategy() {
@@ -315,32 +298,35 @@ public class SessionActor : ReceiveActor, IDisposable {
         Receive<SERVICE_101_PROTOCOL.MSG_GETALLSERVICES>(InitializeActiveSession);
         Receive<SERVER_100_PROTOCOL.MSG_PING>(x => this.Ping = x.Ping);
         Receive<Exception>(ReceiveException);
+        Receive<SERVER_100_PROTOCOL.MSG_RECEIVEDPACKET>(x => HandlePacket(x.Packet));
 
         // Generic message handlers.
         Receive<IServerMessage>(HandleInternalTell);
         Receive<IMessage>(SendToSocket);
     }
 
-    private void InitializeActiveSession(SERVICE_101_PROTOCOL.MSG_GETALLSERVICES message) {
-        // Ask the ActorFactory for this actor's message services.
-        var msg = new SERVICE_101_PROTOCOL.MSG_QUERYLOADEDSERVICES();
-        var services = _actorFactoryRef
-            .Ask<SERVICE_101_PROTOCOL.MSG_SERVICESLIST>(msg)
-            .Result
-            .Services;
+    private void CreateSocketActors(Socket socket) {
+        // Create the socket receiver actor.
+        var props = Akka.Actor.Props.Create(() => new SocketListener(Self, socket, SessionID));
+        _socketListenerRef = Context.ActorOf(props, $"SocketListener-{SessionID}");
 
-        SetServices(services);
+        // Create the socket sender actor.
+        var senderProps = Akka.Actor.Props.Create(() => new SocketSender(Self, socket, SessionID));
+        _socketSenderRef = Context.ActorOf(senderProps, $"SocketSender-{SessionID}");
+    }
+
+    private void SendToSocket(IMessage message) {
+        _socketSenderRef.Forward(message);
+    }
+
+    private void InitializeActiveSession(SERVICE_101_PROTOCOL.MSG_GETALLSERVICES message) {
         SessionValid = true;
 
-        // Finally handle cached messages.
-        if (_preInitMessages is null) {
-            return;
-        }
+        Logger.Debug("SessionActor {Id} initialized with all services.", Logger.Args(SessionID));
 
         foreach (var preInitMessage in _preInitMessages) {
             HandlePacket(preInitMessage);
         }
-        _preInitMessages = null;
     }
 
     private void SetServices(List<Type> services) {
@@ -366,8 +352,31 @@ public class SessionActor : ReceiveActor, IDisposable {
         Dispose();
     }
 
-    private void SendOldContextException(Exception ex) {
-        ActorRef.Tell(ex);
+    private void HandlePacket(IMessage packet) {
+        // If the session still is not valid (the client hasn't completed the session handshake)
+        // we'll cache all non-control messages for later processing.
+        if (!SessionValid && packet.ServiceId != 0) {
+            _preInitMessages.Add(packet);
+
+            Logger.Verbose("SessionActor {Id} cached message {MessageName} for later processing.",
+                Logger.Args(SessionID, packet.GetType().Name));
+            return;
+        }
+
+        // Iterate through services and forward the message to any service that can handle the message.
+        var wasDispatched = false;
+        foreach (var (actorRef, type) in _services) {
+            if (type.MessageHandlers.All(x => x.Key != packet.GetType())) {
+                continue;
+            }
+
+            actorRef.Forward(packet);
+            wasDispatched = true;
+        }
+
+        if (!wasDispatched) {
+            Unhandled(packet);
+        }
     }
 
     private void SendPreDisposeToServices() {
@@ -395,216 +404,4 @@ public class SessionActor : ReceiveActor, IDisposable {
             actorRef.Tell(new SERVICE_101_PROTOCOL.MSG_DISPOSE());
         }
     }
-
-    #region Socket Operations
-
-    private void ProcessReceive(SocketAsyncEventArgs eventArgs) {
-        if (!Socket.ReceiveAsync(eventArgs)) {
-            OnReceiveCompleted(eventArgs);
-        }
-    }
-
-    private void OnReceiveCompleted(SocketAsyncEventArgs e) {
-        if (!_tokenBucket.TryAcquire()) {
-            Logger.Warning("SessionActor {SessionId} failed to acquire token.", Logger.Args(SessionID));
-
-            // The rate limit was reached.
-            var failedAcquisitionCount = _tokenBucket.GetFailedAcquisitionCount();
-            if (failedAcquisitionCount >= _tokenBucketFailedAcquisitionLimit) {
-                // Log warning.
-                Logger.Warning("SessionActor [{SessionId}] failed to acquire token {FailedAcquisitionCount} times.",
-                    Logger.Args(SessionID, failedAcquisitionCount));
-
-                // The session has exceeded the failed acquisition limit. We'll dispose of the session.
-                SendOldContextException(new SessionFatalException($"SessionActor [{SessionID}] failed to acquire " +
-                                                                  $"token {failedAcquisitionCount} times. " +
-                                                                  $"Session will be disposed."));
-                return;
-            }
-
-            return;
-        }
-
-        // If receive failed, chances are the socket suddenly disconnected.
-        if (e.SocketError != SocketError.Success) {
-            // If the socket is not connected, we'll just dispose of the session. We cannot just throw the error
-            // here, because the actor context is on a different thread. We'll just send a message to the actor
-            // and let it handle the error.
-            SendOldContextException(new SessionFatalException($"SessionActor socket {e.SocketError}."));
-            return;
-        }
-        if (e.BytesTransferred <= 0) {
-            // If the bytes transferred is 0, the socket has disconnected.
-            this.Dispose();
-            return;
-        }
-
-        var packet = GetPacketsFromBuffer(e.Buffer, e.BytesTransferred);
-        if (packet != null && (SessionValid || packet[0].ServiceId == 0)) {
-            foreach (var message in packet) {
-                HandlePacket(message);
-            }
-        }
-        else if (packet != null && !SessionValid) {
-            // If the session still isn't created, cache all non-control messages for later processing.
-            foreach (var message in packet) {
-                _preInitMessages.Add(message);
-
-                Logger.Verbose("SessionActor {Id} cached message {MessageName} for later processing.",
-                    Logger.Args(SessionID, message.GetType().Name));
-            }
-        }
-
-        var newArgs = GetReceiveEventArgsFromPool();
-        ProcessReceive(newArgs);
-
-        // Reset the buffer before putting it back into the pool.
-        e.SetBuffer(new byte[_bufferSize], 0, _bufferSize);
-        _receiveEventArgPool.Push(e);
-    }
-
-    private void SendToSocket(IMessage message) {
-        if (!Socket.Connected) {
-            SendOldContextException(new SessionFatalException(
-                $"SessionActor [{SessionID}] cannot send message [{message.GetType()}] " +
-                $"send failure: Socket is not connected!"));
-        }
-        if (_isSending) {
-            Logger.Error("SessionActor {SessionId} send failure: " +
-                      "Asynchronous send operation already in progress.", Logger.Args(SessionID));
-            return;
-        }
-        if (_isDisposed) {
-            return;
-        }
-
-        var data = MessageSerializer.Encode(message);
-        _isSending = true;
-        _socketSendArgs.SetBuffer(data, 0, data.Length);
-        _socketSendArgs.UserToken = Socket;
-
-        var willRaiseEvent = Socket.SendAsync(_socketSendArgs);
-        if (!willRaiseEvent) {
-            OnSendCompleted(_socketSendArgs);
-        }
-        else {
-            Logger.Warning("SessionActor {Id} sent message {MessageName} synchronously.",
-                Logger.Args(SessionID, message.GetType().Name));
-        }
-
-        LogSentPacket(message);
-    }
-
-    private void OnSendCompleted(SocketAsyncEventArgs e) {
-        _isSending = false;
-        if (e.SocketError != SocketError.Success) {
-            SendOldContextException(
-                new SessionFatalException($"SessionActor [{SessionID}] send failure: {e.SocketError}"));
-        }
-    }
-
-    private void HandlePacket(IMessage packet) {
-        LogReceivedPacket(packet);
-
-        // Iterate through services and forward the message to any service that can handle the message.
-        var wasDispatched = false;
-        foreach (var (actorRef, type) in _services) {
-            if (type.MessageHandlers.All(x => x.Key != packet.GetType())) {
-                continue;
-            }
-
-            actorRef.Forward(packet);
-            wasDispatched = true;
-        }
-
-        if (!wasDispatched) {
-            Unhandled(packet);
-        }
-    }
-
-    private IMessage[] GetPacketsFromBuffer(byte[] buffer, int bytesReceived) {
-        var bufferSpan = new ReadOnlySpan<byte>(buffer, 0, bytesReceived).ToArray();
-        if (!IsKIPacket(bufferSpan)) {
-            Logger.Debug("SessionActor {SessionId} received non-KINP packet", Logger.Args(SessionID));
-            return null;
-        }
-
-        if (TryDeserializePacket(bufferSpan, out var records)) {
-            return records.ToArray();
-        }
-
-        // The packet failed to deserialize.
-        return null;
-
-    }
-
-    private bool TryDeserializePacket(byte[] buffer, out IReadOnlyCollection<IMessage> messages) {
-        try {
-            messages = MessageSerializer.Decode(buffer);
-            return true;
-        }
-        catch (Exception ex) {
-            Logger.Error("SessionActor {SessionID} packet deserialize failed: {ExMessage}",
-                Logger.Args(SessionID, ex.InnerException?.Message ?? ex.Message));
-
-            messages = null;
-            return false;
-        }
-    }
-
-    private bool IsKIPacket(byte[] buffer)
-    {
-        if (buffer.Length < 2)
-        {
-            return false;
-        }
-
-        return buffer.AsSpan()[..2].SequenceEqual(stackalloc byte[2] { 0x0D, 0xF0 });
-    }
-
-    private SocketAsyncEventArgs GetReceiveEventArgsFromPool() {
-        if (_receiveEventArgPool.Count > 0) {
-            return _receiveEventArgPool.Pop();
-        }
-        else if (_receiveEventArgPool.Count < 5) {
-            // Create a new SocketAsyncEventArgs if the pool is empty and the pool limit has not been reached.
-            var receiveEventArgs = new SocketAsyncEventArgs();
-            receiveEventArgs.Completed += (_, e) => OnReceiveCompleted(e);
-            receiveEventArgs.AcceptSocket = Socket;
-            receiveEventArgs.SetBuffer(new byte[_bufferSize], 0, _bufferSize);
-
-            return receiveEventArgs;
-        }
-
-        SendOldContextException(new SessionFatalException($"SessionActor [{SessionID}] receive argument " +
-                                                          $"pool over maximum allowed count " +
-                                                          $"of {_asyncReceivePoolCount}."));
-        return null;
-    }
-
-    private void LogReceivedPacket(IMessage packet) {
-        var scopedMessageName = packet
-            .GetType()
-            .ToString()
-            .Split('.')[^1]
-            .Replace('+', '.');
-        if (!_suppressedPackets.Contains(packet.GetType())) {
-            Logger.Verbose("SessionActor {SessionId} received KiNP packet {ScopedMessageName}",
-                Logger.Args(SessionID, scopedMessageName));
-        }
-    }
-
-    private void LogSentPacket(IMessage packet) {
-        var scopedMessageName = packet
-            .GetType()
-            .ToString()
-            .Split('.')[^1]
-            .Replace('+', '.');
-        if (!_suppressedPackets.Contains(packet.GetType())) {
-            Logger.Verbose("SessionActor {SessionId} sent KiNP packet {ScopedMessageName}",
-                Logger.Args(SessionID, scopedMessageName));
-        }
-    }
-
-    #endregion
 }

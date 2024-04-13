@@ -4,16 +4,12 @@
  */
 
 using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
-using Imlight.Common.ObjectProperty;
+using Imlight.CoreLib.Game.Sigils;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
-using Imlight.CoreLib.Shared.Resources;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone;
@@ -22,32 +18,31 @@ namespace Imlight.CoreLib.Game.Zone;
 /// This class is responsible for creating a duel actor and spawning the combat sigil object.
 /// It only represents the combat sigil object, not the duel itself.
 /// </summary>
-public class WizardZoneCombatSigil : WizardZoneObject {
+public class WizardZoneSigil : WizardZoneObject {
     private const uint SigilTemplateId = 1901671683;
 
-    private readonly DuelBehavior _duelBehavior;
+    private readonly CombatSigilTemplate _combatSigilTemplate;
+    private WizardClientDuelBehavior _duelBehavior;
     private IActorRef _activeDuelActor;
     private Duel _activeDuel;
 
-    public WizardZoneCombatSigil(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef)
+    public WizardZoneSigil(CoreObject activeGameObject, string sigilType, CoreTemplate template, IActorRef wizardZoneRef)
         : base(activeGameObject, template, wizardZoneRef) {
-        // Initialize the behaviors on the object. One of them is the DuelBehavior,.
-        CoreObjectFactory.InitializeCoreObjectBehaviors(ActiveGameObject, template);
-        if (CoreObjectFactory.FindBehaviorInstance(ActiveGameObject, out DuelBehavior duelBehavior)) {
-            duelBehavior.m_sigilTemplateID = SigilTemplateId;
-            duelBehavior.m_pDuel = _activeDuel;
+        // Load the combat sigil template.
+        _combatSigilTemplate = (CombatSigilTemplate) SigilFactory.GetSigilTemplate(sigilType);
+        if (_combatSigilTemplate is null) {
+            Logger.Error("Could not find combat sigil template with ID {0}.", Logger.Args(SigilTemplateId));
         }
-        else {
-            throw new Exception("Could not find DuelBehavior on CoreObject.");
-        }
+
+        InitializeDuelBehavior();
     }
 
-    public static Props Props(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef)
-        => Akka.Actor.Props.Create(() => new WizardZoneCombatSigil(activeGameObject, template, wizardZoneRef));
+    public static Props Props(CoreObject activeGameObject, string sigilType, CoreTemplate template, IActorRef wizardZoneRef)
+        => Akka.Actor.Props.Create(() => new WizardZoneSigil(activeGameObject, sigilType, template, wizardZoneRef));
 
     protected override void OnPlayerJoin(CoreObject player, IActorRef suspect) {
         if (_activeDuel is not null) {
-            SpawnCombatSigilObject();
+            base.OnPlayerJoin(player, suspect);
         }
     }
 
@@ -58,10 +53,6 @@ public class WizardZoneCombatSigil : WizardZoneObject {
 
         if (IsPlayerSlotAvailable()) {
             AddParticipant(suspect, player);
-        }
-        else {
-            Logger.Debug("Cannot add player {0} to duel {1} because there are already 4 players.",
-                Logger.Args(player.m_globalID, _activeDuelActor));
         }
     }
 
@@ -74,8 +65,8 @@ public class WizardZoneCombatSigil : WizardZoneObject {
             AddParticipant(suspect, creature);
         }
         else {
-            Logger.Debug("Cannot add creature {0} to duel {1} is full.",
-                Logger.Args(creature.m_globalID, _activeDuelActor));
+            var combatDeathMsg = new COMBAT_106_PROTOCOL.MSG_COMBATDEATH();
+            suspect.Tell(combatDeathMsg);
         }
     }
 
@@ -97,19 +88,14 @@ public class WizardZoneCombatSigil : WizardZoneObject {
             return;
         }
 
-        var duel = RequestDuelActor(message.StartingParticipants);
-        _activeDuelActor = duel.Item1;
-        _activeDuel = duel.Item2;
-
-        SpawnCombatSigilObject();
-    }
-
-    private (IActorRef, Duel) RequestDuelActor(Dictionary<IActorRef, CoreObject> participants) {
+        // Otherwise, request a new duel from the WizardZone's duel supervisor.
         var createMsg = new COMBAT_106_PROTOCOL.MSG_STARTDUEL {
-            Participants = participants,
+            Participants = message.StartingParticipants,
+            SigilActor = Self,
             SigilId = ActiveGameObject.m_globalID,
             SigilLocation = ActiveGameObject.m_location,
             SigilOrientation = ActiveGameObject.m_orientation,
+            SigilTemplate = _combatSigilTemplate,
         };
 
         // The zone is going to be the one to create the duel. Await its reply here.
@@ -117,7 +103,32 @@ public class WizardZoneCombatSigil : WizardZoneObject {
             .Ask<COMBAT_106_PROTOCOL.MSG_DUELDETAILS>(createMsg)
             .Result;
 
-        return (createRsp.DuelActor, createRsp.Duel);
+        _activeDuelActor = createRsp.DuelActor;
+        _activeDuel = createRsp.Duel;
+        base.InteractionRadius = _combatSigilTemplate.m_engageRadius;
+
+        SpawnCombatSigilObject();
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVECOMBATSIGIL))]
+    private void ReceiveRemoveCombatSigil(ZONE_102_PROTOCOL.MSG_REMOVECOMBATSIGIL message) {
+        // The duel is over. Despawn the combat sigil object.
+        DespawnCombatSigilObject();
+
+        // Clear the active duel and duel actor.
+        _activeDuel = null;
+        _activeDuelActor = null;
+        _duelBehavior.m_pDuel = null;
+    }
+
+    private void InitializeDuelBehavior() {
+        var duelBehavior = new WizardClientDuelBehavior() {
+            m_sigilTemplateID = SigilTemplateId,
+            m_pDuel = _activeDuel,
+        };
+
+        base.Behaviors.Add(duelBehavior);
+        this._duelBehavior = duelBehavior;
     }
 
     private void SpawnCombatSigilObject() {
@@ -128,14 +139,11 @@ public class WizardZoneCombatSigil : WizardZoneObject {
         // Set the DuelBehavior's properties.
         _duelBehavior.m_pDuel = _activeDuel;
 
-        // Serialize the object and broadcast it to the zone.
-        var serializer = new CoreObjectSerializer()
-            .OnBehaviors(SerializerOptions.Behaviors.None)
-            .OnPropertyMask(SerializerOptions.PropertyFlags.Public
-                | SerializerOptions.PropertyFlags.Transmit
-                | SerializerOptions.PropertyFlags.AuthorityTransmit);
-        var msg = new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = serializer.Serialize(ActiveGameObject) };
+        SpawnSelf();
+    }
 
+    private void DespawnCombatSigilObject() {
+        var msg = new GAME_5_PROTOCOL.MSG_REMOVEOBJECT { GameObjectID = ActiveGameObject.m_globalID };
         var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
             Selfless = true,
             Message = msg,
@@ -149,9 +157,7 @@ public class WizardZoneCombatSigil : WizardZoneObject {
             return false;
         }
 
-        var checkForSlotMsg = new COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLE {
-            Team = Combat.Team.Player
-        };
+        var checkForSlotMsg = new COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLE { Team = Combat.CombatTeam.Player };
         var slotAvailable = _activeDuelActor
             .Ask<COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLERSP>(checkForSlotMsg)
             .Result
@@ -165,9 +171,7 @@ public class WizardZoneCombatSigil : WizardZoneObject {
             return false;
         }
 
-        var checkForSlotMsg = new COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLE {
-            Team = Combat.Team.Creature
-        };
+        var checkForSlotMsg = new COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLE { Team = Combat.CombatTeam.Monster };
         var slotAvailable = _activeDuelActor
             .Ask<COMBAT_106_PROTOCOL.MSG_SLOTAVAILABLERSP>(checkForSlotMsg)
             .Result

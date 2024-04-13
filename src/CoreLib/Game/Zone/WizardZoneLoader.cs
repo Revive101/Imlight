@@ -35,11 +35,6 @@ public static class WizardZoneLoader {
     private const string ResultCollectionName = "zone_triggers";
     private const uint VolumeTemplateId = 1700;
     private static readonly object s_lockObject = new();
-    private static readonly List<string> s_blacklistedObjectActives = new()
-    {
-        "EditorOnly",
-        "PetOnly",
-    };
 
     private static WizardZone s_zone;
     private static IActorRef s_zoneActorRef;
@@ -278,6 +273,7 @@ public static class WizardZoneLoader {
                 .Where(info => info is CombatSigil)) {
             var template = (GameObjectTemplate) CoreObjectFactory.GetCoreTemplate(objectInfo.m_templateID);
             var newObject = CoreObjectFactory.FinalizeCoreObject(objectInfo, template);
+            CoreObjectFactory.InitializeCoreObjectBehaviors(newObject, template);
             if (newObject == null) {
                 continue;
             }
@@ -287,7 +283,8 @@ public static class WizardZoneLoader {
 
             var message = new ZONE_102_PROTOCOL.MSG_ADDCOMBATSIGIL {
                 CoreObject = newObject,
-                Template = template
+                Template = template,
+                SigilType = ((CombatSigil) objectInfo).m_sigilType
             };
             s_zoneActorRef.Tell(message);
         }

@@ -5,13 +5,14 @@
 
 using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 using Imlight.Common.Configuration;
 using Imlight.Common.IO;
 using Imlight.CoreLib.WizardData.Implementations;
-using Newtonsoft.Json;
 using static Imlight.Common.Caches.TypeCache;
+using Imlight.CoreLib.Shared.Character;
 
-namespace Imlight.CoreLib.WizardData.Models.Player;
+namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
 public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
@@ -142,6 +143,8 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
     [JsonIgnore] public float m_shadowPipBonusPercent;
     [JsonIgnore] public float m_wispBonusPercent;
     [JsonIgnore] public float m_pipConversionRatingAll;
+    [JsonIgnore] public byte m_startingPips;
+    [JsonIgnore] public byte m_startingPowerPips;
 
     [JsonIgnore] public MagicSchool MagicSchool;
     [JsonIgnore] public int Level;
@@ -155,26 +158,70 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
     }
 
     internal void SetBaseStats() {
-        var baseHealth = WizardClassData.GetClassHealthAtLevel(MagicSchool, Level);
-        var baseMana = WizardClassData.GetManaAtLevel(Level);
-        var powerPipChance = WizardClassData.GetPowerPipChanceAtLevel(Level);
-        var energyMax = WizardClassData.GetPetEnergyAtLevel(Level);
+        var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(MagicSchool, Level);
 
-        this.m_baseHitpoints = baseHealth;
-        this.m_baseMana = baseMana;
-        this.m_powerPipBase = powerPipChance;
-        this.m_energyMax = energyMax;
+        this.m_baseHitpoints = baseStats.m_hitpoints;
+        this.m_baseMana = baseStats.m_mana;
+        this.m_powerPipBase = baseStats.m_pipChance;
+        this.m_energyMax = baseStats.m_petEnergy;
     }
 
+    /// <summary>
+    /// Returns a full <see cref="WizGameStats"/> object that contains all stats relevant to combat.
+    /// </summary>
+    /// <returns></returns>
+    public WizGameStats GetCombatGameStats() {
+        return new WizGameStats() {
+            m_baseHitpoints = m_baseHitpoints,
+            m_currentHitpoints = m_currentHitpoints,
+            m_baseMana = m_baseMana,
+            m_currentMana = m_currentMana,
+            m_dmgBonusPercent = m_dmgBonusPercent,
+            m_dmgBonusFlat = m_dmgBonusFlat,
+            m_accBonusPercent = m_accBonusPercent,
+            m_apBonusPercent = m_apBonusPercent,
+            m_dmgReducePercent = m_dmgReducePercent,
+            m_dmgReduceFlat = m_dmgReduceFlat,
+            m_accReducePercent = m_accReducePercent,
+            m_healBonusPercent = m_healBonusPercent,
+            m_healIncBonusPercent = m_healIncBonusPercent,
+            m_spellChargeBonus = m_spellChargeBonus,
+            m_dmgBonusPercentAll = m_dmgBonusPercentAll,
+            m_dmgBonusFlatAll = m_dmgBonusFlatAll,
+            m_accBonusPercentAll = m_accBonusPercentAll,
+            m_apBonusPercentAll = m_apBonusPercentAll,
+            m_dmgReducePercentAll = m_dmgReducePercentAll,
+            m_dmgReduceFlatAll = m_dmgReduceFlatAll,
+            m_accReducePercentAll = m_accReducePercentAll,
+            m_healBonusPercentAll = m_healBonusPercentAll,
+            m_healIncBonusPercentAll = m_healIncBonusPercentAll,
+            m_spellChargeBonusAll = m_spellChargeBonusAll,
+            m_powerPipBase = m_powerPipBase,
+            m_powerPipBonusPercentAll = m_powerPipBonusPercentAll,
+            m_xpPercentIncrease = m_xpPercentIncrease,
+            m_criticalHitPercentBySchool = m_criticalHitPercentBySchool,
+            m_blockPercentBySchool = m_blockPercentBySchool,
+            m_criticalHitRatingBySchool = m_criticalHitRatingBySchool,
+            m_blockRatingBySchool = m_blockRatingBySchool,
+        };
+    }
+
+    /// <summary>
+    /// Returns a minimalist <see cref="WizGameStats"/> object that only contains base level/magic school stats.
+    /// Expects that the caller will fill in the rest of the stats.
+    /// </summary>
+    /// <returns></returns>
     public WizGameStats GetClientTypeAlternative() {
+        var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(MagicSchool, Level);
+
         return new WizGameStats() {
             // We want *only* base level/magic school stats here.
             // We can't send the character game stats because the EquipmentService will broadcast the equipment effects,
             // causing each stat to duplicate.
-            m_baseHitpoints = WizardClassData.GetClassHealthAtLevel(MagicSchool, Level),
-            m_baseMana = WizardClassData.GetManaAtLevel(Level),
-            m_energyMax = WizardClassData.GetPetEnergyAtLevel(Level),
-            m_powerPipBase = WizardClassData.GetPowerPipChanceAtLevel(Level),
+            m_baseHitpoints = baseStats.m_hitpoints,
+            m_baseMana = baseStats.m_mana,
+            m_energyMax = baseStats.m_petEnergy,
+            m_powerPipBase = baseStats.m_pipChance,
 
             m_baseGoldPouch = m_baseGoldPouch,
             m_currentHitpoints = m_currentHitpoints,

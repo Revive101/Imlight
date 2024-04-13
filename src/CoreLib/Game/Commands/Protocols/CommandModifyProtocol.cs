@@ -8,8 +8,10 @@ using Imlight.Common.Caches;
 using Imlight.Common.Configuration;
 using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty;
+using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using static Imlight.Common.Caches.TypeCache;
@@ -29,16 +31,14 @@ internal class CommandModifyProtocol : CommandProtocol {
     [AuthRequired(AuthLevel.QualityAssurance)]
     [Alias("lvlup")]
     private void LevelUpCommand() {
-        // Check to see if the new level would be above the max level.
-        var isOverMax = (Context.Character.MagicSchoolBehavior.Level + 1) > ConfigurationManager.Settings.MaxLevel;
-        if (isOverMax) {
-            InformSenderClient("You cannot level up any further.");
+        // Inform the user of failure if the new level would be above the max level.
+        var newLevel = (byte)(Context.Character.MagicSchoolBehavior.Level + 1);
+        if (newLevel > MagicLevelsConfig.MaxLevel) {
+            InformSenderClient($"You cannot set level higher than the max level ({MagicLevelsConfig.MaxLevel}).");
             return;
         }
 
-        var msg = new CHARACTER_103_PROTOCOL.MSG_LEVELUP() {
-            NewLevel = (byte) (Context.Character.MagicSchoolBehavior.Level + 1)
-        };
+        var msg = new CHARACTER_103_PROTOCOL.MSG_LEVELUP() { NewLevel = newLevel };
         Context.SessionActor.Tell(msg, null);
     }
 
@@ -51,17 +51,13 @@ internal class CommandModifyProtocol : CommandProtocol {
             return;
         }
 
-        //var maxLevel = ConfigurationManager.Settings.MaxLevel;
-        var maxLevel = byte.MaxValue;
-        var isOverMax = levelByte > maxLevel;
-        if (isOverMax) {
-            InformSenderClient($"You cannot set level higher than the max level ({maxLevel}).");
+        // Inform the user of failure if the new level would be above the max level.
+        if (levelByte > MagicLevelsConfig.MaxLevel) {
+            InformSenderClient($"You cannot set level higher than the max level ({MagicLevelsConfig.MaxLevel}).");
             return;
         }
 
-        var msg = new CHARACTER_103_PROTOCOL.MSG_LEVELUP() {
-            NewLevel = levelByte
-        };
+        var msg = new CHARACTER_103_PROTOCOL.MSG_LEVELUP() { NewLevel = levelByte };
         Context.SessionActor.Tell(msg, null);
     }
 
@@ -182,27 +178,139 @@ internal class CommandModifyProtocol : CommandProtocol {
 
         InformSenderClient($"Added {goldInt} gold.");
     }
-  
-    [Command("spell")]
+
+    [Command("maxhealth")]
+    [Alias("maxhp")]
     [AuthRequired(AuthLevel.QualityAssurance)]
-    private void SetSpellCommand(string action, string spellId) {
-        var convertedSpellId = Convert.ToInt32(spellId);
-
-        switch (action) {
-            case "add":
-            case "a":
-                Context.SessionActor.Tell(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTOBOOK() {
-                    SpellID = convertedSpellId
-                }, null);
-
-                break;
-            case "remove":
-            case "rem":
-            case "r":
-                Context.SessionActor.Tell(new WIZARD_12_PROTOCOL.MSG_REMOVESPELLFROMBOOK() {
-                    SpellID = convertedSpellId
-                }, null);
-                break;
+    private void SetMaxHealthCommand(string health) {
+        // Try to parse the health.
+        if (!int.TryParse(health, out var healthInt)) {
+            InformSenderClient("Invalid maximum health amount.");
+            return;
         }
+
+        Context.Character.GameStats.m_baseHitpoints = healthInt;
+
+        var networkMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH() {
+            CharacterID = Context.CharacterObject.m_globalID,
+            NewHealth = Context.Character.GameStats.m_currentHitpoints,
+            NewHealthMax = healthInt,
+            DisplayDiff = 1,
+        };
+        Context.SessionActor.Tell(networkMessage, null);
+
+        InformSenderClient($"Set max health to {healthInt}.");
+    }
+
+    [Command("maxmana")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void SetMaxManaCommand(string mana) {
+        // Try to parse the mana.
+        if (!int.TryParse(mana, out var manaInt)) {
+            InformSenderClient("Invalid maximum mana amount.");
+            return;
+        }
+
+        Context.Character.GameStats.m_baseMana = manaInt;
+
+        var networkMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEMANA() {
+            Mana = Context.Character.GameStats.m_currentMana,
+            MaxMana = manaInt,
+            DisplayDiff = 1,
+        };
+        Context.SessionActor.Tell(networkMessage, null);
+
+        InformSenderClient($"Set max mana to {manaInt}.");
+    }
+
+    [Command("currenthealth")]
+    [Alias("currenthp")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void SetCurrentHealthCommand(string health) {
+        // Try to parse the health.
+        if (!int.TryParse(health, out var healthInt)) {
+            InformSenderClient("Invalid current health amount.");
+            return;
+        }
+
+        Context.Character.GameStats.m_currentHitpoints = Math.Min(healthInt, Context.Character.GameStats.m_baseHitpoints);
+
+        // The client has a max health increase effect applied, so sending it here would double the health client side.
+        var magicSchool = Context.Character.MagicSchoolBehavior.MagicSchool;
+        var level = Context.Character.MagicSchoolBehavior.Level;
+        var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(magicSchool, level);
+        var normMaxHealth = baseStats.m_hitpoints;
+
+        var networkMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH() {
+            CharacterID = Context.CharacterObject.m_globalID,
+            NewHealth = healthInt,
+            NewHealthMax = normMaxHealth,
+            DisplayDiff = 1,
+        };
+        Context.SessionActor.Tell(networkMessage, null);
+
+        InformSenderClient($"Set current health to {healthInt}.");
+    }
+
+    [Command("currentmana")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void SetCurrentManaCommand(string mana) {
+        // Try to parse the mana.
+        if (!int.TryParse(mana, out var manaInt)) {
+            InformSenderClient("Invalid current mana amount.");
+            return;
+        }
+
+        Context.Character.GameStats.m_currentMana = Math.Min(manaInt, Context.Character.GameStats.m_baseMana);
+
+        var networkMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEMANA() {
+            Mana = manaInt,
+            MaxMana = Context.Character.GameStats.m_baseMana,
+            DisplayDiff = 1,
+        };
+        Context.SessionActor.Tell(networkMessage, null);
+
+        InformSenderClient($"Set current mana to {manaInt}.");
+    }
+
+    [Command("refillhealth")]
+    [Alias("refillhp", "heal")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void MaxHealthCommand() {
+        var stats = Context.Character.GameStats;
+        var maxHealth = stats.m_baseHitpoints;
+
+        stats.m_currentHitpoints = maxHealth;
+
+        // The client has a max health increase effect applied, so sending it here would double the health client side.
+        var magicSchool = Context.Character.MagicSchoolBehavior.MagicSchool;
+        var level = Context.Character.MagicSchoolBehavior.Level;
+        var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(magicSchool, level);
+        var normMaxHealth = baseStats.m_hitpoints;
+
+        var networkMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH() {
+            CharacterID = Context.CharacterObject.m_globalID,
+            NewHealth = maxHealth,
+            NewHealthMax = normMaxHealth,
+            DisplayDiff = 1,
+        };
+        Context.SessionActor.Tell(networkMessage, null);
+    }
+
+    [Command("refillmana")]
+    [Alias("refillmp", "rejuvenate", "rejuv")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void MaxManaCommand() {
+        var stats = Context.Character.GameStats;
+        var maxMana = stats.m_baseMana;
+
+        stats.m_currentMana = maxMana;
+
+        var networkMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEMANA() {
+            Mana = maxMana,
+            MaxMana = maxMana,
+            DisplayDiff = 1,
+        };
+        Context.SessionActor.Tell(networkMessage, null);
     }
 }

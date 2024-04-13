@@ -15,7 +15,7 @@ public static class ClassElementWriters {
     private static readonly Dictionary<Type, Action<BitWriter, object>> s_primitiveWriters = new()
     {
         { typeof(byte),           (r, v) => r.WriteUInt8((byte)v)                },
-        { typeof(char),           (r, v) => r.WriteUInt8((byte)v)                },
+        { typeof(char),           (r, v) => r.WriteUInt8(Convert.ToByte(v))      },
         { typeof(bool),           (r, v) => r.WriteBit((bool)v)                  },
         { typeof(short),          (r, v) => r.WriteInt16((short)v)               },
         { typeof(ushort),         (r, v) => r.WriteUInt16((ushort)v)             },
@@ -31,7 +31,6 @@ public static class ClassElementWriters {
         { typeof(Quaternion),     (r, v) => r.WriteQuaternion((Quaternion)v)     },
         { typeof(Matrix),         (r, v) => r.WriteMatrix((Matrix)v)             },
         { typeof(Color),          (r, v) => r.WriteColor((Color)v)               },
-        { typeof(Color3),         (r, v) => r.WriteColor3((Color3)v)             },
         { typeof(Rectangle),      (r, v) => r.WriteRectangle((Rectangle)v)       },
         { typeof(RectangleF),     (r, v) => r.WriteRectangleF((RectangleF)v)     },
         { typeof(Vector2),        (r, v) => r.WriteVector2((Vector2)v)           },

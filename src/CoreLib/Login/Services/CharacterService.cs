@@ -4,11 +4,16 @@
  */
 
 using Akka.Actor;
+using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.ObjectProperty;
+using Imlight.CoreLib.Shared.Behaviors;
+using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models.Player;
+using Newtonsoft.Json;
+using System;
 
 namespace Imlight.CoreLib.Login.Services;
 
@@ -24,27 +29,43 @@ internal class CharacterService : MessageService {
 
     [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_CREATECHARACTER))]
     private void ReceiveCreateCharacter(LOGIN_7_PROTOCOL.MSG_CREATECHARACTER message) {
+        var account = GetSocketAccount();
+        if (account is null) {
+            SendToSocket(new LOGIN_7_PROTOCOL.MSG_CREATECHARACTERRESPONSE { ErrorCode = 1 });
+            return;
+        }
+
         // The client has sent us serialized WizardCharacterCreationData. We need to
         // deserialize it to add it to our account database.
         var serializer = new ObjectSerializer();
-        var errorCode = 0;
 
-        var charData = (TypeCache.WizardCharacterCreationInfo) serializer.Deserialize(message.CreationInfo)
-            ?? throw new ActorKilledException("Could not successfully deserialize WizardCharacterCreationData!");
-
-        // Add the new character to the player's account.
-        var account = GetSocketAccount();
-        if (account is null) {
-            errorCode = 1;
-        }
-        else {
+        // Deserializing the creation data may sometimes fail if the client is using a different version of the game.
+        // Instead of totally failing, we'll catch the exception and send an error message to the client.
+        TypeCache.WizardCharacterCreationInfo charData;
+        try {
+            charData = (TypeCache.WizardCharacterCreationInfo) serializer.Deserialize(message.CreationInfo);
             var newCharacter = CharacterHelper.CreateCharacterFromCreationInfo(charData);
             var createdCharacter = account.AddCharacter(newCharacter);
 
-            errorCode = createdCharacter ? 0 : 1;
-        }
+            // Craft log arguments.
+            var wizardName = newCharacter.PlayerNameBehavior.GetWizardName();
+            var school = (MagicSchool) charData.m_schoolOfFocus;
+            var gender = charData.m_avatarBehavior.m_eGender;
+            var logs = Logger.Args(account.Username, wizardName, charData);
 
-        SendToSocket(new LOGIN_7_PROTOCOL.MSG_CREATECHARACTERRESPONSE { ErrorCode = errorCode });
+            if (createdCharacter) {
+                Logger.Information("Account {accountUsername} created new character {wizardName}", logs);
+                SendToSocket(new LOGIN_7_PROTOCOL.MSG_CREATECHARACTERRESPONSE { ErrorCode = 0 });
+            }
+            else {
+                Logger.Error("Account {accountUsername} failed to add character to database.", logs);
+                SendToSocket(new LOGIN_7_PROTOCOL.MSG_CREATECHARACTERRESPONSE { ErrorCode = 1 });
+            }
+        }
+        catch (Exception e) {
+            Logger.Error("Account {accountUsername} failed to deserialize character creation data. {Exception}", Logger.Args(account.Username, e.Message));
+            SendToSocket(new LOGIN_7_PROTOCOL.MSG_CREATECHARACTERRESPONSE { ErrorCode = 1 });
+        }
     }
 
     [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_DELETECHARACTER))]
@@ -52,25 +73,34 @@ internal class CharacterService : MessageService {
         var errorCode = 0;
         var account = GetSocketAccount();
         if (account is null) {
-            errorCode = 1;
+            SendToSocket(new LOGIN_7_PROTOCOL.MSG_DELETECHARACTERRESPONSE { ErrorCode = 1 });
+            return;
         }
-        else {
-            var deletedCharacter = account.DeleteCharacter(message.CharID);
 
-            // If we had no problems deleting the character from the account, delete the character from the database.
-            if (deletedCharacter) {
-                var deletedCharacterFromCollection = WizardCollection
-                    .DeleteCharacter(message.CharID);
-                var deletedCharacterFromAccount = AccountCollection
-                    .DeleteCharacterFromAccount(account.AccountId, message.CharID);
+        var deletedCharacter = account.DeleteCharacter(message.CharID);
 
-                if (!deletedCharacterFromCollection || !deletedCharacterFromAccount) {
-                    errorCode = 1;
-                }
-            }
-            else {
+        // If we had no problems deleting the character from the account, delete the character from the database.
+        if (deletedCharacter) {
+            var deletedCharacterFromCollection = WizardCollection
+                .DeleteCharacter(message.CharID);
+            var deletedCharacterFromAccount = AccountCollection
+                .DeleteCharacterFromAccount(account.AccountId, message.CharID);
+
+            if (!deletedCharacterFromCollection || !deletedCharacterFromAccount) {
+                Logger.Error("Account {accountUsername} failed to delete character {characterId} from database.",
+                    Logger.Args(account.Username, message.CharID));
                 errorCode = 1;
             }
+        }
+        else {
+            Logger.Error("Account {accountUsername} failed to delete character {characterId} from account.",
+                Logger.Args(account.Username, message.CharID));
+            errorCode = 1;
+        }
+
+        if (errorCode == 0) {
+            Logger.Information("Account {accountUsername} deleted character {characterId}.",
+                Logger.Args(account.Username, message.CharID));
         }
 
         SendToSocket(new LOGIN_7_PROTOCOL.MSG_DELETECHARACTERRESPONSE { ErrorCode = errorCode });
