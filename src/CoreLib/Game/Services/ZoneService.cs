@@ -358,6 +358,10 @@ public class ZoneService : MessageService {
 
     private void SendRecallHomeEffect(DateTimeOffset time) {
         var wizard = GetActiveWizard();
+
+        // on live servers, the end time is 200 seconds from the time gohome is sent. i still have no clue why.
+        // also on live servers, when teleporting in zone, it will send the effects like 3 times. i also have no clue on this either.
+        // all i know is that this works. in conclusion, do what makes sense, dont copy kingsisle, or you run into problems.
         NamedEffect effect = new NamedEffect {
             m_bIsOnPet = false,
             m_currentTickCount = 0,
