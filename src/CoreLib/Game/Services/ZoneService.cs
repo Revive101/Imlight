@@ -320,10 +320,10 @@ public class ZoneService : MessageService {
         var now = DateTimeOffset.UtcNow;
         
         SendCantGoHomeEffect(now);
-
+        // what does this do? who knows! its probably important.
         var enterState = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
             GameObjectID = wizard.GameObject.m_globalID,
-            State = 455326240,
+            State = StringHash.Compute("Teleport"),
             Data = "",
             IgnoreIfCurrentStateIsOff = 0
         };
