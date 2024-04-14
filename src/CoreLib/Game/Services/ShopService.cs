@@ -69,6 +69,16 @@ internal class ShopService : MessageService {
             };
             SendToSocket(shopDenyMsg);
 
+            // Log infraction
+            var account = GetActiveAccount();
+            var infractionText = $"Player tried to purchase item {itemTemplateID} from NPC " +
+                $"{message.npcGlobalID} that is not in its inventory!";
+            account.AddInfraction(InfractionType.SuspiciousBehavior, infractionText);
+
+            Logger.Warning("Player tried to purchase item {0} from an NPC that it did not have in its inventory."
+                + " This has been logged as suspicious behavior.",
+                Logger.Args(itemTemplateID));
+
             return;
         }
 
