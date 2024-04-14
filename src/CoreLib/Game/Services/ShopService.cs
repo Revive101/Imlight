@@ -63,8 +63,6 @@ internal class ShopService : MessageService {
             return;
         }
 
-        wizard.AddItemToInventory(item);
-
         // Add the item to the player's inventory
         var data = _itemSerializer.Serialize(item);
         var addItemMsg = new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
@@ -72,6 +70,11 @@ internal class ShopService : MessageService {
             SerializedItem = data,
         };
         SendToSocket(addItemMsg);
+
+        // Add the item to the player's inventory. We do this after sending the message to the client
+        // because adding it to the inventory will initialize all the behaviors. The client will crash
+        // if we serialize those behaviors.
+        wizard.AddItemToInventory(item);
 
         // Inform the client of the new item
         var itemAcqMsg = new WIZARD2_53_PROTOCOL.MSG_ITEMACQUISITION {
