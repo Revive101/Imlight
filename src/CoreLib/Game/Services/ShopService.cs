@@ -86,7 +86,10 @@ internal class ShopService : MessageService {
         item.m_primaryColor = message.texture;
         item.m_secondaryColor = message.decal;
 
-        var goldCost = (int) Math.Ceiling(template.m_baseCost * 1.2275f); // Necessary to match client values, Wizard101 taxes?
+        var goldCost = (int) template.m_baseCost;
+        if (template.m_numPrimaryColors != 1 && template.m_numSecondaryColors != 0) {
+            goldCost = (int) Math.Ceiling(goldCost * 1.2275f); // Dyed items are most expensive.
+        }
 
         // Deny transaction if player cannot afford item
         if (goldCost > wizard.GameStats.m_currentGold) {
