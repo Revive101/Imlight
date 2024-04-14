@@ -11,7 +11,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Imlight.Common;
 using Imlight.Common.Caches;
-using Imlight.Common.Utilities;
 using Imlight.Common.ObjectProperty;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Game.Zone;
@@ -183,9 +182,9 @@ internal class ShopService : MessageService {
             }
         }
 
-        // Cost is 25% of the item's base cost
+        // Cost is 22.5% of the item's base cost
         var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
-        var dyeCost = (int) Math.Ceiling(template.m_baseCost * 0.25f);
+        var dyeCost = (int) Math.Ceiling(template.m_baseCost * 0.225f);
         if (dyeCost > wizard.GameStats.m_currentGold) {
             var dyeDenyMsg = new WIZARD_12_PROTOCOL.MSG_DYECONFIRM { Failure = 1 };
             SendToSocket(dyeDenyMsg);
