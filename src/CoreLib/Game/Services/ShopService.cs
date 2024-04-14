@@ -9,17 +9,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.Utilities;
 using Imlight.Common.ObjectProperty;
-using Imlight.CoreLib.Shared.Networking;
-using Imlight.CoreLib.Shared.Resources;
-using static Imlight.Common.Caches.TypeCache;
-using Imlight.CoreLib.WizardData.Implementations;
-using Imlight.CoreLib.WizardData.Models.Player;
-using Imlight.Common;
-using Imlight.CoreLib.WizardData.Models.World;
+using Imlight.Common.ObjectProperty.PropertyReflection;
+using Imlight.CoreLib.Game.Zone;
 using Imlight.CoreLib.Shared.Items;
+using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.WizardData.Models.Misc;
+using Imlight.CoreLib.WizardData.Models.World;
+using Imlight.CoreLib.WizardData.Models.Player;
+using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Services;
 internal class ShopService : MessageService {
@@ -40,10 +42,35 @@ internal class ShopService : MessageService {
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_SHOPBUYREQUEST))]
     private void ReceiveShopBuyRequest(WIZARD_12_PROTOCOL.MSG_SHOPBUYREQUEST message) {
         var wizard = GetActiveWizard();
+        var npc = GetZoneObject(message.npcGlobalID);
 
-        var itemTemplateID = message.ShopID - ShopOffset; // Do this, for some reason
+        // Check to see if the NPC exists in the zone.
+        if (npc == null) {
+            Logger.Warning("Failed to find NPC {0} in zone for shop purchase", Logger.Args(message.npcGlobalID));
 
-        // Todo: should double check here to make sure this shopkeeper even sells this object.
+            var shopDenyMsg = new WIZARD_12_PROTOCOL.MSG_SHOPBUYCONFIRM {
+                Failure = 1,
+                WebFailure = 0,
+                Credits = 0
+            };
+            SendToSocket(shopDenyMsg);
+            return;
+        }
+
+        var itemTemplateID = message.ShopID - ShopOffset;
+        var npcObject = (WizardZoneNpc) npc;
+
+        // Check to see if the shopkeeper actually sells the item.
+        if (!npcObject.Inventory.Contains((GID) itemTemplateID)) {
+            var shopDenyMsg = new WIZARD_12_PROTOCOL.MSG_SHOPBUYCONFIRM {
+                Failure = 1,
+                WebFailure = 0,
+                Credits = 0
+            };
+            SendToSocket(shopDenyMsg);
+
+            return;
+        }
 
         var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(itemTemplateID);
         var item = (WizClientObjectItem) CoreObjectFactory.FinalizeCoreObject(itemTemplateID);
