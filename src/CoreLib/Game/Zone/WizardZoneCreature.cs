@@ -468,7 +468,7 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
         var msgBaseHealth = clientGameStats.m_baseHitpoints;
         var msgBaseMana = clientGameStats.m_baseMana;
 
-        // Todo: Update health and mana persistently.
+        // Todo: Spawn 'FX_Wisp...nif' effect on player.
         switch (name) {
             // 'WC' HP wisps only appear in Unicorn Way, and heal 40% instead of 25%. 'KT' HP wisps are used everywhere else.
             // 'UW' Mana wips only appear in Unicorn Way, and replenish 25% instead of 10%.
@@ -492,7 +492,7 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
                 };
                 suspectActor.Tell(healthUpdateMsg);
 
-                wizard.GameStats.m_currentHitpoints += healthUpdate;
+                wizard.UpdateHealth(currentHealth + healthUpdate);
 
                 break;
             case var _ when name.Contains("WispMana"):
@@ -514,7 +514,7 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
                 };
                 suspectActor.Tell(manaUpdateMsg);
 
-                wizard.GameStats.m_currentMana += manaUpdate;
+                wizard.UpdateMana(currentMana + manaUpdate);
 
                 break;
             case "WC_WispGold":
