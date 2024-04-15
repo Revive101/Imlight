@@ -134,6 +134,22 @@ public class ZoneService : MessageService {
         ReceiveZoneTransferRequest(tpmsg);
     }
 
+    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_GOTODORM))]
+    private void ReceiveGotoDorm(WIZARD_12_PROTOCOL.MSG_GOTODORM message) {
+        var wizard = GetActiveWizard();
+        SendButtonTeleportEffects();
+
+        var tpmsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
+            DestinationZone = "WizardCity/QA_SpawnRate", // just teleporting to gm for now
+            DestinationLocation = "Start",
+            SendToClient = true
+        };
+        
+        wizard.SetTimeHomeLastClicked(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+        Task.Run(async () => await Task.Delay(TimeSpan.FromSeconds(2))).Wait();
+        ReceiveZoneTransferRequest(tpmsg);
+    }
+
     [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE))]
     private void ReceiveAttachComplete(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE message) {
         var wizard = GetActiveWizard();
