@@ -6,8 +6,8 @@
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
+using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Shared.Packets;
-using System;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone;
@@ -51,6 +51,10 @@ public class WizardZoneWisp : WizardZoneCreature {
             => new WizardZoneWisp(activeGameObject, template, path, startingNodeIndex, wizardZoneRef));
 
     protected override void OnPlayerInteractionEnter(CoreObject suspectObject, IActorRef suspectActor) {
+        var serializer = new ObjectSerializer()
+          .OnBehaviors(SerializerOptions.Behaviors.None)
+          .OnPropertyMask((SerializerOptions.PropertyFlags) 1);
+
         // Query and retrieve wizard that interacted with wisp.
         var queryCharacterMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
         var wizard = suspectActor
@@ -69,7 +73,6 @@ public class WizardZoneWisp : WizardZoneCreature {
         var msgBaseHealth = clientGameStats.m_baseHitpoints;
         var msgBaseMana = clientGameStats.m_baseMana;
 
-        // Todo: Spawn 'FX_Wisp...nif' effect on player.
         // Todo: should split each of these into their own
         var name = ((WizGameObjectTemplate)Template).m_objectName.ToString();
         switch (_wispType) {
@@ -95,6 +98,23 @@ public class WizardZoneWisp : WizardZoneCreature {
                 };
                 suspectActor.Tell(healthUpdateMsg);
 
+                // Todo: Get this info from somewhere else. Also, currently only works on first pickup.
+                var stateHealth = new EmoteStateOverrideInfo {
+                    m_loop = false,
+                    m_particleAsset = "Character/FX_WispRed_Dsppr.nif",
+                    m_soundAsset = "Sound/GUI/ui_health_powerup_01.wav",
+                    m_stateNameID = 1896147676
+                };
+                var stateHealthData = serializer.Serialize(stateHealth);
+
+                var stateHealthMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
+                    GameObjectID = wizard.CharId,
+                    State = 1896147676,
+                    Data = stateHealthData,
+                    IgnoreIfCurrentStateIsOff = 0
+                };
+                suspectActor.Tell(stateHealthMsg);
+
                 wizard.UpdateHealth(currentHealth + healthUpdate);
 
                 break;
@@ -116,6 +136,22 @@ public class WizardZoneWisp : WizardZoneCreature {
                     DisplayDiff = 1
                 };
                 suspectActor.Tell(manaUpdateMsg);
+
+                var stateMana = new EmoteStateOverrideInfo {
+                    m_loop = false,
+                    m_particleAsset = "Character/FX_WispBlue_Dsppr.nif",
+                    m_soundAsset = "Sound/GUI/ui_health_powerup_01.wav",
+                    m_stateNameID = 1896147676
+                };
+                var stateManaData = serializer.Serialize(stateMana);
+
+                var stateManaMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
+                    GameObjectID = wizard.CharId,
+                    State = 1896147676,
+                    Data = stateManaData,
+                    IgnoreIfCurrentStateIsOff = 0
+                };
+                suspectActor.Tell(stateManaMsg);
 
                 wizard.UpdateMana(currentMana + manaUpdate);
 
