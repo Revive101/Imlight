@@ -270,6 +270,23 @@ public class CombatDuelActorSubCircle {
         }
     }
 
+    internal void DeductMana(int mana) {
+        // If the participant is a player, update their mana.
+        // Creature's don't have mana.
+        if (_wizard is not null) {
+            var currentMana = ParticipantGameStats.m_currentMana;
+            var newMana = currentMana - mana;
+
+            // Make sure the mana doesn't go below 0.
+            if (newMana < 0) {
+                newMana = 0;
+            }
+
+            // Update the mana of the player.
+            _wizard.UpdateMana(newMana);
+        }
+    }
+
     private void InitializePlayerSubCircle() {
         var queryCharacterMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
         _wizard = ParticipantActor

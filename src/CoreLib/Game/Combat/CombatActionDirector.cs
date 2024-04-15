@@ -238,6 +238,9 @@ public class CombatActionDirector {
             }
         }
 
+        // Deduce the players mana by the rank of the spell.
+        action.SpellCaster.DeductMana(spell.m_pipCost.m_spellRank);
+
         // Return how long the cinematic will take to play out.
         return GetActionCinematicTime(action) + effectCinematicTime;
     }
