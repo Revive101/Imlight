@@ -24,6 +24,7 @@ public class WizardZoneNpc : WizardZoneObject {
     private static readonly string[] s_dyeShopNameGiveaways = new string[] {
         "dye",
     };
+    private static readonly string s_auctionHouseName = "kt-hub-npc14";
 
     public bool IsShopkeeper { get; set; }
     public ServiceMementoBase ServiceMomentoBase { get; private set; }
@@ -51,6 +52,9 @@ public class WizardZoneNpc : WizardZoneObject {
         var npcName = gameObjTemplate.m_objectName.ToString().ToLower();
         if (s_dyeShopNameGiveaways.Any(npcName.Contains)) {
             SetDyeShop();
+        }
+        else if (npcName == s_auctionHouseName) {
+            SetAuctionHouse();
         }
         else if (WorldVendorLocations.IsVendor(gameObjTemplate.m_templateID)) {
             SetShopkeeper();
@@ -188,5 +192,27 @@ public class WizardZoneNpc : WizardZoneObject {
             m_serviceName = "DyeShopService"
         };
         ServiceMomentoBase.m_serviceOptions.Add(dyeService);
+    }
+
+    private void SetAuctionHouse() {
+        IsShopkeeper = true;
+        var gameObjTemplate = Template as GameObjectTemplate;
+
+        if (Template.m_behaviors.FirstOrDefault(x => x is NPCBehaviorTemplate) is NPCBehaviorTemplate npcBehavior) {
+            _turnTowardsPlayer = npcBehavior.m_turnTowardsPlayer;
+        }
+        else {
+            Logger.Error("NPC {0} is a shopkeeper but has no NPCBehaviorTemplate", Logger.Args(ActiveGameObject.m_debugName));
+        }
+
+        var auctionHouseService = new AuctionHouseOption() {
+            m_auctionHousePurchaseKey = 1, // Todo: Find out what this is
+            m_displayKey = "GUI_AuctionHouse",
+            m_forceInteract = false,
+            m_iconKey = "Shopping",
+            m_serviceIndex = 0,
+            m_serviceName = "AuctionHouseService"
+        };
+        ServiceMomentoBase.m_serviceOptions.Add(auctionHouseService);
     }
 }
