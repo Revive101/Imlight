@@ -27,11 +27,11 @@ namespace Imlight.CoreLib.Game.Zone;
 /// a given <see cref="WizardZonePath" />.
 /// </summary>
 public class WizardZoneCreature : WizardZoneObject, IWithTimers {
-    private const int MINIMUM_MOVEMENT_DELAY_IN_SECONDS = 1;
-    private const int MOVEMENT_INTERVAL_START_DELAY_IN_SECONDS = 1;
-    private const int LOCATION_UPDATE_INTERVAL = 1;
+    protected const int MINIMUM_MOVEMENT_DELAY_IN_SECONDS = 1;
+    protected const int MOVEMENT_INTERVAL_START_DELAY_IN_SECONDS = 1;
+    protected const int LOCATION_UPDATE_INTERVAL = 1;
 
-    internal enum CreatureState {
+    public enum CreatureState {
         Stopped,
         Wandering,
         Combat
@@ -40,18 +40,18 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
     public ServerWizGameStats GameStats { get; private set; }
     public ITimerScheduler Timers { get; set; }
 
-    private readonly WizardZonePath _path;
-    private readonly TimeSpan _startingDelay = TimeSpan.FromSeconds(MOVEMENT_INTERVAL_START_DELAY_IN_SECONDS);
-    private readonly TimeSpan _minimumMovementIntervalDelay = TimeSpan.FromSeconds(MINIMUM_MOVEMENT_DELAY_IN_SECONDS);
-    private readonly TimeSpan _fishInteractionInterval = TimeSpan.FromSeconds(LOCATION_UPDATE_INTERVAL);
-    private readonly NodeObject[] _nodes;
-    private CreatureState _creatureState;
-    private byte _targetNodeIndex;
-    private bool _justPaused;
-    private DateTime _lastMoveTime;
-    private ServerNPCBehavior _npcBehavior;
-    private ServerPathBehavior _pathBehavior;
-    private IActorRef _combatAiActor;
+    protected readonly WizardZonePath _path;
+    protected readonly TimeSpan _startingDelay = TimeSpan.FromSeconds(MOVEMENT_INTERVAL_START_DELAY_IN_SECONDS);
+    protected readonly TimeSpan _minimumMovementIntervalDelay = TimeSpan.FromSeconds(MINIMUM_MOVEMENT_DELAY_IN_SECONDS);
+    protected readonly TimeSpan _fishInteractionInterval = TimeSpan.FromSeconds(LOCATION_UPDATE_INTERVAL);
+    protected readonly NodeObject[] _nodes;
+    protected CreatureState _creatureState;
+    protected byte _targetNodeIndex;
+    protected bool _justPaused;
+    protected DateTime _lastMoveTime;
+    protected ServerNPCBehavior _npcBehavior;
+    protected ServerPathBehavior _pathBehavior;
+    protected IActorRef _combatAiActor;
 
     // ctor
     public WizardZoneCreature(CoreObject activeGameObject,
@@ -119,13 +119,6 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
     }
 
     protected override void OnPlayerInteractionEnter(CoreObject suspectObject, IActorRef suspectActor) {
-        // If I'm a wisp and a player just interacted with me, then add health/mana/gold.
-        var objName = ((WizGameObjectTemplate) Template).m_objectName.ToString();
-        if (objName.Contains("Wisp")) {
-            DoWispInteract(objName, suspectObject, suspectActor);
-            return;
-        }
-
         // If I'm a hostile creature and a player just provoked me, then start a duel.
         if (_creatureState == CreatureState.Combat || !IsDuelingCreature()) {
             return;
@@ -165,6 +158,23 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
         var z = lastNodeReached.Z + t * (targetNode.Z - lastNodeReached.Z);
 
         return new Vector3((float) x, (float) y, (float) z);
+    }
+
+    protected void Die() {
+        // Broadcast the death of this creature to all players.
+        var broadcastMSg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+            Message = new GAME_5_PROTOCOL.MSG_REMOVEOBJECT {
+                GameObjectID = ActiveGameObject.m_globalID
+            },
+            Selfless = true,
+            Sender = Self
+        };
+        WizardZoneRef.Tell(broadcastMSg);
+
+        // Inform the path that this creature has died.
+        _path.RemoveCreature(ActiveGameObject.m_templateID);
+
+        Context.Stop(Self);
     }
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ACTORADDEDTODUEL))]
@@ -449,92 +459,6 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
         _combatAiActor = Context.ActorOf(props, $"combatAIActor_{ActiveGameObject.m_globalID}");
     }
 
-    private void DoWispInteract(string name, CoreObject suspectObject, IActorRef suspectActor) {
-        // Query and retrieve wizard that interacted with wisp.
-        var queryCharacterMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
-        var wizard = suspectActor
-            .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryCharacterMsg)
-            .Result
-            .Wizard;
-
-        // Values with gear and effects.
-        var baseHealth = wizard.GameStats.m_baseHitpoints;
-        var currentHealth = wizard.GameStats.m_currentHitpoints;
-        var baseMana = wizard.GameStats.m_baseMana;
-        var currentMana = wizard.GameStats.m_currentMana;
-
-        // Values before effects are applied.
-        var clientGameStats = wizard.GameStats.GetClientTypeAlternative();
-        var msgBaseHealth = clientGameStats.m_baseHitpoints;
-        var msgBaseMana = clientGameStats.m_baseMana;
-
-        // Todo: Spawn 'FX_Wisp...nif' effect on player.
-        switch (name) {
-            // 'WC' HP wisps only appear in Unicorn Way, and heal 40% instead of 25%. 'KT' HP wisps are used everywhere else.
-            // 'UW' Mana wips only appear in Unicorn Way, and replenish 25% instead of 10%.
-            case var _ when name.Contains("WispHealth"):
-                if (baseHealth == currentHealth) { // If health is full, no need to heal.
-                    return;
-                }
-
-                var healthPercentage = name.Contains("KT") ? 0.25f : 0.40f; // Check for wisp type.
-
-                var healthUpdate = (int) (baseHealth * healthPercentage);
-                if (currentHealth + healthUpdate > baseHealth) { // Check for overheal.
-                    healthUpdate = baseHealth - currentHealth;
-                }
-
-                var healthUpdateMsg = new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH {
-                    CharacterID = wizard.CharId,
-                    NewHealth = currentHealth + healthUpdate,
-                    NewHealthMax = msgBaseHealth,
-                    DisplayDiff = 1
-                };
-                suspectActor.Tell(healthUpdateMsg);
-
-                wizard.UpdateHealth(currentHealth + healthUpdate);
-
-                break;
-            case var _ when name.Contains("WispMana"):
-                if (baseMana == currentMana) { // If mana is full, no need to replenish.
-                    return;
-                }
-
-                var manaPercentage = name.Contains("UW") ? 0.25f : 0.10f; // Check for wisp type.
-
-                var manaUpdate = (int) (baseMana * manaPercentage); // Check for overflow.
-                if (currentMana + manaUpdate > baseMana) {
-                    manaUpdate = baseMana - currentMana;
-                }
-
-                var manaUpdateMsg = new WIZARD_12_PROTOCOL.MSG_UPDATEMANA {
-                    Mana = currentMana + manaUpdate,
-                    MaxMana = msgBaseMana,
-                    DisplayDiff = 1
-                };
-                suspectActor.Tell(manaUpdateMsg);
-
-                wizard.UpdateMana(currentMana + manaUpdate);
-
-                break;
-            case "WC_WispGold":
-                // Todo: Randomly generate gold values. Scale with world maybe?
-                var goldUpdateMsg = new WIZARD_12_PROTOCOL.MSG_UPDATEGOLD {
-                    Gold = wizard.GameStats.m_currentGold + 100,
-                    MaxGold = wizard.GameStats.m_baseGoldPouch
-                };
-                suspectActor.Tell(goldUpdateMsg);
-
-                wizard.AddGold(100);
-
-                break;
-            default:
-                break;
-        }
-
-        Die(); // Destroy wisp.
-    }
-
     private void StopMovement() {
         _creatureState = CreatureState.Stopped;
 
@@ -612,23 +536,6 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
         }
 
         return _pathBehavior.PauseChance > 0 && new Random().Next(0, 100) < _pathBehavior.PauseChance;
-    }
-
-    private void Die() {
-        // Broadcast the death of this creature to all players.
-        var broadcastMSg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-            Message = new GAME_5_PROTOCOL.MSG_REMOVEOBJECT {
-                GameObjectID = ActiveGameObject.m_globalID
-            },
-            Selfless = true,
-            Sender = Self
-        };
-        WizardZoneRef.Tell(broadcastMSg);
-
-        // Inform the path that this creature has died.
-        _path.RemoveCreature(ActiveGameObject.m_templateID);
-
-        Context.Stop(Self);
     }
 
     private NodeObject CurrentTargetNode => _nodes[_targetNodeIndex];
