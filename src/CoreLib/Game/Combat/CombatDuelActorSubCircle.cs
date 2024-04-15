@@ -76,6 +76,7 @@ public class CombatDuelActorSubCircle {
     private readonly float _radius;
     private readonly float _rotation;
     private readonly Color _color;
+    private Wizard _wizard;
 
     // ctor
     internal CombatDuelActorSubCircle(CombatDuelActor duelActor, float radius, float rotation, Color color, int index) {
@@ -219,9 +220,59 @@ public class CombatDuelActorSubCircle {
         return true;
     }
 
+    internal void DamageParticipant(int damage) {
+        // If the participant is a player, update their health.
+        if (_wizard is not null) {
+            var currentHealth = ParticipantGameStats.m_currentHitpoints;
+            var newHealth = currentHealth - damage;
+
+            // Make sure the health doesn't go below 0.
+            if (newHealth < 0) {
+                newHealth = 0;
+            }
+
+            // Update the health of the player.
+            _wizard.UpdateHealth(newHealth);
+        }
+        else {
+            // Make sure the health doesn't go below 0.
+            if (ParticipantGameStats.m_currentHitpoints - damage < 0) {
+                ParticipantGameStats.m_currentHitpoints = 0;
+            }
+            else {
+                ParticipantGameStats.m_currentHitpoints -= damage;
+            }
+        }
+    }
+
+    internal void HealParticipant(int heal) {
+        // If the participant is a player, update their health.
+        if (_wizard is not null) {
+            var currentHealth = ParticipantGameStats.m_currentHitpoints;
+            var newHealth = currentHealth + heal;
+
+            // Make sure the health doesn't go above the max health.
+            if (newHealth > ParticipantGameStats.m_baseHitpoints) {
+                newHealth = ParticipantGameStats.m_baseHitpoints;
+            }
+
+            // Update the health of the player.
+            _wizard.UpdateHealth(newHealth);
+        }
+        else {
+            // Make sure the health doesn't go above the max health.
+            if (ParticipantGameStats.m_currentHitpoints + heal > ParticipantGameStats.m_baseHitpoints) {
+                ParticipantGameStats.m_currentHitpoints = ParticipantGameStats.m_baseHitpoints;
+            }
+            else {
+                ParticipantGameStats.m_currentHitpoints += heal;
+            }
+        }
+    }
+
     private void InitializePlayerSubCircle() {
         var queryCharacterMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
-        var wizard = ParticipantActor
+        _wizard = ParticipantActor
             .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryCharacterMsg)
             .Result
             .Wizard;
@@ -229,15 +280,15 @@ public class CombatDuelActorSubCircle {
         // Dyanmic symbols start at 9 for players.
         var dynamicSymbol = (DynamicSigilSymbol) (SlotIndex + 9);
 
-        ParticipantGameStats = wizard.GameStats;
+        ParticipantGameStats = _wizard.GameStats;
         var combatStats = ParticipantGameStats.GetCombatGameStats();
 
         // Collage spells the player has learned and temporary spells (perhaps from equipment)
         // into one list to create the combat hand.
         var allSpells = new List<CombatDeckSpellData>();
-        if (wizard.SpellbookBehavior.SpellList is not null) {
+        if (_wizard.SpellbookBehavior.SpellList is not null) {
             // We want to convert the spell data to the server spell data.
-            var convertedSpells = wizard.SpellbookBehavior.SpellList
+            var convertedSpells = _wizard.SpellbookBehavior.SpellList
                 .Select(spell => new CombatDeckSpellData {
                     TemplateId = spell.m_templateID,
                     Quantity = spell.m_quantity,
@@ -248,7 +299,7 @@ public class CombatDuelActorSubCircle {
 
         // Count temporary spells as 1 quantity.
         var temporarySpells = new List<CombatDeckSpellData>();
-        foreach (var tempSpell in wizard.SpellbookBehavior.TemporarySpells) {
+        foreach (var tempSpell in _wizard.SpellbookBehavior.TemporarySpells) {
             // If the spell data already exists, increase the quantity.. otherwise add it.
             var existingSpell = temporarySpells.Find(s => s.TemplateId == tempSpell.m_templateID);
             if (existingSpell is not null) {
@@ -271,7 +322,7 @@ public class CombatDuelActorSubCircle {
             m_isPlayer = true,
             m_isMonster = 0,
             m_teamID = 0,
-            m_primaryMagicSchoolID = (int) wizard.MagicSchoolBehavior.MagicSchool,
+            m_primaryMagicSchoolID = (int) _wizard.MagicSchoolBehavior.MagicSchool,
             m_pipCount = new() {
                 m_powerPips = ParticipantGameStats.m_startingPowerPips,
                 m_genericPips = ParticipantGameStats.m_startingPips
