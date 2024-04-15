@@ -88,7 +88,7 @@ internal class ShopService : MessageService {
 
         var goldCost = (int) template.m_baseCost;
         if (template.m_numPrimaryColors != 1 && template.m_numSecondaryColors != 0) {
-            goldCost = (int) Math.Ceiling(goldCost * 1.2275f); // Dyed items are most expensive.
+            goldCost = (int) Math.Ceiling(goldCost * 1.225f); // Dyed items are more expensive.
         }
 
         // Deny transaction if player cannot afford item
@@ -150,7 +150,11 @@ internal class ShopService : MessageService {
         }
 
         var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
+
         var gold = (int) (template.m_baseCost * 0.05f);
+        if (template.m_numPrimaryColors != 1 && template.m_numSecondaryColors != 0) {
+            gold = (int) Math.Ceiling(gold * 1.2275f); // This value is slightly higher for some reason.
+        }
 
         wizard.AddGold(gold);
 

@@ -88,12 +88,17 @@ public class InventoryService : MessageService {
                     ItemID = quickSellItem.m_sellItemGID
                 });
 
-                goldSum += (int) Math.Ceiling(template.m_baseCost * 0.05f);
+                var value = (int) (template.m_baseCost * 0.05f);
+                if (template.m_numPrimaryColors != 1 && template.m_numSecondaryColors != 0) {
+                    value = (int) Math.Ceiling(value * 1.2275f); // Dyed items are more expensive.
+                }
+
+                goldSum += value;
             }
         }
 
         // Update player with their new gold balance.
-        wizard.GameStats.m_currentGold += goldSum;
+        wizard.AddGold(goldSum);
         SendToSocket(new WIZARD_12_PROTOCOL.MSG_UPDATEGOLD() {
             Gold = wizard.GameStats.m_currentGold,
             MaxGold = wizard.GameStats.m_baseGoldPouch,
