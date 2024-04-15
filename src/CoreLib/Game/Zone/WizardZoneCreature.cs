@@ -119,6 +119,13 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
     }
 
     protected override void OnPlayerInteractionEnter(CoreObject suspectObject, IActorRef suspectActor) {
+        // If I'm a wisp and a player just interacted with me, then add health/mana/gold.
+        var objName = ((WizGameObjectTemplate) Template).m_objectName.ToString();
+        if (objName.Contains("Wisp")) {
+            DoWispInteract(objName, suspectObject, suspectActor);
+            return;
+        }
+
         // If I'm a hostile creature and a player just provoked me, then start a duel.
         if (_creatureState == CreatureState.Combat || !IsDuelingCreature()) {
             return;
@@ -440,6 +447,92 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
 
         var props = CombatAIActor.Props(Self, duel, subCircle);
         _combatAiActor = Context.ActorOf(props, $"combatAIActor_{ActiveGameObject.m_globalID}");
+    }
+
+    private void DoWispInteract(string name, CoreObject suspectObject, IActorRef suspectActor) {
+        // Query and retrieve wizard that interacted with wisp.
+        var queryCharacterMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
+        var wizard = suspectActor
+            .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryCharacterMsg)
+            .Result
+            .Wizard;
+
+        // Values with gear and effects.
+        var baseHealth = wizard.GameStats.m_baseHitpoints;
+        var currentHealth = wizard.GameStats.m_currentHitpoints;
+        var baseMana = wizard.GameStats.m_baseMana;
+        var currentMana = wizard.GameStats.m_currentMana;
+
+        // Values before effects are applied.
+        var clientGameStats = wizard.GameStats.GetClientTypeAlternative();
+        var msgBaseHealth = clientGameStats.m_baseHitpoints;
+        var msgBaseMana = clientGameStats.m_baseMana;
+
+        // Todo: Update health and mana persistently.
+        switch (name) {
+            // 'WC' HP wisps only appear in Unicorn Way, and heal 40% instead of 25%. 'KT' HP wisps are used everywhere else.
+            // 'UW' Mana wips only appear in Unicorn Way, and replenish 25% instead of 10%.
+            case var _ when name.Contains("WispHealth"):
+                if (baseHealth == currentHealth) { // If health is full, no need to heal.
+                    return;
+                }
+
+                var healthPercentage = name.Contains("KT") ? 0.25f : 0.40f; // Check for wisp type.
+
+                var healthUpdate = (int) (baseHealth * healthPercentage);
+                if (currentHealth + healthUpdate > baseHealth) { // Check for overheal.
+                    healthUpdate = baseHealth - currentHealth;
+                }
+
+                var healthUpdateMsg = new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH {
+                    CharacterID = wizard.CharId,
+                    NewHealth = currentHealth + healthUpdate,
+                    NewHealthMax = msgBaseHealth,
+                    DisplayDiff = 1
+                };
+                suspectActor.Tell(healthUpdateMsg);
+
+                wizard.GameStats.m_currentHitpoints += healthUpdate;
+
+                break;
+            case var _ when name.Contains("WispMana"):
+                if (baseMana == currentMana) { // If mana is full, no need to replenish.
+                    return;
+                }
+
+                var manaPercentage = name.Contains("UW") ? 0.25f : 0.10f; // Check for wisp type.
+
+                var manaUpdate = (int) (baseMana * manaPercentage); // Check for overflow.
+                if (currentMana + manaUpdate > baseMana) {
+                    manaUpdate = baseMana - currentMana;
+                }
+
+                var manaUpdateMsg = new WIZARD_12_PROTOCOL.MSG_UPDATEMANA {
+                    Mana = currentMana + manaUpdate,
+                    MaxMana = msgBaseMana,
+                    DisplayDiff = 1
+                };
+                suspectActor.Tell(manaUpdateMsg);
+
+                wizard.GameStats.m_currentMana += manaUpdate;
+
+                break;
+            case "WC_WispGold":
+                // Todo: Randomly generate gold values. Scale with world maybe?
+                var goldUpdateMsg = new WIZARD_12_PROTOCOL.MSG_UPDATEGOLD {
+                    Gold = wizard.GameStats.m_currentGold + 100,
+                    MaxGold = wizard.GameStats.m_baseGoldPouch
+                };
+                suspectActor.Tell(goldUpdateMsg);
+
+                wizard.AddGold(100);
+
+                break;
+            default:
+                break;
+        }
+
+        Die(); // Destroy wisp.
     }
 
     private void StopMovement() {
