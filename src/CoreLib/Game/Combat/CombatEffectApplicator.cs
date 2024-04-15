@@ -78,6 +78,9 @@ internal class CombatEffectApplicator {
             case SpellEffect.kEffectTarget.kEnemyTeamAllAtOnce:
                 targets = _activeSubCircles.Where(x => x.OccupiedTeam != caster.OccupiedTeam).ToArray();
                 break;
+            case SpellEffect.kEffectTarget.kGlobal:
+                ApplyGlobalEffect(effect, caster.DuelActor.Duel);
+                return cinematicTime;
         }
 
         switch (effect.m_effectType) {
@@ -137,6 +140,11 @@ internal class CombatEffectApplicator {
             // Calculate damage changes from target hanging effects.
             cinematicTime += CalculateWardCinematicTime(effect.m_sDamageType, target);
             damage = ApplyWards(effect.m_sDamageType, damage, target, out var finalDmgSchool);
+
+            // Calculate global damage modifier
+            var bubbleDamageIncrease = GetGlobalEffectDamageModifier(target, damageType);
+            damage = (int) Math.Floor(damage * (1 + bubbleDamageIncrease));
+
             var finalDmgSchoolEnum = (MagicSchool) Enum.Parse(typeof(MagicSchool), finalDmgSchool);
 
             DoDamageToTarget(target, damage, finalDmgSchoolEnum);
@@ -189,6 +197,10 @@ internal class CombatEffectApplicator {
             // Calculate damage changes from target hanging effects.
             cinematicTime += CalculateWardCinematicTime(effect.m_sDamageType, target);
             damage = ApplyWards(effect.m_sDamageType, damageFromCaster, target, out var finalDmgSchool);
+
+            // Calculate global damage modifier
+            damage += (int) Math.Floor(damage * GetGlobalEffectDamageModifier(target, damageType));
+
             var finalDmgSchoolEnum = (MagicSchool) Enum.Parse(typeof(MagicSchool), finalDmgSchool);
 
             damageDealt += DoDamageToTarget(target, damage, finalDmgSchoolEnum);
@@ -236,6 +248,12 @@ internal class CombatEffectApplicator {
         }
 
         return cinematicTime;
+    }
+
+    private static void ApplyGlobalEffect(SpellEffect spellEffect, Duel duel) {
+        // todo: not good. some bubbles give two effects.
+        duel.m_duelModifier.m_battlefieldEffects.Clear();
+        duel.m_duelModifier.m_battlefieldEffects.Add(spellEffect);
     }
 
     private static int ApplyBlades(string school, int damage, CombatDuelActorSubCircle caster) {
@@ -376,5 +394,29 @@ internal class CombatEffectApplicator {
 
     private static float GetPercentIncomingHealIncrease(CombatDuelActorSubCircle target) {
         return target.ParticipantGameStats.m_healIncBonusPercentAll;
+    }
+
+    private static float GetGlobalEffectDamageModifier(CombatDuelActorSubCircle target, MagicSchool damageType) {
+        var sDamageType = damageType.ToString();
+        var schoolBubble = target.DuelActor.Duel.m_duelModifier.m_battlefieldEffects
+            .FirstOrDefault(x => x.m_effectType == SpellEffect.kSpellEffects.kModifyOutgoingDamage
+                              && x.m_sDamageType == sDamageType);
+
+        if (schoolBubble is not null) {
+            return schoolBubble.m_effectParam / 100.0f;
+        }
+
+        return 0.0f;
+    }
+
+    private static float GetGlobalEffectHealingModifier(CombatDuelActorSubCircle target) {
+        var healBubble = target.DuelActor.Duel.m_duelModifier.m_battlefieldEffects
+            .FirstOrDefault(x => x.m_effectType == SpellEffect.kSpellEffects.kModifyOutgoingHeal);
+
+        if (healBubble is not null) {
+            return healBubble.m_effectParam / 100.0f;
+        }
+
+        return 0.0f;
     }
 }

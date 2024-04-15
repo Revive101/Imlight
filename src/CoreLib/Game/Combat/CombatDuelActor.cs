@@ -769,7 +769,6 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     private Duel CreateDuelWithDefaults(ulong sigilId) {
-        // todo: source planning time from config
         var duel = new Duel() {
             m_duelID = sigilId,
             m_planningTimer = PLANNING_TIME,
@@ -783,6 +782,11 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             m_rK0 = _combatSigilTemplate.m_rK0PvE,
             m_rN0 = _combatSigilTemplate.m_rN0PvE,
             m_flatParticipantList = new List<CombatParticipant>(),
+            m_duelModifier = new DuelModifier() {
+                m_battlefieldEffects = new List<SpellEffect>(),
+                m_combatTriggers = new List<ByteString>(),
+                m_gameEffects = new List<GameEffectInfo>(),
+            }
         };
 
         return duel;

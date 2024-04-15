@@ -71,8 +71,8 @@ public class CombatDuelActorSubCircle {
     }
     internal bool IsAlive => ParticipantGameStats?.m_currentHitpoints > 0;
     internal CombatDeck CombatDeck;
+    internal readonly CombatDuelActor DuelActor;
 
-    private readonly CombatDuelActor _duelActor;
     private readonly float _radius;
     private readonly float _rotation;
     private readonly Color _color;
@@ -80,7 +80,7 @@ public class CombatDuelActorSubCircle {
 
     // ctor
     internal CombatDuelActorSubCircle(CombatDuelActor duelActor, float radius, float rotation, Color color, int index) {
-        _duelActor = duelActor;
+        DuelActor = duelActor;
         _radius = radius;
         _rotation = rotation;
         _color = color;
@@ -102,8 +102,8 @@ public class CombatDuelActorSubCircle {
 
         // Inform the actor that they've been added to a duel.
         var msg = new COMBAT_106_PROTOCOL.MSG_ACTORADDEDTODUEL {
-            DuelActor = _duelActor.ActorRef,
-            Duel = _duelActor,
+            DuelActor = DuelActor.ActorRef,
+            Duel = DuelActor,
             SubCircle = this,
             SlotPosition = WorldPosition,
             SlotOrientation = WorldRotation
@@ -349,7 +349,7 @@ public class CombatDuelActorSubCircle {
             m_maxHandSize = PLAYER_HAND_SIZE,
             m_playerHealth = ParticipantGameStats.m_currentHitpoints,
             m_maxPlayerHealth = ParticipantGameStats.m_baseHitpoints,
-            m_myTeamTurn = _duelActor.Duel.m_firstTeamToAct == 0,
+            m_myTeamTurn = DuelActor.Duel.m_firstTeamToAct == 0,
             m_pGameStats = combatStats,
             m_pPlayDeck = new PlayDeck(),
             m_subcircle = SlotIndex,
@@ -403,7 +403,7 @@ public class CombatDuelActorSubCircle {
             m_pipRoundRates = new(),
             m_playerHealth = creatureStats.GameStats.m_currentHitpoints,
             m_maxPlayerHealth = creatureStats.GameStats.m_baseHitpoints,
-            m_myTeamTurn = _duelActor.Duel.m_firstTeamToAct == 1,
+            m_myTeamTurn = DuelActor.Duel.m_firstTeamToAct == 1,
             m_pGameStats = creatureStats.GameStats.GetCombatGameStats(),
             m_mobLevel = creatureStats.CombatLevel,
 
@@ -418,19 +418,19 @@ public class CombatDuelActorSubCircle {
 
     private async Task PlayEntranceAnimation(CoreObject participantObject) {
         // Set the state of the participant to entering sigil.
-        _duelActor.ZoneBroadcast(new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
+        DuelActor.ZoneBroadcast(new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
             GameObjectID = participantObject.m_globalID,
             State = (uint) NPCStates.Sigil
         });
 
         // Send aggro to the participant.
-        _duelActor.ZoneBroadcast(new WIZARD_12_PROTOCOL.MSG_AGGRO {
+        DuelActor.ZoneBroadcast(new WIZARD_12_PROTOCOL.MSG_AGGRO {
             GlobalID = participantObject.m_globalID,
             LocX = WorldPosition.X,
             LocY = WorldPosition.Y,
             LocZ = WorldPosition.Z,
             Yaw = WorldRotation,
-            SigilGID = _duelActor.SigilId
+            SigilGID = DuelActor.SigilId
         });
 
         // Wait the amount of time it takes for the actor to enter the sigil, then set
@@ -438,7 +438,7 @@ public class CombatDuelActorSubCircle {
         await Task.Delay((int) (AGGRO_TIME_IN_SECONDS * 1000));
 
         // Set state to stationary.
-        _duelActor.ZoneBroadcast(new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
+        DuelActor.ZoneBroadcast(new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
             GameObjectID = participantObject.m_globalID,
             State = (uint) NPCStates.Stationary
         });
