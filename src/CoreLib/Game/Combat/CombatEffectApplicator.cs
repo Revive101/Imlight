@@ -4,7 +4,6 @@
  */
 
 using Imlight.CoreLib.Shared.Behaviors;
-using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -99,6 +98,7 @@ internal class CombatEffectApplicator {
             case SpellEffect.kSpellEffects.kModifyOutgoingHealFlat:
             case SpellEffect.kSpellEffects.kModifyIncomingHeal:
             case SpellEffect.kSpellEffects.kModifyIncomingHealFlat:
+            case SpellEffect.kSpellEffects.kModifyIncomingDamageType:
                 ApplyHangingEffect(effect, targets);
                 break;
             case SpellEffect.kSpellEffects.kStun:
@@ -136,9 +136,10 @@ internal class CombatEffectApplicator {
 
             // Calculate damage changes from target hanging effects.
             cinematicTime += CalculateWardCinematicTime(effect.m_sDamageType, target);
-            damage = ApplyWards(effect.m_sDamageType, damage, target);
+            damage = ApplyWards(effect.m_sDamageType, damage, target, out var finalDmgSchool);
+            var finalDmgSchoolEnum = (MagicSchool) Enum.Parse(typeof(MagicSchool), finalDmgSchool);
 
-            DoDamageToTarget(target, damage, damageType);
+            DoDamageToTarget(target, damage, finalDmgSchoolEnum);
         }
 
         return cinematicTime;
@@ -187,9 +188,10 @@ internal class CombatEffectApplicator {
 
             // Calculate damage changes from target hanging effects.
             cinematicTime += CalculateWardCinematicTime(effect.m_sDamageType, target);
-            damage = ApplyWards(effect.m_sDamageType, damageFromCaster, target);
+            damage = ApplyWards(effect.m_sDamageType, damageFromCaster, target, out var finalDmgSchool);
+            var finalDmgSchoolEnum = (MagicSchool) Enum.Parse(typeof(MagicSchool), finalDmgSchool);
 
-            damageDealt += DoDamageToTarget(target, damage, damageType);
+            damageDealt += DoDamageToTarget(target, damage, finalDmgSchoolEnum);
         }
 
         var casterHealTotal = (int) Math.Floor(damageDealt * effect.m_healModifier);
@@ -257,21 +259,35 @@ internal class CombatEffectApplicator {
         return damage;
     }
 
-    private static int ApplyWards(string school, int damage, CombatDuelActorSubCircle caster) {
-        var wards = caster.HangingEffects
-            .Where(x => x.m_effectType == SpellEffect.kSpellEffects.kModifyIncomingDamage)
+    private static int ApplyWards(string school, int damage, CombatDuelActorSubCircle target, out string currentDmgSchool) {
+        var wards = target.HangingEffects
+            .Where(x => x.m_effectType is SpellEffect.kSpellEffects.kModifyIncomingDamage
+                                       or SpellEffect.kSpellEffects.kModifyIncomingDamageType)
+            .Reverse()
             .ToList();
 
-        var seen = new HashSet<uint>();
-        foreach (var ward in wards.Where(x => x.m_sDamageType == school || x.m_sDamageType == "All")) {
-            if (!seen.Add(ward.m_spellTemplateID)) {
+        var seen = new HashSet<SpellEffect>();
+        currentDmgSchool = school;
+        foreach (var ward in wards) {
+            // Check if this ward has already been applied.
+            if (!seen.Add(ward)) {
+                continue;
+            }
+            if (ward.m_sDamageType != currentDmgSchool && ward.m_sDamageType != "All") {
+                continue;
+            }
+
+            // If this is a prism, we need to change the damage type.
+            if (ward.m_effectType == SpellEffect.kSpellEffects.kModifyIncomingDamageType) {
+                currentDmgSchool = ((MagicSchool) ward.m_effectParam).ToString();
+                target.HangingEffects.Remove(ward);
                 continue;
             }
 
             var damageChange = ward.m_effectParam / 100.0f;
             damage = (int) Math.Floor(damage * (1 + damageChange));
 
-            caster.HangingEffects.Remove(ward);
+            target.HangingEffects.Remove(ward);
         }
 
         return damage;
@@ -322,7 +338,7 @@ internal class CombatEffectApplicator {
         // Ensure that damage isn't negative.
         reducedDamage = Math.Max(reducedDamage, 0);
 
-        target.ParticipantGameStats.m_currentHitpoints -= reducedDamage;
+        target.DamageParticipant(reducedDamage);
         return reducedDamage;
     }
 
@@ -330,7 +346,7 @@ internal class CombatEffectApplicator {
         var percentIncomingHealIncrease = GetPercentIncomingHealIncrease(target);
         heal = (int) Math.Ceiling(heal * (1 + percentIncomingHealIncrease));
 
-        target.ParticipantGameStats.m_currentHitpoints += heal;
+        target.HealParticipant(heal);
         return heal;
     }
 
