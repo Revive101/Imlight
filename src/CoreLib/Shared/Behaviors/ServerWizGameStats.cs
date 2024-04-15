@@ -19,6 +19,8 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
     // These are stats relevant to the player's character, and not ones we can calculate from any other data.
     public int m_currentHitpoints;
     public int m_currentGold;
+    public int m_baseHitpoints;
+    public int m_baseMana;
     public int m_currentEventCurrency1;
     public int m_currentEventCurrency2;
     public int m_currentPvPCurrency;
@@ -74,8 +76,6 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
     public int m_baseGoldPouch;
 
     // These are stats that we can calculate from other data, and don't need to be stored in the player's character data.
-    [JsonIgnore] public int m_baseHitpoints;
-    [JsonIgnore] public int m_baseMana;
     [JsonIgnore] public int m_baseEventCurrency1Pouch;
     [JsonIgnore] public int m_baseEventCurrency2Pouch;
     [JsonIgnore] public int m_basePvPCurrencyPouch;
