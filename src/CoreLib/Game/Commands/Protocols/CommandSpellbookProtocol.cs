@@ -15,6 +15,7 @@ using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using static Imlight.Common.Caches.TypeCache;
+using static Raven.Client.Documents.Commands.MultiGet.GetRequest;
 
 namespace Imlight.CoreLib.Game.Commands.Protocols;
 
@@ -97,6 +98,24 @@ internal class CommandSpellbookProtocol : CommandProtocol {
             SpellID = (int) spellTemplateIdUint
         };
         Context.SessionActor.Tell(clientMsg);
+    }
+    [Command("unlearnall")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void UnlearnallSpellCommand() {
+        // Parse the spell template ID as a uint.
+        if (Context.Character.SpellbookBehavior.LearnedSpellTemplateIds != null){ 
+        foreach (var spell in Context.Character.SpellbookBehavior.LearnedSpellTemplateIds) {
+
+            var clientMsg = new WIZARD_12_PROTOCOL.MSG_REMOVESPELLFROMBOOK {
+                SpellID = (int) spell
+            };
+            Context.SessionActor.Tell(clientMsg);
+            InformSenderClient($"You have unlearned the spell {spell}.");
+        }
+    }
+        else {
+            InformSenderClient($"No Spells To Unlearn");
+        }
     }
 
     [Command("add")]
