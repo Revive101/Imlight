@@ -23,6 +23,7 @@ namespace Imlight.CoreLib.Game.Services;
 public class ZoneService : MessageService, IWithTimers {
     private const int ZONE_REMOVAL_WAIT_TIME_IN_SECONDS = 4;
     private const int ZONE_TRANSFER_CLEANUP_WAIT_TIME_IN_SECONDS = 1;
+    private const float TELEPORT_EFFECTS_TIME = 2.0f;
 
     public IActorRef ZoneActor;
     public ITimerScheduler Timers { get; set; }
@@ -132,7 +133,7 @@ public class ZoneService : MessageService, IWithTimers {
 
         wizard.SetTimeHomeLastClicked(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
 
-        var delay = TimeSpan.FromSeconds(2);
+        var delay = TimeSpan.FromSeconds(TELEPORT_EFFECTS_TIME);
         Timers.StartSingleTimer("zonetransfer", tpmsg, delay);
     }
 
@@ -149,7 +150,7 @@ public class ZoneService : MessageService, IWithTimers {
 
         wizard.SetTimeHomeLastClicked(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
 
-        var delay = TimeSpan.FromSeconds(2);
+        var delay = TimeSpan.FromSeconds(TELEPORT_EFFECTS_TIME);
         Timers.StartSingleTimer("zonetransfer", tpmsg, delay);
     }
 
