@@ -106,11 +106,12 @@ internal class CommandSpellbookProtocol : CommandProtocol {
         if (Context.Character.SpellbookBehavior.LearnedSpellTemplateIds != null){ 
         foreach (var spell in Context.Character.SpellbookBehavior.LearnedSpellTemplateIds) {
 
-            Context.Character.UnlearnSpell(spell);
+            
             var clientMsg = new WIZARD_12_PROTOCOL.MSG_REMOVESPELLFROMBOOK {
                 SpellID = (int) spell
             };
             Context.SessionActor.Tell(clientMsg);
+            Context.Character.UnlearnSpell(spell);
             InformSenderClient($"You have unlearned the spell {spell}.");
         }
     }
