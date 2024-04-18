@@ -35,6 +35,7 @@ public class Wizard : IDisposable {
     public string Zone { get; set; }
     public string ZoneDisplayName { get; set; }
     public string MarkedZone { get; set; }
+    public long TimeHomeLastClicked { get; set; }
     public byte World { get; set; }
     public Vector3 Location {
         get => GameObject?.m_location ?? _location;
@@ -180,6 +181,12 @@ public class Wizard : IDisposable {
 
         // Persistent save.
         WizardCollection.UpdateCharacterMarkedLocation(this, loc, orientation, zone);
+    }
+
+    public void SetTimeHomeLastClicked(long time) {
+        TimeHomeLastClicked = time;
+
+        WizardCollection.UpdateCharacterTimeWentHome(this, time);
     }
 
     public void SetMaxGold(int maxGold) {
