@@ -214,6 +214,34 @@ public class Wizard : IDisposable {
         WizardCollection.UpdateCharacterGameStats(this);
     }
 
+    public void UpdateHealth(int newHealth) {
+        GameStats.m_currentHitpoints = newHealth;
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterGameStats(this);
+    }
+
+    public void UpdateMaxHealth(int newMaxHealth) {
+        GameStats.m_baseHitpoints = newMaxHealth;
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterGameStats(this);
+    }
+
+    public void UpdateMana(int newMana) {
+        GameStats.m_currentMana = newMana;
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterGameStats(this);
+    }
+
+    public void UpdateMaxMana(int newMaxMana) {
+        GameStats.m_baseMana = newMaxMana;
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterGameStats(this);
+    }
+
     public bool AddItemToInventory(ulong itemId, out WizClientObjectItem item) {
         item = (WizClientObjectItem) CoreObjectFactory.FinalizeCoreObject(itemId);
         item.m_characterId = (GID) CharId;

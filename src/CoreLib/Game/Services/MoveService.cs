@@ -116,7 +116,7 @@ internal class MoveService : MessageService, IWithTimers {
         SendToSocket(new WIZARD_12_PROTOCOL.MSG_UPDATEMANA() {
             Mana = wizard.GameStats.m_currentMana,
             MaxMana = wizard.GameStats.m_baseMana,
-            DisplayDiff = (byte) (oldMana - newMana)
+            DisplayDiff = 1
         });
 
         var rsp = new GAME_5_PROTOCOL.MSG_MARK_LOCATION_RESPONSE {

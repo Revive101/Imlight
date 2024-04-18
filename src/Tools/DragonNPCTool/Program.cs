@@ -18,11 +18,17 @@ namespace DragonNPCTool;
 public static class Program {
     private const int FuzzyFindThreshold = 20;
     private const string ZoneDataFileName = "gamedata.bin";
+    private const string InputDirectory = "input";
+    private const string CertificateName = "worlddata.dev.certificate.pfx";
+    private const string ShopkeeperNameManifest = "shopkeeper.manifest";
 
     private static string[] _zoneNames;
+    private static Dictionary<ulong, string> s_shopKeeperNames;
 
     public static void Main() {
         if (!AreAllResourcesAvailable())
+            return;
+        if (!LoadShopkeeperNames())
             return;
 
         Console.Write("Connect to Imlight? (y/n) ");
@@ -31,7 +37,7 @@ public static class Program {
             return;
 
         if (userSettingsInput == "y") {
-            DragonDatabaseManager.SetRemoteServer("https://a.worlddata.ravendb.community", "input/worlddata.dev.certificate.pfx");
+            DragonDatabaseManager.SetRemoteServer("https://a.worlddata.ravendb.community", $"{InputDirectory}/{CertificateName}");
         }
         else {
 
@@ -97,11 +103,40 @@ public static class Program {
 
         var zoneData = fs.OpenClass<TypeCache.WizZoneData>(workingWad, ZoneDataFileName);
         if (zoneData is not null) {
+            // Search the manifest for shopkeepers. If none are found, search the object list.
             objectList = zoneData.m_objectList;
-            npcSuspects = FindShopSuspectObjects(objectList);
+            var npcList = FindShopSuspectObjects(objectList);
 
-            foreach (var suspect in npcSuspects) {
-                AnsiConsole.MarkupLine($"\t[bold]TemplateID {suspect.m_templateID} | {suspect.m_zoneTag}[/] could be a shopkeeper.");
+            var npcFound = false;
+            var printedTemplateIds = new HashSet<ulong>();
+
+            foreach (var obj in objectList)
+            {
+                if (s_shopKeeperNames.ContainsKey(obj.m_templateID) && !printedTemplateIds.Contains(obj.m_templateID))
+                {
+                    npcFound = true;
+                    AnsiConsole.MarkupLine($"[bold]{obj.m_templateID}[/] -{s_shopKeeperNames[obj.m_templateID]}");
+                    printedTemplateIds.Add(obj.m_templateID);
+                }
+            }
+
+            foreach (var npc in npcList)
+            {
+                if (!printedTemplateIds.Contains(npc.m_templateID))
+                {
+                    npcFound = true;
+                    AnsiConsole.MarkupLine($"[bold]{npc.m_templateID}[/] - {npc.m_zoneTag}");
+                    printedTemplateIds.Add(npc.m_templateID);
+                }
+            }
+
+            if (!npcFound)
+            {
+                AnsiConsole.MarkupLine("No shopkeepers found in this zone. Dumping all possible NPCs instead.");
+
+                foreach (var obj in objectList) {
+                    AnsiConsole.MarkupLine($"[bold]{obj.m_templateID}[/] - {obj.m_zoneTag}");
+                }
             }
         }
     }
@@ -143,20 +178,34 @@ public static class Program {
     private static List<GID> CreateNewInventory(ulong templateId) {
         List<GID> inventory = new List<GID>();
 
-        AnsiConsole.MarkupLine("\nInput the TemplateID of an item to add to the inventory:");
+        AnsiConsole.Markup("\nInput the TemplateID of an item to add to the inventory: ");
         var input = Console.ReadLine();
 
-        var itemID = (GID) Convert.ToUInt64(input);
-        inventory.Add(itemID);
+        if (!ulong.TryParse(input, out var itemID)) {
+            AnsiConsole.MarkupLine("Invalid input. Please input a valid TemplateID.");
+        } else {
+            inventory.Add((GID) itemID);
+        }
 
         while (true) {
-            AnsiConsole.MarkupLine($"Added item {input}. Input the next item, or type 'y' to finalize.");
-
+            AnsiConsole.Markup("\nInput the next item, type 'undo' to remove the last item, or type 'y' to finalize: ");
             input = Console.ReadLine();
+
             if (input == "y") break;
 
-            itemID = (GID) Convert.ToUInt64(input);
-            inventory.Add(itemID);
+            if (input == "undo") {
+                inventory.RemoveAt(inventory.Count - 1);
+                AnsiConsole.MarkupLine($"Removed previous item {itemID}.");
+                continue;
+            }
+
+            if (!ulong.TryParse(input, out itemID)) {
+                AnsiConsole.MarkupLine("Invalid input. Please input a valid TemplateID.");
+            }
+            else {
+                inventory.Add((GID) itemID);
+                AnsiConsole.Markup($"Added item {itemID}.");
+            }
         }
 
         return inventory;
@@ -171,14 +220,30 @@ public static class Program {
 
             if (input.Contains("add")) {
                 input = input.Replace("add ", "");
-                var itemID = (GID) Convert.ToUInt64(input);
-                inventory.Add(itemID);
-                AnsiConsole.MarkupLine($"Added item {input}.");
+
+                if (!ulong.TryParse(input, out var itemID)) {
+                    AnsiConsole.MarkupLine("Invalid input. Please input a valid TemplateID.");
+                }
+                else {
+                    inventory.Add((GID) itemID);
+                    AnsiConsole.MarkupLine($"Added item {itemID}.");
+                }
             } else {
-                var index = Convert.ToInt32(input) - 1;
-                var val = inventory[index];
-                inventory.RemoveAt(index);
-                AnsiConsole.MarkupLine($"Removed item {val}.");
+                input = input.Replace("remove ", "");
+
+                if (!ulong.TryParse(input, out var index)) {
+                    AnsiConsole.MarkupLine("Invalid input. Please input a valid index.");
+                }
+                else {
+                    var val = inventory[(int) index - 1];
+                    inventory.RemoveAt((int) index - 1);
+                    AnsiConsole.MarkupLine($"Removed item {Convert.ToUInt64(val)}. New inventory:");
+
+                    AnsiConsole.MarkupLine("      idx | template ID");
+                    for (int i = 0; i < inventory.Count; i++) {
+                        AnsiConsole.MarkupLine($"\t[bold]{i + 1} | {Convert.ToUInt64(inventory[i])}[/]");
+                    }
+                }
             }
         }
     }
@@ -212,6 +277,32 @@ public static class Program {
         catch (Exception ex) {
             Console.WriteLine("Some resource was not available: {0}", ex.Message);
             return false;
+        }
+
+        return true;
+    }
+
+    private static bool LoadShopkeeperNames() {
+        s_shopKeeperNames = new Dictionary<ulong, string>();
+
+        // The manifest is sorted by key | value, where key is the template ID and value is the shopkeeper name.
+        var inputFile = $"{InputDirectory}/{ShopkeeperNameManifest}";
+        if (!File.Exists(inputFile)) {
+            Console.WriteLine("Shopkeeper name manifest not found.");
+            return false;
+        }
+
+        var lines = File.ReadAllLines(inputFile);
+        foreach (var line in lines) {
+            var split = line.Split('|');
+            if (split.Length != 2) {
+                Console.WriteLine("Shopkeeper name manifest is not formatted correctly.");
+                return false;
+            }
+
+            var templateId = Convert.ToUInt64(split[0]);
+            var shopkeeperName = split[1];
+            s_shopKeeperNames.Add(templateId, shopkeeperName);
         }
 
         return true;
@@ -266,7 +357,10 @@ public static class Program {
                                              .Where(info => info is not CombatSigil)
                                              .Where(info => info is not SoundEmitterInfo)
                                              .Where(info => info is not PositionalSoundEmitterInfo)) {
-            if (objectInfo.m_zoneTag.ToString().ToLower().Contains("shop")) {
+            var name = objectInfo.m_zoneTag.ToString();
+
+            // Check to see if the name contains either "shop" or "npc".
+            if (name.Contains("shop", StringComparison.OrdinalIgnoreCase) || name.Contains("npc", StringComparison.OrdinalIgnoreCase)) {
                 shopSuspectObjects.Add(objectInfo);
             }
         }
