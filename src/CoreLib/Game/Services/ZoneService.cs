@@ -120,7 +120,7 @@ public class ZoneService : MessageService {
         // this teleports the wizard to the world hub, NOT their home/dorm. for that you want MSG_GOTODORM. goofy ahh naming scheme
         var wizard = GetActiveWizard();
         SendButtonTeleportEffects();
-
+        
         var currentZone = wizard.Zone;
         var zoneMap = WorldHubZones.GetHubZoneMapping(currentZone);
         var tpmsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
@@ -128,7 +128,7 @@ public class ZoneService : MessageService {
             DestinationLocation = zoneMap.m_location,
             SendToClient = true
         };
-        
+
         wizard.SetTimeHomeLastClicked(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
         Task.Run(async () => await Task.Delay(TimeSpan.FromSeconds(2))).Wait();
         ReceiveZoneTransferRequest(tpmsg);
@@ -159,6 +159,7 @@ public class ZoneService : MessageService {
         if (timeDifference.TotalSeconds < 30) {
             SendCantGoHomeEffect(timeHomeLastClicked);
         }
+        SendHomeButtonData();
     }
 
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_WORLDTELEPORTREQUEST))]
@@ -396,5 +397,16 @@ public class ZoneService : MessageService {
             EffectData = serializedEffect
         };
         SendToSocket(addEffect);
+    }
+
+    private void SendHomeButtonData() {
+        var wizard = GetActiveWizard();
+        var currentZone = wizard.Zone;
+        var zoneMap = WorldHubZones.GetHubZoneMapping(currentZone);
+        var marklocation = new GAME_5_PROTOCOL.MSG_MARK_LOCATION_RESPONSE {
+            Result = 2,
+            CommonsZoneId = zoneMap.m_hubZoneDisplayName
+        };
+        SendToSocket(marklocation);
     }
 }
