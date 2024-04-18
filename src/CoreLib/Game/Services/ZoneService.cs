@@ -144,7 +144,7 @@ public class ZoneService : MessageService {
             DestinationLocation = "Start",
             SendToClient = true
         };
-        
+
         wizard.SetTimeHomeLastClicked(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
         Task.Run(async () => await Task.Delay(TimeSpan.FromSeconds(2))).Wait();
         ReceiveZoneTransferRequest(tpmsg);
@@ -341,8 +341,6 @@ public class ZoneService : MessageService {
         var enterState = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
             GameObjectID = wizard.GameObject.m_globalID,
             State = StringHash.Compute("Teleport"),
-            Data = "",
-            IgnoreIfCurrentStateIsOff = 0
         };
 
         SendToSocket(enterState);
@@ -353,14 +351,9 @@ public class ZoneService : MessageService {
     private void SendCantGoHomeEffect(DateTimeOffset unixTimeStart) {
         var wizard = GetActiveWizard();
         NamedEffect effect = new NamedEffect {
-            m_bIsOnPet = false,
-            m_currentTickCount = 0,
             m_effectNameID = StringHash.Compute("CantGoHome"),
             m_endTime = (uint) unixTimeStart.AddSeconds(30).ToUnixTimeSeconds(),
             m_internalID = wizard.GameEffects.Count,
-            m_itemSlotID = 0,
-            m_originatorID = new GID { Value = 0 },
-            m_overrideName = ""
         };
         var serializedEffect = _effectSerializer.Serialize(effect);
         wizard.GameEffects.Add(effect);
@@ -380,14 +373,9 @@ public class ZoneService : MessageService {
         // also on live servers, when teleporting in zone, it will send the effects like 3 times. i also have no clue on this either.
         // all i know is that this works. in conclusion, do what makes sense, dont copy kingsisle, or you run into problems.
         NamedEffect effect = new NamedEffect {
-            m_bIsOnPet = false,
-            m_currentTickCount = 0,
             m_effectNameID = StringHash.Compute("RecallHome"),
             m_endTime = (uint) time.AddSeconds(2).ToUnixTimeSeconds(),
             m_internalID = wizard.GameEffects.Count,
-            m_itemSlotID = 0,
-            m_originatorID = new GID { Value = 0 },
-            m_overrideName = ""
         };
         
         wizard.GameEffects.Add(effect);
