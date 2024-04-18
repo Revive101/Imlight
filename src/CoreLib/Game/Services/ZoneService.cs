@@ -20,11 +20,12 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Services;
 
-public class ZoneService : MessageService {
+public class ZoneService : MessageService, IWithTimers {
     private const int ZONE_REMOVAL_WAIT_TIME_IN_SECONDS = 4;
     private const int ZONE_TRANSFER_CLEANUP_WAIT_TIME_IN_SECONDS = 1;
 
     public IActorRef ZoneActor;
+    public ITimerScheduler Timers { get; set; }
 
     private readonly TimeSpan _zoneRemovalWaitTime = TimeSpan.FromSeconds(ZONE_REMOVAL_WAIT_TIME_IN_SECONDS);
     private bool _isTransferQueued;
@@ -120,7 +121,7 @@ public class ZoneService : MessageService {
         // this teleports the wizard to the world hub, NOT their home/dorm. for that you want MSG_GOTODORM. goofy ahh naming scheme
         var wizard = GetActiveWizard();
         SendButtonTeleportEffects();
-        
+
         var currentZone = wizard.Zone;
         var zoneMap = WorldHubZones.GetHubZoneMapping(currentZone);
         var tpmsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
@@ -130,8 +131,9 @@ public class ZoneService : MessageService {
         };
 
         wizard.SetTimeHomeLastClicked(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
-        Task.Run(async () => await Task.Delay(TimeSpan.FromSeconds(2))).Wait();
-        ReceiveZoneTransferRequest(tpmsg);
+
+        var delay = TimeSpan.FromSeconds(2);
+        Timers.StartSingleTimer("zonetransfer", tpmsg, delay);
     }
 
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_GOTODORM))]
@@ -146,8 +148,9 @@ public class ZoneService : MessageService {
         };
 
         wizard.SetTimeHomeLastClicked(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
-        Task.Run(async () => await Task.Delay(TimeSpan.FromSeconds(2))).Wait();
-        ReceiveZoneTransferRequest(tpmsg);
+
+        var delay = TimeSpan.FromSeconds(2);
+        Timers.StartSingleTimer("zonetransfer", tpmsg, delay);
     }
 
     [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE))]
@@ -155,7 +158,7 @@ public class ZoneService : MessageService {
         var wizard = GetActiveWizard();
         var timeHomeLastClicked = DateTimeOffset.FromUnixTimeSeconds(wizard.TimeHomeLastClicked);
         var timeDifference = DateTimeOffset.UtcNow.Subtract(timeHomeLastClicked);
-        
+
         if (timeDifference.TotalSeconds < 30) {
             SendCantGoHomeEffect(timeHomeLastClicked);
         }
@@ -335,7 +338,7 @@ public class ZoneService : MessageService {
     private void SendButtonTeleportEffects() {
         var wizard = GetActiveWizard();
         var now = DateTimeOffset.UtcNow;
-        
+
         SendCantGoHomeEffect(now);
         // what does this do? who knows! its probably important.
         var enterState = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
@@ -362,7 +365,7 @@ public class ZoneService : MessageService {
             GameObjectID = wizard.GameObject.m_globalID,
             EffectData = serializedEffect
         };
-        
+
         SendToSocket(addEffect);
     }
 
@@ -377,7 +380,7 @@ public class ZoneService : MessageService {
             m_endTime = (uint) time.AddSeconds(2).ToUnixTimeSeconds(),
             m_internalID = wizard.GameEffects.Count,
         };
-        
+
         wizard.GameEffects.Add(effect);
         var serializedEffect = _effectSerializer.Serialize(effect);
         var addEffect = new GAME_5_PROTOCOL.MSG_ADDEFFECT {
