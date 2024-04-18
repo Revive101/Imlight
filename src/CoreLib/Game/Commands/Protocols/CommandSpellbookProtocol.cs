@@ -102,10 +102,11 @@ internal class CommandSpellbookProtocol : CommandProtocol {
     [Command("unlearnall")]
     [AuthRequired(AuthLevel.QualityAssurance)]
     private void UnlearnallSpellCommand() {
-        // Parse the spell template ID as a uint.
+
         if (Context.Character.SpellbookBehavior.LearnedSpellTemplateIds != null){ 
         foreach (var spell in Context.Character.SpellbookBehavior.LearnedSpellTemplateIds) {
 
+            Context.Character.UnlearnSpell(spell);
             var clientMsg = new WIZARD_12_PROTOCOL.MSG_REMOVESPELLFROMBOOK {
                 SpellID = (int) spell
             };
