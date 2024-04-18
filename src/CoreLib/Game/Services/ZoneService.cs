@@ -120,7 +120,7 @@ public class ZoneService : MessageService, IWithTimers {
     private void ReceiveGoHome(WIZARD_12_PROTOCOL.MSG_GOHOME message) {
         // this teleports the wizard to the world hub, NOT their home/dorm. for that you want MSG_GOTODORM. goofy ahh naming scheme
         var wizard = GetActiveWizard();
-        SendButtonTeleportEffects();
+        SendTeleportEffects();
 
         var currentZone = wizard.Zone;
         var zoneMap = WorldHubZones.GetHubZoneMapping(currentZone);
@@ -139,7 +139,7 @@ public class ZoneService : MessageService, IWithTimers {
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_GOTODORM))]
     private void ReceiveGotoDorm(WIZARD_12_PROTOCOL.MSG_GOTODORM message) {
         var wizard = GetActiveWizard();
-        SendButtonTeleportEffects();
+        SendTeleportEffects();
 
         var tpmsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
             DestinationZone = "WizardCity/QA_SpawnRate", // just teleporting to gm for now
@@ -255,6 +255,11 @@ public class ZoneService : MessageService, IWithTimers {
         ReceiveZoneTransferRequest(msg);
     }
 
+    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_DOTELEPORTEFFECTS))]
+    private void ReceiveTeleportEffects(CHARACTER_103_PROTOCOL.MSG_DOTELEPORTEFFECTS message) {
+        SendTeleportEffects();
+    }
+
     private void SetZone(IActorRef actorRef) {
         ZoneActor = actorRef;
     }
@@ -335,7 +340,7 @@ public class ZoneService : MessageService, IWithTimers {
         SendToSocket(serverTele);
     }
 
-    private void SendButtonTeleportEffects() {
+    private void SendTeleportEffects() {
         var wizard = GetActiveWizard();
         var now = DateTimeOffset.UtcNow;
 
