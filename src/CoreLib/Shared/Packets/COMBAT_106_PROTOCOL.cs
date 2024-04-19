@@ -135,5 +135,10 @@ namespace Imlight.CoreLib.Shared.Packets {
             public byte MessageOrder => 15;
             public byte ServiceID => 106;
         }
+
+        public sealed class MSG_COMBATWIN : IServerMessage {
+            public byte MessageOrder => 16;
+            public byte ServiceID => 106;
+        }
     }
 }

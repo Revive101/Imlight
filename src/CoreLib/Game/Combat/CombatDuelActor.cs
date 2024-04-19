@@ -724,6 +724,9 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
                 State = (uint) NPCStates.Idle
             };
             circle.ParticipantActor.Tell(stateMsg);
+
+            var victoryMsg = new COMBAT_106_PROTOCOL.MSG_COMBATWIN();
+            circle.ParticipantActor.Tell(victoryMsg);
         });
     }
 
