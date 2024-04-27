@@ -125,8 +125,7 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
         }
 
         var msg = new ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL {
-            StartingParticipants = new Dictionary<IActorRef, CoreObject>
-            {
+            StartingParticipants = new Dictionary<IActorRef, CoreObject> {
                 { suspectActor, suspectObject },
                 { Self, ActiveGameObject }
             }

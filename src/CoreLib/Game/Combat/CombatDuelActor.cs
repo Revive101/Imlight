@@ -140,8 +140,8 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
         var availableCreatureSubcircles = GetAvailableSubCircleTeamCreature();
         var availablePlayerSubcircles = GetAvailableSubCircleTeamPlayer();
-        var teamAAssigned = AssignParticipantToSubCircle(availableCreatureSubcircles, startingCreatureActor, startingCreatureObject);
-        var teamBAssigned = AssignParticipantToSubCircle(availablePlayerSubcircles, startingPlayerActor, startingPlayerObject);
+        AssignParticipantToSubCircle(availableCreatureSubcircles, startingCreatureActor, startingCreatureObject);
+        AssignParticipantToSubCircle(availablePlayerSubcircles, startingPlayerActor, startingPlayerObject);
 
         ActionDirector = new CombatActionDirector(Duel, SubCircles);
 
