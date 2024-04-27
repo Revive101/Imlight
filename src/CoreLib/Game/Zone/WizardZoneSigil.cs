@@ -43,6 +43,13 @@ public class WizardZoneSigil : WizardZoneObject {
     protected override void OnPlayerJoin(CoreObject player, IActorRef suspect) {
         if (_activeDuel is not null) {
             base.OnPlayerJoin(player, suspect);
+
+            // Inform the active duel of the new player.
+            var msg = new ZONE_102_PROTOCOL.MSG_ADDPLAYER {
+                Player = suspect,
+                PlayerObject = player,
+            };
+            _activeDuelActor.Tell(msg);
         }
     }
 

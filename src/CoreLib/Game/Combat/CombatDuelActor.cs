@@ -370,6 +370,18 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         HandleFleeAction(subCircle);
     }
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
+    private void ReceiveZoneAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message) {
+        // Check if this player is in the duel. If they are, remove them from the duel.
+        var subCircle = SubCircles.FirstOrDefault(x => x.ParticipantActor == Sender);
+        if (subCircle is null) {
+            return;
+        }
+
+        // Handle this as if it were the flee action.
+        HandleFleeAction(subCircle);
+    }
+
     private void HandleDiscardMove(CombatDuelActorSubCircle caster, int spellSelection) {
         var spell = caster.GetSpellFromLastHand((byte) spellSelection);
         caster.DiscardCard(spell);
