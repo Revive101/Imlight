@@ -657,17 +657,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         var playersWin = AliveAndInDuelCreatureCount <= 0;
         var creaturesWin = AliveAndInDuelPlayerCount <= 0;
 
-        // Inform any dead players that they've been defeated.
-        EnactActionOnSubCircles(circle => {
-            if (!circle.AddedToDuel) {
-                return;
-            }
-
-            if (circle.OccupiedTeam == CombatTeam.Player && !circle.IsAlive) {
-                var defeatMsg = new COMBAT_106_PROTOCOL.MSG_COMBATDEFEAT();
-                circle.ParticipantActor.Tell(defeatMsg);
-            }
-        });
+        RemovePlayersFromDuel();
 
         // Broadcast to the zone of the result.
         var combatMatchResult = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATMATCHRESULT {
@@ -683,6 +673,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             CreatureWin();
         }
 
+        // Inform the zone of the final phase, and the end of the duel.
         Duel.m_duelPhase = kDuelPhase.kPhase_Ended;
         SendCombatPhase((byte) Duel.m_duelPhase);
 
@@ -711,20 +702,6 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
             circle.ParticipantActor.Tell(combatVictoryMsg);
 
-            // Inform the player that they've been removed from this duel.
-            var removeMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATREMOVE {
-                DuelID = SigilId,
-                ParticipantID = circle.ParticipantObject.m_globalID,
-            };
-            ZoneBroadcast(removeMsg);
-
-            // Get the players back into the idle state, so they can move around again.
-            var stateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
-                GameObjectID = circle.ParticipantObject.m_globalID,
-                State = (uint) NPCStates.Idle
-            };
-            circle.ParticipantActor.Tell(stateMsg);
-
             var victoryMsg = new COMBAT_106_PROTOCOL.MSG_COMBATWIN();
             circle.ParticipantActor.Tell(victoryMsg);
         });
@@ -747,6 +724,33 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             circle.ParticipantActor.Tell(defeatMsg);
         });
     }
+
+    private void RemovePlayersFromDuel() => EnactActionOnSubCircles(circle => {
+        if (circle.OccupiedTeam != CombatTeam.Player) {
+            return;
+        }
+
+        // Send any dead players back to the hub.
+        if (!circle.IsAlive) {
+            var defeatMsg = new COMBAT_106_PROTOCOL.MSG_COMBATDEFEAT();
+            circle.ParticipantActor.Tell(defeatMsg);
+            return;
+        }
+
+        // Inform the player that they've been removed from this duel.
+        var removeMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATREMOVE {
+            DuelID = SigilId,
+            ParticipantID = circle.ParticipantObject.m_globalID,
+        };
+        ZoneBroadcast(removeMsg);
+
+        // Get the players back into the idle state, so they can move around again.
+        var stateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
+            GameObjectID = circle.ParticipantObject.m_globalID,
+            State = (uint) NPCStates.Idle
+        };
+        circle.ParticipantActor.Tell(stateMsg);
+    });
 
     private CombatTeam DetermineFirstTeam() {
         // Flip a coin.
