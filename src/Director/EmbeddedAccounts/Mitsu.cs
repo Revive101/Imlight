@@ -39,6 +39,7 @@ internal sealed class Mitsu : EmbeddedAccount {
         };
         var newCharacter = CharacterHelper.CreateCharacterFromCreationInfo(charCreationinfo);
         newCharacter.SetNameOverride("Mitsu");
+        newCharacter.PlayerNameBehavior.BadgeTitle = "WC-NPCs_00000161";
 
         // Add default items.
         newCharacter.AddItemToInventory(1359665, out var hat);   // The Cat Ears

@@ -18,6 +18,8 @@ using Imlight.CoreLib.WizardData;
 using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.Director.EmbeddedAccounts;
+using Imlight.Common.ObjectProperty;
+using System.Linq;
 
 namespace Imlight.Director;
 
@@ -25,7 +27,7 @@ internal static class Program {
     // Major versions in order:
     // Imlight - PROTO   -- Marks the beginning of the project. Very early serialization and networking.
     // Imlight - NETHRA  -- We are in-game. The game is playable and mostly stable, but not feature complete.
-    // Imlight - KALI    -- We feel very confident in the stability of previous systems. We are now focusing on combat.
+    // Imlight - KALI    -- We feel very confident in the stability of previous systems, and are becoming feature complete.
     private const string ActorSystemName = "Imlight";
     private const string MajorVersion = "KALI";
 
