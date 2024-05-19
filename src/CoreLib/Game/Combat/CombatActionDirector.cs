@@ -213,7 +213,7 @@ public class CombatActionDirector {
         var spellWorthCasting = false;
         var combatAction = new CombatAction {
             m_spellCaster = action.SpellCaster.SlotIndex,
-            m_targetSubcircleList = new List<int> { action.SelectedTarget.SlotIndex },
+            m_targetSubcircleList = new List<int>(),
             m_showCast = true,
             m_spellHits = (char) 1, // We've already decided if the spell fizzles or not. We can put 1 here.
             m_spell = action.Spell,
@@ -254,12 +254,13 @@ public class CombatActionDirector {
 
         // Setting the spell to null will cause the caster to pass their turn.
         if (spellWorthCasting) {
-            Logger.Debug("Duel {0} | Slot {1} | Spell hits targets {2}",
-                Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex), string.Join(", ", combatAction.m_targetSubcircleList));
+            var targetsStringForLog = string.Join(", ", combatAction.m_targetSubcircleList);
+            Logger.Debug("Duel {0} | Slot {1} | Spell {2} hits targets [{3}]",
+                Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex, action.Spell.m_templateID, targetsStringForLog));
         }
         else {
-            Logger.Debug("Duel {0} | Slot {1} | Spell not worth casting. Passing turn.",
-                Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex));
+            Logger.Debug("Duel {0} | Slot {1} | Spell {3} not worth casting. Passing turn.",
+                Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex, action.Spell.m_templateID));
 
             combatAction.m_spell = null;
         }
@@ -272,10 +273,7 @@ public class CombatActionDirector {
             return SPELL_PASS_TIME;
         }
 
-        // If this spell action us successful, remove it from the combat deck of the caster.
-        // Deduce the players mana by the rank of the spell.
-        action.SpellCaster.DiscardCard(action.Spell);
-        action.SpellCaster.DeductMana(action.Spell.m_pipCost.m_spellRank);
+        DoSpellCastConsequences(action.SpellCaster, action.Spell);
 
         // Return how long the cinematic will take to play out.
         return GetActionCinematicTime(action) + cinematicTime;
@@ -376,6 +374,13 @@ public class CombatActionDirector {
 
         var hitChance = new Random().Next(0, 100);
         return hitChance <= spellAccuracy;
+    }
+
+    private static void DoSpellCastConsequences(CombatDuelActorSubCircle caster, Spell spell) {
+        // If this spell action us successful, remove it from the combat deck of the caster.
+        // Deduce the players mana by the rank of the spell.
+        caster.DiscardCard(spell);
+        caster.DeductMana(spell.m_pipCost.m_spellRank);
     }
 
     private static bool ConsumeDispell(CombatDuelActorSubCircle caster, uint magicSchoolId) {
