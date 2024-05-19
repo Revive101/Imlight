@@ -287,6 +287,29 @@ public class CombatDuelActorSubCircle {
         }
     }
 
+    internal void DeductPipsFromRank(MagicSchool school, byte spellRank) {
+        var isMastered = HasSchoolMastery((uint) school);
+        var pipCount = CombatParticipant.m_pipCount;
+
+        while (spellRank > 0) {
+            if (isMastered && pipCount.m_powerPips > 0) {
+                pipCount.m_powerPips--;
+                spellRank -= 2;
+            }
+            else if (!isMastered && pipCount.m_powerPips > 0) {
+                pipCount.m_powerPips--;
+                spellRank--;
+            }
+            else if (pipCount.m_powerPips == 0 && pipCount.m_genericPips > 0) {
+                pipCount.m_genericPips--;
+                spellRank--;
+            }
+            else if (pipCount.m_powerPips == 0 && pipCount.m_genericPips == 0) {
+                break;
+            }
+        }
+    }
+
     private void InitializePlayerSubCircle() {
         var queryCharacterMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
         _wizard = ParticipantActor

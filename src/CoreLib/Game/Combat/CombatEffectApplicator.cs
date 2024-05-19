@@ -11,77 +11,12 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Combat;
 
-internal class CombatEffectApplicator {
+internal static class CombatEffectApplicator {
     private const float DAMAGE_PERCENT_MAX = 2.0f;
     private const float HANGING_EFFECT_CONSUME_TIME = 1.0f;
 
-    private readonly CombatDuelActorSubCircle[] _subCircles;
-    private CombatDuelActorSubCircle[] _activeSubCircles => _subCircles.Where(x => x.AddedToDuel && x.IsAlive).ToArray();
-
-    // ctor
-    public CombatEffectApplicator(CombatDuelActorSubCircle[] actorSubCircles) {
-        _subCircles = actorSubCircles;
-    }
-
-    internal float ApplyCombatAction(QueuedCombatAction action, out CombatAction combatAction) {
-        var effectStack = new CombatEffectStack();
+    internal static float ApplyEffect(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets) {
         var cinematicTime = 0.0f;
-
-        if (action.Spell is not null) {
-            foreach (var spellEffect in action.SpellTemplate.m_effects) {
-                var effect = spellEffect;
-
-                // If this is a random spell effect, we need to determine which effect to use.
-                if (spellEffect is RandomSpellEffect randomSpellEffect) {
-                    var count = randomSpellEffect.m_effectList.Count;
-                    var randomEffectIndex = new Random().Next(0, count);
-                    effect = randomSpellEffect.m_effectList[randomEffectIndex];
-
-                    // Push the random effect choice onto the stack.
-                    effectStack.PushRandomEffectChoice(randomEffectIndex);
-                }
-
-                cinematicTime += ApplyEffect(effect, action.SpellCaster, action.TargetSubcircle);
-            }
-        }
-
-        combatAction = new CombatAction {
-            m_effectChosen = effectStack.GetStackAsUint(),
-            m_spellCaster = action.SpellCaster.SlotIndex,
-            m_targetSubcircleList = new List<int> { action.TargetSubcircle.SlotIndex },
-            m_showCast = true,
-            m_spellHits = (char) 1, // Determines spell fizzel. 0 = fizzel, >=1 = hit
-            m_spell = action.Spell,
-        };
-
-        return cinematicTime;
-    }
-
-    private float ApplyEffect(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target) {
-        var targets = new CombatDuelActorSubCircle[] { target };
-        var cinematicTime = 0.0f;
-
-        switch (effect.m_effectTarget)
-        {
-            case SpellEffect.kEffectTarget.kEnemySingle:
-            case SpellEffect.kEffectTarget.kFriendlySingle:
-                targets = new[] { target };
-                break;
-            case SpellEffect.kEffectTarget.kSelf:
-                targets = new[] { caster };
-                break;
-            case SpellEffect.kEffectTarget.kFriendlyTeam:
-            case SpellEffect.kEffectTarget.kFriendlyTeamAllAtOnce:
-                targets = _activeSubCircles.Where(x => x.OccupiedTeam == caster.OccupiedTeam).ToArray();
-                break;
-            case SpellEffect.kEffectTarget.kEnemyTeam:
-            case SpellEffect.kEffectTarget.kEnemyTeamAllAtOnce:
-                targets = _activeSubCircles.Where(x => x.OccupiedTeam != caster.OccupiedTeam).ToArray();
-                break;
-            case SpellEffect.kEffectTarget.kGlobal:
-                ApplyGlobalEffect(effect, caster.DuelActor.Duel);
-                return cinematicTime;
-        }
 
         switch (effect.m_effectType) {
             case SpellEffect.kSpellEffects.kDamage:

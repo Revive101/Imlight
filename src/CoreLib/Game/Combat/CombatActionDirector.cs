@@ -18,7 +18,7 @@ namespace Imlight.CoreLib.Game.Combat;
 
 public class QueuedCombatAction {
     public CombatDuelActorSubCircle SpellCaster;
-    public CombatDuelActorSubCircle TargetSubcircle;
+    public CombatDuelActorSubCircle SelectedTarget;
     public Spell Spell;
     public SpellTemplate SpellTemplate;
 }
@@ -30,7 +30,6 @@ public class CombatActionDirector {
     private const float DAMAGE_OVER_TIME_CINEMATIC_TIME = 2.0f;
 
     private readonly Duel _duel;
-    private readonly CombatEffectApplicator _effects;
 
     private readonly CombatDuelActorSubCircle[] _subCircles = new CombatDuelActorSubCircle[8];
     private CombatDuelActorSubCircle[] ActiveSubCircles => _subCircles.Where(x => x.Occupied).ToArray();
@@ -40,7 +39,6 @@ public class CombatActionDirector {
     public CombatActionDirector(Duel duel, CombatDuelActorSubCircle[] actorSubCircles) {
         _duel = duel;
         _subCircles = actorSubCircles;
-        _effects = new CombatEffectApplicator(actorSubCircles);
     }
 
     public void Reset() {
@@ -54,8 +52,7 @@ public class CombatActionDirector {
         combatActionListObj = new CombatActionListObj { m_actionList = new List<CombatAction>() };
 
         // Some subcircles may not have queued actions. Ensure they do by adding a pass action.
-        EnsureAllCastersHaveQueuedActions();
-        RemoveEmptyTargetActions();
+        AddCasterPassActionIfNeeded();
         SortQueuedActions();
 
         var cinematicTime = ProcessQueuedActions(combatActionListObj);
@@ -70,6 +67,7 @@ public class CombatActionDirector {
         _queuedCombatActions.RemoveAll(x => x.SpellCaster == caster);
 
         if (type == CombatMoveType.ChangeMind) {
+            // We can immediately return here. Anytime a caster doesn't have a queued action, they will pass their turn.
             return;
         }
 
@@ -77,13 +75,19 @@ public class CombatActionDirector {
         SpellTemplate spellTemplate = null;
         if (spell is not null) {
             spellTemplate = (SpellTemplate) CoreObjectFactory.GetCoreTemplate(spell.m_templateID);
+
+            if (spellTemplate is null) {
+                Logger.Error("Duel {0} | Slot {1} | Spell template {2} not found",
+                    Logger.Args(_duel.m_duelID, caster.SlotIndex, spell.m_templateID));
+                return;
+            }
         }
 
         var queuedAction = new QueuedCombatAction {
             SpellCaster = caster,
-            TargetSubcircle = target,
             Spell = type == CombatMoveType.Attack ? spell : null,
             SpellTemplate = spellTemplate,
+            SelectedTarget = target
         };
         _queuedCombatActions.Add(queuedAction);
 
@@ -95,7 +99,7 @@ public class CombatActionDirector {
         return enqueuedPlayers.Count() == _queuedCombatActions.Count;
     }
 
-    private void EnsureAllCastersHaveQueuedActions() {
+    private void AddCasterPassActionIfNeeded() {
         var castersWithoutActions = ActiveSubCircles
             .Where(subCircle => subCircle.AddedToDuel && subCircle.IsAlive)
             .Except(_queuedCombatActions.Select(action => action.SpellCaster))
@@ -104,16 +108,11 @@ public class CombatActionDirector {
         foreach (var subCircle in castersWithoutActions) {
             var queuedAction = new QueuedCombatAction {
                 SpellCaster = subCircle,
-                TargetSubcircle = subCircle,
+                SelectedTarget = null,
                 Spell = null
             };
             _queuedCombatActions.Add(queuedAction);
         }
-    }
-
-    private void RemoveEmptyTargetActions() {
-        // Remove any queued actions that have a target that is not in the duel.
-        _queuedCombatActions.RemoveAll(action => action.TargetSubcircle is not null && !action.TargetSubcircle.AddedToDuel);
     }
 
     private void SortQueuedActions() => _queuedCombatActions.Sort((a, b) => {
@@ -147,7 +146,7 @@ public class CombatActionDirector {
 
         foreach (var action in _queuedCombatActions) {
             // If our target is gone or we're stunned, pass the turn.
-            if (action.TargetSubcircle is null || action.SpellCaster.CombatParticipant.m_stunned > 0) {
+            if (action.SpellCaster.CombatParticipant.m_stunned > 0) {
                 action.SpellCaster.CombatParticipant.m_stunned--;
 
                 combatActionList.m_actionList.Add(new CombatAction {
@@ -158,31 +157,33 @@ public class CombatActionDirector {
                     m_spell = null,
                 });
 
-                Logger.Debug("Duel {0} | Slot {1} | Target is gone or caster is stunned. Passing turn.",
+                Logger.Debug("Duel {0} | Slot {1} | Caster is stunned. Passing turn.",
                     Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex));
 
                 continue;
             }
 
-            // If the caster or target is dead, skip this action.
-            // todo: failing. What if this is an AoE spell but the target selection is dead?
-            if (!action.SpellCaster.IsAlive || !action.TargetSubcircle.IsAlive) {
-                Logger.Debug("Duel {0} | Slot {1} | Caster or target is dead. Skipping action.",
+            // If the caster is dead, skip this action.
+            if (!action.SpellCaster.IsAlive) {
+                Logger.Debug("Duel {0} | Slot {1} | Caster is dead. Skipping action.",
                     Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex));
+                continue;
+            }
+
+            // A null spell indicates the caster is passing their turn.
+            if (action.Spell is null) {
+                Logger.Debug("Duel {0} | Slot {1} | Caster is passing their turn.",
+                    Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex));
+
                 continue;
             }
 
             // Determine if this spell hits or fizzles.
             var spellHits = SpellHits(action.SpellCaster, action.Spell);
-            if (!spellHits && action.Spell is not null) {
-                Logger.Debug("Duel {0} | Slot {1} | Spell fizzles", Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex));
-
+            if (!spellHits) {
                 cinematicTime += HandleFizzleAction(action, combatActionList);
             }
             else {
-                Logger.Debug("Duel {0} | Slot {1} | Spell hits against target {2}",
-                    Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex, action.TargetSubcircle.SlotIndex));
-
                 cinematicTime += HandleSuccessfulAction(action, combatActionList);
             }
         }
@@ -193,18 +194,78 @@ public class CombatActionDirector {
     private float HandleFizzleAction(QueuedCombatAction action, CombatActionListObj combatActionList) {
         var fizzleAction = new CombatAction {
             m_spellCaster = action.SpellCaster.SlotIndex,
-            m_targetSubcircleList = new List<int> { action.TargetSubcircle.SlotIndex },
+            m_targetSubcircleList = new List<int> { 0 },
             m_showCast = true,
             m_spellHits = (char) 0,
             m_spell = action.Spell,
         };
         combatActionList.m_actionList.Add(fizzleAction);
 
+        Logger.Debug("Duel {0} | Slot {1} | Spell fizzled.",
+            Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex));
+
         return SPELL_FIZZLE_TIME;
     }
 
     private float HandleSuccessfulAction(QueuedCombatAction action, CombatActionListObj combatActionList) {
-        var effectCinematicTime = _effects.ApplyCombatAction(action, out var combatAction);
+        var effectStack = new CombatEffectStack();
+        var cinematicTime = 0.0f;
+        var spellWorthCasting = false;
+        var combatAction = new CombatAction {
+            m_spellCaster = action.SpellCaster.SlotIndex,
+            m_targetSubcircleList = new List<int> { action.SelectedTarget.SlotIndex },
+            m_showCast = true,
+            m_spellHits = (char) 1, // We've already decided if the spell fizzles or not. We can put 1 here.
+            m_spell = action.Spell,
+        };
+
+        foreach (var spellEffect in action.SpellTemplate.m_effects) {
+            var chosenEffect = spellEffect;
+
+            // If this is a random spell effect, we need to determine which effect to use.
+            if (spellEffect is RandomSpellEffect randomSpellEffect) {
+                var count = randomSpellEffect.m_effectList.Count;
+                var randomEffectIndex = new Random().Next(0, count);
+                chosenEffect = randomSpellEffect.m_effectList[randomEffectIndex];
+
+                // Push the random effect choice onto the stack.
+                effectStack.PushRandomEffectChoice(randomEffectIndex);
+            }
+
+            // Get the targets for this effect.
+            var targets = GetEffectTargets(chosenEffect, action.SpellCaster, action.SelectedTarget);
+            if (targets.Length == 0) {
+                continue;
+            }
+
+            if (!spellWorthCasting && targets.Any(x => x.IsAlive)) {
+                spellWorthCasting = true;
+            }
+
+            // Add the targets to the combat action, if they are not already there.
+            foreach (var target in targets) {
+                if (!combatAction.m_targetSubcircleList.Contains(target.SlotIndex)) {
+                    combatAction.m_targetSubcircleList.Add(target.SlotIndex);
+                }
+            }
+
+            cinematicTime += CombatEffectApplicator.ApplyEffect(chosenEffect, action.SpellCaster, targets);
+        }
+
+        // Setting the spell to null will cause the caster to pass their turn.
+        if (spellWorthCasting) {
+            Logger.Debug("Duel {0} | Slot {1} | Spell hits targets {2}",
+                Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex), string.Join(", ", combatAction.m_targetSubcircleList));
+        }
+        else {
+            Logger.Debug("Duel {0} | Slot {1} | Spell not worth casting. Passing turn.",
+                Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex));
+
+            combatAction.m_spell = null;
+        }
+
+        combatAction.m_effectChosen = effectStack.GetStackAsUint();
+
         combatActionList.m_actionList.Add(combatAction);
 
         if (action.Spell is null) {
@@ -212,41 +273,53 @@ public class CombatActionDirector {
         }
 
         // If this spell action us successful, remove it from the combat deck of the caster.
-        action.SpellCaster.DiscardCard(action.Spell);
-
-        // Remove the caster's pips. If the spell is mastered, power pips count as 2 pips.
-        // Remove power pips before generic pips.
-        var spell = action.Spell;
-        var isMastered = action.SpellCaster.HasSchoolMastery(spell.m_magicSchoolID);
-        var pipCount = action.SpellCaster.CombatParticipant.m_pipCount;
-        int pipsToDeduct = spell.m_pipCost.m_spellRank;
-
-        while (pipsToDeduct > 0) {
-            if (isMastered && pipCount.m_powerPips > 0) {
-                pipCount.m_powerPips--;
-                pipsToDeduct -= 2;
-            }
-            else if (!isMastered && pipCount.m_powerPips > 0) {
-                pipCount.m_powerPips--;
-                pipsToDeduct--;
-            }
-            else if (pipCount.m_powerPips == 0 && pipCount.m_genericPips > 0) {
-                pipCount.m_genericPips--;
-                pipsToDeduct--;
-            }
-            else if (pipCount.m_powerPips == 0 && pipCount.m_genericPips == 0) {
-                combatAction.m_spell = null;
-            }
-        }
-
         // Deduce the players mana by the rank of the spell.
-        action.SpellCaster.DeductMana(spell.m_pipCost.m_spellRank);
+        action.SpellCaster.DiscardCard(action.Spell);
+        action.SpellCaster.DeductMana(action.Spell.m_pipCost.m_spellRank);
 
         // Return how long the cinematic will take to play out.
-        return GetActionCinematicTime(action) + effectCinematicTime;
+        return GetActionCinematicTime(action) + cinematicTime;
     }
 
-    private float GetActionCinematicTime(QueuedCombatAction action) {
+    private CombatDuelActorSubCircle[] GetEffectTargets(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target) {
+        var targets = Array.Empty<CombatDuelActorSubCircle>();
+
+        switch (effect.m_effectTarget) {
+            case SpellEffect.kEffectTarget.kEnemySingle:
+            case SpellEffect.kEffectTarget.kFriendlySingle:
+                targets = new[] { target };
+                break;
+            case SpellEffect.kEffectTarget.kSelf:
+                targets = new[] { caster };
+                break;
+            case SpellEffect.kEffectTarget.kFriendlyTeam:
+            case SpellEffect.kEffectTarget.kFriendlyTeamAllAtOnce:
+                targets = ActiveSubCircles.Where(x => x.OccupiedTeam == caster.OccupiedTeam).ToArray();
+                break;
+            case SpellEffect.kEffectTarget.kEnemyTeam:
+            case SpellEffect.kEffectTarget.kEnemyTeamAllAtOnce:
+                targets = ActiveSubCircles.Where(x => x.OccupiedTeam != caster.OccupiedTeam).ToArray();
+                break;
+        }
+
+        return targets;
+    }
+
+    private void LogQueuedCombatAction(CombatMoveType type, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target, Spell spell) {
+        if (type == CombatMoveType.ChangeMind) {
+            Logger.Debug("Duel {0} | Slot {1} | Caster changed their mind and is not casting a spell",
+                Logger.Args(_duel.m_duelID, caster.SlotIndex));
+            return;
+        }
+
+        var targetOrSelf = target is null
+            ? "null" : (target.SlotIndex == caster.SlotIndex ? "self" : target.SlotIndex.ToString());
+        var spellOrPass = spell is null ? "pass" : spell.m_templateID.ToString();
+        Logger.Debug("Duel {0} | Slot {1} | Caster is casting spell {2} against target {3}",
+            Logger.Args(_duel.m_duelID, caster.SlotIndex, spellOrPass, targetOrSelf));
+    }
+
+    private static float GetActionCinematicTime(QueuedCombatAction action) {
         if (action.Spell is null) {
             return SPELL_PASS_TIME;
         }
@@ -273,21 +346,11 @@ public class CombatActionDirector {
         return count;
     }
 
-    private void LogQueuedCombatAction(CombatMoveType type, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target, Spell spell) {
-        if (type == CombatMoveType.ChangeMind) {
-            Logger.Debug("Duel {0} | Slot {1} | Caster changed their mind and is not casting a spell",
-                Logger.Args(_duel.m_duelID, caster.SlotIndex));
-            return;
+    private static bool SpellHits(CombatDuelActorSubCircle caster, Spell spell) {
+        if (caster is null || spell is null) {
+            return false;
         }
 
-        var targetOrSelf = target is null
-            ? "null" : (target.SlotIndex == caster.SlotIndex ? "self" : target.SlotIndex.ToString());
-        var spellOrPass = spell is null ? "pass" : spell.m_templateID.ToString();
-        Logger.Debug("Duel {0} | Slot {1} | Caster is casting spell {2} against target {3}",
-            Logger.Args(_duel.m_duelID, caster.SlotIndex, spellOrPass, targetOrSelf));
-    }
-
-    private bool SpellHits(CombatDuelActorSubCircle caster, Spell spell) {
         if (ConsumeDispell(caster, spell.m_magicSchoolID)) {
             return false;
         }
