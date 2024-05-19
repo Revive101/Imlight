@@ -149,13 +149,9 @@ public class CombatActionDirector {
             if (action.SpellCaster.CombatParticipant.m_stunned > 0) {
                 action.SpellCaster.CombatParticipant.m_stunned--;
 
-                combatActionList.m_actionList.Add(new CombatAction {
-                    m_spellCaster = action.SpellCaster.SlotIndex,
-                    m_targetSubcircleList = new List<int> { action.SpellCaster.SlotIndex },
-                    m_showCast = true,
-                    m_spellHits = (char) 0,
-                    m_spell = null,
-                });
+                var passCombatAction = InitializeCombatAction(action);
+                passCombatAction.m_spell = null;
+                combatActionList.m_actionList.Add(passCombatAction);
 
                 Logger.Debug("Duel {0} | Slot {1} | Caster is stunned. Passing turn.",
                     Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex));
@@ -192,13 +188,8 @@ public class CombatActionDirector {
     }
 
     private float HandleFizzleAction(QueuedCombatAction action, CombatActionListObj combatActionList) {
-        var fizzleAction = new CombatAction {
-            m_spellCaster = action.SpellCaster.SlotIndex,
-            m_targetSubcircleList = new List<int> { 0 },
-            m_showCast = true,
-            m_spellHits = (char) 0,
-            m_spell = action.Spell,
-        };
+        var fizzleAction = InitializeCombatAction(action);
+        fizzleAction.m_spellHits = (char) 0;
         combatActionList.m_actionList.Add(fizzleAction);
 
         Logger.Debug("Duel {0} | Slot {1} | Spell fizzled.",
@@ -210,29 +201,33 @@ public class CombatActionDirector {
     private float HandleSuccessfulAction(QueuedCombatAction action, CombatActionListObj combatActionList) {
         var effectStack = new CombatEffectStack();
         var cinematicTime = 0.0f;
+
+        var combatAction = InitializeCombatAction(action);
+        var spellWorthCasting = ProcessSpellEffects(action, effectStack, ref combatAction, ref cinematicTime);
+
+        LogCombatAction(action, combatAction, spellWorthCasting);
+
+        FinalizeCombatAction(action, combatActionList, effectStack, combatAction);
+
+        if (action.Spell is null) {
+            return SPELL_PASS_TIME;
+        }
+
+        DoSpellCastConsequences(action.SpellCaster, action.Spell);
+
+        return GetActionCinematicTime(action) + cinematicTime;
+    }
+
+    private bool ProcessSpellEffects(QueuedCombatAction action, CombatEffectStack effectStack, ref CombatAction combatAction, ref float cinematicTime) {
         var spellWorthCasting = false;
-        var combatAction = new CombatAction {
-            m_spellCaster = action.SpellCaster.SlotIndex,
-            m_targetSubcircleList = new List<int>(),
-            m_showCast = true,
-            m_spellHits = (char) 1, // We've already decided if the spell fizzles or not. We can put 1 here.
-            m_spell = action.Spell,
-        };
 
         foreach (var spellEffect in action.SpellTemplate.m_effects) {
             var chosenEffect = spellEffect;
 
-            // If this is a random spell effect, we need to determine which effect to use.
             if (spellEffect is RandomSpellEffect randomSpellEffect) {
-                var count = randomSpellEffect.m_effectList.Count;
-                var randomEffectIndex = new Random().Next(0, count);
-                chosenEffect = randomSpellEffect.m_effectList[randomEffectIndex];
-
-                // Push the random effect choice onto the stack.
-                effectStack.PushRandomEffectChoice(randomEffectIndex);
+                chosenEffect = ChooseRandomEffect(randomSpellEffect, effectStack);
             }
 
-            // Get the targets for this effect.
             var targets = GetEffectTargets(chosenEffect, action.SpellCaster, action.SelectedTarget);
             if (targets.Length == 0) {
                 continue;
@@ -242,41 +237,12 @@ public class CombatActionDirector {
                 spellWorthCasting = true;
             }
 
-            // Add the targets to the combat action, if they are not already there.
-            foreach (var target in targets) {
-                if (!combatAction.m_targetSubcircleList.Contains(target.SlotIndex)) {
-                    combatAction.m_targetSubcircleList.Add(target.SlotIndex);
-                }
-            }
+            UpdateCombatActionTargets(ref combatAction, targets);
 
             cinematicTime += CombatEffectApplicator.ApplyEffect(chosenEffect, action.SpellCaster, targets);
         }
 
-        // Setting the spell to null will cause the caster to pass their turn.
-        if (spellWorthCasting) {
-            var targetsStringForLog = string.Join(", ", combatAction.m_targetSubcircleList);
-            Logger.Debug("Duel {0} | Slot {1} | Spell {2} hits targets [{3}]",
-                Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex, action.Spell.m_templateID, targetsStringForLog));
-        }
-        else {
-            Logger.Debug("Duel {0} | Slot {1} | Spell {3} not worth casting. Passing turn.",
-                Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex, action.Spell.m_templateID));
-
-            combatAction.m_spell = null;
-        }
-
-        combatAction.m_effectChosen = effectStack.GetStackAsUint();
-
-        combatActionList.m_actionList.Add(combatAction);
-
-        if (action.Spell is null) {
-            return SPELL_PASS_TIME;
-        }
-
-        DoSpellCastConsequences(action.SpellCaster, action.Spell);
-
-        // Return how long the cinematic will take to play out.
-        return GetActionCinematicTime(action) + cinematicTime;
+        return spellWorthCasting;
     }
 
     private CombatDuelActorSubCircle[] GetEffectTargets(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target) {
@@ -288,6 +254,7 @@ public class CombatActionDirector {
                 targets = new[] { target };
                 break;
             case SpellEffect.kEffectTarget.kSelf:
+            case SpellEffect.kEffectTarget.kInvalidTarget:
                 targets = new[] { caster };
                 break;
             case SpellEffect.kEffectTarget.kFriendlyTeam:
@@ -316,6 +283,50 @@ public class CombatActionDirector {
         Logger.Debug("Duel {0} | Slot {1} | Caster is casting spell {2} against target {3}",
             Logger.Args(_duel.m_duelID, caster.SlotIndex, spellOrPass, targetOrSelf));
     }
+
+    private void LogCombatAction(QueuedCombatAction action, CombatAction combatAction, bool spellWorthCasting) {
+        if (spellWorthCasting) {
+            var targetsStringForLog = string.Join(", ", combatAction.m_targetSubcircleList);
+            Logger.Debug("Duel {0} | Slot {1} | Spell {2} hits targets [{3}]",
+                Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex, action.Spell.m_templateID, targetsStringForLog));
+        }
+        else {
+            Logger.Debug("Duel {0} | Slot {1} | Spell {3} not worth casting. Passing turn.",
+                Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex, action.Spell.m_templateID));
+            combatAction.m_spell = null;
+        }
+    }
+
+    private static SpellEffect ChooseRandomEffect(RandomSpellEffect randomSpellEffect, CombatEffectStack effectStack) {
+        var count = randomSpellEffect.m_effectList.Count;
+        var randomEffectIndex = new Random().Next(0, count);
+        var chosenEffect = randomSpellEffect.m_effectList[randomEffectIndex];
+
+        effectStack.PushRandomEffectChoice(randomEffectIndex);
+
+        return chosenEffect;
+    }
+
+    private static void FinalizeCombatAction(QueuedCombatAction action, CombatActionListObj combatActionList, CombatEffectStack effectStack, CombatAction combatAction) {
+        combatAction.m_effectChosen = effectStack.GetStackAsUint();
+        combatActionList.m_actionList.Add(combatAction);
+    }
+
+    private static void UpdateCombatActionTargets(ref CombatAction combatAction, IEnumerable<CombatDuelActorSubCircle> targets) {
+        foreach (var target in targets) {
+            if (!combatAction.m_targetSubcircleList.Contains(target.SlotIndex)) {
+                combatAction.m_targetSubcircleList.Add(target.SlotIndex);
+            }
+        }
+    }
+
+    private static CombatAction InitializeCombatAction(QueuedCombatAction action) => new() {
+        m_spellCaster = action.SpellCaster.SlotIndex,
+        m_targetSubcircleList = new List<int>(),
+        m_showCast = true,
+        m_spellHits = (char) 1,
+        m_spell = action.Spell,
+    };
 
     private static float GetActionCinematicTime(QueuedCombatAction action) {
         if (action.Spell is null) {
