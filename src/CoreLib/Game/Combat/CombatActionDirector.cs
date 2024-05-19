@@ -90,7 +90,7 @@ public class CombatActionDirector {
         LogQueuedCombatAction(type, caster, target, spell);
     }
 
-    public bool HaveAllParticipantsEnqueuedActions(int participantCount) {
+    public bool HaveAllParticipantsEnqueuedActions() {
         var enqueuedPlayers = _subCircles.Where(circle => circle.AddedToDuel && circle.IsAlive);
         return enqueuedPlayers.Count() == _queuedCombatActions.Count;
     }
@@ -165,6 +165,7 @@ public class CombatActionDirector {
             }
 
             // If the caster or target is dead, skip this action.
+            // todo: failing. What if this is an AoE spell but the target selection is dead?
             if (!action.SpellCaster.IsAlive || !action.TargetSubcircle.IsAlive) {
                 Logger.Debug("Duel {0} | Slot {1} | Caster or target is dead. Skipping action.",
                     Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex));
