@@ -23,6 +23,10 @@ public class QueuedCombatAction {
     public SpellTemplate SpellTemplate;
 }
 
+/// <summary>
+/// The CombatActionDirector is responsible for managing the combat actions of the duel.
+/// It processes the queued combat actions and applies the effects of the spells to the targets.
+/// </summary>
 public class CombatActionDirector {
     private const int SPELL_FIZZLE_TIME = 4;
     private const int SPELL_PASS_TIME = 1;
@@ -203,7 +207,7 @@ public class CombatActionDirector {
         var cinematicTime = 0.0f;
 
         var combatAction = InitializeCombatAction(action);
-        var spellWorthCasting = ProcessSpellEffects(action, effectStack, ref combatAction, ref cinematicTime);
+        var spellWorthCasting = CombatEffectProcessor.ProcessSpellEffects(action, effectStack, ref combatAction, ref cinematicTime);
 
         LogCombatAction(action, combatAction, spellWorthCasting);
 
@@ -216,58 +220,6 @@ public class CombatActionDirector {
         DoSpellCastConsequences(action.SpellCaster, action.Spell);
 
         return GetActionCinematicTime(action) + cinematicTime;
-    }
-
-    private bool ProcessSpellEffects(QueuedCombatAction action, CombatEffectStack effectStack, ref CombatAction combatAction, ref float cinematicTime) {
-        var spellWorthCasting = false;
-
-        foreach (var spellEffect in action.SpellTemplate.m_effects) {
-            var chosenEffect = spellEffect;
-
-            if (spellEffect is RandomSpellEffect randomSpellEffect) {
-                chosenEffect = ChooseRandomEffect(randomSpellEffect, effectStack);
-            }
-
-            var targets = GetEffectTargets(chosenEffect, action.SpellCaster, action.SelectedTarget);
-            if (targets.Length == 0) {
-                continue;
-            }
-
-            if (!spellWorthCasting && targets.Any(x => x.IsAlive)) {
-                spellWorthCasting = true;
-            }
-
-            UpdateCombatActionTargets(ref combatAction, targets);
-
-            cinematicTime += CombatEffectApplicator.ApplyEffect(chosenEffect, action.SpellCaster, targets);
-        }
-
-        return spellWorthCasting;
-    }
-
-    private CombatDuelActorSubCircle[] GetEffectTargets(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target) {
-        var targets = Array.Empty<CombatDuelActorSubCircle>();
-
-        switch (effect.m_effectTarget) {
-            case SpellEffect.kEffectTarget.kEnemySingle:
-            case SpellEffect.kEffectTarget.kFriendlySingle:
-                targets = new[] { target };
-                break;
-            case SpellEffect.kEffectTarget.kSelf:
-            case SpellEffect.kEffectTarget.kInvalidTarget:
-                targets = new[] { caster };
-                break;
-            case SpellEffect.kEffectTarget.kFriendlyTeam:
-            case SpellEffect.kEffectTarget.kFriendlyTeamAllAtOnce:
-                targets = ActiveSubCircles.Where(x => x.OccupiedTeam == caster.OccupiedTeam).ToArray();
-                break;
-            case SpellEffect.kEffectTarget.kEnemyTeam:
-            case SpellEffect.kEffectTarget.kEnemyTeamAllAtOnce:
-                targets = ActiveSubCircles.Where(x => x.OccupiedTeam != caster.OccupiedTeam).ToArray();
-                break;
-        }
-
-        return targets;
     }
 
     private void LogQueuedCombatAction(CombatMoveType type, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target, Spell spell) {
@@ -297,27 +249,9 @@ public class CombatActionDirector {
         }
     }
 
-    private static SpellEffect ChooseRandomEffect(RandomSpellEffect randomSpellEffect, CombatEffectStack effectStack) {
-        var count = randomSpellEffect.m_effectList.Count;
-        var randomEffectIndex = new Random().Next(0, count);
-        var chosenEffect = randomSpellEffect.m_effectList[randomEffectIndex];
-
-        effectStack.PushRandomEffectChoice(randomEffectIndex);
-
-        return chosenEffect;
-    }
-
     private static void FinalizeCombatAction(QueuedCombatAction action, CombatActionListObj combatActionList, CombatEffectStack effectStack, CombatAction combatAction) {
         combatAction.m_effectChosen = effectStack.GetStackAsUint();
         combatActionList.m_actionList.Add(combatAction);
-    }
-
-    private static void UpdateCombatActionTargets(ref CombatAction combatAction, IEnumerable<CombatDuelActorSubCircle> targets) {
-        foreach (var target in targets) {
-            if (!combatAction.m_targetSubcircleList.Contains(target.SlotIndex)) {
-                combatAction.m_targetSubcircleList.Add(target.SlotIndex);
-            }
-        }
     }
 
     private static CombatAction InitializeCombatAction(QueuedCombatAction action) => new() {

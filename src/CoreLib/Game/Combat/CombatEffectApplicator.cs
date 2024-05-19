@@ -11,6 +11,9 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Combat;
 
+/// <summary>
+/// Applies the effects of a spell to the targets.
+/// </summary>
 internal static class CombatEffectApplicator {
     private const float DAMAGE_PERCENT_MAX = 2.0f;
     private const float HANGING_EFFECT_CONSUME_TIME = 1.0f;
