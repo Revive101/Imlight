@@ -217,7 +217,7 @@ public class CombatActionDirector {
             return SPELL_PASS_TIME;
         }
 
-        DoSpellCastConsequences(action.SpellCaster, action.Spell);
+        DoSpellCastConsequences(action.SpellCaster, combatAction);
 
         return GetActionCinematicTime(action) + cinematicTime;
     }
@@ -321,11 +321,19 @@ public class CombatActionDirector {
         return hitChance <= spellAccuracy;
     }
 
-    private static void DoSpellCastConsequences(CombatDuelActorSubCircle caster, Spell spell) {
+    private static void DoSpellCastConsequences(CombatDuelActorSubCircle caster, CombatAction action) {
         // If this spell action us successful, remove it from the combat deck of the caster.
         // Deduce the players mana by the rank of the spell.
-        caster.DiscardCard(spell);
-        caster.DeductMana(spell.m_pipCost.m_spellRank);
+        caster.DiscardCard(action.m_spell);
+        caster.DeductMana(action.m_spell.m_pipCost.m_spellRank);
+
+        // Reduce pips.
+        if (action.m_spell.m_pipCost.m_xPipSpell) {
+            caster.DeductAllPips();
+        }
+        else {
+            caster.DeductPips((MagicSchool) action.m_spell.m_magicSchoolID, action.m_spell.m_pipCost.m_spellRank);
+        }
     }
 
     private static bool ConsumeDispell(CombatDuelActorSubCircle caster, uint magicSchoolId) {

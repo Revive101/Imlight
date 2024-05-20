@@ -4,6 +4,7 @@
  */
 
 using Akka.Actor;
+using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.CoreLib.Game.Models.World;
 using Imlight.CoreLib.Game.Spells;
@@ -149,13 +150,12 @@ public class CombatDuelActorSubCircle {
             return;
         }
 
-        var participant = CombatParticipant;
-        var gainedPowerPip = DeterminePowerPipGain(participant);
+        var gainedPowerPip = DeterminePowerPipGain(CombatParticipant);
         if (gainedPowerPip) {
-            participant.m_pipCount.m_powerPips++;
+            CombatParticipant.m_pipCount.m_powerPips++;
         }
         else {
-            participant.m_pipCount.m_genericPips++;
+            CombatParticipant.m_pipCount.m_genericPips++;
         }
     }
 
@@ -174,6 +174,15 @@ public class CombatDuelActorSubCircle {
             MagicSchool.Balance => ParticipantGameStats.m_balanceMastery > 0,
             _ => false,
         };
+    }
+
+    internal bool HasSchoolMastery(string school) {
+        if (Enum.TryParse<MagicSchool>(school, out var magicSchool)) {
+            return HasSchoolMastery((uint)magicSchool);
+        }
+
+        Logger.Warning("Failed to parse magic school \"{0}\" from string.", Logger.Args(school));
+        return false;
     }
 
     internal T GetStatBySchool<T>(List<T> list, MagicSchool enumValue) {
@@ -287,7 +296,7 @@ public class CombatDuelActorSubCircle {
         }
     }
 
-    internal void DeductPipsFromRank(MagicSchool school, byte spellRank) {
+    internal void DeductPips(MagicSchool school, byte spellRank) {
         var isMastered = HasSchoolMastery((uint) school);
         var pipCount = CombatParticipant.m_pipCount;
 
@@ -310,7 +319,14 @@ public class CombatDuelActorSubCircle {
         }
     }
 
+    internal void DeductAllPips() {
+        var ourPipCount = CombatParticipant.m_pipCount;
+        ourPipCount.m_powerPips = 0;
+        ourPipCount.m_genericPips = 0;
+    }
+
     private void InitializePlayerSubCircle() {
+        // todo: this method is a mess.
         var queryCharacterMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
         _wizard = ParticipantActor
             .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryCharacterMsg)
@@ -363,10 +379,7 @@ public class CombatDuelActorSubCircle {
             m_isMonster = 0,
             m_teamID = 0,
             m_primaryMagicSchoolID = (int) _wizard.MagicSchoolBehavior.MagicSchool,
-            m_pipCount = new() {
-                m_powerPips = ParticipantGameStats.m_startingPowerPips,
-                m_genericPips = ParticipantGameStats.m_startingPips
-            },
+            m_pipCount = DetermineStartingPips(),
             m_pipRoundRates = new(),
             m_originalTeam = 0,
             m_maxHandSize = PLAYER_HAND_SIZE,
@@ -419,10 +432,7 @@ public class CombatDuelActorSubCircle {
             m_originalTeam = 1,
             m_maxHandSize = PLAYER_HAND_SIZE,
             m_primaryMagicSchoolID = (int) creatureStats.MagicSchool,
-            m_pipCount = new() {
-                m_powerPips = ParticipantGameStats.m_startingPowerPips,
-                m_genericPips = ParticipantGameStats.m_startingPips
-            },
+            m_pipCount = DetermineStartingPips(),
             m_pipRoundRates = new(),
             m_playerHealth = creatureStats.GameStats.m_currentHitpoints,
             m_maxPlayerHealth = creatureStats.GameStats.m_baseHitpoints,
@@ -465,6 +475,32 @@ public class CombatDuelActorSubCircle {
             GameObjectID = participantObject.m_globalID,
             State = (uint) NPCStates.Stationary
         });
+    }
+
+    private PipCount DetermineStartingPips() {
+        var pipCount = new PipCount() {
+            m_powerPips = ParticipantGameStats.m_startingPowerPips,
+            m_genericPips = ParticipantGameStats.m_startingPips
+        };
+
+        // Ensure that the total number of pips does not exceed MAX_PIP_COUNT.
+        if (pipCount.m_genericPips + pipCount.m_powerPips > MAX_PIP_COUNT) {
+            int excessPips = pipCount.m_genericPips + pipCount.m_powerPips - MAX_PIP_COUNT;
+
+            // Reduce generic pips first if there is an excess
+            if (excessPips <= pipCount.m_genericPips) {
+                pipCount.m_genericPips -= (byte) excessPips;
+            }
+            else {
+                // If excess pips are more than generic pips, set generic pips to 0
+                // and adjust power pips accordingly
+                excessPips -= pipCount.m_genericPips;
+                pipCount.m_genericPips = 0;
+                pipCount.m_powerPips -= (byte) excessPips;
+            }
+        }
+
+        return pipCount;
     }
 
     private bool DeterminePowerPipGain(CombatParticipant participant) {
