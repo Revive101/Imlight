@@ -9,17 +9,18 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Imlight.Common.Caches;
-using Imlight.Common.Utilities;
-using Imlight.Common.ObjectProperty;
-using Imlight.CoreLib.Shared.Networking;
-using Imlight.CoreLib.Shared.Resources;
-using static Imlight.Common.Caches.TypeCache;
-using Imlight.CoreLib.WizardData.Implementations;
-using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.Common;
-using Imlight.CoreLib.WizardData.Models.World;
+using Imlight.Common.Caches;
+using Imlight.Common.ObjectProperty;
+using Imlight.Common.ObjectProperty.PropertyReflection;
+using Imlight.CoreLib.Game.Zone;
 using Imlight.CoreLib.Shared.Items;
+using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.WizardData.Models.Misc;
+using Imlight.CoreLib.WizardData.Models.World;
+using Imlight.CoreLib.WizardData.Models.Player;
+using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Services;
 internal class ShopService : MessageService {
@@ -40,17 +41,55 @@ internal class ShopService : MessageService {
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_SHOPBUYREQUEST))]
     private void ReceiveShopBuyRequest(WIZARD_12_PROTOCOL.MSG_SHOPBUYREQUEST message) {
         var wizard = GetActiveWizard();
+        var npc = GetZoneObject(message.npcGlobalID);
 
-        var itemTemplateID = message.ShopID - ShopOffset; // Do this, for some reason
+        // Check to see if the NPC exists in the zone.
+        if (npc == null) {
+            Logger.Warning("Failed to find NPC {0} in zone for shop purchase", Logger.Args(message.npcGlobalID));
 
-        // Todo: should double check here to make sure this shopkeeper even sells this object.
+            var shopDenyMsg = new WIZARD_12_PROTOCOL.MSG_SHOPBUYCONFIRM {
+                Failure = 1,
+                WebFailure = 0,
+                Credits = 0
+            };
+            SendToSocket(shopDenyMsg);
+            return;
+        }
+
+        var itemTemplateID = message.ShopID - ShopOffset;
+        var npcObject = (WizardZoneNpc) npc;
+
+        // Check to see if the shopkeeper actually sells the item.
+        if (!npcObject.Inventory.Contains((GID) itemTemplateID)) {
+            var shopDenyMsg = new WIZARD_12_PROTOCOL.MSG_SHOPBUYCONFIRM {
+                Failure = 1,
+                WebFailure = 0,
+                Credits = 0
+            };
+            SendToSocket(shopDenyMsg);
+
+            // Log infraction
+            var account = GetActiveAccount();
+            var infractionText = $"Player tried to purchase item {itemTemplateID} from NPC " +
+                $"{message.npcGlobalID} that is not in its inventory!";
+            account.AddInfraction(InfractionType.SuspiciousBehavior, infractionText);
+
+            Logger.Warning("Player tried to purchase item {0} from an NPC that it did not have in its inventory."
+                + " This has been logged as suspicious behavior.",
+                Logger.Args(itemTemplateID));
+
+            return;
+        }
 
         var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(itemTemplateID);
         var item = (WizClientObjectItem) CoreObjectFactory.FinalizeCoreObject(itemTemplateID);
         item.m_primaryColor = message.texture;
         item.m_secondaryColor = message.decal;
 
-        var goldCost = (int) Math.Ceiling(template.m_baseCost * 1.2275f); // Necessary to match client values, Wizard101 taxes?
+        var goldCost = (int) template.m_baseCost;
+        if (template.m_numPrimaryColors != 1 && template.m_numSecondaryColors != 0) {
+            goldCost = (int) Math.Ceiling(goldCost * 1.225f); // Dyed items are more expensive.
+        }
 
         // Deny transaction if player cannot afford item
         if (goldCost > wizard.GameStats.m_currentGold) {
@@ -63,8 +102,6 @@ internal class ShopService : MessageService {
             return;
         }
 
-        wizard.AddItemToInventory(item);
-
         // Add the item to the player's inventory
         var data = _itemSerializer.Serialize(item);
         var addItemMsg = new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
@@ -72,6 +109,11 @@ internal class ShopService : MessageService {
             SerializedItem = data,
         };
         SendToSocket(addItemMsg);
+
+        // Add the item to the player's inventory. We do this after sending the message to the client
+        // because adding it to the inventory will initialize all the behaviors. The client will crash
+        // if we serialize those behaviors.
+        wizard.AddItemToInventory(item);
 
         // Inform the client of the new item
         var itemAcqMsg = new WIZARD2_53_PROTOCOL.MSG_ITEMACQUISITION {
@@ -108,7 +150,11 @@ internal class ShopService : MessageService {
         }
 
         var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
+
         var gold = (int) (template.m_baseCost * 0.05f);
+        if (template.m_numPrimaryColors != 1 && template.m_numSecondaryColors != 0) {
+            gold = (int) Math.Ceiling(gold * 1.2275f); // This value is slightly higher for some reason.
+        }
 
         wizard.AddGold(gold);
 
@@ -146,9 +192,9 @@ internal class ShopService : MessageService {
             }
         }
 
-        // Cost is 25% of the item's base cost
+        // Cost is 22.5% of the item's base cost
         var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
-        var dyeCost = (int) Math.Ceiling(template.m_baseCost * 0.25f);
+        var dyeCost = (int) Math.Ceiling(template.m_baseCost * 0.225f);
         if (dyeCost > wizard.GameStats.m_currentGold) {
             var dyeDenyMsg = new WIZARD_12_PROTOCOL.MSG_DYECONFIRM { Failure = 1 };
             SendToSocket(dyeDenyMsg);

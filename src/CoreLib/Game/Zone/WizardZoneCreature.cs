@@ -27,11 +27,11 @@ namespace Imlight.CoreLib.Game.Zone;
 /// a given <see cref="WizardZonePath" />.
 /// </summary>
 public class WizardZoneCreature : WizardZoneObject, IWithTimers {
-    private const int MINIMUM_MOVEMENT_DELAY_IN_SECONDS = 1;
-    private const int MOVEMENT_INTERVAL_START_DELAY_IN_SECONDS = 1;
-    private const int LOCATION_UPDATE_INTERVAL = 1;
+    protected const int MINIMUM_MOVEMENT_DELAY_IN_SECONDS = 1;
+    protected const int MOVEMENT_INTERVAL_START_DELAY_IN_SECONDS = 1;
+    protected const int LOCATION_UPDATE_INTERVAL = 1;
 
-    internal enum CreatureState {
+    public enum CreatureState {
         Stopped,
         Wandering,
         Combat
@@ -40,18 +40,18 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
     public ServerWizGameStats GameStats { get; private set; }
     public ITimerScheduler Timers { get; set; }
 
-    private readonly WizardZonePath _path;
-    private readonly TimeSpan _startingDelay = TimeSpan.FromSeconds(MOVEMENT_INTERVAL_START_DELAY_IN_SECONDS);
-    private readonly TimeSpan _minimumMovementIntervalDelay = TimeSpan.FromSeconds(MINIMUM_MOVEMENT_DELAY_IN_SECONDS);
-    private readonly TimeSpan _fishInteractionInterval = TimeSpan.FromSeconds(LOCATION_UPDATE_INTERVAL);
-    private readonly NodeObject[] _nodes;
-    private CreatureState _creatureState;
-    private byte _targetNodeIndex;
-    private bool _justPaused;
-    private DateTime _lastMoveTime;
-    private ServerNPCBehavior _npcBehavior;
-    private ServerPathBehavior _pathBehavior;
-    private IActorRef _combatAiActor;
+    protected readonly WizardZonePath _path;
+    protected readonly TimeSpan _startingDelay = TimeSpan.FromSeconds(MOVEMENT_INTERVAL_START_DELAY_IN_SECONDS);
+    protected readonly TimeSpan _minimumMovementIntervalDelay = TimeSpan.FromSeconds(MINIMUM_MOVEMENT_DELAY_IN_SECONDS);
+    protected readonly TimeSpan _fishInteractionInterval = TimeSpan.FromSeconds(LOCATION_UPDATE_INTERVAL);
+    protected readonly NodeObject[] _nodes;
+    protected CreatureState _creatureState;
+    protected byte _targetNodeIndex;
+    protected bool _justPaused;
+    protected DateTime _lastMoveTime;
+    protected ServerNPCBehavior _npcBehavior;
+    protected ServerPathBehavior _pathBehavior;
+    protected IActorRef _combatAiActor;
 
     // ctor
     public WizardZoneCreature(CoreObject activeGameObject,
@@ -157,6 +157,23 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
         var z = lastNodeReached.Z + t * (targetNode.Z - lastNodeReached.Z);
 
         return new Vector3((float) x, (float) y, (float) z);
+    }
+
+    protected void Die() {
+        // Broadcast the death of this creature to all players.
+        var broadcastMSg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+            Message = new GAME_5_PROTOCOL.MSG_REMOVEOBJECT {
+                GameObjectID = ActiveGameObject.m_globalID
+            },
+            Selfless = true,
+            Sender = Self
+        };
+        WizardZoneRef.Tell(broadcastMSg);
+
+        // Inform the path that this creature has died.
+        _path.RemoveCreature(ActiveGameObject.m_templateID);
+
+        Context.Stop(Self);
     }
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ACTORADDEDTODUEL))]
@@ -523,23 +540,6 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
         }
 
         return _pathBehavior.PauseChance > 0 && new Random().Next(0, 100) < _pathBehavior.PauseChance;
-    }
-
-    private void Die() {
-        // Broadcast the death of this creature to all players.
-        var broadcastMSg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-            Message = new GAME_5_PROTOCOL.MSG_REMOVEOBJECT {
-                GameObjectID = ActiveGameObject.m_globalID
-            },
-            Selfless = true,
-            Sender = Self
-        };
-        WizardZoneRef.Tell(broadcastMSg);
-
-        // Inform the path that this creature has died.
-        _path.RemoveCreature(ActiveGameObject.m_templateID);
-
-        Context.Stop(Self);
     }
 
     private NodeObject CurrentTargetNode => _nodes[_targetNodeIndex];

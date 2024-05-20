@@ -41,4 +41,9 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
 
         public byte NewLevel;
     }
+
+    public sealed class MSG_DOTELEPORTEFFECTS : IServerMessage {
+        public byte MessageOrder { get; } = 5;
+        public byte ServiceID { get; } = 103;
+    }
 }

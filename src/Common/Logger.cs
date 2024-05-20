@@ -4,9 +4,11 @@
  */
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
 using Imlight.Common.Configuration;
+using Newtonsoft.Json;
 using Serilog;
 using Serilog.Context;
 using Serilog.Core;
@@ -19,12 +21,18 @@ public class Logger {
     private static readonly string s_path = ConfigurationManager.Settings.LogPath;
     private static readonly string s_logFormat = ConfigurationManager.Settings.LogFormat;
     private static readonly string s_logLevel = ConfigurationManager.Settings.LogLevel;
+    private static readonly string s_seqUrl = ConfigurationManager.Settings.SeqSinkUrl;
 
     public static ILogger Log { get; } = new LoggerConfiguration()
         .MinimumLevel.ControlledBy(new LoggingLevelSwitch { MinimumLevel = GetLogLevel(s_logLevel) })
         .Enrich.FromLogContext()
+        .Enrich.WithThreadId()
+        .Enrich.WithThreadName()
+        .Enrich.WithEnvironmentName()
+        .Enrich.WithMachineName()
         .WriteTo.Console(outputTemplate: s_logFormat)
         .WriteTo.File(s_path, rollingInterval: RollingInterval.Day)
+        .WriteTo.Seq(s_seqUrl)
         .CreateLogger();
 
     /// <summary>
@@ -32,9 +40,7 @@ public class Logger {
     /// </summary>
     /// <param name="args">The objects to include in the log message.</param>
     /// <returns>An array of objects that can be used to format a log message.</returns>
-    public static object[] Args(params object[] args) {
-        return args;
-    }
+    public static object[] Args(params object[] args) => args;
 
     /// <summary>
     /// Logs a verbose message with optional arguments, along with the calling class, method, and line number.
@@ -145,8 +151,20 @@ public class Logger {
         // If the calling space is too long, trim it.
         callingSpace = GetConsistentSpacedName(callingSpace);
 
-        // Push the calling space to the log context.
+        // Push all properties into the context, including the calling space.
         LogContext.PushProperty("CallingSpace", callingSpace);
+        var seen = new HashSet<object?>();
+        foreach (var value in values) {
+            if (seen.Add(value)) {
+                // Check if value is a class. If it is, serialize it as json.
+                if (value is not string and not ValueType) {
+                    LogContext.PushProperty(value.GetType().Name, value, true);
+                }
+                else {
+                    LogContext.PushProperty(value.GetType().Name, value);
+                }
+            }
+        }
 
         Log.Write(logLevel, message, values);
     }
