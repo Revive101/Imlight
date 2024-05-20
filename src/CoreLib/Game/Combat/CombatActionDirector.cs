@@ -195,6 +195,7 @@ public class CombatActionDirector {
     private float HandleFizzleAction(QueuedCombatAction action, CombatActionListObj combatActionList) {
         var fizzleAction = InitializeCombatAction(action);
         fizzleAction.m_spellHits = (char) 0;
+        fizzleAction.m_targetSubcircleList.Add(action.SpellCaster?.SlotIndex ?? 0);
         combatActionList.m_actionList.Add(fizzleAction);
 
         Logger.Debug("Duel {0} | Slot {1} | Spell fizzled.",
