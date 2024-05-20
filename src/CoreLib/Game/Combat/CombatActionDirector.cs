@@ -322,6 +322,10 @@ public class CombatActionDirector {
     }
 
     private static void DoSpellCastConsequences(CombatDuelActorSubCircle caster, CombatAction action) {
+        if (action.m_spell is null) {
+            return;
+        }
+
         // If this spell action us successful, remove it from the combat deck of the caster.
         // Deduce the players mana by the rank of the spell.
         caster.DiscardCard(action.m_spell);

@@ -119,6 +119,8 @@ internal static class CombatEffectProcessor {
             case SpellEffect.kEffectTarget.kEnemyTeamAllAtOnce:
                 targets = _activeSubCircles.Where(x => x.OccupiedTeam != caster.OccupiedTeam).ToArray();
                 break;
+            case SpellEffect.kEffectTarget.kGlobal:
+                return new CombatDuelActorSubCircle[1]{ caster };
         }
 
         return targets;

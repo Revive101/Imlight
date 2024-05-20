@@ -21,6 +21,11 @@ internal static class CombatEffectApplicator {
     internal static float ApplyEffect(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets) {
         var cinematicTime = 0.0f;
 
+        if (effect.m_effectTarget == SpellEffect.kEffectTarget.kGlobal) {
+            ApplyGlobalEffect(effect, caster.DuelActor.Duel);
+            return cinematicTime;
+        }
+
         switch (effect.m_effectType) {
             case SpellEffect.kSpellEffects.kDamage:
                 cinematicTime += ApplyEffectDamage(effect, caster, targets);
