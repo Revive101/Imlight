@@ -76,6 +76,10 @@ internal static class CombatEffectApplicator {
         cinematicTime += CalculateBladeCinematicTime(effect.m_sDamageType, caster);
         damageFromCaster = ApplyBlades(effect.m_sDamageType, damageFromCaster, caster);
 
+        var duel = caster.DuelActor.Duel;
+        var bubbleDamageIncrease = GetGlobalEffectDamageModifier(duel, damageType);
+        damageFromCaster = (int) Math.Floor(damageFromCaster * (1 + bubbleDamageIncrease));
+
         // Apply damage to each target
         foreach (var target in targets) {
             var damage = damageFromCaster;
@@ -83,10 +87,6 @@ internal static class CombatEffectApplicator {
             // Calculate damage changes from target hanging effects.
             cinematicTime += CalculateWardCinematicTime(effect.m_sDamageType, target);
             damage = ApplyWards(effect.m_sDamageType, damage, target, out var finalDmgSchool);
-
-            // Calculate global damage modifier
-            var bubbleDamageIncrease = GetGlobalEffectDamageModifier(target, damageType);
-            damage = (int) Math.Floor(damage * (1 + bubbleDamageIncrease));
 
             var finalDmgSchoolEnum = (MagicSchool) Enum.Parse(typeof(MagicSchool), finalDmgSchool);
 
@@ -103,6 +103,11 @@ internal static class CombatEffectApplicator {
         // Calculate heal increase
         var percentOutgoingHealIncrease = GetPercentOutgoingHealIncrease(caster);
         healFromCaster = (int) Math.Ceiling(healFromCaster * (1 + percentOutgoingHealIncrease));
+
+        // Calculate heal increase from current bubble
+        var duel = caster.DuelActor.Duel;
+        var bubbleHealIncrease = GetGlobalEffectHealingModifier(duel);
+        healFromCaster = (int) Math.Ceiling(healFromCaster * (1 + bubbleHealIncrease));
 
         // Apply heal to each target
         foreach (var target in targets) {
@@ -130,6 +135,11 @@ internal static class CombatEffectApplicator {
         cinematicTime += CalculateBladeCinematicTime(effect.m_sDamageType, caster);
         damageFromCaster = ApplyBlades(effect.m_sDamageType, damageFromCaster, caster);
 
+        // Calculate damage changes from current bubble
+        var duel = caster.DuelActor.Duel;
+        var bubbleDamageIncrease = GetGlobalEffectDamageModifier(duel, damageType);
+        damageFromCaster = (int) Math.Floor(damageFromCaster * (1 + bubbleDamageIncrease));
+
         damageFromCaster = (int) Math.Floor(damageFromCaster * (1 + damagePercentIncrease) + damageFlatIncrease);
 
         // Apply damage to each target
@@ -140,9 +150,6 @@ internal static class CombatEffectApplicator {
             // Calculate damage changes from target hanging effects.
             cinematicTime += CalculateWardCinematicTime(effect.m_sDamageType, target);
             damage = ApplyWards(effect.m_sDamageType, damageFromCaster, target, out var finalDmgSchool);
-
-            // Calculate global damage modifier
-            damage += (int) Math.Floor(damage * GetGlobalEffectDamageModifier(target, damageType));
 
             var finalDmgSchoolEnum = (MagicSchool) Enum.Parse(typeof(MagicSchool), finalDmgSchool);
 
@@ -339,9 +346,9 @@ internal static class CombatEffectApplicator {
         return target.ParticipantGameStats.m_healIncBonusPercentAll;
     }
 
-    private static float GetGlobalEffectDamageModifier(CombatDuelActorSubCircle target, MagicSchool damageType) {
+    private static float GetGlobalEffectDamageModifier(Duel duel, MagicSchool damageType) {
         var sDamageType = damageType.ToString();
-        var schoolBubble = target.DuelActor.Duel.m_duelModifier.m_battlefieldEffects
+        var schoolBubble = duel.m_duelModifier.m_battlefieldEffects
             .FirstOrDefault(x => x.m_effectType == SpellEffect.kSpellEffects.kModifyOutgoingDamage
                               && x.m_sDamageType == sDamageType);
 
@@ -352,8 +359,8 @@ internal static class CombatEffectApplicator {
         return 0.0f;
     }
 
-    private static float GetGlobalEffectHealingModifier(CombatDuelActorSubCircle target) {
-        var healBubble = target.DuelActor.Duel.m_duelModifier.m_battlefieldEffects
+    private static float GetGlobalEffectHealingModifier(Duel duel) {
+        var healBubble = duel.m_duelModifier.m_battlefieldEffects
             .FirstOrDefault(x => x.m_effectType == SpellEffect.kSpellEffects.kModifyOutgoingHeal);
 
         if (healBubble is not null) {
