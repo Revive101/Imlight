@@ -30,6 +30,8 @@ internal class CombatAIActor : ReceiveProtocolDispatcher {
     private const float PREPARE_PASS_CHANCE = 0.33f;
     private const int DAMAGED_AGGRO_INCREASE = 5;
     private const int HEALING_AGGRO_INCREASE = 3;
+    private const int PROVOKE_AGGRO_INCREASE = 20;
+    private const int PACIFY_AGGRO_DECREASE = 50;
 
     private readonly IActorRef _creatureActorRef;
     private readonly CombatDuelActor _duelActor;
@@ -108,7 +110,21 @@ internal class CombatAIActor : ReceiveProtocolDispatcher {
         }
 
         if (isTarget) {
-            UpdateHateTable(message.Caster.SlotIndex, DAMAGED_AGGRO_INCREASE);
+            var isPacify = message.Effect.m_effectType is SpellEffect.kSpellEffects.kPacify;
+            var isProvoke = message.Effect.m_effectType is SpellEffect.kSpellEffects.kTaunt;
+
+            int hateValue;
+            if (isPacify) {
+                hateValue = -PACIFY_AGGRO_DECREASE;
+            }
+            else if (isProvoke) {
+                hateValue = PROVOKE_AGGRO_INCREASE;
+            }
+            else {
+                hateValue = DAMAGED_AGGRO_INCREASE;
+            }
+
+            UpdateHateTable(message.Caster.SlotIndex, hateValue);
         }
         else if (isHealing) {
             UpdateHateTable(message.Caster.SlotIndex, HEALING_AGGRO_INCREASE);

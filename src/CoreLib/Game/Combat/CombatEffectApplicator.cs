@@ -50,6 +50,11 @@ internal static class CombatEffectApplicator {
             case SpellEffect.kSpellEffects.kStun:
                 cinematicTime += ApplyStunEffect(effect, targets);
                 break;
+            case SpellEffect.kSpellEffects.kPacify:
+            case SpellEffect.kSpellEffects.kTaunt:
+                // If you're looking for the implementation, we don't do it here. It happens in the CombatEffectProcessor, when the
+                // actor is informed an effect has happened. The handler is in the CombatAIActor.
+                break;
             default:
                 break;
         }
