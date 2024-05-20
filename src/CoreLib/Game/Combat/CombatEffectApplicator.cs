@@ -28,7 +28,7 @@ internal static class CombatEffectApplicator {
 
         switch (effect.m_effectType) {
             case SpellEffect.kSpellEffects.kDamage:
-                cinematicTime += ApplyEffectDamage(effect, caster, targets);
+                cinematicTime += ApplyEffectFlatDamage(effect, caster, targets);
                 break;
             case SpellEffect.kSpellEffects.kHeal:
                 cinematicTime += ApplyEffectHeal(effect, caster, targets);
@@ -66,7 +66,7 @@ internal static class CombatEffectApplicator {
         return cinematicTime;
     }
 
-    private static float ApplyEffectDamage(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets) {
+    private static float ApplyEffectFlatDamage(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets) {
         var (cinematicTime, _) = ApplyDamageEffect(effect, caster, targets);
         return cinematicTime;
     }
@@ -145,6 +145,11 @@ internal static class CombatEffectApplicator {
 
     private static void ApplyHangingEffect(SpellEffect effect, CombatDuelActorSubCircle[] targets) {
         foreach (var target in targets) {
+            // If this is an absorb ward, set the initial value.
+            if (effect.m_effectType == SpellEffect.kSpellEffects.kAbsorbDamage) {
+                effect.m_paramPerRound = effect.m_effectParam;
+            }
+
             target.HangingEffects.Add(effect);
         }
     }
@@ -211,7 +216,8 @@ internal static class CombatEffectApplicator {
     private static int ApplyWards(string school, int damage, CombatDuelActorSubCircle target, out string currentDmgSchool) {
         var wards = target.HangingEffects
             .Where(x => x.m_effectType is SpellEffect.kSpellEffects.kModifyIncomingDamage
-                                       or SpellEffect.kSpellEffects.kModifyIncomingDamageType)
+                                       or SpellEffect.kSpellEffects.kModifyIncomingDamageType
+                                       or SpellEffect.kSpellEffects.kAbsorbDamage)
             .Reverse()
             .ToList();
 
@@ -230,6 +236,22 @@ internal static class CombatEffectApplicator {
             if (ward.m_effectType == SpellEffect.kSpellEffects.kModifyIncomingDamageType) {
                 currentDmgSchool = ((MagicSchool) ward.m_effectParam).ToString();
                 target.HangingEffects.Remove(ward);
+                continue;
+            }
+            else if (ward.m_effectType == SpellEffect.kSpellEffects.kAbsorbDamage) {
+                // Absorbs will absorb the flat damage, up to the effect param.
+                var absorbAmount = ward.m_paramPerRound;
+                var absorbedDamage = Math.Min(damage, absorbAmount);
+
+                // If the damage exceeds what absorb is remaining, we need to remove the absorb effect.
+                if (damage >= absorbAmount) {
+                    target.HangingEffects.Remove(ward);
+                }
+                else {
+                    ward.m_paramPerRound -= absorbedDamage;
+                }
+
+                damage -= absorbedDamage;
                 continue;
             }
 
