@@ -22,6 +22,19 @@ using Imlight.Common.ObjectProperty.PropertyReflection;
 
 namespace Imlight.CoreLib.Game.Combat;
 
+public enum CombatMoveType {
+    Attack = 0,
+    Flee = 1,
+    Discard = 2,
+    Pass = 3,
+    ChangeMind = 4,
+}
+
+public enum CombatTeam {
+    Player = 0,
+    Monster = 1
+}
+
 /// <summary>
 /// Represents a duel. This is the actor that manages the duel. It is created by the
 /// <see cref="CombatDuelActorSupervisor"/> and is a child of it.
