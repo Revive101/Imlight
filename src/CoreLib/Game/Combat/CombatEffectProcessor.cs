@@ -35,7 +35,9 @@ internal static class CombatEffectProcessor {
                 continue;
             }
 
-            if (!spellWorthCasting && targets.Any(x => x.IsAlive)) {
+            // If the spell has any targets that are alive or on the same team as the caster, it's worth casting.
+            if (!spellWorthCasting && (targets.Any(x => x.IsAlive)
+                                    || targets.Any(x => x.OccupiedTeam == action.SpellCaster.OccupiedTeam))) {
                 spellWorthCasting = true;
             }
 
