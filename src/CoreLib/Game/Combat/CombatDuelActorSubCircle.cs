@@ -325,6 +325,8 @@ public class CombatDuelActorSubCircle {
         ourPipCount.m_genericPips = 0;
     }
 
+    internal void Reshuffle() => CombatDeck.Reshuffle();
+
     private void InitializePlayerSubCircle() {
         // todo: this method is a mess.
         var queryCharacterMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();

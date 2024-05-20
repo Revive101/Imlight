@@ -55,6 +55,9 @@ internal static class CombatEffectApplicator {
                 // If you're looking for the implementation, we don't do it here. It happens in the CombatEffectProcessor, when the
                 // actor is informed an effect has happened. The handler is in the CombatAIActor.
                 break;
+            case SpellEffect.kSpellEffects.kReshuffle:
+                ApplyReshuffleEffect(targets[0]);
+                break;
             default:
                 break;
         }
@@ -165,6 +168,10 @@ internal static class CombatEffectApplicator {
         DoHealToTarget(caster, casterHealTotal);
 
         return cinematicTime;
+    }
+
+    private static void ApplyReshuffleEffect(CombatDuelActorSubCircle caster) {
+        caster.Reshuffle();
     }
 
     private static void ApplyHangingEffect(SpellEffect effect, CombatDuelActorSubCircle[] targets) {
