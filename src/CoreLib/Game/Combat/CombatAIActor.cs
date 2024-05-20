@@ -312,30 +312,35 @@ internal class CombatAIActor : ReceiveProtocolDispatcher {
     }
 
     private void InitiatizeHateTable() {
-        // Create the hate table. There is one for each slot in the duel.
-        for (int i = 0; i < _duelActor.SubCircles.Count(); i++) {
+        // Create the hate table.
+        int start = (_mySubcircle.SlotIndex < 3) ? 4 : 0;
+        int end = (_mySubcircle.SlotIndex < 3) ? _duelActor.SubCircles.Length : _duelActor.SubCircles.Length / 2;
+
+        for (int i = start; i < end; i++) {
             _hateTable.Add(i, 0);
         }
 
-        // The initial target for this creature will be the slot across from it, or the first slot alive.
-        var myIdx = _mySubcircle.SlotIndex;
-        var target = _duelActor.ActiveSubCircles.FirstOrDefault(x => x.SlotIndex > 3 && x.IsAlive);
-        if (target is null) {
-            return;
-        }
-
-        var targetIdx = target.SlotIndex;
+        // Our initial target will be whomever is across from us.
+        var targetIdx = _mySubcircle.SlotIndex + 4 % _duelActor.SubCircles.Length;
         UpdateHateTable(targetIdx, 1);
     }
 
     private int GetMostHatedTarget() {
-        var maxHate = _hateTable.Values.Max();
-        var mostHatedTarget = _hateTable.FirstOrDefault(x => x.Value == maxHate && x.Key >= 4).Key;
-        if (mostHatedTarget < 4) {
-            mostHatedTarget = _duelActor.ActiveSubCircles
-                .FirstOrDefault(x => x.SlotIndex >= 4 && x.IsAlive)?.SlotIndex ?? mostHatedTarget;
+        var orderedHateTable = _hateTable.OrderByDescending(x => x.Value);
+
+        // Pick the highest hated target that is still alive.
+        foreach (var (targetIdx, hateValue) in orderedHateTable) {
+            var target = _duelActor.SubCircles[targetIdx];
+            if (target is null || !target.Occupied) {
+                continue;
+            }
+
+            if (target.IsAlive) {
+                return targetIdx;
+            }
         }
-        return mostHatedTarget;
+
+        return 0;
     }
 
     private void UpdateHateTable(int targetIdx, int hateValue) {
