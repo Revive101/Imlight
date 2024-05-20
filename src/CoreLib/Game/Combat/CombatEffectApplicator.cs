@@ -45,6 +45,7 @@ internal static class CombatEffectApplicator {
             case SpellEffect.kSpellEffects.kModifyIncomingHeal:
             case SpellEffect.kSpellEffects.kModifyIncomingHealFlat:
             case SpellEffect.kSpellEffects.kModifyIncomingDamageType:
+            case SpellEffect.kSpellEffects.kAbsorbDamage:
                 ApplyHangingEffect(effect, targets);
                 break;
             case SpellEffect.kSpellEffects.kStun:
@@ -66,6 +67,18 @@ internal static class CombatEffectApplicator {
     }
 
     private static float ApplyEffectDamage(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets) {
+        var (cinematicTime, _) = ApplyDamageEffect(effect, caster, targets);
+        return cinematicTime;
+    }
+
+    private static float ApplyEffectStealHealth(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets) {
+        var (cinematicTime, damageDealt) = ApplyDamageEffect(effect, caster, targets);
+        var casterHealTotal = (int) Math.Floor(damageDealt * effect.m_healModifier);
+        DoHealToTarget(caster, casterHealTotal);
+        return cinematicTime;
+    }
+
+    private static (float cinematicTime, int damageDealt) ApplyDamageEffect(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets) {
         int damageFromCaster = effect.m_effectParam;
         var cinematicTime = 0.0f;
 
@@ -89,6 +102,7 @@ internal static class CombatEffectApplicator {
         damageFromCaster = (int) Math.Floor(damageFromCaster * (1 + bubbleDamageIncrease));
 
         // Apply damage to each target
+        var damageDealt = 0;
         foreach (var target in targets) {
             var damage = damageFromCaster;
 
@@ -98,10 +112,10 @@ internal static class CombatEffectApplicator {
 
             var finalDmgSchoolEnum = (MagicSchool) Enum.Parse(typeof(MagicSchool), finalDmgSchool);
 
-            DoDamageToTarget(target, damage, finalDmgSchoolEnum);
+            damageDealt += DoDamageToTarget(target, damage, finalDmgSchoolEnum);
         }
 
-        return cinematicTime;
+        return (cinematicTime, damageDealt);
     }
 
     private static float ApplyEffectHeal(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets) {
@@ -121,51 +135,6 @@ internal static class CombatEffectApplicator {
         foreach (var target in targets) {
             DoHealToTarget(target, healFromCaster);
         }
-
-        return cinematicTime;
-    }
-
-    private static float ApplyEffectStealHealth(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets) {
-        int damageFromCaster = effect.m_effectParam;
-        var cinematicTime = 0.0f;
-
-        if (!Enum.TryParse(typeof(MagicSchool), effect.m_sDamageType, out var damageTypeObj)) {
-            throw new ArgumentException("Invalid damage type");
-        }
-        var damageType = (MagicSchool) damageTypeObj;
-
-        // Calculate damage increase from caster stats.
-        var damageFlatIncrease = GetFlatDamageIncrease(caster, damageType);
-        var damagePercentIncrease = GetPercentDamageIncrease(caster, damageType);
-        damagePercentIncrease = Math.Min(damagePercentIncrease, DAMAGE_PERCENT_MAX);
-
-        // Calculate damage changes from hanging effects.
-        cinematicTime += CalculateBladeCinematicTime(effect.m_sDamageType, caster);
-        damageFromCaster = ApplyBlades(effect.m_sDamageType, damageFromCaster, caster);
-
-        // Calculate damage changes from current bubble
-        var duel = caster.DuelActor.Duel;
-        var bubbleDamageIncrease = GetGlobalEffectDamageModifier(duel, damageType);
-        damageFromCaster = (int) Math.Floor(damageFromCaster * (1 + bubbleDamageIncrease));
-
-        damageFromCaster = (int) Math.Floor(damageFromCaster * (1 + damagePercentIncrease) + damageFlatIncrease);
-
-        // Apply damage to each target
-        var damageDealt = 0;
-        foreach (var target in targets) {
-            var damage = damageFromCaster;
-
-            // Calculate damage changes from target hanging effects.
-            cinematicTime += CalculateWardCinematicTime(effect.m_sDamageType, target);
-            damage = ApplyWards(effect.m_sDamageType, damageFromCaster, target, out var finalDmgSchool);
-
-            var finalDmgSchoolEnum = (MagicSchool) Enum.Parse(typeof(MagicSchool), finalDmgSchool);
-
-            damageDealt += DoDamageToTarget(target, damage, finalDmgSchoolEnum);
-        }
-
-        var casterHealTotal = (int) Math.Floor(damageDealt * effect.m_healModifier);
-        DoHealToTarget(caster, casterHealTotal);
 
         return cinematicTime;
     }
