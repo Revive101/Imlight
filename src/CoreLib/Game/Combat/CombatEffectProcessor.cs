@@ -4,6 +4,7 @@
  */
 
 using Imlight.Common;
+using Imlight.CoreLib.Shared.Packets;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -42,6 +43,7 @@ internal static class CombatEffectProcessor {
             }
 
             UpdateCombatActionTargets(ref combatAction, targets);
+            InformDuelParticipantsOfEffect(action.SpellCaster, targets, chosenEffect);
 
             cinematicTime += CombatEffectApplicator.ApplyEffect(chosenEffect, action.SpellCaster, targets);
         }
@@ -97,6 +99,19 @@ internal static class CombatEffectProcessor {
             if (!combatAction.m_targetSubcircleList.Contains(target.SlotIndex)) {
                 combatAction.m_targetSubcircleList.Add(target.SlotIndex);
             }
+        }
+    }
+
+    private static void InformDuelParticipantsOfEffect(CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets, SpellEffect effect) {
+        var allParticipants = caster.DuelActor.ActiveSubCircles.Select(x => x.ParticipantActor).ToArray();
+        var msg = new COMBAT_106_PROTOCOL.MSG_COMBATEFFECT {
+            Caster = caster,
+            Targets = targets,
+            Effect = effect,
+        };
+
+        foreach (var participant in allParticipants) {
+            participant.Tell(msg, null);
         }
     }
 

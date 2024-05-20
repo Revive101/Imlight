@@ -28,6 +28,8 @@ internal class CombatAIActor : ReceiveProtocolDispatcher {
     private const float HEALING_THRESHOLD = 0.75f;
     private const float HEALING_PERCENT_CHANCE = 0.5f;
     private const float PREPARE_PASS_CHANCE = 0.33f;
+    private const int DAMAGED_AGGRO_INCREASE = 5;
+    private const int HEALING_AGGRO_INCREASE = 3;
 
     private readonly IActorRef _creatureActorRef;
     private readonly CombatDuelActor _duelActor;
@@ -89,6 +91,28 @@ internal class CombatAIActor : ReceiveProtocolDispatcher {
 
         // Send the action to the duel actor.
         _duelActor.ActorRef.Tell(action);
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_COMBATEFFECT))]
+    private void ReceiveCombatEffect(COMBAT_106_PROTOCOL.MSG_COMBATEFFECT message) {
+        // Determine if I am included in the target array.
+        var isTarget = message.Targets.Any(x => x.SlotIndex == _mySubcircle.SlotIndex);
+        var isHealing = message.Effect.m_effectType is SpellEffect.kSpellEffects.kHeal
+                                                    or SpellEffect.kSpellEffects.kHealOverTime
+                                                    or SpellEffect.kSpellEffects.kHealPercent;
+
+        // Ignore if the caster is on my team.
+        var isOnMyTeam = message.Caster.OccupiedTeam == _mySubcircle.OccupiedTeam;
+        if (isOnMyTeam) {
+            return;
+        }
+
+        if (isTarget) {
+            UpdateHateTable(message.Caster.SlotIndex, DAMAGED_AGGRO_INCREASE);
+        }
+        else if (isHealing) {
+            UpdateHateTable(message.Caster.SlotIndex, HEALING_AGGRO_INCREASE);
+        }
     }
 
     private void DetermineAttitude() {

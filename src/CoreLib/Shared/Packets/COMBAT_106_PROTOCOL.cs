@@ -140,5 +140,14 @@ namespace Imlight.CoreLib.Shared.Packets {
             public byte MessageOrder => 16;
             public byte ServiceID => 106;
         }
+
+        public sealed class MSG_COMBATEFFECT : IServerMessage {
+            public byte MessageOrder => 17;
+            public byte ServiceID => 106;
+
+            public CombatDuelActorSubCircle Caster;
+            public CombatDuelActorSubCircle[] Targets;
+            public SpellEffect Effect;
+        }
     }
 }

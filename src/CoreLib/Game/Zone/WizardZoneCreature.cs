@@ -208,6 +208,11 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
         _combatAiActor.Forward(message);
     }
 
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_COMBATEFFECT))]
+    private void ReceiveCombatEffect(COMBAT_106_PROTOCOL.MSG_COMBATEFFECT message) {
+        _combatAiActor.Forward(message);
+    }
+
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_COMBATDEATH))]
     private void ReceiveCombatDeath(COMBAT_106_PROTOCOL.MSG_COMBATDEATH message) {
         if (_combatAiActor is not null) {

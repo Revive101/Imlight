@@ -13,6 +13,7 @@ using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models.Player;
 using static Imlight.Common.Caches.TypeCache;
 using Imlight.Common.Cryptography;
+using Imlight.CoreLib.Shared.Packets;
 
 namespace Imlight.CoreLib.Game.Combat;
 
