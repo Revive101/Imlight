@@ -3,6 +3,7 @@
  * Proprietary and confidential.
  */
 
+using Imlight.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,13 +19,16 @@ namespace Imlight.CoreLib.Game.Combat;
 internal static class CombatEffectProcessor {
     internal static bool ProcessSpellEffects(QueuedCombatAction action, CombatEffectStack effectStack, ref CombatAction combatAction, ref float cinematicTime) {
         var spellWorthCasting = false;
+        combatAction.m_xPipCost = GetXPipCost(action.Spell, action.SpellCaster);
 
         foreach (var spellEffect in action.SpellTemplate.m_effects) {
             var chosenEffect = spellEffect;
 
-            if (spellEffect is RandomSpellEffect randomSpellEffect) {
-                chosenEffect = ChooseRandomEffect(randomSpellEffect, effectStack);
-            }
+            chosenEffect = spellEffect switch {
+                RandomSpellEffect randomSpellEffect => ChooseRandomEffect(randomSpellEffect, effectStack),
+                VariableSpellEffect variableSpellEffect => ChooseVariableEffect(variableSpellEffect, combatAction.m_xPipCost, effectStack),
+                _ => spellEffect,
+            };
 
             var targets = GetEffectTargets(chosenEffect, action.SpellCaster, action.SelectedTarget);
             if (targets.Length == 0) {
@@ -51,6 +55,39 @@ internal static class CombatEffectProcessor {
         effectStack.PushRandomEffectChoice(randomEffectIndex);
 
         return chosenEffect;
+    }
+
+    private static SpellEffect ChooseVariableEffect(VariableSpellEffect variableSpellEffect, int parameter, CombatEffectStack effectStack) {
+        // Variable spell effects are for x pip spells. There should be a total of 14 nested spell effects
+        // for each pip level of the spell.
+        if (variableSpellEffect.m_effectList.Count != 14) {
+            Logger.Error("Variable spell effect does not have 14 nested effects.");
+            return variableSpellEffect;
+        }
+
+        // Make sure we're not out of bounds.
+        parameter = Math.Min(parameter, 13);
+
+        effectStack.PushRandomEffectChoice(parameter);
+        var chosenEffect = variableSpellEffect.m_effectList[parameter];
+
+        return chosenEffect;
+    }
+
+    private static byte GetXPipCost(Spell spell, CombatDuelActorSubCircle caster) {
+        if (!spell.m_pipCost.m_xPipSpell) {
+            return 0;
+        }
+
+        var pipCount = caster.CombatParticipant.m_pipCount;
+
+        // x pip spells will consume all pips.
+        var totalCost = pipCount.m_genericPips;;
+
+        var isSpellMastered = caster.HasSchoolMastery(spell.m_magicSchoolID);
+        totalCost += isSpellMastered ? (byte) (pipCount.m_powerPips * 2) : pipCount.m_powerPips;
+
+        return totalCost;
     }
 
     private static void UpdateCombatActionTargets(ref CombatAction combatAction, IEnumerable<CombatDuelActorSubCircle> targets) {
