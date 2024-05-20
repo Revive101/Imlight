@@ -28,13 +28,13 @@ internal static class CombatEffectApplicator {
 
         switch (effect.m_effectType) {
             case SpellEffect.kSpellEffects.kDamage:
-                cinematicTime += ApplyEffectFlatDamage(effect, caster, targets);
+                cinematicTime += ApplyFlatDamageEffect(effect, caster, targets);
                 break;
             case SpellEffect.kSpellEffects.kHeal:
-                cinematicTime += ApplyEffectHeal(effect, caster, targets);
+                cinematicTime += ApplyFlatHealEffect(effect, caster, targets);
                 break;
             case SpellEffect.kSpellEffects.kStealHealth:
-                cinematicTime += ApplyEffectStealHealth(effect, caster, targets);
+                cinematicTime += ApplyStealHealthEffect(effect, caster, targets);
                 break;
             case SpellEffect.kSpellEffects.kModifyOutgoingDamage:
             case SpellEffect.kSpellEffects.kModifyIncomingDamage:
@@ -66,12 +66,12 @@ internal static class CombatEffectApplicator {
         return cinematicTime;
     }
 
-    private static float ApplyEffectFlatDamage(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets) {
+    private static float ApplyFlatDamageEffect(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets) {
         var (cinematicTime, _) = ApplyDamageEffect(effect, caster, targets);
         return cinematicTime;
     }
 
-    private static float ApplyEffectStealHealth(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets) {
+    private static float ApplyStealHealthEffect(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets) {
         var (cinematicTime, damageDealt) = ApplyDamageEffect(effect, caster, targets);
         var casterHealTotal = (int) Math.Floor(damageDealt * effect.m_healModifier);
         DoHealToTarget(caster, casterHealTotal);
@@ -94,8 +94,8 @@ internal static class CombatEffectApplicator {
         damageFromCaster = (int) Math.Floor(damageFromCaster * (1 + damagePercentIncrease) + damageFlatIncrease);
 
         // Calculate damage changes from hanging effects.
-        cinematicTime += CalculateBladeCinematicTime(effect.m_sDamageType, caster);
-        damageFromCaster = ApplyBlades(effect.m_sDamageType, damageFromCaster, caster);
+        cinematicTime += CalculateOutgoingDamageCharmCinematicTime(effect.m_sDamageType, caster);
+        damageFromCaster = ApplyOutgoingDamageCharms(effect.m_sDamageType, damageFromCaster, caster);
 
         var duel = caster.DuelActor.Duel;
         var bubbleDamageIncrease = GetGlobalEffectDamageModifier(duel, damageType);
@@ -107,8 +107,8 @@ internal static class CombatEffectApplicator {
             var damage = damageFromCaster;
 
             // Calculate damage changes from target hanging effects.
-            cinematicTime += CalculateWardCinematicTime(effect.m_sDamageType, target);
-            damage = ApplyWards(effect.m_sDamageType, damage, target, out var finalDmgSchool);
+            cinematicTime += CalculateIncomingDamageWardCinematicTime(effect.m_sDamageType, target);
+            damage = ApplyIncomingDamageWards(effect.m_sDamageType, damage, target, out var finalDmgSchool);
 
             var finalDmgSchoolEnum = (MagicSchool) Enum.Parse(typeof(MagicSchool), finalDmgSchool);
 
@@ -118,13 +118,17 @@ internal static class CombatEffectApplicator {
         return (cinematicTime, damageDealt);
     }
 
-    private static float ApplyEffectHeal(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets) {
+    private static float ApplyFlatHealEffect(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets) {
         int healFromCaster = effect.m_effectParam;
         var cinematicTime = 0.0f;
 
-        // Calculate heal increase
+        // Calculate heal increase from gear
         var percentOutgoingHealIncrease = GetPercentOutgoingHealIncrease(caster);
         healFromCaster = (int) Math.Ceiling(healFromCaster * (1 + percentOutgoingHealIncrease));
+
+        // Calculate heal increase/decrease from hanging effects on caster
+        cinematicTime += CalculateHealingHangingEffectTime(caster);
+        healFromCaster = ApplyHealingCharms(healFromCaster, caster);
 
         // Calculate heal increase from current bubble
         var duel = caster.DuelActor.Duel;
@@ -192,7 +196,7 @@ internal static class CombatEffectApplicator {
         duel.m_duelModifier.m_battlefieldEffects.Add(spellEffect);
     }
 
-    private static int ApplyBlades(string school, int damage, CombatDuelActorSubCircle caster) {
+    private static int ApplyOutgoingDamageCharms(string school, int damage, CombatDuelActorSubCircle caster) {
         var blades = caster.HangingEffects
             .Where(x => x.m_effectType == SpellEffect.kSpellEffects.kModifyOutgoingDamage)
             .Reverse()
@@ -213,7 +217,7 @@ internal static class CombatEffectApplicator {
         return damage;
     }
 
-    private static int ApplyWards(string school, int damage, CombatDuelActorSubCircle target, out string currentDmgSchool) {
+    private static int ApplyIncomingDamageWards(string school, int damage, CombatDuelActorSubCircle target, out string currentDmgSchool) {
         var wards = target.HangingEffects
             .Where(x => x.m_effectType is SpellEffect.kSpellEffects.kModifyIncomingDamage
                                        or SpellEffect.kSpellEffects.kModifyIncomingDamageType
@@ -264,7 +268,29 @@ internal static class CombatEffectApplicator {
         return damage;
     }
 
-    private static float CalculateBladeCinematicTime(string school, CombatDuelActorSubCircle caster) {
+    private static int ApplyHealingCharms(int heal, CombatDuelActorSubCircle target) {
+        var heals = target.HangingEffects
+            .Where(x => x.m_effectType is SpellEffect.kSpellEffects.kModifyIncomingHeal
+                                       or SpellEffect.kSpellEffects.kModifyIncomingHealFlat)
+            .Reverse()
+            .ToList();
+
+        var seen = new HashSet<uint>();
+        foreach (var healEffect in heals) {
+            if (!seen.Add(healEffect.m_spellTemplateID)) {
+                continue;
+            }
+
+            var healChange = healEffect.m_effectParam / 100.0f;
+            heal = (int) Math.Floor(heal * (1 + healChange));
+
+            target.HangingEffects.Remove(healEffect);
+        }
+
+        return heal;
+    }
+
+    private static float CalculateOutgoingDamageCharmCinematicTime(string school, CombatDuelActorSubCircle caster) {
         var wards = caster.HangingEffects
             .Where(x => x.m_effectType == SpellEffect.kSpellEffects.kModifyIncomingDamage)
             .ToList();
@@ -282,7 +308,7 @@ internal static class CombatEffectApplicator {
         return cinematicTime;
     }
 
-    private static float CalculateWardCinematicTime(string school, CombatDuelActorSubCircle caster) {
+    private static float CalculateIncomingDamageWardCinematicTime(string school, CombatDuelActorSubCircle caster) {
         var wards = caster.HangingEffects
             .Where(x => x.m_effectType == SpellEffect.kSpellEffects.kModifyIncomingDamage)
             .ToList();
@@ -291,6 +317,25 @@ internal static class CombatEffectApplicator {
         var seen = new HashSet<uint>();
         foreach (var ward in wards.Where(x => x.m_sDamageType == school || x.m_sDamageType == "All")) {
             if (!seen.Add(ward.m_spellTemplateID)) {
+                continue;
+            }
+
+            cinematicTime += HANGING_EFFECT_CONSUME_TIME;
+        }
+
+        return cinematicTime;
+    }
+
+    private static float CalculateHealingHangingEffectTime(CombatDuelActorSubCircle target) {
+        var heals = target.HangingEffects
+            .Where(x => x.m_effectType is SpellEffect.kSpellEffects.kModifyIncomingHeal
+                                       or SpellEffect.kSpellEffects.kModifyIncomingHealFlat)
+            .ToList();
+        var cinematicTime = 0.0f;
+
+        var seen = new HashSet<uint>();
+        foreach (var healEffect in heals) {
+            if (!seen.Add(healEffect.m_spellTemplateID)) {
                 continue;
             }
 
