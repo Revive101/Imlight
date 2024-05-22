@@ -4,27 +4,37 @@
  */
 
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
+using Imlight.Common.Cryptography;
+using Imlight.Common.ObjectProperty;
+using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Game.Zone;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models.World;
+using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Services;
 
-public class ZoneService : MessageService {
+public class ZoneService : MessageService, IWithTimers {
     private const int ZONE_REMOVAL_WAIT_TIME_IN_SECONDS = 4;
     private const int ZONE_TRANSFER_CLEANUP_WAIT_TIME_IN_SECONDS = 1;
+    private const float TELEPORT_EFFECTS_TIME = 2.0f;
 
     public IActorRef ZoneActor;
+    public ITimerScheduler Timers { get; set; }
 
     private readonly TimeSpan _zoneRemovalWaitTime = TimeSpan.FromSeconds(ZONE_REMOVAL_WAIT_TIME_IN_SECONDS);
     private bool _isTransferQueued;
+
+    private readonly CoreObjectSerializer _effectSerializer = new CoreObjectSerializer()
+                    .OnBehaviors(SerializerOptions.Behaviors.None)
+                    .OnPropertyMask(SerializerOptions.PropertyFlags.Transmit
+                                  | SerializerOptions.PropertyFlags.AuthorityTransmit);
 
     public ZoneService(SessionActor sessionActor) : base(sessionActor) { }
 
@@ -105,6 +115,55 @@ public class ZoneService : MessageService {
 
         character.QueuedZoneName = character.Zone;
         character.QueuedZoneLocation = Util.GetCompactStringFromVector(character.Location, character.Orientation);
+    }
+
+    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_GOHOME))]
+    private void ReceiveGoHome(WIZARD_12_PROTOCOL.MSG_GOHOME message) {
+        // this teleports the wizard to the world hub, NOT their home/dorm. for that you want MSG_GOTODORM. goofy ahh naming scheme
+        var wizard = GetActiveWizard();
+        SendTeleportEffects();
+
+        var currentZone = wizard.Zone;
+        var zoneMap = WorldHubZones.GetHubZoneMapping(currentZone);
+        var tpmsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
+            DestinationZone = zoneMap.m_hubZone,
+            DestinationLocation = zoneMap.m_location,
+            SendToClient = true
+        };
+
+        wizard.SetTimeHomeLastClicked(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+
+        var delay = TimeSpan.FromSeconds(TELEPORT_EFFECTS_TIME);
+        Timers.StartSingleTimer("zonetransfer", tpmsg, delay);
+    }
+
+    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_GOTODORM))]
+    private void ReceiveGotoDorm(WIZARD_12_PROTOCOL.MSG_GOTODORM message) {
+        var wizard = GetActiveWizard();
+        SendTeleportEffects();
+
+        var tpmsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
+            DestinationZone = "WizardCity/QA_SpawnRate", // just teleporting to gm for now
+            DestinationLocation = "Start",
+            SendToClient = true
+        };
+
+        wizard.SetTimeHomeLastClicked(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+
+        var delay = TimeSpan.FromSeconds(TELEPORT_EFFECTS_TIME);
+        Timers.StartSingleTimer("zonetransfer", tpmsg, delay);
+    }
+
+    [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE))]
+    private void ReceiveAttachComplete(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE message) {
+        var wizard = GetActiveWizard();
+        var timeHomeLastClicked = DateTimeOffset.FromUnixTimeSeconds(wizard.TimeHomeLastClicked);
+        var timeDifference = DateTimeOffset.UtcNow.Subtract(timeHomeLastClicked);
+
+        if (timeDifference.TotalSeconds < 30) {
+            SendCantGoHomeEffect(timeHomeLastClicked);
+        }
+        SendHomeButtonData();
     }
 
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_WORLDTELEPORTREQUEST))]
@@ -197,6 +256,11 @@ public class ZoneService : MessageService {
         ReceiveZoneTransferRequest(msg);
     }
 
+    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_DOTELEPORTEFFECTS))]
+    private void ReceiveTeleportEffects(CHARACTER_103_PROTOCOL.MSG_DOTELEPORTEFFECTS message) {
+        SendTeleportEffects();
+    }
+
     private void SetZone(IActorRef actorRef) {
         ZoneActor = actorRef;
     }
@@ -275,5 +339,71 @@ public class ZoneService : MessageService {
             MobileID = GetActiveGameObject().m_nMobileID,
         };
         SendToSocket(serverTele);
+    }
+
+    private void SendTeleportEffects() {
+        var wizard = GetActiveWizard();
+        var now = DateTimeOffset.UtcNow;
+
+        SendCantGoHomeEffect(now);
+        // what does this do? who knows! its probably important.
+        var enterState = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
+            GameObjectID = wizard.GameObject.m_globalID,
+            State = StringHash.Compute("Teleport"),
+        };
+
+        SendToSocket(enterState);
+
+        SendRecallHomeEffect(now);
+    }
+
+    private void SendCantGoHomeEffect(DateTimeOffset unixTimeStart) {
+        var wizard = GetActiveWizard();
+        NamedEffect effect = new NamedEffect {
+            m_effectNameID = StringHash.Compute("CantGoHome"),
+            m_endTime = (uint) unixTimeStart.AddSeconds(30).ToUnixTimeSeconds(),
+            m_internalID = wizard.GameEffects.Count,
+        };
+        var serializedEffect = _effectSerializer.Serialize(effect);
+        wizard.GameEffects.Add(effect);
+
+        var addEffect = new GAME_5_PROTOCOL.MSG_ADDEFFECT {
+            GameObjectID = wizard.GameObject.m_globalID,
+            EffectData = serializedEffect
+        };
+
+        SendToSocket(addEffect);
+    }
+
+    private void SendRecallHomeEffect(DateTimeOffset time) {
+        var wizard = GetActiveWizard();
+
+        // on live servers, the end time is 200 seconds from the time gohome is sent. i still have no clue why.
+        // also on live servers, when teleporting in zone, it will send the effects like 3 times. i also have no clue on this either.
+        // all i know is that this works. in conclusion, do what makes sense, dont copy kingsisle, or you run into problems.
+        NamedEffect effect = new NamedEffect {
+            m_effectNameID = StringHash.Compute("RecallHome"),
+            m_endTime = (uint) time.AddSeconds(2).ToUnixTimeSeconds(),
+            m_internalID = wizard.GameEffects.Count,
+        };
+
+        wizard.GameEffects.Add(effect);
+        var serializedEffect = _effectSerializer.Serialize(effect);
+        var addEffect = new GAME_5_PROTOCOL.MSG_ADDEFFECT {
+            GameObjectID = wizard.GameObject.m_globalID,
+            EffectData = serializedEffect
+        };
+        SendToSocket(addEffect);
+    }
+
+    private void SendHomeButtonData() {
+        var wizard = GetActiveWizard();
+        var currentZone = wizard.Zone;
+        var zoneMap = WorldHubZones.GetHubZoneMapping(currentZone);
+        var marklocation = new GAME_5_PROTOCOL.MSG_MARK_LOCATION_RESPONSE {
+            Result = 2,
+            CommonsZoneId = zoneMap.m_hubZoneDisplayName
+        };
+        SendToSocket(marklocation);
     }
 }

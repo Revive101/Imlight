@@ -10,11 +10,15 @@ using Imlight.Common.Configuration;
 using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Game.Spells;
+using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System;
+using System.Collections.Generic;
 using static Imlight.Common.Caches.TypeCache;
+using static Raven.Client.Documents.Commands.MultiGet.GetRequest;
 
 namespace Imlight.CoreLib.Game.Commands.Protocols;
 
@@ -97,6 +101,35 @@ internal class CommandSpellbookProtocol : CommandProtocol {
             SpellID = (int) spellTemplateIdUint
         };
         Context.SessionActor.Tell(clientMsg);
+    }
+    [Command("unlearnall")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void UnlearnallSpellCommand() {
+
+        if (Context.Character.SpellbookBehavior.LearnedSpellTemplateIds != null) {
+            List<uint> spellList = new();
+            foreach (var spell in Context.Character.SpellbookBehavior.LearnedSpellTemplateIds) {
+                spellList.Add(spell);
+            }
+
+            foreach (var spell in spellList) {
+
+
+                var clientMsg = new WIZARD_12_PROTOCOL.MSG_REMOVESPELLFROMBOOK {
+                    SpellID = (int) spell
+                };
+                Context.SessionActor.Tell(clientMsg);
+
+                Context.Character.SpellbookBehavior.RemoveSpellFromBook(spell);
+
+                // Persistent save.
+                WizardCollection.UnlearnSpell(Context.Character, spell);
+                InformSenderClient($"You have unlearned the spell {spell}.");
+            }
+        }
+        else {
+            InformSenderClient($"No Spells To Unlearn");
+        }
     }
 
     [Command("add")]

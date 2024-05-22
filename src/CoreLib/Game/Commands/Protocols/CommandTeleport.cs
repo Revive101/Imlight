@@ -9,6 +9,7 @@ using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Imlight.CoreLib.Game.Commands.Protocols;
 
@@ -44,6 +45,12 @@ internal class CommandTeleport : CommandProtocol {
 
             actualZoneName = s_gmIslandZoneName;
         }
+
+        var teleportEffectsMsg = new CHARACTER_103_PROTOCOL.MSG_DOTELEPORTEFFECTS();
+        Context.SessionActor.Tell(teleportEffectsMsg);
+
+        // Wait 2 seconds.
+        Task.Delay(2000).Wait();
 
         var msg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER() {
             DestinationZone = actualZoneName,
