@@ -172,12 +172,88 @@ internal class AuctionHouseService : MessageService {
         };
         SendToSocket(shopBuyConfirmMsg);
     }
+
+    private void SellToAuctionHouse(ulong itemGlobalId, uint key) {
+        var wizard = GetActiveWizard();
+
+        // Check player has item.
+        var removedItemSuccess = wizard.InventoryBehavior.RemoveItem(itemGlobalId, out var item);
+        if (!removedItemSuccess) {
+            var auctionRspErrorMsg = new WIZARD_12_PROTOCOL.MSG_AUCTIONRESPONSE {
+                Command = 2,
+                ItemTemplateID = item.m_templateID,
+                Cost = 0,
+                ReturnCode = 1
+            };
+            SendToSocket(auctionRspErrorMsg);
+            return;
         }
+
+        var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
+
+        // Calculate gold sell value.
+        var gold = (int) (template.m_baseCost * 0.5f); // Bazaar buys items at 50% of their value.
+        if (template.m_numPrimaryColors != 1 && template.m_numSecondaryColors != 0) {
+            gold = (int) Math.Ceiling(gold * 1.2275f); // This value is slightly higher for some reason.
+        }
+
+        var auctionRspMsg = new WIZARD_12_PROTOCOL.MSG_AUCTIONRESPONSE {
+            Command = 2,
+            ItemTemplateID = item.m_templateID,
+            Cost = gold,
+            ReturnCode = 0
+        };
+        SendToSocket(auctionRspMsg);
+
+        // Update stock and push to database.
+        var entry = AuctionHouseCollection.GetAuctionHouseEntry(item.m_templateID);
+        if (entry is null) {
+            entry = new AuctionHouseEntry {
+                m_templateID = (GID) item.m_templateID,
+                m_buyPrice = (int) template.m_baseCost * 2, // Bazaar sells items at 200% of their value.
+                m_numForSale = 1,
+                m_sellPrice = (int) (template.m_baseCost * 0.5f)
+            };
+            AuctionHouseCollection.AddAuctionHouseEntry(entry);
     }
+        else {
+            entry.m_numForSale += 1;
+            AuctionHouseCollection.UpdateAuctionHouseEntry(entry);
     }
 
-    private void BuyFromAuctionHouse(ulong templateId, uint key) {
+        // Inform of update.
+        var houseEntryData = _serializer.Serialize(entry);
+        var auctionUpdateMsg = new GAME_5_PROTOCOL.MSG_AUCTIONHOUSEUPDATE {
+            UpdateInfo = houseEntryData,
+            CharacterID = wizard.CharId
+        };
+        SendToSocket(auctionUpdateMsg);
 
+        // Update gold balances.
+        wizard.AddGold(gold);
+
+        var updateGoldMsg = new WIZARD_12_PROTOCOL.MSG_UPDATEGOLD {
+            Gold = wizard.GameStats.m_currentGold,
+            MaxGold = wizard.GameStats.m_baseGoldPouch
+        };
+        SendToSocket(updateGoldMsg);
+
+        // Remove item from inventory.
+        var removeItemMsg = new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_REMOVEITEM {
+            GlobalID = wizard.CharId,
+            ItemID = item.m_globalID
+        };
+        SendToSocket(removeItemMsg);
+
+        var shopSellConfirmMsg = new WIZARD_12_PROTOCOL.MSG_SHOPSELLCONFIRM {
+            ClientRequestID = 0,
+            GlobalID = 0,
+            Failure = 0
+        };
+        SendToSocket(shopSellConfirmMsg);
+
+        // Todo: fix removal of items? seems broken at the moment.
+        wizard.RemoveItemFromInventory(item.m_globalID);
     }
 
 }
