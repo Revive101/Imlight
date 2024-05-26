@@ -3,17 +3,25 @@
  * Proprietary and confidential.
  */
 
-using System.Collections.Generic;
+using System;
 using Akka.Actor;
 using Imlight.Common.Caches;
 using Imlight.Common.ObjectProperty;
 using Imlight.Common.ObjectProperty.PropertyReflection;
+using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.WizardData.Collections;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Services;
 
 internal class AuctionHouseService : MessageService {
+    private readonly CoreObjectSerializer _itemSerializer = new CoreObjectSerializer()
+                    .OnBehaviors(SerializerOptions.Behaviors.None)
+                    .OnPropertyMask((SerializerOptions.PropertyFlags) 1);
+    private readonly ObjectSerializer _serializer = new ObjectSerializer()
+                .OnBehaviors(SerializerOptions.Behaviors.None)
+                .OnPropertyMask((SerializerOptions.PropertyFlags) 1);
 
     public AuctionHouseService(SessionActor sessionActor) : base(sessionActor) { }
 
@@ -28,7 +36,25 @@ internal class AuctionHouseService : MessageService {
                 SendAuctionHouseContents(message.npcGlobalID, message.key);
                 break;
             case 1:
-                BuyFromAuctionHouse(message.itemTemplateID, message.key);
+                ConfirmBuyFromAuctionHouse(message.itemTemplateID, message.key);
+                break;
+            case 2:
+                SellToAuctionHouse(message.itemGlobalID, message.key);
+                break;
+            case 3:
+                BuyFromAuctionHouse(message.itemTemplateID, message.texture, message.decal, message.key);
+                break;
+            case 4:
+                // ?
+                break;
+            case 5:
+                // ?
+                break;
+            case 6:
+                // ?
+                break;
+            case 9:
+                // ?
                 break;
             default:
                 break;
