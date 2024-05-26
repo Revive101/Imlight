@@ -495,23 +495,15 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         var upFirstSigilSlot = GetUpFirstSigilSlot();
 
         var serializer = new ObjectSerializer()
+                .OnMode(SerializerOptions.Mode.Verbose)
                 .OnBehaviors(SerializerOptions.Behaviors.None)
                 .OnPropertyMask(SerializerOptions.PropertyFlags.Public
                               | SerializerOptions.PropertyFlags.Transmit
                               | SerializerOptions.PropertyFlags.AuthorityTransmit);
 
-        // This serialized data is used for nearby players to see the combat phase.
-        // Unsure the wording, but it sounds like it's used for spectators.
+        // Unsure what m_resultType means here, but it's always recorded as 122.
         var upFirstData = serializer.Serialize(new UpFirstData() {
-            /*
-            Record from client. Keeping it here because it's probably important.
-
-            m_resultType = 1884669703,
-            m_roundNum = 96,
-            m_upFirst = 320,
-            */
-
-            m_resultType = 0,
+            m_resultType = 122,
             m_roundNum = Duel.m_roundNum,
             m_upFirst = upFirstSigilSlot,
         });
@@ -520,7 +512,6 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             DuelID = SigilId,
             NewPhase = phase,
             PlayerID = 0, // Always recorded as 0
-            // todo: unsure why, but client fails to deserialize this
             Data = phase == 1 ? upFirstData : "",
         };
 
