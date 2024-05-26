@@ -107,6 +107,71 @@ internal class AuctionHouseService : MessageService {
         };
         SendToSocket(auctionRspMsg);
     }
+
+    private void BuyFromAuctionHouse(ulong templateId, int texture, int decal, uint key) {
+        var wizard = GetActiveWizard();
+        var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(templateId);
+
+        var item = (WizClientObjectItem) CoreObjectFactory.FinalizeCoreObject(templateId);
+        item.m_primaryColor = texture;
+        item.m_secondaryColor = decal;
+        var itemData = _itemSerializer.Serialize(item);
+
+        var entry = AuctionHouseCollection.GetAuctionHouseEntry(templateId);
+        var goldCost = entry.m_buyPrice;
+
+        // Update stock and push to database.
+        entry.m_numForSale -= 1;
+        if (entry.m_numForSale < 1) {
+            // Remove entry if no more stock.
+            AuctionHouseCollection.RemoveAuctionHouseEntry(templateId);
+        }
+        else {
+            AuctionHouseCollection.UpdateAuctionHouseEntry(entry);
+        }
+
+        // Inform of update.
+        var houseEntryData = _serializer.Serialize(entry);
+        var auctionUpdateMsg = new GAME_5_PROTOCOL.MSG_AUCTIONHOUSEUPDATE {
+            UpdateInfo = houseEntryData,
+            CharacterID = wizard.CharId
+        };
+        SendToSocket(auctionUpdateMsg);
+
+        // Add item to inventory
+        var addItemMsg = new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
+            GlobalID = wizard.CharId,
+            SerializedItem = itemData,
+        };
+        SendToSocket(addItemMsg);
+
+        // Add item to inventory after message to prevent crashes.
+        wizard.AddItemToInventory(item);
+
+        // Alert client of new item.
+        var itemAcqMsg = new WIZARD2_53_PROTOCOL.MSG_ITEMACQUISITION {
+            ItemGlobalID = item.m_globalID,
+            ItemTemplateID = (uint) item.m_templateID,
+            ItemLocation = 1,
+        };
+        SendToSocket(itemAcqMsg);
+
+        // Update gold balances.
+        wizard.RemoveGold(goldCost);
+        var goldUpdateMsg = new WIZARD_12_PROTOCOL.MSG_UPDATEGOLD {
+            Gold = wizard.GameStats.m_currentGold,
+            MaxGold = wizard.GameStats.m_baseGoldPouch
+        };
+        SendToSocket(goldUpdateMsg);
+
+        // Confirm transaction.
+        var shopBuyConfirmMsg = new WIZARD_12_PROTOCOL.MSG_SHOPBUYCONFIRM {
+            Failure = 0,
+            WebFailure = 0,
+            Credits = 0
+        };
+        SendToSocket(shopBuyConfirmMsg);
+    }
         }
     }
     }
