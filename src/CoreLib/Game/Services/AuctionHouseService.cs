@@ -62,29 +62,40 @@ internal class AuctionHouseService : MessageService {
     }
 
     private void SendAuctionHouseContents(ulong npcId, uint key) {
-        var serializer = new ObjectSerializer()
-          .OnBehaviors(SerializerOptions.Behaviors.None)
-          .OnPropertyMask((SerializerOptions.PropertyFlags) 1);
+        // Todo: minimize number of database calls, each player service does not need to fetch
+        // all auction house entries. this should be stored in memory somewhere shared.
 
-        var houseEntry = new AuctionHouseEntry {
-            m_templateID = (GID) (106959),
-            m_numForSale = 100,
-            m_buyPrice = 10000,
-            m_sellPrice = 2500
-        };
-        var houseEntryList = new List<AuctionHouseEntry>() { houseEntry };
+        // Retrieve all Auction House entries.
+        var houseEntryList = AuctionHouseCollection.GetAllAuctionHouseEntries();
 
-        var auctionHouseEntry = new AuctionHouseOffering {
+        while (houseEntryList.Count > 0) {
+            // Contents sent in blocks of up to 50 entries.
+            var houseEntryBlock = (houseEntryList.Count >= 50)
+                ? houseEntryList.GetRange(0, 50) : houseEntryList.GetRange(0, houseEntryList.Count);
+
+            var auctionHouseEntries = new AuctionHouseOffering {
             m_auctionHousePurchaseKey = key,
-            m_auctionList = houseEntryList
+                m_auctionList = houseEntryBlock
         };
-        var auctionHouseEntryData = serializer.Serialize(auctionHouseEntry);
+            var auctionHouseEntriesData = _serializer.Serialize(auctionHouseEntries);
 
-        var auctionHouseResponse = new WIZARD_12_PROTOCOL.MSG_AUCTIONHOUSECONTENTS {
-            Contents = auctionHouseEntryData,
+            var auctionHouseContentsMsg = new WIZARD_12_PROTOCOL.MSG_AUCTIONHOUSECONTENTS {
+                Contents = auctionHouseEntriesData,
             GlobalID = npcId
         };
-        SendToSocket(auctionHouseResponse);
+            SendToSocket(auctionHouseContentsMsg);
+
+            // Remove first 50 entries from list.
+            if (houseEntryList.Count >= 50) {
+                houseEntryList.RemoveRange(0, 50);
+            } else {
+                houseEntryList.RemoveRange(0, houseEntryList.Count);
+            }
+        }
+    }
+    }
+        }
+    }
     }
 
     private void BuyFromAuctionHouse(ulong templateId, uint key) {
