@@ -176,6 +176,8 @@ public class CombatActionDirector {
                 Logger.Debug("Duel {0} | Slot {1} | Caster is passing their turn.",
                     Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex));
 
+                cinematicTime += HandlePassAction(action, combatActionList);
+
                 continue;
             }
 
@@ -222,6 +224,14 @@ public class CombatActionDirector {
         DoSpellCastConsequences(action.SpellCaster, combatAction);
 
         return GetActionCinematicTime(action) + cinematicTime;
+    }
+
+    private float HandlePassAction(QueuedCombatAction action, CombatActionListObj combatActionList) {
+        var passCombatAction = InitializeCombatAction(action);
+        passCombatAction.m_spell = null;
+        combatActionList.m_actionList.Add(passCombatAction);
+
+        return SPELL_PASS_TIME;
     }
 
     private void LogQueuedCombatAction(CombatMoveType type, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target, Spell spell) {
