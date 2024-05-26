@@ -93,6 +93,19 @@ internal class AuctionHouseService : MessageService {
             }
         }
     }
+
+    private void ConfirmBuyFromAuctionHouse(ulong templateId, uint key) {
+        var entry = AuctionHouseCollection.GetAuctionHouseEntry(templateId);
+
+        // Todo: check if entry exists.
+
+        var auctionRspMsg = new WIZARD_12_PROTOCOL.MSG_AUCTIONRESPONSE {
+            Command = 1,
+            ItemTemplateID = templateId,
+            Cost = entry.m_buyPrice,
+            ReturnCode = 0
+        };
+        SendToSocket(auctionRspMsg);
     }
         }
     }
