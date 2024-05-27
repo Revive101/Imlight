@@ -28,7 +28,7 @@ public class QueuedCombatAction {
 /// The CombatActionDirector is responsible for managing the combat actions of the duel.
 /// It processes the queued combat actions and applies the effects of the spells to the targets.
 /// </summary>
-public class CombatActionDirector {
+public class CombatResolver {
     private const int SPELL_FIZZLE_TIME = 4;
     private const int SPELL_PASS_TIME = 1;
     private const float SPELL_CAST_TIME = 5.0f;
@@ -41,7 +41,7 @@ public class CombatActionDirector {
     private List<QueuedCombatAction> _queuedCombatActions;
 
     // ctor
-    public CombatActionDirector(Duel duel, CombatDuelActorSubCircle[] actorSubCircles) {
+    public CombatResolver(Duel duel, CombatDuelActorSubCircle[] actorSubCircles) {
         _duel = duel;
         _subCircles = actorSubCircles;
     }
