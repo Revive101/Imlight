@@ -103,7 +103,7 @@ internal static class CombatEffectProcessor {
     }
 
     private static void InformDuelParticipantsOfEffect(CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets, SpellEffect effect) {
-        var allParticipants = caster.DuelActor.ActiveSubCircles.Select(x => x.ParticipantActor).ToArray();
+        var allParticipants = caster._duelActor.ActiveSubCircles.Select(x => x.ParticipantActor).ToArray();
         var msg = new COMBAT_106_PROTOCOL.MSG_COMBATEFFECT {
             Caster = caster,
             Targets = targets,
@@ -117,7 +117,7 @@ internal static class CombatEffectProcessor {
 
     private static CombatDuelActorSubCircle[] GetEffectTargets(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target) {
         var targets = Array.Empty<CombatDuelActorSubCircle>();
-        var _activeSubCircles = caster.DuelActor.ActiveSubCircles;
+        var _activeSubCircles = caster._duelActor.ActiveSubCircles;
 
         switch (effect.m_effectTarget) {
             case SpellEffect.kEffectTarget.kEnemySingle:

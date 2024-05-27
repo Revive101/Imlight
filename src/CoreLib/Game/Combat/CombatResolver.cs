@@ -306,6 +306,17 @@ public class CombatResolver {
             return false;
         }
 
+        // Easter egg: Kevin has a 100% fizzle rate on storm spells. Fuck you, Kevin.
+        if (caster.OccupiedTeam == CombatTeam.Player && caster.Occupied) {
+            var wizardName = caster._wizard.PlayerNameBehavior.GetWizardName();
+            var wizardSchool = caster._wizard.MagicSchoolBehavior.MagicSchool;
+            var isStormKevin = wizardName == "Kevin" && wizardSchool == MagicSchool.Storm;
+
+            if (isStormKevin && spell.m_magicSchoolID == (uint) MagicSchool.Storm) {
+                return false;
+            }
+        }
+
         if (ConsumeDispell(caster, spell.m_magicSchoolID)) {
             return false;
         }
@@ -353,12 +364,12 @@ public class CombatResolver {
     }
 
     private static bool ConsumeDispell(CombatDuelActorSubCircle caster, uint magicSchoolId) {
-        var dispellHangingEffect = caster.HangingEffects
+        var dispellHangingEffect = caster._hangingEffects
             .FirstOrDefault(x => x.m_effectType == SpellEffect.kSpellEffects.kDispel
                      && StringHash.Compute(x.m_sDamageType) == magicSchoolId);
 
         if (dispellHangingEffect is not null) {
-            caster.HangingEffects.Remove(dispellHangingEffect);
+            caster._hangingEffects.Remove(dispellHangingEffect);
             return true;
         }
         else {
@@ -367,13 +378,13 @@ public class CombatResolver {
     }
 
     private static int ConsumeHangingAccuracyEffects(int startingAccuracy, CombatDuelActorSubCircle caster, uint magicSchoolId) {
-        var accuracyHangingEffects = caster.HangingEffects
+        var accuracyHangingEffects = caster._hangingEffects
             .Where(x => x.m_effectType == SpellEffect.kSpellEffects.kModifyAccuracy)
             .Where(x => x.m_damageType == magicSchoolId);
 
         foreach (var effect in accuracyHangingEffects) {
             startingAccuracy += (int) Math.Floor(1 + effect.m_effectParam / 100.0);
-            caster.HangingEffects.Remove(effect);
+            caster._hangingEffects.Remove(effect);
         }
 
         return startingAccuracy;

@@ -41,23 +41,23 @@ public class CombatDuelActorSubCircle {
     internal ServerWizGameStats ParticipantGameStats { get; private set; }
     internal CombatParticipant CombatParticipant { get; private set; }
     internal bool AddedToDuel { get; set;}
-    internal readonly List<SpellEffect> HangingEffects = new();
+    internal readonly List<SpellEffect> _hangingEffects = new();
     public uint AvailableSpells {
         get {
-            if (CombatDeck is null) {
+            if (_combatDeck is null) {
                 return 0;
             }
 
-            return (uint) CombatDeck.RemainingCardCount;
+            return (uint) _combatDeck.RemainingCardCount;
         }
     }
     public uint TotalSpells {
         get {
-            if (CombatDeck is null) {
+            if (_combatDeck is null) {
                 return 0;
             }
 
-            return (uint) CombatDeck.TotalCardCount;
+            return (uint) _combatDeck.TotalCardCount;
         }
     }
     internal bool Occupied => ParticipantObject is not null;
@@ -71,17 +71,17 @@ public class CombatDuelActorSubCircle {
         }
     }
     internal bool IsAlive => ParticipantGameStats?.m_currentHitpoints > 0;
-    internal CombatDeck CombatDeck;
-    internal readonly CombatDuelActor DuelActor;
+    internal CombatDeck _combatDeck;
+    internal readonly CombatDuelActor _duelActor;
+    internal Wizard _wizard;
 
     private readonly float _radius;
     private readonly float _rotation;
     private readonly Color _color;
-    private Wizard _wizard;
 
     // ctor
     internal CombatDuelActorSubCircle(CombatDuelActor duelActor, float radius, float rotation, Color color, int index) {
-        DuelActor = duelActor;
+        _duelActor = duelActor;
         _radius = radius;
         _rotation = rotation;
         _color = color;
@@ -103,8 +103,8 @@ public class CombatDuelActorSubCircle {
 
         // Inform the actor that they've been added to a duel.
         var msg = new COMBAT_106_PROTOCOL.MSG_ACTORADDEDTODUEL {
-            DuelActor = DuelActor.ActorRef,
-            Duel = DuelActor,
+            DuelActor = _duelActor.ActorRef,
+            Duel = _duelActor,
             SubCircle = this,
             SlotPosition = WorldPosition,
             SlotOrientation = WorldRotation
@@ -124,22 +124,22 @@ public class CombatDuelActorSubCircle {
     }
 
     internal Hand DrawHand() {
-        var newHand = CombatDeck.GetHand();
+        var newHand = _combatDeck.GetHand();
         CombatParticipant.m_pHand = newHand;
 
         return newHand;
     }
 
     internal void DiscardCard(Spell spell) {
-        CombatDeck.Discard(spell);
+        _combatDeck.Discard(spell);
     }
 
     internal Spell GetSpellFromLastHand(byte index) {
-        if (CombatDeck.LastGivenHand is null || index >= CombatDeck.LastGivenHand.Count) {
+        if (_combatDeck.LastGivenHand is null || index >= _combatDeck.LastGivenHand.Count) {
             return null;
         }
 
-        return CombatDeck.LastGivenHand[index];
+        return _combatDeck.LastGivenHand[index];
     }
 
     internal void DoPipGain() {
@@ -325,7 +325,7 @@ public class CombatDuelActorSubCircle {
         ourPipCount.m_genericPips = 0;
     }
 
-    internal void Reshuffle() => CombatDeck.Reshuffle();
+    internal void Reshuffle() => _combatDeck.Reshuffle();
 
     private void InitializePlayerSubCircle() {
         // todo: this method is a mess.
@@ -372,7 +372,7 @@ public class CombatDuelActorSubCircle {
             }
         }
         allSpells.AddRange(temporarySpells);
-        CombatDeck = new CombatDeck(allSpells, PLAYER_HAND_SIZE);
+        _combatDeck = new CombatDeck(allSpells, PLAYER_HAND_SIZE);
 
         CombatParticipant = new CombatParticipant {
             m_ownerID = ParticipantObject.m_globalID,
@@ -387,7 +387,7 @@ public class CombatDuelActorSubCircle {
             m_maxHandSize = PLAYER_HAND_SIZE,
             m_playerHealth = ParticipantGameStats.m_currentHitpoints,
             m_maxPlayerHealth = ParticipantGameStats.m_baseHitpoints,
-            m_myTeamTurn = DuelActor.Duel.m_firstTeamToAct == 0,
+            m_myTeamTurn = _duelActor.Duel.m_firstTeamToAct == 0,
             m_pGameStats = combatStats,
             m_pPlayDeck = new PlayDeck(),
             m_subcircle = SlotIndex,
@@ -422,7 +422,7 @@ public class CombatDuelActorSubCircle {
             });
         }
 
-        CombatDeck = new CombatDeck(spellData, PLAYER_HAND_SIZE);
+        _combatDeck = new CombatDeck(spellData, PLAYER_HAND_SIZE);
 
         ParticipantGameStats = creatureStats.GameStats;
         CombatParticipant = new CombatParticipant {
@@ -438,7 +438,7 @@ public class CombatDuelActorSubCircle {
             m_pipRoundRates = new(),
             m_playerHealth = creatureStats.GameStats.m_currentHitpoints,
             m_maxPlayerHealth = creatureStats.GameStats.m_baseHitpoints,
-            m_myTeamTurn = DuelActor.Duel.m_firstTeamToAct == 1,
+            m_myTeamTurn = _duelActor.Duel.m_firstTeamToAct == 1,
             m_pGameStats = creatureStats.GameStats.GetCombatGameStats(),
             m_mobLevel = creatureStats.CombatLevel,
 
@@ -453,19 +453,19 @@ public class CombatDuelActorSubCircle {
 
     private async Task PlayEntranceAnimation(CoreObject participantObject) {
         // Set the state of the participant to entering sigil.
-        DuelActor.ZoneBroadcast(new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
+        _duelActor.ZoneBroadcast(new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
             GameObjectID = participantObject.m_globalID,
             State = (uint) NPCStates.Sigil
         });
 
         // Send aggro to the participant.
-        DuelActor.ZoneBroadcast(new WIZARD_12_PROTOCOL.MSG_AGGRO {
+        _duelActor.ZoneBroadcast(new WIZARD_12_PROTOCOL.MSG_AGGRO {
             GlobalID = participantObject.m_globalID,
             LocX = WorldPosition.X,
             LocY = WorldPosition.Y,
             LocZ = WorldPosition.Z,
             Yaw = WorldRotation,
-            SigilGID = DuelActor.SigilId
+            SigilGID = _duelActor.SigilId
         });
 
         // Wait the amount of time it takes for the actor to enter the sigil, then set
@@ -473,7 +473,7 @@ public class CombatDuelActorSubCircle {
         await Task.Delay((int) (AGGRO_TIME_IN_SECONDS * 1000));
 
         // Set state to stationary.
-        DuelActor.ZoneBroadcast(new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
+        _duelActor.ZoneBroadcast(new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
             GameObjectID = participantObject.m_globalID,
             State = (uint) NPCStates.Stationary
         });

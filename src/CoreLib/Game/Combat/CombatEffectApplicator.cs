@@ -22,7 +22,7 @@ internal static class CombatEffectApplicator {
         var cinematicTime = 0.0f;
 
         if (effect.m_effectTarget == SpellEffect.kEffectTarget.kGlobal) {
-            ApplyGlobalEffect(effect, caster.DuelActor.Duel);
+            ApplyGlobalEffect(effect, caster._duelActor.Duel);
             return cinematicTime;
         }
 
@@ -97,7 +97,7 @@ internal static class CombatEffectApplicator {
         cinematicTime += CalculateOutgoingDamageCharmCinematicTime(effect.m_sDamageType, caster);
         damageFromCaster = ApplyOutgoingDamageCharms(effect.m_sDamageType, damageFromCaster, caster);
 
-        var duel = caster.DuelActor.Duel;
+        var duel = caster._duelActor.Duel;
         var bubbleDamageIncrease = GetGlobalEffectDamageModifier(duel, damageType);
         damageFromCaster = (int) Math.Floor(damageFromCaster * (1 + bubbleDamageIncrease));
 
@@ -131,7 +131,7 @@ internal static class CombatEffectApplicator {
         healFromCaster = ApplyHealingCharms(healFromCaster, caster);
 
         // Calculate heal increase from current bubble
-        var duel = caster.DuelActor.Duel;
+        var duel = caster._duelActor.Duel;
         var bubbleHealIncrease = GetGlobalEffectHealingModifier(duel);
         healFromCaster = (int) Math.Ceiling(healFromCaster * (1 + bubbleHealIncrease));
 
@@ -154,7 +154,7 @@ internal static class CombatEffectApplicator {
                 effect.m_paramPerRound = effect.m_effectParam;
             }
 
-            target.HangingEffects.Add(effect);
+            target._hangingEffects.Add(effect);
         }
     }
 
@@ -168,10 +168,10 @@ internal static class CombatEffectApplicator {
             }
 
             // Check to see if this target has a stun block.
-            var spellBlock = target.HangingEffects.FirstOrDefault(x => x.m_effectType == SpellEffect.kSpellEffects.kStunBlock);
+            var spellBlock = target._hangingEffects.FirstOrDefault(x => x.m_effectType == SpellEffect.kSpellEffects.kStunBlock);
             if (spellBlock is not null) {
                 // Remove the stun block and do nothing else.
-                target.HangingEffects.Remove(spellBlock);
+                target._hangingEffects.Remove(spellBlock);
                 cinematicTime += HANGING_EFFECT_CONSUME_TIME;
                 continue;
             }
@@ -183,7 +183,7 @@ internal static class CombatEffectApplicator {
                     m_spellTemplateID = effect.m_spellTemplateID,
                 };
 
-                target.HangingEffects.Add(stunBlockEffect);
+                target._hangingEffects.Add(stunBlockEffect);
             }
         }
 
@@ -197,7 +197,7 @@ internal static class CombatEffectApplicator {
     }
 
     private static int ApplyOutgoingDamageCharms(string school, int damage, CombatDuelActorSubCircle caster) {
-        var blades = caster.HangingEffects
+        var blades = caster._hangingEffects
             .Where(x => x.m_effectType == SpellEffect.kSpellEffects.kModifyOutgoingDamage)
             .Reverse()
             .ToList();
@@ -211,14 +211,14 @@ internal static class CombatEffectApplicator {
             var damageChange = blade.m_effectParam / 100.0f;
             damage = (int) Math.Floor(damage * (1 + damageChange));
 
-            caster.HangingEffects.Remove(blade);
+            caster._hangingEffects.Remove(blade);
         }
 
         return damage;
     }
 
     private static int ApplyIncomingDamageWards(string school, int damage, CombatDuelActorSubCircle target, out string currentDmgSchool) {
-        var wards = target.HangingEffects
+        var wards = target._hangingEffects
             .Where(x => x.m_effectType is SpellEffect.kSpellEffects.kModifyIncomingDamage
                                        or SpellEffect.kSpellEffects.kModifyIncomingDamageType
                                        or SpellEffect.kSpellEffects.kAbsorbDamage)
@@ -239,7 +239,7 @@ internal static class CombatEffectApplicator {
             // If this is a prism, we need to change the damage type.
             if (ward.m_effectType == SpellEffect.kSpellEffects.kModifyIncomingDamageType) {
                 currentDmgSchool = ((MagicSchool) ward.m_effectParam).ToString();
-                target.HangingEffects.Remove(ward);
+                target._hangingEffects.Remove(ward);
                 continue;
             }
             else if (ward.m_effectType == SpellEffect.kSpellEffects.kAbsorbDamage) {
@@ -249,7 +249,7 @@ internal static class CombatEffectApplicator {
 
                 // If the damage exceeds what absorb is remaining, we need to remove the absorb effect.
                 if (damage >= absorbAmount) {
-                    target.HangingEffects.Remove(ward);
+                    target._hangingEffects.Remove(ward);
                 }
                 else {
                     ward.m_paramPerRound -= absorbedDamage;
@@ -262,14 +262,14 @@ internal static class CombatEffectApplicator {
             var damageChange = ward.m_effectParam / 100.0f;
             damage = (int) Math.Floor(damage * (1 + damageChange));
 
-            target.HangingEffects.Remove(ward);
+            target._hangingEffects.Remove(ward);
         }
 
         return damage;
     }
 
     private static int ApplyHealingCharms(int heal, CombatDuelActorSubCircle target) {
-        var heals = target.HangingEffects
+        var heals = target._hangingEffects
             .Where(x => x.m_effectType is SpellEffect.kSpellEffects.kModifyIncomingHeal
                                        or SpellEffect.kSpellEffects.kModifyIncomingHealFlat)
             .Reverse()
@@ -284,14 +284,14 @@ internal static class CombatEffectApplicator {
             var healChange = healEffect.m_effectParam / 100.0f;
             heal = (int) Math.Floor(heal * (1 + healChange));
 
-            target.HangingEffects.Remove(healEffect);
+            target._hangingEffects.Remove(healEffect);
         }
 
         return heal;
     }
 
     private static float CalculateOutgoingDamageCharmCinematicTime(string school, CombatDuelActorSubCircle caster) {
-        var wards = caster.HangingEffects
+        var wards = caster._hangingEffects
             .Where(x => x.m_effectType == SpellEffect.kSpellEffects.kModifyIncomingDamage)
             .ToList();
         var cinematicTime = 0.0f;
@@ -309,7 +309,7 @@ internal static class CombatEffectApplicator {
     }
 
     private static float CalculateIncomingDamageWardCinematicTime(string school, CombatDuelActorSubCircle caster) {
-        var wards = caster.HangingEffects
+        var wards = caster._hangingEffects
             .Where(x => x.m_effectType == SpellEffect.kSpellEffects.kModifyIncomingDamage)
             .ToList();
         var cinematicTime = 0.0f;
@@ -327,7 +327,7 @@ internal static class CombatEffectApplicator {
     }
 
     private static float CalculateHealingHangingEffectTime(CombatDuelActorSubCircle target) {
-        var heals = target.HangingEffects
+        var heals = target._hangingEffects
             .Where(x => x.m_effectType is SpellEffect.kSpellEffects.kModifyIncomingHeal
                                        or SpellEffect.kSpellEffects.kModifyIncomingHealFlat)
             .ToList();
