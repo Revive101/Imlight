@@ -42,13 +42,15 @@ public enum CombatTeam {
 public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
     private const byte PLANNING_TIME = 30;
     private const float DUEL_GRACE_PERIOD_IN_SECONDS = 3.75f;
+    private const float DUEL_NEW_ROUND_DELAY = 2.5f;
     private const float YAW_ERROR_COMPENSATION = 1.58f;
     private const string PLANNING_TIME_KEY = "PlanningPhase";
+    private const string PREPLANNING_TIME_KEY = "PrePlanningPhase";
 
     public ITimerScheduler Timers { get; set; }
     public Duel Duel { get; private set; }
     public ulong SigilId { get; private set; }
-    public CombatActionDirector ActionDirector { get; private set; }
+    public CombatResolver ActionDirector { get; private set; }
     public IActorRef ActorRef;
     public CombatDuelActorSubCircle[] SubCircles = new CombatDuelActorSubCircle[8];
     public CombatDuelActorSubCircle[] ActiveSubCircles => SubCircles.Where(x => x.Occupied).ToArray();
@@ -156,7 +158,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         AssignParticipantToSubCircle(availableCreatureSubcircles, startingCreatureActor, startingCreatureObject);
         AssignParticipantToSubCircle(availablePlayerSubcircles, startingPlayerActor, startingPlayerObject);
 
-        ActionDirector = new CombatActionDirector(Duel, SubCircles);
+        ActionDirector = new CombatResolver(Duel, SubCircles);
 
         Logger.Debug("Duel {0} | Created. Grace period over in {1}", Logger.Args(Duel.m_duelID, DUEL_GRACE_PERIOD_IN_SECONDS));
 
@@ -184,6 +186,12 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         SendCombatPhase((byte) Duel.m_duelPhase);
         SendUpFirst(Duel.m_roundNum);
 
+        var delay = TimeSpan.FromSeconds(DUEL_NEW_ROUND_DELAY);
+        Timers.StartSingleTimer(PREPLANNING_TIME_KEY, new COMBAT_106_PROTOCOL.MSG_PLANNINGPHASEBEGIN(), delay);
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_PLANNINGPHASEBEGIN))]
+    private void ReceivePlanningPhaseBegin(COMBAT_106_PROTOCOL.MSG_PLANNINGPHASEBEGIN message) {
         // Planning phase is when each participant notices their new stats and "plans" accordingly.
         Duel.m_duelPhase = kDuelPhase.kPhase_Planning;
         SendCombatPhase((byte) Duel.m_duelPhase);
