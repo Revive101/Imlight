@@ -25,14 +25,13 @@ public class QueuedCombatAction {
 }
 
 /// <summary>
-/// The CombatActionDirector is responsible for managing the combat actions of the duel.
+/// The CombatResolver is responsible for managing the combat actions of the duel.
 /// It processes the queued combat actions and applies the effects of the spells to the targets.
 /// </summary>
 public class CombatResolver {
     private const int SPELL_FIZZLE_TIME = 4;
     private const int SPELL_PASS_TIME = 1;
     private const float SPELL_CAST_TIME = 5.0f;
-    private const float DAMAGE_OVER_TIME_CINEMATIC_TIME = 2.0f;
 
     private readonly Duel _duel;
 
@@ -207,22 +206,19 @@ public class CombatResolver {
     }
 
     private float HandleSuccessfulAction(QueuedCombatAction action, CombatActionListObj combatActionList) {
-        var effectStack = new CombatEffectStack();
         var cinematicTime = 0.0f;
-
         var combatAction = InitializeCombatAction(action);
-        var spellWorthCasting = CombatEffectProcessor.ProcessSpellEffects(action, effectStack, ref combatAction, ref cinematicTime);
+        var spellWorthCasting = CombatActionResolver.ProcessedQueuedCombatAction(action, ref combatAction, ref cinematicTime);
 
         LogCombatAction(action, combatAction, spellWorthCasting);
 
-        FinalizeCombatAction(action, combatActionList, effectStack, combatAction);
+        combatActionList.m_actionList.Add(combatAction);
 
         if (action.Spell is null) {
             return SPELL_PASS_TIME;
         }
 
         DoSpellCastConsequences(action.SpellCaster, combatAction);
-
         return GetActionCinematicTime(action) + cinematicTime;
     }
 
@@ -259,11 +255,6 @@ public class CombatResolver {
                 Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex, action.Spell.m_templateID));
             combatAction.m_spell = null;
         }
-    }
-
-    private static void FinalizeCombatAction(QueuedCombatAction action, CombatActionListObj combatActionList, CombatEffectStack effectStack, CombatAction combatAction) {
-        combatAction.m_effectChosen = effectStack.GetStackAsUint();
-        combatActionList.m_actionList.Add(combatAction);
     }
 
     private static CombatAction InitializeCombatAction(QueuedCombatAction action) => new() {

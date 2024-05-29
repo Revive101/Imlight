@@ -50,7 +50,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
     public ITimerScheduler Timers { get; set; }
     public Duel Duel { get; private set; }
     public ulong SigilId { get; private set; }
-    public CombatResolver ActionDirector { get; private set; }
+    public CombatResolver CombatResolver { get; private set; }
     public IActorRef ActorRef;
     public CombatDuelActorSubCircle[] SubCircles = new CombatDuelActorSubCircle[8];
     public CombatDuelActorSubCircle[] ActiveSubCircles => SubCircles.Where(x => x.Occupied).ToArray();
@@ -158,7 +158,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         AssignParticipantToSubCircle(availableCreatureSubcircles, startingCreatureActor, startingCreatureObject);
         AssignParticipantToSubCircle(availablePlayerSubcircles, startingPlayerActor, startingPlayerObject);
 
-        ActionDirector = new CombatResolver(Duel, SubCircles);
+        CombatResolver = new CombatResolver(Duel, SubCircles);
 
         Logger.Debug("Duel {0} | Created. Grace period over in {1}", Logger.Args(Duel.m_duelID, DUEL_GRACE_PERIOD_IN_SECONDS));
 
@@ -174,7 +174,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
         // Add the circles to combat if they are not already.
         AddWaitingCombatParticipants();
-        ActionDirector.Reset();
+        CombatResolver.Reset();
         _awaitingCombatMoves = true;
 
         // Echo the new round message to all actors.
@@ -221,7 +221,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         SendCombatPhase((byte) Duel.m_duelPhase);
 
         // Determine how long the cinematics will take.
-        var cinematicTimeInSeconds = ActionDirector.ApplyQueuedCombatActions(out var actions);
+        var cinematicTimeInSeconds = CombatResolver.ApplyQueuedCombatActions(out var actions);
         var actionExecutionTime = TimeSpan.FromSeconds(cinematicTimeInSeconds);
         Duel.m_executionPhaseTimer = (float) actionExecutionTime.TotalSeconds;
 
@@ -360,7 +360,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
         // If by this point all participants have inputted their moves, we can start the next phase.
         var participantCount = AlivePlayerCount + AliveCreatureCount;
-        if (ActionDirector.HaveAllParticipantsEnqueuedActions()) {
+        if (CombatResolver.HaveAllParticipantsEnqueuedActions()) {
             // Adding a new timer will cancel the old one.
             var delay = TimeSpan.FromSeconds(1);
             Timers.StartSingleTimer(PLANNING_TIME_KEY, new COMBAT_106_PROTOCOL.MSG_PLANNINGPHASEOVER(), delay);
@@ -413,7 +413,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
     private void HandlePassMove(CombatDuelActorSubCircle caster) {
         // If the participant passes, we don't need to know what spell they were casting.
-        ActionDirector.AddCombatMove(CombatMoveType.Pass, caster, null, null);
+        CombatResolver.AddCombatMove(CombatMoveType.Pass, caster, null, null);
 
         if (caster.OccupiedTeam == CombatTeam.Player) {
             SendCombatMoveSelection(caster.ParticipantObject.m_globalID, (byte) CombatMoveType.Pass, null, 0);
@@ -426,7 +426,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             Logger.Warning("Duel {0} | Slot {1} | Participant does not have enough pips for spell {2}",
                 Logger.Args(Duel.m_duelID, caster.SlotIndex, spell.m_templateID));
 
-            ActionDirector.AddCombatMove(CombatMoveType.Pass, caster, null, null);
+            CombatResolver.AddCombatMove(CombatMoveType.Pass, caster, null, null);
         }
 
         var targetIdx = spellTarget;
@@ -435,7 +435,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             target = SubCircles[targetIdx];
         }
 
-        ActionDirector.AddCombatMove(CombatMoveType.Attack, caster, target, spell);
+        CombatResolver.AddCombatMove(CombatMoveType.Attack, caster, target, spell);
 
         if (caster.OccupiedTeam == CombatTeam.Player) {
             SendCombatMoveSelection(caster.ParticipantObject.m_globalID, (byte) CombatMoveType.Attack, spell, (byte) targetIdx);
@@ -444,7 +444,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
     private void HandleChangeMindAction(CombatDuelActorSubCircle caster) {
         // Send the action director a null spell to indicate that the participant has changed their mind.
-        ActionDirector.AddCombatMove(CombatMoveType.ChangeMind, caster, null, null);
+        CombatResolver.AddCombatMove(CombatMoveType.ChangeMind, caster, null, null);
 
         // Echo the change mind action to each player participant
         if (caster.OccupiedTeam == CombatTeam.Player) {
