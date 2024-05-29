@@ -263,9 +263,15 @@ internal class CommandModifyProtocol : CommandProtocol {
 
         Context.Character.GameStats.m_currentMana = Math.Min(manaInt, Context.Character.GameStats.m_baseMana);
 
+        // The client has a max mana increase effect applied, so sending it here would double the mana client side.
+        var magicSchool = Context.Character.MagicSchoolBehavior.MagicSchool;
+        var level = Context.Character.MagicSchoolBehavior.Level;
+        var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(magicSchool, level);
+        var normMaxMana = baseStats.m_mana;
+
         var networkMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEMANA() {
             Mana = manaInt,
-            MaxMana = Context.Character.GameStats.m_baseMana,
+            MaxMana = normMaxMana,
             DisplayDiff = 1,
         };
         Context.SessionActor.Tell(networkMessage, null);
