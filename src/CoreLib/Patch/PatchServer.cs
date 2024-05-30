@@ -33,8 +33,6 @@ public class PatchServer : Shared.Networking.Server {
     private readonly uint _revision = ConfigurationManager.Settings.GameRevision;
     private readonly uint _patchServerTimeout = ConfigurationManager.Settings.PatchServerInternalTimeout;
     private readonly string _patchServerInternalUrl = ConfigurationManager.Settings.PatchServerInternalUrl;
-    private readonly ushort _patchServerInternalPort = ConfigurationManager.Settings.PatchServerInternalPort;
-    // "http://phill030.de:12369/patcher/";
 
     public static IActorRef Instance { get; private set; }
     public static bool EndpointReached { get; set; }
@@ -60,9 +58,8 @@ public class PatchServer : Shared.Networking.Server {
         Instance = this.Self;
     }
 
-    public static Props Props(string serverName, ushort serverPort) {
-        return Akka.Actor.Props.Create(() => new PatchServer(serverName, serverPort, PatchServiceFactory.Props()));
-    }
+    public static Props Props(string serverName, ushort serverPort)
+        => Akka.Actor.Props.Create(() => new PatchServer(serverName, serverPort, PatchServiceFactory.Props()));
 
     protected override void PreRestart(Exception reason, object message) {
         Logger.Error($"Patch server actor has restarted due to {reason.Message}");
@@ -208,8 +205,7 @@ public class PatchServer : Shared.Networking.Server {
     }
 
     private bool GetPatchServerStatus() {
-        var internalUrl = $"{_patchServerInternalUrl}:{_patchServerInternalPort}/patcher";
-        var workingUrl = $"{internalUrl}/V_r{_revision}.WizardDev";
+        var workingUrl = $"{_patchServerInternalUrl}/patcher/V_r{_revision}.WizardDev";
 
         // Check to see if the patch server URL is available at all.
         Logger.Information("Checking patch server at URL {Url}. Timeout: {Timeout} s",
@@ -285,7 +281,7 @@ public class PatchServer : Shared.Networking.Server {
         latestBin.Seek(0, SeekOrigin.Begin);
         latestBin.CopyTo(ms);
         ms.Seek(0, SeekOrigin.Begin);
-        s_listFileCrc = crc32.Compute(ms.ToArray());
+        s_listFileCrc = Crc32.GetHash(uint.MaxValue, ms.ToArray()) ^ uint.MaxValue;
 
         return true;
     }
