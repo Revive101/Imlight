@@ -20,15 +20,18 @@ using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.CoreLib.Shared.Resources;
 using SharpDX;
+using Imlight.CoreLib.Shared.Character;
 
 namespace Imlight.CoreLib.Game.Zone;
 
-public class WizardZone : ReceiveProtocolDispatcher {
-    private const ushort ReservedMobileIdMax = 1000;
+public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
+    private const ushort RESERVED_MOBILE_ID_MAX = 1000;
+    private const uint HEAL_INTERVAL_PER_MINUTE_IN_SECONDS = 5;
 
     public string ZoneName { get; }
     public string ZoneDisplayName { get; set; }
     public WizZoneData ZoneData { get; set; }
+    public ITimerScheduler Timers { get; set; }
 
     private readonly uint _dynamicZoneId;
     private readonly IActorRef _objectSupervisorRef;
@@ -53,6 +56,12 @@ public class WizardZone : ReceiveProtocolDispatcher {
         // Load and initialize this zone.
         WizardZoneLoader.LoadZoneData(this, Self);
         Logger.Debug("Zone {ZoneName} created.", Logger.Args(ZoneName));
+
+        if (ZoneData.m_healingPerMinute > 0) {
+            // Fire a message to self to start the heal tick.
+            var delay = TimeSpan.FromSeconds(HEAL_INTERVAL_PER_MINUTE_IN_SECONDS);
+            Timers.StartPeriodicTimer("healtick", new ZONE_102_PROTOCOL.MSG_HEALTICK(), delay);
+        }
     }
 
     // Akka.NET ctor
@@ -147,7 +156,7 @@ public class WizardZone : ReceiveProtocolDispatcher {
         ushort test;
         var r = new Random();
         while (true) {
-            test = (ushort) r.Next(ReservedMobileIdMax, ushort.MaxValue);
+            test = (ushort) r.Next(RESERVED_MOBILE_ID_MAX, ushort.MaxValue);
             if (_zonePlayers.Values.Any(x => x.GameObject.m_nMobileID == test)) {
                 continue;
             }
@@ -159,7 +168,7 @@ public class WizardZone : ReceiveProtocolDispatcher {
     }
 
     private ushort GenerateReservedMobileId() {
-        if (_zoneObjectMobileIdCounter + 1 >= ReservedMobileIdMax) {
+        if (_zoneObjectMobileIdCounter + 1 >= RESERVED_MOBILE_ID_MAX) {
             throw new Exception($"Zone \"{ZoneName}\" reached the maximum reserved mobile ID count!");
         }
 
@@ -431,6 +440,46 @@ public class WizardZone : ReceiveProtocolDispatcher {
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT))]
     private void ReceiveObjectQuery(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT message) {
         _objectSupervisorRef.Forward(message);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_HEALTICK))]
+    private void ReceiveHealTick(ZONE_102_PROTOCOL.MSG_HEALTICK message) {
+        if (_zonePlayers.Count == 0) {
+            return;
+        }
+
+        foreach (var (a, w) in _zonePlayers) {
+            var currentWizardHealth = w.GameStats.m_currentHitpoints;
+            var maxWizardHealth = w.GameStats.m_baseHitpoints;
+
+            // If this wizard is max health, skip.
+            if (currentWizardHealth >= maxWizardHealth) {
+                continue;
+            }
+
+            // Update our Wizard server side.
+            var healPerMinute = ZoneData.m_healingPerMinute;
+            float healPercentage = (float) healPerMinute / (60 / HEAL_INTERVAL_PER_MINUTE_IN_SECONDS);
+            float healAmount = healPercentage / 100 * maxWizardHealth;
+            var newHealth = Math.Min(currentWizardHealth + (int) healAmount, maxWizardHealth);
+
+            w.UpdateHealth(newHealth);
+
+            // Inform the client about the new health changes.
+            // The client has a max health increase effect applied, so sending it here would double the health client side.
+            var magicSchool = w.MagicSchoolBehavior.MagicSchool;
+            var level = w.MagicSchoolBehavior.Level;
+            var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(magicSchool, level);
+            var normMaxHealth = baseStats.m_hitpoints;
+
+            var networkMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH() {
+                CharacterID = w.GameObject.m_globalID,
+                NewHealth = newHealth,
+                NewHealthMax = normMaxHealth,
+                DisplayDiff = 1,
+            };
+            a.Tell(networkMessage);
+        }
     }
 
     #endregion
