@@ -90,7 +90,7 @@ internal static class CombatActionResolver {
         return chosenEffect;
     }
 
-    private static byte GetXPipCost(Spell spell, CombatDuelActorSubCircle caster) {
+    private static byte GetXPipCost(Spell spell, CombatDuelSubCircle caster) {
         if (!spell.m_pipCost.m_xPipSpell) {
             return 0;
         }
@@ -106,7 +106,7 @@ internal static class CombatActionResolver {
         return totalCost;
     }
 
-    private static void UpdateCombatActionTargets(ref CombatAction combatAction, IEnumerable<CombatDuelActorSubCircle> targets) {
+    private static void UpdateCombatActionTargets(ref CombatAction combatAction, IEnumerable<CombatDuelSubCircle> targets) {
         foreach (var target in targets) {
             if (!combatAction.m_targetSubcircleList.Contains(target.SlotIndex)) {
                 combatAction.m_targetSubcircleList.Add(target.SlotIndex);
@@ -114,7 +114,7 @@ internal static class CombatActionResolver {
         }
     }
 
-    private static void InformDuelParticipantsOfEffect(CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets, SpellEffect effect) {
+    private static void InformDuelParticipantsOfEffect(CombatDuelSubCircle caster, CombatDuelSubCircle[] targets, SpellEffect effect) {
         var allParticipants = caster._duelActor.ActiveSubCircles.Select(x => x.ParticipantActor).ToArray();
         var msg = new COMBAT_106_PROTOCOL.MSG_COMBATEFFECT {
             Caster = caster,
@@ -127,8 +127,8 @@ internal static class CombatActionResolver {
         }
     }
 
-    private static CombatDuelActorSubCircle[] GetEffectTargets(SpellEffect effect, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target) {
-        var targets = Array.Empty<CombatDuelActorSubCircle>();
+    private static CombatDuelSubCircle[] GetEffectTargets(SpellEffect effect, CombatDuelSubCircle caster, CombatDuelSubCircle target) {
+        var targets = Array.Empty<CombatDuelSubCircle>();
         var _activeSubCircles = caster._duelActor.ActiveSubCircles;
 
         switch (effect.m_effectTarget) {
@@ -149,7 +149,7 @@ internal static class CombatActionResolver {
                 targets = _activeSubCircles.Where(x => x.OccupiedTeam != caster.OccupiedTeam).ToArray();
                 break;
             case SpellEffect.kEffectTarget.kGlobal:
-                return new CombatDuelActorSubCircle[1]{ caster };
+                return new CombatDuelSubCircle[1]{ caster };
         }
 
         return targets;

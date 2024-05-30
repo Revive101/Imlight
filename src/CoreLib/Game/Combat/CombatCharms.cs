@@ -20,7 +20,7 @@ internal static class CombatCharms {
     /// <param name="caster">The combat duel actor sub-circle representing the caster.</param>
     /// <param name="effects">The array of spell effects to search for applied charms.</param>
     /// <returns>A list of spell effects representing the applied charms.</returns>
-    internal static List<SpellEffect> FindAppliedCharms(CombatDuelActorSubCircle caster, SpellEffect[] effects) {
+    internal static List<SpellEffect> FindAppliedCharms(CombatDuelSubCircle caster, SpellEffect[] effects) {
         var appliedCharms = new List<SpellEffect>();
 
         foreach (var effect in effects) {

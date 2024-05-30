@@ -17,7 +17,7 @@ internal static class CombatEffectApplicator {
     private const float DAMAGE_PERCENT_MAX = 2.45f; // todo: not correct. this should be a limit function
     private const float HANGING_EFFECT_CONSUME_TIME = 1.0f;
 
-    internal static float ApplyEffect(SpellEffect effect, SpellEffect[] charms, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets) {
+    internal static float ApplyEffect(SpellEffect effect, SpellEffect[] charms, CombatDuelSubCircle caster, CombatDuelSubCircle[] targets) {
         var cinematicTime = 0.0f;
 
         if (effect.m_effectTarget == SpellEffect.kEffectTarget.kGlobal) {
@@ -71,12 +71,12 @@ internal static class CombatEffectApplicator {
         return cinematicTime;
     }
 
-    private static float ApplyFlatDamageEffect(SpellEffect effect, SpellEffect[] charms, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets) {
+    private static float ApplyFlatDamageEffect(SpellEffect effect, SpellEffect[] charms, CombatDuelSubCircle caster, CombatDuelSubCircle[] targets) {
         var (cinematicTime, _) = ApplyDamageEffect(effect, charms, caster, targets);
         return cinematicTime;
     }
 
-    private static float ApplyDamageOverTime(SpellEffect effect, SpellEffect[] charms, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets) {
+    private static float ApplyDamageOverTime(SpellEffect effect, SpellEffect[] charms, CombatDuelSubCircle caster, CombatDuelSubCircle[] targets) {
         var damageFromCaster = effect.m_effectParam;
         var cinematicTime = 0.0f;
 
@@ -127,7 +127,7 @@ internal static class CombatEffectApplicator {
         return cinematicTime;
     }
 
-    private static float ApplyHealOverTime(SpellEffect effect, SpellEffect[] charms, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets) {
+    private static float ApplyHealOverTime(SpellEffect effect, SpellEffect[] charms, CombatDuelSubCircle caster, CombatDuelSubCircle[] targets) {
         var healFromCaster = effect.m_effectParam;
         var cinematicTime = 0.0f;
 
@@ -163,7 +163,7 @@ internal static class CombatEffectApplicator {
         return cinematicTime;
     }
 
-    private static float ApplyStealHealthEffect(SpellEffect effect, SpellEffect[] charms, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets) {
+    private static float ApplyStealHealthEffect(SpellEffect effect, SpellEffect[] charms, CombatDuelSubCircle caster, CombatDuelSubCircle[] targets) {
         var (cinematicTime, damageDealt) = ApplyDamageEffect(effect, charms, caster, targets);
         var casterHealTotal = (int) Math.Floor(damageDealt * effect.m_healModifier);
         DoHealToTarget(caster, casterHealTotal);
@@ -172,8 +172,8 @@ internal static class CombatEffectApplicator {
 
     private static (float cinematicTime, int damageDealt) ApplyDamageEffect(SpellEffect effect,
                                                                             SpellEffect[] charms,
-                                                                            CombatDuelActorSubCircle caster,
-                                                                            CombatDuelActorSubCircle[] targets) {
+                                                                            CombatDuelSubCircle caster,
+                                                                            CombatDuelSubCircle[] targets) {
         int damageFromCaster = effect.m_effectParam;
         var cinematicTime = 0.0f;
 
@@ -217,7 +217,7 @@ internal static class CombatEffectApplicator {
         return (cinematicTime, damageDealt);
     }
 
-    private static float ApplyFlatHealEffect(SpellEffect effect, SpellEffect[] charms, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle[] targets) {
+    private static float ApplyFlatHealEffect(SpellEffect effect, SpellEffect[] charms, CombatDuelSubCircle caster, CombatDuelSubCircle[] targets) {
         int healFromCaster = effect.m_effectParam;
         var cinematicTime = 0.0f;
 
@@ -242,11 +242,11 @@ internal static class CombatEffectApplicator {
         return cinematicTime;
     }
 
-    private static void ApplyReshuffleEffect(CombatDuelActorSubCircle caster) {
+    private static void ApplyReshuffleEffect(CombatDuelSubCircle caster) {
         caster.Reshuffle();
     }
 
-    private static void ApplyHangingEffect(SpellEffect effect, CombatDuelActorSubCircle[] targets) {
+    private static void ApplyHangingEffect(SpellEffect effect, CombatDuelSubCircle[] targets) {
         foreach (var target in targets) {
             // If this is an absorb ward, set the initial value.
             if (effect.m_effectType == SpellEffect.kSpellEffects.kAbsorbDamage) {
@@ -257,7 +257,7 @@ internal static class CombatEffectApplicator {
         }
     }
 
-    private static float ApplyStunEffect(SpellEffect effect, CombatDuelActorSubCircle[] targets) {
+    private static float ApplyStunEffect(SpellEffect effect, CombatDuelSubCircle[] targets) {
         var cinematicTime = 0.0f;
 
         foreach (var target in targets) {
@@ -304,7 +304,7 @@ internal static class CombatEffectApplicator {
         return heal;
     }
 
-    private static int DoDamageToTarget(CombatDuelActorSubCircle target, int damage, MagicSchool damageType) {
+    private static int DoDamageToTarget(CombatDuelSubCircle target, int damage, MagicSchool damageType) {
         // Calculate damage reduction from target stats
         var damageReductionFlat = GetFlatDamageReduction(target, damageType);
         var damageReductionPercent = GetPercentDamageReduction(target, damageType);
@@ -317,7 +317,7 @@ internal static class CombatEffectApplicator {
         return reducedDamage;
     }
 
-    private static int DoHealToTarget(CombatDuelActorSubCircle target, int heal) {
+    private static int DoHealToTarget(CombatDuelSubCircle target, int heal) {
         var percentIncomingHealIncrease = GetPercentIncomingHealIncrease(target);
         heal = (int) Math.Ceiling(heal * (1 + percentIncomingHealIncrease));
 
@@ -325,12 +325,12 @@ internal static class CombatEffectApplicator {
         return heal;
     }
 
-    private static float GetFlatDamageIncrease(CombatDuelActorSubCircle caster, MagicSchool damageType) {
+    private static float GetFlatDamageIncrease(CombatDuelSubCircle caster, MagicSchool damageType) {
         var damageFlatIncrease = caster.GetStatBySchool(caster.ParticipantGameStats.m_dmgBonusFlat, damageType);
         return damageFlatIncrease + caster.ParticipantGameStats.m_dmgBonusFlatAll;
     }
 
-    private static float GetPercentDamageIncrease(CombatDuelActorSubCircle caster, MagicSchool damageType) {
+    private static float GetPercentDamageIncrease(CombatDuelSubCircle caster, MagicSchool damageType) {
         var damagePercentIncrease = caster.GetStatBySchool(caster.ParticipantGameStats.m_dmgBonusPercent, damageType);
         damagePercentIncrease += caster.ParticipantGameStats.m_dmgBonusPercentAll;
         damagePercentIncrease = Math.Min(damagePercentIncrease, DAMAGE_PERCENT_MAX);
@@ -338,21 +338,21 @@ internal static class CombatEffectApplicator {
         return damagePercentIncrease;;
     }
 
-    private static float GetFlatDamageReduction(CombatDuelActorSubCircle target, MagicSchool damageType) {
+    private static float GetFlatDamageReduction(CombatDuelSubCircle target, MagicSchool damageType) {
         var damageReductionFlat = target.GetStatBySchool(target.ParticipantGameStats.m_dmgReduceFlat, damageType);
         return damageReductionFlat + target.ParticipantGameStats.m_dmgReduceFlatAll;
     }
 
-    private static float GetPercentDamageReduction(CombatDuelActorSubCircle target, MagicSchool damageType) {
+    private static float GetPercentDamageReduction(CombatDuelSubCircle target, MagicSchool damageType) {
         var damageReductionPercent = target.GetStatBySchool(target.ParticipantGameStats.m_dmgReducePercent, damageType);
         return damageReductionPercent + target.ParticipantGameStats.m_dmgReducePercentAll;
     }
 
-    private static float GetPercentOutgoingHealIncrease(CombatDuelActorSubCircle caster) {
+    private static float GetPercentOutgoingHealIncrease(CombatDuelSubCircle caster) {
         return caster.ParticipantGameStats.m_healBonusPercentAll;;
     }
 
-    private static float GetPercentIncomingHealIncrease(CombatDuelActorSubCircle target) {
+    private static float GetPercentIncomingHealIncrease(CombatDuelSubCircle target) {
         return target.ParticipantGameStats.m_healIncBonusPercentAll;
     }
 

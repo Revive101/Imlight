@@ -35,7 +35,7 @@ internal class CombatAIActor : ReceiveProtocolDispatcher {
 
     private readonly IActorRef _creatureActorRef;
     private readonly CombatDuelActor _duelActor;
-    private readonly CombatDuelActorSubCircle _mySubcircle;
+    private readonly CombatDuelSubCircle _mySubcircle;
     private readonly ServerWizGameStats _stats;
     private readonly MagicSchool _magicSchool;
     private readonly int _level;
@@ -55,13 +55,13 @@ internal class CombatAIActor : ReceiveProtocolDispatcher {
     private bool _determinedSelfishThisTurn;
 
     private Hand _roundHand;
-    private CombatDuelActorSubCircle[] _friendlySubcircles
+    private CombatDuelSubCircle[] _friendlySubcircles
         => _duelActor.ActiveSubCircles.Where(x => x.OccupiedTeam == _mySubcircle.OccupiedTeam).ToArray();
     private bool _isHealingViable
         => _friendlySubcircles.Any(x => x.ParticipantGameStats.m_currentHitpoints / x.ParticipantGameStats.m_baseHitpoints < HEALING_THRESHOLD);
 
     // ctor
-    public CombatAIActor(IActorRef creatureActor, CombatDuelActor duelActor, CombatDuelActorSubCircle mySubcircle) {
+    public CombatAIActor(IActorRef creatureActor, CombatDuelActor duelActor, CombatDuelSubCircle mySubcircle) {
         this._creatureActorRef = creatureActor;
         this._duelActor = duelActor;
         this._mySubcircle = mySubcircle;
@@ -81,7 +81,7 @@ internal class CombatAIActor : ReceiveProtocolDispatcher {
     }
 
     // Akka.NET ctor
-    public static Props Props(IActorRef creatureActor, CombatDuelActor duelActor, CombatDuelActorSubCircle mySubcircle)
+    public static Props Props(IActorRef creatureActor, CombatDuelActor duelActor, CombatDuelSubCircle mySubcircle)
         => Akka.Actor.Props.Create(() => new CombatAIActor(creatureActor, duelActor, mySubcircle));
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_NEWROUND))]

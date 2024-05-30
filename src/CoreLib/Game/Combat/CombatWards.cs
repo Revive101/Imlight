@@ -23,7 +23,7 @@ internal static class CombatWards {
     /// <param name="target">The target combat actor.</param>
     /// <param name="spellEffect">The spell effect to match.</param>
     /// <returns>A list of applied wards.</returns>
-    internal static List<SpellEffect> FindAppliedWards(CombatDuelActorSubCircle target, SpellEffect spellEffect) {
+    internal static List<SpellEffect> FindAppliedWards(CombatDuelSubCircle target, SpellEffect spellEffect) {
         var appliedCharms = new List<SpellEffect>();
 
         // Get all wards that are currently applied to the target.
