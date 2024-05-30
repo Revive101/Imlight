@@ -18,7 +18,6 @@ namespace Imlight.CoreLib.Game.Zone;
 /// A volume is a space in the game world that can be used to trigger events when a player enters or exits it.
 /// </summary>
 public class WizardZoneVolume : WizardZoneObject {
-    private readonly Volume _volume;
     private readonly List<Trigger> _enterEvents;
     private readonly List<Trigger> _exitEvents;
 
@@ -30,7 +29,6 @@ public class WizardZoneVolume : WizardZoneObject {
                             List<Trigger> enterEvents,
                             List<Trigger> exitEvents)
         : base(activeGameObject, template, wizardZoneRef) {
-        this._volume = volume;
         this._enterEvents = enterEvents;
         this._exitEvents = exitEvents;
         base.InteractionRadius = volume.m_radius;
