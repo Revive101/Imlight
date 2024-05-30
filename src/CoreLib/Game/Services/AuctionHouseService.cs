@@ -30,7 +30,6 @@ internal class AuctionHouseService : MessageService {
 
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_AUCTIONHOUSEREQUEST))]
     private void ReceiveAuctionHouseRequest(WIZARD_12_PROTOCOL.MSG_AUCTIONHOUSEREQUEST message) {
-
         switch (message.Command) {
             case 0:
                 SendAuctionHouseContents(message.npcGlobalID, message.key);
@@ -74,15 +73,15 @@ internal class AuctionHouseService : MessageService {
                 ? houseEntryList.GetRange(0, 50) : houseEntryList.GetRange(0, houseEntryList.Count);
 
             var auctionHouseEntries = new AuctionHouseOffering {
-            m_auctionHousePurchaseKey = key,
+                m_auctionHousePurchaseKey = key,
                 m_auctionList = houseEntryBlock
-        };
+            };
             var auctionHouseEntriesData = _serializer.Serialize(auctionHouseEntries);
 
             var auctionHouseContentsMsg = new WIZARD_12_PROTOCOL.MSG_AUCTIONHOUSECONTENTS {
                 Contents = auctionHouseEntriesData,
-            GlobalID = npcId
-        };
+                GlobalID = npcId
+            };
             SendToSocket(auctionHouseContentsMsg);
 
             // Remove first 50 entries from list.
@@ -215,11 +214,11 @@ internal class AuctionHouseService : MessageService {
                 m_sellPrice = (int) (template.m_baseCost * 0.5f)
             };
             AuctionHouseCollection.AddAuctionHouseEntry(entry);
-    }
+        }
         else {
             entry.m_numForSale += 1;
             AuctionHouseCollection.UpdateAuctionHouseEntry(entry);
-    }
+        }
 
         // Inform of update.
         var houseEntryData = _serializer.Serialize(entry);
@@ -251,7 +250,7 @@ internal class AuctionHouseService : MessageService {
             Failure = 0
         };
         SendToSocket(shopSellConfirmMsg);
-
+        
         // Todo: fix removal of items? seems broken at the moment.
         wizard.RemoveItemFromInventory(item.m_globalID);
     }

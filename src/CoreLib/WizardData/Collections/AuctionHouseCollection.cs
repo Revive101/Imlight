@@ -15,7 +15,7 @@ internal class AuctionHouseCollection {
     private static readonly IDocumentStore s_store;
 
     static AuctionHouseCollection() {
-        s_store = WorldDatabase.Instance.Store;
+        s_store = PlayerDatabase.Instance.Store;
     }
 
     /// <summary>
