@@ -12,44 +12,26 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone;
 
-/// <summary>
-/// This is a zone ObjectState which manages itself as an actor.
-/// An ObjectState are typically objects that the wizard can interact with, ie the universe teleport door.
-/// This acts similar to an NPC.
-/// </summary>
-public class WizardZoneStatefulObject : WizardZoneObject {
-    private static readonly string UniverseTeleportName = "UniverseTeleport";
-    private static readonly uint UniverseTeleportId = 84113;
+public class WizardZoneTeleportDoor : WizardZoneObject {
+    private const string DOOR_NAME_KEY = "WizardGameObjects_00000070";
+    private const string DOOR_TEXT_KEY = "GUI_ObjectInteract";
 
-    public bool IsWorldTeleporter { get; set; }
     public ServiceMementoBase ServiceMomentoBase { get; private set; }
 
     private readonly ObjectSerializer _serializer = new ObjectSerializer()
             .OnBehaviors(SerializerOptions.Behaviors.None)
             .OnPropertyMask((SerializerOptions.PropertyFlags) 4);
-    private readonly string _npcNameKey = "WizardGameObjects_00000070";
-    private readonly string _npcTextKey = "GUI_ObjectInteract";
+    private byte[] _serializedServiceMomentoBase;
 
     // ctor
-    public WizardZoneStatefulObject(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef)
+    public WizardZoneTeleportDoor(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef)
         : base(activeGameObject, template, wizardZoneRef) {
-        if (Template is not GameObjectTemplate gameObjTemplate) {
-            return;
-        }
-
         SetServiceMomentoBase();
-
-        // Check to see if we're a teleport door
-        var objectName = gameObjTemplate.m_objectName.ToString();
-        var objectId = gameObjTemplate.m_templateID;
-        if (objectName == UniverseTeleportName || objectId == UniverseTeleportId) {
-            SetWorldTeleporter();
-        }
     }
 
     // Akka.NET ctor
     public static Props Props(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef)
-        => Akka.Actor.Props.Create(() => new WizardZoneStatefulObject(activeGameObject, template, wizardZoneRef));
+        => Akka.Actor.Props.Create(() => new WizardZoneTeleportDoor(activeGameObject, template, wizardZoneRef));
 
     protected override void OnPlayerJoin(CoreObject player, IActorRef suspect) {
         base.OnPlayerJoin(player, suspect);
@@ -58,25 +40,17 @@ public class WizardZoneStatefulObject : WizardZoneObject {
     }
 
     protected override void OnPlayerInteractionEnter(CoreObject player, IActorRef suspect) {
-        if (IsWorldTeleporter) {
-            var data = _serializer.Serialize(ServiceMomentoBase);
+        var npcOptionsMsg = new QUEST_MESSAGES_52_PROTOCOL.MSG_SENDNPCOPTIONS {
+            MobileID = ActiveGameObject.m_globalID,
+            Options = _serializedServiceMomentoBase,
+            Reinteract = 0
+        };
 
-            var npcOptionsMsg = new QUEST_MESSAGES_52_PROTOCOL.MSG_SENDNPCOPTIONS {
-                MobileID = ActiveGameObject.m_globalID,
-                Options = data,
-                Reinteract = 0
-            };
-
-            suspect.Tell(npcOptionsMsg);
-        }
+        suspect.Tell(npcOptionsMsg);
     }
 
     protected override void OnPlayerInteractionExit(CoreObject player, IActorRef suspect) {
         base.OnPlayerInteractionExit(player, suspect);
-
-        if (Template is not GameObjectTemplate gameObjTemplate) {
-            return;
-        }
 
         var leaveServiceRangeMsg = new GAME_5_PROTOCOL.MSG_LEAVESERVICERANGE {
             MobileID = ActiveGameObject.m_globalID
@@ -84,24 +58,25 @@ public class WizardZoneStatefulObject : WizardZoneObject {
         suspect.Tell(leaveServiceRangeMsg);
     }
 
-
     private void SetServiceMomentoBase() {
-        var gameObjTemplate = Template as GameObjectTemplate;
         ServiceMomentoBase = new ServiceMementoBase() {
             m_bTurnPlayerToFace = true, // in my capture this is true, which doesnt make sense. how can a door turn to face the player lmfao. bro on a turntable
             m_clickToInteractOnly = false,
             m_npcFarewellSound = "",
             m_npcGreetingSound = "",
             m_npcIcon = "",
-            m_npcNameKey = _npcNameKey,
-            m_npcTextKey = _npcTextKey,
+            m_npcNameKey = DOOR_NAME_KEY,
+            m_npcTextKey = DOOR_TEXT_KEY,
             m_personaMadlibs = null,
             m_serviceOptions = new List<ServiceOptionBase>()
         };
+
+        SetWorldTeleporter();
+
+        _serializedServiceMomentoBase = _serializer.Serialize(ServiceMomentoBase);
     }
 
     private void SetWorldTeleporter() {
-
         var universeService = new UniverseMapOption {
             m_displayKey = "GUI_UniverseMap",
             m_forceInteract = false,
@@ -110,8 +85,6 @@ public class WizardZoneStatefulObject : WizardZoneObject {
             m_serviceName = "UniverseMapService"
         };
         ServiceMomentoBase.m_serviceOptions.Add(universeService);
-
         ServiceMomentoBase.m_npcIcon = "GUI/Buttons/Button_Spiral.dds";
-        IsWorldTeleporter = true;
     }
 }
