@@ -41,7 +41,13 @@ public class CombatDuelActorSubCircle {
     internal ServerWizGameStats ParticipantGameStats { get; private set; }
     internal CombatParticipant CombatParticipant { get; private set; }
     internal bool AddedToDuel { get; set;}
-    internal readonly List<SpellEffect> _hangingEffects = new();
+    internal List<SpellEffect> _hangingEffects { get {
+        if (CombatParticipant is null) {
+            return null;
+        }
+
+        return CombatParticipant.m_hangingEffects ?? new List<SpellEffect>();
+    }}
     public uint AvailableSpells {
         get {
             if (_combatDeck is null) {

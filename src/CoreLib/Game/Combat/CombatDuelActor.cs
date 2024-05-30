@@ -177,6 +177,9 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         CombatResolver.Reset();
         _awaitingCombatMoves = true;
 
+        // Determine the power pip gain for each participant.
+        DoPipGain();
+
         // Echo the new round message to all actors.
         EnactActionOnSubCircles(circle => circle.ParticipantActor.Tell(message));
 
@@ -196,14 +199,10 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         Duel.m_duelPhase = kDuelPhase.kPhase_Planning;
         SendCombatPhase((byte) Duel.m_duelPhase);
 
-        // Determine the power pip gain for each participant.
-        DoPipGain();
-
         SendCombatStats();
         SendCombatHand();
         SendCombatPips();
         SendCombatHealth();
-
         SendCombatUI(PLANNING_TIME);
 
         var delay = TimeSpan.FromSeconds(PLANNING_TIME);

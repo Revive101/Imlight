@@ -161,7 +161,8 @@ internal class CombatAIActor : ReceiveProtocolDispatcher {
         }
 
         // If we want to be aggressive and we have something to cast, do it.
-        if (_determinedAggressiveThisTurn && GetCastableDamageSpells(_roundHand.m_spellList).Count > 0) {
+        var hasDamageSpells = GetCastableDamageSpells(_roundHand.m_spellList).Count > 0;
+        if (_determinedAggressiveThisTurn && hasDamageSpells) {
             return DetermineAggressiveBehavior();
         }
         else {
