@@ -22,6 +22,19 @@ using Imlight.Common.ObjectProperty.PropertyReflection;
 
 namespace Imlight.CoreLib.Game.Combat;
 
+public enum CombatMoveType {
+    Attack = 0,
+    Flee = 1,
+    Discard = 2,
+    Pass = 3,
+    ChangeMind = 4,
+}
+
+public enum CombatTeam {
+    Player = 0,
+    Monster = 1
+}
+
 /// <summary>
 /// Represents a duel. This is the actor that manages the duel. It is created by the
 /// <see cref="CombatDuelActorSupervisor"/> and is a child of it.
@@ -29,13 +42,15 @@ namespace Imlight.CoreLib.Game.Combat;
 public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
     private const byte PLANNING_TIME = 30;
     private const float DUEL_GRACE_PERIOD_IN_SECONDS = 3.75f;
+    private const float DUEL_NEW_ROUND_DELAY = 2.5f;
     private const float YAW_ERROR_COMPENSATION = 1.58f;
     private const string PLANNING_TIME_KEY = "PlanningPhase";
+    private const string PREPLANNING_TIME_KEY = "PrePlanningPhase";
 
     public ITimerScheduler Timers { get; set; }
     public Duel Duel { get; private set; }
     public ulong SigilId { get; private set; }
-    public CombatActionDirector ActionDirector { get; private set; }
+    public CombatResolver CombatResolver { get; private set; }
     public IActorRef ActorRef;
     public CombatDuelActorSubCircle[] SubCircles = new CombatDuelActorSubCircle[8];
     public CombatDuelActorSubCircle[] ActiveSubCircles => SubCircles.Where(x => x.Occupied).ToArray();
@@ -140,10 +155,10 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
         var availableCreatureSubcircles = GetAvailableSubCircleTeamCreature();
         var availablePlayerSubcircles = GetAvailableSubCircleTeamPlayer();
-        var teamAAssigned = AssignParticipantToSubCircle(availableCreatureSubcircles, startingCreatureActor, startingCreatureObject);
-        var teamBAssigned = AssignParticipantToSubCircle(availablePlayerSubcircles, startingPlayerActor, startingPlayerObject);
+        AssignParticipantToSubCircle(availableCreatureSubcircles, startingCreatureActor, startingCreatureObject);
+        AssignParticipantToSubCircle(availablePlayerSubcircles, startingPlayerActor, startingPlayerObject);
 
-        ActionDirector = new CombatActionDirector(Duel, SubCircles);
+        CombatResolver = new CombatResolver(Duel, SubCircles);
 
         Logger.Debug("Duel {0} | Created. Grace period over in {1}", Logger.Args(Duel.m_duelID, DUEL_GRACE_PERIOD_IN_SECONDS));
 
@@ -159,8 +174,11 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
         // Add the circles to combat if they are not already.
         AddWaitingCombatParticipants();
-        ActionDirector.Reset();
+        CombatResolver.Reset();
         _awaitingCombatMoves = true;
+
+        // Determine the power pip gain for each participant.
+        DoPipGain();
 
         // Echo the new round message to all actors.
         EnactActionOnSubCircles(circle => circle.ParticipantActor.Tell(message));
@@ -171,18 +189,20 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         SendCombatPhase((byte) Duel.m_duelPhase);
         SendUpFirst(Duel.m_roundNum);
 
+        var delay = TimeSpan.FromSeconds(DUEL_NEW_ROUND_DELAY);
+        Timers.StartSingleTimer(PREPLANNING_TIME_KEY, new COMBAT_106_PROTOCOL.MSG_PLANNINGPHASEBEGIN(), delay);
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_PLANNINGPHASEBEGIN))]
+    private void ReceivePlanningPhaseBegin(COMBAT_106_PROTOCOL.MSG_PLANNINGPHASEBEGIN message) {
         // Planning phase is when each participant notices their new stats and "plans" accordingly.
         Duel.m_duelPhase = kDuelPhase.kPhase_Planning;
         SendCombatPhase((byte) Duel.m_duelPhase);
-
-        // Determine the power pip gain for each participant.
-        DoPipGain();
 
         SendCombatStats();
         SendCombatHand();
         SendCombatPips();
         SendCombatHealth();
-
         SendCombatUI(PLANNING_TIME);
 
         var delay = TimeSpan.FromSeconds(PLANNING_TIME);
@@ -200,7 +220,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         SendCombatPhase((byte) Duel.m_duelPhase);
 
         // Determine how long the cinematics will take.
-        var cinematicTimeInSeconds = ActionDirector.ApplyQueuedCombatActions(out var actions);
+        var cinematicTimeInSeconds = CombatResolver.ApplyQueuedCombatActions(out var actions);
         var actionExecutionTime = TimeSpan.FromSeconds(cinematicTimeInSeconds);
         Duel.m_executionPhaseTimer = (float) actionExecutionTime.TotalSeconds;
 
@@ -339,7 +359,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
         // If by this point all participants have inputted their moves, we can start the next phase.
         var participantCount = AlivePlayerCount + AliveCreatureCount;
-        if (ActionDirector.HaveAllParticipantsEnqueuedActions(participantCount)) {
+        if (CombatResolver.HaveAllParticipantsEnqueuedActions()) {
             // Adding a new timer will cancel the old one.
             var delay = TimeSpan.FromSeconds(1);
             Timers.StartSingleTimer(PLANNING_TIME_KEY, new COMBAT_106_PROTOCOL.MSG_PLANNINGPHASEOVER(), delay);
@@ -370,6 +390,18 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         HandleFleeAction(subCircle);
     }
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
+    private void ReceiveZoneAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message) {
+        // Check if this player is in the duel. If they are, remove them from the duel.
+        var subCircle = SubCircles.FirstOrDefault(x => x.ParticipantActor == Sender);
+        if (subCircle is null) {
+            return;
+        }
+
+        // Handle this as if it were the flee action.
+        HandleFleeAction(subCircle);
+    }
+
     private void HandleDiscardMove(CombatDuelActorSubCircle caster, int spellSelection) {
         var spell = caster.GetSpellFromLastHand((byte) spellSelection);
         caster.DiscardCard(spell);
@@ -380,7 +412,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
     private void HandlePassMove(CombatDuelActorSubCircle caster) {
         // If the participant passes, we don't need to know what spell they were casting.
-        ActionDirector.AddCombatMove(CombatMoveType.Pass, caster, null, null);
+        CombatResolver.AddCombatMove(CombatMoveType.Pass, caster, null, null);
 
         if (caster.OccupiedTeam == CombatTeam.Player) {
             SendCombatMoveSelection(caster.ParticipantObject.m_globalID, (byte) CombatMoveType.Pass, null, 0);
@@ -390,7 +422,10 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
     private void HandleAttackMove(CombatDuelActorSubCircle caster, int spellSelection, uint spellTarget) {
         var spell = caster.GetSpellFromLastHand((byte) spellSelection);
         if (!caster.HasPipsForSpell(spell)) {
-            throw new InvalidOperationException("The participant does not have enough pips for this spell.");
+            Logger.Warning("Duel {0} | Slot {1} | Participant does not have enough pips for spell {2}",
+                Logger.Args(Duel.m_duelID, caster.SlotIndex, spell.m_templateID));
+
+            CombatResolver.AddCombatMove(CombatMoveType.Pass, caster, null, null);
         }
 
         var targetIdx = spellTarget;
@@ -399,7 +434,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             target = SubCircles[targetIdx];
         }
 
-        ActionDirector.AddCombatMove(CombatMoveType.Attack, caster, target, spell);
+        CombatResolver.AddCombatMove(CombatMoveType.Attack, caster, target, spell);
 
         if (caster.OccupiedTeam == CombatTeam.Player) {
             SendCombatMoveSelection(caster.ParticipantObject.m_globalID, (byte) CombatMoveType.Attack, spell, (byte) targetIdx);
@@ -408,7 +443,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
     private void HandleChangeMindAction(CombatDuelActorSubCircle caster) {
         // Send the action director a null spell to indicate that the participant has changed their mind.
-        ActionDirector.AddCombatMove(CombatMoveType.ChangeMind, caster, null, null);
+        CombatResolver.AddCombatMove(CombatMoveType.ChangeMind, caster, null, null);
 
         // Echo the change mind action to each player participant
         if (caster.OccupiedTeam == CombatTeam.Player) {
@@ -467,23 +502,15 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         var upFirstSigilSlot = GetUpFirstSigilSlot();
 
         var serializer = new ObjectSerializer()
+                .OnMode(SerializerOptions.Mode.Verbose)
                 .OnBehaviors(SerializerOptions.Behaviors.None)
                 .OnPropertyMask(SerializerOptions.PropertyFlags.Public
                               | SerializerOptions.PropertyFlags.Transmit
                               | SerializerOptions.PropertyFlags.AuthorityTransmit);
 
-        // This serialized data is used for nearby players to see the combat phase.
-        // Unsure the wording, but it sounds like it's used for spectators.
+        // Unsure what m_resultType means here, but it's always recorded as 122.
         var upFirstData = serializer.Serialize(new UpFirstData() {
-            /*
-            Record from client. Keeping it here because it's probably important.
-
-            m_resultType = 1884669703,
-            m_roundNum = 96,
-            m_upFirst = 320,
-            */
-
-            m_resultType = 0,
+            m_resultType = 122,
             m_roundNum = Duel.m_roundNum,
             m_upFirst = upFirstSigilSlot,
         });
@@ -492,7 +519,6 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             DuelID = SigilId,
             NewPhase = phase,
             PlayerID = 0, // Always recorded as 0
-            // todo: unsure why, but client fails to deserialize this
             Data = phase == 1 ? upFirstData : "",
         };
 
@@ -654,17 +680,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         var playersWin = AliveAndInDuelCreatureCount <= 0;
         var creaturesWin = AliveAndInDuelPlayerCount <= 0;
 
-        // Inform any dead players that they've been defeated.
-        EnactActionOnSubCircles(circle => {
-            if (!circle.AddedToDuel) {
-                return;
-            }
-
-            if (circle.OccupiedTeam == CombatTeam.Player && !circle.IsAlive) {
-                var defeatMsg = new COMBAT_106_PROTOCOL.MSG_COMBATDEFEAT();
-                circle.ParticipantActor.Tell(defeatMsg);
-            }
-        });
+        RemovePlayersFromDuel();
 
         // Broadcast to the zone of the result.
         var combatMatchResult = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATMATCHRESULT {
@@ -680,6 +696,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             CreatureWin();
         }
 
+        // Inform the zone of the final phase, and the end of the duel.
         Duel.m_duelPhase = kDuelPhase.kPhase_Ended;
         SendCombatPhase((byte) Duel.m_duelPhase);
 
@@ -708,19 +725,8 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
             circle.ParticipantActor.Tell(combatVictoryMsg);
 
-            // Inform the player that they've been removed from this duel.
-            var removeMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATREMOVE {
-                DuelID = SigilId,
-                ParticipantID = circle.ParticipantObject.m_globalID,
-            };
-            ZoneBroadcast(removeMsg);
-
-            // Get the players back into the idle state, so they can move around again.
-            var stateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
-                GameObjectID = circle.ParticipantObject.m_globalID,
-                State = (uint) NPCStates.Idle
-            };
-            circle.ParticipantActor.Tell(stateMsg);
+            var victoryMsg = new COMBAT_106_PROTOCOL.MSG_COMBATWIN();
+            circle.ParticipantActor.Tell(victoryMsg);
         });
     }
 
@@ -741,6 +747,33 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             circle.ParticipantActor.Tell(defeatMsg);
         });
     }
+
+    private void RemovePlayersFromDuel() => EnactActionOnSubCircles(circle => {
+        if (circle.OccupiedTeam != CombatTeam.Player) {
+            return;
+        }
+
+        // Send any dead players back to the hub.
+        if (!circle.IsAlive) {
+            var defeatMsg = new COMBAT_106_PROTOCOL.MSG_COMBATDEFEAT();
+            circle.ParticipantActor.Tell(defeatMsg);
+            return;
+        }
+
+        // Inform the player that they've been removed from this duel.
+        var removeMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATREMOVE {
+            DuelID = SigilId,
+            ParticipantID = circle.ParticipantObject.m_globalID,
+        };
+        ZoneBroadcast(removeMsg);
+
+        // Get the players back into the idle state, so they can move around again.
+        var stateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
+            GameObjectID = circle.ParticipantObject.m_globalID,
+            State = (uint) NPCStates.Idle
+        };
+        circle.ParticipantActor.Tell(stateMsg);
+    });
 
     private CombatTeam DetermineFirstTeam() {
         // Flip a coin.
@@ -766,7 +799,6 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     private Duel CreateDuelWithDefaults(ulong sigilId) {
-        // todo: source planning time from config
         var duel = new Duel() {
             m_duelID = sigilId,
             m_planningTimer = PLANNING_TIME,
@@ -780,6 +812,11 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             m_rK0 = _combatSigilTemplate.m_rK0PvE,
             m_rN0 = _combatSigilTemplate.m_rN0PvE,
             m_flatParticipantList = new List<CombatParticipant>(),
+            m_duelModifier = new DuelModifier() {
+                m_battlefieldEffects = new List<SpellEffect>(),
+                m_combatTriggers = new List<ByteString>(),
+                m_gameEffects = new List<GameEffectInfo>(),
+            }
         };
 
         return duel;

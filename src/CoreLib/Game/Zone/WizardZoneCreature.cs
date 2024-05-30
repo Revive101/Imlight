@@ -125,8 +125,7 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
         }
 
         var msg = new ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL {
-            StartingParticipants = new Dictionary<IActorRef, CoreObject>
-            {
+            StartingParticipants = new Dictionary<IActorRef, CoreObject> {
                 { suspectActor, suspectObject },
                 { Self, ActiveGameObject }
             }
@@ -223,6 +222,11 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_NEWROUND))]
     private void ReceiveNewCombatRound(COMBAT_106_PROTOCOL.MSG_NEWROUND message) {
+        _combatAiActor.Forward(message);
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_COMBATEFFECT))]
+    private void ReceiveCombatEffect(COMBAT_106_PROTOCOL.MSG_COMBATEFFECT message) {
         _combatAiActor.Forward(message);
     }
 

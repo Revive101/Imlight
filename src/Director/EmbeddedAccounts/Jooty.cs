@@ -39,7 +39,7 @@ internal sealed class Jooty : EmbeddedAccount {
         };
         var newCharacter = CharacterHelper.CreateCharacterFromCreationInfo(charCreationinfo);
         newCharacter.SetNameOverride("Jay");
-        newCharacter.PlayerNameBehavior.BadgeTitle = "Title_1";
+        newCharacter.PlayerNameBehavior.BadgeTitle = "WC-NPCs_00000161";
 
         // Add default items.
         newCharacter.AddItemToInventory(1414535, out var hat);

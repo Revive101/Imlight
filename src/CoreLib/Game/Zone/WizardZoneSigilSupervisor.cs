@@ -22,6 +22,8 @@ public class WizardZoneSigilSupervisor : ReceiveProtocolDispatcher {
     private readonly IActorRef _wizardZoneRef;
     private readonly Dictionary<IActorRef, CoreObject> _sigils;
     private readonly TimeSpan _statusCheckTimeout = TimeSpan.FromSeconds(5);
+    private readonly Dictionary<IActorRef, DateTime> _actorCache = new();
+    private readonly TimeSpan _actorCacheTimeout = TimeSpan.FromSeconds(5);
 
     // ctor
     public WizardZoneSigilSupervisor(IActorRef wizardZoneRef) {
@@ -30,9 +32,8 @@ public class WizardZoneSigilSupervisor : ReceiveProtocolDispatcher {
     }
 
     // Akka.NET ctor
-    public static Props Props(IActorRef wizardZoneRef) {
-        return Akka.Actor.Props.Create(() => new WizardZoneSigilSupervisor(wizardZoneRef));
-    }
+    public static Props Props(IActorRef wizardZoneRef)
+        => Akka.Actor.Props.Create(() => new WizardZoneSigilSupervisor(wizardZoneRef));
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDCOMBATSIGIL))]
     private void ReceiveAddCombatSigil(ZONE_102_PROTOCOL.MSG_ADDCOMBATSIGIL message) {
@@ -55,6 +56,20 @@ public class WizardZoneSigilSupervisor : ReceiveProtocolDispatcher {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL))]
     private void ReceiveRequestCombatSigil(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL message) {
+        // Check if we have a cached actor. If we do, check to see if their timeout has expired.
+        // If it hasn't, it must have interacted with two different suspects at once.
+        if (_actorCache.TryGetValue(Sender, out var cacheTime)) {
+            if (DateTime.Now - cacheTime < _actorCacheTimeout) {
+                return;
+            }
+            else {
+                _actorCache.Remove(Sender);
+            }
+        }
+        else {
+            _actorCache.Add(Sender, DateTime.Now);
+        }
+
         // Find the closest sigil to the primary suspect.
         var primarySuspect = message.StartingParticipants.First().Value;
         var closestSigilActor = FindClosestSigil(primarySuspect);

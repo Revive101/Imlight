@@ -251,4 +251,9 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte MessageOrder { get; } = 27;
         public byte ServiceID { get; } = 102;
     }
+
+    public class MSG_HEALTICK : IServerMessage {
+        public byte MessageOrder { get; } = 28;
+        public byte ServiceID { get; } = 102;
+    }
 }

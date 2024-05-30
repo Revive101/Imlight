@@ -11,10 +11,13 @@ using Akka.IO;
 using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.IO;
+using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Game.Zone;
+using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Misc;
+using Imlight.CoreLib.WizardData.Models.Player;
 using static Imlight.Common.Caches.TypeCache;
 
 
@@ -22,10 +25,23 @@ namespace Imlight.CoreLib.Game.Services;
 
 public class CombatService : MessageService {
     private IActorRef _currentDuelActor;
+    private ulong _cachedMountId;
+    private readonly CoreObjectSerializer _effectSerializer = new CoreObjectSerializer()
+                    .OnBehaviors(SerializerOptions.Behaviors.None)
+                    .OnPropertyMask(SerializerOptions.PropertyFlags.Transmit
+                                  | SerializerOptions.PropertyFlags.AuthorityTransmit);
+    private readonly CoreObjectSerializer _itemSerializer = new CoreObjectSerializer()
+                    .OnBehaviors(SerializerOptions.Behaviors.None)
+                    .OnPropertyMask((SerializerOptions.PropertyFlags) 1);
 
     public CombatService(SessionActor sessionActor) : base(sessionActor) { }
 
     protected static Props Props(SessionActor parentActor) => Akka.Actor.Props.Create(() => new CombatService(parentActor));
+
+    protected override void OnDispose() {
+        var message = new GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT();
+        _currentDuelActor?.Tell(message, SessionActor.ActorRef);
+    }
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ACTORADDEDTODUEL))]
     private void RecieveDuelAdd(COMBAT_106_PROTOCOL.MSG_ACTORADDEDTODUEL message) {
@@ -47,9 +63,16 @@ public class CombatService : MessageService {
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_COMBATDEFEAT))]
     private void ReceiveCombatDefeat(COMBAT_106_PROTOCOL.MSG_COMBATDEFEAT message) {
+        EquipMountSubtle();
+
         // We've fled or have been defeated in this duel. Send us back to the world hub.
         var hubMsg = new ZONE_102_PROTOCOL.MSG_SENDTOHUB();
         TellOtherServices(hubMsg);
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_COMBATWIN))]
+    private void ReceiveCombatVictory(COMBAT_106_PROTOCOL.MSG_COMBATWIN message) {
+        EquipMount();
     }
 
     [MessageHandler(typeof(WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATMOVE))]
@@ -78,33 +101,90 @@ public class CombatService : MessageService {
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT))]
     private void ReceiveQueryLogout(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT message) => _currentDuelActor?.Tell(message, SessionActor.ActorRef);
 
+    private void EquipMount() {
+        if (_cachedMountId == 0) {
+            // We don't have a cached mount.
+            return;
+        }
+
+        var wizard = GetActiveWizard();
+        var wizEquipmentBehavior = wizard.EquipmentBehavior;
+        var slot = wizEquipmentBehavior.GetSlotOfItem(_cachedMountId);
+
+        // We can discard the removed effects because we know for sure they are not present.
+        if (!wizard.InventoryToEquipmentTransfer(_cachedMountId, out var addedEffects, out var _)) {
+            // If this fails, there is perhaps desync between the server and the client.
+            // Send a message to the client to assure them that the server does not have the item equipped.
+            SendUnequipItem("Mount", slot, _cachedMountId);
+
+            Logger.Warning("Equip failed on item {0}", Logger.Args(_cachedMountId));
+            return;
+        }
+
+        var item = wizEquipmentBehavior.GetItemInSlot(EquipmentSlotType.Mount);
+
+        SendEquipItem(item, "Mount");
+        SendAddEffects(addedEffects);
+        _cachedMountId = 0;
+    }
+
+    private void EquipMountSubtle() {
+        // If we have a cached mount, equip it.
+        // Don't inform the client of it.
+        if (_cachedMountId == 0) {
+            return;
+        }
+
+        var wizard = GetActiveWizard();
+        if (!wizard.InventoryToEquipmentTransfer(_cachedMountId, out var _, out var _)) {
+            Logger.Warning("Equip failed on item {0}", Logger.Args(_cachedMountId));
+            return;
+        }
+
+        _cachedMountId = 0;
+    }
+
     private void UnEquipMount() {
         var wizard = GetActiveWizard();
         var wizEquipmentBehavior = wizard.EquipmentBehavior;
-        ulong itemId;
 
-        try {
-            itemId = wizEquipmentBehavior.GetItemInSlot(WizardData.Models.Player.EquipmentSlotType.Mount).m_globalID;
-        }
-        catch (Exception ex) {
-            //Logger.Debug("Player Has no mount equipped good to go");
+        var item = wizEquipmentBehavior.GetItemInSlot(EquipmentSlotType.Mount);
+        if (item == null) {
+            // We don't have a mount equipped.
             return;
         }
 
-        // This needs to be done before we unequip the item, because we need to know what slot it was in.
-        var slot = wizEquipmentBehavior.GetSlotOfItem(itemId);
+        _cachedMountId = item.m_globalID;
+        var slot = wizEquipmentBehavior.GetSlotOfItem(_cachedMountId);
 
-        if (!wizard.EquipmentToInventoryTransfer(itemId, out var removedEffects)) {
+        if (!wizard.EquipmentToInventoryTransfer(_cachedMountId, out var removedEffects)) {
             // If this fails, there is perhaps desync between the server and the client.
             // Send a message to the client to assure them that the server does not have the item equipped.
-            SendUnequipItem("Mount", slot, itemId);
+            SendUnequipItem("Mount", slot, _cachedMountId);
 
-            Logger.Warning("Unequip failed on item {0}", Logger.Args(itemId));
+            Logger.Warning("Unequip failed on item {0}", Logger.Args(_cachedMountId));
             return;
         }
 
-        SendUnequipItem("Mount", slot, itemId);
+        SendUnequipItem("Mount", slot, _cachedMountId);
         SendRemoveEffects(removedEffects);
+    }
+
+    private void SendEquipItem(WizClientObjectItem item, string slotName) {
+        // Confirm to the player that we've equipped their item server side.
+        SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPITEM() {
+            ItemID = item.m_globalID,
+            SlotName = slotName,
+            IsEquip = 1
+        });
+
+        // Serialize item and broadcast equip action to other players.
+        var pubItem = ItemHelper.GetPublicItem(item);
+        var data = _itemSerializer.Serialize(pubItem);
+        ZoneBroadcast(new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM() {
+            GlobalID = GetActiveGameObject().m_globalID,
+            SerializedInfo = data
+        }, false);
     }
 
     private void SendUnequipItem(Common.IO.ByteString slotName, byte slot, ulong itemId) {
@@ -120,6 +200,34 @@ public class CombatService : MessageService {
             GlobalID = GetActiveGameObject().m_globalID,
             IndexToRemove = slot
         }, false);
+    }
+
+    private void SendAddEffects(List<GameEffectBase> effects) {
+        if (effects is null || effects.Count == 0) {
+            return;
+        }
+
+        // This may fail since it is accessed immediately after attach. This means the CharacterService
+        // hasn't had enough time to set its Wizard reference yet.
+        var wizardObj = GetActiveGameObject();
+        if (wizardObj is null) {
+            wizardObj = GetActiveWizard().GameObject;
+
+            if (wizardObj is null) {
+                Logger.Error("Failed to get wizard object for adding effects.");
+                return;
+            }
+        }
+
+        var charObjId = wizardObj.m_globalID;
+
+        foreach (var effect in effects) {
+            var effectSerializedData = _effectSerializer.Serialize(effect);
+            SendToSocket(new GAME_5_PROTOCOL.MSG_ADDEFFECT() {
+                GameObjectID = charObjId,
+                EffectData = effectSerializedData
+            });
+        }
     }
 
     private void SendRemoveEffects(List<GameEffectBase> effects) {

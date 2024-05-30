@@ -4,6 +4,7 @@
  */
 
 using Akka.Actor;
+using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.CoreLib.Game.Models.World;
 using Imlight.CoreLib.Game.Spells;
@@ -40,23 +41,29 @@ public class CombatDuelActorSubCircle {
     internal ServerWizGameStats ParticipantGameStats { get; private set; }
     internal CombatParticipant CombatParticipant { get; private set; }
     internal bool AddedToDuel { get; set;}
-    internal readonly List<SpellEffect> HangingEffects = new();
+    internal List<SpellEffect> _hangingEffects { get {
+        if (CombatParticipant is null) {
+            return null;
+        }
+
+        return CombatParticipant.m_hangingEffects ?? new List<SpellEffect>();
+    }}
     public uint AvailableSpells {
         get {
-            if (CombatDeck is null) {
+            if (_combatDeck is null) {
                 return 0;
             }
 
-            return (uint) CombatDeck.RemainingCardCount;
+            return (uint) _combatDeck.RemainingCardCount;
         }
     }
     public uint TotalSpells {
         get {
-            if (CombatDeck is null) {
+            if (_combatDeck is null) {
                 return 0;
             }
 
-            return (uint) CombatDeck.TotalCardCount;
+            return (uint) _combatDeck.TotalCardCount;
         }
     }
     internal bool Occupied => ParticipantObject is not null;
@@ -70,9 +77,10 @@ public class CombatDuelActorSubCircle {
         }
     }
     internal bool IsAlive => ParticipantGameStats?.m_currentHitpoints > 0;
-    internal CombatDeck CombatDeck;
+    internal CombatDeck _combatDeck;
+    internal readonly CombatDuelActor _duelActor;
+    internal Wizard _wizard;
 
-    private readonly CombatDuelActor _duelActor;
     private readonly float _radius;
     private readonly float _rotation;
     private readonly Color _color;
@@ -122,22 +130,22 @@ public class CombatDuelActorSubCircle {
     }
 
     internal Hand DrawHand() {
-        var newHand = CombatDeck.GetHand();
+        var newHand = _combatDeck.GetHand();
         CombatParticipant.m_pHand = newHand;
 
         return newHand;
     }
 
     internal void DiscardCard(Spell spell) {
-        CombatDeck.Discard(spell);
+        _combatDeck.Discard(spell);
     }
 
     internal Spell GetSpellFromLastHand(byte index) {
-        if (CombatDeck.LastGivenHand is null || index >= CombatDeck.LastGivenHand.Count) {
+        if (_combatDeck.LastGivenHand is null || index >= _combatDeck.LastGivenHand.Count) {
             return null;
         }
 
-        return CombatDeck.LastGivenHand[index];
+        return _combatDeck.LastGivenHand[index];
     }
 
     internal void DoPipGain() {
@@ -148,13 +156,12 @@ public class CombatDuelActorSubCircle {
             return;
         }
 
-        var participant = CombatParticipant;
-        var gainedPowerPip = DeterminePowerPipGain(participant);
+        var gainedPowerPip = DeterminePowerPipGain(CombatParticipant);
         if (gainedPowerPip) {
-            participant.m_pipCount.m_powerPips++;
+            CombatParticipant.m_pipCount.m_powerPips++;
         }
         else {
-            participant.m_pipCount.m_genericPips++;
+            CombatParticipant.m_pipCount.m_genericPips++;
         }
     }
 
@@ -173,6 +180,15 @@ public class CombatDuelActorSubCircle {
             MagicSchool.Balance => ParticipantGameStats.m_balanceMastery > 0,
             _ => false,
         };
+    }
+
+    internal bool HasSchoolMastery(string school) {
+        if (Enum.TryParse<MagicSchool>(school, out var magicSchool)) {
+            return HasSchoolMastery((uint)magicSchool);
+        }
+
+        Logger.Warning("Failed to parse magic school \"{0}\" from string.", Logger.Args(school));
+        return false;
     }
 
     internal T GetStatBySchool<T>(List<T> list, MagicSchool enumValue) {
@@ -212,9 +228,115 @@ public class CombatDuelActorSubCircle {
         return totalPips >= spellRank;
     }
 
+    internal bool TryStun() {
+        // todo: check if this creature can be stunned.
+        CombatParticipant.m_stunned = 1;
+
+        return true;
+    }
+
+    internal void DamageParticipant(int damage) {
+        // If the participant is a player, update their health.
+        if (_wizard is not null) {
+            var currentHealth = ParticipantGameStats.m_currentHitpoints;
+            var newHealth = currentHealth - damage;
+
+            // Make sure the health doesn't go below 0.
+            if (newHealth < 0) {
+                newHealth = 0;
+            }
+
+            // Update the health of the player.
+            _wizard.UpdateHealth(newHealth);
+        }
+        else {
+            // Make sure the health doesn't go below 0.
+            if (ParticipantGameStats.m_currentHitpoints - damage < 0) {
+                ParticipantGameStats.m_currentHitpoints = 0;
+            }
+            else {
+                ParticipantGameStats.m_currentHitpoints -= damage;
+            }
+        }
+    }
+
+    internal void HealParticipant(int heal) {
+        // If the participant is a player, update their health.
+        if (_wizard is not null) {
+            var currentHealth = ParticipantGameStats.m_currentHitpoints;
+            var newHealth = currentHealth + heal;
+
+            // Make sure the health doesn't go above the max health.
+            if (newHealth > ParticipantGameStats.m_baseHitpoints) {
+                newHealth = ParticipantGameStats.m_baseHitpoints;
+            }
+
+            // Update the health of the player.
+            _wizard.UpdateHealth(newHealth);
+        }
+        else {
+            // Make sure the health doesn't go above the max health.
+            if (ParticipantGameStats.m_currentHitpoints + heal > ParticipantGameStats.m_baseHitpoints) {
+                ParticipantGameStats.m_currentHitpoints = ParticipantGameStats.m_baseHitpoints;
+            }
+            else {
+                ParticipantGameStats.m_currentHitpoints += heal;
+            }
+        }
+    }
+
+    internal void DeductMana(int mana) {
+        // If the participant is a player, update their mana.
+        // Creature's don't have mana.
+        if (_wizard is not null) {
+            var currentMana = ParticipantGameStats.m_currentMana;
+            var newMana = currentMana - mana;
+
+            // Make sure the mana doesn't go below 0.
+            if (newMana < 0) {
+                newMana = 0;
+            }
+
+            // Update the mana of the player.
+            _wizard.UpdateMana(newMana);
+        }
+    }
+
+    internal void DeductPips(MagicSchool school, byte spellRank) {
+        var isMastered = HasSchoolMastery((uint) school);
+        var pipCount = CombatParticipant.m_pipCount;
+
+        while (spellRank > 0) {
+            if (isMastered && pipCount.m_powerPips > 0) {
+                pipCount.m_powerPips--;
+                spellRank -= 2;
+            }
+            else if (!isMastered && pipCount.m_powerPips > 0) {
+                pipCount.m_powerPips--;
+                spellRank--;
+            }
+            else if (pipCount.m_powerPips == 0 && pipCount.m_genericPips > 0) {
+                pipCount.m_genericPips--;
+                spellRank--;
+            }
+            else if (pipCount.m_powerPips == 0 && pipCount.m_genericPips == 0) {
+                break;
+            }
+        }
+    }
+
+    internal void DeductAllPips() {
+        var ourPipCount = CombatParticipant.m_pipCount;
+        ourPipCount.m_powerPips = 0;
+        ourPipCount.m_genericPips = 0;
+    }
+
+    internal void Reshuffle() => _combatDeck.Reshuffle();
+
     private void InitializePlayerSubCircle() {
+        // todo: this method is a mess.
         var queryCharacterMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
-        var wizard = ParticipantActor
+        _wizard = ParticipantActor
             .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryCharacterMsg)
             .Result
             .Wizard;
@@ -222,15 +344,15 @@ public class CombatDuelActorSubCircle {
         // Dyanmic symbols start at 9 for players.
         var dynamicSymbol = (DynamicSigilSymbol) (SlotIndex + 9);
 
-        ParticipantGameStats = wizard.GameStats;
+        ParticipantGameStats = _wizard.GameStats;
         var combatStats = ParticipantGameStats.GetCombatGameStats();
 
         // Collage spells the player has learned and temporary spells (perhaps from equipment)
         // into one list to create the combat hand.
         var allSpells = new List<CombatDeckSpellData>();
-        if (wizard.SpellbookBehavior.SpellList is not null) {
+        if (_wizard.SpellbookBehavior.SpellList is not null) {
             // We want to convert the spell data to the server spell data.
-            var convertedSpells = wizard.SpellbookBehavior.SpellList
+            var convertedSpells = _wizard.SpellbookBehavior.SpellList
                 .Select(spell => new CombatDeckSpellData {
                     TemplateId = spell.m_templateID,
                     Quantity = spell.m_quantity,
@@ -241,7 +363,7 @@ public class CombatDuelActorSubCircle {
 
         // Count temporary spells as 1 quantity.
         var temporarySpells = new List<CombatDeckSpellData>();
-        foreach (var tempSpell in wizard.SpellbookBehavior.TemporarySpells) {
+        foreach (var tempSpell in _wizard.SpellbookBehavior.TemporarySpells) {
             // If the spell data already exists, increase the quantity.. otherwise add it.
             var existingSpell = temporarySpells.Find(s => s.TemplateId == tempSpell.m_templateID);
             if (existingSpell is not null) {
@@ -256,7 +378,7 @@ public class CombatDuelActorSubCircle {
             }
         }
         allSpells.AddRange(temporarySpells);
-        CombatDeck = new CombatDeck(allSpells, PLAYER_HAND_SIZE);
+        _combatDeck = new CombatDeck(allSpells, PLAYER_HAND_SIZE);
 
         CombatParticipant = new CombatParticipant {
             m_ownerID = ParticipantObject.m_globalID,
@@ -264,11 +386,8 @@ public class CombatDuelActorSubCircle {
             m_isPlayer = true,
             m_isMonster = 0,
             m_teamID = 0,
-            m_primaryMagicSchoolID = (int) wizard.MagicSchoolBehavior.MagicSchool,
-            m_pipCount = new() {
-                m_powerPips = ParticipantGameStats.m_startingPowerPips,
-                m_genericPips = ParticipantGameStats.m_startingPips
-            },
+            m_primaryMagicSchoolID = (int) _wizard.MagicSchoolBehavior.MagicSchool,
+            m_pipCount = DetermineStartingPips(),
             m_pipRoundRates = new(),
             m_originalTeam = 0,
             m_maxHandSize = PLAYER_HAND_SIZE,
@@ -309,7 +428,7 @@ public class CombatDuelActorSubCircle {
             });
         }
 
-        CombatDeck = new CombatDeck(spellData, PLAYER_HAND_SIZE);
+        _combatDeck = new CombatDeck(spellData, PLAYER_HAND_SIZE);
 
         ParticipantGameStats = creatureStats.GameStats;
         CombatParticipant = new CombatParticipant {
@@ -321,10 +440,7 @@ public class CombatDuelActorSubCircle {
             m_originalTeam = 1,
             m_maxHandSize = PLAYER_HAND_SIZE,
             m_primaryMagicSchoolID = (int) creatureStats.MagicSchool,
-            m_pipCount = new() {
-                m_powerPips = ParticipantGameStats.m_startingPowerPips,
-                m_genericPips = ParticipantGameStats.m_startingPips
-            },
+            m_pipCount = DetermineStartingPips(),
             m_pipRoundRates = new(),
             m_playerHealth = creatureStats.GameStats.m_currentHitpoints,
             m_maxPlayerHealth = creatureStats.GameStats.m_baseHitpoints,
@@ -367,6 +483,32 @@ public class CombatDuelActorSubCircle {
             GameObjectID = participantObject.m_globalID,
             State = (uint) NPCStates.Stationary
         });
+    }
+
+    private PipCount DetermineStartingPips() {
+        var pipCount = new PipCount() {
+            m_powerPips = ParticipantGameStats.m_startingPowerPips,
+            m_genericPips = ParticipantGameStats.m_startingPips
+        };
+
+        // Ensure that the total number of pips does not exceed MAX_PIP_COUNT.
+        if (pipCount.m_genericPips + pipCount.m_powerPips > MAX_PIP_COUNT) {
+            int excessPips = pipCount.m_genericPips + pipCount.m_powerPips - MAX_PIP_COUNT;
+
+            // Reduce generic pips first if there is an excess
+            if (excessPips <= pipCount.m_genericPips) {
+                pipCount.m_genericPips -= (byte) excessPips;
+            }
+            else {
+                // If excess pips are more than generic pips, set generic pips to 0
+                // and adjust power pips accordingly
+                excessPips -= pipCount.m_genericPips;
+                pipCount.m_genericPips = 0;
+                pipCount.m_powerPips -= (byte) excessPips;
+            }
+        }
+
+        return pipCount;
     }
 
     private bool DeterminePowerPipGain(CombatParticipant participant) {

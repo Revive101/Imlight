@@ -39,6 +39,7 @@ internal sealed class Kid : EmbeddedAccount {
         };
         var newCharacter = CharacterHelper.CreateCharacterFromCreationInfo(charCreationinfo);
         newCharacter.SetNameOverride("Niduus");
+        newCharacter.PlayerNameBehavior.BadgeTitle = "WC-NPCs_00000161";
 
         // Add default items.
         newCharacter.AddItemToInventory(1376408, out var hat);

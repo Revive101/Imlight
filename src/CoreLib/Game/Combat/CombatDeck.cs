@@ -19,14 +19,14 @@ internal class CombatDeck {
     private readonly List<CombatDeckSpellData> _spellData;
     private readonly byte _handSize;
     private readonly List<CombatDeckSpellData> _usedUpSpellData;
-    private readonly List<Spell> _discardedCards;
+    private readonly List<Spell> _cardsDiscardedThisTurn;
 
     // ctor
     internal CombatDeck(List<CombatDeckSpellData> spellDatas, byte handSize) {
         this._spellData = spellDatas;
         this._handSize = handSize;
         this.LastGivenHand = new List<Spell>();
-        this._discardedCards = new List<Spell>();
+        this._cardsDiscardedThisTurn = new List<Spell>();
 
         // Clone the spell data into used up spell data.
         this._usedUpSpellData = new List<CombatDeckSpellData>();
@@ -45,7 +45,7 @@ internal class CombatDeck {
         var random = new Random();
 
         // Discard the cards that were used up or discarded.
-        foreach (var spell in _discardedCards) {
+        foreach (var spell in _cardsDiscardedThisTurn) {
             LastGivenHand.Remove(spell);
 
             var spellData = _usedUpSpellData.FirstOrDefault(s => s.TemplateId == spell.m_templateID);
@@ -62,6 +62,7 @@ internal class CombatDeck {
                 spellData.Quantity--;
             }
         }
+        _cardsDiscardedThisTurn.Clear();
 
         // Refill the hand with new cards
         var cardsToRefill = _handSize - LastGivenHand.Count;
@@ -97,6 +98,21 @@ internal class CombatDeck {
         return new Hand() { m_spellList = LastGivenHand };
     }
 
-    internal void Discard(Spell spell) => _discardedCards.Add(spell);
+    internal void Discard(Spell spell) => _cardsDiscardedThisTurn.Add(spell);
+
+    internal void Reshuffle() {
+        // Copy spell data back to used up spell data
+        _usedUpSpellData.Clear();
+        foreach (var originalSpellData in _spellData) {
+            _usedUpSpellData.Add(new CombatDeckSpellData() {
+                TemplateId = originalSpellData.TemplateId,
+                Quantity = originalSpellData.Quantity,
+                IsBattleCard = originalSpellData.IsBattleCard,
+                IsItemCard = originalSpellData.IsItemCard
+            });
+        }
+
+        _cardsDiscardedThisTurn.Clear();
+    }
 }
 
