@@ -205,7 +205,7 @@ public class PatchServer : Shared.Networking.Server {
     }
 
     private bool GetPatchServerStatus() {
-        var workingUrl = $"{_patchServerInternalUrl}/patcher/V_r{_revision}.WizardDev";
+        var workingUrl = $"{_patchServerInternalUrl}/V_r{_revision}.WizardDev";
 
         // Check to see if the patch server URL is available at all.
         Logger.Information("Checking patch server at URL {Url}. Timeout: {Timeout} s",
