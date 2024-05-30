@@ -37,27 +37,7 @@ internal static class CombatWards {
             _ => beneficialWards.Concat(harmfulWards).ToList()
         };
 
-        var seen = new HashSet<SpellEffect>();
-        var currentSchool = spellEffect.m_sDamageType;
-        foreach (var ward in wards) {
-            // Check if this ward has already been applied.
-            if (!seen.Add(ward)) {
-                continue;
-            }
-            if (ward.m_sDamageType != currentSchool && ward.m_sDamageType != "All") {
-                continue;
-            }
-
-            // If this is a prism, we need to change the damage type.
-            if (ward.m_effectType == SpellEffect.kSpellEffects.kModifyIncomingDamageType) {
-                currentSchool = ((MagicSchool) ward.m_effectParam).ToString();
-                continue;
-            }
-
-            appliedCharms.Add(ward);
-        }
-
-        return appliedCharms;
+        return wards.DistinctBy(x => x.m_spellTemplateID).ToList();
     }
 
     /// <summary>
@@ -87,18 +67,27 @@ internal static class CombatWards {
     }
 
     /// <summary>
-    /// Gets the last school from the given wards.
+    /// Retrieves a list of wards based on the specified magic school.
     /// </summary>
-    /// <param name="wards">The array of wards.</param>
-    /// <returns>The last school from the wards.</returns>
-    internal static MagicSchool GetLastSchoolFromWards(SpellEffect[] wards, MagicSchool startingSchool) {
+    /// <param name="wards">An array of spell effects representing the wards.</param>
+    /// <param name="school">The magic school to filter the wards by.</param>
+    /// <param name="finalSchool">The final magic school determined by the wards.</param>
+    /// <returns>A list of spell effects that match the specified magic school.</returns>
+    internal static List<SpellEffect> GetWardsBySchool(SpellEffect[] wards, MagicSchool school, out MagicSchool finalSchool) {
+        var schoolWards = new List<SpellEffect>();
+        finalSchool = school;
+
         foreach (var ward in wards) {
             if (ward.m_effectType == SpellEffect.kSpellEffects.kModifyIncomingDamageType) {
-                return (MagicSchool) ward.m_effectParam;
+                finalSchool = (MagicSchool) ward.m_effectParam;
+            }
+
+            if (ward.m_sDamageType == finalSchool.ToString() || ward.m_sDamageType == "All") {
+                schoolWards.Add(ward);
             }
         }
 
-        return startingSchool;
+        return schoolWards;
     }
 
     private static List<SpellEffect> GetBeneficialWards(CombatDuelSubCircle target) => target._hangingEffects

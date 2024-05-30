@@ -57,7 +57,7 @@ internal static class CombatCharms {
             }
         }
 
-        return appliedCharms;
+        return appliedCharms.DistinctBy(x => x.m_spellTemplateID).ToList();
     }
 
     /// <summary>

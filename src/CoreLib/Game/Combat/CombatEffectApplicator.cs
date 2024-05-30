@@ -70,6 +70,12 @@ internal static class CombatEffectApplicator {
             case SpellEffect.kSpellEffects.kRemoveWard:
                 cinematicTime += ApplyRemoveWardEffect(effect, targets);
                 break;
+            case SpellEffect.kSpellEffects.kStealCharm:
+                cinematicTime += ApplyStealCharmEffect(effect, caster, targets);
+                break;
+            case SpellEffect.kSpellEffects.kStealWard:
+                cinematicTime += ApplyStealWardEffect(effect, caster, targets);
+                break;
             default:
                 break;
         }
@@ -208,13 +214,11 @@ internal static class CombatEffectApplicator {
 
             // Calculate damage changes from target hanging effects.
             var wards = CombatWards.FindAppliedWards(target, effect);
+            wards = CombatWards.GetWardsBySchool(wards.ToArray(), damageType, out var finalSchool);
             cinematicTime += wards.Count * HANGING_EFFECT_CONSUME_TIME;
             damage = CombatWards.GetIncomingDamageFromWards(wards, damage);
 
-            var schoolEnum = Enum.Parse<MagicSchool>(effect.m_sDamageType);
-            var finalDmgSchoolEnum = CombatWards.GetLastSchoolFromWards(wards.ToArray(), schoolEnum);
-
-            damageDealt += DoDamageToTarget(target, damage, finalDmgSchoolEnum);
+            damageDealt += DoDamageToTarget(target, damage, finalSchool);
 
             // Remove the wards that were applied to this spell from the target's hanging effects.
             target._hangingEffects.RemoveAll(x => wards.Contains(x));
@@ -278,12 +282,57 @@ internal static class CombatEffectApplicator {
         var wardRemoveCount = effect.m_effectParam == -1 ? effect.m_effectParam = int.MaxValue : effect.m_effectParam;
 
         foreach (var target in targets) {
+            // Remove all wards except for stun blocks.
+            var wards = CombatWards.FindAppliedWards(target, effect)
+                                   .Where(x => x.m_effectType != SpellEffect.kSpellEffects.kStunBlock)
+                                   .Take(wardRemoveCount);
+
+            cinematicTime += wards.Count() * HANGING_EFFECT_CONSUME_TIME;
+
+            target._hangingEffects.RemoveAll(x => wards.Contains(x));
+        }
+
+        return cinematicTime;
+    }
+
+    private static float ApplyStealCharmEffect(SpellEffect effect, CombatDuelSubCircle caster, CombatDuelSubCircle[] targets) {
+        var cinematicTime = 0.0f;
+
+        // -1 is a special value that means remove all charms.
+        var charmRemoveCount = effect.m_effectParam == -1 ? effect.m_effectParam = int.MaxValue : effect.m_effectParam;
+
+        // This is the same as the remove charm function, but we're moving the charms from the target to the caster.
+
+        foreach (var target in targets) {
+            var hangingEffects = target._hangingEffects.ToArray();
+            var charmsInQuesiton = CombatCharms.FindAppliedCharms(target, hangingEffects, effect.m_disposition)
+                                               .Take(charmRemoveCount);
+
+            cinematicTime += charmsInQuesiton.Count() * HANGING_EFFECT_CONSUME_TIME;
+
+            target._hangingEffects.RemoveAll(x => charmsInQuesiton.Contains(x));
+            caster._hangingEffects.AddRange(charmsInQuesiton);
+        }
+
+        return cinematicTime;
+    }
+
+    private static float ApplyStealWardEffect(SpellEffect effect, CombatDuelSubCircle caster, CombatDuelSubCircle[] targets) {
+        var cinematicTime = 0.0f;
+
+        // -1 is a special value that means remove all wards.
+        var wardRemoveCount = effect.m_effectParam == -1 ? effect.m_effectParam = int.MaxValue : effect.m_effectParam;
+
+        // This is the same as the remove ward function, but we're moving the wards from the target to the caster.
+
+        foreach (var target in targets) {
             var wards = CombatWards.FindAppliedWards(target, effect)
                                    .Take(wardRemoveCount);
 
             cinematicTime += wards.Count() * HANGING_EFFECT_CONSUME_TIME;
 
             target._hangingEffects.RemoveAll(x => wards.Contains(x));
+            caster._hangingEffects.AddRange(wards);
         }
 
         return cinematicTime;

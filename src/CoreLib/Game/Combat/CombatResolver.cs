@@ -241,8 +241,8 @@ public class CombatResolver {
 
         foreach (var effect in dotEffects) {
             var initialDamage = effect.m_paramPerRound;
-            var wards = CombatWards.FindAppliedWards(caster, effect);
-            var damage = CombatWards.GetIncomingDamageFromWards(wards.ToArray(), initialDamage);
+            var wards = CombatWards.FindAppliedWards(caster, effect).ToList();
+            var damage = CombatWards.GetIncomingDamageFromWards(wards, initialDamage);
 
             // We don't need to calculate stats from gear because the initial application already did that.
 
