@@ -45,8 +45,11 @@ public class CombatDuelSubCircle {
         if (CombatParticipant is null) {
             return null;
         }
+        if (CombatParticipant is not null && CombatParticipant.m_hangingEffects is null) {
+            CombatParticipant.m_hangingEffects = new List<SpellEffect>();
+        }
 
-        return CombatParticipant.m_hangingEffects ?? new List<SpellEffect>();
+        return CombatParticipant.m_hangingEffects;
     }}
     public uint AvailableSpells {
         get {

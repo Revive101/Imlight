@@ -64,6 +64,12 @@ internal static class CombatEffectApplicator {
             case SpellEffect.kSpellEffects.kReshuffle:
                 ApplyReshuffleEffect(targets[0]);
                 break;
+            case SpellEffect.kSpellEffects.kRemoveCharm:
+                cinematicTime += ApplyRemoveCharmEffect(effect, targets);
+                break;
+            case SpellEffect.kSpellEffects.kRemoveWard:
+                cinematicTime += ApplyRemoveWardEffect(effect, targets);
+                break;
             default:
                 break;
         }
@@ -203,7 +209,7 @@ internal static class CombatEffectApplicator {
             // Calculate damage changes from target hanging effects.
             var wards = CombatWards.FindAppliedWards(target, effect);
             cinematicTime += wards.Count * HANGING_EFFECT_CONSUME_TIME;
-            damage = CombatWards.GetIncomingDamageFromWards(wards.ToArray(), damage);
+            damage = CombatWards.GetIncomingDamageFromWards(wards, damage);
 
             var schoolEnum = Enum.Parse<MagicSchool>(effect.m_sDamageType);
             var finalDmgSchoolEnum = CombatWards.GetLastSchoolFromWards(wards.ToArray(), schoolEnum);
@@ -244,6 +250,43 @@ internal static class CombatEffectApplicator {
 
     private static void ApplyReshuffleEffect(CombatDuelSubCircle caster) {
         caster.Reshuffle();
+    }
+
+    private static float ApplyRemoveCharmEffect(SpellEffect effect, CombatDuelSubCircle[] targets) {
+        var cinematicTime = 0.0f;
+
+        // -1 is a special value that means remove all charms.
+        var charmRemoveCount = effect.m_effectParam == -1 ? effect.m_effectParam = int.MaxValue : effect.m_effectParam;
+
+        foreach (var target in targets) {
+            var hangingEffects = target._hangingEffects.ToArray();
+            var charmsInQuesiton = CombatCharms.FindAppliedCharms(target, hangingEffects, effect.m_disposition)
+                                               .Take(charmRemoveCount);
+
+            cinematicTime += charmsInQuesiton.Count() * HANGING_EFFECT_CONSUME_TIME;
+
+            target._hangingEffects.RemoveAll(x => charmsInQuesiton.Contains(x));
+        }
+
+        return cinematicTime;
+    }
+
+    private static float ApplyRemoveWardEffect(SpellEffect effect, CombatDuelSubCircle[] targets) {
+        var cinematicTime = 0.0f;
+
+        // -1 is a special value that means remove all wards.
+        var wardRemoveCount = effect.m_effectParam == -1 ? effect.m_effectParam = int.MaxValue : effect.m_effectParam;
+
+        foreach (var target in targets) {
+            var wards = CombatWards.FindAppliedWards(target, effect)
+                                   .Take(wardRemoveCount);
+
+            cinematicTime += wards.Count() * HANGING_EFFECT_CONSUME_TIME;
+
+            target._hangingEffects.RemoveAll(x => wards.Contains(x));
+        }
+
+        return cinematicTime;
     }
 
     private static void ApplyHangingEffect(SpellEffect effect, CombatDuelSubCircle[] targets) {

@@ -20,7 +20,9 @@ internal static class CombatCharms {
     /// <param name="caster">The combat duel actor sub-circle representing the caster.</param>
     /// <param name="effects">The array of spell effects to search for applied charms.</param>
     /// <returns>A list of spell effects representing the applied charms.</returns>
-    internal static List<SpellEffect> FindAppliedCharms(CombatDuelSubCircle caster, SpellEffect[] effects) {
+    internal static List<SpellEffect> FindAppliedCharms(CombatDuelSubCircle caster,
+                                                        SpellEffect[] effects,
+                                                        SpellEffect.kHangingDisposition disposition = SpellEffect.kHangingDisposition.kBoth) {
         var appliedCharms = new List<SpellEffect>();
 
         foreach (var effect in effects) {
@@ -33,19 +35,25 @@ internal static class CombatCharms {
             var isHealEffect = effect.m_effectType is SpellEffect.kSpellEffects.kHeal
                                                    or SpellEffect.kSpellEffects.kHealOverTime;
 
+            // Choose the beneficial or harmful charms based on the disposition.
+            var beneficialCharms = GetBeneficialCharms(caster);
+            var harmfulCharms = GetHarmfulCharms(caster);
+            var charms = disposition switch {
+                SpellEffect.kHangingDisposition.kBeneficial => beneficialCharms,
+                SpellEffect.kHangingDisposition.kHarmful => harmfulCharms,
+                _ => beneficialCharms.Concat(harmfulCharms).Reverse().ToList()
+            };
+
             if (isDamageEffect) {
-                appliedCharms = caster._hangingEffects
-                    .Where(x => x.m_effectType == SpellEffect.kSpellEffects.kModifyOutgoingDamage)
-                    .Where(x => x.m_sDamageType == effect.m_sDamageType || x.m_sDamageType == "All")
-                    .Reverse()
-                    .ToList();
+                appliedCharms = beneficialCharms.Where(x => x.m_sDamageType == effect.m_sDamageType || x.m_sDamageType == "All")
+                                                .Reverse()
+                                                .ToList();
             }
             else if (isHealEffect) {
-                appliedCharms = caster._hangingEffects
-                    .Where(x => x.m_effectType is SpellEffect.kSpellEffects.kModifyIncomingHeal
-                                               or SpellEffect.kSpellEffects.kModifyIncomingHealFlat)
-                    .Reverse()
-                    .ToList();
+                appliedCharms = beneficialCharms.Where(x => x.m_effectType is SpellEffect.kSpellEffects.kModifyOutgoingHeal
+                                                                           or SpellEffect.kSpellEffects.kModifyOutgoingHealFlat)
+                                                .Reverse()
+                                                .ToList();
             }
         }
 
@@ -66,4 +74,12 @@ internal static class CombatCharms {
 
         return initialDamage;
     }
+
+    private static IEnumerable<SpellEffect> GetBeneficialCharms(CombatDuelSubCircle target) => target._hangingEffects
+            .Where(x => x.m_effectType is SpellEffect.kSpellEffects.kModifyOutgoingDamage && x.m_effectParam > 0
+                                       || x.m_effectType == SpellEffect.kSpellEffects.kModifyOutgoingHeal
+                                       || x.m_effectType == SpellEffect.kSpellEffects.kModifyOutgoingHealFlat);
+
+    private static IEnumerable<SpellEffect> GetHarmfulCharms(CombatDuelSubCircle target) => target._hangingEffects
+            .Where(x => x.m_effectType is SpellEffect.kSpellEffects.kModifyOutgoingDamage && x.m_effectParam < 0);
 }

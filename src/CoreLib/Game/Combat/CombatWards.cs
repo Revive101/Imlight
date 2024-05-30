@@ -23,16 +23,19 @@ internal static class CombatWards {
     /// <param name="target">The target combat actor.</param>
     /// <param name="spellEffect">The spell effect to match.</param>
     /// <returns>A list of applied wards.</returns>
-    internal static List<SpellEffect> FindAppliedWards(CombatDuelSubCircle target, SpellEffect spellEffect) {
+    internal static List<SpellEffect> FindAppliedWards(CombatDuelSubCircle target,
+                                                       SpellEffect spellEffect,
+                                                       SpellEffect.kHangingDisposition disposition = SpellEffect.kHangingDisposition.kBoth) {
         var appliedCharms = new List<SpellEffect>();
 
-        // Get all wards that are currently applied to the target.
-        var wards = target._hangingEffects
-            .Where(x => x.m_effectType is SpellEffect.kSpellEffects.kModifyIncomingDamage
-                                       or SpellEffect.kSpellEffects.kModifyIncomingDamageType
-                                       or SpellEffect.kSpellEffects.kAbsorbDamage)
-            .Reverse()
-            .ToList();
+        // Choose the beneficial or harmful wards based on the disposition.
+        var beneficialWards = GetBeneficialWards(target);
+        var harmfulWards = GetHarmfulWards(target);
+        var wards = disposition switch {
+            SpellEffect.kHangingDisposition.kBeneficial => beneficialWards,
+            SpellEffect.kHangingDisposition.kHarmful => harmfulWards,
+            _ => beneficialWards.Concat(harmfulWards).ToList()
+        };
 
         var seen = new HashSet<SpellEffect>();
         var currentSchool = spellEffect.m_sDamageType;
@@ -63,7 +66,7 @@ internal static class CombatWards {
     /// <param name="wards">The array of wards.</param>
     /// <param name="initialDamage">The initial damage amount.</param>
     /// <returns>The modified incoming damage.</returns>
-    internal static int GetIncomingDamageFromWards(SpellEffect[] wards, int initialDamage = 0) {
+    internal static int GetIncomingDamageFromWards(List<SpellEffect> wards, int initialDamage = 0) {
         foreach (var ward in wards) {
             if (ward.m_effectType == SpellEffect.kSpellEffects.kAbsorbDamage) {
                 // Absorbs will absorb the flat damage, up to the effect param.
@@ -97,4 +100,16 @@ internal static class CombatWards {
 
         return startingSchool;
     }
+
+    private static List<SpellEffect> GetBeneficialWards(CombatDuelSubCircle target) => target._hangingEffects
+            .Where(x => x.m_effectType is SpellEffect.kSpellEffects.kModifyIncomingDamage && x.m_effectParam > 0
+                                       || x.m_effectType == SpellEffect.kSpellEffects.kAbsorbDamage)
+            .Reverse()
+            .ToList();
+
+    private static List<SpellEffect> GetHarmfulWards(CombatDuelSubCircle target) => target._hangingEffects
+            .Where(x => x.m_effectType is SpellEffect.kSpellEffects.kModifyIncomingDamage && x.m_effectParam < 0 ||
+                        x.m_effectType == SpellEffect.kSpellEffects.kModifyIncomingDamageType)
+            .Reverse()
+            .ToList();
 }
