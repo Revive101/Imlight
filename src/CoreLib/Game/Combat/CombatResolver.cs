@@ -149,6 +149,13 @@ public class CombatResolver {
         var cinematicTime = 0.0f;
 
         foreach (var action in _queuedCombatActions) {
+            // If the caster is dead, skip this action.
+            if (!action.SpellCaster.IsAlive) {
+                Logger.Debug("Duel {0} | Slot {1} | Caster is dead. Skipping action.",
+                    Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex));
+                continue;
+            }
+
             // If our target is gone or we're stunned, pass the turn.
             if (action.SpellCaster.CombatParticipant.m_stunned > 0) {
                 action.SpellCaster.CombatParticipant.m_stunned--;
@@ -160,13 +167,6 @@ public class CombatResolver {
                 Logger.Debug("Duel {0} | Slot {1} | Caster is stunned. Passing turn.",
                     Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex));
 
-                continue;
-            }
-
-            // If the caster is dead, skip this action.
-            if (!action.SpellCaster.IsAlive) {
-                Logger.Debug("Duel {0} | Slot {1} | Caster is dead. Skipping action.",
-                    Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex));
                 continue;
             }
 

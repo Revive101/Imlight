@@ -16,7 +16,8 @@ internal static class CombatActionResolver {
     internal static bool ProcessedQueuedCombatAction(QueuedCombatAction action, ref CombatAction combatAction, ref float cinematicTime) {
         var spellWorthCasting = false;
         var effectStack = new CombatEffectStack();
-        var charmsAffectingThisSpell = FindAppliedCharms(action.SpellCaster, action.SpellTemplate.m_effects.ToArray());
+        var charmsAffectingThisSpell = new List<SpellEffect>();
+        var allEffects = action.SpellTemplate.m_effects.ToList();
         combatAction.m_xPipCost = GetXPipCost(action.Spell, action.SpellCaster);
 
         foreach (var spellEffect in action.SpellTemplate.m_effects) {
@@ -30,7 +31,9 @@ internal static class CombatActionResolver {
                 VariableSpellEffect variableSpellEffect => ChooseVariableEffect(variableSpellEffect, combatAction.m_xPipCost, effectStack),
                 _ => spellEffect,
             };
-            charmsAffectingThisSpell.Add(chosenEffect);
+            allEffects.Add(chosenEffect);
+
+            charmsAffectingThisSpell = CombatCharms.FindAppliedCharms(action.SpellCaster, allEffects.ToArray());
 
             var targets = GetEffectTargets(chosenEffect, action.SpellCaster, action.SelectedTarget);
             if (targets.Length == 0) {
@@ -101,38 +104,6 @@ internal static class CombatActionResolver {
         totalCost += isSpellMastered ? (byte) (pipCount.m_powerPips * 2) : pipCount.m_powerPips;
 
         return totalCost;
-    }
-
-    private static List<SpellEffect> FindAppliedCharms(CombatDuelActorSubCircle caster, SpellEffect[] effects) {
-        var appliedCharms = new List<SpellEffect>();
-
-        foreach (var effect in effects) {
-            var isDamageEffect = effect.m_effectType is SpellEffect.kSpellEffects.kDamage
-                                                     or SpellEffect.kSpellEffects.kDamageOverTime
-                                                     or SpellEffect.kSpellEffects.kDamageNoCrit
-                                                     or SpellEffect.kSpellEffects.kDamagePerTotalPipPower
-                                                     or SpellEffect.kSpellEffects.kDivideDamage
-                                                     or SpellEffect.kSpellEffects.kStealHealth;
-            var isHealEffect = effect.m_effectType is SpellEffect.kSpellEffects.kHeal
-                                                   or SpellEffect.kSpellEffects.kHealOverTime;
-
-            if (isDamageEffect) {
-                appliedCharms = caster._hangingEffects
-                    .Where(x => x.m_effectType == SpellEffect.kSpellEffects.kModifyOutgoingDamage)
-                    .Where(x => x.m_sDamageType == effect.m_sDamageType || x.m_sDamageType == "All")
-                    .Reverse()
-                    .ToList();
-            }
-            else if (isHealEffect) {
-                appliedCharms = caster._hangingEffects
-                    .Where(x => x.m_effectType is SpellEffect.kSpellEffects.kModifyIncomingHeal
-                                               or SpellEffect.kSpellEffects.kModifyIncomingHealFlat)
-                    .Reverse()
-                    .ToList();
-            }
-        }
-
-        return appliedCharms;
     }
 
     private static void UpdateCombatActionTargets(ref CombatAction combatAction, IEnumerable<CombatDuelActorSubCircle> targets) {
