@@ -221,7 +221,7 @@ internal static class CombatEffectApplicator {
             damageDealt += DoDamageToTarget(target, damage, finalSchool);
 
             // Remove the wards that were applied to this spell from the target's hanging effects.
-            target._hangingEffects.RemoveAll(x => wards.Contains(x));
+            target._hangingEffects.RemoveAll(x => wards.Contains(x) && x.m_paramPerRound <= 0);
         }
 
         return (cinematicTime, damageDealt);
