@@ -29,9 +29,8 @@ public class WizardZoneObjectSupervisor : ReceiveProtocolDispatcher {
     }
 
     // Akka.NET ctor
-    public static Props Props(IActorRef wizardZoneRef) {
-        return Akka.Actor.Props.Create(() => new WizardZoneObjectSupervisor(wizardZoneRef));
-    }
+    public static Props Props(IActorRef wizardZoneRef)
+        => Akka.Actor.Props.Create(() => new WizardZoneObjectSupervisor(wizardZoneRef));
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDOBJECT))]
     private void ReceiveAddObject(ZONE_102_PROTOCOL.MSG_ADDOBJECT message) {
@@ -71,7 +70,12 @@ public class WizardZoneObjectSupervisor : ReceiveProtocolDispatcher {
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDVOLUME))]
     private void ReceiveAddVolume(ZONE_102_PROTOCOL.MSG_ADDVOLUME message) {
         // Volumes do not use a template, so we pass null.
-        var props = WizardZoneVolume.Props(message.CoreObject, null, _wizardZoneRef, message.Volume);
+        var props = WizardZoneVolume.Props(message.CoreObject,
+                                           null,
+                                           _wizardZoneRef,
+                                           message.Volume,
+                                           message.EnterEvents,
+                                           message.ExitEvents);
         CreateActorAndRespond(props);
     }
 

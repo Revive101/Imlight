@@ -6,24 +6,25 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using Akka.Actor;
+using SharpDX;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Game.Combat;
-using static Imlight.Common.Caches.ServerTypeCache;
-using static Imlight.Common.Caches.TypeCache;
 using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.MessageLayer;
 using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.CoreLib.Shared.Resources;
-using SharpDX;
 using Imlight.CoreLib.Shared.Character;
+using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone;
 
+/// <summary>
+/// The WizardZone is the main actor for a zone. It is responsible for managing all the objects within the zone.
+/// </summary>
 public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
     private const ushort RESERVED_MOBILE_ID_MAX = 1000;
     private const uint HEAL_INTERVAL_PER_MINUTE_IN_SECONDS = 5;
@@ -33,11 +34,15 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
     public WizZoneData ZoneData { get; set; }
     public ITimerScheduler Timers { get; set; }
 
+    private readonly CoreObjectSerializer _coreObjectSerializer = new CoreObjectSerializer()
+            .OnBehaviors(SerializerOptions.Behaviors.None)
+            .OnPropertyMask(SerializerOptions.PropertyFlags.Public
+                | SerializerOptions.PropertyFlags.Transmit
+                | SerializerOptions.PropertyFlags.AuthorityTransmit);
     private readonly uint _dynamicZoneId;
     private readonly IActorRef _objectSupervisorRef;
     private readonly IActorRef _sigilSupervisorRef;
     private readonly IActorRef _duelSupervisorRef;
-    private readonly List<Trigger> _triggers;
     private readonly Dictionary<IActorRef, Wizard> _zonePlayers;
     private ushort _zoneObjectMobileIdCounter;
 
@@ -46,7 +51,6 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
         ZoneName = zoneName;
         _dynamicZoneId = GenerateDynamicZoneId();
         _zonePlayers = new Dictionary<IActorRef, Wizard>();
-        _triggers = new List<Trigger>();
 
         // Create supervisor children. This just helps offload most of the work.
         _objectSupervisorRef = CreateObjectSupervisor();
@@ -101,14 +105,8 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
         return Context.ActorOf(props);
     }
 
-    private void BroadcastObjectCreation(CoreObject obj) {
-        var serializer = new CoreObjectSerializer()
-            .OnBehaviors(SerializerOptions.Behaviors.None)
-            .OnPropertyMask(SerializerOptions.PropertyFlags.Public
-                | SerializerOptions.PropertyFlags.Transmit
-                | SerializerOptions.PropertyFlags.AuthorityTransmit);
-        Broadcast(new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = serializer.Serialize(obj) });
-    }
+    private void BroadcastObjectCreation(CoreObject obj)
+        => Broadcast(new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = _coreObjectSerializer.Serialize(obj) });
 
     private void InformZoneObjectsOfJoin(ZONE_102_PROTOCOL.MSG_ADDPLAYER message) {
         var msg = new ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST {
@@ -124,24 +122,18 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
         BroadcastObjectCreation(message.PlayerObject);
     }
 
-    private void InformZoneObjectsOfDeparture(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message) {
+    private void InformZoneObjectsOfDeparture(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message) =>
         // Forward the departure message to every zone object so that they may personally deal with this situation.
         _objectSupervisorRef.Tell(new ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST {
             Source = message.Player,
             Messages = new IServerMessage[] { message }
         });
-    }
 
     private void SpawnPlayersForNewClient(IActorRef client) {
         // Now spawn each existing player.
-        var serializer = new CoreObjectSerializer()
-            .OnBehaviors(SerializerOptions.Behaviors.None)
-            .OnPropertyMask(SerializerOptions.PropertyFlags.Public
-                | SerializerOptions.PropertyFlags.Transmit
-                | SerializerOptions.PropertyFlags.AuthorityTransmit);
         foreach (var obj in _zonePlayers.Values) {
             var playerObj = WizardObjectLoader.GetPlayerGameObject(obj);
-            var msg = new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = serializer.Serialize(playerObj) };
+            var msg = new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = _coreObjectSerializer.Serialize(playerObj) };
             client.Tell(msg);
         }
     }
@@ -173,29 +165,6 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
         }
 
         return ++_zoneObjectMobileIdCounter;
-    }
-
-    private void SendZoneTransfer(IActorRef suspect, ServerTypeCache.ResTeleport resTeleport) {
-        var msg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
-            DestinationZone = resTeleport.m_destinationZone,
-            DestinationLocation = resTeleport.m_destinationLoc,
-            SendToClient = true
-        };
-        suspect.Tell(msg);
-    }
-
-    private void SendDisplayText(IActorRef suspect, ResDisplayText resDisplayText) {
-        var msg = new GAME_5_PROTOCOL.MSG_CLIENTNOTIFYTEXT {
-            NotifyText = resDisplayText.m_text,
-            Type = resDisplayText.m_type,
-        };
-        suspect.Tell(msg);
-    }
-
-    private void SendPlaySound(IActorRef suspect, ResPlaySound resPlaySound) {
-        // todo: implement
-        var msg = new GAME_5_PROTOCOL.MSG_PLAYSOUND { SoundFilename = resPlaySound.m_soundName };
-        suspect.Tell(msg);
     }
 
     #region Handlers
@@ -306,9 +275,8 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPATH))]
-    private void ReceiveAddPath(ZONE_102_PROTOCOL.MSG_ADDPATH message) {
-        _objectSupervisorRef.Forward(message);
-    }
+    private void ReceiveAddPath(ZONE_102_PROTOCOL.MSG_ADDPATH message)
+        => _objectSupervisorRef.Forward(message);
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDOBJECT))]
     private void ReceiveAddObject(ZONE_102_PROTOCOL.MSG_ADDOBJECT message) {
@@ -366,49 +334,6 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
         _objectSupervisorRef.Tell(message);
     }
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDTRIGGER))]
-    private void ReceiveAddTrigger(ZONE_102_PROTOCOL.MSG_ADDTRIGGER message) {
-        _triggers.Add(message.Trigger);
-    }
-
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_TRIGGER))]
-    private void ReceiveActivateTrigger(ZONE_102_PROTOCOL.MSG_TRIGGER message) {
-        var triggers = (
-            from trigger in _triggers
-            from vol in trigger.m_volumes
-            where vol == message.TriggerName
-            select trigger)
-            .ToList();
-
-        if (!triggers.Any()) {
-            Logger.Verbose("{Volume} {ZoneName} tried to activate trigger " +
-                               "{TriggerName}, but no trigger was found in the zone",
-                Logger.Args(nameof(WizardZoneVolume), ZoneName, message.TriggerName));
-            return;
-        }
-
-        foreach (var result in triggers.SelectMany(trigger => trigger.m_results.m_results)) {
-            switch (result) {
-                case ServerTypeCache.ResTeleport resTeleport:
-                    SendZoneTransfer(message.Suspect, resTeleport);
-                    break;
-                case ResDisplayText resDisplayText:
-                    SendDisplayText(message.Suspect, resDisplayText);
-                    break;
-                case ResPlaySound resPlaySound:
-                    SendPlaySound(message.Suspect, resPlaySound);
-                    break;
-            }
-        }
-
-        // Debug log all the triggers that were activated.
-        foreach (var trigger in triggers) {
-            Logger.Verbose(
-                "{WizardZoneVolume} {ZoneName} activated trigger {TriggerName}",
-                Logger.Args(nameof(WizardZoneVolume), ZoneName, trigger.m_triggerName));
-        }
-    }
-
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_FISHINTERACTION))]
     private void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_FISHINTERACTION message) {
         // Broadcast to each zone object that a player is fishing for proximity reactions.
@@ -428,19 +353,16 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL))]
-    private void ReceiveRequestCombatSigil(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL message) {
-        _sigilSupervisorRef.Forward(message);
-    }
+    private void ReceiveRequestCombatSigil(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL message)
+        => _sigilSupervisorRef.Forward(message);
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_STARTDUEL))]
-    private void ReceiveStartDuel(COMBAT_106_PROTOCOL.MSG_STARTDUEL message) {
-        _duelSupervisorRef.Forward(message);
-    }
+    private void ReceiveStartDuel(COMBAT_106_PROTOCOL.MSG_STARTDUEL message)
+        => _duelSupervisorRef.Forward(message);
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT))]
-    private void ReceiveObjectQuery(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT message) {
-        _objectSupervisorRef.Forward(message);
-    }
+    private void ReceiveObjectQuery(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT message)
+        => _objectSupervisorRef.Forward(message);
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_HEALTICK))]
     private void ReceiveHealTick(ZONE_102_PROTOCOL.MSG_HEALTICK message) {

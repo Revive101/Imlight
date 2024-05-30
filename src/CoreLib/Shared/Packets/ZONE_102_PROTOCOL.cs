@@ -13,6 +13,7 @@ using Imlight.CoreLib.Game.Zone;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Models.Player;
 using SharpDX;
+using static Imlight.Common.Caches.ServerTypeCache;
 
 namespace Imlight.CoreLib.Shared.Packets;
 
@@ -124,21 +125,8 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
         public TypeCache.CoreObject CoreObject;
         public ServerTypeCache.Volume Volume;
-    }
-
-    public class MSG_ADDTRIGGER : IServerMessage {
-        public byte MessageOrder { get; } = 12;
-        public byte ServiceID { get; } = 102;
-
-        public ServerTypeCache.Trigger Trigger;
-    }
-
-    public class MSG_TRIGGER : IServerMessage {
-        public byte MessageOrder { get; } = 13;
-        public byte ServiceID { get; } = 102;
-
-        public ByteString TriggerName;
-        public IActorRef Suspect;
+        public List<Trigger> EnterEvents;
+        public List<Trigger> ExitEvents;
     }
 
     public class MSG_FISHINTERACTION : IServerMessage {
