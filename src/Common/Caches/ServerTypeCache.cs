@@ -8,6 +8,7 @@ using System.Diagnostics;
 using Akka.Util;
 using Imlight.Common.IO;
 using Imlight.Common.ObjectProperty.PropertyReflection;
+using static Imlight.Common.Caches.TypeCache;
 // ReSharper disable InconsistentNaming
 
 namespace Imlight.Common.Caches;
@@ -49,19 +50,35 @@ public static class ServerTypeCache {
         public override uint GetHash() => 0x068C265B;
 
         [Property(0xB8C90C10, 31)] public ByteString m_triggerName;
-        [Property(0x3933D634, 31)] public uint unknown_1;
-        [Property(0x767AAC3C, 31)] public uint unknown_2;
-        [Property(0x2E8B9981, 31)] public uint unknown_3;
-        [Property(0x3282D78A, 31)] public bool unknown_bool;
-        [Property(0x7DB09CC1, 31)] public List<ByteString>? unknown_5;
-        [Property(0xA7BEADF6, 31)] public List<ByteString>? m_volumes;
-        [Property(0x62A2160A, 31)] public byte unknown_byte_1;
-        [Property(0x5C548D5F, 31)] public byte unknown_byte_2;
-        [Property(0xA955FFA6, 31)] public TypeCache.RequirementList? m_requirements;
-        [Property(0xE11C8ADA, 31)] public TypeCache.ResultList? m_results;
-        [Property(0x794EA0DF, 31)] public uint unknown_uint_3;
-        [Property(0x88B9D287, 31)] public byte unknown_byte_3;
-        [Property(0x8177DA98, 31)] public uint unknown_int;
+        [Property(0x3933D634, 31)] public uint m_triggerMax;
+        [Property(0x767AAC3C, 31)] public uint m_cooldown;
+        [Property(0x2E8B9981, 31)] public uint m_cooldownRand;
+        [Property(0x3282D78A, 31)] public bool m_pulsar;
+        [Property(0x7DB09CC1, 31)] public List<ByteString>? m_activateEvents;
+        [Property(0xA7BEADF6, 31)] public List<ByteString>? m_fireEvents;
+        [Property(0x62A2160A, 31)] public List<ByteString>? m_deactivateEvents;
+        [Property(0x5C548D5F, 31)] public List<ByteString>? m_unknown;
+        [Property(0xA955FFA6, 31)] public RequirementList? m_requirements;
+        [Property(0xE11C8ADA, 31)] public ResultList? m_results;
+        [Property(0x794EA0DF, 31)] public uint unknown_uint_3;      // ??
+        [Property(0x88B9D287, 31)] public ByteString unknown_str_3; // this is probably a list or string
+        [Property(0x8177DA98, 31)] public TriggerObjectInfo m_triggerObjInfo;
+    }
+
+    // Don't look at me, this is what the game uses.
+    public class TriggerObjectBase : CoreObjectInfo {
+        // todo: need actual hashes here
+        public override uint GetHash() => 0x068C265B;
+
+        // Why would a trigger have a location? Isn't this what volumes are for?
+        [Property(0x7DB3F828, 31)] public float m_locationX;
+        [Property(0x7DB3F829, 31)] public float m_locationY;
+        [Property(0x7DB3F82A, 31)] public float m_locationZ;
+    }
+
+    public class TriggerObjectInfo : TriggerObjectBase {
+        // todo: need actual hashes here
+        public override uint GetHash() => 0x068C265B;
     }
 
     public class WizZoneVolumes : PropertyClass {
@@ -71,7 +88,7 @@ public static class ServerTypeCache {
     }
 
     [DebuggerDisplay("{m_volumeName}")]
-    public class Volume : TypeCache.CoreObjectInfo {
+    public class Volume : CoreObjectInfo {
         public override uint GetHash() => 0x1B7B55F6;
 
         // CoreObjectInfo properties end here.
@@ -79,8 +96,7 @@ public static class ServerTypeCache {
         [Property(0x7DB3F828, 31)] public float m_locationX;
         [Property(0x7DB3F829, 31)] public float m_locationY;
         [Property(0x7DB3F82A, 31)] public float m_locationZ;
-        // Yes, this is a duplicate property. KI making another certified whoopsie daisy moment.
-        [Property(0x40183401, 31)] public new ulong m_templateID;
+        [Property(0x40183401, 31)] public new ulong m_templateID; // Yes, this is a duplicate property.
         [Property(0x8987B2CC, 31)] public ByteString m_primitiveType; // @todo: convert to enum
         [Property(0x3AF933DF, 31)] public float m_radius;
         [Property(0x2D481539, 31)] public float m_length;
@@ -127,11 +143,15 @@ public static class ServerTypeCache {
 
         [Property(0x444373FA, 31)] public ZoneRouter? m_router;
         [Property(0x87BA8BE5, 31)] public ByteString m_soundName;
+        [Property(0x3B9498D7, 31)] public bool m_blocking;
+        [Property(0x2C2BC314, 31)] public float m_reinteractTime;
 
-        // 0x1D70805C | Size: 65 bits
-        // 0x3B657FD7 | Size: 103 bits (~13 bytes)
-        // 0x3B9498D7 | Size: 65 bits
-        // 0x2C2BC314 | Size: 12 bytes
+        // Live server says MSG_PLAYSOUND with ID `89062548015657`
+        // Client data says this trigger should play "WC_ShopB_Bell_01"
+        // How are we supposed to know what sound to play?
+
+        [Property(0x1D70805C, 31)] public bool m_unknown_bool_1;  // Size: 65 bits
+        [Property(0x3B657FD7, 31)] public ulong m_unknown_bool_2; // Size: 103 bits (~13 bytes)
     }
 
     public class ZoneRouter : PropertyClass {
@@ -171,7 +191,7 @@ public static class ServerTypeCache {
         [Property(0x61437E16, 31)] public bool m_unknown_bool_9;
     }
 
-    public class CombatSigil : TypeCache.CoreObjectInfo {
+    public class CombatSigil : CoreObjectInfo {
         public override uint GetHash() => 478486736;
 
         // Properties here are listed in order of their understanding.

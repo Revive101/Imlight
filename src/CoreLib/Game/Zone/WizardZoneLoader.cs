@@ -137,7 +137,7 @@ public static class WizardZoneLoader {
         Logger.Verbose("Loading zone data for {ZoneName}...", Logger.Args(s_zone.ZoneName));
 
         var serializer = new FileSerializer();
-        s_zoneData = serializer.OpenClass<WizZoneData>(s_wad, ZoneDataFileName);
+        var s =s_zoneData = serializer.OpenClass<WizZoneData>(s_wad, ZoneDataFileName);
         s_zone.ZoneDisplayName = s_zoneData.m_zoneDisplayName;
 
         if (s_zoneData is null) {
@@ -334,14 +334,14 @@ public static class WizardZoneLoader {
             var volumeEnterEvents = (
                 from triggerName in volume.m_enterEvents
                 from trigger in triggers
-                from triggerVolumeNames in trigger.m_volumes
+                from triggerVolumeNames in trigger.m_fireEvents
                 where triggerVolumeNames == triggerName
                 select trigger
             ).ToList();
             var volumeExitEvents = (
                 from triggerName in volume.m_exitEvents
                 from trigger in triggers
-                from triggerVolumeNames in trigger.m_volumes
+                from triggerVolumeNames in trigger.m_fireEvents
                 where triggerVolumeNames == triggerName
                 select trigger
             ).ToList();
