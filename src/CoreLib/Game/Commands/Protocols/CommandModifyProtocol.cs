@@ -233,7 +233,8 @@ internal class CommandModifyProtocol : CommandProtocol {
             return;
         }
 
-        Context.Character.GameStats.m_currentHitpoints = Math.Min(healthInt, Context.Character.GameStats.m_baseHitpoints);
+        var newHealth = Math.Min(healthInt, Context.Character.GameStats.m_baseHitpoints);
+        Context.Character.UpdateHealth(newHealth);
 
         // The client has a max health increase effect applied, so sending it here would double the health client side.
         var magicSchool = Context.Character.MagicSchoolBehavior.MagicSchool;
@@ -261,7 +262,8 @@ internal class CommandModifyProtocol : CommandProtocol {
             return;
         }
 
-        Context.Character.GameStats.m_currentMana = Math.Min(manaInt, Context.Character.GameStats.m_baseMana);
+        var newMana = Math.Min(manaInt, Context.Character.GameStats.m_baseMana);
+        Context.Character.UpdateMana(newMana);
 
         // The client has a max mana increase effect applied, so sending it here would double the mana client side.
         var magicSchool = Context.Character.MagicSchoolBehavior.MagicSchool;
