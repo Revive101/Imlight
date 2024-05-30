@@ -100,6 +100,28 @@ internal static class CombatEffectApplicator {
         var bubbleDamageIncrease = GetGlobalEffectDamageModifier(duel, damageType);
         damageFromCaster = (int) Math.Floor(damageFromCaster * (1 + bubbleDamageIncrease));
 
+        foreach (var target in targets) {
+            var targetSpecificDamage = damageFromCaster;
+
+            // Calculate damage reduction from target stats
+            var damageReductionFlat = GetFlatDamageReduction(target, damageType);
+            var damageReductionPercent = GetPercentDamageReduction(target, damageType);
+            var reducedDamage = (int) Math.Floor(targetSpecificDamage * (1 - damageReductionPercent) - damageReductionFlat);
+
+            // Ensure that damage isn't negative.
+            reducedDamage = Math.Max(reducedDamage, 0);
+            reducedDamage /= effect.m_numRounds;
+
+            var effectClone = new SpellEffect {
+                m_disposition = effect.m_disposition,
+                m_numRounds = effect.m_numRounds,
+                m_paramPerRound = reducedDamage,
+                m_sDamageType = effect.m_sDamageType,
+                m_effectType = effect.m_effectType,
+            };
+            target._hangingEffects.Add(effectClone);
+        }
+
         effect.m_paramPerRound = damageFromCaster / effect.m_numRounds;
 
         return cinematicTime;
@@ -122,7 +144,21 @@ internal static class CombatEffectApplicator {
         var bubbleHealIncrease = GetGlobalEffectHealingModifier(duel);
         healFromCaster = (int) Math.Ceiling(healFromCaster * (1 + bubbleHealIncrease));
 
-        effect.m_paramPerRound = healFromCaster / effect.m_numRounds;
+        foreach (var target in targets) {
+            // Calculate heal increase from target stats
+            var percentIncomingHealIncrease = GetPercentIncomingHealIncrease(target);
+            var healPerTarget = (int) Math.Ceiling(healFromCaster * (1 + percentIncomingHealIncrease));
+            healPerTarget /= effect.m_numRounds;
+
+            var effectClone = new SpellEffect {
+                m_disposition = effect.m_disposition,
+                m_numRounds = effect.m_numRounds,
+                m_paramPerRound = healPerTarget,
+                m_effectType = effect.m_effectType,
+            };
+
+            target._hangingEffects.Add(effectClone);
+        }
 
         return cinematicTime;
     }

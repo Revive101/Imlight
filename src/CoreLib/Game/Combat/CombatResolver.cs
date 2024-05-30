@@ -32,6 +32,8 @@ public class CombatResolver {
     private const int SPELL_FIZZLE_TIME = 4;
     private const int SPELL_PASS_TIME = 1;
     private const float SPELL_CAST_TIME = 5.0f;
+    private const float HANGING_EFFECT_CONSUME_TIME = 1.0f;
+    private const float OVER_TIME_ACTIVATION_TIME = 2.0f;
 
     private readonly Duel _duel;
 
@@ -149,6 +151,8 @@ public class CombatResolver {
         var cinematicTime = 0.0f;
 
         foreach (var action in _queuedCombatActions) {
+            cinematicTime += InvokeOverTimeEffects(action.SpellCaster);
+
             // If the caster is dead, skip this action.
             if (!action.SpellCaster.IsAlive) {
                 Logger.Debug("Duel {0} | Slot {1} | Caster is dead. Skipping action.",
@@ -228,6 +232,43 @@ public class CombatResolver {
         combatActionList.m_actionList.Add(passCombatAction);
 
         return SPELL_PASS_TIME;
+    }
+
+    private float InvokeOverTimeEffects(CombatDuelActorSubCircle caster) {
+        var dotEffects = caster._hangingEffects.Where(x => x.m_effectType == SpellEffect.kSpellEffects.kDamageOverTime);
+        var hotEffects = caster._hangingEffects.Where(x => x.m_effectType == SpellEffect.kSpellEffects.kHealOverTime);
+        var cinematicTime = dotEffects.Count() + hotEffects.Count() * OVER_TIME_ACTIVATION_TIME;
+
+        foreach (var effect in dotEffects) {
+            var initialDamage = effect.m_paramPerRound;
+            var wards = CombatWards.FindAppliedWards(caster, effect);
+            var damage = CombatWards.GetIncomingDamageFromWards(wards.ToArray(), initialDamage);
+
+            // We don't need to calculate stats from gear because the initial application already did that.
+
+            cinematicTime += HANGING_EFFECT_CONSUME_TIME * wards.Count;
+            caster.DamageParticipant(damage);
+            effect.m_numRounds--;
+
+            // Remove the effect if it's out of rounds.
+            if (effect.m_numRounds <= 0) {
+                caster._hangingEffects.Remove(effect);
+            }
+        }
+
+        foreach (var effect in hotEffects) {
+            // Todo: are there wards that increase incoming healing?
+            // We don't need to calculate stats from gear because the initial application already did that.
+            caster.HealParticipant(effect.m_paramPerRound);
+            effect.m_numRounds--;
+
+            // Remove the effect if it's out of rounds.
+            if (effect.m_numRounds <= 0) {
+                caster._hangingEffects.Remove(effect);
+            }
+        }
+
+        return cinematicTime;
     }
 
     private void LogQueuedCombatAction(CombatMoveType type, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target, Spell spell) {
