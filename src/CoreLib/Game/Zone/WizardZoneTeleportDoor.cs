@@ -33,12 +33,6 @@ public class WizardZoneTeleportDoor : WizardZoneObject {
     public static Props Props(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef)
         => Akka.Actor.Props.Create(() => new WizardZoneTeleportDoor(activeGameObject, template, wizardZoneRef));
 
-    protected override void OnPlayerJoin(CoreObject player, IActorRef suspect) {
-        base.OnPlayerJoin(player, suspect);
-
-        Sender.Tell(new ZONE_102_PROTOCOL.MSG_ADDOBJECTRSP());
-    }
-
     protected override void OnPlayerInteractionEnter(CoreObject player, IActorRef suspect) {
         var npcOptionsMsg = new QUEST_MESSAGES_52_PROTOCOL.MSG_SENDNPCOPTIONS {
             MobileID = ActiveGameObject.m_globalID,

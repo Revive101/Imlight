@@ -68,10 +68,8 @@ internal class InteractService : MessageService {
                     break;
             }
         }
-        else if (npc is WizardZoneTeleportDoor zoneObjState) {
-            if (zoneObjState.IsWorldTeleporter) {
-                InteractTeleportDoor(message, wizard, zoneObjState);
-            }
+        else if (npc is WizardZoneTeleportDoor teleportDoor) {
+            InteractTeleportDoor(message, wizard, teleportDoor);
         }
         else {
             Logger.Error("{0} searched for NPC by global ID {1} but the object found was not a {2} or {3}",
@@ -139,12 +137,6 @@ internal class InteractService : MessageService {
     }
 
     private void InteractTeleportDoor(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC message, Wizard wizard, WizardZoneTeleportDoor zoneNpc) {
-        if (!zoneNpc.IsWorldTeleporter) {
-            Logger.Error("{0} interacted with NPC by global ID {1} but the object found was not a teleport door",
-                Logger.Args(wizard.CharId, message.GlobalID));
-            return;
-        }
-
         var teleportDoorOptions = new WorldTeleportOptions {
             m_worldList = new List<ByteString> { // TODO: fetch available worlds for user to teleport to from db
                 "WizardCity",
