@@ -30,7 +30,7 @@ public class PatchServer : Shared.Networking.Server {
     // Configuration values.
     private readonly string _userAgentValue = ConfigurationManager.Settings.PatchServerUserAgent;
     private readonly ushort _downloadBufferSize = ConfigurationManager.Settings.PatchServerBufferSize;
-    private readonly uint _revision = ConfigurationManager.Settings.GameRevision;
+    private readonly string _revision = ConfigurationManager.Settings.GameRevision;
     private readonly uint _patchServerTimeout = ConfigurationManager.Settings.PatchServerInternalTimeout;
     private readonly string _patchServerInternalUrl = ConfigurationManager.Settings.PatchServerInternalUrl;
 
@@ -205,7 +205,7 @@ public class PatchServer : Shared.Networking.Server {
     }
 
     private bool GetPatchServerStatus() {
-        var workingUrl = $"{_patchServerInternalUrl}/V_r{_revision}.WizardDev";
+        var workingUrl = $"{_patchServerInternalUrl}/V_{_revision}";
 
         // Check to see if the patch server URL is available at all.
         Logger.Information("Checking patch server at URL {Url}. Timeout: {Timeout} s",
@@ -268,10 +268,19 @@ public class PatchServer : Shared.Networking.Server {
             return false;
         }
 
+        // Process the actual revision from the revision string. It is right after the 'r' and before the '.'.
+        var revisionStart = _revision.IndexOf('r') + 1;
+        var revisionEnd = _revision.IndexOf('.');
+        if (revisionStart == -1 || revisionEnd == -1) {
+            Logger.Error("Could not parse the revision from the revision string.");
+            return false;
+        }
+        var actualRevision = _revision[revisionStart..revisionEnd];
+
         // Cache the `.bin` file properties.
-        s_latestVersion = Convert.ToUInt32(_revision);
+        s_latestVersion = Convert.ToUInt32(actualRevision);
         s_listFileName = LatestFileListNameBin;
-        s_listFileUrl = $"{_patchServerWorkingUrl}/{LatestFileListNameBin}";
+        s_listFileUrl = $"{_patchServerWorkingUrl}/utils/{LatestFileListNameBin}";
         s_listFileSize = Convert.ToUInt32(latestBin.Length);
         s_urlPrefix = _patchServerWorkingUrl;
         s_urlSuffix = "";

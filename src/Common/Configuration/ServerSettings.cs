@@ -9,8 +9,8 @@ namespace Imlight.Common.Configuration;
 
 [IniSection("Global Settings")]
 public sealed class ServerSettings {
-    [DefaultValue(739602)]
-    public uint GameRevision { get; set; }
+    [DefaultValue("r754018.Wizard_1_540")]
+    public string GameRevision { get; set; }
 
     #region Logging
 
