@@ -149,10 +149,10 @@ public class WizardZoneNpc : WizardZoneObject {
         var getInventorySuccess = NpcInventoryCollection.TryGetNpcInventory(ActiveGameObject.m_templateID, out var npcInventory);
         if (!getInventorySuccess) {
             Inventory = new List<GID>() { new GID(1363076) }; // Default to selling One Ring
-            return;
         }
-
-        Inventory = npcInventory.Inventory;
+        else {
+            Inventory = npcInventory.Inventory;
+        }
 
         // What a funny line, C# pattern matching.
         if (Template.m_behaviors.FirstOrDefault(x => x is NPCBehaviorTemplate) is NPCBehaviorTemplate npcBehavior) {

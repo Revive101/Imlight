@@ -309,7 +309,9 @@ public class CombatDuelSubCircle {
         var isMastered = HasSchoolMastery((uint) school);
         var pipCount = CombatParticipant.m_pipCount;
 
-        while (spellRank > 0) {
+        // Deduct pips based on the spell rank.
+        // We have a second conditional here incase of byte overflow.
+        while (spellRank is > 0 and < (MAX_PIP_COUNT * 2)) {
             if (isMastered && pipCount.m_powerPips > 0) {
                 pipCount.m_powerPips--;
                 spellRank -= 2;
