@@ -174,13 +174,14 @@ internal class AuctionHouseService : MessageService {
 
     private void SellToAuctionHouse(ulong itemGlobalId, uint key) {
         var wizard = GetActiveWizard();
+        var item = wizard.InventoryBehavior.GetItem(itemGlobalId);
 
         // Check player has item.
-        var removedItemSuccess = wizard.InventoryBehavior.RemoveItem(itemGlobalId, out var item);
+        var removedItemSuccess = wizard.RemoveItemFromInventory(itemGlobalId);
         if (!removedItemSuccess) {
             var auctionRspErrorMsg = new WIZARD_12_PROTOCOL.MSG_AUCTIONRESPONSE {
                 Command = 2,
-                ItemTemplateID = item.m_templateID,
+                ItemTemplateID = 0, // Can't get this ID if item doesn't exist.
                 Cost = 0,
                 ReturnCode = 1
             };

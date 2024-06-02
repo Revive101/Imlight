@@ -5,11 +5,8 @@
 
 using Akka.Actor;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Imlight.Common;
+using Imlight.Common.IO;
 using Imlight.Common.Caches;
 using Imlight.Common.ObjectProperty;
 using Imlight.Common.ObjectProperty.PropertyReflection;
@@ -143,8 +140,9 @@ internal class ShopService : MessageService {
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_SHOPSELLREQUEST))]
     private void ReceiveShopSellRequest(WIZARD_12_PROTOCOL.MSG_SHOPSELLREQUEST message) {
         var wizard = GetActiveWizard();
+        var item = wizard.InventoryBehavior.GetItem(message.GlobalID);
 
-        var removedItemSuccess = wizard.InventoryBehavior.RemoveItem(message.GlobalID, out var item);
+        var removedItemSuccess = wizard.RemoveItemFromInventory(message.GlobalID);
         if (!removedItemSuccess) {
             return;
         }
