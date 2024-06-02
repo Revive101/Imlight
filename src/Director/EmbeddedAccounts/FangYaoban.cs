@@ -17,7 +17,7 @@ internal sealed class FangYaoban : EmbeddedAccount {
     protected override Wizard CreateDefaultWizard() {
         var charCreationinfo = new WizardCharacterCreationInfo {
             m_avatarBehavior = new WizardCharacterBehavior {
-                m_eGender = eGender.Male,
+                m_eGender = eGender.Female,
                 m_eRace = eRace.Human,
                 m_extendedHairColor = 0,
                 m_nFeetColor = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5) 6,
@@ -30,8 +30,8 @@ internal sealed class FangYaoban : EmbeddedAccount {
                 m_nSkinDecal2 = 0,
                 m_nTorsoColor = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5) 6,
                 m_nTorsoDecal = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5) 7,
-                m_newPlayerOptions = 1900024385,
-                m_newPlayerOptions2 = 10
+                m_newPlayerOptions = 2705330761,
+                m_newPlayerOptions2 = 0
             },
             m_nameIndices = 6481693,
             m_schoolOfFocus = (uint) MagicSchool.Death,
