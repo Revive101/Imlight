@@ -156,6 +156,7 @@ internal static class Program {
         new Pluto("pluto", "1224", "pluto@r101.net", AuthLevel.QualityAssurance);
         new Socks("socks", "8723", "socks@r101.net", AuthLevel.QualityAssurance);
         new Tommyw3b("tommyw3b", "9871", "Tommyw3b@r101.net", AuthLevel.QualityAssurance);
+        new Storm("storm", "4040", "Storm@r101.net", AuthLevel.QualityAssurance);
 
         Logger.Information("Embedded database accounts created.");
     }
