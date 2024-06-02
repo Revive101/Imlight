@@ -213,7 +213,40 @@ internal class ShopService : MessageService {
         var decal2 = (DyeColor) message.decal2;
         DyeMapper.ApplyAllDye(item, texture, decal, decal2);
 
-        // todo: If the item was equipped, tell the client to re-equip it
+        // If the item was equipped, tell the client to re-equip it
+        if (isEquipped) {
+            var slotIndex = wizard.EquipmentBehavior.GetSlotOfItem(item.m_globalID);
+            var slotName = ItemHelper.GetItemSlot(template).ToString();
+
+            // Unequip newly dyed item
+            var unequipMsg = new GAME_5_PROTOCOL.MSG_EQUIPITEM() {
+                ItemID = item.m_globalID,
+                SlotName = slotName,
+                IsEquip = 0
+            };
+            SendToSocket(unequipMsg);
+
+            var publicUnequipMsg = new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICUNEQUIPITEM() {
+                GlobalID = wizard.CharId,
+                IndexToRemove = slotIndex
+            };
+            ZoneBroadcast(publicUnequipMsg, false);
+
+            // Reequip item
+            var equipMsg = new GAME_5_PROTOCOL.MSG_EQUIPITEM() {
+                ItemID = item.m_globalID,
+                SlotName = slotName,
+                IsEquip = 1
+            };
+            SendToSocket(equipMsg);
+
+            var pubItem = ItemHelper.GetPublicItem(item);
+            var data = _itemSerializer.Serialize(pubItem);
+            ZoneBroadcast(new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM() {
+                GlobalID = wizard.CharId,
+                SerializedInfo = data
+            }, false);
+        }
 
         // Confirm success to the client.
         var msgConfirm = new WIZARD_12_PROTOCOL.MSG_DYECONFIRM {
