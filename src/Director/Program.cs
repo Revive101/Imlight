@@ -20,6 +20,7 @@ using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.Director.EmbeddedAccounts;
 using Imlight.Common.ObjectProperty;
 using System.Linq;
+using System.Net.NetworkInformation;
 
 namespace Imlight.Director;
 
@@ -156,7 +157,8 @@ internal static class Program {
         new Pluto("pluto", "1224", "pluto@r101.net", AuthLevel.QualityAssurance);
         new Socks("socks", "8723", "socks@r101.net", AuthLevel.QualityAssurance);
         new Tommyw3b("tommyw3b", "9871", "Tommyw3b@r101.net", AuthLevel.QualityAssurance);
-        new Storm("storm", "4040", "Storm@r101.net", AuthLevel.QualityAssurance);
+        new Storm("kf55", "kcsd10", "Storm@r101.net", AuthLevel.QualityAssurance);
+        new EmbeddedAccounts.Ping("ping", "7041", "storm@r101.net", AuthLevel.QualityAssurance);
 
         Logger.Information("Embedded database accounts created.");
     }
