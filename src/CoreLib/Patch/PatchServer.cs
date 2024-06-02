@@ -22,9 +22,8 @@ using Imlight.Common;
 
 namespace Imlight.CoreLib.Patch;
 
-public class PatchServer : Shared.Networking.Server {
-    private const string PatchServerWadUrlPrefix = "wads";
-    private const string PatchServerUtilUrlPrefix = "utils";
+public class PatchServer : Server {
+    private const string PatchServerWadUrlPrefix = "Data/GameData";
     private const string LatestFileListNameBin = "LatestFileList.bin";
     private const string LatestFileListNameXml = "LatestFileList.xml";
     // Configuration values.
@@ -147,22 +146,12 @@ public class PatchServer : Shared.Networking.Server {
         return await DownloadFileStream(url);
     }
 
-    private async Task<MemoryStream> DownloadUtilityStream(string fileName) {
+    private async Task<MemoryStream> DownloadStream(string fileName) {
         if (!EndpointReached) {
             throw new Exception("By this point, the patch server endpoint has not yet been reached!");
         }
 
-        var url = $"{_patchServerWorkingUrl}/{PatchServerUtilUrlPrefix}/{fileName}";
-
-        return await DownloadFileStream(url);
-    }
-
-    private async Task<MemoryStream> DownloadLatestFileList() {
-        if (!EndpointReached) {
-            throw new Exception("By this point, the patch server endpoint has not yet been reached!");
-        }
-
-        var url = $"{_patchServerWorkingUrl}";
+        var url = $"{_patchServerWorkingUrl}/{fileName}";
 
         return await DownloadFileStream(url);
     }
@@ -246,7 +235,7 @@ public class PatchServer : Shared.Networking.Server {
         // We need both versions of the LatestFileList (for now).
         // The first interpretation is xml, and is for the server to parse and cache.
         // We'll be using it to check the integrity of Imlight's cached files.
-        var latestXml = DownloadLatestFileList().Result;
+        var latestXml = DownloadStream(LatestFileListNameXml).Result;
         if (latestXml is null) {
             Logger.Error("Had trouble downloading {Name}", Logger.Args(LatestFileListNameXml));
             return false;
@@ -262,7 +251,7 @@ public class PatchServer : Shared.Networking.Server {
 
         // The second interpretation is the `.bin`, which is what the Wizard101 client uses.
         // Download the `.bin` interpretation and cache the file stats.
-        var latestBin = DownloadUtilityStream(LatestFileListNameBin).Result;
+        var latestBin = DownloadStream(LatestFileListNameBin).Result;
         if (latestBin is null) {
             Logger.Error("Had trouble downloading the {Name}", Logger.Args(LatestFileListNameBin));
             return false;
@@ -280,7 +269,7 @@ public class PatchServer : Shared.Networking.Server {
         // Cache the `.bin` file properties.
         s_latestVersion = Convert.ToUInt32(actualRevision);
         s_listFileName = LatestFileListNameBin;
-        s_listFileUrl = $"{_patchServerWorkingUrl}/utils/{LatestFileListNameBin}";
+        s_listFileUrl = $"{_patchServerWorkingUrl}/{LatestFileListNameBin}";
         s_listFileSize = Convert.ToUInt32(latestBin.Length);
         s_urlPrefix = _patchServerWorkingUrl;
         s_urlSuffix = "";

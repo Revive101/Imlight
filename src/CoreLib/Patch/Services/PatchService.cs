@@ -30,6 +30,7 @@ public class PatchService : MessageService
             ListFileSize = rsp.Size,
             ListFileCRC = rsp.CRC,
             ListFileURL = rsp.URL,
+            ListFileType = 1, // This cuases the client to fail parsing the file if it is not 1. Do not change !
             URLPrefix = rsp.URLPrefix,
             URLSuffix = rsp.URLSuffix,
         };

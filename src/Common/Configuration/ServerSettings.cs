@@ -126,10 +126,6 @@ public sealed class ServerSettings {
     [Description("The URL to the patch server.")]
     public string? PatchServerInternalUrl { get; set; }
 
-    [DefaultValue(12369)]
-    [Description("The internal port used by the patch server.")]
-    public ushort PatchServerInternalPort { get; set; }
-
     [DefaultValue(10)]
     [Description("The time in seconds that the patch server will wait to reach the endpoint before timing out.")]
     public uint PatchServerInternalTimeout { get; set; }
