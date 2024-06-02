@@ -191,9 +191,9 @@ internal class AuctionHouseService : MessageService {
         var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
 
         // Calculate gold sell value.
-        var gold = (int) (template.m_baseCost * 0.5f); // Bazaar buys items at 50% of their value.
+        var gold = (int) Math.Ceiling(template.m_baseCost * 0.5f); // Bazaar buys items at 50% of their value.
         if (template.m_numPrimaryColors != 1 && template.m_numSecondaryColors != 0) {
-            gold = (int) Math.Ceiling(gold * 1.2275f); // This value is slightly higher for some reason.
+            gold = (int) Math.Ceiling(gold * 1.225f);
         }
 
         var auctionRspMsg = new WIZARD_12_PROTOCOL.MSG_AUCTIONRESPONSE {
