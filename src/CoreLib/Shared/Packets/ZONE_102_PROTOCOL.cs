@@ -59,7 +59,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte MessageOrder { get; } = 4;
         public byte ServiceID { get; } = 102;
 
-        public TypeCache.CoreObject WizardGameObject;
+        public ushort GivenMobileId;
     }
 
     public class MSG_REMOVEPLAYER : IServerMessage {
