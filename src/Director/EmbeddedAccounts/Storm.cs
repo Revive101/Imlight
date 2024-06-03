@@ -19,21 +19,21 @@ internal sealed class Storm : EmbeddedAccount {
     protected override Wizard CreateDefaultWizard() {
         var charCreationinfo = new WizardCharacterCreationInfo {
             m_avatarBehavior = new WizardCharacterBehavior {
-                m_eGender = eGender.Male,
+                m_eGender = eGender.Female,
                 m_eRace = eRace.Human,
                 m_extendedHairColor = 1,
-                m_nFeetColor = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5)6,
-                m_nFeetDecal = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5)0,
-                m_nHairColor = (Imlight.Common.ObjectProperty.PropertyReflection.Bui7)104,
-                m_nHairModel = (Imlight.Common.ObjectProperty.PropertyReflection.Bui4)8,
-                m_nHatColor = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5)6,
-                m_nHatDecal = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5)6,
-                m_nSkinColor = (Imlight.Common.ObjectProperty.PropertyReflection.Bui4)0,
-                m_nSkinDecal2 = 0,
-                m_nTorsoColor = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5)0,
-                m_nTorsoDecal = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5)8,
-                m_newPlayerOptions = 2055247922,
-                m_newPlayerOptions2 = 3
+                m_nFeetColor = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5)7,
+                m_nFeetDecal = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5)4,
+                m_nHairColor = (Imlight.Common.ObjectProperty.PropertyReflection.Bui7)48,
+                m_nHairModel = (Imlight.Common.ObjectProperty.PropertyReflection.Bui4)4,
+                m_nHatColor = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5)7,
+                m_nHatDecal = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5)7,
+                m_nSkinColor = (Imlight.Common.ObjectProperty.PropertyReflection.Bui4)4,
+                m_nSkinDecal2 = 11,
+                m_nTorsoColor = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5)7,
+                m_nTorsoDecal = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5)7,
+                m_newPlayerOptions = 1384124992,
+                m_newPlayerOptions2 = 27
             },
             m_nameIndices = 6481693,
             m_schoolOfFocus = (uint)MagicSchool.Fire,
@@ -41,6 +41,24 @@ internal sealed class Storm : EmbeddedAccount {
         };
         var newCharacter = CharacterHelper.CreateCharacterFromCreationInfo(charCreationinfo);
         newCharacter.SetNameOverride("Storm");
+
+        // Add default items.
+        newCharacter.AddItemToInventory(1523823, out var hat);
+        newCharacter.AddItemToInventory(97328, out var robe);
+        newCharacter.AddItemToInventory(1456623, out var boots);
+
+        // Dye the items black.
+        DyeMapper.ApplyPrimaryDye(hat, DyeColor.Red);
+        DyeMapper.ApplySecondaryDye(hat, DyeColor.Pink);
+        DyeMapper.ApplyPrimaryDye(robe, DyeColor.Red);
+        DyeMapper.ApplySecondaryDye(robe, DyeColor.Pink);
+        DyeMapper.ApplyPrimaryDye(boots, DyeColor.Red);
+        DyeMapper.ApplySecondaryDye(boots, DyeColor.Pink);
+
+        // Now equip the items.
+        newCharacter.InventoryToEquipmentTransfer(hat.m_globalID, out var _, out var _);
+        newCharacter.InventoryToEquipmentTransfer(robe.m_globalID, out var _, out var _);
+        newCharacter.InventoryToEquipmentTransfer(boots.m_globalID, out var _, out var _);
 
         return newCharacter;
     }
