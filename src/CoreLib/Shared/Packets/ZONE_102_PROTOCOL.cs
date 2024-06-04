@@ -244,6 +244,8 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     public class MSG_HEALTICK : IServerMessage {
         public byte MessageOrder { get; } = 28;
         public byte ServiceID { get; } = 102;
+
+        public float MaxHealthPercent;
     }
 
     public class MSG_PLAYERADDEDTOZONE : IServerMessage {

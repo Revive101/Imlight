@@ -12,6 +12,7 @@ using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Game.Zone;
+using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
@@ -304,6 +305,41 @@ public class ZoneService : MessageService, IWithTimers {
     [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_DOTELEPORTEFFECTS))]
     private void ReceiveTeleportEffects(CHARACTER_103_PROTOCOL.MSG_DOTELEPORTEFFECTS message) {
         SendTeleportEffects();
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_HEALTICK))]
+    private void ReceiveZoneHealTick(ZONE_102_PROTOCOL.MSG_HEALTICK message) {
+        var w = GetActiveWizard();
+
+        var currentWizardHealth = w.GameStats.m_currentHitpoints;
+        var maxWizardHealth = w.GameStats.m_baseHitpoints;
+
+        // If this wizard is max health, skip.
+        if (currentWizardHealth >= maxWizardHealth) {
+            return;
+        }
+
+        // Update our Wizard server side.
+        var healPercent = message.MaxHealthPercent;
+        float healAmount = healPercent / 100 * maxWizardHealth;
+        var newHealth = Math.Min(currentWizardHealth + (int) healAmount, maxWizardHealth);
+
+        w.UpdateHealth(newHealth);
+
+        // Inform the client about the new health changes.
+        // The client has a max health increase effect applied, so sending it here would double the health client side.
+        var magicSchool = w.MagicSchoolBehavior.MagicSchool;
+        var level = w.MagicSchoolBehavior.Level;
+        var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(magicSchool, level);
+        var normMaxHealth = baseStats.m_hitpoints;
+
+        var networkMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH() {
+            CharacterID = w.GameObject.m_globalID,
+            NewHealth = newHealth,
+            NewHealthMax = normMaxHealth,
+            DisplayDiff = 1,
+        };
+        SendToSocket(networkMessage);
     }
 
     private void SetZone(IActorRef actorRef) {

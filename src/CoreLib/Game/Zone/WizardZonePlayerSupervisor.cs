@@ -68,4 +68,11 @@ public class WizardZonePlayerSupervisor : ReceiveProtocolDispatcher {
         // Remove the player from the list of players.
         _players.Remove(message.Player);
     }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_HEALTICK))]
+    private void ReceiveHealTick(ZONE_102_PROTOCOL.MSG_HEALTICK message) {
+        foreach (var player in _players) {
+            player.Tell(message);
+        }
+    }
 }

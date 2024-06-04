@@ -28,7 +28,7 @@ namespace Imlight.CoreLib.Game.Zone;
 /// </summary>
 public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
     private const ushort RESERVED_MOBILE_ID_MAX = 1000;
-    private const uint HEAL_INTERVAL_PER_MINUTE_IN_SECONDS = 5;
+    private const int HEAL_INTERVAL_PER_MINUTE_IN_SECONDS = 5;
 
     private static readonly Vector4 s_locationFailedGiveaway = new(float.MaxValue, float.MaxValue, float.MaxValue, float.MaxValue);
 
@@ -68,9 +68,17 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
         Logger.Debug("Zone {ZoneName} created.", Logger.Args(ZoneName));
 
         if (ZoneData.m_healingPerMinute > 0) {
+            // Calculate how much healing happens on interval.
+            var healingPerMin = ZoneData.m_healingPerMinute;
+            var healingPerSec = healingPerMin / 60.0f;
+            var healingPerTick = healingPerSec * HEAL_INTERVAL_PER_MINUTE_IN_SECONDS;
+
             // Fire a message to self to start the heal tick.
             var delay = TimeSpan.FromSeconds(HEAL_INTERVAL_PER_MINUTE_IN_SECONDS);
-            Timers.StartPeriodicTimer("healtick", new ZONE_102_PROTOCOL.MSG_HEALTICK(), delay);
+            var msg = new ZONE_102_PROTOCOL.MSG_HEALTICK {
+                MaxHealthPercent = healingPerTick
+            };
+            Timers.StartPeriodicTimer("healtick", msg, delay);
         }
     }
 
@@ -114,7 +122,7 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
         _sigilSupervisorRef.Tell(msg);
         _duelSupervisorRef.Tell(msg);
 
-        _playerSupervisorRef.Tell(message);
+        _playerSupervisorRef.Forward(message);
     }
 
     private void InformZoneEntitiesOfPlayerExit(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message) {
@@ -132,7 +140,7 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
         }
 
         // We do, however, want to inform players that a player has left.
-        _playerSupervisorRef.Tell(message);
+        _playerSupervisorRef.Forward(message);
     }
 
     private static uint GenerateDynamicZoneId() {
@@ -212,7 +220,7 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
         };
         message.Player.Tell(rsp);
 
-        Logger.Debug("{Name} added to zone {ZoneName}.", Logger.Args(message.ActualWizardName, ZoneName));
+        Logger.Debug("{Name} added to zone {ZoneName}.", Logger.Args(message.ActualWizardName, ZoneDisplayName));
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER))]
@@ -225,7 +233,7 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
         message.Player.Tell(rsp);
 
         Logger.Debug("Player {Name} removed from zone {ZoneName}.",
-            Logger.Args(message.Player.Path.Name, ZoneName));
+            Logger.Args(message.Player.Path.Name, ZoneDisplayName));
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
@@ -324,43 +332,7 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_HEALTICK))]
     private void ReceiveHealTick(ZONE_102_PROTOCOL.MSG_HEALTICK message) {
-        // todo
-        //if (_zonePlayers.Count == 0) {
-        //    return;
-        //}
-//
-        //foreach (var (a, w) in _zonePlayers) {
-        //    var currentWizardHealth = w.GameStats.m_currentHitpoints;
-        //    var maxWizardHealth = w.GameStats.m_baseHitpoints;
-//
-        //    // If this wizard is max health, skip.
-        //    if (currentWizardHealth >= maxWizardHealth) {
-        //        continue;
-        //    }
-//
-        //    // Update our Wizard server side.
-        //    var healPerMinute = ZoneData.m_healingPerMinute;
-        //    float healPercentage = (float) healPerMinute / (60 / HEAL_INTERVAL_PER_MINUTE_IN_SECONDS);
-        //    float healAmount = healPercentage / 100 * maxWizardHealth;
-        //    var newHealth = Math.Min(currentWizardHealth + (int) healAmount, maxWizardHealth);
-//
-        //    w.UpdateHealth(newHealth);
-//
-        //    // Inform the client about the new health changes.
-        //    // The client has a max health increase effect applied, so sending it here would double the health client side.
-        //    var magicSchool = w.MagicSchoolBehavior.MagicSchool;
-        //    var level = w.MagicSchoolBehavior.Level;
-        //    var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(magicSchool, level);
-        //    var normMaxHealth = baseStats.m_hitpoints;
-//
-        //    var networkMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH() {
-        //        CharacterID = w.GameObject.m_globalID,
-        //        NewHealth = newHealth,
-        //        NewHealthMax = normMaxHealth,
-        //        DisplayDiff = 1,
-        //    };
-        //    a.Tell(networkMessage);
-        //}
+        _playerSupervisorRef.Forward(message);
     }
 
     #endregion
