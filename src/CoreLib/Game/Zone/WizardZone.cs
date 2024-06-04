@@ -230,7 +230,7 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
         DecrementObjectIdentifiers();
 
         var rsp = new ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP();
-        message.Player.Tell(rsp);
+        Sender.Tell(rsp);
 
         Logger.Debug("Player {Name} removed from zone {ZoneName}.",
             Logger.Args(message.Player.Path.Name, ZoneDisplayName));

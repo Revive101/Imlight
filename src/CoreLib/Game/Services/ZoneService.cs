@@ -22,7 +22,7 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Game.Services;
 
 public class ZoneService : MessageService, IWithTimers {
-    private const int ZONE_REMOVAL_WAIT_TIME_IN_SECONDS = 4;
+    private const int ZONE_REMOVAL_WAIT_TIME_IN_SECONDS = 8;
     private const int ZONE_TRANSFER_CLEANUP_WAIT_TIME_IN_SECONDS = 1;
     private const float TELEPORT_EFFECTS_TIME = 2.0f;
 
@@ -373,7 +373,7 @@ public class ZoneService : MessageService, IWithTimers {
                 GlobalId = GetActiveGameObject().m_globalID,
                 IsPlayerStillConnected = true
             };
-            _ = ZoneActor.Ask(removePlayerMsg, _zoneRemovalWaitTime).Result;
+            _ = ZoneActor.Ask<ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP>(removePlayerMsg, _zoneRemovalWaitTime).Result;
         }
         catch {
             Logger.Warning("Zone removal timeout of {0} seconds exceeded.", Logger.Args(ZONE_REMOVAL_WAIT_TIME_IN_SECONDS));
