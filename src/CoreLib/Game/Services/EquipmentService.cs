@@ -56,7 +56,7 @@ public class EquipmentService : MessageService {
             var playerCharacter = GetActiveWizard();
             var effects = playerCharacter.GameEffects;
 
-            SendAddEffects(effects);
+            SendAddEffects(effects.ToList());
         }
         catch  (Exception ex) {
             Logger.Error("Error while attaching effects: {0} {1}", Logger.Args(ex.Message, ex.StackTrace));

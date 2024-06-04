@@ -31,22 +31,19 @@ public class WizardService : MessageService {
     #region Internal Handlers
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP))]
-    private void ReceiveZoneAddPlayerResponse(ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP message) {
-        _activeWizardGameObject = message.WizardGameObject;
-    }
+    private void ReceiveZoneAddPlayerResponse(ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP message)
+        => _activeWizardGameObject = message.WizardGameObject;
 
     [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_SETACTIVEWIZARD))]
-    private void ReceiveSetActiveWizard(CHARACTER_103_PROTOCOL.MSG_SETACTIVEWIZARD message) {
-        _activeWizard = message.Wizard;
-    }
+    private void ReceiveSetActiveWizard(CHARACTER_103_PROTOCOL.MSG_SETACTIVEWIZARD message)
+        => _activeWizard = message.Wizard;
 
     [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD))]
-    private void ReceiveQueryActiveWIzard(CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD message) {
-        Sender.Tell(new CHARACTER_103_PROTOCOL.MSG_CHARACTER() {
-            Wizard = _activeWizard,
-            WizardGameObject = _activeWizardGameObject
-        });
-    }
+    private void ReceiveQueryActiveWIzard(CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD message)
+        => Sender.Tell(new CHARACTER_103_PROTOCOL.MSG_CHARACTER() {
+        Wizard = _activeWizard,
+        WizardGameObject = _activeWizardGameObject
+    });
 
     [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_LEVELUP))]
     private void ReceiveSetLevel(CHARACTER_103_PROTOCOL.MSG_LEVELUP message) {

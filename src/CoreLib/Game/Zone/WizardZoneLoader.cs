@@ -89,13 +89,13 @@ public static class WizardZoneLoader {
                     Logger.Args(zoneName, benchmarkTimer.ElapsedMilliseconds));
                 benchmarkTimer.Restart();
 
-                LoadVolumeData();
-                Logger.Debug("{0} Loaded volume data in {Time}ms.",
+                LoadTriggerData();
+                Logger.Debug("{0} Loaded trigger data in {Time}ms.",
                     Logger.Args(zoneName, benchmarkTimer.ElapsedMilliseconds));
                 benchmarkTimer.Restart();
 
-                LoadTriggerData();
-                Logger.Debug("{0} Loaded trigger data in {Time}ms.",
+                LoadVolumeData();
+                Logger.Debug("{0} Loaded volume data in {Time}ms.",
                     Logger.Args(zoneName, benchmarkTimer.ElapsedMilliseconds));
                 benchmarkTimer.Restart();
 
@@ -114,14 +114,10 @@ public static class WizardZoneLoader {
                     Logger.Args(zoneName, benchmarkTimer.ElapsedMilliseconds));
                 benchmarkTimer.Restart();
 
-                CreateZoneVolumes();
+                CreateZoneVolumesWithTriggers();
                 Logger.Debug("{0} Created volumes in {Time}ms.",
                     Logger.Args(zoneName, benchmarkTimer.ElapsedMilliseconds));
                 benchmarkTimer.Restart();
-
-                CreateZoneTriggers();
-                Logger.Debug("{0} Created triggers in {Time}ms.",
-                    Logger.Args(zoneName, benchmarkTimer.ElapsedMilliseconds));
 
                 benchmarkTimer.Stop();
 
@@ -142,7 +138,6 @@ public static class WizardZoneLoader {
 
         var serializer = new FileSerializer();
         s_zoneData = serializer.OpenClass<WizZoneData>(s_wad, ZoneDataFileName);
-        s_zone.ZoneDisplayName = s_zoneData.m_zoneDisplayName;
 
         if (s_zoneData is null) {
             Logger.Error("Zone {ZoneName} could not load {ZoneDataFileName} as it was missing or invalid.",
@@ -312,14 +307,11 @@ public static class WizardZoneLoader {
     /// Creates the volumes for the zone based on the loaded volume data.
     /// </summary>
     /// <exception cref="NullReferenceException"></exception>
-    private static void CreateZoneVolumes() {
-        if (s_zoneVolumes is null) {
-            throw new NullReferenceException(nameof(s_zoneVolumes));
-        }
+    private static void CreateZoneVolumesWithTriggers() {
+        if (s_zoneVolumes is null)  { throw new NullReferenceException(nameof(s_zoneVolumes));  }
+        if (s_zoneTriggers is null) { throw new NullReferenceException(nameof(s_zoneTriggers)); }
 
-        if (s_zoneTriggers is null) {
-            throw new NullReferenceException(nameof(s_zoneTriggers));
-        }
+        var triggers = GetTriggerDataFromDatabase();
 
         foreach (var volume in s_zoneVolumes.m_volumes) {
             // We have to use this explicit method because the volume has two `m_templateID` fields, but only the duplicate one is used.
@@ -334,10 +326,36 @@ public static class WizardZoneLoader {
             // For some reason, the volume type has two `m_templateID` fields, but only the duplicate one is used.
             newObj.m_templateID = volume.m_templateID; // I've never seen this templateID be anything but 1700.
 
+            // Set the volume's trigger data. This is dumbly complicated so I'll try to explain it.
+            // The `Trigger` type has a list of volume names (`m_volumes`) that it is associated with. However, these
+            // are not the names of volumes. Instead, you'll find these names in the `Volume` types
+            // `m_enterEvents` or `m_exitEvents`.
+            var volumeEnterEvents = (
+                from triggerName in volume.m_enterEvents
+                from trigger in triggers
+                from triggerVolumeNames in trigger.m_fireEvents
+                where triggerVolumeNames == triggerName
+                select trigger
+            ).ToList();
+            var volumeExitEvents = (
+                from triggerName in volume.m_exitEvents
+                from trigger in triggers
+                from triggerVolumeNames in trigger.m_fireEvents
+                where triggerVolumeNames == triggerName
+                select trigger
+            ).ToList();
+
+            if (volumeEnterEvents.Count <= 0) {
+                Logger.Verbose("Volume {VolumeName} in zone {ZoneName} has no triggers associated with it.",
+                    Logger.Args(volume.m_volumeName, s_zone.ZoneName));
+            }
+
             // Write a message citing the details of this volume, and send a message to the zone.
             var msg = new ZONE_102_PROTOCOL.MSG_ADDVOLUME {
                 CoreObject = newObj,
                 Volume = volume,
+                EnterEvents = volumeEnterEvents,
+                ExitEvents = volumeExitEvents
             };
             s_zoneActorRef.Tell(msg);
         }
@@ -346,15 +364,16 @@ public static class WizardZoneLoader {
     /// <summary>
     /// Creates the triggers for the zone based on the loaded trigger data.
     /// </summary>
-    private static void CreateZoneTriggers() {
+    private static List<Trigger> GetTriggerDataFromDatabase() {
         if (s_zoneTriggers is null) {
             throw new NullReferenceException(nameof(s_zoneTriggers));
         }
 
+        var triggers = new List<Trigger>(s_zoneTriggers.m_triggers);
         var zoneName = s_zoneData.m_zoneName;
         var persistentZoneData = ZoneDataCollection.GetZoneData(zoneName);
 
-        foreach (var trigger in s_zoneTriggers.m_triggers) {
+        foreach (var trigger in triggers) {
             // If there's persistent data associated with this trigger, load it.
             var persistentTriggerData = persistentZoneData?.Teleports
                 .FirstOrDefault(x => x.TriggerName == trigger.m_triggerName);
@@ -368,11 +387,9 @@ public static class WizardZoneLoader {
                 };
                 trigger.m_results = resultList;
             }
-
-            // Write a message citing the details of this volume, and send a message to the zone.
-            var msg = new ZONE_102_PROTOCOL.MSG_ADDTRIGGER { Trigger = trigger };
-            s_zoneActorRef.Tell(msg);
         }
+
+        return triggers;
     }
 
     /// <summary>

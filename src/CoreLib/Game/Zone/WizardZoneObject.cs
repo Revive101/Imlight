@@ -31,6 +31,11 @@ public class WizardZoneObject : ReceiveProtocolDispatcher, IClientTypeProvider<W
     protected float InteractionRadius = 300f;
 
     private readonly List<CoreObject> _objsInRadius;
+    private readonly CoreObjectSerializer _zoneObjectSerializer = new CoreObjectSerializer()
+            .OnBehaviors(SerializerOptions.Behaviors.None)
+            .OnPropertyMask(SerializerOptions.PropertyFlags.Public
+                | SerializerOptions.PropertyFlags.Transmit
+                | SerializerOptions.PropertyFlags.AuthorityTransmit);
 
     // ctor
     public WizardZoneObject(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef) {
@@ -74,12 +79,7 @@ public class WizardZoneObject : ReceiveProtocolDispatcher, IClientTypeProvider<W
         }
 
         // When a new player joins, we need to send them the object data.
-        var serializer = new CoreObjectSerializer()
-            .OnBehaviors(SerializerOptions.Behaviors.None)
-            .OnPropertyMask(SerializerOptions.PropertyFlags.Public
-                | SerializerOptions.PropertyFlags.Transmit
-                | SerializerOptions.PropertyFlags.AuthorityTransmit);
-        var msg = new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = serializer.Serialize(GetClientTypeAlternative()) };
+        var msg = new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = _zoneObjectSerializer.Serialize(GetClientTypeAlternative()) };
         suspect.Tell(msg);
 
         Sender.Tell(new ZONE_102_PROTOCOL.MSG_ADDOBJECTRSP());
@@ -199,12 +199,7 @@ public class WizardZoneObject : ReceiveProtocolDispatcher, IClientTypeProvider<W
         OnStatusCheck();
 
     protected void SpawnSelf() {
-        var serializer = new CoreObjectSerializer()
-                    .OnBehaviors(SerializerOptions.Behaviors.None)
-                    .OnPropertyMask(SerializerOptions.PropertyFlags.Public
-                        | SerializerOptions.PropertyFlags.Transmit
-                        | SerializerOptions.PropertyFlags.AuthorityTransmit);
-        var msg = new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = serializer.Serialize(GetClientTypeAlternative()) };
+        var msg = new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = _zoneObjectSerializer.Serialize(GetClientTypeAlternative()) };
 
         // Broadcast the spawn of this creature to all players.
         var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
