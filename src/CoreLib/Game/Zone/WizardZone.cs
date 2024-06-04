@@ -50,7 +50,7 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
     private readonly IActorRef _playerSupervisorRef; // Supervisor for all players in this zone.
     private readonly string _mobileIdLock = string.Empty;
     private ushort _reservedMobileIdCounter;
-    private ushort _nonreservedMobileIdCounter;
+    private ushort _nonreservedMobileIdCounter = RESERVED_MOBILE_ID_MAX + 1;
 
     // ctor
     public WizardZone(string zoneName) {
@@ -162,8 +162,8 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
 
     private ushort DecrementObjectIdentifiers() {
         lock (_mobileIdLock) {
-            if (_nonreservedMobileIdCounter - 1 <= 0) {
-                _nonreservedMobileIdCounter = 0;
+            if (_nonreservedMobileIdCounter - 1 <= RESERVED_MOBILE_ID_MAX) {
+                _nonreservedMobileIdCounter = RESERVED_MOBILE_ID_MAX + 1;
                 return 0;
             }
 
