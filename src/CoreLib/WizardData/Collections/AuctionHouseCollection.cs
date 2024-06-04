@@ -94,7 +94,8 @@ internal class AuctionHouseCollection {
             .FirstOrDefault();
 
         if (existingEntry != null) {
-            existingEntry = entry;
+            existingEntry.m_templateID = entry.m_templateID;
+            existingEntry.m_numForSale = entry.m_numForSale;
         }
         else {
             return false;
