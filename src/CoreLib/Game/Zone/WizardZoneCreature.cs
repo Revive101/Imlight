@@ -448,13 +448,13 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
         CharacterEffectHelper.AddEffectsToGameStats(GameStats, template);
     }
 
-    private void StartCombat(CombatDuelActor duel, CombatDuelActorSubCircle subCircle) {
+    private void StartCombat(CombatDuelActor duel, CombatDuelSubCircle subCircle) {
         CreateCombatAIActor(duel, subCircle);
         StopMovement();
         _creatureState = CreatureState.Combat;
     }
 
-    private void CreateCombatAIActor(CombatDuelActor duel, CombatDuelActorSubCircle subCircle) {
+    private void CreateCombatAIActor(CombatDuelActor duel, CombatDuelSubCircle subCircle) {
         if (_combatAiActor is not null) {
             return;
         }

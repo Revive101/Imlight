@@ -18,8 +18,8 @@ using Imlight.CoreLib.Shared.Packets;
 namespace Imlight.CoreLib.Game.Combat;
 
 public class QueuedCombatAction {
-    public CombatDuelActorSubCircle SpellCaster;
-    public CombatDuelActorSubCircle SelectedTarget;
+    public CombatDuelSubCircle SpellCaster;
+    public CombatDuelSubCircle SelectedTarget;
     public Spell Spell;
     public SpellTemplate SpellTemplate;
 }
@@ -37,12 +37,12 @@ public class CombatResolver {
 
     private readonly Duel _duel;
 
-    private readonly CombatDuelActorSubCircle[] _subCircles = new CombatDuelActorSubCircle[8];
-    private CombatDuelActorSubCircle[] ActiveSubCircles => _subCircles.Where(x => x.Occupied).ToArray();
+    private readonly CombatDuelSubCircle[] _subCircles = new CombatDuelSubCircle[8];
+    private CombatDuelSubCircle[] ActiveSubCircles => _subCircles.Where(x => x.Occupied).ToArray();
     private List<QueuedCombatAction> _queuedCombatActions;
 
     // ctor
-    public CombatResolver(Duel duel, CombatDuelActorSubCircle[] actorSubCircles) {
+    public CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
         _duel = duel;
         _subCircles = actorSubCircles;
     }
@@ -66,8 +66,8 @@ public class CombatResolver {
     }
 
     public void AddCombatMove(CombatMoveType type,
-                              CombatDuelActorSubCircle caster,
-                              CombatDuelActorSubCircle target,
+                              CombatDuelSubCircle caster,
+                              CombatDuelSubCircle target,
                               Spell spell) {
         // If this spell is already queued by the same caster, remove all of their queued actions.
         _queuedCombatActions.RemoveAll(x => x.SpellCaster == caster);
@@ -200,7 +200,7 @@ public class CombatResolver {
     private float HandleFizzleAction(QueuedCombatAction action, CombatActionListObj combatActionList) {
         var fizzleAction = InitializeCombatAction(action);
         fizzleAction.m_spellHits = (char) 0;
-        fizzleAction.m_targetSubcircleList.Add(action.SpellCaster?.SlotIndex ?? 0);
+        fizzleAction.m_targetSubcircleList.Add(action.SelectedTarget.SlotIndex);
         combatActionList.m_actionList.Add(fizzleAction);
 
         Logger.Debug("Duel {0} | Slot {1} | Spell fizzled.",
@@ -234,15 +234,15 @@ public class CombatResolver {
         return SPELL_PASS_TIME;
     }
 
-    private float InvokeOverTimeEffects(CombatDuelActorSubCircle caster) {
+    private float InvokeOverTimeEffects(CombatDuelSubCircle caster) {
         var dotEffects = caster._hangingEffects.Where(x => x.m_effectType == SpellEffect.kSpellEffects.kDamageOverTime);
         var hotEffects = caster._hangingEffects.Where(x => x.m_effectType == SpellEffect.kSpellEffects.kHealOverTime);
         var cinematicTime = dotEffects.Count() + hotEffects.Count() * OVER_TIME_ACTIVATION_TIME;
 
         foreach (var effect in dotEffects) {
             var initialDamage = effect.m_paramPerRound;
-            var wards = CombatWards.FindAppliedWards(caster, effect);
-            var damage = CombatWards.GetIncomingDamageFromWards(wards.ToArray(), initialDamage);
+            var wards = CombatWards.FindAppliedWards(caster, effect).ToList();
+            var damage = CombatWards.GetIncomingDamageFromWards(wards, initialDamage);
 
             // We don't need to calculate stats from gear because the initial application already did that.
 
@@ -271,7 +271,7 @@ public class CombatResolver {
         return cinematicTime;
     }
 
-    private void LogQueuedCombatAction(CombatMoveType type, CombatDuelActorSubCircle caster, CombatDuelActorSubCircle target, Spell spell) {
+    private void LogQueuedCombatAction(CombatMoveType type, CombatDuelSubCircle caster, CombatDuelSubCircle target, Spell spell) {
         if (type == CombatMoveType.ChangeMind) {
             Logger.Debug("Duel {0} | Slot {1} | Caster changed their mind and is not casting a spell",
                 Logger.Args(_duel.m_duelID, caster.SlotIndex));
@@ -333,7 +333,7 @@ public class CombatResolver {
         return count;
     }
 
-    private static bool SpellHits(CombatDuelActorSubCircle caster, Spell spell) {
+    private static bool SpellHits(CombatDuelSubCircle caster, Spell spell) {
         if (caster is null || spell is null) {
             return false;
         }
@@ -376,7 +376,7 @@ public class CombatResolver {
         return hitChance <= spellAccuracy;
     }
 
-    private static void DoSpellCastConsequences(CombatDuelActorSubCircle caster, CombatAction action) {
+    private static void DoSpellCastConsequences(CombatDuelSubCircle caster, CombatAction action) {
         if (action.m_spell is null) {
             return;
         }
@@ -395,7 +395,7 @@ public class CombatResolver {
         }
     }
 
-    private static bool ConsumeDispell(CombatDuelActorSubCircle caster, uint magicSchoolId) {
+    private static bool ConsumeDispell(CombatDuelSubCircle caster, uint magicSchoolId) {
         var dispellHangingEffect = caster._hangingEffects
             .FirstOrDefault(x => x.m_effectType == SpellEffect.kSpellEffects.kDispel
                      && StringHash.Compute(x.m_sDamageType) == magicSchoolId);
@@ -409,7 +409,7 @@ public class CombatResolver {
         }
     }
 
-    private static int ConsumeHangingAccuracyEffects(int startingAccuracy, CombatDuelActorSubCircle caster, uint magicSchoolId) {
+    private static int ConsumeHangingAccuracyEffects(int startingAccuracy, CombatDuelSubCircle caster, uint magicSchoolId) {
         var accuracyHangingEffects = caster._hangingEffects
             .Where(x => x.m_effectType == SpellEffect.kSpellEffects.kModifyAccuracy)
             .Where(x => x.m_damageType == magicSchoolId);

@@ -200,7 +200,7 @@ public static class LocalWadCache {
 
         var wadMeatSegment = new byte[segmentSize];
         Buffer.BlockCopy(data, wadHeaderSize, wadMeatSegment, 0, segmentSize);
-        var crc = crc32.Compute(wadMeatSegment);
+        var crc = Crc32.GetHash(uint.MaxValue, wadMeatSegment) ^ uint.MaxValue;
         return crc;
     }
 }

@@ -43,11 +43,6 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
     public WizZoneData ZoneData { get; set; }
     public ITimerScheduler Timers { get; set; }
 
-    private readonly CoreObjectSerializer _zoneObjectSerializer = new CoreObjectSerializer()
-            .OnBehaviors(SerializerOptions.Behaviors.None)
-            .OnPropertyMask(SerializerOptions.PropertyFlags.Public
-                | SerializerOptions.PropertyFlags.Transmit
-                | SerializerOptions.PropertyFlags.AuthorityTransmit);
     private readonly uint _dynamicZoneId;
     private readonly IActorRef _objectSupervisorRef; // Supervisor for all objects in this zone.
     private readonly IActorRef _sigilSupervisorRef;  // Supervisor for all sigils in this zone.
@@ -160,7 +155,8 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
     private ushort DecrementObjectIdentifiers() {
         lock (_mobileIdLock) {
             if (_nonreservedMobileIdCounter - 1 <= 0) {
-                throw new Exception($"Zone \"{ZoneName}\" reached the minimum mobile ID count!");
+                _nonreservedMobileIdCounter = 0;
+                return 0;
             }
 
             return --_nonreservedMobileIdCounter;
@@ -214,7 +210,7 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
         var rsp = new ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP {
             WizardGameObject = message.PlayerObject,
         };
-        Sender.Tell(rsp);
+        message.Player.Tell(rsp);
 
         Logger.Debug("{Name} added to zone {ZoneName}.", Logger.Args(message.ActualWizardName, ZoneName));
     }
@@ -226,7 +222,7 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
         DecrementObjectIdentifiers();
 
         var rsp = new ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP();
-        Sender.Tell(rsp);
+        message.Player.Tell(rsp);
 
         Logger.Debug("Player {Name} removed from zone {ZoneName}.",
             Logger.Args(message.Player.Path.Name, ZoneName));

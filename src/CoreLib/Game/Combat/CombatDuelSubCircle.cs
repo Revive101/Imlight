@@ -26,7 +26,7 @@ internal enum CombatSlotType {
     Player
 }
 
-public class CombatDuelActorSubCircle {
+public class CombatDuelSubCircle {
     private const float AGGRO_TIME_IN_SECONDS = 0.75f;
     private const byte MAX_PIP_COUNT = 7;
     private const byte PLAYER_HAND_SIZE = 7;
@@ -45,8 +45,11 @@ public class CombatDuelActorSubCircle {
         if (CombatParticipant is null) {
             return null;
         }
+        if (CombatParticipant is not null && CombatParticipant.m_hangingEffects is null) {
+            CombatParticipant.m_hangingEffects = new List<SpellEffect>();
+        }
 
-        return CombatParticipant.m_hangingEffects ?? new List<SpellEffect>();
+        return CombatParticipant.m_hangingEffects;
     }}
     public uint AvailableSpells {
         get {
@@ -86,7 +89,7 @@ public class CombatDuelActorSubCircle {
     private readonly Color _color;
 
     // ctor
-    internal CombatDuelActorSubCircle(CombatDuelActor duelActor, float radius, float rotation, Color color, int index) {
+    internal CombatDuelSubCircle(CombatDuelActor duelActor, float radius, float rotation, Color color, int index) {
         _duelActor = duelActor;
         _radius = radius;
         _rotation = rotation;
@@ -306,7 +309,9 @@ public class CombatDuelActorSubCircle {
         var isMastered = HasSchoolMastery((uint) school);
         var pipCount = CombatParticipant.m_pipCount;
 
-        while (spellRank > 0) {
+        // Deduct pips based on the spell rank.
+        // We have a second conditional here incase of byte overflow.
+        while (spellRank is > 0 and < (MAX_PIP_COUNT * 2)) {
             if (isMastered && pipCount.m_powerPips > 0) {
                 pipCount.m_powerPips--;
                 spellRank -= 2;
@@ -473,6 +478,10 @@ public class CombatDuelActorSubCircle {
             Yaw = WorldRotation,
             SigilGID = _duelActor.SigilId
         });
+
+        // Set the actual position of the game object to the sigil.
+        participantObject.m_location = new Vector3(WorldPosition.X, WorldPosition.Y, WorldPosition.Z);
+        participantObject.m_orientation = new Vector3(0, 0, WorldRotation);
 
         // Wait the amount of time it takes for the actor to enter the sigil, then set
         // their state to combat idle.

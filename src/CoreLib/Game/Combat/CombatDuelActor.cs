@@ -52,8 +52,8 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
     public ulong SigilId { get; private set; }
     public CombatResolver CombatResolver { get; private set; }
     public IActorRef ActorRef;
-    public CombatDuelActorSubCircle[] SubCircles = new CombatDuelActorSubCircle[8];
-    public CombatDuelActorSubCircle[] ActiveSubCircles => SubCircles.Where(x => x.Occupied).ToArray();
+    public CombatDuelSubCircle[] SubCircles = new CombatDuelSubCircle[8];
+    public CombatDuelSubCircle[] ActiveSubCircles => SubCircles.Where(x => x.Occupied).ToArray();
     public byte PlayerCount => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Player);
     public byte CreatureCount => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Monster);
     public byte AlivePlayerCount
@@ -402,7 +402,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         HandleFleeAction(subCircle);
     }
 
-    private void HandleDiscardMove(CombatDuelActorSubCircle caster, int spellSelection) {
+    private void HandleDiscardMove(CombatDuelSubCircle caster, int spellSelection) {
         var spell = caster.GetSpellFromLastHand((byte) spellSelection);
         caster.DiscardCard(spell);
 
@@ -410,7 +410,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             Logger.Args(Duel.m_duelID, caster.SlotIndex, spell.m_templateID.ToString() ?? "None"));
     }
 
-    private void HandlePassMove(CombatDuelActorSubCircle caster) {
+    private void HandlePassMove(CombatDuelSubCircle caster) {
         // If the participant passes, we don't need to know what spell they were casting.
         CombatResolver.AddCombatMove(CombatMoveType.Pass, caster, null, null);
 
@@ -419,7 +419,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         }
     }
 
-    private void HandleAttackMove(CombatDuelActorSubCircle caster, int spellSelection, uint spellTarget) {
+    private void HandleAttackMove(CombatDuelSubCircle caster, int spellSelection, uint spellTarget) {
         var spell = caster.GetSpellFromLastHand((byte) spellSelection);
         if (!caster.HasPipsForSpell(spell)) {
             Logger.Warning("Duel {0} | Slot {1} | Participant does not have enough pips for spell {2}",
@@ -441,7 +441,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         }
     }
 
-    private void HandleChangeMindAction(CombatDuelActorSubCircle caster) {
+    private void HandleChangeMindAction(CombatDuelSubCircle caster) {
         // Send the action director a null spell to indicate that the participant has changed their mind.
         CombatResolver.AddCombatMove(CombatMoveType.ChangeMind, caster, null, null);
 
@@ -451,7 +451,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         }
     }
 
-    private void HandleFleeAction(CombatDuelActorSubCircle caster) {
+    private void HandleFleeAction(CombatDuelSubCircle caster) {
         var actor = caster.ParticipantActor;
         var participantObjId = caster.ParticipantObject.m_globalID;
 
@@ -792,7 +792,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         });
     }
 
-    private void EnactActionOnSubCircles(Action<CombatDuelActorSubCircle> action) {
+    private void EnactActionOnSubCircles(Action<CombatDuelSubCircle> action) {
         foreach (var subCircle in ActiveSubCircles) {
             action(subCircle);
         }
@@ -822,9 +822,9 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         return duel;
     }
 
-    private CombatDuelActorSubCircle[] CreateDuelActorSubCircles(CombatSigilTemplate template) {
+    private CombatDuelSubCircle[] CreateDuelActorSubCircles(CombatSigilTemplate template) {
         var subCircles = template.m_subCircles;
-        var subCircleObjs = new CombatDuelActorSubCircle[8];
+        var subCircleObjs = new CombatDuelSubCircle[8];
 
         // The sigil rotation is stored between -pi and pi. We need it to be between 0 and 2pi.
         var sigilRotation = _sigilOrientation.Z;
@@ -857,7 +857,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             }
 
             // Cretae the sub circle object and add it to the array.
-            var subCircle = new CombatDuelActorSubCircle(this, radius, rotation, color, i) {
+            var subCircle = new CombatDuelSubCircle(this, radius, rotation, color, i) {
                 WorldPosition = rotatedSigilPos,
                 WorldRotation = faceTowardsYaw,
                 SlotName = subCircles[i].m_locationPreference,
@@ -869,7 +869,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         return subCircleObjs;
     }
 
-    private CombatDuelActorSubCircle GetAvailableSubCircleTeamCreature() {
+    private CombatDuelSubCircle GetAvailableSubCircleTeamCreature() {
         for (int i = 0; i < 4; i++) {
             if (!SubCircles[i].Occupied) {
                 return SubCircles[i];
@@ -879,7 +879,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         return null;
     }
 
-    private CombatDuelActorSubCircle GetAvailableSubCircleTeamPlayer() {
+    private CombatDuelSubCircle GetAvailableSubCircleTeamPlayer() {
         for (int i = 4; i < 8; i++) {
             if (!SubCircles[i].Occupied) {
                 return SubCircles[i];
@@ -889,7 +889,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         return null;
     }
 
-    private bool AssignParticipantToSubCircle(CombatDuelActorSubCircle subCircle, IActorRef actorRef, CoreObject coreObject) {
+    private bool AssignParticipantToSubCircle(CombatDuelSubCircle subCircle, IActorRef actorRef, CoreObject coreObject) {
         if (subCircle.ParticipantActor != null) {
             return false;
         }

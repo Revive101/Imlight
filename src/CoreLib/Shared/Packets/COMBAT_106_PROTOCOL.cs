@@ -87,7 +87,7 @@ namespace Imlight.CoreLib.Shared.Packets {
 
             public IActorRef DuelActor;
             public CombatDuelActor Duel;
-            public CombatDuelActorSubCircle SubCircle;
+            public CombatDuelSubCircle SubCircle;
             public Vector3 SlotPosition;
             public float SlotOrientation;
         }
@@ -145,8 +145,8 @@ namespace Imlight.CoreLib.Shared.Packets {
             public byte MessageOrder => 17;
             public byte ServiceID => 106;
 
-            public CombatDuelActorSubCircle Caster;
-            public CombatDuelActorSubCircle[] Targets;
+            public CombatDuelSubCircle Caster;
+            public CombatDuelSubCircle[] Targets;
             public SpellEffect Effect;
         }
 
