@@ -219,9 +219,12 @@ public class ZoneService : MessageService, IWithTimers {
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PLAYERADDEDTOZONE))]
     private void ReceiveNewPlayerAddedToZone(ZONE_102_PROTOCOL.MSG_PLAYERADDEDTOZONE message) {
         // A new player has been added to the zone. We need to spawn them.
-        // Throw an exception if this is myself.
+        // Skip if this is myself.
         if (message.Player == SessionActor.ActorRef) {
-            throw new Exception("Player added to zone is the same as the current player.");
+            Logger.Error("{0} {1} received {2} for self.",
+                Logger.Args(SessionActor.ActorRef, SessionActor.SessionID, message.GetType()));
+
+            return;
         }
 
         // Spawn myself for the new player.
@@ -233,6 +236,9 @@ public class ZoneService : MessageService, IWithTimers {
         // A player has been removed from the zone. We need to remove them.
         // Skip if this is myself.
         if (message.Player == SessionActor.ActorRef) {
+            Logger.Error("{0} {1} received {2} for self.",
+                Logger.Args(SessionActor.ActorRef, SessionActor.SessionID, message.GetType()));
+
             return;
         }
 

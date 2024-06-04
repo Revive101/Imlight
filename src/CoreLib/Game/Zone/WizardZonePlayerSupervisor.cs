@@ -33,7 +33,7 @@ public class WizardZonePlayerSupervisor : ReceiveProtocolDispatcher {
                 continue;
             }
 
-            player.Tell(message);
+            player.Tell(message.Message);
         }
     }
 
