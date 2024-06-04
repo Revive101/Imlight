@@ -14,6 +14,7 @@ using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Models.Player;
 using SharpDX;
 using static Imlight.Common.Caches.ServerTypeCache;
+using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Shared.Packets;
 
@@ -59,7 +60,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte MessageOrder { get; } = 4;
         public byte ServiceID { get; } = 102;
 
-        public ushort GivenMobileId;
+        public CoreObject WizardGameObject;
     }
 
     public class MSG_REMOVEPLAYER : IServerMessage {
@@ -243,5 +244,21 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     public class MSG_HEALTICK : IServerMessage {
         public byte MessageOrder { get; } = 28;
         public byte ServiceID { get; } = 102;
+    }
+
+    public class MSG_PLAYERADDEDTOZONE : IServerMessage {
+        public byte MessageOrder { get; } = 29;
+        public byte ServiceID { get; } = 102;
+
+        public IActorRef Player;
+        public CoreObject PlayerObject;
+    }
+
+    public class MSG_PLAYERREMOVEDFROMZONE : IServerMessage {
+        public byte MessageOrder { get; } = 30;
+        public byte ServiceID { get; } = 102;
+
+        public IActorRef Player;
+        public ulong GlobalId;
     }
 }

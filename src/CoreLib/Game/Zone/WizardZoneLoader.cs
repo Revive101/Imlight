@@ -137,8 +137,7 @@ public static class WizardZoneLoader {
         Logger.Verbose("Loading zone data for {ZoneName}...", Logger.Args(s_zone.ZoneName));
 
         var serializer = new FileSerializer();
-        var s =s_zoneData = serializer.OpenClass<WizZoneData>(s_wad, ZoneDataFileName);
-        s_zone.ZoneDisplayName = s_zoneData.m_zoneDisplayName;
+        s_zoneData = serializer.OpenClass<WizZoneData>(s_wad, ZoneDataFileName);
 
         if (s_zoneData is null) {
             Logger.Error("Zone {ZoneName} could not load {ZoneDataFileName} as it was missing or invalid.",

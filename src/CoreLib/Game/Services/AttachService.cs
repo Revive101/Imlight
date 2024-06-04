@@ -179,13 +179,7 @@ internal class AttachService : MessageService {
             Wizard = wizard,
             ActualWizardName = wizard.PlayerNameBehavior.GetWizardName(),
         };
-        var reply = AskOtherService<ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP>(msg);
-
-        if (reply.GivenMobileId == 0) {
-            throw new ServiceRetryException("Failed to add player to zone.");
-        }
-
-        wizard.GameObject.m_nMobileID = reply.GivenMobileId;
+        TellOtherServices(msg);
     }
 
     private SERVER_100_PROTOCOL.MSG_SERVERINFO GetGameServer() {

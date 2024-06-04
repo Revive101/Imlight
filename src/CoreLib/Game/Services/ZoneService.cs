@@ -35,6 +35,11 @@ public class ZoneService : MessageService, IWithTimers {
                     .OnBehaviors(SerializerOptions.Behaviors.None)
                     .OnPropertyMask(SerializerOptions.PropertyFlags.Transmit
                                   | SerializerOptions.PropertyFlags.AuthorityTransmit);
+    private readonly CoreObjectSerializer _zoneObjectSerializer = new CoreObjectSerializer()
+            .OnBehaviors(SerializerOptions.Behaviors.None)
+            .OnPropertyMask(SerializerOptions.PropertyFlags.Public
+                | SerializerOptions.PropertyFlags.Transmit
+                | SerializerOptions.PropertyFlags.AuthorityTransmit);
 
     public ZoneService(SessionActor sessionActor) : base(sessionActor) { }
 
@@ -205,6 +210,40 @@ public class ZoneService : MessageService, IWithTimers {
         ZoneActor.Forward(message);
     }
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP))]
+    private void ReceiveAddPlayerRsp(ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP message) {
+        // I've just been added to a zone. I need to spawn myself for all the other players.
+        SpawnMyself();
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PLAYERADDEDTOZONE))]
+    private void ReceiveNewPlayerAddedToZone(ZONE_102_PROTOCOL.MSG_PLAYERADDEDTOZONE message) {
+        // A new player has been added to the zone. We need to spawn them.
+        // Throw an exception if this is myself.
+        if (message.Player == SessionActor.ActorRef) {
+            throw new Exception("Player added to zone is the same as the current player.");
+        }
+
+        // Spawn myself for the new player.
+        SpawnMyselfFor(message.Player);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PLAYERREMOVEDFROMZONE))]
+    private void ReceivePlayerRemovedFromZone(ZONE_102_PROTOCOL.MSG_PLAYERREMOVEDFROMZONE message) {
+        // A player has been removed from the zone. We need to remove them.
+        // Skip if this is myself.
+        if (message.Player == SessionActor.ActorRef) {
+            return;
+        }
+
+        // Remove the player from the zone.
+        var removeMsg = new GAME_5_PROTOCOL.MSG_REMOVEOBJECT {
+            GameObjectID = message.GlobalId
+        };
+
+        SendToSocket(removeMsg);
+    }
+
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
     private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message) {
         if (ZoneActor is null) {
@@ -339,6 +378,33 @@ public class ZoneService : MessageService, IWithTimers {
             MobileID = GetActiveGameObject().m_nMobileID,
         };
         SendToSocket(serverTele);
+    }
+
+    private void SpawnMyself() {
+        var wizard = GetActiveWizard();
+        var properGameObj = WizardObjectLoader.GetPlayerGameObject(wizard);
+        var gameObjData = _zoneObjectSerializer.Serialize(properGameObj);
+
+        var addMsg = new GAME_5_PROTOCOL.MSG_NEWOBJECT {
+            Data = gameObjData,
+        };
+        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+            Message = addMsg
+        };
+
+        ZoneActor.Tell(broadcastMsg);
+    }
+
+    private void SpawnMyselfFor(IActorRef actorRef) {
+        var wizard = GetActiveWizard();
+        var properGameObj = WizardObjectLoader.GetPlayerGameObject(wizard);
+        var gameObjData = _zoneObjectSerializer.Serialize(properGameObj);
+
+        var addMsg = new GAME_5_PROTOCOL.MSG_NEWOBJECT {
+            Data = gameObjData,
+        };
+
+        actorRef.Tell(addMsg);
     }
 
     private void SendTeleportEffects() {

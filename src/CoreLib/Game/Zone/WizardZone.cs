@@ -52,20 +52,21 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
     private readonly IActorRef _objectSupervisorRef; // Supervisor for all objects in this zone.
     private readonly IActorRef _sigilSupervisorRef;  // Supervisor for all sigils in this zone.
     private readonly IActorRef _duelSupervisorRef;   // Supervisor for all duels in this zone.
-    private readonly Dictionary<IActorRef, Wizard> _zonePlayers;
+    private readonly IActorRef _playerSupervisorRef; // Supervisor for all players in this zone.
     private readonly string _mobileIdLock = string.Empty;
     private ushort _reservedMobileIdCounter;
+    private ushort _nonreservedMobileIdCounter;
 
     // ctor
     public WizardZone(string zoneName) {
         ZoneName = zoneName;
         _dynamicZoneId = GenerateDynamicZoneId();
-        _zonePlayers = new Dictionary<IActorRef, Wizard>();
 
         // Create supervisor children. This just helps offload most of the work.
         _objectSupervisorRef = CreateObjectSupervisor();
         _sigilSupervisorRef = CreateSigilSupervisor();
         _duelSupervisorRef = CreateDuelSupervisor();
+        _playerSupervisorRef = CreatePlayerSupervisor();
 
         // Load and initialize this zone.
         WizardZoneLoader.LoadZoneData(this, Self);
@@ -87,19 +88,6 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
         base.PreRestart(reason, message);
     }
 
-    private void Broadcast(IMessage message) {
-        foreach (var player in _zonePlayers.Keys) {
-            player.Tell(message);
-        }
-    }
-
-    private void BroadcastSelfless(IActorRef sender, IMessage message) {
-        foreach (var player in _zonePlayers.Keys
-                     .Where(player => !player.Equals(sender))) {
-            player.Tell(message);
-        }
-    }
-
     private IActorRef CreateObjectSupervisor() {
         var props = WizardZoneObjectSupervisor.Props(Self);
         return Context.ActorOf(props);
@@ -115,10 +103,12 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
         return Context.ActorOf(props);
     }
 
-    private void BroadcastObjectCreation(CoreObject obj)
-        => Broadcast(new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = _zoneObjectSerializer.Serialize(obj) });
+    private IActorRef CreatePlayerSupervisor() {
+        var props = WizardZonePlayerSupervisor.Props(Self);
+        return Context.ActorOf(props);
+    }
 
-    private void InformZoneObjectsOfJoin(ZONE_102_PROTOCOL.MSG_ADDPLAYER message) {
+    private void InformZoneEntitesOfPlayerEnter(ZONE_102_PROTOCOL.MSG_ADDPLAYER message) {
         var msg = new ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST {
             Source = message.Player,
             Messages = new IServerMessage[] { message }
@@ -129,24 +119,25 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
         _sigilSupervisorRef.Tell(msg);
         _duelSupervisorRef.Tell(msg);
 
-        // Broadcast this new player to each existing player in the zone.
-        BroadcastObjectCreation(message.PlayerObject);
+        _playerSupervisorRef.Tell(message);
     }
 
-    private void InformZoneObjectsOfDeparture(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message) =>
-        // Forward the departure message to every zone object so that they may personally deal with this situation.
-        _objectSupervisorRef.Tell(new ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST {
+    private void InformZoneEntitiesOfPlayerExit(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message) {
+        var msg = new ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST {
             Source = message.Player,
             Messages = new IServerMessage[] { message }
-        });
+        };
 
-    private void SpawnPlayersForNewClient(IActorRef client) {
-        // Now spawn each existing player.
-        foreach (var obj in _zonePlayers.Values) {
-            var playerObj = WizardObjectLoader.GetPlayerGameObject(obj);
-            var msg = new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = _zoneObjectSerializer.Serialize(playerObj) };
-            client.Tell(msg);
+        // Forward the remove player message to every zone object so that they may personally deal with this situation.
+        // These supervisors supervise non-player entities, so we don't need to inform them.
+        if (!message.IsPlayerStillConnected) {
+            _objectSupervisorRef.Tell(msg);
+            _sigilSupervisorRef.Tell(msg);
+            _duelSupervisorRef.Tell(msg);
         }
+
+        // We do, however, want to inform players that a player has left.
+        _playerSupervisorRef.Tell(message);
     }
 
     private static uint GenerateDynamicZoneId() {
@@ -156,21 +147,23 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
         return (uint) random.Next(0, int.MaxValue);
     }
 
-    private ushort GenerateMobileId() {
+    private ushort IncremementObjectIdentifiers() {
         lock (_mobileIdLock) {
-            // Avoid collisions as much as possible.
-            ushort test;
-            var r = new Random();
-            while (true) {
-                test = (ushort) r.Next(RESERVED_MOBILE_ID_MAX, ushort.MaxValue);
-                if (_zonePlayers.Values.Any(x => x.GameObject.m_nMobileID == test)) {
-                    continue;
-                }
-
-                break;
+            if (_nonreservedMobileIdCounter + 1 >= ushort.MaxValue) {
+                throw new Exception($"Zone \"{ZoneName}\" reached the maximum mobile ID count!");
             }
 
-            return test;
+            return ++_nonreservedMobileIdCounter;
+        }
+    }
+
+    private ushort DecrementObjectIdentifiers() {
+        lock (_mobileIdLock) {
+            if (_nonreservedMobileIdCounter - 1 <= 0) {
+                throw new Exception($"Zone \"{ZoneName}\" reached the minimum mobile ID count!");
+            }
+
+            return --_nonreservedMobileIdCounter;
         }
     }
 
@@ -193,7 +186,7 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
             ZoneActorRef = Self,
             DynamicZoneId = _dynamicZoneId,
             ErrorCode = 0,
-            MobileId = GenerateMobileId(),
+            MobileId = IncremementObjectIdentifiers(),
             ZoneDisplayName = ZoneDisplayName
         };
 
@@ -215,42 +208,22 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
     private void ReceiveAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message) {
-        if (_zonePlayers.ContainsKey(message.Player)) {
-            throw new Exception("Player actor already exists in this zone!");
-        }
+        // Inform all other zone entitites of the new player.
+        InformZoneEntitesOfPlayerEnter(message);
 
-        InformZoneObjectsOfJoin(message);
-        SpawnPlayersForNewClient(message.Player);
-
-        // Now we add the player, so they don't end up creating themselves when we spawn each zone object.
-        _zonePlayers.Add(message.Player, message.Wizard);
-
-        // Inform the player that they've been successfully added to the zone. We want to reply to the callee
-        // and any services that may be waiting for this reply.
-        var response = new ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP {
-            GivenMobileId = GenerateMobileId()
+        var rsp = new ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP {
+            WizardGameObject = message.PlayerObject,
         };
-        Sender.Tell(response);
-        message.Player.Tell(response);
+        Sender.Tell(rsp);
 
         Logger.Debug("{Name} added to zone {ZoneName}.", Logger.Args(message.ActualWizardName, ZoneName));
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER))]
     private void ReceiveRemovePlayer(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message) {
-        // Make sure this player is in this zone. This is just a sanity check, and with different race conditions
-        // it's possible that this player is no longer in this zone. If that's the case, we just ignore this message.
-        if (!_zonePlayers.Remove(message.Player)) {
-            return;
-        }
-
-        // Don't send a torrent of messages to a disconnected socket.
-        if (message.IsPlayerStillConnected) {
-            InformZoneObjectsOfDeparture(message);
-        }
-
-        // Inform every other player that this object has been removed.
-        Broadcast(new GAME_5_PROTOCOL.MSG_REMOVEOBJECT { GameObjectID = message.GlobalId });
+        // Inform all other zone entities of the player leaving.
+        InformZoneEntitiesOfPlayerExit(message);
+        DecrementObjectIdentifiers();
 
         var rsp = new ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP();
         Sender.Tell(rsp);
@@ -260,14 +233,8 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
-    private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message) {
-        if (message.Selfless) {
-            BroadcastSelfless(message.Sender, message.Message);
-        }
-        else {
-            Broadcast(message.Message);
-        }
-    }
+    private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message)
+        => _playerSupervisorRef.Forward(message);
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPATH))]
     private void ReceiveAddPath(ZONE_102_PROTOCOL.MSG_ADDPATH message)
@@ -361,42 +328,43 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_HEALTICK))]
     private void ReceiveHealTick(ZONE_102_PROTOCOL.MSG_HEALTICK message) {
-        if (_zonePlayers.Count == 0) {
-            return;
-        }
-
-        foreach (var (a, w) in _zonePlayers) {
-            var currentWizardHealth = w.GameStats.m_currentHitpoints;
-            var maxWizardHealth = w.GameStats.m_baseHitpoints;
-
-            // If this wizard is max health, skip.
-            if (currentWizardHealth >= maxWizardHealth) {
-                continue;
-            }
-
-            // Update our Wizard server side.
-            var healPerMinute = ZoneData.m_healingPerMinute;
-            float healPercentage = (float) healPerMinute / (60 / HEAL_INTERVAL_PER_MINUTE_IN_SECONDS);
-            float healAmount = healPercentage / 100 * maxWizardHealth;
-            var newHealth = Math.Min(currentWizardHealth + (int) healAmount, maxWizardHealth);
-
-            w.UpdateHealth(newHealth);
-
-            // Inform the client about the new health changes.
-            // The client has a max health increase effect applied, so sending it here would double the health client side.
-            var magicSchool = w.MagicSchoolBehavior.MagicSchool;
-            var level = w.MagicSchoolBehavior.Level;
-            var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(magicSchool, level);
-            var normMaxHealth = baseStats.m_hitpoints;
-
-            var networkMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH() {
-                CharacterID = w.GameObject.m_globalID,
-                NewHealth = newHealth,
-                NewHealthMax = normMaxHealth,
-                DisplayDiff = 1,
-            };
-            a.Tell(networkMessage);
-        }
+        // todo
+        //if (_zonePlayers.Count == 0) {
+        //    return;
+        //}
+//
+        //foreach (var (a, w) in _zonePlayers) {
+        //    var currentWizardHealth = w.GameStats.m_currentHitpoints;
+        //    var maxWizardHealth = w.GameStats.m_baseHitpoints;
+//
+        //    // If this wizard is max health, skip.
+        //    if (currentWizardHealth >= maxWizardHealth) {
+        //        continue;
+        //    }
+//
+        //    // Update our Wizard server side.
+        //    var healPerMinute = ZoneData.m_healingPerMinute;
+        //    float healPercentage = (float) healPerMinute / (60 / HEAL_INTERVAL_PER_MINUTE_IN_SECONDS);
+        //    float healAmount = healPercentage / 100 * maxWizardHealth;
+        //    var newHealth = Math.Min(currentWizardHealth + (int) healAmount, maxWizardHealth);
+//
+        //    w.UpdateHealth(newHealth);
+//
+        //    // Inform the client about the new health changes.
+        //    // The client has a max health increase effect applied, so sending it here would double the health client side.
+        //    var magicSchool = w.MagicSchoolBehavior.MagicSchool;
+        //    var level = w.MagicSchoolBehavior.Level;
+        //    var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(magicSchool, level);
+        //    var normMaxHealth = baseStats.m_hitpoints;
+//
+        //    var networkMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH() {
+        //        CharacterID = w.GameObject.m_globalID,
+        //        NewHealth = newHealth,
+        //        NewHealthMax = normMaxHealth,
+        //        DisplayDiff = 1,
+        //    };
+        //    a.Tell(networkMessage);
+        //}
     }
 
     #endregion
