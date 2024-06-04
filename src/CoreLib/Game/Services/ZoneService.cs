@@ -123,6 +123,8 @@ public class ZoneService : MessageService, IWithTimers {
         character.QueuedZoneLocation = Util.GetCompactStringFromVector(character.Location, character.Orientation);
     }
 
+    // This button and the GotoDorm button are locked client-side until level 2. 
+    // jooty, again? cmon man
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_GOHOME))]
     private void ReceiveGoHome(WIZARD_12_PROTOCOL.MSG_GOHOME message) {
         // this teleports the wizard to the world hub, NOT their home/dorm. for that you want MSG_GOTODORM. goofy ahh naming scheme
@@ -143,6 +145,8 @@ public class ZoneService : MessageService, IWithTimers {
         Timers.StartSingleTimer("zonetransfer", tpmsg, delay);
     }
 
+    // This button and the GoHome button are locked client-side until level 2. 
+    // jooty, again? cmon man
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_GOTODORM))]
     private void ReceiveGotoDorm(WIZARD_12_PROTOCOL.MSG_GOTODORM message) {
         var wizard = GetActiveWizard();
