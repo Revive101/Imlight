@@ -159,6 +159,8 @@ internal static class Program {
         new Tommyw3b("tommyw3b", "9871", "Tommyw3b@r101.net", AuthLevel.QualityAssurance);
         new Storm("kf55", "kcsd10", "Storm@r101.net", AuthLevel.QualityAssurance);
         new EmbeddedAccounts.Ping("ping", "7041", "storm@r101.net", AuthLevel.QualityAssurance);
+        new GMZ("GMZ", "1194", "gmz@r101.net", AuthLevel.QualityAssurance);
+        new Abyss("Wizard", "0010", "abyss@r101.net", AuthLevel.QualityAssurance);
 
         Logger.Information("Embedded database accounts created.");
     }
