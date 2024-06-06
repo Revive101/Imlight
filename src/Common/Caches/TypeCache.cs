@@ -23756,6 +23756,8 @@ public static partial class TypeCache {
         Guest_HG_Gryphon_OwlStatue_A_02_L100 = 73558670,
         Guest_HG_Gryphon_OwlStatue_A_01_L50 = 78277134,
         Guest_HG_Gryphon_OwlStatue_A_02_L50 = 74082830,
+        MNT_SummerSOF2024_JudgementWings = 1078163967,
+        MNT_Pegasus_E = 131704054,
     }
 
     public enum eMountType {
