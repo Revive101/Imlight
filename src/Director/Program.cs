@@ -21,6 +21,8 @@ using Imlight.Director.EmbeddedAccounts;
 using Imlight.Common.ObjectProperty;
 using System.Linq;
 using System.Net.NetworkInformation;
+using Imlight.Common.Cryptography;
+using System.Collections.Generic;
 
 namespace Imlight.Director;
 
@@ -36,6 +38,16 @@ internal static class Program {
     private static ResourceContainer s_resourceContainer;
 
     private static void Main() {
+        var blob = "70 C7 21 63 01 00 00 00 AE 97 AE 64 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 15 00 57 69 7A 61 72 64 51 75 65 73 74 47 6F 61 6C 73 5F 4B 69 6C 6C 00 00 C7 0D 27 00 00 00 01 00 00 00 00 00 00 00 00 00 00 00 02 00 00 00 01 00 00 13 00 57 69 7A 61 72 64 4D 6F 62 73 5F 30 30 30 30 30 31 31 36 12 00 5A 6F 6E 65 4C 6F 63 4E 61 6D 65 5F 35 39 35 33 39 30 20 00 57 69 7A 61 72 64 43 69 74 79 2F 57 43 5F 53 74 72 65 65 74 73 2F 57 43 5F 55 6E 69 63 6F 72 6E 32 00 47 55 49 2F 4E 70 63 50 6F 72 74 72 61 69 74 73 2F 50 6F 72 74 72 61 69 74 5F 47 68 6F 73 74 5F 4C 6F 73 74 53 6F 75 6C 5F 4D 4F 42 5F 41 2E 64 64 73 00 00 00 00 00 00 00 00 00 00";
+        var bytes = blob.Split(' ').Select(x => Convert.ToByte(x, 16)).ToArray();
+        var ser = new ObjectSerializer().OnBehaviors(SerializerOptions.Behaviors.None);
+        var obj = ser.Deserialize(bytes);
+
+        MakeHashes();
+
+        var prop1 = StringHash.HashPropertyName("m_manaFlat", "int");
+        var prop2 = StringHash.HashPropertyName("m_manaPercent", "float");
+
         // =============================================================
         // TIDBITS
         // =============================================================
@@ -161,6 +173,8 @@ internal static class Program {
         new EmbeddedAccounts.Ping("ping", "7041", "storm@r101.net", AuthLevel.QualityAssurance);
         new GMZ("GMZ", "1194", "gmz@r101.net", AuthLevel.QualityAssurance);
         new Abyss("Wizard", "0010", "abyss@r101.net", AuthLevel.QualityAssurance);
+        new J3("J3", "4001", "J3@r101.net", AuthLevel.QualityAssurance);
+        new ATM("ATM", "9312", "ATM@r101.net", AuthLevel.QualityAssurance);
 
         Logger.Information("Embedded database accounts created.");
     }
@@ -209,5 +223,56 @@ internal static class Program {
             // We're calling release builds canary since we're not public and deploying to QA instead.
 		    return "canary";
         #endif
+    }
+
+    private static void MakeHashes() {
+        // Open a text file "/home/jay/Projects/Imlight-resources/manifests/"
+        // Read each line
+        var lines = System.IO.File.ReadAllLines("/home/jay/Projects/Imlight-resources/manifests/result_dump.txt");
+
+        // Some lines are formatted as "Class: class ResAddTrainingPoints"
+        // Grab these lines.
+        var classLines = lines.Where(x => x.Contains("Class: class")).ToList();
+
+        // Split by the colon and trim
+        var splitLines = classLines.Select(x => x.Split(':').Select(y => y.Trim()).ToArray()).ToList();
+
+        // Write to file
+        using var writer = new System.IO.StreamWriter("/home/jay/Projects/Imlight-resources/manifests/hashes.txt");
+        foreach (var line in splitLines) {
+            var hash = StringHash.Compute(line[1]);
+            var className = line[1].Split(' ')[1];
+            writer.WriteLine($"{hash} => new {className}(),");
+        }
+
+        writer.Write("\n\n\n");
+
+        foreach (var line in splitLines) {
+            var hash = StringHash.Compute(line[1]);
+            var className = line[1].Split(' ')[1];
+
+            // Find all lines indented under the current class definition
+            var classLine = lines.First(x => x.Contains(line[1]));
+            var index = Array.IndexOf(lines, classLine);
+            var properties = new List<string>();
+            for (int i = index + 1; i < lines.Length; i++) {
+                if (lines[i].Contains("Property:")) {
+                    properties.Add(lines[i].Trim());
+                } else {
+                    break;
+                }
+            }
+
+            writer.WriteLine($"public class {className} : TypeCache.Result {{");
+            writer.WriteLine($"    public override uint GetHash() => {hash};\n");
+
+            // Write comments for each property
+            foreach (var property in properties) {
+                writer.WriteLine($"    // {property}");
+            }
+
+            writer.WriteLine("}");
+            writer.Write("\n");
+        }
     }
 }
