@@ -29,10 +29,28 @@ internal class WizardZoneTrigger : ReceiveProtocolDispatcher {
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_POSTEVENT))]
     private void ReceivePostEvent(ZONE_102_PROTOCOL.MSG_POSTEVENT message) {
         // todo: requirements
-        // todo: cooldowns
+        if (_trigger.m_cooldown > 0 && !CooldownCheck(message.SenderActor)) {
+            return;
+        }
 
         foreach (var ev in _trigger.m_results.m_results) {
             ResultDispatcher.DispatchResult(this.Sender, message.SenderActor, ev);
         }
+    }
+
+    private bool CooldownCheck(IActorRef playerRef) {
+        if (_cooldowns.TryGetValue(playerRef, out var lastTriggered)) {
+            if (DateTime.Now - lastTriggered < TimeSpan.FromSeconds(_trigger.m_cooldown)) {
+                return false;
+            }
+            else {
+                _cooldowns[playerRef] = DateTime.Now;
+            }
+        }
+        else {
+            _cooldowns.Add(playerRef, DateTime.Now);
+        }
+
+        return true;
     }
 }
