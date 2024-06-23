@@ -4,14 +4,17 @@
  */
 
 using Akka.Actor;
-using Imlight.Common;
+using Imlight.CoreLib.Game.Events;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using System;
+using System.Collections.Generic;
 using static Imlight.Common.Caches.ServerTypeCache;
 
 namespace Imlight.CoreLib.Game.Zone;
 
 internal class WizardZoneTrigger : ReceiveProtocolDispatcher {
+    private readonly Dictionary<IActorRef, DateTime> _cooldowns = new(); // todo
     private Trigger _trigger;
 
     // Akka.NET ctor
@@ -25,6 +28,10 @@ internal class WizardZoneTrigger : ReceiveProtocolDispatcher {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_POSTEVENT))]
     private void ReceivePostEvent(ZONE_102_PROTOCOL.MSG_POSTEVENT message) {
-        Logger.Information("Received event {0}", Logger.Args(message.EventName));
+        // todo: requirements
+
+        foreach (var ev in _trigger.m_results.m_results) {
+            ResultDispatcher.DispatchResult(this.Sender, message.SenderActor, ev);
+        }
     }
 }
