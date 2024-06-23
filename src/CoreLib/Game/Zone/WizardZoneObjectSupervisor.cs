@@ -65,9 +65,7 @@ public class WizardZoneObjectSupervisor : ReceiveProtocolDispatcher {
         var props = WizardZoneVolume.Props(message.CoreObject,
                                            null,
                                            _wizardZoneRef,
-                                           message.Volume,
-                                           message.EnterEvents,
-                                           message.ExitEvents);
+                                           message.Volume);
         CreateActorAndRespond(props);
     }
 

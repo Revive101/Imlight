@@ -20,6 +20,7 @@ using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.Shared.Character;
 using static Imlight.Common.Caches.TypeCache;
 using Imlight.Common.IO;
+using static Imlight.Common.Caches.ServerTypeCache;
 
 namespace Imlight.CoreLib.Game.Zone;
 
@@ -44,10 +45,11 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
     public ITimerScheduler Timers { get; set; }
 
     private readonly uint _dynamicZoneId;
-    private readonly IActorRef _objectSupervisorRef; // Supervisor for all objects in this zone.
-    private readonly IActorRef _sigilSupervisorRef;  // Supervisor for all sigils in this zone.
-    private readonly IActorRef _duelSupervisorRef;   // Supervisor for all duels in this zone.
-    private readonly IActorRef _playerSupervisorRef; // Supervisor for all players in this zone.
+    private readonly IActorRef _objectSupervisorRef;  // Supervisor for all objects in this zone.
+    private readonly IActorRef _sigilSupervisorRef;   // Supervisor for all sigils in this zone.
+    private readonly IActorRef _duelSupervisorRef;    // Supervisor for all duels in this zone.
+    private readonly IActorRef _playerSupervisorRef;  // Supervisor for all players in this zone.
+    private readonly IActorRef _triggerSupervisorRef; // Supervisor for all triggers in this zone.
     private readonly string _mobileIdLock = string.Empty;
     private ushort _reservedMobileIdCounter;
     private ushort _nonreservedMobileIdCounter = RESERVED_MOBILE_ID_MAX + 1;
@@ -62,6 +64,7 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
         _sigilSupervisorRef = CreateSigilSupervisor();
         _duelSupervisorRef = CreateDuelSupervisor();
         _playerSupervisorRef = CreatePlayerSupervisor();
+        _triggerSupervisorRef = CreateTriggerSupervisor();
 
         // Load and initialize this zone.
         WizardZoneLoader.LoadZoneData(this, Self);
@@ -108,6 +111,11 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
 
     private IActorRef CreatePlayerSupervisor() {
         var props = WizardZonePlayerSupervisor.Props(Self);
+        return Context.ActorOf(props);
+    }
+
+    private IActorRef CreateTriggerSupervisor() {
+        var props = WizardZoneTriggerSupervisor.Props();
         return Context.ActorOf(props);
     }
 
@@ -299,6 +307,14 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
         // Inform the object supervisor to create an actor representation and add it to the zone objects list.
         _objectSupervisorRef.Tell(message);
     }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDTRIGGER))]
+    private void ReceiveAddTrigger(ZONE_102_PROTOCOL.MSG_ADDTRIGGER message)
+        => _triggerSupervisorRef.Forward(message);
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_POSTEVENT))]
+    private void ReceivePostEvent(ZONE_102_PROTOCOL.MSG_POSTEVENT message)
+        => _triggerSupervisorRef.Forward(message);
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_FISHINTERACTION))]
     private void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_FISHINTERACTION message) {

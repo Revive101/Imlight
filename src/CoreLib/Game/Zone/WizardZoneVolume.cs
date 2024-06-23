@@ -18,53 +18,55 @@ namespace Imlight.CoreLib.Game.Zone;
 /// A volume is a space in the game world that can be used to trigger events when a player enters or exits it.
 /// </summary>
 public class WizardZoneVolume : WizardZoneObject {
-    private readonly List<Trigger> _enterEvents;
-    private readonly List<Trigger> _exitEvents;
+    private Volume _volume;
 
     // ctor
     public WizardZoneVolume(CoreObject activeGameObject,
                             CoreTemplate template,
                             IActorRef wizardZoneRef,
-                            Volume volume,
-                            List<Trigger> enterEvents,
-                            List<Trigger> exitEvents)
+                            Volume volume)
         : base(activeGameObject, template, wizardZoneRef) {
-        this._enterEvents = enterEvents;
-        this._exitEvents = exitEvents;
         base.InteractionRadius = volume.m_radius;
+        this._volume = volume;
     }
 
     // Akka.NET ctor
     public static Props Props(CoreObject activeGameObject,
                               CoreTemplate template,
                               IActorRef wizardZoneRef,
-                              Volume volume,
-                              List<Trigger> enterEvents,
-                              List<Trigger> exitEvents)
+                              Volume volume)
         => Akka.Actor.Props.Create(() => new WizardZoneVolume(activeGameObject,
                                                               template,
                                                               wizardZoneRef,
-                                                              volume,
-                                                              enterEvents,
-                                                              exitEvents));
+                                                              volume));
 
     protected override void OnPlayerInteractionEnter(CoreObject player, IActorRef suspect) {
         base.OnPlayerInteractionEnter(player, suspect);
 
-        foreach (var enterEvent in _enterEvents) {
-            foreach (var eventResult in enterEvent.m_results.m_results) {
-                DoResult(eventResult, suspect);
-            }
+        foreach (var enterEvent in _volume.m_enterEvents) {
+            var postEventMsg = new ZONE_102_PROTOCOL.MSG_POSTEVENT {
+                EventName = enterEvent,
+                ZoneActor = WizardZoneRef,
+                SenderActor = suspect,
+                SenderGameObject = player
+            };
+
+            WizardZoneRef.Tell(postEventMsg);
         }
     }
 
     protected override void OnPlayerInteractionExit(CoreObject player, IActorRef suspect) {
         base.OnPlayerInteractionExit(player, suspect);
 
-        foreach (var exitEvent in _exitEvents) {
-            foreach (var eventResult in exitEvent.m_results.m_results) {
-                DoResult(eventResult, suspect);
-            }
+        foreach (var exitEvent in _volume.m_exitEvents) {
+            var postEventMsg = new ZONE_102_PROTOCOL.MSG_POSTEVENT {
+                EventName = exitEvent,
+                ZoneActor = WizardZoneRef,
+                SenderActor = suspect,
+                SenderGameObject = player
+            };
+
+            WizardZoneRef.Tell(postEventMsg);
         }
     }
 

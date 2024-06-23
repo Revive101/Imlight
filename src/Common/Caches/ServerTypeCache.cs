@@ -131,7 +131,7 @@ public static class ServerTypeCache {
         [Property(0x8177DA98, 31)] public TriggerObjectInfo m_triggerObjInfo;
     }
 
-    // Don't look at me, this is what the game uses.
+    // ? Why does this exist?
     public class TriggerObjectBase : CoreObjectInfo {
         // todo: need actual hashes here
         public override uint GetHash() => 0x068C265B;
