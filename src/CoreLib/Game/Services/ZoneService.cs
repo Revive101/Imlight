@@ -25,6 +25,7 @@ public class ZoneService : MessageService, IWithTimers {
     private const int ZONE_REMOVAL_WAIT_TIME_IN_SECONDS = 8;
     private const int ZONE_TRANSFER_CLEANUP_WAIT_TIME_IN_SECONDS = 1;
     private const float TELEPORT_EFFECTS_TIME = 2.0f;
+    private const string ENTER_ZONE_EVENT_NAME = "EnterZone";
 
     public IActorRef ZoneActor;
     public ITimerScheduler Timers { get; set; }
@@ -123,7 +124,7 @@ public class ZoneService : MessageService, IWithTimers {
         character.QueuedZoneLocation = Util.GetCompactStringFromVector(character.Location, character.Orientation);
     }
 
-    // This button and the GotoDorm button are locked client-side until level 2. 
+    // This button and the GotoDorm button are locked client-side until level 2.
     // jooty, again? cmon man
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_GOHOME))]
     private void ReceiveGoHome(WIZARD_12_PROTOCOL.MSG_GOHOME message) {
@@ -145,7 +146,7 @@ public class ZoneService : MessageService, IWithTimers {
         Timers.StartSingleTimer("zonetransfer", tpmsg, delay);
     }
 
-    // This button and the GoHome button are locked client-side until level 2. 
+    // This button and the GoHome button are locked client-side until level 2.
     // jooty, again? cmon man
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_GOTODORM))]
     private void ReceiveGotoDorm(WIZARD_12_PROTOCOL.MSG_GOTODORM message) {
@@ -174,6 +175,14 @@ public class ZoneService : MessageService, IWithTimers {
             SendCantGoHomeEffect(timeHomeLastClicked);
         }
         SendHomeButtonData();
+
+        var postEventMsg = new ZONE_102_PROTOCOL.MSG_POSTEVENT {
+            ZoneActor = ZoneActor,
+            EventName = ENTER_ZONE_EVENT_NAME,
+            SenderActor = SessionActor.ActorRef,
+            SenderGameObject = GetActiveGameObject()
+        };
+        ZoneActor.Tell(postEventMsg);
     }
 
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_WORLDTELEPORTREQUEST))]

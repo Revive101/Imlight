@@ -14,7 +14,7 @@ using static Imlight.Common.Caches.ServerTypeCache;
 namespace Imlight.CoreLib.Game.Zone;
 
 internal class WizardZoneTrigger : ReceiveProtocolDispatcher {
-    private readonly Dictionary<IActorRef, DateTime> _cooldowns = new(); // todo
+    private readonly Dictionary<IActorRef, DateTime> _cooldowns = new();
     private Trigger _trigger;
 
     // Akka.NET ctor
@@ -29,6 +29,7 @@ internal class WizardZoneTrigger : ReceiveProtocolDispatcher {
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_POSTEVENT))]
     private void ReceivePostEvent(ZONE_102_PROTOCOL.MSG_POSTEVENT message) {
         // todo: requirements
+        // todo: cooldowns
 
         foreach (var ev in _trigger.m_results.m_results) {
             ResultDispatcher.DispatchResult(this.Sender, message.SenderActor, ev);
