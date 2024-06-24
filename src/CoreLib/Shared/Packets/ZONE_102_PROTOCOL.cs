@@ -126,8 +126,13 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
         public TypeCache.CoreObject CoreObject;
         public ServerTypeCache.Volume Volume;
-        public List<Trigger> EnterEvents;
-        public List<Trigger> ExitEvents;
+    }
+
+    public class MSG_ADDTRIGGER : IServerMessage {
+        public byte MessageOrder { get; } = 12;
+        public byte ServiceID { get; } = 102;
+
+        public ServerTypeCache.Trigger Trigger;
     }
 
     public class MSG_FISHINTERACTION : IServerMessage {
@@ -262,5 +267,15 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
         public IActorRef Player;
         public ulong GlobalId;
+    }
+
+    public class MSG_POSTEVENT : IServerMessage {
+        public byte MessageOrder { get; } = 31;
+        public byte ServiceID { get; } = 102;
+
+        public IActorRef ZoneActor;
+        public ByteString EventName;
+        public IActorRef SenderActor;
+        public CoreObject? SenderGameObject;
     }
 }
