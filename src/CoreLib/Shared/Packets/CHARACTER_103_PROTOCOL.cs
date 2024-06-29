@@ -46,4 +46,11 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
         public byte MessageOrder { get; } = 5;
         public byte ServiceID { get; } = 103;
     }
+
+    public sealed class MSG_ENTERSTATE : IServerMessage {
+        public byte MessageOrder { get; } = 6;
+        public byte ServiceID { get; } = 103;
+
+        public string StateName;
+    }
 }

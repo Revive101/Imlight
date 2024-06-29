@@ -9,6 +9,8 @@ using Imlight.CoreLib.Shared.Packets;
 using Imlight.Common.Caches;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.CoreLib.Shared.Character;
+using Imlight.Common.Cryptography;
+using Imlight.Common;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -91,6 +93,28 @@ public class WizardService : MessageService {
             MaxEnergy = baseStats.m_petEnergy
         };
         SendToSocket(petEnergyMessage);
+    }
+
+    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_ENTERSTATE))]
+    private void ReceiveEnterState(CHARACTER_103_PROTOCOL.MSG_ENTERSTATE message) {
+        var objState = _activeWizard.EnterState(message.StateName);
+        if (objState is null) {
+            Logger.Error("Failed to enter state {0} for wizard {1}", Logger.Args(message.StateName, _activeWizard.CharId));
+            return;
+        }
+
+        // Echo the state change to the client.
+        var stateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
+            GameObjectID = _activeWizardGameObject.m_globalID,
+            State = StringHash.Compute(message.StateName)
+        };
+
+        var isPublicStateChange = !objState.m_privateState;
+        if (isPublicStateChange) {
+            ZoneBroadcast(stateMsg, false);
+        } else {
+            SendToSocket(stateMsg);
+        }
     }
 
     #endregion

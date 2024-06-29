@@ -103,6 +103,7 @@ public class Wizard : IDisposable {
         284071, // Swift Gryphon (PERM)
         126983, // Starter Deck
     };
+    [JsonIgnore] private ServerObjectStateBehavior _objectStateBehavior;
 
     // Constructor: Used for deserialization. If this is not present, the default constructor will be used.
     [JsonConstructor]
@@ -519,10 +520,13 @@ public class Wizard : IDisposable {
         return true;
     }
 
+    public ObjState EnterState(string stateName) => _objectStateBehavior.SetState(stateName);
+
     internal void AfterDatabaseLoad() {
         AfterDatabaseLoadWizardGameStats();
         AfterDatabaseLoadSpellbookBehavior();
         AfterDatabaseloadMountOwnerBehavior();
+        _objectStateBehavior = new ServerObjectStateBehavior("PlayerMobileStates");
     }
 
     private void EquipMount(WizItemTemplate template, WizClientObjectItem item) {
