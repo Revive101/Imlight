@@ -323,10 +323,13 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
             .FirstOrDefault(x => x is NPCBehaviorTemplate) as NPCBehaviorTemplate;
         var equipmentBehaviorTemplate = Template.m_behaviors
             .FirstOrDefault(x => x is EquipmentBehaviorTemplate) as EquipmentBehaviorTemplate;
+        var objectStateBehaviorTemplate = Template.m_behaviors
+            .FirstOrDefault(x => x is ObjectStateBehaviorTemplate) as ObjectStateBehaviorTemplate;
 
         CreatePathBehavior(pathBehaviorTemplate, pathMovementBehavior);
         CreateNPCBehavior(npcBehaviorTemplate, duelistBehaviorTemplate);
         CreateEquipmentBehavior(equipmentBehaviorTemplate);
+        CreateStateBehavior(objectStateBehaviorTemplate);
     }
 
     private void CreatePathBehavior(PathBehaviorTemplate pathTemplate, PathMovementBehaviorTemplate movementTemplate) {
@@ -433,6 +436,11 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
     private void CreateDeckBehavior(DeckBehaviorTemplate deckBehaviorTemplate) {
         var deckBehaviorInstance = new ServerCreatureSpellbookBehavior(deckBehaviorTemplate);
         this.Behaviors.Add(deckBehaviorInstance);
+    }
+
+    private void CreateStateBehavior(ObjectStateBehaviorTemplate objectStateBehaviorTemplate) {
+        var stateBehaviorInstance = new ServerObjectStateBehavior(objectStateBehaviorTemplate.m_stateSetName);
+        this.Behaviors.Add(stateBehaviorInstance);
     }
 
     private void EquipItem(WizItemTemplate template) {
