@@ -56,18 +56,29 @@ public sealed class ServerObjectStateBehavior : ServerBehaviorInstance {
     // This is a no transfer behavior !!
     public override BehaviorInstance GetClientBehaviorInstance() => throw new NotImplementedException();
 
-    public void SetState(string categoryName, string stateName) {
-        // Determine if the category and state given exist
+    public ObjState SetState(string stateName) {
+        // Find the category that the state belongs to.
+        var category = _stateSet.m_categories.FirstOrDefault(x => x.m_states.Any(y => y.m_stateName == stateName));
+        if (category == null) {
+            Logger.Error("State {0} not found in {1} {2}", Logger.Args(stateName, typeof(ObjStateSet), _stateSet));
+            return null;
+        }
+
+        return SetState(category.m_categoryName, stateName);
+    }
+
+    public ObjState SetState(string categoryName, string stateName) {
         var category = GetCategory(categoryName);
         if (category == null) {
-            Logger.Error("Category {0} not found in {1} {2}", Logger.Args(categoryName, typeof(ObjStateSet), _stateSet));
-            return;
+            Logger.Error("Category {0} not found in {1}", Logger.Args(categoryName, _stateSetName));
+            return null;
         }
 
         var newState = GetState(categoryName, stateName);
         if (newState == null) {
-            Logger.Error("State {0} not found in {1} {2}", Logger.Args(stateName, typeof(ObjStateCategory), category));
-            return;
+            Logger.Error("State {0} not found in category {1} in state set {2}",
+                Logger.Args(stateName, categoryName, _stateSetName));
+            return null;
         }
 
         // Determine if this transition is possible given the current state.
@@ -76,16 +87,17 @@ public sealed class ServerObjectStateBehavior : ServerBehaviorInstance {
         var currentState = GetCategoryState(categoryName);
         var transition = GetTransitionFromCurrentState(categoryName, stateName);
         if (transition is null) {
-            Logger.Warning("Transition from {0} to {1} not found in {2} {3}",
-                Logger.Args(currentState, newState, typeof(ObjStateCategory), category));
+            Logger.Warning("Transition from {0} to {1} not found in state set {2}",
+                Logger.Args(currentState.m_stateName, newState.m_stateName, _stateSetName));
         }
 
         // The new state may force changes in the other categories.
         foreach (var forceChange in newState.m_forcedStates) {
-            SetState(forceChange.m_category, forceChange.m_forcedState);
+            SetState(forceChange.m_forcedState);
         }
 
         category.m_baseState = newState.m_stateName;
+        return newState;
     }
 
     public string this[string categoryName] {
