@@ -10,6 +10,7 @@ using Imlight.Common.Caches;
 using Imlight.CoreLib.Game.Sigils;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.WizardData.Models.Player;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone;
@@ -40,9 +41,9 @@ public class WizardZoneSigil : WizardZoneObject {
     public static Props Props(CoreObject activeGameObject, string sigilType, CoreTemplate template, IActorRef wizardZoneRef)
         => Akka.Actor.Props.Create(() => new WizardZoneSigil(activeGameObject, sigilType, template, wizardZoneRef));
 
-    protected override void OnPlayerJoin(CoreObject player, IActorRef suspect) {
+    protected override void OnPlayerJoin(CoreObject player, IActorRef suspect, Wizard wizard) {
         if (_activeDuel is not null) {
-            base.OnPlayerJoin(player, suspect);
+            base.OnPlayerJoin(player, suspect, wizard);
 
             // Inform the active duel of the new player.
             var msg = new ZONE_102_PROTOCOL.MSG_ADDPLAYER {
