@@ -67,27 +67,32 @@ public sealed class ServerObjectStateBehavior : ServerBehaviorInstance {
         return SetState(category.m_categoryName, stateName);
     }
 
-    public ObjState SetState(string categoryName, string stateName) {
+    public ObjState SetState(string categoryName, string newStateName) {
         var category = GetCategory(categoryName);
         if (category == null) {
             Logger.Error("Category {0} not found in {1}", Logger.Args(categoryName, _stateSetName));
             return null;
         }
 
-        var newState = GetState(categoryName, stateName);
+        var newState = GetState(categoryName, newStateName);
         if (newState == null) {
             Logger.Error("State {0} not found in category {1} in state set {2}",
-                Logger.Args(stateName, categoryName, _stateSetName));
+                Logger.Args(newStateName, categoryName, _stateSetName));
             return null;
+        }
+
+        // If the new state is the same as the current state, we don't need to do anything.
+        var currentState = GetCategoryState(categoryName);
+        if (currentState.m_stateName == newStateName) {
+            return currentState;
         }
 
         // Determine if this transition is possible given the current state.
         // We'll throw a warning if the state is not allowed to transition to the new state, but continue regardless
         // because we are the server and we can do whatever we want.
-        var currentState = GetCategoryState(categoryName);
-        var transition = GetTransitionFromCurrentState(categoryName, stateName);
+        var transition = GetTransitionFromCurrentState(categoryName, newStateName);
         if (transition is null) {
-            Logger.Warning("Transition from {0} to {1} not found in state set {2}",
+            Logger.Warning("Transition from {0} to {1} is not possible in state set {2}. We did it anyways.",
                 Logger.Args(currentState.m_stateName, newState.m_stateName, _stateSetName));
         }
 
