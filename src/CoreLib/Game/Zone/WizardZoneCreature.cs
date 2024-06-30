@@ -9,6 +9,7 @@ using System.Linq;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
+using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Game.Combat;
 using Imlight.CoreLib.Game.Effects;
@@ -51,6 +52,7 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
     protected DateTime _lastMoveTime;
     protected ServerNPCBehavior _npcBehavior;
     protected ServerPathBehavior _pathBehavior;
+    protected ServerObjectStateBehavior _stateBehavior;
     protected IActorRef _combatAiActor;
 
     // ctor
@@ -312,6 +314,32 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
         WizardZoneRef.Tell(msg);
     }
 
+    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_ENTERSTATE))]
+    private void ReceiveEnterState(CHARACTER_103_PROTOCOL.MSG_ENTERSTATE message) {
+        var objState = _stateBehavior.SetState(message.StateName);
+        if (objState is null) {
+            Logger.Error("Failed to enter state {0} for creature {1}", Logger.Args(message.StateName, ActiveGameObject.m_debugName));
+            return;
+        }
+
+        // Echo the state change to the client.
+        var stateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
+            GameObjectID = ActiveGameObject.m_globalID,
+            State = StringHash.Compute(message.StateName)
+        };
+
+        var isPublicStateChange = !objState.m_privateState;
+        if (isPublicStateChange) {
+            var zoneBroadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+                Message = stateMsg,
+                Selfless = true,
+                Sender = Self
+            };
+            WizardZoneRef.Tell(zoneBroadcastMsg);
+        }
+
+    }
+
     private void CreateBehaviorsFromTemplate() {
         var pathBehaviorTemplate = Template.m_behaviors
             .FirstOrDefault(x => x is PathBehaviorTemplate) as PathBehaviorTemplate;
@@ -439,8 +467,8 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
     }
 
     private void CreateStateBehavior(ObjectStateBehaviorTemplate objectStateBehaviorTemplate) {
-        var stateBehaviorInstance = new ServerObjectStateBehavior(objectStateBehaviorTemplate.m_stateSetName);
-        this.Behaviors.Add(stateBehaviorInstance);
+        _stateBehavior = new ServerObjectStateBehavior(objectStateBehaviorTemplate.m_stateSetName);
+        this.Behaviors.Add(_stateBehavior);
     }
 
     private void EquipItem(WizItemTemplate template) {
