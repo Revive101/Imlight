@@ -54,6 +54,7 @@ public class DynaModService : MessageService {
         wizard.AddDynamod(zoneName, dynaModClientTag, dynaModState);
     }
 
+    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_REMOVEDYNAMOD))]
     private void ReceiveRemoveDynaMod(CHARACTER_103_PROTOCOL.MSG_REMOVEDYNAMOD message) {
         var wizard = GetActiveWizard();
         var dynaModClientTag = message.DynaMod.m_dynaModClientTag;
