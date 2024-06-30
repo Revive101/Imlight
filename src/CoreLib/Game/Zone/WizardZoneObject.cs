@@ -231,6 +231,10 @@ public class WizardZoneObject : ReceiveProtocolDispatcher, IClientTypeProvider<W
         WizardZoneRef.Tell(zoneBroadcastMsg);
     }
 
+    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_ADDDYNAMOD))]
+    private void ReceiveAddDynaMod(CHARACTER_103_PROTOCOL.MSG_ADDDYNAMOD message)
+        => EnterState(message.DynaMod.m_dynaModState, message.ContextActor);
+
     protected void SpawnSelf() {
         var msg = new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = _zoneObjectSerializer.Serialize(GetClientTypeAlternative()) };
 

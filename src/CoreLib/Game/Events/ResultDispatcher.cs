@@ -6,6 +6,7 @@
 using Akka.Actor;
 using Imlight.Common.Caches;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.WizardData.Models.Player;
 using static Imlight.Common.Caches.ServerTypeCache;
 using static Imlight.Common.Caches.TypeCache;
 
@@ -19,6 +20,9 @@ internal static class ResultDispatcher {
                 break;
             case ResDisplayText resDisplayText:
                 DisplayText(playerRef, resDisplayText);
+                break;
+            case ResAddDynaMod resAddDynaMod:
+                AddDynaMod(playerRef, zoneRef, resAddDynaMod);
                 break;
         }
     }
@@ -37,6 +41,19 @@ internal static class ResultDispatcher {
             NotifyText = resDisplayText.m_text,
             Type = resDisplayText.m_type,
         };
+        playerRef.Tell(msg);
+    }
+
+    private static void AddDynaMod(IActorRef playerRef, IActorRef zoneRef, ResAddDynaMod resAddDynaMod) {
+        var msg = new CHARACTER_103_PROTOCOL.MSG_ADDDYNAMOD {
+            DynaMod = resAddDynaMod,
+            ContextActor = playerRef
+        };
+
+        // Inform the zone of this state change. This will actually change the object state.
+        zoneRef.Tell(msg);
+
+        // Inform the player of this state change. This will add the modification persistently.
         playerRef.Tell(msg);
     }
 }
