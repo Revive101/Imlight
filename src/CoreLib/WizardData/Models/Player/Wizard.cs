@@ -556,7 +556,6 @@ public class Wizard : IDisposable {
         var removeSuccess = DynamodSet.RemoveDynamod(clientTag);
 
         if (!removeSuccess) {
-            Logger.Warning("Could not remove Dynamod from player {0}'s DynamodSet.", Logger.Args(PlayerNameBehavior.GetWizardName()));
             return false;
         }
 
