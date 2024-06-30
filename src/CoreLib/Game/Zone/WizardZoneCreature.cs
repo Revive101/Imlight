@@ -18,6 +18,7 @@ using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Implementations;
+using Imlight.CoreLib.WizardData.Models.Player;
 using SharpDX;
 using static Imlight.Common.Caches.TypeCache;
 
@@ -92,11 +93,11 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
             => new WizardZoneCreature(activeGameObject, template, path, startingNodeIndex, wizardZoneRef));
     }
 
-    protected override void OnPlayerJoin(CoreObject player, IActorRef playerActor) {
+    protected override void OnPlayerJoin(CoreObject player, IActorRef playerActor, Wizard wizard) {
         // Since we're not constantly updating the position of the game object, we need to
         // update the position of the game object when a player joins.
         ActiveGameObject.m_location = GetPosition();
-        base.OnPlayerJoin(player, playerActor);
+        base.OnPlayerJoin(player, playerActor, wizard);
 
         // Inform the new player that this creature is moving.
         // MOVESTATE: 0 = stopped, 1 = moving.

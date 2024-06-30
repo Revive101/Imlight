@@ -15,6 +15,7 @@ using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Implementations;
+using Imlight.CoreLib.WizardData.Models.Player;
 using SharpDX;
 using static Imlight.Common.Caches.TypeCache;
 
@@ -46,7 +47,8 @@ public class WizardZoneObject : ReceiveProtocolDispatcher, IClientTypeProvider<W
         this.WizardZoneRef = wizardZoneRef;
         this._objsInRadius = new List<CoreObject>();
 
-        if (template.m_behaviors.Any(x => x is ObjectStateBehaviorTemplate)) {
+        if (template is not null &&
+            template.m_behaviors.Any(x => x is ObjectStateBehaviorTemplate)) {
             CreateStateBehavior(template.m_behaviors.OfType<ObjectStateBehaviorTemplate>().First());
         }
     }
@@ -78,7 +80,7 @@ public class WizardZoneObject : ReceiveProtocolDispatcher, IClientTypeProvider<W
     /// </summary>
     /// <param name="player">The player object that joined the zone.</param>
     /// <param name="suspect">The actor reference of the player that joined the zone.</param>
-    protected virtual void OnPlayerJoin(CoreObject player, IActorRef suspect) {
+    protected virtual void OnPlayerJoin(CoreObject player, IActorRef suspect, Wizard wizard) {
         // If the player spawns within this object, add them to the list of objects in radius.
         if (IsInRadius(player)) {
             _objsInRadius.Add(player);
@@ -87,6 +89,13 @@ public class WizardZoneObject : ReceiveProtocolDispatcher, IClientTypeProvider<W
         // When a new player joins, we need to send them the object data.
         var msg = new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = _zoneObjectSerializer.Serialize(GetClientTypeAlternative()) };
         suspect.Tell(msg);
+
+        // Check this player's dynamic modifications. If they have any, apply them.
+        var dynamod = wizard.DynamodSet.Dynamods
+            .FirstOrDefault(x => StringHash.Compute(x.ClientTag) == ActiveGameObject.m_zoneTagID);
+        if (dynamod != null) {
+            EnterState(dynamod.ModState, suspect);
+        }
 
         Sender.Tell(new ZONE_102_PROTOCOL.MSG_ADDOBJECTRSP());
     }
@@ -159,7 +168,7 @@ public class WizardZoneObject : ReceiveProtocolDispatcher, IClientTypeProvider<W
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
     protected virtual void ReceiveAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message)
-        => OnPlayerJoin(message.PlayerObject, message.Player);
+        => OnPlayerJoin(message.PlayerObject, message.Player, message.Wizard);
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER))]
     protected virtual void ReceiveRemovePlayer(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message)
@@ -206,27 +215,20 @@ public class WizardZoneObject : ReceiveProtocolDispatcher, IClientTypeProvider<W
 
     [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_ENTERSTATE))]
     private void ReceiveEnterState(CHARACTER_103_PROTOCOL.MSG_ENTERSTATE message) {
-        var objState = StateBehavior.SetState(message.StateName);
-        if (objState is null) {
-            Logger.Error("Failed to enter state {0} for creature {1}", Logger.Args(message.StateName, ActiveGameObject.m_debugName));
-            return;
-        }
+        EnterState(message.StateName, Sender);
 
-        // Echo the state change to the client.
+        // Broadcast the state change to all players.
         var stateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
             GameObjectID = ActiveGameObject.m_globalID,
             State = StringHash.Compute(message.StateName)
         };
 
-        var isPublicStateChange = !objState.m_privateState;
-        if (isPublicStateChange) {
-            var zoneBroadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-                Message = stateMsg,
-                Selfless = true,
-                Sender = Self
-            };
-            WizardZoneRef.Tell(zoneBroadcastMsg);
-        }
+        var zoneBroadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+            Message = stateMsg,
+            Selfless = true,
+            Sender = Self
+        };
+        WizardZoneRef.Tell(zoneBroadcastMsg);
     }
 
     protected void SpawnSelf() {
@@ -239,6 +241,21 @@ public class WizardZoneObject : ReceiveProtocolDispatcher, IClientTypeProvider<W
             Sender = Self
         };
         WizardZoneRef.Tell(broadcastMsg);
+    }
+
+    protected void EnterState(string newStateName, IActorRef sender) {
+        var objState = StateBehavior.SetState(newStateName);
+        if (objState is null) {
+            Logger.Error("Failed to enter state {0} for creature {1}", Logger.Args(newStateName, ActiveGameObject.m_debugName));
+            return;
+        }
+
+        var stateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
+            GameObjectID = ActiveGameObject.m_globalID,
+            State = StringHash.Compute(newStateName)
+        };
+
+        sender.Tell(stateMsg);
     }
 
     private bool IsInRadius(CoreObject obj1) {

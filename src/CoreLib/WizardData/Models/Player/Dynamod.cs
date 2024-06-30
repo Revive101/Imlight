@@ -5,6 +5,7 @@
 
 using Imlight.CoreLib.WizardData.Collections;
 using System;
+using System.Text.Json.Serialization;
 
 namespace Imlight.CoreLib.WizardData.Models.Player;
 
@@ -12,9 +13,19 @@ public class DynamodSet {
     internal ulong CharId { get; set; }
     internal Dynamod[] Dynamods { get; set; }
 
+    [JsonConstructor]
+    public DynamodSet() { }
+
     // ctor
     internal DynamodSet(ulong charId) {
         CharId = charId;
+
+        // todo: test; remove later!
+        AddDynamod(new Dynamod {
+            ZoneName = "WizardCity/WC_Hub",
+            ClientTag = "WC_GateCommons_ToUnicornWay",
+            ModState = "IdleOpen"
+        });
     }
 
     internal bool AddDynamod(Dynamod dynamod) {
