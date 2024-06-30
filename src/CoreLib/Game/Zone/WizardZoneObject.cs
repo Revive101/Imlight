@@ -8,6 +8,7 @@ using System.Linq;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
+using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Networking;
@@ -29,6 +30,7 @@ public class WizardZoneObject : ReceiveProtocolDispatcher, IClientTypeProvider<W
     protected readonly IActorRef WizardZoneRef;
     protected readonly List<BehaviorInstance> Behaviors = new();
     protected float InteractionRadius = 300f;
+    protected ServerObjectStateBehavior StateBehavior;
 
     private readonly List<CoreObject> _objsInRadius;
     private readonly CoreObjectSerializer _zoneObjectSerializer = new CoreObjectSerializer()
@@ -43,6 +45,10 @@ public class WizardZoneObject : ReceiveProtocolDispatcher, IClientTypeProvider<W
         this.Template = template;
         this.WizardZoneRef = wizardZoneRef;
         this._objsInRadius = new List<CoreObject>();
+
+        if (template.m_behaviors.Any(x => x is ObjectStateBehaviorTemplate)) {
+            CreateStateBehavior(template.m_behaviors.OfType<ObjectStateBehaviorTemplate>().First());
+        }
     }
 
     // Akka.NET ctor
@@ -198,6 +204,31 @@ public class WizardZoneObject : ReceiveProtocolDispatcher, IClientTypeProvider<W
     protected void ReceiveStatusCheck(ZONE_102_PROTOCOL.MSG_OBJECTSTATUSCHECK message) =>
         OnStatusCheck();
 
+    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_ENTERSTATE))]
+    private void ReceiveEnterState(CHARACTER_103_PROTOCOL.MSG_ENTERSTATE message) {
+        var objState = StateBehavior.SetState(message.StateName);
+        if (objState is null) {
+            Logger.Error("Failed to enter state {0} for creature {1}", Logger.Args(message.StateName, ActiveGameObject.m_debugName));
+            return;
+        }
+
+        // Echo the state change to the client.
+        var stateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
+            GameObjectID = ActiveGameObject.m_globalID,
+            State = StringHash.Compute(message.StateName)
+        };
+
+        var isPublicStateChange = !objState.m_privateState;
+        if (isPublicStateChange) {
+            var zoneBroadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+                Message = stateMsg,
+                Selfless = true,
+                Sender = Self
+            };
+            WizardZoneRef.Tell(zoneBroadcastMsg);
+        }
+    }
+
     protected void SpawnSelf() {
         var msg = new GAME_5_PROTOCOL.MSG_NEWOBJECT { Data = _zoneObjectSerializer.Serialize(GetClientTypeAlternative()) };
 
@@ -215,6 +246,11 @@ public class WizardZoneObject : ReceiveProtocolDispatcher, IClientTypeProvider<W
         var sqrtRadius = InteractionRadius * InteractionRadius;
 
         return sqrtDist <= sqrtRadius;
+    }
+
+    private void CreateStateBehavior(ObjectStateBehaviorTemplate objectStateBehaviorTemplate) {
+        StateBehavior = new ServerObjectStateBehavior(objectStateBehaviorTemplate.m_stateSetName);
+        this.Behaviors.Add(StateBehavior);
     }
 
     public WizClientObject GetClientTypeAlternative() {

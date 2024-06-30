@@ -52,7 +52,6 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
     protected DateTime _lastMoveTime;
     protected ServerNPCBehavior _npcBehavior;
     protected ServerPathBehavior _pathBehavior;
-    protected ServerObjectStateBehavior _stateBehavior;
     protected IActorRef _combatAiActor;
 
     // ctor
@@ -314,32 +313,6 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
         WizardZoneRef.Tell(msg);
     }
 
-    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_ENTERSTATE))]
-    private void ReceiveEnterState(CHARACTER_103_PROTOCOL.MSG_ENTERSTATE message) {
-        var objState = _stateBehavior.SetState(message.StateName);
-        if (objState is null) {
-            Logger.Error("Failed to enter state {0} for creature {1}", Logger.Args(message.StateName, ActiveGameObject.m_debugName));
-            return;
-        }
-
-        // Echo the state change to the client.
-        var stateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
-            GameObjectID = ActiveGameObject.m_globalID,
-            State = StringHash.Compute(message.StateName)
-        };
-
-        var isPublicStateChange = !objState.m_privateState;
-        if (isPublicStateChange) {
-            var zoneBroadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-                Message = stateMsg,
-                Selfless = true,
-                Sender = Self
-            };
-            WizardZoneRef.Tell(zoneBroadcastMsg);
-        }
-
-    }
-
     private void CreateBehaviorsFromTemplate() {
         var pathBehaviorTemplate = Template.m_behaviors
             .FirstOrDefault(x => x is PathBehaviorTemplate) as PathBehaviorTemplate;
@@ -351,13 +324,10 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
             .FirstOrDefault(x => x is NPCBehaviorTemplate) as NPCBehaviorTemplate;
         var equipmentBehaviorTemplate = Template.m_behaviors
             .FirstOrDefault(x => x is EquipmentBehaviorTemplate) as EquipmentBehaviorTemplate;
-        var objectStateBehaviorTemplate = Template.m_behaviors
-            .FirstOrDefault(x => x is ObjectStateBehaviorTemplate) as ObjectStateBehaviorTemplate;
 
         CreatePathBehavior(pathBehaviorTemplate, pathMovementBehavior);
         CreateNPCBehavior(npcBehaviorTemplate, duelistBehaviorTemplate);
         CreateEquipmentBehavior(equipmentBehaviorTemplate);
-        CreateStateBehavior(objectStateBehaviorTemplate);
     }
 
     private void CreatePathBehavior(PathBehaviorTemplate pathTemplate, PathMovementBehaviorTemplate movementTemplate) {
@@ -464,11 +434,6 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
     private void CreateDeckBehavior(DeckBehaviorTemplate deckBehaviorTemplate) {
         var deckBehaviorInstance = new ServerCreatureSpellbookBehavior(deckBehaviorTemplate);
         this.Behaviors.Add(deckBehaviorInstance);
-    }
-
-    private void CreateStateBehavior(ObjectStateBehaviorTemplate objectStateBehaviorTemplate) {
-        _stateBehavior = new ServerObjectStateBehavior(objectStateBehaviorTemplate.m_stateSetName);
-        this.Behaviors.Add(_stateBehavior);
     }
 
     private void EquipItem(WizItemTemplate template) {
