@@ -50,17 +50,14 @@ public class DynamodSet {
         return true;
     }
 
-    internal bool RemoveDynamod(string zoneName) {
+    internal bool RemoveDynamod(string clientTag) {
         if (Dynamods == null) {
             return false;
         }
 
         for (int i = 0; i < Dynamods.Length; i++) {
-            if (Dynamods[i].ZoneName == zoneName) {
-                Dynamod[] resizedArray = new Dynamod[Dynamods.Length - 1];
-                Array.Copy(Dynamods, resizedArray, i);
-                Array.Copy(Dynamods, i + 1, resizedArray, i, Dynamods.Length - i - 1);
-                Dynamods = resizedArray;
+            if (Dynamods[i].ClientTag == clientTag) {
+                Dynamods[i] = null;
                 return true;
             }
         }

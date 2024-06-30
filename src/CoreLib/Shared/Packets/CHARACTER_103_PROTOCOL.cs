@@ -63,4 +63,12 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
         public ResAddDynaMod DynaMod;
         public IActorRef ContextActor;
     }
+
+    public sealed class MSG_REMOVEDYNAMOD : IServerMessage {
+        public byte MessageOrder { get; } = 8;
+        public byte ServiceID { get; } = 103;
+
+        public ResRemoveDynaMod DynaMod;
+        public IActorRef ContextActor;
+    }
 }

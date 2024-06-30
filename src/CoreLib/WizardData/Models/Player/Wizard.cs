@@ -548,12 +548,12 @@ public class Wizard : IDisposable {
         return true;
     }
 
-    public bool RemoveDynamod(string zoneName) {
+    public bool RemoveDynamod(string clientTag) {
         if (DynamodSet is null) {
             return false;
         }
 
-        var removeSuccess = DynamodSet.RemoveDynamod(zoneName);
+        var removeSuccess = DynamodSet.RemoveDynamod(clientTag);
 
         if (!removeSuccess) {
             Logger.Warning("Could not remove Dynamod from player {0}'s DynamodSet.", Logger.Args(PlayerNameBehavior.GetWizardName()));

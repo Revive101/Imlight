@@ -24,6 +24,9 @@ internal static class ResultDispatcher {
             case ResAddDynaMod resAddDynaMod:
                 AddDynaMod(playerRef, zoneRef, resAddDynaMod);
                 break;
+            case ResRemoveDynaMod resRemoveDynaMod:
+                RemoveDynaMod(playerRef, zoneRef, resRemoveDynaMod);
+                break;
         }
     }
 
@@ -54,6 +57,19 @@ internal static class ResultDispatcher {
         zoneRef.Tell(msg);
 
         // Inform the player of this state change. This will add the modification persistently.
+        playerRef.Tell(msg);
+    }
+
+    private static void RemoveDynaMod(IActorRef playerRef, IActorRef zoneRef, ResRemoveDynaMod resRemoveDynaMod) {
+        var msg = new CHARACTER_103_PROTOCOL.MSG_REMOVEDYNAMOD {
+            DynaMod = resRemoveDynaMod,
+            ContextActor = playerRef
+        };
+
+        // Inform the zone of this state change. This will actually change the object state.
+        zoneRef.Tell(msg);
+
+        // Inform the player of this state change. This will remove the modification persistently.
         playerRef.Tell(msg);
     }
 }
