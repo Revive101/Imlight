@@ -1,0 +1,66 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
+using Imlight.CoreLib.WizardData.Collections;
+using System;
+
+namespace Imlight.CoreLib.WizardData.Models.Player;
+
+public class DynamodSet {
+    internal ulong CharId { get; set; }
+    internal Dynamod[] Dynamods { get; set; }
+
+    // ctor
+    internal DynamodSet(ulong charId) {
+        CharId = charId;
+    }
+
+    internal bool AddDynamod(Dynamod dynamod) {
+        if (Dynamods == null) {
+            Dynamods = new Dynamod[1];
+            Dynamods[0] = dynamod;
+            return true;
+        }
+
+        for (int i = 0; i < Dynamods.Length; i++) {
+            if (Dynamods[i].ZoneName == dynamod.ZoneName) {
+                Dynamods[i] = dynamod;
+                return true;
+            }
+        }
+
+        Dynamod[] resizedArray = new Dynamod[Dynamods.Length + 1];
+        Array.Copy(Dynamods, resizedArray, Dynamods.Length);
+        resizedArray[Dynamods.Length] = dynamod;
+        Dynamods = resizedArray;
+
+        return true;
+    }
+
+    internal bool RemoveDynamod(string zoneName) {
+        if (Dynamods == null) {
+            return false;
+        }
+
+        for (int i = 0; i < Dynamods.Length; i++) {
+            if (Dynamods[i].ZoneName == zoneName) {
+                Dynamod[] resizedArray = new Dynamod[Dynamods.Length - 1];
+                Array.Copy(Dynamods, resizedArray, i);
+                Array.Copy(Dynamods, i + 1, resizedArray, i, Dynamods.Length - i - 1);
+                Dynamods = resizedArray;
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
+[Serializable]
+public class Dynamod {
+    internal string ZoneName { get; set; }
+    internal string ClientTag { get; set; }
+    internal string ModState { get; set; }
+}

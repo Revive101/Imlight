@@ -34,6 +34,8 @@ using System;
 using System.Linq;
 using Imlight.Common;
 using Imlight.CoreLib.Game.States;
+using Imlight.CoreLib.WizardData.Models.Player;
+using Newtonsoft.Json;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Shared.Behaviors;
@@ -41,8 +43,8 @@ namespace Imlight.CoreLib.Shared.Behaviors;
 public sealed class ServerObjectStateBehavior : ServerBehaviorInstance {
     public override bool NoTransfer { get; set; } = true;
 
-    private readonly string _stateSetName;
-    private readonly ObjStateSet _stateSet;
+    [JsonIgnore] private readonly string _stateSetName;
+    [JsonIgnore] private readonly ObjStateSet _stateSet;
 
     // ctor
     public ServerObjectStateBehavior(string stateSetName) {

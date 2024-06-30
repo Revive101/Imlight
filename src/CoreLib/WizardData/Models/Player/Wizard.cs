@@ -28,8 +28,6 @@ namespace Imlight.CoreLib.WizardData.Models.Player;
 
 [Serializable]
 public class Wizard : IDisposable {
-    private const float OrientationCompressionFactor = CharacterHelper.OrientationCompressionFactor;
-
     public ulong AccountId { get; set; }
     public ulong CharId { get; set; }
     public string Zone { get; set; }
@@ -70,6 +68,7 @@ public class Wizard : IDisposable {
     public ServerMagicSchoolBehavior MagicSchoolBehavior { get; set; }
     public ServerWizSpellbookBehavior SpellbookBehavior { get; set; }
     public ServerMountOwnerBehavior MountOwnerBehavior { get; set; }
+    [JsonIgnore] public ServerObjectStateBehavior ObjectStateBehavior { get; set; }
     public ServerWizGameStats GameStats { get; set; }
 
     [JsonIgnore] public Account Account;
@@ -79,6 +78,7 @@ public class Wizard : IDisposable {
     [JsonIgnore] public ushort GameServerPort;
     [JsonIgnore] public string QueuedZoneName;
     [JsonIgnore] public string QueuedZoneLocation;
+    [JsonIgnore] internal DynamodSet DynamodSet { get; set; }
 
     [JsonIgnore] private Vector3 _location;
     [JsonIgnore] private Vector3 _orientation;
@@ -103,7 +103,6 @@ public class Wizard : IDisposable {
         284071, // Swift Gryphon (PERM)
         126983, // Starter Deck
     };
-    [JsonIgnore] private ServerObjectStateBehavior _objectStateBehavior;
 
     // Constructor: Used for deserialization. If this is not present, the default constructor will be used.
     [JsonConstructor]
@@ -124,6 +123,11 @@ public class Wizard : IDisposable {
         InitializeSpellbookBehavior();
         InitializeMountOwnerBehavior();
         InitializeWizardGameStats(wizardSchoolType, level);
+
+        ObjectStateBehavior = new ServerObjectStateBehavior("PlayerMobileStates");
+
+        DynamodSet = new DynamodSet(CharId);
+        DynamodCollection.AddDynamodSet(DynamodSet);
     }
 
     public void SetCachedLocation(Vector3 loc) => Location = loc;
@@ -520,13 +524,54 @@ public class Wizard : IDisposable {
         return true;
     }
 
-    public ObjState EnterState(string stateName) => _objectStateBehavior.SetState(stateName);
+    public ObjState EnterState(string stateName) => ObjectStateBehavior.SetState(stateName);
+
+    public bool AddDynamod(string zoneName, string clientTag, string modState) {
+        DynamodSet ??= new DynamodSet(CharId);
+
+        var dynamod = new Dynamod {
+            ZoneName = zoneName,
+            ClientTag = clientTag,
+            ModState = modState
+        };
+
+        var addSuccess = DynamodSet.AddDynamod(dynamod);
+
+        if (!addSuccess) {
+            Logger.Warning("Could not add Dynamod to player {0}'s DynamodSet.", Logger.Args(PlayerNameBehavior.GetWizardName()));
+            return false;
+        }
+
+        // Persistent save.
+        DynamodCollection.UpdateDynamodSet(DynamodSet);
+
+        return true;
+    }
+
+    public bool RemoveDynamod(string zoneName) {
+        if (DynamodSet is null) {
+            return false;
+        }
+
+        var removeSuccess = DynamodSet.RemoveDynamod(zoneName);
+
+        if (!removeSuccess) {
+            Logger.Warning("Could not remove Dynamod from player {0}'s DynamodSet.", Logger.Args(PlayerNameBehavior.GetWizardName()));
+            return false;
+        }
+
+        // Persistent save.
+        DynamodCollection.UpdateDynamodSet(DynamodSet);
+
+        return true;
+    }
 
     internal void AfterDatabaseLoad() {
         AfterDatabaseLoadWizardGameStats();
         AfterDatabaseLoadSpellbookBehavior();
         AfterDatabaseloadMountOwnerBehavior();
-        _objectStateBehavior = new ServerObjectStateBehavior("PlayerMobileStates");
+
+        ObjectStateBehavior ??= new ServerObjectStateBehavior("PlayerMobileStates");
     }
 
     private void EquipMount(WizItemTemplate template, WizClientObjectItem item) {
