@@ -354,12 +354,8 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
     [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_ADDDYNAMOD))]
     private void ReceiveAddDynaMod(CHARACTER_103_PROTOCOL.MSG_ADDDYNAMOD message) {
         // Inform all zone objects of this state change.
-        var msg = new ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST {
-            Source = message.ContextActor,
-            Messages = new IServerMessage[] { message }
-        };
-        _objectSupervisorRef.Tell(msg);
-        _sigilSupervisorRef.Tell(msg);
+        _objectSupervisorRef.Tell(message);
+        _sigilSupervisorRef.Tell(message);
     }
 
     #endregion
