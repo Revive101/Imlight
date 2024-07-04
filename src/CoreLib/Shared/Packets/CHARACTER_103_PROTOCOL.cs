@@ -3,9 +3,11 @@
  * Proprietary and confidential.
  */
 
+using Akka.Actor;
 using Imlight.Common.Caches;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Models.Player;
+using static Imlight.Common.Caches.ServerTypeCache;
 
 namespace Imlight.CoreLib.Shared.Packets;
 
@@ -45,5 +47,28 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
     public sealed class MSG_DOTELEPORTEFFECTS : IServerMessage {
         public byte MessageOrder { get; } = 5;
         public byte ServiceID { get; } = 103;
+    }
+
+    public sealed class MSG_ENTERSTATE : IServerMessage {
+        public byte MessageOrder { get; } = 6;
+        public byte ServiceID { get; } = 103;
+
+        public string StateName;
+    }
+
+    public sealed class MSG_ADDDYNAMOD : IServerMessage {
+        public byte MessageOrder { get; } = 7;
+        public byte ServiceID { get; } = 103;
+
+        public ResAddDynaMod DynaMod;
+        public IActorRef ContextActor;
+    }
+
+    public sealed class MSG_REMOVEDYNAMOD : IServerMessage {
+        public byte MessageOrder { get; } = 8;
+        public byte ServiceID { get; } = 103;
+
+        public ResRemoveDynaMod DynaMod;
+        public IActorRef ContextActor;
     }
 }

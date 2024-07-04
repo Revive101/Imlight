@@ -11,6 +11,7 @@ using Imlight.Common.ObjectProperty;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Collections;
+using Imlight.CoreLib.WizardData.Models.Player;
 using System.Collections.Generic;
 using System.Linq;
 using static Imlight.Common.Caches.TypeCache;
@@ -65,8 +66,8 @@ public class WizardZoneNpc : WizardZoneObject {
     public static Props Props(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef)
         => Akka.Actor.Props.Create(() => new WizardZoneNpc(activeGameObject, template, wizardZoneRef));
 
-    protected override void OnPlayerJoin(CoreObject player, IActorRef suspect) {
-        base.OnPlayerJoin(player, suspect);
+    protected override void OnPlayerJoin(CoreObject player, IActorRef suspect, Wizard wizard) {
+        base.OnPlayerJoin(player, suspect, wizard);
 
         if (IsShopkeeper) {
             var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG {

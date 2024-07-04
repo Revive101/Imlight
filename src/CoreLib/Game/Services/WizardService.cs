@@ -9,6 +9,8 @@ using Imlight.CoreLib.Shared.Packets;
 using Imlight.Common.Caches;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.CoreLib.Shared.Character;
+using Imlight.Common.Cryptography;
+using Imlight.Common;
 
 namespace Imlight.CoreLib.Game.Services;
 

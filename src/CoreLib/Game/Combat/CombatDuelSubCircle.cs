@@ -120,7 +120,7 @@ public class CombatDuelSubCircle {
         };
         ParticipantActor.Tell(msg);
 
-        PlayEntranceAnimation(participantObject);
+        PlayEntranceAnimation(participantObject, actor);
 
         return this.CombatParticipant;
     }
@@ -462,12 +462,12 @@ public class CombatDuelSubCircle {
         };
     }
 
-    private async Task PlayEntranceAnimation(CoreObject participantObject) {
+    private async Task PlayEntranceAnimation(CoreObject participantObject, IActorRef participantActor) {
         // Set the state of the participant to entering sigil.
-        _duelActor.ZoneBroadcast(new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
-            GameObjectID = participantObject.m_globalID,
-            State = (uint) NPCStates.Sigil
-        });
+        var stateMsg = new CHARACTER_103_PROTOCOL.MSG_ENTERSTATE {
+            StateName = "Sigil"
+        };
+        participantActor.Tell(stateMsg);
 
         // Send aggro to the participant.
         _duelActor.ZoneBroadcast(new WIZARD_12_PROTOCOL.MSG_AGGRO {
@@ -488,10 +488,10 @@ public class CombatDuelSubCircle {
         await Task.Delay((int) (AGGRO_TIME_IN_SECONDS * 1000));
 
         // Set state to stationary.
-        _duelActor.ZoneBroadcast(new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
-            GameObjectID = participantObject.m_globalID,
-            State = (uint) NPCStates.Stationary
-        });
+        stateMsg = new CHARACTER_103_PROTOCOL.MSG_ENTERSTATE {
+            StateName = "Stationary"
+        };
+        participantActor.Tell(stateMsg);
     }
 
     private PipCount DetermineStartingPips() {

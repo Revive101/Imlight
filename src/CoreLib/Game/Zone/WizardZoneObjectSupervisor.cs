@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
 using Imlight.Common;
+using Imlight.Common.Cryptography;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using static Imlight.Common.Caches.TypeCache;
@@ -98,6 +99,17 @@ public class WizardZoneObjectSupervisor : ReceiveProtocolDispatcher {
         var rsp = new ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECTRSP { ZoneObject = obj };
 
         Sender.Tell(rsp);
+    }
+
+    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_ADDDYNAMOD))]
+    private void ReceiveAddDynaMod(CHARACTER_103_PROTOCOL.MSG_ADDDYNAMOD message) {
+        foreach (var obj in _objects) {
+            if (obj.Value.ActiveGameObject.m_zoneTagID != StringHash.Compute(message.DynaMod.m_dynaModClientTag)) {
+                continue;
+            }
+
+            obj.Key.Tell(message);
+        }
     }
 
     private void CreateActorAndRespond(Props props) {

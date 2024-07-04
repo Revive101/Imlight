@@ -19,6 +19,7 @@ using Imlight.CoreLib.WizardData.Implementations;
 using SharpDX;
 using static Imlight.Common.Caches.TypeCache;
 using static Imlight.Common.Caches.ServerTypeCache;
+using Imlight.Common.Cryptography;
 
 namespace Imlight.CoreLib.Game.Zone;
 

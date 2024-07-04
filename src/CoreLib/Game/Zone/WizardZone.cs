@@ -351,6 +351,13 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
         _playerSupervisorRef.Forward(message);
     }
 
+    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_ADDDYNAMOD))]
+    private void ReceiveAddDynaMod(CHARACTER_103_PROTOCOL.MSG_ADDDYNAMOD message) {
+        // Inform all zone objects of this state change.
+        _objectSupervisorRef.Tell(message);
+        _sigilSupervisorRef.Tell(message);
+    }
+
     #endregion
 
     private Vector4 GetLocationFromString(ByteString location) {
