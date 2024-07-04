@@ -20,6 +20,7 @@ using Imlight.Common.IO;
 namespace Imlight.Common.Caches;
 
 public static partial class TypeCache {
+
     public static Imlight.Common.ObjectProperty.PropertyReflection.PropertyClass Dispatch(uint hash) {
         switch (hash) {
             case 725087: return new DerbyLockLane();
@@ -67,6 +68,7 @@ public static partial class TypeCache {
             case 56448876: return new ClassProjectActiveList();
             case 58611215: return new TeleportProximityBehavior();
             case 61741842: return new CountBasedSpellEffect();
+            case 66088836: return new GuildAchievementInfo();
             case 69371072: return new SG_GameAction_DestroyBlock();
             case 69943298: return new ClientDuelBehavior();
             case 69958050: return new ClientDeckBehavior();
@@ -94,6 +96,7 @@ public static partial class TypeCache {
             case 90085300: return new RaidManagerBehavior();
             case 92056648: return new UntargetableCinematicStageTemplate();
             case 93715321: return new ClientZoneTokenBoolean();
+            case 93756938: return new SummonMinionEffectTemplate();
             case 94610103: return new StartHangingRotationCinematicAction();
             case 95736291: return new ExpansionBehaviorTemplate();
             case 96661878: return new BaseEffectCinematicAction();
@@ -124,7 +127,6 @@ public static partial class TypeCache {
             case 120308658: return new ClientRegisterActorCinematicAction();
             case 122015576: return new PvPCurrencyBonusLootInfo();
             case 122951263: return new BadgeFilter();
-            case 123577961: return new BracketTournamentGoldCostInfo();
             case 126910823: return new BattlegroundTeamData();
             case 127363269: return new ClientProvidePetPower();
             case 130186975: return new MountSoundBehavior();
@@ -219,6 +221,7 @@ public static partial class TypeCache {
             case 211235823: return new ExpansionData();
             case 211793384: return new ConfirmOption();
             case 213549285: return new AnimationBehavior();
+            case 215859203: return new PvPMatchJoinQueueRequirements();
             case 216582072: return new NameOverrideBehavior();
             case 217538642: return new ClientObjectRemapBehavior();
             case 218034742: return new PetCastEffectActorCinematicAction();
@@ -343,6 +346,7 @@ public static partial class TypeCache {
             case 332607721: return new SwapShadowMaterialActorCinematicAction();
             case 332869472: return new ClientBanishBacklashEffectCinematicAction();
             case 336820599: return new ShadowCreatureCameraCutCinematicAction();
+            case 337312279: return new PvPTourneyCurrencyLootInfo();
             case 337702974: return new PetBoostPlayerStatEffect();
             case 339928888: return new SpringboardNodeDescriptor();
             case 340150373: return new SG_GameBlockType();
@@ -362,11 +366,14 @@ public static partial class TypeCache {
             case 354783937: return new SpellCardAttachmentBehaviorTemplate();
             case 355839574: return new CrownShopLayout();
             case 359215443: return new TieredSpellManager();
+            case 359892405: return new SocialSystemPlayerList();
             case 360231646: return new BehaviorTemplate();
             case 361088321: return new FurnitureInfoBehaviorTemplate();
             case 361737915: return new SubscriberOnlyItemsList();
             case 361756972: return new ClientDerbyTeleport();
+            case 362097679: return new TourneyTokensAmountTemplate();
             case 363049144: return new ZoneTokenBehaviorTemplate();
+            case 363285728: return new GraphicalPvPTourneyCurrencyBonus();
             case 364170412: return new PhysicsSim();
             case 364240958: return new AdventurePartyJoinList();
             case 366524624: return new DdWinAnimMoveZap();
@@ -470,6 +477,7 @@ public static partial class TypeCache {
             case 473949253: return new NaturalSummonCinematicStageTemplate();
             case 474222920: return new CantripsInvisibilityEffect();
             case 474458266: return new ClientDynaModBehavior();
+            case 474703847: return new PvPTourneyCurrencyBonusLootInfo();
             case 475375693: return new RecreateNPCActorCinematicAction();
             case 475758968: return new QuestEffectTemplate();
             case 476217519: return new CantripsInvisibilityEffectInfo();
@@ -587,7 +595,6 @@ public static partial class TypeCache {
             case 588090941: return new CastleTourHouseTemplateList();
             case 588389314: return new TransformationEffect();
             case 595095093: return new CastleToursFavoritesBehavior();
-            case 595747853: return new PvPMatchMakerStats();
             case 596139110: return new TransformationEffectInfo();
             case 596383997: return new ControlEdit();
             case 596414623: return new ControlText();
@@ -770,6 +777,7 @@ public static partial class TypeCache {
             case 777039708: return new PhysicsSimMassBox();
             case 777060197: return new GardeningShedBehaviorBase();
             case 778972366: return new WizDisableItemStatEffectTemplate();
+            case 779407485: return new GuildAchievementData();
             case 779748765: return new ControlMultiLineEdit();
             case 780479981: return new GuildMuseumCuratorBehavior();
             case 780639017: return new AdvPvPLeaderboardEntry();
@@ -780,7 +788,9 @@ public static partial class TypeCache {
             case 785208611: return new ContainerEffectInfo();
             case 785304851: return new BattleCardShopOption();
             case 785676554: return new MatchCostAdjustment();
+            case 786023501: return new GuildAchievementDataList();
             case 788111631: return new ObstacleCourseCatapultBehaviorClient();
+            case 788411968: return new GuildAchievementOption();
             case 792029465: return new ClientFlareBacklashEffectCinematicAction();
             case 792240292: return new BadgeTemplate();
             case 795152686: return new CombatResolver();
@@ -855,6 +865,7 @@ public static partial class TypeCache {
             case 853268042: return new ProvideCombatTriggerTemplate();
             case 853452777: return new SpellRank();
             case 854001393: return new WizBugReport();
+            case 854951333: return new GuildAchievementBehavior();
             case 855187657: return new SoccerBall();
             case 856547416: return new ClientRemoveBacklashEffectCinematicAciton();
             case 858568024: return new ReqIsQuest();
@@ -896,6 +907,7 @@ public static partial class TypeCache {
             case 897469938: return new ClientDerbyModifyCheerCost();
             case 897822817: return new RaidManagerBehaviorTemplate();
             case 898738405: return new SigilSubCircle();
+            case 901428785: return new TourneyTokenItemsOption();
             case 901447185: return new FriendData();
             case 901959605: return new CastleMagicManager();
             case 902409505: return new Slot_Node_FXDef();
@@ -1194,6 +1206,7 @@ public static partial class TypeCache {
             case 1157919952: return new BlobRequestObject();
             case 1158483591: return new TreasureShopOption();
             case 1158680138: return new SplashCinematicInfo();
+            case 1158697381: return new SummonMinionEffectInfo();
             case 1158760128: return new Mail();
             case 1160667979: return new ArenaBonusPointsLootInfo();
             case 1160849771: return new RatingBadgeInfo();
@@ -1263,6 +1276,7 @@ public static partial class TypeCache {
             case 1225309305: return new SpellEffect();
             case 1225428773: return new BadgeLeaderboardBehaviorTemplate();
             case 1227463801: return new SpeedEffect();
+            case 1227787104: return new GraphicalPvPTourneyCurrency();
             case 1228900789: return new QuestEntry();
             case 1229607021: return new PetGeneticsControl();
             case 1229774622: return new GuildIslandItemBehavior();
@@ -1428,6 +1442,7 @@ public static partial class TypeCache {
             case 1404790572: return new ObstacleCourseFinishLineBehaviorTemplate();
             case 1404794289: return new BoosterPackTemplate();
             case 1407815894: return new ClientDerbyModifyPetStat();
+            case 1408207052: return new SummonMinionEffect();
             case 1408632626: return new ClientStartBacklashRotationEffectCinematicAction();
             case 1409100712: return new TeamHelpWindow();
             case 1410401656: return new ZoneTokenBoolean();
@@ -1511,7 +1526,6 @@ public static partial class TypeCache {
             case 1509627481: return new SortedDirt();
             case 1509765278: return new PetStatsControl();
             case 1511448627: return new CombatTriggerDescription();
-            case 1512331650: return new BracketTournamentGoldCostInfoList();
             case 1514144732: return new JewelSocketWrenchElements();
             case 1515417353: return new UIScaleConfigEntry();
             case 1517921756: return new UpdatePipsCinematicAction();
@@ -1556,6 +1570,7 @@ public static partial class TypeCache {
             case 1545570424: return new PulseEffectTemplate();
             case 1545613187: return new RecipeTypeList();
             case 1545841998: return new ConditionalSpellEffect();
+            case 1547966277: return new RecentWizardInfoList();
             case 1549455354: return new ModifyPipRoundRateData();
             case 1552219135: return new DeathCinematicStageTemplate();
             case 1553710977: return new RidableBehavior();
@@ -1699,7 +1714,6 @@ public static partial class TypeCache {
             case 1712912440: return new ClientDerbyAddObstacle();
             case 1712992399: return new ClassProjectLeaderboard();
             case 1713818816: return new WorldElixirBehaviorTemplate();
-            case 1714919442: return new IgnoredPlayerList();
             case 1715531072: return new RaidKeyBehavior();
             case 1716921058: return new ClientDerbyModifyMorale();
             case 1717552648: return new CollectedEssenceTrackingData();
@@ -1717,6 +1731,7 @@ public static partial class TypeCache {
             case 1731493837: return new HousingMusicPlayerBehavior();
             case 1733903409: return new SchoolOfFocusOption();
             case 1734454951: return new FishingLevelControl();
+            case 1735114774: return new GuildAchievementBehaviorTemplate();
             case 1737361018: return new WeightedEntryT_std_string();
             case 1738178676: return new DailyQuestReward();
             case 1738202186: return new ZoneTokenBooleanControl();
@@ -1896,6 +1911,7 @@ public static partial class TypeCache {
             case 1927861928: return new TabDisplayPriorityList();
             case 1928119170: return new DelaySpellEffect();
             case 1928665059: return new WhirlyBurlyOption();
+            case 1928915121: return new RecentWizardInfo();
             case 1929567268: return new PartyObserver();
             case 1930319611: return new SG_GameAction_Interact();
             case 1930457836: return new MountShopOption();
@@ -1962,6 +1978,7 @@ public static partial class TypeCache {
             case 1990441318: return new BGPolymorphSelectBehaviorTemplate();
             case 1991057723: return new PetLevelInfo();
             case 1992226516: return new ClientMountRiderBehavior();
+            case 1992896385: return new GuildAchievementList();
             case 1992945078: return new CastleMagicBehavior();
             case 1993005499: return new WizBankingOption();
             case 1993386671: return new PulseEffect();
@@ -2454,6 +2471,14 @@ public static partial class TypeCache {
         }
     }
 
+    public class GuildAchievementInfo : PropertyClass {
+
+        public override uint GetHash() => 66088836;
+        [Property(2446900370, 8388615)] public ByteString m_displayName;
+        [Property(1754773829, 7)] public ByteString m_achievementName;
+        [Property(1245971442, 7)] public Boolean m_displayCount;
+    }
+
     public class SG_GameAction_DestroyBlock : SG_GameAction {
 
         public override uint GetHash() => 69371072;
@@ -2616,7 +2641,8 @@ public static partial class TypeCache {
         [Property(1544572080, 31)] public Single m_defaultShadowPipRating;
         [Property(447039594, 31)] public Single m_shadowPipThresholdTeam0;
         [Property(447039595, 31)] public Single m_shadowPipThresholdTeam1;
-        [Property(772697088, 31)] public Single m_maxArchmastery;
+        [Property(300185527, 31)] public Single m_maxArchmasteryTeam0;
+        [Property(300185528, 31)] public Single m_maxArchmasteryTeam1;
         [Property(1865068300, 31)] public Single m_scalarDamage;
         [Property(270448583, 31)] public Single m_scalarResist;
         [Property(196427621, 31)] public Single m_scalarPierce;
@@ -2794,6 +2820,13 @@ public static partial class TypeCache {
     public class ClientZoneTokenBoolean : ZoneTokenBoolean {
 
         public override uint GetHash() => 93715321;
+    }
+
+    public class SummonMinionEffectTemplate : GameEffectTemplate {
+
+        public override uint GetHash() => 93756938;
+        [Property(3186373083, 2097159)] public MinionType m_minionType;
+        [Property(1109386027, 7)] public Int32 m_summonedTemplateID;
     }
 
     public class StartHangingRotationCinematicAction : ActorCinematicAction {
@@ -3102,17 +3135,6 @@ public static partial class TypeCache {
     public class BadgeFilter : PropertyClass {
 
         public override uint GetHash() => 122951263;
-    }
-
-    public class BracketTournamentGoldCostInfo : PropertyClass {
-
-        public override uint GetHash() => 123577961;
-        [Property(1708220969, 31)] public UInt32 m_minLevel;
-        [Property(357765739, 31)] public UInt32 m_maxLevel;
-        [Property(2119335232, 31)] public UInt32 m_goldCostSubscriber;
-        [Property(598602850, 31)] public UInt32 m_goldCostSubscriberMSRP;
-        [Property(1818371979, 31)] public UInt32 m_goldCostNonSubscriber;
-        [Property(2328874029, 31)] public UInt32 m_goldCostNonSubscriberMSRP;
     }
 
     public class BattlegroundTeamData : PropertyClass {
@@ -4016,6 +4038,22 @@ public static partial class TypeCache {
         public override uint GetHash() => 213549285;
     }
 
+    public class PvPMatchJoinQueueRequirements : PropertyClass {
+
+        public override uint GetHash() => 215859203;
+        [Property(1496818518, 31)] public Int32 m_minLevel;
+        [Property(146363288, 31)] public Int32 m_maxLevel;
+        [Property(979905379, 31)] public Int32 m_minEloRating;
+        [Property(938224805, 31)] public Int32 m_maxEloRating;
+        [Property(1961133770, 31)] public Int32 m_minEloRank;
+        [Property(194203532, 31)] public Int32 m_maxEloRank;
+        [Property(650179746, 31)] public Int32 m_minMatchesPlayed;
+        [Property(1560790756, 31)] public Int32 m_maxMatchesPlayed;
+        [Property(2633719087, 31)] public ByteString m_requiredBadge;
+        [Property(1051823616, 31)] public Boolean m_membersOnly;
+        [Property(1420401792, 31)] public Boolean m_friendsOnly;
+    }
+
     public class NameOverrideBehavior : BehaviorInstance {
 
         public override uint GetHash() => 216582072;
@@ -4376,6 +4414,7 @@ public static partial class TypeCache {
         [Property(1148443466, 7)] public Int32 m_purposeType;
         [Property(1790486832, 7)] public UInt32 m_purposeWorldID;
         [Property(234201381, 7)] public Int32 m_partySize;
+        [Property(35306568, 7)] public Int32 m_onlineCount;
     }
 
     public class EffectsBehavior : BehaviorInstance {
@@ -5268,6 +5307,12 @@ public static partial class TypeCache {
         public override uint GetHash() => 336820599;
     }
 
+    public class PvPTourneyCurrencyLootInfo : LootInfo {
+
+        public override uint GetHash() => 337312279;
+        [Property(1148086373, 31)] public Int32 m_pvpTourneyCurrencyAmount;
+    }
+
     public class PetBoostPlayerStatEffect : WizStatisticEffect {
 
         public override uint GetHash() => 337702974;
@@ -5377,6 +5422,7 @@ public static partial class TypeCache {
         [Property(3358741882, 31)] public List<ByteString> m_treasureSpellNames;
         [Property(1936888726, 31)] public Boolean m_crownShop;
         [Property(648643854, 31)] public Boolean m_pvpCurrencyShop;
+        [Property(520923364, 31)] public Boolean m_pvpTourneyCurrencyShop;
     }
 
     public class ClientObject : CoreObject {
@@ -5436,6 +5482,12 @@ public static partial class TypeCache {
         [Property(2945256819, 7)] public TieredSpellConfig m_tieredSpellConfig;
     }
 
+    public class SocialSystemPlayerList : PropertyClass {
+
+        public override uint GetHash() => 359892405;
+        [Property(1909774945, 7)] public List<GID> m_playerList;
+    }
+
     public class BehaviorTemplate : PropertyClass {
 
         public override uint GetHash() => 360231646;
@@ -5468,9 +5520,21 @@ public static partial class TypeCache {
         public override uint GetHash() => 361756972;
     }
 
+    public class TourneyTokensAmountTemplate : WizItemTemplate {
+
+        public override uint GetHash() => 362097679;
+        [Property(1579576120, 7)] public Int32 m_tourneyTokensAmount;
+        [Property(1764743064, 131079)] public ByteString m_nif;
+    }
+
     public class ZoneTokenBehaviorTemplate : BehaviorTemplate {
 
         public override uint GetHash() => 363049144;
+    }
+
+    public class GraphicalPvPTourneyCurrencyBonus : GraphicalSpell {
+
+        public override uint GetHash() => 363285728;
     }
 
     public class PhysicsSim : BaseZone.BaseSimulation {
@@ -5774,8 +5838,7 @@ public static partial class TypeCache {
     public class PvPMatchInfo : ArenaMatchInfo {
 
         public override uint GetHash() => 398288299;
-        [Property(1496818518, 31)] public Int32 m_minLevel;
-        [Property(146363288, 31)] public Int32 m_maxLevel;
+        [Property(2746080983, 31)] public PvPMatchJoinQueueRequirements m_joinQueueRequirements;
         [Property(312519798, 31)] public UInt32 m_timeLimitSec;
         [Property(1688842509, 31)] public Boolean m_useHistoricDiego;
         [Property(1850924028, 31)] public List<GID> m_ignoredList;
@@ -5907,15 +5970,10 @@ public static partial class TypeCache {
         [Property(981867512, 31)] public List<BracketTeam> m_teams;
         [Property(2343388751, 63)] public UInt32 m_teamSize;
         [Property(885135115, 6)] public List<MatchActor> m_actorList;
-        [Property(1708220969, 63)] public UInt32 m_minLevel;
-        [Property(357765739, 63)] public UInt32 m_maxLevel;
-        [Property(2062988042, 63)] public Int32 m_minRank;
         [Property(861487416, 63)] public UInt32 m_currentRound;
-        [Property(1761764108, 63)] public Int32 m_maxRank;
         [Property(790945386, 63)] public UInt32 m_bracketState;
         [Property(1751361288, 63)] public UInt32 m_matchNameID;
         [Property(346233980, 63)] public UInt32 m_roundStartsInSeconds;
-        [Property(1420401792, 63)] public Boolean m_friendsOnly;
         [Property(1964849971, 63)] public UInt32 m_roundTimeSeconds;
         [Property(1439120946, 63)] public GID m_scheduleID;
         [Property(1245818841, 63)] public UInt32 m_visibleTimeSeconds;
@@ -5927,15 +5985,11 @@ public static partial class TypeCache {
         [Property(2611946162, 63)] public ByteString m_overrideTourneyName;
         [Property(2731391050, 63)] public ByteString m_firstTourneyNameSTKey;
         [Property(1747016318, 63)] public ByteString m_secondTourneyNameSTKey;
-        [Property(219280307, 63)] public Int32 m_cost;
-        [Property(1676731293, 63)] public Int32 m_subCost;
         [Property(1688562149, 31)] public Int32 m_subBracketIdx;
         [Property(545011290, 63)] public Single m_scoreMultiplier;
         [Property(475550641, 63)] public Int32 m_preferredNumberOfTeams;
         [Property(1506283288, 63)] public Int32 m_minTeams;
         [Property(155828058, 63)] public Int32 m_maxTeams;
-        [Property(2062720469, 63)] public Int32 m_costMSRP;
-        [Property(104559295, 63)] public Int32 m_subCostMSRP;
         [Property(1211693398, 63)] public Boolean m_specialEvent;
         [Property(1796488605, 31)] public List<ByteString> m_pvpDuelModifiers;
         [Property(2010454400, 31)] public List<DuelModifierTemplate> m_pvpDuelModifierTemplates;
@@ -5943,10 +5997,10 @@ public static partial class TypeCache {
         [Property(2521625388, 63)] public ByteString m_premierPrizesStoreGIDsCSV;
         [Property(1530265666, 2097159)] public EnumTournamentStyle m_tournamentStyle;
         [Property(3842983067, 31)] public List<BracketRewards> m_bracketRewardsList;
-        [Property(575488556, 63)] public Boolean m_bSubscribersPayGold;
-        [Property(628670615, 63)] public Boolean m_bNonSubscribersPayGold;
-        [Property(1806822126, 31)] public List<BracketTournamentGoldCostInfo> m_goldCostList;
-        [Property(3533108629, 551)] public ByteString m_goldCostListBlob;
+        [Property(1611997610, 63)] public Int32 m_costPvPTourneyCurrency;
+        [Property(1871398932, 63)] public Int32 m_subCostPvPTourneyCurrency;
+        [Property(2746080983, 31)] public PvPMatchJoinQueueRequirements m_joinQueueRequirements;
+        [Property(2615447859, 551)] public ByteString m_joinQueueRequirementsBlob;
 
         public enum EnumTournamentStyle {
 
@@ -6079,6 +6133,7 @@ public static partial class TypeCache {
         [Property(2861967351, 7)] public List<AdventurePartyEntryInfo> m_adventurePartyMemberList;
         [Property(2175215327, 7)] public List<MessageBoardMessage> m_messageBoardList;
         [Property(762261177, 7)] public UInt32 m_renameCooldownTime;
+        [Property(453769201, 7)] public UInt32 m_newOwnerTime;
     }
 
     public class ObjectLocationList : PropertyClass {
@@ -6369,6 +6424,12 @@ public static partial class TypeCache {
     public class ClientDynaModBehavior : DynaModBehavior {
 
         public override uint GetHash() => 474458266;
+    }
+
+    public class PvPTourneyCurrencyBonusLootInfo : LootInfo {
+
+        public override uint GetHash() => 474703847;
+        [Property(1691016556, 31)] public Int32 m_pvpTourneyCurrencyBonusAmount;
     }
 
     public class RecreateNPCActorCinematicAction : ActorCinematicAction {
@@ -7306,38 +7367,6 @@ public static partial class TypeCache {
         public override uint GetHash() => 595095093;
     }
 
-    public class PvPMatchMakerStats : PropertyClass {
-
-        public override uint GetHash() => 595747853;
-        [Property(460836014, 31)] public Int32 m_timeStamp;
-        [Property(2132039331, 31)] public Int32 m_teamType;
-        [Property(1019689674, 31)] public Int32 m_unmatchedActorQueueSizeAvg;
-        [Property(1019702320, 31)] public Int32 m_unmatchedActorQueueSizeMin;
-        [Property(1019702066, 31)] public Int32 m_unmatchedActorQueueSizeMax;
-        [Property(1745036242, 31)] public Int32 m_unfilledTeamQueueSizeAvg;
-        [Property(1745048888, 31)] public Int32 m_unfilledTeamQueueSizeMin;
-        [Property(1745048634, 31)] public Int32 m_unfilledTeamQueueSizeMax;
-        [Property(1313586808, 31)] public Int32 m_unmatchedTeamQueueSizeAvg;
-        [Property(1313599454, 31)] public Int32 m_unmatchedTeamQueueSizeMin;
-        [Property(1313599200, 31)] public Int32 m_unmatchedTeamQueueSizeMax;
-        [Property(1966828168, 31)] public Int32 m_actorFindTeamTimeAvg;
-        [Property(1966840814, 31)] public Int32 m_actorFindTeamTimeMin;
-        [Property(1966840560, 31)] public Int32 m_actorFindTeamTimeMax;
-        [Property(2080110229, 31)] public Int32 m_teamFillTimeAvg;
-        [Property(2080122875, 31)] public Int32 m_teamFillTimeMin;
-        [Property(2080122621, 31)] public Int32 m_teamFillTimeMax;
-        [Property(1257419131, 31)] public Int32 m_teamMatchTimeAvg;
-        [Property(1257431777, 31)] public Int32 m_teamMatchTimeMin;
-        [Property(1257431523, 31)] public Int32 m_teamMatchTimeMax;
-        [Property(52876132, 31)] public Int32 m_actorTotalTimeAvg;
-        [Property(52888778, 31)] public Int32 m_actorTotalTimeMin;
-        [Property(52888524, 31)] public Int32 m_actorTotalTimeMax;
-        [Property(872066515, 31)] public Int32 m_actorLeaves;
-        [Property(294420813, 31)] public Int32 m_actorLeaveTimeAvg;
-        [Property(294433459, 31)] public Int32 m_actorLeaveTimeMin;
-        [Property(294433205, 31)] public Int32 m_actorLeaveTimeMax;
-    }
-
     public class TransformationEffectInfo : GameEffectInfo {
 
         public override uint GetHash() => 596139110;
@@ -8133,7 +8162,9 @@ public static partial class TypeCache {
             LOOT_TYPE_TELEPORT_EFFECT = 23,
             LOOT_TYPE_PVP_CURRENCY = 26,
             LOOT_TYPE_PVP_CURRENCY_BONUS = 27,
-            LOOT_TYPE_FURNITURE_ESSENCE = 28,
+            LOOT_TYPE_PVP_TOURNEY_CURRENCY = 28,
+            LOOT_TYPE_PVP_TOURNEY_CURRENCY_BONUS = 29,
+            LOOT_TYPE_FURNITURE_ESSENCE = 30,
         }
     }
 
@@ -8961,6 +8992,15 @@ public static partial class TypeCache {
         [Property(3305858271, 7)] public List<ByteString> m_itemSlots;
     }
 
+    public class GuildAchievementData : PropertyClass {
+
+        public override uint GetHash() => 779407485;
+        [Property(778026115, 7)] public UInt32 m_guildName;
+        [Property(1382795736, 7)] public UInt32 m_categoryID;
+        [Property(431286940, 7)] public UInt32 m_time;
+        [Property(1002373110, 7)] public UInt32 m_count;
+    }
+
     public class ControlMultiLineEdit : ControlEdit {
 
         public override uint GetHash() => 779748765;
@@ -9033,9 +9073,20 @@ public static partial class TypeCache {
         }
     }
 
+    public class GuildAchievementDataList : PropertyClass {
+
+        public override uint GetHash() => 786023501;
+        [Property(1717126676, 7)] public List<GuildAchievementData> m_guildAchievementDataList;
+    }
+
     public class ObstacleCourseCatapultBehaviorClient : ObstacleCourseCatapultBehavior {
 
         public override uint GetHash() => 788111631;
+    }
+
+    public class GuildAchievementOption : ServiceOptionBase {
+
+        public override uint GetHash() => 788411968;
     }
 
     public class ClientFlareBacklashEffectCinematicAction : FlareBacklashEffectCinematicAction {
@@ -9481,16 +9532,29 @@ public static partial class TypeCache {
         [Property(697457018, 33554463)] public List<Int32> m_bannedEquipment;
         [Property(2291474320, 31)] public List<ByteString> m_bannedEquipmentSlots;
         [Property(2417746270, 31)] public List<ByteString> m_bannedSchools;
-        [Property(1754346744, 8388639)] public ByteString m_ruleText;
-        [Property(2040511330, 31)] public Boolean m_newRulesFlag;
-        [Property(1885530300, 8388639)] public ByteString m_gameTypeText;
-        [Property(1523671421, 8388639)] public ByteString m_leftDoodle;
-        [Property(2828021488, 8388639)] public ByteString m_rightDoodle;
+        [Property(2759718993, 31)] public List<ByteString> m_requiredSpellsAdjectives;
+        [Property(2971738904, 31)] public List<ByteString> m_bannedSpellsAdjectives;
+        [Property(1523671421, 131103)] public ByteString m_leftDoodle;
+        [Property(2828021488, 131103)] public ByteString m_rightDoodle;
         [Property(752220749, 31)] public Boolean m_onlyTreasureCards;
         [Property(2142185705, 31)] public Boolean m_noShadowSpells;
         [Property(1780948882, 31)] public Boolean m_noEnchantedTreasureCards;
         [Property(1325982520, 31)] public Boolean m_noEnchantmentSpells;
+        [Property(1409034133, 31)] public Boolean m_noMaycastSpells;
         [Property(1272415451, 31)] public Boolean m_enableSpellLevelRestrictions;
+        [Property(1714276188, 31)] public Boolean m_ignoreSpellsPvPOnlyFlag;
+        [Property(1691675729, 31)] public Boolean m_ignoreSpellsPvEOnlyFlag;
+        [Property(2040511330, 31)] public Boolean m_newRulesFlag;
+        [Property(1754346744, 8388639)] public ByteString m_ruleText;
+        [Property(1885530300, 8388639)] public ByteString m_gameTypeText;
+        [Property(2417600380, 8388639)] public ByteString m_combatTriggersDescText;
+        [Property(3278371679, 8388639)] public ByteString m_battlefieldEffectsDescText;
+        [Property(3340359101, 8388639)] public ByteString m_gamedEffectsDescText;
+        [Property(3306238112, 8388639)] public ByteString m_spellLevelRestrictionsDescText;
+        [Property(3064659424, 8388639)] public ByteString m_combatRulesDescText;
+        [Property(1681120031, 8388639)] public ByteString m_bannedEquipmentDescText;
+        [Property(2035585939, 8388639)] public ByteString m_requiredSpellsDescText;
+        [Property(2010144922, 8388639)] public ByteString m_bannedSpellsDescText;
     }
 
     public class OldWizardEquippedItemInfo : EquippedItemInfo {
@@ -9687,6 +9751,11 @@ public static partial class TypeCache {
             UG_Male = 1,
             UG_Female = 2,
         }
+    }
+
+    public class GuildAchievementBehavior : BehaviorInstance {
+
+        public override uint GetHash() => 854951333;
     }
 
     public class SoccerBall : PropertyClass {
@@ -10036,6 +10105,11 @@ public static partial class TypeCache {
         [Property(989410271, 7)] public Single m_radius;
         [Property(1791663549, 7)] public Color m_color;
         [Property(2715542772, 7)] public List<SigilCamera> m_cameras;
+    }
+
+    public class TourneyTokenItemsOption : ServiceOptionBase {
+
+        public override uint GetHash() => 901428785;
     }
 
     public class FriendData : PropertyClass {
@@ -10933,6 +11007,7 @@ public static partial class TypeCache {
         [Property(2438566051, 7)] public ByteString m_school;
         [Property(1819621796, 7)] public Int32 m_arenaPointCost;
         [Property(645595444, 7)] public Int32 m_pvpCurrencyCost;
+        [Property(517874954, 7)] public Int32 m_pvpTourneyCurrencyCost;
         [Property(219803942, 7)] public Int32 m_rank;
         [Property(802140453, 7)] public Int32 m_boyIconIndex;
         [Property(832706793, 7)] public Int32 m_girlIconIndex;
@@ -11521,6 +11596,7 @@ public static partial class TypeCache {
         [Property(1440672233, 1)] public Single m_accuracyBonus;
         [Property(1896926112, 31)] public Int32 m_minionSubCircle;
         [Property(1597230777, 31)] public Boolean m_isMinion;
+        [Property(1067399659, 31)] public Boolean m_isAccompanyNPC;
         [Property(2685029606, 27)] public List<SpellEffect> m_hangingEffects;
         [Property(1243141029, 31)] public List<SpellEffect> m_publicHangingEffects;
         [Property(2783652947, 31)] public List<SpellEffect> m_auraEffects;
@@ -11531,6 +11607,8 @@ public static partial class TypeCache {
         [Property(1320079328, 31)] public UInt32 m_polymorphSpellTemplateID;
         [Property(1717547872, 1)] public ByteString m_side;
         [Property(2077139652, 31)] public Boolean m_shadowSpellsDisabled;
+        [Property(1714276188, 31)] public Boolean m_ignoreSpellsPvPOnlyFlag;
+        [Property(1691675729, 31)] public Boolean m_ignoreSpellsPvEOnlyFlag;
         [Property(986129576, 31)] public Boolean m_bossMob;
         [Property(1284658049, 31)] public Boolean m_hidePVPEnemyChat;
         [Property(1654684388, 1)] public List<Int32> m_combatTriggerIDs;
@@ -11708,6 +11786,7 @@ public static partial class TypeCache {
         [Property(1592212719, 7)] public Int32 m_crownsCost;
         [Property(1819621796, 7)] public Int32 m_arenaPointCost;
         [Property(645595444, 7)] public Int32 m_pvpCurrencyCost;
+        [Property(517874954, 7)] public Int32 m_pvpTourneyCurrencyCost;
         [Property(2438566051, 7)] public ByteString m_school;
         [Property(3174641793, 7)] public RequirementList m_purchaseRequirements;
         [Property(2994795359, 7)] public ByteString m_holidayFlag;
@@ -12392,7 +12471,9 @@ public static partial class TypeCache {
             LOOT_TYPE_EVENT_CURRENCY_2 = 25,
             LOOT_TYPE_PVP_CURRENCY = 26,
             LOOT_TYPE_PVP_CURRENCY_BONUS = 27,
-            LOOT_TYPE_FURNITURE_ESSENCE = 28,
+            LOOT_TYPE_PVP_TOURNEY_CURRENCY = 28,
+            LOOT_TYPE_PVP_TOURNEY_CURRENCY_BONUS = 29,
+            LOOT_TYPE_FURNITURE_ESSENCE = 30,
         }
     }
 
@@ -12868,6 +12949,13 @@ public static partial class TypeCache {
         [Property(1640179405, 7)] public Single m_assetPlaybackTime;
     }
 
+    public class SummonMinionEffectInfo : GameEffectInfo {
+
+        public override uint GetHash() => 1158697381;
+        [Property(3186373083, 2097159)] public MinionType m_minionType;
+        [Property(1109386027, 31)] public Int32 m_summonedTemplateID;
+    }
+
     public class Mail : PropertyClass {
 
         public override uint GetHash() => 1158760128;
@@ -13212,12 +13300,14 @@ public static partial class TypeCache {
         [Property(1227701106, 31)] public Int32 m_baseEventCurrency1Pouch;
         [Property(1266836499, 31)] public Int32 m_baseEventCurrency2Pouch;
         [Property(250034965, 31)] public Int32 m_basePvPCurrencyPouch;
+        [Property(2005272907, 31)] public Int32 m_basePvPTourneyCurrencyPouch;
         [Property(493080970, 31)] public Int32 m_energyMax;
         [Property(1533788735, 31)] public Int32 m_currentHitpoints;
         [Property(1255819683, 31)] public Int32 m_currentGold;
         [Property(1718583419, 31)] public Int32 m_currentEventCurrency1;
         [Property(1718583420, 31)] public Int32 m_currentEventCurrency2;
         [Property(958495550, 31)] public Int32 m_currentPvPCurrency;
+        [Property(398198452, 31)] public Int32 m_currentPvPTourneyCurrency;
         [Property(1256020122, 31)] public Int32 m_currentMana;
         [Property(1119642753, 31)] public Int32 m_currentArenaPoints;
         [Property(712023615, 31)] public List<Int32> m_spellChargeBase;
@@ -13747,6 +13837,11 @@ public static partial class TypeCache {
         [Property(32503058, 31)] public Int32 m_speedMultiplier;
     }
 
+    public class GraphicalPvPTourneyCurrency : GraphicalSpell {
+
+        public override uint GetHash() => 1227787104;
+    }
+
     public class QuestEntry : PropertyClass {
 
         public override uint GetHash() => 1228900789;
@@ -14045,8 +14140,6 @@ public static partial class TypeCache {
     public class BracketMatchInfo : PvPMatchInfo {
 
         public override uint GetHash() => 1274905603;
-        [Property(2062988042, 31)] public Int32 m_minRank;
-        [Property(1761764108, 31)] public Int32 m_maxRank;
         [Property(1601148004, 31)] public Int32 m_numTeams;
         [Property(394154926, 31)] public Int32 m_pointsForLosingByDefeat;
         [Property(1202223548, 31)] public Int32 m_pointsForWinningByDefeat;
@@ -15270,6 +15363,13 @@ public static partial class TypeCache {
         public override uint GetHash() => 1407815894;
     }
 
+    public class SummonMinionEffect : GameEffectBase {
+
+        public override uint GetHash() => 1408207052;
+        [Property(3186373083, 2097159)] public MinionType m_minionType;
+        [Property(1109386027, 31)] public Int32 m_summonedTemplateID;
+    }
+
     public class ClientStartBacklashRotationEffectCinematicAction : StartBacklashRotationEffectCinematicAction {
 
         public override uint GetHash() => 1408632626;
@@ -15990,12 +16090,6 @@ public static partial class TypeCache {
         [Property(3323484466, 268435463)] public ByteString m_displaySpellName;
     }
 
-    public class BracketTournamentGoldCostInfoList : PropertyClass {
-
-        public override uint GetHash() => 1512331650;
-        [Property(960161071, 31)] public List<BracketTournamentGoldCostInfo> m_list;
-    }
-
     public class JewelSocketWrenchElements : PropertyClass {
 
         public override uint GetHash() => 1514144732;
@@ -16410,6 +16504,12 @@ public static partial class TypeCache {
         [Property(2647383318, 31)] public List<ConditionalSpellElement> m_elements;
     }
 
+    public class RecentWizardInfoList : PropertyClass {
+
+        public override uint GetHash() => 1547966277;
+        [Property(3708234369, 7)] public List<RecentWizardInfo> m_recentWizardInfoList;
+    }
+
     public class ModifyPipRoundRateData : PropertyClass {
 
         public override uint GetHash() => 1549455354;
@@ -16578,33 +16678,26 @@ public static partial class TypeCache {
     public class BracketRequest : PvPMatchRequest {
 
         public override uint GetHash() => 1572128943;
-        [Property(1761764108, 31)] public Int32 m_maxRank;
-        [Property(2062988042, 31)] public Int32 m_minRank;
         [Property(1656964203, 31)] public UInt32 m_maxNumberOfTeams;
         [Property(746353193, 31)] public UInt32 m_minNumberOfTeams;
         [Property(312519798, 31)] public UInt32 m_timeLimitSec;
-        [Property(1420401792, 31)] public Boolean m_friendsOnly;
         [Property(1439120946, 31)] public GID m_scheduleID;
         [Property(1245818841, 31)] public UInt32 m_visibleTimeSeconds;
         [Property(2064854776, 31)] public UInt32 m_registrationOpenTimeSeconds;
         [Property(1121720544, 31)] public UInt32 m_tournamentPreparingTimeSeconds;
-        [Property(346233980, 31)] public UInt32 m_roundStartsInSeconds;
         [Property(2131986300, 31)] public Int32 m_teamSize;
         [Property(3842983067, 7)] public List<BracketRewards> m_bracketRewardsList;
-        [Property(1717359772, 31)] public ByteString m_name;
-        [Property(430682758, 31)] public UInt32 m_cost;
-        [Property(1888133744, 31)] public UInt32 m_subCost;
+        [Property(1717359772, 8388639)] public ByteString m_name;
+        [Property(346233980, 31)] public UInt32 m_roundStartsInSeconds;
         [Property(671173677, 31)] public UInt32 m_roundBufferTimeSeconds;
+        [Property(2292833030, 31)] public UInt32 m_numberOfRounds;
         [Property(545011290, 31)] public Single m_scoreMultiplier;
         [Property(686953092, 31)] public UInt32 m_preferredNumberOfTeams;
-        [Property(2274122920, 31)] public UInt32 m_costMSRP;
-        [Property(315961746, 31)] public UInt32 m_subCostMSRP;
         [Property(1211693398, 31)] public Boolean m_specialEvent;
         [Property(1796488605, 31)] public List<ByteString> m_pvpDuelModifiers;
         [Property(2521625388, 31)] public ByteString m_premierPrizesStoreGIDsCSV;
-        [Property(575488556, 31)] public Boolean m_bSubscribersPayGold;
-        [Property(628670615, 31)] public Boolean m_bNonSubscribersPayGold;
-        [Property(1806822126, 31)] public List<BracketTournamentGoldCostInfo> m_goldCostList;
+        [Property(1823400061, 31)] public UInt32 m_costPvPTourneyCurrency;
+        [Property(2082801383, 31)] public UInt32 m_subCostPvPTourneyCurrency;
     }
 
     public class ClientVisibilityBehavior : VisibilityBehavior {
@@ -16758,6 +16851,7 @@ public static partial class TypeCache {
         [Property(1426436071, 31)] public Int32 m_ratingGained;
         [Property(511478910, 31)] public Int32 m_arenaPoints;
         [Property(611304283, 31)] public Int32 m_pvpCurrency;
+        [Property(1184787505, 31)] public Int32 m_pvpTourneyCurrency;
         [Property(219423808, 31)] public Int32 m_gold;
         [Property(1417654793, 31)] public Byte m_gameResult;
     }
@@ -17380,6 +17474,8 @@ public static partial class TypeCache {
         [Property(899783871, 31)] public Int32 m_rating;
         [Property(2097286567, 31)] public Int32 m_levelBand;
         [Property(638238406, 31)] public Int32 m_enteredQueue;
+        [Property(952325795, 31)] public Boolean m_isSubscriber;
+        [Property(438139258, 31)] public Boolean m_meetBracketBadgeRequirnments;
         [Property(269458571, 31)] public Boolean m_1v1;
         [Property(961375108, 31)] public Int32 m_streak;
         [Property(1757638687, 31)] public Int32 m_matches;
@@ -17561,12 +17657,6 @@ public static partial class TypeCache {
         [Property(2914797659, 7)] public ByteString m_questPrefix;
     }
 
-    public class IgnoredPlayerList : PropertyClass {
-
-        public override uint GetHash() => 1714919442;
-        [Property(1909774945, 7)] public List<GID> m_playerList;
-    }
-
     public class RaidKeyBehavior : BehaviorInstance {
 
         public override uint GetHash() => 1715531072;
@@ -17685,6 +17775,11 @@ public static partial class TypeCache {
         public override uint GetHash() => 1734454951;
     }
 
+    public class GuildAchievementBehaviorTemplate : BehaviorTemplate {
+
+        public override uint GetHash() => 1735114774;
+    }
+
     public class WeightedEntryT_std_string : WeightedEntry {
 
         public override uint GetHash() => 1737361018;
@@ -17708,8 +17803,9 @@ public static partial class TypeCache {
             RT_Crowns = 1,
             RT_ArenaTickets = 2,
             RT_PvPCurrency = 3,
-            RT_Chest = 4,
-            RT_Quest = 5,
+            RT_PvPTourneyCurrency = 4,
+            RT_Chest = 5,
+            RT_Quest = 6,
         }
     }
 
@@ -17814,7 +17910,12 @@ public static partial class TypeCache {
         [Property(1394430197, 31)] public Boolean m_noCrits;
         [Property(1780948882, 31)] public Boolean m_noEnchantedTreasureCards;
         [Property(1325982520, 31)] public Boolean m_noEnchantmentSpells;
+        [Property(1409034133, 31)] public Boolean m_noMaycastSpells;
         [Property(1272415451, 31)] public Boolean m_enableSpellLevelRestrictions;
+        [Property(1714276188, 31)] public Boolean m_ignoreSpellsPvPOnlyFlag;
+        [Property(1691675729, 31)] public Boolean m_ignoreSpellsPvEOnlyFlag;
+        [Property(1262019376, 31)] public List<Int32> m_requiredSpellsAdjectives;
+        [Property(1474039287, 31)] public List<Int32> m_bannedSpellsAdjectives;
     }
 
     public class ZoneTickEffectInfo : GameEffectInfo {
@@ -17992,7 +18093,8 @@ public static partial class TypeCache {
             CURRENCY_EC1 = 3,
             CURRENCY_EC2 = 4,
             CURRENCY_PVPCUR = 5,
-            CURRENCY_LOYALTYTOKENS = 6,
+            CURRENCY_PVPTOURNEYCUR = 6,
+            CURRENCY_LOYALTYTOKENS = 7,
         }
     }
 
@@ -18751,6 +18853,7 @@ public static partial class TypeCache {
         [Property(1475151502, 7)] public Int32 m_baseCost;
         [Property(715313825, 7)] public Int32 m_creditsCost;
         [Property(645595444, 7)] public Int32 m_pvpCurrencyCost;
+        [Property(517874954, 7)] public Int32 m_pvpTourneyCurrencyCost;
         [Property(3428653697, 131079)] public ByteString m_boosterPackIcon;
         [Property(2355782967, 7)] public List<UInt32> m_validTargetSpells;
         [Property(269492361, 7)] public Boolean m_PvP;
@@ -19247,6 +19350,26 @@ public static partial class TypeCache {
         public override uint GetHash() => 1928665059;
     }
 
+    public class RecentWizardInfo : PropertyClass {
+
+        public override uint GetHash() => 1928915121;
+        [Property(501688601, 7)] public GID m_characterGID;
+        [Property(1805208228, 7)] public ByteString m_packedName;
+        [Property(2066613339, 7)] public UInt32 m_lastSeenTime;
+        [Property(1012687813, 7)] public UInt32 m_level;
+        [Property(1152268885, 7)] public UInt32 m_school;
+        [Property(2338224044, 7)] public UInt32 m_combatCount;
+        [Property(1489352139, 7)] public UInt32 m_instanceCount;
+        [Property(1273194302, 7)] public UInt32 m_hatchCount;
+        [Property(1289638718, 7)] public UInt32 m_beastmoonCount;
+        [Property(265597676, 7)] public UInt32 m_derbyCount;
+        [Property(624008108, 7)] public UInt32 m_PVPCount;
+        [Property(1403136525, 7)] public UInt32 m_housingGameCount;
+        [Property(397177058, 7)] public UInt32 m_worldID;
+        [Property(2037310403, 7)] public GID m_objectGID;
+        [Property(1681359252, 7)] public Boolean m_isOnline;
+    }
+
     public class PartyObserver : GroupObserver {
 
         public override uint GetHash() => 1929567268;
@@ -19315,6 +19438,7 @@ public static partial class TypeCache {
         [Property(732802992, 7)] public Int32 m_playerCount;
         [Property(2171104787, 7)] public List<ByteString> m_zoneList;
         [Property(3345769311, 7)] public ByteString m_zoneTeleportLocation;
+        [Property(2014197012, 7)] public Int32 m_enabledSeconds;
     }
 
     public class PrivateEquippedJewelInfo : PropertyClass {
@@ -19797,6 +19921,12 @@ public static partial class TypeCache {
     public class ClientMountRiderBehavior : BehaviorInstance {
 
         public override uint GetHash() => 1992226516;
+    }
+
+    public class GuildAchievementList : PropertyClass {
+
+        public override uint GetHash() => 1992896385;
+        [Property(2487751645, 7)] public List<GuildAchievementInfo> m_guildAchievementList;
     }
 
     public class CastleMagicBehavior : CastleMagicBehaviorBase {
@@ -20923,8 +21053,7 @@ public static partial class TypeCache {
     public class PvPMatchRequest : MatchRequest {
 
         public override uint GetHash() => 2132132349;
-        [Property(1496818518, 31)] public Int32 m_minLevel;
-        [Property(146363288, 31)] public Int32 m_maxLevel;
+        [Property(2746080983, 31)] public PvPMatchJoinQueueRequirements m_joinQueueRequirements;
         [Property(1850924028, 31)] public List<GID> m_ignoredList;
         [Property(1510935909, 31)] public Single m_matchTimer;
         [Property(1757496496, 31)] public Int32 m_bonusTime;
@@ -21042,6 +21171,14 @@ public static partial class TypeCache {
 
         LLT_Rigid = 0,
         LLT_Elastic = 1,
+    }
+
+    public enum MinionType {
+
+        MT_NONE = 0,
+        MT_ACCOMPANY = 1,
+        MT_MINION = 2,
+        MT_MONSTER = 3,
     }
 
     public enum kShadow_Threshold_Type {
@@ -23758,6 +23895,42 @@ public static partial class TypeCache {
         Guest_HG_Gryphon_OwlStatue_A_02_L50 = 74082830,
         MNT_SummerSOF2024_JudgementWings = 1078163967,
         MNT_Pegasus_E = 131704054,
+        MNT_PolarisHero = 665176426,
+        PP_Duckana = 1128961578,
+        PP_QueenBee = 833291695,
+        Transformation_BG_Draconian_Balance = 2078940682,
+        Transformation_BG_WolfWarrior_Fire = 1762248682,
+        Transformation_BG_Minotaur_Death = 309090657,
+        PP_WolfWarrior_Fire = 685685256,
+        PP_WolfWarrior_Death = 1857202724,
+        Guest_ME_GTAV01_WyrmBoss_150 = 1482208618,
+        Guest_ME_SpectreOfB_L150 = 684104791,
+        Guest_ME_MD_MacDeath_L150 = 1128977615,
+        Guest_ME_Pig_BalanceWizardA_L150 = 959913724,
+        Guest_ME_Pig_BalanceWizardB_L150 = 959913712,
+        Guest_ME_Pig_BalanceWizardC_L150 = 959913716,
+        Guest_ME_Pig_FireWizard_L150 = 964392255,
+        Guest_ME_Pig_IceWizardF_L150 = 86941026,
+        Guest_ME_Pig_MythWizard_L150 = 964051241,
+        Guest_ME_Pig_StormWizardF_L150 = 2016383602,
+        Guest_ME_Clock_Clockworker_L150 = 1424569772,
+        Guest_ME_Clock_ClockworkSpanner_L150 = 1966824609,
+        Guest_ME_Clock_Lugs_L150 = 370290904,
+        Guest_ME_Clock_Lucia_L150 = 1857768409,
+        MNT_EvilChair = 339577702,
+        PP_Cyclops_Storm = 621464512,
+        PP_Krokomummy_Life = 462432735,
+        Transformation_CL_Rematch_Crustacean = 1686865207,
+        Transformation_CL_Rematch_Protector = 1893951532,
+        Transformation_CL_Rematch_Angler = 120412196,
+        Transformation_CL_Rematch_Piscean = 1624106070,
+        Transformation_Zebra_Template = 1900548493,
+        Transformation_Zebra2_Template = 325099540,
+        Transformation_Zebra3_Template = 325099524,
+        Transformation_Zebra4_Template = 325099636,
+        MNT_SweetSixteenBirthday = 1009398096,
+        MNT_2P_TRex_Bones = 1618543266,
+        MNT_SpringBumperCar = 1725007788,
     }
 
     public enum eMountType {
