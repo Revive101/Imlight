@@ -96,7 +96,18 @@ internal class AuctionHouseService : MessageService {
     private void ConfirmBuyFromAuctionHouse(ulong templateId, uint key) {
         var entry = AuctionHouseCollection.GetAuctionHouseEntry(templateId);
 
-        // Todo: check if entry exists.
+        if (entry is null) {
+            // todo: figure out correct response, should inform player the transaction failed and reload contents
+            /*var responseMsg = new WIZARD_12_PROTOCOL.MSG_AUCTIONRESPONSE {
+                Command = 1,
+                ItemTemplateID = 0,
+                Cost = 0,
+                ReturnCode = 4
+            };
+            SendToSocket(responseMsg);*/
+
+            return;
+        }
 
         var auctionRspMsg = new WIZARD_12_PROTOCOL.MSG_AUCTIONRESPONSE {
             Command = 1,
@@ -118,15 +129,6 @@ internal class AuctionHouseService : MessageService {
 
         var entry = AuctionHouseCollection.GetAuctionHouseEntry(templateId);
         if (entry is null) { // Entry does not exist.
-            // todo: figure out correct response.
-            var responseMsg = new WIZARD_12_PROTOCOL.MSG_AUCTIONRESPONSE {
-                Command = 3,
-                ItemTemplateID = templateId,
-                Cost = 0,
-                ReturnCode = 1
-            };
-            SendToSocket(responseMsg);
-
             return;
         }
         var goldCost = entry.m_buyPrice;
@@ -230,9 +232,9 @@ internal class AuctionHouseService : MessageService {
         }
         else {
             if (entry.m_numForSale < 99) { // Stock limit of 99. Players can still sell item but stock will not increase.
-            entry.m_numForSale += 1;
-            AuctionHouseCollection.UpdateAuctionHouseEntry(entry);
-        }
+                entry.m_numForSale += 1;
+                AuctionHouseCollection.UpdateAuctionHouseEntry(entry);
+            }
         }
 
         // Inform of update.
