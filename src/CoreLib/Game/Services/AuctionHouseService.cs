@@ -217,8 +217,10 @@ internal class AuctionHouseService : MessageService {
             AuctionHouseCollection.AddAuctionHouseEntry(entry);
         }
         else {
+            if (entry.m_numForSale < 99) { // Stock limit of 99. Players can still sell item but stock will not increase.
             entry.m_numForSale += 1;
             AuctionHouseCollection.UpdateAuctionHouseEntry(entry);
+        }
         }
 
         // Inform of update.
