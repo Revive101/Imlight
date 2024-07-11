@@ -21,7 +21,6 @@ public class SpellbookService : MessageService {
         var wizard = GetActiveWizard();
         var deckAddSuccess = wizard.AddSpellToDeck((uint) message.SpellID, message.DeckID);
 
-        Logger.Debug("SpellID: " + message.SpellID + ", DeckID: " + message.DeckID + ", Success: " + message.Success);
         SendToSocket(new WIZARD_12_PROTOCOL.MSG_ADDSPELLTODECK() {
             SpellID = message.SpellID,
             DeckID = message.DeckID,
@@ -34,7 +33,6 @@ public class SpellbookService : MessageService {
         var wizard = GetActiveWizard();
         var deckRemoveSuccess = wizard.RemoveSpellFromDeck((uint) message.SpellID, message.DeckID);
 
-        Logger.Debug("SpellID: " + message.SpellID + ", DeckID: " + message.DeckID + ", Success: " + message.Success);
         SendToSocket(new WIZARD_12_PROTOCOL.MSG_REMOVESPELLFROMDECK() {
             SpellID = message.SpellID,
             DeckID = message.DeckID,

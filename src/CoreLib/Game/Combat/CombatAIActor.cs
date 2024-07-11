@@ -28,10 +28,14 @@ internal class CombatAIActor : ReceiveProtocolDispatcher {
     private const float HEALING_THRESHOLD = 0.75f;
     private const float HEALING_PERCENT_CHANCE = 0.5f;
     private const float PREPARE_PASS_CHANCE = 0.33f;
+    private const int DAMAGED_AGGRO_INCREASE = 5;
+    private const int HEALING_AGGRO_INCREASE = 3;
+    private const int PROVOKE_AGGRO_INCREASE = 20;
+    private const int PACIFY_AGGRO_DECREASE = 50;
 
     private readonly IActorRef _creatureActorRef;
     private readonly CombatDuelActor _duelActor;
-    private readonly CombatDuelActorSubCircle _mySubcircle;
+    private readonly CombatDuelSubCircle _mySubcircle;
     private readonly ServerWizGameStats _stats;
     private readonly MagicSchool _magicSchool;
     private readonly int _level;
@@ -51,13 +55,13 @@ internal class CombatAIActor : ReceiveProtocolDispatcher {
     private bool _determinedSelfishThisTurn;
 
     private Hand _roundHand;
-    private CombatDuelActorSubCircle[] _friendlySubcircles
+    private CombatDuelSubCircle[] _friendlySubcircles
         => _duelActor.ActiveSubCircles.Where(x => x.OccupiedTeam == _mySubcircle.OccupiedTeam).ToArray();
     private bool _isHealingViable
         => _friendlySubcircles.Any(x => x.ParticipantGameStats.m_currentHitpoints / x.ParticipantGameStats.m_baseHitpoints < HEALING_THRESHOLD);
 
     // ctor
-    public CombatAIActor(IActorRef creatureActor, CombatDuelActor duelActor, CombatDuelActorSubCircle mySubcircle) {
+    public CombatAIActor(IActorRef creatureActor, CombatDuelActor duelActor, CombatDuelSubCircle mySubcircle) {
         this._creatureActorRef = creatureActor;
         this._duelActor = duelActor;
         this._mySubcircle = mySubcircle;
@@ -77,7 +81,7 @@ internal class CombatAIActor : ReceiveProtocolDispatcher {
     }
 
     // Akka.NET ctor
-    public static Props Props(IActorRef creatureActor, CombatDuelActor duelActor, CombatDuelActorSubCircle mySubcircle)
+    public static Props Props(IActorRef creatureActor, CombatDuelActor duelActor, CombatDuelSubCircle mySubcircle)
         => Akka.Actor.Props.Create(() => new CombatAIActor(creatureActor, duelActor, mySubcircle));
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_NEWROUND))]
@@ -89,6 +93,42 @@ internal class CombatAIActor : ReceiveProtocolDispatcher {
 
         // Send the action to the duel actor.
         _duelActor.ActorRef.Tell(action);
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_COMBATEFFECT))]
+    private void ReceiveCombatEffect(COMBAT_106_PROTOCOL.MSG_COMBATEFFECT message) {
+        // Determine if I am included in the target array.
+        var isTarget = message.Targets.Any(x => x.SlotIndex == _mySubcircle.SlotIndex);
+        var isHealing = message.Effect.m_effectType is SpellEffect.kSpellEffects.kHeal
+                                                    or SpellEffect.kSpellEffects.kHealOverTime
+                                                    or SpellEffect.kSpellEffects.kHealPercent;
+
+        // Ignore if the caster is on my team.
+        var isOnMyTeam = message.Caster.OccupiedTeam == _mySubcircle.OccupiedTeam;
+        if (isOnMyTeam) {
+            return;
+        }
+
+        if (isTarget) {
+            var isPacify = message.Effect.m_effectType is SpellEffect.kSpellEffects.kPacify;
+            var isProvoke = message.Effect.m_effectType is SpellEffect.kSpellEffects.kTaunt;
+
+            int hateValue;
+            if (isPacify) {
+                hateValue = -PACIFY_AGGRO_DECREASE;
+            }
+            else if (isProvoke) {
+                hateValue = PROVOKE_AGGRO_INCREASE;
+            }
+            else {
+                hateValue = DAMAGED_AGGRO_INCREASE;
+            }
+
+            UpdateHateTable(message.Caster.SlotIndex, hateValue);
+        }
+        else if (isHealing) {
+            UpdateHateTable(message.Caster.SlotIndex, HEALING_AGGRO_INCREASE);
+        }
     }
 
     private void DetermineAttitude() {
@@ -105,8 +145,24 @@ internal class CombatAIActor : ReceiveProtocolDispatcher {
     }
 
     private COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE DetermineTurnAction() {
+        // If I'm stunned, pass.
+        if (_mySubcircle.CombatParticipant.m_stunned > 0) {
+            _mySubcircle.CombatParticipant.m_stunned--;
+
+            Logger.Debug("Duel {0} | Slot {1} | Stunned. Passing.",
+                Logger.Args(_duelActor.SigilId, _mySubcircle.SlotIndex));
+
+            return new COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE {
+                Actor = _creatureActorRef,
+                MoveType = (byte) CombatMoveType.Pass,
+                SpellSelection = 0,
+                SpellTarget = 0,
+            };
+        }
+
         // If we want to be aggressive and we have something to cast, do it.
-        if (_determinedAggressiveThisTurn && GetCastableDamageSpells(_roundHand.m_spellList).Count > 0) {
+        var hasDamageSpells = GetCastableDamageSpells(_roundHand.m_spellList).Count > 0;
+        if (_determinedAggressiveThisTurn && hasDamageSpells) {
             return DetermineAggressiveBehavior();
         }
         else {
@@ -263,12 +319,6 @@ internal class CombatAIActor : ReceiveProtocolDispatcher {
         return msg;
     }
 
-    private void DiscardSpells(List<Spell> spells) {
-        foreach (var spell in spells) {
-            _mySubcircle.DiscardCard(spell);
-        }
-    }
-
     private List<Spell> GetCastableSpells(List<Spell> spells) {
         var castableSpells = new List<Spell>();
         foreach (var spell in spells) {
@@ -303,30 +353,35 @@ internal class CombatAIActor : ReceiveProtocolDispatcher {
     }
 
     private void InitiatizeHateTable() {
-        // Create the hate table. There is one for each slot in the duel.
-        for (int i = 0; i < _duelActor.SubCircles.Count(); i++) {
+        // Create the hate table.
+        int start = (_mySubcircle.SlotIndex < 3) ? 4 : 0;
+        int end = (_mySubcircle.SlotIndex < 3) ? _duelActor.SubCircles.Length : _duelActor.SubCircles.Length / 2;
+
+        for (int i = start; i < end; i++) {
             _hateTable.Add(i, 0);
         }
 
-        // The initial target for this creature will be the slot across from it, or the first slot alive.
-        var myIdx = _mySubcircle.SlotIndex;
-        var target = _duelActor.ActiveSubCircles.FirstOrDefault(x => x.SlotIndex > 3 && x.IsAlive);
-        if (target is null) {
-            return;
-        }
-
-        var targetIdx = target.SlotIndex;
+        // Our initial target will be whomever is across from us.
+        var targetIdx = _mySubcircle.SlotIndex + 4 % _duelActor.SubCircles.Length;
         UpdateHateTable(targetIdx, 1);
     }
 
     private int GetMostHatedTarget() {
-        var maxHate = _hateTable.Values.Max();
-        var mostHatedTarget = _hateTable.FirstOrDefault(x => x.Value == maxHate && x.Key >= 4).Key;
-        if (mostHatedTarget < 4) {
-            mostHatedTarget = _duelActor.ActiveSubCircles
-                .FirstOrDefault(x => x.SlotIndex >= 4 && x.IsAlive)?.SlotIndex ?? mostHatedTarget;
+        var orderedHateTable = _hateTable.OrderByDescending(x => x.Value);
+
+        // Pick the highest hated target that is still alive.
+        foreach (var (targetIdx, hateValue) in orderedHateTable) {
+            var target = _duelActor.SubCircles[targetIdx];
+            if (target is null || !target.Occupied) {
+                continue;
+            }
+
+            if (target.IsAlive) {
+                return targetIdx;
+            }
         }
-        return mostHatedTarget;
+
+        return 0;
     }
 
     private void UpdateHateTable(int targetIdx, int hateValue) {

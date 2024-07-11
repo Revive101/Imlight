@@ -9,6 +9,7 @@ using System.Linq;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
+using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Game.Combat;
 using Imlight.CoreLib.Game.Effects;
@@ -17,6 +18,7 @@ using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Implementations;
+using Imlight.CoreLib.WizardData.Models.Player;
 using SharpDX;
 using static Imlight.Common.Caches.TypeCache;
 
@@ -91,11 +93,11 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
             => new WizardZoneCreature(activeGameObject, template, path, startingNodeIndex, wizardZoneRef));
     }
 
-    protected override void OnPlayerJoin(CoreObject player, IActorRef playerActor) {
+    protected override void OnPlayerJoin(CoreObject player, IActorRef playerActor, Wizard wizard) {
         // Since we're not constantly updating the position of the game object, we need to
         // update the position of the game object when a player joins.
         ActiveGameObject.m_location = GetPosition();
-        base.OnPlayerJoin(player, playerActor);
+        base.OnPlayerJoin(player, playerActor, wizard);
 
         // Inform the new player that this creature is moving.
         // MOVESTATE: 0 = stopped, 1 = moving.
@@ -125,8 +127,7 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
         }
 
         var msg = new ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL {
-            StartingParticipants = new Dictionary<IActorRef, CoreObject>
-            {
+            StartingParticipants = new Dictionary<IActorRef, CoreObject> {
                 { suspectActor, suspectObject },
                 { Self, ActiveGameObject }
             }
@@ -223,6 +224,11 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_NEWROUND))]
     private void ReceiveNewCombatRound(COMBAT_106_PROTOCOL.MSG_NEWROUND message) {
+        _combatAiActor.Forward(message);
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_COMBATEFFECT))]
+    private void ReceiveCombatEffect(COMBAT_106_PROTOCOL.MSG_COMBATEFFECT message) {
         _combatAiActor.Forward(message);
     }
 
@@ -444,13 +450,13 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
         CharacterEffectHelper.AddEffectsToGameStats(GameStats, template);
     }
 
-    private void StartCombat(CombatDuelActor duel, CombatDuelActorSubCircle subCircle) {
+    private void StartCombat(CombatDuelActor duel, CombatDuelSubCircle subCircle) {
         CreateCombatAIActor(duel, subCircle);
         StopMovement();
         _creatureState = CreatureState.Combat;
     }
 
-    private void CreateCombatAIActor(CombatDuelActor duel, CombatDuelActorSubCircle subCircle) {
+    private void CreateCombatAIActor(CombatDuelActor duel, CombatDuelSubCircle subCircle) {
         if (_combatAiActor is not null) {
             return;
         }

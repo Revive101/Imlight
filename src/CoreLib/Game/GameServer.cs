@@ -56,9 +56,8 @@ public class GameServer : Server {
             Logger.Args(serverName, serverPort));
     }
 
-    public static Props Props(string serverName, ushort serverPort) {
-        return Akka.Actor.Props.Create(() => new GameServer(serverName, serverPort));
-    }
+    public static Props Props(string serverName, ushort serverPort)
+        => Akka.Actor.Props.Create(() => new GameServer(serverName, serverPort));
 
     [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_CREATEKEY))]
     private void ReceiveCreateKey(SERVER_100_PROTOCOL.MSG_CREATEKEY message) {

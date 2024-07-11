@@ -17,24 +17,24 @@ internal sealed class FangYaoban : EmbeddedAccount {
     protected override Wizard CreateDefaultWizard() {
         var charCreationinfo = new WizardCharacterCreationInfo {
             m_avatarBehavior = new WizardCharacterBehavior {
-                m_eGender = eGender.Male,
+                m_eGender = eGender.Female,
                 m_eRace = eRace.Human,
                 m_extendedHairColor = 0,
-                m_nFeetColor = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5) 2,
-                m_nFeetDecal = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5) 1,
-                m_nHairColor = (Imlight.Common.ObjectProperty.PropertyReflection.Bui7) 12,
-                m_nHairModel = (Imlight.Common.ObjectProperty.PropertyReflection.Bui4) 1,
-                m_nHatColor = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5) 2,
-                m_nHatDecal = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5) 6,
+                m_nFeetColor = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5) 6,
+                m_nFeetDecal = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5) 7,
+                m_nHairColor = (Imlight.Common.ObjectProperty.PropertyReflection.Bui7) 60,
+                m_nHairModel = (Imlight.Common.ObjectProperty.PropertyReflection.Bui4) 6,
+                m_nHatColor = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5) 6,
+                m_nHatDecal = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5) 7,
                 m_nSkinColor = (Imlight.Common.ObjectProperty.PropertyReflection.Bui4) 0,
                 m_nSkinDecal2 = 0,
                 m_nTorsoColor = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5) 6,
-                m_nTorsoDecal = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5) 2,
-                m_newPlayerOptions = 1900021346,
-                m_newPlayerOptions2 = 10
+                m_nTorsoDecal = (Imlight.Common.ObjectProperty.PropertyReflection.Bui5) 7,
+                m_newPlayerOptions = 2705330761,
+                m_newPlayerOptions2 = 0
             },
             m_nameIndices = 6481693,
-            m_schoolOfFocus = (uint) MagicSchool.Fire,
+            m_schoolOfFocus = (uint) MagicSchool.Death,
             m_name = "Fang Yaoban",
         };
         var newCharacter = CharacterHelper.CreateCharacterFromCreationInfo(charCreationinfo);

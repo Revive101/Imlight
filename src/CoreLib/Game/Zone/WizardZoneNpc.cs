@@ -11,6 +11,7 @@ using Imlight.Common.ObjectProperty;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Collections;
+using Imlight.CoreLib.WizardData.Models.Player;
 using System.Collections.Generic;
 using System.Linq;
 using static Imlight.Common.Caches.TypeCache;
@@ -65,8 +66,8 @@ public class WizardZoneNpc : WizardZoneObject {
     public static Props Props(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef)
         => Akka.Actor.Props.Create(() => new WizardZoneNpc(activeGameObject, template, wizardZoneRef));
 
-    protected override void OnPlayerJoin(CoreObject player, IActorRef suspect) {
-        base.OnPlayerJoin(player, suspect);
+    protected override void OnPlayerJoin(CoreObject player, IActorRef suspect, Wizard wizard) {
+        base.OnPlayerJoin(player, suspect, wizard);
 
         if (IsShopkeeper) {
             var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG {
@@ -149,10 +150,10 @@ public class WizardZoneNpc : WizardZoneObject {
         var getInventorySuccess = NpcInventoryCollection.TryGetNpcInventory(ActiveGameObject.m_templateID, out var npcInventory);
         if (!getInventorySuccess) {
             Inventory = new List<GID>() { new GID(1363076) }; // Default to selling One Ring
-            return;
         }
-
-        Inventory = npcInventory.Inventory;
+        else {
+            Inventory = npcInventory.Inventory;
+        }
 
         // What a funny line, C# pattern matching.
         if (Template.m_behaviors.FirstOrDefault(x => x is NPCBehaviorTemplate) is NPCBehaviorTemplate npcBehavior) {

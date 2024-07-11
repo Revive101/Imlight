@@ -157,7 +157,8 @@ public class ObjectSerializer {
                 break;
             case Mode.Verbose:
             default:
-                throw new NotImplementedException();
+                SerializeVerbose(writer, propertyClass);
+                break;
         }
 
         _recursionLevel--;
@@ -170,10 +171,10 @@ public class ObjectSerializer {
         // If we're in verbose mode, we'll go back to the length location and write the size of the object.
         // The size of the object is the current bit position minus the length location, minus 32 bits for the
         // property hash. We'll then seek to the end of the object.
-        var objectSize = (uint) ((writer.BitPos() - lengthLocation - 32) / 8);
+        var objectSize = (uint) (writer.BitPos() - lengthLocation);
         writer.SeekBit(lengthLocation);
         writer.WriteUInt32(objectSize);
-        writer.SeekBit((int) (lengthLocation + objectSize * 8 + 32));
+        writer.SeekBit((int) (lengthLocation + objectSize));
 
         return writer;
     }
@@ -184,6 +185,47 @@ public class ObjectSerializer {
         var fields = GetPropertyClassFields(propertyClass);
         foreach (var field in fields) {
             SerializeObjectField(writer, propertyClass, field);
+        }
+    }
+
+    private void SerializeVerbose(BitWriter writer, PropertyClass propertyClass) {
+        // In verbose mode, the serializer will write property size and hashes.
+        var fields = GetPropertyClassFields(propertyClass);
+        foreach (var field in fields) {
+            var flags = (PropertyFlags) field.GetCustomAttribute<PropertyAttribute>()!.Flags;
+            var writerFunc = ClassElementWriters.TryGetWriter(field.FieldType);
+
+            // Write the property size and hash.
+            var preWriteBitSize = writer.BitPos();
+            writer.WriteUInt32(0); // Placeholder for size.
+            writer.WriteUInt32(field.GetCustomAttribute<PropertyAttribute>()!.Hash);
+
+            // If the field is a list, we'll write each object individually.
+            if (field.FieldType.IsGenericType && field.FieldType.GetGenericTypeDefinition() == typeof(List<>)) {
+                var list = (ICollection?) field.GetValue(propertyClass);
+                var count = list?.Count ?? 0;
+
+                // Write the list count.
+                WriteVectorCount(writer, count);
+
+                // Write each object in the list.
+                if (list is not null) {
+                    foreach (var item in list) {
+                        SerializeObjectValue(writer, field, item);
+                    }
+                }
+            }
+            else {
+                // Write the object value.
+                SerializeObjectValue(writer, field, field.GetValue(propertyClass)!);
+            }
+
+            // Determine how many bits we wrote and write the size of the property.
+            var postWriteBitSize = writer.BitPos();
+            var propertySize = (uint) (postWriteBitSize - preWriteBitSize);
+            writer.SeekBit(preWriteBitSize);
+            writer.WriteUInt32(propertySize);
+            writer.SeekBit(postWriteBitSize);
         }
     }
 

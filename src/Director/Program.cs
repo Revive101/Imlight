@@ -18,6 +18,11 @@ using Imlight.CoreLib.WizardData;
 using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.Director.EmbeddedAccounts;
+using Imlight.Common.ObjectProperty;
+using System.Linq;
+using System.Net.NetworkInformation;
+using Imlight.Common.Cryptography;
+using System.Collections.Generic;
 
 namespace Imlight.Director;
 
@@ -25,7 +30,7 @@ internal static class Program {
     // Major versions in order:
     // Imlight - PROTO   -- Marks the beginning of the project. Very early serialization and networking.
     // Imlight - NETHRA  -- We are in-game. The game is playable and mostly stable, but not feature complete.
-    // Imlight - KALI    -- We feel very confident in the stability of previous systems. We are now focusing on combat.
+    // Imlight - KALI    -- We feel very confident in the stability of previous systems, and are becoming feature complete.
     private const string ActorSystemName = "Imlight";
     private const string MajorVersion = "KALI";
 
@@ -154,6 +159,12 @@ internal static class Program {
         new Pluto("pluto", "1224", "pluto@r101.net", AuthLevel.QualityAssurance);
         new Socks("socks", "8723", "socks@r101.net", AuthLevel.QualityAssurance);
         new Tommyw3b("tommyw3b", "9871", "Tommyw3b@r101.net", AuthLevel.QualityAssurance);
+        new Storm("kf55", "kcsd10", "Storm@r101.net", AuthLevel.QualityAssurance);
+        new EmbeddedAccounts.Ping("ping", "7041", "storm@r101.net", AuthLevel.QualityAssurance);
+        new GMZ("GMZ", "1194", "gmz@r101.net", AuthLevel.QualityAssurance);
+        new Abyss("Wizard", "0010", "abyss@r101.net", AuthLevel.QualityAssurance);
+        new J3("J3", "4001", "J3@r101.net", AuthLevel.QualityAssurance);
+        new ATM("ATM", "9312", "ATM@r101.net", AuthLevel.QualityAssurance);
 
         Logger.Information("Embedded database accounts created.");
     }

@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
 using Imlight.Common;
+using Imlight.Common.Cryptography;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using static Imlight.Common.Caches.TypeCache;
@@ -18,6 +19,8 @@ namespace Imlight.CoreLib.Game.Zone;
 /// Supervises a bunch of child <see cref="WizardZoneObject"/> actors.
 /// </summary>
 public class WizardZoneObjectSupervisor : ReceiveProtocolDispatcher {
+    private const uint UNIVERSE_TELEPORT_TEMPLATE_ID = 84113;
+
     private readonly IActorRef _wizardZoneRef;
     private readonly Dictionary<IActorRef, WizardZoneObject> _objects;
     private readonly TimeSpan _statusCheckTimeout = TimeSpan.FromSeconds(5);
@@ -29,31 +32,20 @@ public class WizardZoneObjectSupervisor : ReceiveProtocolDispatcher {
     }
 
     // Akka.NET ctor
-    public static Props Props(IActorRef wizardZoneRef) {
-        return Akka.Actor.Props.Create(() => new WizardZoneObjectSupervisor(wizardZoneRef));
-    }
+    public static Props Props(IActorRef wizardZoneRef)
+        => Akka.Actor.Props.Create(() => new WizardZoneObjectSupervisor(wizardZoneRef));
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDOBJECT))]
     private void ReceiveAddObject(ZONE_102_PROTOCOL.MSG_ADDOBJECT message) {
-        var objBehaviors = message.Template.m_behaviors;
-
-        // Check to see if any of the behaviors are of type NPCBehavior.
-        if (objBehaviors != null) {
-            foreach (var behavior in objBehaviors) {
-                if (behavior is NPCBehaviorTemplate) {
-                    var npcProps = WizardZoneNpc.Props(message.CoreObject, message.Template, _wizardZoneRef);
-                    CreateActorAndRespond(npcProps);
-                    return;
-                }
-                else if (behavior is ObjectStateBehaviorTemplate) {
-                    var objectStateProps = WizardZoneStatefulObject.Props(message.CoreObject, message.Template, _wizardZoneRef);
-                    CreateActorAndRespond(objectStateProps);
-                    return;
-                }
-            }
+        if (message.Template is null) {
+            Logger.Error("Received a null template for object {0}", Logger.Args(message.CoreObject.m_debugName));
+            return;
         }
 
-        var props = WizardZoneObject.Props(message.CoreObject, message.Template, _wizardZoneRef);
+        var props = message.Template.m_behaviors != null
+            ? DeduceObjectType(message.CoreObject, message.Template as GameObjectTemplate)
+            : WizardZoneObject.Props(message.CoreObject, message.Template, _wizardZoneRef);
+
         CreateActorAndRespond(props);
     }
 
@@ -71,7 +63,10 @@ public class WizardZoneObjectSupervisor : ReceiveProtocolDispatcher {
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDVOLUME))]
     private void ReceiveAddVolume(ZONE_102_PROTOCOL.MSG_ADDVOLUME message) {
         // Volumes do not use a template, so we pass null.
-        var props = WizardZoneVolume.Props(message.CoreObject, null, _wizardZoneRef, message.Volume);
+        var props = WizardZoneVolume.Props(message.CoreObject,
+                                           null,
+                                           _wizardZoneRef,
+                                           message.Volume);
         CreateActorAndRespond(props);
     }
 
@@ -106,6 +101,17 @@ public class WizardZoneObjectSupervisor : ReceiveProtocolDispatcher {
         Sender.Tell(rsp);
     }
 
+    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_ADDDYNAMOD))]
+    private void ReceiveAddDynaMod(CHARACTER_103_PROTOCOL.MSG_ADDDYNAMOD message) {
+        foreach (var obj in _objects) {
+            if (obj.Value.ActiveGameObject.m_zoneTagID != StringHash.Compute(message.DynaMod.m_dynaModClientTag)) {
+                continue;
+            }
+
+            obj.Key.Tell(message);
+        }
+    }
+
     private void CreateActorAndRespond(Props props) {
         var actorRef = Context.ActorOf(props);
 
@@ -126,5 +132,24 @@ public class WizardZoneObjectSupervisor : ReceiveProtocolDispatcher {
         // Respond to the sender with the actor reference we just created.
         var rsp = new ZONE_102_PROTOCOL.MSG_ADDOBJECTRSP { ActorRef = actorRef };
         Sender.Tell(rsp);
+    }
+
+    private static Props DeduceObjectType(CoreObject obj, GameObjectTemplate template) {
+        var objBehaviors = template.m_behaviors;
+
+        // Check to see if any of the behaviors are of type NPCBehavior.
+        if (objBehaviors != null) {
+            foreach (var behavior in objBehaviors) {
+                if (behavior is NPCBehaviorTemplate) {
+                    return WizardZoneNpc.Props(obj, template, Context.Self);
+                }
+            }
+        }
+
+        if (template.m_templateID == UNIVERSE_TELEPORT_TEMPLATE_ID) {
+            return WizardZoneTeleportDoor.Props(obj, template, Context.Self);
+        }
+
+        return WizardZoneObject.Props(obj, template, Context.Self);
     }
 }

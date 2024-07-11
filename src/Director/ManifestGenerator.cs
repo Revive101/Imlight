@@ -5,8 +5,10 @@
 
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Resources;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.Director;
@@ -18,6 +20,8 @@ internal class ManifestGenerator {
     private const string SPELL_MANIFEST_NAME = "spell.manifest";
     private const string NPC_MANIFEST_NAME = "npc.manifest";
     private const string SHOPKEEPER_MANIFEST_NAME = "shopkeeper.manifest";
+    private const string CREATURE_MANIFEST_NAME = "creature.manifest";
+    private const string DECK_MANIFEST_NAME = "deck.manifest";
     private const int INFORM_ALIVE_INTERVAL = 10000;
 
     private static readonly string[] s_shopKeeperNameGiveaways = new string[] {
@@ -34,7 +38,10 @@ internal class ManifestGenerator {
     private readonly StreamWriter _spellManifest;
     private readonly StreamWriter _npcManifest;
     private readonly StreamWriter _shopkeeperManifest;
-
+    private readonly StreamWriter _creatureManifest;
+    private readonly StreamWriter _deckManifest;
+    private readonly Dictionary<string, List<string>> _npcDeckMap = new();
+    private int _topDeckCharCount;
 
     internal ManifestGenerator() {
         var resourceContainer = new ResourceContainer();
@@ -45,6 +52,8 @@ internal class ManifestGenerator {
         _spellManifest = OpenManifest(SPELL_MANIFEST_NAME);
         _npcManifest = OpenManifest(NPC_MANIFEST_NAME);
         _shopkeeperManifest = OpenManifest(SHOPKEEPER_MANIFEST_NAME);
+        _creatureManifest = OpenManifest(CREATURE_MANIFEST_NAME);
+        _deckManifest = OpenManifest(DECK_MANIFEST_NAME);
 
         Generate();
     }
@@ -84,12 +93,16 @@ internal class ManifestGenerator {
             counter++;
         }
 
+        WriteSortedDecks();
+
         Logger.Information("Finished writing manifests");
         _goManifest.Flush();
         _itemManifest.Flush();
         _spellManifest.Flush();
         _npcManifest.Flush();
         _shopkeeperManifest.Flush();
+        _creatureManifest.Flush();
+        _deckManifest.Flush();
     }
 
     private void WriteGameObject(ulong id, WizGameObjectTemplate template, WizClientObject obj) {
@@ -113,6 +126,13 @@ internal class ManifestGenerator {
             return;
         }
 
+        // If this template has a DuelistBehavior, it's a creature.
+        var duelistBehavior = template.m_behaviors
+            .FirstOrDefault(x => x is not null && x.GetType() == typeof(DuelistBehaviorTemplate)) as DuelistBehaviorTemplate;
+        if (duelistBehavior is not null) {
+            WriteCreature(id, template, obj);
+        }
+
         var paddedId = id.ToString();
         var name = obj.m_debugName == "" ? template.m_objectName : obj.m_debugName;
         paddedId = paddedId.ToString().PadRight(20, ' ');
@@ -126,6 +146,55 @@ internal class ManifestGenerator {
         paddedId = paddedId.ToString().PadRight(20, ' ');
 
         _shopkeeperManifest.WriteLine($"{paddedId} | {name}");
+    }
+
+    private void WriteCreature(ulong id, WizGameObjectTemplate template, WizClientObject obj) {
+        var paddedId = id.ToString();
+        var name = obj.m_debugName == "" ? template.m_objectName : obj.m_debugName;
+        paddedId = paddedId.ToString().PadRight(20, ' ');
+
+        _creatureManifest.WriteLine($"{paddedId} | {name}");
+
+        // We'll also write their deck to a manifest. Search for their equipment behavior template.
+        var equipmentBehavior = template.m_behaviors
+            .FirstOrDefault(x => x is not null && x.GetType() == typeof(EquipmentBehaviorTemplate)) as EquipmentBehaviorTemplate;
+        if (equipmentBehavior is not null) {
+            foreach (var itemTemplateId in equipmentBehavior.m_itemList) {
+                var itemTemplate = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(itemTemplateId);
+                if (template is null) {
+                    continue;
+                }
+
+                // Check if the item has a deck behavior.
+                var deckBehaviorTemplate = itemTemplate.m_behaviors
+                    .FirstOrDefault(x => x is DeckBehaviorTemplate) as DeckBehaviorTemplate;
+                if (deckBehaviorTemplate is not null) {
+                    var deckName = deckBehaviorTemplate.m_defaultDeck;
+
+                    // If the deck name is longer than the current top deck name, update it.
+                    if (deckName.Length > _topDeckCharCount) {
+                        _topDeckCharCount = deckName.Length;
+                    }
+
+                    if (!_npcDeckMap.ContainsKey(deckName)) {
+                        var newList = new List<string> { name };
+                        _npcDeckMap.Add(deckName, newList);
+                    }
+                    else {
+                        _npcDeckMap[deckName].Add(name);
+                    }
+                }
+            }
+        }
+    }
+
+    private void WriteSortedDecks() {
+        foreach (var (deckName, npcList) in _npcDeckMap.OrderBy(x => x.Key)) {
+            var deckLine = new StringBuilder();
+            deckLine.Append($"{deckName.PadRight(_topDeckCharCount)} | ");
+            deckLine.Append(string.Join(", ", npcList.OrderBy(x => x)));
+            _deckManifest.WriteLine(deckLine.ToString());
+        }
     }
 
     private void WriteItem(ulong id, WizItemTemplate template, WizClientObjectItem item) {

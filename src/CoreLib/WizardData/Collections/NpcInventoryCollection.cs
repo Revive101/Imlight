@@ -9,6 +9,7 @@ using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.World;
 
 namespace Imlight.CoreLib.WizardData.Collections;
+
 public static class NpcInventoryCollection {
     public const string CollectionName = "NpcInventory";
     private static readonly IDocumentStore s_store;

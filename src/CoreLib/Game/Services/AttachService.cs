@@ -77,7 +77,7 @@ internal class AttachService : MessageService {
 
             // Set character data.
             Data = localGameObjectData,
-            IsCSR = _account.AuthLevel > AuthLevel.QualityAssurance ? 1 : 0,
+            IsCSR = _account.AuthLevel > AuthLevel.None ? 1 : 0, // todo: Change this back before prod!
 
             // 0b0   - None
             // 0b1   - Chat enabled

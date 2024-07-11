@@ -12,6 +12,7 @@ using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Game.Zone;
+using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
@@ -21,9 +22,10 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Game.Services;
 
 public class ZoneService : MessageService, IWithTimers {
-    private const int ZONE_REMOVAL_WAIT_TIME_IN_SECONDS = 4;
+    private const int ZONE_REMOVAL_WAIT_TIME_IN_SECONDS = 8;
     private const int ZONE_TRANSFER_CLEANUP_WAIT_TIME_IN_SECONDS = 1;
     private const float TELEPORT_EFFECTS_TIME = 2.0f;
+    private const string ENTER_ZONE_EVENT_NAME = "EnterZone";
 
     public IActorRef ZoneActor;
     public ITimerScheduler Timers { get; set; }
@@ -35,6 +37,11 @@ public class ZoneService : MessageService, IWithTimers {
                     .OnBehaviors(SerializerOptions.Behaviors.None)
                     .OnPropertyMask(SerializerOptions.PropertyFlags.Transmit
                                   | SerializerOptions.PropertyFlags.AuthorityTransmit);
+    private readonly CoreObjectSerializer _zoneObjectSerializer = new CoreObjectSerializer()
+            .OnBehaviors(SerializerOptions.Behaviors.None)
+            .OnPropertyMask(SerializerOptions.PropertyFlags.Public
+                | SerializerOptions.PropertyFlags.Transmit
+                | SerializerOptions.PropertyFlags.AuthorityTransmit);
 
     public ZoneService(SessionActor sessionActor) : base(sessionActor) { }
 
@@ -117,6 +124,8 @@ public class ZoneService : MessageService, IWithTimers {
         character.QueuedZoneLocation = Util.GetCompactStringFromVector(character.Location, character.Orientation);
     }
 
+    // This button and the GotoDorm button are locked client-side until level 2.
+    // jooty, again? cmon man
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_GOHOME))]
     private void ReceiveGoHome(WIZARD_12_PROTOCOL.MSG_GOHOME message) {
         // this teleports the wizard to the world hub, NOT their home/dorm. for that you want MSG_GOTODORM. goofy ahh naming scheme
@@ -137,6 +146,8 @@ public class ZoneService : MessageService, IWithTimers {
         Timers.StartSingleTimer("zonetransfer", tpmsg, delay);
     }
 
+    // This button and the GoHome button are locked client-side until level 2.
+    // jooty, again? cmon man
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_GOTODORM))]
     private void ReceiveGotoDorm(WIZARD_12_PROTOCOL.MSG_GOTODORM message) {
         var wizard = GetActiveWizard();
@@ -164,6 +175,14 @@ public class ZoneService : MessageService, IWithTimers {
             SendCantGoHomeEffect(timeHomeLastClicked);
         }
         SendHomeButtonData();
+
+        var postEventMsg = new ZONE_102_PROTOCOL.MSG_POSTEVENT {
+            ZoneActor = ZoneActor,
+            EventName = ENTER_ZONE_EVENT_NAME,
+            SenderActor = SessionActor.ActorRef,
+            SenderGameObject = GetActiveGameObject()
+        };
+        ZoneActor.Tell(postEventMsg);
     }
 
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_WORLDTELEPORTREQUEST))]
@@ -203,6 +222,46 @@ public class ZoneService : MessageService, IWithTimers {
         }
 
         ZoneActor.Forward(message);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP))]
+    private void ReceiveAddPlayerRsp(ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP message) {
+        // I've just been added to a zone. I need to spawn myself for all the other players.
+        SpawnMyself();
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PLAYERADDEDTOZONE))]
+    private void ReceiveNewPlayerAddedToZone(ZONE_102_PROTOCOL.MSG_PLAYERADDEDTOZONE message) {
+        // A new player has been added to the zone. We need to spawn them.
+        // Skip if this is myself.
+        if (message.Player == SessionActor.ActorRef) {
+            Logger.Error("{0} {1} received {2} for self.",
+                Logger.Args(SessionActor.ActorRef, SessionActor.SessionID, message.GetType()));
+
+            return;
+        }
+
+        // Spawn myself for the new player.
+        SpawnMyselfFor(message.Player);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PLAYERREMOVEDFROMZONE))]
+    private void ReceivePlayerRemovedFromZone(ZONE_102_PROTOCOL.MSG_PLAYERREMOVEDFROMZONE message) {
+        // A player has been removed from the zone. We need to remove them.
+        // Skip if this is myself.
+        if (message.Player == SessionActor.ActorRef) {
+            Logger.Error("{0} {1} received {2} for self.",
+                Logger.Args(SessionActor.ActorRef, SessionActor.SessionID, message.GetType()));
+
+            return;
+        }
+
+        // Remove the player from the zone.
+        var removeMsg = new GAME_5_PROTOCOL.MSG_REMOVEOBJECT {
+            GameObjectID = message.GlobalId
+        };
+
+        SendToSocket(removeMsg);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
@@ -261,6 +320,41 @@ public class ZoneService : MessageService, IWithTimers {
         SendTeleportEffects();
     }
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_HEALTICK))]
+    private void ReceiveZoneHealTick(ZONE_102_PROTOCOL.MSG_HEALTICK message) {
+        var w = GetActiveWizard();
+
+        var currentWizardHealth = w.GameStats.m_currentHitpoints;
+        var maxWizardHealth = w.GameStats.m_baseHitpoints;
+
+        // If this wizard is max health, skip.
+        if (currentWizardHealth >= maxWizardHealth) {
+            return;
+        }
+
+        // Update our Wizard server side.
+        var healPercent = message.MaxHealthPercent;
+        float healAmount = healPercent / 100 * maxWizardHealth;
+        var newHealth = Math.Min(currentWizardHealth + (int) healAmount, maxWizardHealth);
+
+        w.UpdateHealth(newHealth);
+
+        // Inform the client about the new health changes.
+        // The client has a max health increase effect applied, so sending it here would double the health client side.
+        var magicSchool = w.MagicSchoolBehavior.MagicSchool;
+        var level = w.MagicSchoolBehavior.Level;
+        var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(magicSchool, level);
+        var normMaxHealth = baseStats.m_hitpoints;
+
+        var networkMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH() {
+            CharacterID = w.GameObject.m_globalID,
+            NewHealth = newHealth,
+            NewHealthMax = normMaxHealth,
+            DisplayDiff = 1,
+        };
+        SendToSocket(networkMessage);
+    }
+
     private void SetZone(IActorRef actorRef) {
         ZoneActor = actorRef;
     }
@@ -292,7 +386,7 @@ public class ZoneService : MessageService, IWithTimers {
                 GlobalId = GetActiveGameObject().m_globalID,
                 IsPlayerStillConnected = true
             };
-            _ = ZoneActor.Ask(removePlayerMsg, _zoneRemovalWaitTime).Result;
+            _ = ZoneActor.Ask<ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP>(removePlayerMsg, _zoneRemovalWaitTime).Result;
         }
         catch {
             Logger.Warning("Zone removal timeout of {0} seconds exceeded.", Logger.Args(ZONE_REMOVAL_WAIT_TIME_IN_SECONDS));
@@ -339,6 +433,33 @@ public class ZoneService : MessageService, IWithTimers {
             MobileID = GetActiveGameObject().m_nMobileID,
         };
         SendToSocket(serverTele);
+    }
+
+    private void SpawnMyself() {
+        var wizard = GetActiveWizard();
+        var properGameObj = WizardObjectLoader.GetPlayerGameObject(wizard);
+        var gameObjData = _zoneObjectSerializer.Serialize(properGameObj);
+
+        var addMsg = new GAME_5_PROTOCOL.MSG_NEWOBJECT {
+            Data = gameObjData,
+        };
+        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+            Message = addMsg
+        };
+
+        ZoneActor.Tell(broadcastMsg);
+    }
+
+    private void SpawnMyselfFor(IActorRef actorRef) {
+        var wizard = GetActiveWizard();
+        var properGameObj = WizardObjectLoader.GetPlayerGameObject(wizard);
+        var gameObjData = _zoneObjectSerializer.Serialize(properGameObj);
+
+        var addMsg = new GAME_5_PROTOCOL.MSG_NEWOBJECT {
+            Data = gameObjData,
+        };
+
+        actorRef.Tell(addMsg);
     }
 
     private void SendTeleportEffects() {

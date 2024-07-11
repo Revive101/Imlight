@@ -113,6 +113,12 @@ public static class AccountCollection {
             character.EquipmentBehavior.EquippedItems = inventory
                 .Where(i => character.EquipmentBehavior.EquippedItemIds.Any(e => i.m_globalID == e)).ToList();
 
+            // Load character dynamic modifications.
+            var dynamods = session.Query<DynamodSet>(collectionName: DynamodCollection.CollectionName)
+                .Where(d => d.CharId == character.CharId)
+                .ToList();
+            character.DynamodSet = dynamods.FirstOrDefault() ?? new DynamodSet(character.CharId);
+
             character.AfterDatabaseLoad();
         }
 
@@ -163,6 +169,12 @@ public static class AccountCollection {
             // Find any items in the inventory that match the equipped item IDs.
             character.EquipmentBehavior.EquippedItems = inventory
                 .Where(i => character.EquipmentBehavior.EquippedItemIds.Any(e => i.m_globalID == e)).ToList();
+
+            // Load character dynamic modifications.
+            var dynamods = session.Query<DynamodSet>(collectionName: DynamodCollection.CollectionName)
+                .Where(d => d.CharId == character.CharId)
+                .ToList();
+            character.DynamodSet = dynamods.FirstOrDefault() ?? new DynamodSet(character.CharId);
 
             character.AfterDatabaseLoad();
         }

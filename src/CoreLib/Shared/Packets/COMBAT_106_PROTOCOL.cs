@@ -87,7 +87,7 @@ namespace Imlight.CoreLib.Shared.Packets {
 
             public IActorRef DuelActor;
             public CombatDuelActor Duel;
-            public CombatDuelActorSubCircle SubCircle;
+            public CombatDuelSubCircle SubCircle;
             public Vector3 SlotPosition;
             public float SlotOrientation;
         }
@@ -133,6 +133,25 @@ namespace Imlight.CoreLib.Shared.Packets {
 
         public sealed class MSG_COMBATDEFEAT : IServerMessage {
             public byte MessageOrder => 15;
+            public byte ServiceID => 106;
+        }
+
+        public sealed class MSG_COMBATWIN : IServerMessage {
+            public byte MessageOrder => 16;
+            public byte ServiceID => 106;
+        }
+
+        public sealed class MSG_COMBATEFFECT : IServerMessage {
+            public byte MessageOrder => 17;
+            public byte ServiceID => 106;
+
+            public CombatDuelSubCircle Caster;
+            public CombatDuelSubCircle[] Targets;
+            public SpellEffect Effect;
+        }
+
+        public sealed class MSG_PLANNINGPHASEBEGIN : IServerMessage {
+            public byte MessageOrder => 18;
             public byte ServiceID => 106;
         }
     }

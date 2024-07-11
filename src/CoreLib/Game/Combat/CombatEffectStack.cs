@@ -12,18 +12,18 @@ to determine which effect to use from the `RandomSpellEffect` `m_effectList` arr
 This is recursive, and the stack can be as deep as the bounds of bits available.
 Any bit on the stack not used is set to 1.
 
-                                         These 3 bits index into the `RandomSpellEffect` `m_effectList` array.
-                                                         |
-                                                         |
-                                                      v--|---- This bit means "enter the `RandomSpellEffect` at index `0`.
-Frost Beetle 1/5 damage: 1111111111111111111111111111 0 000
-Frost Beetle 2/5 damage: 1111111111111111111111111111 0 001
-Frost Beetle 3/5 damage: 1111111111111111111111111111 0 010
-Frost Beetle 4/5 damage: 1111111111111111111111111111 0 011
-Frost Beetle 5/5 damage: 1111111111111111111111111111 0 100
+                                         These 4 bits index into the `RandomSpellEffect` `m_effectList` array.
+                                                        |
+                                                        |
+                                                        |
+Frost Beetle 1/5 damage: 1111111111111111111111111111 0000
+Frost Beetle 2/5 damage: 1111111111111111111111111111 0001
+Frost Beetle 3/5 damage: 1111111111111111111111111111 0010
+Frost Beetle 4/5 damage: 1111111111111111111111111111 0011
+Frost Beetle 5/5 damage: 1111111111111111111111111111 0100
 
 A stack of all `1` means every effect was chosen.
- */
+*/
 
 using System;
 
@@ -37,8 +37,8 @@ public class CombatEffectStack {
     }
 
     public void PushRandomEffectChoice(int choiceIndex) {
-        // Shift 4 bits, insert the empty '0', then insert the choice index
-        _stack = (_stack << 4) | (uint) (choiceIndex & 0b111);
+        // Shift 4 bits, then insert the choice index
+        _stack = (_stack << 4) | (uint) (choiceIndex & 0b1111);
     }
 
     public uint GetStackAsUint() {

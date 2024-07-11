@@ -233,7 +233,8 @@ internal class CommandModifyProtocol : CommandProtocol {
             return;
         }
 
-        Context.Character.GameStats.m_currentHitpoints = Math.Min(healthInt, Context.Character.GameStats.m_baseHitpoints);
+        var newHealth = Math.Min(healthInt, Context.Character.GameStats.m_baseHitpoints);
+        Context.Character.UpdateHealth(newHealth);
 
         // The client has a max health increase effect applied, so sending it here would double the health client side.
         var magicSchool = Context.Character.MagicSchoolBehavior.MagicSchool;
@@ -261,11 +262,18 @@ internal class CommandModifyProtocol : CommandProtocol {
             return;
         }
 
-        Context.Character.GameStats.m_currentMana = Math.Min(manaInt, Context.Character.GameStats.m_baseMana);
+        var newMana = Math.Min(manaInt, Context.Character.GameStats.m_baseMana);
+        Context.Character.UpdateMana(newMana);
+
+        // The client has a max mana increase effect applied, so sending it here would double the mana client side.
+        var magicSchool = Context.Character.MagicSchoolBehavior.MagicSchool;
+        var level = Context.Character.MagicSchoolBehavior.Level;
+        var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(magicSchool, level);
+        var normMaxMana = baseStats.m_mana;
 
         var networkMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEMANA() {
             Mana = manaInt,
-            MaxMana = Context.Character.GameStats.m_baseMana,
+            MaxMana = normMaxMana,
             DisplayDiff = 1,
         };
         Context.SessionActor.Tell(networkMessage, null);
@@ -280,13 +288,13 @@ internal class CommandModifyProtocol : CommandProtocol {
         var stats = Context.Character.GameStats;
         var maxHealth = stats.m_baseHitpoints;
 
-        stats.m_currentHitpoints = maxHealth;
-
         // The client has a max health increase effect applied, so sending it here would double the health client side.
         var magicSchool = Context.Character.MagicSchoolBehavior.MagicSchool;
         var level = Context.Character.MagicSchoolBehavior.Level;
         var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(magicSchool, level);
         var normMaxHealth = baseStats.m_hitpoints;
+
+        Context.Character.UpdateHealth(maxHealth);
 
         var networkMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH() {
             CharacterID = Context.CharacterObject.m_globalID,
@@ -304,11 +312,17 @@ internal class CommandModifyProtocol : CommandProtocol {
         var stats = Context.Character.GameStats;
         var maxMana = stats.m_baseMana;
 
-        stats.m_currentMana = maxMana;
+        // The client has a max mana increase effect applied, so sending it here would double the mana client side.
+        var magicSchool = Context.Character.MagicSchoolBehavior.MagicSchool;
+        var level = Context.Character.MagicSchoolBehavior.Level;
+        var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(magicSchool, level);
+        var normMaxMana = baseStats.m_mana;
+
+        Context.Character.UpdateMana(maxMana);
 
         var networkMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEMANA() {
             Mana = maxMana,
-            MaxMana = maxMana,
+            MaxMana = normMaxMana,
             DisplayDiff = 1,
         };
         Context.SessionActor.Tell(networkMessage, null);
