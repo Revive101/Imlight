@@ -117,6 +117,18 @@ internal class AuctionHouseService : MessageService {
         var itemData = _itemSerializer.Serialize(item);
 
         var entry = AuctionHouseCollection.GetAuctionHouseEntry(templateId);
+        if (entry is null) { // Entry does not exist.
+            // todo: figure out correct response.
+            var responseMsg = new WIZARD_12_PROTOCOL.MSG_AUCTIONRESPONSE {
+                Command = 3,
+                ItemTemplateID = templateId,
+                Cost = 0,
+                ReturnCode = 1
+            };
+            SendToSocket(responseMsg);
+
+            return;
+        }
         var goldCost = entry.m_buyPrice;
 
         // Update stock and push to database.
