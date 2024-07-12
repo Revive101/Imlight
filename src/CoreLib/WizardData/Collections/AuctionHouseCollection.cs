@@ -5,17 +5,66 @@
 
 using System.Linq;
 using System.Collections.Generic;
-using Imlight.CoreLib.WizardData.Databases;
 using Raven.Client.Documents;
+using Imlight.CoreLib.WizardData.Databases;
+using Imlight.CoreLib.WizardData.Models.World;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.WizardData.Collections;
 internal class AuctionHouseCollection {
     public const string CollectionName = "AuctionHouse";
+
     private static readonly IDocumentStore s_store;
+    private static bool s_isInitialized;
+    private static AuctionHouseModel s_model;
 
     static AuctionHouseCollection() {
         s_store = PlayerDatabase.Instance.Store;
+    }
+
+    /// <summary>
+    /// Saves new Auction House model/entries to the database.
+    /// </summary>
+    /// <param name="model"></param>
+    public static void SaveAuctionHouseModel(AuctionHouseModel model) {
+        using var session = s_store.OpenSession();
+
+        // Delete the old Auction House entries.
+        var oldModel = session
+            .Query<AuctionHouseModel>(collectionName: CollectionName)
+            .FirstOrDefault();
+        if (oldModel is not null) {
+            session.Delete(oldModel);
+        }
+
+        // Store the new one and set its metadata.
+        session.Store(model);
+        var metadata = session.Advanced.GetMetadataFor(model);
+        metadata[Raven.Client.Constants.Documents.Metadata.Collection] = CollectionName;
+
+        s_model = model;
+        s_isInitialized = true;
+
+        session.SaveChanges();
+    }
+
+    /// <summary>
+    /// Retrieves all Auction House entries available.
+    /// </summary>
+    /// <returns>A model of all available Auction House entries, or null if none found.</returns>
+    public static AuctionHouseModel GetAllAuctionHouseEntries() {
+        if (s_isInitialized) {
+            return s_model;
+        }
+
+        using var session = s_store.OpenSession();
+
+        s_model = session
+            .Query<AuctionHouseModel>(collectionName: CollectionName)
+            .FirstOrDefault();
+
+        s_isInitialized = true;
+        return s_model;
     }
 
     /// <summary>
@@ -24,25 +73,18 @@ internal class AuctionHouseCollection {
     /// <param name="templateID">The template ID of an object.</param>
     /// <returns>The Auction House entry, or null if not found.</returns>
     public static AuctionHouseEntry GetAuctionHouseEntry(ulong templateID) {
-        using var session = s_store.OpenSession();
+        if (!s_isInitialized) {
+            GetAllAuctionHouseEntries();
+        }
 
-        var auctionHouseEntry = session.Query<AuctionHouseEntry>(collectionName: CollectionName)
+        if (s_model is null) {
+            return null;
+        }
+
+        var auctionHouseEntry = s_model.AuctionHouseEntries
             .FirstOrDefault(x => x.m_templateID == templateID);
 
         return auctionHouseEntry;
-    }
-
-    /// <summary>
-    /// Retrieves all Auction House entries available.
-    /// </summary>
-    /// <returns>A list of all available Auction House entries, or null if none found.</returns>
-    public static List<AuctionHouseEntry> GetAllAuctionHouseEntries() {
-        using var session = s_store.OpenSession();
-
-        var auctionHouseEntries = session.Query<AuctionHouseEntry>(collectionName: CollectionName)
-            .ToList();
-
-        return auctionHouseEntries;
     }
 
     /// <summary>
@@ -50,13 +92,12 @@ internal class AuctionHouseCollection {
     /// </summary>
     /// <param name="entry">The Auction House entry to add.</param>
     public static void AddAuctionHouseEntry(AuctionHouseEntry entry) {
-        using var session = s_store.OpenSession();
+        if (!s_isInitialized) {
+            GetAllAuctionHouseEntries();
+        }
 
-        session.Store(entry);
-        var metaData = session.Advanced.GetMetadataFor(entry);
-        metaData[Raven.Client.Constants.Documents.Metadata.Collection] = CollectionName;
-
-        session.SaveChanges();
+        s_model.AuctionHouseEntries.Add(entry);
+        SaveAuctionHouseModel(s_model);
     }
 
 
@@ -66,42 +107,37 @@ internal class AuctionHouseCollection {
     /// <param name="templateID">The template ID of the object to remove the entry for.</param>
     /// <returns>True if the Auction House entry was successfully removed, false otherwise.</returns>
     public static bool RemoveAuctionHouseEntry(ulong templateID) {
-        using var session = s_store.OpenSession();
-        var entry = session.Query<AuctionHouseEntry>(collectionName: CollectionName)
-            .Where(x => x.m_templateID == templateID)
-            .FirstOrDefault();
-
-        if (entry != null) {
-            session.Delete(entry);
-            session.SaveChanges();
-            return true;
+        if (!s_isInitialized) {
+            GetAllAuctionHouseEntries();
         }
 
-        return false;
+        var entry = s_model.AuctionHouseEntries
+            .FirstOrDefault(x => x.m_templateID == templateID);
+
+        var removed = s_model.AuctionHouseEntries.RemoveAll(x => x.m_templateID == templateID);
+        SaveAuctionHouseModel(s_model);
+
+        return removed != 0;
     }
 
     /// <summary>
     /// Updates the entry in the Auction House collection for a specific template ID.
     /// </summary>
-    /// <param name="entry">The new Auction House entry to udpate with.</param>
+    /// <param name="entry">The new Auction House entry to update with.</param>
     /// <returns>True if the Auction House entry was updated, false if the entry could not be found.</returns>
     public static bool UpdateAuctionHouseEntry(AuctionHouseEntry entry) {
-        using var session = s_store.OpenSession();
-
-        // Check if the AuctionHouseEntry already exists
-        var existingEntry = session.Query<AuctionHouseEntry>(collectionName: CollectionName)
-            .Where(x => x.m_templateID == entry.m_templateID)
-            .FirstOrDefault();
-
-        if (existingEntry != null) {
-            existingEntry.m_templateID = entry.m_templateID;
-            existingEntry.m_numForSale = entry.m_numForSale;
+        if (!s_isInitialized) {
+            GetAllAuctionHouseEntries();
         }
-        else {
+
+        var removeSuccess = RemoveAuctionHouseEntry(entry.m_templateID);
+
+        if (!removeSuccess) {
             return false;
         }
 
-        session.SaveChanges();
+        AddAuctionHouseEntry(entry);
+
         return true;
     }
 

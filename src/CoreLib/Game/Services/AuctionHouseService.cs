@@ -4,6 +4,7 @@
  */
 
 using System;
+using System.Collections.Generic;
 using Akka.Actor;
 using Imlight.Common.Caches;
 using Imlight.Common.ObjectProperty;
@@ -61,11 +62,14 @@ internal class AuctionHouseService : MessageService {
     }
 
     private void SendAuctionHouseContents(ulong npcId, uint key) {
-        // Todo: minimize number of database calls, each player service does not need to fetch
-        // all auction house entries. this should be stored in memory somewhere shared.
-
         // Retrieve all Auction House entries.
-        var houseEntryList = AuctionHouseCollection.GetAllAuctionHouseEntries();
+        var houseEntryModel = AuctionHouseCollection.GetAllAuctionHouseEntries();
+
+        if (houseEntryModel is null) {
+            return;
+        }
+
+        var houseEntryList = new List<AuctionHouseEntry>(houseEntryModel.AuctionHouseEntries);
 
         while (houseEntryList.Count > 0) {
             // Contents sent in blocks of up to 50 entries.
@@ -97,15 +101,7 @@ internal class AuctionHouseService : MessageService {
         var entry = AuctionHouseCollection.GetAuctionHouseEntry(templateId);
 
         if (entry is null) {
-            // todo: figure out correct response, should inform player the transaction failed and reload contents
-            /*var responseMsg = new WIZARD_12_PROTOCOL.MSG_AUCTIONRESPONSE {
-                Command = 1,
-                ItemTemplateID = 0,
-                Cost = 0,
-                ReturnCode = 4
-            };
-            SendToSocket(responseMsg);*/
-
+            // todo: figure out correct response, should inform player the transaction failed and reload content.
             return;
         }
 
