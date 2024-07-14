@@ -69,9 +69,7 @@ internal static class Program {
 
         // Force load dragon database. Create a dud account if the database ends up using the embedded database.
         _ = PlayerDatabase.Instance.Store;
-        if (PlayerDatabase.Instance.IsEmbedded) {
-            CreateEmbeddedDatabaseAccounts();
-        }
+        CreateEmbeddedDatabaseAccounts();
 
         // Keep program busy with a while loop.
         Logger.Information("Imlight may now be connected to.");
