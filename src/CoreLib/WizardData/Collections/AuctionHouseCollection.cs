@@ -63,6 +63,11 @@ internal class AuctionHouseCollection {
             .Query<AuctionHouseModel>(collectionName: CollectionName)
             .FirstOrDefault();
 
+        if (s_model is null) {
+            s_model = new AuctionHouseModel();
+            SaveAuctionHouseModel(s_model);
+        }
+
         s_isInitialized = true;
         return s_model;
     }
