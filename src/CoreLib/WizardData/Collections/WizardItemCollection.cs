@@ -69,16 +69,7 @@ public static class WizardItemCollection {
         using var session = s_store.OpenSession();
 
         // Add the items to the items collection.
-        foreach (var item in items)
-        {
-            // Return false if this item already exists.
-            if (session
-                .Query<WizClientObjectItem>(collectionName: CollectionName)
-                .Any(x => x.m_characterId == item.m_characterId && x.m_globalID == item.m_globalID)) {
-                Logger.Error("Item {0} already exists in the database.", Logger.Args(item.m_globalID));
-                return false;
-            }
-
+        foreach (var item in items) {
             session.Store(item);
 
             // Set the collection name in the metadata.
