@@ -13,16 +13,9 @@ using Imlight.Common.Configuration;
 using Imlight.CoreLib.Login;
 using Imlight.CoreLib.Patch;
 using Imlight.CoreLib.Shared.Packets;
-using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData;
 using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.Player;
-using Imlight.Director.EmbeddedAccounts;
-using Imlight.Common.ObjectProperty;
-using System.Linq;
-using System.Net.NetworkInformation;
-using Imlight.Common.Cryptography;
-using System.Collections.Generic;
 
 namespace Imlight.Director;
 
@@ -123,48 +116,11 @@ internal static class Program {
     }
 
     private static void CreateEmbeddedDatabaseAccounts() {
-        Logger.Information("Creating embedded database accounts. If you don't see anything, they already exist!");
-
-        #if DEBUG
-        // Generic developer accounts
-        for (int i = 1; i <= 3; i++) {
-            DatabaseUtilities.CreateEmbeddedDatabaseAccount($"dev{i}", $"dev{i}@r101.com", "dev9999", AuthLevel.Administrator);
-        }
-        #endif
-
-        // Dev accounts; Hi, devs! Feel free to make your own account and add it here.
-        new Jooty("jooty", "2342", "jay@r101net", AuthLevel.Administrator);
-        new MoMi("MoMi", "joji1", "MoMi@r101net", AuthLevel.Administrator);
-        new Joji("joji", "jootysocoollike", "joji@r101.net", AuthLevel.Administrator);
-        new MoMi("MoMi", "2109", "MoMi@r101.net", AuthLevel.Administrator);
-        new Phill("phill", "gay", "phill@r101.net", AuthLevel.Administrator);
-        new Jeff("jeff", "jefffakename", "jeff@r101.net", AuthLevel.Administrator);
-        new Rocket("rocket", "7969", "rocket@r101.net", AuthLevel.Developer);
-
-        // Hard code hall monitor lead accounts. Don't share these passwords!
-        new Mitsu("mitsu", "2034", "mitsu@r101.net", AuthLevel.Administrator);
-        new Kid("Niduus", "Niduus", "Niduus@r101.net", AuthLevel.Administrator);
-
-        // Hall Monitor accounts.
-        new PokemonHacker("pk", "7878", "pk@r101.net", AuthLevel.HallMonitor);
-        new Tilr("tilr", "8080", "tilr@r101.net", AuthLevel.HallMonitor);
-
-        // Quality Assurance accounts
-        new B("b", "1121", "b@r101.net", AuthLevel.QualityAssurance);
-        new Dalnakii("dalnakii", "0091", "b@r101.net", AuthLevel.QualityAssurance);
-        new DarkLegend("darklegend", "1041", "darklegend@r101.net", AuthLevel.QualityAssurance);
-        new FangYaoban("fangyaobang", "2290", "fang@r101.net", AuthLevel.QualityAssurance);
-        new Griz("grizzly", "9142", "griz@r101.net", AuthLevel.QualityAssurance);
-        new Nyakua("nyakua", "6142", "nyakua@r101.net", AuthLevel.QualityAssurance);
-        new Pluto("pluto", "1224", "pluto@r101.net", AuthLevel.QualityAssurance);
-        new Socks("socks", "8723", "socks@r101.net", AuthLevel.QualityAssurance);
-        new Tommyw3b("tommyw3b", "9871", "Tommyw3b@r101.net", AuthLevel.QualityAssurance);
-        new Storm("kf55", "kcsd10", "Storm@r101.net", AuthLevel.QualityAssurance);
-        new EmbeddedAccounts.Ping("ping", "7041", "storm@r101.net", AuthLevel.QualityAssurance);
-        new GMZ("GMZ", "1194", "gmz@r101.net", AuthLevel.QualityAssurance);
-        new Abyss("Wizard", "0010", "abyss@r101.net", AuthLevel.QualityAssurance);
-        new J3("J3", "4001", "J3@r101.net", AuthLevel.QualityAssurance);
-        new ATM("ATM", "9312", "ATM@r101.net", AuthLevel.QualityAssurance);
+        // At least one account needs to exist.
+        var adminAccountUsername = ConfigurationManager.Settings.AdminAccountUsername;
+        var adminAccountPassword = ConfigurationManager.Settings.AdminAccountPassword;
+        DatabaseUtilities.CreateEmbeddedDatabaseAccount(adminAccountUsername, "testtest@r101.com", adminAccountPassword, AuthLevel.Administrator);
+        Logger.Information("Created admin account.");
 
         Logger.Information("Embedded database accounts created.");
     }

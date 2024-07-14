@@ -161,6 +161,12 @@ public sealed class ServerSettings {
     [DefaultValue("./Certificates/worlddata.client.pfx")]
     public string? WorldDatabaseCertificatePath { get; set; }
 
+    [DefaultValue("admin")]
+    public string? AdminAccountUsername { get; set; }
+
+    [DefaultValue("compsci")]
+    public string? AdminAccountPassword { get; set; }
+
     [DefaultValue(16)]
     public byte DatabaseMaxNumberOfRequestsPerSession { get; set; }
 
