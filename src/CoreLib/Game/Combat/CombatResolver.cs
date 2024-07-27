@@ -235,8 +235,9 @@ public class CombatResolver {
     }
 
     private float InvokeOverTimeEffects(CombatDuelSubCircle caster) {
-        var dotEffects = caster._hangingEffects.Where(x => x.m_effectType == SpellEffect.kSpellEffects.kDamageOverTime);
-        var hotEffects = caster._hangingEffects.Where(x => x.m_effectType == SpellEffect.kSpellEffects.kHealOverTime);
+        // Get all DoT and HoT effects. Clone the list to avoid concurrent modification.
+        var dotEffects = caster._hangingEffects.Where(x => x.m_effectType == SpellEffect.kSpellEffects.kDamageOverTime).ToList();
+        var hotEffects = caster._hangingEffects.Where(x => x.m_effectType == SpellEffect.kSpellEffects.kHealOverTime).ToList();
         var cinematicTime = dotEffects.Count() + hotEffects.Count() * OVER_TIME_ACTIVATION_TIME;
 
         foreach (var effect in dotEffects) {
