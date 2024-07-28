@@ -34,6 +34,7 @@ public class CombatResolver {
     private const float SPELL_CAST_TIME = 5.0f;
     private const float HANGING_EFFECT_CONSUME_TIME = 1.0f;
     private const float OVER_TIME_ACTIVATION_TIME = 2.0f;
+    private const float DEATH_ANIMATION_TIME = 2.0f;
 
     private readonly Duel _duel;
 
@@ -151,8 +152,6 @@ public class CombatResolver {
         var cinematicTime = 0.0f;
 
         foreach (var action in _queuedCombatActions) {
-            cinematicTime += InvokeOverTimeEffects(action.SpellCaster);
-
             // If the caster is dead, skip this action.
             if (!action.SpellCaster.IsAlive) {
                 Logger.Debug("Duel {0} | Slot {1} | Caster is dead. Skipping action.",
@@ -160,8 +159,13 @@ public class CombatResolver {
                 continue;
             }
 
+            // We want to invoke the overtime effects after we check for death.
+            // This is because the overtime effects can kill a participant, and we want to see the animation.
+            cinematicTime += InvokeOverTimeEffects(action.SpellCaster);
+
             // If our target is gone or we're stunned, pass the turn.
-            if (action.SpellCaster.CombatParticipant.m_stunned > 0) {
+            // If we died from the over time effects, we'll still pass the turn.
+            if (action.SpellCaster.CombatParticipant.m_stunned > 0 || !action.SelectedTarget.IsAlive) {
                 action.SpellCaster.CombatParticipant.m_stunned--;
 
                 var passCombatAction = InitializeCombatAction(action);
@@ -238,7 +242,7 @@ public class CombatResolver {
         // Get all DoT and HoT effects. Clone the list to avoid concurrent modification.
         var dotEffects = caster._hangingEffects.Where(x => x.m_effectType == SpellEffect.kSpellEffects.kDamageOverTime).ToList();
         var hotEffects = caster._hangingEffects.Where(x => x.m_effectType == SpellEffect.kSpellEffects.kHealOverTime).ToList();
-        var cinematicTime = dotEffects.Count() + hotEffects.Count() * OVER_TIME_ACTIVATION_TIME;
+        var cinematicTime = (dotEffects.Count + hotEffects.Count) * OVER_TIME_ACTIVATION_TIME;
 
         foreach (var effect in dotEffects) {
             var initialDamage = effect.m_paramPerRound;
@@ -267,6 +271,12 @@ public class CombatResolver {
             if (effect.m_numRounds <= 0) {
                 caster._hangingEffects.Remove(effect);
             }
+        }
+
+        // Is the participant dead after the effects?
+        // If so, add a death animation time.
+        if (!caster.IsAlive) {
+            cinematicTime += DEATH_ANIMATION_TIME;
         }
 
         return cinematicTime;
