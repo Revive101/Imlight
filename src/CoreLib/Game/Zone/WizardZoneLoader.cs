@@ -419,14 +419,12 @@ public static class WizardZoneLoader {
         var creatureList = new List<SpawnObject>();
         foreach (var spawnObject in s_spawnData.m_spawners) {
             var spawnList = spawnObject.m_spawnList;
-            if (spawnList is null || spawnList.Count <= 0 || spawnList[0]?.m_objectInfo is null) {
-                continue;
-            }
-            if (spawnList[0].m_objectInfo.m_pathID != path.m_id) {
+            if (spawnList is null || spawnList.Count <= 0) {
                 continue;
             }
 
             // Check the spawn requirements for this mob, if they exist.
+            // If the requirements are not met, skip this mob.
             if (spawnObject.m_globalDynamicReqs is not null) {
                 var requirements = spawnObject.m_globalDynamicReqs.m_requirements.ToList();
                 var operatorType = spawnObject.m_globalDynamicReqs.m_operator;
@@ -435,14 +433,12 @@ public static class WizardZoneLoader {
                 }
             }
 
-            // If the Id matches and all the requirements are met, add it to the list.
-            creatureList.Add(spawnObject);
+            // If the path ID matches, add it to the list.
+            var matchedCreatures = spawnList.Any(x => x.m_objectInfo is not null
+                                              && x.m_objectInfo.m_pathID == path.m_id);
 
-            // TEST: I'm not sure this will ever occur. Perhaps remove later?
-            if (!AllObjectsContainSamePath(spawnList)) {
-                Logger.Warning("Zone {ZoneName} contains a SpawnObject {SoName} " +
-                                   "that contains multiple objects, which spawn on different paths. Let Jooty know.",
-                    Logger.Args(s_zone.ZoneName, spawnObject.m_name));
+            if (matchedCreatures) {
+                creatureList.Add(spawnObject);
             }
         }
 
@@ -504,16 +500,6 @@ public static class WizardZoneLoader {
                     return false;
                 }
         }
-    }
-
-    /// <summary>
-    /// Checks to see if all creatures in a <see cref="SpawnItem"/> contain the same path ID.
-    /// </summary>
-    /// <param name="spawnList">The list of spawns.</param>
-    /// <returns>True, if all the creatures are on the same path; false otherwise.</returns>
-    private static bool AllObjectsContainSamePath(IReadOnlyList<SpawnItem> spawnList) {
-        var firstPathId = spawnList[0].m_objectInfo.m_pathID;
-        return spawnList.All(x => x.m_objectInfo.m_pathID == firstPathId);
     }
 
     /// <summary>

@@ -102,6 +102,7 @@ public static class ServerTypeCache {
         145615551 => new ResStartStagedCinematic(),
         74783451 => new ResReduceMana(),
         1486342711 => new ResInitiateCombat(),
+        1839222684 => new UnknownSpawnObjectInfo(),
         _ => null
     };
 
@@ -842,5 +843,9 @@ public static class ServerTypeCache {
         // HASH : 0x6FA14D24
         // SIZE : 8
         [Property(0x6FA14D24, 31)] public uint m_unknown_uint_4;
+    }
+
+    public class UnknownSpawnObjectInfo : SpawnObjectInfo {
+        public override uint GetHash() => 1839222684;
     }
 }
