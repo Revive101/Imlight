@@ -4,6 +4,7 @@
  */
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using Akka.Actor;
 using Imlight.Common.Caches;
@@ -187,13 +188,14 @@ internal class AuctionHouseService : MessageService {
         var item = wizard.InventoryBehavior.GetItem(itemGlobalId);
 
         // Check player has item.
-        var removedItemSuccess = wizard.RemoveItemFromInventory(itemGlobalId);
-        if (!removedItemSuccess) {
+        var hasItem = wizard.InventoryBehavior.HasItem(itemGlobalId);
+        if (!hasItem) {
+            // Todo: respond with error
             var auctionRspErrorMsg = new WIZARD_12_PROTOCOL.MSG_AUCTIONRESPONSE {
-                Command = 2,
+                Command = 5,
                 ItemTemplateID = 0, // Can't get this ID if item doesn't exist.
                 Cost = 0,
-                ReturnCode = 1
+                ReturnCode = 0
             };
             SendToSocket(auctionRspErrorMsg);
             return;
@@ -214,6 +216,13 @@ internal class AuctionHouseService : MessageService {
             ReturnCode = 0
         };
         SendToSocket(auctionRspMsg);
+
+        // Remove item from inventory.
+        var removedItemSuccess = wizard.RemoveItemFromInventory(itemGlobalId);
+        if (!removedItemSuccess) {
+            // Log error.
+            return;
+        }
 
         // Update stock and push to database.
         var entry = AuctionHouseCollection.GetAuctionHouseEntry(item.m_templateID);
