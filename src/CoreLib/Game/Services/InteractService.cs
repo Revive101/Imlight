@@ -54,9 +54,16 @@ internal class InteractService : MessageService {
                 return;
             }
 
+            // Disable player movement
+            var disableMovementStateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
+                GameObjectID = wizard.CharId,
+                State = 2700595,
+                Data = "",
+                IgnoreIfCurrentStateIsOff = 0
+            };
+            SendToSocket(disableMovementStateMsg);
+
             // Check to see if this NPC is capable of providing the service.
-
-
             switch (message.ServiceName) {
                 case "WizShoppingService":
                     InteractShopkeeper(message, wizard, zoneNpc);
