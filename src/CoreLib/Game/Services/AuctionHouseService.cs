@@ -202,6 +202,19 @@ internal class AuctionHouseService : MessageService {
         }
 
         var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
+        
+        var isNoAuction = template.m_adjectiveList.Any(x => x == "FLAG_NoAuction");
+        if (isNoAuction) { // The item cannot be sold to the bazaar.
+            // Todo: respond with error
+            var auctionRspErrorMsg = new WIZARD_12_PROTOCOL.MSG_AUCTIONRESPONSE {
+                Command = 2,
+                ItemTemplateID = item.m_templateID,
+                Cost = 0,
+                ReturnCode = 1
+            };
+            SendToSocket(auctionRspErrorMsg);
+            return;
+        }
 
         // Calculate gold sell value.
         var gold = (int) Math.Ceiling(template.m_baseCost * 0.5f); // Bazaar buys items at 50% of their value.
@@ -273,7 +286,6 @@ internal class AuctionHouseService : MessageService {
         };
         SendToSocket(shopSellConfirmMsg);
         
-        // Todo: fix removal of items? seems broken at the moment.
         wizard.RemoveItemFromInventory(item.m_globalID);
     }
 
