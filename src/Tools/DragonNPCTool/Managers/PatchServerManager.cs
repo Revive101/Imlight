@@ -9,10 +9,10 @@ using System.Net;
 namespace DragonNPCTool.Managers;
 
 public static class PatchServerManager {
-    private const string PatchServerUrl = "https://patcher.phill030.de";
+    private const string PatchServerUrl = "http://patcher.phill030.de";
     private const string PatchServerWadUrlPrefix = "Data/GameData";
     private const int PatchServerTimeout = 10; // In seconds.
-    private const uint GameClientRevision = 757029;
+    private const string GameClientRevision = "r754018.Wizard_1_540";
     private const string UserAgentValue = "KingsIsle Patcher";
     private const ushort DownloadBufferSize = 4096;
     private static string? _patchServerWorkingUrl;
@@ -44,7 +44,7 @@ public static class PatchServerManager {
     }
 
     private static bool GetPatchServerStatus() {
-        var workingUrl = $"{PatchServerUrl}/V_r{GameClientRevision}.Wizard_1_550_0_Live";
+        var workingUrl = $"{PatchServerUrl}/V_{GameClientRevision}";
 
         // Check to see if the patch server URL is available at all.
         Console.WriteLine($"Checking patch server at URL {workingUrl}. Timeout: {PatchServerTimeout} s.");
