@@ -181,6 +181,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte ServiceID { get; } = 102;
 
         public ulong GlobalID;
+        public ushort MobileID;
     }
 
     public class MSG_QUERYZONEOBJECTRSP : IServerMessage {

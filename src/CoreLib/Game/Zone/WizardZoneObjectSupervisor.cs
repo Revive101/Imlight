@@ -95,7 +95,9 @@ public class WizardZoneObjectSupervisor : ReceiveProtocolDispatcher {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT))]
     private void ReceiveQueryObject(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT message) {
-        var obj = _objects.Values.First(x => x.ActiveGameObject.m_globalID == message.GlobalID);
+        var obj = _objects.Values.First(x =>
+               x.ActiveGameObject.m_globalID == message.GlobalID
+            || x.ActiveGameObject.m_nMobileID == message.MobileID);
         var rsp = new ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECTRSP { ZoneObject = obj };
 
         Sender.Tell(rsp);
