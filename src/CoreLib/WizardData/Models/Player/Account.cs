@@ -88,6 +88,7 @@ public class Account {
         this.Email = email;
         this.PasswordHash = passwordHash;
         this.CreationTime = DateTime.UtcNow;
+        this.ChatMode = ChatMode.Open;
     }
 
     /// <summary>
