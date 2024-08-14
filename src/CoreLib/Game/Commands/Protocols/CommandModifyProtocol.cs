@@ -333,7 +333,7 @@ internal class CommandModifyProtocol : CommandProtocol {
     [Alias("clvlup")]
     private void CantripLevelUpCommand() {
         var newLevel = (byte)(Context.Character.GameStats.m_cantripLevel + 1);
-        if (newLevel > 10) {
+        if (newLevel > 10) { // TODO: find resource that states max cantrip level to avoid hardcoding
             InformSenderClient($"You cannot set level higher than the max level (10).");
             return;
         }
