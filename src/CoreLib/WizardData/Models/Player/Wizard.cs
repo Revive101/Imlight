@@ -248,6 +248,8 @@ public class Wizard : IDisposable {
     public void UpdateCantripLevel(byte newCantripLevel) {
         GameStats.m_cantripLevel = newCantripLevel;
 
+        // Persistent save.
+        WizardCollection.UpdateCharacterGameStats(this);
     }
 
     public bool AddItemToInventory(ulong itemId, out WizClientObjectItem item) {
