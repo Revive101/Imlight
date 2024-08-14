@@ -327,4 +327,23 @@ internal class CommandModifyProtocol : CommandProtocol {
         };
         Context.SessionActor.Tell(networkMessage, null);
     }
+
+    [Command("cantriplevelup")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    [Alias("clvlup")]
+    private void CantripLevelUpCommand() {
+        var newLevel = (byte)(Context.Character.GameStats.m_cantripLevel + 1);
+        if (newLevel > 10) {
+            InformSenderClient($"You cannot set level higher than the max level (10).");
+            return;
+        }
+
+        Context.Character.UpdateCantripLevel(newLevel);
+
+        var msg = new CANTRIPSMESSAGES_57_PROTOCOL.MSG_UPDATECANTRIPXP {
+            XP = 0,
+            Level = newLevel
+        };
+        Context.SessionActor.Tell(msg, null);
+    }
 }

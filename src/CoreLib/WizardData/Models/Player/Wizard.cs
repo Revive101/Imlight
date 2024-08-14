@@ -245,6 +245,11 @@ public class Wizard : IDisposable {
         WizardCollection.UpdateCharacterGameStats(this);
     }
 
+    public void UpdateCantripLevel(byte newCantripLevel) {
+        GameStats.m_cantripLevel = newCantripLevel;
+
+    }
+
     public bool AddItemToInventory(ulong itemId, out WizClientObjectItem item) {
         item = (WizClientObjectItem) CoreObjectFactory.FinalizeCoreObject(itemId);
         item.m_characterId = (GID) CharId;
