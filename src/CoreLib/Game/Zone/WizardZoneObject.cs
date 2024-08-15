@@ -27,6 +27,7 @@ namespace Imlight.CoreLib.Game.Zone;
 public class WizardZoneObject : ReceiveProtocolDispatcher, IClientTypeProvider<WizClientObject> {
     public readonly CoreObject ActiveGameObject;
     public readonly CoreTemplate Template;
+    public IActorRef ActorRef => Self;
 
     protected readonly IActorRef WizardZoneRef;
     protected readonly List<BehaviorInstance> Behaviors = new();

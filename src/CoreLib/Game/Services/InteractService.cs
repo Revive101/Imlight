@@ -73,7 +73,7 @@ internal class InteractService : MessageService {
             InteractTeleportDoor(message, wizard, teleportDoor);
             return;
         }
-        
+
         Logger.Error("{0} searched for NPC by global ID {1} but the object found was not a {2} or {3}",
             Logger.Args(wizard.CharId, message.GlobalID, nameof(WizardZoneNpc), nameof(WizardZoneTeleportDoor)));
         return;
