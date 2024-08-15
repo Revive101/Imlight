@@ -48,7 +48,7 @@ public class CantripFactory : RootSingleResourceSingleton<CantripFactory>, IMemo
     /// <param name="level">The level of the cantrip.</param>
     /// <returns>The CantripLevelInfo object for the specified level, or null if the level is invalid.</returns>
     public static CantripLevelInfo GetCantripLevelInfo(int level) {
-        if (level < 0 || level >= _cantripXPConfig.m_levelInfo.Count) {
+        if (level < 0 || level > _cantripXPConfig.m_maxLevel) {
             Logger.Warning("Tried to get cantrip level info for invalid level {0}.", Logger.Args(level));
             return null;
         }
@@ -62,7 +62,7 @@ public class CantripFactory : RootSingleResourceSingleton<CantripFactory>, IMemo
     /// <param name="xp">The XP of the cantrip.</param>
     /// <returns>The CantripLevelInfo object for the specified XP.</returns>
     public static CantripLevelInfo GetCantripLevelInfoFromXp(int xp) {
-        for (var i = 0; i < _cantripXPConfig.m_levelInfo.Count; i++) {
+        for (var i = 0; i < _cantripXPConfig.m_maxLevel; i++) {
             if (xp < _cantripXPConfig.m_levelInfo[i].m_xpToLevel) {
                 return _cantripXPConfig.m_levelInfo[i];
             }

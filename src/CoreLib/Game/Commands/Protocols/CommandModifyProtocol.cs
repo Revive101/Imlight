@@ -8,6 +8,7 @@ using Imlight.Common.Caches;
 using Imlight.Common.Configuration;
 using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty;
+using Imlight.CoreLib.Game.Cantrips;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
@@ -333,7 +334,7 @@ internal class CommandModifyProtocol : CommandProtocol {
     [Alias("clvlup")]
     private void CantripLevelUpCommand() {
         var newLevel = (byte)(Context.Character.GameStats.m_cantripLevel + 1);
-        if (newLevel > 10) { // TODO: find resource that states max cantrip level to avoid hardcoding
+        if (newLevel > CantripFactory.GetMaxCantripLevel()) {
             InformSenderClient($"You cannot set level higher than the max level (10).");
             return;
         }
@@ -357,7 +358,7 @@ internal class CommandModifyProtocol : CommandProtocol {
             return;
         }
 
-        if (levelByte > 10) {
+        if (levelByte > CantripFactory.GetMaxCantripLevel()) {
             InformSenderClient($"You cannot set level higher than the max level (10).");
             return;
         }
