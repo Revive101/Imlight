@@ -4,11 +4,12 @@
  */
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
+using System.Collections.Generic;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Cryptography;
+using Imlight.CoreLib.Game.Zone.NPC;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using static Imlight.Common.Caches.TypeCache;
@@ -20,6 +21,8 @@ namespace Imlight.CoreLib.Game.Zone;
 /// </summary>
 public class WizardZoneObjectSupervisor : ReceiveProtocolDispatcher {
     private const uint UNIVERSE_TELEPORT_TEMPLATE_ID = 84113;
+    private const string DYE_SHOP_GIVEAWAY = "dye";
+    private const string AUCTION_HOUSE_GIVEAWAY = "kt-hub-npc14";
 
     private readonly IActorRef _wizardZoneRef;
     private readonly Dictionary<IActorRef, WizardZoneObject> _objects;
@@ -143,6 +146,21 @@ public class WizardZoneObjectSupervisor : ReceiveProtocolDispatcher {
         if (objBehaviors != null) {
             foreach (var behavior in objBehaviors) {
                 if (behavior is NPCBehaviorTemplate) {
+                    // Check to see if the NPC is a known vendor.
+                    if (WorldVendorLocations.IsVendor(template.m_templateID)) {
+                        return WizardZoneVendor.Props(obj, template, Context.Self);
+                    }
+
+                    // Check to see if the NPC is probably a dye shop.
+                    var npcName = template.m_objectName.ToString().ToLower();
+                    if (npcName.Contains(DYE_SHOP_GIVEAWAY)) {
+                        return WizardZoneDyer.Props(obj, template, Context.Self);
+                    }
+
+                    if (npcName == AUCTION_HOUSE_GIVEAWAY) {
+                        return WizardZoneAuctionVendor.Props(obj, template, Context.Self);
+                    }
+
                     return WizardZoneNpc.Props(obj, template, Context.Self);
                 }
             }

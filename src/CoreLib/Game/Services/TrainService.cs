@@ -6,7 +6,9 @@
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
+using Imlight.CoreLib.Game.Zone.NPC;
 using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.Shared.Packets;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -17,5 +19,19 @@ internal class TrainService : MessageService {
         => Akka.Actor.Props.Create(() => new TrainService(parentActor));
 
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_TRAIN))]
-    private void ReceiveTrain(WIZARD_12_PROTOCOL.MSG_TRAIN message) { }
+    private void ReceiveTrain(WIZARD_12_PROTOCOL.MSG_TRAIN message) {
+        // Query the zone for the NPC by the ID
+        var msg = new ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT() {
+            GlobalID = message.MobileID
+        };
+        var response = AskOtherService<ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECTRSP>(msg);
+        if (response is null) {
+            return;
+        }
+
+        var npcObj = (WizardZoneNpc) response.ZoneObject;
+        var wizard = GetActiveWizard();
+
+        var spellOption = npcObj.ServiceMomentoBase.m_serviceOptions[message.TrainingIndex];
+    }
 }

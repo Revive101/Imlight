@@ -8,15 +8,15 @@ using System.Linq;
 using System.Collections.Generic;
 using Akka.Actor;
 using Imlight.Common;
+using Imlight.Common.IO;
 using Imlight.Common.Caches;
-using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Game.Zone;
+using Imlight.CoreLib.Game.Zone.NPC;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Models.Player;
-using static Imlight.Common.Caches.TypeCache;
 using Imlight.CoreLib.WizardData.Models.World;
-using Imlight.Common.IO;
+using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Services;
 internal class InteractService : MessageService {
@@ -46,45 +46,40 @@ internal class InteractService : MessageService {
             return;
         }
 
-        // Check if the object is a shopkeeper or teleport door.
-        if (npc is WizardZoneNpc zoneNpc) {
-            if (!zoneNpc.ServiceMomentoBase.m_serviceOptions.Any(x => x.m_serviceName == message.ServiceName)) {
+        // Check if the object is a vendor or teleport door.
+        if (npc is WizardZoneVendor zoneVendor) {
+            if (!zoneVendor.ServiceMomentoBase.m_serviceOptions.Any(x => x.m_serviceName == message.ServiceName)) {
                 Logger.Error("{0} interacted with NPC by global ID {1} but the service {2} was not found",
                     Logger.Args(wizard.CharId, message.GlobalID, message.ServiceName));
                 return;
             }
 
-            // Check to see if this NPC is capable of providing the service.
-
-
-            switch (message.ServiceName) {
-                case "WizShoppingService":
-                    InteractShopkeeper(message, wizard, zoneNpc);
-                    break;
-                case "DyeShopService":
-                    InteractDyeShop(message, wizard, zoneNpc);
-                    break;
-                default:
-                    break;
-            }
-        }
-        else if (npc is WizardZoneTeleportDoor teleportDoor) {
-            InteractTeleportDoor(message, wizard, teleportDoor);
-        }
-        else {
-            Logger.Error("{0} searched for NPC by global ID {1} but the object found was not a {2} or {3}",
-                Logger.Args(wizard.CharId, message.GlobalID, nameof(WizardZoneNpc), nameof(WizardZoneTeleportDoor)));
+            InteractShopkeeper(message, wizard, zoneVendor);
             return;
         }
+
+        if (npc is WizardZoneDyer zoneDyer) {
+            if (!zoneDyer.ServiceMomentoBase.m_serviceOptions.Any(x => x.m_serviceName == message.ServiceName)) {
+                Logger.Error("{0} interacted with NPC by global ID {1} but the service {2} was not found",
+                    Logger.Args(wizard.CharId, message.GlobalID, message.ServiceName));
+                return;
+            }
+
+            InteractDyeShop(message, wizard, zoneDyer);
+            return;
+        }
+
+        if (npc is WizardZoneTeleportDoor teleportDoor) {
+            InteractTeleportDoor(message, wizard, teleportDoor);
+            return;
+        }
+        
+        Logger.Error("{0} searched for NPC by global ID {1} but the object found was not a {2} or {3}",
+            Logger.Args(wizard.CharId, message.GlobalID, nameof(WizardZoneNpc), nameof(WizardZoneTeleportDoor)));
+        return;
     }
 
-    private void InteractShopkeeper(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC message, Wizard wizard, WizardZoneNpc zoneNpc) {
-        if (!zoneNpc.IsShopkeeper) {
-            Logger.Error("{0} interacted with NPC by global ID {1} but the object found was not a shopkeeper",
-                Logger.Args(wizard.CharId, message.GlobalID));
-            return;
-        }
-
+    private void InteractShopkeeper(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC message, Wizard wizard, WizardZoneVendor zoneVendor) {
         var shopOffering = new WizShopOffering() {
             m_CSRTestShop = false,
             m_activeHolidayList = null,
@@ -92,7 +87,7 @@ internal class InteractService : MessageService {
             m_recipeList = null,
             m_sellModifier = 0.05f,
             m_shopTitle = "KrocNPC_00000013",
-            m_shopList = zoneNpc.Inventory,
+            m_shopList = zoneVendor.Inventory,
 
             // Changes the type of currency that is used
             // 0 - Gold
@@ -116,13 +111,7 @@ internal class InteractService : MessageService {
         ZoneBroadcast(wizBangMsg, false);
     }
 
-    private void InteractDyeShop(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC message, Wizard wizard, WizardZoneNpc zoneNpc) {
-        if (!zoneNpc.IsShopkeeper) {
-            Logger.Error("{0} interacted with NPC by global ID {1} but the object found was not a shopkeeper",
-                Logger.Args(wizard.CharId, message.GlobalID));
-            return;
-        }
-
+    private void InteractDyeShop(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC message, Wizard wizard, WizardZoneDyer zoneDyer) {
         var dyeShopOpen = new WIZARD_12_PROTOCOL.MSG_DYESHOPOPEN() {
             GlobalID = message.GlobalID,
             Title = "WC-NPCs_00000718"

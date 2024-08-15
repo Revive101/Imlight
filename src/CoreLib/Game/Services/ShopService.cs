@@ -6,11 +6,10 @@
 using Akka.Actor;
 using System;
 using Imlight.Common;
-using Imlight.Common.IO;
 using Imlight.Common.Caches;
 using Imlight.Common.ObjectProperty;
 using Imlight.Common.ObjectProperty.PropertyReflection;
-using Imlight.CoreLib.Game.Zone;
+using Imlight.CoreLib.Game.Zone.NPC;
 using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.Shared.Networking;
@@ -54,7 +53,7 @@ internal class ShopService : MessageService {
         }
 
         var itemTemplateID = message.ShopID - ShopOffset;
-        var npcObject = (WizardZoneNpc) npc;
+        var npcObject = (WizardZoneVendor) npc;
 
         // Check to see if the shopkeeper actually sells the item.
         if (!npcObject.Inventory.Contains((GID) itemTemplateID)) {
