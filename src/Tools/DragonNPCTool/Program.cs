@@ -112,6 +112,10 @@ public static class Program {
 
             foreach (var obj in objectList)
             {
+                if (obj is null) {
+                    continue;
+                }
+
                 if (s_shopKeeperNames.ContainsKey(obj.m_templateID) && !printedTemplateIds.Contains(obj.m_templateID))
                 {
                     npcFound = true;
