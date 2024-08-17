@@ -68,7 +68,7 @@ public class ServerWizSpellbookBehavior : ServerSpellbookBehavior {
         }
 
         // Get the spells template; we'll need it for the magic school ID.
-        var spellTemplate = SpellFactory.CreateSpellFromTemplate(spellTemplateId);
+        var spellTemplate = SpellFactory.GetSpell(spellTemplateId);
         if (spellTemplate is null) {
             Logger.Debug("Failed to create spell from template {0}.", Logger.Args(spellTemplateId));
             return false;

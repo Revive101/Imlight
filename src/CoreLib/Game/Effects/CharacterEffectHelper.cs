@@ -101,7 +101,7 @@ internal static class CharacterEffectHelper {
             var nameHash = StringHash.Compute(effectInfo.m_effectName);
             var gameEffect = wizard.GameEffects.Find(e => e.m_effectNameID == nameHash && e.m_itemSlotID == slotHash);
             if (gameEffect is null) {
-                Logger.Warning("Could not find effect {0} in player's list of effects.", Logger.Args(effectInfo.m_effectName));
+                // It's fine if the effect isn't found. Just continue.
                 continue;
             }
 
@@ -110,13 +110,9 @@ internal static class CharacterEffectHelper {
             RemoveGameEffectFromStats(wizard.GameStats, effectInfo);
 
             if (gameEffect is ProvideSpellEffect provideSpellEffect) {
-                // This is a little confusing. We need both the template and the template ID.
-                // The template is used to create the spell, and the template ID is used to add the spell to the player's spellbook.
-                var spellTemplatePath = $"Spells/{provideSpellEffect.m_spellName}.xml";
-                var spellTemplateId = CoreObjectFactory.GetCoreTemplateID(spellTemplatePath);
-
                 for (var i = 0; i < provideSpellEffect.m_numSpells; i++) {
-                    wizard.RemoveTemporarySpell(spellTemplateId);
+                    var hash = StringHash.Compute(provideSpellEffect.m_spellName);
+                    wizard.RemoveTemporarySpell(hash);
                 }
             }
         }
