@@ -194,27 +194,22 @@ public class CombatDuelSubCircle {
         return false;
     }
 
-    internal T GetStatBySchool<T>(List<T> list, MagicSchool enumValue) {
+    internal T GetStatBySchool<T>(List<T> list, string magicSchool) {
         if (list is null) {
             return default;
-        }
-        if (list.Count < 7) {
-            throw new ArgumentException("List must have at least 7 items");
         }
         if (!typeof(T).IsPrimitive && !typeof(T).IsEnum) {
             throw new ArgumentException("List items must be primitive types or enums");
         }
 
-        return enumValue switch {
-            MagicSchool.Fire    => list[0],
-            MagicSchool.Ice     => list[1],
-            MagicSchool.Storm   => list[2],
-            MagicSchool.Myth    => list[3],
-            MagicSchool.Life    => list[4],
-            MagicSchool.Death   => list[5],
-            MagicSchool.Balance => list[6],
-            _ => default,
-        };
+        // Check if we're over the max index.
+        var maxIndex = MagicSchools.GetMaxMagicSchoolIndex();
+        if (list.Count < maxIndex) {
+            throw new ArgumentException("List must have a count equal to the max magic school index.");
+        }
+
+        var index = (int) MagicSchools.GetMagicSchool(magicSchool).m_schoolIndex;
+        return list[index];
     }
 
     internal bool HasPipsForSpell(Spell spell) {

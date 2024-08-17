@@ -92,14 +92,9 @@ internal static class CombatEffectApplicator {
         var damageFromCaster = effect.m_effectParam;
         var cinematicTime = 0.0f;
 
-        if (!Enum.TryParse(typeof(MagicSchool), effect.m_sDamageType, out var damageTypeObj)) {
-            throw new ArgumentException("Invalid damage type");
-        }
-        var damageType = (MagicSchool) damageTypeObj;
-
         // Calculate damage increase from caster stats.
-        var damageFlatIncrease = GetFlatDamageIncrease(caster, damageType);
-        var damagePercentIncrease = GetPercentDamageIncrease(caster, damageType);
+        var damageFlatIncrease = GetFlatDamageIncrease(caster, effect.m_sDamageType);
+        var damagePercentIncrease = GetPercentDamageIncrease(caster, effect.m_sDamageType);
         damagePercentIncrease = Math.Min(damagePercentIncrease, DAMAGE_PERCENT_MAX);
         damageFromCaster = (int) Math.Floor(damageFromCaster * (1 + damagePercentIncrease) + damageFlatIncrease);
 
@@ -109,15 +104,15 @@ internal static class CombatEffectApplicator {
 
         // Calculate damage from current bubble
         var duel = caster._duelActor.Duel;
-        var bubbleDamageIncrease = GetGlobalEffectDamageModifier(duel, damageType);
+        var bubbleDamageIncrease = GetGlobalEffectDamageModifier(duel, effect.m_sDamageType);
         damageFromCaster = (int) Math.Floor(damageFromCaster * (1 + bubbleDamageIncrease));
 
         foreach (var target in targets) {
             var targetSpecificDamage = damageFromCaster;
 
             // Calculate damage reduction from target stats
-            var damageReductionFlat = GetFlatDamageReduction(target, damageType);
-            var damageReductionPercent = GetPercentDamageReduction(target, damageType);
+            var damageReductionFlat = GetFlatDamageReduction(target, effect.m_sDamageType);
+            var damageReductionPercent = GetPercentDamageReduction(target, effect.m_sDamageType);
             var reducedDamage = (int) Math.Floor(targetSpecificDamage * (1 - damageReductionPercent) - damageReductionFlat);
 
             // Ensure that damage isn't negative.
@@ -189,14 +184,9 @@ internal static class CombatEffectApplicator {
         int damageFromCaster = effect.m_effectParam;
         var cinematicTime = 0.0f;
 
-        if (!Enum.TryParse(typeof(MagicSchool), effect.m_sDamageType, out var damageTypeObj)) {
-            throw new ArgumentException("Invalid damage type");
-        }
-        var damageType = (MagicSchool) damageTypeObj;
-
         // Calculate damage increase from caster stats.
-        var damageFlatIncrease = GetFlatDamageIncrease(caster, damageType);
-        var damagePercentIncrease = 1 + GetPercentDamageIncrease(caster, damageType);
+        var damageFlatIncrease = GetFlatDamageIncrease(caster, effect.m_sDamageType);
+        var damagePercentIncrease = 1 + GetPercentDamageIncrease(caster, effect.m_sDamageType);
         damageFromCaster = (int) Math.Floor((damageFromCaster * damagePercentIncrease) + damageFlatIncrease);
 
         // Calculate damage changes from hanging effects.
@@ -204,7 +194,7 @@ internal static class CombatEffectApplicator {
         damageFromCaster = CombatCharms.GetOutgoingDamageFromCharms(charms, damageFromCaster);
 
         var duel = caster._duelActor.Duel;
-        var bubbleDamageIncrease = GetGlobalEffectDamageModifier(duel, damageType);
+        var bubbleDamageIncrease = GetGlobalEffectDamageModifier(duel, effect.m_sDamageType);
         damageFromCaster = (int) Math.Floor(damageFromCaster * (1 + bubbleDamageIncrease));
 
         // Apply damage to each target
@@ -214,7 +204,7 @@ internal static class CombatEffectApplicator {
 
             // Calculate damage changes from target hanging effects.
             var wards = CombatWards.FindAppliedWards(target, effect);
-            wards = CombatWards.GetWardsBySchool(wards.ToArray(), damageType, out var finalSchool);
+            wards = CombatWards.GetWardsBySchool(wards.ToArray(), effect.m_sDamageType, out var finalSchool);
             cinematicTime += wards.Count * HANGING_EFFECT_CONSUME_TIME;
             damage = CombatWards.GetIncomingDamageFromWards(wards, damage);
 
@@ -396,7 +386,7 @@ internal static class CombatEffectApplicator {
         return heal;
     }
 
-    private static int DoDamageToTarget(CombatDuelSubCircle target, int damage, MagicSchool damageType) {
+    private static int DoDamageToTarget(CombatDuelSubCircle target, int damage, string damageType) {
         // Calculate damage reduction from target stats
         var damageReductionFlat = GetFlatDamageReduction(target, damageType);
         var damageReductionPercent = GetPercentDamageReduction(target, damageType);
@@ -417,12 +407,12 @@ internal static class CombatEffectApplicator {
         return heal;
     }
 
-    private static float GetFlatDamageIncrease(CombatDuelSubCircle caster, MagicSchool damageType) {
+    private static float GetFlatDamageIncrease(CombatDuelSubCircle caster, string damageType) {
         var damageFlatIncrease = caster.GetStatBySchool(caster.ParticipantGameStats.m_dmgBonusFlat, damageType);
         return damageFlatIncrease + caster.ParticipantGameStats.m_dmgBonusFlatAll;
     }
 
-    private static float GetPercentDamageIncrease(CombatDuelSubCircle caster, MagicSchool damageType) {
+    private static float GetPercentDamageIncrease(CombatDuelSubCircle caster, string damageType) {
         var damagePercentIncrease = caster.GetStatBySchool(caster.ParticipantGameStats.m_dmgBonusPercent, damageType);
         damagePercentIncrease += caster.ParticipantGameStats.m_dmgBonusPercentAll;
         damagePercentIncrease = Math.Min(damagePercentIncrease, DAMAGE_PERCENT_MAX);
@@ -430,12 +420,12 @@ internal static class CombatEffectApplicator {
         return damagePercentIncrease;;
     }
 
-    private static float GetFlatDamageReduction(CombatDuelSubCircle target, MagicSchool damageType) {
+    private static float GetFlatDamageReduction(CombatDuelSubCircle target, string damageType) {
         var damageReductionFlat = target.GetStatBySchool(target.ParticipantGameStats.m_dmgReduceFlat, damageType);
         return damageReductionFlat + target.ParticipantGameStats.m_dmgReduceFlatAll;
     }
 
-    private static float GetPercentDamageReduction(CombatDuelSubCircle target, MagicSchool damageType) {
+    private static float GetPercentDamageReduction(CombatDuelSubCircle target, string damageType) {
         var damageReductionPercent = target.GetStatBySchool(target.ParticipantGameStats.m_dmgReducePercent, damageType);
         return damageReductionPercent + target.ParticipantGameStats.m_dmgReducePercentAll;
     }
@@ -448,11 +438,10 @@ internal static class CombatEffectApplicator {
         return target.ParticipantGameStats.m_healIncBonusPercentAll;
     }
 
-    private static float GetGlobalEffectDamageModifier(Duel duel, MagicSchool damageType) {
-        var sDamageType = damageType.ToString();
+    private static float GetGlobalEffectDamageModifier(Duel duel, string damageType) {
         var schoolBubble = duel.m_duelModifier.m_battlefieldEffects
             .FirstOrDefault(x => x.m_effectType == SpellEffect.kSpellEffects.kModifyOutgoingDamage
-                              && x.m_sDamageType == sDamageType);
+                              && x.m_sDamageType == damageType);
 
         if (schoolBubble is not null) {
             return schoolBubble.m_effectParam / 100.0f;

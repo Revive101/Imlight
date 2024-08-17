@@ -3,26 +3,23 @@
  * Proprietary and confidential.
  */
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Imlight.Common;
 using Imlight.Common.Cryptography;
-using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Items;
-using Imlight.CoreLib.Shared.Resources;
-using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models.Player;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Effects;
 
+/// <summary>
+/// Helper class for adding and removing effects to/from a wizard character.
+/// </summary>
 internal static class CharacterEffectHelper {
-    private const int SCHOOL_COUNT = 7;
-
     /// <summary>
     /// Adds effects to a wizard based on a given template.
     /// </summary>
@@ -215,38 +212,25 @@ internal static class CharacterEffectHelper {
     }
 
     private static void ApplySchoolEffect(ref List<float> effectList, string schoolName, float value) {
+        var maxIndex = MagicSchools.GetMaxMagicSchoolIndex();
+
         // Set the list if it doesn't exist. Give it a count equal to how many schools there are.
-        effectList ??= Enumerable.Repeat(0f, SCHOOL_COUNT).ToList();
+        effectList ??= Enumerable.Repeat(0f, (int) maxIndex).ToList();
 
         // Ensure that the effect list is the same length as the number of schools.
-        if (effectList.Count != SCHOOL_COUNT) {
-            var compensationRequired = SCHOOL_COUNT - effectList.Count;
-            effectList.AddRange(Enumerable.Repeat(0f, compensationRequired));
+        if (effectList.Count != maxIndex) {
+            var compensationRequired = maxIndex - effectList.Count;
+            effectList.AddRange(Enumerable.Repeat(0f, (int) compensationRequired));
         }
 
-        switch (schoolName) {
-            case "Fire":
-                effectList[0] += value;
-                break;
-            case "Ice":
-                effectList[1] += value;
-                break;
-            case "Storm":
-                effectList[2] += value;
-                break;
-            case "Myth":
-                effectList[3] += value;
-                break;
-            case "Life":
-                effectList[4] += value;
-                break;
-            case "Death":
-                effectList[5] += value;
-                break;
-            case "Balance":
-                effectList[6] += value;
-                break;
+        var schoolTemplate = MagicSchools.GetMagicSchool(schoolName);
+        if (schoolTemplate is null) {
+            Logger.Warning("Could not find magic school {0}.", Logger.Args(schoolName));
+            return;
         }
+
+        var schoolIndex = schoolTemplate.m_schoolIndex;
+        effectList[schoolIndex] += value;
     }
 
     private static void ApplySchoolMastery(ServerWizGameStats stats, string effectCategory) {
@@ -338,20 +322,23 @@ internal static class CharacterEffectHelper {
     }
 
     private static void RemoveSchoolEffect(ref List<float> effectList, string schoolName, float value) {
-        var schools = Enum.GetValues(typeof(MagicSchool));
-        effectList ??= new List<float>(new float[schools.Length]);
+        var maxIndex = MagicSchools.GetMaxMagicSchoolIndex();
 
-        if (effectList.Count != schools.Length) {
-            effectList = new List<float>(new float[schools.Length]);
+        // Ensure that the effect list is the same length as the number of schools.
+        effectList ??= new List<float>(new float[maxIndex]);
+
+        if (effectList.Count != maxIndex) {
+            effectList = new List<float>(new float[maxIndex]);
         }
 
-        for (var i = 0; i < schools.Length; i++) {
-            var school = (MagicSchool) schools.GetValue(i);
-            if (schoolName == school.ToString()) {
-                effectList[i] -= value;
-                break;
-            }
+        var index = MagicSchools.GetMagicSchool(schoolName)?.m_schoolIndex ?? -1;
+
+        if (index == -1) {
+            Logger.Warning("Could not find magic school {0}.", Logger.Args(schoolName));
+            return;
         }
+
+        effectList[index] -= value;
     }
 
     private static void RemoveSchoolMastery(ServerWizGameStats stats, string effectCategory) {

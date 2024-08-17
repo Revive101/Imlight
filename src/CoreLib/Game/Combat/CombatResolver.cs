@@ -366,7 +366,7 @@ public class CombatResolver {
 
         var spellAccuracy = (int) spell.m_accuracy;
         var stats = caster.CombatParticipant.m_pGameStats;
-        var school = (MagicSchool) spell.m_magicSchoolID;
+        var school = MagicSchools.GetMagicSchool(spell.m_magicSchoolID).m_schoolName;
 
         var percentIncrease = caster.GetStatBySchool(stats.m_accBonusPercent, school);
         var percentIncreaseAll = stats.m_accBonusPercentAll;

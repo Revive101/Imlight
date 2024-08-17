@@ -4,6 +4,7 @@
  */
 
 using Imlight.Common;
+using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Packets;
 using System;
@@ -73,13 +74,13 @@ internal static class CombatWards {
     /// <param name="school">The magic school to filter the wards by.</param>
     /// <param name="finalSchool">The final magic school determined by the wards.</param>
     /// <returns>A list of spell effects that match the specified magic school.</returns>
-    internal static List<SpellEffect> GetWardsBySchool(SpellEffect[] wards, MagicSchool school, out MagicSchool finalSchool) {
+    internal static List<SpellEffect> GetWardsBySchool(SpellEffect[] wards, string school, out string finalSchool) {
         var schoolWards = new List<SpellEffect>();
         finalSchool = school;
 
         foreach (var ward in wards) {
             if (ward.m_effectType == SpellEffect.kSpellEffects.kModifyIncomingDamageType) {
-                finalSchool = (MagicSchool) ward.m_effectParam;
+                finalSchool = MagicSchools.GetMagicSchool(ward.m_effectParam)?.m_schoolName ?? school;
             }
 
             if (ward.m_sDamageType == finalSchool.ToString() || ward.m_sDamageType == "All") {
