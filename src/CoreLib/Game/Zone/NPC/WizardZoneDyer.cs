@@ -64,7 +64,7 @@ internal class WizardZoneDyer : WizardZoneNpc {
         Sender.Tell(new ZONE_102_PROTOCOL.MSG_ADDOBJECTRSP());
     }
 
-    protected override void OnPlayerInteractionEnter(CoreObject player, IActorRef suspect) {
+    protected override void OnPlayerProximityEnter(CoreObject player, IActorRef suspect) {
         var data = _serializer.Serialize(ServiceMomentoBase);
 
         var npcOptionsMsg = new QUEST_MESSAGES_52_PROTOCOL.MSG_SENDNPCOPTIONS {

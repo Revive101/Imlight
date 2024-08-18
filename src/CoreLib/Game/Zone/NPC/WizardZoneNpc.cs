@@ -57,10 +57,10 @@ public class WizardZoneNpc : WizardZoneObject {
         Sender.Tell(new ZONE_102_PROTOCOL.MSG_ADDOBJECTRSP());
     }
 
-    protected override void OnPlayerInteractionEnter(CoreObject player, IActorRef suspect) { }
+    protected override void OnPlayerProximityEnter(CoreObject player, IActorRef suspect) { }
 
-    protected override void OnPlayerInteractionExit(CoreObject player, IActorRef suspect) {
-        base.OnPlayerInteractionExit(player, suspect);
+    protected override void OnPlayerProximityExit(CoreObject player, IActorRef suspect) {
+        base.OnPlayerProximityExit(player, suspect);
 
         if (Template is not GameObjectTemplate gameObjTemplate) {
             return;
@@ -106,9 +106,6 @@ public class WizardZoneNpc : WizardZoneObject {
             m_serviceOptions = new List<ServiceOptionBase>()
         };
     }
-
-    [MessageHandler(typeof(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC))]
-    protected virtual void ReceiveNpcInteract(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC message) { }
 
     private void SetSpellTrainer() {
         IsSpellTrainer = true;

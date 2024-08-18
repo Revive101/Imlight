@@ -79,7 +79,7 @@ internal class WizardZoneVendor : WizardZoneNpc {
         Sender.Tell(new ZONE_102_PROTOCOL.MSG_ADDOBJECTRSP());
     }
 
-    protected override void OnPlayerInteractionEnter(CoreObject player, IActorRef suspect) {
+    protected override void OnPlayerProximityEnter(CoreObject player, IActorRef suspect) {
         var data = _serializer.Serialize(ServiceMomentoBase);
 
         var npcOptionsMsg = new QUEST_MESSAGES_52_PROTOCOL.MSG_SENDNPCOPTIONS {
@@ -91,7 +91,7 @@ internal class WizardZoneVendor : WizardZoneNpc {
         suspect.Tell(npcOptionsMsg);
     }
 
-    protected override void ReceiveNpcInteract(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC message) {
+    protected override void OnPlayerInteraction(IActorRef suspect) {
         var shopOffering = new WizShopOffering() {
             m_CSRTestShop = false,
             m_activeHolidayList = null,
@@ -109,11 +109,11 @@ internal class WizardZoneVendor : WizardZoneNpc {
         var data = _serializer.Serialize(shopOffering);
 
         var shopListMsg = new WIZARD_12_PROTOCOL.MSG_SHOPLIST() {
-            GlobalID = message.GlobalID,
+            GlobalID = ActiveGameObject.m_globalID,
             Data = data,
             Credits = 0,
             WebFailure = 0,
         };
-        Sender.Tell(shopListMsg);
+        suspect.Tell(shopListMsg);
     }
 }

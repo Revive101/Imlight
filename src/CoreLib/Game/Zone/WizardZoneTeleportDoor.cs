@@ -33,7 +33,7 @@ public class WizardZoneTeleportDoor : WizardZoneObject {
     public static Props Props(CoreObject activeGameObject, CoreTemplate template, IActorRef wizardZoneRef)
         => Akka.Actor.Props.Create(() => new WizardZoneTeleportDoor(activeGameObject, template, wizardZoneRef));
 
-    protected override void OnPlayerInteractionEnter(CoreObject player, IActorRef suspect) {
+    protected override void OnPlayerProximityEnter(CoreObject player, IActorRef suspect) {
         var npcOptionsMsg = new QUEST_MESSAGES_52_PROTOCOL.MSG_SENDNPCOPTIONS {
             MobileID = ActiveGameObject.m_globalID,
             Options = _serializedServiceMomentoBase,
@@ -43,8 +43,8 @@ public class WizardZoneTeleportDoor : WizardZoneObject {
         suspect.Tell(npcOptionsMsg);
     }
 
-    protected override void OnPlayerInteractionExit(CoreObject player, IActorRef suspect) {
-        base.OnPlayerInteractionExit(player, suspect);
+    protected override void OnPlayerProximityExit(CoreObject player, IActorRef suspect) {
+        base.OnPlayerProximityExit(player, suspect);
 
         var leaveServiceRangeMsg = new GAME_5_PROTOCOL.MSG_LEAVESERVICERANGE {
             MobileID = ActiveGameObject.m_globalID

@@ -50,7 +50,7 @@ public class WizardZoneWisp : WizardZoneCreature {
                               IActorRef wizardZoneRef) => Akka.Actor.Props.Create(()
             => new WizardZoneWisp(activeGameObject, template, path, startingNodeIndex, wizardZoneRef));
 
-    protected override void OnPlayerInteractionEnter(CoreObject suspectObject, IActorRef suspectActor) {
+    protected override void OnPlayerProximityEnter(CoreObject suspectObject, IActorRef suspectActor) {
         var serializer = new ObjectSerializer()
           .OnBehaviors(SerializerOptions.Behaviors.None)
           .OnPropertyMask((SerializerOptions.PropertyFlags) 1);

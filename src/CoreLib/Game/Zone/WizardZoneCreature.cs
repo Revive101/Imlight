@@ -120,7 +120,7 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
         }
     }
 
-    protected override void OnPlayerInteractionEnter(CoreObject suspectObject, IActorRef suspectActor) {
+    protected override void OnPlayerProximityEnter(CoreObject suspectObject, IActorRef suspectActor) {
         // If I'm a hostile creature and a player just provoked me, then start a duel.
         if (_creatureState == CreatureState.Combat || !IsDuelingCreature()) {
             return;

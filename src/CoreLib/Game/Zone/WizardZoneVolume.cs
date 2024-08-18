@@ -40,8 +40,8 @@ public class WizardZoneVolume : WizardZoneObject {
                                                               wizardZoneRef,
                                                               volume));
 
-    protected override void OnPlayerInteractionEnter(CoreObject player, IActorRef suspect) {
-        base.OnPlayerInteractionEnter(player, suspect);
+    protected override void OnPlayerProximityEnter(CoreObject player, IActorRef suspect) {
+        base.OnPlayerProximityEnter(player, suspect);
 
         foreach (var enterEvent in _volume.m_enterEvents) {
             var postEventMsg = new ZONE_102_PROTOCOL.MSG_POSTEVENT {
@@ -55,8 +55,8 @@ public class WizardZoneVolume : WizardZoneObject {
         }
     }
 
-    protected override void OnPlayerInteractionExit(CoreObject player, IActorRef suspect) {
-        base.OnPlayerInteractionExit(player, suspect);
+    protected override void OnPlayerProximityExit(CoreObject player, IActorRef suspect) {
+        base.OnPlayerProximityExit(player, suspect);
 
         foreach (var exitEvent in _volume.m_exitEvents) {
             var postEventMsg = new ZONE_102_PROTOCOL.MSG_POSTEVENT {
