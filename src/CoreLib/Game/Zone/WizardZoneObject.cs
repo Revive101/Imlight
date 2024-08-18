@@ -27,7 +27,7 @@ namespace Imlight.CoreLib.Game.Zone;
 public class WizardZoneObject : ReceiveProtocolDispatcher, IClientTypeProvider<WizClientObject> {
     public readonly CoreObject ActiveGameObject;
     public readonly CoreTemplate Template;
-    public IActorRef ActorRef => Self;
+    public IActorRef ActorRef;
 
     protected readonly IActorRef WizardZoneRef;
     protected readonly List<BehaviorInstance> Behaviors = new();
@@ -47,6 +47,7 @@ public class WizardZoneObject : ReceiveProtocolDispatcher, IClientTypeProvider<W
         this.Template = template;
         this.WizardZoneRef = wizardZoneRef;
         this._objsInRadius = new List<CoreObject>();
+        this.ActorRef = Context.Self;
 
         if (template is not null &&
             template.m_behaviors.Any(x => x is ObjectStateBehaviorTemplate)) {
@@ -122,7 +123,7 @@ public class WizardZoneObject : ReceiveProtocolDispatcher, IClientTypeProvider<W
     /// </summary>
     /// <param name="player">The player object that entered the zone.</param>
     /// <param name="suspect">The actor reference of the suspect.</param>
-    protected virtual void OnPlayerInteractionEnter(CoreObject player, IActorRef suspect) {
+    protected virtual void OnPlayerProximityEnter(CoreObject player, IActorRef suspect) {
 
     }
 
@@ -131,7 +132,15 @@ public class WizardZoneObject : ReceiveProtocolDispatcher, IClientTypeProvider<W
     /// </summary>
     /// <param name="player">The player who exited the interaction range.</param>
     /// <param name="suspect">The suspect actor reference.</param>
-    protected virtual void OnPlayerInteractionExit(CoreObject player, IActorRef suspect) {
+    protected virtual void OnPlayerProximityExit(CoreObject player, IActorRef suspect) {
+
+    }
+
+    /// <summary>
+    /// Called when a player interactions (by pressing the interact key) with this object.
+    /// </summary>
+    /// <param name="suspect">The actor reference of the player.</param>
+    protected virtual void OnPlayerInteraction(IActorRef suspect) {
 
     }
 
@@ -140,7 +149,7 @@ public class WizardZoneObject : ReceiveProtocolDispatcher, IClientTypeProvider<W
     /// </summary>
     /// <param name="creature">The CoreObject representing the creature.</param>
     /// <param name="suspect">The IActorRef representing the suspect.</param>
-    protected virtual void OnCreatureInteractionEnter(CoreObject creature, IActorRef suspect) {
+    protected virtual void OnCreatureProximityEnter(CoreObject creature, IActorRef suspect) {
 
     }
 
@@ -191,17 +200,17 @@ public class WizardZoneObject : ReceiveProtocolDispatcher, IClientTypeProvider<W
             // Do enter events.
             _objsInRadius.Add(message.CoreObject);
             if (message.IsCreature) {
-                OnCreatureInteractionEnter(message.CoreObject, message.Suspect);
+                OnCreatureProximityEnter(message.CoreObject, message.Suspect);
             }
             else {
-                OnPlayerInteractionEnter(message.CoreObject, message.Suspect);
+                OnPlayerProximityEnter(message.CoreObject, message.Suspect);
             }
         }
         else if (_objsInRadius.Contains(message.CoreObject) && !IsInRadius(message.CoreObject)) {
             // Do exit events.
             _objsInRadius.Remove(message.CoreObject);
             if (!message.IsCreature) {
-                OnPlayerInteractionExit(message.CoreObject, message.Suspect);
+                OnPlayerProximityExit(message.CoreObject, message.Suspect);
             }
         }
     }
@@ -209,6 +218,10 @@ public class WizardZoneObject : ReceiveProtocolDispatcher, IClientTypeProvider<W
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
     protected void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message) =>
         WizardZoneRef.Tell(message);
+
+    [MessageHandler(typeof(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC))]
+    protected void ReceiveInteractNPC(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC message)
+        => OnPlayerInteraction(Sender);
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_OBJECTSTATUSCHECK))]
     protected void ReceiveStatusCheck(ZONE_102_PROTOCOL.MSG_OBJECTSTATUSCHECK message) =>
