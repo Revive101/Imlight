@@ -10,6 +10,7 @@ using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Models.Player;
 using static Imlight.Common.Caches.TypeCache;
 
@@ -40,8 +41,6 @@ public class WizardZoneNpc : WizardZoneObject {
         SetMadLibBlock();
         SetServiceMomentoBase();
 
-        // Check to see if we're a shopkeeper. If we are, set the shopkeeper properties.
-        // For some reason, dye shops are not included in the world vendor locations.
         var npcName = gameObjTemplate.m_objectName.ToString().ToLower();
         if (npcName == "wc-rav-npc05") {
             SetSpellTrainer();
@@ -107,6 +106,9 @@ public class WizardZoneNpc : WizardZoneObject {
             m_serviceOptions = new List<ServiceOptionBase>()
         };
     }
+
+    [MessageHandler(typeof(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC))]
+    protected virtual void ReceiveNpcInteract(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC message) { }
 
     private void SetSpellTrainer() {
         IsSpellTrainer = true;

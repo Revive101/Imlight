@@ -13,6 +13,11 @@ using Imlight.CoreLib.WizardData.Models.World;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.NPC;
+
+/// <summary>
+/// This is a zone NPC auction house vendor which manages itself as an actor. It
+/// derives from <see cref="WizardZoneNpc"/>.
+/// </summary>
 internal class WizardZoneAuctionVendor : WizardZoneNpc {
 
     // ctor

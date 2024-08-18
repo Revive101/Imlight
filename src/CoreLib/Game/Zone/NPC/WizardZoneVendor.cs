@@ -10,6 +10,7 @@ using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.World;
 using Imlight.CoreLib.WizardData.Models.Player;
@@ -18,7 +19,7 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Game.Zone.NPC;
 
 /// <summary>
-/// This is a zone NPC vendor which manages itself as an actor. It
+/// This is a zone NPC item vendor which manages itself as an actor. It
 /// derives from <see cref="WizardZoneNpc"/>.
 /// </summary>
 internal class WizardZoneVendor : WizardZoneNpc {
@@ -88,5 +89,31 @@ internal class WizardZoneVendor : WizardZoneNpc {
         };
 
         suspect.Tell(npcOptionsMsg);
+    }
+
+    protected override void ReceiveNpcInteract(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC message) {
+        var shopOffering = new WizShopOffering() {
+            m_CSRTestShop = false,
+            m_activeHolidayList = null,
+            m_furnitureShop = 0,
+            m_recipeList = null,
+            m_sellModifier = 0.05f,
+            m_shopTitle = "KrocNPC_00000013",
+            m_shopList = Inventory,
+
+            // Changes the type of currency that is used
+            // 0 - Gold
+            // 1 - PvP tickets
+            m_shopType = 0,
+        };
+        var data = _serializer.Serialize(shopOffering);
+
+        var shopListMsg = new WIZARD_12_PROTOCOL.MSG_SHOPLIST() {
+            GlobalID = message.GlobalID,
+            Data = data,
+            Credits = 0,
+            WebFailure = 0,
+        };
+        Sender.Tell(shopListMsg);
     }
 }

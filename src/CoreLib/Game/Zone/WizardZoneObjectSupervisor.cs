@@ -157,6 +157,7 @@ public class WizardZoneObjectSupervisor : ReceiveProtocolDispatcher {
                         return WizardZoneDyer.Props(obj, template, Context.Self);
                     }
 
+                    // Check to see if the NPC is the auction house vendor.
                     if (npcName == AUCTION_HOUSE_GIVEAWAY) {
                         return WizardZoneAuctionVendor.Props(obj, template, Context.Self);
                     }

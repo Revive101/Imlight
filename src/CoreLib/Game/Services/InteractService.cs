@@ -53,8 +53,15 @@ internal class InteractService : MessageService {
                     Logger.Args(wizard.CharId, message.GlobalID, message.ServiceName));
                 return;
             }
+            zoneVendor.ActorRef.Tell(message);
 
-            InteractShopkeeper(message, wizard, zoneVendor);
+            /*var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG() {
+                GameObjectID = wizard.CharId,
+                WizBangID = (uint) WizBangs.Registrar
+            };
+            ZoneBroadcast(wizBangMsg, false);*/
+
+            //InteractShopkeeper(message, wizard, zoneVendor);
             return;
         }
 
