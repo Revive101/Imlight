@@ -82,7 +82,7 @@ internal class AttachService : MessageService {
             Data = localGameObjectData,
             IsCSR = _account.AuthLevel > AuthLevel.None ? 1 : 0, // todo: Change this back before prod!
 
-            Permissions = (uint) accountFlags,
+            Permissions = 0b1100_1111,
 
             // Set zone data.
             ZoneName = message.ZoneName,
