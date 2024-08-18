@@ -4,9 +4,9 @@
  */
 
 using Akka.Actor;
+using Imlight.Common.IO;
 using Imlight.Common.Caches;
 using Imlight.Common.ObjectProperty;
-using Imlight.CoreLib.Shared.Packets;
 using System.Collections.Generic;
 using static Imlight.Common.Caches.TypeCache;
 
@@ -50,6 +50,25 @@ public class WizardZoneTeleportDoor : WizardZoneObject {
             MobileID = ActiveGameObject.m_globalID
         };
         suspect.Tell(leaveServiceRangeMsg);
+    }
+
+    protected override void OnPlayerInteraction(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC message, IActorRef suspect) {
+        var teleportDoorOptions = new WorldTeleportOptions {
+            m_worldList = new List<ByteString> { // TODO: fetch available worlds for user to teleport to from db
+                "WizardCity",
+                "Krokotopia",
+                "Marleybone",
+                "MooShu",
+                "Grizzleheim",
+                "DragonSpire"
+            }
+        };
+
+        var teleportDoorOpen = new WIZARD_12_PROTOCOL.MSG_WORLDTELEPORTLIST {
+            GlobalID = message.GlobalID,
+            Data = _serializer.Serialize(teleportDoorOptions)
+        };
+        suspect.Tell(teleportDoorOpen);
     }
 
     private void SetServiceMomentoBase() {

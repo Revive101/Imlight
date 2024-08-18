@@ -75,4 +75,13 @@ internal class WizardZoneDyer : WizardZoneNpc {
 
         suspect.Tell(npcOptionsMsg);
     }
+
+    protected override void OnPlayerInteraction(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC message, IActorRef suspect) {
+        var dyeShopOpen = new WIZARD_12_PROTOCOL.MSG_DYESHOPOPEN() {
+            GlobalID = message.GlobalID,
+            Title = "WC-NPCs_00000718"
+        };
+
+        suspect.Tell(dyeShopOpen);
+    }
 }
