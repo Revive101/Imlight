@@ -125,18 +125,21 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
     }
 
     /// <summary>
-    /// Retrieves the ID of a core template based on its name.
+    /// Gets the ID of the core template that matches the specified predicate.
     /// </summary>
-    /// <param name="templateName">The name of the template.</param>
-    /// <returns>The ID of the core template.</returns>
-    public static uint GetCoreTemplateID(string templateName) {
-        var template = TemplateManifest.m_serializedTemplates.FirstOrDefault(x => x.m_filename == templateName);
-        if (template is null) {
-            Logger.Error("Could not find CoreTemplate by name {TName}", Logger.Args(templateName));
+    /// <param name="predicate">The predicate used to match the template.</param>
+    /// <returns>The ID of the matching core template.</returns>
+    public static uint GetCoreTemplateID(Func<TemplateLocation, bool> predicate) {
+        var templateOrNull = TemplateManifest.m_serializedTemplates
+            .AsParallel()
+            .FirstOrDefault(predicate);
+
+        if (templateOrNull is null) {
+            Logger.Error("Could not find CoreTemplate by predicate.");
             return 0;
         }
 
-        return (uint)template.m_id;
+        return (uint)templateOrNull.m_id;
     }
 
     /// <summary>

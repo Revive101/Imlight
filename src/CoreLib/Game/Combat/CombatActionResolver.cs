@@ -41,8 +41,10 @@ internal static class CombatActionResolver {
             }
 
             // If the spell has any targets that are alive or on the same team as the caster, it's worth casting.
+            // If the spell has a global target, it's worth casting.
             if (!spellWorthCasting && (targets.Any(x => x.IsAlive)
-                                    || targets.Any(x => x.OccupiedTeam == action.SpellCaster.OccupiedTeam))) {
+                                    || targets.Any(x => x.OccupiedTeam == action.SpellCaster.OccupiedTeam))
+                                    || chosenEffect.m_effectTarget == SpellEffect.kEffectTarget.kGlobal) {
                 spellWorthCasting = true;
             }
 
@@ -149,7 +151,7 @@ internal static class CombatActionResolver {
                 targets = _activeSubCircles.Where(x => x.OccupiedTeam != caster.OccupiedTeam).ToArray();
                 break;
             case SpellEffect.kEffectTarget.kGlobal:
-                return new CombatDuelSubCircle[1]{ caster };
+                return Array.Empty<CombatDuelSubCircle>();
         }
 
         return targets;

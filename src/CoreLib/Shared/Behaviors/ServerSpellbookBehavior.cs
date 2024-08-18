@@ -3,7 +3,6 @@
  * Proprietary and confidential.
  */
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
@@ -47,12 +46,12 @@ public class ServerSpellbookBehavior : ServerBehaviorInstance {
         }
     }
 
-    public void RemoveTemporarySpellFromBook(uint templateId) {
+    public void RemoveTemporarySpellFromBook(uint stringHash) {
         if (TemporarySpells is null) {
             return;
         }
 
-        var spell = TemporarySpells.Find(x => x.m_templateID == templateId);
+        var spell = TemporarySpells.Find(x => x.m_spellID == stringHash);
         if (spell != null) {
             TemporarySpells.Remove(spell);
         }

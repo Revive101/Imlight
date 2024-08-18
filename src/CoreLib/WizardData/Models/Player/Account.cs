@@ -20,7 +20,7 @@ namespace Imlight.CoreLib.WizardData.Models.Player;
 public enum AccountFlags {
     IsHallMonitor = 1 << 0,
     CanChat = 1 << 1,
-    CanFilteredChat = 1 << 2,
+    CanHaveCustomNames = 1 << 2,
     CanOpenChat = 1 << 3,
     CanOpenChatLegacy = 1 << 4,
     CanTrueFriendCode = 1 << 5,
@@ -251,19 +251,32 @@ public class Account {
     public AccountFlags GetAccountFlags() {
         AccountFlags flags = 0;
 
-        flags |= AuthLevel >= AuthLevel.HallMonitor ? AccountFlags.IsHallMonitor : 0;
-        flags |= AuthLevel >= AuthLevel.QualityAssurance ? AccountFlags.CanReportBugs : 0;
+        if (AuthLevel >= AuthLevel.QualityAssurance) {
+            flags |= AccountFlags.CanReportBugs;
+        }
 
         switch (ChatMode) {
             case ChatMode.Open:
+                flags |= AccountFlags.CanChat;
                 flags |= AccountFlags.CanOpenChat;
                 break;
             case ChatMode.Filtered:
-                flags |= AccountFlags.CanFilteredChat;
+                flags |= AccountFlags.CanChat;
+                flags &= ~AccountFlags.CanOpenChat;
                 break;
             case ChatMode.Closed:
-                flags |= AccountFlags.CanChat;
+                flags &= ~AccountFlags.CanChat;
+                flags &= ~AccountFlags.CanOpenChat;
                 break;
+        }
+
+        // Can't be a hall monitor without being able to read chat.
+        if (AuthLevel >= AuthLevel.HallMonitor) {
+            flags |= AccountFlags.IsHallMonitor;
+            flags |= AccountFlags.CanChat;
+            flags |= AccountFlags.CanHaveCustomNames;
+            flags |= AccountFlags.CanOpenChat;
+            flags |= AccountFlags.CanOpenChatLegacy;
         }
 
         // Always true.
