@@ -91,6 +91,10 @@ internal class InteractService : MessageService {
             return;
         }
 
+        if (npc is WizardZoneAuctionVendor zoneAuctionVendor) {
+            return; // Auction vendor is handled in its respective service.
+        }
+
         Logger.Error("{0} searched for NPC by global ID {1} but the object found was not a {2} or {3}",
             Logger.Args(wizard.CharId, message.GlobalID, nameof(WizardZoneNpc), nameof(WizardZoneTeleportDoor)));
         return;
