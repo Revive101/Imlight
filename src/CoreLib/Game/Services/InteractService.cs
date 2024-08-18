@@ -35,6 +35,11 @@ internal class InteractService : MessageService {
 
         // A player is closing their shop
         if (message.ServiceName == "") {
+            var clearWizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG() {
+                GameObjectID = wizard.CharId,
+                WizBangID = (uint) WizBangs.None
+            };
+            ZoneBroadcast(clearWizBangMsg, false);
             return;
         }
 
@@ -45,6 +50,12 @@ internal class InteractService : MessageService {
                 Logger.Args(wizard.CharId, message.GlobalID));
             return;
         }
+
+        var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG() {
+            GameObjectID = wizard.CharId,
+            WizBangID = (uint) WizBangs.Registrar
+        };
+        ZoneBroadcast(wizBangMsg, false);
 
         // Check if the object is a vendor or teleport door.
         if (npc is WizardZoneVendor zoneVendor) {
