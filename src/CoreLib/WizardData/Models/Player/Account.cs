@@ -16,6 +16,39 @@ using Imlight.CoreLib.WizardData.Models.Misc;
 
 namespace Imlight.CoreLib.WizardData.Models.Player;
 
+[Flags]
+public enum AccountFlags {
+    IsHallMonitor = 1 << 0,
+    CanChat = 1 << 1,
+    CanFilteredChat = 1 << 2,
+    CanOpenChat = 1 << 3,
+    CanOpenChatLegacy = 1 << 4,
+    CanTrueFriendCode = 1 << 5,
+    CanGift = 1 << 6,
+    CanReportBugs = 1 << 7,
+    Unknown1 = 1 << 8,
+    Unknown2 = 1 << 9,
+    Unknown3 = 1 << 10,
+    CanEarnCrownsOffers = 1 << 11,
+    CanEarnCrownsButton = 1 << 12,
+}
+
+[Serializable]
+public enum AuthLevel {
+    None,
+    QualityAssurance,
+    HallMonitor,
+    Developer,
+    Administrator
+}
+
+[Serializable]
+public enum ChatMode {
+    Open,
+    Filtered,
+    Closed
+}
+
 [Serializable]
 public class Account {
     [JsonIgnore] public readonly byte MAX_ALLOWED_CHARACTERS = ConfigurationManager.Settings.MaxAllowedCharactersPerAccount;
@@ -25,6 +58,7 @@ public class Account {
     public string Email { get; private set; }
     public string PasswordHash { get; set; }
     public AuthLevel AuthLevel { get; set; }
+    public ChatMode ChatMode { get; set; }
     public List<ulong> CharacterIds { get; private set; } = new();
     public List<ulong> InfractionIds { get; private set; } = new();
     public DateTime CreationTime { get; private set; }
@@ -54,6 +88,7 @@ public class Account {
         this.Email = email;
         this.PasswordHash = passwordHash;
         this.CreationTime = DateTime.UtcNow;
+        this.ChatMode = ChatMode.Open;
     }
 
     /// <summary>
@@ -211,5 +246,30 @@ public class Account {
         InfractionCollection.UpdateInfraction(currentMute);
 
         return true;
+    }
+
+    public AccountFlags GetAccountFlags() {
+        AccountFlags flags = 0;
+
+        flags |= AuthLevel >= AuthLevel.HallMonitor ? AccountFlags.IsHallMonitor : 0;
+        flags |= AuthLevel >= AuthLevel.QualityAssurance ? AccountFlags.CanReportBugs : 0;
+
+        switch (ChatMode) {
+            case ChatMode.Open:
+                flags |= AccountFlags.CanOpenChat;
+                break;
+            case ChatMode.Filtered:
+                flags |= AccountFlags.CanFilteredChat;
+                break;
+            case ChatMode.Closed:
+                flags |= AccountFlags.CanChat;
+                break;
+        }
+
+        // Always true.
+        flags |= AccountFlags.CanTrueFriendCode;
+        flags |= AccountFlags.CanGift;
+
+        return flags;
     }
 }
