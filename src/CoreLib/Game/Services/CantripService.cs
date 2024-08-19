@@ -6,9 +6,13 @@
 using Akka.Actor;
 using Imlight.Common.Caches;
 using Imlight.Common.IO;
+using Imlight.CoreLib.Game.Cantrips;
 using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Models.Player;
+using System;
+using System.Collections;
+using System.Net;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Services;
@@ -30,20 +34,25 @@ public class CantripService : MessageService {
         var cantripResponse = new CANTRIPSMESSAGES_57_PROTOCOL.MSG_CANTRIPSRESPONSE {
             EnergyUsed = (uint) cantrip.m_energyCost,
             CooldownSeconds = (uint) cantrip.m_cooldownSeconds
-            // wtf is OutOfEnergy?
+            // if user is out of energy, set OutOfEnergy to 1
         };
-        SendToSocket(cantripResponse);
-
-        // TODO: look into dealing with multiple of these things
-        var animationKFM = cantrip.m_animationKFMs.Count == 0 ? (ByteString) "" : cantrip.m_animationKFMs[0];
-        var animationName = cantrip.m_animationNames.Count == 0 ? (ByteString) "" : cantrip.m_animationNames[0]; 
+        SendToSocket(cantripResponse); 
 
         var castEffect = new CANTRIPSMESSAGES_57_PROTOCOL.MSG_CASTEFFECT {
             GameObjectID = GetActiveWizard().GameObject.m_globalID,
-            SpellTemplateID = (int) message.SpellTemplateID,
-            AnimationKFM = animationKFM,
-            AnimationName = animationName
+            SpellTemplateID = (int) message.SpellTemplateID
         };
+
+        switch (cantrip.m_cantripsSpellEffect) {
+            case CantripsSpellTemplate.CantripsSpellEffect.CSE_Emote:
+                castEffect.AnimationName = cantrip.m_animationNames[0]; break;
+            case CantripsSpellTemplate.CantripsSpellEffect.CSE_PlayEffect:
+                var rand = new Random();
+                int num = rand.Next(cantrip.m_animationKFMs.Count);
+                castEffect.AnimationKFM = cantrip.m_animationKFMs[num];
+                castEffect.AnimationName = cantrip.m_animationNames[num];
+                break;
+        }
         SendToSocket(castEffect);
     }
 }
