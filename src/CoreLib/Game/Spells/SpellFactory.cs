@@ -5,46 +5,68 @@
 
 using Imlight.Common;
 using Imlight.Common.Cryptography;
+using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Shared.Resources;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Spells;
 
-public static class SpellFactory {
-    /// <summary>
-    /// Creates an array of spells based on the provided spell effect.
-    /// </summary>
-    /// <param name="effect">The spell effect used to create the spells.</param>
-    /// <returns>An array of spells created from the spell effect.</returns>
-    public static Spell[] CreateSpellsFromEffect(ProvideSpellEffect effect) {
-        // The spell template does not include the template ID. We need both to create the spell.
-        var spellTemplatePath = $"Spells/{effect.m_spellName}.xml";
-        var spellTemplate = RootArchiveLoader.GetFile<SpellTemplate>(spellTemplatePath);
-        if (spellTemplate is null) {
-            // The spell may be in tiered spells directory.
-            spellTemplatePath = $"Spells/Tiered Spells/{effect.m_spellName}.xml";
-            spellTemplate = RootArchiveLoader.GetFile<SpellTemplate>(spellTemplatePath);
+public class SpellFactory : RootDirectoryResourceSingleton<SpellFactory>, IMemoryStreamDisposable {
+    protected override string DirectoryName => "Spells/";
 
+    private static readonly Dictionary<uint, SpellTemplate> s_spellTemplates = new();
+    private static readonly Dictionary<uint, string> s_spellTemplatePaths = new();
+
+    protected override void AfterLoad() {
+        var serializer = new FileSerializer();
+        var counter = 0;
+
+        foreach (var file in base.Files) {
+            var fileRecord = file.Key;
+            var fileStream = file.Value;
+
+            var spellTemplate = serializer.OpenClass<SpellTemplate>(fileStream);
             if (spellTemplate is null) {
-                Logger.Warning("Could not find spell template {0}.", Logger.Args(effect.m_spellName));
-                return null;
+                Logger.Error("Could not deserialize {0} as {1}", Logger.Args(fileRecord.FileName, nameof(SpellTemplate)));
+                continue;
             }
+
+            var stringHash = StringHash.Compute(spellTemplate.m_name);
+
+            s_spellTemplates.Add(stringHash, spellTemplate);
+            counter++;
+
+            // Store the path of the spell template for later use.
+            s_spellTemplatePaths.Add(stringHash, fileRecord.FileName);
         }
 
-        var spellTemplateId = CoreObjectFactory.GetCoreTemplateID(spellTemplatePath);
-        var spell = CreateSpellFromTemplate(spellTemplateId);
+        Logger.Information("Loaded {0} spell templates.", Logger.Args(counter));
+    }
 
-        var spells = new List<Spell>();
-        for (var i = 0; i < effect.m_numSpells; i++) {
-            // Indicate to the client that this spell is given by an item.
-            spell.m_itemCard = true;
-
-            spells.Add(spell);
+    /// <summary>
+    /// Retrieves a spell by its name.
+    /// </summary>
+    /// <param name="spellName">The name of the spell.</param>
+    /// <returns>The spell with the specified name, or null if the spell template is not found.</returns>
+    public static Spell GetSpell(string spellName) {
+        var stringHash = StringHash.Compute(spellName);
+        if (!s_spellTemplates.TryGetValue(stringHash, out var spellTemplate)) {
+            Logger.Warning("Could not find spell template with name {0}.", Logger.Args(spellName));
+            return null;
         }
 
-        return spells.ToArray();
+        var spellTemplateActualPath = s_spellTemplatePaths[stringHash];
+        var templateId = CoreObjectFactory.GetCoreTemplateID(x => x.m_filename == spellTemplateActualPath);
+
+        if (templateId == 0) {
+            Logger.Warning("Could not find template ID for spell {0}.", Logger.Args(spellName));
+            return null;
+        }
+
+        return GetSpell(spellTemplate, templateId);
     }
 
     /// <summary>
@@ -52,21 +74,35 @@ public static class SpellFactory {
     /// </summary>
     /// <param name="templateId">The ID of the spell template.</param>
     /// <returns>The created spell object.</returns>
-    public static Spell CreateSpellFromTemplate(uint templateId) {
-        var template = (SpellTemplate) CoreObjectFactory.GetCoreTemplate(templateId);
+    public static Spell GetSpell(uint templateId) {
+        var template = CoreObjectFactory.GetCoreTemplate(templateId);
 
-        if (template == null) {
-            Logger.Warning("Tried to create spell from non-existent template {0}.", Logger.Args(templateId));
+        if (template is null) {
+            Logger.Warning("Could not find spell template with ID {0}.", Logger.Args(templateId));
             return null;
         }
+
         if (template is not SpellTemplate spellTemplate) {
-            Logger.Warning("Tried to create spell from non-spell template {0}.", Logger.Args(templateId));
+            Logger.Warning("Template with ID {0} is not a spell template.", Logger.Args(templateId));
             return null;
         }
 
-        // Create a random uint32 for the spell ID.
-        var ran = new Random();
-        var spellId = (uint) ran.Next(0, int.MaxValue);
+        return GetSpell(spellTemplate, templateId);
+    }
+
+    /// <summary>
+    /// Creates a spell from a spell template.
+    /// </summary>
+    /// <param name="template">The spell template to create the spell from.</param>
+    /// <returns>The created spell object.</returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static Spell GetSpell(SpellTemplate template, uint templateId) {
+        if (template is null) {
+            throw new ArgumentNullException(nameof(template));
+        }
+
+        // Hash the spell name to create a unique spell ID.
+        var spellId = StringHash.Compute(template.m_name);
 
         var spell = new Spell() {
             m_templateID = templateId,
@@ -75,20 +111,32 @@ public static class SpellFactory {
             m_treasureCard = template.m_Treasure,
             m_spellID = spellId,
             m_itemCard = false, // todo: bad
-            m_magicSchoolID = StringHash.Compute(spellTemplate.m_sMagicSchoolName),
+            m_magicSchoolID = StringHash.Compute(template.m_sMagicSchoolName),
         };
 
         return spell;
     }
 
     /// <summary>
-    /// Retrieves the name of a spell based on its template ID.
+    /// Creates an array of spells based on the provided spell effect.
     /// </summary>
-    /// <param name="templateId">The template ID of the spell.</param>
-    /// <returns>The name of the spell, or null if the template is not found.</returns>
-    public static string GetSpellName(uint templateId) {
-        var template = (SpellTemplate) CoreObjectFactory.GetCoreTemplate(templateId);
-        return template?.m_name;
+    /// <param name="effect">The spell effect used to create the spells.</param>
+    /// <returns>An array of spells created from the spell effect.</returns>
+    public static Spell[] CreateSpellsFromEffect(ProvideSpellEffect effect) {
+        var spell = GetSpell(effect.m_spellName);
+        if (spell is null) {
+            Logger.Warning("Could not create spell from effect {0}.", Logger.Args(effect.m_spellName));
+            return null;
+        }
+
+        var spells = new List<Spell>();
+        for (var i = 0; i < effect.m_numSpells; i++) {
+            // Indicate to the client that this spell is given by an item.
+            spell.m_itemCard = true;
+            spells.Add(spell);
+        }
+
+        return spells.ToArray();
     }
 
     /// <summary>
@@ -99,5 +147,10 @@ public static class SpellFactory {
     public static string GetBaseSpellName(uint templateId) {
         var template = (SpellTemplate) CoreObjectFactory.GetCoreTemplate(templateId);
         return template?.m_spellBase;
+    }
+
+    public void DisposeStream() {
+        s_spellTemplates.Clear();
+        s_spellTemplatePaths.Clear();
     }
 }

@@ -37,7 +37,7 @@ public class ServerCreatureSpellbookBehavior : ServerSpellbookBehavior {
 
     private void AddAllSpellsFromSpellbook(CreatureSpellbook creatureSpellbook) {
         foreach (var spellId in creatureSpellbook.SpellTemplateIds) {
-            var spell = SpellFactory.CreateSpellFromTemplate(spellId);
+            var spell = SpellFactory.GetSpell(spellId);
 
             if (spell is null) {
                 Logger.Warning("Deck {0} had spell by template id {1} that could not be created.",

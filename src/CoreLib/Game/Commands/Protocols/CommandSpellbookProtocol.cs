@@ -45,7 +45,7 @@ internal class CommandSpellbookProtocol : CommandProtocol {
         }
         var spellName = spellTemplate.m_name;
 
-        var spell = SpellFactory.CreateSpellFromTemplate(spellTemplateIdUint);
+        var spell = SpellFactory.GetSpell(spellTemplateIdUint);
         if (spell == null) {
             InformSenderClient("Invalid spell template ID.");
             return;
@@ -84,7 +84,7 @@ internal class CommandSpellbookProtocol : CommandProtocol {
         }
         var spellName = spellTemplate.m_name;
 
-        var spell = SpellFactory.CreateSpellFromTemplate(spellTemplateIdUint);
+        var spell = SpellFactory.GetSpell(spellTemplateIdUint);
         if (spell == null) {
             InformSenderClient("Invalid spell template ID.");
             return;
@@ -141,7 +141,7 @@ internal class CommandSpellbookProtocol : CommandProtocol {
             return;
         }
 
-        var spell = SpellFactory.CreateSpellFromTemplate(spellTemplateIdUint);
+        var spell = SpellFactory.GetSpell(spellTemplateIdUint);
         if (spell == null) {
             InformSenderClient("Invalid spell template ID.");
             return;
@@ -160,7 +160,7 @@ internal class CommandSpellbookProtocol : CommandProtocol {
             return;
         }
 
-        var spell = SpellFactory.CreateSpellFromTemplate(spellTemplateIdUint);
+        var spell = SpellFactory.GetSpell(spellTemplateIdUint);
         if (spell == null) {
             InformSenderClient("Invalid spell template ID.");
             return;
