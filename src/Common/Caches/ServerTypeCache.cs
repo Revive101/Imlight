@@ -103,6 +103,7 @@ public static class ServerTypeCache {
         74783451 => new ResReduceMana(),
         1486342711 => new ResInitiateCombat(),
         1839222684 => new UnknownSpawnObjectInfo(),
+        511049413 => new WizBangPriorityTemplate(),
         _ => null
     };
 
@@ -847,5 +848,11 @@ public static class ServerTypeCache {
 
     public class UnknownSpawnObjectInfo : SpawnObjectInfo {
         public override uint GetHash() => 1839222684;
+    }
+
+    public class WizBangPriorityTemplate : PropertyClass {
+        public override uint GetHash() => 511049413;
+
+        [Property(2003411223, 31)] public List<ByteString> m_priorityList;
     }
 }
