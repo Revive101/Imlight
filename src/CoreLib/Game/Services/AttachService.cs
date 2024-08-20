@@ -72,6 +72,9 @@ internal class AttachService : MessageService {
                                             $"their player object.");
         }
 
+        var account = GetActiveAccount();
+        var accountFlags = account.GetAccountFlags();
+
         var loginCompleteMsg = new GAME_5_PROTOCOL.MSG_LOGINCOMPLETE() {
             RealmName = "Centaur",
 
@@ -79,10 +82,6 @@ internal class AttachService : MessageService {
             Data = localGameObjectData,
             IsCSR = _account.AuthLevel > AuthLevel.None ? 1 : 0, // todo: Change this back before prod!
 
-            // 0b0   - None
-            // 0b1   - Chat enabled
-            // 0b10  - Filtered chat
-            // ob100 - Open chat
             Permissions = 0b1100_1111,
 
             // Set zone data.

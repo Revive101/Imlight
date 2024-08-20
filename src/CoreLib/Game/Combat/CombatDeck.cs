@@ -76,7 +76,7 @@ internal class CombatDeck {
             var spellTemplateId = spellData.TemplateId;
 
             // Create a new spell from the template id
-            var spell = SpellFactory.CreateSpellFromTemplate(spellTemplateId)
+            var spell = SpellFactory.GetSpell(spellTemplateId)
                 ?? throw new InvalidOperationException("Spell could not be created from template id.");
             spell.m_itemCard = spellData.IsItemCard;
             spell.m_battleCard = spellData.IsBattleCard;

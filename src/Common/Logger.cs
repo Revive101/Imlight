@@ -18,10 +18,14 @@ namespace Imlight.Common;
 
 public class Logger {
     private const byte MaxCallerNameLength = 40;
-    private static readonly string s_path = ConfigurationManager.Settings.LogPath;
-    private static readonly string s_logFormat = ConfigurationManager.Settings.LogFormat;
-    private static readonly string s_logLevel = ConfigurationManager.Settings.LogLevel;
-    private static readonly string s_seqUrl = ConfigurationManager.Settings.SeqSinkUrl;
+    private static readonly string s_path = ConfigurationManager.Settings?.LogPath
+        ?? Path.Combine(Directory.GetCurrentDirectory(), "logs", "log.txt");
+    private static readonly string s_logFormat = ConfigurationManager.Settings?.LogFormat
+        ?? "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}";
+    private static readonly string s_logLevel = ConfigurationManager.Settings?.LogLevel
+        ?? "INFO";
+    private static readonly string s_seqUrl = ConfigurationManager.Settings?.SeqSinkUrl
+        ?? "http://localhost:5341";
 
     public static ILogger Log { get; } = new LoggerConfiguration()
         .MinimumLevel.ControlledBy(new LoggingLevelSwitch { MinimumLevel = GetLogLevel(s_logLevel) })

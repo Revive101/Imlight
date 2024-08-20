@@ -11,7 +11,7 @@ using System.Reflection;
 namespace Imlight.Common.Configuration;
 
 public static class ConfigurationManager {
-    private static readonly string _path = Path.Combine(
+    private static readonly string s_path = Path.Combine(
         Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
         ?? string.Empty, "Config/Imlight.ini");
 
@@ -19,11 +19,11 @@ public static class ConfigurationManager {
     public static ServerSettings Settings => s_settings ?? LoadOrCreateServerSettings();
 
     private static ServerSettings LoadOrCreateServerSettings() {
-        if (!File.Exists(_path)) {
+        if (!File.Exists(s_path)) {
             return CreateDefaultServerSettings();
         }
 
-        var iniData = File.ReadAllText(_path);
+        var iniData = File.ReadAllText(s_path);
         var deserializedData = IniSerializer.Deserialize<ServerSettings>(iniData);
 
         s_settings = deserializedData;
@@ -46,9 +46,16 @@ public static class ConfigurationManager {
             property.SetValue(defaultSettings, value);
         }
 
-        // Serialize the data and write it to the file.
-        var serializedData = IniSerializer.Serialize(defaultSettings);
-        File.WriteAllText(_path, serializedData);
+        // Try to serialize the object and write it to the file.
+        // It's fine if we can't find a file at that path, just keep our default settings.
+        try {
+            var serializedData = IniSerializer.Serialize(defaultSettings);
+            File.WriteAllText(s_path, serializedData);
+        }
+        catch { }
+        finally {
+            s_settings = defaultSettings;
+        }
 
         return defaultSettings;
     }

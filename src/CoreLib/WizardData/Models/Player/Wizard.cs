@@ -83,6 +83,7 @@ public class Wizard : IDisposable {
     [JsonIgnore] private Vector3 _location;
     [JsonIgnore] private Vector3 _orientation;
     [JsonIgnore] private readonly List<ulong> _defaultItems = new() {
+        // warning: do not exceed 16 items! RavenDB has a batch limit of 16 items.
         // Quality assurance hats, 05-10-25-50-100
         1317127, 1317128, 1317125, 1317124, 1317126,
 
@@ -96,9 +97,6 @@ public class Wizard : IDisposable {
         87256,   // Antiquated Wand (starting wand)
         1456120, // Celebration Staff
 
-        180047, // Conumdrum Blade
-        4672,   // Storm Slitherer Gem
-        4757,   // Flawed Opal Band
         126412, // Black Cat Pet
         284071, // Swift Gryphon (PERM)
         126983, // Starter Deck

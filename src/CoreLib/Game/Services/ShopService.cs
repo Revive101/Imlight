@@ -5,11 +5,8 @@
 
 using Akka.Actor;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Imlight.Common;
+using Imlight.Common.IO;
 using Imlight.Common.Caches;
 using Imlight.Common.ObjectProperty;
 using Imlight.Common.ObjectProperty.PropertyReflection;
@@ -88,7 +85,7 @@ internal class ShopService : MessageService {
 
         var goldCost = (int) template.m_baseCost;
         if (template.m_numPrimaryColors != 1 && template.m_numSecondaryColors != 0) {
-            goldCost = (int) Math.Ceiling(goldCost * 1.225f); // Dyed items are more expensive.
+            goldCost = (int) Math.Ceiling(goldCost * 1.225f) + 1; // Dyed items are more expensive.
         }
 
         // Deny transaction if player cannot afford item
@@ -143,17 +140,18 @@ internal class ShopService : MessageService {
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_SHOPSELLREQUEST))]
     private void ReceiveShopSellRequest(WIZARD_12_PROTOCOL.MSG_SHOPSELLREQUEST message) {
         var wizard = GetActiveWizard();
+        var item = wizard.InventoryBehavior.GetItem(message.GlobalID);
 
-        var removedItemSuccess = wizard.InventoryBehavior.RemoveItem(message.GlobalID, out var item);
+        var removedItemSuccess = wizard.RemoveItemFromInventory(message.GlobalID);
         if (!removedItemSuccess) {
             return;
         }
 
         var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
 
-        var gold = (int) (template.m_baseCost * 0.05f);
+        var gold = (int) Math.Ceiling(template.m_baseCost * 0.05f);
         if (template.m_numPrimaryColors != 1 && template.m_numSecondaryColors != 0) {
-            gold = (int) Math.Ceiling(gold * 1.2275f); // This value is slightly higher for some reason.
+            gold = (int) Math.Ceiling(gold * 1.225f); // This value is slightly higher for some reason.
         }
 
         wizard.AddGold(gold);
@@ -215,7 +213,40 @@ internal class ShopService : MessageService {
         var decal2 = (DyeColor) message.decal2;
         DyeMapper.ApplyAllDye(item, texture, decal, decal2);
 
-        // todo: If the item was equipped, tell the client to re-equip it
+        // If the item was equipped, tell the client to re-equip it
+        if (isEquipped) {
+            var slotIndex = wizard.EquipmentBehavior.GetSlotOfItem(item.m_globalID);
+            var slotName = ItemHelper.GetItemSlot(template).ToString();
+
+            // Unequip newly dyed item
+            var unequipMsg = new GAME_5_PROTOCOL.MSG_EQUIPITEM() {
+                ItemID = item.m_globalID,
+                SlotName = slotName,
+                IsEquip = 0
+            };
+            SendToSocket(unequipMsg);
+
+            var publicUnequipMsg = new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICUNEQUIPITEM() {
+                GlobalID = wizard.CharId,
+                IndexToRemove = slotIndex
+            };
+            ZoneBroadcast(publicUnequipMsg, false);
+
+            // Reequip item
+            var equipMsg = new GAME_5_PROTOCOL.MSG_EQUIPITEM() {
+                ItemID = item.m_globalID,
+                SlotName = slotName,
+                IsEquip = 1
+            };
+            SendToSocket(equipMsg);
+
+            var pubItem = ItemHelper.GetPublicItem(item);
+            var data = _itemSerializer.Serialize(pubItem);
+            ZoneBroadcast(new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM() {
+                GlobalID = wizard.CharId,
+                SerializedInfo = data
+            }, false);
+        }
 
         // Confirm success to the client.
         var msgConfirm = new WIZARD_12_PROTOCOL.MSG_DYECONFIRM {
