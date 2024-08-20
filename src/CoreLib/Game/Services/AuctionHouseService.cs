@@ -244,7 +244,7 @@ internal class AuctionHouseService : MessageService {
                 m_templateID = (GID) item.m_templateID,
                 m_buyPrice = (int) template.m_baseCost * 2, // Bazaar sells items at 200% of their value.
                 m_numForSale = 1,
-                m_sellPrice = (int) (template.m_baseCost * 0.5f)
+                m_sellPrice = gold 
             };
             AuctionHouseCollection.AddAuctionHouseEntry(entry);
         }
