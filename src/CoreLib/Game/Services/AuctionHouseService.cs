@@ -230,13 +230,6 @@ internal class AuctionHouseService : MessageService {
         };
         SendToSocket(auctionRspMsg);
 
-        // Remove item from inventory.
-        var removedItemSuccess = wizard.RemoveItemFromInventory(itemGlobalId);
-        if (!removedItemSuccess) {
-            // Log error.
-            return;
-        }
-
         // Update stock and push to database.
         var entry = AuctionHouseCollection.GetAuctionHouseEntry(item.m_templateID);
         if (entry is null) {
@@ -254,6 +247,9 @@ internal class AuctionHouseService : MessageService {
                 AuctionHouseCollection.UpdateAuctionHouseEntry(entry);
             }
         }
+
+        // Remove item from inventory.
+        var removedItemSuccess = wizard.RemoveItemFromInventory(itemGlobalId);
 
         // Inform of update.
         var houseEntryData = _serializer.Serialize(entry);
@@ -285,8 +281,6 @@ internal class AuctionHouseService : MessageService {
             Failure = 0
         };
         SendToSocket(shopSellConfirmMsg);
-        
-        wizard.RemoveItemFromInventory(item.m_globalID);
     }
 
 }
