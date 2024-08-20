@@ -64,13 +64,13 @@ internal class AuctionHouseService : MessageService {
 
     private void SendAuctionHouseContents(ulong npcId, uint key) {
         // Retrieve all Auction House entries.
-        var houseEntryModel = AuctionHouseCollection.GetAllAuctionHouseEntries();
+        var houseEntries = AuctionHouseCollection.GetAllAuctionHouseEntries();
 
-        if (houseEntryModel is null) {
+        if (houseEntries is null) {
             return;
         }
 
-        var houseEntryList = new List<AuctionHouseEntry>(houseEntryModel.AuctionHouseEntries);
+        var houseEntryList = new List<AuctionHouseEntry>(houseEntries);
 
         while (houseEntryList.Count > 0) {
             // Contents sent in blocks of up to 50 entries.
