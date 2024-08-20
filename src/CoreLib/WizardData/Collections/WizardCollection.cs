@@ -249,6 +249,23 @@ public static class WizardCollection {
     }
 
     /// <summary>
+    /// Updates the training points of a wizard.
+    /// </summary>
+    /// <param name="wizard">The wizard object containing the updated training points count.</param>
+    public static void UpdateCharacterTrainingPoints(Wizard wizard) {
+        using var session = s_store.OpenSession();
+
+        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
+            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        if (existingCharacter is null) {
+            return;
+        }
+
+        existingCharacter.MagicSchoolBehavior.TrainingPoints = wizard.MagicSchoolBehavior.TrainingPoints;
+        session.SaveChanges();
+    }
+
+    /// <summary>
     /// Adds a spell to the spellbook of a wizard.
     /// </summary>
     /// <param name="wizard">The wizard to add the spell to.</param>

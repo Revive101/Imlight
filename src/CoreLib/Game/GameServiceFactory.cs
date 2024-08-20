@@ -32,6 +32,7 @@ public class GameServiceFactory : ServiceFactory {
         typeof(ShopService),
         typeof(AuctionHouseService),
         typeof(DynaModService),
+        typeof(TrainService)
     };
 
     public static Props Props() {

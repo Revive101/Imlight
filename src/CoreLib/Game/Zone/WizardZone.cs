@@ -4,7 +4,6 @@
  */
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
 using SharpDX;
@@ -12,15 +11,9 @@ using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Game.Combat;
 using Imlight.Common;
-using Imlight.Common.Caches;
-using Imlight.Common.MessageLayer;
-using Imlight.Common.ObjectProperty;
-using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.CoreLib.Shared.Resources;
-using Imlight.CoreLib.Shared.Character;
 using static Imlight.Common.Caches.TypeCache;
 using Imlight.Common.IO;
-using static Imlight.Common.Caches.ServerTypeCache;
 
 namespace Imlight.CoreLib.Game.Zone;
 
@@ -28,9 +21,19 @@ namespace Imlight.CoreLib.Game.Zone;
 /// The WizardZone is the main actor for a zone. It is responsible for managing all the objects within the zone.
 /// </summary>
 public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
+    /// <summary>
+    /// The maximum number of reserved mobile IDs. These are used for objects that are not players.
+    /// </summary>
     private const ushort RESERVED_MOBILE_ID_MAX = 1000;
+
+    /// <summary>
+    /// The interval at which healing occurs in the zone.
+    /// </summary>
     private const int HEAL_INTERVAL_PER_MINUTE_IN_SECONDS = 5;
 
+    /// <summary>
+    /// A vector that represents a failed location.
+    /// </summary>
     private static readonly Vector4 s_locationFailedGiveaway = new(float.MaxValue, float.MaxValue, float.MaxValue, float.MaxValue);
 
     public string ZoneName { get; }
@@ -119,7 +122,7 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
         return Context.ActorOf(props);
     }
 
-    private void InformZoneEntitesOfPlayerEnter(ZONE_102_PROTOCOL.MSG_ADDPLAYER message) {
+    protected void InformZoneEntitesOfPlayerEnter(ZONE_102_PROTOCOL.MSG_ADDPLAYER message) {
         var msg = new ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST {
             Source = message.Player,
             Messages = new IServerMessage[] { message }
@@ -133,7 +136,7 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
         _playerSupervisorRef.Forward(message);
     }
 
-    private void InformZoneEntitiesOfPlayerExit(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message) {
+    protected void InformZoneEntitiesOfPlayerExit(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message) {
         var msg = new ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST {
             Source = message.Player,
             Messages = new IServerMessage[] { message }
@@ -151,14 +154,14 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
         _playerSupervisorRef.Forward(message);
     }
 
-    private static uint GenerateDynamicZoneId() {
+    protected static uint GenerateDynamicZoneId() {
         // This could be done on the server rather than the zone, but the chances of collision
         // are so low that it's not worth the extra work.
         var random = new Random();
         return (uint) random.Next(0, int.MaxValue);
     }
 
-    private ushort IncremementObjectIdentifiers() {
+    protected ushort IncremementObjectIdentifiers() {
         lock (_mobileIdLock) {
             if (_nonreservedMobileIdCounter + 1 >= ushort.MaxValue) {
                 throw new Exception($"Zone \"{ZoneName}\" reached the maximum mobile ID count!");
@@ -168,7 +171,7 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
         }
     }
 
-    private ushort DecrementObjectIdentifiers() {
+    protected ushort DecrementObjectIdentifiers() {
         lock (_mobileIdLock) {
             if (_nonreservedMobileIdCounter - 1 <= RESERVED_MOBILE_ID_MAX) {
                 _nonreservedMobileIdCounter = RESERVED_MOBILE_ID_MAX + 1;
@@ -179,7 +182,7 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
         }
     }
 
-    private ushort GenerateReservedMobileId() {
+    protected ushort GenerateReservedMobileId() {
         if (_reservedMobileIdCounter + 1 >= RESERVED_MOBILE_ID_MAX) {
             throw new Exception($"Zone \"{ZoneName}\" reached the maximum reserved mobile ID count!");
         }
@@ -187,10 +190,22 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
         return ++_reservedMobileIdCounter;
     }
 
+    protected void CloseZone() {
+        // Inform all other zone entities that the zone is closing.
+        var msg = new ZONE_102_PROTOCOL.MSG_ZONECLOSED();
+        _playerSupervisorRef.Tell(msg);
+        _objectSupervisorRef.Tell(msg);
+        _sigilSupervisorRef.Tell(msg);
+        _duelSupervisorRef.Tell(msg);
+
+        // Stop the zone.
+        Context.Stop(Self);
+    }
+
     #region Handlers
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]
-    private void ReceiveZoneTransfer(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message) {
+    protected virtual void ReceiveZoneTransfer(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message) {
         // Received when a player wants to transfer into this zone.
         // All we want to do is return details about the zone and the actual coordinates of where they want to be located.
         // If the actor accepts, they'll send a ZONE_102_PROTOCOL.MSG_ADDPLAYER message.
@@ -219,7 +234,7 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
-    private void ReceiveAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message) {
+    protected virtual void ReceiveAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message) {
         // Inform all other zone entitites of the new player.
         InformZoneEntitesOfPlayerEnter(message);
 
@@ -232,7 +247,7 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER))]
-    private void ReceiveRemovePlayer(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message) {
+    protected virtual void ReceiveRemovePlayer(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message) {
         // Inform all other zone entities of the player leaving.
         InformZoneEntitiesOfPlayerExit(message);
         DecrementObjectIdentifiers();
@@ -244,16 +259,21 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
             Logger.Args(message.Player.Path.Name, ZoneDisplayName));
     }
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PLAYERCOUNTUPDATE))]
+    protected virtual void ReceivePlayerCountUpdate(ZONE_102_PROTOCOL.MSG_PLAYERCOUNTUPDATE message) {
+        // todo: start the countdown to close this zone if it's empty.
+    }
+
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
-    private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message)
+    protected virtual void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message)
         => _playerSupervisorRef.Forward(message);
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPATH))]
-    private void ReceiveAddPath(ZONE_102_PROTOCOL.MSG_ADDPATH message)
+    protected virtual void ReceiveAddPath(ZONE_102_PROTOCOL.MSG_ADDPATH message)
         => _objectSupervisorRef.Forward(message);
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDOBJECT))]
-    private void ReceiveAddObject(ZONE_102_PROTOCOL.MSG_ADDOBJECT message) {
+    protected virtual void ReceiveAddObject(ZONE_102_PROTOCOL.MSG_ADDOBJECT message) {
         // This message is received on the WizardZone to:
         // a. Give it a unique ID.
         // b. Broadcast its creation to every player in the zone.
@@ -270,7 +290,7 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDCOMBATSIGIL))]
-    private void ReceiveAddCombatSigil(ZONE_102_PROTOCOL.MSG_ADDCOMBATSIGIL message) {
+    protected virtual void ReceiveAddCombatSigil(ZONE_102_PROTOCOL.MSG_ADDCOMBATSIGIL message) {
         // This message is first received on the WizardZone to give it a unqiue ID.
         // Then it is forwarded to the WizardZoneSigilSupervisor to create the actor.
         var id = GenerateReservedMobileId();
@@ -286,7 +306,7 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDCREATURE))]
-    private void ReceiveAddCreature(ZONE_102_PROTOCOL.MSG_ADDCREATURE message) {
+    protected virtual void ReceiveAddCreature(ZONE_102_PROTOCOL.MSG_ADDCREATURE message) {
         // This message is received on the WizardZone to:
         // a. Give it a unique ID.
         // b. Broadcast its creation to every player in the zone.
@@ -298,7 +318,7 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDVOLUME))]
-    private void ReceiveAddVolume(ZONE_102_PROTOCOL.MSG_ADDVOLUME message) {
+    protected virtual void ReceiveAddVolume(ZONE_102_PROTOCOL.MSG_ADDVOLUME message) {
         var id = GenerateReservedMobileId();
         message.CoreObject.m_nMobileID = id;
         message.CoreObject.m_debugName = message.Volume.m_volumeName;
@@ -309,15 +329,15 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDTRIGGER))]
-    private void ReceiveAddTrigger(ZONE_102_PROTOCOL.MSG_ADDTRIGGER message)
+    protected virtual void ReceiveAddTrigger(ZONE_102_PROTOCOL.MSG_ADDTRIGGER message)
         => _triggerSupervisorRef.Forward(message);
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_POSTEVENT))]
-    private void ReceivePostEvent(ZONE_102_PROTOCOL.MSG_POSTEVENT message)
+    protected virtual void ReceivePostEvent(ZONE_102_PROTOCOL.MSG_POSTEVENT message)
         => _triggerSupervisorRef.Forward(message);
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_FISHINTERACTION))]
-    private void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_FISHINTERACTION message) {
+    protected virtual void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_FISHINTERACTION message) {
         // Broadcast to each zone object that a player is fishing for proximity reactions.
         var msgBroadcast = new ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST {
             Source = Sender,
@@ -335,24 +355,24 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL))]
-    private void ReceiveRequestCombatSigil(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL message)
+    protected virtual void ReceiveRequestCombatSigil(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL message)
         => _sigilSupervisorRef.Forward(message);
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_STARTDUEL))]
-    private void ReceiveStartDuel(COMBAT_106_PROTOCOL.MSG_STARTDUEL message)
+    protected virtual void ReceiveStartDuel(COMBAT_106_PROTOCOL.MSG_STARTDUEL message)
         => _duelSupervisorRef.Forward(message);
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT))]
-    private void ReceiveObjectQuery(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT message)
+    protected virtual void ReceiveObjectQuery(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT message)
         => _objectSupervisorRef.Forward(message);
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_HEALTICK))]
-    private void ReceiveHealTick(ZONE_102_PROTOCOL.MSG_HEALTICK message) {
+    protected virtual void ReceiveHealTick(ZONE_102_PROTOCOL.MSG_HEALTICK message) {
         _playerSupervisorRef.Forward(message);
     }
 
     [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_ADDDYNAMOD))]
-    private void ReceiveAddDynaMod(CHARACTER_103_PROTOCOL.MSG_ADDDYNAMOD message) {
+    protected virtual void ReceiveAddDynaMod(CHARACTER_103_PROTOCOL.MSG_ADDDYNAMOD message) {
         // Inform all zone objects of this state change.
         _objectSupervisorRef.Tell(message);
         _sigilSupervisorRef.Tell(message);
@@ -360,7 +380,7 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
 
     #endregion
 
-    private Vector4 GetLocationFromString(ByteString location) {
+    protected Vector4 GetLocationFromString(ByteString location) {
         var actualLocation = Vector4.Zero;
 
         // Try to parse the location as a vector: does it have a non-zero value?

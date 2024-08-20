@@ -10,6 +10,7 @@ using Imlight.Common.IO;
 using Imlight.Common.MessageLayer;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Game.Zone;
+using Imlight.CoreLib.Game.Zone.ServiceOptions;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Models.Player;
 using SharpDX;
@@ -31,6 +32,8 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public string DestinationZone;
         public string DestinationLocation;
         public bool SendToClient = true;
+        public bool IsPrivate = false;
+        public IActorRef Owner;
     }
 
     public class MSG_ZONETRANSFERRSP : IServerMessage {
@@ -181,6 +184,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte ServiceID { get; } = 102;
 
         public ulong GlobalID;
+        public ushort MobileID;
     }
 
     public class MSG_QUERYZONEOBJECTRSP : IServerMessage {
