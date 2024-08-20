@@ -181,6 +181,10 @@ internal class MoveService : MessageService, IWithTimers {
     }
 
     private void BroadcastClientMove(GAME_5_PROTOCOL.MSG_CLIENTMOVE message) {
+        if (_activeCoreObject is null) {
+            return;
+        }
+
         var serverMoveMsg = new GAME_5_PROTOCOL.MSG_SERVERMOVE {
             LocationX = message.LocationX,
             LocationY = message.LocationY,
@@ -192,6 +196,10 @@ internal class MoveService : MessageService, IWithTimers {
     }
 
     private void BroadcastClientMoveState(GAME_5_PROTOCOL.MSG_CLIENTMOVESTATE message) {
+        if (_activeCoreObject is null) {
+            return;
+        }
+
         var stateMsg = new GAME_5_PROTOCOL.MSG_MOVESTATE {
             NewState = message.NewState,
             GlobalID = _activeCoreObject.m_globalID
