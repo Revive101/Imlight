@@ -6,12 +6,14 @@
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.CoreLib.Game.WizBang;
+using System;
 using System.Collections.Generic;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.ServiceOptions;
 
 public abstract class ServiceOption {
+    public abstract string ServiceName { get; protected set;}
     public abstract string WizBang { get; set; }
     public abstract List<ServiceOptionBase> ServiceOptionBases { get; set; }
     public virtual string NpcIconOverride { get; protected set; }
@@ -29,5 +31,5 @@ public abstract class ServiceOption {
         this.ActiveGameObject = activeGameObject;
     }
 
-    protected abstract void OnPlayerInteraction(IActorRef suspect);
+    public abstract void OnPlayerInteraction(IActorRef suspect, int serviceIndex);
 }

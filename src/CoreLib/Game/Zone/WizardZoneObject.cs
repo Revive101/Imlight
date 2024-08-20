@@ -139,14 +139,6 @@ public class WizardZoneObject : ReceiveProtocolDispatcher, IClientTypeProvider<W
     /// <summary>
     /// Called when a player interactions (by pressing the interact key) with this object.
     /// </summary>
-    /// <param name="suspect">The actor reference of the player.</param>
-    protected virtual void OnPlayerInteraction(IActorRef suspect) {
-
-    }
-
-    /// <summary>
-    /// Called when a player interactions (by pressing the interact key) with this object.
-    /// </summary>
     /// <param name="message">The message containing the interaction data.</param>
     /// <param name="suspect">The actor reference of the player.</param>
     protected virtual void OnPlayerInteraction(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC message, IActorRef suspect) {

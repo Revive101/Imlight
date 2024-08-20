@@ -10,6 +10,7 @@ using Imlight.Common.IO;
 using Imlight.Common.MessageLayer;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Game.Zone;
+using Imlight.CoreLib.Game.Zone.ServiceOptions;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Models.Player;
 using SharpDX;
@@ -278,5 +279,12 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public ByteString EventName;
         public IActorRef SenderActor;
         public CoreObject? SenderGameObject;
+    }
+
+    public class MSG_ADDSERVICEOPTION : IServerMessage {
+        public byte MessageOrder { get; } = 32;
+        public byte ServiceID { get; } = 102;
+
+        public ServiceOption ServiceOption;
     }
 }

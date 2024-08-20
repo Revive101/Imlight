@@ -10,6 +10,7 @@ using Imlight.CoreLib.Shared.Resources;
 using System.Collections.Generic;
 using static Imlight.Common.Caches.TypeCache;
 using static Imlight.Common.Caches.ServerTypeCache;
+using System.Linq;
 
 namespace Imlight.CoreLib.Game.WizBang;
 
@@ -51,13 +52,25 @@ internal class WizBangPriority : RootSingleResourceSingleton<WizBangs>, IMemoryS
         return null;
     }
 
+    /// <summary>
+    /// Gets a list of wiz bangs sorted by priority.
+    /// </summary>
+    /// <param name="wizBangs">The list of wiz bangs to sort.</param>
+    /// <returns>A new list of wiz bangs sorted by priority.</returns>
     public static List<string> GetPrioritySortedWizBangs(List<string> wizBangs) {
         if (s_wizBangPriority is null) {
             Logger.Error("WizBangPriority is null");
             return null;
         }
 
-        return s_wizBangPriority.m_priorityList.Where(wizBangs.Contains);
+        var newList = new List<string>();
+        foreach (var wizBang in s_wizBangPriority.m_priorityList) {
+            if (wizBangs.Contains(wizBang)) {
+                newList.Add(wizBang);
+            }
+        }
+
+        return newList;
     }
 
     public void DisposeStream() => base.Stream.Dispose();
