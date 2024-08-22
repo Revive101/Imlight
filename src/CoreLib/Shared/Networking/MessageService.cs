@@ -12,6 +12,7 @@ using Imlight.CoreLib.Game.Services;
 using Imlight.CoreLib.Game.Zone;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models.Player;
 
@@ -133,6 +134,9 @@ public abstract class MessageService : ReceiveProtocolDispatcher {
     /// </summary>
     protected void CloseSession() {
         SessionActor.ActorRef.Tell("Close");
+
+        // Remove the player from the online collection.
+        OnlinePlayerCollection.RemoveOnlinePlayer(SessionActor.SessionID);
     }
 
     /// <summary>

@@ -9,6 +9,8 @@ using Imlight.Common.Caches;
 using Imlight.CoreLib.AntiAmbrose;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.WizardData.Collections;
+using Imlight.CoreLib.WizardData.Models.Misc;
 using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Login.Services;
@@ -16,9 +18,8 @@ namespace Imlight.CoreLib.Login.Services;
 internal class AuthenticatorService : MessageService {
     public AuthenticatorService(SessionActor parentActor) : base(parentActor) { }
 
-    protected static Props Props(SessionActor parentActor) {
-        return Akka.Actor.Props.Create(() => new AuthenticatorService(parentActor));
-    }
+    protected static Props Props(SessionActor parentActor)
+        => Akka.Actor.Props.Create(() => new AuthenticatorService(parentActor));
 
     #region Handlers
 
@@ -127,6 +128,21 @@ internal class AuthenticatorService : MessageService {
                 Status = serverEnqueueResult.Status,
             };
             SendToSocket(clientResponse);
+
+            // Add the player to the online player collection.
+            AddToOnlineCollection(account);
         }
+    }
+
+    private void AddToOnlineCollection(Account account) {
+        // Add the player to the online player collection.
+        var onlinePlayer = new OnlinePlayer {
+            SessionId = SessionActor.SessionID,
+            AccountId = account.AccountId,
+            CurrentRealm = "LoginServer",
+            ActorPath = SessionActor.ActorRef.Path.ToString(),
+        };
+
+        OnlinePlayerCollection.AddOnlinePlayer(onlinePlayer);
     }
 }
