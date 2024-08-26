@@ -17,7 +17,8 @@ public static class DragonDatabaseManager {
     private const ushort EmbeddedDatabasePort = 8080;
 
     private static readonly string _databaseName = "WorldData";
-    private static readonly string _collectionName = "NpcInventory";
+    private static readonly string _npcInventoryCollection = "NpcInventory";
+    private static readonly string _npcSpellInventoryCollection = "NpcSpellInventory";
 
     private static IDocumentStore? _store;
     public static IDocumentStore? Store => _store ??= _isInEmbeddedMode ? CreateEmbeddedStore() : CreateRemoteStore();
@@ -100,7 +101,7 @@ public static class DragonDatabaseManager {
 
         session.Store(npcInventory);
         var metadata = session.Advanced.GetMetadataFor(npcInventory);
-        metadata[Raven.Client.Constants.Documents.Metadata.Collection] = _collectionName;
+        metadata[Raven.Client.Constants.Documents.Metadata.Collection] = _npcInventoryCollection;
 
         session.SaveChanges();
     }
@@ -109,7 +110,7 @@ public static class DragonDatabaseManager {
         using var session = Store!.OpenSession();
 
         // Check if the NPCInventory already exists
-        var existingNpcInventory = session.Query<NPCInventory>(collectionName: _collectionName)
+        var existingNpcInventory = session.Query<NPCInventory>(collectionName: _npcInventoryCollection)
             .Where(x => x.TemplateID == npcInventory.TemplateID)
             .FirstOrDefault();
 
@@ -127,10 +128,48 @@ public static class DragonDatabaseManager {
     public static bool TryGetNpcInventory(ulong templateID, out NPCInventory ?npcInventory) {
         using var session = Store!.OpenSession();
 
-        npcInventory = session.Query<NPCInventory>(collectionName: _collectionName)
+        npcInventory = session.Query<NPCInventory>(collectionName: _npcInventoryCollection)
             .Where(x => x.TemplateID == templateID)
             .FirstOrDefault();
 
         return npcInventory != null;
+    }
+
+    public static void AddNpcSpellInventory(NPCSpellInventory npcSpellInventory) {
+        using var session = Store!.OpenSession();
+
+        session.Store(npcSpellInventory);
+        var metadata = session.Advanced.GetMetadataFor(npcSpellInventory);
+        metadata[Raven.Client.Constants.Documents.Metadata.Collection] = _npcSpellInventoryCollection;
+
+        session.SaveChanges();
+    }
+
+    public static bool UpdateNpcSpellInventory(NPCSpellInventory npcSpellInventory) {
+        using var session = Store!.OpenSession();
+
+        var existingNpcSpellInventory = session.Query<NPCSpellInventory>(collectionName: _npcSpellInventoryCollection)
+            .Where(x => x.TemplateID == npcSpellInventory.TemplateID)
+            .FirstOrDefault();
+
+        if (existingNpcSpellInventory != null) {
+            existingNpcSpellInventory.Spells = npcSpellInventory.Spells;
+        }
+        else {
+            return false;
+        }
+
+        session.SaveChanges();
+        return true;
+    }
+
+    public static bool TryGetNpcSpellInventory(ulong templateID, out NPCSpellInventory ?npcSpellInventory) {
+        using var session = Store!.OpenSession();
+
+        npcSpellInventory = session.Query<NPCSpellInventory>(collectionName: _npcSpellInventoryCollection)
+            .Where(x => x.TemplateID == templateID)
+            .FirstOrDefault();
+
+        return npcSpellInventory != null;
     }
 }
