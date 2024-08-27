@@ -187,6 +187,10 @@ public class WizardZoneObjectSupervisor : ReceiveProtocolDispatcher {
             }
         }
 
+        if (NpcSpellInventoryCollection.TryGetNpcInventory(template.m_templateID, out var spellInventory)) {
+            options.Add(new ServiceOptionTrain(obj, spellInventory.Spells));
+        }
+
         // Check to see if the NPC is a dye shop.
         if (npcName.Contains(DYE_SHOP_GIVEAWAY)) {
             options.Add(new ServiceOptionDyes(obj));
