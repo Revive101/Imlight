@@ -50,7 +50,7 @@ internal class TrainService : MessageService {
         var spellTemplate = (SpellTemplate) CoreObjectFactory.GetCoreTemplate(spellEntry.TemplateID);
         var spellCost = wizard.MagicSchoolBehavior.MagicSchool.ToString() == spellTemplate.m_sMagicSchoolName ? 0 : 1;
 
-        var spell = SpellFactory.CreateSpellFromTemplate((uint) spellEntry.TemplateID);
+        var spell = SpellFactory.GetSpell((uint) spellEntry.TemplateID);
         wizard.LearnSpell(spell);
 
         var addSpellMsg = new WIZARD_12_PROTOCOL.MSG_ADDSPELLTOBOOK() {
