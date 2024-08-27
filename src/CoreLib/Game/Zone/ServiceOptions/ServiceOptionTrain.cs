@@ -27,21 +27,21 @@ public class ServiceOptionTrain : ServiceOption {
         foreach (var spell in SpellInventory) {
             var spellTemplate = (SpellTemplate) CoreObjectFactory.GetCoreTemplate(spell.TemplateID);
 
-            var spellOption = new WizTrainingOption();
+            var spellOption = new WizTrainingOption {
+                m_serviceIndex = 0,
+                m_forceInteract = false,
+                m_iconKey = "Training",
+                m_serviceName = "WizTrainingService",
 
-            spellOption.m_serviceIndex = 0;
-            spellOption.m_forceInteract = false;
-            spellOption.m_iconKey = "Training";
-            spellOption.m_serviceName = "WizTrainingService";
+                m_spellName = spellTemplate.m_name,
+                m_displayKey = spellTemplate.m_displayName,
+                m_requiredLevel = spell.Level,
+                m_trainingIndex = npcSpellInventory.IndexOf(spell),
+                m_trainingCost = spellTemplate.m_trainingCost,
 
-            spellOption.m_spellName = spellTemplate.m_name;
-            spellOption.m_displayKey = spellTemplate.m_displayName;
-            spellOption.m_requiredLevel = spell.Level;
-            spellOption.m_trainingIndex = npcSpellInventory.IndexOf(spell);
-            spellOption.m_trainingCost = 1;
-
-            spellOption.m_bCanTrain = false;
-            spellOption.m_failedRequirement = null;
+                m_bCanTrain = false,
+                m_failedRequirement = null
+            };
 
             if (spell.RequiredSpellID != 0) {
                 var reqSpellTemplate = (SpellTemplate) CoreObjectFactory.GetCoreTemplate(spell.RequiredSpellID);
