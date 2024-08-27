@@ -73,8 +73,14 @@ public static class Program {
                 case "wad":
                     CommandWad();
                     break;
-                case "npc":
+                case "vendor":
                     CommandNpc();
+                    break;
+                case "trainer":
+                    CommandTrainer();
+                    break;
+                case "creature":
+
                     break;
                 case "exit":
                     return;
@@ -88,7 +94,9 @@ public static class Program {
         AnsiConsole.MarkupLine("Commands:");
         AnsiConsole.MarkupLine("\thelp - Display this help message.");
         AnsiConsole.MarkupLine("\twad - Download and display possible shopkeeping NPCs within a zone WAD.");
-        AnsiConsole.MarkupLine("\tnpc - Select an NPC template ID to create/modify an inventory for them.");
+        AnsiConsole.MarkupLine("\tvendor - Select an NPC template ID to create/modify an inventory for them.");
+        AnsiConsole.MarkupLine("\ttrainer - Select an NPC template ID to create/modify a spell inventory for them.");
+        //AnsiConsole.MarkupLine("\tcreature - Select a mob/boss/enemy template ID to create/modify a spellbook for them.");
         AnsiConsole.MarkupLine("\texit - Exit the program.");
     }
 
@@ -179,6 +187,44 @@ public static class Program {
         UpdateInventoryDatabase(templateId, inventory);
     }
 
+    private static void CommandTrainer() {
+        List<NPCSpellEntry> spellInventory = new List<NPCSpellEntry>();
+
+        AnsiConsole.Markup("\nInput the TemplateID of the trainer: ");
+        var templateId = Convert.ToUInt64(Console.ReadLine());
+
+        var getInventorySuccess = DragonDatabaseManager.TryGetNpcSpellInventory(templateId, out var existingInventory);
+        if (getInventorySuccess) {
+            AnsiConsole.MarkupLine($"Spell inventory for NPC with TemplateID {templateId} already exists. Current inventory:");
+
+            AnsiConsole.MarkupLine("\tidx | template ID");
+            for (int i = 0; i < existingInventory.Spells.Count; i++) {
+                AnsiConsole.MarkupLine($"\t[bold]  {i + 1} | {existingInventory.Spells[i].TemplateID}[/]");
+                AnsiConsole.MarkupLine($"\t\t[bold]Required Spell ID: {existingInventory.Spells[i].RequiredSpellID}[/]");
+                AnsiConsole.MarkupLine($"\t\t[bold]Required Level: {existingInventory.Spells[i].Level}[/]");
+            }
+
+            AnsiConsole.Markup($"Do you want to modify, overwrite, or skip this inventory? (mod/ow/skip): ");
+            var input = Console.ReadLine();
+
+            if (input == "skip") {
+                return;
+            }
+
+            if (input == "mod") {
+                spellInventory = ModifySpellInventory(existingInventory);
+            }
+            else {
+                spellInventory = CreateNewSpellInventory(templateId);
+            }
+        }
+        else {
+            spellInventory = CreateNewSpellInventory(templateId);
+        }
+
+        UpdateSpellInventoryDatabase(templateId, spellInventory);
+    }
+
     private static List<GID> CreateNewInventory(ulong templateId) {
         List<GID> inventory = new List<GID>();
 
@@ -217,7 +263,7 @@ public static class Program {
 
     private static List<GID> ModifyInventory(List<GID> inventory) {
         while (true) {
-            AnsiConsole.Markup("Use 'remove <idx>' to remove item, 'add <ID>' to add item, or type 'y' to finalize: ");
+            AnsiConsole.Markup("\nUse 'add <ID>' to add item, 'remove <idx>' to remove item, or type 'y' to finalize: ");
             var input = Console.ReadLine();
 
             if (input == "y") return inventory;
@@ -227,26 +273,171 @@ public static class Program {
 
                 if (!ulong.TryParse(input, out var itemID)) {
                     AnsiConsole.MarkupLine("Invalid input. Please input a valid TemplateID.");
+                    continue;
                 }
-                else {
-                    inventory.Add((GID) itemID);
-                    AnsiConsole.MarkupLine($"Added item {itemID}.");
-                }
+
+                inventory.Add((GID) itemID);
+                AnsiConsole.MarkupLine($"Added item {itemID}.");
             } else {
                 input = input.Replace("remove ", "");
 
-                if (!ulong.TryParse(input, out var index)) {
+                if (!int.TryParse(input, out var index)) {
                     AnsiConsole.MarkupLine("Invalid input. Please input a valid index.");
+                    continue;
                 }
-                else {
-                    var val = inventory[(int) index - 1];
-                    inventory.RemoveAt((int) index - 1);
-                    AnsiConsole.MarkupLine($"Removed item {Convert.ToUInt64(val)}. New inventory:");
+                if (index - 1 >= inventory.Count()) {
+                    AnsiConsole.MarkupLine("Invalid input. Index out of range.");
+                    continue;
+                }
 
-                    AnsiConsole.MarkupLine("      idx | template ID");
-                    for (int i = 0; i < inventory.Count; i++) {
-                        AnsiConsole.MarkupLine($"\t[bold]{i + 1} | {Convert.ToUInt64(inventory[i])}[/]");
-                    }
+                var val = inventory[(int) index - 1];
+                inventory.RemoveAt((int) index - 1);
+                AnsiConsole.MarkupLine($"Removed item {Convert.ToUInt64(val)}. New inventory:");
+
+                AnsiConsole.MarkupLine("      idx | template ID");
+                for (int i = 0; i < inventory.Count; i++) {
+                    AnsiConsole.MarkupLine($"\t[bold]{i + 1} | {Convert.ToUInt64(inventory[i])}[/]");
+                }
+            }
+        }
+    }
+
+    private static List<NPCSpellEntry> CreateNewSpellInventory(ulong templateId) {
+        List<NPCSpellEntry> inventory = new List<NPCSpellEntry>();
+
+        while (true) {
+            AnsiConsole.Markup("\nType 'undo' to remove the last item, or type 'y' to finalize: ");
+            AnsiConsole.Markup("\nInput the TemplateID of a spell to add to the trainer: ");
+            var input = Console.ReadLine();
+
+            if (input == "y") break;
+
+            if (input == "undo") {
+                inventory.RemoveAt(inventory.Count - 1);
+                AnsiConsole.MarkupLine($"Removed previous spell.");
+                continue;
+            }
+
+            if (!ulong.TryParse(input, out var spellID)) {
+                AnsiConsole.MarkupLine("Invalid input. Please input a valid TemplateID.");
+                continue;
+            }
+
+            var newEntry = CreateNewSpellEntry(spellID);
+            inventory.Add(newEntry);
+        }
+
+        return inventory;
+    }
+
+    private static NPCSpellEntry CreateNewSpellEntry(ulong templateID) {
+        NPCSpellEntry entry = new NPCSpellEntry();
+        entry.TemplateID = templateID;
+
+        AnsiConsole.Markup("== Input the TemplateID of the required spell to learn this spell (0 if none): ");
+        var input = Console.ReadLine();
+        if (!ulong.TryParse(input, out var reqSpellID)) {
+            AnsiConsole.MarkupLine("Invalid input. Please input a valid integer.");
+            entry.RequiredSpellID = 0;
+        }
+        else {
+            entry.RequiredSpellID = reqSpellID;
+        }
+
+        AnsiConsole.Markup("== Input the level required to learn this spell: ");
+        input = Console.ReadLine();
+        if (!int.TryParse(input, out var levelReq)) {
+            AnsiConsole.MarkupLine("Invalid input. Please input a valid integer.");
+            entry.Level = -1;
+        }
+        else {
+            entry.Level = levelReq;
+        }
+
+        return entry;
+    }
+
+    private static List<NPCSpellEntry> ModifySpellInventory(NPCSpellInventory spellInventory) {
+        while (true) {
+            AnsiConsole.Markup("\nUse 'add <ID>' to add spell, 'mod <idx>' to modify a spell, " +
+                "'remove <idx>' to remove spell, 'swap <idx> <idx>' to swap spell position, or type 'y' to finalize: ");
+            var input = Console.ReadLine();
+
+            if (input == "y") return spellInventory.Spells;
+
+            if (input.Contains("add")) {
+                input = input.Replace("add ", "");
+
+                if (!ulong.TryParse(input, out var spellID)) {
+                    AnsiConsole.MarkupLine("Invalid input. Please input a valid TemplateID.");
+                    continue;
+                }
+
+                var newSpell = CreateNewSpellEntry(spellID);
+                spellInventory.Spells.Add(newSpell);
+                continue;
+            }
+
+            if (input.Contains("mod")) {
+                input = input.Replace("mod ", "");
+
+                if (!int.TryParse(input, out var index)) {
+                    AnsiConsole.MarkupLine("Invalid input. Please input a valid index.");
+                    continue;
+                }
+                if (index - 1 >= spellInventory.Spells.Count()) {
+                    AnsiConsole.MarkupLine("Invalid input. Index out of range.");
+                    continue;
+                }
+
+                spellInventory.Spells[index - 1] = CreateNewSpellEntry(spellInventory.Spells[index - 1].TemplateID);
+                continue;
+            }
+
+            if (input.Contains("swap")) {
+                input = input.Replace("swap ", "");
+                var split = input.Split(' ');
+
+                if (split.Length != 2) {
+                    AnsiConsole.MarkupLine("Invalid input. Please input two valid indices.");
+                    continue;
+                }
+                if (!int.TryParse(split[0], out var index1) || !int.TryParse(split[1], out var index2)) {
+                    AnsiConsole.MarkupLine("Invalid input. Please input two valid indices.");
+                    continue;
+                }
+                if (index1 - 1 >= spellInventory.Spells.Count() || index2 - 1 >= spellInventory.Spells.Count()) {
+                    AnsiConsole.MarkupLine("Invalid input. Index out of range.");
+                    continue;
+                }
+
+                var temp = spellInventory.Spells[index1 - 1];
+                spellInventory.Spells[index1 - 1] = spellInventory.Spells[index2 - 1];
+                spellInventory.Spells[index2 - 1] = temp;
+                continue;
+            }
+
+            if (input.Contains("remove")) {
+                input = input.Replace("remove ", "");
+
+                if (!int.TryParse(input, out var index)) {
+                    AnsiConsole.MarkupLine("Invalid input. Please input a valid index.");
+                    continue;
+                }
+                if (index >= spellInventory.Spells.Count()) {
+                    AnsiConsole.MarkupLine("Invalid input. Index out of range.");
+                    continue;
+                }
+
+                var val = spellInventory.Spells[(int) index - 1];
+                spellInventory.Spells.RemoveAt((int) index - 1);
+                AnsiConsole.MarkupLine($"Removed item {Convert.ToUInt64(val)}. New spell inventory:");
+
+                AnsiConsole.MarkupLine("\tidx | template ID");
+                for (int i = 0; i < spellInventory.Spells.Count; i++) {
+                    AnsiConsole.MarkupLine($"\t[bold]  {i + 1} | {spellInventory.Spells[i].TemplateID}[/]");
+                    AnsiConsole.MarkupLine($"\t\t[bold]Required Spell ID: {spellInventory.Spells[i].RequiredSpellID}[/]");
+                    AnsiConsole.MarkupLine($"\t\t[bold]Required Level: {spellInventory.Spells[i].Level}[/]");
                 }
             }
         }
@@ -265,6 +456,24 @@ public static class Program {
         }
         else {
             DragonDatabaseManager.AddNpcInventory(finalInventory);
+        }
+
+        AnsiConsole.MarkupLine("Database updated successfully!");
+    }
+
+    private static void UpdateSpellInventoryDatabase(ulong templateId, List<NPCSpellEntry> inventory) {
+        var finalInventory = new NPCSpellInventory {
+            TemplateID = templateId,
+            Spells = inventory
+        };
+
+        var getInventorySuccess = DragonDatabaseManager.TryGetNpcSpellInventory(templateId, out var existingInventory);
+
+        if (getInventorySuccess) {
+            DragonDatabaseManager.UpdateNpcSpellInventory(finalInventory);
+        }
+        else {
+            DragonDatabaseManager.AddNpcSpellInventory(finalInventory);
         }
 
         AnsiConsole.MarkupLine("Database updated successfully!");

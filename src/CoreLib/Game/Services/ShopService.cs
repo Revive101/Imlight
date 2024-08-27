@@ -6,11 +6,9 @@
 using Akka.Actor;
 using System;
 using Imlight.Common;
-using Imlight.Common.IO;
 using Imlight.Common.Caches;
 using Imlight.Common.ObjectProperty;
 using Imlight.Common.ObjectProperty.PropertyReflection;
-using Imlight.CoreLib.Game.Zone;
 using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.Shared.Networking;
@@ -18,6 +16,9 @@ using Imlight.CoreLib.WizardData.Models.Misc;
 using Imlight.CoreLib.WizardData.Models.World;
 using Imlight.CoreLib.WizardData.Models.Player;
 using static Imlight.Common.Caches.TypeCache;
+using Imlight.CoreLib.Game.Zone;
+using System.Linq;
+using Imlight.CoreLib.Game.Zone.ServiceOptions;
 
 namespace Imlight.CoreLib.Game.Services;
 internal class ShopService : MessageService {
@@ -38,10 +39,12 @@ internal class ShopService : MessageService {
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_SHOPBUYREQUEST))]
     private void ReceiveShopBuyRequest(WIZARD_12_PROTOCOL.MSG_SHOPBUYREQUEST message) {
         var wizard = GetActiveWizard();
-        var npc = GetZoneObject(message.npcGlobalID);
+        var interactedObject = GetZoneObject(message.npcGlobalID);
 
         // Check to see if the NPC exists in the zone.
-        if (npc == null) {
+        if (interactedObject == null
+            || interactedObject is not WizardZoneNpc npc
+            || !npc.ServiceOptions.Any(x => x is ServiceOptionVendor)) {
             Logger.Warning("Failed to find NPC {0} in zone for shop purchase", Logger.Args(message.npcGlobalID));
 
             var shopDenyMsg = new WIZARD_12_PROTOCOL.MSG_SHOPBUYCONFIRM {
@@ -54,10 +57,10 @@ internal class ShopService : MessageService {
         }
 
         var itemTemplateID = message.ShopID - ShopOffset;
-        var npcObject = (WizardZoneNpc) npc;
 
         // Check to see if the shopkeeper actually sells the item.
-        if (!npcObject.Inventory.Contains((GID) itemTemplateID)) {
+        if (!npc.ServiceOptions.Any(option => option is ServiceOptionVendor vendor
+                                           && vendor.HasShopItem((GID) itemTemplateID))) {
             var shopDenyMsg = new WIZARD_12_PROTOCOL.MSG_SHOPBUYCONFIRM {
                 Failure = 1,
                 WebFailure = 0,
@@ -263,6 +266,15 @@ internal class ShopService : MessageService {
     private void ReceiveDoneShopping(WIZARD_12_PROTOCOL.MSG_DONESHOPPING message) {
         // A wizard has complete shopping and is leaving the shop.
         var wizard = GetActiveWizard();
+
+        // Reenable player movement
+        var enableMovementStateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
+            GameObjectID = wizard.CharId,
+            State = 1685237158,
+            Data = "",
+            IgnoreIfCurrentStateIsOff = 0
+        };
+        SendToSocket(enableMovementStateMsg);
 
         var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG() {
             GameObjectID = wizard.CharId,
