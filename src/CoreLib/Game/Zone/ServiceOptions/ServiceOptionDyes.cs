@@ -24,7 +24,8 @@ public class ServiceOptionDyes : ServiceOption {
         }
     };
 
-    public ServiceOptionDyes(CoreObject ActiveGameObject) : base(ActiveGameObject) { }
+    public ServiceOptionDyes(CoreObject ActiveGameObject) : base(ActiveGameObject)
+        => RecalculateOnProximityEnter = false;
 
     public override void OnPlayerInteraction(IActorRef suspect, int serviceIndex) {
         var dyeShopOpen = new WIZARD_12_PROTOCOL.MSG_DYESHOPOPEN() {
@@ -34,4 +35,7 @@ public class ServiceOptionDyes : ServiceOption {
 
         suspect.Tell(dyeShopOpen);
     }
+
+    public override List<ServiceOptionBase> Recalculate(IActorRef suspect)
+        => ServiceOptionBases;
 }

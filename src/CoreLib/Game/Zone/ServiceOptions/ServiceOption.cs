@@ -19,6 +19,7 @@ public abstract class ServiceOption {
     public virtual string NpcIconOverride { get; protected set; }
     public virtual string NpcNameKeyOverride { get; protected set; }
     public virtual string NpcTextKeyOverride { get; protected set; }
+    public virtual bool RecalculateOnProximityEnter { get; protected set; }
     protected CoreObject ActiveGameObject { get; private set; }
 
     // ctor
@@ -32,4 +33,5 @@ public abstract class ServiceOption {
     }
 
     public abstract void OnPlayerInteraction(IActorRef suspect, int serviceIndex);
+    public abstract List<ServiceOptionBase> Recalculate(IActorRef suspect);
 }

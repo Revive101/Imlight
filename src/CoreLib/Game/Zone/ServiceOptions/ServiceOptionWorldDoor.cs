@@ -32,7 +32,8 @@ public class ServiceOptionWorldDoor : ServiceOption {
             .OnBehaviors(SerializerOptions.Behaviors.None)
             .OnPropertyMask((SerializerOptions.PropertyFlags) 4);
 
-    public ServiceOptionWorldDoor(CoreObject ActiveGameObject) : base(ActiveGameObject) { }
+    public ServiceOptionWorldDoor(CoreObject ActiveGameObject) : base(ActiveGameObject)
+        => RecalculateOnProximityEnter = false;
 
     public override void OnPlayerInteraction(IActorRef suspect, int serviceIndex) {
         var teleportDoorOptions = new WorldTeleportOptions {
@@ -52,4 +53,7 @@ public class ServiceOptionWorldDoor : ServiceOption {
         };
         suspect.Tell(teleportDoorOpen);
     }
+
+    public override List<ServiceOptionBase> Recalculate(IActorRef suspect)
+        => ServiceOptionBases;
 }
