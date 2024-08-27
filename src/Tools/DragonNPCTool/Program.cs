@@ -200,10 +200,7 @@ public static class Program {
             AnsiConsole.MarkupLine("\tidx | template ID");
             for (int i = 0; i < existingInventory.Spells.Count; i++) {
                 AnsiConsole.MarkupLine($"\t[bold]  {i + 1} | {existingInventory.Spells[i].TemplateID}[/]");
-                AnsiConsole.MarkupLine($"\t\t[bold]Name: {existingInventory.Spells[i].SpellName}[/]");
-                AnsiConsole.MarkupLine($"\t\t[bold]Display Key: {existingInventory.Spells[i].DisplayKey}[/]");
-                AnsiConsole.MarkupLine($"\t\t[bold]Required Spell: {existingInventory.Spells[i].RequiredSpell}[/]");
-                AnsiConsole.MarkupLine($"\t\t[bold]Required Quest: {existingInventory.Spells[i].RequiredQuest}[/]");
+                AnsiConsole.MarkupLine($"\t\t[bold]Required Spell ID: {existingInventory.Spells[i].RequiredSpellID}[/]");
                 AnsiConsole.MarkupLine($"\t\t[bold]Required Level: {existingInventory.Spells[i].Level}[/]");
             }
 
@@ -337,21 +334,15 @@ public static class Program {
         NPCSpellEntry entry = new NPCSpellEntry();
         entry.TemplateID = templateID;
 
-        AnsiConsole.Markup("== Input the name of the spell (case and space sensitive!): ");
+        AnsiConsole.Markup("== Input the TemplateID of the required spell to learn this spell (0 if none): ");
         var input = Console.ReadLine();
-        entry.SpellName = input;
-
-        AnsiConsole.Markup("== Input the display key of the spell (number above spell name in Spells.lang, including zeros): ");
-        input = Console.ReadLine();
-        entry.DisplayKey = input;
-
-        AnsiConsole.Markup("== Input the name of the required spell to learn this spell (if any): ");
-        input = Console.ReadLine();
-        entry.RequiredSpell = input;
-
-        AnsiConsole.Markup("== Input the display key of the required quest to learn this spell (if any, number above name in QuestTitle.lang): ");
-        input = Console.ReadLine();
-        entry.RequiredQuest = input;
+        if (!ulong.TryParse(input, out var reqSpellID)) {
+            AnsiConsole.MarkupLine("Invalid input. Please input a valid integer.");
+            entry.RequiredSpellID = 0;
+        }
+        else {
+            entry.RequiredSpellID = reqSpellID;
+        }
 
         AnsiConsole.Markup("== Input the level required to learn this spell: ");
         input = Console.ReadLine();
@@ -362,8 +353,6 @@ public static class Program {
         else {
             entry.Level = levelReq;
         }
-
-        entry.TrainingCost = 1;
 
         return entry;
     }
@@ -447,10 +436,7 @@ public static class Program {
                 AnsiConsole.MarkupLine("\tidx | template ID");
                 for (int i = 0; i < spellInventory.Spells.Count; i++) {
                     AnsiConsole.MarkupLine($"\t[bold]  {i + 1} | {spellInventory.Spells[i].TemplateID}[/]");
-                    AnsiConsole.MarkupLine($"\t\t[bold]Name: {spellInventory.Spells[i].SpellName}[/]");
-                    AnsiConsole.MarkupLine($"\t\t[bold]Display Key: {spellInventory.Spells[i].DisplayKey}[/]");
-                    AnsiConsole.MarkupLine($"\t\t[bold]Required Spell: {spellInventory.Spells[i].RequiredSpell}[/]");
-                    AnsiConsole.MarkupLine($"\t\t[bold]Required Quest: {spellInventory.Spells[i].RequiredQuest}[/]");
+                    AnsiConsole.MarkupLine($"\t\t[bold]Required Spell ID: {spellInventory.Spells[i].RequiredSpellID}[/]");
                     AnsiConsole.MarkupLine($"\t\t[bold]Required Level: {spellInventory.Spells[i].Level}[/]");
                 }
             }

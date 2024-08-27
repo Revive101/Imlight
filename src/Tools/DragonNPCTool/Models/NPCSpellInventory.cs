@@ -3,19 +3,14 @@
  * Proprietary and confidential.
  */
 
-using System.Collections.Generic;
-
 namespace DragonNPCTool.Models;
 
 public class NPCSpellEntry {
     public ulong TemplateID { get; set; }
-    public string SpellName { get; set; }
-    public string DisplayKey { get; set; }
-    public string RequiredSpell { get; set; }
-    public string RequiredQuest { get; set; }
+    public ulong RequiredSpellID { get; set; }
     public int Level { get; set; }
-    public int TrainingCost { get; set; }
 }
+
 
 public class NPCSpellInventory {
     public ulong TemplateID { get; set; }
