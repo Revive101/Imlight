@@ -58,6 +58,10 @@ public class ServerSpellbookBehavior : ServerBehaviorInstance {
         }
     }
 
+    public bool HasSpell(uint templateId) {
+        return LearnedSpellTemplateIds.Contains(templateId);
+    }
+
     public override ClientSpellbookBehavior GetClientBehaviorInstance() {
         var spellIdList = new List<SpellIDTracker>();
         foreach (var spellTemplateId in LearnedSpellTemplateIds) {
