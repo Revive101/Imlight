@@ -12,10 +12,10 @@ using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Models.Player;
-using static Imlight.Common.Caches.TypeCache;
 using Imlight.CoreLib.Game.Zone.ServiceOptions;
 using Imlight.CoreLib.Game.WizBang;
 using Imlight.Common.Cryptography;
+using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone;
 
@@ -43,11 +43,6 @@ public sealed class WizardZoneNpc : WizardZoneObject {
 
         SetMadLibBlock();
         SetServiceMomentoBase();
-
-        var npcName = gameObjTemplate.m_objectName.ToString().ToLower();
-        if (npcName == "wc-rav-npc05") {
-            //SetSpellTrainer();
-        }
     }
 
     // Akka.NET ctor
@@ -117,12 +112,28 @@ public sealed class WizardZoneNpc : WizardZoneObject {
     }
 
     protected override void OnPlayerProximityEnter(CoreObject player, IActorRef suspect) {
-        var data = _serializer.Serialize(ServiceMomentoBase);
-
         // If we have no service, we have no options.
         if (ServiceOptions.Count <= 0) {
             return;
         }
+
+        // todo: clean this up a bit
+        List<ServiceOptionBase> options = new List<ServiceOptionBase>();
+
+        // Some options may need to be recalculated for each player when they enter the proximity.
+        foreach (var serviceOption in ServiceOptions) {
+            if (serviceOption.RecalculateOnProximityEnter) {
+                var recalcOptions = serviceOption.Recalculate(suspect);
+                options.AddRange(recalcOptions);
+            } else {
+                options.AddRange(serviceOption.ServiceOptionBases);
+            }
+        }
+
+        var newMemento = ServiceMomentoBase;
+        newMemento.m_serviceOptions = options;
+
+        var data = _serializer.Serialize(newMemento);
 
         var npcOptionsMsg = new QUEST_MESSAGES_52_PROTOCOL.MSG_SENDNPCOPTIONS {
             MobileID = ActiveGameObject.m_globalID,
