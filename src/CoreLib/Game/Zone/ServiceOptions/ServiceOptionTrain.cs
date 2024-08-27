@@ -93,9 +93,12 @@ public class ServiceOptionTrain : ServiceOption {
             if (spellTemplate.m_sMagicSchoolName == schoolName) {
                 newBase.m_trainingCost = 0;
             }
+            else {
+                newBase.m_trainingCost = 1;
+            }
 
             // Check if wizard has enough training points to train the spell.
-            if (wizard.MagicSchoolBehavior.TrainingPoints < 1) {
+            if (wizard.MagicSchoolBehavior.TrainingPoints < newBase.m_trainingCost) {
                 newBase.m_bCanTrain = false;
                 newBase.m_failedRequirement = null;
                 continue;
