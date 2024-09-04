@@ -19,6 +19,7 @@ public static class DragonDatabaseManager {
     private static readonly string _databaseName = "WorldData";
     private static readonly string _npcInventoryCollection = "NpcInventory";
     private static readonly string _npcSpellInventoryCollection = "NpcSpellInventory";
+    private static readonly string _npcCreatureSpellbookCollection = "CreatureSpellbook";
 
     private static IDocumentStore? _store;
     public static IDocumentStore? Store => _store ??= _isInEmbeddedMode ? CreateEmbeddedStore() : CreateRemoteStore();
@@ -171,5 +172,43 @@ public static class DragonDatabaseManager {
             .FirstOrDefault();
 
         return npcSpellInventory != null;
+    }
+
+    public static void AddCreatureSpellbook(CreatureSpellbook creatureSpellbook) {
+        using var session = Store!.OpenSession();
+
+        session.Store(creatureSpellbook);
+        var metaData = session.Advanced.GetMetadataFor(creatureSpellbook);
+        metaData[Raven.Client.Constants.Documents.Metadata.Collection] = _npcCreatureSpellbookCollection;
+
+        session.SaveChanges();
+    }
+
+    public static bool UpdateCreatureSpellbook(CreatureSpellbook creatureSpellbook) {
+        using var session = Store!.OpenSession();
+
+        var existingCreatureSpellbook = session.Query<CreatureSpellbook>(collectionName: _npcCreatureSpellbookCollection)
+            .Where(x => x.DeckName == creatureSpellbook.DeckName)
+            .FirstOrDefault();
+
+        if (existingCreatureSpellbook != null) {
+            existingCreatureSpellbook.SpellTemplateIds = creatureSpellbook.SpellTemplateIds;
+        }
+        else {
+            return false;
+        }
+
+        session.SaveChanges();
+        return true;
+    }
+
+    public static bool TryGetCreatureSpellbook(string deckName, out CreatureSpellbook? creatureSpellbook) {
+        using var session = Store!.OpenSession();
+
+        creatureSpellbook = session.Query<CreatureSpellbook>(collectionName: _npcCreatureSpellbookCollection)
+            .Where(x => x.DeckName == deckName)
+            .FirstOrDefault();
+
+        return creatureSpellbook != null;
     }
 }
