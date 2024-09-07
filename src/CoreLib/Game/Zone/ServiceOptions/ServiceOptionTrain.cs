@@ -4,6 +4,7 @@
  */
 
 using Akka.Actor;
+using Imlight.Common;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models.World;
@@ -25,7 +26,12 @@ public class ServiceOptionTrain : ServiceOption {
         RecalculateOnProximityEnter = true;
 
         foreach (var spell in SpellInventory) {
-            var spellTemplate = (SpellTemplate) CoreObjectFactory.GetCoreTemplate(spell.TemplateID);
+            var template = CoreObjectFactory.GetCoreTemplate(spell.TemplateID);
+            if (template is null || template is not SpellTemplate spellTemplate) {
+                Logger.Error("Trainer {0} has an invalid spell template with ID {1}",
+                    Logger.Args(ActiveGameObject.m_templateID, spell.TemplateID));
+                continue;
+            }
 
             var spellOption = new WizTrainingOption {
                 m_serviceIndex = 0,
@@ -44,7 +50,12 @@ public class ServiceOptionTrain : ServiceOption {
             };
 
             if (spell.RequiredSpellID != 0) {
-                var reqSpellTemplate = (SpellTemplate) CoreObjectFactory.GetCoreTemplate(spell.RequiredSpellID);
+                var reqTemplate = CoreObjectFactory.GetCoreTemplate(spell.RequiredSpellID);
+                if (reqTemplate is null || reqTemplate is not SpellTemplate reqSpellTemplate) {
+                    Logger.Error("Trainer {0} has an invalid required spell template with ID {1}",
+                        Logger.Args(ActiveGameObject.m_templateID, spell.RequiredSpellID));
+                    continue;
+                }
 
                 spellOption.m_requirements = new RequirementList() {
                     m_applyNOT = false,
