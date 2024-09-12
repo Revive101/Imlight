@@ -108,17 +108,14 @@ public class ServiceOptionTrain : ServiceOption {
                 newBase.m_trainingCost = 1;
             }
 
-            // Check if wizard has enough training points to train the spell.
-            if (wizard.MagicSchoolBehavior.TrainingPoints < newBase.m_trainingCost) {
+            // Check if wizard has enough training points to train the spell, and if the
+            // wizard is high enough level to train the spell.
+            if (wizard.MagicSchoolBehavior.TrainingPoints < newBase.m_trainingCost
+                    || wizard.MagicSchoolBehavior.Level < SpellInventory[i].Level) {
                 newBase.m_bCanTrain = false;
                 newBase.m_failedRequirement = null;
-                continue;
-            }
 
-            // Check if wizard is high enough level to train the spell.
-            if (wizard.MagicSchoolBehavior.Level < SpellInventory[i].Level) {
-                newBase.m_bCanTrain = false;
-                newBase.m_failedRequirement = null;
+                newServiceOptions.Add(newBase);
                 continue;
             }
 
