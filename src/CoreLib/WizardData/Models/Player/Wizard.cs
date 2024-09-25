@@ -252,6 +252,13 @@ public class Wizard : IDisposable {
         WizardCollection.UpdateCharacterGameStats(this);
     }
 
+    public void UpdateTrainingPoints(int newTrainingPoints) {
+        MagicSchoolBehavior.TrainingPoints = newTrainingPoints;
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterTrainingPoints(this);
+    }
+
     public bool AddItemToInventory(ulong itemId, out WizClientObjectItem item) {
         item = (WizClientObjectItem) CoreObjectFactory.FinalizeCoreObject(itemId);
         item.m_characterId = (GID) CharId;

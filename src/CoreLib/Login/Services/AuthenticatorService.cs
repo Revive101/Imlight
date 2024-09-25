@@ -72,7 +72,7 @@ internal class AuthenticatorService : MessageService {
                 PayingUser = 1,
                 TimeStamp = "",
                 Rec1 = authReply._rec1,
-                Flags = (int) authReply._account.GetAccountFlags(),
+                //Flags = (int) authReply._account.GetAccountFlags(),
             });
         }
 
@@ -94,7 +94,7 @@ internal class AuthenticatorService : MessageService {
             Reason = "",
             UserID = validationReply._account.AccountId,
             PayingUser = 1,
-            Flags = (int) validationReply._account.GetAccountFlags(),
+            //Flags = (int) validationReply._account.GetAccountFlags(),
         });
 
         SendClientToLogin(validationReply._account);

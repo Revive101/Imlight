@@ -371,4 +371,46 @@ internal class CommandModifyProtocol : CommandProtocol {
         };
         Context.SessionActor.Tell(msg, null);
     }
+
+    [Command("addtrainingpoints")]
+    [Alias("addtp")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void AddTrainingPointsCommand(string trainingPoints) {
+        // Try to parse the training points.
+        if (!int.TryParse(trainingPoints, out var trainingPointsInt)) {
+            InformSenderClient("Invalid training points amount.");
+            return;
+        }
+
+        var currentTrainingPoints = Context.Character.MagicSchoolBehavior.TrainingPoints;
+        var newTrainingPoints = currentTrainingPoints + trainingPointsInt;
+        Context.Character.UpdateTrainingPoints(newTrainingPoints);
+
+        var networkMessage = new WIZARD_12_PROTOCOL.MSG_UPDATETRAINING() {
+            TrainingPoints = newTrainingPoints
+        };
+        Context.SessionActor.Tell(networkMessage, null);
+
+        InformSenderClient($"Added {trainingPointsInt} training points.");
+    }
+
+    [Command("settrainingpoints")]
+    [Alias("settp")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void SetTrainingPointsCommand(string trainingPoints) {
+        // Try to parse the training points.
+        if (!int.TryParse(trainingPoints, out var trainingPointsInt)) {
+            InformSenderClient("Invalid training points amount.");
+            return;
+        }
+
+        Context.Character.UpdateTrainingPoints(trainingPointsInt);
+
+        var networkMessage = new WIZARD_12_PROTOCOL.MSG_UPDATETRAINING() {
+            TrainingPoints = trainingPointsInt
+        };
+        Context.SessionActor.Tell(networkMessage, null);
+
+        InformSenderClient($"Set training points to {trainingPointsInt}.");
+    }
 }

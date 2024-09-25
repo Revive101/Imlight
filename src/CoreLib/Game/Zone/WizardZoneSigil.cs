@@ -54,7 +54,7 @@ public class WizardZoneSigil : WizardZoneObject {
         }
     }
 
-    protected override void OnPlayerInteractionEnter(CoreObject player, IActorRef suspect) {
+    protected override void OnPlayerProximityEnter(CoreObject player, IActorRef suspect) {
         if (_activeDuel is null || _activeDuelActor is null) {
             return;
         }
@@ -64,7 +64,7 @@ public class WizardZoneSigil : WizardZoneObject {
         }
     }
 
-    protected override void OnCreatureInteractionEnter(CoreObject creature, IActorRef suspect) {
+    protected override void OnCreatureProximityEnter(CoreObject creature, IActorRef suspect) {
         if (_activeDuel is null || _activeDuelActor is null) {
             return;
         }
