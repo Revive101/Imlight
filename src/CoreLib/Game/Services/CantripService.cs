@@ -47,6 +47,8 @@ public class CantripService : MessageService {
             case CantripsSpellTemplate.CantripsSpellEffect.CSE_Emote:
                 castEffect.AnimationName = cantrip.m_animationNames[0]; break;
             case CantripsSpellTemplate.CantripsSpellEffect.CSE_PlayEffect:
+                // note that the only cantrip from this section that needs rng is the dice roll one
+                // all the other cantrips in this section only have 1 animation
                 var rand = new Random();
                 int num = rand.Next(cantrip.m_animationKFMs.Count);
                 castEffect.AnimationKFM = cantrip.m_animationKFMs[num];
