@@ -238,7 +238,7 @@ internal class CommandModifyProtocol : CommandProtocol {
 
         var networkMessage = new PET_9_PROTOCOL.MSG_PETENERGYTICK() {
             GlobalID = Context.Character.GameObject.m_globalID,
-            Energy = Context.Character.PetOwnerBehavior.m_energy,
+            Energy = Context.Character.PetOwnerBehavior.Energy,
             MaxEnergy = energyInt,
             TickTime = (int) DateTimeOffset.UtcNow.ToUnixTimeSeconds()
         };

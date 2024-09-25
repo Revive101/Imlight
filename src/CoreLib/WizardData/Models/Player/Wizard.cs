@@ -70,7 +70,7 @@ public class Wizard : IDisposable {
     public ServerMountOwnerBehavior MountOwnerBehavior { get; set; }
     [JsonIgnore] public ServerObjectStateBehavior ObjectStateBehavior { get; set; }
     public ServerWizGameStats GameStats { get; set; }
-    public ClientPetOwnerBehavior PetOwnerBehavior { get; set; }
+    public ServerPetOwnerBehavior PetOwnerBehavior { get; set; }
 
     [JsonIgnore] public Account Account;
     [JsonIgnore] public WizClientObject GameObject;
@@ -241,7 +241,7 @@ public class Wizard : IDisposable {
     }
 
     public void UpdateEnergy(int newEnergy) {
-        PetOwnerBehavior.m_energy = newEnergy;
+        PetOwnerBehavior.SetEnergy(newEnergy);
 
         // Persistent save.
         WizardCollection.UpdateCharacterPetOwnerBehavior(this);
@@ -592,6 +592,7 @@ public class Wizard : IDisposable {
         AfterDatabaseloadMountOwnerBehavior();
 
         ObjectStateBehavior ??= new ServerObjectStateBehavior("PlayerMobileStates");
+        PetOwnerBehavior ??= new ServerPetOwnerBehavior();
     }
 
     private void EquipMount(WizItemTemplate template, WizClientObjectItem item) {
@@ -772,7 +773,7 @@ public class Wizard : IDisposable {
     }
 
     private void InitializePetOwnerBehavior() {
-        PetOwnerBehavior = new ClientPetOwnerBehavior();
+        PetOwnerBehavior = new ServerPetOwnerBehavior();
     }
 
     private void AfterDatabaseLoadWizardGameStats() {
