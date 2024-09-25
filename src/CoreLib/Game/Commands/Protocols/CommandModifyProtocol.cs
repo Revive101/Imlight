@@ -225,6 +225,7 @@ internal class CommandModifyProtocol : CommandProtocol {
     }
 
     [Command("maxenergy")]
+    [Alias("maxnrg")]
     [AuthRequired(AuthLevel.QualityAssurance)]
     private void SetMaxEnergyCommand(string energy) {
         // Try to parse the energy.
