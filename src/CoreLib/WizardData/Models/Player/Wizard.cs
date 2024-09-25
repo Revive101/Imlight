@@ -70,6 +70,7 @@ public class Wizard : IDisposable {
     public ServerMountOwnerBehavior MountOwnerBehavior { get; set; }
     [JsonIgnore] public ServerObjectStateBehavior ObjectStateBehavior { get; set; }
     public ServerWizGameStats GameStats { get; set; }
+    public ClientPetOwnerBehavior PetOwnerBehavior { get; set; }
 
     [JsonIgnore] public Account Account;
     [JsonIgnore] public WizClientObject GameObject;
@@ -121,6 +122,7 @@ public class Wizard : IDisposable {
         InitializeSpellbookBehavior();
         InitializeMountOwnerBehavior();
         InitializeWizardGameStats(wizardSchoolType, level);
+        InitializePetOwnerBehavior();
 
         ObjectStateBehavior = new ServerObjectStateBehavior("PlayerMobileStates");
 
@@ -236,6 +238,13 @@ public class Wizard : IDisposable {
 
         // Persistent save.
         WizardCollection.UpdateCharacterGameStats(this);
+    }
+
+    public void UpdateEnergy(int newEnergy) {
+        PetOwnerBehavior.m_energy = newEnergy;
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterPetOwnerBehavior(this);
     }
 
     public void UpdateMaxMana(int newMaxMana) {
@@ -760,6 +769,10 @@ public class Wizard : IDisposable {
 
         GameStats.m_currentHitpoints = GameStats.m_baseHitpoints;
         GameStats.m_currentMana = GameStats.m_baseMana;
+    }
+
+    private void InitializePetOwnerBehavior() {
+        PetOwnerBehavior = new ClientPetOwnerBehavior();
     }
 
     private void AfterDatabaseLoadWizardGameStats() {
