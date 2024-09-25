@@ -328,7 +328,7 @@ internal class CommandModifyProtocol : CommandProtocol {
             GlobalID = Context.Character.GameObject.m_globalID,
             Energy = energyInt,
             MaxEnergy = normMaxEnergy,
-            TickTime = (int) DateTimeOffset.UtcNow.ToUnixTimeSeconds() + 10 // note: need to investigate this further.
+            TickTime = (int) DateTimeOffset.UtcNow.ToUnixTimeSeconds()
         };
         Context.SessionActor.Tell(networkMessage, null);
 
@@ -386,22 +386,20 @@ internal class CommandModifyProtocol : CommandProtocol {
     [Alias("refillen", "refillnrg", "refillpet")]
     [AuthRequired(AuthLevel.QualityAssurance)]
     private void MaxEnergyCommand() {
-        var stats = Context.Character.GameStats;
-        var maxEnergy = stats.m_energyMax;
-
         // The client has a max mana increase effect applied, so sending it here would double the mana client side.
         var magicSchool = Context.Character.MagicSchoolBehavior.MagicSchool;
         var level = Context.Character.MagicSchoolBehavior.Level;
         var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(magicSchool, level);
         var normMaxEnergy = baseStats.m_petEnergy;
 
-        Context.Character.UpdateEnergy(maxEnergy);
+        Context.Character.UpdateEnergy(normMaxEnergy);
 
+        // Inform the client of the change.
         var networkMessage = new PET_9_PROTOCOL.MSG_PETENERGYTICK() {
             GlobalID = Context.Character.GameObject.m_globalID,
-            Energy = maxEnergy,
+            Energy = normMaxEnergy,
             MaxEnergy = normMaxEnergy,
-            TickTime = 0 // note: need to investigate
+            TickTime = (int) DateTimeOffset.UtcNow.ToUnixTimeSeconds()
         };
         Context.SessionActor.Tell(networkMessage, null);
     }

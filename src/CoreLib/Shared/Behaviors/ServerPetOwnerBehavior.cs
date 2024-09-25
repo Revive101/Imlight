@@ -24,9 +24,7 @@ public class ServerPetOwnerBehavior : ServerBehaviorInstance {
 
     public void SetEnergy(int energy) {
         Energy = energy;
-
-        // todo: Set EnergyTickInSeconds. Perhaps this is the time in milliseconds since epoch?
-        EnergyTickInSeconds = 0;
+        EnergyTickInSeconds = (uint) DateTimeOffset.UtcNow.ToUnixTimeSeconds();
     }
 
     public override ClientPetOwnerBehavior GetClientBehaviorInstance() => new() {

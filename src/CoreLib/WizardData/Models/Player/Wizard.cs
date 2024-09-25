@@ -590,9 +590,9 @@ public class Wizard : IDisposable {
         AfterDatabaseLoadWizardGameStats();
         AfterDatabaseLoadSpellbookBehavior();
         AfterDatabaseloadMountOwnerBehavior();
+        AfterDatabaseLoadPetOwnerBehavior();
 
         ObjectStateBehavior ??= new ServerObjectStateBehavior("PlayerMobileStates");
-        PetOwnerBehavior ??= new ServerPetOwnerBehavior();
     }
 
     private void EquipMount(WizItemTemplate template, WizClientObjectItem item) {
@@ -774,6 +774,31 @@ public class Wizard : IDisposable {
 
     private void InitializePetOwnerBehavior() {
         PetOwnerBehavior = new ServerPetOwnerBehavior();
+    }
+
+    private void AfterDatabaseLoadPetOwnerBehavior() {
+        // Normal members regain 1 energy every 10 minutes.
+        // Subscribed members regain 1 energy have 7.5 minutes.
+        // All of our members are considered subscribed members. Calculate how much energy the player has regained
+        // while they were offline.
+        if (PetOwnerBehavior is null) {
+            PetOwnerBehavior = new ServerPetOwnerBehavior();
+            PetOwnerBehavior.SetEnergy(GameStats.m_energyMax);
+
+            return;
+        }
+
+        var currentTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var timeDifference = currentTime - PetOwnerBehavior.EnergyTickInSeconds;
+        var energyRegained = timeDifference / 450; // 450 seconds = 7.5 minutes
+
+        // If the player has regained more energy than their max, set it to the max.
+        if (PetOwnerBehavior.Energy + energyRegained > GameStats.m_energyMax) {
+            PetOwnerBehavior.SetEnergy(GameStats.m_energyMax);
+        }
+        else {
+            PetOwnerBehavior.SetEnergy((int) (PetOwnerBehavior.Energy + energyRegained));
+        }
     }
 
     private void AfterDatabaseLoadWizardGameStats() {
