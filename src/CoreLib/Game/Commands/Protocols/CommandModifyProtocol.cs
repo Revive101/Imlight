@@ -332,7 +332,7 @@ internal class CommandModifyProtocol : CommandProtocol {
         };
         Context.SessionActor.Tell(networkMessage, null);
 
-        InformSenderClient($"Set current mana to {energyInt}.");
+        InformSenderClient($"Set current energy to {energyInt}.");
     }
 
     [Command("refillhealth")]
