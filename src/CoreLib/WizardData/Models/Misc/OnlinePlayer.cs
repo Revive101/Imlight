@@ -13,6 +13,7 @@ public class OnlinePlayer {
     public ulong AccountId;
     public ulong CharacterId;
     public string CurrentZone;
+    public string CurrentZoneDisplayName;
     public string CurrentRealm;
     public string ActorPath;
 }

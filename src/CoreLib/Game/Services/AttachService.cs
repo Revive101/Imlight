@@ -104,7 +104,11 @@ internal class AttachService : MessageService {
 
         // Add the player to the online player collection.
         // I don't know why this is normally blocking. Put it on a background thread.
-        Task.Run(() => AddPlayerToOnlineCollection(_wizard, message.ZoneName, realmName, SessionActor.ActorRef));
+        Task.Run(() => AddPlayerToOnlineCollection(_wizard,
+                                                   message.ZoneName,
+                                                   zoneDetails.ZoneDisplayName,
+                                                   realmName,
+                                                   SessionActor.ActorRef));
 
         // Complete the login process.
         SendToSocket(loginCompleteMsg);
@@ -192,8 +196,11 @@ internal class AttachService : MessageService {
         TellOtherServices(msg);
     }
 
-    private async void AddPlayerToOnlineCollection(Wizard wizard, string zoneName, string realmName,
-                                             IActorRef playerActor) {
+    private async void AddPlayerToOnlineCollection(Wizard wizard,
+                                                   string zoneName,
+                                                   string zoneDisplayName,
+                                                   string realmName,
+                                                   IActorRef playerActor) {
         var onlinePlayerRef = new OnlinePlayer {
             SessionId = SessionActor.SessionID,
             AccountId = wizard.AccountId,
