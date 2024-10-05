@@ -16,6 +16,7 @@ using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData;
 using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.Player;
+using Imlight.CoreLib.WizardData.Collections;
 
 namespace Imlight.Director;
 
@@ -70,6 +71,8 @@ internal static class Program {
         // Force load dragon database. Create a dud account if the database ends up using the embedded database.
         _ = PlayerDatabase.Instance.Store;
         CreateEmbeddedDatabaseAccounts();
+
+        OnlinePlayerCollection.Clear();
 
         // Keep program busy with a while loop.
         Logger.Information("Imlight may now be connected to.");

@@ -11,6 +11,7 @@ using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
 using SharpDX;
 
@@ -80,7 +81,9 @@ internal class GameTransitionService : MessageService {
             SendToSocket(serverEnqueueResult);
         }
         else {
+            // There is no queue. Send the message to the game server.
             SendToSocket(charSelectedMsg);
+            CloseSession();
         }
     }
 
@@ -102,5 +105,7 @@ internal class GameTransitionService : MessageService {
     private void SendErrorToSocket(int errorCode = 1) {
         var msg = new LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED() { Error = errorCode };
         SendToSocket(msg);
+
+        CloseSession();
     }
 }

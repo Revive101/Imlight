@@ -16,6 +16,7 @@ using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.World;
 using static Imlight.Common.Caches.TypeCache;
 
@@ -61,6 +62,9 @@ public class ZoneService : MessageService, IWithTimers {
             GlobalId = globalId
         });
         ZoneActor = null;
+
+        // Remove the player from the online player collection.
+        OnlinePlayerCollection.RemoveOnlinePlayer(SessionActor.SessionID);
 
         base.OnPreDispose();
     }
@@ -387,6 +391,9 @@ public class ZoneService : MessageService, IWithTimers {
                 IsPlayerStillConnected = true
             };
             _ = ZoneActor.Ask<ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP>(removePlayerMsg, _zoneRemovalWaitTime).Result;
+
+            // Remove the player from the online player collection.
+            OnlinePlayerCollection.RemoveOnlinePlayer(SessionActor.SessionID);
         }
         catch {
             Logger.Warning("Zone removal timeout of {0} seconds exceeded.", Logger.Args(ZONE_REMOVAL_WAIT_TIME_IN_SECONDS));

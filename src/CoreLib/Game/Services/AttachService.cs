@@ -3,7 +3,9 @@
  * Proprietary and confidential.
  */
 
+using System.Collections.Generic;
 using System.Net;
+using System.Threading.Tasks;
 using Akka.Actor;
 using Imlight.Common.Caches;
 using Imlight.Common.IO;
@@ -13,7 +15,9 @@ using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Implementations;
+using Imlight.CoreLib.WizardData.Models.Misc;
 using Imlight.CoreLib.WizardData.Models.Player;
 using SharpDX;
 using static Imlight.Common.Caches.TypeCache;
@@ -74,9 +78,10 @@ internal class AttachService : MessageService {
 
         var account = GetActiveAccount();
         var accountFlags = account.GetAccountFlags();
+        var realmName = "Centaur"; // todo
 
         var loginCompleteMsg = new GAME_5_PROTOCOL.MSG_LOGINCOMPLETE() {
-            RealmName = "Centaur",
+            RealmName = realmName,
 
             // Set character data.
             Data = localGameObjectData,
@@ -96,6 +101,16 @@ internal class AttachService : MessageService {
         };
 
         AddPlayerToZone(charGameObject, _wizard);
+
+        // Add the player to the online player collection.
+        // I don't know why this is normally blocking. Put it on a background thread.
+        Task.Run(() => AddPlayerToOnlineCollection(_wizard,
+                                                   message.ZoneName,
+                                                   zoneDetails.ZoneDisplayName,
+                                                   realmName,
+                                                   SessionActor.ActorRef));
+
+        // Complete the login process.
         SendToSocket(loginCompleteMsg);
         TellOtherServices(new SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE());
     }
@@ -179,6 +194,23 @@ internal class AttachService : MessageService {
             ActualWizardName = wizard.PlayerNameBehavior.GetWizardName(),
         };
         TellOtherServices(msg);
+    }
+
+    private async void AddPlayerToOnlineCollection(Wizard wizard,
+                                                   string zoneName,
+                                                   string zoneDisplayName,
+                                                   string realmName,
+                                                   IActorRef playerActor) {
+        var onlinePlayerRef = new OnlinePlayer {
+            SessionId = SessionActor.SessionID,
+            AccountId = wizard.AccountId,
+            CharacterId = wizard.CharId,
+            CurrentZone = zoneName,
+            CurrentRealm = realmName,
+            ActorPath = playerActor.Path.ToString(),
+        };
+
+        OnlinePlayerCollection.AddOnlinePlayer(onlinePlayerRef);
     }
 
     private SERVER_100_PROTOCOL.MSG_SERVERINFO GetGameServer() {

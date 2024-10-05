@@ -3,14 +3,10 @@
  * Proprietary and confidential.
  */
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using Akka.Actor;
-using Imlight.Common;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone;
 
@@ -51,6 +47,11 @@ public class WizardZonePlayerSupervisor : ReceiveProtocolDispatcher {
 
         // Add the player to the list of players.
         _players.Add(message.Player);
+
+        // Inform the zone of the new player count.
+        _wizardZoneRef.Tell(new ZONE_102_PROTOCOL.MSG_PLAYERCOUNTUPDATE {
+            PlayerCount = (ushort) _players.Count,
+        });
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER))]
@@ -67,6 +68,11 @@ public class WizardZonePlayerSupervisor : ReceiveProtocolDispatcher {
 
         // Remove the player from the list of players.
         _players.Remove(message.Player);
+
+        // Inform the zone of the new player count.
+        _wizardZoneRef.Tell(new ZONE_102_PROTOCOL.MSG_PLAYERCOUNTUPDATE {
+            PlayerCount = (ushort) _players.Count,
+        });
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_HEALTICK))]
@@ -74,5 +80,14 @@ public class WizardZonePlayerSupervisor : ReceiveProtocolDispatcher {
         foreach (var player in _players) {
             player.Tell(message);
         }
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONECLOSED))]
+    private void ReceiveZoneClosed(ZONE_102_PROTOCOL.MSG_ZONECLOSED message) {
+        foreach (var player in _players) {
+            player.Tell(message);
+        }
+
+        _players.Clear();
     }
 }
