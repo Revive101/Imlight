@@ -65,27 +65,6 @@ public static class OnlinePlayerCollection {
     }
 
     /// <summary>
-    /// Retrieves an array of online friends for the specified account ID.
-    /// </summary>
-    /// <param name="accountId">The account ID of the player.</param>
-    /// <returns>An array of <see cref="OnlinePlayer"/> objects representing the online friends.</returns>
-    public static OnlinePlayer[] GetOnlineFriends(ulong accountId) {
-        using var session = s_store.OpenSession();
-
-        var onlinePlayer = session
-            .Query<OnlinePlayer>(collectionName: CollectionName)
-            .FirstOrDefault(x => x.AccountId == accountId);
-        if (onlinePlayer != null) {
-            return session
-                .Query<OnlinePlayer>(collectionName: CollectionName)
-                .Where(x => onlinePlayer.Friends.Contains(x.AccountId))
-                .ToArray();
-        }
-
-        return System.Array.Empty<OnlinePlayer>();
-    }
-
-    /// <summary>
     /// Retrieves all online players from the collection.
     /// </summary>
     /// <returns>An array of online players.</returns>

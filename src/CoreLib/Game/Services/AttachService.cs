@@ -201,7 +201,6 @@ internal class AttachService : MessageService {
             CurrentZone = zoneName,
             CurrentRealm = realmName,
             ActorPath = playerActor.Path.ToString(),
-            Friends = new HashSet<ulong>()
         };
 
         OnlinePlayerCollection.AddOnlinePlayer(onlinePlayerRef);
