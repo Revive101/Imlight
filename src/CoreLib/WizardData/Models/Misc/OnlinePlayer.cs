@@ -15,5 +15,4 @@ public class OnlinePlayer {
     public string CurrentZone;
     public string CurrentRealm;
     public string ActorPath;
-    public HashSet<ulong> Friends;
 }
