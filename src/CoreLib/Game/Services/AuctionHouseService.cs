@@ -4,6 +4,7 @@
  */
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using Akka.Actor;
 using Imlight.Common.Caches;
@@ -63,13 +64,13 @@ internal class AuctionHouseService : MessageService {
 
     private void SendAuctionHouseContents(ulong npcId, uint key) {
         // Retrieve all Auction House entries.
-        var houseEntryModel = AuctionHouseCollection.GetAllAuctionHouseEntries();
+        var houseEntries = AuctionHouseCollection.GetAllAuctionHouseEntries();
 
-        if (houseEntryModel is null) {
+        if (houseEntries is null) {
             return;
         }
 
-        var houseEntryList = new List<AuctionHouseEntry>(houseEntryModel.AuctionHouseEntries);
+        var houseEntryList = new List<AuctionHouseEntry>(houseEntries);
 
         while (houseEntryList.Count > 0) {
             // Contents sent in blocks of up to 50 entries.
@@ -187,19 +188,33 @@ internal class AuctionHouseService : MessageService {
         var item = wizard.InventoryBehavior.GetItem(itemGlobalId);
 
         // Check player has item.
-        var removedItemSuccess = wizard.RemoveItemFromInventory(itemGlobalId);
-        if (!removedItemSuccess) {
+        var hasItem = wizard.InventoryBehavior.HasItem(itemGlobalId);
+        if (!hasItem) {
+            // Todo: respond with error
             var auctionRspErrorMsg = new WIZARD_12_PROTOCOL.MSG_AUCTIONRESPONSE {
-                Command = 2,
+                Command = 5,
                 ItemTemplateID = 0, // Can't get this ID if item doesn't exist.
                 Cost = 0,
-                ReturnCode = 1
+                ReturnCode = 0
             };
             SendToSocket(auctionRspErrorMsg);
             return;
         }
 
         var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
+        
+        var isNoAuction = template.m_adjectiveList.Any(x => x == "FLAG_NoAuction");
+        if (isNoAuction) { // The item cannot be sold to the bazaar.
+            // Todo: respond with error
+            var auctionRspErrorMsg = new WIZARD_12_PROTOCOL.MSG_AUCTIONRESPONSE {
+                Command = 2,
+                ItemTemplateID = item.m_templateID,
+                Cost = 0,
+                ReturnCode = 1
+            };
+            SendToSocket(auctionRspErrorMsg);
+            return;
+        }
 
         // Calculate gold sell value.
         var gold = (int) Math.Ceiling(template.m_baseCost * 0.5f); // Bazaar buys items at 50% of their value.
@@ -222,7 +237,7 @@ internal class AuctionHouseService : MessageService {
                 m_templateID = (GID) item.m_templateID,
                 m_buyPrice = (int) template.m_baseCost * 2, // Bazaar sells items at 200% of their value.
                 m_numForSale = 1,
-                m_sellPrice = (int) (template.m_baseCost * 0.5f)
+                m_sellPrice = gold 
             };
             AuctionHouseCollection.AddAuctionHouseEntry(entry);
         }
@@ -232,6 +247,9 @@ internal class AuctionHouseService : MessageService {
                 AuctionHouseCollection.UpdateAuctionHouseEntry(entry);
             }
         }
+
+        // Remove item from inventory.
+        var removedItemSuccess = wizard.RemoveItemFromInventory(itemGlobalId);
 
         // Inform of update.
         var houseEntryData = _serializer.Serialize(entry);
@@ -263,9 +281,6 @@ internal class AuctionHouseService : MessageService {
             Failure = 0
         };
         SendToSocket(shopSellConfirmMsg);
-        
-        // Todo: fix removal of items? seems broken at the moment.
-        wizard.RemoveItemFromInventory(item.m_globalID);
     }
 
 }

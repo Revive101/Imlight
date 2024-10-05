@@ -25,10 +25,14 @@ public class ServiceOptionAuction : ServiceOption {
         }
     };
 
-    public ServiceOptionAuction(CoreObject ActiveGameObject) : base(ActiveGameObject) { }
+    public ServiceOptionAuction(CoreObject ActiveGameObject) : base(ActiveGameObject)
+        => RecalculateOnProximityEnter = false;
 
     public override void OnPlayerInteraction(IActorRef suspect, int serviceIndex) {
         // We've already sent the service option and need to do nothing more.
         // If you're looking for Auction house interaction, you'll find it in Game/Services/AuctionHouseService.cs
     }
+
+    public override List<ServiceOptionBase> Recalculate(IActorRef suspect)
+        => ServiceOptionBases;
 }

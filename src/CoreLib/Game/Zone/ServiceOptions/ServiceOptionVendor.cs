@@ -32,8 +32,10 @@ public class ServiceOptionVendor : ServiceOption {
             .OnPropertyMask((SerializerOptions.PropertyFlags) 4);
     private readonly List<GID> _inventory = new();
 
-    public ServiceOptionVendor(CoreObject ActiveGameObject, List<GID> inventory) : base(ActiveGameObject)
-        => _inventory = inventory;
+    public ServiceOptionVendor(CoreObject ActiveGameObject, List<GID> inventory) : base(ActiveGameObject) {
+        _inventory = inventory;
+        RecalculateOnProximityEnter = false;
+    }
 
     public bool HasShopItem(GID item)
         => _inventory.Contains(item);
@@ -63,4 +65,7 @@ public class ServiceOptionVendor : ServiceOption {
         };
         suspect.Tell(shopListMsg);
     }
+
+    public override List<ServiceOptionBase> Recalculate(IActorRef suspect)
+        => ServiceOptionBases;
 }

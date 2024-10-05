@@ -267,6 +267,15 @@ internal class ShopService : MessageService {
         // A wizard has complete shopping and is leaving the shop.
         var wizard = GetActiveWizard();
 
+        // Reenable player movement
+        var enableMovementStateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
+            GameObjectID = wizard.CharId,
+            State = 1685237158,
+            Data = "",
+            IgnoreIfCurrentStateIsOff = 0
+        };
+        SendToSocket(enableMovementStateMsg);
+
         var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG() {
             GameObjectID = wizard.CharId,
             WizBangID = (uint) WizBangs.None

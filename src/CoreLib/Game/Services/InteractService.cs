@@ -49,16 +49,23 @@ internal class InteractService : MessageService {
                 Logger.Args(wizard.CharId, message.GlobalID));
             return;
         }
-
-        // Inforn the interaction object that the player is interacting with it.
+      
+        // Inform the interaction object that the player is interacting with it.
         npc.ActorRef.Tell(message, SessionActor.ActorRef);
 
+        // Disable player movement
+        var disableMovementStateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
+            GameObjectID = wizard.CharId,
+            State = 2700595,
+            Data = "",
+            IgnoreIfCurrentStateIsOff = 0
+        };
+        SendToSocket(disableMovementStateMsg);
+      
         var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG() {
             GameObjectID = wizard.CharId,
             WizBangID = (uint) WizBangs.Registrar
         };
         ZoneBroadcast(wizBangMsg, false);
-
-        return;
     }
 }

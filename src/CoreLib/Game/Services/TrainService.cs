@@ -3,12 +3,17 @@
  * Proprietary and confidential.
  */
 
+using System.Linq;
 using Akka.Actor;
-using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.CoreLib.Game.Zone;
+using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Game.Zone.ServiceOptions;
+using static Imlight.Common.Caches.TypeCache;
+using Imlight.Common;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -25,13 +30,47 @@ internal class TrainService : MessageService {
             GlobalID = message.MobileID
         };
         var response = AskOtherService<ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECTRSP>(msg);
-        if (response is null) {
+        if (response is null || response.ZoneObject is null) {
+            var wizardName = GetActiveWizard().PlayerNameBehavior.GetWizardName();
+            Logger.Error("{0} searched for training NPC {1} (mobile ID), but it was not found within the zone.",
+                Logger.Args(wizardName, message.MobileID));
             return;
         }
 
-        var npcObj = (WizardZoneNpc) response.ZoneObject;
         var wizard = GetActiveWizard();
+        var npcObj = (WizardZoneNpc) response.ZoneObject;
 
-        var spellOption = npcObj.ServiceMomentoBase.m_serviceOptions[message.TrainingIndex];
+        var serviceOption = (ServiceOptionTrain) npcObj.ServiceOptions.FirstOrDefault(x => x.ServiceName == "WizTrainingService");
+        if (serviceOption is null) {
+            Logger.Error("NPC {0} does not have a WizTrainingService option.", Logger.Args(npcObj.ActiveGameObject.m_debugName));
+            return;
+        }
+
+        var spellEntry = serviceOption.SpellInventory[message.TrainingIndex];
+        var spellTemplate = (SpellTemplate) CoreObjectFactory.GetCoreTemplate(spellEntry.TemplateID);
+        var spellCost = wizard.MagicSchoolBehavior.MagicSchool.ToString() == spellTemplate.m_sMagicSchoolName ? 0 : 1;
+
+        var spell = SpellFactory.GetSpell((uint) spellEntry.TemplateID);
+        wizard.LearnSpell(spell);
+
+        var addSpellMsg = new WIZARD_12_PROTOCOL.MSG_ADDSPELLTOBOOK() {
+            SpellID = (int) spellEntry.TemplateID
+        };
+        SendToSocket(addSpellMsg);
+
+        var newTrainingPoints = wizard.MagicSchoolBehavior.TrainingPoints - spellCost;
+        wizard.UpdateTrainingPoints(newTrainingPoints);
+
+        var updateTrainingMsg = new WIZARD_12_PROTOCOL.MSG_UPDATETRAINING() {
+            TrainingPoints = newTrainingPoints
+        };
+        SendToSocket(updateTrainingMsg);
+
+        var trainCompleteMsg = new WIZARD_12_PROTOCOL.MSG_SPELLTRAINCOMPLETE() {
+            SpellID = spellEntry.TemplateID,
+            DisplayText = "WizTraining_00000040",
+            Success = 1
+        };
+        SendToSocket(trainCompleteMsg);
     }
 }
