@@ -68,6 +68,7 @@ public class Wizard : IDisposable {
     public ServerMagicSchoolBehavior MagicSchoolBehavior { get; set; }
     public ServerWizSpellbookBehavior SpellbookBehavior { get; set; }
     public ServerMountOwnerBehavior MountOwnerBehavior { get; set; }
+    public ServerPetSnackBehavior PetSnackBehavior { get; set; }
     [JsonIgnore] public ServerObjectStateBehavior ObjectStateBehavior { get; set; }
     public ServerWizGameStats GameStats { get; set; }
 
@@ -121,6 +122,7 @@ public class Wizard : IDisposable {
         InitializeSpellbookBehavior();
         InitializeMountOwnerBehavior();
         InitializeWizardGameStats(wizardSchoolType, level);
+        InitializeDefaultPetSnackBehavior();
 
         ObjectStateBehavior = new ServerObjectStateBehavior("PlayerMobileStates");
 
@@ -379,6 +381,38 @@ public class Wizard : IDisposable {
         Logger.Debug("{0} unequips item {1}", Logger.Args(PlayerNameBehavior.GetWizardName(), itemId));
 
         unequipEffects = CharacterEffectHelper.RemoveEffectsFromWizard(this, template);
+        return true;
+    }
+
+    public bool AddSnackToSnackBag(ulong snackId, out ClientPetSnackItem snack) {
+        snack = (ClientPetSnackItem) CoreObjectFactory.FinalizeCoreObject(snackId);
+        snack.m_characterId = (GID) CharId;
+        snack.m_quantity = 1;
+
+        return AddSnackToSnackBag(snack);
+    }
+    public bool AddSnackToSnackBag(ClientPetSnackItem snack) {
+        if (snack is null) {
+            Logger.Warning("Cannot add snack to inventory because that snack does not exist.");
+            return false;
+        }
+
+        CoreObjectFactory.InitializeCoreObjectBehaviors(snack, snack.m_templateID);
+
+        // Ensure that the item is associated with this Wizard.
+        snack.m_characterId = (GID) CharId;
+
+        var success = PetSnackBehavior.AddSnack(snack);
+        if (!success) {
+            Logger.Warning("Could not add snack {0} to player {1}'s snackbag.",
+                Logger.Args(snack.m_globalID, PlayerNameBehavior.GetWizardName()));
+            return false;
+        }
+
+        // Persistent save.
+        //WizardPetSnackCollection.AddSnack(snack);
+        //WizardCollection.UpdateCharacterItems(this);
+
         return true;
     }
 
@@ -681,6 +715,13 @@ public class Wizard : IDisposable {
 
     private void InitializeSpellbookBehavior() {
         SpellbookBehavior = new ServerWizSpellbookBehavior();
+    }
+
+    private void InitializeDefaultPetSnackBehavior() {
+        PetSnackBehavior = new ServerPetSnackBehavior() {
+            SnackIds = new List<ulong>(),
+            Snacks = new List<ClientPetSnackItem>()
+        };
     }
 
     private void AfterDatabaseLoadSpellbookBehavior() {
