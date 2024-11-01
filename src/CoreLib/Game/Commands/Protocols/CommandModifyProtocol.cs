@@ -128,6 +128,63 @@ internal class CommandModifyProtocol : CommandProtocol {
         InformSenderClient($"Added item {coreObject.m_debugName} to inventory.");
     }
 
+    [Command("addsnack")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void AddSnackCommand(string templateId) {
+        // Try to parse the item id.
+        if (!ulong.TryParse(templateId, out var templateIdLong)) {
+            InformSenderClient("Invalid item id.");
+            return;
+        }
+
+        // Check to see if this template exists.
+        var template = CoreObjectFactory.GetCoreTemplate(templateIdLong);
+        if (template is null) {
+            InformSenderClient("Invalid item id.");
+            return;
+        }
+
+        // We can't non-snack objects to the snack bag.
+        if (template is not PetSnackItemTemplate) {
+            InformSenderClient($"Cannot add objects of type {template.GetType().Name} to snack bag.");
+            return;
+        }
+
+        var addedSnackSuccess = Context.Character.AddSnackToSnackBag(templateIdLong, out var coreObject);
+        if (!addedSnackSuccess) {
+            InformSenderClient("Could not add snack to snack bag.");
+            return;
+        }
+
+        // todo: Broken atm
+        var serializer = new CoreObjectSerializer()
+            .OnMode(SerializerOptions.Mode.Compact)
+            .OnBehaviors(SerializerOptions.Behaviors.None)
+            .OnPropertyMask((SerializerOptions.PropertyFlags) 27);
+        var networkMessage = new PET_9_PROTOCOL.MSG_PETSNACKADD {
+            GlobalID = Context.Character.CharId,
+            Data = serializer.Serialize(coreObject)
+        };
+        Context.SessionActor.Tell(networkMessage, null);
+
+        var acquireMessage = new WIZARD2_53_PROTOCOL.MSG_ITEMACQUISITION {
+            ItemGlobalID = coreObject.m_globalID,
+            ItemTemplateID = (uint) coreObject.m_templateID,
+            ItemLocation = 1
+        };
+        Context.SessionActor.Tell(acquireMessage, null);
+
+        var updateMessage = new PET_9_PROTOCOL.MSG_PETSNACKUPDATE {
+            GlobalID = Context.Character.CharId,
+            ItemID = coreObject.m_globalID,
+            Quantity = 1
+        };
+        Context.SessionActor.Tell(updateMessage, null);
+
+
+        InformSenderClient($"Added snack {coreObject.m_debugName} to snack bag.");
+    }
+
     [Command("name")]
     [AuthRequired(AuthLevel.QualityAssurance)]
     private void SetNameCommand([Remainder]string name) {
