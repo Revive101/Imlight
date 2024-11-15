@@ -26,6 +26,7 @@ public class WizardNameBank : RootSingleResourceSingleton<WizardNameBank>, IMemo
     protected override void AfterLoad() {
         s_characterNameTable = GetCharacterNameTable(Stream);
         Logger.Information("Loaded {0} character name tables.", Logger.Args(s_characterNameTable.Count));
+
     }
 
     /// <summary>
@@ -34,33 +35,26 @@ public class WizardNameBank : RootSingleResourceSingleton<WizardNameBank>, IMemo
     /// <param name="nameIndices">The name indices containing the first name, middle name, and last name.</param>
     /// <param name="gender">The gender of the character.</param>
     /// <returns>The English name composed of the first name, middle name, and last name.</returns>
-    public static string GetEnglishName(uint nameIndices, eGender gender)
-    {
-        // Drop the uneeded MSB.
-        nameIndices &= 0x7FFFFFFF;
-
+    public static string GetEnglishName(uint nameIndices, eGender gender) {
         // The first 8 bits are the first name, the next 8 bits are the middle name, and the last 8 bits are the last name.
-        var firstNameIndex = (int)(nameIndices >> 16);
-        var middleNameIndex = (int)((nameIndices >> 8) & 0xFF);
-        var lastNameIndex = (int)(nameIndices & 0xFF);
+        var firstNameIndex = (int) (nameIndices >> 16) & 0xFF;
+        var middleNameIndex = (int) ((nameIndices >> 8) & 0xFF);
+        var lastNameIndex = (int) (nameIndices & 0xFF);
 
         var firstNameTableName = (gender == eGender.Male) ? FirstNameHumanMaleTableName : FirstNameHumanFemaleTableName;
         var firstName = GetEnglishNamePart(firstNameTableName, firstNameIndex);
 
         string middleName = string.Empty;
-        if (middleNameIndex != 0)
-        {
+        if (middleNameIndex != 0) {
             middleName = GetEnglishNamePart(MiddleNameHumanTableName, middleNameIndex);
         }
 
         string lastName = string.Empty;
-        if (lastNameIndex != 0)
-        {
+        if (lastNameIndex != 0) {
             lastName = GetEnglishNamePart(LastNameHumanTableName, lastNameIndex);
         }
 
-        if (middleNameIndex == 0 && lastNameIndex == 0)
-        {
+        if (middleNameIndex == 0 && lastNameIndex == 0) {
             // If the middle name and last name are both 0, then the first name is the full name.
             return firstName;
         }
@@ -70,17 +64,18 @@ public class WizardNameBank : RootSingleResourceSingleton<WizardNameBank>, IMemo
 
     private static string GetEnglishNamePart(string tableName, int index) {
         if (!s_characterNameTable.TryGetValue(tableName, out var characterNames)) {
-            return "[NOT_FOUND]";
+            return "[TABLE_NOT_FOUND]";
         }
 
         if (index >= characterNames.Count) {
-            return "[NOT_FOUND]";
+            return "[INDEX_OUT_OF_RANGE]";
         }
 
         // The character name table is just a list of locale IDs.
         var localeNameid = characterNames[index];
-        var englishName = Locale.GetEnglishName(CharacterLocaleTable, localeNameid);
-        return (englishName == "") ? "[NOT_FOUND]" : englishName;
+        var englishName = Locale.GetEnglishName(CharacterLocaleTable, localeNameid) ?? $"[NAME_NOT_FOUND]";
+
+        return englishName;
     }
 
     private static Dictionary<string, List<string>> GetCharacterNameTable(MemoryStream fileStream) {
@@ -91,6 +86,14 @@ public class WizardNameBank : RootSingleResourceSingleton<WizardNameBank>, IMemo
         var result = new Dictionary<string, List<string>>();
         var tableNodes = xmlDocument.SelectNodes("/CharacterNameTable/Table");
         foreach (XmlNode tableNode in tableNodes) {
+            // As of r766693 (11/15/2024), the game client now includes multiple character name tables for different locales.
+            // Note that all recorded tables still reference the same, English lookup name.
+            // In this case, we're only interested in the German locale since it's the first table.
+            var localeAttr = tableNode.Attributes["Locale"];
+            if (localeAttr != null && localeAttr.Value != "de") {
+                continue;
+            }
+
             string tableName = tableNode.Attributes["Name"].Value;
             List<string> characterNames = new List<string>();
 
