@@ -77,7 +77,8 @@ public class CoreObjectSerializer : ObjectSerializer {
 
         if (classId == 0 && namespaceId == 0) {
             // This is not a core object. Dispatch the object normally.
-            propClass = TypeCache.Dispatch(templateOrHash);
+            propClass = TypeCache.Dispatch(templateOrHash) ?? ServerTypeCache.Dispatch(templateOrHash);
+
             return propClass is not null;
         }
         else {
@@ -123,6 +124,7 @@ public class CoreObjectSerializer : ObjectSerializer {
             (132, 9) => 398229815,
             (148, 9) => 1748894102,
             (131, 131) => 958775582,
+            (148, 09) => 1748894102,
             _ => 0
         };
     }
