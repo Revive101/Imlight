@@ -452,17 +452,16 @@ public static class WizardZoneLoader {
     /// <param name="operatorType">The operator type to use for combining the requirements.</param>
     /// <returns>True if all requirements are met, false otherwise.</returns>
     private static bool CheckGlobalRegistryRequirements(List<Requirement> values, Requirement.Operator operatorType) {
-        var allMatched = operatorType == Requirement.Operator.ROP_OR;
+        var allMatched = true;
 
         foreach (var requirement in values) {
             if (requirement is ReqGlobalRegistryValue globalReq) {
-                var globalValueMet = GlobalRegistryValueMet(globalReq);
-                if (globalValueMet) {
-                    continue;
+                if (!GlobalRegistryValueMet(globalReq)
+                    && operatorType == Requirement.Operator.ROP_AND) {
+                    return false;
                 }
-                else {
-                    allMatched = allMatched && !globalReq.m_applyNOT;
-                }
+
+                allMatched = allMatched && !globalReq.m_applyNOT;
             }
             else {
                 Logger.Warning("Holy!!! We found a spawn requirement that isn't a global registry value. " +

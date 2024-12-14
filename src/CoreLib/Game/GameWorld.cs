@@ -13,18 +13,16 @@ using Imlight.CoreLib.Shared.Resources;
 namespace Imlight.CoreLib.Game;
 
 public class GameWorld : ReceiveProtocolDispatcher {
-    public Dictionary<string, IActorRef> Zones { get; }
-
-    private GameServer _server;
+    private readonly Dictionary<string, IActorRef> _zones;
+    private readonly GameServer _server;
 
     public GameWorld(GameServer server) {
-        this.Zones = new Dictionary<string, IActorRef>();
+        this._zones = new Dictionary<string, IActorRef>();
         this._server = server;
     }
 
-    public static Props Props(GameServer server) {
-        return Akka.Actor.Props.Create(() => new GameWorld(server));
-    }
+    public static Props Props(GameServer server)
+        => Akka.Actor.Props.Create(() => new GameWorld(server));
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]
     private void ReceiveZoneTransfer(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message) {
@@ -33,8 +31,9 @@ public class GameWorld : ReceiveProtocolDispatcher {
             Logger.Error("{Name} received invalid zone name {ZoneName}",
                 Logger.Args(nameof(GameWorld), message.DestinationZone));
 
-            var response = new ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP();
-            response.ErrorCode = 1;
+            var response = new ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP {
+                ErrorCode = 1
+            };
             Sender.Tell(response);
 
             return;
@@ -42,23 +41,49 @@ public class GameWorld : ReceiveProtocolDispatcher {
 
         // Get the zone if it's already loaded; or, create a new one if it's not.
         IActorRef zone;
-        if (!Zones.ContainsKey(message.DestinationZone)) {
-            // '/' is an illegal character in Akka.NET actor names, so we replace it with '-'.
-            var zoneActorName = message.DestinationZone
-                .Replace('/', '-');
-
-            zone = Context.ActorOf(Zone.WizardZone.Props(message.DestinationZone), zoneActorName);
-            Zones.Add(message.DestinationZone, zone);
-
-            // Log the new zone creation.
-            Logger.Information("GameWorld created new zone: {ZoneName}",
-                Logger.Args(message.DestinationZone));
+        if (!_zones.TryGetValue(message.DestinationZone, out var value)) {
+            if (message.IsPrivate) {
+                zone = CreatePrivateZone(message.DestinationZone, message.Owner);
+            }
+            else {
+                zone = CreatePublicZone(message.DestinationZone);
+            }
         }
         else {
-            zone = Zones[message.DestinationZone];
+            zone = value;
         }
 
-        // Forward the message to the zone actor we just created.
+        // Forward the message to the zone actor we just created, or already have.
         zone.Forward(message);
+    }
+
+    private IActorRef CreatePublicZone(string zoneName) {
+        // '/' is an illegal character in Akka.NET actor names, so we replace it with '-'.
+        var zoneActorName = zoneName
+            .Replace('/', '-');
+
+        var zone = Context.ActorOf(Zone.WizardZone.Props(zoneName), zoneActorName);
+        _zones.Add(zoneName, zone);
+
+        // Log the new zone creation.
+        Logger.Information("GameWorld created new zone: {ZoneName}",
+            Logger.Args(zoneName));
+
+        return zone;
+    }
+
+    private IActorRef CreatePrivateZone(string zoneName, IActorRef owner) {
+        // '/' is an illegal character in Akka.NET actor names, so we replace it with '-'.
+        var zoneActorName = zoneName
+            .Replace('/', '-');
+
+        var zone = Context.ActorOf(Zone.WizardPrivateZone.Props(zoneName, owner), zoneActorName);
+        _zones.Add(zoneName, zone);
+
+        // Log the new zone creation.
+        Logger.Information("GameWorld created new private zone: {ZoneName}",
+            Logger.Args(zoneName));
+
+        return zone;
     }
 }

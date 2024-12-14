@@ -28,8 +28,13 @@ internal class LoginAFKService : MessageService {
         _timer.Enabled = true;
     }
 
-    protected static Props Props(SessionActor parentActor) {
-        return Akka.Actor.Props.Create(() => new LoginAFKService(parentActor));
+    protected static Props Props(SessionActor parentActor)
+        => Akka.Actor.Props.Create(() => new LoginAFKService(parentActor));
+
+    protected override void OnDispose() {
+        base.OnDispose();
+
+        CloseSession();
     }
 
     [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_LOGIN_NOT_AFK))]

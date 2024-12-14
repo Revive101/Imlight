@@ -32,6 +32,8 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public string DestinationZone;
         public string DestinationLocation;
         public bool SendToClient = true;
+        public bool IsPrivate = false;
+        public IActorRef Owner;
     }
 
     public class MSG_ZONETRANSFERRSP : IServerMessage {
@@ -281,8 +283,20 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public CoreObject? SenderGameObject;
     }
 
-    public class MSG_ADDSERVICEOPTION : IServerMessage {
+    public class MSG_PLAYERCOUNTUPDATE : IServerMessage {
         public byte MessageOrder { get; } = 32;
+        public byte ServiceID { get; } = 102;
+
+        public int PlayerCount;
+    }
+
+    public class MSG_ZONECLOSED : IServerMessage {
+        public byte MessageOrder { get; } = 33;
+        public byte ServiceID { get; } = 102;
+    }
+
+    public class MSG_ADDSERVICEOPTION : IServerMessage {
+        public byte MessageOrder { get; } = 34;
         public byte ServiceID { get; } = 102;
 
         public ServiceOption ServiceOption;
