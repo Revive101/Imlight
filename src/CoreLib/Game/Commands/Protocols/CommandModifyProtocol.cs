@@ -383,7 +383,7 @@ internal class CommandModifyProtocol : CommandProtocol {
     }
 
     [Command("refillenergy")]
-    [Alias("refillen", "refillnrg", "refillpet")]
+    [Alias("refillen", "refillnrg", "refillpet", "energize")]
     [AuthRequired(AuthLevel.QualityAssurance)]
     private void MaxEnergyCommand() {
         // The client has a max mana increase effect applied, so sending it here would double the mana client side.
