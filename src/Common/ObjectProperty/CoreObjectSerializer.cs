@@ -124,7 +124,6 @@ public class CoreObjectSerializer : ObjectSerializer {
             (132, 9) => 398229815,
             (148, 9) => 1748894102,
             (131, 131) => 958775582,
-            (148, 09) => 1748894102,
             _ => 0
         };
     }
