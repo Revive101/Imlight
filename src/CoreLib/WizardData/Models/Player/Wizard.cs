@@ -774,6 +774,7 @@ public class Wizard : IDisposable {
 
     private void InitializePetOwnerBehavior() {
         PetOwnerBehavior = new ServerPetOwnerBehavior();
+        PetOwnerBehavior.SetEnergy(GameStats.m_energyMax);
     }
 
     private void AfterDatabaseLoadPetOwnerBehavior() {
@@ -788,17 +789,17 @@ public class Wizard : IDisposable {
             return;
         }
 
-        var currentTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        var timeDifference = currentTime - PetOwnerBehavior.EnergyTickInSeconds;
-        var energyRegained = timeDifference / 450; // 450 seconds = 7.5 minutes
-
-        // If the player has regained more energy than their max, set it to the max.
-        if (PetOwnerBehavior.Energy + energyRegained > GameStats.m_energyMax) {
-            PetOwnerBehavior.SetEnergy(GameStats.m_energyMax);
-        }
-        else {
-            PetOwnerBehavior.SetEnergy((int) (PetOwnerBehavior.Energy + energyRegained));
-        }
+        //var currentTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        //var timeDifference = currentTime - PetOwnerBehavior.EnergyTickInSeconds;
+        //var energyRegained = timeDifference / 450; // 450 seconds = 7.5 minutes
+//
+        //// If the player has regained more energy than their max, set it to the max.
+        //if (PetOwnerBehavior.Energy + energyRegained > GameStats.m_energyMax) {
+        //    PetOwnerBehavior.SetEnergy(GameStats.m_energyMax);
+        //}
+        //else {
+        //    PetOwnerBehavior.SetEnergy((int) (PetOwnerBehavior.Energy + energyRegained));
+        //}
     }
 
     private void AfterDatabaseLoadWizardGameStats() {

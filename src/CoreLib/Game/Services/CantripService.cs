@@ -8,7 +8,9 @@ using Imlight.Common.Caches;
 using Imlight.Common.IO;
 using Imlight.CoreLib.Game.Cantrips;
 using Imlight.CoreLib.Game.Spells;
+using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using System.Collections;
@@ -26,6 +28,28 @@ public class CantripService : MessageService {
 
     protected override void OnDispose() {
 
+    }
+
+    [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE))]
+    private void ReceivePostAttach(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE message) {
+        // Send a pet energy tick message to the client.
+        var wizard = GetActiveWizard();
+        var petOwnerBehavior = wizard.PetOwnerBehavior;
+
+        // The client has a max energy increase effect applied, so sending it here would double the energy client side.
+        var magicSchool = wizard.MagicSchoolBehavior.MagicSchool;
+        var level = wizard.MagicSchoolBehavior.Level;
+        var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(magicSchool, level);
+        var normMaxEnergy = baseStats.m_petEnergy;
+
+        var tickMsg = new PET_9_PROTOCOL.MSG_PETENERGYTICK() {
+            GlobalID = wizard.CharId,
+            Energy = petOwnerBehavior.Energy,
+            MaxEnergy = normMaxEnergy,
+            TickTime = 0
+        };
+
+        SendToSocket(tickMsg);
     }
 
     [MessageHandler(typeof(CANTRIPSMESSAGES_57_PROTOCOL.MSG_CANTRIPSSPELLCAST))]

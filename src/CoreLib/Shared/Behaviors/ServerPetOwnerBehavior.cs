@@ -18,20 +18,23 @@ public class ServerPetOwnerBehavior : ServerBehaviorInstance {
 
     public byte MaxSlots { get; set; }
     public List<CraftingSlot> MorphingSlots { get; set; }
-    public uint EnergyTickInSeconds { get; private set; }
+    public uint NextEnergyTickEpoch { get; private set; }
     public int Energy { get; private set; }
     public bool PlayingAsPet { get; set; }
 
     public void SetEnergy(int energy) {
         Energy = energy;
-        EnergyTickInSeconds = (uint) DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+        // Next energy tick is now + 7.5 minutes.
+        var currentTick = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        NextEnergyTickEpoch = (uint) (currentTick + 450);
     }
 
     public override ClientPetOwnerBehavior GetClientBehaviorInstance() => new() {
         m_maxSlots = MaxSlots,
         m_morphingSlots = MorphingSlots,
-        m_energyTickTimeSecs = EnergyTickInSeconds,
-        m_energy = 100,
+        m_energyTickTimeSecs = NextEnergyTickEpoch,
+        m_energy = Energy,
         m_playingAsPet = PlayingAsPet
     };
 }
