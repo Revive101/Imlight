@@ -5967,14 +5967,14 @@ public sealed class PET_9_PROTOCOL : MessageProtocol {
 	public override Int32 ProtocolVersion { get; } = 1;
 	public sealed class MSG_CHEERCOSTMAPUPDATE : IMessage {
 		// Sent from server to client fixup the cheercostmods
-		public byte MessageOrder { get; } = 2;
+		public byte MessageOrder { get; } = 1;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("STR")] public ByteString CheerCostMods;
 	}
 	public sealed class MSG_DERBYEFFECTAPPLY : IMessage {
 		// Sent from server to client to apply a derby effect.
-		public byte MessageOrder { get; } = 3;
+		public byte MessageOrder { get; } = 2;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("STR")] public ByteString Game;
@@ -5982,7 +5982,7 @@ public sealed class PET_9_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_DERBYEFFECTREMOVE : IMessage {
 		// Sent from server to client to remove a derby effect.
-		public byte MessageOrder { get; } = 4;
+		public byte MessageOrder { get; } = 3;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("STR")] public ByteString Game;
@@ -5990,14 +5990,14 @@ public sealed class PET_9_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_DERBYEFFECTSLISTUPDATE : IMessage {
 		// Sent from server to client represent the remaining active effects.
-		public byte MessageOrder { get; } = 5;
+		public byte MessageOrder { get; } = 4;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("STR")] public ByteString Data;
 	}
 	public sealed class MSG_DERBYLOCATION : IMessage {
 		// Sent from server to client to update a racers location.
-		public byte MessageOrder { get; } = 6;
+		public byte MessageOrder { get; } = 5;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("INT")] public Int32 RacerId;
@@ -6008,7 +6008,7 @@ public sealed class PET_9_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_DERBYPETENERGYINFO : IMessage {
 		// Sent from server to client to set pet energy info
-		public byte MessageOrder { get; } = 7;
+		public byte MessageOrder { get; } = 6;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("INT")] public Int32 Cost;
@@ -6018,14 +6018,14 @@ public sealed class PET_9_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_DERBYSTATMOD : IMessage {
 		// Sent from server to client to modify a pet stat.
-		public byte MessageOrder { get; } = 8;
+		public byte MessageOrder { get; } = 7;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("STR")] public ByteString Data;
 	}
 	public sealed class MSG_DERBYSYNC : IMessage {
 		// Sent from server to client to sync derby locations
-		public byte MessageOrder { get; } = 9;
+		public byte MessageOrder { get; } = 8;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("GID")] public UInt64 RacerId;
@@ -6036,7 +6036,7 @@ public sealed class PET_9_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_HATCHEGGNOW : IMessage {
 		// Client requests that an egg is hatched for gold
-		public byte MessageOrder { get; } = 10;
+		public byte MessageOrder { get; } = 9;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("GID")] public UInt64 EggGID;
@@ -6044,13 +6044,13 @@ public sealed class PET_9_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_LENTPET : IMessage {
 		// Server lets client know they lent their pet
-		public byte MessageOrder { get; } = 11;
+		public byte MessageOrder { get; } = 10;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 	}
 	public sealed class MSG_PETDERBYBUFF : IMessage {
 		// Message to notify buffs
-		public byte MessageOrder { get; } = 12;
+		public byte MessageOrder { get; } = 11;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("UBYT")] public Byte Add;
@@ -6059,21 +6059,21 @@ public sealed class PET_9_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PETDERBYCHEER : IMessage {
 		// Message to cheer
-		public byte MessageOrder { get; } = 13;
+		public byte MessageOrder { get; } = 12;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("UBYT")] public Byte PetIndex;
 	}
 	public sealed class MSG_PETDERBYJUMPDUCK : IMessage {
 		// Message to Jump or Duck
-		public byte MessageOrder { get; } = 14;
+		public byte MessageOrder { get; } = 13;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("UBYT")] public Byte PetIndex;
 	}
 	public sealed class MSG_PETDERBYLAP : IMessage {
 		// Message to notify lap change
-		public byte MessageOrder { get; } = 15;
+		public byte MessageOrder { get; } = 14;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("UBYT")] public Byte PetIndex;
@@ -6081,7 +6081,7 @@ public sealed class PET_9_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PETDERBYMODIFYSTAT : IMessage {
 		// Message to modify stats
-		public byte MessageOrder { get; } = 16;
+		public byte MessageOrder { get; } = 15;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("UBYT")] public Byte Name;
@@ -6090,7 +6090,7 @@ public sealed class PET_9_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PETDERBYMORALE : IMessage {
 		// Message to adjust Morale
-		public byte MessageOrder { get; } = 17;
+		public byte MessageOrder { get; } = 16;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("UBYT")] public Byte PetIndex;
@@ -6098,7 +6098,7 @@ public sealed class PET_9_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PETDERBYPHOTOFINISH : IMessage {
 		// Message to notify race finish
-		public byte MessageOrder { get; } = 18;
+		public byte MessageOrder { get; } = 17;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("INT")] public Int32 Rank;
@@ -6106,21 +6106,21 @@ public sealed class PET_9_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PETDERBYPLAYERLEFT : IMessage {
 		// Message to notify a player left
-		public byte MessageOrder { get; } = 19;
+		public byte MessageOrder { get; } = 18;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("UBYT")] public Byte PetIndex;
 	}
 	public sealed class MSG_PETDERBYSLOW : IMessage {
 		// Message to slow
-		public byte MessageOrder { get; } = 20;
+		public byte MessageOrder { get; } = 19;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("UBYT")] public Byte PetIndex;
 	}
 	public sealed class MSG_PETDERBYSPEED : IMessage {
 		// Message to adjust Speed
-		public byte MessageOrder { get; } = 21;
+		public byte MessageOrder { get; } = 20;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("UBYT")] public Byte PetIndex;
@@ -6128,14 +6128,14 @@ public sealed class PET_9_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PETDERBYSTART : IMessage {
 		// Message to notify race start steps
-		public byte MessageOrder { get; } = 22;
+		public byte MessageOrder { get; } = 21;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("UBYT")] public Byte GoGoGo;
 	}
 	public sealed class MSG_PETDERBYSWITCHLANE : IMessage {
 		// Message to switch lanes
-		public byte MessageOrder { get; } = 23;
+		public byte MessageOrder { get; } = 22;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("UBYT")] public Byte PetIndex;
@@ -6144,13 +6144,13 @@ public sealed class PET_9_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PETDERBYSWITCHLANEFAIL : IMessage {
 		// Message that the attempt to switch lanes failed
-		public byte MessageOrder { get; } = 24;
+		public byte MessageOrder { get; } = 23;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 	}
 	public sealed class MSG_PETDERBYUSETALENT : IMessage {
 		// Message to Use a Talent
-		public byte MessageOrder { get; } = 25;
+		public byte MessageOrder { get; } = 24;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("UINT")] public UInt32 TalentID;
@@ -6159,7 +6159,7 @@ public sealed class PET_9_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PETEGGMORPHED : IMessage {
 		// Tell a client that an egg was created
-		public byte MessageOrder { get; } = 26;
+		public byte MessageOrder { get; } = 25;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("GID")] public UInt64 PetTemplateGID;
@@ -6168,14 +6168,14 @@ public sealed class PET_9_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PETENERGYMAX : IMessage {
 		// Tell client his new max energy
-		public byte MessageOrder { get; } = 27;
+		public byte MessageOrder { get; } = 26;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("INT")] public Int32 MaxEnergy;
 	}
 	public sealed class MSG_PETENERGYTICK : IMessage {
 		// Tell client our pet regained a point of energy
-		public byte MessageOrder { get; } = 28;
+		public byte MessageOrder { get; } = 27;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("GID")] public UInt64 GlobalID;
@@ -6185,14 +6185,14 @@ public sealed class PET_9_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PETGAMEDANCE : IMessage {
 		// Sent from server to client to control the game.
-		public byte MessageOrder { get; } = 29;
+		public byte MessageOrder { get; } = 28;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("STR")] public ByteString Moves;
 	}
 	public sealed class MSG_PETGAMEDATA : IMessage {
 		// Sent from server to client to set up a round 
-		public byte MessageOrder { get; } = 30;
+		public byte MessageOrder { get; } = 29;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("STR")] public ByteString Game;
@@ -6200,14 +6200,14 @@ public sealed class PET_9_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PETGAMEDERBYRESULTS : IMessage {
 		// Sent from server to client with derby results
-		public byte MessageOrder { get; } = 31;
+		public byte MessageOrder { get; } = 30;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("STR")] public ByteString Data;
 	}
 	public sealed class MSG_PETGAMEDROPBONUS : IMessage {
 		// Sent from server to client to control the game.
-		public byte MessageOrder { get; } = 32;
+		public byte MessageOrder { get; } = 31;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("UBYT")] public Byte GameCommand;
@@ -6215,7 +6215,7 @@ public sealed class PET_9_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PETGAMEDROPOBJECT : IMessage {
 		// Sent from server to client to control the game.
-		public byte MessageOrder { get; } = 33;
+		public byte MessageOrder { get; } = 32;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("UBYT")] public Byte GameCommand;
@@ -6223,7 +6223,7 @@ public sealed class PET_9_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PETGAMEEND : IMessage {
 		// Sent from server to client to end a pet game
-		public byte MessageOrder { get; } = 34;
+		public byte MessageOrder { get; } = 33;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("STR")] public ByteString Game;
@@ -6231,7 +6231,7 @@ public sealed class PET_9_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PETGAMEENDING : IMessage {
 		// Sent from server to client to end a pet game
-		public byte MessageOrder { get; } = 35;
+		public byte MessageOrder { get; } = 34;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("STR")] public ByteString Game;
@@ -6239,14 +6239,14 @@ public sealed class PET_9_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PETGAMEINDIVIDUALRESULTS : IMessage {
 		// Sent from server to client send down individual-specific data
-		public byte MessageOrder { get; } = 36;
+		public byte MessageOrder { get; } = 35;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("STR")] public ByteString Data;
 	}
 	public sealed class MSG_PETGAMEINIT : IMessage {
 		// Sent from server to client to initialize the game
-		public byte MessageOrder { get; } = 37;
+		public byte MessageOrder { get; } = 36;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("STR")] public ByteString Game;
@@ -6256,7 +6256,7 @@ public sealed class PET_9_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PETGAMEJOIN : IMessage {
 		// Sent from client to server to initiate a pet game
-		public byte MessageOrder { get; } = 38;
+		public byte MessageOrder { get; } = 37;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("STR")] public ByteString Game;
@@ -6264,7 +6264,7 @@ public sealed class PET_9_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PETGAMEJOINRSP : IMessage {
 		// Sent from server to cientl for ack that they can acutally join a pet game
-		public byte MessageOrder { get; } = 39;
+		public byte MessageOrder { get; } = 38;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("STR")] public ByteString Game;
@@ -6272,13 +6272,13 @@ public sealed class PET_9_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PETGAMEJUMP : IMessage {
 		// Jump message for Gobbler Drop, etc.
-		public byte MessageOrder { get; } = 40;
+		public byte MessageOrder { get; } = 39;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 	}
 	public sealed class MSG_PETGAMEMAZE : IMessage {
 		// Sent from server to client to control the game.
-		public byte MessageOrder { get; } = 41;
+		public byte MessageOrder { get; } = 40;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("UBYT")] public Byte GameCommand;
@@ -6287,26 +6287,26 @@ public sealed class PET_9_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PETGAMEREADY : IMessage {
 		// Sent from client to server to say the player is ready
-		public byte MessageOrder { get; } = 42;
+		public byte MessageOrder { get; } = 41;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 	}
 	public sealed class MSG_PETGAMESNACKFEEDFAILED : IMessage {
 		// Sent from server to client as snack feeding failure.
-		public byte MessageOrder { get; } = 43;
+		public byte MessageOrder { get; } = 42;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 	}
 	public sealed class MSG_PETGAMESNACKFEEDSUCCESS : IMessage {
 		// Sent from server to client as snack feeding success.
-		public byte MessageOrder { get; } = 44;
+		public byte MessageOrder { get; } = 43;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("STR")] public ByteString Data;
 	}
 	public sealed class MSG_PETGAMESTART : IMessage {
 		// Sent from server to client to start a pet game
-		public byte MessageOrder { get; } = 45;
+		public byte MessageOrder { get; } = 44;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("STR")] public ByteString Game;
@@ -6314,7 +6314,7 @@ public sealed class PET_9_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PETHATCHED : IMessage {
 		// Tell a client that a pet hatched
-		public byte MessageOrder { get; } = 46;
+		public byte MessageOrder { get; } = 45;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("GID")] public UInt64 GlobalID;
@@ -6322,7 +6322,7 @@ public sealed class PET_9_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PETLEVELUP : IMessage {
 		// Tell client our pet just went up a level
-		public byte MessageOrder { get; } = 47;
+		public byte MessageOrder { get; } = 46;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("GID")] public UInt64 GlobalID;
@@ -6336,14 +6336,14 @@ public sealed class PET_9_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PETMORPHCANAFFORD : IMessage {
 		// Tell a client that they can or cant afford to morph
-		public byte MessageOrder { get; } = 48;
+		public byte MessageOrder { get; } = 47;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("BYT")] public SByte CanAfford;
 	}
 	public sealed class MSG_PETMORPHINGSLOT : IMessage {
 		// Tell the client a change occured with a morphing slot
-		public byte MessageOrder { get; } = 49;
+		public byte MessageOrder { get; } = 48;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("GID")] public UInt64 GlobalID;
@@ -6352,21 +6352,21 @@ public sealed class PET_9_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PETMORPHREADY : IMessage {
 		// Tell a client that another partner has changed its readiness
-		public byte MessageOrder { get; } = 50;
+		public byte MessageOrder { get; } = 49;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("BYT")] public SByte Confirmed;
 	}
 	public sealed class MSG_PETMORPHSET : IMessage {
 		// Tell a client that another partner has chosen a different pet for morphing
-		public byte MessageOrder { get; } = 51;
+		public byte MessageOrder { get; } = 50;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("GID")] public UInt64 PetID;
 	}
 	public sealed class MSG_PETSNACKADD : IMessage {
 		// Notifying the client of a brand new petsnack
-		public byte MessageOrder { get; } = 52;
+		public byte MessageOrder { get; } = 51;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("GID")] public UInt64 GlobalID;
@@ -6374,7 +6374,7 @@ public sealed class PET_9_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PETSNACKREMOVE : IMessage {
 		// Notifying the client to drop a petsnack
-		public byte MessageOrder { get; } = 53;
+		public byte MessageOrder { get; } = 52;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("GID")] public UInt64 GlobalID;
@@ -6382,14 +6382,14 @@ public sealed class PET_9_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PETSNACKREMOVEREQUEST : IMessage {
 		// Notify the server to remove a petsnack
-		public byte MessageOrder { get; } = 54;
+		public byte MessageOrder { get; } = 53;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("GID")] public UInt64 GlobalID;
 	}
 	public sealed class MSG_PETSNACKUPDATE : IMessage {
 		// The quantity of a petsnack stack has changed
-		public byte MessageOrder { get; } = 55;
+		public byte MessageOrder { get; } = 54;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("GID")] public UInt64 GlobalID;
@@ -6398,7 +6398,7 @@ public sealed class PET_9_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PETUPDATEBEHAVIOR : IMessage {
 		// Tell a client the new state of the behavior after a major update
-		public byte MessageOrder { get; } = 56;
+		public byte MessageOrder { get; } = 55;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 9;
 		[MessageElement("GID")] public UInt64 GlobalID;
