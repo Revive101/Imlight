@@ -6,7 +6,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/src/Director/bin/Debug/net7.0/Imlight.Director.dll",
+            "program": "${workspaceFolder}/src/Director/bin/Debug/net9.0/Imlight.Director.dll",
             "args": [],
             "cwd": "${workspaceFolder}/src/Director",
             "console": "integratedTerminal",
