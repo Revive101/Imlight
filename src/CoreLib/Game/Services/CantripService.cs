@@ -54,16 +54,29 @@ public class CantripService : MessageService {
 
     [MessageHandler(typeof(CANTRIPSMESSAGES_57_PROTOCOL.MSG_CANTRIPSSPELLCAST))]
     private void ReceiveCantripSpellCast(CANTRIPSMESSAGES_57_PROTOCOL.MSG_CANTRIPSSPELLCAST message) {
+        var wizard = GetActiveWizard();
         CantripsSpellTemplate cantrip = CantripFactory.CreateCantripTemplateFromId(message.SpellTemplateID);
+        
+        bool hasEnergy = UseEnergy(wizard, cantrip.m_energyCost);
+        byte outOfEnergy = 0;
+        if (!hasEnergy) {
+            cantrip.m_energyCost = 0;
+            outOfEnergy = 1;
+        }
+
         var cantripResponse = new CANTRIPSMESSAGES_57_PROTOCOL.MSG_CANTRIPSRESPONSE {
             EnergyUsed = (uint) cantrip.m_energyCost,
-            CooldownSeconds = (uint) cantrip.m_cooldownSeconds
-            // if user is out of energy, set OutOfEnergy to 1
+            CooldownSeconds = (uint) cantrip.m_cooldownSeconds,
+            OutOfEnergy = outOfEnergy
         };
         SendToSocket(cantripResponse); 
 
+        if (!hasEnergy) {
+            return;
+        }
+
         var castEffect = new CANTRIPSMESSAGES_57_PROTOCOL.MSG_CASTEFFECT {
-            GameObjectID = GetActiveWizard().GameObject.m_globalID,
+            GameObjectID = wizard.GameObject.m_globalID,
             SpellTemplateID = (int) message.SpellTemplateID
         };
 
@@ -80,5 +93,29 @@ public class CantripService : MessageService {
                 break;
         }
         SendToSocket(castEffect);
+    }
+
+    private bool UseEnergy(Wizard wizard, int energyCost) {
+        var newEnergy = wizard.PetOwnerBehavior.Energy - energyCost;
+        if (newEnergy < 0) {
+            return false;
+        }
+        wizard.UpdateEnergy(newEnergy);
+
+        // The client has a max energy increase effect applied, so sending it here would double the energy client side.
+        var magicSchool = wizard.MagicSchoolBehavior.MagicSchool;
+        var level = wizard.MagicSchoolBehavior.Level;
+        var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(magicSchool, level);
+        var normMaxEnergy = baseStats.m_petEnergy;
+
+        var networkMessage = new PET_9_PROTOCOL.MSG_PETENERGYTICK() {
+            GlobalID = wizard.GameObject.m_globalID,
+            Energy = newEnergy,
+            MaxEnergy = normMaxEnergy,
+            TickTime = (int) wizard.PetOwnerBehavior.NextEnergyTickEpoch
+        };
+
+        SendToSocket(networkMessage);
+        return true;
     }
 }
