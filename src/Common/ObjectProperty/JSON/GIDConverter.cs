@@ -3,28 +3,23 @@
  * Proprietary and confidential.
  */
 
-using System;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Newtonsoft.Json;
+using System;
 
 namespace Imlight.Common.ObjectProperty.JSON;
 
-public class GIDConverter : JsonConverter {
-    public override bool CanConvert(Type objectType) {
-        return objectType == typeof(GID);
-    }
-
-    public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer) {
-        if (value is GID gid) {
-            writer.WriteValue(gid.Value);
-        }
-    }
-
-    public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer) {
-        if (reader.Value != null && ulong.TryParse(reader.Value.ToString(), out ulong ulongValue)) {
-            return new GID(ulongValue);
+public class GIDConverter : JsonConverter<GID> {
+    public override GID ReadJson(JsonReader reader, Type objectType, GID existingValue, bool hasExistingValue, JsonSerializer serializer) {
+        if (reader.TokenType == JsonToken.Integer) {
+            var value = Convert.ToUInt64(reader.Value);
+            return new GID(value);
         }
 
-        return null;
+        throw new JsonSerializationException($"Unexpected token type {reader.TokenType} when parsing GID");
+    }
+
+    public override void WriteJson(JsonWriter writer, GID value, JsonSerializer serializer) {
+        writer.WriteValue(value.Full);
     }
 }

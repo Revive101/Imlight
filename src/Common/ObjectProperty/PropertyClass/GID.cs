@@ -18,12 +18,15 @@ modification, are permitted provided that the following conditions are met:
    this software without specific prior written permission.
 */
 
+using Imlight.Common.ObjectProperty.JSON;
+using Newtonsoft.Json;
 using System;
 using System.Runtime.InteropServices;
 
 namespace Imlight.Common.ObjectProperty.PropertyReflection;
 
 [StructLayout(LayoutKind.Explicit)]
+[JsonConverter(typeof(GIDConverter))]
 public struct GID(ulong full) : IConvertible {
     [FieldOffset(0)]
     public ulong Full = full;
