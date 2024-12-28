@@ -35,7 +35,7 @@ public abstract class MessageService : ReceiveProtocolDispatcher {
             throw new ActorKilledException($"{GetType()} attempted to send message to undefined SessionActor.");
         }
 
-        SessionActor.ActorRef.Tell(message);
+        SessionActor.ActorRef.Tell(message, Self);
     }
 
     /// <summary>
@@ -48,7 +48,7 @@ public abstract class MessageService : ReceiveProtocolDispatcher {
                                 $"Do not do this. Use {nameof(SendToSocket)} instead.");
         }
 
-        SessionActor.ActorRef.Tell(message);
+        SessionActor.ActorRef.Tell(message, Self);
     }
 
     /// <summary>
@@ -62,13 +62,13 @@ public abstract class MessageService : ReceiveProtocolDispatcher {
             throw new ActorKilledException($"{GetType()} attempted to send message to undefined SessionActor.");
         }
 
-        var msg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+        var message = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
             Message = originalMessage,
             Selfless = isSelfless,
             Sender = SessionActor.ActorRef
         };
 
-        SessionActor.ActorRef.Tell(msg);
+        SessionActor.ActorRef.Tell(message, Self);
     }
 
     /// <summary>
