@@ -5,23 +5,29 @@
 
 using Akka.Actor;
 using Imlight.Common.Caches;
+using Imlight.Common.Cryptography;
 using Imlight.Common.IO;
 using Imlight.CoreLib.Game.Cantrips;
 using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using System.Collections;
 using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Services;
 
-public class CantripService : MessageService {
-
+public class CantripService : MessageService, IWithTimers {
+    private const int CANTRIP_CAST_TIME = 5;
     public CantripService(SessionActor sessionActor) : base(sessionActor) { }
+    public ITimerScheduler Timers { get; set; }
+    private readonly TimeSpan _zoneRemovalWaitTime = TimeSpan.FromSeconds(CANTRIP_CAST_TIME);
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new CantripService(parentActor));
@@ -91,8 +97,22 @@ public class CantripService : MessageService {
                 castEffect.AnimationKFM = cantrip.m_animationKFMs[num];
                 castEffect.AnimationName = cantrip.m_animationNames[num];
                 break;
+            case CantripsSpellTemplate.CantripsSpellEffect.CSE_Teleport:
+                var tpmsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
+                    DestinationLocation = "Start",
+                    DestinationZone = cantrip.m_effectParameter,
+                    SendToClient = true,
+                };
+                Timers.StartSingleTimer("zonetransfer", tpmsg, _zoneRemovalWaitTime);
+                // DoZoneTransfer(cantrip.m_effectParameter);
+                break;
         }
         SendToSocket(castEffect);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]
+    private void ReceiveZoneTransferRequest(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message) {
+        TellOtherServices(message);
     }
 
     private bool UseEnergy(Wizard wizard, int energyCost) {
