@@ -5,7 +5,6 @@
 
 using Akka.Actor;
 using Imlight.Common.Caches;
-using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Game.Cantrips;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Networking;
@@ -72,32 +71,19 @@ public class CantripService : MessageService, IWithTimers {
 
         switch (cantrip.m_cantripsSpellEffect) {
             case CantripsSpellTemplate.CantripsSpellEffect.CSE_Emote:
-                castEffect.AnimationName = cantrip.m_animationNames[0]; break;
+                castEffect = castEmoteCantrip(cantrip, castEffect); 
+                break;
             case CantripsSpellTemplate.CantripsSpellEffect.CSE_PlayEffect:
-                // note that the only cantrip from this section that needs rng is the dice roll one
-                // all the other cantrips in this section only have 1 animation
-                var rand = new Random();
-                int num = rand.Next(cantrip.m_animationKFMs.Count);
-                castEffect.AnimationKFM = cantrip.m_animationKFMs[num];
-                castEffect.AnimationName = cantrip.m_animationNames[num];
+                castEffect = castPlayEffectCantrip(cantrip, castEffect);
                 break;
             case CantripsSpellTemplate.CantripsSpellEffect.CSE_Teleport:
-                var tpmsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
-                    DestinationLocation = "Start",
-                    DestinationZone = cantrip.m_effectParameter,
-                    SendToClient = true,
-                };
-                Timers.StartSingleTimer("zonetransfer", tpmsg, _zoneRemovalWaitTime);
+                castTeleportCantrip(cantrip);
                 break;
             case CantripsSpellTemplate.CantripsSpellEffect.CSE_Ritual:
-                var castRitualMsg = new CANTRIPSMESSAGES_57_PROTOCOL.MSG_CASTRITUAL {
-                    SpellTemplateID = (int) message.SpellTemplateID,
-                    Phase = 0
-                };
-                SendToSocket(castRitualMsg);
+                castRitualCantrip((int) message.SpellTemplateID);
                 return; // User needs to select a target first
         }
-        ZoneBroadcast(castEffect);
+        SendToSocket(castEffect);
     }
 
     [MessageHandler(typeof(CANTRIPSMESSAGES_57_PROTOCOL.MSG_CASTRITUAL))]
@@ -162,5 +148,37 @@ public class CantripService : MessageService, IWithTimers {
 
         SendToSocket(networkMessage);
         return true;
+    }
+
+    private CANTRIPSMESSAGES_57_PROTOCOL.MSG_CASTEFFECT castEmoteCantrip(CantripsSpellTemplate cantrip, CANTRIPSMESSAGES_57_PROTOCOL.MSG_CASTEFFECT castEffect) {
+        castEffect.AnimationName = cantrip.m_animationNames[0];
+        return castEffect;
+    }
+
+    private CANTRIPSMESSAGES_57_PROTOCOL.MSG_CASTEFFECT castPlayEffectCantrip(CantripsSpellTemplate cantrip, CANTRIPSMESSAGES_57_PROTOCOL.MSG_CASTEFFECT castEffect) {
+        // note that the only cantrip from this section that needs rng is the dice roll one
+        // all the other cantrips in this section only have 1 animation
+        var rand = new Random();
+        int num = rand.Next(cantrip.m_animationKFMs.Count);
+        castEffect.AnimationKFM = cantrip.m_animationKFMs[num];
+        castEffect.AnimationName = cantrip.m_animationNames[num];
+        return castEffect;
+    }
+
+    private void castTeleportCantrip(CantripsSpellTemplate cantrip) {
+        var tpmsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
+            DestinationLocation = "Start",
+            DestinationZone = cantrip.m_effectParameter,
+            SendToClient = true,
+        };
+        Timers.StartSingleTimer("zonetransfer", tpmsg, _zoneRemovalWaitTime);
+    }
+
+    private void castRitualCantrip(int spellTemplateID) {
+        var castRitualMsg = new CANTRIPSMESSAGES_57_PROTOCOL.MSG_CASTRITUAL {
+            SpellTemplateID = spellTemplateID,
+            Phase = 0
+        };
+        SendToSocket(castRitualMsg);
     }
 }
