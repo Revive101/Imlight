@@ -5,20 +5,13 @@
 
 using Akka.Actor;
 using Imlight.Common.Caches;
-using Imlight.Common.Cryptography;
-using Imlight.Common.IO;
+using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Game.Cantrips;
-using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
-using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System;
-using System.Collections;
-using System.Net;
-using System.Threading;
-using System.Threading.Tasks;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Services;
@@ -63,22 +56,13 @@ public class CantripService : MessageService, IWithTimers {
         var wizard = GetActiveWizard();
         CantripsSpellTemplate cantrip = CantripFactory.CreateCantripTemplateFromId(message.SpellTemplateID);
         
-        bool hasEnergy = UseEnergy(wizard, cantrip.m_energyCost);
-        byte outOfEnergy = 0;
-        if (!hasEnergy) {
-            cantrip.m_energyCost = 0;
-            outOfEnergy = 1;
-        }
+        // Rituals require a target to be selected first, so don't use energy here
+        if (cantrip.m_cantripsSpellEffect != CantripsSpellTemplate.CantripsSpellEffect.CSE_Ritual) {
+            bool hasEnergy = castCantrip(message.SpellTemplateID);
 
-        var cantripResponse = new CANTRIPSMESSAGES_57_PROTOCOL.MSG_CANTRIPSRESPONSE {
-            EnergyUsed = (uint) cantrip.m_energyCost,
-            CooldownSeconds = (uint) cantrip.m_cooldownSeconds,
-            OutOfEnergy = outOfEnergy
-        };
-        SendToSocket(cantripResponse); 
-
-        if (!hasEnergy) {
-            return;
+            if (!hasEnergy) {
+                return;
+            }
         }
 
         var castEffect = new CANTRIPSMESSAGES_57_PROTOCOL.MSG_CASTEFFECT {
@@ -104,10 +88,51 @@ public class CantripService : MessageService, IWithTimers {
                     SendToClient = true,
                 };
                 Timers.StartSingleTimer("zonetransfer", tpmsg, _zoneRemovalWaitTime);
-                // DoZoneTransfer(cantrip.m_effectParameter);
                 break;
+            case CantripsSpellTemplate.CantripsSpellEffect.CSE_Ritual:
+                var castRitualMsg = new CANTRIPSMESSAGES_57_PROTOCOL.MSG_CASTRITUAL {
+                    SpellTemplateID = (int) message.SpellTemplateID,
+                    Phase = 0
+                };
+                SendToSocket(castRitualMsg);
+                return; // User needs to select a target first
         }
-        SendToSocket(castEffect);
+        ZoneBroadcast(castEffect);
+    }
+
+    [MessageHandler(typeof(CANTRIPSMESSAGES_57_PROTOCOL.MSG_CASTRITUAL))]
+    private void ReceiveCastRitual(CANTRIPSMESSAGES_57_PROTOCOL.MSG_CASTRITUAL message) {
+        bool hasEnergy = castCantrip((uint) message.SpellTemplateID);
+
+        if (!hasEnergy) {
+            return;
+        }
+
+        SendToSocket(message);
+    }
+
+    private bool castCantrip(uint spellTemplateID) {
+        var wizard = GetActiveWizard();
+        CantripsSpellTemplate cantrip = CantripFactory.CreateCantripTemplateFromId(spellTemplateID);
+        
+        bool hasEnergy = UseEnergy(wizard, cantrip.m_energyCost);
+        byte outOfEnergy = 0;
+        if (!hasEnergy) {
+            cantrip.m_energyCost = 0;
+            outOfEnergy = 1;
+        }
+
+        var cantripResponse = new CANTRIPSMESSAGES_57_PROTOCOL.MSG_CANTRIPSRESPONSE {
+            EnergyUsed = (uint) cantrip.m_energyCost,
+            CooldownSeconds = (uint) cantrip.m_cooldownSeconds,
+            OutOfEnergy = outOfEnergy
+        };
+        SendToSocket(cantripResponse); 
+
+        if (!hasEnergy) {
+            return false;
+        }
+        return true;
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]
