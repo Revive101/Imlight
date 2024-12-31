@@ -5,10 +5,15 @@
 
 using Akka.Actor;
 using Imlight.Common.Caches;
+using Imlight.Common.Cryptography;
+using Imlight.Common.ObjectProperty;
+using Imlight.Common.ObjectProperty.PropertyReflection;
+using Imlight.Common.Utilities;
 using Imlight.CoreLib.Game.Cantrips;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using static Imlight.Common.Caches.TypeCache;
@@ -16,10 +21,14 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Game.Services;
 
 public class CantripService : MessageService, IWithTimers {
-    private const int CANTRIP_CAST_TIME = 5;
+    private const int CANTRIP_CAST_TIME = 3;
     public CantripService(SessionActor sessionActor) : base(sessionActor) { }
     public ITimerScheduler Timers { get; set; }
-    private readonly TimeSpan _zoneRemovalWaitTime = TimeSpan.FromSeconds(CANTRIP_CAST_TIME);
+    private readonly TimeSpan _cantripCastTimeSpan = TimeSpan.FromSeconds(CANTRIP_CAST_TIME);
+    private readonly CoreObjectSerializer _effectSerializer = new CoreObjectSerializer()
+                    .OnBehaviors(SerializerOptions.Behaviors.None)
+                    .OnPropertyMask(SerializerOptions.PropertyFlags.Transmit
+                                  | SerializerOptions.PropertyFlags.AuthorityTransmit);
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new CantripService(parentActor));
@@ -68,7 +77,6 @@ public class CantripService : MessageService, IWithTimers {
             GameObjectID = wizard.GameObject.m_globalID,
             SpellTemplateID = (int) message.SpellTemplateID
         };
-
         switch (cantrip.m_cantripsSpellEffect) {
             case CantripsSpellTemplate.CantripsSpellEffect.CSE_Emote:
                 castEffect = castEmoteCantrip(cantrip, castEffect); 
@@ -82,6 +90,9 @@ public class CantripService : MessageService, IWithTimers {
             case CantripsSpellTemplate.CantripsSpellEffect.CSE_Ritual:
                 castRitualCantrip((int) message.SpellTemplateID);
                 return; // User needs to select a target first
+            case CantripsSpellTemplate.CantripsSpellEffect.CSE_Invisibility:
+                castInvisCantrip(cantrip);
+                break;
         }
         SendToSocket(castEffect);
     }
@@ -171,7 +182,7 @@ public class CantripService : MessageService, IWithTimers {
             DestinationZone = cantrip.m_effectParameter,
             SendToClient = true,
         };
-        Timers.StartSingleTimer("zonetransfer", tpmsg, _zoneRemovalWaitTime);
+        Timers.StartSingleTimer("zonetransfer", tpmsg, _cantripCastTimeSpan);
     }
 
     private void castRitualCantrip(int spellTemplateID) {
@@ -180,5 +191,27 @@ public class CantripService : MessageService, IWithTimers {
             Phase = 0
         };
         SendToSocket(castRitualMsg);
+    }
+
+    private void castInvisCantrip(CantripsSpellTemplate cantrip) {
+        var wizard = GetActiveWizard();
+        var effect = new NamedEffect {
+            m_effectNameID = 1662424096, // if someone can find the string for this stringhash i will cum rapidly and forcefully, breaking the sound barrier in the process
+            m_internalID = wizard.GameEffects.Count,
+            m_endTime = (uint) DateTimeOffset.UtcNow.AddSeconds(60).ToUnixTimeSeconds()
+        };
+        var serializedEffect = _effectSerializer.Serialize(effect);
+        wizard.GameEffects.Add(effect);
+        var addEffect = new GAME_5_PROTOCOL.MSG_ADDEFFECT {
+            GameObjectID = wizard.GameObject.m_globalID,
+            EffectData = serializedEffect
+        };
+
+        Timers.StartSingleTimer("inviseffect", addEffect, _cantripCastTimeSpan);
+    }
+
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ADDEFFECT))]
+    private void ReceiveAddEffect(GAME_5_PROTOCOL.MSG_ADDEFFECT message) {
+        SendToSocket(message);
     }
 }
