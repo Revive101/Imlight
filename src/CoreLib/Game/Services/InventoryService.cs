@@ -131,6 +131,38 @@ public class InventoryService : MessageService {
 
     #endregion
 
+    #region Snacks
+
+    [MessageHandler(typeof(PET_9_PROTOCOL.MSG_PETSNACKREMOVEREQUEST))]
+    private void ReceivePetSnackRemoveRequest(PET_9_PROTOCOL.MSG_PETSNACKREMOVEREQUEST message) {
+        var wizard = GetActiveWizard();
+
+        var hasSnack = wizard.PetSnackBehavior.HasSnackID(message.GlobalID);
+        if (!hasSnack) {
+            Logger.Log.Debug("Tried to remove snack with global id {0} that does not exist in player snack bag.",
+                Logger.Args(message.GlobalID));
+            return;
+        }
+
+        wizard.RemoveSnackFromSnackBag(message.GlobalID, out var updatedSnack);
+
+        if (updatedSnack.m_quantity > 0) {
+            SendToSocket(new PET_9_PROTOCOL.MSG_PETSNACKUPDATE() {
+                GlobalID = wizard.CharId,
+                ItemID = updatedSnack.m_globalID,
+                Quantity = updatedSnack.m_quantity
+            });
+            return;
+        }
+
+        SendToSocket(new PET_9_PROTOCOL.MSG_PETSNACKREMOVE() {
+            GlobalID = wizard.CharId,
+            ItemID = updatedSnack.m_globalID,
+        });
+    }
+
+    #endregion
+
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_PLAYERWIZBANG))]
     private void ReceivePlayerWizbang(WIZARD_12_PROTOCOL.MSG_PLAYERWIZBANG message) {
         var wizard = GetActiveWizard();
