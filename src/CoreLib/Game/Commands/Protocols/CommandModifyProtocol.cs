@@ -119,6 +119,7 @@ internal class CommandModifyProtocol : CommandProtocol {
         var serializer = new CoreObjectSerializer()
             .OnBehaviors(SerializerOptions.Behaviors.None)
             .OnPropertyMask((SerializerOptions.PropertyFlags)24);
+
         var networkMessage = new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
             GlobalID = Context.Character.CharId,
             SerializedItem = serializer.Serialize(coreObject)
@@ -150,39 +151,38 @@ internal class CommandModifyProtocol : CommandProtocol {
             return;
         }
 
-        var addedSnackSuccess = Context.Character.AddSnackToSnackBag(templateIdLong, out var coreObject);
+        var addedSnackSuccess = Context.Character.AddSnackToSnackBag(templateIdLong, out var snackObj);
         if (!addedSnackSuccess) {
             InformSenderClient("Could not add snack to snack bag.");
             return;
         }
 
-        // todo: Broken atm
         var serializer = new CoreObjectSerializer()
-            .OnMode(SerializerOptions.Mode.Compact)
-            .OnBehaviors(SerializerOptions.Behaviors.None)
-            .OnPropertyMask((SerializerOptions.PropertyFlags) 27);
+              .OnMode(SerializerOptions.Mode.Compact)
+              .OnBehaviors(SerializerOptions.Behaviors.None)
+              .OnPropertyMask((SerializerOptions.PropertyFlags) 27);
+
         var networkMessage = new PET_9_PROTOCOL.MSG_PETSNACKADD {
             GlobalID = Context.Character.CharId,
-            Data = serializer.Serialize(coreObject)
+            Data = serializer.Serialize(snackObj)
         };
         Context.SessionActor.Tell(networkMessage, null);
 
         var acquireMessage = new WIZARD2_53_PROTOCOL.MSG_ITEMACQUISITION {
-            ItemGlobalID = coreObject.m_globalID,
-            ItemTemplateID = (uint) coreObject.m_templateID,
+            ItemGlobalID = snackObj.m_globalID,
+            ItemTemplateID = (uint) snackObj.m_templateID,
             ItemLocation = 1
         };
         Context.SessionActor.Tell(acquireMessage, null);
 
         var updateMessage = new PET_9_PROTOCOL.MSG_PETSNACKUPDATE {
             GlobalID = Context.Character.CharId,
-            ItemID = coreObject.m_globalID,
-            Quantity = 1
+            ItemID = snackObj.m_globalID,
+            Quantity = snackObj.m_quantity
         };
         Context.SessionActor.Tell(updateMessage, null);
 
-
-        InformSenderClient($"Added snack {coreObject.m_debugName} to snack bag.");
+        InformSenderClient($"Added snack {snackObj.m_debugName} to snack bag.");
     }
 
     [Command("name")]

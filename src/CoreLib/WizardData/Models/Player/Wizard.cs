@@ -385,12 +385,17 @@ public class Wizard : IDisposable {
     }
 
     public bool AddSnackToSnackBag(ulong snackId, out ClientPetSnackItem snack) {
-        snack = (ClientPetSnackItem) CoreObjectFactory.FinalizeCoreObject(snackId);
-        snack.m_characterId = (GID) CharId;
-        snack.m_quantity = 1;
+        if (PetSnackBehavior.HasSnack(snackId)) {
+            snack = PetSnackBehavior.GetSnack(snackId);
+        } else {
+            snack = (ClientPetSnackItem) CoreObjectFactory.FinalizeCoreObject(snackId);
+            snack.m_characterId = (GID) CharId;
+            snack.m_quantity = 1;
+        }
 
         return AddSnackToSnackBag(snack);
     }
+
     public bool AddSnackToSnackBag(ClientPetSnackItem snack) {
         if (snack is null) {
             Logger.Warning("Cannot add snack to inventory because that snack does not exist.");
@@ -412,6 +417,14 @@ public class Wizard : IDisposable {
         // Persistent save.
         //WizardPetSnackCollection.AddSnack(snack);
         //WizardCollection.UpdateCharacterItems(this);
+
+        return true;
+    }
+
+    public bool RemoveSnackFromSnackBag(ulong globalId, out ClientPetSnackItem snack) {
+        PetSnackBehavior.RemoveSnack(globalId, out snack);
+
+        // Persistent save.
 
         return true;
     }
@@ -719,7 +732,6 @@ public class Wizard : IDisposable {
 
     private void InitializeDefaultPetSnackBehavior() {
         PetSnackBehavior = new ServerPetSnackBehavior() {
-            SnackIds = new List<ulong>(),
             Snacks = new List<ClientPetSnackItem>()
         };
     }
