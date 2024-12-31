@@ -195,11 +195,22 @@ public class CantripService : MessageService, IWithTimers {
 
     private void castInvisCantrip(CantripsSpellTemplate cantrip) {
         var wizard = GetActiveWizard();
-        var effect = new NamedEffect {
-            m_effectNameID = 1662424096, // if someone can find the string for this stringhash i will cum rapidly and forcefully, breaking the sound barrier in the process
-            m_internalID = wizard.GameEffects.Count,
-            m_endTime = (uint) DateTimeOffset.UtcNow.AddSeconds(60).ToUnixTimeSeconds()
-        };
+        GameEffectBase effect;
+        if (cantrip.m_name == "CantripsMinorInvisibility") {
+            effect = new NamedEffect {
+                m_effectNameID = 1662424096, // if someone can find the string for this stringhash i will cum rapidly and forcefully, breaking the sound barrier in the process
+                m_internalID = wizard.GameEffects.Count,
+                m_endTime = (uint) DateTimeOffset.UtcNow.AddSeconds(60).ToUnixTimeSeconds()
+            };
+        } else if (cantrip.m_name == "CantripsMajorInvisibility") {
+            effect = new CantripsMajorInvisibilityEffect {
+                m_effectNameID = StringHash.Compute("CantripsMajorInvisibilityEffect"),
+                m_internalID = wizard.GameEffects.Count
+            };
+        } else {
+            return;
+        }
+        
         var serializedEffect = _effectSerializer.Serialize(effect);
         wizard.GameEffects.Add(effect);
         var addEffect = new GAME_5_PROTOCOL.MSG_ADDEFFECT {
@@ -213,5 +224,19 @@ public class CantripService : MessageService, IWithTimers {
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ADDEFFECT))]
     private void ReceiveAddEffect(GAME_5_PROTOCOL.MSG_ADDEFFECT message) {
         SendToSocket(message);
+    }
+
+    [MessageHandler(typeof(CANTRIPSMESSAGES_57_PROTOCOL.MSG_CANCELINVISIBLITY))]
+    private void ReceiveCancelInvisibility(CANTRIPSMESSAGES_57_PROTOCOL.MSG_CANCELINVISIBLITY message) {
+        var wizard = GetActiveWizard();
+        var effect = wizard.GameEffects.Find(e => e.m_effectNameID == StringHash.Compute("CantripsMajorInvisibilityEffect"));
+        if (effect == null) {return;}
+        wizard.GameEffects.Remove(effect);
+        var removeEffect = new GAME_5_PROTOCOL.MSG_REMOVEEFFECT {
+            GameObjectID = wizard.GameObject.m_globalID,
+            EffectNameID = effect.m_effectNameID,
+            InternalID = effect.m_internalID
+        };
+        SendToSocket(removeEffect);
     }
 }
