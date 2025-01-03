@@ -239,4 +239,57 @@ public class CantripService : MessageService, IWithTimers {
         };
         SendToSocket(removeEffect);
     }
+
+    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_ENERGYSHOPOPEN))]
+    private void ReceiveEnergyShopOpen(WIZARD_12_PROTOCOL.MSG_ENERGYSHOPOPEN message) {
+        // This would usually open a menu to spend crowns to refill energy
+        // We aren't going to do that, but it will refill your energy if you are QA or above
+        var wizard = GetActiveWizard();
+        MaybeBackflip(wizard);
+        if (wizard.Account.AuthLevel >= AuthLevel.QualityAssurance) {
+            // The client has a max mana increase effect applied, so sending it here would double the mana client side.
+            var magicSchool = wizard.MagicSchoolBehavior.MagicSchool;
+            var level = wizard.MagicSchoolBehavior.Level;
+            var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(magicSchool, level);
+            var normMaxEnergy = baseStats.m_petEnergy;
+
+            wizard.UpdateEnergy(normMaxEnergy);
+
+            // Inform the client of the change.
+            var networkMessage = new PET_9_PROTOCOL.MSG_PETENERGYTICK() {
+                GlobalID = wizard.GameObject.m_globalID,
+                Energy = normMaxEnergy,
+                MaxEnergy = normMaxEnergy,
+                TickTime = (int) wizard.PetOwnerBehavior.NextEnergyTickEpoch
+            };
+            SendToSocket(networkMessage);
+            SendMessageToPlayer("Refilled energy.");
+        } else {
+            SendMessageToPlayer("You cannot do that.");
+            return;
+        }
+    }
+
+    private void SendMessageToPlayer(string message) {
+        var msg = new EXTENDEDBASE_2_PROTOCOL.MSG_SERVERMESSAGE {
+            Message = message
+        };
+        SendToSocket(msg);
+    }
+
+    private void MaybeBackflip(Wizard wizard) {
+        // 1 in 20 chance the player does a backflip instead :D
+        var rand = new Random();
+        int num = rand.Next(20);
+        if (num != 0) return;
+        uint backflipID = 1521398842;
+        CantripsSpellTemplate cantrip = CantripFactory.CreateCantripTemplateFromId(backflipID);
+        var castEffect = new CANTRIPSMESSAGES_57_PROTOCOL.MSG_CASTEFFECT {
+            GameObjectID = wizard.GameObject.m_globalID,
+            SpellTemplateID = (int) backflipID
+        };
+        castEffect = castEmoteCantrip(cantrip, castEffect);
+        SendToSocket(castEffect);
+        SendMessageToPlayer("backflip!");
+    }
 }
