@@ -33,10 +33,6 @@ public class CantripService : MessageService, IWithTimers {
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new CantripService(parentActor));
 
-    protected override void OnDispose() {
-
-    }
-
     [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE))]
     private void ReceivePostAttach(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE message) {
         // Send a pet energy tick message to the client.
@@ -108,6 +104,60 @@ public class CantripService : MessageService, IWithTimers {
         SendToSocket(message);
     }
 
+[MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]
+    private void ReceiveZoneTransferRequest(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message) {
+        TellOtherServices(message);
+    }
+
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ADDEFFECT))]
+    private void ReceiveAddEffect(GAME_5_PROTOCOL.MSG_ADDEFFECT message) {
+        SendToSocket(message);
+    }
+
+    [MessageHandler(typeof(CANTRIPSMESSAGES_57_PROTOCOL.MSG_CANCELINVISIBLITY))]
+    private void ReceiveCancelInvisibility(CANTRIPSMESSAGES_57_PROTOCOL.MSG_CANCELINVISIBLITY message) {
+        var wizard = GetActiveWizard();
+        var effect = wizard.GameEffects.Find(e => e.m_effectNameID == StringHash.Compute("CantripsMajorInvisibilityEffect"));
+        if (effect == null) {return;}
+        wizard.GameEffects.Remove(effect);
+        var removeEffect = new GAME_5_PROTOCOL.MSG_REMOVEEFFECT {
+            GameObjectID = wizard.GameObject.m_globalID,
+            EffectNameID = effect.m_effectNameID,
+            InternalID = effect.m_internalID
+        };
+        SendToSocket(removeEffect);
+    }
+
+    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_ENERGYSHOPOPEN))]
+    private void ReceiveEnergyShopOpen(WIZARD_12_PROTOCOL.MSG_ENERGYSHOPOPEN message) {
+        // This would usually open a menu to spend crowns to refill energy
+        // We aren't going to do that, but it will refill your energy if you are QA or above
+        var wizard = GetActiveWizard();
+        MaybeBackflip(wizard);
+        if (wizard.Account.AuthLevel >= AuthLevel.QualityAssurance) {
+            // The client has a max mana increase effect applied, so sending it here would double the mana client side.
+            var magicSchool = wizard.MagicSchoolBehavior.MagicSchool;
+            var level = wizard.MagicSchoolBehavior.Level;
+            var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(magicSchool, level);
+            var normMaxEnergy = baseStats.m_petEnergy;
+
+            wizard.UpdateEnergy(normMaxEnergy);
+
+            // Inform the client of the change.
+            var networkMessage = new PET_9_PROTOCOL.MSG_PETENERGYTICK() {
+                GlobalID = wizard.GameObject.m_globalID,
+                Energy = normMaxEnergy,
+                MaxEnergy = normMaxEnergy,
+                TickTime = (int) wizard.PetOwnerBehavior.NextEnergyTickEpoch
+            };
+            SendToSocket(networkMessage);
+            SendMessageToPlayer("Refilled energy.");
+        } else {
+            SendMessageToPlayer("You cannot do that.");
+            return;
+        }
+    }
+
     private bool castCantrip(uint spellTemplateID) {
         var wizard = GetActiveWizard();
         CantripsSpellTemplate cantrip = CantripFactory.CreateCantripTemplateFromId(spellTemplateID);
@@ -130,11 +180,6 @@ public class CantripService : MessageService, IWithTimers {
             return false;
         }
         return true;
-    }
-
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]
-    private void ReceiveZoneTransferRequest(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message) {
-        TellOtherServices(message);
     }
 
     private bool UseEnergy(Wizard wizard, int energyCost) {
@@ -219,55 +264,6 @@ public class CantripService : MessageService, IWithTimers {
         };
 
         Timers.StartSingleTimer("inviseffect", addEffect, _cantripCastTimeSpan);
-    }
-
-    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ADDEFFECT))]
-    private void ReceiveAddEffect(GAME_5_PROTOCOL.MSG_ADDEFFECT message) {
-        SendToSocket(message);
-    }
-
-    [MessageHandler(typeof(CANTRIPSMESSAGES_57_PROTOCOL.MSG_CANCELINVISIBLITY))]
-    private void ReceiveCancelInvisibility(CANTRIPSMESSAGES_57_PROTOCOL.MSG_CANCELINVISIBLITY message) {
-        var wizard = GetActiveWizard();
-        var effect = wizard.GameEffects.Find(e => e.m_effectNameID == StringHash.Compute("CantripsMajorInvisibilityEffect"));
-        if (effect == null) {return;}
-        wizard.GameEffects.Remove(effect);
-        var removeEffect = new GAME_5_PROTOCOL.MSG_REMOVEEFFECT {
-            GameObjectID = wizard.GameObject.m_globalID,
-            EffectNameID = effect.m_effectNameID,
-            InternalID = effect.m_internalID
-        };
-        SendToSocket(removeEffect);
-    }
-
-    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_ENERGYSHOPOPEN))]
-    private void ReceiveEnergyShopOpen(WIZARD_12_PROTOCOL.MSG_ENERGYSHOPOPEN message) {
-        // This would usually open a menu to spend crowns to refill energy
-        // We aren't going to do that, but it will refill your energy if you are QA or above
-        var wizard = GetActiveWizard();
-        MaybeBackflip(wizard);
-        if (wizard.Account.AuthLevel >= AuthLevel.QualityAssurance) {
-            // The client has a max mana increase effect applied, so sending it here would double the mana client side.
-            var magicSchool = wizard.MagicSchoolBehavior.MagicSchool;
-            var level = wizard.MagicSchoolBehavior.Level;
-            var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(magicSchool, level);
-            var normMaxEnergy = baseStats.m_petEnergy;
-
-            wizard.UpdateEnergy(normMaxEnergy);
-
-            // Inform the client of the change.
-            var networkMessage = new PET_9_PROTOCOL.MSG_PETENERGYTICK() {
-                GlobalID = wizard.GameObject.m_globalID,
-                Energy = normMaxEnergy,
-                MaxEnergy = normMaxEnergy,
-                TickTime = (int) wizard.PetOwnerBehavior.NextEnergyTickEpoch
-            };
-            SendToSocket(networkMessage);
-            SendMessageToPlayer("Refilled energy.");
-        } else {
-            SendMessageToPlayer("You cannot do that.");
-            return;
-        }
     }
 
     private void SendMessageToPlayer(string message) {
