@@ -384,21 +384,21 @@ public class Wizard : IDisposable {
         return true;
     }
 
-    public bool AddSnackToSnackBag(ulong snackId, out ClientPetSnackItem snack) {
-        if (PetSnackBehavior.HasSnack(snackId)) {
-            snack = PetSnackBehavior.GetSnack(snackId);
+    public bool AddSnackToSnackBag(ulong snackTemplateId, out ClientPetSnackItem snackObj) {
+        if (PetSnackBehavior.HasSnack(snackTemplateId)) {
+            snackObj = PetSnackBehavior.GetSnack(snackTemplateId);
         } else {
-            snack = (ClientPetSnackItem) CoreObjectFactory.FinalizeCoreObject(snackId);
-            snack.m_characterId = (GID) CharId;
-            snack.m_quantity = 1;
+            snackObj = (ClientPetSnackItem) CoreObjectFactory.FinalizeCoreObject(snackTemplateId);
+            snackObj.m_characterId = (GID) CharId;
+            snackObj.m_quantity = 1;
         }
 
-        return AddSnackToSnackBag(snack);
+        return AddSnackToSnackBag(snackObj);
     }
 
     public bool AddSnackToSnackBag(ClientPetSnackItem snack) {
         if (snack is null) {
-            Logger.Warning("Cannot add snack to inventory because that snack does not exist.");
+            Logger.Warning("Cannot add snack to snack bag because that snack does not exist.");
             return false;
         }
 
@@ -414,18 +414,32 @@ public class Wizard : IDisposable {
             return false;
         }
 
-        // Persistent save.
-        //WizardPetSnackCollection.AddSnack(snack);
-        //WizardCollection.UpdateCharacterItems(this);
+        if (snack.m_quantity > 1) {
+            // Persistent save.
+            WizardPetSnackCollection.UpdateSnack(snack);
+            WizardCollection.UpdateCharacterItems(this);
+            return true;
+        }
 
+        // Persistent save.
+        WizardPetSnackCollection.AddSnack(snack);
+        WizardCollection.UpdateCharacterItems(this);
         return true;
     }
 
     public bool RemoveSnackFromSnackBag(ulong globalId, out ClientPetSnackItem snack) {
         PetSnackBehavior.RemoveSnack(globalId, out snack);
 
-        // Persistent save.
+        if (snack.m_quantity <= 0) {
+            // Persistent save.
+            WizardPetSnackCollection.RemoveSnack(snack);
+            WizardCollection.UpdateCharacterItems(this);
+            return true;
+        }
 
+        // Persistent save.
+        WizardPetSnackCollection.UpdateSnack(snack);
+        WizardCollection.UpdateCharacterItems(this);
         return true;
     }
 
@@ -732,7 +746,8 @@ public class Wizard : IDisposable {
 
     private void InitializeDefaultPetSnackBehavior() {
         PetSnackBehavior = new ServerPetSnackBehavior() {
-            Snacks = new List<ClientPetSnackItem>()
+            Snacks = new List<ClientPetSnackItem>(),
+            SnackItemIds = new List<ulong>()
         };
     }
 

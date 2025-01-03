@@ -159,6 +159,7 @@ public static class WizardCollection {
 
         existingCharacter.InventoryBehavior = wizard.InventoryBehavior;
         existingCharacter.EquipmentBehavior = wizard.EquipmentBehavior;
+        existingCharacter.PetSnackBehavior = wizard.PetSnackBehavior;
         session.SaveChanges();
     }
 

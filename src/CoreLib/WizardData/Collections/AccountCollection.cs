@@ -113,6 +113,13 @@ public static class AccountCollection {
             character.EquipmentBehavior.EquippedItems = inventory
                 .Where(i => character.EquipmentBehavior.EquippedItemIds.Any(e => i.m_globalID == e)).ToList();
 
+            // Load the character's snack bag.
+            var snackbag = session.Query<ClientPetSnackItem>(collectionName: WizardPetSnackCollection.CollectionName)
+                .Where(i => i.m_characterId == character.CharId)
+                .ToList();
+            character.PetSnackBehavior.Snacks = snackbag
+                .Where(i => character.PetSnackBehavior.SnackItemIds.Any(e => i.m_globalID == e)).ToList();
+
             // Load character dynamic modifications.
             var dynamods = session.Query<DynamodSet>(collectionName: DynamodCollection.CollectionName)
                 .Where(d => d.CharId == character.CharId)
