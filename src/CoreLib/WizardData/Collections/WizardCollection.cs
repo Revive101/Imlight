@@ -230,6 +230,10 @@ public static class WizardCollection {
         session.SaveChanges();
     }
 
+    /// <summary>
+    /// Updates the character pet owner behavior for a wizard.
+    /// </summary>
+    /// <param name="wizard">The wizard object containing the updated pet owner behavior.</param>
     public static void UpdateCharacterPetOwnerBehavior(Wizard wizard) {
         using var session = s_store.OpenSession();
 
