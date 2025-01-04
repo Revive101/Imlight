@@ -7,13 +7,10 @@ using Akka.Actor;
 using Imlight.Common.Caches;
 using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty;
-using Imlight.Common.ObjectProperty.PropertyReflection;
-using Imlight.Common.Utilities;
 using Imlight.CoreLib.Game.Cantrips;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
-using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using static Imlight.Common.Caches.TypeCache;
@@ -59,10 +56,10 @@ public class CantripService : MessageService, IWithTimers {
     private void ReceiveCantripSpellCast(CANTRIPSMESSAGES_57_PROTOCOL.MSG_CANTRIPSSPELLCAST message) {
         var wizard = GetActiveWizard();
         CantripsSpellTemplate cantrip = CantripFactory.CreateCantripTemplateFromId(message.SpellTemplateID);
-        
+
         // Rituals require a target to be selected first, so don't use energy here
         if (cantrip.m_cantripsSpellEffect != CantripsSpellTemplate.CantripsSpellEffect.CSE_Ritual) {
-            bool hasEnergy = castCantrip(message.SpellTemplateID);
+            bool hasEnergy = CastCantrip(message.SpellTemplateID);
 
             if (!hasEnergy) {
                 return;
@@ -73,29 +70,31 @@ public class CantripService : MessageService, IWithTimers {
             GameObjectID = wizard.GameObject.m_globalID,
             SpellTemplateID = (int) message.SpellTemplateID
         };
+
         switch (cantrip.m_cantripsSpellEffect) {
             case CantripsSpellTemplate.CantripsSpellEffect.CSE_Emote:
-                castEffect = castEmoteCantrip(cantrip, castEffect); 
+                CastEmoteCantrip(cantrip, ref castEffect);
                 break;
             case CantripsSpellTemplate.CantripsSpellEffect.CSE_PlayEffect:
-                castEffect = castPlayEffectCantrip(cantrip, castEffect);
+                CastPlayEffectCantrip(cantrip, ref castEffect);
                 break;
             case CantripsSpellTemplate.CantripsSpellEffect.CSE_Teleport:
-                castTeleportCantrip(cantrip);
+                CastTeleportCantrip(cantrip);
                 break;
             case CantripsSpellTemplate.CantripsSpellEffect.CSE_Ritual:
-                castRitualCantrip((int) message.SpellTemplateID);
+                CastRitualCantrip((int) message.SpellTemplateID);
                 return; // User needs to select a target first
             case CantripsSpellTemplate.CantripsSpellEffect.CSE_Invisibility:
-                castInvisCantrip(cantrip);
+                CastInvisCantrip(cantrip);
                 break;
         }
+
         SendToSocket(castEffect);
     }
 
     [MessageHandler(typeof(CANTRIPSMESSAGES_57_PROTOCOL.MSG_CASTRITUAL))]
     private void ReceiveCastRitual(CANTRIPSMESSAGES_57_PROTOCOL.MSG_CASTRITUAL message) {
-        bool hasEnergy = castCantrip((uint) message.SpellTemplateID);
+        bool hasEnergy = CastCantrip((uint) message.SpellTemplateID);
 
         if (!hasEnergy) {
             return;
@@ -104,7 +103,7 @@ public class CantripService : MessageService, IWithTimers {
         SendToSocket(message);
     }
 
-[MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]
     private void ReceiveZoneTransferRequest(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message) {
         TellOtherServices(message);
     }
@@ -118,13 +117,17 @@ public class CantripService : MessageService, IWithTimers {
     private void ReceiveCancelInvisibility(CANTRIPSMESSAGES_57_PROTOCOL.MSG_CANCELINVISIBLITY message) {
         var wizard = GetActiveWizard();
         var effect = wizard.GameEffects.Find(e => e.m_effectNameID == StringHash.Compute("CantripsMajorInvisibilityEffect"));
-        if (effect == null) {return;}
+        if (effect == null) { 
+            return; 
+        }
+
         wizard.GameEffects.Remove(effect);
         var removeEffect = new GAME_5_PROTOCOL.MSG_REMOVEEFFECT {
             GameObjectID = wizard.GameObject.m_globalID,
             EffectNameID = effect.m_effectNameID,
             InternalID = effect.m_internalID
         };
+
         SendToSocket(removeEffect);
     }
 
@@ -151,17 +154,18 @@ public class CantripService : MessageService, IWithTimers {
                 TickTime = (int) wizard.PetOwnerBehavior.NextEnergyTickEpoch
             };
             SendToSocket(networkMessage);
-            SendMessageToPlayer("Refilled energy.");
-        } else {
-            SendMessageToPlayer("You cannot do that.");
+            InformGameClient("Refilled energy.");
+        }
+        else {
+            InformGameClient("You cannot do that.");
             return;
         }
     }
 
-    private bool castCantrip(uint spellTemplateID) {
+    private bool CastCantrip(uint spellTemplateID) {
         var wizard = GetActiveWizard();
         CantripsSpellTemplate cantrip = CantripFactory.CreateCantripTemplateFromId(spellTemplateID);
-        
+
         bool hasEnergy = UseEnergy(wizard, cantrip.m_energyCost);
         byte outOfEnergy = 0;
         if (!hasEnergy) {
@@ -174,7 +178,7 @@ public class CantripService : MessageService, IWithTimers {
             CooldownSeconds = (uint) cantrip.m_cooldownSeconds,
             OutOfEnergy = outOfEnergy
         };
-        SendToSocket(cantripResponse); 
+        SendToSocket(cantripResponse);
 
         if (!hasEnergy) {
             return false;
@@ -206,22 +210,20 @@ public class CantripService : MessageService, IWithTimers {
         return true;
     }
 
-    private CANTRIPSMESSAGES_57_PROTOCOL.MSG_CASTEFFECT castEmoteCantrip(CantripsSpellTemplate cantrip, CANTRIPSMESSAGES_57_PROTOCOL.MSG_CASTEFFECT castEffect) {
+    private void CastEmoteCantrip(CantripsSpellTemplate cantrip, ref CANTRIPSMESSAGES_57_PROTOCOL.MSG_CASTEFFECT castEffect) {
         castEffect.AnimationName = cantrip.m_animationNames[0];
-        return castEffect;
     }
 
-    private CANTRIPSMESSAGES_57_PROTOCOL.MSG_CASTEFFECT castPlayEffectCantrip(CantripsSpellTemplate cantrip, CANTRIPSMESSAGES_57_PROTOCOL.MSG_CASTEFFECT castEffect) {
+    private void CastPlayEffectCantrip(CantripsSpellTemplate cantrip, ref CANTRIPSMESSAGES_57_PROTOCOL.MSG_CASTEFFECT castEffect) {
         // note that the only cantrip from this section that needs rng is the dice roll one
         // all the other cantrips in this section only have 1 animation
         var rand = new Random();
         int num = rand.Next(cantrip.m_animationKFMs.Count);
         castEffect.AnimationKFM = cantrip.m_animationKFMs[num];
         castEffect.AnimationName = cantrip.m_animationNames[num];
-        return castEffect;
     }
 
-    private void castTeleportCantrip(CantripsSpellTemplate cantrip) {
+    private void CastTeleportCantrip(CantripsSpellTemplate cantrip) {
         var tpmsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
             DestinationLocation = "Start",
             DestinationZone = cantrip.m_effectParameter,
@@ -230,7 +232,7 @@ public class CantripService : MessageService, IWithTimers {
         Timers.StartSingleTimer("zonetransfer", tpmsg, _cantripCastTimeSpan);
     }
 
-    private void castRitualCantrip(int spellTemplateID) {
+    private void CastRitualCantrip(int spellTemplateID) {
         var castRitualMsg = new CANTRIPSMESSAGES_57_PROTOCOL.MSG_CASTRITUAL {
             SpellTemplateID = spellTemplateID,
             Phase = 0
@@ -238,7 +240,7 @@ public class CantripService : MessageService, IWithTimers {
         SendToSocket(castRitualMsg);
     }
 
-    private void castInvisCantrip(CantripsSpellTemplate cantrip) {
+    private void CastInvisCantrip(CantripsSpellTemplate cantrip) {
         var wizard = GetActiveWizard();
         GameEffectBase effect;
         if (cantrip.m_name == "CantripsMinorInvisibility") {
@@ -247,15 +249,17 @@ public class CantripService : MessageService, IWithTimers {
                 m_internalID = wizard.GameEffects.Count,
                 m_endTime = (uint) DateTimeOffset.UtcNow.AddSeconds(60).ToUnixTimeSeconds()
             };
-        } else if (cantrip.m_name == "CantripsMajorInvisibility") {
+        }
+        else if (cantrip.m_name == "CantripsMajorInvisibility") {
             effect = new CantripsMajorInvisibilityEffect {
                 m_effectNameID = StringHash.Compute("CantripsMajorInvisibilityEffect"),
                 m_internalID = wizard.GameEffects.Count
             };
-        } else {
+        }
+        else {
             return;
         }
-        
+
         var serializedEffect = _effectSerializer.Serialize(effect);
         wizard.GameEffects.Add(effect);
         var addEffect = new GAME_5_PROTOCOL.MSG_ADDEFFECT {
@@ -266,26 +270,21 @@ public class CantripService : MessageService, IWithTimers {
         Timers.StartSingleTimer("inviseffect", addEffect, _cantripCastTimeSpan);
     }
 
-    private void SendMessageToPlayer(string message) {
-        var msg = new EXTENDEDBASE_2_PROTOCOL.MSG_SERVERMESSAGE {
-            Message = message
-        };
-        SendToSocket(msg);
-    }
-
     private void MaybeBackflip(Wizard wizard) {
         // 1 in 20 chance the player does a backflip instead :D
         var rand = new Random();
         int num = rand.Next(20);
-        if (num != 0) return;
+        if (num != 0) {
+            return;
+        }
         uint backflipID = 1521398842;
         CantripsSpellTemplate cantrip = CantripFactory.CreateCantripTemplateFromId(backflipID);
         var castEffect = new CANTRIPSMESSAGES_57_PROTOCOL.MSG_CASTEFFECT {
             GameObjectID = wizard.GameObject.m_globalID,
             SpellTemplateID = (int) backflipID
         };
-        castEffect = castEmoteCantrip(cantrip, castEffect);
+        CastEmoteCantrip(cantrip, ref castEffect);
         SendToSocket(castEffect);
-        SendMessageToPlayer("backflip!");
+        InformGameClient("backflip!");
     }
 }
