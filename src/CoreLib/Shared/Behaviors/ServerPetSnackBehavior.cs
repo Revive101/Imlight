@@ -103,13 +103,6 @@ public class ServerPetSnackBehavior : ServerBehaviorInstance {
     /// <summary>
     /// Returns the snack with the specified template ID.
     /// </summary>
-    /// <param name="globalId">The global ID of the snack to get.</param>
-    /// <returns>Returns the snack object with the specified global ID, otherwise null.</returns>
-    public ClientPetSnackItem GetSnackID(ulong globalId) => Snacks.FirstOrDefault(snack => snack.m_globalID == globalId);
-
-    /// <summary>
-    /// Returns the snack with the specified template ID.
-    /// </summary>
     /// <param name="templateId">The template ID of the snack to get.</param>
     /// <returns>Returns the snack object with the specified template ID, otherwise null.</returns>
     public ClientPetSnackItem GetSnack(ulong templateId) => Snacks.FirstOrDefault(snack => snack.m_templateID == templateId);
