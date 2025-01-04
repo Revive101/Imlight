@@ -26,6 +26,7 @@ public static class WizardPetSnackCollection {
     /// Adds a pet snack to the WizardPetSnacks collection for a specific player.
     /// </summary>
     /// <param name="snack">The snack to be added.</param>
+    /// <returns>True if the snack was successfully added, false otherwise.</returns>
     public static bool AddSnack(ClientPetSnackItem snack) {
         using var session = s_store.OpenSession();
 
@@ -58,6 +59,7 @@ public static class WizardPetSnackCollection {
     /// Updates a pet snack in the WizardPetSnacks collection for a specific player.
     /// </summary>
     /// <param name="snack">The updated snack to be saved.</param>
+    /// <returns>True if the snack was successfully updated, false otherwise.</returns>
     public static bool UpdateSnack(ClientPetSnackItem snack) {
         using var session = s_store.OpenSession();
 
