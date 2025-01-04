@@ -89,7 +89,7 @@ public class CantripService : MessageService, IWithTimers {
                 break;
         }
 
-        SendToSocket(castEffect);
+        ZoneBroadcast(castEffect, isSelfless: false);
     }
 
     [MessageHandler(typeof(CANTRIPSMESSAGES_57_PROTOCOL.MSG_CASTRITUAL))]
