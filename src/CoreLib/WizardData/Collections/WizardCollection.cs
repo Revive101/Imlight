@@ -5,6 +5,7 @@
 
 using System.Linq;
 using Imlight.CoreLib.WizardData.Databases;
+using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Raven.Client.Documents;
 using SharpDX;
@@ -54,6 +55,11 @@ public static class WizardCollection {
         if (character is null) {
             return false;
         }
+
+        // Delete related items/dynamods/quests data/etc.
+        WizardItemCollection.DeleteInventory(id);
+        WizardPetSnackCollection.DeleteSnackBag(id);
+        DynamodCollection.DeleteAllDynamodSets(id);
 
         session.Delete(character);
         session.SaveChanges();

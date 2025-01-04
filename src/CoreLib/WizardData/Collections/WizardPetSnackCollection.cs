@@ -6,12 +6,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Imlight.Common;
-using Imlight.CoreLib.Shared.Resources;
-using Imlight.CoreLib.WizardData.Databases;
-using Imlight.CoreLib.WizardData.Models.Player;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Operations;
+using Imlight.CoreLib.WizardData.Databases;
+using Imlight.CoreLib.WizardData.Models.Player;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.WizardData.Implementations;
@@ -167,6 +165,33 @@ public static class WizardPetSnackCollection {
 
         // Set the snack bag to the retrieved snacks.
         snackBag = snacks.ToList();
+        return true;
+    }
+
+    /// <summary>
+    /// Tries to delete the entire snack bag of a player.
+    /// </summary>
+    /// <param name="playerID">The ID of the player.</param>
+    /// <returns>True if the player's snacks were deleted, false if the player had no snacks to delete.</returns>
+    public static bool DeleteSnackBag(ulong playerId) {
+        using var session = s_store.OpenSession();
+
+        // Get the snacks from the snacks collection.
+        var snacks = session.Query<ClientPetSnackItem>(collectionName: CollectionName)
+            .Where(x => x.m_characterId == playerId)
+            .ToList();
+
+        // If no snacks were found, return false.
+        if (snacks.Count == 0) {
+            return false;
+        }
+
+        // Delete the snacks from the snacks collection.
+        foreach (var snack in snacks) {
+            session.Delete(snack);
+        }
+
+        session.SaveChanges();
         return true;
     }
 }
