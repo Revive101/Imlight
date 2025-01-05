@@ -99,4 +99,32 @@ public static class DynamodCollection {
         session.SaveChanges();
         return true;
     }
+
+    /// <summary>
+    /// Deletes all Dynamod sets for the specified character ID.
+    /// </summary>
+    /// <param name="charId">The character ID of the DynamodSets to be deleted.</param>
+    /// <returns><c>true</c> if the DynamodSets were successfully deleted; otherwise, <c>false</c>.</returns>
+    public static bool DeleteAllDynamodSets(ulong charId) {
+        using var session = s_store.OpenSession();
+
+        // Get the sets from the dynamod collection.
+        var dynamodSets = session.Query<DynamodSet>(collectionName: CollectionName)
+            .Where(ds => ds.CharId == charId)
+            .ToList();
+
+        // If no sets were found, return false.
+        if (dynamodSets.Count == 0) {
+            return false;
+        }
+
+        // Delete the sets from the dynamod collection.
+        foreach (var dynamodSet in dynamodSets) {
+            session.Delete(dynamodSet);
+        }
+
+        // Save the changes.
+        session.SaveChanges();
+        return true;
+    }
 }

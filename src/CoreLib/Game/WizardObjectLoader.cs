@@ -43,6 +43,7 @@ public static class WizardObjectLoader {
         SetMagicSchoolBehavior(clientObject, ref character);
         SetSpellbookBehavior(clientObject, ref character);
         SetMountOwnerBehavior(clientObject, ref character);
+        SetPetSnackBehavior(clientObject, ref character);
         SetPetOwnerBehavior(clientObject, ref character);
 
         return clientObject;
@@ -138,6 +139,16 @@ public static class WizardObjectLoader {
         }
     }
 
+    public static void SetPetSnackBehavior(WizClientObject clientObject, ref Wizard character) {
+        if (CoreObjectFactory.FindBehaviorInstance<ClientPetSnackBehavior>(clientObject, out var petSnackBehavior)) {
+            var idx = clientObject.m_inactiveBehaviors.IndexOf(petSnackBehavior);
+            clientObject.m_inactiveBehaviors[idx] = character.PetSnackBehavior.GetClientBehaviorInstance();
+        }
+        else {
+            throw new Exception("Behavior ClientPetSnackBehavior not found!");
+        }
+    }
+  
     public static void SetPetOwnerBehavior(WizClientObject clientObject, ref Wizard character) {
         if (CoreObjectFactory.FindBehaviorInstance<ClientPetOwnerBehavior>(clientObject, out var petOwnerBehavior)) {
             var idx = clientObject.m_inactiveBehaviors.IndexOf(petOwnerBehavior);

@@ -1,4 +1,4 @@
-﻿/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
  */
@@ -221,6 +221,7 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
     private static CoreObject CreateCoreObjectFromTemplate(CoreTemplate template) {
         return template switch {
             ReagentItemTemplate => new ClientReagentItem(),
+            PetSnackItemTemplate => new ClientPetSnackItem(),
             ItemTemplate => new WizClientObjectItem(),
             WizGameObjectTemplate => new WizClientObject(),
             _ => new ClientObject()

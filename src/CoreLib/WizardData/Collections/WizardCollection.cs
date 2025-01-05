@@ -5,6 +5,7 @@
 
 using System.Linq;
 using Imlight.CoreLib.WizardData.Databases;
+using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Raven.Client.Documents;
 using SharpDX;
@@ -54,6 +55,11 @@ public static class WizardCollection {
         if (character is null) {
             return false;
         }
+
+        // Delete related items/dynamods/quests data/etc.
+        WizardItemCollection.DeleteInventory(id);
+        WizardPetSnackCollection.DeleteSnackBag(id);
+        DynamodCollection.DeleteAllDynamodSets(id);
 
         session.Delete(character);
         session.SaveChanges();
@@ -159,6 +165,7 @@ public static class WizardCollection {
 
         existingCharacter.InventoryBehavior = wizard.InventoryBehavior;
         existingCharacter.EquipmentBehavior = wizard.EquipmentBehavior;
+        existingCharacter.PetSnackBehavior = wizard.PetSnackBehavior;
         session.SaveChanges();
     }
 
@@ -210,6 +217,23 @@ public static class WizardCollection {
         }
 
         existingCharacter.PlayerNameBehavior.NameOverride = wizard.PlayerNameBehavior.NameOverride;
+        session.SaveChanges();
+    }
+
+    /// <summary>
+    /// Updates the character badge override for a wizard.
+    /// </summary>
+    /// <param name="wizard">The wizard object containing the updated character badge override.</param>
+    public static void UpdateCharacterBadgeOverride(Wizard wizard) {
+        using var session = s_store.OpenSession();
+
+        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
+            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        if (existingCharacter is null) {
+            return;
+        }
+
+        existingCharacter.PlayerNameBehavior.BadgeTitle = wizard.PlayerNameBehavior.BadgeTitle;
         session.SaveChanges();
     }
 

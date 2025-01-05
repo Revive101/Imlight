@@ -4,12 +4,13 @@
  */
 
 using System.Linq;
-using Imlight.CoreLib.WizardData.Collections;
+using Raven.Client.Documents;
 using Imlight.CoreLib.WizardData.Databases;
+using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Misc;
 using Imlight.CoreLib.WizardData.Models.Player;
-using Raven.Client.Documents;
 using static Imlight.Common.Caches.TypeCache;
+using Imlight.CoreLib.Shared.Behaviors;
 
 namespace Imlight.CoreLib.WizardData.Implementations;
 
@@ -112,6 +113,14 @@ public static class AccountCollection {
             // Find any items in the inventory that match the equipped item IDs.
             character.EquipmentBehavior.EquippedItems = inventory
                 .Where(i => character.EquipmentBehavior.EquippedItemIds.Any(e => i.m_globalID == e)).ToList();
+
+            // Load the character's snack bag.
+            var snackbag = session.Query<ClientPetSnackItem>(collectionName: WizardPetSnackCollection.CollectionName)
+                .Where(i => i.m_characterId == character.CharId)
+                .ToList();
+            character.PetSnackBehavior ??= new ServerPetSnackBehavior();
+            character.PetSnackBehavior.Snacks = snackbag
+                .Where(i => character.PetSnackBehavior.SnackItemIds.Any(e => i.m_globalID == e)).ToList();
 
             // Load character dynamic modifications.
             var dynamods = session.Query<DynamodSet>(collectionName: DynamodCollection.CollectionName)

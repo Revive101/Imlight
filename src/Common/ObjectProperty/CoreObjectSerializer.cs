@@ -1,4 +1,4 @@
-﻿/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
  */
@@ -77,7 +77,8 @@ public class CoreObjectSerializer : ObjectSerializer {
 
         if (classId == 0 && namespaceId == 0) {
             // This is not a core object. Dispatch the object normally.
-            propClass = TypeCache.Dispatch(templateOrHash);
+            propClass = TypeCache.Dispatch(templateOrHash) ?? ServerTypeCache.Dispatch(templateOrHash);
+
             return propClass is not null;
         }
         else {
@@ -107,6 +108,8 @@ public class CoreObjectSerializer : ObjectSerializer {
                 (132, 9),
             958775582 => // ClientRecipe
                 (131, 131),
+            1748894102 => // ClientPetSnackItem
+                (148, 9),
             _ => (0, 0)
         };
     }
@@ -115,10 +118,11 @@ public class CoreObjectSerializer : ObjectSerializer {
         return (classId, namespaceId) switch {
             (2, 2) => 350837933,
             (104, 2) => 766500222,
-            (115, 9) => 1653772158,
             (106, 2) => 1167581154,
             (108, 2) => 2109552587,
+            (115, 9) => 1653772158,
             (132, 9) => 398229815,
+            (148, 9) => 1748894102,
             (131, 131) => 958775582,
             _ => 0
         };

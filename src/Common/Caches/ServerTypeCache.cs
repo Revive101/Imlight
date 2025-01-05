@@ -104,6 +104,7 @@ public static class ServerTypeCache {
         1486342711 => new ResInitiateCombat(),
         1839222684 => new UnknownSpawnObjectInfo(),
         511049413 => new WizBangPriorityTemplate(),
+        1349180726 => new ClientQuantityBehavior(),
         _ => null
     };
 

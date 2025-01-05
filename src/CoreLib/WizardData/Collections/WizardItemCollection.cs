@@ -342,4 +342,32 @@ public static class WizardItemCollection {
         inventory = items.ToList();
         return true;
     }
+
+    /// <summary>
+    /// Tries to delete the entire inventory of a player.
+    /// </summary>
+    /// <param name="playerID">The ID of the player.</param>
+    /// <returns>True if the player's items were deleted, false if the player had no items to delete.</returns>
+    public static bool DeleteInventory(ulong playerID) {
+        using var session = s_store.OpenSession();
+
+        // Get the items from the items collection.
+        var items = session.Query<WizClientObjectItem>(collectionName: CollectionName)
+            .Where(x => x.m_characterId == playerID)
+            .ToList();
+
+        // If no items were found, return false.
+        if (items.Count == 0) {
+            return false;
+        }
+
+        // Delete the items from the items collection.
+        foreach (var item in items) {
+            session.Delete(item);
+        }
+
+        // Save the changes.
+        session.SaveChanges();
+        return true;
+    }
 }

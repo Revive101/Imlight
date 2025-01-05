@@ -6,23 +6,20 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Imlight.Common;
-using Imlight.Common.Configuration;
-using Imlight.Common.Cryptography;
-using Imlight.Common.IO;
-using Imlight.Common.ObjectProperty.PropertyReflection;
-using Imlight.Common.Utilities;
-using Imlight.CoreLib.Shared.Resources;
-using Imlight.CoreLib.WizardData.Implementations;
-using Imlight.CoreLib.Game;
-using Newtonsoft.Json;
 using SharpDX;
-using static Imlight.Common.Caches.TypeCache;
+using Newtonsoft.Json;
+using Imlight.Common;
+using Imlight.Common.Utilities;
+using Imlight.Common.Configuration;
+using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Game.Effects;
-using Imlight.CoreLib.Shared.Behaviors;
-using Imlight.CoreLib.WizardData.Collections;
-using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Items;
+using Imlight.CoreLib.Shared.Behaviors;
+using Imlight.CoreLib.Shared.Character;
+using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Collections;
+using Imlight.CoreLib.WizardData.Implementations;
+using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.WizardData.Models.Player;
 
@@ -68,6 +65,7 @@ public class Wizard : IDisposable {
     public ServerMagicSchoolBehavior MagicSchoolBehavior { get; set; }
     public ServerWizSpellbookBehavior SpellbookBehavior { get; set; }
     public ServerMountOwnerBehavior MountOwnerBehavior { get; set; }
+    public ServerPetSnackBehavior PetSnackBehavior { get; set; }
     [JsonIgnore] public ServerObjectStateBehavior ObjectStateBehavior { get; set; }
     public ServerWizGameStats GameStats { get; set; }
     public ServerPetOwnerBehavior PetOwnerBehavior { get; set; }
@@ -122,6 +120,7 @@ public class Wizard : IDisposable {
         InitializeSpellbookBehavior();
         InitializeMountOwnerBehavior();
         InitializeWizardGameStats(wizardSchoolType, level);
+        InitializeDefaultPetSnackBehavior();
         InitializePetOwnerBehavior();
 
         ObjectStateBehavior = new ServerObjectStateBehavior("PlayerMobileStates");
@@ -398,11 +397,77 @@ public class Wizard : IDisposable {
         return true;
     }
 
+    public bool AddSnackToSnackBag(ulong snackTemplateId, out ClientPetSnackItem snackObj) {
+        if (PetSnackBehavior.HasSnack(snackTemplateId)) {
+            snackObj = PetSnackBehavior.GetSnack(snackTemplateId);
+        } else {
+            snackObj = (ClientPetSnackItem) CoreObjectFactory.FinalizeCoreObject(snackTemplateId);
+            snackObj.m_characterId = (GID) CharId;
+            snackObj.m_quantity = 1;
+        }
+
+        return AddSnackToSnackBag(snackObj);
+    }
+
+    public bool AddSnackToSnackBag(ClientPetSnackItem snack) {
+        if (snack is null) {
+            Logger.Warning("Cannot add snack to snack bag because that snack does not exist.");
+            return false;
+        }
+
+        CoreObjectFactory.InitializeCoreObjectBehaviors(snack, snack.m_templateID);
+
+        // Ensure that the item is associated with this Wizard.
+        snack.m_characterId = (GID) CharId;
+
+        var success = PetSnackBehavior.AddSnack(snack);
+        if (!success) {
+            Logger.Warning("Could not add snack {0} to player {1}'s snackbag.",
+                Logger.Args(snack.m_globalID, PlayerNameBehavior.GetWizardName()));
+            return false;
+        }
+
+        if (snack.m_quantity > 1) {
+            // Persistent save.
+            WizardPetSnackCollection.UpdateSnack(snack);
+            WizardCollection.UpdateCharacterItems(this);
+            return true;
+        }
+
+        // Persistent save.
+        WizardPetSnackCollection.AddSnack(snack);
+        WizardCollection.UpdateCharacterItems(this);
+        return true;
+    }
+
+    public bool RemoveSnackFromSnackBag(ulong globalId, out ClientPetSnackItem snack) {
+        PetSnackBehavior.RemoveSnack(globalId, out snack);
+
+        if (snack.m_quantity <= 0) {
+            // Persistent save.
+            WizardPetSnackCollection.RemoveSnack(snack);
+            WizardCollection.UpdateCharacterItems(this);
+            return true;
+        }
+
+        // Persistent save.
+        WizardPetSnackCollection.UpdateSnack(snack);
+        WizardCollection.UpdateCharacterItems(this);
+        return true;
+    }
+
     public void SetNameOverride(string newName) {
         PlayerNameBehavior.NameOverride = newName;
 
         // Persistent save.
         WizardCollection.UpdateCharacterNameOverride(this);
+    }
+
+    public void SetBadgeOverride(string newBadge) {
+        PlayerNameBehavior.BadgeTitle = newBadge;
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterBadgeOverride(this);
     }
 
     public bool LearnSpell(Spell spell) {
@@ -698,6 +763,13 @@ public class Wizard : IDisposable {
 
     private void InitializeSpellbookBehavior() {
         SpellbookBehavior = new ServerWizSpellbookBehavior();
+    }
+
+    private void InitializeDefaultPetSnackBehavior() {
+        PetSnackBehavior = new ServerPetSnackBehavior() {
+            Snacks = new List<ClientPetSnackItem>(),
+            SnackItemIds = new List<ulong>()
+        };
     }
 
     private void AfterDatabaseLoadSpellbookBehavior() {
