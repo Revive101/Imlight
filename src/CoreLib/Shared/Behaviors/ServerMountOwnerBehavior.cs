@@ -4,10 +4,11 @@
  */
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json.Serialization;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.WizardData.Implementations;
+using Newtonsoft.Json;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Shared.Behaviors;
@@ -31,39 +32,21 @@ public class ServerMountOwnerBehavior : ServerBehaviorInstance {
             return false;
         }
 
-        // MountItemBehaviorTemplate
-        if (mountTemplate.m_behaviors.Any(x => x is MountItemBehaviorTemplate)) {
-            var mountBehavior = mountTemplate.m_behaviors.First(x => x is MountItemBehaviorTemplate) as MountItemBehaviorTemplate;
-
-            MountRace = mountBehavior.m_eRace;
-            MountGender = mountBehavior.m_eGender;
-            MountType = mountBehavior.m_eMountType;
-            MountHasAdjustableAnimationRate = mountBehavior.m_adjustableAnimationRate;
-            MountGeometryOption = mountBehavior.m_geometryOption;
-
-            // If the mount has a different texture rather than color, use that instead.
-            // Otherwise, use the color given from the item.
-            if (mountBehavior.m_patternToTexture is not null && mountBehavior.m_patternToTexture.Count > 0) {
-                MountPatternColor = mountBehavior.m_patternToTexture[0].m_texture;
-            }
-            else {
-                MountPatternColor = item.m_pattern;
-            }
-
-            if (mountBehavior.m_primaryDyeToTexture is not null && mountBehavior.m_primaryDyeToTexture.Count > 0) {
-                MountPrimaryColor = mountBehavior.m_primaryDyeToTexture[0].m_texture;
-            }
-            else {
-                MountPrimaryColor = item.m_primaryColor;
-            }
-
-            if (mountBehavior.m_secondaryDyeToTexture is not null && mountBehavior.m_secondaryDyeToTexture.Count > 0) {
-                MountSecondaryColor = mountBehavior.m_secondaryDyeToTexture[0].m_texture;
-            }
-            else {
-                MountSecondaryColor = item.m_secondaryColor;
-            }
+        var mountBehavior = mountTemplate.m_behaviors.OfType<MountItemBehaviorTemplate>().FirstOrDefault();
+        if (mountBehavior == null) {
+            return false;
         }
+
+        MountRace = mountBehavior.m_eRace;
+        MountGender = mountBehavior.m_eGender;
+        MountType = mountBehavior.m_eMountType;
+        MountHasAdjustableAnimationRate = mountBehavior.m_adjustableAnimationRate;
+        MountGeometryOption = mountBehavior.m_geometryOption;
+        LastMountId = new GID(item.m_templateID);
+
+        MountPatternColor = GetColor(mountBehavior.m_patternToTexture, item.m_pattern);
+        MountPrimaryColor = GetColor(mountBehavior.m_primaryDyeToTexture, item.m_primaryColor);
+        MountSecondaryColor = GetColor(mountBehavior.m_secondaryDyeToTexture, item.m_secondaryColor);
 
         return true;
     }
@@ -75,6 +58,16 @@ public class ServerMountOwnerBehavior : ServerBehaviorInstance {
         MountPrimaryColor = 0;
         MountSecondaryColor = 0;
         MountPatternColor = 0;
+    }
+
+    private static int GetColor(IList<MountDyeToTexture> textureMappings, int colorIndex) {
+        if (textureMappings != null && textureMappings.Count > 0) {
+            if (colorIndex >= 0 && colorIndex < textureMappings.Count) {
+                return textureMappings[colorIndex].m_texture;
+            }
+        }
+
+        return colorIndex;
     }
 
     public override ClientMountOwnerBehavior GetClientBehaviorInstance() => new() {
