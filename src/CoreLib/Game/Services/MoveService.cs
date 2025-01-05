@@ -86,17 +86,6 @@ internal class MoveService : MessageService, IWithTimers {
         _activeCoreObject ??= GetActiveGameObject();
         BroadcastClientMoveState(message);
 
-        var wizard = GetActiveWizard();
-        var enterState = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
-            GameObjectID = wizard.GameObject.m_globalID,
-        };
-        if (message.NewState == 0) {
-            enterState.State = (uint) NPCStates.Stationary;
-        } else if (message.NewState == 1) {
-            enterState.State = (uint) NPCStates.Moving;
-        }
-        SendToSocket(enterState);
-
         _lastMoveTime = DateTime.Now;
     }
 
