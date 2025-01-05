@@ -111,48 +111,52 @@ public static class NetworkMessageGenerator {
     }
 
     private static Dictionary<byte, string> AddSubRecordsToProtocol(ref CodeTypeDeclaration protocolClass,
-                                                                    IEnumerable<XmlNode> xmlRecords,
-                                                                    byte serviceId) {
+                                                                IEnumerable<XmlNode> xmlRecords,
+                                                                byte serviceId) {
         // There are sometimes duplicate records. Only the first instance of a record is regarded.
         var seenRecords = new HashSet<string>();
         var duplicateRecordCount = 0;
         var createdClasses = new Dictionary<byte, string>();
 
         var xmlBases = xmlRecords as XmlNode[] ?? xmlRecords.ToArray();
+        byte msgOrderCounter = 1;
+
         foreach (var xmlBase in xmlBases) {
             // Skip metadata, comments, and duplicate records.
             if (xmlBase.Name.StartsWith(MetadataNodePrefix) || xmlBase.NodeType == XmlNodeType.Comment) {
                 continue;
             }
             if (!seenRecords.Add(xmlBase.Name)) {
+                Log.Warning("Duplicate record found: {RecordName} in {ProtocolName}. Skipping.", xmlBase.Name, protocolClass.Name);
                 duplicateRecordCount++;
                 continue;
             }
 
-            var msgOrderFallback = Array.IndexOf(xmlBases, xmlBase) + 1 - duplicateRecordCount;
-            var codeClass = CreateRecordTypeDeclaration(xmlBase, serviceId, (byte) msgOrderFallback);
-
-            protocolClass.Members.Add(codeClass);
-
-            // Check to see if the message has a _MsgOrder or _MsgType property. If it does, we'll use that as the key.
-            // Otherwise, we'll use the index of the message as it appears in the protocol.
-            // Delve in 1 layer to get into the RECORD node.
-            if (xmlBase.ChildNodes[0]!
+            // Try to find an explicit MsgOrder or MsgType.
+            var msgOrder = (byte?) null;
+            var msgOrderElement = xmlBase.ChildNodes[0]!
                 .ChildNodes
                 .OfType<XmlElement>()
-                .Any(x => x.Name is MetadataOrderName or MetadataTypeName)) {
-                var msgOrder = xmlBase.ChildNodes[0]!
-                    .ChildNodes
-                    .OfType<XmlElement>()
-                    .First(x => x.Name is MetadataOrderName or MetadataTypeName);
-                var msgOrderValue = byte.Parse(msgOrder.InnerText);
-                createdClasses.Add(msgOrderValue, codeClass.Name);
-                continue;
+                .FirstOrDefault(x => x.Name == MetadataOrderName || x.Name == MetadataTypeName);
+
+            if (msgOrderElement != null) {
+                // If we have a MsgOrder, use it.
+                msgOrder = byte.Parse(msgOrderElement.InnerText);
             }
 
-            // If we're here, the message doesn't have a _MsgOrder property.
-            // We'll use the index of the message as it appears in the protocol.
-            createdClasses.Add(unchecked((byte) msgOrderFallback), codeClass.Name);
+            // If no MsgOrder or MsgType is found, use the current counter.
+            if (msgOrder == null) {
+                msgOrder = msgOrderCounter++;
+            }
+
+            var codeClass = CreateRecordTypeDeclaration(xmlBase, serviceId, (byte) msgOrder);
+
+            protocolClass.Members.Add(codeClass);
+            createdClasses.Add((byte) msgOrder, codeClass.Name);
+        }
+
+        if (duplicateRecordCount > 0) {
+            Log.Information("{DuplicateCount} duplicate records were skipped.", duplicateRecordCount);
         }
 
         return createdClasses;

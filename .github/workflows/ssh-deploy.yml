@@ -20,7 +20,7 @@ jobs:
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '7.0.x'
+        dotnet-version: '9.0.x'
     - name: Dotnet Publish
       run: dotnet publish src -c Release -o deploy
     - name: Copy files via ssh rsync
@@ -43,7 +43,7 @@ jobs:
         script: |
           sudo apt-get update
           sudo apt-get upgrade -y
-          sudo apt-get install -y dotnet-runtime-7.0
+          sudo apt-get install -y dotnet-runtime-9.0
     - name: Run the application on the server
       uses: appleboy/ssh-action@master
       with:

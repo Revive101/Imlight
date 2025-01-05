@@ -70,6 +70,7 @@ public class Wizard : IDisposable {
     public ServerMountOwnerBehavior MountOwnerBehavior { get; set; }
     [JsonIgnore] public ServerObjectStateBehavior ObjectStateBehavior { get; set; }
     public ServerWizGameStats GameStats { get; set; }
+    public ServerPetOwnerBehavior PetOwnerBehavior { get; set; }
 
     [JsonIgnore] public Account Account;
     [JsonIgnore] public WizClientObject GameObject;
@@ -121,6 +122,7 @@ public class Wizard : IDisposable {
         InitializeSpellbookBehavior();
         InitializeMountOwnerBehavior();
         InitializeWizardGameStats(wizardSchoolType, level);
+        InitializePetOwnerBehavior();
 
         ObjectStateBehavior = new ServerObjectStateBehavior("PlayerMobileStates");
 
@@ -238,8 +240,22 @@ public class Wizard : IDisposable {
         WizardCollection.UpdateCharacterGameStats(this);
     }
 
+    public void UpdateEnergy(int newEnergy) {
+        PetOwnerBehavior.SetEnergy(newEnergy);
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterPetOwnerBehavior(this);
+    }
+
     public void UpdateMaxMana(int newMaxMana) {
         GameStats.m_baseMana = newMaxMana;
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterGameStats(this);
+    }
+
+    public void UpdateCantripLevel(byte newCantripLevel) {
+        GameStats.m_cantripLevel = newCantripLevel;
 
         // Persistent save.
         WizardCollection.UpdateCharacterGameStats(this);
@@ -574,6 +590,7 @@ public class Wizard : IDisposable {
         AfterDatabaseLoadWizardGameStats();
         AfterDatabaseLoadSpellbookBehavior();
         AfterDatabaseloadMountOwnerBehavior();
+        AfterDatabaseLoadPetOwnerBehavior();
 
         ObjectStateBehavior ??= new ServerObjectStateBehavior("PlayerMobileStates");
     }
@@ -753,6 +770,36 @@ public class Wizard : IDisposable {
 
         GameStats.m_currentHitpoints = GameStats.m_baseHitpoints;
         GameStats.m_currentMana = GameStats.m_baseMana;
+    }
+
+    private void InitializePetOwnerBehavior() {
+        PetOwnerBehavior = new ServerPetOwnerBehavior();
+        PetOwnerBehavior.SetEnergy(GameStats.m_energyMax);
+    }
+
+    private void AfterDatabaseLoadPetOwnerBehavior() {
+        // Normal members regain 1 energy every 10 minutes.
+        // Subscribed members regain 1 energy have 7.5 minutes.
+        // All of our members are considered subscribed members. Calculate how much energy the player has regained
+        // while they were offline.
+        if (PetOwnerBehavior is null) {
+            PetOwnerBehavior = new ServerPetOwnerBehavior();
+            PetOwnerBehavior.SetEnergy(GameStats.m_energyMax);
+
+            return;
+        }
+
+        //var currentTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        //var timeDifference = currentTime - PetOwnerBehavior.EnergyTickInSeconds;
+        //var energyRegained = timeDifference / 450; // 450 seconds = 7.5 minutes
+//
+        //// If the player has regained more energy than their max, set it to the max.
+        //if (PetOwnerBehavior.Energy + energyRegained > GameStats.m_energyMax) {
+        //    PetOwnerBehavior.SetEnergy(GameStats.m_energyMax);
+        //}
+        //else {
+        //    PetOwnerBehavior.SetEnergy((int) (PetOwnerBehavior.Energy + energyRegained));
+        //}
     }
 
     private void AfterDatabaseLoadWizardGameStats() {

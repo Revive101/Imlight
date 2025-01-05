@@ -6,7 +6,9 @@
 using System;
 using Akka.Actor;
 using Imlight.Common.Caches;
+using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty.PropertyReflection;
+using Imlight.CoreLib.Game.Models.World;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
@@ -83,6 +85,17 @@ internal class MoveService : MessageService, IWithTimers {
     private void ReceiveClientMoveState(GAME_5_PROTOCOL.MSG_CLIENTMOVESTATE message) {
         _activeCoreObject ??= GetActiveGameObject();
         BroadcastClientMoveState(message);
+
+        var wizard = GetActiveWizard();
+        var enterState = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
+            GameObjectID = wizard.GameObject.m_globalID,
+        };
+        if (message.NewState == 0) {
+            enterState.State = (uint) NPCStates.Stationary;
+        } else if (message.NewState == 1) {
+            enterState.State = (uint) NPCStates.Moving;
+        }
+        SendToSocket(enterState);
 
         _lastMoveTime = DateTime.Now;
     }

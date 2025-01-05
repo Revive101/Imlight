@@ -8,6 +8,7 @@ using Imlight.Common.Caches;
 using Imlight.Common.Configuration;
 using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty;
+using Imlight.CoreLib.Game.Cantrips;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
@@ -223,6 +224,35 @@ internal class CommandModifyProtocol : CommandProtocol {
         InformSenderClient($"Set max mana to {manaInt}.");
     }
 
+    [Command("maxenergy")]
+    [Alias("maxnrg")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void SetMaxEnergyCommand(string energy) {
+        // Try to parse the energy.
+        if (!int.TryParse(energy, out var energyInt)) {
+            InformSenderClient("Invalid maximum energy amount.");
+            return;
+        }
+
+        Context.Character.GameStats.m_energyMax = energyInt;
+        Context.Character.PetOwnerBehavior.SetEnergy(energyInt);
+
+        var tickMsg = new PET_9_PROTOCOL.MSG_PETENERGYTICK() {
+            GlobalID = Context.Character.GameObject.m_globalID,
+            Energy = Context.Character.PetOwnerBehavior.Energy,
+            MaxEnergy = energyInt,
+            TickTime = (int) Context.Character.PetOwnerBehavior.NextEnergyTickEpoch
+        };
+        var maxMsg = new PET_9_PROTOCOL.MSG_PETENERGYMAX() {
+            MaxEnergy = energyInt
+        };
+
+        Context.SessionActor.Tell(tickMsg, null);
+        Context.SessionActor.Tell(maxMsg, null);
+
+        InformSenderClient($"Set max energy to {energyInt}.");
+    }
+
     [Command("currenthealth")]
     [Alias("currenthp")]
     [AuthRequired(AuthLevel.QualityAssurance)]
@@ -281,6 +311,36 @@ internal class CommandModifyProtocol : CommandProtocol {
         InformSenderClient($"Set current mana to {manaInt}.");
     }
 
+    [Command("currentenergy")]
+    [Alias("currentnrg")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void SetCurrentEnergyCommand(string energy) {
+        // Try to parse the energy.
+        if (!int.TryParse(energy, out var energyInt)) {
+            InformSenderClient("Invalid current energy amount.");
+            return;
+        }
+
+        var newEnergy = Math.Min(energyInt, Context.Character.GameStats.m_energyMax);
+        Context.Character.UpdateEnergy(newEnergy);
+
+        // The client has a max energy increase effect applied, so sending it here would double the energy client side.
+        var magicSchool = Context.Character.MagicSchoolBehavior.MagicSchool;
+        var level = Context.Character.MagicSchoolBehavior.Level;
+        var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(magicSchool, level);
+        var normMaxEnergy = baseStats.m_petEnergy;
+
+        var networkMessage = new PET_9_PROTOCOL.MSG_PETENERGYTICK() {
+            GlobalID = Context.Character.GameObject.m_globalID,
+            Energy = energyInt,
+            MaxEnergy = normMaxEnergy,
+            TickTime = (int) Context.Character.PetOwnerBehavior.NextEnergyTickEpoch
+        };
+        Context.SessionActor.Tell(networkMessage, null);
+
+        InformSenderClient($"Set current energy to {energyInt}.");
+    }
+
     [Command("refillhealth")]
     [Alias("refillhp", "heal")]
     [AuthRequired(AuthLevel.QualityAssurance)]
@@ -326,6 +386,71 @@ internal class CommandModifyProtocol : CommandProtocol {
             DisplayDiff = 1,
         };
         Context.SessionActor.Tell(networkMessage, null);
+    }
+
+    [Command("refillenergy")]
+    [Alias("refillen", "refillnrg", "refillpet", "energize")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void MaxEnergyCommand() {
+        // The client has a max mana increase effect applied, so sending it here would double the mana client side.
+        var magicSchool = Context.Character.MagicSchoolBehavior.MagicSchool;
+        var level = Context.Character.MagicSchoolBehavior.Level;
+        var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(magicSchool, level);
+        var normMaxEnergy = baseStats.m_petEnergy;
+
+        Context.Character.UpdateEnergy(normMaxEnergy);
+
+        // Inform the client of the change.
+        var networkMessage = new PET_9_PROTOCOL.MSG_PETENERGYTICK() {
+            GlobalID = Context.Character.GameObject.m_globalID,
+            Energy = normMaxEnergy,
+            MaxEnergy = normMaxEnergy,
+            TickTime = (int) Context.Character.PetOwnerBehavior.NextEnergyTickEpoch
+        };
+        Context.SessionActor.Tell(networkMessage, null);
+    }
+
+    [Command("cantriplevelup")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    [Alias("clvlup")]
+    private void CantripLevelUpCommand() {
+        var newLevel = (byte)(Context.Character.GameStats.m_cantripLevel + 1);
+        if (newLevel > CantripFactory.GetMaxCantripLevel()) {
+            InformSenderClient($"You cannot set level higher than the max level (10).");
+            return;
+        }
+
+        Context.Character.UpdateCantripLevel(newLevel);
+
+        var msg = new CANTRIPSMESSAGES_57_PROTOCOL.MSG_UPDATECANTRIPXP {
+            XP = 0,
+            Level = newLevel
+        };
+        Context.SessionActor.Tell(msg, null);
+    }
+
+    [Command("cantriplevel")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    [Alias("clvl")]
+    private void SetCantripLevelCommand(string level) {
+        // Try to parse the level.
+        if (!byte.TryParse(level, out var levelByte)) {
+            InformSenderClient("Invalid level.");
+            return;
+        }
+
+        if (levelByte > CantripFactory.GetMaxCantripLevel()) {
+            InformSenderClient($"You cannot set level higher than the max level (10).");
+            return;
+        }
+
+        Context.Character.UpdateCantripLevel(levelByte);
+
+        var msg = new CANTRIPSMESSAGES_57_PROTOCOL.MSG_UPDATECANTRIPXP {
+            XP = 0,
+            Level = levelByte
+        };
+        Context.SessionActor.Tell(msg, null);
     }
 
     [Command("addtrainingpoints")]

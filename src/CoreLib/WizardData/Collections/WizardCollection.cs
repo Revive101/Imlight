@@ -231,6 +231,23 @@ public static class WizardCollection {
     }
 
     /// <summary>
+    /// Updates the character pet owner behavior for a wizard.
+    /// </summary>
+    /// <param name="wizard">The wizard object containing the updated pet owner behavior.</param>
+    public static void UpdateCharacterPetOwnerBehavior(Wizard wizard) {
+        using var session = s_store.OpenSession();
+
+        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
+            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        if (existingCharacter is null) {
+            return;
+        }
+
+        existingCharacter.PetOwnerBehavior = wizard.PetOwnerBehavior;
+        session.SaveChanges();
+    }
+
+    /// <summary>
     /// Updates the character's last time they clicked the "go to ___ (ex. commons)" button.
     /// Confusingly, Kingsisle calls this the home button, while the wizard's house is called their dorm.
     /// </summary>
