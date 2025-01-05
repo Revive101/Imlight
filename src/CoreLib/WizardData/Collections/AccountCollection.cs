@@ -10,6 +10,7 @@ using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Misc;
 using Imlight.CoreLib.WizardData.Models.Player;
 using static Imlight.Common.Caches.TypeCache;
+using Imlight.CoreLib.Shared.Behaviors;
 
 namespace Imlight.CoreLib.WizardData.Implementations;
 
@@ -117,6 +118,7 @@ public static class AccountCollection {
             var snackbag = session.Query<ClientPetSnackItem>(collectionName: WizardPetSnackCollection.CollectionName)
                 .Where(i => i.m_characterId == character.CharId)
                 .ToList();
+            character.PetSnackBehavior ??= new ServerPetSnackBehavior();
             character.PetSnackBehavior.Snacks = snackbag
                 .Where(i => character.PetSnackBehavior.SnackItemIds.Any(e => i.m_globalID == e)).ToList();
 
