@@ -48,6 +48,21 @@ public abstract class MessageService : ReceiveProtocolDispatcher {
                                 $"Do not do this. Use {nameof(SendToSocket)} instead.");
         }
 
+        SessionActor.ActorRef.Tell(message, Self);
+    }
+
+    /// <summary>
+    /// Sends the SessionActor a server message. Used to send data to another service of the SessionActor.
+    /// </summary>
+    /// <param name="message"></param>
+    protected void TellAllServices(IServerMessage message) {
+        if (message.ServiceID < 100) {
+            throw new Exception($"You are sending a non-server message using {nameof(TellOtherServices)}! " +
+                                $"Do not do this. Use {nameof(SendToSocket)} instead.");
+        }
+
+        // The SessionActor has a check to not send a message to the sender.
+        // We can just set the sender to the current actor, so it won't skip the service that sent it.
         SessionActor.ActorRef.Tell(message);
     }
 
@@ -62,13 +77,13 @@ public abstract class MessageService : ReceiveProtocolDispatcher {
             throw new ActorKilledException($"{GetType()} attempted to send message to undefined SessionActor.");
         }
 
-        var msg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+        var message = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
             Message = originalMessage,
             Selfless = isSelfless,
             Sender = SessionActor.ActorRef
         };
 
-        SessionActor.ActorRef.Tell(msg);
+        SessionActor.ActorRef.Tell(message, Self);
     }
 
     /// <summary>

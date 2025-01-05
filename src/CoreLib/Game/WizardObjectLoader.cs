@@ -34,6 +34,7 @@ public static class WizardObjectLoader {
         clientObject.m_location = character.Location;
         clientObject.m_orientation = character.Orientation;
 
+        // todo: (Jooty) I hate this. We need to find a better way to handle this.
         SetWizardAvatarBehavior(clientObject, ref character);
         SetWizardGameStats(clientObject, ref character);
         SetEquipmentBehavior(clientObject, character);
@@ -43,6 +44,7 @@ public static class WizardObjectLoader {
         SetSpellbookBehavior(clientObject, ref character);
         SetMountOwnerBehavior(clientObject, ref character);
         SetPetSnackBehavior(clientObject, ref character);
+        SetPetOwnerBehavior(clientObject, ref character);
 
         return clientObject;
     }
@@ -144,6 +146,16 @@ public static class WizardObjectLoader {
         }
         else {
             throw new Exception("Behavior ClientPetSnackBehavior not found!");
+        }
+    }
+  
+    public static void SetPetOwnerBehavior(WizClientObject clientObject, ref Wizard character) {
+        if (CoreObjectFactory.FindBehaviorInstance<ClientPetOwnerBehavior>(clientObject, out var petOwnerBehavior)) {
+            var idx = clientObject.m_inactiveBehaviors.IndexOf(petOwnerBehavior);
+            clientObject.m_inactiveBehaviors[idx] = character.PetOwnerBehavior.GetClientBehaviorInstance();
+        }
+        else {
+            throw new Exception("Behavior ClientPetOwnerBehavior not found!");
         }
     }
 }

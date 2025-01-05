@@ -59,6 +59,7 @@ public static class BehaviorCache {
             0x64E6088B => new TypeCache.PetTomeBehavior(),
             0x29474BCF => new TypeCache.TutorialLogBehavior(),
             0x174F46F4 => new TypeCache.WishlistBehavior(),
+            0x673324BA => new TypeCache.ClientPetOwnerBehavior(),
             // Client also has PathMovementBehaviorTemplate, but doesn't appear to use the actual behavior.
             //case 0x22B1AD8D: return new PathMovementBehavior();
             // ======================================================================

@@ -134,6 +134,11 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
                 continue;
             }
 
+            // If the handler is the sender, skip.
+            if (actorRef == Sender) {
+                continue;
+            }
+
             actorRef.Forward(msg);
             wasDispatched = true;
         }
@@ -155,6 +160,11 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
         // Iterate our services and see if any of them can handle this message.
         foreach (var (actorRef, type) in _services) {
             if (type.MessageHandlers.All(x => x.Key != msg.GetType())) {
+                continue;
+            }
+
+            // If the handler is the sender, skip.
+            if (actorRef == Sender) {
                 continue;
             }
 
