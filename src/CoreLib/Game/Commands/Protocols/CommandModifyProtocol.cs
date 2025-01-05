@@ -195,6 +195,15 @@ internal class CommandModifyProtocol : CommandProtocol {
         InformSenderClient($"Set name to {name}. Relog to see changes.");
     }
 
+    [Command("badge")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void SetBadgeCommand([Remainder]string badge) {
+        // Set the badge of the character.
+        Context.Character.SetBadgeOverride(badge);
+
+        InformSenderClient($"Set badge to {badge}. Relog to see changes.");
+    }
+
     [Command("maxgold")]
     [AuthRequired(AuthLevel.QualityAssurance)]
     private void SetMaxGoldCommand(string gold) {

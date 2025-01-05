@@ -463,6 +463,13 @@ public class Wizard : IDisposable {
         WizardCollection.UpdateCharacterNameOverride(this);
     }
 
+    public void SetBadgeOverride(string newBadge) {
+        PlayerNameBehavior.BadgeTitle = newBadge;
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterBadgeOverride(this);
+    }
+
     public bool LearnSpell(Spell spell) {
         if (SpellbookBehavior.LearnedSpellTemplateIds.Contains(spell.m_templateID)) {
             Logger.Warning("{0} Tried to learn spell with template ID {1} that is already known.",
