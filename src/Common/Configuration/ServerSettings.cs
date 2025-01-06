@@ -108,6 +108,9 @@ public sealed class ServerSettings {
     [DefaultValue(100)]
     public int MaxJewelsAllowed { get; set;}
 
+    [DefaultValue(450)]
+    public int PetEnergyTickInSeconds { get; set; }
+
     #endregion
 
     #region Patch Server
