@@ -458,6 +458,48 @@ public class Wizard : IDisposable {
         return true;
     }
 
+    public bool AddReagentToReagentBag(ulong reagentTemplateId, out ClientReagentItem reagentObj) {
+        if (AlchemyBehavior.HasReageant(reagentTemplateId)) {
+            reagentObj = AlchemyBehavior.GetReagent(reagentTemplateId);
+        }
+        else {
+            reagentObj = (ClientReagentItem) CoreObjectFactory.FinalizeCoreObject(reagentTemplateId);
+            reagentObj.m_characterId = (GID) CharId;
+            reagentObj.m_quantity = 1;
+        }
+
+        return AddReagentToReagentBag(reagentObj);
+    }
+
+    public bool AddReagentToReagentBag(ClientReagentItem reagent) {
+        if (reagent is null) {
+            Logger.Warning("Cannot add reagent to reagent bag because that reagent does not exist.");
+            return false;
+        }
+
+        CoreObjectFactory.InitializeCoreObjectBehaviors(reagent, reagent.m_templateID);
+
+        // Ensure that the item is associated with this Wizard.
+        reagent.m_characterId = (GID) CharId;
+
+        var success = AlchemyBehavior.AddReagent(reagent);
+        if (!success) {
+            Logger.Warning("Could not add reagent {0} to player {1}'s reagent bag.",
+                Logger.Args(reagent.m_globalID, PlayerNameBehavior.GetWizardName()));
+            return false;
+        }
+
+        if (reagent.m_quantity > 1) {
+            // Persistent save.
+
+            return true;
+        }
+
+        // Persistent save.
+
+        return true;
+    }
+
     public void SetNameOverride(string newName) {
         PlayerNameBehavior.NameOverride = newName;
 
