@@ -285,4 +285,12 @@ public class Account {
 
         return flags;
     }
+
+    /// <summary>
+    /// Retrieves the highest level wizard on the account.
+    /// </summary>
+    /// <returns>The highest level wizard on the account.</returns>
+    public Wizard GetHighestLevelWizard() => Characters
+        .OrderByDescending(c => c.GameStats.Level)
+        .FirstOrDefault();
 }
