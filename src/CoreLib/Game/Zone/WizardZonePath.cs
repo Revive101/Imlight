@@ -179,11 +179,18 @@ public class WizardZonePath : ReceiveProtocolDispatcher, IWithTimers {
 
         // Create the creature actor. This will also add the creature to the zone.
         // The creature actor will be responsible for updating the zone with its presence.
-        // If this is a wisp, we need to use the wisp actor. Otherwise, use the creature actor.
+        // If this is a wisp, we need to use the wisp actor.
+        // If this is a reagent, we need to use the reagent actor.
+        // Otherwise, use the creature actor.
         Props props;
-        if (template is WizGameObjectTemplate gameObjectTemplate
-            && gameObjectTemplate.m_objectName.ToString().Contains("Wisp")) {
+        if (template is WizGameObjectTemplate wizGameObjectTemplate
+            && wizGameObjectTemplate.m_objectName.ToString().Contains("Wisp")) {
             props = WizardZoneWisp.Props(newObj, template, this, (byte) nodeIndex, _zoneActorRef);
+        }
+        else if (template is GameObjectTemplate gameObjectTemplate
+            && gameObjectTemplate.m_adjectiveList.Count >= 2
+            && gameObjectTemplate.m_adjectiveList[1] == "Reagent") {
+            props = WizardZoneReagent.Props(newObj, template, this, (byte) nodeIndex, _zoneActorRef);
         }
         else {
             props = WizardZoneCreature.Props(newObj, template, this, (byte) nodeIndex, _zoneActorRef);

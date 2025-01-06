@@ -49,7 +49,12 @@ public class ReagentFactory : RootDirectoryResourceSingleton<ReagentFactory>, IM
     /// <param name="reagentName">The name of the reagent.</param>
     /// <returns>The reagent with the specified name, or null if the reagent template is not found.</returns>
     public static ClientReagentItem GetReagent(string reagentName) {
-        reagentName = reagentName.ToLower();    
+        reagentName = reagentName.ToLower();
+
+        if (reagentName.Contains("flax")) { // KI naming inconsistency
+            reagentName = "flax-01"; 
+        }
+
         foreach (var kp in s_reagentTemplates) {
             if (kp.Key.Contains(reagentName)) {
                 return GetReagent(kp.Value.m_templateID);
