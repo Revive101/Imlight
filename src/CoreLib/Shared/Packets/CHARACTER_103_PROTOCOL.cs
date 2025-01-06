@@ -71,4 +71,9 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
         public ResRemoveDynaMod DynaMod;
         public IActorRef ContextActor;
     }
+
+    public sealed class MSG_DOENERGYTICK : IServerMessage {
+        public byte MessageOrder { get; } = 9;
+        public byte ServiceID { get; } = 103;
+    }
 }

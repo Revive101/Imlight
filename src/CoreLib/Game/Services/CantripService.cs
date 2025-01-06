@@ -30,28 +30,6 @@ public class CantripService : MessageService, IWithTimers {
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new CantripService(parentActor));
 
-    [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE))]
-    private void ReceivePostAttach(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE message) {
-        // Send a pet energy tick message to the client.
-        var wizard = GetActiveWizard();
-        var petOwnerBehavior = wizard.PetOwnerBehavior;
-
-        // The client has a max energy increase effect applied, so sending it here would double the energy client side.
-        var magicSchool = wizard.MagicSchoolBehavior.MagicSchool;
-        var level = wizard.MagicSchoolBehavior.Level;
-        var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(magicSchool, level);
-        var normMaxEnergy = baseStats.m_petEnergy;
-
-        var tickMsg = new PET_9_PROTOCOL.MSG_PETENERGYTICK() {
-            GlobalID = wizard.CharId,
-            Energy = petOwnerBehavior.Energy,
-            MaxEnergy = normMaxEnergy,
-            TickTime = 0
-        };
-
-        SendToSocket(tickMsg);
-    }
-
     [MessageHandler(typeof(CANTRIPSMESSAGES_57_PROTOCOL.MSG_CANTRIPSSPELLCAST))]
     private void ReceiveCantripSpellCast(CANTRIPSMESSAGES_57_PROTOCOL.MSG_CANTRIPSSPELLCAST message) {
         var wizard = GetActiveWizard();
@@ -151,7 +129,7 @@ public class CantripService : MessageService, IWithTimers {
                 GlobalID = wizard.GameObject.m_globalID,
                 Energy = normMaxEnergy,
                 MaxEnergy = normMaxEnergy,
-                TickTime = (int) wizard.PetOwnerBehavior.NextEnergyTickEpoch
+                TickTime = (int) wizard.PetOwnerBehavior.LastEnergyTickEpoch
             };
             SendToSocket(networkMessage);
             InformGameClient("Refilled energy.");
@@ -203,7 +181,7 @@ public class CantripService : MessageService, IWithTimers {
             GlobalID = wizard.GameObject.m_globalID,
             Energy = newEnergy,
             MaxEnergy = normMaxEnergy,
-            TickTime = (int) wizard.PetOwnerBehavior.NextEnergyTickEpoch
+            TickTime = (int) wizard.PetOwnerBehavior.LastEnergyTickEpoch
         };
 
         SendToSocket(networkMessage);
