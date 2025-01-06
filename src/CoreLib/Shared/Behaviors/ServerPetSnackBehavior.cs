@@ -28,6 +28,9 @@ public class ServerPetSnackBehavior : ServerBehaviorInstance {
     /// <param name="snack">The snack to be added.</param>
     /// <returns>True if the snack was successfully added, false otherwise.</returns>
     public bool AddSnack(ClientPetSnackItem snack) {
+        Snacks ??= [];
+        SnackItemIds ??= [];
+
         var totalSnacks = 0;
         foreach (var s in Snacks) {
             totalSnacks += s.m_quantity;
@@ -56,6 +59,8 @@ public class ServerPetSnackBehavior : ServerBehaviorInstance {
     /// <param name="snackId">The unique identifier of the snack to be removed.</param>
     /// <returns><c>true</c> if the snack was successfully removed; otherwise, <c>false</c>.</returns>
     public bool RemoveSnack(ulong snackId, out ClientPetSnackItem updatedSnack) {
+        Snacks ??= [];
+        SnackItemIds ??= [];
         updatedSnack = null;
 
         // Get the actual item from the inventory.
@@ -91,26 +96,26 @@ public class ServerPetSnackBehavior : ServerBehaviorInstance {
     /// </summary>
     /// <param name="globalId">The global ID of the snack to check.</param>
     /// <returns>True if the snack bag contains an snack with the specified global ID, otherwise false.</returns>
-    public bool HasSnackID(ulong globalId) => Snacks.Any(snack => snack.m_globalID == globalId);
+    public bool HasSnackID(ulong globalId) => Snacks?.Any(snack => snack.m_globalID == globalId) ?? false;
 
     /// <summary>
     /// Checks if the snack bag contains a snack with the specified template ID.
     /// </summary>
     /// <param name="templateId">The template ID of the snack to check.</param>
     /// <returns>True if the snack bag contains an snack with the specified template ID, otherwise false.</returns>
-    public bool HasSnack(ulong templateId) => Snacks.Any(snack => snack.m_templateID == templateId);
+    public bool HasSnack(ulong templateId) => Snacks?.Any(snack => snack.m_templateID == templateId) ?? false;
 
     /// <summary>
     /// Returns the snack with the specified template ID.
     /// </summary>
     /// <param name="templateId">The template ID of the snack to get.</param>
     /// <returns>Returns the snack object with the specified template ID, otherwise null.</returns>
-    public ClientPetSnackItem GetSnack(ulong templateId) => Snacks.FirstOrDefault(snack => snack.m_templateID == templateId);
+    public ClientPetSnackItem GetSnack(ulong templateId) => Snacks?.FirstOrDefault(snack => snack.m_templateID == templateId) ?? null;
 
     public override ClientPetSnackBehavior GetClientBehaviorInstance() => new() {
         m_snackBag = new ObjectBag() {
             m_maxItemStack = s_maxSnacksAllowed,
-            m_itemList = Snacks.ConvertAll(item => (CoreObject) item)
+            m_itemList = Snacks?.ConvertAll(item => (CoreObject) item) ?? []
         }
     };
 }

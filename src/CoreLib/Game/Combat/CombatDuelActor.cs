@@ -238,10 +238,6 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ROUNDRESOLUTION))]
     private void ReceiveRoundResolution(COMBAT_106_PROTOCOL.MSG_ROUNDRESOLUTION message) {
-        // All spells have been called. Inform the client whether this duel continues or ends.
-        Duel.m_duelPhase = kDuelPhase.kPhase_Resolution;
-        SendCombatPhase((byte) Duel.m_duelPhase);
-
         // Iterate through dead creature participants and remove them from the duel.
         // Players can be healed and therefore don't need to be removed.
         EnactActionOnSubCircles(circle => {
@@ -250,6 +246,10 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
                 circle.ParticipantActor.Tell(removeMsg);
             }
         });
+
+        // All spells have been called. Inform the client whether this duel continues or ends.
+        Duel.m_duelPhase = kDuelPhase.kPhase_Resolution;
+        SendCombatPhase((byte) Duel.m_duelPhase);
 
         var playersWin = AliveCreatureCount <= 0;
         var creaturesWin = AlivePlayerCount <= 0;
@@ -656,9 +656,9 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     private void SendCombatMoveSelection(ulong participantId, byte moveType, Spell spell, byte targetIndex) {
-        byte isItemCard = (byte)(spell?.m_itemCard ?? false ? 1 : 0);
-        byte isTreasureCard = (byte)(spell?.m_treasureCard ?? false ? 1 : 0);
-        byte isBattleCard = (byte)(spell?.m_battleCard ?? false ? 1 : 0);
+        byte isItemCard = (byte) (spell?.m_itemCard ?? false ? 1 : 0);
+        byte isTreasureCard = (byte) (spell?.m_treasureCard ?? false ? 1 : 0);
+        byte isBattleCard = (byte) (spell?.m_battleCard ?? false ? 1 : 0);
 
         var actualIndex = (byte) Math.Pow(2, targetIndex);
 
@@ -666,7 +666,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             DuelID = SigilId,
             ParticipantID = participantId,
             MoveType = moveType,
-            SpellID = (int)(spell?.m_templateID ?? 0),
+            SpellID = (int) (spell?.m_templateID ?? 0),
             SpellTargetIndex = actualIndex,
             IsItemCard = isItemCard,
             IsTreasureCard = isTreasureCard,
@@ -682,19 +682,19 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
 
         RemovePlayersFromDuel();
 
-        // Broadcast to the zone of the result.
-        var combatMatchResult = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATMATCHRESULT {
-            DuelID = SigilId,
-            WinningTeam = playersWin ? (byte) CombatTeam.Player : (byte) CombatTeam.Monster,
-        };
-        ZoneBroadcast(combatMatchResult);
-
         if (playersWin) {
             PlayerWin();
         }
         else if (creaturesWin) {
             CreatureWin();
         }
+
+        // Broadcast to the zone of the result.
+        var combatMatchResult = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATMATCHRESULT {
+            DuelID = SigilId,
+            WinningTeam = playersWin ? (byte) CombatTeam.Player : (byte) CombatTeam.Monster,
+        };
+        ZoneBroadcast(combatMatchResult);
 
         // Inform the zone of the final phase, and the end of the duel.
         Duel.m_duelPhase = kDuelPhase.kPhase_Ended;
@@ -759,13 +759,6 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             circle.ParticipantActor.Tell(defeatMsg);
             return;
         }
-
-        // Inform the player that they've been removed from this duel.
-        var removeMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATREMOVE {
-            DuelID = SigilId,
-            ParticipantID = circle.ParticipantObject.m_globalID,
-        };
-        ZoneBroadcast(removeMsg);
 
         // Get the players back into the idle state, so they can move around again.
         var stateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {

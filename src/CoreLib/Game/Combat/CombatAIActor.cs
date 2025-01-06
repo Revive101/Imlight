@@ -13,6 +13,7 @@ Journeyman -- Details intelligence, aggressiveness, and selfishness factors.
 
 using Akka.Actor;
 using Imlight.Common;
+using Imlight.Common.Caches;
 using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Networking;
@@ -129,6 +130,15 @@ internal class CombatAIActor : ReceiveProtocolDispatcher {
         else if (isHealing) {
             UpdateHateTable(message.Caster.SlotIndex, HEALING_AGGRO_INCREASE);
         }
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_COMBATDEATH))]
+    private void ReceiveCombatDeath(COMBAT_106_PROTOCOL.MSG_COMBATDEATH message) {
+        // I have died. Remove myself from the current duel.
+        _duelActor.DuelBroadcast(new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATREMOVE {
+            DuelID = _duelActor.SigilId,
+            ParticipantID = _mySubcircle.ParticipantObject.m_globalID
+        });
     }
 
     private void DetermineAttitude() {

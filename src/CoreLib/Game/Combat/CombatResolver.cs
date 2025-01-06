@@ -163,27 +163,24 @@ public class CombatResolver {
             // This is because the overtime effects can kill a participant, and we want to see the animation.
             cinematicTime += InvokeOverTimeEffects(action.SpellCaster);
 
-            // If our target is gone or we're stunned, pass the turn.
-            // If we died from the over time effects, we'll still pass the turn.
-            if (action.SpellCaster.CombatParticipant.m_stunned > 0 || !action.SelectedTarget.IsAlive) {
-                action.SpellCaster.CombatParticipant.m_stunned--;
-
-                var passCombatAction = InitializeCombatAction(action);
-                passCombatAction.m_spell = null;
-                combatActionList.m_actionList.Add(passCombatAction);
-
-                Logger.Debug("Duel {0} | Slot {1} | Caster is stunned. Passing turn.",
-                    Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex));
-
-                continue;
-            }
-
             // A null spell indicates the caster is passing their turn.
-            if (action.Spell is null) {
+            if (action.Spell is null || action.SelectedTarget is null) {
                 Logger.Debug("Duel {0} | Slot {1} | Caster is passing their turn.",
                     Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex));
 
                 cinematicTime += HandlePassAction(action, combatActionList);
+
+                continue;
+            }
+
+            // If our target is gone or we're stunned, pass the turn.
+            if (action.SpellCaster.CombatParticipant.m_stunned > 0 || !action.SelectedTarget.IsAlive) {
+                action.SpellCaster.CombatParticipant.m_stunned--;
+
+                cinematicTime += HandlePassAction(action, combatActionList);
+
+                Logger.Debug("Duel {0} | Slot {1} | Spell cannot occur because target is dead or caster is stunned.",
+                    Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex));
 
                 continue;
             }

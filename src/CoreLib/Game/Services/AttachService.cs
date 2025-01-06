@@ -42,8 +42,10 @@ internal class AttachService : MessageService {
         // Tell the game server that the user has attached, and now we need to find a zone process for their
         // zone, or create a new one. This is an internal zone transfer that does not involve the client.
         var zoneDetails = InternalZoneTransfer(message.ZoneName, message.Location);
-        if (zoneDetails.ErrorCode != 0) {
-            SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED { Error = zoneDetails.ErrorCode });
+        if (zoneDetails is null || zoneDetails.ErrorCode != 0) {
+            SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED { 
+                Error = zoneDetails?.ErrorCode ?? 1 
+            });
             return;
         }
 
