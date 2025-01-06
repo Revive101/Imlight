@@ -186,6 +186,62 @@ internal class CommandModifyProtocol : CommandProtocol {
         InformSenderClient($"Added snack {snackObj.m_debugName} to snack bag.");
     }
 
+    [Command("addreagent")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void AddReagentCommand(string templateId) {
+        // Try to parse the item id.
+        if (!ulong.TryParse(templateId, out var templateIdLong)) {
+            InformSenderClient("Invalid item id.");
+            return;
+        }
+
+        // Check to see if this template exists.
+        var template = CoreObjectFactory.GetCoreTemplate(templateIdLong);
+        if (template is null) {
+            InformSenderClient("Invalid item id.");
+            return;
+        }
+
+        // We can't add non-reagent objects to the reagent bag.
+        if (template is not ReagentItemTemplate) {
+            InformSenderClient($"Cannot add objects of type {template.GetType().Name} to reagent bag.");
+            return;
+        }
+
+        var addedReagentSuccess = Context.Character.AddReagentToReagentBag(templateIdLong, out var reagentObj);
+        if (!addedReagentSuccess) {
+            InformSenderClient("Could not add reagent to reagent bag.");
+            return;
+        }
+
+        var serializer = new CoreObjectSerializer()
+              .OnMode(SerializerOptions.Mode.Compact)
+              .OnBehaviors(SerializerOptions.Behaviors.None)
+              .OnPropertyMask((SerializerOptions.PropertyFlags) 27);
+
+        var networkMessage = new WIZARD_12_PROTOCOL.MSG_REAGENTADD {
+            GlobalID = Context.Character.CharId,
+            Data = serializer.Serialize(reagentObj)
+        };
+        Context.SessionActor.Tell(networkMessage, null);
+
+        var acquireMessage = new WIZARD2_53_PROTOCOL.MSG_ITEMACQUISITION {
+            ItemGlobalID = reagentObj.m_globalID,
+            ItemTemplateID = (uint) reagentObj.m_templateID,
+            ItemLocation = 1
+        };
+        Context.SessionActor.Tell(acquireMessage, null);
+
+        var updateMessage = new WIZARD_12_PROTOCOL.MSG_REAGENTUPDATE {
+            GlobalID = Context.Character.CharId,
+            ItemID = reagentObj.m_globalID,
+            Quantity = reagentObj.m_quantity
+        };
+        Context.SessionActor.Tell(updateMessage, null);
+
+        InformSenderClient($"Added reagent {reagentObj.m_debugName} to reagent bag.");
+    }
+
     [Command("name")]
     [AuthRequired(AuthLevel.QualityAssurance)]
     private void SetNameCommand([Remainder]string name) {
