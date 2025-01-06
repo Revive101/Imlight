@@ -144,7 +144,7 @@ public class InventoryService : MessageService {
             return;
         }
 
-        wizard.RemoveSnackFromSnackBag(message.GlobalID, out var updatedSnack);
+        wizard.RemoveSnack(message.GlobalID, out var updatedSnack);
 
         if (updatedSnack.m_quantity > 0) {
             SendToSocket(new PET_9_PROTOCOL.MSG_PETSNACKUPDATE() {

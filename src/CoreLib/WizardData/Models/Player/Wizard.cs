@@ -399,7 +399,7 @@ public class Wizard : IDisposable {
         return true;
     }
 
-    public bool AddSnackToSnackBag(ulong snackTemplateId, out ClientPetSnackItem snackObj) {
+    public bool AddSnack(ulong snackTemplateId, out ClientPetSnackItem snackObj) {
         if (PetSnackBehavior.HasSnack(snackTemplateId)) {
             snackObj = PetSnackBehavior.GetSnack(snackTemplateId);
         } else {
@@ -408,10 +408,10 @@ public class Wizard : IDisposable {
             snackObj.m_quantity = 1;
         }
 
-        return AddSnackToSnackBag(snackObj);
+        return AddSnack(snackObj);
     }
 
-    public bool AddSnackToSnackBag(ClientPetSnackItem snack) {
+    public bool AddSnack(ClientPetSnackItem snack) {
         if (snack is null) {
             Logger.Warning("Cannot add snack to snack bag because that snack does not exist.");
             return false;
@@ -442,7 +442,7 @@ public class Wizard : IDisposable {
         return true;
     }
 
-    public bool RemoveSnackFromSnackBag(ulong globalId, out ClientPetSnackItem snack) {
+    public bool RemoveSnack(ulong globalId, out ClientPetSnackItem snack) {
         PetSnackBehavior.RemoveSnack(globalId, out snack);
 
         if (snack.m_quantity <= 0) {
@@ -458,7 +458,7 @@ public class Wizard : IDisposable {
         return true;
     }
 
-    public bool AddReagentToReagentBag(ulong reagentTemplateId, out ClientReagentItem reagentObj) {
+    public bool AddReagent(ulong reagentTemplateId, out ClientReagentItem reagentObj) {
         if (AlchemyBehavior.HasReageant(reagentTemplateId)) {
             reagentObj = AlchemyBehavior.GetReagent(reagentTemplateId);
         }
@@ -468,10 +468,10 @@ public class Wizard : IDisposable {
             reagentObj.m_quantity = 1;
         }
 
-        return AddReagentToReagentBag(reagentObj);
+        return AddReagent(reagentObj);
     }
 
-    public bool AddReagentToReagentBag(ClientReagentItem reagent) {
+    public bool AddReagent(ClientReagentItem reagent) {
         if (reagent is null) {
             Logger.Warning("Cannot add reagent to reagent bag because that reagent does not exist.");
             return false;

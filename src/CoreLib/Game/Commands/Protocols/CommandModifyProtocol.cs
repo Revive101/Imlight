@@ -152,7 +152,7 @@ internal class CommandModifyProtocol : CommandProtocol {
             return;
         }
 
-        var addedSnackSuccess = Context.Character.AddSnackToSnackBag(templateIdLong, out var snackObj);
+        var addedSnackSuccess = Context.Character.AddSnack(templateIdLong, out var snackObj);
         if (!addedSnackSuccess) {
             InformSenderClient("Could not add snack to snack bag.");
             return;
@@ -208,7 +208,7 @@ internal class CommandModifyProtocol : CommandProtocol {
             return;
         }
 
-        var addedReagentSuccess = Context.Character.AddReagentToReagentBag(templateIdLong, out var reagentObj);
+        var addedReagentSuccess = Context.Character.AddReagent(templateIdLong, out var reagentObj);
         if (!addedReagentSuccess) {
             InformSenderClient("Could not add reagent to reagent bag.");
             return;
