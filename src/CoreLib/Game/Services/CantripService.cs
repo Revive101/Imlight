@@ -151,7 +151,7 @@ public class CantripService : MessageService, IWithTimers {
                 GlobalID = wizard.GameObject.m_globalID,
                 Energy = normMaxEnergy,
                 MaxEnergy = normMaxEnergy,
-                TickTime = (int) wizard.PetOwnerBehavior.NextEnergyTickEpoch
+                TickTime = (int) wizard.PetOwnerBehavior.LastEnergyTickEpoch
             };
             SendToSocket(networkMessage);
             InformGameClient("Refilled energy.");
@@ -203,7 +203,7 @@ public class CantripService : MessageService, IWithTimers {
             GlobalID = wizard.GameObject.m_globalID,
             Energy = newEnergy,
             MaxEnergy = normMaxEnergy,
-            TickTime = (int) wizard.PetOwnerBehavior.NextEnergyTickEpoch
+            TickTime = (int) wizard.PetOwnerBehavior.LastEnergyTickEpoch
         };
 
         SendToSocket(networkMessage);
