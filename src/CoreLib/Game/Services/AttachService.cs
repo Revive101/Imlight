@@ -3,6 +3,7 @@
  * Proprietary and confidential.
  */
 
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
@@ -84,6 +85,7 @@ internal class AttachService : MessageService {
 
         var loginCompleteMsg = new GAME_5_PROTOCOL.MSG_LOGINCOMPLETE() {
             RealmName = realmName,
+            ServerTime = (uint) DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
 
             // Set character data.
             Data = localGameObjectData,
