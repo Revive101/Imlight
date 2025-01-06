@@ -66,6 +66,7 @@ public class Wizard : IDisposable {
     public ServerWizSpellbookBehavior SpellbookBehavior { get; set; }
     public ServerMountOwnerBehavior MountOwnerBehavior { get; set; }
     public ServerPetSnackBehavior PetSnackBehavior { get; set; }
+    public ServerAlchemyBehavior AlchemyBehavior { get; set; }
     [JsonIgnore] public ServerObjectStateBehavior ObjectStateBehavior { get; set; }
     public ServerWizGameStats GameStats { get; set; }
     public ServerPetOwnerBehavior PetOwnerBehavior { get; set; }
@@ -122,6 +123,7 @@ public class Wizard : IDisposable {
         InitializeWizardGameStats(wizardSchoolType, level);
         InitializeDefaultPetSnackBehavior();
         InitializePetOwnerBehavior();
+        InitializeAlchemyBehavior();
 
         ObjectStateBehavior = new ServerObjectStateBehavior("PlayerMobileStates");
 
@@ -847,6 +849,15 @@ public class Wizard : IDisposable {
     private void InitializePetOwnerBehavior() {
         PetOwnerBehavior = new ServerPetOwnerBehavior();
         PetOwnerBehavior.SetEnergy(GameStats.m_energyMax);
+    }
+
+    private void InitializeAlchemyBehavior() {
+        AlchemyBehavior = new ServerAlchemyBehavior() {
+            Reagents = new List<ClientReagentItem>(),
+            Recipes = new List<Recipe>(),
+            CraftingSlots = new List<CraftingSlot>(),
+            ReagentItemIds = new List<ulong>()
+        };
     }
 
     private void AfterDatabaseLoadPetOwnerBehavior() {
