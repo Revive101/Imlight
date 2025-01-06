@@ -69,7 +69,7 @@ public class ServerAlchemyBehavior : ServerBehaviorInstance {
     /// </summary>
     /// <param name="templateId">The template ID of the reagent to get.</param>
     /// <returns>Returns the reagent object with the specified template ID, otherwise null.</returns>
-    public ClientReagentItem GetReagent(ulong templateId) => Reagents?.FirstOrDefault(reagent => reagent.m_templateID == templateId);
+    public ClientReagentItem GetReagent(ulong templateId) => Reagents?.FirstOrDefault(reagent => reagent.m_templateID == templateId) ?? null;
 
     public override ClientAlchemyBehavior GetClientBehaviorInstance() => new() {
         m_reagentBag = new ObjectBag() {
