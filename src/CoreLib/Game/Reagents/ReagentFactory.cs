@@ -81,6 +81,31 @@ public class ReagentFactory : RootDirectoryResourceSingleton<ReagentFactory>, IM
         return (ClientReagentItem) CoreObjectFactory.FinalizeCoreObject(templateId);
     }
 
+    /// <summary>
+    /// Retrieves a rare variant of a harvestable reagent by its non-rare counterpart's name.
+    /// </summary>
+    /// <param name="reagentName">The name of the reagent.</param>
+    /// <returns>The rare variant of the reagent with the specified name, or null if the reagent template is not found.</returns>
+    public static ClientReagentItem GetHarvestableRareVariant(string reagentName) {
+        // Example reagent     : Harvest-Mushroom-01
+        // Example rare variant: Harvest-Mushroom-Nightshade-01
+        // All rare harvestable variants follow the schema of Harvest-<reagentName>-<rareVariantName>-<variantNumber>
+        reagentName = reagentName.ToLower();
+        if (!reagentName.StartsWith("harvest-")) {
+            Logger.Warning("Trying to search for a rare variant of a non-harvestable reagent: {0}", Logger.Args(reagentName));
+            return null;
+        }
+
+        var reagentNameParts = reagentName.Split('-');
+        if (reagentNameParts.Length < 3) {
+            Logger.Warning("Invalid reagent name format: {0}", Logger.Args(reagentName));
+            return null;
+        }
+
+        var rareVariantName = reagentNameParts[1] + "-" + reagentNameParts[2];
+        return GetReagent(rareVariantName);
+    }
+
     public void DisposeStream() {
         s_reagentTemplates.Clear();
     }
