@@ -886,9 +886,12 @@ public class Wizard : IDisposable {
     }
 
     private void AfterDatabaseLoadWizardGameStats() {
+        var highestLevelOnAcc = Account.GetHighestLevelWizard().MagicSchoolBehavior.Level;
+
         GameStats.Level = MagicSchoolBehavior.Level;
         GameStats.MagicSchool = MagicSchoolBehavior.MagicSchool;
         GameStats.m_schoolID = (uint) MagicSchoolBehavior.MagicSchool;
+        GameStats.m_highestCharacterLevelOnAccount = highestLevelOnAcc;
     }
 
     public void Dispose() =>
