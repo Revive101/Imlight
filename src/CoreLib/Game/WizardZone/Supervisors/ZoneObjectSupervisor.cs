@@ -19,10 +19,11 @@ namespace Imlight.CoreLib.Game.WizardZone.Supervisors;
 /// <summary>
 /// Exists as a child actor of a <see cref="Zone"/> and is the supervisor 
 /// for any objects that are created within the zone.
-/// <remarks>Initializes any <see cref="CoreObjectInfo"/> found withing <see cref="ZoneData.m_objectList"/> field of the
+/// <remarks>Initializes any <see cref="CoreObjectInfo"/> found within <see cref="ZoneData.m_objectList"/> field of the
 /// given zone data.</remarks>
 /// </summary>
-/// <param name="wizardZoneRef"></param>
+/// <param name="wizardZoneRef">The reference to the parent <see cref="WizardZone"/>.</param>
+/// <param name="zone">The zone that this supervisor is responsible for.</param>
 internal sealed class ZoneObjectSupervisor(IActorRef wizardZoneRef, Core.Zone zone) : ReceiveProtocolDispatcher {
 
     private readonly IActorRef _wizardZoneRef = wizardZoneRef;
