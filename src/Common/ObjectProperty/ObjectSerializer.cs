@@ -431,7 +431,7 @@ public class ObjectSerializer {
             }
             else {
                 var hexHash = propertyHash.ToString("X");
-                Logger.Debug("No property with hash {0}(0x{1}) in PropertyClass {2} was found. Skipping by {3} bits.",
+                Logger.Verbose("No property with hash {0}(0x{1}) in PropertyClass {2} was found. Skipping by {3} bits.",
                     Logger.Args(propertyHash, hexHash, propertyClass.GetType().ToString().Split('+')[^1], propertySize));
             }
 
