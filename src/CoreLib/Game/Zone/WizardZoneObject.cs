@@ -307,7 +307,7 @@ public class WizardZoneObject : ReceiveProtocolDispatcher, IClientTypeProvider<W
 
             // If this is a server behavior, it may not play nicely in the client when we serialize it.
             // We need to convert it to a client behavior.
-            if (instance is ServerBehaviorInstance serverBehaviorInstance) {
+            if (instance is IClientBehaviorProvider serverBehaviorInstance) {
                 if (serverBehaviorInstance.NoTransfer) {
                     continue;
                 }

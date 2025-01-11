@@ -137,7 +137,7 @@ public class ZoneEntity : ReceiveProtocolDispatcher {
 
         // Let each component contribute its behaviors.
         foreach (var component in _components.Values) {
-            if (component is ServerBehaviorInstance serverBehavior) {
+            if (component is IClientBehaviorProvider<BehaviorInstance> serverBehavior) {
                 if (serverBehavior.NoTransfer) {
                     continue;
                 }

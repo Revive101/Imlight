@@ -7,6 +7,7 @@ using Akka.Actor;
 using Imlight.Common.Caches;
 using Imlight.CoreLib.Game.WizardZone.Components;
 using Imlight.CoreLib.Shared.Behaviors;
+using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Models.Player;
 using static Imlight.Common.Caches.TypeCache;
 
@@ -64,7 +65,7 @@ public interface IZoneComponent {
 /// <summary>
 /// Base class for components that implements common functionality
 /// </summary>
-public abstract class BaseZoneComponent : ServerBehaviorInstance, IZoneComponent, IComponentFactory {
+public abstract class BaseZoneComponent : ReceiveProtocolDispatcher, IZoneComponent, IComponentFactory {
 
     protected ZoneEntity Entity { get; private set; }
 

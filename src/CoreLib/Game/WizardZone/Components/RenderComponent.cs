@@ -17,8 +17,6 @@ namespace Imlight.CoreLib.Game.WizardZone.Components;
 
 internal sealed class RenderComponent : BaseZoneComponent {
 
-    public override bool NoTransfer { get; set; } = true;
-
     private readonly CoreObjectSerializer _serializer = new CoreObjectSerializer()
             .OnBehaviors(SerializerOptions.Behaviors.None)
             .OnPropertyMask(SerializerOptions.PropertyFlags.Public 
@@ -105,7 +103,5 @@ internal sealed class RenderComponent : BaseZoneComponent {
         var sqrtRadius = _renderDistance * _renderDistance;
         return sqrtDist <= sqrtRadius;
     }
-
-    public override BehaviorInstance GetClientBehaviorInstance() => throw new System.NotImplementedException();
 
 }
