@@ -185,8 +185,8 @@ public class WizardZoneObject : ReceiveProtocolDispatcher, IClientTypeProvider<W
     protected virtual void ReceiveRemovePlayer(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message)
         => OnPlayerLeave(message.Player, message.GlobalId);
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_FISHINTERACTION))]
-    protected void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_FISHINTERACTION message) {
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PLAYERMOVE))]
+    protected void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_PLAYERMOVE message) {
         if (message.CoreObject is null) {
             return;
         }
@@ -201,17 +201,17 @@ public class WizardZoneObject : ReceiveProtocolDispatcher, IClientTypeProvider<W
             // Do enter events.
             _objsInRadius.Add(message.CoreObject);
             if (message.IsCreature) {
-                OnCreatureProximityEnter(message.CoreObject, message.Suspect);
+                OnCreatureProximityEnter(message.CoreObject, message.PlayerActor);
             }
             else {
-                OnPlayerProximityEnter(message.CoreObject, message.Suspect);
+                OnPlayerProximityEnter(message.CoreObject, message.PlayerActor);
             }
         }
         else if (_objsInRadius.Contains(message.CoreObject) && !IsInRadius(message.CoreObject)) {
             // Do exit events.
             _objsInRadius.Remove(message.CoreObject);
             if (!message.IsCreature) {
-                OnPlayerProximityExit(message.CoreObject, message.Suspect);
+                OnPlayerProximityExit(message.CoreObject, message.PlayerActor);
             }
         }
     }

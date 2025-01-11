@@ -306,9 +306,9 @@ public class WizardZoneCreature : WizardZoneObject, IWithTimers {
 
         ActiveGameObject.m_location = GetPosition();
 
-        var msg = new ZONE_102_PROTOCOL.MSG_FISHINTERACTION() {
+        var msg = new ZONE_102_PROTOCOL.MSG_PLAYERMOVE() {
             CoreObject = ActiveGameObject,
-            Suspect = Self,
+            PlayerActor = Self,
             IsCreature = true
         };
         WizardZoneRef.Tell(msg);

@@ -336,8 +336,8 @@ public class WizardZoneLegacy : ReceiveProtocolDispatcher, IWithTimers {
     protected virtual void ReceivePostEvent(ZONE_102_PROTOCOL.MSG_POSTEVENT message)
         => _triggerSupervisorRef.Forward(message);
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_FISHINTERACTION))]
-    protected virtual void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_FISHINTERACTION message) {
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PLAYERMOVE))]
+    protected virtual void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_PLAYERMOVE message) {
         // Broadcast to each zone object that a player is fishing for proximity reactions.
         var msgBroadcast = new ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST {
             Source = Sender,

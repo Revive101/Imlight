@@ -138,12 +138,12 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public ServerTypeCache.Trigger Trigger;
     }
 
-    public class MSG_FISHINTERACTION : IServerMessage {
+    public class MSG_PLAYERMOVE : IServerMessage {
         public byte MessageOrder { get; } = 14;
         public byte ServiceID { get; } = 102;
 
         public TypeCache.CoreObject CoreObject;
-        public IActorRef Suspect;
+        public IActorRef PlayerActor;
         public bool IsCreature;
     }
 

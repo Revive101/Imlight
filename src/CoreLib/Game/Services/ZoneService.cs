@@ -277,8 +277,8 @@ public class ZoneService : MessageService, IWithTimers {
         ZoneActor.Tell(message);
     }
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_FISHINTERACTION))]
-    private void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_FISHINTERACTION message) {
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PLAYERMOVE))]
+    private void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_PLAYERMOVE message) {
         // This is an exception. Sometimes the MoveService interval happens as we zone transfer.
         if (ZoneActor is null) {
             return;

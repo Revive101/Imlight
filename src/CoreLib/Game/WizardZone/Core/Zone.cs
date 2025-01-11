@@ -230,7 +230,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     protected virtual void ReceiveRemovePlayer(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message) {
         if (_isLoading) {
             _pendingPlayerEvents.Remove(Sender);
-            
+
             return;
         }
 
@@ -288,7 +288,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
 
     private IActorRef CreateSupervisor<T>() where T : ActorBase {
         var props = Akka.Actor.Props.Create(() => (T) Activator.CreateInstance(typeof(T), Self));
-        return Context.ActorOf(props);
+        return Context.ActorOf(props, typeof(T).Name);
     }
 
     private void InformZoneEntitiesOfPlayerEvent(IActorRef player, IServerMessage message) {

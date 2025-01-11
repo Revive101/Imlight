@@ -30,7 +30,6 @@ public class ZoneEntity : ReceiveProtocolDispatcher {
     protected IActorRef WizardZoneRef;
 
     private readonly Dictionary<Type, IZoneComponent> _components = [];
-    private readonly List<CoreObject> _objsInRadius = [];
 
     // ctor
     public ZoneEntity(CoreObject activeGameObject, CoreTemplate template, IActorRef zoneRef) {
@@ -60,11 +59,6 @@ public class ZoneEntity : ReceiveProtocolDispatcher {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
     protected virtual void ReceiveAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message) {
-        // If the player spawns within the interaction radius, add them.
-        if (IsInRadius(message.PlayerObject)) {
-            _objsInRadius.Add(message.PlayerObject);
-        }
-
         // Notify all components of the player's arrival.
         foreach (var component in _components.Values) {
             component.OnPlayerJoin(message.PlayerObject, message.Player, message.Wizard);
@@ -73,46 +67,21 @@ public class ZoneEntity : ReceiveProtocolDispatcher {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER))]
     protected virtual void ReceiveRemovePlayer(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message) {
-        // If the player was within the interaction radius, remove them.
-        _objsInRadius.RemoveAll(x => x.m_globalID == message.GlobalId);
-
         // Notify all components of the player's departure.
         foreach (var component in _components.Values) {
             component.OnPlayerLeave(message.Player, message.GlobalId);
         }
     }
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_FISHINTERACTION))]
-    protected virtual void ReceiveFishInteraction(ZONE_102_PROTOCOL.MSG_FISHINTERACTION message) {
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PLAYERMOVE))]
+    protected virtual void ReceivePlayerMove(ZONE_102_PROTOCOL.MSG_PLAYERMOVE message) {
         if (message.CoreObject == null) {
             return;
         }
 
-        var isInRange = IsInRadius(message.CoreObject);
-        var wasInRange = _objsInRadius.Contains(message.CoreObject);
-
-        // Handle entering radius
-        if (isInRange && !wasInRange) {
-            _objsInRadius.Add(message.CoreObject);
-            if (message.IsCreature) {
-                foreach (var component in _components.Values) {
-                    component.OnCreatureProximityEnter(message.CoreObject, message.Suspect);
-                }
-            }
-            else {
-                foreach (var component in _components.Values) {
-                    component.OnPlayerProximityEnter(message.CoreObject, message.Suspect);
-                }
-            }
-        }
-        // Handle exiting radius
-        else if (!isInRange && wasInRange) {
-            _objsInRadius.Remove(message.CoreObject);
-            if (!message.IsCreature) {
-                foreach (var component in _components.Values) {
-                    component.OnPlayerProximityExit(message.CoreObject, message.Suspect);
-                }
-            }
+        // Notify all components of the player's movement.
+        foreach (var component in _components.Values) {
+            component.OnPlayerMove(message.CoreObject, message.PlayerActor);
         }
     }
 
@@ -121,17 +90,6 @@ public class ZoneEntity : ReceiveProtocolDispatcher {
         => WizardZoneRef.Tell(message);
 
     #endregion
-
-    /// <summary>
-    /// Determines if the given object is within the interaction radius of this entity.
-    /// </summary>
-    /// <param name="obj"> The object to check. </param>
-    /// <returns> True if the object is within the radius, false otherwise. </returns>
-    protected bool IsInRadius(CoreObject obj) {
-        var sqrtDist = (obj.m_location - ActiveGameObject.m_location).LengthSquared();
-        var sqrtRadius = InteractionRadius * InteractionRadius;
-        return sqrtDist <= sqrtRadius;
-    }
 
     /// <summary>
     /// Broadcasts a message to the zone.

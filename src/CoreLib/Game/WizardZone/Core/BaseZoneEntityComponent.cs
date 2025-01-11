@@ -39,18 +39,11 @@ public interface IZoneComponent {
     void OnPlayerLeave(IActorRef playerActor, ulong id);
 
     /// <summary>
-    /// Called when a player enters the proximity of the zone.
+    /// Called when a player moves within the zone.
     /// </summary>
     /// <param name="playerObj">The core object representing the player.</param>
     /// <param name="playerActor">The actor reference of the player.</param>
-    void OnPlayerProximityEnter(CoreObject playerObj, IActorRef playerActor);
-
-    /// <summary>
-    /// Called when a player exits the proximity of the zone.
-    /// </summary>
-    /// <param name="playerObj">The core object representing the player.</param>
-    /// <param name="playerActor">The actor reference of the player.</param>
-    void OnPlayerProximityExit(CoreObject playerObj, IActorRef playerActor);
+    void OnPlayerMove(CoreObject playerObj, IActorRef playerActor);
 
     /// <summary>
     /// Called when a player interacts with an NPC in the zone.
@@ -80,8 +73,7 @@ public abstract class BaseZoneComponent : ServerBehaviorInstance, IZoneComponent
 
     public virtual void OnPlayerJoin(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) { }
     public virtual void OnPlayerLeave(IActorRef playerActor, ulong id) { }
-    public virtual void OnPlayerProximityEnter(CoreObject playerObj, IActorRef playerActor) { }
-    public virtual void OnPlayerProximityExit(CoreObject playerObj, IActorRef playerActor) { }
+    public virtual void OnPlayerMove(CoreObject playerObj, IActorRef playerActor) { }
     public virtual void OnPlayerInteraction(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC message, IActorRef playerActor) { }
     public virtual void OnCreatureProximityEnter(CoreObject creature, IActorRef suspect) { }
 

@@ -210,9 +210,9 @@ internal class MoveService : MessageService, IWithTimers {
     }
 
     private void SendZoneInteractionFishRequest() {
-        var msg = new ZONE_102_PROTOCOL.MSG_FISHINTERACTION() {
+        var msg = new ZONE_102_PROTOCOL.MSG_PLAYERMOVE() {
             CoreObject = _activeCoreObject,
-            Suspect = SessionActor.ActorRef
+            PlayerActor = SessionActor.ActorRef
         };
 
         TellOtherServices(msg);
