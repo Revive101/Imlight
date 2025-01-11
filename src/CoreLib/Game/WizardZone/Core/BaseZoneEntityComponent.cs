@@ -68,6 +68,8 @@ public interface IZoneComponent {
 public abstract class BaseZoneComponent : ReceiveProtocolDispatcher, IZoneComponent, IComponentFactory {
 
     protected ZoneEntity Entity { get; private set; }
+    protected Zone Zone => Entity.Zone;
+    protected IActorRef ZoneActor => Entity.ZoneRef;
 
     public virtual void Initialize(ZoneEntity entity) 
         => Entity = entity;

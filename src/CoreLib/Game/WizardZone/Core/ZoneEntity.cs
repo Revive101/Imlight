@@ -27,8 +27,8 @@ public class ZoneEntity : ReceiveProtocolDispatcher {
     public CoreTemplate Template { get; private set; }
     public float InteractionRadius { get; protected set; } = 300f;
     public Zone Zone { get; private set; }
-    protected IActorRef SupervisorRef;
-    protected IActorRef WizardZoneRef;
+    public IActorRef SupervisorRef { get; private set; }
+    public IActorRef ZoneRef { get; private set; }
 
     private readonly Dictionary<Type, IZoneComponent> _components = [];
 
@@ -37,7 +37,7 @@ public class ZoneEntity : ReceiveProtocolDispatcher {
         ActiveGameObject = activeGameObject;
         Template = template;
         SupervisorRef = Context.Parent;
-        WizardZoneRef = zoneRef;
+        ZoneRef = zoneRef;
         Zone = zone;
 
         AutoAttachComponents();
@@ -89,7 +89,7 @@ public class ZoneEntity : ReceiveProtocolDispatcher {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
     protected virtual void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message)
-        => WizardZoneRef.Tell(message);
+        => ZoneRef.Tell(message);
 
     #endregion
 
@@ -104,7 +104,7 @@ public class ZoneEntity : ReceiveProtocolDispatcher {
             Selfless = selfless,
             Sender = Self
         };
-        WizardZoneRef.Tell(broadcastMsg);
+        ZoneRef.Tell(broadcastMsg);
     }
 
     private void AutoAttachComponents() {

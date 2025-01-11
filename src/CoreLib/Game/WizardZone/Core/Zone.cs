@@ -26,6 +26,8 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
 
     public const ushort RESERVED_OBJECT_ID_MIN = 0;
     public const ushort RESERVED_OBJECT_ID_MAX = 500;
+    public const ushort RESERVED_VOLUME_ID_MIN = 501;
+    public const ushort RESERVED_VOLUME_ID_MAX = 600;
 
     private const ushort RESERVED_MOBILE_ID_MAX = 1000;
     private const ushort ZONE_LOAD_TIMEOUT_IN_SECONDS = 30;
@@ -80,6 +82,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         this._zoneLoadTimer = new Stopwatch();
 
         _supervisors.Add(CreateSupervisor<ZoneObjectSupervisor>());
+        _supervisors.Add(CreateSupervisor<ZoneVolumeSupervisor>());
 
         // Create the loader actor and prepare the loading of this zone.
         _loaderRef = Context.ActorOf(Akka.Actor.Props.Create(() => new ZoneLoader()));
