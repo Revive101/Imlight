@@ -35,7 +35,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     /// <summary>
     /// The zone data as loaded from game client data.
     /// </summary>
-    public WizZoneData ZoneData { get; init; }
+    public WizZoneData ZoneData { get; private set; }
 
     /// <summary>
     /// The zone path, formatted as it would be in the access pass.
@@ -244,18 +244,30 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
             Logger.Args(message.Player.Path.Name, ZoneName));
     }
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PLAYERMOVE))]
+    protected virtual void ReceiveOnPlayerMove(ZONE_102_PROTOCOL.MSG_PLAYERMOVE message) {
+        if (_isLoading) {
+            _pendingPlayerEvents[Sender] = message;
+
+            return;
+        }
+
+        InformZoneEntitiesOfPlayerEvent(message.PlayerActor, message);
+    }
+
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS))]
     private void ReceiveZoneLoadResults(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS message) {
-        _isLoading = false;
         _loaderRef.Tell(PoisonPill.Instance);
         _zoneLoadTimer.Stop();
 
         if (message.Error) {
-            Logger.Error("Zone {ZoneName} failed to load.", Logger.Args(ZoneName));
+            Logger.Error("Zone {ZoneName} failed to load because {ErrorMessage}", Logger.Args(ZoneName, message.ErrorMessage));
             CloseZone();
 
             return;
         }
+
+        ZoneData = message.ZoneData;
 
         // Inform each supervisor of the loaded zone data. They are expected to give a reply
         // to inform the zone that they have loaded their data.
@@ -287,7 +299,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     #endregion
 
     private IActorRef CreateSupervisor<T>() where T : ActorBase {
-        var props = Akka.Actor.Props.Create(() => (T) Activator.CreateInstance(typeof(T), Self));
+        var props = Akka.Actor.Props.Create(() => (T) Activator.CreateInstance(typeof(T), Self, this));
         return Context.ActorOf(props, typeof(T).Name);
     }
 

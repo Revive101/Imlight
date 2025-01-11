@@ -520,6 +520,9 @@ public class ObjectSerializer {
             var hash = reader.ReadUInt32();
             if (hash != 0) {
                 var skip = reader.ReadInt32();
+                if (skip <= 0 || reader.BitPos() + skip > reader.GetData().Length * 8) {
+                    return null;
+                }
                 reader.SeekBit(reader.BitPos() + skip - 32);
             }
         }

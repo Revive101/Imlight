@@ -5,9 +5,12 @@
 
 using Akka.Actor;
 using Imlight.Common.Caches;
+using Imlight.Common.Configuration;
 using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Game.WizardZone.Core;
 using Imlight.CoreLib.WizardData.Models.Player;
+using System.Collections.Generic;
+using System.Linq;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.WizardZone.Components;
@@ -21,25 +24,86 @@ internal sealed class RenderComponent : BaseZoneComponent {
             .OnPropertyMask(SerializerOptions.PropertyFlags.Public 
                 | SerializerOptions.PropertyFlags.Transmit 
                 | SerializerOptions.PropertyFlags.AuthorityTransmit);
+    private readonly Dictionary<CoreObject, IActorRef> _playersInRange = [];
+    private float _renderDistance;
+    private bool _doesDistanceCheck = false;
+
+    public override void Initialize(ZoneEntity entity) {
+         base.Initialize(entity);
+         
+        // Check if the object should be spawned based on distance.
+        _doesDistanceCheck = entity.Template.m_behaviors
+            .OfType<AnimationBehaviorTemplate>()
+            .Any(anim => anim.m_bFadesIn || anim.m_bFadesOut);
+
+        _renderDistance = Entity.Zone.ZoneData.m_farClip;
+    }
 
     public override bool ShouldAttachToEntity(CoreTemplate template) =>
-        // All objects that should be visible to players need a RenderComponent.
+        // All objects have a render component.
         true;
 
     public override void OnPlayerJoin(CoreObject player, IActorRef suspect, Wizard wizard) {
-        // Send object data to the new player
-        var newObjectMsg = new GAME_5_PROTOCOL.MSG_NEWOBJECT {
-            Data = _serializer.Serialize(Entity.GetClientTypeAlternative())
-        };
-        suspect.Tell(newObjectMsg);
+        if (!_doesDistanceCheck) {
+            // If the object does not have a distance check, spawn the object for the player.
+            SpawnObjectForPlayer(suspect);
+            return;
+        }
+
+        // If the player joins within render distance, spawn the object for them.
+        if (IsInRadius(player)) {
+            SpawnObjectForPlayer(suspect);
+            _playersInRange.Add(player, suspect);
+        }
     }
 
     public override void OnPlayerLeave(IActorRef suspect, ulong id) {
-        // Tell the client to remove the object
-        var removeMsg = new GAME_5_PROTOCOL.MSG_REMOVEOBJECT {
+        // Remove the player from the list of players in range.
+        var player = _playersInRange.FirstOrDefault(x => x.Value == suspect).Key;
+        if (player != null) {
+            _playersInRange.Remove(player);
+        }
+
+        DespawnObjectForPlayer(suspect);
+    }
+
+    public override void OnPlayerMove(CoreObject playerObj, IActorRef playerActor) {
+        if (!_doesDistanceCheck) {
+            return;
+        }
+
+        // Check if the player is now in range of the object.
+        if (IsInRadius(playerObj) && !_playersInRange.ContainsKey(playerObj)) {
+            // If the player is in range, spawn the object for them.
+            SpawnObjectForPlayer(playerActor);
+            _playersInRange.Add(playerObj, playerActor);
+        } else if (!IsInRadius(playerObj) && _playersInRange.ContainsKey(playerObj)) {
+            // If the player is out of range, despawn the object for them.
+            DespawnObjectForPlayer(playerActor);
+            _playersInRange.Remove(playerObj);
+        }
+    }
+
+    private void SpawnObjectForPlayer(IActorRef player) {
+        // Send object data to the player
+        var newObjectMsg = new GAME_5_PROTOCOL.MSG_NEWOBJECT {
+            Data = _serializer.Serialize(Entity.GetClientTypeAlternative())
+        };
+        player.Tell(newObjectMsg);
+    }
+
+    private void DespawnObjectForPlayer(IActorRef player) {
+        // Send object data to the player
+        var despawnObjectMsg = new GAME_5_PROTOCOL.MSG_REMOVEOBJECT {
             GameObjectID = Entity.ActiveGameObject.m_globalID
         };
-        suspect.Tell(removeMsg);
+        player.Tell(despawnObjectMsg);
+    }
+
+    private bool IsInRadius(CoreObject obj) {
+        var sqrtDist = (obj.m_location - Entity.ActiveGameObject.m_location).LengthSquared();
+        var sqrtRadius = _renderDistance * _renderDistance;
+        return sqrtDist <= sqrtRadius;
     }
 
     public override BehaviorInstance GetClientBehaviorInstance() => throw new System.NotImplementedException();

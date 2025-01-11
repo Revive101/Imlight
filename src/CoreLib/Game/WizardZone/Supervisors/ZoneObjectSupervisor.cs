@@ -23,9 +23,10 @@ namespace Imlight.CoreLib.Game.WizardZone.Supervisors;
 /// given zone data.</remarks>
 /// </summary>
 /// <param name="wizardZoneRef"></param>
-internal sealed class ZoneObjectSupervisor(IActorRef wizardZoneRef) : ReceiveProtocolDispatcher {
+internal sealed class ZoneObjectSupervisor(IActorRef wizardZoneRef, Core.Zone zone) : ReceiveProtocolDispatcher {
 
     private readonly IActorRef _wizardZoneRef = wizardZoneRef;
+    private readonly Core.Zone _zone = zone;
     private readonly List<IActorRef> _objectActors = [];
     private ushort _reservedIdCounter = Core.Zone.RESERVED_OBJECT_ID_MIN;
 
@@ -47,7 +48,7 @@ internal sealed class ZoneObjectSupervisor(IActorRef wizardZoneRef) : ReceivePro
 
             // Create a new object actor for the core object. Expect a reply from the object actor
             // to indicate that object has finished initializing.
-            var objectActor = Context.ActorOf(Props.Create(() => new ZoneEntity(coreObject, template, _wizardZoneRef)));
+            var objectActor = Context.ActorOf(Props.Create(() => new ZoneEntity(coreObject, template, _wizardZoneRef, _zone)));
             // todo: await reply
 
             _objectActors.Add(objectActor);
@@ -86,6 +87,10 @@ internal sealed class ZoneObjectSupervisor(IActorRef wizardZoneRef) : ReceivePro
     }
 
     private static bool IsObjectEligibleForSpawn(CoreObjectInfo objectInfo) {
+        if (objectInfo is null) {
+            return false;
+        }
+
         if (objectInfo.m_spawnRequirements is not null) {
             var requirements = objectInfo.m_spawnRequirements.m_requirements.ToList();
             var operatorType = objectInfo.m_spawnRequirements.m_operator;

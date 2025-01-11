@@ -26,17 +26,19 @@ public class ZoneEntity : ReceiveProtocolDispatcher {
     public CoreObject ActiveGameObject { get; private set; }
     public CoreTemplate Template { get; private set; }
     public float InteractionRadius { get; protected set; } = 300f;
+    public Zone Zone { get; private set; }
     protected IActorRef SupervisorRef;
     protected IActorRef WizardZoneRef;
 
     private readonly Dictionary<Type, IZoneComponent> _components = [];
 
     // ctor
-    public ZoneEntity(CoreObject activeGameObject, CoreTemplate template, IActorRef zoneRef) {
+    public ZoneEntity(CoreObject activeGameObject, CoreTemplate template, IActorRef zoneRef, Zone zone) {
         ActiveGameObject = activeGameObject;
         Template = template;
         SupervisorRef = Context.Parent;
         WizardZoneRef = zoneRef;
+        Zone = zone;
 
         AutoAttachComponents();
     }

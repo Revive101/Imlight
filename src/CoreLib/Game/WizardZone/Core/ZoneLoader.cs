@@ -27,7 +27,6 @@ internal sealed class ZoneLoader : ReceiveProtocolDispatcher {
     private const string VOLUME_DATA_FILE_NAME = "volumes.xml";
     private const string TRIGGER_DATA_FILE_NAME = "triggers.xml";
 
-    private readonly IActorRef _zoneRef = Context.Parent;
     private KiWad _wad;
     private readonly FileSerializer _serializer = new();
     private readonly System.Diagnostics.Stopwatch _benchmarkTimer = new();
@@ -86,7 +85,7 @@ internal sealed class ZoneLoader : ReceiveProtocolDispatcher {
         catch (Exception ex) {
             var failureMsg = new ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS {
                 Error = true,
-                ErrorMessage = $"Failed to load zone data: {ex.Message}"
+                ErrorMessage = ex.Message
             };
             Sender.Tell(failureMsg);
         }
