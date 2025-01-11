@@ -37,7 +37,7 @@ public static class WizardZoneLoader {
     private const uint VolumeTemplateId = 1700;
     private static readonly object s_lockObject = new();
 
-    private static WizardZone s_zone;
+    private static WizardZoneLegacy s_zone;
     private static IActorRef s_zoneActorRef;
     private static KiWad s_wad;
     private static WizZoneData s_zoneData;
@@ -48,11 +48,11 @@ public static class WizardZoneLoader {
     private static WizZoneTriggers s_zoneTriggers;
 
     /// <summary>
-    /// Loads the <see cref="WizardZone" /> data from the <see cref="ResourceManager" />.
+    /// Loads the <see cref="WizardZoneLegacy" /> data from the <see cref="ResourceManager" />.
     /// </summary>
     /// <param name="zone">The zone object.</param>
     /// <param name="zoneActorRef">The Akka.NET actor reference of the zone.</param>
-    public static void LoadZoneData(WizardZone zone, IActorRef zoneActorRef) {
+    public static void LoadZoneData(WizardZoneLegacy zone, IActorRef zoneActorRef) {
         lock (s_lockObject) {
             try {
                 s_zone = zone;

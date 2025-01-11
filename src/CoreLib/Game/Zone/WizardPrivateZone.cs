@@ -9,7 +9,7 @@ using Imlight.CoreLib.Shared.Packets;
 
 namespace Imlight.CoreLib.Game.Zone;
 
-public class WizardPrivateZone : WizardZone {
+public class WizardPrivateZone : WizardZoneLegacy {
     private readonly IActorRef _owner;
 
     // ctor

@@ -20,7 +20,7 @@ namespace Imlight.CoreLib.Game.Zone;
 /// <summary>
 /// The WizardZone is the main actor for a zone. It is responsible for managing all the objects within the zone.
 /// </summary>
-public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
+public class WizardZoneLegacy : ReceiveProtocolDispatcher, IWithTimers {
     /// <summary>
     /// The maximum number of reserved mobile IDs. These are used for objects that are not players.
     /// </summary>
@@ -58,7 +58,7 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
     private ushort _nonreservedMobileIdCounter = RESERVED_MOBILE_ID_MAX + 1;
 
     // ctor
-    public WizardZone(string zoneName) {
+    public WizardZoneLegacy(string zoneName) {
         ZoneName = zoneName;
         _dynamicZoneId = GenerateDynamicZoneId();
 
@@ -90,7 +90,7 @@ public class WizardZone : ReceiveProtocolDispatcher, IWithTimers {
 
     // Akka.NET ctor
     public static Props Props(string zoneName)
-        => Akka.Actor.Props.Create(() => new WizardZone(zoneName));
+        => Akka.Actor.Props.Create(() => new WizardZoneLegacy(zoneName));
 
     protected override void PreRestart(Exception reason, object message) {
         Logger.Error("Zone {ZoneName} restarts for: {Exception}", Logger.Args(ZoneName, reason));

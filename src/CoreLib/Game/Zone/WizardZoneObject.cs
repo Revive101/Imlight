@@ -299,7 +299,7 @@ public class WizardZoneObject : ReceiveProtocolDispatcher, IClientTypeProvider<W
             m_permID = ActiveGameObject.m_permID,
             m_templateID = ActiveGameObject.m_templateID,
             m_zoneTagID = ActiveGameObject.m_zoneTagID,
-            m_inactiveBehaviors = ActiveGameObject.m_inactiveBehaviors ?? new(),
+            m_inactiveBehaviors = ActiveGameObject.m_inactiveBehaviors ?? [],
         };
 
         foreach (var behaviorInstance in this.Behaviors) {

@@ -15,7 +15,7 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Game.Zone;
 
 /// <summary>
-/// Exists as a child of <see cref="WizardZone"/> and supervises
+/// Exists as a child of <see cref="WizardZoneLegacy"/> and supervises
 /// a bunch of child <see cref="WizardZoneSigil"/> actors.
 /// </summary>
 public class WizardZoneSigilSupervisor : ReceiveProtocolDispatcher {
