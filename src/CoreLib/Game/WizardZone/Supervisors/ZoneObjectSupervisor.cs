@@ -24,11 +24,8 @@ namespace Imlight.CoreLib.Game.WizardZone.Supervisors;
 /// </summary>
 /// <param name="wizardZoneRef">The reference to the parent <see cref="WizardZone"/>.</param>
 /// <param name="zone">The zone that this supervisor is responsible for.</param>
-internal sealed class ZoneObjectSupervisor(IActorRef wizardZoneRef, Core.Zone zone) : ReceiveProtocolDispatcher {
+internal sealed class ZoneObjectSupervisor(IActorRef wizardZoneRef, Core.Zone zone) : ZoneEntitySupervisor(wizardZoneRef, zone) {
 
-    private readonly IActorRef _wizardZoneRef = wizardZoneRef;
-    private readonly Core.Zone _zone = zone;
-    private readonly List<IActorRef> _objectActors = [];
     private ushort _reservedIdCounter = Core.Zone.RESERVED_OBJECT_ID_MIN;
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS))]
@@ -46,26 +43,13 @@ internal sealed class ZoneObjectSupervisor(IActorRef wizardZoneRef, Core.Zone zo
 
             var template = (GameObjectTemplate) CoreObjectFactory.GetCoreTemplate(objectInfo.m_templateID);
             var coreObject = InitializeObject(objectInfo, template);
+            var objectActor = CreateEntityActor(coreObject, null);
 
-            // Create a new object actor for the core object. Expect a reply from the object actor
-            // to indicate that object has finished initializing.
-            var objectActor = Context.ActorOf(Props.Create(() => new ZoneEntity(coreObject, template, _wizardZoneRef, _zone)));
-            // todo: await reply
-
-            _objectActors.Add(objectActor);
+            EntityActors.Add(objectActor);
         }
 
         // Inform the zone that we have finished initializing all objects.
         Sender.Tell(message);
-    }
-
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST))]
-    private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST message) {
-        foreach (var actor in _objectActors) {
-            foreach (var internlMessage in message.Messages) {
-                actor.Tell(internlMessage);
-            }
-        }
     }
 
     private CoreObject InitializeObject(CoreObjectInfo objectInfo, GameObjectTemplate template) {
