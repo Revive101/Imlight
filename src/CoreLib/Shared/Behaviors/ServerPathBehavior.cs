@@ -13,8 +13,8 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
-public class ServerPathBehavior : ServerBehaviorInstance {
-    [JsonIgnore] public override bool NoTransfer { get; set; } = false;
+public class ServerPathBehavior : IClientBehaviorProvider<PathBehaviorClient> {
+    [JsonIgnore] public bool NoTransfer { get; set; } = false;
 
     public PathBehaviorTemplate.PathType PathType { get; set; }
     public GID PathId { get; set; }
@@ -25,7 +25,7 @@ public class ServerPathBehavior : ServerBehaviorInstance {
     public float MovementSpeed { get; set; }
     public float MovementMultiplier { get; set; }
 
-    public override PathBehaviorClient GetClientBehaviorInstance() => new() {
+    public PathBehaviorClient GetClientBehaviorInstance() => new() {
         // Nothing here for client.
     };
 }

@@ -11,8 +11,8 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
-public class ServerNPCBehavior : ServerBehaviorInstance {
-    [JsonIgnore] public override bool NoTransfer { get; set; } = false;
+public class ServerNPCBehavior : IClientBehaviorProvider<NPCBehavior> {
+    [JsonIgnore] public bool NoTransfer { get; set; } = false;
 
     public bool BossMob { get; set; }
     public float Intelligence { get; set; }
@@ -25,7 +25,7 @@ public class ServerNPCBehavior : ServerBehaviorInstance {
     public bool IsMonster { get; set; }
     public string NameOveride { get; set; }
 
-    public override NPCBehavior GetClientBehaviorInstance() => new() {
+    public NPCBehavior GetClientBehaviorInstance() => new() {
         m_isMonster = IsMonster,
         m_wsNameOverride = NameOveride,
     };
