@@ -7,13 +7,13 @@ using Akka.Actor;
 using Imlight.Common.Caches;
 using Imlight.Common.Configuration;
 using Imlight.Common.ObjectProperty;
-using Imlight.CoreLib.Game.WizardZone.Core;
+using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System.Collections.Generic;
 using System.Linq;
 using static Imlight.Common.Caches.TypeCache;
 
-namespace Imlight.CoreLib.Game.WizardZone.Components;
+namespace Imlight.CoreLib.Game.Zone.Components;
 
 internal sealed class RenderComponent : BaseZoneComponent {
 

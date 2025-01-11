@@ -15,7 +15,7 @@ using Imlight.Common;
 namespace Imlight.CoreLib.Shared.Behaviors;
 
 public class ServerCreatureSpellbookBehavior : ServerSpellbookBehavior {
-    [JsonIgnore] public override bool NoTransfer { get; set; } = true;
+    [JsonIgnore] public bool NoTransfer { get; set; } = true;
 
     [JsonIgnore] public readonly int SpellInstanceCount;
     private readonly string _deckName;

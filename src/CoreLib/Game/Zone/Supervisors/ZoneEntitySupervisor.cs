@@ -4,19 +4,19 @@
  */
 
 using Akka.Actor;
-using Imlight.CoreLib.Game.WizardZone.Core;
+using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using System.Collections.Generic;
 using static Imlight.Common.Caches.TypeCache;
 
-namespace Imlight.CoreLib.Game.WizardZone.Supervisors;
+namespace Imlight.CoreLib.Game.Zone.Supervisors;
 
 /// <summary>
 /// Exists as a child actor of a <see cref="Zone"/> and is the supervisor
 /// for any entities that are created within the zone.
 /// </summary>
-/// <param name="wizardZoneRef">The reference to the parent <see cref="WizardZone"/>.</param>
+/// <param name="wizardZoneRef">The reference to the parent <see cref="Zone"/>.</param>
 /// <param name="zone">The zone that this supervisor is responsible for.</param>
 internal abstract class ZoneEntitySupervisor(IActorRef wizardZoneRef, Core.Zone zone) : ReceiveProtocolDispatcher {
 

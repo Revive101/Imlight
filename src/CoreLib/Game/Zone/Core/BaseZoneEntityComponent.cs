@@ -5,13 +5,14 @@
 
 using Akka.Actor;
 using Imlight.Common.Caches;
-using Imlight.CoreLib.Game.WizardZone.Components;
+using Imlight.CoreLib.Game.Zone.Components;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Models.Player;
+using Serilog.Debugging;
 using static Imlight.Common.Caches.TypeCache;
 
-namespace Imlight.CoreLib.Game.WizardZone.Core;
+namespace Imlight.CoreLib.Game.Zone.Core;
 
 /// <summary>
 /// Represents a component within a zone that handles various player and creature interactions.
@@ -67,12 +68,15 @@ public interface IZoneComponent {
 /// </summary>
 public abstract class BaseZoneComponent : ReceiveProtocolDispatcher, IZoneComponent, IComponentFactory {
 
+    public IActorRef ActorRef;
     protected ZoneEntity Entity { get; private set; }
     protected Zone Zone => Entity.Zone;
     protected IActorRef ZoneActor => Entity.ZoneRef;
 
-    public virtual void Initialize(ZoneEntity entity) 
-        => Entity = entity;
+    public virtual void Initialize(ZoneEntity entity) {
+        ActorRef = Self;
+        Entity = entity;
+    }
 
     public virtual void OnPlayerJoin(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) { }
     public virtual void OnPlayerLeave(IActorRef playerActor, ulong id) { }

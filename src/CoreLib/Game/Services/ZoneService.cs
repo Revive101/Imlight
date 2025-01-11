@@ -11,6 +11,7 @@ using Imlight.Common.Caches;
 using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty;
 using Imlight.Common.ObjectProperty.PropertyReflection;
+using Imlight.CoreLib.Game.World;
 using Imlight.CoreLib.Game.Zone;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Networking;
@@ -183,8 +184,8 @@ public class ZoneService : MessageService, IWithTimers {
         var postEventMsg = new ZONE_102_PROTOCOL.MSG_POSTEVENT {
             ZoneActor = ZoneActor,
             EventName = ENTER_ZONE_EVENT_NAME,
-            SenderActor = SessionActor.ActorRef,
-            SenderGameObject = GetActiveGameObject()
+            PlayerActor = SessionActor.ActorRef,
+            PlayerGameObject = GetActiveGameObject()
         };
         ZoneActor.Tell(postEventMsg);
     }

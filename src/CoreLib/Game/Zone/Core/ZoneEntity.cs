@@ -6,7 +6,7 @@
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
-using Imlight.CoreLib.Game.WizardZone.Components;
+using Imlight.CoreLib.Game.Zone.Components;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
@@ -15,7 +15,7 @@ using System.Collections.Generic;
 using System.Linq;
 using static Imlight.Common.Caches.TypeCache;
 
-namespace Imlight.CoreLib.Game.WizardZone.Core;
+namespace Imlight.CoreLib.Game.Zone.Core;
 
 /// <summary>
 /// Base entity class for all zone objects. Uses a component-based architecture
@@ -30,7 +30,7 @@ public class ZoneEntity : ReceiveProtocolDispatcher {
     public IActorRef SupervisorRef { get; private set; }
     public IActorRef ZoneRef { get; private set; }
 
-    private readonly Dictionary<Type, IZoneComponent> _components = [];
+    private readonly List<BaseZoneComponent> _components = [];
 
     // ctor
     public ZoneEntity(CoreObject activeGameObject, CoreTemplate template, IActorRef zoneRef, Zone zone) {
@@ -43,26 +43,12 @@ public class ZoneEntity : ReceiveProtocolDispatcher {
         AutoAttachComponents();
     }
 
-    /// <summary>
-    /// Gets a component of the specified type.
-    /// </summary>
-    public bool TryGetComponent<T>(out T component) where T : IZoneComponent {
-        if (_components.TryGetValue(typeof(T), out var baseComponent)) {
-            component = (T) baseComponent;
-
-            return true;
-        }
-        component = default;
-
-        return false;
-    }
-
     #region Message Handlers
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
     protected virtual void ReceiveAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message) {
         // Notify all components of the player's arrival.
-        foreach (var component in _components.Values) {
+        foreach (var component in _components) {
             component.OnPlayerJoin(message.PlayerObject, message.Player, message.Wizard);
         }
     }
@@ -70,7 +56,7 @@ public class ZoneEntity : ReceiveProtocolDispatcher {
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER))]
     protected virtual void ReceiveRemovePlayer(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message) {
         // Notify all components of the player's departure.
-        foreach (var component in _components.Values) {
+        foreach (var component in _components) {
             component.OnPlayerLeave(message.Player, message.GlobalId);
         }
     }
@@ -82,7 +68,7 @@ public class ZoneEntity : ReceiveProtocolDispatcher {
         }
 
         // Notify all components of the player's movement.
-        foreach (var component in _components.Values) {
+        foreach (var component in _components) {
             component.OnPlayerMove(message.CoreObject, message.PlayerActor);
         }
     }
@@ -90,6 +76,14 @@ public class ZoneEntity : ReceiveProtocolDispatcher {
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
     protected virtual void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message)
         => ZoneRef.Tell(message);
+
+    [MessageHandler(typeof(IServerMessage))]
+    private void ReceiveElse(IServerMessage message) {
+        // Notify all components of the message.
+        foreach (var component in _components) {
+            component.ActorRef.Tell(message);
+        }
+    }
 
     #endregion
 
@@ -119,7 +113,7 @@ public class ZoneEntity : ReceiveProtocolDispatcher {
 
     private void AddComponent(IZoneComponent component) {
         component.Initialize(this);
-        _components[component.GetType()] = component;
+        _components.Add((BaseZoneComponent) component);
     }
 
     public WizClientObject GetClientTypeAlternative() {
@@ -136,7 +130,7 @@ public class ZoneEntity : ReceiveProtocolDispatcher {
         };
 
         // Let each component contribute its behaviors.
-        foreach (var component in _components.Values) {
+        foreach (var component in _components) {
             if (component is IClientBehaviorProvider<BehaviorInstance> serverBehavior) {
                 if (serverBehavior.NoTransfer) {
                     continue;

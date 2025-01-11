@@ -16,7 +16,7 @@ using System.Collections.Generic;
 using static Imlight.Common.Caches.ServerTypeCache;
 using static Imlight.Common.Caches.TypeCache;
 
-namespace Imlight.CoreLib.Game.WizardZone.Core;
+namespace Imlight.CoreLib.Game.Zone.Core;
 
 internal sealed class ZoneLoader : ReceiveProtocolDispatcher {
 

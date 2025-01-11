@@ -54,7 +54,7 @@ public class GameWorld(GameServer server) : ReceiveProtocolDispatcher {
 
     private IActorRef CreatePublicZone(string zoneName) {
         var zoneActorName = SanitizeZoneName(zoneName);
-        var zone = Context.ActorOf(WizardZone.Core.Zone.Props(zoneName, 1), zoneActorName);
+        var zone = Context.ActorOf(Zone.Core.Zone.Props(zoneName, 1), zoneActorName);
 
         _zones.Add(zoneName, zone);
 

@@ -5,7 +5,7 @@
 
 using Akka.Actor;
 using Imlight.Common;
-using Imlight.CoreLib.Game.WizardZone.Core;
+using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
@@ -14,7 +14,7 @@ using System.Collections.Generic;
 using System.Linq;
 using static Imlight.Common.Caches.TypeCache;
 
-namespace Imlight.CoreLib.Game.WizardZone.Supervisors;
+namespace Imlight.CoreLib.Game.Zone.Supervisors;
 
 /// <summary>
 /// Exists as a child actor of a <see cref="Zone"/> and is the supervisor 
@@ -22,7 +22,7 @@ namespace Imlight.CoreLib.Game.WizardZone.Supervisors;
 /// <remarks>Initializes any <see cref="CoreObjectInfo"/> found within <see cref="ZoneData.m_objectList"/> field of the
 /// given zone data.</remarks>
 /// </summary>
-/// <param name="wizardZoneRef">The reference to the parent <see cref="WizardZone"/>.</param>
+/// <param name="wizardZoneRef">The reference to the parent <see cref="Zone"/>.</param>
 /// <param name="zone">The zone that this supervisor is responsible for.</param>
 internal sealed class ZoneObjectSupervisor(IActorRef wizardZoneRef, Core.Zone zone) : ZoneEntitySupervisor(wizardZoneRef, zone) {
 

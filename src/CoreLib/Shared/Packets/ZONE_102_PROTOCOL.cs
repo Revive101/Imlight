@@ -9,6 +9,7 @@ using Imlight.Common.Caches;
 using Imlight.Common.IO;
 using Imlight.Common.MessageLayer;
 using Imlight.Common.ObjectProperty.PropertyReflection;
+using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Game.Zone;
 using Imlight.CoreLib.Game.Zone.ServiceOptions;
 using Imlight.CoreLib.Shared.Networking;
@@ -191,7 +192,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte MessageOrder { get; } = 19;
         public byte ServiceID { get; } = 102;
 
-        public WizardZoneObject ZoneObject;
+        public ZoneEntity ZoneObject;
     }
 
     public sealed class MSG_CREATURESPAWNINTERVAL : IServerMessage {
@@ -234,7 +235,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte MessageOrder { get; } = 26;
         public byte ServiceID { get; } = 102;
 
-        public WizardZoneObject ZoneObject;
+        public ZoneEntity ZoneObject;
         public TypeCache.CoreObject CoreObject;
         public bool Failure;
         public string Error;
@@ -277,10 +278,9 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte MessageOrder { get; } = 31;
         public byte ServiceID { get; } = 102;
 
-        public IActorRef ZoneActor;
         public ByteString EventName;
-        public IActorRef SenderActor;
-        public CoreObject? SenderGameObject;
+        public IActorRef PlayerActor;
+        public CoreObject? PlayerGameObject;
     }
 
     public class MSG_PLAYERCOUNTUPDATE : IServerMessage {

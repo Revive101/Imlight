@@ -6,7 +6,7 @@
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.IO;
-using Imlight.CoreLib.Game.WizardZone.Supervisors;
+using Imlight.CoreLib.Game.Zone.Supervisors;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
@@ -17,7 +17,7 @@ using System.Diagnostics;
 using System.Linq;
 using static Imlight.Common.Caches.TypeCache;
 
-namespace Imlight.CoreLib.Game.WizardZone.Core;
+namespace Imlight.CoreLib.Game.Zone.Core;
 
 /// <summary>
 /// Represents a zone in the game world.

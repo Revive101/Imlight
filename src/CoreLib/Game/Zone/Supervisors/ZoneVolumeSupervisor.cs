@@ -5,19 +5,19 @@
 
 using Akka.Actor;
 using Imlight.Common;
-using Imlight.CoreLib.Game.WizardZone.Core;
+using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using SharpDX;
 
-namespace Imlight.CoreLib.Game.WizardZone.Supervisors;
+namespace Imlight.CoreLib.Game.Zone.Supervisors;
 
 /// <summary>
 /// Exists as a child actor of a <see cref="Zone"/> and is the supervisor 
 /// for any volumes that are created within the zone.
 /// </summary>
-/// <param name="wizardZoneRef">The reference to the parent <see cref="WizardZone"/>.</param>
+/// <param name="wizardZoneRef">The reference to the parent <see cref="Zone"/>.</param>
 /// <param name="zone">The zone that this supervisor is responsible for.</param>
 internal sealed class ZoneVolumeSupervisor(IActorRef wizardZoneRef, Core.Zone zone) : ZoneEntitySupervisor(wizardZoneRef, zone) {
 
@@ -40,9 +40,16 @@ internal sealed class ZoneVolumeSupervisor(IActorRef wizardZoneRef, Core.Zone zo
             coreObject.m_nMobileID = GetReservedMobileID();
             coreObject.m_debugName = volume.m_volumeName;
 
-            var objectActor = CreateEntityActor(coreObject, null);
+            var template = CoreObjectFactory.GetCoreTemplate(volume.m_templateID);
+            var objectActor = CreateEntityActor(coreObject, template);
 
             EntityActors.Add(objectActor);
+
+            // Send the volume details to the object actor.
+            var volumeDetails = new ZONE_102_PROTOCOL.MSG_ADDVOLUME { 
+                Volume = volume,
+            };
+            objectActor.Tell(volumeDetails);
         }
     }
 

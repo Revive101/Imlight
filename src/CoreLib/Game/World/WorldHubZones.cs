@@ -9,7 +9,7 @@ using Imlight.CoreLib.Shared.Resources;
 using System.Linq;
 using static Imlight.Common.Caches.TypeCache;
 
-namespace Imlight.CoreLib.Game.Zone;
+namespace Imlight.CoreLib.Game.World;
 
 public class WorldHubZones : RootSingleResourceSingleton<WorldHubZones>, IMemoryStreamDisposable {
 

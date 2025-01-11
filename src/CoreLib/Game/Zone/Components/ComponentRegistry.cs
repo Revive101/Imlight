@@ -3,13 +3,13 @@
  * Proprietary and confidential.
  */
 
-using Imlight.CoreLib.Game.WizardZone.Core;
+using Imlight.CoreLib.Game.Zone.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using static Imlight.Common.Caches.TypeCache;
 
-namespace Imlight.CoreLib.Game.WizardZone.Components;
+namespace Imlight.CoreLib.Game.Zone.Components;
 
 /// <summary>
 /// Interface that defines a component's ability to determine if it should be added to an entity

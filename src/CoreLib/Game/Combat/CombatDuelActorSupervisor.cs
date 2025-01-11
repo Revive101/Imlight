@@ -11,7 +11,7 @@ using Imlight.CoreLib.Shared.Packets;
 namespace Imlight.CoreLib.Game.Combat;
 
 /// <summary>
-/// This class is responsible for managing all duels in a <see cref="WizardZone"/>.
+/// This class is responsible for managing all duels in a <see cref="Zone"/>.
 /// </summary>
 public class CombatDuelActorSupervisor : ReceiveProtocolDispatcher {
     private readonly IActorRef _wizardZoneRef;
