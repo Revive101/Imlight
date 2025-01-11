@@ -12,14 +12,9 @@ using Imlight.CoreLib.Shared.Resources;
 
 namespace Imlight.CoreLib.Game;
 
-public class GameWorld : ReceiveProtocolDispatcher {
-    private readonly Dictionary<string, IActorRef> _zones;
-    private readonly GameServer _server;
-
-    public GameWorld(GameServer server) {
-        this._zones = new Dictionary<string, IActorRef>();
-        this._server = server;
-    }
+public class GameWorld(GameServer server) : ReceiveProtocolDispatcher {
+    private readonly Dictionary<string, IActorRef> _zones = [];
+    private readonly GameServer _server = server;
 
     public static Props Props(GameServer server)
         => Akka.Actor.Props.Create(() => new GameWorld(server));
@@ -58,11 +53,9 @@ public class GameWorld : ReceiveProtocolDispatcher {
     }
 
     private IActorRef CreatePublicZone(string zoneName) {
-        // '/' is an illegal character in Akka.NET actor names, so we replace it with '-'.
-        var zoneActorName = zoneName
-            .Replace('/', '-');
+        var zoneActorName = SanitizeZoneName(zoneName);
+        var zone = Context.ActorOf(WizardZone.Core.Zone.Props(zoneName, 1), zoneActorName);
 
-        var zone = Context.ActorOf(Zone.WizardZone.Props(zoneName), zoneActorName);
         _zones.Add(zoneName, zone);
 
         // Log the new zone creation.
@@ -73,11 +66,10 @@ public class GameWorld : ReceiveProtocolDispatcher {
     }
 
     private IActorRef CreatePrivateZone(string zoneName, IActorRef owner) {
-        // '/' is an illegal character in Akka.NET actor names, so we replace it with '-'.
-        var zoneActorName = zoneName
-            .Replace('/', '-');
-
+        // Suffix this private zone name with the owner's name to prevent conflicts.
+        var zoneActorName = SanitizeZoneName(zoneName) + "-" + owner.Path.Name;
         var zone = Context.ActorOf(Zone.WizardPrivateZone.Props(zoneName, owner), zoneActorName);
+
         _zones.Add(zoneName, zone);
 
         // Log the new zone creation.
@@ -86,4 +78,7 @@ public class GameWorld : ReceiveProtocolDispatcher {
 
         return zone;
     }
+
+    private static string SanitizeZoneName(string zoneName) 
+        => zoneName.Replace('/', '-');
 }

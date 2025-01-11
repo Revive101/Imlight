@@ -301,4 +301,30 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
         public ServiceOption ServiceOption;
     }
+
+    public class MSG_ZONELOADBEGIN : IServerMessage {
+        public byte MessageOrder { get; } = 35;
+        public byte ServiceID { get; } = 102;
+
+        public string ZonePath;
+    }
+
+    public class MSG_ZONELOADRESULTS : IServerMessage {
+        public byte MessageOrder { get; } = 36;
+        public byte ServiceID { get; } = 102;
+
+        public WizZoneData ZoneData;
+        public SpawnManager SpawnData;
+        public PathManager_PathTemplateList PathData;
+        public PathManager_NodeTemplateList NodeData;
+        public WizZoneVolumes VolumeData;
+        public WizZoneTriggers TriggerData;
+        public bool Error;
+        public string ErrorMessage;
+    }
+
+    public class MSG_ZONELOADTIMER : IServerMessage {
+        public byte MessageOrder { get; } = 37;
+        public byte ServiceID { get; } = 102;
+    }
 }
