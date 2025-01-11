@@ -49,7 +49,7 @@ internal sealed class RenderComponent : BaseZoneComponent {
         }
 
         // If the player joins within render distance, spawn the object for them.
-        if (IsInRadius(player)) {
+        if (IsInRadius(player, _renderDistance)) {
             SpawnObjectForPlayer(suspect);
             _playersInRange.Add(player, suspect);
         }
@@ -71,11 +71,11 @@ internal sealed class RenderComponent : BaseZoneComponent {
         }
 
         // Check if the player is now in range of the object.
-        if (IsInRadius(playerObj) && !_playersInRange.ContainsKey(playerObj)) {
+        if (IsInRadius(playerObj, _renderDistance) && !_playersInRange.ContainsKey(playerObj)) {
             // If the player is in range, spawn the object for them.
             SpawnObjectForPlayer(playerActor);
             _playersInRange.Add(playerObj, playerActor);
-        } else if (!IsInRadius(playerObj) && _playersInRange.ContainsKey(playerObj)) {
+        } else if (!IsInRadius(playerObj, _renderDistance) && _playersInRange.ContainsKey(playerObj)) {
             // If the player is out of range, despawn the object for them.
             DespawnObjectForPlayer(playerActor);
             _playersInRange.Remove(playerObj);
@@ -96,12 +96,6 @@ internal sealed class RenderComponent : BaseZoneComponent {
             GameObjectID = Entity.ActiveGameObject.m_globalID
         };
         player.Tell(despawnObjectMsg);
-    }
-
-    private bool IsInRadius(CoreObject obj) {
-        var sqrtDist = (obj.m_location - Entity.ActiveGameObject.m_location).LengthSquared();
-        var sqrtRadius = _renderDistance * _renderDistance;
-        return sqrtDist <= sqrtRadius;
     }
 
 }

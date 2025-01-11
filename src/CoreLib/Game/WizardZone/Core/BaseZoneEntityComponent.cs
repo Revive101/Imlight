@@ -82,4 +82,15 @@ public abstract class BaseZoneComponent : ReceiveProtocolDispatcher, IZoneCompon
 
     public abstract bool ShouldAttachToEntity(CoreTemplate template);
 
+    /// <summary>
+    /// Checks if the specified object is within the radius of the entity.
+    /// </summary>
+    /// <param name="obj">The object to check.</param>
+    /// <returns>True if the object is within the radius, otherwise false.</returns>
+    protected bool IsInRadius(CoreObject obj, float distance) {
+        var sqrtDist = (obj.m_location - Entity.ActiveGameObject.m_location).LengthSquared();
+        var sqrtRadius = distance * distance;
+        return sqrtDist <= sqrtRadius;
+    }
+
 }
