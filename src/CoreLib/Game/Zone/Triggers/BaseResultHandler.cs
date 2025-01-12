@@ -4,7 +4,6 @@
  */
 
 using Akka.Actor;
-using Imlight.CoreLib.Game.Zone.Components;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using static Imlight.Common.Caches.TypeCache;

@@ -76,7 +76,7 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
     }
 
     private IActorRef CreateTriggerActor(Trigger trigger) {
-        var objectActor = Context.ActorOf(Props.Create(() => new ZoneTrigger(ZoneRef, Zone)));
+        var objectActor = Context.ActorOf(Props.Create(() => new ZoneTrigger(ZoneRef, Zone, trigger)));
 
         try {
             // Send a message to the object and await a reply to ensure it has been created and initialized successfully.
