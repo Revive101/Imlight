@@ -53,7 +53,7 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
 
     private List<Trigger> ReplaceTriggerDataWithDatabase(WizZoneTriggers clientTriggers) {
         var triggers = new List<Trigger>(clientTriggers.m_triggers);
-        var zoneName = Zone.ZoneName;
+        var zoneName = Zone.ZonePath;
 
         // One single database query: great!
         var databaseTriggers = ZoneDataCollection.GetZoneData(zoneName);
