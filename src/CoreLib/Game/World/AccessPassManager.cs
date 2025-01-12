@@ -7,10 +7,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml;
 using Imlight.Common;
+using Imlight.CoreLib.Shared.Resources;
 
-namespace Imlight.CoreLib.Shared.Resources;
+namespace Imlight.CoreLib.Game.World;
 
+/// <summary>
+/// Manages access passes for zones.
+/// </summary>
 public class AccessPassManager : RootSingleResourceSingleton<AccessPassManager>, IMemoryStreamDisposable {
+
     protected override string ResourceName { get; } = "AccessPass.xml";
 
     private static string[] s_zones;
@@ -30,7 +35,7 @@ public class AccessPassManager : RootSingleResourceSingleton<AccessPassManager>,
         // Log
         Logger.Information("Loaded {Count} zones.", Logger.Args(zoneList.Count));
 
-        s_zones = zoneList.ToArray();
+        s_zones = [.. zoneList];
         ((IMemoryStreamDisposable)this).DisposeStream();
     }
 
@@ -41,4 +46,5 @@ public class AccessPassManager : RootSingleResourceSingleton<AccessPassManager>,
         => s_zones.FirstOrDefault(zone => zone.ToLower().Contains(partialZoneName.ToLower()));
 
     void IMemoryStreamDisposable.DisposeStream() => base.Stream?.Dispose();
+
 }
