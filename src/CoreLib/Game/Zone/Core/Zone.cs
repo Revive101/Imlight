@@ -10,6 +10,7 @@ using Imlight.CoreLib.Game.Zone.Supervisors;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
+using Nito.AsyncEx.Synchronous;
 using SharpDX;
 using System;
 using System.Collections.Generic;
@@ -277,11 +278,20 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         var timer = new Stopwatch();
         foreach (var supervisor in _supervisors) {
             timer.Restart();
-            var timeout = TimeSpan.FromSeconds(ZONE_SUPERVISOR_LOAD_TIMEOUT_IN_SECONDS);
-            _ = supervisor.Ask(message, timeout);
+            try {
+                var timeout = TimeSpan.FromSeconds(ZONE_SUPERVISOR_LOAD_TIMEOUT_IN_SECONDS);
+                _ = supervisor.Ask<ZONE_102_PROTOCOL.MSG_ZONESUPERVISORLOADRESULTS>(message, timeout).WaitAndUnwrapException();
 
-            Logger.Debug("Supervisor {SupervisorName} for zone {ZoneName} loaded in {Time}ms.",
-                Logger.Args(supervisor.Path.Name, ZoneName, timer.ElapsedMilliseconds));
+                Logger.Debug("Supervisor {SupervisorName} for zone {ZoneName} loaded in {Time}ms.",
+                    Logger.Args(supervisor.Path.Name, ZoneName, timer.ElapsedMilliseconds));
+            }
+            catch (Exception ex) {
+                Logger.Error("Supervisor {SupervisorName} for zone {ZoneName} failed to load because {ErrorMessage}",
+                    Logger.Args(supervisor.Path.Name, ZoneName, ex.Message));
+                CloseZone();
+
+                return;
+            }
         }
 
         Logger.Information("Zone {ZoneName} loaded in {Time}ms.", Logger.Args(ZoneName, _zoneLoadTimer.ElapsedMilliseconds));
@@ -297,6 +307,11 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
             Logger.Error("Zone {ZoneName} failed to load within the timeout.", Logger.Args(ZoneName));
             CloseZone();
         }
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_POSTEVENT))]
+    private void ReceiveTriggerPost(ZONE_102_PROTOCOL.MSG_POSTEVENT message) {
+        Logger.Debug("Zone {ZoneName} received post event {EventName}.", Logger.Args(ZoneName, message.EventName));
     }
 
     #endregion

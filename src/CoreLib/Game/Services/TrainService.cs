@@ -37,6 +37,8 @@ internal class TrainService : MessageService {
             return;
         }
 
+        // todo: fixme
+        /*
         var wizard = GetActiveWizard();
         var npcObj = (WizardZoneNpc) response.ZoneObject;
 
@@ -72,5 +74,6 @@ internal class TrainService : MessageService {
             Success = 1
         };
         SendToSocket(trainCompleteMsg);
+        */
     }
 }

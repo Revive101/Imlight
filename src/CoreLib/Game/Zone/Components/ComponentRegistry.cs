@@ -7,6 +7,7 @@ using Imlight.CoreLib.Game.Zone.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
@@ -16,8 +17,8 @@ namespace Imlight.CoreLib.Game.Zone.Components;
 /// </summary>
 public interface IComponentFactory {
 
-    bool ShouldAttachToEntity(CoreTemplate template);
-    
+    static abstract bool ShouldAttachToEntity(CoreTemplate template);
+
 }
 
 /// <summary>
@@ -25,22 +26,31 @@ public interface IComponentFactory {
 /// </summary>
 public static class ComponentRegistry {
 
-    private static readonly List<Type> s_registeredComponents = [];
-
+    private static readonly Dictionary<Type, MethodInfo> s_componentFactories = [];
+    
     static ComponentRegistry() {
-        // Auto-discover and register all component types
         var componentTypes = AppDomain.CurrentDomain
             .GetAssemblies()
             .SelectMany(a => a.GetTypes())
-            .Where(t => !t.IsAbstract && !t.IsInterface 
-                && typeof(IComponentFactory).IsAssignableFrom(t)
-                && typeof(IZoneComponent).IsAssignableFrom(t));
+            .Where(t => !t.IsAbstract && 
+                       !t.IsInterface && 
+                       typeof(IComponentFactory).IsAssignableFrom(t) &&
+                       typeof(BaseZoneComponent).IsAssignableFrom(t));
 
-        foreach (var type in componentTypes) {
-            s_registeredComponents.Add(type);
+        foreach (var componentType in componentTypes) {
+            var shouldAttachMethod = componentType.GetMethod(
+                "ShouldAttachToEntity", 
+                BindingFlags.Public | BindingFlags.Static,
+                [typeof(CoreTemplate)]
+            );
+
+            if (shouldAttachMethod != null) {
+                s_componentFactories.Add(componentType, shouldAttachMethod);
+            }
         }
     }
 
-    public static IEnumerable<Type> GetRegisteredComponents() => s_registeredComponents;
-    
+    public static IReadOnlyDictionary<Type, MethodInfo> GetRegisteredComponents() 
+        => s_componentFactories;
+
 }

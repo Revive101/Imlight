@@ -8,8 +8,10 @@ using Imlight.Common.Caches;
 using Imlight.CoreLib.Game.Zone.Components;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Serilog.Debugging;
+using System;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Core;
@@ -18,12 +20,6 @@ namespace Imlight.CoreLib.Game.Zone.Core;
 /// Represents a component within a zone that handles various player and creature interactions.
 /// </summary>
 public interface IZoneComponent {
-
-    /// <summary>
-    /// Initializes the component with the specified zone entity.
-    /// </summary>
-    /// <param name="entity">The zone entity to initialize.</param>
-    void Initialize(ZoneEntity entity);
 
     /// <summary>
     /// Called when a player joins the zone.
@@ -66,17 +62,11 @@ public interface IZoneComponent {
 /// <summary>
 /// Base class for components that implements common functionality
 /// </summary>
-public abstract class BaseZoneComponent : ReceiveProtocolDispatcher, IZoneComponent, IComponentFactory {
+public abstract class BaseZoneComponent(ZoneEntity entity) : ReceiveProtocolDispatcher, IZoneComponent {
 
-    public IActorRef ActorRef;
-    protected ZoneEntity Entity { get; private set; }
+    protected ZoneEntity Entity { get; private set; } = entity;
     protected Zone Zone => Entity.Zone;
     protected IActorRef ZoneActor => Entity.ZoneRef;
-
-    public virtual void Initialize(ZoneEntity entity) {
-        ActorRef = Self;
-        Entity = entity;
-    }
 
     public virtual void OnPlayerJoin(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) { }
     public virtual void OnPlayerLeave(IActorRef playerActor, ulong id) { }
@@ -84,7 +74,21 @@ public abstract class BaseZoneComponent : ReceiveProtocolDispatcher, IZoneCompon
     public virtual void OnPlayerInteraction(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC message, IActorRef playerActor) { }
     public virtual void OnCreatureProximityEnter(CoreObject creature, IActorRef suspect) { }
 
-    public abstract bool ShouldAttachToEntity(CoreTemplate template);
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
+    public void ReceiveAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message) 
+        => OnPlayerJoin(message.PlayerObject, message.Player, message.Wizard);
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER))]
+    public void ReceiveRemovePlayer(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message) 
+        => OnPlayerLeave(message.Player, message.GlobalId);
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PLAYERMOVE))]
+    public void ReceivePlayerMove(ZONE_102_PROTOCOL.MSG_PLAYERMOVE message) 
+        => OnPlayerMove(message.PlayerObject, message.PlayerActor);
+
+    [MessageHandler(typeof(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC))]
+    public void ReceivePlayerInteraction(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC message) 
+        => OnPlayerInteraction(message, Sender);
 
     /// <summary>
     /// Checks if the specified object is within the radius of the entity.

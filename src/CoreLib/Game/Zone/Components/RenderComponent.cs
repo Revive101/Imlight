@@ -15,7 +15,7 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
-internal sealed class RenderComponent : BaseZoneComponent {
+internal sealed class RenderComponent : BaseZoneComponent, IComponentFactory {
 
     private readonly CoreObjectSerializer _serializer = new CoreObjectSerializer()
             .OnBehaviors(SerializerOptions.Behaviors.None)
@@ -23,12 +23,10 @@ internal sealed class RenderComponent : BaseZoneComponent {
                 | SerializerOptions.PropertyFlags.Transmit 
                 | SerializerOptions.PropertyFlags.AuthorityTransmit);
     private readonly Dictionary<CoreObject, IActorRef> _playersInRange = [];
-    private float _renderDistance;
-    private bool _doesDistanceCheck = false;
+    private readonly float _renderDistance;
+    private readonly bool _doesDistanceCheck = false;
 
-    public override void Initialize(ZoneEntity entity) {
-         base.Initialize(entity);
-         
+    public RenderComponent(ZoneEntity entity) : base(entity) {
         // Check if the object should be spawned based on distance.
         _doesDistanceCheck = entity.Template.m_behaviors
             .OfType<AnimationBehaviorTemplate>()
@@ -37,9 +35,8 @@ internal sealed class RenderComponent : BaseZoneComponent {
         _renderDistance = Entity.Zone.ZoneData.m_farClip;
     }
 
-    public override bool ShouldAttachToEntity(CoreTemplate template) =>
-        // All objects have a render component.
-        true;
+    public static bool ShouldAttachToEntity(CoreTemplate template) =>
+        template is GameObjectTemplate and not DynamicTriggerTemplate;
 
     public override void OnPlayerJoin(CoreObject player, IActorRef suspect, Wizard wizard) {
         if (!_doesDistanceCheck) {
@@ -50,6 +47,7 @@ internal sealed class RenderComponent : BaseZoneComponent {
 
         // If the player joins within render distance, spawn the object for them.
         if (IsInRadius(player, _renderDistance)) {
+            _playersInRange.Remove(player);
             SpawnObjectForPlayer(suspect);
             _playersInRange.Add(player, suspect);
         }

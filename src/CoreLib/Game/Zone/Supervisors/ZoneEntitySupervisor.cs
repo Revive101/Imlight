@@ -4,9 +4,12 @@
  */
 
 using Akka.Actor;
+using Imlight.Common;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Nito.AsyncEx.Synchronous;
+using System;
 using System.Collections.Generic;
 using static Imlight.Common.Caches.TypeCache;
 
@@ -20,15 +23,21 @@ namespace Imlight.CoreLib.Game.Zone.Supervisors;
 /// <param name="zone">The zone that this supervisor is responsible for.</param>
 internal abstract class ZoneEntitySupervisor(IActorRef wizardZoneRef, Core.Zone zone) : ReceiveProtocolDispatcher {
 
+    protected const uint OBJECT_CREATION_TIMEOUT_IN_MS = 5000;
+
     protected readonly IActorRef ZoneRef = wizardZoneRef;
     protected readonly Core.Zone Zone = zone;
     protected readonly List<IActorRef> EntityActors = [];
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST))]
-    private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST message) {
+    public void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST message) {
         foreach (var actor in EntityActors) {
-            foreach (var internlMessage in message.Messages) {
-                actor.Tell(internlMessage);
+            if (actor is null) {
+                continue;
+            }
+
+            foreach (var internalMessage in message.Messages) {
+                actor.Tell(internalMessage);
             }
         }
     }
@@ -41,9 +50,21 @@ internal abstract class ZoneEntitySupervisor(IActorRef wizardZoneRef, Core.Zone 
     /// <returns>The newly created entity actor.</returns>
     protected IActorRef CreateEntityActor(CoreObject coreObject, CoreTemplate template) {
         var objectActor = Context.ActorOf(Props.Create(() => new ZoneEntity(coreObject, template, ZoneRef, Zone)));
-        EntityActors.Add(objectActor);
 
-        // todo: await reply
+        try {
+            // Send a message to the object and await a reply to ensure it has been created and initialized successfully.
+            var msg = new ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN();
+            var timeout = TimeSpan.FromMilliseconds(OBJECT_CREATION_TIMEOUT_IN_MS);
+            var result = objectActor.Ask<ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADRESULTS>(msg, timeout).WaitAndUnwrapException();
+            
+            EntityActors.Add(objectActor);
+        }
+        catch (Exception ex) {
+            Logger.Error("Failed to create entity actor for {0} {1} ({2}).", 
+                Logger.Args(nameof(CoreTemplate), template.GetType().Name, ex.Message));
+
+            return null;
+        }
 
         return objectActor;
     }

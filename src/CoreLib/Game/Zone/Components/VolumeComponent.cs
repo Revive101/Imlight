@@ -14,15 +14,19 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
-internal sealed class VolumeComponent : BaseZoneComponent {
+internal sealed class VolumeComponent(ZoneEntity entity) : BaseZoneComponent(entity), IComponentFactory {
 
     private readonly Dictionary<CoreObject, IActorRef> _playersInRange = [];
     private Volume _volume;
 
-    public override bool ShouldAttachToEntity(CoreTemplate template) 
-        => template.m_behaviors.Any(b => b.m_behaviorName == "BasicProximityBehavior");
+    public static bool ShouldAttachToEntity(CoreTemplate template) 
+        => template is GameObjectTemplate goT && goT.m_templateID == 1700;
 
     public override void OnPlayerMove(CoreObject playerObj, IActorRef playerActor) {
+        if (_volume == null) {
+            return;
+        }
+
         // Check if the player is now in range of the object.
         if (IsInRadius(playerObj, _volume.m_radius) && !_playersInRange.ContainsKey(playerObj)) {
             // If the player is in range, trigger the enter events.
@@ -36,9 +40,8 @@ internal sealed class VolumeComponent : BaseZoneComponent {
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDVOLUME))]
-    private void ReceiveVolumeDetails(ZONE_102_PROTOCOL.MSG_ADDVOLUME message) {
-        _volume = message.Volume;
-    }
+    private void ReceiveVolumeDetails(ZONE_102_PROTOCOL.MSG_ADDVOLUME message) 
+        => _volume = message.Volume;
 
     private void OnProximityEnter(CoreObject playerObj, IActorRef playerActor) {
         foreach (var enterEvent in _volume.m_enterEvents) {

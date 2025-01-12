@@ -38,7 +38,8 @@ public class GameWorld(GameServer server) : ReceiveProtocolDispatcher {
         IActorRef zone;
         if (!_zones.TryGetValue(message.DestinationZone, out var value)) {
             if (message.IsPrivate) {
-                zone = CreatePrivateZone(message.DestinationZone, message.Owner);
+                // todo
+                zone = CreatePublicZone(message.DestinationZone);
             }
             else {
                 zone = CreatePublicZone(message.DestinationZone);
@@ -60,20 +61,6 @@ public class GameWorld(GameServer server) : ReceiveProtocolDispatcher {
 
         // Log the new zone creation.
         Logger.Information("GameWorld created new zone: {ZoneName}",
-            Logger.Args(zoneName));
-
-        return zone;
-    }
-
-    private IActorRef CreatePrivateZone(string zoneName, IActorRef owner) {
-        // Suffix this private zone name with the owner's name to prevent conflicts.
-        var zoneActorName = SanitizeZoneName(zoneName) + "-" + owner.Path.Name;
-        var zone = Context.ActorOf(Zone.WizardPrivateZone.Props(zoneName, owner), zoneActorName);
-
-        _zones.Add(zoneName, zone);
-
-        // Log the new zone creation.
-        Logger.Information("GameWorld created new private zone: {ZoneName}",
             Logger.Args(zoneName));
 
         return zone;

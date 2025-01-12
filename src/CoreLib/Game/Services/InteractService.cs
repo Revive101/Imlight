@@ -51,6 +51,8 @@ internal class InteractService : MessageService {
         }
       
         // Inform the interaction object that the player is interacting with it.
+        // todo: fixme
+        /*
         npc.ActorRef.Tell(message, SessionActor.ActorRef);
 
         // Disable player movement
@@ -67,5 +69,6 @@ internal class InteractService : MessageService {
             WizBangID = (uint) WizBangs.Registrar
         };
         ZoneBroadcast(wizBangMsg, false);
+        */
     }
 }

@@ -43,13 +43,14 @@ internal sealed class ZoneObjectSupervisor(IActorRef wizardZoneRef, Core.Zone zo
 
             var template = (GameObjectTemplate) CoreObjectFactory.GetCoreTemplate(objectInfo.m_templateID);
             var coreObject = InitializeObject(objectInfo, template);
-            var objectActor = CreateEntityActor(coreObject, null);
+            var objectActor = CreateEntityActor(coreObject, template);
 
             EntityActors.Add(objectActor);
         }
 
         // Inform the zone that we have finished initializing all objects.
-        Sender.Tell(message);
+        var reply = new ZONE_102_PROTOCOL.MSG_ZONESUPERVISORLOADRESULTS();
+        Sender.Tell(reply);
     }
 
     private CoreObject InitializeObject(CoreObjectInfo objectInfo, GameObjectTemplate template) {

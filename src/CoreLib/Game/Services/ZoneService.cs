@@ -182,7 +182,6 @@ public class ZoneService : MessageService, IWithTimers {
         SendHomeButtonData();
 
         var postEventMsg = new ZONE_102_PROTOCOL.MSG_POSTEVENT {
-            ZoneActor = ZoneActor,
             EventName = ENTER_ZONE_EVENT_NAME,
             PlayerActor = SessionActor.ActorRef,
             PlayerGameObject = GetActiveGameObject()

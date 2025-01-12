@@ -143,7 +143,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte MessageOrder { get; } = 14;
         public byte ServiceID { get; } = 102;
 
-        public TypeCache.CoreObject CoreObject;
+        public TypeCache.CoreObject PlayerObject;
         public IActorRef PlayerActor;
         public bool IsCreature;
     }
@@ -302,15 +302,21 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public ServiceOption ServiceOption;
     }
 
-    public class MSG_ZONELOADBEGIN : IServerMessage {
-        public byte MessageOrder { get; } = 35;
+    /// <summary>
+    /// Sent by the <see cref="Zone"/> to a <see cref="ZoneLoader"/> to begin loading a zone.
+    /// </summary>
+    public sealed class MSG_ZONELOADBEGIN : IServerMessage {
+        public byte MessageOrder { get; } = 1;
         public byte ServiceID { get; } = 102;
 
         public string ZonePath;
     }
 
-    public class MSG_ZONELOADRESULTS : IServerMessage {
-        public byte MessageOrder { get; } = 36;
+    /// <summary>
+    /// Sent by the <see cref="ZoneLoader"/> to the <see cref="Zone"/> to indicate that the zone has been loaded.
+    /// </summary>
+    public sealed class MSG_ZONELOADRESULTS : IServerMessage {
+        public byte MessageOrder { get; } = 2;
         public byte ServiceID { get; } = 102;
 
         public WizZoneData ZoneData;
@@ -323,8 +329,42 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public string ErrorMessage;
     }
 
-    public class MSG_ZONELOADTIMER : IServerMessage {
-        public byte MessageOrder { get; } = 37;
+    /// <summary>
+    /// Sent by the <see cref="Zone"/> to itself to indicate that the zone load timer has expired.
+    /// This message is used to ensure that the zone is loaded within a certain time frame.
+    /// </summary>
+    public sealed class MSG_ZONELOADTIMER : IServerMessage {
+        public byte MessageOrder { get; } = 3;
         public byte ServiceID { get; } = 102;
+    }
+
+    /// <summary>
+    /// Sent by a <see cref="ZoneSupervisor"/> to the <see cref="Zone"/> to indicate that the zone supervisor has been loaded.
+    /// </summary>
+    public sealed class MSG_ZONESUPERVISORLOADRESULTS : IServerMessage {
+        public byte MessageOrder { get; } = 4;
+        public byte ServiceID { get; } = 102;
+
+        public bool Error;
+        public string ErrorMessage;
+    }
+
+    /// <summary>
+    /// Sent by a <<see cref="ZoneSupervisor"/> to a <see cref="ZoneEntity"/> to indicate that the zone object is being loaded.
+    /// </summary>
+    public sealed class MSG_ZONEOBJECTLOADBEGIN : IServerMessage {
+        public byte MessageOrder { get; } = 5;
+        public byte ServiceID { get; } = 102;
+    }
+
+    /// <summary>
+    /// Sent by a <see cref="ZoneEntity"/> to the <see cref="ZoneSupervisor"/> to indicate that the zone object has been loaded.
+    /// </summary>
+    public sealed class MSG_ZONEOBJECTLOADRESULTS : IServerMessage {
+        public byte MessageOrder { get; } = 6;
+        public byte ServiceID { get; } = 102;
+
+        public bool Error;
+        public string ErrorMessage;
     }
 }

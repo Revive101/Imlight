@@ -51,6 +51,9 @@ internal sealed class ZoneVolumeSupervisor(IActorRef wizardZoneRef, Core.Zone zo
             };
             objectActor.Tell(volumeDetails);
         }
+
+        var reply = new ZONE_102_PROTOCOL.MSG_ZONESUPERVISORLOADRESULTS();
+        Sender.Tell(reply);
     }
 
     private ushort GetReservedMobileID() {

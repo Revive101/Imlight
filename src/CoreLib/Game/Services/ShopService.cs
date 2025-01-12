@@ -36,6 +36,8 @@ internal class ShopService : MessageService {
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new InteractService(parentActor));
 
+    // todo: fixme
+    /*
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_SHOPBUYREQUEST))]
     private void ReceiveShopBuyRequest(WIZARD_12_PROTOCOL.MSG_SHOPBUYREQUEST message) {
         var wizard = GetActiveWizard();
@@ -139,6 +141,7 @@ internal class ShopService : MessageService {
         };
         SendToSocket(shopConfirmMsg);
     }
+    */
 
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_SHOPSELLREQUEST))]
     private void ReceiveShopSellRequest(WIZARD_12_PROTOCOL.MSG_SHOPSELLREQUEST message) {

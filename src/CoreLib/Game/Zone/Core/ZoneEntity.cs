@@ -21,68 +21,37 @@ namespace Imlight.CoreLib.Game.Zone.Core;
 /// Base entity class for all zone objects. Uses a component-based architecture
 /// to handle different behaviors and functionality.
 /// </summary>
-public class ZoneEntity : ReceiveProtocolDispatcher {
+public sealed class ZoneEntity(
+    CoreObject activeGameObject,
+    CoreTemplate template,
+    IActorRef zoneRef,
+    Zone zone) : ReceiveProtocolDispatcher {
 
-    public CoreObject ActiveGameObject { get; private set; }
-    public CoreTemplate Template { get; private set; }
-    public float InteractionRadius { get; protected set; } = 300f;
-    public Zone Zone { get; private set; }
-    public IActorRef SupervisorRef { get; private set; }
-    public IActorRef ZoneRef { get; private set; }
+    public CoreObject ActiveGameObject { get; private set; } = activeGameObject;
+    public CoreTemplate Template { get; private set; } = template;
+    public Zone Zone { get; private set; } = zone;
+    public IActorRef SupervisorRef { get; private set; } = Context.Parent;
+    public IActorRef ZoneRef { get; private set; } = zoneRef;
 
-    private readonly List<BaseZoneComponent> _components = [];
-
-    // ctor
-    public ZoneEntity(CoreObject activeGameObject, CoreTemplate template, IActorRef zoneRef, Zone zone) {
-        ActiveGameObject = activeGameObject;
-        Template = template;
-        SupervisorRef = Context.Parent;
-        ZoneRef = zoneRef;
-        Zone = zone;
-
-        AutoAttachComponents();
-    }
+    private readonly List<IActorRef> _components = [];
 
     #region Message Handlers
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
-    protected virtual void ReceiveAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message) {
-        // Notify all components of the player's arrival.
-        foreach (var component in _components) {
-            component.OnPlayerJoin(message.PlayerObject, message.Player, message.Wizard);
-        }
-    }
-
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER))]
-    protected virtual void ReceiveRemovePlayer(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message) {
-        // Notify all components of the player's departure.
-        foreach (var component in _components) {
-            component.OnPlayerLeave(message.Player, message.GlobalId);
-        }
-    }
-
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PLAYERMOVE))]
-    protected virtual void ReceivePlayerMove(ZONE_102_PROTOCOL.MSG_PLAYERMOVE message) {
-        if (message.CoreObject == null) {
+    [MessageHandler(typeof(IServerMessage))]
+    private void ReceiveElse(IServerMessage message) {
+        if (message is ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN) {
             return;
         }
 
-        // Notify all components of the player's movement.
         foreach (var component in _components) {
-            component.OnPlayerMove(message.CoreObject, message.PlayerActor);
+            component.Tell(message);
         }
     }
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
-    protected virtual void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message)
-        => ZoneRef.Tell(message);
-
-    [MessageHandler(typeof(IServerMessage))]
-    private void ReceiveElse(IServerMessage message) {
-        // Notify all components of the message.
-        foreach (var component in _components) {
-            component.ActorRef.Tell(message);
-        }
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN))]
+    private void ReceiveObjectLoadBegin() {
+        AutoAttachComponents();
+        Sender.Tell(new ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADRESULTS());
     }
 
     #endregion
@@ -92,7 +61,7 @@ public class ZoneEntity : ReceiveProtocolDispatcher {
     /// </summary>
     /// <param name="message"> The message to broadcast. </param>
     /// <param name="selfless"> Whether or not the message should be sent to the sender. </param>
-    protected void BroadcastToZone(IServerMessage message, bool selfless = true) {
+    internal void BroadcastToZone(IServerMessage message, bool selfless = true) {
         var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
             Message = (Common.MessageLayer.IMessage) message,
             Selfless = selfless,
@@ -102,18 +71,20 @@ public class ZoneEntity : ReceiveProtocolDispatcher {
     }
 
     private void AutoAttachComponents() {
-        foreach (var componentType in ComponentRegistry.GetRegisteredComponents()) {
-            // Create instance and check if it should be attached.
-            var component = (IComponentFactory) Activator.CreateInstance(componentType);
-            if (component.ShouldAttachToEntity(Template)) {
-                AddComponent((IZoneComponent) component);
+        var template = Template;
+
+        foreach (var (componentType, shouldAttachMethod) in ComponentRegistry.GetRegisteredComponents()) {
+            var shouldAttach = (bool) shouldAttachMethod.Invoke(null, [template]);
+            if (shouldAttach) {
+                AddComponent(componentType);
             }
         }
     }
 
-    private void AddComponent(IZoneComponent component) {
-        component.Initialize(this);
-        _components.Add((BaseZoneComponent) component);
+    private void AddComponent(Type type) {
+        var props = Props.Create(type, this);
+        var component = Context.ActorOf(props, type.Name);
+        _components.Add(component);
     }
 
     public WizClientObject GetClientTypeAlternative() {
