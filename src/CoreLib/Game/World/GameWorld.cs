@@ -8,9 +8,8 @@ using Akka.Actor;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
-using Imlight.CoreLib.Shared.Resources;
 
-namespace Imlight.CoreLib.Game;
+namespace Imlight.CoreLib.Game.World;
 
 public class GameWorld(GameServer server) : ReceiveProtocolDispatcher {
     private readonly Dictionary<string, IActorRef> _zones = [];
