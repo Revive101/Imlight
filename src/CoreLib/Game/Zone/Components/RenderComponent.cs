@@ -83,7 +83,7 @@ internal sealed class RenderComponent : BaseZoneComponent, IComponentFactory {
     private void SpawnObjectForPlayer(IActorRef player) {
         // Send object data to the player
         var newObjectMsg = new GAME_5_PROTOCOL.MSG_NEWOBJECT {
-            Data = _serializer.Serialize(Entity.GetClientTypeAlternative())
+            Data = _serializer.Serialize(Entity.GetClientBehaviorInstance())
         };
         player.Tell(newObjectMsg);
     }
