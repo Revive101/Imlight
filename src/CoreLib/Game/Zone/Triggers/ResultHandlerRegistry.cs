@@ -3,6 +3,7 @@
  * Proprietary and confidential.
  */
 
+using Imlight.Common;
 using Imlight.CoreLib.Game.Zone.Components;
 using Imlight.CoreLib.Game.Zone.Core;
 using System;
@@ -46,14 +47,15 @@ public static class ResultHandlerRegistry {
         foreach (var componentType in componentTypes) {
             var shouldAttachMethod = componentType.GetMethod(
                 "ShouldAttachToEntity", 
-                BindingFlags.Public | BindingFlags.Static,
-                [typeof(CoreTemplate)]
+                BindingFlags.Public | BindingFlags.Static
             );
 
             if (shouldAttachMethod != null) {
                 s_componentFactories.Add(componentType, shouldAttachMethod);
             }
         }
+
+        Logger.Information("Registered {0} result handlers", Logger.Args(s_componentFactories.Count));
     }
 
     public static IReadOnlyDictionary<Type, MethodInfo> GetRegisteredResultHandlers() 

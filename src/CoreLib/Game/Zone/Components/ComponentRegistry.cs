@@ -3,6 +3,7 @@
  * Proprietary and confidential.
  */
 
+using Imlight.Common;
 using Imlight.CoreLib.Game.Zone.Core;
 using System;
 using System.Collections.Generic;
@@ -53,6 +54,8 @@ public static class ComponentRegistry {
                 s_componentFactories.Add(componentType, shouldAttachMethod);
             }
         }
+
+        Logger.Information("Registered {0} component factories", Logger.Args(s_componentFactories.Count));
     }
 
     public static IReadOnlyDictionary<Type, MethodInfo> GetRegisteredComponents() 

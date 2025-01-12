@@ -10,6 +10,7 @@ using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using static Imlight.Common.Caches.ServerTypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Core;
@@ -22,14 +23,12 @@ namespace Imlight.CoreLib.Game.Zone.Core;
 /// <param name="zone">The zone that this trigger is a part of.</param>
 public sealed class ZoneTrigger : ZoneEntity {
 
-    private readonly Trigger _trigger;
-    private readonly List<ByteString> _combinedEvents;
+    public Trigger TriggerData { get; init; }
     private readonly Dictionary<IActorRef, DateTime> _cooldowns = [];
 
     // ctor
     public ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger) : base(null, null, zoneRef, zone) {
-        _trigger = trigger;
-        _combinedEvents = [.. _trigger.m_activateEvents, .. _trigger.m_deactivateEvents];
+        TriggerData = trigger;
     }
 
     // Unsure why this override is required, but it fails without it present.
@@ -39,9 +38,9 @@ public sealed class ZoneTrigger : ZoneEntity {
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_POSTEVENT))]
     private void ReceivePostEvent(ZONE_102_PROTOCOL.MSG_POSTEVENT message) {
         // Determine if this event name matches either or enter or exit events.
-        if (_combinedEvents.Contains(message.EventName)) {
+        if (TriggerData.m_fireEvents.Any(x => x == message.EventName)) {
             // If the event name matches, we'll also want to check if the player is on cooldown.
-            if (_trigger.m_cooldown > 0 && !CooldownCheck(message.PlayerActor)) {
+            if (TriggerData.m_cooldown > 0 && !CooldownCheck(message.PlayerActor)) {
                 return;
             }
 
@@ -57,7 +56,7 @@ public sealed class ZoneTrigger : ZoneEntity {
         // Same as the base class, except we want to search the trigger registry for
         // any triggers that should be attached to this entity.
         foreach (var (componentType, shouldAttachMethod) in ResultHandlerRegistry.GetRegisteredResultHandlers()) {
-            var shouldAttach = (bool) shouldAttachMethod.Invoke(null, null);
+            var shouldAttach = (bool) shouldAttachMethod.Invoke(null, [this]);
             if (shouldAttach) {
                 AddComponent(componentType);
             }
@@ -66,7 +65,7 @@ public sealed class ZoneTrigger : ZoneEntity {
 
     private bool CooldownCheck(IActorRef playerRef) {
         if (_cooldowns.TryGetValue(playerRef, out var lastTriggered)) {
-            if (DateTime.Now - lastTriggered < TimeSpan.FromSeconds(_trigger.m_cooldown)) {
+            if (DateTime.Now - lastTriggered < TimeSpan.FromSeconds(TriggerData.m_cooldown)) {
                 return false;
             }
             else {
