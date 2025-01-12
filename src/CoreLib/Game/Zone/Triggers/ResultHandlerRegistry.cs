@@ -32,26 +32,50 @@ public interface IResultHandlerFactory {
 /// Registry for all available trigger types
 /// </summary>
 public static class ResultHandlerRegistry {
-
     private static readonly Dictionary<Type, MethodInfo> s_componentFactories = [];
     
     static ResultHandlerRegistry() {
-        var componentTypes = AppDomain.CurrentDomain
-            .GetAssemblies()
+        var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+        
+        var componentTypes = assemblies
             .SelectMany(a => a.GetTypes())
-            .Where(t => !t.IsAbstract && 
-                       !t.IsInterface && 
-                       typeof(IResultHandlerFactory).IsAssignableFrom(t) &&
-                       typeof(BaseResultHandler).IsAssignableFrom(t));
+            .Where(t => {
+                if (!t.IsClass || t.IsAbstract) {
+                    return false;
+                }
 
-        foreach (var componentType in componentTypes) {
-            var shouldAttachMethod = componentType.GetMethod(
+                if (t.IsGenericTypeDefinition) {
+                    // Get the generic type parameter constraints.
+                    var genericParams = t.GetGenericArguments();
+                    if (genericParams.Length != 1) {
+                        return false;
+                    }
+
+                    var param = genericParams[0];
+                    var constraints = param.GetGenericParameterConstraints();
+
+                    // Check if it inherits from BaseResultHandler<>
+                    if (   t.BaseType.IsGenericType 
+                        && t.BaseType.GetGenericTypeDefinition() == typeof(BaseResultHandler<>)) {
+                        return true;
+                    }
+                }
+                
+                return false;
+            });
+
+        foreach (var type in componentTypes) {
+            var shouldAttachMethod = type.GetMethod(
                 "ShouldAttachToEntity", 
-                BindingFlags.Public | BindingFlags.Static
+                BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy
             );
 
             if (shouldAttachMethod != null) {
-                s_componentFactories.Add(componentType, shouldAttachMethod);
+                s_componentFactories.Add(type, shouldAttachMethod);
+            }
+            else {
+                Logger.Warning("Could not find ShouldAttachToEntity method on: {0}", 
+                    Logger.Args(type.FullName));
             }
         }
 
@@ -60,5 +84,4 @@ public static class ResultHandlerRegistry {
 
     public static IReadOnlyDictionary<Type, MethodInfo> GetRegisteredResultHandlers() 
         => s_componentFactories;
-
 }

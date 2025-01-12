@@ -4,9 +4,11 @@
  */
 
 using Akka.Actor;
+using Akka.Util.Reflection;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using System.Linq;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Triggers;
@@ -28,12 +30,21 @@ public interface IResultHandler {
 /// <summary>
 /// Base class for all result handlers.
 /// </summary>
-public abstract class BaseResultHandler(ZoneTrigger trigger) : ReceiveProtocolDispatcher, IResultHandler {
+public abstract class BaseResultHandler<T>(ZoneTrigger trigger) 
+    : ReceiveProtocolDispatcher, IResultHandler, IResultHandlerFactory 
+    where T : Result {
         
     protected ZoneTrigger Trigger { get; } = trigger;
-    protected Result Result { get; init; }
     protected Core.Zone Zone => Trigger.Zone;
     protected IActorRef ZoneActor => Trigger.ZoneRef;
+
+    private T _result;
+    protected T Result => _result ??= Trigger.TriggerData?.m_results?.m_results?
+        .FirstOrDefault(x => x is not null && x.GetType() == typeof(T)) as T;
+
+    public static bool ShouldAttachToEntity(ZoneTrigger trigger) 
+        => trigger.TriggerData?.m_results?.m_results?
+            .Any(x => x is not null && x.GetType() == typeof(T)) ?? false;
 
     public abstract void Execute(IActorRef playerRef, CoreObject playerObj);
 

@@ -11,6 +11,7 @@ using Imlight.CoreLib.Shared.Packets;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using static Imlight.Common.Caches.ServerTypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Core;
@@ -53,12 +54,46 @@ public sealed class ZoneTrigger : ZoneEntity {
     }
 
     protected override void AutoAttachComponents() {
-        // Same as the base class, except we want to search the trigger registry for
-        // any triggers that should be attached to this entity.
-        foreach (var (componentType, shouldAttachMethod) in ResultHandlerRegistry.GetRegisteredResultHandlers()) {
-            var shouldAttach = (bool) shouldAttachMethod.Invoke(null, [this]);
-            if (shouldAttach) {
-                AddComponent(componentType);
+        foreach (var (handlerType, shouldAttachMethod) in ResultHandlerRegistry.GetRegisteredResultHandlers()) {
+            // If it's a generic type definition, we need to construct it with the correct type
+            if (handlerType.IsGenericTypeDefinition) {
+                // Get the result types from the trigger data
+                var results = TriggerData?.m_results?.m_results;
+                if (results == null) {
+                    continue;
+                }
+
+                // Get the generic parameter constraints
+                var genericParam = handlerType.GetGenericArguments()[0];
+                var constraints = genericParam.GetGenericParameterConstraints();
+
+                // Find the first result that matches our constraints
+                var matchingResult = results
+                    .Where(r => r != null)
+                    .FirstOrDefault(r => constraints.All(c => c.IsAssignableFrom(r.GetType())));
+
+                if (matchingResult != null) {
+                    // Create the constructed type with our result type
+                    var constructedType = handlerType.MakeGenericType(matchingResult.GetType());
+
+                    // Get the method from the constructed type
+                    var constructedMethod = constructedType.GetMethod(
+                        "ShouldAttachToEntity",
+                        BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy
+                    );
+
+                    var shouldAttach = (bool) constructedMethod.Invoke(null, [this]);
+                    if (shouldAttach) {
+                        AddComponent(constructedType);
+                    }
+                }
+            }
+            else {
+                // Handle non-generic types as before
+                var shouldAttach = (bool) shouldAttachMethod.Invoke(null, [this]);
+                if (shouldAttach) {
+                    AddComponent(handlerType);
+                }
             }
         }
     }

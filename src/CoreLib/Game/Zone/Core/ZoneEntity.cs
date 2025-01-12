@@ -80,8 +80,24 @@ public class ZoneEntity(
     /// <param name="type">The type of the component to add.</param>
     protected void AddComponent(Type type) {
         var props = Props.Create(type, this);
-        var component = Context.ActorOf(props, type.Name);
+        var componentName = type.Name;
+
+        // Ensure the component name is valid for an actor path
+        if (string.IsNullOrEmpty(componentName) || componentName.StartsWith('$') || !IsValidActorName(componentName)) {
+            componentName = $"Component_{Guid.NewGuid()}";
+        }
+
+        var component = Context.ActorOf(props, componentName);
         Components.Add(component);
+    }
+
+    private static bool IsValidActorName(string name) {
+        foreach (char c in name) {
+            if (!char.IsLetterOrDigit(c) && "-_.*$+:@&=,!~';()".IndexOf(c) == -1) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public WizClientObject GetClientBehaviorInstance() {
