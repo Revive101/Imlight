@@ -21,21 +21,32 @@ namespace Imlight.CoreLib.Game.Zone.Core;
 /// Base entity class for all zone objects. Uses a component-based architecture
 /// to handle different behaviors and functionality.
 /// </summary>
-public sealed class ZoneEntity(
+/// <param name="activeGameObject">The active game object that this entity represents.</param>
+/// <param name="template">The template that this entity is based on.</param>
+/// <param name="zoneRef">The reference to the zone that this entity is a part of.</param>
+/// <param name="zone">The zone that this entity is a part of.</param>
+public class ZoneEntity(
     CoreObject activeGameObject,
     CoreTemplate template,
     IActorRef zoneRef,
-    Zone zone) : ReceiveProtocolDispatcher {
+    Zone zone) : ReceiveProtocolDispatcher, IClientBehaviorProvider<WizClientObject> {
 
     public CoreObject ActiveGameObject { get; private set; } = activeGameObject;
     public CoreTemplate Template { get; private set; } = template;
     public Zone Zone { get; private set; } = zone;
     public IActorRef SupervisorRef { get; private set; } = Context.Parent;
     public IActorRef ZoneRef { get; private set; } = zoneRef;
+    public bool NoTransfer { get; set; } = false;
 
     private readonly List<IActorRef> _components = [];
 
     #region Message Handlers
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN))]
+    private void ReceiveObjectLoadBegin() {
+        AutoAttachComponents();
+        Sender.Tell(new ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADRESULTS());
+    }
 
     [MessageHandler(typeof(IServerMessage))]
     private void ReceiveElse(IServerMessage message) {
@@ -48,29 +59,12 @@ public sealed class ZoneEntity(
         }
     }
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN))]
-    private void ReceiveObjectLoadBegin() {
-        AutoAttachComponents();
-        Sender.Tell(new ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADRESULTS());
-    }
-
     #endregion
 
     /// <summary>
-    /// Broadcasts a message to the zone.
+    /// Automatically attaches components to this entity based on the template.
     /// </summary>
-    /// <param name="message"> The message to broadcast. </param>
-    /// <param name="selfless"> Whether or not the message should be sent to the sender. </param>
-    internal void BroadcastToZone(IServerMessage message, bool selfless = true) {
-        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-            Message = (Common.MessageLayer.IMessage) message,
-            Selfless = selfless,
-            Sender = Self
-        };
-        ZoneRef.Tell(broadcastMsg);
-    }
-
-    private void AutoAttachComponents() {
+    protected virtual void AutoAttachComponents() {
         var template = Template;
 
         foreach (var (componentType, shouldAttachMethod) in ComponentRegistry.GetRegisteredComponents()) {
@@ -81,13 +75,17 @@ public sealed class ZoneEntity(
         }
     }
 
-    private void AddComponent(Type type) {
+    /// <summary>
+    /// Adds a component to this entity.
+    /// </summary>
+    /// <param name="type">The type of the component to add.</param>
+    protected void AddComponent(Type type) {
         var props = Props.Create(type, this);
         var component = Context.ActorOf(props, type.Name);
         _components.Add(component);
     }
 
-    public WizClientObject GetClientTypeAlternative() {
+    public WizClientObject GetClientBehaviorInstance() {
         var clientObj = new WizClientObject {
             m_debugName = ActiveGameObject.m_debugName,
             m_globalID = ActiveGameObject.m_globalID,
