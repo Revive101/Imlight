@@ -5,7 +5,6 @@
 
 using Akka.Actor;
 using Imlight.Common;
-using Imlight.Common.Caches;
 using Imlight.CoreLib.Game.Zone.Components;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Networking;
@@ -38,12 +37,12 @@ public class ZoneEntity(
     public IActorRef ZoneRef { get; private set; } = zoneRef;
     public bool NoTransfer { get; set; } = false;
 
-    private readonly List<IActorRef> _components = [];
+    protected readonly List<IActorRef> Components = [];
 
     #region Message Handlers
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN))]
-    private void ReceiveObjectLoadBegin() {
+    protected virtual void ReceiveObjectLoadBegin() {
         AutoAttachComponents();
         Sender.Tell(new ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADRESULTS());
     }
@@ -54,7 +53,7 @@ public class ZoneEntity(
             return;
         }
 
-        foreach (var component in _components) {
+        foreach (var component in Components) {
             component.Tell(message);
         }
     }
@@ -82,7 +81,7 @@ public class ZoneEntity(
     protected void AddComponent(Type type) {
         var props = Props.Create(type, this);
         var component = Context.ActorOf(props, type.Name);
-        _components.Add(component);
+        Components.Add(component);
     }
 
     public WizClientObject GetClientBehaviorInstance() {
@@ -99,7 +98,7 @@ public class ZoneEntity(
         };
 
         // Let each component contribute its behaviors.
-        foreach (var component in _components) {
+        foreach (var component in Components) {
             if (component is IClientBehaviorProvider<BehaviorInstance> serverBehavior) {
                 if (serverBehavior.NoTransfer) {
                     continue;

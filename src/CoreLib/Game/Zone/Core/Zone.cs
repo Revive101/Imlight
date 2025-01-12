@@ -84,6 +84,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
 
         _supervisors.Add(CreateSupervisor<ZoneObjectSupervisor>());
         _supervisors.Add(CreateSupervisor<ZoneVolumeSupervisor>());
+        _supervisors.Add(CreateSupervisor<ZoneTriggerSupervisor>());
 
         // Create the loader actor and prepare the loading of this zone.
         _loaderRef = Context.ActorOf(Akka.Actor.Props.Create(() => new ZoneLoader()));
@@ -311,7 +312,11 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_POSTEVENT))]
     private void ReceiveTriggerPost(ZONE_102_PROTOCOL.MSG_POSTEVENT message) {
-        Logger.Debug("Zone {ZoneName} received post event {EventName}.", Logger.Args(ZoneName, message.EventName));
+        Logger.Verbose("Zone {ZoneName} received post event {EventName}.", Logger.Args(ZoneName, message.EventName));
+
+        foreach (var supervisor in _supervisors) {
+            supervisor.Tell(message);
+        }
     }
 
     #endregion
