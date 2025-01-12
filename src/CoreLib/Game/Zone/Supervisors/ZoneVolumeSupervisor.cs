@@ -17,9 +17,8 @@ namespace Imlight.CoreLib.Game.Zone.Supervisors;
 /// Exists as a child actor of a <see cref="Zone"/> and is the supervisor 
 /// for any volumes that are created within the zone.
 /// </summary>
-/// <param name="wizardZoneRef">The reference to the parent <see cref="Zone"/>.</param>
 /// <param name="zone">The zone that this supervisor is responsible for.</param>
-internal sealed class ZoneVolumeSupervisor(IActorRef wizardZoneRef, Core.Zone zone) : ZoneEntitySupervisor(wizardZoneRef, zone) {
+internal sealed class ZoneVolumeSupervisor(Core.Zone zone) : ZoneEntitySupervisor(zone) {
 
     private ushort _reservedIdCounter = Core.Zone.RESERVED_VOLUME_ID_MIN;
 

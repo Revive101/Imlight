@@ -19,13 +19,12 @@ namespace Imlight.CoreLib.Game.Zone.Supervisors;
 /// Exists as a child actor of a <see cref="Zone"/> and is the supervisor
 /// for any entities that are created within the zone.
 /// </summary>
-/// <param name="wizardZoneRef">The reference to the parent <see cref="Zone"/>.</param>
 /// <param name="zone">The zone that this supervisor is responsible for.</param>
-internal abstract class ZoneEntitySupervisor(IActorRef wizardZoneRef, Core.Zone zone) : ReceiveProtocolDispatcher {
+internal abstract class ZoneEntitySupervisor(Core.Zone zone) : ReceiveProtocolDispatcher {
 
     protected const uint OBJECT_CREATION_TIMEOUT_IN_MS = 5000;
 
-    protected readonly IActorRef ZoneRef = wizardZoneRef;
+    protected readonly IActorRef ZoneRef = Context.Parent;
     protected readonly Core.Zone Zone = zone;
     protected readonly List<IActorRef> EntityActors = [];
 

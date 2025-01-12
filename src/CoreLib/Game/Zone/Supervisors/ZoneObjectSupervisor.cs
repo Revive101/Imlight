@@ -22,9 +22,8 @@ namespace Imlight.CoreLib.Game.Zone.Supervisors;
 /// <remarks>Initializes any <see cref="CoreObjectInfo"/> found within <see cref="ZoneData.m_objectList"/> field of the
 /// given zone data.</remarks>
 /// </summary>
-/// <param name="wizardZoneRef">The reference to the parent <see cref="Zone"/>.</param>
 /// <param name="zone">The zone that this supervisor is responsible for.</param>
-internal sealed class ZoneObjectSupervisor(IActorRef wizardZoneRef, Core.Zone zone) : ZoneEntitySupervisor(wizardZoneRef, zone) {
+internal sealed class ZoneObjectSupervisor(Core.Zone zone) : ZoneEntitySupervisor(zone) {
 
     private ushort _reservedIdCounter = Core.Zone.RESERVED_OBJECT_ID_MIN;
 
