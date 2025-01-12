@@ -8,12 +8,22 @@ using Akka.Actor;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.WizardData.Collections;
 
 namespace Imlight.CoreLib.Game.World;
 
-public class GameWorld(GameServer server) : ReceiveProtocolDispatcher {
+public class GameWorld : ReceiveProtocolDispatcher {
     private readonly Dictionary<string, IActorRef> _zones = [];
-    private readonly GameServer _server = server;
+    private readonly GameServer _server;
+
+    // ctor
+    public GameWorld(GameServer server) {
+        _server = server;
+
+        // Preload NPC vendor data and trainer data.
+        NpcInventoryCollection.PreloadInventories();
+        NpcSpellInventoryCollection.PreloadNpcSpellInventories();
+    }
 
     public static Props Props(GameServer server)
         => Akka.Actor.Props.Create(() => new GameWorld(server));
