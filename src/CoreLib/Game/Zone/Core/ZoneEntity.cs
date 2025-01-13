@@ -39,6 +39,22 @@ public class ZoneEntity(
 
     protected readonly List<IActorRef> Components = [];
 
+    /// <summary>
+    /// Gets a list of components of the specified type.
+    /// </summary>
+    /// <typeparam name="T">The type of component to get.</typeparam>
+    /// <returns>A list of components of the specified type.</returns>
+    public List<IActorRef> GetComponentsOfType<T>() 
+        => Components.Where(x => x is T).ToList();
+
+    /// <summary>
+    /// Gets a component of the specified type.
+    /// </summary>
+    /// <typeparam name="T">The type of component to get.</typeparam>
+    /// <returns>A component of the specified type.</returns>
+    public IActorRef GetComponentOfType<T>()
+        => Components.FirstOrDefault(x => x is T);
+
     #region Message Handlers
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN))]
