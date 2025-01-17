@@ -9,6 +9,8 @@ using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
+using System;
+using System.Collections.Generic;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
@@ -73,7 +75,7 @@ public abstract class BaseZoneComponent(ZoneEntity entity) : ReceiveProtocolDisp
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
     public void ReceiveAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message) 
-        => OnPlayerJoin(message.PlayerObject, message.Player, message.Wizard);
+        => OnPlayerJoin(message.PlayerObject, message.PlayerActor, message.Wizard);
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER))]
     public void ReceiveRemovePlayer(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message) 
@@ -86,6 +88,10 @@ public abstract class BaseZoneComponent(ZoneEntity entity) : ReceiveProtocolDisp
     [MessageHandler(typeof(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC))]
     public void ReceivePlayerInteraction(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC message) 
         => OnPlayerInteraction(message, Sender);
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ENTITYCOMPONENTREQUESTIDENTITY))]
+    public void ReceiveRequestIdentity() 
+        => Sender.Tell(new ZONE_102_PROTOCOL.MSG_ENTITYCOMPONENTREQUESTIDENTITYRSP { Component = this });
 
     /// <summary>
     /// Checks if the specified object is within the radius of the entity.

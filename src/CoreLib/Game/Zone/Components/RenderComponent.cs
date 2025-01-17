@@ -5,10 +5,10 @@
 
 using Akka.Actor;
 using Imlight.Common.Caches;
-using Imlight.Common.Configuration;
 using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.WizardData.Models.Player;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using static Imlight.Common.Caches.TypeCache;
@@ -81,9 +81,11 @@ internal sealed class RenderComponent : BaseZoneComponent, IComponentFactory {
     }
 
     private void SpawnObjectForPlayer(IActorRef player) {
+        var clientObj = Entity.GetClientBehaviorInstance();
+
         // Send object data to the player
         var newObjectMsg = new GAME_5_PROTOCOL.MSG_NEWOBJECT {
-            Data = _serializer.Serialize(Entity.GetClientBehaviorInstance())
+            Data = _serializer.Serialize(clientObj)
         };
         player.Tell(newObjectMsg);
     }

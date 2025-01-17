@@ -9,7 +9,6 @@ using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Game.WizBang;
 using Imlight.CoreLib.Game.Zone.Core;
-using Imlight.CoreLib.Game.Zone.ServiceOptions;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,7 +16,10 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
-internal sealed class ServiceMementoComponent : BaseZoneComponent, IComponentFactory {
+internal sealed class ServiceMementoComponent(ZoneEntity entity) : BaseZoneComponent(entity), IComponentFactory {
+
+    private const string DEFAULT_NAME_KEY = "NPCFormats_Name";
+    private const string DEFAULT_TEXT_KEY = "GUI_NPCInteractText";
 
     private readonly float _interactionRadius = 300.0f;
     private readonly List<IServiceComponent> _serviceComponents = [];
@@ -27,13 +29,7 @@ internal sealed class ServiceMementoComponent : BaseZoneComponent, IComponentFac
             .OnPropertyMask((SerializerOptions.PropertyFlags) 4);
     private ServiceMementoBase _serviceMemento;
     private bool _searchedForServiceComponents = false;
-
-    // ctor
-    internal ServiceMementoComponent(ZoneEntity entity) : base(entity) {
-        if (entity.Template is not GameObjectTemplate) {
-            throw new System.Exception("ServiceMomentComponent can only be attached to GameObjects");
-        }
-    }
+    private MadlibBlock _madlibBlock;
 
     public static bool ShouldAttachToEntity(CoreTemplate template) =>
         template is GameObjectTemplate gameObjTemplate &&
@@ -49,6 +45,7 @@ internal sealed class ServiceMementoComponent : BaseZoneComponent, IComponentFac
             _serviceComponents.AddRange(serviceComponents);
 
             RefreshServiceMomento();
+            SetMadLibBlock();
             _searchedForServiceComponents = true;
         }
 
@@ -79,12 +76,17 @@ internal sealed class ServiceMementoComponent : BaseZoneComponent, IComponentFac
     }
 
     public override void OnPlayerMove(CoreObject playerObj, IActorRef playerActor) {
+        if (_serviceComponents.Count <= 0) {
+            return;
+        }
+
         if (IsInRadius(playerObj, _interactionRadius) && !_playersInRange.ContainsKey(playerObj)) {
             _playersInRange.Add(playerObj, playerActor);
             SendActorServiceOptions(playerActor);
         }
         else if (!IsInRadius(playerObj, _interactionRadius) && _playersInRange.ContainsKey(playerObj)) {
             _playersInRange.Remove(playerObj);
+            SendLeaveServiceRange(playerActor);
         }
     }
 
@@ -99,6 +101,14 @@ internal sealed class ServiceMementoComponent : BaseZoneComponent, IComponentFac
         playerActor.Tell(npcOptionsMsg);
     }
 
+    private void SendLeaveServiceRange(IActorRef playerActor) {
+        var msg = new GAME_5_PROTOCOL.MSG_LEAVESERVICERANGE {
+            MobileID = Entity.MobileID
+        };
+
+        playerActor.Tell(msg);
+    }
+
     private void RefreshServiceMomento() {
         var gameObjTemplate = Entity.Template as GameObjectTemplate;
 
@@ -110,14 +120,32 @@ internal sealed class ServiceMementoComponent : BaseZoneComponent, IComponentFac
         var highestPriority = sortedComponents.FirstOrDefault();
 
         _serviceMemento = new ServiceMementoBase {
-            m_bTurnPlayerToFace = false,
-            m_clickToInteractOnly = false,
-            m_npcFarewellSound = "",
-            m_npcGreetingSound = "",
             m_npcIcon = highestPriority?.NpcIcon ?? gameObjTemplate.m_sIcon,
-            m_npcNameKey = highestPriority?.NpcNameKey ?? "NPCFormats_Name",
-            m_npcTextKey = highestPriority?.NpcTextKey ?? "GUI_NPCInteractText",
-            m_serviceOptions = allOptions
+            m_npcNameKey = highestPriority?.NpcNameKey ?? DEFAULT_NAME_KEY,
+            m_npcTextKey = highestPriority?.NpcTextKey ?? DEFAULT_TEXT_KEY,
+            m_serviceOptions = allOptions,
+            m_personaMadlibs = _madlibBlock
+        };
+    }
+
+    private void SetMadLibBlock() {
+        // NPCs normally have a madlib of first name, last name, and title.
+        // To avoid hardcoding these values, we use the display name of the template.
+        // We'll also set the madlib token to just "NAME" so the client displays the name as-is.
+        if (Entity.Template is not GameObjectTemplate gameObjTemplate) {
+            return;
+        }
+
+        var madlibList = new List<MadlibArg> {
+            new MadlibArgT_std_string() {
+                m_madlibArgument = gameObjTemplate.m_displayName,
+                m_madlibToken = "NAME"
+            },
+        };
+
+        _madlibBlock = new MadlibBlock() {
+            m_blockToken = "NPC",
+            m_madlibs = madlibList
         };
     }
 

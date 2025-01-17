@@ -36,7 +36,7 @@ internal abstract class ZoneEntitySupervisor(Core.Zone zone) : ReceiveProtocolDi
             }
 
             foreach (var internalMessage in message.Messages) {
-                actor.Tell(internalMessage);
+                actor.Forward(internalMessage);
             }
         }
     }

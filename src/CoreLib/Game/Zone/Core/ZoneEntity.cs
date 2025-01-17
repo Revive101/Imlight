@@ -30,35 +30,45 @@ public class ZoneEntity(
     IActorRef zoneRef,
     Zone zone) : ReceiveProtocolDispatcher, IClientBehaviorProvider<WizClientObject> {
 
+    private const uint MOBILE_ID_REQUEST_TIMEOUT_IN_MS = 1000;
+
     public CoreObject ActiveGameObject { get; private set; } = activeGameObject;
     public CoreTemplate Template { get; private set; } = template;
     public Zone Zone { get; private set; } = zone;
     public IActorRef SupervisorRef { get; private set; } = Context.Parent;
     public IActorRef ZoneRef { get; private set; } = zoneRef;
     public bool NoTransfer { get; set; } = false;
+    public ushort MobileID { 
+        get => ActiveGameObject.m_nMobileID; 
+        private set => ActiveGameObject.m_nMobileID = value; 
+    }
 
-    protected readonly List<IActorRef> Components = [];
+    protected readonly Dictionary<BaseZoneComponent, IActorRef> Components = [];
 
     /// <summary>
     /// Gets a list of components of the specified type.
     /// </summary>
     /// <typeparam name="T">The type of component to get.</typeparam>
     /// <returns>A list of components of the specified type.</returns>
-    public List<IActorRef> GetComponentsOfType<T>() 
-        => Components.Where(x => x is T).ToList();
+    public List<BaseZoneComponent> GetComponentsOfType<T>()
+        => Components.Keys.Where(x => typeof(T).IsAssignableFrom(x.GetType())).ToList();
 
     /// <summary>
     /// Gets a component of the specified type.
     /// </summary>
     /// <typeparam name="T">The type of component to get.</typeparam>
     /// <returns>A component of the specified type.</returns>
-    public IActorRef GetComponentOfType<T>()
-        => Components.FirstOrDefault(x => x is T);
+    public BaseZoneComponent GetComponentOfType<T>()
+        => Components.Keys.FirstOrDefault(x => typeof(T).IsAssignableFrom(x.GetType()));
 
     #region Message Handlers
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN))]
     protected virtual void ReceiveObjectLoadBegin() {
+        if (ActiveGameObject is not null) {
+            MobileID = GetMobileIDFromZone();
+        }
+
         AutoAttachComponents();
         Sender.Tell(new ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADRESULTS());
     }
@@ -69,8 +79,8 @@ public class ZoneEntity(
             return;
         }
 
-        foreach (var component in Components) {
-            component.Tell(message);
+        foreach (var (_, actor) in Components) {
+            actor.Tell(message);
         }
     }
 
@@ -98,13 +108,17 @@ public class ZoneEntity(
         var props = Props.Create(type, this);
         var componentName = type.Name;
 
-        // Ensure the component name is valid for an actor path
+        // Ensure the component name is valid for an actor path.
         if (string.IsNullOrEmpty(componentName) || componentName.StartsWith('$') || !IsValidActorName(componentName)) {
             componentName = $"Component_{Guid.NewGuid()}";
         }
 
-        var component = Context.ActorOf(props, componentName);
-        Components.Add(component);
+        // Create the component actor and request its identity.
+        var componentActor = Context.ActorOf(props, componentName);
+        var identityMsg = new ZONE_102_PROTOCOL.MSG_ENTITYCOMPONENTREQUESTIDENTITY();
+        var identityRsp = componentActor.Ask<ZONE_102_PROTOCOL.MSG_ENTITYCOMPONENTREQUESTIDENTITYRSP>(identityMsg).Result;
+
+        Components.Add(identityRsp.Component, componentActor);
     }
 
     private static bool IsValidActorName(string name) {
@@ -116,8 +130,23 @@ public class ZoneEntity(
         return true;
     }
 
+    private ushort GetMobileIDFromZone() {
+        try {
+            var requestMsg = new ZONE_102_PROTOCOL.MSG_GETMOBILEID() { ActorRef = Self };
+            var timeout = TimeSpan.FromMilliseconds(MOBILE_ID_REQUEST_TIMEOUT_IN_MS);
+            var requestRsp = ZoneRef.Ask<ZONE_102_PROTOCOL.MSG_GETMOBILEIDRSP>(requestMsg, timeout).Result;
+
+            return requestRsp.MobileID;
+        }
+        catch (Exception e) {
+            Logger.Error("Failed to get mobile ID from zone: {0}", Logger.Args(e.Message));
+
+            return 0;
+        }
+    }
+
     public WizClientObject GetClientBehaviorInstance() {
-        var clientObj = new WizClientObject {
+        var gameObj = new WizClientObject() {
             m_debugName = ActiveGameObject.m_debugName,
             m_globalID = ActiveGameObject.m_globalID,
             m_location = ActiveGameObject.m_location,
@@ -126,11 +155,13 @@ public class ZoneEntity(
             m_permID = ActiveGameObject.m_permID,
             m_templateID = ActiveGameObject.m_templateID,
             m_zoneTagID = ActiveGameObject.m_zoneTagID,
-            m_inactiveBehaviors = []
+            m_inactiveBehaviors = ActiveGameObject.m_inactiveBehaviors ?? [],
+            m_fScale = 1,
+            m_characterId = (Common.ObjectProperty.PropertyReflection.GID) ActiveGameObject.m_globalID,
         };
 
         // Let each component contribute its behaviors.
-        foreach (var component in Components) {
+        foreach (var (component, _) in Components) {
             if (component is IClientBehaviorProvider<BehaviorInstance> serverBehavior) {
                 if (serverBehavior.NoTransfer) {
                     continue;
@@ -140,22 +171,22 @@ public class ZoneEntity(
 
                 // Check to see if there is already a behavior of this type in the list.
                 // If there is, replace it.
-                var existing = ActiveGameObject.m_inactiveBehaviors
+                var existing = gameObj.m_inactiveBehaviors
                     .Where(x => x is not null)
                     .FirstOrDefault(x => x.GetType() == clientInstance.GetType());
                 if (existing != null) {
-                    var idx = ActiveGameObject.m_inactiveBehaviors.IndexOf(existing);
-                    ActiveGameObject.m_inactiveBehaviors[idx] = clientInstance;
+                    var idx = gameObj.m_inactiveBehaviors.IndexOf(existing);
+                    gameObj.m_inactiveBehaviors[idx] = clientInstance;
                 }
                 else {
                     // This will cause the client to crash if the behavior does not exist in the template.
                     Logger.Fatal("{0} contains behavior {1} that does not exist in the template.",
-                        Logger.Args(ActiveGameObject.m_debugName, clientInstance.GetType().Name));
+                        Logger.Args(gameObj.m_debugName, clientInstance.GetType().Name));
                 }
             }
         }
 
-        return clientObj;
+        return gameObj;
     }
 
 }

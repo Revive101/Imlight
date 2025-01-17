@@ -26,6 +26,7 @@ public sealed class ZoneTrigger : ZoneEntity {
 
     public Trigger TriggerData { get; init; }
     private readonly Dictionary<IActorRef, DateTime> _cooldowns = [];
+    private readonly List<IActorRef> _triggerActors = [];
 
     // ctor
     public ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger) : base(null, null, zoneRef, zone) {
@@ -34,7 +35,8 @@ public sealed class ZoneTrigger : ZoneEntity {
 
     // Unsure why this override is required, but it fails without it present.
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN))]
-    protected override void ReceiveObjectLoadBegin() => base.ReceiveObjectLoadBegin();
+    protected override void ReceiveObjectLoadBegin() 
+        => base.ReceiveObjectLoadBegin();
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_POSTEVENT))]
     private void ReceivePostEvent(ZONE_102_PROTOCOL.MSG_POSTEVENT message) {
@@ -47,8 +49,8 @@ public sealed class ZoneTrigger : ZoneEntity {
 
             // Fire off all results that happen on this event.
             // We do that by simply dispatching the event to all components attached to this trigger.
-            foreach (var component in Components) {
-                component.Tell(message);
+            foreach (var triggerActor in _triggerActors) {
+                triggerActor.Tell(message);
             }
         }
     }
@@ -111,6 +113,30 @@ public sealed class ZoneTrigger : ZoneEntity {
             _cooldowns.Add(playerRef, DateTime.Now);
         }
 
+        return true;
+    }
+
+    private new void AddComponent(Type type) {
+        var props = Props.Create(type, this);
+        var componentName = type.Name;
+
+        // Ensure the component name is valid for an actor path.
+        if (string.IsNullOrEmpty(componentName) || componentName.StartsWith('$') || !IsValidActorName(componentName)) {
+            componentName = $"Component_{Guid.NewGuid()}";
+        }
+
+        // Create the component actor and request its identity.
+        var componentActor = Context.ActorOf(props, componentName);
+
+        _triggerActors.Add(componentActor);
+    }
+
+    private static bool IsValidActorName(string name) {
+        foreach (char c in name) {
+            if (!char.IsLetterOrDigit(c) && "-_.*$+:@&=,!~';()".IndexOf(c) == -1) {
+                return false;
+            }
+        }
         return true;
     }
 

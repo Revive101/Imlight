@@ -60,7 +60,8 @@ public class ZoneService : MessageService, IWithTimers {
         // If the zone reference is not null, we'll tell the zone to remove the player.
         ZoneActor?.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER() {
             Player = SessionActor.ActorRef,
-            GlobalId = globalId
+            GlobalId = globalId,
+            MobileId = gameObj.m_nMobileID,
         });
         ZoneActor = null;
 
@@ -388,7 +389,8 @@ public class ZoneService : MessageService, IWithTimers {
             var removePlayerMsg = new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER() {
                 Player = SessionActor.ActorRef,
                 GlobalId = GetActiveGameObject().m_globalID,
-                IsPlayerStillConnected = true
+                IsPlayerStillConnected = true,
+                MobileId = GetActiveGameObject().m_nMobileID
             };
             _ = ZoneActor.Ask<ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP>(removePlayerMsg, _zoneRemovalWaitTime).Result;
 

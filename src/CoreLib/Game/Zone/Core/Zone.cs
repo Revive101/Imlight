@@ -10,12 +10,12 @@ using Imlight.CoreLib.Game.Zone.Supervisors;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
-using Nito.AsyncEx.Synchronous;
 using SharpDX;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Core;
@@ -25,14 +25,8 @@ namespace Imlight.CoreLib.Game.Zone.Core;
 /// </summary>
 public class Zone : ReceiveProtocolDispatcher, IWithTimers {
 
-    public const ushort RESERVED_OBJECT_ID_MIN = 0;
-    public const ushort RESERVED_OBJECT_ID_MAX = 500;
-    public const ushort RESERVED_VOLUME_ID_MIN = 501;
-    public const ushort RESERVED_VOLUME_ID_MAX = 600;
-
-    private const ushort RESERVED_MOBILE_ID_MAX = 1000;
+    private const ushort RESERVED_MOBILE_ID_MAX = ushort.MaxValue / 20; // 5% of the maximum mobile ID count is reserved for special objects.
     private const ushort ZONE_LOAD_TIMEOUT_IN_SECONDS = 30;
-    private const ushort ZONE_SUPERVISOR_LOAD_TIMEOUT_IN_SECONDS = 10;
     private static readonly Vector4 s_locationFailedGiveaway = new(float.MaxValue, float.MaxValue, float.MaxValue, float.MaxValue);
 
     /// <summary>
@@ -62,13 +56,13 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     public ITimerScheduler Timers { get; set; }
 
     private readonly uint _dynamicZoneId;
-    private readonly string _mobileIdLock = string.Empty;
+    private readonly Lock _mobileIdLock = new();
     private readonly List<IActorRef> _supervisors = [];
     private readonly IActorRef _loaderRef;
     private readonly Stopwatch _zoneLoadTimer;
     private readonly Dictionary<IActorRef, IServerMessage> _pendingPlayerEvents = [];
-    private ushort _reservedMobileIdCounter;
-    private ushort _nonreservedMobileIdCounter;
+    private readonly List<ushort> _mobileIdMap = [];
+    private readonly Dictionary<IActorRef, bool> _supervisorLoadResults = [];
     private bool _isLoading;
 
     /// <summary>
@@ -113,68 +107,6 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     /// <summary>
-    /// Generates a new object identifier for a non-reserved object.
-    /// </summary>
-    /// <returns>The generated object identifier.</returns>
-    /// <exception cref="Exception">Thrown if the zone has reached the maximum mobile ID count.</exception>
-    protected ushort GenerateObjectIdentifier() {
-        lock (_mobileIdLock) {
-            if (_nonreservedMobileIdCounter + 1 >= ushort.MaxValue) {
-                throw new Exception($"Zone \"{ZoneName}\" reached the maximum mobile ID count!");
-            }
-
-            return ++_nonreservedMobileIdCounter;
-        }
-    }
-
-    /// <summary>
-    /// Generates a new object identifier for a reserved object.
-    /// </summary>
-    /// <returns>The generated object identifier.</returns>
-    /// <exception cref="Exception">Thrown if the zone has reached the maximum reserved mobile ID count.</exception>
-    protected ushort GeneratedReservedObjectIdentifier() {
-        lock (_mobileIdLock) {
-            if (_reservedMobileIdCounter + 1 >= RESERVED_MOBILE_ID_MAX) {
-                throw new Exception($"Zone \"{ZoneName}\" reached the maximum reserved mobile ID count!");
-            }
-
-            return ++_reservedMobileIdCounter;
-        }
-    }
-
-    /// <summary>
-    /// Releases an object identifier for a non-reserved object.
-    /// </summary>
-    /// <returns>The released object identifier.</returns>
-    /// <exception cref="Exception">Thrown if the object identifier is already at the minimum value.</exception>
-    protected ushort ReleaseObjectIdentifier() {
-        lock (_mobileIdLock) {
-            if (_nonreservedMobileIdCounter - 1 <= RESERVED_MOBILE_ID_MAX) {
-                _nonreservedMobileIdCounter = RESERVED_MOBILE_ID_MAX + 1;
-                return 0;
-            }
-
-            return --_nonreservedMobileIdCounter;
-        }
-    }
-
-    /// <summary>
-    /// Releases an object identifier for a reserved object.
-    /// </summary>
-    /// <returns>The released object identifier.</returns>
-    /// <exception cref="Exception">Thrown if the object identifier is already at the minimum value.</exception>
-    protected ushort ReleaseReservedObjectIdentifier() {
-        lock (_mobileIdLock) {
-            if (_reservedMobileIdCounter - 1 <= 0) {
-                _reservedMobileIdCounter = 0;
-                return 0;
-            }
-
-            return --_reservedMobileIdCounter;
-        }
-    }
-
-    /// <summary>
     /// Closes the zone and stops all child actors.
     /// </summary>
     protected void CloseZone() {
@@ -189,7 +121,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
                 ZoneActorRef = Self,
                 DynamicZoneId = _dynamicZoneId,
                 ErrorCode = 1,
-                MobileId = GenerateObjectIdentifier(),
+                MobileId = 0,
                 ZoneDisplayName = ZoneName
             };
 
@@ -215,17 +147,17 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
     protected virtual void ReceiveAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message) {
         if (_isLoading) {
-            _pendingPlayerEvents[Sender] = message;
+            _pendingPlayerEvents[message.PlayerActor] = message;
 
             return;
         }
 
-        InformZoneEntitiesOfPlayerEvent(message.Player, message);
+        InformZoneSupervisors(message.PlayerActor, message);
 
         var rsp = new ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP {
             WizardGameObject = message.PlayerObject
         };
-        message.Player.Tell(rsp);
+        message.PlayerActor.Tell(rsp);
 
         Logger.Debug("{Name} added to zone {ZoneName}.",
             Logger.Args(message.ActualWizardName, ZoneName));
@@ -234,14 +166,14 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER))]
     protected virtual void ReceiveRemovePlayer(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message) {
         if (_isLoading) {
-            _pendingPlayerEvents.Remove(Sender);
+            _pendingPlayerEvents.Remove(message.Player);
 
             return;
         }
 
-        InformZoneEntitiesOfPlayerEvent(message.Player, message);
-        ReleaseObjectIdentifier();
-
+        InformZoneSupervisors(message.Player, message);
+        ReleaseObjectIdentifier(message.MobileId);
+ 
         var rsp = new ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP();
         Sender.Tell(rsp);
 
@@ -250,20 +182,27 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PLAYERMOVE))]
-    protected virtual void ReceiveOnPlayerMove(ZONE_102_PROTOCOL.MSG_PLAYERMOVE message) {
+    protected virtual void ReceivePlayerMove(ZONE_102_PROTOCOL.MSG_PLAYERMOVE message) {
         if (_isLoading) {
-            _pendingPlayerEvents[Sender] = message;
+            _pendingPlayerEvents[message.PlayerActor] = message;
 
             return;
         }
 
-        InformZoneEntitiesOfPlayerEvent(message.PlayerActor, message);
+        // If the actor is not a part of this zone, do not bother processing.
+        if (!_mobileIdMap.Contains(message.PlayerObject.m_nMobileID)) {
+            return;
+        }
+
+        InformZoneSupervisors(message.PlayerActor, message);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS))]
     private void ReceiveZoneLoadResults(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS message) {
+        Logger.Debug("Zone {ZoneName} client data gathered.", Logger.Args(ZoneName));
+
         _loaderRef.Tell(PoisonPill.Instance);
-        _zoneLoadTimer.Stop();
+        _zoneLoadTimer.Restart();
 
         if (message.Error) {
             Logger.Error("Zone {ZoneName} failed to load because {ErrorMessage}", Logger.Args(ZoneName, message.ErrorMessage));
@@ -276,38 +215,44 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
 
         // Inform each supervisor of the loaded zone data. They are expected to give a reply
         // to inform the zone that they have loaded their data.
-        var timer = new Stopwatch();
+        _supervisorLoadResults.Clear();
         foreach (var supervisor in _supervisors) {
-            timer.Restart();
-            try {
-                var timeout = TimeSpan.FromSeconds(ZONE_SUPERVISOR_LOAD_TIMEOUT_IN_SECONDS);
-                _ = supervisor.Ask<ZONE_102_PROTOCOL.MSG_ZONESUPERVISORLOADRESULTS>(message, timeout).WaitAndUnwrapException();
-
-                Logger.Debug("Supervisor {SupervisorName} for zone {ZoneName} loaded in {Time}ms.",
-                    Logger.Args(supervisor.Path.Name, ZoneName, timer.ElapsedMilliseconds));
-            }
-            catch (Exception ex) {
-                Logger.Error("Supervisor {SupervisorName} for zone {ZoneName} failed to load because {ErrorMessage}",
-                    Logger.Args(supervisor.Path.Name, ZoneName, ex.Message));
-                CloseZone();
-
-                return;
-            }
+            _supervisorLoadResults[supervisor] = false;
+            supervisor.Tell(message);
         }
+    }
 
-        Logger.Information("Zone {ZoneName} loaded in {Time}ms.", Logger.Args(ZoneName, _zoneLoadTimer.ElapsedMilliseconds));
-        _isLoading = false;
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONESUPERVISORLOADRESULTS))]
+    private void ReceiveSupervisorLoadComplete(ZONE_102_PROTOCOL.MSG_ZONESUPERVISORLOADRESULTS message) {
+        _supervisorLoadResults[Sender] = true;
 
-        // Finally process any pending player events that couldn't occur because the zone was still loading.
-        ProcessQueue();
+        Logger.Debug("Zone {ZoneName} supervisor {SupervisorName} loaded.", Logger.Args(ZoneName, message.SupervisorName));
+
+        // If the supervisor load results are all true, then the zone is fully loaded.
+        if (_supervisorLoadResults.All(x => x.Value)) {
+            // Finally process any pending player events that couldn't occur because the zone was still loading.
+            ProcessQueue();
+
+            _zoneLoadTimer.Stop();
+            Logger.Information("Zone {ZoneName} loaded in {Time}ms.", Logger.Args(ZoneName, _zoneLoadTimer.ElapsedMilliseconds));
+            _isLoading = false;
+        }
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADTIMER))]
-    private void ReceiveZoneTimerEnd(ZONE_102_PROTOCOL.MSG_ZONELOADTIMER message) {
+    private void ReceiveZoneTimerEnd() {
         if (_isLoading) {
             Logger.Error("Zone {ZoneName} failed to load within the timeout.", Logger.Args(ZoneName));
             CloseZone();
         }
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_GETMOBILEID))]
+    private void ReceiveGetMobileId() {
+        var rsp = new ZONE_102_PROTOCOL.MSG_GETMOBILEIDRSP {
+            MobileID = GenerateReservedObjectIdentifier()
+        };
+        Sender.Tell(rsp);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_POSTEVENT))]
@@ -326,14 +271,14 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         return Context.ActorOf(props, typeof(T).Name);
     }
 
-    private void InformZoneEntitiesOfPlayerEvent(IActorRef player, IServerMessage message) {
+    private void InformZoneSupervisors(IActorRef player, IServerMessage message) {
         var broadcast = new ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST {
             Source = player,
             Messages = [message]
         };
 
         foreach (var supervisor in _supervisors) {
-            supervisor.Tell(broadcast);
+            supervisor.Forward(broadcast);
         }
     }
 
@@ -386,7 +331,43 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
                 ProcessZoneTransfer(transfer, playerActor);
             }
             else {
-                InformZoneEntitiesOfPlayerEvent(playerActor, pendingEvent);
+                InformZoneSupervisors(playerActor, pendingEvent);
+            }
+        }
+    }
+
+    private ushort GenerateObjectIdentifier() {
+        lock (_mobileIdLock) {
+            // Find first available ID.
+            for (ushort i = RESERVED_MOBILE_ID_MAX + 1; i <= ushort.MaxValue; i++) {
+                if (!_mobileIdMap.Contains(i)) {
+                    _mobileIdMap.Add(i);
+                    return i;
+                }
+            }
+
+            throw new InvalidOperationException("Failed to generate a mobile ID.");
+        }
+    }
+
+    private ushort GenerateReservedObjectIdentifier() {
+        lock (_mobileIdLock) {
+            // Find first available ID in reserved range.
+            for (ushort i = 1; i <= RESERVED_MOBILE_ID_MAX; i++) {
+                if (!_mobileIdMap.Contains(i)) {
+                    _mobileIdMap.Add(i);
+                    return i;
+                }
+            }
+
+            throw new InvalidOperationException("Failed to generate a reserved mobile ID - all IDs in use.");
+        }
+    }
+
+    private void ReleaseObjectIdentifier(ushort mobileId) {
+        lock (_mobileIdLock) {
+            if (_mobileIdMap.Contains(mobileId)) {
+                _mobileIdMap.Remove(mobileId);
             }
         }
     }

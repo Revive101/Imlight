@@ -20,8 +20,6 @@ namespace Imlight.CoreLib.Game.Zone.Supervisors;
 /// <param name="zone">The zone that this supervisor is responsible for.</param>
 internal sealed class ZoneVolumeSupervisor(Core.Zone zone) : ZoneEntitySupervisor(zone) {
 
-    private ushort _reservedIdCounter = Core.Zone.RESERVED_VOLUME_ID_MIN;
-
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS))]
     private void ReceiveZoneLoadResults(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS message) {
         foreach (var volume in message.VolumeData.m_volumes) {
@@ -36,7 +34,6 @@ internal sealed class ZoneVolumeSupervisor(Core.Zone zone) : ZoneEntitySuperviso
             coreObject.m_location = loc;
             // For some reason, the volume type has two `m_templateID` fields, but only the duplicate one is used.
             coreObject.m_templateID = volume.m_templateID; // I've never seen this templateID be anything but 1700.
-            coreObject.m_nMobileID = GetReservedMobileID();
             coreObject.m_debugName = volume.m_volumeName;
 
             var template = CoreObjectFactory.GetCoreTemplate(volume.m_templateID);
@@ -51,20 +48,9 @@ internal sealed class ZoneVolumeSupervisor(Core.Zone zone) : ZoneEntitySuperviso
             objectActor.Tell(volumeDetails);
         }
 
-        var reply = new ZONE_102_PROTOCOL.MSG_ZONESUPERVISORLOADRESULTS();
+        // Inform the zone that we have finished initializing all objects.
+        var reply = new ZONE_102_PROTOCOL.MSG_ZONESUPERVISORLOADRESULTS { SupervisorName = nameof(ZoneVolumeSupervisor) };
         Sender.Tell(reply);
-    }
-
-    private ushort GetReservedMobileID() {
-        var max = Core.Zone.RESERVED_VOLUME_ID_MAX;
-
-        if (_reservedIdCounter + 1 >= max) {
-            Logger.Fatal("ZoneObjectSupervisor has run out of reserved mobile IDs. " +
-                         "Minimum reserved ID: {MinReservedID}, Maximum reserved ID: {MaxReservedID}",
-                         Logger.Args(Core.Zone.RESERVED_VOLUME_ID_MAX, max));
-        }
-
-        return _reservedIdCounter++;
     }
 
 }

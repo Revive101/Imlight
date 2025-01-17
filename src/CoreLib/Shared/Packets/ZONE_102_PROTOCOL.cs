@@ -17,6 +17,7 @@ using Imlight.CoreLib.WizardData.Models.Player;
 using SharpDX;
 using static Imlight.Common.Caches.ServerTypeCache;
 using static Imlight.Common.Caches.TypeCache;
+using Imlight.CoreLib.Game.Zone.Components;
 
 namespace Imlight.CoreLib.Shared.Packets;
 
@@ -54,7 +55,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte MessageOrder { get; } = 3;
         public byte ServiceID { get; } = 102;
 
-        public IActorRef Player;
+        public IActorRef PlayerActor;
         public TypeCache.CoreObject PlayerObject;
         public Wizard Wizard;
         public string ActualWizardName;
@@ -73,6 +74,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
         public IActorRef Player;
         public ulong GlobalId;
+        public ushort MobileId;
         public bool IsPlayerStillConnected;
     }
 
@@ -345,6 +347,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte MessageOrder { get; } = 4;
         public byte ServiceID { get; } = 102;
 
+        public string SupervisorName;
         public bool Error;
         public string ErrorMessage;
     }
@@ -366,5 +369,44 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
         public bool Error;
         public string ErrorMessage;
+    }
+
+    /// <summary>
+    /// Sent by a <see cref="ZoneEntity"/> to a <see cref="BaseZoneComponent"/> actor to request the identity of the entity.
+    /// The identity is usually the type.
+    /// </summary>
+    public sealed class MSG_ENTITYCOMPONENTREQUESTIDENTITY : IServerMessage {
+        public byte MessageOrder { get; } = 7;
+        public byte ServiceID { get; } = 102;
+    }
+
+    /// <summary>
+    /// Sent by a <see cref="BaseZoneComponent"/> actor to a <see cref="ZoneEntity"/> to respond to a request for the entity's identity.
+    /// </summary>
+    public sealed class MSG_ENTITYCOMPONENTREQUESTIDENTITYRSP : IServerMessage {
+        public byte MessageOrder { get; } = 8;
+        public byte ServiceID { get; } = 102;
+
+        public BaseZoneComponent Component;
+    }
+
+    /// <summary>
+    /// Sent by a <see cref="ZoneEntity"/> to a <see cref="Zone"/> to get a unique mobile ID.
+    /// </summary>
+    public sealed class MSG_GETMOBILEID : IServerMessage {
+        public byte MessageOrder { get; } = 9;
+        public byte ServiceID { get; } = 102;
+
+        public IActorRef ActorRef;
+    }
+
+    /// <summary>
+    /// Sent by the <see cref="Zone"/> to a <see cref="ZoneEntity"/> to respond to a request for a unique mobile ID.
+    /// </summary>
+    public sealed class MSG_GETMOBILEIDRSP : IServerMessage {
+        public byte MessageOrder { get; } = 10;
+        public byte ServiceID { get; } = 102;
+
+        public ushort MobileID;
     }
 }

@@ -25,8 +25,6 @@ namespace Imlight.CoreLib.Game.Zone.Supervisors;
 /// <param name="zone">The zone that this supervisor is responsible for.</param>
 internal sealed class ZoneObjectSupervisor(Core.Zone zone) : ZoneEntitySupervisor(zone) {
 
-    private ushort _reservedIdCounter = Core.Zone.RESERVED_OBJECT_ID_MIN;
-
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS))]
     private void ReceiveZoneLoadResults(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS message) {
         // We only care about the ZoneData section of the message.
@@ -35,40 +33,19 @@ internal sealed class ZoneObjectSupervisor(Core.Zone zone) : ZoneEntitySuperviso
         // Initialize any objects found within the zone data.
         foreach (var objectInfo in zoneData.m_objectList) {
             // Some objects may be flagged as holiday objects, which means they should only be
-            // spawned during certain times of the year.
+            // spawned during certain times of the year.5
             if (!IsObjectEligibleForSpawn(objectInfo)) {
                 continue;
             }
 
             var template = (GameObjectTemplate) CoreObjectFactory.GetCoreTemplate(objectInfo.m_templateID);
-            var coreObject = InitializeObject(objectInfo, template);
+            var coreObject = CoreObjectFactory.FinalizeCoreObject(objectInfo, template);;
             var objectActor = CreateEntityActor(coreObject, template);
-
-            EntityActors.Add(objectActor);
         }
 
         // Inform the zone that we have finished initializing all objects.
-        var reply = new ZONE_102_PROTOCOL.MSG_ZONESUPERVISORLOADRESULTS();
+        var reply = new ZONE_102_PROTOCOL.MSG_ZONESUPERVISORLOADRESULTS { SupervisorName = nameof(ZoneObjectSupervisor) };
         Sender.Tell(reply);
-    }
-
-    private CoreObject InitializeObject(CoreObjectInfo objectInfo, GameObjectTemplate template) {
-        var newObject = CoreObjectFactory.FinalizeCoreObject(objectInfo, template);
-        newObject.m_nMobileID = GetReservedMobileID();
-
-        return newObject;
-    }
-
-    private ushort GetReservedMobileID() {
-        var max = Core.Zone.RESERVED_OBJECT_ID_MAX;
-
-        if (_reservedIdCounter + 1 >= max) {
-            Logger.Fatal("ZoneObjectSupervisor has run out of reserved mobile IDs. " +
-                         "Minimum reserved ID: {MinReservedID}, Maximum reserved ID: {MaxReservedID}",
-                         Logger.Args(Core.Zone.RESERVED_OBJECT_ID_MIN, max));
-        }
-
-        return _reservedIdCounter++;
     }
 
     private static bool IsObjectEligibleForSpawn(CoreObjectInfo objectInfo) {

@@ -7,6 +7,7 @@ using Akka.Actor;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.WizardData.Models.Player;
 using System.Collections.Generic;
 using System.Linq;
 using static Imlight.Common.Caches.ServerTypeCache;
@@ -21,6 +22,14 @@ internal sealed class VolumeComponent(ZoneEntity entity) : BaseZoneComponent(ent
 
     public static bool ShouldAttachToEntity(CoreTemplate template) 
         => template is GameObjectTemplate goT && goT.m_templateID == 1700;
+
+    public override void OnPlayerJoin(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) {
+        // If the player spawned within the volume, add them to the list of players in range but
+        // do not send any events.
+        if (_volume != null && IsInRadius(playerObj, _volume.m_radius) && !_playersInRange.ContainsKey(playerObj)) {
+            _playersInRange.Add(playerObj, playerActor);
+        }
+    }
 
     public override void OnPlayerMove(CoreObject playerObj, IActorRef playerActor) {
         if (_volume == null) {

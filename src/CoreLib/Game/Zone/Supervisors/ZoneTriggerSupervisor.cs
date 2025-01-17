@@ -38,8 +38,8 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
             _ = CreateTriggerActor(trigger);
         }
 
-        // Send a message to the zone to let it know that we're done loading.
-        var reply = new ZONE_102_PROTOCOL.MSG_ZONESUPERVISORLOADRESULTS();
+        // Inform the zone that we have finished initializing all objects.
+        var reply = new ZONE_102_PROTOCOL.MSG_ZONESUPERVISORLOADRESULTS { SupervisorName = nameof(ZoneTriggerSupervisor) };
         Sender.Tell(reply);
     }
 
@@ -58,7 +58,7 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
         // One single database query: great!
         var databaseTriggers = ZoneDataCollection.GetZoneData(zoneName);
 
-         foreach (var trigger in triggers) {
+        foreach (var trigger in triggers) {
             // If there's persistent data associated with this trigger, load it.
             var persistentTriggerData = databaseTriggers?.Teleports
                 .FirstOrDefault(x => x.TriggerName == trigger.m_triggerName);
@@ -83,11 +83,11 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
             var msg = new ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN();
             var timeout = TimeSpan.FromMilliseconds(OBJECT_CREATION_TIMEOUT_IN_MS);
             var result = objectActor.Ask<ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADRESULTS>(msg, timeout).WaitAndUnwrapException();
-            
+
             EntityActors.Add(objectActor);
         }
         catch (Exception ex) {
-            Logger.Error("Failed to create trigger actor for {0} {1} ({2}).", 
+            Logger.Error("Failed to create trigger actor for {0} {1} ({2}).",
                 Logger.Args(nameof(Trigger), trigger.m_triggerName, ex.Message));
 
             return null;

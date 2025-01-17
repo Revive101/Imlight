@@ -4,6 +4,7 @@
  */
 
 using Imlight.Common.ObjectProperty.PropertyReflection;
+using Imlight.CoreLib.Game.World;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.WizardData.Collections;
 using System.Collections.Generic;
@@ -12,33 +13,23 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
-internal sealed class VendorComponent: BaseZoneComponent, IServiceComponent, IComponentFactory {
+internal sealed class VendorComponent(ZoneEntity entity) : BaseZoneComponent(entity), IServiceComponent, IComponentFactory {
 
     public string ServiceName => "WizShoppingService";
-    public string NpcIcon     => "Shopping";
-    public string NpcNameKey  => "NPCFormats_Name";
-    public string NpcTextKey  => "GUI_NPCInteractText";
+    public string NpcIcon     => null;
+    public string NpcNameKey  => null;
+    public string NpcTextKey  => null;
     public string WizBang     => "Shopping";
     private static string DisplayKey => "GUI_ShopOptionEquipment";
     private readonly List<GID> _inventory;
 
-    // ctor
-    internal VendorComponent(ZoneEntity entity) : base(entity) {
-        if (entity.Template is not GameObjectTemplate goTemplate) {
-            throw new System.Exception("VendorComponent can only be attached to GameObjects");
-        }
-
-        if (!NpcInventoryCollection.TryGetNpcInventory(goTemplate.m_templateID, out var inventory)) {
-            throw new System.Exception("VendorComponent requires an NPC inventory");
-        }
-
-        _inventory = inventory.Inventory;
-    }
-
     public static bool ShouldAttachToEntity(CoreTemplate template) 
+        // Attach if the template is an NPC and has an inventory in Dragon database,
+        // or if the template is a vendor as per game client data.
         => template is GameObjectTemplate goTemplate 
         && goTemplate.m_behaviors.Any(x => x is NPCBehaviorTemplate) 
-        && NpcInventoryCollection.TryGetNpcInventory(goTemplate.m_templateID, out _);
+        && (NpcInventoryCollection.TryGetNpcInventory(goTemplate.m_templateID, out _)
+        || WorldVendorLocations.IsVendor(goTemplate.m_templateID));
 
     public IEnumerable<ServiceOptionBase> GetServiceOptions() 
         => [

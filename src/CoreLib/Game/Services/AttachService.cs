@@ -192,7 +192,7 @@ internal class AttachService : MessageService {
 
     private void AddPlayerToZone(WizClientObject charObj, Wizard wizard) {
         var msg = new ZONE_102_PROTOCOL.MSG_ADDPLAYER {
-            Player = SessionActor.ActorRef,
+            PlayerActor = SessionActor.ActorRef,
             PlayerObject = charObj,
             Wizard = wizard,
             ActualWizardName = wizard.PlayerNameBehavior.GetWizardName(),
