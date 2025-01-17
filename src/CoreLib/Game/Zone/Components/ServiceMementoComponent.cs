@@ -93,6 +93,9 @@ internal sealed class ServiceMementoComponent(ZoneEntity entity) : BaseZoneCompo
     private void SendActorServiceOptions(IActorRef playerActor) {
         var data = _serializer.Serialize(_serviceMemento);
         var npcOptionsMsg = new QUEST_MESSAGES_52_PROTOCOL.MSG_SENDNPCOPTIONS {
+            // Do not let this property name fool you. 
+            // The client incorrectly labels this property as "MobileID." It is in fact
+            // the global ID of the NPC. It will not work if you set it to the mobile ID.
             MobileID = Entity.ActiveGameObject.m_globalID,
             Options = data,
             Reinteract = 0
@@ -103,7 +106,10 @@ internal sealed class ServiceMementoComponent(ZoneEntity entity) : BaseZoneCompo
 
     private void SendLeaveServiceRange(IActorRef playerActor) {
         var msg = new GAME_5_PROTOCOL.MSG_LEAVESERVICERANGE {
-            MobileID = Entity.MobileID
+            // Do not let this property name fool you. 
+            // The client incorrectly labels this property as "MobileID." It is in fact
+            // the global ID of the NPC. It will not work if you set it to the mobile ID.
+            MobileID = Entity.ActiveGameObject.m_globalID
         };
 
         playerActor.Tell(msg);
