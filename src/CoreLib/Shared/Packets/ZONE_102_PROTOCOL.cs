@@ -92,14 +92,6 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public bool Selfless;
     }
 
-    public class MSG_ADDOBJECT : IServerMessage {
-        public byte MessageOrder { get; } = 6;
-        public byte ServiceID { get; } = 102;
-
-        public TypeCache.CoreObject CoreObject;
-        public TypeCache.CoreTemplate Template;
-    }
-
     public class MSG_ADDOBJECTRSP : IServerMessage {
         public byte MessageOrder { get; } = 7;
         public byte ServiceID { get; } = 102;
@@ -182,21 +174,6 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public Dictionary<IActorRef, TypeCache.CoreObject> StartingParticipants;
     }
 
-    public class MSG_QUERYZONEOBJECT : IServerMessage {
-        public byte MessageOrder { get; } = 18;
-        public byte ServiceID { get; } = 102;
-
-        public ulong GlobalID;
-        public ushort MobileID;
-    }
-
-    public class MSG_QUERYZONEOBJECTRSP : IServerMessage {
-        public byte MessageOrder { get; } = 19;
-        public byte ServiceID { get; } = 102;
-
-        public ZoneEntity ZoneObject;
-    }
-
     public sealed class MSG_CREATURESPAWNINTERVAL : IServerMessage {
         public byte MessageOrder { get; } = 20;
         public byte ServiceID { get; } = 102;
@@ -228,21 +205,6 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte ServiceID { get; } = 102;
     }
 
-    public class MSG_OBJECTSTATUSCHECK : IServerMessage {
-        public byte MessageOrder { get; } = 25;
-        public byte ServiceID { get; } = 102;
-    }
-
-    public class MSG_OBJECTSTATUSCHECKRSP : IServerMessage {
-        public byte MessageOrder { get; } = 26;
-        public byte ServiceID { get; } = 102;
-
-        public ZoneEntity ZoneObject;
-        public TypeCache.CoreObject CoreObject;
-        public bool Failure;
-        public string Error;
-    }
-
     public class MSG_PLAYERMOVEINTERVAL : IServerMessage {
         public byte MessageOrder { get; } = 22;
         public byte ServiceID { get; } = 102;
@@ -251,13 +213,6 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     public class MSG_SENDTOHUB : IServerMessage {
         public byte MessageOrder { get; } = 27;
         public byte ServiceID { get; } = 102;
-    }
-
-    public class MSG_HEALTICK : IServerMessage {
-        public byte MessageOrder { get; } = 28;
-        public byte ServiceID { get; } = 102;
-
-        public float MaxHealthPercent;
     }
 
     public class MSG_PLAYERADDEDTOZONE : IServerMessage {
@@ -297,38 +252,69 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte ServiceID { get; } = 102;
     }
 
-    public class MSG_ADDSERVICEOPTION : IServerMessage {
-        public byte MessageOrder { get; } = 34;
-        public byte ServiceID { get; } = 102;
-
-        public ServiceOption ServiceOption;
-    }
-
     /// <summary>
     /// Sent by the <see cref="Zone"/> to a <see cref="ZoneLoader"/> to begin loading a zone.
     /// </summary>
     public sealed class MSG_ZONELOADBEGIN : IServerMessage {
+
         public byte MessageOrder { get; } = 1;
         public byte ServiceID { get; } = 102;
 
+        /// <summary>
+        /// The path to the zone file as it would appear in the <see cref="AccessPassManager"/>.
+        /// </summary>
         public string ZonePath;
+
     }
 
     /// <summary>
     /// Sent by the <see cref="ZoneLoader"/> to the <see cref="Zone"/> to indicate that the zone has been loaded.
     /// </summary>
     public sealed class MSG_ZONELOADRESULTS : IServerMessage {
+
         public byte MessageOrder { get; } = 2;
         public byte ServiceID { get; } = 102;
 
+        /// <summary>
+        /// The data for the zone, as it appears in the game client data.
+        /// </summary>
         public WizZoneData ZoneData;
+
+        /// <summary>
+        /// The data for the zone's spawn points, as it appears in the game client data.
+        /// </summary>
         public SpawnManager SpawnData;
+
+        /// <summary>
+        /// The data for the zone's paths, as it appears in the game client data.
+        /// </summary>
         public PathManager_PathTemplateList PathData;
+
+        /// <summary>
+        /// The data for the zone's node templates, as it appears in the game client data.
+        /// </summary>
         public PathManager_NodeTemplateList NodeData;
+
+        /// <summary>
+        /// The data for the zone's volumes, as it appears in the game client data.
+        /// </summary>
         public WizZoneVolumes VolumeData;
+
+        /// <summary>
+        /// The data for the zone's triggers, as it appears in the game client data.
+        /// </summary>
         public WizZoneTriggers TriggerData;
+
+        /// <summary>
+        /// True, if an error occured during loading.
+        /// </summary>
         public bool Error;
+
+        /// <summary>
+        /// The error message, if an error occured during loading.
+        /// </summary>
         public string ErrorMessage;
+
     }
 
     /// <summary>
@@ -336,39 +322,65 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     /// This message is used to ensure that the zone is loaded within a certain time frame.
     /// </summary>
     public sealed class MSG_ZONELOADTIMER : IServerMessage {
+
         public byte MessageOrder { get; } = 3;
         public byte ServiceID { get; } = 102;
+
     }
 
     /// <summary>
     /// Sent by a <see cref="ZoneSupervisor"/> to the <see cref="Zone"/> to indicate that the zone supervisor has been loaded.
     /// </summary>
     public sealed class MSG_ZONESUPERVISORLOADRESULTS : IServerMessage {
+
         public byte MessageOrder { get; } = 4;
         public byte ServiceID { get; } = 102;
 
+        /// <summary>
+        /// The name of the supervisor that has finished loading.
+        /// </summary>
         public string SupervisorName;
+
+        /// <summary>
+        /// True, if an error occured during loading.
+        /// </summary>
         public bool Error;
+
+        /// <summary>
+        /// The error message, if an error occured during loading.
+        /// </summary>
         public string ErrorMessage;
+
     }
 
     /// <summary>
     /// Sent by a <<see cref="ZoneSupervisor"/> to a <see cref="ZoneEntity"/> to indicate that the zone object is being loaded.
     /// </summary>
     public sealed class MSG_ZONEOBJECTLOADBEGIN : IServerMessage {
+
         public byte MessageOrder { get; } = 5;
         public byte ServiceID { get; } = 102;
+
     }
 
     /// <summary>
     /// Sent by a <see cref="ZoneEntity"/> to the <see cref="ZoneSupervisor"/> to indicate that the zone object has been loaded.
     /// </summary>
     public sealed class MSG_ZONEOBJECTLOADRESULTS : IServerMessage {
+
         public byte MessageOrder { get; } = 6;
         public byte ServiceID { get; } = 102;
 
+        /// <summary>
+        /// True, if an error occured during loading.
+        /// </summary>
         public bool Error;
+
+        /// <summary>
+        /// The error message, if an error occured during loading.
+        /// </summary>
         public string ErrorMessage;
+
     }
 
     /// <summary>
@@ -376,37 +388,134 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     /// The identity is usually the type.
     /// </summary>
     public sealed class MSG_ENTITYCOMPONENTREQUESTIDENTITY : IServerMessage {
+
         public byte MessageOrder { get; } = 7;
         public byte ServiceID { get; } = 102;
+
     }
 
     /// <summary>
     /// Sent by a <see cref="BaseZoneComponent"/> actor to a <see cref="ZoneEntity"/> to respond to a request for the entity's identity.
     /// </summary>
     public sealed class MSG_ENTITYCOMPONENTREQUESTIDENTITYRSP : IServerMessage {
+
         public byte MessageOrder { get; } = 8;
         public byte ServiceID { get; } = 102;
 
+        /// <summary>
+        /// The identity of the entity.
+        /// </summary>
         public BaseZoneComponent Component;
+
     }
 
     /// <summary>
     /// Sent by a <see cref="ZoneEntity"/> to a <see cref="Zone"/> to get a unique mobile ID.
     /// </summary>
-    public sealed class MSG_GETMOBILEID : IServerMessage {
+    public sealed class MSG_GETRESERVEDMOBILEID : IServerMessage {
+
         public byte MessageOrder { get; } = 9;
         public byte ServiceID { get; } = 102;
 
-        public IActorRef ActorRef;
     }
 
     /// <summary>
     /// Sent by the <see cref="Zone"/> to a <see cref="ZoneEntity"/> to respond to a request for a unique mobile ID.
     /// </summary>
-    public sealed class MSG_GETMOBILEIDRSP : IServerMessage {
+    public sealed class MSG_GETRESERVEDMOBILEIDRSP : IServerMessage {
+
         public byte MessageOrder { get; } = 10;
         public byte ServiceID { get; } = 102;
 
         public ushort MobileID;
+
     }
+
+    /// <summary>
+    /// Sent to a <see cref="Zone"/> to find an object by its global ID or mobile ID.
+    /// </summary>
+    public sealed class MSG_QUERYZONEENTITY : IServerMessage {
+
+        public byte MessageOrder { get; } = 11;
+        public byte ServiceID { get; } = 102;
+
+        /// <summary>
+        /// The global ID of the object to find.
+        /// </summary>
+        public ulong GlobalID;
+
+        /// <summary>
+        /// The mobile ID of the object to find.
+        /// </summary>
+        public ushort MobileID;
+
+    }
+
+    /// <summary>
+    /// Sent by a <see cref="Zone"/> to respond to a request to find an object by its global ID or mobile ID.
+    /// </summary>
+    public sealed class MSG_QUERYZONEENTITYRSP : IServerMessage {
+
+        public byte MessageOrder { get; } = 12;
+        public byte ServiceID { get; } = 102;
+
+        /// <summary>
+        /// True, if the object was found.
+        /// </summary>
+        public bool Found;
+
+        /// <summary>
+        /// The object that was found.
+        /// </summary>
+        public ZoneEntity ZoneObject;
+
+    }
+
+    /// <summary>
+    /// Sent by a player to a <see cref="ServiceMementoComponent"/> to interact with an NPC.
+    /// </summary>
+    public sealed class MSG_PLAYERINTERACT() : IServerMessage {
+        public byte MessageOrder { get; } = 13;
+        public byte ServiceID { get; } = 102;
+
+        /// <summary>
+        /// The actor reference of the player that is interacting with the NPC.
+        /// </summary>
+        public IActorRef PlayerActor;
+
+        /// <summary>
+        /// The <see cref="Wizard"/> of the player that is interacting with the NPC.
+        /// </summary>
+        public Wizard PlayerCharacter;
+
+        /// <summary>
+        /// The <see cref="CoreObject"/> of the player that is interacting with the NPC.
+        public CoreObject PlayerObject;
+
+        /// <summary>
+        /// The global ID of the object that is being interacted with.
+        /// </summary>
+        public ulong ObjectGlobalID;
+
+        /// <summary>
+        /// The name of the service that the player is interacting with.
+        /// </summary>
+        public string ServiceName;
+
+        /// <summary>
+        /// The internal option index of the service that the player is interacting with.
+        /// </summary>
+        public uint ServiceOptionIndex;
+    }
+
+    /// <summary>
+    /// Sent internally looped by a <see cref="ZoneService"/> to heal the player.
+    /// </summary>
+    public sealed class MSG_HEALTICK : IServerMessage {
+
+        public byte MessageOrder { get; } = 28;
+        public byte ServiceID { get; } = 102;
+
+    }
+
 }

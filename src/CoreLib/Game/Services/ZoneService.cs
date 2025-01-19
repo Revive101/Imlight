@@ -26,6 +26,7 @@ namespace Imlight.CoreLib.Game.Services;
 public class ZoneService : MessageService, IWithTimers {
     private const int ZONE_REMOVAL_WAIT_TIME_IN_SECONDS = 8;
     private const int ZONE_TRANSFER_CLEANUP_WAIT_TIME_IN_SECONDS = 1;
+    private const int ZONE_HEAL_TICK_INTERVAL_IN_SECONDS = 5;
     private const float TELEPORT_EFFECTS_TIME = 2.0f;
     private const string ENTER_ZONE_EVENT_NAME = "EnterZone";
 
@@ -45,7 +46,11 @@ public class ZoneService : MessageService, IWithTimers {
                 | SerializerOptions.PropertyFlags.Transmit
                 | SerializerOptions.PropertyFlags.AuthorityTransmit);
 
-    public ZoneService(SessionActor sessionActor) : base(sessionActor) { }
+    public ZoneService(SessionActor sessionActor) : base(sessionActor) {
+        // Start a timer for the healing tick.
+        var timeSpan = TimeSpan.FromSeconds(ZONE_HEAL_TICK_INTERVAL_IN_SECONDS);
+        Timers.StartPeriodicTimer("healtick", new ZONE_102_PROTOCOL.MSG_HEALTICK(), timeSpan);
+    }
 
     protected static Props Props(SessionActor parentActor) => Akka.Actor.Props.Create(() => new ZoneService(parentActor));
 
@@ -288,8 +293,8 @@ public class ZoneService : MessageService, IWithTimers {
         ZoneActor.Forward(message);
     }
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT))]
-    private void ReceiveQueryZoneObject(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT message) {
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY))]
+    private void ReceiveQueryZoneObject(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY message) {
         if (ZoneActor is null) {
             throw new Exception("Zone Reference was null.");
         }
@@ -327,6 +332,8 @@ public class ZoneService : MessageService, IWithTimers {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_HEALTICK))]
     private void ReceiveZoneHealTick(ZONE_102_PROTOCOL.MSG_HEALTICK message) {
+        /*
+        // todo: fixme
         var w = GetActiveWizard();
 
         var currentWizardHealth = w.GameStats.m_currentHitpoints;
@@ -338,7 +345,7 @@ public class ZoneService : MessageService, IWithTimers {
         }
 
         // Update our Wizard server side.
-        var healPercent = message.MaxHealthPercent;
+        var healPercent = ZONE_HEAL_MAX_HEALTH_PERCENT;
         float healAmount = healPercent / 100 * maxWizardHealth;
         var newHealth = Math.Min(currentWizardHealth + (int) healAmount, maxWizardHealth);
 
@@ -358,6 +365,7 @@ public class ZoneService : MessageService, IWithTimers {
             DisplayDiff = 1,
         };
         SendToSocket(networkMessage);
+        */
     }
 
     private void SetZone(IActorRef actorRef) {

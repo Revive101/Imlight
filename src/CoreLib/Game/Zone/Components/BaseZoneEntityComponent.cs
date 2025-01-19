@@ -4,6 +4,7 @@
  */
 
 using Akka.Actor;
+using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
@@ -45,9 +46,17 @@ public interface IZoneComponent {
     /// <summary>
     /// Called when a player interacts with an NPC in the zone.
     /// </summary>
-    /// <param name="message">The interaction message.</param>
     /// <param name="playerActor">The actor reference of the player.</param>
-    void OnPlayerInteraction(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC message, IActorRef playerActor);
+    /// <param name="playerCharacter">The wizard associated with the player.</param>
+    /// <param name="playerObject">The core object representing the player.</param>
+    /// <param name="serviceName">The name of the service.</param>
+    /// <param name="serviceIndex">The index of the service.</param>
+    void OnPlayerInteraction(
+        IActorRef playerActor,
+        Wizard playerCharacter,
+        CoreObject playerObject,
+        string serviceName,
+        uint serviceIndex);
 
     /// <summary>
     /// Called when a creature enters the proximity of the zone.
@@ -70,7 +79,12 @@ public abstract class BaseZoneComponent(ZoneEntity entity) : ReceiveProtocolDisp
     public virtual void OnPlayerJoin(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) { }
     public virtual void OnPlayerLeave(IActorRef playerActor, ulong id) { }
     public virtual void OnPlayerMove(CoreObject playerObj, IActorRef playerActor) { }
-    public virtual void OnPlayerInteraction(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC message, IActorRef playerActor) { }
+    public virtual void OnPlayerInteraction(
+        IActorRef playerActor,
+        Wizard playerCharacter,
+        CoreObject playerObject,
+        string serviceName,
+        uint serviceIndex) { }
     public virtual void OnCreatureProximityEnter(CoreObject creature, IActorRef suspect) { }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
@@ -85,9 +99,23 @@ public abstract class BaseZoneComponent(ZoneEntity entity) : ReceiveProtocolDisp
     public void ReceivePlayerMove(ZONE_102_PROTOCOL.MSG_PLAYERMOVE message) 
         => OnPlayerMove(message.PlayerObject, message.PlayerActor);
 
-    [MessageHandler(typeof(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC))]
-    public void ReceivePlayerInteraction(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC message) 
-        => OnPlayerInteraction(message, Sender);
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PLAYERINTERACT))]
+    public void ReceivePlayerInteraction(ZONE_102_PROTOCOL.MSG_PLAYERINTERACT message) {
+        // Ensure that the global ID provided in the message is the same as the entity's global ID.
+        if (message.ObjectGlobalID != Entity.ActiveGameObject.m_globalID) {
+            Logger.Error("Player {0} attempted to interact with entity {1} but the global IDs do not match",
+                Logger.Args(message.PlayerActor, message.ObjectGlobalID));
+
+            return;
+        }
+
+        OnPlayerInteraction(
+            message.PlayerActor,
+            message.PlayerCharacter,
+            message.PlayerObject,
+            message.ServiceName,
+            message.ServiceOptionIndex);
+    }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ENTITYCOMPONENTREQUESTIDENTITY))]
     public void ReceiveRequestIdentity() 

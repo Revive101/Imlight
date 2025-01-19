@@ -26,10 +26,10 @@ internal class TrainService : MessageService {
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_TRAIN))]
     private void ReceiveTrain(WIZARD_12_PROTOCOL.MSG_TRAIN message) {
         // Query the zone for the NPC by the ID
-        var msg = new ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT() {
+        var msg = new ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY() {
             GlobalID = message.MobileID
         };
-        var response = AskOtherService<ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECTRSP>(msg);
+        var response = AskOtherService<ZONE_102_PROTOCOL.MSG_QUERYZONEENTITYRSP>(msg);
         if (response is null || response.ZoneObject is null) {
             var wizardName = GetActiveWizard().PlayerNameBehavior.GetWizardName();
             Logger.Error("{0} searched for training NPC {1} (mobile ID), but it was not found within the zone.",

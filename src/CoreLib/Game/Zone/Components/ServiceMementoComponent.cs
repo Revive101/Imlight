@@ -4,12 +4,15 @@
  */
 
 using Akka.Actor;
+using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Game.WizBang;
 using Imlight.CoreLib.Game.Zone.Core;
+using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using static Imlight.Common.Caches.TypeCache;
@@ -20,13 +23,14 @@ internal sealed class ServiceMementoComponent(ZoneEntity entity) : BaseZoneCompo
 
     private const string DEFAULT_NAME_KEY = "NPCFormats_Name";
     private const string DEFAULT_TEXT_KEY = "GUI_NPCInteractText";
+    private const uint SERVICE_COMPONENT_TIMEOUT_IN_MS = 1000;
 
     private readonly float _interactionRadius = 300.0f;
-    private readonly List<IServiceComponent> _serviceComponents = [];
     private readonly Dictionary<CoreObject, IActorRef> _playersInRange = [];
     private readonly ObjectSerializer _serializer = new ObjectSerializer()
             .OnBehaviors(SerializerOptions.Behaviors.None)
             .OnPropertyMask((SerializerOptions.PropertyFlags) 4);
+    private List<IServiceComponent> _serviceComponents = [];
     private ServiceMementoBase _serviceMemento;
     private bool _searchedForServiceComponents = false;
     private MadlibBlock _madlibBlock;
@@ -38,12 +42,6 @@ internal sealed class ServiceMementoComponent(ZoneEntity entity) : BaseZoneCompo
     public override void OnPlayerJoin(CoreObject playerObject, IActorRef playerActor, Wizard playerWizard) {
         // It's difficult to do this in the constructor because not all service options are available at that time.
         if (!_searchedForServiceComponents) {
-            // Find all service components on this entity.
-            var serviceComponents = Entity
-                .GetComponentsOfType<IServiceComponent>()
-                .Cast<IServiceComponent>();
-            _serviceComponents.AddRange(serviceComponents);
-
             RefreshServiceMomento();
             SetMadLibBlock();
             _searchedForServiceComponents = true;
@@ -90,6 +88,35 @@ internal sealed class ServiceMementoComponent(ZoneEntity entity) : BaseZoneCompo
         }
     }
 
+    public override void OnPlayerInteraction(
+        IActorRef playerActor,
+        Wizard playerCharacter,
+        CoreObject playerObject,
+        string serviceName,
+        uint serviceIndex) {
+        Logger.Debug("Player {0} interacted with NPC {1} using service {2} at index {3}",
+            Logger.Args(playerActor.Path.Name, Entity.ActiveGameObject.m_globalID, serviceName, serviceIndex));
+
+        if (_serviceComponents.Count <= 0) {
+            Logger.Warning("No service components found for NPC {0}", Logger.Args(Entity.ActiveGameObject.m_debugName));
+
+            return;
+        }
+
+        // Find the service component that corresponds to the service name.
+        // If the service component is not found, log a warning and return.
+        var serviceComponent = _serviceComponents.FirstOrDefault(c => c.ServiceName == serviceName);
+        if (serviceComponent == null) {
+            Logger.Warning("Service component not found for NPC {0} with service name {1}",
+                Logger.Args(Entity.ActiveGameObject.m_debugName, serviceName));
+
+            return;
+        }
+
+        // Call the service component's interaction method.
+        serviceComponent.OnServiceInteraction(playerActor, playerCharacter, playerObject, serviceIndex);
+    }
+
     private void SendActorServiceOptions(IActorRef playerActor) {
         var data = _serializer.Serialize(_serviceMemento);
         var npcOptionsMsg = new QUEST_MESSAGES_52_PROTOCOL.MSG_SENDNPCOPTIONS {
@@ -116,6 +143,7 @@ internal sealed class ServiceMementoComponent(ZoneEntity entity) : BaseZoneCompo
     }
 
     private void RefreshServiceMomento() {
+        _serviceComponents = GetServiceOptions().ToList();
         var gameObjTemplate = Entity.Template as GameObjectTemplate;
 
         // Get all service options.
@@ -132,6 +160,33 @@ internal sealed class ServiceMementoComponent(ZoneEntity entity) : BaseZoneCompo
             m_serviceOptions = allOptions,
             m_personaMadlibs = _madlibBlock
         };
+    }
+
+    private List<IServiceComponent> GetServiceOptions() {
+        var serviceComponentActors = Entity.GetComponentsOfType<IServiceComponent>();
+        var serviceComponents = new List<IServiceComponent>();
+
+        // Send a message to each service component to get its identity.
+        var timeout = TimeSpan.FromMilliseconds(SERVICE_COMPONENT_TIMEOUT_IN_MS);
+        foreach (var serviceComponent in serviceComponentActors) {
+            try {
+                var identityMsg = new ZONE_102_PROTOCOL.MSG_ENTITYCOMPONENTREQUESTIDENTITY();
+                var identityRsp = serviceComponent
+                    .Ask<ZONE_102_PROTOCOL.MSG_ENTITYCOMPONENTREQUESTIDENTITYRSP>(identityMsg, timeout)
+                    .Result;
+
+                if (identityRsp == null) {
+                    Logger.Error("Failed to get service component identity: {0}", Logger.Args("Response was null"));
+                    continue;
+                }
+
+                serviceComponents.Add((IServiceComponent) identityRsp.Component);
+            } catch (Exception ex) {
+                Logger.Error("Failed to get service component identity: {0}", Logger.Args(ex.Message));
+            }
+        }
+
+        return serviceComponents;
     }
 
     private void SetMadLibBlock() {

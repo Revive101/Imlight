@@ -30,14 +30,25 @@ internal abstract class ZoneEntitySupervisor(Core.Zone zone) : ReceiveProtocolDi
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST))]
     public void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST message) {
-        foreach (var actor in EntityActors) {
-            if (actor is null) {
+        foreach (var entity in EntityActors) {
+            if (entity is null) {
                 continue;
             }
 
             foreach (var internalMessage in message.Messages) {
-                actor.Forward(internalMessage);
+                entity.Forward(internalMessage);
             }
+        }
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY))]
+    public void ReceiveQueryEntityObject(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY message) {
+        foreach (var entity in EntityActors) {
+            if (entity is null) {
+                continue;
+            }
+
+            entity.Forward(message);
         }
     }
 

@@ -247,9 +247,9 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         }
     }
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_GETMOBILEID))]
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_GETRESERVEDMOBILEID))]
     private void ReceiveGetMobileId() {
-        var rsp = new ZONE_102_PROTOCOL.MSG_GETMOBILEIDRSP {
+        var rsp = new ZONE_102_PROTOCOL.MSG_GETRESERVEDMOBILEIDRSP {
             MobileID = GenerateReservedObjectIdentifier()
         };
         Sender.Tell(rsp);
@@ -261,6 +261,13 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
 
         foreach (var supervisor in _supervisors) {
             supervisor.Tell(message);
+        }
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY))]
+    private void ReceiveQueryEntityObject(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY message) {
+        foreach (var supervisor in _supervisors) {
+            supervisor.Forward(message);
         }
     }
 

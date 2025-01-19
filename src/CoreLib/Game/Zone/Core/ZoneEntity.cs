@@ -48,18 +48,18 @@ public class ZoneEntity(
     /// <summary>
     /// Gets a list of components of the specified type.
     /// </summary>
-    /// <typeparam name="T">The type of component to get.</typeparam>
-    /// <returns>A list of components of the specified type.</returns>
-    public List<BaseZoneComponent> GetComponentsOfType<T>()
-        => Components.Keys.Where(x => typeof(T).IsAssignableFrom(x.GetType())).ToList();
+    /// <typeparam name="T">The type of the components to get.</typeparam>
+    /// <returns>A list of actor references of the components of the specified type.</returns>
+    public List<IActorRef> GetComponentsOfType<T>()
+            => [.. Components.Keys.Where(x => typeof(T).IsAssignableFrom(x.GetType())).Select(x => Components[x])];
 
     /// <summary>
     /// Gets a component of the specified type.
     /// </summary>
-    /// <typeparam name="T">The type of component to get.</typeparam>
-    /// <returns>A component of the specified type.</returns>
-    public BaseZoneComponent GetComponentOfType<T>()
-        => Components.Keys.FirstOrDefault(x => typeof(T).IsAssignableFrom(x.GetType()));
+    /// <typeparam name="T">The type of the component to get.</typeparam>
+    /// <returns>The actor reference of the component of the specified type, or null if it does not exist.</returns>
+    public IActorRef GetComponentOfType<T>() 
+        => Components.TryGetValue(Components.Keys.FirstOrDefault(x => x.GetType() == typeof(T)), out var actorRef) ? actorRef : null;
 
     #region Message Handlers
 
@@ -71,6 +71,20 @@ public class ZoneEntity(
 
         AutoAttachComponents();
         Sender.Tell(new ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADRESULTS());
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY))]
+    protected void ReceiveQueryEntityObject(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY message) {
+        if (ActiveGameObject is null) {
+            return;
+        }
+
+        if (ActiveGameObject.m_globalID == message.GlobalID || MobileID == message.MobileID) {
+            Sender.Tell(new ZONE_102_PROTOCOL.MSG_QUERYZONEENTITYRSP() {
+                ZoneObject = this,
+                Found = true
+            });
+        }
     }
 
     [MessageHandler(typeof(IServerMessage))]
@@ -132,9 +146,9 @@ public class ZoneEntity(
 
     private ushort GetMobileIDFromZone() {
         try {
-            var requestMsg = new ZONE_102_PROTOCOL.MSG_GETMOBILEID() { ActorRef = Self };
+            var requestMsg = new ZONE_102_PROTOCOL.MSG_GETRESERVEDMOBILEID();
             var timeout = TimeSpan.FromMilliseconds(MOBILE_ID_REQUEST_TIMEOUT_IN_MS);
-            var requestRsp = ZoneRef.Ask<ZONE_102_PROTOCOL.MSG_GETMOBILEIDRSP>(requestMsg, timeout).Result;
+            var requestRsp = ZoneRef.Ask<ZONE_102_PROTOCOL.MSG_GETRESERVEDMOBILEIDRSP>(requestMsg, timeout).Result;
 
             return requestRsp.MobileID;
         }
