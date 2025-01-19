@@ -32,39 +32,17 @@ internal sealed class ServiceMementoComponent(ZoneEntity entity) : BaseZoneCompo
             .OnPropertyMask((SerializerOptions.PropertyFlags) 4);
     private List<IServiceComponent> _serviceComponents = [];
     private ServiceMementoBase _serviceMemento;
-    private bool _searchedForServiceComponents = false;
     private MadlibBlock _madlibBlock;
 
     public static bool ShouldAttachToEntity(CoreTemplate template) =>
         template is GameObjectTemplate gameObjTemplate &&
         gameObjTemplate.m_behaviors.Any(x => x is NPCBehaviorTemplate);
 
-    public override void OnPlayerJoin(CoreObject playerObject, IActorRef playerActor, Wizard playerWizard) {
-        // It's difficult to do this in the constructor because not all service options are available at that time.
-        if (!_searchedForServiceComponents) {
-            RefreshServiceMomento();
-            SetMadLibBlock();
-            _searchedForServiceComponents = true;
-        }
+    public override void OnStart() 
+        => RefreshServiceMomento();
 
-        // Deduce what WizBang to use based on the highest priority service component.
-        if (_serviceComponents.Count <= 0) {
-            return;
-        }
-
-        var wizBangs = _serviceComponents.Select(c => c.WizBang).Where(w => w != null);
-        var prioritySortedWizBangs = WizBangPriority.GetPrioritySortedWizBangs(wizBangs.ToList());
-        var highestPriority = SortComponentsByPriority(_serviceComponents).FirstOrDefault();
-
-        // Send the WizBang to the player.
-        var wizBang = highestPriority?.WizBang ?? "None";
-        var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG {
-            WizBangID = StringHash.Compute(wizBang),
-            GameObjectID = Entity.ActiveGameObject.m_globalID
-        };
-
-        playerActor.Tell(wizBangMsg);
-    }
+    public override void OnPlayerJoin(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) 
+        => SendWizBang(playerActor);
 
     public override void OnPlayerLeave(IActorRef playerActor, ulong id) {
         if (_playersInRange.Any(x => x.Value == playerActor)) {
@@ -143,7 +121,7 @@ internal sealed class ServiceMementoComponent(ZoneEntity entity) : BaseZoneCompo
     }
 
     private void RefreshServiceMomento() {
-        _serviceComponents = GetServiceOptions().ToList();
+        _serviceComponents = [.. GetServiceOptions()];
         var gameObjTemplate = Entity.Template as GameObjectTemplate;
 
         // Get all service options.
@@ -152,6 +130,8 @@ internal sealed class ServiceMementoComponent(ZoneEntity entity) : BaseZoneCompo
         // Get UI overrides based on priority.
         var sortedComponents = SortComponentsByPriority(_serviceComponents);
         var highestPriority = sortedComponents.FirstOrDefault();
+
+        SetMadLibBlock();
 
         _serviceMemento = new ServiceMementoBase {
             m_npcIcon = highestPriority?.NpcIcon ?? gameObjTemplate.m_sIcon,
@@ -208,6 +188,32 @@ internal sealed class ServiceMementoComponent(ZoneEntity entity) : BaseZoneCompo
             m_blockToken = "NPC",
             m_madlibs = madlibList
         };
+    }
+
+    private void SendWizBang(IActorRef playerActor) {
+        if (_serviceComponents.Count <= 0) {
+            return;
+        }
+
+        // There's a number of network speed factors that can cause this message
+        // to be received before the player's game client has fully loaded.
+        // This delay is to ensure that the player's game client has fully loaded.
+        System.Threading.Tasks.Task.Delay(800).Wait();
+
+        // Out of the service options, deduce which WizBang is the highest priority.
+        // Thankfully, game client data has a priority list for WizBangs.
+        var wizBangs = _serviceComponents.Select(c => c.WizBang).Where(w => w != null);
+        var prioritySortedWizBangs = WizBangPriority.GetPrioritySortedWizBangs(wizBangs.ToList());
+        var highestPriority = SortComponentsByPriority(_serviceComponents).FirstOrDefault();
+
+        // Send the WizBang to the player.
+        var wizBang = highestPriority?.WizBang ?? "None";
+        var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG {
+            WizBangID = StringHash.Compute(wizBang),
+            GameObjectID = Entity.ActiveGameObject.m_globalID
+        };
+
+        playerActor.Tell(wizBangMsg);
     }
 
     private static IOrderedEnumerable<IServiceComponent> SortComponentsByPriority(IEnumerable<IServiceComponent> components) {

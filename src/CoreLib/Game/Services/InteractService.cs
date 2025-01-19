@@ -22,6 +22,7 @@ internal class InteractService(SessionActor sessionActor) : MessageService(sessi
     [MessageHandler(typeof(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC))]
     private void ReceiveNpcInteract(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC message) {
         var wizard = GetActiveWizard();
+        var gameObj = GetActiveGameObject();
 
         // A player is closing their shop
         if (message.ServiceName == "") {
@@ -51,6 +52,8 @@ internal class InteractService(SessionActor sessionActor) : MessageService(sessi
         // Inform the service memento component that the player is interacting with it.
         var interactMsg = new ZONE_102_PROTOCOL.MSG_PLAYERINTERACT {
             PlayerActor = SessionActor.ActorRef,
+            PlayerCharacter = wizard,
+            PlayerObject = gameObj,
             ObjectGlobalID = message.GlobalID,
             ServiceName = message.ServiceName,
             ServiceOptionIndex = message.ServiceIndex

@@ -49,7 +49,7 @@ public class ZoneService : MessageService, IWithTimers {
     public ZoneService(SessionActor sessionActor) : base(sessionActor) {
         // Start a timer for the healing tick.
         var timeSpan = TimeSpan.FromSeconds(ZONE_HEAL_TICK_INTERVAL_IN_SECONDS);
-        Timers.StartPeriodicTimer("healtick", new ZONE_102_PROTOCOL.MSG_HEALTICK(), timeSpan);
+        //Timers.StartPeriodicTimer("healtick", new ZONE_102_PROTOCOL.MSG_HEALTICK(), timeSpan);
     }
 
     protected static Props Props(SessionActor parentActor) => Akka.Actor.Props.Create(() => new ZoneService(parentActor));
@@ -330,8 +330,8 @@ public class ZoneService : MessageService, IWithTimers {
         SendTeleportEffects();
     }
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_HEALTICK))]
-    private void ReceiveZoneHealTick(ZONE_102_PROTOCOL.MSG_HEALTICK message) {
+    //[MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_HEALTICK))]
+    //private void ReceiveZoneHealTick(ZONE_102_PROTOCOL.MSG_HEALTICK message) {
         /*
         // todo: fixme
         var w = GetActiveWizard();
@@ -366,7 +366,7 @@ public class ZoneService : MessageService, IWithTimers {
         };
         SendToSocket(networkMessage);
         */
-    }
+    //}
 
     private void SetZone(IActorRef actorRef) {
         ZoneActor = actorRef;

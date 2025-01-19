@@ -52,6 +52,17 @@ internal abstract class ZoneEntitySupervisor(Core.Zone zone) : ReceiveProtocolDi
         }
     }
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONESTART))]
+    public void ReceiveZoneStart(ZONE_102_PROTOCOL.MSG_ZONESTART message) {
+        foreach (var entity in EntityActors) {
+            if (entity is null) {
+                continue;
+            }
+
+            entity.Forward(message);
+        }
+    }
+
     /// <summary>
     /// Creates a new entity actor for the given core object and template.
     /// </summary>

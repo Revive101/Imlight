@@ -236,6 +236,12 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
             _zoneLoadTimer.Stop();
             Logger.Information("Zone {ZoneName} loaded in {Time}ms.", Logger.Args(ZoneName, _zoneLoadTimer.ElapsedMilliseconds));
             _isLoading = false;
+
+            var startMsg = new ZONE_102_PROTOCOL.MSG_ZONESTART();
+
+            foreach (var supervisor in _supervisors) {
+                supervisor.Tell(startMsg);
+            }
         }
     }
 
@@ -268,6 +274,13 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     private void ReceiveQueryEntityObject(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY message) {
         foreach (var supervisor in _supervisors) {
             supervisor.Forward(message);
+        }
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
+    private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message) {
+        foreach (var supervisor in _supervisors) {
+            supervisor.Tell(message);
         }
     }
 

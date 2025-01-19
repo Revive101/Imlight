@@ -509,13 +509,12 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     }
 
     /// <summary>
-    /// Sent internally looped by a <see cref="ZoneService"/> to heal the player.
+    /// Called by a <see cref="Zone"/> to all <see cref="ZoneEntitySupervisor"/>s to indicate that the
+    /// zone has completed initialization and is now starting.
     /// </summary>
-    public sealed class MSG_HEALTICK : IServerMessage {
-
-        public byte MessageOrder { get; } = 28;
+    public sealed class MSG_ZONESTART : IServerMessage {
+        public byte MessageOrder { get; } = 14;
         public byte ServiceID { get; } = 102;
-
     }
 
 }

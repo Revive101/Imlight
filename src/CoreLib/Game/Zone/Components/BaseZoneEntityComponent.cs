@@ -22,6 +22,11 @@ namespace Imlight.CoreLib.Game.Zone.Components;
 public interface IZoneComponent {
 
     /// <summary>
+    /// Called once a <see cref="Zone"/> has completed initialization.
+    /// </summary>
+    void OnStart();
+
+    /// <summary>
     /// Called when a player joins the zone.
     /// </summary>
     /// <param name="playerObj">The core object representing the player.</param>
@@ -76,6 +81,7 @@ public abstract class BaseZoneComponent(ZoneEntity entity) : ReceiveProtocolDisp
     protected Core.Zone Zone => Entity.Zone;
     protected IActorRef ZoneActor => Entity.ZoneRef;
 
+    public virtual void OnStart() { }
     public virtual void OnPlayerJoin(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) { }
     public virtual void OnPlayerLeave(IActorRef playerActor, ulong id) { }
     public virtual void OnPlayerMove(CoreObject playerObj, IActorRef playerActor) { }
@@ -86,6 +92,10 @@ public abstract class BaseZoneComponent(ZoneEntity entity) : ReceiveProtocolDisp
         string serviceName,
         uint serviceIndex) { }
     public virtual void OnCreatureProximityEnter(CoreObject creature, IActorRef suspect) { }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONESTART))]
+    public void ReceiveZoneStart() 
+        => OnStart();
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
     public void ReceiveAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message) 

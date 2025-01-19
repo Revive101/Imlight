@@ -10,6 +10,7 @@ using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Game.World;
 using Imlight.CoreLib.Game.Zone.Core;
+using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System.Collections.Generic;
@@ -51,8 +52,8 @@ internal sealed class VendorComponent(ZoneEntity entity) : BaseZoneComponent(ent
 
     public void OnServiceInteraction(IActorRef playerActor, Wizard playerCharacter, CoreObject playerObject, uint serviceOptionIndex) {
         SendShopOfferings(playerActor);
-        SendWizBang(playerActor);
-        SendChangeState(playerActor);
+        SendPlayerIntoWizbang(playerObject.m_globalID);
+        SendPlayerIntoState(playerObject.m_globalID);
     }
 
     private void SendShopOfferings(IActorRef playerActor) {
@@ -64,10 +65,6 @@ internal sealed class VendorComponent(ZoneEntity entity) : BaseZoneComponent(ent
         }
 
         var shopOffering = new WizShopOffering() {
-            m_CSRTestShop = false,
-            m_activeHolidayList = null,
-            m_furnitureShop = 0,
-            m_recipeList = null,
             m_sellModifier = 0.05f,
             m_shopTitle = "KrocNPC_00000013",
             m_shopList = inventory.Inventory,
@@ -85,20 +82,32 @@ internal sealed class VendorComponent(ZoneEntity entity) : BaseZoneComponent(ent
         playerActor.Tell(shopListMsg);
     }
 
-    private void SendWizBang(IActorRef playerActor) {
+    private void SendPlayerIntoWizbang(ulong playerObjID) {
+        // Create the wiz bang message, and wrap it in a broadcast message.
         var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG {
             WizBangID = StringHash.Compute(WizBang),
-            GameObjectID = Entity.ActiveGameObject.m_globalID
+            GameObjectID = playerObjID
         };
-        playerActor.Tell(wizBangMsg);
+        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+            Message = wizBangMsg,
+            Selfless = false,
+        };
+
+        Entity.ZoneRef.Tell(broadcastMsg);
     }
 
-    private void SendChangeState(IActorRef playerActor) {
+    private void SendPlayerIntoState(ulong playerObjID) {
+        // Create the change state message, and wrap it in a broadcast message.
         var changeStateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
-            GameObjectID = Entity.ActiveGameObject.m_globalID,
             State = StringHash.Compute(StateName),
+            GameObjectID = playerObjID
         };
-        playerActor.Tell(changeStateMsg);
+        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+            Message = changeStateMsg,
+            Selfless = false,
+        };
+
+        Entity.ZoneRef.Tell(broadcastMsg);
     }
 
 }
