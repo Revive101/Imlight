@@ -9,7 +9,6 @@ using Imlight.Common.Caches;
 using Imlight.Common.Cryptography;
 using Imlight.CoreLib.Game.Zone.Components;
 using Imlight.CoreLib.Shared.Networking;
-using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.World;
 
 namespace Imlight.CoreLib.Game.Services;

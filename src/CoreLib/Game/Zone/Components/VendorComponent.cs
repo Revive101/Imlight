@@ -11,12 +11,9 @@ using Imlight.Common.ObjectProperty;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Game.World;
 using Imlight.CoreLib.Game.Zone.Core;
-using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
-using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using static Imlight.Common.Caches.TypeCache;
@@ -34,12 +31,9 @@ internal sealed class VendorComponent(ZoneEntity entity) : BaseZoneComponent(ent
     public string InteractWizBang => "Registrar";
     public string DisplayKey      => "GUI_ShopOptionEquipment";
 
-    private static readonly ObjectSerializer _offeringsSerializer = new ObjectSerializer()
+    private static readonly ObjectSerializer s_offeringsSerializer = new ObjectSerializer()
             .OnBehaviors(SerializerOptions.Behaviors.None)
             .OnPropertyMask((SerializerOptions.PropertyFlags) 4);
-    private static readonly CoreObjectSerializer _itemSerializer = new CoreObjectSerializer()
-                    .OnBehaviors(SerializerOptions.Behaviors.None)
-                    .OnPropertyMask((SerializerOptions.PropertyFlags) 1);
     private List<GID> _inventory;
 
     public static bool ShouldAttachToEntity(CoreTemplate template) 
@@ -90,7 +84,7 @@ internal sealed class VendorComponent(ZoneEntity entity) : BaseZoneComponent(ent
             // 1 - PvP tickets
             m_shopType = 0,
         };
-        var data = _offeringsSerializer.Serialize(shopOffering);
+        var data = s_offeringsSerializer.Serialize(shopOffering);
         var shopListMsg = new WIZARD_12_PROTOCOL.MSG_SHOPLIST() {
             GlobalID = Entity.ActiveGameObject.m_globalID,
             Data = data,
