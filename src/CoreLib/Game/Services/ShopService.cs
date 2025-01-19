@@ -8,140 +8,79 @@ using System;
 using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.ObjectProperty;
-using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.Shared.Networking;
-using Imlight.CoreLib.WizardData.Models.Misc;
 using Imlight.CoreLib.WizardData.Models.World;
 using Imlight.CoreLib.WizardData.Models.Player;
 using static Imlight.Common.Caches.TypeCache;
-using Imlight.CoreLib.Game.Zone;
-using System.Linq;
-using Imlight.CoreLib.Game.Zone.ServiceOptions;
+using Imlight.CoreLib.Game.Zone.Components;
+using Imlight.Common.ObjectProperty.PropertyReflection;
+using Imlight.CoreLib.Shared.Packets;
 
 namespace Imlight.CoreLib.Game.Services;
-internal class ShopService : MessageService {
-    // Notice: It is currently unknown where this constant originates from. It is used on MSG_SHOPBUYREQUEST
-    // to know which item a player has purchased. That being, this constant + the template ID of the item.
-    // If you see it change, please let us know.
-    private const long ShopOffset = 9895604649984;
 
-    private readonly CoreObjectSerializer _itemSerializer = new CoreObjectSerializer()
+internal class ShopService(SessionActor sessionActor) : MessageService(sessionActor) {
+
+    private const float SELL_MODIFIER = 0.05f;
+    private const float DYED_ITEM_COST_MULTIPLIER = 1.225f;
+
+    private static readonly CoreObjectSerializer s_itemSerializer = new CoreObjectSerializer()
                     .OnBehaviors(SerializerOptions.Behaviors.None)
                     .OnPropertyMask((SerializerOptions.PropertyFlags) 1);
-
-    public ShopService(SessionActor sessionActor) : base(sessionActor) { }
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new InteractService(parentActor));
 
-    // todo: fixme
-    /*
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_SHOPBUYREQUEST))]
     private void ReceiveShopBuyRequest(WIZARD_12_PROTOCOL.MSG_SHOPBUYREQUEST message) {
-        var wizard = GetActiveWizard();
+        // Ensure that the player has interacted with an object in the zone.
         var interactedObject = GetZoneObject(message.npcGlobalID);
-
-        // Check to see if the NPC exists in the zone.
-        if (interactedObject == null
-            || interactedObject is not WizardZoneNpc npc
-            || !npc.ServiceOptions.Any(x => x is ServiceOptionVendor)) {
-            Logger.Warning("Failed to find NPC {0} in zone for shop purchase", Logger.Args(message.npcGlobalID));
-
-            var shopDenyMsg = new WIZARD_12_PROTOCOL.MSG_SHOPBUYCONFIRM {
-                Failure = 1,
-                WebFailure = 0,
-                Credits = 0
-            };
+        if (interactedObject is null) {
+            Logger.Warning("Failed to find NPC {0} in zone for shop purchase", 
+                Logger.Args(message.npcGlobalID));
+            var shopDenyMsg = new WIZARD_12_PROTOCOL.MSG_SHOPBUYCONFIRM { Failure = 1 };
             SendToSocket(shopDenyMsg);
-            return;
-        }
-
-        var itemTemplateID = message.ShopID - ShopOffset;
-
-        // Check to see if the shopkeeper actually sells the item.
-        if (!npc.ServiceOptions.Any(option => option is ServiceOptionVendor vendor
-                                           && vendor.HasShopItem((GID) itemTemplateID))) {
-            var shopDenyMsg = new WIZARD_12_PROTOCOL.MSG_SHOPBUYCONFIRM {
-                Failure = 1,
-                WebFailure = 0,
-                Credits = 0
-            };
-            SendToSocket(shopDenyMsg);
-
-            // Log infraction
-            var account = GetActiveAccount();
-            var infractionText = $"Player tried to purchase item {itemTemplateID} from NPC " +
-                $"{message.npcGlobalID} that is not in its inventory!";
-            account.AddInfraction(InfractionType.SuspiciousBehavior, infractionText);
-
-            Logger.Warning("Player tried to purchase item {0} from an NPC that it did not have in its inventory."
-                + " This has been logged as suspicious behavior.",
-                Logger.Args(itemTemplateID));
 
             return;
         }
 
+        // Ensure that the interacted object is a vendor.
+        var vendorComponent = interactedObject.GetComponentOfType<VendorComponent>();
+        if (vendorComponent is null) {
+            Logger.Warning("Failed to find VendorComponent for NPC {0} in zone for shop purchase", 
+                Logger.Args(message.npcGlobalID));
+            var shopDenyMsg = new WIZARD_12_PROTOCOL.MSG_SHOPBUYCONFIRM { Failure = 1 };
+            SendToSocket(shopDenyMsg);
+
+            return;
+        }
+
+        // Ensure that the vendor has the item that the player is trying to purchase.
+        var itemTemplateID = new GID(message.ShopID).MParts.Id;
+        if (!vendorComponent.HasItem((GID) message.ShopID)) {
+            HandleIllegalPurchaseAttempt(itemTemplateID, message.npcGlobalID);
+
+            return;
+        }
+
+        var playerWizard = GetActiveWizard();
         var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(itemTemplateID);
         var item = (WizClientObjectItem) CoreObjectFactory.FinalizeCoreObject(itemTemplateID);
         item.m_primaryColor = message.texture;
         item.m_secondaryColor = message.decal;
 
-        var goldCost = (int) template.m_baseCost;
-        if (template.m_numPrimaryColors != 1 && template.m_numSecondaryColors != 0) {
-            goldCost = (int) Math.Ceiling(goldCost * 1.225f) + 1; // Dyed items are more expensive.
-        }
+        var goldCost = CalculateItemCost(template);
 
-        // Deny transaction if player cannot afford item
-        if (goldCost > wizard.GameStats.m_currentGold) {
-            var shopDenyMsg = new WIZARD_12_PROTOCOL.MSG_SHOPBUYCONFIRM {
-                Failure = 1,
-                WebFailure = 0,
-                Credits = 0
-            };
-            SendToSocket(shopDenyMsg);
+        // Check if the user can afford the item.
+        if (playerWizard.GameStats.m_currentGold >= goldCost) {
+            ProcessSuccessfulPurchase(playerWizard, item, itemTemplateID, goldCost);
+
             return;
         }
 
-        // Add the item to the player's inventory
-        var data = _itemSerializer.Serialize(item);
-        var addItemMsg = new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
-            GlobalID = wizard.CharId,
-            SerializedItem = data,
-        };
-        SendToSocket(addItemMsg);
-
-        // Add the item to the player's inventory. We do this after sending the message to the client
-        // because adding it to the inventory will initialize all the behaviors. The client will crash
-        // if we serialize those behaviors.
-        wizard.AddItemToInventory(item);
-
-        // Inform the client of the new item
-        var itemAcqMsg = new WIZARD2_53_PROTOCOL.MSG_ITEMACQUISITION {
-            ItemGlobalID = item.m_globalID,
-            ItemTemplateID = (uint) itemTemplateID,
-            ItemLocation = 1,
-        };
-        SendToSocket(itemAcqMsg);
-
-        // Update and inform of new gold balance
-        wizard.RemoveGold(goldCost);
-        var goldUpdateMsg = new WIZARD_12_PROTOCOL.MSG_UPDATEGOLD {
-            Gold = wizard.GameStats.m_currentGold,
-            MaxGold = wizard.GameStats.m_baseGoldPouch
-        };
-        SendToSocket(goldUpdateMsg);
-
-        // Inform the client that all previous transactions were successful
-        var shopConfirmMsg = new WIZARD_12_PROTOCOL.MSG_SHOPBUYCONFIRM {
-            Failure = 0,
-            WebFailure = 0,
-            Credits = 0
-        };
-        SendToSocket(shopConfirmMsg);
+        SendShopDenyMessage();
     }
-    */
 
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_SHOPSELLREQUEST))]
     private void ReceiveShopSellRequest(WIZARD_12_PROTOCOL.MSG_SHOPSELLREQUEST message) {
@@ -150,29 +89,16 @@ internal class ShopService : MessageService {
 
         var removedItemSuccess = wizard.RemoveItemFromInventory(message.GlobalID);
         if (!removedItemSuccess) {
+            Logger.Warning("Failed to find item {0} in inventory for shop sell", Logger.Args(message.GlobalID));
+            ProcessFailedSale();
+
             return;
         }
 
         var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
+        var gold = CalculateItemSellValue(template);
 
-        var gold = (int) Math.Ceiling(template.m_baseCost * 0.05f);
-        if (template.m_numPrimaryColors != 1 && template.m_numSecondaryColors != 0) {
-            gold = (int) Math.Ceiling(gold * 1.225f); // This value is slightly higher for some reason.
-        }
-
-        wizard.AddGold(gold);
-
-        var updateGoldMsg = new WIZARD_12_PROTOCOL.MSG_UPDATEGOLD {
-            Gold = wizard.GameStats.m_currentGold,
-            MaxGold = wizard.GameStats.m_baseGoldPouch
-        };
-        SendToSocket(updateGoldMsg);
-
-        var removeItemMsg = new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_REMOVEITEM {
-            GlobalID = wizard.CharId,
-            ItemID = message.GlobalID
-        };
-        SendToSocket(removeItemMsg);
+        ProcessSuccessfulSale(wizard, message.GlobalID, gold);
     }
 
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_DYEREQUEST))]
@@ -247,7 +173,7 @@ internal class ShopService : MessageService {
             SendToSocket(equipMsg);
 
             var pubItem = ItemHelper.GetPublicItem(item);
-            var data = _itemSerializer.Serialize(pubItem);
+            var data = s_itemSerializer.Serialize(pubItem);
             ZoneBroadcast(new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM() {
                 GlobalID = wizard.CharId,
                 SerializedInfo = data
@@ -266,7 +192,7 @@ internal class ShopService : MessageService {
     }
 
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_DONESHOPPING))]
-    private void ReceiveDoneShopping(WIZARD_12_PROTOCOL.MSG_DONESHOPPING message) {
+    private void ReceiveDoneShopping() {
         // A wizard has complete shopping and is leaving the shop.
         var wizard = GetActiveWizard();
 
@@ -285,4 +211,101 @@ internal class ShopService : MessageService {
         };
         ZoneBroadcast(wizBangMsg, false);
     }
+
+    private void ProcessSuccessfulSale(Wizard wizard, ulong itemID, int goldValue) {
+        wizard.AddGold(goldValue);
+
+        // Inform the game client of the successful sale.
+        var updateGoldMsg = new WIZARD_12_PROTOCOL.MSG_UPDATEGOLD {
+            Gold = wizard.GameStats.m_currentGold,
+            MaxGold = wizard.GameStats.m_baseGoldPouch
+        };
+        SendToSocket(updateGoldMsg);
+
+        // Inform the game client of the successful sale.
+        var removeItemMsg = new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_REMOVEITEM {
+            GlobalID = wizard.CharId,
+            ItemID = itemID
+        };
+        SendToSocket(removeItemMsg);
+    }
+
+    private void ProcessFailedSale() {
+        var shopDenyMsg = new WIZARD_12_PROTOCOL.MSG_SHOPSELLCONFIRM {
+            Failure = 1,
+        };
+        SendToSocket(shopDenyMsg);
+    }
+
+    private void SendShopDenyMessage() {
+        var shopDenyMsg = new WIZARD_12_PROTOCOL.MSG_SHOPBUYCONFIRM {
+            Failure = 1,
+            WebFailure = 0,
+            Credits = 0
+        };
+        SendToSocket(shopDenyMsg);
+    }
+
+    private void ProcessSuccessfulPurchase(Wizard playerWizard, WizClientObjectItem item, uint itemTemplateID, int goldCost) {
+        var serializedItemWithoutBehaviors = s_itemSerializer.Serialize(item);
+        playerWizard.AddItemToInventory(item);
+        playerWizard.RemoveGold(goldCost);
+
+        // Inform the game client that a new item has been added to the player's inventory.
+        var addItemMsg = new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
+            GlobalID = playerWizard.CharId,
+            SerializedItem = serializedItemWithoutBehaviors,
+        };
+        SendToSocket(addItemMsg);
+
+        // Inform the game client that the player has acquired a new item.
+        var itemAcqMsg = new WIZARD2_53_PROTOCOL.MSG_ITEMACQUISITION {
+            ItemGlobalID = item.m_globalID,
+            ItemTemplateID = itemTemplateID,
+            ItemLocation = 1,
+        };
+        SendToSocket(itemAcqMsg);
+
+        // Inform the game client that the player's gold has been updated.
+        var goldUpdateMsg = new WIZARD_12_PROTOCOL.MSG_UPDATEGOLD {
+            Gold = playerWizard.GameStats.m_currentGold,
+            MaxGold = playerWizard.GameStats.m_baseGoldPouch
+        };
+        SendToSocket(goldUpdateMsg);
+
+        // Inform the game client that the purchase was successful.
+        var shopConfirmMsg = new WIZARD_12_PROTOCOL.MSG_SHOPBUYCONFIRM();
+        SendToSocket(shopConfirmMsg);
+    }
+
+    private void HandleIllegalPurchaseAttempt(uint itemTemplateID, ulong interactedObjectGID) {
+        var account = GetActiveAccount();
+        SendShopDenyMessage();
+
+        var infractionText = $"Player tried to purchase item {itemTemplateID} from NPC {interactedObjectGID} that is not in its inventory!";
+        account.AddInfraction(WizardData.Models.Misc.InfractionType.SuspiciousBehavior, infractionText);
+
+        Logger.Warning("Player tried to purchase item {0} from an NPC that it did not have in its inventory. "
+            + "This has been logged as suspicious behavior.",
+            Logger.Args(itemTemplateID));
+    }
+
+    private static int CalculateItemSellValue(WizItemTemplate template) {
+        var goldValue = (int) Math.Ceiling(template.m_baseCost * SELL_MODIFIER);
+        if (template.m_numPrimaryColors != 1 && template.m_numSecondaryColors != 0) {
+            goldValue = (int) Math.Ceiling(goldValue * DYED_ITEM_COST_MULTIPLIER) + 1;
+        }
+
+        return goldValue;
+    }
+
+    private static int CalculateItemCost(WizItemTemplate template) {
+        var goldCost = (int) template.m_baseCost;
+        if (template.m_numPrimaryColors != 1 && template.m_numSecondaryColors != 0) {
+            goldCost = (int) Math.Ceiling(goldCost * DYED_ITEM_COST_MULTIPLIER) + 1;
+        }
+
+        return goldCost;
+    }
+
 }

@@ -50,16 +50,16 @@ public class ZoneEntity(
     /// </summary>
     /// <typeparam name="T">The type of the components to get.</typeparam>
     /// <returns>A list of actor references of the components of the specified type.</returns>
-    public List<IActorRef> GetComponentsOfType<T>()
-            => [.. Components.Keys.Where(x => typeof(T).IsAssignableFrom(x.GetType())).Select(x => Components[x])];
+    public List<T> GetComponentsOfType<T>()
+        => [.. Components.Keys.Where(x => typeof(T).IsAssignableFrom(x.GetType())).Cast<T>()];
 
     /// <summary>
     /// Gets a component of the specified type.
     /// </summary>
     /// <typeparam name="T">The type of the component to get.</typeparam>
     /// <returns>The actor reference of the component of the specified type, or null if it does not exist.</returns>
-    public IActorRef GetComponentOfType<T>() 
-        => Components.TryGetValue(Components.Keys.FirstOrDefault(x => x.GetType() == typeof(T)), out var actorRef) ? actorRef : null;
+    public T GetComponentOfType<T>() where T : class
+        => Components.Keys.FirstOrDefault(x => typeof(T).IsAssignableFrom(x.GetType())) as T;
 
     #region Message Handlers
 

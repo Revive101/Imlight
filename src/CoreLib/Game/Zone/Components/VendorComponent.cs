@@ -8,11 +8,15 @@ using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty;
+using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Game.World;
 using Imlight.CoreLib.Game.Zone.Core;
+using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using static Imlight.Common.Caches.TypeCache;
@@ -29,9 +33,14 @@ internal sealed class VendorComponent(ZoneEntity entity) : BaseZoneComponent(ent
     public string StateName       => "Shop";
     public string InteractWizBang => "Registrar";
     public string DisplayKey      => "GUI_ShopOptionEquipment";
-    private readonly ObjectSerializer _serializer = new ObjectSerializer()
+
+    private static readonly ObjectSerializer _offeringsSerializer = new ObjectSerializer()
             .OnBehaviors(SerializerOptions.Behaviors.None)
             .OnPropertyMask((SerializerOptions.PropertyFlags) 4);
+    private static readonly CoreObjectSerializer _itemSerializer = new CoreObjectSerializer()
+                    .OnBehaviors(SerializerOptions.Behaviors.None)
+                    .OnPropertyMask((SerializerOptions.PropertyFlags) 1);
+    private List<GID> _inventory;
 
     public static bool ShouldAttachToEntity(CoreTemplate template) 
         // Attach if the template is an NPC and has an inventory in Dragon database,
@@ -40,6 +49,17 @@ internal sealed class VendorComponent(ZoneEntity entity) : BaseZoneComponent(ent
         && goTemplate.m_behaviors.Any(x => x is NPCBehaviorTemplate) 
         && (NpcInventoryCollection.TryGetNpcInventory(goTemplate.m_templateID, out _)
         || WorldVendorLocations.IsVendor(goTemplate.m_templateID));
+
+    public override void OnStart() {
+        if (!NpcInventoryCollection.TryGetNpcInventory(Entity.ActiveGameObject.m_templateID, out var inventory)) {
+            Logger.Error("Failed to get vendor inventory for NPC {0}", 
+                Logger.Args(Entity.ActiveGameObject.m_templateID));
+
+            return;
+        }
+
+        _inventory = inventory.Inventory;
+    }
 
     public IEnumerable<ServiceOptionBase> GetServiceOptions() 
         => [
@@ -56,25 +76,21 @@ internal sealed class VendorComponent(ZoneEntity entity) : BaseZoneComponent(ent
         SendPlayerIntoState(playerObject.m_globalID);
     }
 
+    public bool HasItem(GID itemGID) 
+        => _inventory.Any(x => x.MParts.Id == itemGID.MParts.Id);
+
     private void SendShopOfferings(IActorRef playerActor) {
-        if (!NpcInventoryCollection.TryGetNpcInventory(Entity.ActiveGameObject.m_templateID, out var inventory)) {
-            Logger.Error("Failed to get vendor inventory for NPC {0}", 
-                Logger.Args(Entity.ActiveGameObject.m_templateID));
-
-            return;
-        }
-
         var shopOffering = new WizShopOffering() {
             m_sellModifier = 0.05f,
             m_shopTitle = "KrocNPC_00000013",
-            m_shopList = inventory.Inventory,
+            m_shopList = _inventory,
 
             // Changes the type of currency that is used
             // 0 - Gold
             // 1 - PvP tickets
             m_shopType = 0,
         };
-        var data = _serializer.Serialize(shopOffering);
+        var data = _offeringsSerializer.Serialize(shopOffering);
         var shopListMsg = new WIZARD_12_PROTOCOL.MSG_SHOPLIST() {
             GlobalID = Entity.ActiveGameObject.m_globalID,
             Data = data,

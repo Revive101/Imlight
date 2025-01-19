@@ -49,21 +49,6 @@ public interface IZoneComponent {
     void OnPlayerMove(CoreObject playerObj, IActorRef playerActor);
 
     /// <summary>
-    /// Called when a player interacts with an NPC in the zone.
-    /// </summary>
-    /// <param name="playerActor">The actor reference of the player.</param>
-    /// <param name="playerCharacter">The wizard associated with the player.</param>
-    /// <param name="playerObject">The core object representing the player.</param>
-    /// <param name="serviceName">The name of the service.</param>
-    /// <param name="serviceIndex">The index of the service.</param>
-    void OnPlayerInteraction(
-        IActorRef playerActor,
-        Wizard playerCharacter,
-        CoreObject playerObject,
-        string serviceName,
-        uint serviceIndex);
-
-    /// <summary>
     /// Called when a creature enters the proximity of the zone.
     /// </summary>
     /// <param name="creature">The core object representing the creature.</param>
@@ -77,6 +62,7 @@ public interface IZoneComponent {
 /// </summary>
 public abstract class BaseZoneComponent(ZoneEntity entity) : ReceiveProtocolDispatcher, IZoneComponent {
 
+    public IActorRef ActorRef { get; private set; }
     protected ZoneEntity Entity { get; private set; } = entity;
     protected Core.Zone Zone => Entity.Zone;
     protected IActorRef ZoneActor => Entity.ZoneRef;
@@ -85,17 +71,13 @@ public abstract class BaseZoneComponent(ZoneEntity entity) : ReceiveProtocolDisp
     public virtual void OnPlayerJoin(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) { }
     public virtual void OnPlayerLeave(IActorRef playerActor, ulong id) { }
     public virtual void OnPlayerMove(CoreObject playerObj, IActorRef playerActor) { }
-    public virtual void OnPlayerInteraction(
-        IActorRef playerActor,
-        Wizard playerCharacter,
-        CoreObject playerObject,
-        string serviceName,
-        uint serviceIndex) { }
     public virtual void OnCreatureProximityEnter(CoreObject creature, IActorRef suspect) { }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONESTART))]
-    public void ReceiveZoneStart() 
-        => OnStart();
+    public void ReceiveZoneStart() {
+        ActorRef = Self;
+        OnStart();
+    }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
     public void ReceiveAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message) 
@@ -108,24 +90,6 @@ public abstract class BaseZoneComponent(ZoneEntity entity) : ReceiveProtocolDisp
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PLAYERMOVE))]
     public void ReceivePlayerMove(ZONE_102_PROTOCOL.MSG_PLAYERMOVE message) 
         => OnPlayerMove(message.PlayerObject, message.PlayerActor);
-
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PLAYERINTERACT))]
-    public void ReceivePlayerInteraction(ZONE_102_PROTOCOL.MSG_PLAYERINTERACT message) {
-        // Ensure that the global ID provided in the message is the same as the entity's global ID.
-        if (message.ObjectGlobalID != Entity.ActiveGameObject.m_globalID) {
-            Logger.Error("Player {0} attempted to interact with entity {1} but the global IDs do not match",
-                Logger.Args(message.PlayerActor, message.ObjectGlobalID));
-
-            return;
-        }
-
-        OnPlayerInteraction(
-            message.PlayerActor,
-            message.PlayerCharacter,
-            message.PlayerObject,
-            message.ServiceName,
-            message.ServiceOptionIndex);
-    }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ENTITYCOMPONENTREQUESTIDENTITY))]
     public void ReceiveRequestIdentity() 

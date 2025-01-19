@@ -22,7 +22,6 @@ internal class InteractService(SessionActor sessionActor) : MessageService(sessi
     [MessageHandler(typeof(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC))]
     private void ReceiveNpcInteract(QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC message) {
         var wizard = GetActiveWizard();
-        var gameObj = GetActiveGameObject();
 
         // A player is closing their shop
         if (message.ServiceName == "") {
@@ -41,24 +40,21 @@ internal class InteractService(SessionActor sessionActor) : MessageService(sessi
         }
 
         // Check if the interacted object contains a service memento component.
-        var serviceMementoActor = npc.GetComponentOfType<ServiceMementoComponent>();
-        if (serviceMementoActor == null) {
+        var serviceMementoComponent = npc.GetComponentOfType<ServiceMementoComponent>();
+        if (serviceMementoComponent == null) {
             Logger.Error("{0} interacted with NPC {1} but it does not contain a service memento component",
                 Logger.Args(wizard.CharId, message.GlobalID));
 
             return;
         }
+
+        var actor = SessionActor.ActorRef;
+        var gameObj = GetActiveGameObject();
+        var serviceName = message.ServiceName;
+        var serviceIndex = message.ServiceIndex;
       
         // Inform the service memento component that the player is interacting with it.
-        var interactMsg = new ZONE_102_PROTOCOL.MSG_PLAYERINTERACT {
-            PlayerActor = SessionActor.ActorRef,
-            PlayerCharacter = wizard,
-            PlayerObject = gameObj,
-            ObjectGlobalID = message.GlobalID,
-            ServiceName = message.ServiceName,
-            ServiceOptionIndex = message.ServiceIndex
-        };
-        serviceMementoActor.Tell(interactMsg);
+        serviceMementoComponent.PlayerInteraction(actor, wizard, gameObj, serviceName, serviceIndex);
     }
 
     private void CloseShop(ulong charId) {

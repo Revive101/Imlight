@@ -23,7 +23,6 @@ internal sealed class ServiceMementoComponent(ZoneEntity entity) : BaseZoneCompo
 
     private const string DEFAULT_NAME_KEY = "NPCFormats_Name";
     private const string DEFAULT_TEXT_KEY = "GUI_NPCInteractText";
-    private const uint SERVICE_COMPONENT_TIMEOUT_IN_MS = 1000;
 
     private readonly float _interactionRadius = 300.0f;
     private readonly Dictionary<CoreObject, IActorRef> _playersInRange = [];
@@ -66,7 +65,7 @@ internal sealed class ServiceMementoComponent(ZoneEntity entity) : BaseZoneCompo
         }
     }
 
-    public override void OnPlayerInteraction(
+    public void PlayerInteraction(
         IActorRef playerActor,
         Wizard playerCharacter,
         CoreObject playerObject,
@@ -121,7 +120,7 @@ internal sealed class ServiceMementoComponent(ZoneEntity entity) : BaseZoneCompo
     }
 
     private void RefreshServiceMomento() {
-        _serviceComponents = [.. GetServiceOptions()];
+        _serviceComponents = [.. Entity.GetComponentsOfType<IServiceComponent>()];
         var gameObjTemplate = Entity.Template as GameObjectTemplate;
 
         // Get all service options.
@@ -140,33 +139,6 @@ internal sealed class ServiceMementoComponent(ZoneEntity entity) : BaseZoneCompo
             m_serviceOptions = allOptions,
             m_personaMadlibs = _madlibBlock
         };
-    }
-
-    private List<IServiceComponent> GetServiceOptions() {
-        var serviceComponentActors = Entity.GetComponentsOfType<IServiceComponent>();
-        var serviceComponents = new List<IServiceComponent>();
-
-        // Send a message to each service component to get its identity.
-        var timeout = TimeSpan.FromMilliseconds(SERVICE_COMPONENT_TIMEOUT_IN_MS);
-        foreach (var serviceComponent in serviceComponentActors) {
-            try {
-                var identityMsg = new ZONE_102_PROTOCOL.MSG_ENTITYCOMPONENTREQUESTIDENTITY();
-                var identityRsp = serviceComponent
-                    .Ask<ZONE_102_PROTOCOL.MSG_ENTITYCOMPONENTREQUESTIDENTITYRSP>(identityMsg, timeout)
-                    .Result;
-
-                if (identityRsp == null) {
-                    Logger.Error("Failed to get service component identity: {0}", Logger.Args("Response was null"));
-                    continue;
-                }
-
-                serviceComponents.Add((IServiceComponent) identityRsp.Component);
-            } catch (Exception ex) {
-                Logger.Error("Failed to get service component identity: {0}", Logger.Args(ex.Message));
-            }
-        }
-
-        return serviceComponents;
     }
 
     private void SetMadLibBlock() {

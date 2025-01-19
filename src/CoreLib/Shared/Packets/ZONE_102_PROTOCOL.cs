@@ -472,48 +472,11 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     }
 
     /// <summary>
-    /// Sent by a player to a <see cref="ServiceMementoComponent"/> to interact with an NPC.
-    /// </summary>
-    public sealed class MSG_PLAYERINTERACT() : IServerMessage {
-        public byte MessageOrder { get; } = 13;
-        public byte ServiceID { get; } = 102;
-
-        /// <summary>
-        /// The actor reference of the player that is interacting with the NPC.
-        /// </summary>
-        public IActorRef PlayerActor;
-
-        /// <summary>
-        /// The <see cref="Wizard"/> of the player that is interacting with the NPC.
-        /// </summary>
-        public Wizard PlayerCharacter;
-
-        /// <summary>
-        /// The <see cref="CoreObject"/> of the player that is interacting with the NPC.
-        public CoreObject PlayerObject;
-
-        /// <summary>
-        /// The global ID of the object that is being interacted with.
-        /// </summary>
-        public ulong ObjectGlobalID;
-
-        /// <summary>
-        /// The name of the service that the player is interacting with.
-        /// </summary>
-        public string ServiceName;
-
-        /// <summary>
-        /// The internal option index of the service that the player is interacting with.
-        /// </summary>
-        public uint ServiceOptionIndex;
-    }
-
-    /// <summary>
     /// Called by a <see cref="Zone"/> to all <see cref="ZoneEntitySupervisor"/>s to indicate that the
     /// zone has completed initialization and is now starting.
     /// </summary>
     public sealed class MSG_ZONESTART : IServerMessage {
-        public byte MessageOrder { get; } = 14;
+        public byte MessageOrder { get; } = 13;
         public byte ServiceID { get; } = 102;
     }
 
