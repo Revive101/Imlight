@@ -64,7 +64,7 @@ public class ZoneService : MessageService, IWithTimers {
 
         // If the zone reference is not null, we'll tell the zone to remove the player.
         ZoneActor?.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER() {
-            Player = SessionActor.ActorRef,
+            PlayerActor = SessionActor.ActorRef,
             GlobalId = globalId,
             MobileId = gameObj.m_nMobileID,
         });
@@ -244,7 +244,7 @@ public class ZoneService : MessageService, IWithTimers {
     private void ReceiveNewPlayerAddedToZone(ZONE_102_PROTOCOL.MSG_PLAYERADDEDTOZONE message) {
         // A new player has been added to the zone. We need to spawn them.
         // Skip if this is myself.
-        if (message.Player == SessionActor.ActorRef) {
+        if (message.PlayerActor == SessionActor.ActorRef) {
             Logger.Error("{0} {1} received {2} for self.",
                 Logger.Args(SessionActor.ActorRef, SessionActor.SessionID, message.GetType()));
 
@@ -252,14 +252,14 @@ public class ZoneService : MessageService, IWithTimers {
         }
 
         // Spawn myself for the new player.
-        SpawnMyselfFor(message.Player);
+        SpawnMyselfFor(message.PlayerActor);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PLAYERREMOVEDFROMZONE))]
     private void ReceivePlayerRemovedFromZone(ZONE_102_PROTOCOL.MSG_PLAYERREMOVEDFROMZONE message) {
         // A player has been removed from the zone. We need to remove them.
         // Skip if this is myself.
-        if (message.Player == SessionActor.ActorRef) {
+        if (message.PlayerActor == SessionActor.ActorRef) {
             Logger.Error("{0} {1} received {2} for self.",
                 Logger.Args(SessionActor.ActorRef, SessionActor.SessionID, message.GetType()));
 
@@ -395,7 +395,7 @@ public class ZoneService : MessageService, IWithTimers {
         // before we continue on potentially a different thread.
         try {
             var removePlayerMsg = new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER() {
-                Player = SessionActor.ActorRef,
+                PlayerActor = SessionActor.ActorRef,
                 GlobalId = GetActiveGameObject().m_globalID,
                 IsPlayerStillConnected = true,
                 MobileId = GetActiveGameObject().m_nMobileID

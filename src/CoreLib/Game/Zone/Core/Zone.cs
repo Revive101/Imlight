@@ -79,6 +79,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         _supervisors.Add(CreateSupervisor<ZoneObjectSupervisor>());
         _supervisors.Add(CreateSupervisor<ZoneVolumeSupervisor>());
         _supervisors.Add(CreateSupervisor<ZoneTriggerSupervisor>());
+        _supervisors.Add(CreateSupervisor<ZonePlayerSupervisor>());
 
         // Create the loader actor and prepare the loading of this zone.
         _loaderRef = Context.ActorOf(Akka.Actor.Props.Create(() => new ZoneLoader()));
@@ -153,32 +154,18 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         }
 
         InformZoneSupervisors(message.PlayerActor, message);
-
-        var rsp = new ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP {
-            WizardGameObject = message.PlayerObject
-        };
-        message.PlayerActor.Tell(rsp);
-
-        Logger.Debug("{Name} added to zone {ZoneName}.",
-            Logger.Args(message.ActualWizardName, ZoneName));
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER))]
     protected virtual void ReceiveRemovePlayer(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message) {
         if (_isLoading) {
-            _pendingPlayerEvents.Remove(message.Player);
+            _pendingPlayerEvents.Remove(message.PlayerActor);
 
             return;
         }
 
-        InformZoneSupervisors(message.Player, message);
+        InformZoneSupervisors(message.PlayerActor, message);
         ReleaseObjectIdentifier(message.MobileId);
- 
-        var rsp = new ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP();
-        Sender.Tell(rsp);
-
-        Logger.Debug("Player {Name} removed from zone {ZoneName}.",
-            Logger.Args(message.Player.Path.Name, ZoneName));
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PLAYERMOVE))]

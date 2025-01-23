@@ -51,38 +51,6 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public uint ErrorCode;
     }
 
-    public class MSG_ADDPLAYER : IServerMessage {
-        public byte MessageOrder { get; } = 3;
-        public byte ServiceID { get; } = 102;
-
-        public IActorRef PlayerActor;
-        public TypeCache.CoreObject PlayerObject;
-        public Wizard Wizard;
-        public string ActualWizardName;
-    }
-
-    public class MSG_ADDPLAYERRSP : IServerMessage {
-        public byte MessageOrder { get; } = 4;
-        public byte ServiceID { get; } = 102;
-
-        public CoreObject WizardGameObject;
-    }
-
-    public class MSG_REMOVEPLAYER : IServerMessage {
-        public byte MessageOrder { get; } = 5;
-        public byte ServiceID { get; } = 102;
-
-        public IActorRef Player;
-        public ulong GlobalId;
-        public ushort MobileId;
-        public bool IsPlayerStillConnected;
-    }
-
-    public class MSG_REMOVEPLAYERRSP : IServerMessage {
-        public byte MessageOrder { get; } = 5;
-        public byte ServiceID { get; } = 102;
-    }
-
     public class MSG_ZONEBROADCAST : IServerMessage {
         public byte MessageOrder { get; } = 6;
         public byte ServiceID { get; } = 102;
@@ -213,22 +181,6 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     public class MSG_SENDTOHUB : IServerMessage {
         public byte MessageOrder { get; } = 27;
         public byte ServiceID { get; } = 102;
-    }
-
-    public class MSG_PLAYERADDEDTOZONE : IServerMessage {
-        public byte MessageOrder { get; } = 29;
-        public byte ServiceID { get; } = 102;
-
-        public IActorRef Player;
-        public CoreObject PlayerObject;
-    }
-
-    public class MSG_PLAYERREMOVEDFROMZONE : IServerMessage {
-        public byte MessageOrder { get; } = 30;
-        public byte ServiceID { get; } = 102;
-
-        public IActorRef Player;
-        public ulong GlobalId;
     }
 
     public class MSG_POSTEVENT : IServerMessage {
@@ -478,6 +430,87 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     public sealed class MSG_ZONESTART : IServerMessage {
         public byte MessageOrder { get; } = 13;
         public byte ServiceID { get; } = 102;
+    }
+
+    /// <summary>
+    /// Called by a <see cref="ZoneService"/> to a <see cref="Zone"/> to indicate the player needs to be
+    /// added to the zone.
+    /// </summary>
+    public class MSG_ADDPLAYER : IServerMessage {
+
+        public byte MessageOrder { get; } = 14;
+        public byte ServiceID { get; } = 102;
+
+        public IActorRef PlayerActor;
+        public CoreObject PlayerObject;
+        public Wizard Wizard;
+        public string ActualWizardName;
+
+    }
+
+    /// <summary>
+    /// Called by a <see cref="Zone"/> to a <see cref="ZoneService"/> to indicate that the player has been added to the zone.
+    /// </summary>
+    public class MSG_ADDPLAYERRSP : IServerMessage {
+
+        public byte MessageOrder { get; } = 15;
+        public byte ServiceID { get; } = 102;
+
+        public CoreObject WizardGameObject;
+
+    }
+
+    /// <summary>
+    /// Called by a <see cref="ZoneService"/> to a <see cref="Zone"/> to indicate that the player needs to be removed from the zone.
+    /// </summary>
+    public class MSG_REMOVEPLAYER : IServerMessage {
+
+        public byte MessageOrder { get; } = 16;
+        public byte ServiceID { get; } = 102;
+
+        public IActorRef PlayerActor;
+        public ulong GlobalId;
+        public ushort MobileId;
+        public bool IsPlayerStillConnected;
+
+    }
+
+    /// <summary>
+    /// Called by a <see cref="Zone"/> to a <see cref="ZoneService"/> to indicate that the player has been removed from the zone.
+    /// </summary>
+    public class MSG_REMOVEPLAYERRSP : IServerMessage {
+
+        public byte MessageOrder { get; } = 17;
+        public byte ServiceID { get; } = 102;
+
+    }
+
+    /// <summary>
+    /// Called by a <see cref="Zone"/> to all currently connected players to indicate that a player (that is not them)
+    /// has been added to the zone.
+    /// </summary>
+    public class MSG_PLAYERADDEDTOZONE : IServerMessage {
+
+        public byte MessageOrder { get; } = 18;
+        public byte ServiceID { get; } = 102;
+
+        public IActorRef PlayerActor;
+        public CoreObject PlayerObject;
+
+    }
+
+    /// <summary>
+    /// Called by a <see cref="Zone"/> to all currently connected players to indicate that a player (that is not them)
+    /// has been removed from the zone.
+    /// </summary>
+    public class MSG_PLAYERREMOVEDFROMZONE : IServerMessage {
+
+        public byte MessageOrder { get; } = 19;
+        public byte ServiceID { get; } = 102;
+
+        public IActorRef PlayerActor;
+        public ulong GlobalId;
+
     }
 
 }

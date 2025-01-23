@@ -85,7 +85,7 @@ public abstract class BaseZoneComponent(ZoneEntity entity) : ReceiveProtocolDisp
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER))]
     public void ReceiveRemovePlayer(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message) 
-        => OnPlayerLeave(message.Player, message.GlobalId);
+        => OnPlayerLeave(message.PlayerActor, message.GlobalId);
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PLAYERMOVE))]
     public void ReceivePlayerMove(ZONE_102_PROTOCOL.MSG_PLAYERMOVE message) 
