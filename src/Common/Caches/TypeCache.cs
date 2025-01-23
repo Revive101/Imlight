@@ -19,6 +19,7 @@ using Imlight.Common.IO;
 
 namespace Imlight.Common.Caches;
 
+
 public sealed partial class TypeCache {
 
 	public static Imlight.Common.ObjectProperty.PropertyReflection.PropertyClass Dispatch(uint hash) {
@@ -2138,7 +2139,8 @@ public sealed partial class TypeCache {
 			case 2144947950: return new ShadowCreatureLevelTransitionCinematicAction();
 			case 2147332134: return new SchoolPipSelector();
 			default: return null;
-		};
+		}
+		;
 	}
 
 	public class DerbyLockLane : DerbyEffect {
@@ -2606,7 +2608,7 @@ public sealed partial class TypeCache {
 
 		public override uint GetHash() => 84951489;
 		[Property(1541139342, 7)] public List<Spell> m_spellList;
-		[Property(2334460620, 7)] public List<SpellTemplate> m_spellFusionList;
+		[Property(1038665578, 7)] public List<UInt32> m_spellFusionIDList;
 	}
 
 	public class Duel : PropertyClass {
@@ -9598,7 +9600,6 @@ public sealed partial class TypeCache {
 		[Property(2965245049, 8388639)] public ByteString m_gameEffectsDescText;
 		[Property(3306238112, 8388639)] public ByteString m_spellLevelRestrictionsDescText;
 		[Property(3064659424, 8388639)] public ByteString m_combatRulesDescText;
-		[Property(1681120031, 8388639)] public ByteString m_bannedEquipmentDescText;
 		[Property(2035585939, 8388639)] public ByteString m_requiredSpellsDescText;
 		[Property(2010144922, 8388639)] public ByteString m_bannedSpellsDescText;
 	}
@@ -11353,6 +11354,14 @@ public sealed partial class TypeCache {
 		[Property(269492350, 287)] public Boolean m_PvE;
 		[Property(112365451, 31)] public Int32 m_roundAddedTC;
 		[Property(2081206026, 7)] public UInt32 m_secondarySchoolID;
+		[Property(835324539, 31)] public FusionState m_fusionState;
+
+		public enum FusionState {
+
+			FS_Invalid = 0,
+			FS_Partial = 1,
+			FS_Valid = 2,
+		}
 	}
 
 	public class LevelScaledEffectTemplate : StatisticEffectTemplate {
@@ -24153,6 +24162,35 @@ public sealed partial class TypeCache {
 		MNT_Mustang_B = 1448793691,
 		PP_FireElfMyth = 1933609060,
 		MNT_KT_BoatRide = 1560860110,
+		MNT_ShadowMagic = 2095978357,
+		MNT_MardiGrasFloat_A = 1740674432,
+		PP_ChineseNYSnake = 988201940,
+		MNT_AnubisDog = 1995079956,
+		PP_ShadowImp_A = 1604849432,
+		PP_ShadowImp_B = 1604849438,
+		PP_ShadowImp_C = 1604849436,
+		MNT_ShadowMagic_B = 2093870965,
+		MNT_ShadowMagic_C = 2093805429,
+		Guest_KT_SE_Tritops_Warrior_I_01 = 97516901,
+		Guest_KT_SE_DS_Draconian_Model_01 = 1916095079,
+		Guest_KT_SE_Beetle_Scarab_C_01_L50 = 1064004307,
+		Guest_KT_SE_Roach_Warrior_C_03 = 1872574203,
+		Guest_KT_SE_Roach_Warrior_C_04 = 1871918843,
+		Guest_KT_SE_Roach_Warrior_C_05 = 1871787771,
+		Guest_KT_SE_Beetle_Scarab_C_01 = 1353410759,
+		Guest_KT_SE_Mander_Citizen_B_01_L50 = 2044509396,
+		Guest_KT_SE_Mander_CitizenF_B_01_L50 = 164327682,
+		Guest_KT_SE_Treant_Tormented_A_01 = 1359800879,
+		Guest_KT_SE_Treant_Base_A_01 = 765512948,
+		Guest_KT_SE_Mander_Citizen_F_D_05 = 171244620,
+		Guest_KT_SE_Mander_CitizenF_D_01 = 163791037,
+		Guest_KT_SE_Mander_CitizenF_D_02 = 298008765,
+		Guest_KT_SE_Mander_CitizenF_D_03 = 432226493,
+		Guest_KT_SE_Mander_CitizenF_D_04 = 566444221,
+		Guest_KT_SE_Mander_MummyF_A_01 = 964349080,
+		Guest_KT_SE_Mander_MummyF_A_02 = 964480152,
+		Guest_KT_SE_MC_Wraith_Model_01 = 1101442118,
+		Guest_KT_SE_Mander_CitizenF_B_02 = 298000573,
 	}
 
 	public enum eMountType {
