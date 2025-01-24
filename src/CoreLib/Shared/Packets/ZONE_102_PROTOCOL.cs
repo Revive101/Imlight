@@ -49,24 +49,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public Vector3 Location;
         public float Orientation;
         public uint ErrorCode;
-    }
-
-    public class MSG_ZONEBROADCAST : IServerMessage {
-        public byte MessageOrder { get; } = 6;
-        public byte ServiceID { get; } = 102;
-
-        public IActorRef Sender;
-        public IMessage Message;
-        public bool Selfless;
-    }
-
-    public class MSG_ADDOBJECTRSP : IServerMessage {
-        public byte MessageOrder { get; } = 7;
-        public byte ServiceID { get; } = 102;
-
-        public IActorRef ActorRef;
-        public ushort MobileId;
-    }
+    }  
 
     public class MSG_ADDPATH : IServerMessage {
         public byte MessageOrder { get; } = 8;
@@ -108,14 +91,6 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public TypeCache.CoreObject PlayerObject;
         public IActorRef PlayerActor;
         public bool IsCreature;
-    }
-
-    public class MSG_ZONEOBJECTBROADCAST : IServerMessage {
-        public byte MessageOrder { get; } = 14;
-        public byte ServiceID { get; } = 102;
-
-        public IActorRef Source;
-        public IServerMessage[] Messages;
     }
 
     public class MSG_ADDCOMBATSIGIL : IServerMessage {
@@ -510,6 +485,53 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
         public IActorRef PlayerActor;
         public ulong GlobalId;
+
+    }
+
+    /// <summary>
+    /// Called and sent to a <see cref="Zone"/> to broadcast a particular message
+    /// to other <see cref="SessionActor"/>s within that zone.
+    /// </summary>
+    public class MSG_ZONEPLAYERBROADCAST : IServerMessage {
+
+        public byte MessageOrder { get; } = 20;
+        public byte ServiceID { get; } = 102;
+
+        /// <summary>
+        /// The actor that sent the message.
+        /// </summary>
+        public IActorRef Sender;
+
+        /// <summary>
+        /// The message to broadcast.
+        /// </summary>
+        public IMessage Message;
+
+        /// <summary>
+        /// True, if the message should not be sent to the sender.
+        /// </summary>
+        public bool Selfless;
+
+    }
+
+    /// <summary>
+    /// Called and sent to a <see cref="Zone"/> to broadcast a particular message
+    /// to all <see cref="ZoneEntity"/>s within that zone.
+    /// </summary>
+    public class MSG_ZONESUPERVISORBROADCAST : IServerMessage {
+
+        public byte MessageOrder { get; } = 21;
+        public byte ServiceID { get; } = 102;
+
+        /// <summary>
+        /// The actor that sent the message.
+        /// </summary>
+        public IActorRef Sender;
+
+        /// <summary>
+        /// The messages to broadcast.
+        /// </summary>
+        public IServerMessage[] Messages;
 
     }
 

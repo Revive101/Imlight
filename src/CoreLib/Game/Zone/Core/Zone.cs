@@ -264,12 +264,9 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         }
     }
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
-    private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message) {
-        foreach (var supervisor in _supervisors) {
-            supervisor.Tell(message);
-        }
-    }
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEPLAYERBROADCAST))]
+    private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEPLAYERBROADCAST message) 
+        => _supervisors.ForEach(supervisor => supervisor.Forward(message));
 
     #endregion
 
@@ -279,8 +276,8 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     private void InformZoneSupervisors(IActorRef player, IServerMessage message) {
-        var broadcast = new ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST {
-            Source = player,
+        var broadcast = new ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST {
+            Sender = player,
             Messages = [message]
         };
 

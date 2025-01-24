@@ -92,7 +92,7 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
         => Akka.Actor.Props.Create(() => new CombatDuelActor(wizardZoneRef));
 
     internal void ZoneBroadcast(IMessage message) {
-        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEPLAYERBROADCAST {
             Selfless = false,
             Sender = Self,
             Message = message

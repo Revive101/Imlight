@@ -21,7 +21,7 @@ namespace Imlight.CoreLib.Game.Zone.Supervisors;
 internal sealed class ZoneVolumeSupervisor(Core.Zone zone) : ZoneEntitySupervisor(zone) {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS))]
-    private void ReceiveZoneLoadResults(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS message) {
+    public override void ReceiveZoneLoadResults(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS message) {
         foreach (var volume in message.VolumeData.m_volumes) {
             // We have to use this explicit method because the volume has two `m_templateID` fields, but only the duplicate one is used.
             var coreObject = CoreObjectFactory.FinalizeCoreObject(volume, volume.m_templateID);

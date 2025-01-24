@@ -35,8 +35,8 @@ public class CombatDuelActorSupervisor : ReceiveProtocolDispatcher {
         duelActor.Forward(message);
     }
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST))]
-    private void ReceiveZoneObjectBroadcast(ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST message) {
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST))]
+    private void ReceiveZoneObjectBroadcast(ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST message) {
         foreach (var obj in _duels) {
             foreach (var msg in message.Messages) {
                 obj.Forward(msg);

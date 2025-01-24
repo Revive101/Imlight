@@ -7,7 +7,6 @@ using Akka.Actor;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
-using System.Collections.Generic;
 
 namespace Imlight.CoreLib.Game.Zone.Supervisors;
 
@@ -21,40 +20,53 @@ namespace Imlight.CoreLib.Game.Zone.Supervisors;
 /// <param name="zone">The zone that this supervisor is responsible for.</param>
 internal sealed class ZonePlayerSupervisor(Core.Zone zone) : ZoneEntitySupervisor(zone) {
 
-    private readonly List<IActorRef> _players = [];
-    private int _playerPopThresh;
-
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS))]
-    private void ReceiveZoneLoadResults(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS message) {
-        // We only care about the ZoneData section of the message.
-        var zoneData = message.ZoneData;
-
-        _playerPopThresh = zoneData.m_playerPopThresh;
-
+    public override void ReceiveZoneLoadResults(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS message) {
+        // We don't have any actual processing to do here. 
         // Inform the zone that we have finished initializing.
         var reply = new ZONE_102_PROTOCOL.MSG_ZONESUPERVISORLOADRESULTS { SupervisorName = nameof(ZonePlayerSupervisor) };
         Sender.Tell(reply);
     }
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
-    private void ReceiveAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message) {
-        // If we have reached the player population threshold, we should not add any more players.
-        if (_players.Count >= _playerPopThresh) {
-            Logger.Error("Player population threshhold for {0} reached ({1} allowed).", 
-                Logger.Args(zone.ZoneName, _playerPopThresh));
-
-            return;
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST))]
+    public override void ReceiveZoneSupervisorBroadcast(ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST message) {
+        foreach (var internalMessage in message.Messages) {
+            // Check if this is the add player or remove player message.
+            switch (internalMessage) {
+                case ZONE_102_PROTOCOL.MSG_ADDPLAYER addPlayer:
+                    HandleAddPlayer(addPlayer);
+                    return;
+                case ZONE_102_PROTOCOL.MSG_REMOVEPLAYER removePlayer:
+                    HandleRemovePlayer(removePlayer);
+                    return;
+            }
         }
 
+        // Otherwise, pass the message to the base class.
+        base.ReceiveZoneSupervisorBroadcast(message);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEPLAYERBROADCAST))]
+    private void ReceiveZonePlayerBroadcast(ZONE_102_PROTOCOL.MSG_ZONEPLAYERBROADCAST message) {
+        foreach (var entity in EntityActors) {
+            if (entity.Path.Name == message.Sender.Path.Name && message.Selfless) {
+                continue;
+            }
+
+            entity.Tell(message.Message);
+        }
+    }
+
+    private void HandleAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message) {
         // Inform all currently connected players that a new player has joined the zone.
         var notify = new ZONE_102_PROTOCOL.MSG_PLAYERADDEDTOZONE {
             PlayerActor = message.PlayerActor,
             PlayerObject = message.PlayerObject
         };
-        _players.ForEach(p => p.Tell(notify));
+        EntityActors.ForEach(p => p.Tell(notify));
 
         // Add the player to the list of players in the zone.
-        _players.Add(message.PlayerActor);
+        EntityActors.Add(message.PlayerActor);
 
         // Inform the player that they have been added to the zone.
         var rsp = new ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP {
@@ -66,9 +78,8 @@ internal sealed class ZonePlayerSupervisor(Core.Zone zone) : ZoneEntitySuperviso
             Logger.Args(message.ActualWizardName, zone.ZoneName));
     }
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER))]
-    private void ReceiveRemovePlayer(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message) {
-        _players.Remove(message.PlayerActor);
+    private void HandleRemovePlayer(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message) {
+        EntityActors.Remove(message.PlayerActor);
 
         var rsp = new ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP();
         Sender.Tell(rsp);
@@ -82,7 +93,7 @@ internal sealed class ZonePlayerSupervisor(Core.Zone zone) : ZoneEntitySuperviso
             PlayerActor = message.PlayerActor,
             GlobalId = message.GlobalId
         };
-        _players.ForEach(p => p.Tell(notify));
+        EntityActors.ForEach(p => p.Tell(notify));
     }
 
 }

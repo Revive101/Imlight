@@ -28,8 +28,11 @@ internal abstract class ZoneEntitySupervisor(Core.Zone zone) : ReceiveProtocolDi
     protected readonly Core.Zone Zone = zone;
     protected readonly List<IActorRef> EntityActors = [];
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST))]
-    public void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEOBJECTBROADCAST message) {
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS))]
+    public abstract void ReceiveZoneLoadResults(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS message);
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST))]
+    public virtual void ReceiveZoneSupervisorBroadcast(ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST message) {
         foreach (var entity in EntityActors) {
             if (entity is null) {
                 continue;
@@ -42,7 +45,7 @@ internal abstract class ZoneEntitySupervisor(Core.Zone zone) : ReceiveProtocolDi
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY))]
-    public void ReceiveQueryEntityObject(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY message) {
+    public virtual void ReceiveQueryEntityObject(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY message) {
         foreach (var entity in EntityActors) {
             if (entity is null) {
                 continue;
@@ -53,7 +56,7 @@ internal abstract class ZoneEntitySupervisor(Core.Zone zone) : ReceiveProtocolDi
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONESTART))]
-    public void ReceiveZoneStart(ZONE_102_PROTOCOL.MSG_ZONESTART message) {
+    public virtual void ReceiveZoneStart(ZONE_102_PROTOCOL.MSG_ZONESTART message) {
         foreach (var entity in EntityActors) {
             if (entity is null) {
                 continue;

@@ -160,7 +160,7 @@ internal class MoveService : MessageService, IWithTimers {
             };
 
             // Broadcast the server teleport.
-            var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST() {
+            var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEPLAYERBROADCAST() {
                 Sender = SessionActor.ActorRef,
                 Message = serverTeleportRsp,
                 Selfless = false,

@@ -28,7 +28,7 @@ namespace Imlight.CoreLib.Game.Zone.Supervisors;
 internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervisor(zone) {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS))]
-    private void ReceiveZoneLoadResults(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS message) {
+    public override void ReceiveZoneLoadResults(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS message) {
         // Triggers are stored in the client data, except for zone transfers.
         // Our QA team has manually recreated this trigger data, and is available within the database.
         // Words cannot describe how thankful I am for QA. They are the unsung heroes of the development team.

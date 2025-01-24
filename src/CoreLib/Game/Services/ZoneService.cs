@@ -274,8 +274,8 @@ public class ZoneService : MessageService, IWithTimers {
         SendToSocket(removeMsg);
     }
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
-    private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message) {
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEPLAYERBROADCAST))]
+    private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEPLAYERBROADCAST message) {
         if (ZoneActor is null) {
             throw new Exception("Zone Reference was null.");
         }
@@ -460,7 +460,7 @@ public class ZoneService : MessageService, IWithTimers {
         var addMsg = new GAME_5_PROTOCOL.MSG_NEWOBJECT {
             Data = gameObjData,
         };
-        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEPLAYERBROADCAST {
             Message = addMsg
         };
 
