@@ -10,9 +10,7 @@ using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Game.WizBang;
 using Imlight.CoreLib.Game.Zone.Core;
-using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using static Imlight.Common.Caches.TypeCache;
@@ -33,9 +31,8 @@ internal sealed class ServiceMementoComponent(ZoneEntity entity) : BaseZoneCompo
     private ServiceMementoBase _serviceMemento;
     private MadlibBlock _madlibBlock;
 
-    public static bool ShouldAttachToEntity(CoreTemplate template) =>
-        template is GameObjectTemplate gameObjTemplate &&
-        gameObjTemplate.m_behaviors.Any(x => x is NPCBehaviorTemplate);
+    public static bool ShouldAttachToEntity(CoreTemplate template) 
+        => true;
 
     public override void OnStart() 
         => RefreshServiceMomento();
@@ -121,6 +118,10 @@ internal sealed class ServiceMementoComponent(ZoneEntity entity) : BaseZoneCompo
 
     private void RefreshServiceMomento() {
         _serviceComponents = [.. Entity.GetComponentsOfType<IServiceComponent>()];
+        if (_serviceComponents.Count <= 0) {
+            return;
+        }
+
         var gameObjTemplate = Entity.Template as GameObjectTemplate;
 
         // Get all service options.
