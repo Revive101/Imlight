@@ -10,8 +10,6 @@ using Imlight.Common.IO;
 using Imlight.Common.MessageLayer;
 using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Game.Zone.Core;
-using Imlight.CoreLib.Game.Zone;
-using Imlight.CoreLib.Game.Zone.ServiceOptions;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Models.Player;
 using SharpDX;
