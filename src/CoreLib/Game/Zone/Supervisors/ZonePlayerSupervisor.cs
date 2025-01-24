@@ -41,15 +41,19 @@ internal sealed class ZonePlayerSupervisor(Core.Zone zone) : ZoneEntitySuperviso
                     return;
             }
         }
-
-        // Otherwise, pass the message to the base class.
-        base.ReceiveZoneSupervisorBroadcast(message);
     }
+
+    // If this handler was left to the base class, it would cause a stack overflow.
+    // Players attempt to query a zone entity, which is sent to themselves, which sends this message again.
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY))]
+    public override void ReceiveQueryEntityObject(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY message)  { }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEPLAYERBROADCAST))]
     private void ReceiveZonePlayerBroadcast(ZONE_102_PROTOCOL.MSG_ZONEPLAYERBROADCAST message) {
         foreach (var entity in EntityActors) {
-            if (entity.Path.Name == message.Sender.Path.Name && message.Selfless) {
+            if (   message.Sender is not null 
+                && entity.Path.Name == message.Sender.Path.Name 
+                && message.Selfless) {
                 continue;
             }
 

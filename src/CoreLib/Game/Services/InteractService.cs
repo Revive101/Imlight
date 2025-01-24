@@ -62,7 +62,7 @@ internal class InteractService(SessionActor sessionActor) : MessageService(sessi
             State = StringHash.Compute("Moving"),
             IgnoreIfCurrentStateIsOff = 1
         };
-        SendToSocket(enableMovementStateMsg);
+        ZoneBroadcast(enableMovementStateMsg, false);
 
         var clearWizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG() {
             GameObjectID = charId,
