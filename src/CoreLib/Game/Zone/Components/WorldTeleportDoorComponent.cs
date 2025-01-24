@@ -36,7 +36,7 @@ internal sealed class WorldTeleportDoorComponent(ZoneEntity entity) : BaseZoneCo
         => template is GameObjectTemplate goTemplate 
         && goTemplate.m_templateID == WORLD_DOOR_TEMPLATE_ID;
 
-    public IEnumerable<ServiceOptionBase> GetServiceOptions() 
+    public IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard _) 
         => [
             new UniverseMapOption() {
                 m_displayKey = DisplayKey,

@@ -15,7 +15,7 @@ namespace Imlight.CoreLib.Game.Zone.Components;
 /// </summary>
 public interface IServiceComponent {
 
-    IEnumerable<ServiceOptionBase> GetServiceOptions();
+    IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard playerCharacter);
     void OnServiceInteraction(IActorRef playerActor, Wizard playerCharacter, CoreObject playerObject, uint serviceOptionIndex);
     
     string ServiceName { get; }

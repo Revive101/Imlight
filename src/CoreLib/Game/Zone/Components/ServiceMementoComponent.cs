@@ -10,6 +10,7 @@ using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Game.WizBang;
 using Imlight.CoreLib.Game.Zone.Core;
+using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,7 +36,7 @@ internal sealed class ServiceMementoComponent(ZoneEntity entity) : BaseZoneCompo
         => true;
 
     public override void OnStart() 
-        => RefreshServiceMomento();
+        => RefreshServiceMomento(null);
 
     public override void OnPlayerJoin(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) 
         => SendWizBang(playerActor);
@@ -92,6 +93,14 @@ internal sealed class ServiceMementoComponent(ZoneEntity entity) : BaseZoneCompo
     }
 
     private void SendActorServiceOptions(IActorRef playerActor) {
+        // Get interacting wizard
+        var queryCharacterMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
+        var wizard = playerActor
+            .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryCharacterMsg)
+            .Result
+            .Wizard;
+        RefreshServiceMomento(wizard);
+
         var data = _serializer.Serialize(_serviceMemento);
         var npcOptionsMsg = new QUEST_MESSAGES_52_PROTOCOL.MSG_SENDNPCOPTIONS {
             // Do not let this property name fool you. 
@@ -116,7 +125,7 @@ internal sealed class ServiceMementoComponent(ZoneEntity entity) : BaseZoneCompo
         playerActor.Tell(msg);
     }
 
-    private void RefreshServiceMomento() {
+    private void RefreshServiceMomento(Wizard playerCharacter) {
         _serviceComponents = [.. Entity.GetComponentsOfType<IServiceComponent>()];
         if (_serviceComponents.Count <= 0) {
             return;
@@ -125,7 +134,7 @@ internal sealed class ServiceMementoComponent(ZoneEntity entity) : BaseZoneCompo
         var gameObjTemplate = Entity.Template as GameObjectTemplate;
 
         // Get all service options.
-        var allOptions = _serviceComponents.SelectMany(c => c.GetServiceOptions()).ToList();
+        var allOptions = _serviceComponents.SelectMany(c => c.GetServiceOptions(playerCharacter)).ToList();
 
         // Get UI overrides based on priority.
         var sortedComponents = SortComponentsByPriority(_serviceComponents);

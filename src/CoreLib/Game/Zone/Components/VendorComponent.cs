@@ -55,7 +55,7 @@ internal sealed class VendorComponent(ZoneEntity entity) : BaseZoneComponent(ent
         _inventory = inventory.Inventory;
     }
 
-    public IEnumerable<ServiceOptionBase> GetServiceOptions() 
+    public IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard _) 
         => [
             new EquipmentShopOption {
                 m_displayKey = DisplayKey,

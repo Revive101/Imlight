@@ -33,7 +33,7 @@ internal sealed class DyeShopComponent(ZoneEntity entity) : BaseZoneComponent(en
         => template is GameObjectTemplate gameObjectTemplate
         && gameObjectTemplate.m_objectName.ToString().Contains(DYE_SHOP_NPC_CONTAINS);
 
-    public IEnumerable<ServiceOptionBase> GetServiceOptions() 
+    public IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard _) 
         => [
             new DyeShopOption {
                 m_displayKey = DisplayKey,
