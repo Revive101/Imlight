@@ -28,7 +28,6 @@ internal sealed class ZoneLoader : ReceiveProtocolDispatcher {
     private const string TRIGGER_DATA_FILE_NAME = "triggers.xml";
 
     private KiWad _wad;
-    private readonly FileSerializer _serializer = new();
     private readonly System.Diagnostics.Stopwatch _benchmarkTimer = new();
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADBEGIN))]
@@ -91,23 +90,35 @@ internal sealed class ZoneLoader : ReceiveProtocolDispatcher {
         }
     }
 
-    private WizZoneData LoadZoneData() 
-        => _serializer.OpenClass<WizZoneData>(_wad, ZONE_DATA_FILE_NAME);
+    private WizZoneData LoadZoneData() {
+        var serializer = new FileSerializer();
+        return serializer.OpenClass<WizZoneData>(_wad, ZONE_DATA_FILE_NAME);
+    }
 
-    private SpawnManager LoadSpawnData() 
-        => _serializer.OpenClass<SpawnManager>(_wad, SPAWN_DATA_FILE_NAME);
+    private SpawnManager LoadSpawnData() {
+        var serializer = new FileSerializer();
+        return serializer.OpenClass<SpawnManager>(_wad, SPAWN_DATA_FILE_NAME);
+    }
 
-    private PathManager_PathTemplateList LoadPathData() 
-        => _serializer.OpenClass<PathManager_PathTemplateList>(_wad, PATH_DATA_FILE_NAME);
+    private PathManager_PathTemplateList LoadPathData() {
+        var serializer = new FileSerializer();
+        return serializer.OpenClass<PathManager_PathTemplateList>(_wad, PATH_DATA_FILE_NAME);
+    }
 
-    private PathManager_NodeTemplateList LoadNodeData() 
-        => _serializer.OpenClass<PathManager_NodeTemplateList>(_wad, NODE_DATA_FILE_NAME);
+    private PathManager_NodeTemplateList LoadNodeData() {
+        var serializer = new FileSerializer();
+        return serializer.OpenClass<PathManager_NodeTemplateList>(_wad, NODE_DATA_FILE_NAME);
+    }
 
-    private WizZoneVolumes LoadVolumeData() 
-        => _serializer.OpenClass<WizZoneVolumes>(_wad, VOLUME_DATA_FILE_NAME);
+    private WizZoneVolumes LoadVolumeData() {
+        var serializer = new FileSerializer();
+        return serializer.OpenClass<WizZoneVolumes>(_wad, VOLUME_DATA_FILE_NAME);
+    }
 
-    private WizZoneTriggers LoadTriggerData() 
-        => _serializer.OpenClass<WizZoneTriggers>(_wad, TRIGGER_DATA_FILE_NAME);
+    private WizZoneTriggers LoadTriggerData() {
+        var serializer = new FileSerializer();
+        return serializer.OpenClass<WizZoneTriggers>(_wad, TRIGGER_DATA_FILE_NAME);
+    }
 
     private void LogLoadingStep(string step) {
         Logger.Debug("Loaded {step} in {Time}ms", 
