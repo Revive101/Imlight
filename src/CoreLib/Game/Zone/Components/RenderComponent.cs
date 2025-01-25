@@ -33,6 +33,12 @@ internal sealed class RenderComponent : BaseZoneComponent, IComponentFactory {
             .Any(anim => anim.m_bFadesIn || anim.m_bFadesOut);
 
         _renderDistance = Entity.Zone.ZoneData.m_farClip;
+
+        // Broadcast the creation of the object to all players.
+        var clientObj = Entity.GetClientBehaviorInstance();
+        PlayerBroadcast(new GAME_5_PROTOCOL.MSG_NEWOBJECT {
+            Data = _serializer.Serialize(clientObj)
+        });
     }
 
     public static bool ShouldAttachToEntity(CoreTemplate template) =>

@@ -4,8 +4,10 @@
  */
 
 using Akka.Actor;
+using DotNetty.Transport.Channels;
 using Imlight.Common;
 using Imlight.Common.Caches;
+using Imlight.Common.MessageLayer;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
@@ -104,6 +106,16 @@ public abstract class BaseZoneComponent(ZoneEntity entity) : ReceiveProtocolDisp
         var sqrtDist = (obj.m_location - Entity.ActiveGameObject.m_location).LengthSquared();
         var sqrtRadius = distance * distance;
         return sqrtDist <= sqrtRadius;
+    }
+
+    /// <summary>
+    /// Broadcasts a message to all players within the zone.
+    /// </summary>
+    /// <param name="message">The message to broadcast.</param>
+    protected void PlayerBroadcast(IMessage message) {
+        // Wrap the message in a zone broadcast message.
+        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEPLAYERBROADCAST { Message = message };
+        ZoneActor.Tell(broadcastMsg);
     }
 
 }

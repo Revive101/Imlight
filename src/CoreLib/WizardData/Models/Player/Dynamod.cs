@@ -56,6 +56,10 @@ public class DynamodSet {
         }
 
         for (int i = 0; i < Dynamods.Length; i++) {
+            if (Dynamods[i] is null) {
+                continue;
+            }
+
             if (Dynamods[i].ClientTag == clientTag) {
                 Dynamods[i] = null;
                 return true;

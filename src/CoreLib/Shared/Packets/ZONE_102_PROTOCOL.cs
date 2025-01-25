@@ -20,6 +20,7 @@ using Imlight.CoreLib.Game.Zone.Components;
 namespace Imlight.CoreLib.Shared.Packets;
 
 public class ZONE_102_PROTOCOL : IServerProtocol {
+
     public byte ServiceID { get; } = 102;
     public string ProtocolType { get; } = "ZONE";
     public int ProtocolVersion { get; } = 1;
@@ -48,39 +49,6 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public float Orientation;
         public uint ErrorCode;
     }  
-
-    public class MSG_ADDPATH : IServerMessage {
-        public byte MessageOrder { get; } = 8;
-        public byte ServiceID { get; } = 102;
-
-        public GID Id;
-        public ByteString Name;
-        public List<TypeCache.NodeObject> Nodes;
-        public List<TypeCache.SpawnObject> Creatures;
-    }
-
-    public class MSG_ADDCREATURE : IServerMessage {
-        public byte MessageOrder { get; } = 9;
-        public byte ServiceID { get; } = 102;
-
-        public IActorRef ObjectIdentity;
-        public TypeCache.CoreObject CoreObject;
-    }
-
-    public class MSG_ADDVOLUME : IServerMessage {
-        public byte MessageOrder { get; } = 11;
-        public byte ServiceID { get; } = 102;
-
-        public TypeCache.CoreObject CoreObject;
-        public ServerTypeCache.Volume Volume;
-    }
-
-    public class MSG_ADDTRIGGER : IServerMessage {
-        public byte MessageOrder { get; } = 12;
-        public byte ServiceID { get; } = 102;
-
-        public ServerTypeCache.Trigger Trigger;
-    }
 
     public class MSG_PLAYERMOVE : IServerMessage {
         public byte MessageOrder { get; } = 14;
@@ -113,32 +81,6 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte ServiceID { get; } = 102;
 
         public Dictionary<IActorRef, TypeCache.CoreObject> StartingParticipants;
-    }
-
-    public sealed class MSG_CREATURESPAWNINTERVAL : IServerMessage {
-        public byte MessageOrder { get; } = 20;
-        public byte ServiceID { get; } = 102;
-
-        public TypeCache.SpawnObject SpawnObject;
-    }
-
-    public sealed class MSG_CREATURESPAWNONPATH : IServerMessage {
-        public byte MessageOrder { get; } = 21;
-        public byte ServiceID { get; } = 102;
-
-        public TypeCache.SpawnObject SpawnObject;
-        public int Count;
-        public int SpawnRate;
-    }
-
-    public sealed class MSG_CREATUREMOVEINTERVAL : IServerMessage {
-        public byte MessageOrder { get; } = 22;
-        public byte ServiceID { get; } = 102;
-    }
-
-    public sealed class MSG_CREATUREFISHINTERACTIONINTERVAL : IServerMessage {
-        public byte MessageOrder { get; } = 23;
-        public byte ServiceID { get; } = 102;
     }
 
     public sealed class MSG_REMOVECOMBATSIGIL : IServerMessage {
@@ -530,6 +472,54 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         /// The messages to broadcast.
         /// </summary>
         public IServerMessage[] Messages;
+
+    }
+
+    /// <summary>
+    /// Called by a <see cref="ZonePath"/> to itself to indicate that it's time to spawn a creature,
+    /// if possible.
+    /// </summary>
+    public sealed class MSG_PATHSPAWNINTERVAL : IServerMessage {
+
+        public byte MessageOrder { get; } = 22;
+        public byte ServiceID { get; } = 102;
+
+        public SpawnObject SpawnObject;
+    }
+
+    /// <summary>
+    /// Called by a <see cref="PathMovementComponent"/> to itself to indicate that it's time to move a creature.
+    /// </summary>
+    public sealed class MSG_CREATUREMOVEINTERVAL : IServerMessage {
+
+        public byte MessageOrder { get; } = 23;
+        public byte ServiceID { get; } = 102;
+
+    }
+
+    /// <summary>
+    /// Sent by a <see cref="ZoneVolumeSupervisor"/> to a <see cref="VolumeComponent"/> to indicate
+    /// the details of the volume.
+    /// </summary>
+    public sealed class MSG_VOLUMEDETAILS : IServerMessage {
+
+        public byte MessageOrder { get; } = 24;
+        public byte ServiceID { get; } = 102;
+
+        public CoreObject CoreObject;
+        public Volume Volume;
+
+    }
+
+    /// <summary>
+    /// Sent by a <see cref="ZonePath"/> to a <see cref="PathMovementComponent"/> to indicate
+    /// the details of the path.
+    public sealed class MSG_PATHDETAILS : IServerMessage {
+
+        public byte MessageOrder { get; } = 25;
+        public byte ServiceID { get; } = 102;
+
+        public List<NodeObject> NodeObjects;
 
     }
 

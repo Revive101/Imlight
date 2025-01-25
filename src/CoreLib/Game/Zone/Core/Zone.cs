@@ -80,6 +80,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         _supervisors.Add(CreateSupervisor<ZoneVolumeSupervisor>());
         _supervisors.Add(CreateSupervisor<ZoneTriggerSupervisor>());
         _supervisors.Add(CreateSupervisor<ZonePlayerSupervisor>());
+        _supervisors.Add(CreateSupervisor<ZonePathSupervisor>());
 
         // Create the loader actor and prepare the loading of this zone.
         _loaderRef = Context.ActorOf(Akka.Actor.Props.Create(() => new ZoneLoader()));

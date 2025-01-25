@@ -48,8 +48,8 @@ internal sealed class VolumeComponent(ZoneEntity entity) : BaseZoneComponent(ent
         }
     }
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDVOLUME))]
-    private void ReceiveVolumeDetails(ZONE_102_PROTOCOL.MSG_ADDVOLUME message) 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_VOLUMEDETAILS))]
+    private void ReceiveVolumeDetails(ZONE_102_PROTOCOL.MSG_VOLUMEDETAILS message) 
         => _volume = message.Volume;
 
     private void OnProximityEnter(CoreObject playerObj, IActorRef playerActor) {

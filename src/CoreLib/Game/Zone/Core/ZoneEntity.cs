@@ -32,11 +32,11 @@ public class ZoneEntity(
 
     private const uint MOBILE_ID_REQUEST_TIMEOUT_IN_MS = 1000;
 
-    public CoreObject ActiveGameObject { get; private set; } = activeGameObject;
-    public CoreTemplate Template { get; private set; } = template;
-    public Zone Zone { get; private set; } = zone;
-    public IActorRef SupervisorRef { get; private set; } = Context.Parent;
-    public IActorRef ZoneRef { get; private set; } = zoneRef;
+    public CoreObject ActiveGameObject { get; protected set; } = activeGameObject;
+    public CoreTemplate Template { get; protected set; } = template;
+    public Zone Zone { get; protected set; } = zone;
+    public IActorRef SupervisorRef { get; protected set; } = Context.Parent;
+    public IActorRef ZoneRef { get; protected set; } = zoneRef;
     public bool NoTransfer { get; set; } = false;
     public ushort MobileID { 
         get => ActiveGameObject.m_nMobileID; 
@@ -74,7 +74,7 @@ public class ZoneEntity(
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY))]
-    protected void ReceiveQueryEntityObject(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY message) {
+    protected virtual void ReceiveQueryEntityObject(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY message) {
         if (ActiveGameObject is null) {
             return;
         }
@@ -88,7 +88,7 @@ public class ZoneEntity(
     }
 
     [MessageHandler(typeof(IServerMessage))]
-    private void ReceiveElse(IServerMessage message) {
+    protected virtual void ReceiveElse(IServerMessage message) {
         if (message is ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN) {
             return;
         }

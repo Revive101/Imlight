@@ -42,7 +42,7 @@ internal sealed class ZoneVolumeSupervisor(Core.Zone zone) : ZoneEntitySuperviso
             EntityActors.Add(objectActor);
 
             // Send the volume details to the object actor.
-            var volumeDetails = new ZONE_102_PROTOCOL.MSG_ADDVOLUME { 
+            var volumeDetails = new ZONE_102_PROTOCOL.MSG_VOLUMEDETAILS { 
                 Volume = volume,
             };
             objectActor.Tell(volumeDetails);
