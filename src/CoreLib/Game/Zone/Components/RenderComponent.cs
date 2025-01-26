@@ -15,22 +15,22 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
-internal sealed class RenderComponent : BaseZoneComponent, IComponentFactory {
+internal sealed class RenderComponent(ZoneEntity entity) : BaseZoneComponent(entity), IComponentFactory {
 
     private readonly CoreObjectSerializer _serializer = new CoreObjectSerializer()
             .OnBehaviors(SerializerOptions.Behaviors.None)
-            .OnPropertyMask(SerializerOptions.PropertyFlags.Public 
-                | SerializerOptions.PropertyFlags.Transmit 
+            .OnPropertyMask(SerializerOptions.PropertyFlags.Public
+                | SerializerOptions.PropertyFlags.Transmit
                 | SerializerOptions.PropertyFlags.AuthorityTransmit);
     private readonly Dictionary<CoreObject, IActorRef> _playersInRange = [];
-    private readonly float _renderDistance;
-    private readonly bool _doesDistanceCheck = false;
+    private float _renderDistance;
+    private bool _doesDistanceCheck = false;
 
-    public RenderComponent(ZoneEntity entity) : base(entity) {
+    public override void OnStart() {
         // Check if the object should be spawned based on distance.
         _doesDistanceCheck = entity.Template.m_behaviors
-            .OfType<AnimationBehaviorTemplate>()
-            .Any(anim => anim.m_bFadesIn || anim.m_bFadesOut);
+                .OfType<AnimationBehaviorTemplate>()
+                .Any(anim => anim.m_bFadesIn || anim.m_bFadesOut);
 
         _renderDistance = Entity.Zone.ZoneData.m_farClip;
 
@@ -79,7 +79,8 @@ internal sealed class RenderComponent : BaseZoneComponent, IComponentFactory {
             // If the player is in range, spawn the object for them.
             SpawnObjectForPlayer(playerActor);
             _playersInRange.Add(playerObj, playerActor);
-        } else if (!IsInRadius(playerObj, _renderDistance) && _playersInRange.ContainsKey(playerObj)) {
+        }
+        else if (!IsInRadius(playerObj, _renderDistance) && _playersInRange.ContainsKey(playerObj)) {
             // If the player is out of range, despawn the object for them.
             DespawnObjectForPlayer(playerActor);
             _playersInRange.Remove(playerObj);

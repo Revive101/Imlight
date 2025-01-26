@@ -514,12 +514,23 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     /// <summary>
     /// Sent by a <see cref="ZonePath"/> to a <see cref="PathMovementComponent"/> to indicate
     /// the details of the path.
+    /// </summary>
     public sealed class MSG_PATHDETAILS : IServerMessage {
 
         public byte MessageOrder { get; } = 25;
         public byte ServiceID { get; } = 102;
 
         public List<NodeObject> NodeObjects;
+
+    }
+
+    /// <summary>
+    /// Called by a <see cref="ZoneEntity"/> to all its components to indicate the entity has finished initializing.
+    /// </summary>
+    public sealed class MSG_ZONEOBJECTINITIALIZED : IServerMessage {
+
+        public byte MessageOrder { get; } = 26;
+        public byte ServiceID { get; } = 102;
 
     }
 

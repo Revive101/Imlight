@@ -24,9 +24,14 @@ namespace Imlight.CoreLib.Game.Zone.Components;
 public interface IZoneComponent {
 
     /// <summary>
-    /// Called once a <see cref="Zone"/> has completed initialization.
+    /// Sent by the <see cref="ZoneEntity"/> when all components have been initialized.
     /// </summary>
     void OnStart();
+
+    /// <summary>
+    /// Called once a <see cref="Zone"/> has completed initialization.
+    /// </summary>
+    void OnZoneStart();
 
     /// <summary>
     /// Called when a player joins the zone.
@@ -70,6 +75,7 @@ public abstract class BaseZoneComponent(ZoneEntity entity) : ReceiveProtocolDisp
     protected IActorRef ZoneActor => Entity.ZoneRef;
 
     public virtual void OnStart() { }
+    public virtual void OnZoneStart() { }
     public virtual void OnPlayerJoin(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) { }
     public virtual void OnPlayerLeave(IActorRef playerActor, ulong id) { }
     public virtual void OnPlayerMove(CoreObject playerObj, IActorRef playerActor) { }
@@ -78,7 +84,7 @@ public abstract class BaseZoneComponent(ZoneEntity entity) : ReceiveProtocolDisp
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONESTART))]
     public void ReceiveZoneStart() {
         ActorRef = Self;
-        OnStart();
+        OnZoneStart();
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
@@ -96,6 +102,10 @@ public abstract class BaseZoneComponent(ZoneEntity entity) : ReceiveProtocolDisp
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ENTITYCOMPONENTREQUESTIDENTITY))]
     public void ReceiveRequestIdentity() 
         => Sender.Tell(new ZONE_102_PROTOCOL.MSG_ENTITYCOMPONENTREQUESTIDENTITYRSP { Component = this });
+        
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTINITIALIZED))]
+    public void ReceiveObjectStart()
+        => OnStart();
 
     /// <summary>
     /// Checks if the specified object is within the radius of the entity.

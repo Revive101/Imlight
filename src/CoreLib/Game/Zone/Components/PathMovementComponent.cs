@@ -17,7 +17,7 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
-internal sealed class PathMovementComponent : BaseZoneComponent, IComponentFactory, IWithTimers {
+internal sealed class PathMovementComponent(ZoneEntity entity) : BaseZoneComponent(entity), IComponentFactory, IWithTimers {
 
     private const string CREATURE_SPAWN_INTERVAL_LOCK = "CREATURE_SPAWN_INTERVAL_LOCK";
     private const uint INITIAL_MOVEMENT_DELAY_MINIMUM_IN_MS = 1000;
@@ -28,12 +28,12 @@ internal sealed class PathMovementComponent : BaseZoneComponent, IComponentFacto
     public bool Stopped { get; set; }
     public ITimerScheduler Timers { get; set; }
 
-    private readonly PathBehaviorTemplate.PathType _pathType;
-    private readonly int _pathDirection;
-    private readonly uint _pauseChance;
-    private readonly float _pauseDuration;
-    private readonly float _movementSpeed;
-    private readonly float _movementScale;
+    private PathBehaviorTemplate.PathType _pathType;
+    private int _pathDirection;
+    private uint _pauseChance;
+    private float _pauseDuration;
+    private float _movementSpeed;
+    private float _movementScale;
     private bool _justPaused;
     private List<NodeObject> _nodes;
     private NodeObject _currentNode;
@@ -48,7 +48,7 @@ internal sealed class PathMovementComponent : BaseZoneComponent, IComponentFacto
             && pathMovement.m_movementSpeed > 0.0f)
         && goTemplate.m_behaviors.Any(x => x is PathBehaviorTemplate);
 
-    public PathMovementComponent(ZoneEntity entity) : base(entity) {
+    public override void OnStart() {
         var pathBehavior = Entity.Template.m_behaviors.OfType<PathBehaviorTemplate>().First();
         var pathMovementBehavior = Entity.Template.m_behaviors.OfType<PathMovementBehaviorTemplate>().First();
 

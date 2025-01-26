@@ -17,7 +17,7 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
-internal sealed class TrainerComponent : BaseZoneComponent, IServiceComponent, IComponentFactory {
+internal sealed class TrainerComponent(ZoneEntity entity) : BaseZoneComponent(entity), IServiceComponent, IComponentFactory {
 
     public string ServiceName     => "WizTrainingService";
     public string NpcIcon         => null;
@@ -37,7 +37,7 @@ internal sealed class TrainerComponent : BaseZoneComponent, IServiceComponent, I
         && goTemplate.m_behaviors.Any(x => x is NPCBehaviorTemplate) 
         && NpcSpellInventoryCollection.TryGetNpcInventory(goTemplate.m_templateID, out _);
 
-    public TrainerComponent(ZoneEntity entity) : base(entity) {
+    public override void OnStart() {
         // Search Dragon database for our spell inventory.
         if (    Entity.Template is not GameObjectTemplate goTemplate
             || !NpcSpellInventoryCollection.TryGetNpcInventory(goTemplate.m_templateID, out var spellInventory)) {

@@ -36,7 +36,7 @@ public class DynamodSet {
         }
 
         for (int i = 0; i < Dynamods.Length; i++) {
-            if (Dynamods[i].ZoneName == dynamod.ZoneName) {
+            if (Dynamods[i] is null || Dynamods[i].ZoneName == dynamod.ZoneName) {
                 Dynamods[i] = dynamod;
                 return true;
             }
