@@ -5,7 +5,6 @@
 
 using Akka.Actor;
 using Imlight.Common;
-using Imlight.CoreLib.Game.Zone.Components;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;

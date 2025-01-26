@@ -8,7 +8,7 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Shared.Behaviors;
 
-public interface IClientBehaviorProvider<T> {
+public interface IClientBehaviorProvider<out T> {
 
     public abstract bool NoTransfer { get; set; }
     public abstract T GetClientBehaviorInstance();
