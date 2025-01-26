@@ -15,7 +15,7 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
-internal sealed class RenderComponent(ZoneEntity entity) : BaseZoneComponent(entity), IComponentFactory {
+internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(entity), IComponentFactory {
 
     private readonly CoreObjectSerializer _serializer = new CoreObjectSerializer()
             .OnBehaviors(SerializerOptions.Behaviors.None)

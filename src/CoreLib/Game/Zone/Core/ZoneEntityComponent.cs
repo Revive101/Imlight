@@ -4,19 +4,13 @@
  */
 
 using Akka.Actor;
-using DotNetty.Transport.Channels;
-using Imlight.Common;
-using Imlight.Common.Caches;
 using Imlight.Common.MessageLayer;
-using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
-using System;
-using System.Collections.Generic;
 using static Imlight.Common.Caches.TypeCache;
 
-namespace Imlight.CoreLib.Game.Zone.Components;
+namespace Imlight.CoreLib.Game.Zone.Core;
 
 /// <summary>
 /// Represents a component within a zone that handles various player and creature interactions.
@@ -67,7 +61,7 @@ public interface IZoneComponent {
 /// <summary>
 /// Base class for components that implements common functionality
 /// </summary>
-public abstract class BaseZoneComponent(ZoneEntity entity) : ReceiveProtocolDispatcher, IZoneComponent {
+public abstract class ZoneEntityComponent(ZoneEntity entity) : ReceiveProtocolDispatcher, IZoneComponent {
 
     public IActorRef ActorRef { get; private set; }
     protected ZoneEntity Entity { get; private set; } = entity;

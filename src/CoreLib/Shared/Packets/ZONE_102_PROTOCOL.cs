@@ -251,7 +251,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     }
 
     /// <summary>
-    /// Sent by a <see cref="ZoneEntity"/> to a <see cref="BaseZoneComponent"/> actor to request the identity of the entity.
+    /// Sent by a <see cref="ZoneEntity"/> to a <see cref="ZoneEntityComponent"/> actor to request the identity of the entity.
     /// The identity is usually the type.
     /// </summary>
     public sealed class MSG_ENTITYCOMPONENTREQUESTIDENTITY : IServerMessage {
@@ -262,7 +262,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     }
 
     /// <summary>
-    /// Sent by a <see cref="BaseZoneComponent"/> actor to a <see cref="ZoneEntity"/> to respond to a request for the entity's identity.
+    /// Sent by a <see cref="ZoneEntityComponent"/> actor to a <see cref="ZoneEntity"/> to respond to a request for the entity's identity.
     /// </summary>
     public sealed class MSG_ENTITYCOMPONENTREQUESTIDENTITYRSP : IServerMessage {
 
@@ -272,7 +272,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         /// <summary>
         /// The identity of the entity.
         /// </summary>
-        public BaseZoneComponent Component;
+        public ZoneEntityComponent Component;
 
     }
 

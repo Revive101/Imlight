@@ -20,7 +20,7 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
-internal sealed class VendorComponent(ZoneEntity entity) : BaseZoneComponent(entity), IServiceComponent, IComponentFactory {
+internal sealed class VendorComponent(ZoneEntity entity) : ZoneEntityComponent(entity), IServiceComponent, IComponentFactory {
 
     public string ServiceName     => "WizShoppingService";
     public string NpcIcon         => null;

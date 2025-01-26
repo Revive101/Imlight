@@ -14,7 +14,7 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
-internal sealed class DyeShopComponent(ZoneEntity entity) : BaseZoneComponent(entity), IServiceComponent, IComponentFactory {
+internal sealed class DyeShopComponent(ZoneEntity entity) : ZoneEntityComponent(entity), IServiceComponent, IComponentFactory {
 
     // Dye shop NPCs always have "dye" in their object name. It's what we can use to deduce if the entity is a dye shop NPC.
     private const string DYE_SHOP_NPC_CONTAINS = "Dye";

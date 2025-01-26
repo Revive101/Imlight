@@ -17,7 +17,7 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
-internal sealed class PathMovementComponent(ZoneEntity entity) : BaseZoneComponent(entity), IComponentFactory, IWithTimers {
+internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityComponent(entity), IComponentFactory, IWithTimers {
 
     private const string CREATURE_SPAWN_INTERVAL_LOCK = "CREATURE_SPAWN_INTERVAL_LOCK";
     private const uint INITIAL_MOVEMENT_DELAY_MINIMUM_IN_MS = 1000;

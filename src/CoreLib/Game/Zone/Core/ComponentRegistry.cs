@@ -11,7 +11,7 @@ using System.Linq;
 using System.Reflection;
 using static Imlight.Common.Caches.TypeCache;
 
-namespace Imlight.CoreLib.Game.Zone.Components;
+namespace Imlight.CoreLib.Game.Zone.Core;
 
 /// <summary>
 /// Interface that defines a component's ability to determine if it should be added to an entity
@@ -41,7 +41,7 @@ public static class ComponentRegistry {
             .Where(t => !t.IsAbstract && 
                        !t.IsInterface && 
                        typeof(IComponentFactory).IsAssignableFrom(t) &&
-                       typeof(BaseZoneComponent).IsAssignableFrom(t));
+                       typeof(ZoneEntityComponent).IsAssignableFrom(t));
 
         foreach (var componentType in componentTypes) {
             var shouldAttachMethod = componentType.GetMethod(

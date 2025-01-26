@@ -18,7 +18,26 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
-internal sealed class ServiceMementoComponent(ZoneEntity entity) : BaseZoneComponent(entity), IComponentFactory {
+/// <summary>
+/// Interface for service components that can be attached to a zone entity.
+/// </summary>
+public interface IServiceComponent {
+
+    IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard playerCharacter);
+    void OnServiceInteraction(IActorRef playerActor, Wizard playerCharacter, CoreObject playerObject, uint serviceOptionIndex);
+    
+    string ServiceName { get; }
+    string NpcIcon { get; }
+    string NpcNameKey { get; }
+    string NpcTextKey { get; }
+    string WizBang { get; } 
+    string StateName { get; }
+    string InteractWizBang { get; }
+    string DisplayKey { get; }
+
+}
+
+internal sealed class ServiceMementoComponent(ZoneEntity entity) : ZoneEntityComponent(entity), IComponentFactory {
 
     private const string DEFAULT_NAME_KEY = "NPCFormats_Name";
     private const string DEFAULT_TEXT_KEY = "GUI_NPCInteractText";

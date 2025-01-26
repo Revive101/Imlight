@@ -15,7 +15,7 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
-internal sealed class VolumeComponent(ZoneEntity entity) : BaseZoneComponent(entity), IComponentFactory {
+internal sealed class VolumeComponent(ZoneEntity entity) : ZoneEntityComponent(entity), IComponentFactory {
 
     private readonly Dictionary<CoreObject, IActorRef> _playersInRange = [];
     private Volume _volume;

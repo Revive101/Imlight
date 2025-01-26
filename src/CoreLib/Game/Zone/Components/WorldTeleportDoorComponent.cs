@@ -15,7 +15,7 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
-internal sealed class WorldTeleportDoorComponent(ZoneEntity entity) : BaseZoneComponent(entity), IServiceComponent, IComponentFactory {
+internal sealed class WorldTeleportDoorComponent(ZoneEntity entity) : ZoneEntityComponent(entity), IServiceComponent, IComponentFactory {
 
     private const uint WORLD_DOOR_TEMPLATE_ID = 84113;
 

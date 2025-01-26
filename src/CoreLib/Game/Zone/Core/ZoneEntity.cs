@@ -43,7 +43,7 @@ public class ZoneEntity(
         private set => ActiveGameObject.m_nMobileID = value; 
     }
 
-    protected readonly Dictionary<BaseZoneComponent, IActorRef> Components = [];
+    protected readonly Dictionary<ZoneEntityComponent, IActorRef> Components = [];
 
     /// <summary>
     /// Gets a list of components of the specified type.
@@ -70,6 +70,13 @@ public class ZoneEntity(
         }
 
         AutoAttachComponents();
+
+        // Notify each component that the entity has been initialized.
+        var initializedMsg = new ZONE_102_PROTOCOL.MSG_ZONEOBJECTINITIALIZED();
+        foreach (var (_, actor) in Components) {
+            actor.Tell(initializedMsg);
+        }
+
         Sender.Tell(new ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADRESULTS());
     }
 
