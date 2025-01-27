@@ -112,7 +112,7 @@ public class ZoneEntity(
     protected virtual void AutoAttachComponents() {
         var template = Template;
 
-        foreach (var (componentType, shouldAttachMethod) in ComponentRegistry.GetRegisteredComponents()) {
+        foreach (var (componentType, shouldAttachMethod) in ZoneEntityComponentRegistry.GetRegisteredComponents()) {
             var shouldAttach = (bool) shouldAttachMethod.Invoke(null, [template]);
             if (shouldAttach) {
                 AddComponent(componentType);

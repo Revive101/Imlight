@@ -30,11 +30,11 @@ public interface IComponentFactory {
 /// <summary>
 /// Registry for all available component types
 /// </summary>
-public static class ComponentRegistry {
+public static class ZoneEntityComponentRegistry {
 
     private static readonly Dictionary<Type, MethodInfo> s_componentFactories = [];
     
-    static ComponentRegistry() {
+    static ZoneEntityComponentRegistry() {
         var componentTypes = AppDomain.CurrentDomain
             .GetAssemblies()
             .SelectMany(a => a.GetTypes())
