@@ -26,6 +26,10 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
     private float _renderDistance;
     private bool _doesDistanceCheck = false;
 
+    public static bool ShouldAttachToEntity(CoreTemplate template) 
+        => template is GameObjectTemplate gameObjectTemplate
+        && gameObjectTemplate.m_behaviors.Any(x => x is RenderBehaviorTemplate);
+
     public override void OnStart() {
         // Check if the object should be spawned based on distance.
         _doesDistanceCheck = entity.Template.m_behaviors
@@ -41,8 +45,19 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         });
     }
 
-    public static bool ShouldAttachToEntity(CoreTemplate template) =>
-        template is GameObjectTemplate and not DynamicTriggerTemplate;
+    public override void OnEnabled() {
+        // Broadcast the creation of the object to all players.
+        var clientObj = Entity.GetClientBehaviorInstance();
+        PlayerBroadcast(new GAME_5_PROTOCOL.MSG_NEWOBJECT {
+            Data = _serializer.Serialize(clientObj)
+        });
+    }
+
+    public override void OnDisabled() =>
+        // Broadcast the removal of the object to all players.
+        PlayerBroadcast(new GAME_5_PROTOCOL.MSG_REMOVEOBJECT {
+            GameObjectID = Entity.ActiveGameObject.m_globalID
+        });
 
     public override void OnPlayerJoin(CoreObject player, IActorRef suspect, Wizard wizard) {
         if (!_doesDistanceCheck) {

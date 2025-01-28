@@ -5,10 +5,8 @@
 
 using System.Collections.Generic;
 using Akka.Actor;
-using Imlight.Common.Caches;
 using Imlight.Common.IO;
 using Imlight.Common.MessageLayer;
-using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Models.Player;
@@ -54,33 +52,9 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte MessageOrder { get; } = 14;
         public byte ServiceID { get; } = 102;
 
-        public TypeCache.CoreObject PlayerObject;
+        public CoreObject PlayerObject;
         public IActorRef PlayerActor;
         public bool IsCreature;
-    }
-
-    public class MSG_ADDCOMBATSIGIL : IServerMessage {
-        public byte MessageOrder { get; } = 15;
-        public byte ServiceID { get; } = 102;
-
-        public TypeCache.CoreObject CoreObject;
-        public TypeCache.CoreTemplate Template;
-        public string SigilType;
-    }
-
-    public class MSG_ADDCOMBATSIGILRSP : IServerMessage {
-        public byte MessageOrder { get; } = 16;
-        public byte ServiceID { get; } = 102;
-
-        public IActorRef ActorRef;
-        public ushort MobileId;
-    }
-
-    public class MSG_REQUESTCOMBATSIGIL : IServerMessage {
-        public byte MessageOrder { get; } = 17;
-        public byte ServiceID { get; } = 102;
-
-        public Dictionary<IActorRef, TypeCache.CoreObject> StartingParticipants;
     }
 
     public sealed class MSG_REMOVECOMBATSIGIL : IServerMessage {
@@ -525,12 +499,37 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     }
 
     /// <summary>
+    /// Sent by a <see cref="ZoneSigilSupervisor"/> to a <see cref="DuelComponent"/> to indicate
+    /// the details of the sigil.
+    /// </summary>
+    internal sealed class MSG_SIGILDETAILS : IServerMessage {
+
+        public byte MessageOrder { get; } = 26;
+        public byte ServiceID { get; } = 102;
+
+        public CombatSigilObjectInfo CombatSigilObjectInfo;
+
+    }
+
+    /// <summary>
     /// Called by a <see cref="ZoneEntity"/> to all its components to indicate the entity has finished initializing.
     /// </summary>
     public sealed class MSG_ZONEOBJECTINITIALIZED : IServerMessage {
 
-        public byte MessageOrder { get; } = 26;
+        public byte MessageOrder { get; } = 27;
         public byte ServiceID { get; } = 102;
+
+    }
+
+    /// <summary>
+    /// Called by a <see cref="NpcComponent"/> to a <see cref="Zone"/> to request a combat sigil.
+    /// </summary>
+    public class MSG_REQUESTCOMBATSIGIL : IServerMessage {
+
+        public byte MessageOrder { get; } = 17;
+        public byte ServiceID { get; } = 102;
+
+        public Dictionary<IActorRef, CoreObject> StartingParticipants;
 
     }
 

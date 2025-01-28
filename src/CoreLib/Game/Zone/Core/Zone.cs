@@ -81,6 +81,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         _supervisors.Add(CreateSupervisor<ZoneTriggerSupervisor>());
         _supervisors.Add(CreateSupervisor<ZonePlayerSupervisor>());
         _supervisors.Add(CreateSupervisor<ZonePathSupervisor>());
+        _supervisors.Add(CreateSupervisor<ZoneSigilSupervisor>());
 
         // Create the loader actor and prepare the loading of this zone.
         _loaderRef = Context.ActorOf(Akka.Actor.Props.Create(() => new ZoneLoader()));
@@ -267,6 +268,10 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEPLAYERBROADCAST))]
     private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEPLAYERBROADCAST message) 
+        => _supervisors.ForEach(supervisor => supervisor.Forward(message));
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL))]
+    private void ReceiveRequestCombatSigil(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL message)
         => _supervisors.ForEach(supervisor => supervisor.Forward(message));
 
     #endregion

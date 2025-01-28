@@ -32,7 +32,7 @@ public static class ServerTypeCache {
         0x774C0B33 => new ResDisplayText(),
         0x3C626744 => new ResPlaySound(),
         0xDa51FA8 => new ZoneRouter(),
-        478486736 => new CombatSigil(),
+        478486736 => new CombatSigilObjectInfo(),
         16312488 => new ResPlayCinematic(),
         338444955 => new ResActorDialog(),
         703672453 => new ResAddGold(),
@@ -789,7 +789,7 @@ public static class ServerTypeCache {
         // Property: m_sigilLabel (string)
     }
 
-    public class CombatSigil : CoreObjectInfo {
+    public class CombatSigilObjectInfo : CoreObjectInfo {
         public override uint GetHash() => 478486736;
 
         // Properties here are listed in order of their understanding.
@@ -799,17 +799,12 @@ public static class ServerTypeCache {
         [Property(0xADC3A56F, 31)] public ByteString m_zoneTag2;
         [Property(0x3AF933DF, 31)] public float m_radius;
         [Property(0x595FC144, 31)] public int m_firstTeamToAct;
-        [Property(0x4AFCF400, 2097183)] public TypeCache.Duel.SigilInitiativeSwitchMode m_initiativeSwitchMode;
+        [Property(0x4AFCF400, 2097183)] public Duel.SigilInitiativeSwitchMode m_initiativeSwitchMode;
         [Property(0x203340FD, 31)] public int m_initiativeSwitchRounds;
         [Property(0x975DE361, 268435463)] public List<ByteString>? m_lootTable;
         [Property(0x5DB0B6E8, 31)] public bool m_disableTimer;
-
-        // HASH : 0x7DB09CC1
-        // SIZE : 191 bits
-        // EXAM : StartZone
-        // Very confident about the type.
-        // This property is shared with the Trigger class.
-        [Property(0x7DB09CC1, 31)] public List<ByteString>? unknown_5;
+        [Property(0x7DB09CC1, 31)] public List<ByteString>? m_activateEvents;
+        [Property(0x62A2160A, 31)] public List<ByteString>? m_deactivateEvents;
 
         // HASH : 0x71FCB022
         // SIZE : 65 bits
@@ -828,11 +823,6 @@ public static class ServerTypeCache {
         // HASH : 0x61B4E11E
         // SIZE : 72 bits
         [Property(0x61B4E11E, 31)] public bool m_unknown_boolean_4;
-
-        // HASH : 0x62A2160A
-        // SIZE : 8
-        // This property is shared with the Trigger class.
-        [Property(0x62A2160A, 31)] public uint m_unknown_uint_1;
 
         // HASH : 0x37BEB1CF
         // SIZE : 8

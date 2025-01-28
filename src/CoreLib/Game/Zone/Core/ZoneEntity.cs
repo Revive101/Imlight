@@ -31,6 +31,7 @@ public class ZoneEntity(
 
     private const uint MOBILE_ID_REQUEST_TIMEOUT_IN_MS = 1000;
 
+    public IActorRef SelfRef { get; protected set; } 
     public CoreObject ActiveGameObject { get; protected set; } = activeGameObject;
     public CoreTemplate Template { get; protected set; } = template;
     public Zone Zone { get; protected set; } = zone;
@@ -75,6 +76,8 @@ public class ZoneEntity(
         foreach (var (_, actor) in Components) {
             actor.Tell(initializedMsg);
         }
+
+        this.SelfRef = Self;
 
         Sender.Tell(new ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADRESULTS());
     }

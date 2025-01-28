@@ -55,7 +55,27 @@ public interface IZoneComponent {
     /// <param name="creature">The core object representing the creature.</param>
     /// <param name="suspect">The actor reference of the suspect.</param>
     void OnCreatureProximityEnter(CoreObject creature, IActorRef suspect);
+
+    /// <summary>
+    /// Enables the component.
+    /// </summary>
+    void Enable();
+
+    /// <summary>
+    /// Disables the component.
+    /// </summary>
+    void Disable();
+
+    /// <summary>
+    /// Called when the component is enabled.
+    /// </summary>
+    void OnEnabled();
     
+    /// <summary>
+    /// Called when the component is disabled.
+    /// </summary>
+    void OnDisabled();
+
 }
 
 /// <summary>
@@ -65,8 +85,9 @@ public abstract class ZoneEntityComponent(ZoneEntity entity) : ReceiveProtocolDi
 
     public IActorRef ActorRef { get; private set; }
     protected ZoneEntity Entity { get; private set; } = entity;
-    protected Core.Zone Zone => Entity.Zone;
+    protected Zone Zone => Entity.Zone;
     protected IActorRef ZoneActor => Entity.ZoneRef;
+    private bool _enabled = true;
 
     public virtual void OnStart() { }
     public virtual void OnZoneStart() { }
@@ -74,32 +95,73 @@ public abstract class ZoneEntityComponent(ZoneEntity entity) : ReceiveProtocolDi
     public virtual void OnPlayerLeave(IActorRef playerActor, ulong id) { }
     public virtual void OnPlayerMove(CoreObject playerObj, IActorRef playerActor) { }
     public virtual void OnCreatureProximityEnter(CoreObject creature, IActorRef suspect) { }
+    public virtual void OnEnabled() { }
+    public virtual void OnDisabled() { }
+
+    public void Enable() {
+        _enabled = true;
+        OnEnabled();
+    }
+    
+    public void Disable() {
+        _enabled = false;
+        OnDisabled();
+    }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONESTART))]
     public void ReceiveZoneStart() {
+        if (!_enabled) {
+            return;
+        }
+
         ActorRef = Self;
         OnZoneStart();
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ADDPLAYER))]
-    public void ReceiveAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message) 
-        => OnPlayerJoin(message.PlayerObject, message.PlayerActor, message.Wizard);
+    public void ReceiveAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message) {
+        if (!_enabled) {
+            return;
+        }
+
+        OnPlayerJoin(message.PlayerObject, message.PlayerActor, message.Wizard);
+    }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER))]
-    public void ReceiveRemovePlayer(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message) 
-        => OnPlayerLeave(message.PlayerActor, message.GlobalId);
+    public void ReceiveRemovePlayer(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message) {
+        if (!_enabled) {
+            return;
+        }
+
+        OnPlayerLeave(message.PlayerActor, message.GlobalId);
+    }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PLAYERMOVE))]
-    public void ReceivePlayerMove(ZONE_102_PROTOCOL.MSG_PLAYERMOVE message) 
-        => OnPlayerMove(message.PlayerObject, message.PlayerActor);
+    public void ReceivePlayerMove(ZONE_102_PROTOCOL.MSG_PLAYERMOVE message) {
+        if (!_enabled) {
+            return;
+        }
+
+        OnPlayerMove(message.PlayerObject, message.PlayerActor);
+    }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ENTITYCOMPONENTREQUESTIDENTITY))]
-    public void ReceiveRequestIdentity() 
-        => Sender.Tell(new ZONE_102_PROTOCOL.MSG_ENTITYCOMPONENTREQUESTIDENTITYRSP { Component = this });
+    public void ReceiveRequestIdentity() {
+        if (!_enabled) {
+            return;
+        }
+
+        Sender.Tell(new ZONE_102_PROTOCOL.MSG_ENTITYCOMPONENTREQUESTIDENTITYRSP { Component = this });
+    }
         
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTINITIALIZED))]
-    public void ReceiveObjectStart()
-        => OnStart();
+    public void ReceiveObjectStart() {
+        if (!_enabled) {
+            return;
+        }
+
+        OnStart();
+    }
 
     /// <summary>
     /// Checks if the specified object is within the radius of the entity.

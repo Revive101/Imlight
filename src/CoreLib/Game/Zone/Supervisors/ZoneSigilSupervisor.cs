@@ -4,11 +4,10 @@
  */
 
 using Akka.Actor;
-using Imlight.Common;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
-using Imlight.CoreLib.WizardData.Collections;
+using SharpDX;
 using System.Collections.Generic;
 using System.Linq;
 using static Imlight.Common.Caches.ServerTypeCache;
@@ -16,15 +15,10 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Supervisors;
 
-/// <summary>
-/// Exists as a child actor of a <see cref="Zone"/> and is the supervisor 
-/// for any objects that are created within the zone.
-/// <remarks>Initializes any <see cref="CoreObjectInfo"/> found within <see cref="ZoneData.m_objectList"/> field of the
-/// given zone data.</remarks>
-/// </summary>
-/// <param name="zone">The zone that this supervisor is responsible for.</param>
-internal sealed class ZoneObjectSupervisor(Core.Zone zone) : ZoneEntitySupervisor(zone) {
+internal sealed class ZoneSigilSupervisor(Core.Zone zone) : ZoneEntitySupervisor(zone) {
 
+    private readonly Dictionary<CoreObject, IActorRef> _sigils = [];
+    
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS))]
     public override void ReceiveZoneLoadResults(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS message) {
         // We only care about the ZoneData section of the message.
@@ -32,15 +26,24 @@ internal sealed class ZoneObjectSupervisor(Core.Zone zone) : ZoneEntitySuperviso
 
         // Initialize any objects found within the zone data.
         foreach (var objectInfo in zoneData.m_objectList) {
-            // Some objects may be flagged as holiday objects, which means they should only be
-            // spawned during certain times of the year.5
             if (!IsObjectEligibleForSpawn(objectInfo)) {
                 continue;
             }
 
             var template = (GameObjectTemplate) CoreObjectFactory.GetCoreTemplate(objectInfo.m_templateID);
             var coreObject = CoreObjectFactory.FinalizeCoreObject(objectInfo, template);
+
+            // Sometimes the sigil may spawn in the ground.
+            coreObject.m_location.Z++;
+
+            // Create the sigil actor and inform it of the details.
             var objectActor = CreateEntityActor(coreObject, template);
+            var detailsMsg = new ZONE_102_PROTOCOL.MSG_SIGILDETAILS {
+                CombatSigilObjectInfo = (CombatSigilObjectInfo) objectInfo,
+            };
+            objectActor.Tell(detailsMsg);
+
+            _sigils.Add(coreObject, objectActor);
         }
 
         // Inform the zone that we have finished initializing all objects.
@@ -48,24 +51,20 @@ internal sealed class ZoneObjectSupervisor(Core.Zone zone) : ZoneEntitySuperviso
         Sender.Tell(reply);
     }
 
-    private static bool IsObjectEligibleForSpawn(CoreObjectInfo objectInfo) {
-        if (objectInfo is null) {
-            return false;
-        }
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL))]
+    private void ReceiveRequestCombatSigil(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL message) {
+        var firstParticipantObj = message.StartingParticipants.Values.First();
 
-        // Do not spawn combat sigils within this supervisor.
-        if (objectInfo is CombatSigilObjectInfo) {
-            return false;
-        }
-
-        if (objectInfo.m_spawnRequirements is not null) {
-            var requirements = objectInfo.m_spawnRequirements.m_requirements.ToList();
-            var operatorType = objectInfo.m_spawnRequirements.m_operator;
-            
-            return GlobalRegistryCollection.CheckGlobalRegistryRequirements(requirements, operatorType);
-        }
-
-        return true;
+        // Find the sigil that is closest to the first participant. Forward
+        // the request to that sigil.
+        var closestSigil = _sigils
+            .OrderBy(x => Vector3.Distance(x.Key.m_location, firstParticipantObj.m_location))
+            .FirstOrDefault();
+        
+        closestSigil.Value?.Forward(message);
     }
+
+    private static bool IsObjectEligibleForSpawn(CoreObjectInfo objectInfo) 
+        => objectInfo is not null and CombatSigilObjectInfo;
 
 }
