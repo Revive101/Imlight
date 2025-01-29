@@ -5,8 +5,10 @@
 
 using Akka.Actor;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Effects;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Behaviors;
+using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using System;
 using System.Collections.Generic;
@@ -31,40 +33,65 @@ internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, ICl
     public string NameOverride { get; private set; }
 
     private readonly Dictionary<CoreObject, IActorRef> _playersInRange = [];
+    private readonly NPCBehaviorTemplate _npcBehaviorTemplate;
+    private readonly DuelistBehaviorTemplate _duelistBehaviorTemplate;
+
+    private StatsComponent _statsComponent;
 
     public static bool ShouldAttachToEntity(CoreTemplate template) 
         => template is GameObjectTemplate gameObjectTemplate
         && gameObjectTemplate.m_behaviors.Any(x => x is NPCBehaviorTemplate);
 
     public NpcComponent(ZoneEntity entity) : base(entity) {
-        var npcBehaviorTemplate = entity.Template.m_behaviors
+        _npcBehaviorTemplate = entity.Template.m_behaviors
             .OfType<NPCBehaviorTemplate>()
             .First();
-        var duelistBehaviorTemplate = entity.Template.m_behaviors
+        _duelistBehaviorTemplate = entity.Template.m_behaviors
             .OfType<DuelistBehaviorTemplate>()
             .First();
 
-        this.IsBossMonster = npcBehaviorTemplate.m_bossMob;
-        this.Intelligence = npcBehaviorTemplate.m_fIntelligence;
-        this.SelfishFactor = npcBehaviorTemplate.m_fSelfishFactor;
-        this.AggressiveFactor = npcBehaviorTemplate.m_nAggressiveFactor;
-        this.StartingHealth = npcBehaviorTemplate.m_nStartingHealth;
+        this.IsBossMonster = _npcBehaviorTemplate.m_bossMob;
+        this.Intelligence = _npcBehaviorTemplate.m_fIntelligence;
+        this.SelfishFactor = _npcBehaviorTemplate.m_fSelfishFactor;
+        this.AggressiveFactor = _npcBehaviorTemplate.m_nAggressiveFactor;
+        this.StartingHealth = _npcBehaviorTemplate.m_nStartingHealth;
 
-        this.IsMonster = duelistBehaviorTemplate is not null;
-        this.Proximity = duelistBehaviorTemplate?.m_npcProximity ?? 0;
+        this.IsMonster = _duelistBehaviorTemplate is not null;
+        this.Proximity = _duelistBehaviorTemplate?.m_npcProximity ?? 0;
         
         // Try to parse the npcBehaviorTemplate.m_schoolOfFocus to a MagicSchool.
         var parsedSchool = MagicSchool.Balance;
-        if (    npcBehaviorTemplate.m_schoolOfFocus != "" 
-            && !Enum.TryParse(npcBehaviorTemplate.m_schoolOfFocus, out parsedSchool)) {
+        if (    _npcBehaviorTemplate.m_schoolOfFocus != "" 
+            && !Enum.TryParse(_npcBehaviorTemplate.m_schoolOfFocus, out parsedSchool)) {
             Logger.Error("Failed to parse magic school {0} for creature {1}.",
-                Logger.Args(npcBehaviorTemplate.m_schoolOfFocus, Entity.ActiveGameObject.m_globalID));
+                Logger.Args(_npcBehaviorTemplate.m_schoolOfFocus, Entity.ActiveGameObject.m_globalID));
 
             return;
         }
 
         this.MagicSchool = parsedSchool;
-        this.Level = npcBehaviorTemplate.m_nLevel;
+        this.Level = _npcBehaviorTemplate.m_nLevel;
+    }
+
+    public override void OnStart() {
+        // All NPCs have game stats.
+        _statsComponent = Entity.GetComponentOfType<StatsComponent>();
+        if (_statsComponent is null) {
+            Logger.Error("NPC {0} does not have a StatsComponent.", Logger.Args(Entity.ActiveGameObject.m_globalID));
+
+            return;
+        }
+
+        _statsComponent.Stats.m_currentHitpoints = StartingHealth;
+        _statsComponent.Stats.m_baseHitpoints = StartingHealth;
+
+        // Boss mobs will sometimes have base effects in their NPC template.
+        if (_npcBehaviorTemplate.m_baseEffects.Count > 0) {
+            foreach (var effect in _npcBehaviorTemplate.m_baseEffects) {
+                // todo
+                //CharacterEffectHelper.AddGameEffectToStats(statsComponent.Stats, effect);
+            }
+        }
     }
 
     public override void OnPlayerMove(CoreObject playerObj, IActorRef playerActor) {
@@ -101,6 +128,21 @@ internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, ICl
 
         // We do nothing further here. This message will be sent to the ZoneSigilSupervisor
         // to locate the closest sigil to the player and the creature.
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_QUERYCREATURESTATS))]
+    private void ReceiveQueryGameStats(COMBAT_106_PROTOCOL.MSG_QUERYCREATURESTATS message) {
+        var rsp = new COMBAT_106_PROTOCOL.MSG_CREATURESTATS {
+            GameStats = _statsComponent.Stats,
+            CombatIntelligence = Intelligence,
+            CombatSelfishFactor = SelfishFactor,
+            CombatAggressionFactor = AggressiveFactor,
+            CombatLevel = Level,
+            MagicSchool = MagicSchool,
+            SpellList = [], // todo
+        };
+
+        Sender.Tell(rsp);
     }
 
 }

@@ -850,13 +850,13 @@ public class CombatDuelActor : ReceiveProtocolDispatcher, IWithTimers {
             }
 
             // Cretae the sub circle object and add it to the array.
-            var subCircle = new CombatDuelSubCircle(this, radius, rotation, color, i) {
-                WorldPosition = rotatedSigilPos,
-                WorldRotation = faceTowardsYaw,
-                SlotName = subCircles[i].m_locationPreference,
-                SlotType = subCircles[i].m_locationType == "MonsterCircle" ? CombatSlotType.Creature : CombatSlotType.Player
-            };
-            subCircleObjs[i] = subCircle;
+            //var subCircle = new CombatDuelSubCircle(this, radius, rotation, color, i) {
+            //    WorldPosition = rotatedSigilPos,
+            //    WorldRotation = faceTowardsYaw,
+            //    SlotName = subCircles[i].m_locationPreference,
+            //    SlotType = subCircles[i].m_locationType == "MonsterCircle" ? CombatSlotType.Creature : CombatSlotType.Player
+            //};
+            //subCircleObjs[i] = subCircle;
         }
 
         return subCircleObjs;
