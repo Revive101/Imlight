@@ -93,8 +93,6 @@ internal sealed class ZonePathSupervisor(Core.Zone zone) : ZoneEntitySupervisor(
             var msg = new ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN();
             var timeout = TimeSpan.FromMilliseconds(OBJECT_CREATION_TIMEOUT_IN_MS);
             var result = pathActor.Ask<ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADRESULTS>(msg, timeout).WaitAndUnwrapException();
-
-            EntityActors.Add(pathActor);
         }
         catch (Exception ex) {
             Logger.Error("Failed to create path actor {0}: {1}", Logger.Args(path.m_name, ex.Message));

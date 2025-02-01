@@ -5,6 +5,7 @@
 
 using Akka.Actor;
 using Imlight.Common;
+using Imlight.Common.MessageLayer;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 
@@ -47,19 +48,6 @@ internal sealed class ZonePlayerSupervisor(Core.Zone zone) : ZoneEntitySuperviso
     // Players attempt to query a zone entity, which is sent to themselves, which sends this message again.
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY))]
     public override void ReceiveQueryEntityObject(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY message)  { }
-
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEPLAYERBROADCAST))]
-    private void ReceiveZonePlayerBroadcast(ZONE_102_PROTOCOL.MSG_ZONEPLAYERBROADCAST message) {
-        foreach (var entity in EntityActors) {
-            if (   message.Sender is not null 
-                && entity.Path.Name == message.Sender.Path.Name 
-                && message.Selfless) {
-                continue;
-            }
-
-            entity.Tell(message.Message);
-        }
-    }
 
     private void HandleAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message) {
         // Inform all currently connected players that a new player has joined the zone.

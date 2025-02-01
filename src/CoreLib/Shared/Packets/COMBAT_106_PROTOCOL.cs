@@ -61,7 +61,7 @@ namespace Imlight.CoreLib.Shared.Packets {
             public byte ServiceID => 106;
         }
 
-        public sealed class MSG_SLOTAVAILABLE : IServerMessage {
+        internal sealed class MSG_SLOTAVAILABLE : IServerMessage {
             public byte MessageOrder => 6;
             public byte ServiceID => 106;
 

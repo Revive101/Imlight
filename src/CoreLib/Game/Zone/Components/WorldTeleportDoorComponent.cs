@@ -76,7 +76,7 @@ internal sealed class WorldTeleportDoorComponent(ZoneEntity entity) : ZoneEntity
             WizBangID = StringHash.Compute(InteractWizBang),
             GameObjectID = playerObjID
         };
-        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEPLAYERBROADCAST {
+        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
             Message = wizBangMsg,
             Selfless = false,
         };
@@ -90,7 +90,7 @@ internal sealed class WorldTeleportDoorComponent(ZoneEntity entity) : ZoneEntity
             State = StringHash.Compute(StateName),
             GameObjectID = playerObjID
         };
-        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEPLAYERBROADCAST {
+        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
             Message = changeStateMsg,
             Selfless = false,
         };

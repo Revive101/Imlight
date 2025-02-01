@@ -72,9 +72,6 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     private CombatSigilTemplate _sigilTemplate;
     private bool _isActive;
     private bool _awaitingCombatMoves;
-    private int _playerCount;
-    private int _creatureCount;
-
     public static bool ShouldAttachToEntity(CoreTemplate template)
         => template is GameObjectTemplate gameObjectTemplate
         && gameObjectTemplate.m_behaviors.Any(x => x is not null && x.m_behaviorName == "DuelBehavior");
@@ -105,7 +102,50 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         HandleFleeAction(subCircle);
     }
 
-    internal void ZoneBroadcast(IMessage message) => Entity.ZoneRef.Tell(new ZONE_102_PROTOCOL.MSG_ZONEPLAYERBROADCAST {
+    public override void OnPlayerMove(CoreObject playerObj, IActorRef playerActor) {
+        if (!_isActive) {
+            return;
+        }
+
+        // Check if the player is now in range of the object.
+        // If there's a slot available, add the player to the duel.
+        if (IsInRadius(playerObj, _combatSigilObjectInfo.m_radius) && !_entitiesInRange.ContainsKey(playerObj)) {
+            _entitiesInRange.Add(playerObj, playerActor);
+
+            if (IsSlotAvailable(CombatTeam.Player)) {
+                AddParticipant(playerObj, playerActor);
+            }
+        } 
+        else if (!IsInRadius(playerObj, _combatSigilObjectInfo.m_radius) && _entitiesInRange.ContainsKey(playerObj)) {
+            _entitiesInRange.Remove(playerObj);
+        }
+    }
+
+    public override void OnCreatureMove(CoreObject creature, IActorRef suspect) {
+        if (!_isActive) {
+            return;
+        }
+
+        // Check if the creature is now in range of the object.
+        // If there's a slot available, add the creature to the duel.
+        if (IsInRadius(creature, _combatSigilObjectInfo.m_radius) && !_entitiesInRange.ContainsKey(creature)) {
+            _entitiesInRange.Add(creature, suspect);
+            
+            if (IsSlotAvailable(CombatTeam.Monster)) {
+                AddParticipant(creature, suspect);
+            }
+            else {
+                // Delete the creature.
+                var deleteMsg = new COMBAT_106_PROTOCOL.MSG_COMBATDEATH();
+                suspect.Tell(deleteMsg);
+            }
+        } 
+        else if (!IsInRadius(creature, _combatSigilObjectInfo.m_radius) && _entitiesInRange.ContainsKey(creature)) {
+            _entitiesInRange.Remove(creature);
+        }
+    }
+
+    internal void ZoneBroadcast(IMessage message) => Entity.ZoneRef.Tell(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
         Selfless = false,
         Sender = Self,
         Message = message
@@ -286,6 +326,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         if (!playersWin && !creaturesWin) {
             // Continue. Start a new round.
             Self.Tell(new COMBAT_106_PROTOCOL.MSG_NEWROUND());
+
             return;
         }
 
@@ -296,16 +337,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     private void DespawnDuel() {
         _isActive = false;
         _renderComponent?.Disable();
-
-        // Cleanup and remove the sigil entity
-        var removeMsg = new GAME_5_PROTOCOL.MSG_REMOVEOBJECT {
-            GameObjectID = Entity.ActiveGameObject.m_globalID
-        };
-
-        Entity.ZoneRef.Tell(new ZONE_102_PROTOCOL.MSG_ZONEPLAYERBROADCAST {
-            Message = removeMsg,
-            Selfless = false
-        });
+        Entity.DespawnObject();
+        _entitiesInRange.Clear();
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT))]
@@ -359,6 +392,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
         AssignParticipantToSubCircle(availableCreatureSubCircle, startingCreatureActor.Key, startingCreatureObject);
         AssignParticipantToSubCircle(availablePlayerSubCircle, startingPlayerActor.Key, startingPlayerObject);
+
+        _isActive = true;
 
         Logger.Debug("Duel {0} | Created. Grace period over in {1}", 
             Logger.Args(Duel.m_duelID, DUEL_GRACE_PERIOD_IN_SECONDS));
@@ -464,17 +499,31 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             return false;
         }
 
-        var team = coreObject.m_templateID == 1 ? CombatTeam.Player : CombatTeam.Monster;
-        if (team == CombatTeam.Monster) {
-            _creatureCount++;
-        }
-        else {
-            _playerCount++;
-        }
-
         subCircle.AssignParticipant(actorRef, coreObject);
 
         return true;
+    }
+
+    private void AddParticipant(CoreObject participantObject, IActorRef participantActor) {
+        var isPlayer = participantObject.m_templateID == 1;
+
+        var alreadyInDuel = SubCircles.Any(x => x.ParticipantObject == participantObject);
+        if (alreadyInDuel) {
+            return;
+        }
+
+        var subCircle = isPlayer ? GetAvailableSubCircleTeamPlayer() : GetAvailableSubCircleTeamCreature();
+        if (subCircle is null) {
+            Logger.Warning("Duel {0} | No available sub circles for participant {1}",
+                Logger.Args(Duel.m_duelID, participantObject.m_globalID));
+
+            return;
+        }
+
+        AssignParticipantToSubCircle(subCircle, participantActor, participantObject);
+
+        Logger.Debug("Duel {0} | Slot {1} | Participant {2} joined",
+            Logger.Args(Duel.m_duelID, subCircle.SlotIndex, participantObject.m_debugName));
     }
 
     private void SendCombatPhase(byte phase) {
@@ -866,4 +915,21 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         circle.ParticipantActor.Tell(stateMsg);
     });
    
+    private bool IsSlotAvailable(CombatTeam team) {
+        // todo: keep these variables in the zone
+        var IsNewbieZone = false;
+        var IsDangerousZone = false;
+
+        // Newbie zones (like Unicorn Way) can only have 1 creature as a base.
+        // Dangerous zones (like Sunken City) can have 3 creatures as a base.
+        // Every player in the duel also allocates 1 more creature slot.
+        var baseCreatureCount = IsNewbieZone ? 1 : IsDangerousZone ? 3 : 2;
+        var maxCreatures = baseCreatureCount + (PlayerCount - 1);
+
+        var slotAvailable = (team == CombatTeam.Player)
+            ? PlayerCount < 4
+            : CreatureCount < 4 && (CreatureCount < maxCreatures);
+
+        return slotAvailable;
+    }
 }

@@ -5,6 +5,7 @@
 
 using Akka.Actor;
 using Imlight.Common;
+using Imlight.Common.Caches;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
@@ -38,6 +39,7 @@ public sealed class ZonePath : ZoneEntity, IWithTimers {
     private readonly List<SpawnObject> _creatures;
     private readonly Dictionary<SpawnObject, byte> _creatureCount = [];
     private readonly List<IActorRef> _creatureActors = [];
+    private readonly Dictionary<ulong, SpawnObject> _spawnObjectInfo = [];
 
     // ctor
     public ZonePath(PathObjectTemplate template, List<NodeObject> nodes, List<SpawnObject> creatures, IActorRef zoneRef, Zone zone)
@@ -69,7 +71,7 @@ public sealed class ZonePath : ZoneEntity, IWithTimers {
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN))]
-    protected override void ReceiveObjectLoadBegin() 
+    protected override void ReceiveObjectLoadBegin()
         => Sender.Tell(new ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADRESULTS());
 
     [MessageHandler(typeof(IServerMessage))]
@@ -78,6 +80,17 @@ public sealed class ZonePath : ZoneEntity, IWithTimers {
         // Dispatch the message to all of the creatures that follow the path.
         foreach (var actor in _creatureActors) {
             actor.Forward(message);
+        }
+    }
+
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_DELETEOBJECT))]
+    private void ReceiveZoneBroadcast(GAME_5_PROTOCOL.MSG_DELETEOBJECT message) {
+        if (_spawnObjectInfo.TryGetValue(message.GameObjectID, out var spawnObject)) {
+            var count = CreatureCount(spawnObject);
+            SetCreatureCount(spawnObject, count - 1);
+
+            _spawnObjectInfo.Remove(message.GameObjectID);
+            _creatureActors.RemoveAll(x => x == Sender);
         }
     }
 
@@ -106,6 +119,7 @@ public sealed class ZonePath : ZoneEntity, IWithTimers {
         // Create the creature actor.
         var creatureActor = CreateEntityActor(creatureObj, template);
         _creatureActors.Add(creatureActor);
+        _spawnObjectInfo.Add(creatureObj.m_globalID, spawnObject);
 
         // Inform the newly created creature actor about the nodes they must walk through,
         // if relevant.
@@ -195,7 +209,8 @@ public sealed class ZonePath : ZoneEntity, IWithTimers {
     }
 
     private IActorRef CreateEntityActor(CoreObject coreObject, CoreTemplate template) {
-        var objectActor = Context.ActorOf(Props.Create(() => new ZoneEntity(coreObject, template, ZoneRef, Zone)));
+        var actorName = CreateEntityActorName(coreObject);
+        var objectActor = Context.ActorOf(Props.Create(() => new ZoneEntity(coreObject, template, ZoneRef, Zone)), actorName);
 
         try {
             // Send a message to the object and await a reply to ensure it has been created and initialized successfully.
@@ -211,6 +226,15 @@ public sealed class ZonePath : ZoneEntity, IWithTimers {
         }
 
         return objectActor;
+    }
+
+    private static string CreateEntityActorName(CoreObject coreObject) {
+        var actorName = $"{coreObject.m_debugName}_{coreObject.m_globalID}";
+
+        // Only alphanumeric characters and underscores are allowed in actor names.
+        actorName = new string([.. actorName.Where(c => char.IsLetterOrDigit(c) || c == '_')]);
+
+        return actorName;
     }
 
 }

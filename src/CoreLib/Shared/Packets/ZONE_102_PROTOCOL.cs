@@ -22,76 +22,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     public byte ServiceID { get; } = 102;
     public string ProtocolType { get; } = "ZONE";
     public int ProtocolVersion { get; } = 1;
-    public string ProtocolDescription { get; } = "Internal Zone General Messages.";
-
-    public class MSG_ZONETRANSFER : IServerMessage {
-        public byte MessageOrder { get; } = 1;
-        public byte ServiceID { get; } = 102;
-
-        public string DestinationZone;
-        public string DestinationLocation;
-        public bool SendToClient = true;
-        public bool IsPrivate = false;
-        public IActorRef Owner;
-    }
-
-    public class MSG_ZONETRANSFERRSP : IServerMessage {
-        public byte MessageOrder { get; } = 2;
-        public byte ServiceID { get; } = 102;
-
-        public IActorRef ZoneActorRef;
-        public ushort MobileId;
-        public uint DynamicZoneId;
-        public string ZoneDisplayName;
-        public Vector3 Location;
-        public float Orientation;
-        public uint ErrorCode;
-    }  
-
-    public class MSG_PLAYERMOVE : IServerMessage {
-        public byte MessageOrder { get; } = 14;
-        public byte ServiceID { get; } = 102;
-
-        public CoreObject PlayerObject;
-        public IActorRef PlayerActor;
-        public bool IsCreature;
-    }
-
-    public sealed class MSG_REMOVECOMBATSIGIL : IServerMessage {
-        public byte MessageOrder { get; } = 24;
-        public byte ServiceID { get; } = 102;
-    }
-
-    public class MSG_PLAYERMOVEINTERVAL : IServerMessage {
-        public byte MessageOrder { get; } = 22;
-        public byte ServiceID { get; } = 102;
-    }
-
-    public class MSG_SENDTOHUB : IServerMessage {
-        public byte MessageOrder { get; } = 27;
-        public byte ServiceID { get; } = 102;
-    }
-
-    public class MSG_POSTEVENT : IServerMessage {
-        public byte MessageOrder { get; } = 31;
-        public byte ServiceID { get; } = 102;
-
-        public ByteString EventName;
-        public IActorRef PlayerActor;
-        public CoreObject? PlayerGameObject;
-    }
-
-    public class MSG_PLAYERCOUNTUPDATE : IServerMessage {
-        public byte MessageOrder { get; } = 32;
-        public byte ServiceID { get; } = 102;
-
-        public int PlayerCount;
-    }
-
-    public class MSG_ZONECLOSED : IServerMessage {
-        public byte MessageOrder { get; } = 33;
-        public byte ServiceID { get; } = 102;
-    }
+    public string ProtocolDescription { get; } = "Internal Zone General Messages."; 
 
     /// <summary>
     /// Sent by the <see cref="Zone"/> to a <see cref="ZoneLoader"/> to begin loading a zone.
@@ -406,7 +337,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     /// Called and sent to a <see cref="Zone"/> to broadcast a particular message
     /// to other <see cref="SessionActor"/>s within that zone.
     /// </summary>
-    public class MSG_ZONEPLAYERBROADCAST : IServerMessage {
+    public class MSG_ZONEBROADCAST : IServerMessage {
 
         public byte MessageOrder { get; } = 20;
         public byte ServiceID { get; } = 102;
@@ -530,6 +461,121 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte ServiceID { get; } = 102;
 
         public Dictionary<IActorRef, CoreObject> StartingParticipants;
+
+    }
+
+    /// <summary>
+    /// Called by a <see cref="PathMovementComponent"/> to itself to indicate the interval to check for interactions.
+    /// </summary>
+    public sealed class MSG_CREATUREFISHINTERACTIONINTERVAL : IServerMessage {
+
+        public byte MessageOrder { get; } = 28;
+        public byte ServiceID { get; } = 102;
+
+    }
+
+    /// <summary>
+    /// Sent to a <see cref="Zone"/> to indicate a posted event.
+    /// </summary>
+    public class MSG_POSTEVENT : IServerMessage {
+
+        public byte MessageOrder { get; } = 29;
+        public byte ServiceID { get; } = 102;
+
+        public ByteString EventName;
+        public IActorRef PlayerActor;
+        public CoreObject? PlayerGameObject;
+
+    }
+
+    /// <summary>
+    /// Sent by a <see cref="SessionActor"/> to a <see cref="Zone"/> to request a zone transfer.
+    /// </summary>
+    public class MSG_ZONETRANSFER : IServerMessage {
+
+        public byte MessageOrder { get; } = 30;
+        public byte ServiceID { get; } = 102;
+
+        public string DestinationZone;
+        public string DestinationLocation;
+        public bool SendToClient = true;
+        public bool IsPrivate = false;
+        public IActorRef Owner;
+
+    }
+
+    /// <summary>
+    /// Sent by a <see cref="Zone"/> to a <see cref="SessionActor"/> to respond to a zone transfer request.
+    /// </summary>
+    public class MSG_ZONETRANSFERRSP : IServerMessage {
+
+        public byte MessageOrder { get; } = 31;
+        public byte ServiceID { get; } = 102;
+
+        public IActorRef ZoneActorRef;
+        public ushort MobileId;
+        public uint DynamicZoneId;
+        public string ZoneDisplayName;
+        public Vector3 Location;
+        public float Orientation;
+        public uint ErrorCode;
+
+    } 
+
+    /// <summary>
+    /// Sent by a <see cref="MoveService"/> to a <see cref="Zone"/> to indicate the player is moving.
+    /// </summary>
+    public class MSG_PLAYERMOVE : IServerMessage {
+
+        public byte MessageOrder { get; } = 32;
+        public byte ServiceID { get; } = 102;
+
+        public CoreObject PlayerObject;
+        public IActorRef PlayerActor;
+
+    }
+
+    /// <summary>
+    /// Sent by a <see cref="PathMovementComponent"/> to a <see cref="Zone"/> to indicate the creature is moving.
+    public sealed class MSG_CREATUREMOVE : IServerMessage {
+
+        public byte MessageOrder { get; } = 33;
+        public byte ServiceID { get; } = 102;
+
+        public CoreObject CreatureObject;
+        public IActorRef CreatureActor;
+
+    }
+
+    /// <summary>
+    /// Sent by a <see cref="MoveService"/> to itself to indicate that it's time to fish for interactions.
+    /// </summary>
+    public class MSG_PLAYERMOVEINTERVAL : IServerMessage {
+
+        public byte MessageOrder { get; } = 34;
+        public byte ServiceID { get; } = 102;
+
+    }
+
+    /// <summary>
+    /// Called by a <see cref="CombatDuelComponent"/> to a <see cref="SessionActor"/> that they have fled
+    /// or have been defeated in a combat duel and need to be sent back to the hub zone.
+    /// </summary>
+    public class MSG_SENDTOHUB : IServerMessage {
+
+        public byte MessageOrder { get; } = 35;
+        public byte ServiceID { get; } = 102;
+
+    }
+
+    /// <summary>
+    /// Sent by a <see cref="Zone"/> to all <see cref="ZoneEntitySupervisor"/>s and <see cref="SessionActor"/>s that the zone
+    /// is closing.
+    /// </summary>
+    public sealed class MSG_ZONECLOSED : IServerMessage {
+
+        public byte MessageOrder { get; } = 36;
+        public byte ServiceID { get; } = 102;
 
     }
 

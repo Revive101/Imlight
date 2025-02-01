@@ -186,6 +186,16 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         InformZoneSupervisors(message.PlayerActor, message);
     }
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_CREATUREMOVE))]
+    protected virtual void ReceiveCreatureMove(ZONE_102_PROTOCOL.MSG_CREATUREMOVE message) {
+        // If the actor is not a part of this zone, do not bother processing.
+        if (!_mobileIdMap.Contains(message.CreatureObject.m_nMobileID)) {
+            return;
+        }
+
+        InformZoneSupervisors(message.CreatureActor, message);
+    }
+
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS))]
     private void ReceiveZoneLoadResults(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS message) {
         Logger.Debug("Zone {ZoneName} client data gathered.", Logger.Args(ZoneName));
@@ -266,8 +276,8 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         }
     }
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEPLAYERBROADCAST))]
-    private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEPLAYERBROADCAST message) 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
+    private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message) 
         => _supervisors.ForEach(supervisor => supervisor.Forward(message));
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL))]

@@ -75,6 +75,7 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
             DespawnObjectForPlayer(suspect);
         }
         else {
+            _playersInRange.Remove(player);
             _playersInRange.Add(player, suspect);
         }
     }

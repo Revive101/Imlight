@@ -50,11 +50,11 @@ public interface IZoneComponent {
     void OnPlayerMove(CoreObject playerObj, IActorRef playerActor);
 
     /// <summary>
-    /// Called when a creature enters the proximity of the zone.
+    /// Called when a creature moves within the zone.
     /// </summary>
     /// <param name="creature">The core object representing the creature.</param>
     /// <param name="suspect">The actor reference of the suspect.</param>
-    void OnCreatureProximityEnter(CoreObject creature, IActorRef suspect);
+    void OnCreatureMove(CoreObject creature, IActorRef suspect);
 
     /// <summary>
     /// Enables the component.
@@ -94,7 +94,7 @@ public abstract class ZoneEntityComponent(ZoneEntity entity) : ReceiveProtocolDi
     public virtual void OnPlayerJoin(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) { }
     public virtual void OnPlayerLeave(IActorRef playerActor, ulong id) { }
     public virtual void OnPlayerMove(CoreObject playerObj, IActorRef playerActor) { }
-    public virtual void OnCreatureProximityEnter(CoreObject creature, IActorRef suspect) { }
+    public virtual void OnCreatureMove(CoreObject creature, IActorRef suspect) { }
     public virtual void OnEnabled() { }
     public virtual void OnDisabled() { }
 
@@ -163,6 +163,15 @@ public abstract class ZoneEntityComponent(ZoneEntity entity) : ReceiveProtocolDi
         OnStart();
     }
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_CREATUREMOVE))]
+    public void ReceiveCreatureMove(ZONE_102_PROTOCOL.MSG_CREATUREMOVE message) {
+        if (!_enabled) {
+            return;
+        }
+
+        OnCreatureMove(message.CreatureObject, message.CreatureActor);
+    }
+
     /// <summary>
     /// Checks if the specified object is within the radius of the entity.
     /// </summary>
@@ -180,7 +189,7 @@ public abstract class ZoneEntityComponent(ZoneEntity entity) : ReceiveProtocolDi
     /// <param name="message">The message to broadcast.</param>
     protected void PlayerBroadcast(IMessage message) {
         // Wrap the message in a zone broadcast message.
-        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEPLAYERBROADCAST { Message = message };
+        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST { Message = message };
         ZoneActor.Tell(broadcastMsg);
     }
 

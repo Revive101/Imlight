@@ -22,8 +22,8 @@ internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, ICl
     public bool NoTransfer { get; set; } = false;
     public bool IsMonster { get; private set; }
     public bool IsBossMonster { get; private set; }
-    public float Intelligence { get; private set; }
-    public float SelfishFactor { get; private set; }
+    public float IntelligenceFactor { get; private set; }
+    public float SelfishnessFactor { get; private set; }
     public float AggressiveFactor { get; private set; }
     public int StartingHealth { get; private set; }
     public int CurrentHealth { get; private set; }
@@ -51,8 +51,8 @@ internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, ICl
             .FirstOrDefault();
 
         this.IsBossMonster = _npcBehaviorTemplate.m_bossMob;
-        this.Intelligence = _npcBehaviorTemplate.m_fIntelligence;
-        this.SelfishFactor = _npcBehaviorTemplate.m_fSelfishFactor;
+        this.IntelligenceFactor = _npcBehaviorTemplate.m_fIntelligence;
+        this.SelfishnessFactor = _npcBehaviorTemplate.m_fSelfishFactor;
         this.AggressiveFactor = _npcBehaviorTemplate.m_nAggressiveFactor;
         this.StartingHealth = _npcBehaviorTemplate.m_nStartingHealth;
 
@@ -133,8 +133,8 @@ internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, ICl
     private void ReceiveQueryGameStats(COMBAT_106_PROTOCOL.MSG_QUERYCREATURESTATS message) {
         var rsp = new COMBAT_106_PROTOCOL.MSG_CREATURESTATS {
             GameStats = _statsComponent.Stats,
-            CombatIntelligence = Intelligence,
-            CombatSelfishFactor = SelfishFactor,
+            CombatIntelligence = IntelligenceFactor,
+            CombatSelfishFactor = SelfishnessFactor,
             CombatAggressionFactor = AggressiveFactor,
             CombatLevel = Level,
             MagicSchool = MagicSchool,

@@ -5,6 +5,9 @@
 
 using Akka.Actor;
 using Imlight.Common;
+using Imlight.Common.Caches;
+using Imlight.Common.Cryptography;
+using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
@@ -46,6 +49,8 @@ public class ZoneEntity(
 
     protected readonly Dictionary<ZoneEntityComponent, IActorRef> Components = [];
 
+    private readonly ObjectSerializer _serializer = new();
+
     /// <summary>
     /// Gets a list of components of the specified type.
     /// </summary>
@@ -61,6 +66,47 @@ public class ZoneEntity(
     /// <returns>The actor reference of the component of the specified type, or null if it does not exist.</returns>
     public T GetComponentOfType<T>() where T : class
         => Components.Keys.FirstOrDefault(x => typeof(T).IsAssignableFrom(x.GetType())) as T;
+
+    /// <summary>
+    /// Deletes this entity from the zone.
+    /// </summary>
+    /// <param name="killer">The global ID of the entity that killed this entity.</param>
+    /// <param name="despawnEffect">The name of the despawn effect to play.</param>
+    public void DeleteObject(string effectName = "", ulong killer = 0) {
+        var despawnEffects = new DespawnInfo {
+            m_killer = (Common.ObjectProperty.PropertyReflection.GID) killer,
+            m_despawnEffect = StringHash.Compute(effectName),
+        };
+
+        var serializedData = _serializer.Serialize(despawnEffects);
+        var despawnMsg = new GAME_5_PROTOCOL.MSG_DELETEOBJECT {
+            GameObjectID = ActiveGameObject.m_globalID,
+            Data = serializedData,
+        };
+
+        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+            Message = despawnMsg,
+            Sender = SelfRef,
+        };
+        ZoneRef.Tell(broadcastMsg);
+
+        // Kill the actor.
+        Context.Stop(Self);
+    }
+
+    /// <summary>
+    /// Despawns this entity from the zone, without destroying it.
+    /// </summary>
+    public void DespawnObject() {
+        var removeMsg = new GAME_5_PROTOCOL.MSG_REMOVEOBJECT {
+            GameObjectID = ActiveGameObject.m_globalID
+        };
+
+        ZoneRef.Tell(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+            Message = removeMsg,
+            Selfless = false
+        });
+    }
 
     #region Message Handlers
 

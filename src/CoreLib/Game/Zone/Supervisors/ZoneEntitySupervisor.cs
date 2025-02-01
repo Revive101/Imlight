@@ -11,6 +11,7 @@ using Imlight.CoreLib.Shared.Packets;
 using Nito.AsyncEx.Synchronous;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Supervisors;
@@ -66,6 +67,19 @@ internal abstract class ZoneEntitySupervisor(Core.Zone zone) : ReceiveProtocolDi
         }
     }
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
+    public virtual void ReceiveZonePlayerBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message) {
+        foreach (var entity in EntityActors) {
+            if (   message.Sender is not null 
+                && entity.Path.Name == message.Sender.Path.Name 
+                && message.Selfless) {
+                continue;
+            }
+
+            entity.Forward(message.Message);
+        }
+    }
+
     /// <summary>
     /// Creates a new entity actor for the given core object and template.
     /// </summary>
@@ -73,7 +87,8 @@ internal abstract class ZoneEntitySupervisor(Core.Zone zone) : ReceiveProtocolDi
     /// <param name="template">The template to use for the core object.</param>
     /// <returns>The newly created entity actor.</returns>
     protected IActorRef CreateEntityActor(CoreObject coreObject, CoreTemplate template) {
-        var objectActor = Context.ActorOf(Props.Create(() => new ZoneEntity(coreObject, template, ZoneRef, Zone)));
+        var actorName = CreateEntityActorName(coreObject);
+        var objectActor = Context.ActorOf(Props.Create(() => new ZoneEntity(coreObject, template, ZoneRef, Zone)), actorName);
 
         try {
             // Send a message to the object and await a reply to ensure it has been created and initialized successfully.
@@ -91,6 +106,15 @@ internal abstract class ZoneEntitySupervisor(Core.Zone zone) : ReceiveProtocolDi
         }
 
         return objectActor;
+    }
+
+    protected static string CreateEntityActorName(CoreObject coreObject) {
+        var actorName = $"{coreObject.m_debugName}_{coreObject.m_globalID}";
+
+        // Only alphanumeric characters and underscores are allowed in actor names.
+        actorName = new string([.. actorName.Where(c => char.IsLetterOrDigit(c) || c == '_')]);
+
+        return actorName;
     }
 
 }

@@ -98,7 +98,7 @@ internal sealed class VendorComponent(ZoneEntity entity) : ZoneEntityComponent(e
             WizBangID = StringHash.Compute(WizBang),
             GameObjectID = playerObjID
         };
-        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEPLAYERBROADCAST {
+        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
             Message = wizBangMsg,
             Selfless = false,
         };
@@ -112,7 +112,7 @@ internal sealed class VendorComponent(ZoneEntity entity) : ZoneEntityComponent(e
             State = StringHash.Compute(StateName),
             GameObjectID = playerObjID
         };
-        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEPLAYERBROADCAST {
+        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
             Message = changeStateMsg,
             Selfless = false,
         };

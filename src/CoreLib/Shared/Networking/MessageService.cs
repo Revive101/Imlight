@@ -78,7 +78,7 @@ public abstract class MessageService : ReceiveProtocolDispatcher {
             throw new ActorKilledException($"{GetType()} attempted to send message to undefined SessionActor.");
         }
 
-        var message = new ZONE_102_PROTOCOL.MSG_ZONEPLAYERBROADCAST {
+        var message = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
             Message = originalMessage,
             Selfless = isSelfless,
             Sender = SessionActor.ActorRef
