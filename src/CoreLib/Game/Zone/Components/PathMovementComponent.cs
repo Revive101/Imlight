@@ -9,6 +9,7 @@ using Imlight.Common.Caches;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.WizardData.Models.Player;
 using SharpDX;
 using System;
 using System.Collections.Generic;
@@ -74,6 +75,28 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
         var fishInteractionInterval = TimeSpan.FromMilliseconds(TRAVEL_TIME_CLAMP_MINIMUM_IN_MS);
         var fishInteractionMsg = new ZONE_102_PROTOCOL.MSG_CREATUREFISHINTERACTIONINTERVAL();
         Timers.StartPeriodicTimer(CREATURE_FISH_INTERVAL_LOCK, fishInteractionMsg, fishInteractionInterval);
+    }
+
+    public override void OnPlayerJoin(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) {
+        if (_currentNode is null) {
+            return;
+        }
+
+        // Inform the player of where the creature is moving to.
+        var movestateMsg = new GAME_5_PROTOCOL.MSG_MOVESTATE {
+            GlobalID = Entity.ActiveGameObject.m_globalID,
+            NewState = 0
+        };
+        playerActor.Tell(movestateMsg);
+
+        var movementMsg = new GAME_5_PROTOCOL.MSG_SERVERMOVE {
+            Direction = (byte) (_currentNode.m_direction / Math.PI / 2 * 250),
+            LocationX = (ushort) (_currentNode.m_location.X / 4.0f),
+            LocationY = (ushort) (_currentNode.m_location.Y / 4.0f),
+            LocationZ = (ushort) (_currentNode.m_location.Z / 4.0f),
+            MobileID = Entity.MobileID
+        };
+        playerActor.Tell(movementMsg);
     }
 
     public void Stop() => Stopped = true;
@@ -248,22 +271,18 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
             return Entity.ActiveGameObject.m_location;
         }
 
-        // If the creature is moving, then calculate the position based on the
-        // last node reached, the target node position, and the movement speed.
-        var lastNodeReached = Entity.ActiveGameObject.m_location;
+        var lastLocation = Entity.ActiveGameObject.m_location;
         var targetNode = _currentNode.m_location;
-        var totalDistance = Vector3.Distance(lastNodeReached, targetNode);
-        var elapsedTimeInSeconds = (DateTime.Now - _lastMoveTime).TotalSeconds;
-        var distanceTraveled = elapsedTimeInSeconds * _movementSpeed * _movementScale;
+        var totalDistance = Vector3.Distance(lastLocation, targetNode);
+        var elapsedTimeInMsg = (DateTime.Now - _lastMoveTime).TotalMilliseconds;
+        var distanceTraveled = _movementSpeed * _movementScale * elapsedTimeInMsg / 1000;
 
-        if (distanceTraveled >= totalDistance) {
-            return targetNode;
-        }
+        // Clamp t between 0 and 1 to prevent overshooting.
+        var t = Math.Clamp(distanceTraveled / totalDistance, 0, 1);
 
-        var t = distanceTraveled / totalDistance;
-        var x = lastNodeReached.X + t * (targetNode.X - lastNodeReached.X);
-        var y = lastNodeReached.Y + t * (targetNode.Y - lastNodeReached.Y);
-        var z = lastNodeReached.Z + t * (targetNode.Z - lastNodeReached.Z);
+        var x = lastLocation.X + t * (targetNode.X - lastLocation.X);
+        var y = lastLocation.Y + t * (targetNode.Y - lastLocation.Y);
+        var z = lastLocation.Z + t * (targetNode.Z - lastLocation.Z);
 
         return new Vector3((float) x, (float) y, (float) z);
     }
@@ -286,7 +305,7 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
             }
 
             RestartMoveInterval(INITIAL_MOVEMENT_DELAY_MINIMUM_IN_MS);
-            
+
             return false;
         }
 
