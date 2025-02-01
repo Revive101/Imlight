@@ -45,7 +45,7 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
         }
 
         // Ensure that the interacted object is a vendor.
-        var vendorComponent = interactedObject.GetComponentOfType<VendorComponent>();
+        var vendorComponent = interactedObject.GetComponentOfType<InteractVendorComponent>();
         if (vendorComponent is null) {
             Logger.Warning("Failed to find VendorComponent for NPC {0} in zone for shop purchase", 
                 Logger.Args(message.npcGlobalID));

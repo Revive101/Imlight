@@ -532,6 +532,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
         public CoreObject PlayerObject;
         public IActorRef PlayerActor;
+        public Wizard PlayerWizard;
 
     }
 

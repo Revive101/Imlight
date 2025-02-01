@@ -244,6 +244,10 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
         );
 
     private Vector3 GetPosition() {
+        if (_currentNode is null) {
+            return Entity.ActiveGameObject.m_location;
+        }
+
         // If the creature is moving, then calculate the position based on the
         // last node reached, the target node position, and the movement speed.
         var lastNodeReached = Entity.ActiveGameObject.m_location;

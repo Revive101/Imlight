@@ -31,7 +31,7 @@ internal sealed class VolumeComponent(ZoneEntity entity) : ZoneEntityComponent(e
         }
     }
 
-    public override void OnPlayerMove(CoreObject playerObj, IActorRef playerActor) {
+    public override void OnPlayerMove(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) {
         if (_volume == null) {
             return;
         }

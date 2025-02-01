@@ -10,6 +10,7 @@ using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -93,7 +94,7 @@ internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, ICl
         }
     }
 
-    public override void OnPlayerMove(CoreObject playerObj, IActorRef playerActor) {
+    public override void OnPlayerMove(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) {
         // Check if the player is now in range of the object.
         if (IsInRadius(playerObj, Proximity) && !_playersInRange.ContainsKey(playerObj)) {
             // If the player is in range, trigger the enter events.

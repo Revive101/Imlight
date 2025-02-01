@@ -47,7 +47,8 @@ public interface IZoneComponent {
     /// </summary>
     /// <param name="playerObj">The core object representing the player.</param>
     /// <param name="playerActor">The actor reference of the player.</param>
-    void OnPlayerMove(CoreObject playerObj, IActorRef playerActor);
+    /// <param name="playerWizard">The wizard associated with the player.</param>
+    void OnPlayerMove(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard);
 
     /// <summary>
     /// Called when a creature moves within the zone.
@@ -93,7 +94,7 @@ public abstract class ZoneEntityComponent(ZoneEntity entity) : ReceiveProtocolDi
     public virtual void OnZoneStart() { }
     public virtual void OnPlayerJoin(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) { }
     public virtual void OnPlayerLeave(IActorRef playerActor, ulong id) { }
-    public virtual void OnPlayerMove(CoreObject playerObj, IActorRef playerActor) { }
+    public virtual void OnPlayerMove(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) { }
     public virtual void OnCreatureMove(CoreObject creature, IActorRef suspect) { }
     public virtual void OnEnabled() { }
     public virtual void OnDisabled() { }
@@ -142,7 +143,7 @@ public abstract class ZoneEntityComponent(ZoneEntity entity) : ReceiveProtocolDi
             return;
         }
 
-        OnPlayerMove(message.PlayerObject, message.PlayerActor);
+        OnPlayerMove(message.PlayerObject, message.PlayerActor, message.PlayerWizard);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ENTITYCOMPONENTREQUESTIDENTITY))]

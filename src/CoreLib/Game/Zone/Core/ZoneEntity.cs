@@ -108,6 +108,39 @@ public class ZoneEntity(
         });
     }
 
+    /// <summary>
+    /// Changes the state of the entity.
+    /// </summary>
+    /// <param name="stateName">The name of the state to change to.</param>
+    /// <param name="emoteStateOverrideInfo">The override information for the emote state.</param>
+    /// <param name="ignoreIfCurrentStateIsOff">Whether to ignore the state change if the current state is off.</param>
+    public void ChangeState(string stateName, EmoteStateOverrideInfo emoteStateOverrideInfo = null, bool ignoreIfCurrentStateIsOff = false) {
+        var stateHash = StringHash.Compute(stateName);
+        ChangeState(stateHash, emoteStateOverrideInfo, ignoreIfCurrentStateIsOff);
+    }
+
+    /// <summary>
+    /// Changes the state of the entity.
+    /// </summary>
+    /// <param name="stateHash">The hash of the state to change to.</param>
+    /// <param name="emoteStateOverrideInfo">The override information for the emote state.</param>
+    /// <param name="ignoreIfCurrentStateIsOff">Whether to ignore the state change if the current state is off.</param>
+    public void ChangeState(uint stateHash, EmoteStateOverrideInfo emoteStateOverrideInfo = null, bool ignoreIfCurrentStateIsOff = false) {
+        var emoteData = _serializer.Serialize(emoteStateOverrideInfo);
+        var stateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
+            GameObjectID = ActiveGameObject.m_globalID,
+            State = stateHash,
+            Data = emoteData,
+            IgnoreIfCurrentStateIsOff = (byte) (ignoreIfCurrentStateIsOff ? 1 : 0),
+        };
+
+        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+            Message = stateMsg,
+            Selfless = false
+        };
+        ZoneRef.Tell(broadcastMsg);
+    }
+
     #region Message Handlers
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN))]

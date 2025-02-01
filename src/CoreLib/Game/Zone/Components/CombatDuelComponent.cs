@@ -102,7 +102,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         HandleFleeAction(subCircle);
     }
 
-    public override void OnPlayerMove(CoreObject playerObj, IActorRef playerActor) {
+    public override void OnPlayerMove(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) {
         if (!_isActive) {
             return;
         }

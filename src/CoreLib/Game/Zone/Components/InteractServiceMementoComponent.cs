@@ -37,7 +37,7 @@ public interface IServiceComponent {
 
 }
 
-internal sealed class ServiceMementoComponent(ZoneEntity entity) : ZoneEntityComponent(entity), IComponentFactory {
+internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneEntityComponent(entity), IComponentFactory {
 
     private const string DEFAULT_NAME_KEY = "NPCFormats_Name";
     private const string DEFAULT_TEXT_KEY = "GUI_NPCInteractText";
@@ -67,7 +67,7 @@ internal sealed class ServiceMementoComponent(ZoneEntity entity) : ZoneEntityCom
         }
     }
 
-    public override void OnPlayerMove(CoreObject playerObj, IActorRef playerActor) {
+    public override void OnPlayerMove(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) {
         if (_serviceComponents.Count <= 0) {
             return;
         }

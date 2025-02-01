@@ -39,7 +39,7 @@ internal class InteractService(SessionActor sessionActor) : MessageService(sessi
         }
 
         // Check if the interacted object contains a service memento component.
-        var serviceMementoComponent = npc.GetComponentOfType<ServiceMementoComponent>();
+        var serviceMementoComponent = npc.GetComponentOfType<InteractServiceMementoComponent>();
         if (serviceMementoComponent == null) {
             Logger.Error("{0} interacted with NPC {1} but it does not contain a service memento component",
                 Logger.Args(wizard.CharId, message.GlobalID));

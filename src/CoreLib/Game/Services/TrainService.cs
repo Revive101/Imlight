@@ -36,7 +36,7 @@ internal class TrainService(SessionActor sessionActor) : MessageService(sessionA
         }
 
         // Ensure that the interacted object has a TrainerComponent.
-        var trainerComponent = response.ZoneObject.GetComponentOfType<TrainerComponent>();
+        var trainerComponent = response.ZoneObject.GetComponentOfType<InteractTrainerComponent>();
         if (trainerComponent is null) {
             Logger.Error("NPC {0} does not have a TrainerComponent.", Logger.Args(response.ZoneObject.ActiveGameObject.m_debugName));
 
