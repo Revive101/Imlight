@@ -580,4 +580,16 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
     }
 
+    /// <summary>
+    /// Sent by a <see cref="ZonePlayerSupervisor"/> to itself to indicate that all players need to be healed.
+    /// </summary>
+    public sealed class MSG_ZONEHEALTICK : IServerMessage {
+
+        public byte MessageOrder { get; } = 37;
+        public byte ServiceID { get; } = 102;
+
+        public float MaxHealthPercent;
+
+    }
+
 }

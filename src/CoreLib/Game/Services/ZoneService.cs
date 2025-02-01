@@ -330,10 +330,8 @@ public class ZoneService : MessageService, IWithTimers {
         SendTeleportEffects();
     }
 
-    //[MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_HEALTICK))]
-    //private void ReceiveZoneHealTick(ZONE_102_PROTOCOL.MSG_HEALTICK message) {
-        /*
-        // todo: fixme
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEHEALTICK))]
+    private void ReceiveZoneHealTick(ZONE_102_PROTOCOL.MSG_ZONEHEALTICK message) {
         var w = GetActiveWizard();
 
         var currentWizardHealth = w.GameStats.m_currentHitpoints;
@@ -345,7 +343,7 @@ public class ZoneService : MessageService, IWithTimers {
         }
 
         // Update our Wizard server side.
-        var healPercent = ZONE_HEAL_MAX_HEALTH_PERCENT;
+        var healPercent = message.MaxHealthPercent;
         float healAmount = healPercent / 100 * maxWizardHealth;
         var newHealth = Math.Min(currentWizardHealth + (int) healAmount, maxWizardHealth);
 
@@ -365,8 +363,7 @@ public class ZoneService : MessageService, IWithTimers {
             DisplayDiff = 1,
         };
         SendToSocket(networkMessage);
-        */
-    //}
+    }
 
     private void SetZone(IActorRef actorRef) {
         ZoneActor = actorRef;

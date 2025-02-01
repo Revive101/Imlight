@@ -8,6 +8,7 @@ using Imlight.Common;
 using Imlight.Common.MessageLayer;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using System;
 
 namespace Imlight.CoreLib.Game.Zone.Supervisors;
 
@@ -19,7 +20,11 @@ namespace Imlight.CoreLib.Game.Zone.Supervisors;
 /// That responsibility is left to the <see cref="GameServer"/> itself.
 /// </summary>
 /// <param name="zone">The zone that this supervisor is responsible for.</param>
-internal sealed class ZonePlayerSupervisor(Core.Zone zone) : ZoneEntitySupervisor(zone) {
+internal sealed class ZonePlayerSupervisor(Core.Zone zone) : ZoneEntitySupervisor(zone), IWithTimers {
+
+    private const int HEAL_INTERVAL_PER_MINUTE_IN_SECONDS = 5;
+
+    public ITimerScheduler Timers { get; set; }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS))]
     public override void ReceiveZoneLoadResults(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS message) {
@@ -27,6 +32,20 @@ internal sealed class ZonePlayerSupervisor(Core.Zone zone) : ZoneEntitySuperviso
         // Inform the zone that we have finished initializing.
         var reply = new ZONE_102_PROTOCOL.MSG_ZONESUPERVISORLOADRESULTS { SupervisorName = nameof(ZonePlayerSupervisor) };
         Sender.Tell(reply);
+
+        if (message.ZoneData.m_healingPerMinute > 0) {
+            // Calculate how much healing happens on interval.
+            var healingPerMin = message.ZoneData.m_healingPerMinute;
+            var healingPerSec = healingPerMin / 60.0f;
+            var healingPerTick = healingPerSec * HEAL_INTERVAL_PER_MINUTE_IN_SECONDS;
+
+            // Fire a message to self to start the heal tick.
+            var delay = TimeSpan.FromSeconds(HEAL_INTERVAL_PER_MINUTE_IN_SECONDS);
+            var msg = new ZONE_102_PROTOCOL.MSG_ZONEHEALTICK {
+                MaxHealthPercent = healingPerTick
+            };
+            Timers.StartPeriodicTimer("healtick", msg, delay);
+        }
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST))]
@@ -47,7 +66,12 @@ internal sealed class ZonePlayerSupervisor(Core.Zone zone) : ZoneEntitySuperviso
     // If this handler was left to the base class, it would cause a stack overflow.
     // Players attempt to query a zone entity, which is sent to themselves, which sends this message again.
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY))]
-    public override void ReceiveQueryEntityObject(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY message)  { }
+    public override void ReceiveQueryEntityObject(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY message) { }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEHEALTICK))]
+    private void ReceiveZoneTick(ZONE_102_PROTOCOL.MSG_ZONEHEALTICK message) =>
+        // Inform all players in the zone that they have been healed.
+        EntityActors.ForEach(p => p.Forward(message));
 
     private void HandleAddPlayer(ZONE_102_PROTOCOL.MSG_ADDPLAYER message) {
         // Inform all currently connected players that a new player has joined the zone.
