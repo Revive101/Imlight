@@ -83,6 +83,40 @@ public sealed class ServerSettings {
 
     #endregion
 
+    #region Combat
+
+    [IniSection("Combat")]
+
+    [DefaultValue(0.75f)]
+    [Description("The current health percent a creature must to decide healing itself on a prepare turn.")]
+    public float HealingThreshold { get; set; }
+
+    [DefaultValue(0.50f)]
+    [Description("The percent chance a creature will heal itself on a prepare turn.")]
+    public float HealingPercentChance { get; set; }
+
+    [DefaultValue(0.33f)]
+    [Description("The percent chance a creature will pass on a prepare turn.")]
+    public float PreparePassChance { get; set; }
+
+    [DefaultValue(5)]
+    [Description("The amount of aggro increase a player will receive upon damaging a creature.")]
+    public int DamagedAggroIncrease { get; set; }
+
+    [DefaultValue(3)]
+    [Description("The amount of aggro increase a player will receive upon healing a teammate.")]
+    public int HealingAggroIncrease { get; set; }
+
+    [DefaultValue(20)]
+    [Description("The amount of aggro increase a player will receive upon using the 'Provoke' spell on a creature.")]
+    public int ProvokeAggroIncrease { get; set; }
+
+    [DefaultValue(50)]
+    [Description("The amount of aggro decrease a player will receive upon using the 'Pacify' spell on a creature.")]
+    public int PacifyAggroDecrease { get; set; }
+
+    #endregion
+
     #region Character
 
     [IniSection("Character")]
