@@ -8,7 +8,6 @@ using Imlight.Common.Caches;
 using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.WizardData.Models.Player;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using static Imlight.Common.Caches.TypeCache;
@@ -16,6 +15,15 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Game.Zone.Components;
 
 internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(entity), IComponentFactory {
+
+    ////////////////////////////////////////////////////////////////////////////
+    /// There are two distinct messages to send to the client in regards to  ///
+    /// objects in the game. The first is MSG_NEWOBJECT, which is used to    ///
+    /// create a new object in the client's world.                           ///
+    /// The second is MSG_ADDOBJECT, which respawns an object that was       ///
+    /// previously removed. You cannot send MSG_ADDOBJECT in regards to an   ///
+    /// object if the client has not been told about it with MSG_NEWOBJECT   ///
+    ////////////////////////////////////////////////////////////////////////////
 
     private readonly CoreObjectSerializer _serializer = new CoreObjectSerializer()
             .OnBehaviors(SerializerOptions.Behaviors.None)
@@ -38,11 +46,7 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
 
         _renderDistance = Entity.Zone.ZoneData.m_farClip;
 
-        // Broadcast the creation of the object to all players.
-        var clientObj = Entity.GetClientBehaviorInstance();
-        PlayerBroadcast(new GAME_5_PROTOCOL.MSG_NEWOBJECT {
-            Data = _serializer.Serialize(clientObj)
-        });
+        CreateObjectForAllPlayers();
     }
 
     public override void OnEnabled() {
@@ -60,16 +64,17 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         });
 
     public override void OnPlayerJoin(CoreObject player, IActorRef suspect, Wizard wizard) {
+        CreateObjectForPlayer(suspect);
+
+        // If the player is not within our render distance, despawn.
         if (!_doesDistanceCheck) {
-            // If the object does not have a distance check, spawn the object for the player.
-            SpawnObjectForPlayer(suspect);
             return;
         }
 
-        // If the player joins within render distance, spawn the object for them.
-        if (IsInRadius(player, _renderDistance)) {
-            _playersInRange.Remove(player);
-            SpawnObjectForPlayer(suspect);
+        if (!IsInRadius(player, _renderDistance)) {
+            DespawnObjectForPlayer(suspect);
+        }
+        else {
             _playersInRange.Add(player, suspect);
         }
     }
@@ -92,7 +97,7 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         // Check if the player is now in range of the object.
         if (IsInRadius(playerObj, _renderDistance) && !_playersInRange.ContainsKey(playerObj)) {
             // If the player is in range, spawn the object for them.
-            SpawnObjectForPlayer(playerActor);
+            RespawnObjectForPlayer(playerActor);
             _playersInRange.Add(playerObj, playerActor);
         }
         else if (!IsInRadius(playerObj, _renderDistance) && _playersInRange.ContainsKey(playerObj)) {
@@ -102,12 +107,33 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         }
     }
 
-    private void SpawnObjectForPlayer(IActorRef player) {
+    private void CreateObjectForPlayer(IActorRef player) {
         var clientObj = Entity.GetClientBehaviorInstance();
 
-        // Send object data to the player
+        // Send object data to the player.
         var newObjectMsg = new GAME_5_PROTOCOL.MSG_NEWOBJECT {
             Data = _serializer.Serialize(clientObj)
+        };
+        player.Tell(newObjectMsg);
+    }
+
+    private void CreateObjectForAllPlayers() {
+        var clientObj = Entity.GetClientBehaviorInstance();
+
+        // Send object data to all players.
+        PlayerBroadcast(new GAME_5_PROTOCOL.MSG_NEWOBJECT {
+            Data = _serializer.Serialize(clientObj)
+        });
+    }
+
+    private void RespawnObjectForPlayer(IActorRef player) {
+        // Send object data to the player.
+        var newObjectMsg = new GAME_5_PROTOCOL.MSG_ADDOBJECT {
+            GameObjectID = Entity.ActiveGameObject.m_globalID,
+            LocationX = Entity.ActiveGameObject.m_location.X,
+            LocationY = Entity.ActiveGameObject.m_location.Y,
+            LocationZ = Entity.ActiveGameObject.m_location.Z,
+            Direction = Entity.ActiveGameObject.m_orientation.Z
         };
         player.Tell(newObjectMsg);
     }
