@@ -8,6 +8,7 @@ using Imlight.Common;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Resources;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -103,7 +104,7 @@ public class ZoneEntity(
         }
 
         foreach (var (_, actor) in Components) {
-            actor.Tell(message);
+            actor.Forward(message);
         }
     }
 
@@ -183,6 +184,8 @@ public class ZoneEntity(
             m_characterId = (Common.ObjectProperty.PropertyReflection.GID) ActiveGameObject.m_globalID,
         };
 
+        gameObj = CoreObjectFactory.InitializeCoreObjectBehaviors(gameObj, Template);
+
         // Let each component contribute its behaviors.
         foreach (var (component, _) in Components) {
             if (component is IClientBehaviorProvider<BehaviorInstance> serverBehavior) {
@@ -200,11 +203,6 @@ public class ZoneEntity(
                 if (existing != null) {
                     var idx = gameObj.m_inactiveBehaviors.IndexOf(existing);
                     gameObj.m_inactiveBehaviors[idx] = clientInstance;
-                }
-                else {
-                    // This will cause the client to crash if the behavior does not exist in the template.
-                    Logger.Fatal("{0} contains behavior {1} that does not exist in the template.",
-                        Logger.Args(gameObj.m_debugName, clientInstance.GetType().Name));
                 }
             }
         }

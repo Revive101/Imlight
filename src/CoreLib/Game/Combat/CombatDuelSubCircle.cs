@@ -83,7 +83,7 @@ public class CombatDuelSubCircle {
     }
     internal bool IsAlive => ParticipantGameStats?.m_currentHitpoints > 0;
     internal CombatDeck _combatDeck;
-    internal readonly DuelComponent _duelActor;
+    internal readonly CombatDuelComponent _duelActor;
     internal Wizard _wizard;
 
     private readonly float _radius;
@@ -91,7 +91,7 @@ public class CombatDuelSubCircle {
     private readonly Color _color;
 
     // ctor
-    internal CombatDuelSubCircle(DuelComponent duelActor, float radius, float rotation, Color color, int index) {
+    internal CombatDuelSubCircle(CombatDuelComponent duelActor, float radius, float rotation, Color color, int index) {
         _duelActor = duelActor;
         _radius = radius;
         _rotation = rotation;

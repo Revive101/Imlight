@@ -48,7 +48,7 @@ internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, ICl
             .First();
         _duelistBehaviorTemplate = entity.Template.m_behaviors
             .OfType<DuelistBehaviorTemplate>()
-            .First();
+            .FirstOrDefault();
 
         this.IsBossMonster = _npcBehaviorTemplate.m_bossMob;
         this.Intelligence = _npcBehaviorTemplate.m_fIntelligence;
@@ -88,8 +88,7 @@ internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, ICl
         // Boss mobs will sometimes have base effects in their NPC template.
         if (_npcBehaviorTemplate.m_baseEffects.Count > 0) {
             foreach (var effect in _npcBehaviorTemplate.m_baseEffects) {
-                // todo
-                //CharacterEffectHelper.AddGameEffectToStats(statsComponent.Stats, effect);
+                CharacterEffectHelper.AddGameEffectToStats(_statsComponent.Stats, effect);
             }
         }
     }
@@ -112,7 +111,7 @@ internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, ICl
     };
 
     private void OnProximityEnter(CoreObject playerObj, IActorRef playerActor) {
-        if (!IsMonster || !IsBossMonster) {
+        if (!IsMonster) {
             return;
         }
 

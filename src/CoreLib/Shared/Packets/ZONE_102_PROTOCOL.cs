@@ -499,7 +499,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     }
 
     /// <summary>
-    /// Sent by a <see cref="ZoneSigilSupervisor"/> to a <see cref="DuelComponent"/> to indicate
+    /// Sent by a <see cref="ZoneSigilSupervisor"/> to a <see cref="CombatDuelComponent"/> to indicate
     /// the details of the sigil.
     /// </summary>
     internal sealed class MSG_SIGILDETAILS : IServerMessage {

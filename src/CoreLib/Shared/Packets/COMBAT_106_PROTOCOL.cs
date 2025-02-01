@@ -87,7 +87,7 @@ namespace Imlight.CoreLib.Shared.Packets {
             public byte ServiceID => 106;
 
             public IActorRef DuelActor;
-            public DuelComponent Duel;
+            public CombatDuelComponent Duel;
             public CombatDuelSubCircle SubCircle;
             public Vector3 SlotPosition;
             public float SlotOrientation;
@@ -123,7 +123,7 @@ namespace Imlight.CoreLib.Shared.Packets {
             public byte MessageOrder => 14;
             public byte ServiceID => 106;
 
-            public WizGameStats GameStats;
+            public ServerWizGameStats GameStats;
             public float CombatIntelligence;
             public float CombatSelfishFactor;
             public float CombatAggressionFactor;
