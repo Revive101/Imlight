@@ -79,7 +79,7 @@ public interface IZoneComponent {
     /// Called when the component is enabled.
     /// </summary>
     void OnEnabled();
-    
+
     /// <summary>
     /// Called when the component is disabled.
     /// </summary>
@@ -97,7 +97,7 @@ public abstract class ZoneEntityComponent(ZoneEntity entity) : ReceiveProtocolDi
     protected Zone Zone => Entity.Zone;
     protected IActorRef ZoneActor => Entity.ZoneRef;
     private bool _enabled = true;
-    private bool _awakeCalled;
+    private bool _awakeCalled = false;
 
     public virtual void OnAwake() { }
     public virtual void OnStart() { }
@@ -113,7 +113,7 @@ public abstract class ZoneEntityComponent(ZoneEntity entity) : ReceiveProtocolDi
         _enabled = true;
         OnEnabled();
     }
-    
+
     public void Disable() {
         _enabled = false;
         OnDisabled();
@@ -164,21 +164,24 @@ public abstract class ZoneEntityComponent(ZoneEntity entity) : ReceiveProtocolDi
 
         Sender.Tell(new ZONE_102_PROTOCOL.MSG_ENTITYCOMPONENTREQUESTIDENTITYRSP { Component = this });
     }
-        
+
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTINITIALIZED))]
     public void ReceiveObjectStart() {
         if (!_enabled) {
+            Sender.Tell(new ZONE_102_PROTOCOL.MSG_ZONEOBJECTINITIALIZED());
+            
             return;
         }
 
         if (!_awakeCalled) {
             _awakeCalled = true;
             OnAwake();
-
-            return;
+            Sender.Tell(new ZONE_102_PROTOCOL.MSG_ZONEOBJECTINITIALIZED());
         }
-
-        OnStart();
+        else {
+            OnStart();
+            Sender.Tell(new ZONE_102_PROTOCOL.MSG_ZONEOBJECTINITIALIZED());
+        }
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_CREATUREMOVE))]

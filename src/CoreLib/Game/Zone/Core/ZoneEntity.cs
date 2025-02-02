@@ -8,6 +8,7 @@ using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty;
+using Imlight.CoreLib.Game.Zone.Components;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
@@ -33,7 +34,7 @@ public class ZoneEntity(
     IActorRef zoneRef,
     Zone zone) : ReceiveProtocolDispatcher, IClientBehaviorProvider<WizClientObject> {
 
-    private const uint MOBILE_ID_REQUEST_TIMEOUT_IN_MS = 1000;
+    private const uint MOBILE_ID_REQUEST_TIMEOUT_IN_MS = 2500;
 
     public IActorRef SelfRef { get; protected set; } 
     public CoreObject ActiveGameObject { get; protected set; } = activeGameObject;
@@ -153,15 +154,20 @@ public class ZoneEntity(
 
         this.SelfRef = Self;
 
+        // Send two start messages here: OnAwake and OnStart.
+        // OnAwake is early initialization. It's meant to configure dependent components that are guaranteed to be present.
+        // OnStart is late initialization. 
+        // We're also asking instead of telling, to ensure that all components receive `OnAwake` before `OnStart`.
+
         // Notify each component that the entity has been initialized (OnAwake).
         var initializedMsg = new ZONE_102_PROTOCOL.MSG_ZONEOBJECTINITIALIZED();
         foreach (var (_, actor) in Components) {
-            actor.Tell(initializedMsg);
+            var _ = actor.Ask(initializedMsg).Result;
         }
 
         // Send a message to the zone to indicate that the entity has been loaded (OnStart).
         foreach (var (_, actor) in Components) {
-            actor.Tell(initializedMsg);
+            var _ = actor.Ask(initializedMsg).Result;
         }
 
         Sender.Tell(new ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADRESULTS());
@@ -289,6 +295,12 @@ public class ZoneEntity(
                     gameObj.m_inactiveBehaviors[idx] = clientInstance;
                 }
             }
+        }
+
+        // This one must be done manually.
+        var statsComponent = GetComponentOfType<StatsComponent>();
+        if (statsComponent is not null) {
+            gameObj.m_gameStats = statsComponent.Stats.GetCombatGameStats();
         }
 
         return gameObj;

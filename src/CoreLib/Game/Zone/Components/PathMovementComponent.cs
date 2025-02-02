@@ -298,7 +298,7 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
                     Logger.Args(
                         Entity.ActiveGameObject.m_debugName,
                         Entity.Zone.ZoneName,
-                        PATH_DETAILS_FAILURE_COUNT_MAXIMUM * INITIAL_MOVEMENT_DELAY_MINIMUM_IN_MS
+                        PATH_DETAILS_FAILURE_COUNT_MAXIMUM * INITIAL_MOVEMENT_DELAY_MINIMUM_IN_MS / 1000
                     )
                 );
 
