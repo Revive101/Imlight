@@ -169,7 +169,8 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
 
         var msg = new ZONE_102_PROTOCOL.MSG_CREATUREMOVE() {
             CreatureActor = Entity.SelfRef,
-            CreatureObject = Entity.ActiveGameObject
+            CreatureObject = Entity.ActiveGameObject,
+            CreatureEntity = Entity
         };
         Entity.ZoneRef.Tell(msg);
     }

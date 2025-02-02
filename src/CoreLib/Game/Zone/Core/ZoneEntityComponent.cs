@@ -55,7 +55,8 @@ public interface IZoneComponent {
     /// </summary>
     /// <param name="creature">The core object representing the creature.</param>
     /// <param name="suspect">The actor reference of the suspect.</param>
-    void OnCreatureMove(CoreObject creature, IActorRef suspect);
+    /// <param name="entity">The zone entity associated with the creature.</param>
+    void OnCreatureMove(CoreObject creature, IActorRef suspect, ZoneEntity entity);
 
     /// <summary>
     /// Enables the component.
@@ -95,7 +96,7 @@ public abstract class ZoneEntityComponent(ZoneEntity entity) : ReceiveProtocolDi
     public virtual void OnPlayerJoin(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) { }
     public virtual void OnPlayerLeave(IActorRef playerActor, ulong id) { }
     public virtual void OnPlayerMove(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) { }
-    public virtual void OnCreatureMove(CoreObject creature, IActorRef suspect) { }
+    public virtual void OnCreatureMove(CoreObject creature, IActorRef suspect, ZoneEntity entity) { }
     public virtual void OnEnabled() { }
     public virtual void OnDisabled() { }
 
@@ -170,7 +171,7 @@ public abstract class ZoneEntityComponent(ZoneEntity entity) : ReceiveProtocolDi
             return;
         }
 
-        OnCreatureMove(message.CreatureObject, message.CreatureActor);
+        OnCreatureMove(message.CreatureObject, message.CreatureActor, message.CreatureEntity);
     }
 
     /// <summary>

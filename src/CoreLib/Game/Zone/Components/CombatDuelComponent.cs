@@ -121,7 +121,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         }
     }
 
-    public override void OnCreatureMove(CoreObject creature, IActorRef suspect) {
+    public override void OnCreatureMove(CoreObject creature, IActorRef suspect, ZoneEntity entity) {
         if (!_isActive) {
             return;
         }
@@ -130,6 +130,11 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         // If there's a slot available, add the creature to the duel.
         if (IsInRadius(creature, _combatSigilObjectInfo.m_radius) && !_entitiesInRange.ContainsKey(creature)) {
             _entitiesInRange.Add(creature, suspect);
+
+            var npcComponent = entity.GetComponentOfType<NpcComponent>();
+            if (npcComponent != null && !npcComponent.IsMonster) {
+                return;
+            }
             
             if (IsSlotAvailable(CombatTeam.Monster)) {
                 AddParticipant(creature, suspect);
