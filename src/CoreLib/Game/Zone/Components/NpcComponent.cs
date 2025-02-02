@@ -38,6 +38,7 @@ internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, ICl
     private readonly DuelistBehaviorTemplate _duelistBehaviorTemplate;
 
     private StatsComponent _statsComponent;
+    private CombatDeckComponent _deckComponent;
 
     public static bool ShouldAttachToEntity(CoreTemplate template) 
         => template is GameObjectTemplate gameObjectTemplate
@@ -92,6 +93,17 @@ internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, ICl
                 CharacterEffectHelper.AddGameEffectToStats(_statsComponent.Stats, effect);
             }
         }
+
+        // If the NPC is a monster, it will have a deck.
+        if (IsMonster) {
+            _deckComponent = Entity.GetComponentOfType<CombatDeckComponent>();
+            if (_deckComponent is null) {
+                Logger.Error("NPC {0} does not have a CombatDeckComponent.", 
+                    Logger.Args(Entity.ActiveGameObject.m_debugName));
+
+                return;
+            }
+        }
     }
 
     public override void OnPlayerMove(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) {
@@ -139,7 +151,7 @@ internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, ICl
             CombatAggressionFactor = AggressiveFactor,
             CombatLevel = Level,
             MagicSchool = MagicSchool,
-            SpellList = [], // todo
+            SpellList = _deckComponent?.Spells ?? [],
         };
 
         Sender.Tell(rsp);

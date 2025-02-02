@@ -118,6 +118,9 @@ public sealed class ZonePath : ZoneEntity, IWithTimers {
 
         // Create the creature actor.
         var creatureActor = CreateEntityActor(creatureObj, template);
+        if (creatureActor is null) {
+            return;
+        }
         _creatureActors.Add(creatureActor);
         _spawnObjectInfo.Add(creatureObj.m_globalID, spawnObject);
 

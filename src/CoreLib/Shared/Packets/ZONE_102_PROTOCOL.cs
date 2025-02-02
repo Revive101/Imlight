@@ -545,6 +545,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
         public CoreObject CreatureObject;
         public IActorRef CreatureActor;
+        public ZoneEntity CreatureEntity;
 
     }
 
