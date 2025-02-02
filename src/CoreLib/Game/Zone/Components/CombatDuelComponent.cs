@@ -182,9 +182,6 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL))]
     private void ReceiveDuelStart(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL message) {
         if (_isActive) {
-            Logger.Warning("Received start request for already active sigil {0}",
-                Logger.Args(Entity.ActiveGameObject.m_globalID));
-
             return;
         }
 

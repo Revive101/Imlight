@@ -151,13 +151,18 @@ public class ZoneEntity(
 
         AutoAttachComponents();
 
-        // Notify each component that the entity has been initialized.
+        this.SelfRef = Self;
+
+        // Notify each component that the entity has been initialized (OnAwake).
         var initializedMsg = new ZONE_102_PROTOCOL.MSG_ZONEOBJECTINITIALIZED();
         foreach (var (_, actor) in Components) {
             actor.Tell(initializedMsg);
         }
 
-        this.SelfRef = Self;
+        // Send a message to the zone to indicate that the entity has been loaded (OnStart).
+        foreach (var (_, actor) in Components) {
+            actor.Tell(initializedMsg);
+        }
 
         Sender.Tell(new ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADRESULTS());
     }

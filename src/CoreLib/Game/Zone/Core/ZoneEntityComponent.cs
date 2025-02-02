@@ -19,6 +19,13 @@ public interface IZoneComponent {
 
     /// <summary>
     /// Sent by the <see cref="ZoneEntity"/> when all components have been initialized.
+    /// Called before <see cref="OnStart"/>.
+    /// </summary>
+    void OnAwake();
+
+    /// <summary>
+    /// Sent by the <see cref="ZoneEntity"/> when all components have been initialized.
+    /// Called after <see cref="OnAwake"/>.
     /// </summary>
     void OnStart();
 
@@ -90,7 +97,9 @@ public abstract class ZoneEntityComponent(ZoneEntity entity) : ReceiveProtocolDi
     protected Zone Zone => Entity.Zone;
     protected IActorRef ZoneActor => Entity.ZoneRef;
     private bool _enabled = true;
+    private bool _awakeCalled;
 
+    public virtual void OnAwake() { }
     public virtual void OnStart() { }
     public virtual void OnZoneStart() { }
     public virtual void OnPlayerJoin(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) { }
@@ -159,6 +168,13 @@ public abstract class ZoneEntityComponent(ZoneEntity entity) : ReceiveProtocolDi
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTINITIALIZED))]
     public void ReceiveObjectStart() {
         if (!_enabled) {
+            return;
+        }
+
+        if (!_awakeCalled) {
+            _awakeCalled = true;
+            OnAwake();
+
             return;
         }
 
