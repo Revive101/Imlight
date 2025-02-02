@@ -9,6 +9,7 @@ using Imlight.Common;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Collections;
+using Imlight.CoreLib.WizardData.Implementations;
 
 namespace Imlight.CoreLib.Game.World;
 
@@ -23,6 +24,7 @@ public class GameWorld : ReceiveProtocolDispatcher {
         // Preload NPC vendor data and trainer data.
         NpcInventoryCollection.PreloadInventories();
         NpcSpellInventoryCollection.PreloadNpcSpellInventories();
+        CreatureSpellbookCollection.PreloadSpellbooks();
     }
 
     public static Props Props(GameServer server)
