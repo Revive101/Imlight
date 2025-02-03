@@ -18,18 +18,20 @@ using Imlight.Common;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.Game.Commands;
 using Imlight.CoreLib.WizardData.Databases;
-using Imlight.CoreLib.Game.Effects;
 using Imlight.CoreLib.Game.World;
+using Imlight.CoreLib.Game.Processes;
 
 namespace Imlight.CoreLib.Game;
 
 public class GameServer : Server {
+
     private readonly string _sessionKeyHashInput = ConfigurationManager.Settings.SessionKeyHashInput;
     private readonly ushort _sessionKeyValidityTime = ConfigurationManager.Settings.SessionKeyValidityTime;
     private readonly ushort _playerLimit = ConfigurationManager.Settings.GameServerPlayerLimit;
 
     private readonly IActorRef _gameWorldRef;
     private readonly IActorRef _commandDispatcherRef;
+    private readonly IActorRef _processSupervisorRef;
     private readonly Cache<ByteString, ulong> _sessionKeys;
     private readonly ListQueue<SessionActor> _playerQueue;
 
@@ -40,15 +42,20 @@ public class GameServer : Server {
         this.ActiveSessions.CollectionChanged += ActiveSessionsChangedEvent;
 
         // Create actor children.
-        var gameWorldActorName = $"{Name}.GameWorld";
+        var gameWorldActorName = $"{Name}.{nameof(GameWorld)}";
         _gameWorldRef = Context.ActorOf(GameWorld.Props(this), gameWorldActorName);
         Logger.Verbose("New actor created under {Path}: {Name}",
             Logger.Args(Context.Self.Path, gameWorldActorName));
 
-        var commandDispatcherActorName = $"{Name}.CommandDispatcher";
+        var commandDispatcherActorName = $"{Name}.{nameof(CommandDispatcher)}";
         _commandDispatcherRef = Context.ActorOf(CommandDispatcher.Props(), commandDispatcherActorName);
         Logger.Verbose("New actor created under {Path}: {Name}",
             Logger.Args(Context.Self.Path, commandDispatcherActorName));
+
+        var processSupervisorActorName = $"{Name}.{nameof(ProcessSupervisor)}";
+        _processSupervisorRef = Context.ActorOf(ProcessSupervisor.Props(), processSupervisorActorName);
+        Logger.Verbose("New actor created under {Path}: {Name}",
+            Logger.Args(Context.Self.Path, processSupervisorActorName));
 
         LoadResources();
 
@@ -150,6 +157,10 @@ public class GameServer : Server {
         _gameWorldRef.Forward(message);
     }
 
+    [MessageHandler(typeof(PROCESS_107_PROTOCOL.MSG_NEW_MINIGAME_PROCESS))]
+    private void ReceiveNewProcess(PROCESS_107_PROTOCOL.MSG_NEW_MINIGAME_PROCESS message) 
+        => _processSupervisorRef.Forward(message);
+
     protected override ushort GetNewUniqueId() {
         ushort newId = 0;
         var isUniqueId = false;
@@ -214,4 +225,5 @@ public class GameServer : Server {
 
         return key;
     }
+
 }
