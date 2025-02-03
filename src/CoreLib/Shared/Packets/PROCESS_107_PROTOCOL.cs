@@ -20,6 +20,7 @@ internal sealed class PROCESS_107_PROTOCOL : IServerProtocol {
         public byte MessageOrder { get; } = 1;
         public byte ServiceID { get; } = 107;
 
+        public byte MinigameIndex;
         public string MinigameName;
         public IActorRef Owner;
 

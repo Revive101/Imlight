@@ -23,9 +23,10 @@ internal sealed class ProcessSupervisor : ReceiveProtocolDispatcher {
     private void ReceiveNewMinigameProcess(PROCESS_107_PROTOCOL.MSG_NEW_MINIGAME_PROCESS message) {
         var minigameName = message.MinigameName;
         var processId = GenerateProcessId();
+        var minigameIndex = message.MinigameIndex;
 
         // Create Akka props for the new process.
-        var props = GetMinigameProps(minigameName, processId);
+        var props = Akka.Actor.Props.Create(() => new MinigameProcess(minigameName, processId, minigameIndex));
         var processName = $"{minigameName}_{processId}";
         var processActorRef = Context.ActorOf(props, processName);
 
@@ -36,22 +37,6 @@ internal sealed class ProcessSupervisor : ReceiveProtocolDispatcher {
             ProcessId = processId
         };
         Sender.Tell(reply);
-    }
-
-    private static Props GetMinigameProps(string minigameName, uint processId) {
-        var processName = $"{minigameName}_{processId}";
-
-        return minigameName switch {
-            "SkullRiders"   => Akka.Actor.Props.Create(() => new SkullRidersProcess(processName, processId)),
-            "Soblocks"      => Akka.Actor.Props.Create(() => new SorceryStonesProcess(processName, processId)),
-            "DoodleDoug"    => Akka.Actor.Props.Create(() => new DoodleDougProcess(processName, processId)),
-            "concentration" => Akka.Actor.Props.Create(() => new ConcentrationProcess(processName, processId)),
-            "HotShots"      => Akka.Actor.Props.Create(() => new HotShotsProcess(processName, processId)),
-            "ChooChooZoo"   => Akka.Actor.Props.Create(() => new ChooChooProcess(processName, processId)),
-            "PotionMotion"  => Akka.Actor.Props.Create(() => new PotionMotionProcess(processName, processId)),
-            "Dueling_Diego" => Akka.Actor.Props.Create(() => new DuelingDiegoProcess(processName, processId)),
-            _ => throw new System.NotImplementedException($"Minigame '{minigameName}' is not implemented."),
-        };
     }
 
     private uint GenerateProcessId() {

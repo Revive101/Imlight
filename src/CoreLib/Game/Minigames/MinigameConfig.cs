@@ -39,6 +39,9 @@ internal sealed class MinigameConfig : RootSingleResourceSingleton<MinigameConfi
         return $"{minigameInfo.m_name}/Client.lua";
     }
 
+    public static byte GetMinigameIndex(string zoneName) 
+        => (byte) _minigameConfig.m_minigames.FindIndex(x => x.m_zone == zoneName);
+
     public static bool IsMinigameZone(string zoneName) 
         => _minigameConfig.m_minigames.Any(x => x.m_zone == zoneName);
 

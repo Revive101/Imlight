@@ -37,9 +37,11 @@ internal class MinigameService(SessionActor sessionActor) : MessageService(sessi
 
         // Minigame script format looks like 'SkullRiders/Client.lua'
         var minigameScript = MinigameConfig.GetMinigameScript(wizardZone);
+        var minigameIndex = MinigameConfig.GetMinigameIndex(wizardZone);
 
         // Ask the server for a new minigame process.
         var msg = new PROCESS_107_PROTOCOL.MSG_NEW_MINIGAME_PROCESS {
+            MinigameIndex = minigameIndex,
             MinigameName = minigameScript.Split('/')[0],
             Owner = SessionActor.ActorRef
         };

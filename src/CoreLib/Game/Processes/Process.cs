@@ -6,6 +6,7 @@
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
+using Imlight.Common.MessageLayer;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using System;
@@ -22,16 +23,15 @@ internal abstract class Process : ReceiveProtocolDispatcher, IWithTimers {
 
     protected List<IActorRef> Participants { get; set; } = [];
 
-    private readonly string _processName;
-    private readonly uint _processId;
-
-    private bool _hadActivity;
+    protected readonly string ProcessName;
+    protected readonly uint ProcessId;
+    protected bool HadActivity;
 
     // ctor
     protected Process(string processName, uint processId, params IActorRef[] participants) {
-        this._processName = processName;
-        this._processId = processId;
-        this._hadActivity = false;
+        this.ProcessName = processName;
+        this.ProcessId = processId;
+        this.HadActivity = false;
         this.Participants.AddRange(participants);
 
         // Start a periodic timer to check for activity.
@@ -40,28 +40,24 @@ internal abstract class Process : ReceiveProtocolDispatcher, IWithTimers {
         Timers.StartPeriodicTimer(ACTIVITY_CHECK_LOCK, msg, timespan);
     }
 
-    [MessageHandler(typeof(IServerMessage))]
-    internal void ReceiveElse() 
-        => _hadActivity = true;
-
     [MessageHandler(typeof(PROCESS_107_PROTOCOL.MSG_PROCESS_ACTIVITY_CHECK))]
     private void ReceiveProcessLifeCycle() {
-        if (!_hadActivity) {
+        if (!HadActivity) {
             KillProcess();
 
             Logger.Debug("Process {0} killed after {1} seconds of inactivity.",
-                Logger.Args(_processName, ACTIVITY_CHECK_INTERVAL_IN_SECONDS));
+                Logger.Args(ProcessName, ACTIVITY_CHECK_INTERVAL_IN_SECONDS));
 
             return;
         }
 
-        _hadActivity = false;
+        HadActivity = false;
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENT_PROCESS_TERMINATED))]
     internal void ReceiveClientKilledProcess(GAME_5_PROTOCOL.MSG_CLIENT_PROCESS_TERMINATED message) {
-        if (message.JobID == _processId) {
-            Logger.Debug("Process {0} killed by client.", Logger.Args(_processName));
+        if (message.JobID == ProcessId) {
+            Logger.Debug("Process {0} killed by client.", Logger.Args(ProcessName));
             
             KillProcess();
         }
@@ -71,7 +67,7 @@ internal abstract class Process : ReceiveProtocolDispatcher, IWithTimers {
         // Inform the supervisor that the process has been killed.
         var supervisor = Context.Parent;
         var killedMsg = new PROCESS_107_PROTOCOL.MSG_PROCESS_KILLED {
-            ProcessId = _processId
+            ProcessId = ProcessId
         };
         supervisor.Tell(killedMsg);
 
