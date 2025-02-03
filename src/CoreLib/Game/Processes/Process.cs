@@ -5,6 +5,7 @@
 
 using Akka.Actor;
 using Imlight.Common;
+using Imlight.Common.Caches;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using System;
@@ -40,16 +41,30 @@ internal abstract class Process : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     [MessageHandler(typeof(IServerMessage))]
-    private void ReceiveElse() 
+    internal void ReceiveElse() 
         => _hadActivity = true;
 
     [MessageHandler(typeof(PROCESS_107_PROTOCOL.MSG_PROCESS_ACTIVITY_CHECK))]
     private void ReceiveProcessLifeCycle() {
         if (!_hadActivity) {
             KillProcess();
+
+            Logger.Debug("Process {0} killed after {1} seconds of inactivity.",
+                Logger.Args(_processName, ACTIVITY_CHECK_INTERVAL_IN_SECONDS));
+
+            return;
         }
 
         _hadActivity = false;
+    }
+
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENT_PROCESS_TERMINATED))]
+    internal void ReceiveClientKilledProcess(GAME_5_PROTOCOL.MSG_CLIENT_PROCESS_TERMINATED message) {
+        if (message.JobID == _processId) {
+            Logger.Debug("Process {0} killed by client.", Logger.Args(_processName));
+            
+            KillProcess();
+        }
     }
 
     private void KillProcess() {
@@ -61,12 +76,10 @@ internal abstract class Process : ReceiveProtocolDispatcher, IWithTimers {
         supervisor.Tell(killedMsg);
 
         // Inform the participants that the process has been killed.
+        Sender.Tell(killedMsg);
         foreach (var participant in Participants) {
             participant.Tell(killedMsg);
         }
-
-        Logger.Debug("Process {0} killed after {1} seconds of inactivity.",
-            Logger.Args(_processName, ACTIVITY_CHECK_INTERVAL_IN_SECONDS));
 
         Timers.Cancel(ACTIVITY_CHECK_LOCK);
         Context.Stop(Self);
