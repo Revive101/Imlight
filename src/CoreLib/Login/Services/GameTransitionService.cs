@@ -17,8 +17,9 @@ using SharpDX;
 
 namespace Imlight.CoreLib.Login.Services;
 
-internal class GameTransitionService : MessageService {
-    public GameTransitionService(SessionActor sessionActor) : base(sessionActor) { }
+internal class GameTransitionService(SessionActor sessionActor) : MessageService(sessionActor) {
+
+    private const string FALLBACK_ZONE_NAME = "WizardCity/WC_Hub";
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new GameTransitionService(parentActor));
@@ -46,16 +47,12 @@ internal class GameTransitionService : MessageService {
         var serverEnqueueResult = (LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED) SessionActor.EnqueueToServer(gameServer.ActorRef);
         var allocatedKey = CreateSessionKey(gameServer.ActorRef, account);
 
-        var wizardNAme = character.PlayerNameBehavior.GetWizardName();
+        var wizardName = character.PlayerNameBehavior.GetWizardName();
         Logger.Information("Sending wizard {name} to game server {IP}:{Port}.",
-            Logger.Args(wizardNAme, gameServer.IP, gameServer.Port));
+            Logger.Args(wizardName, gameServer.IP, gameServer.Port));
 
-        // If this character was just made, their default location is Vector3.Zero.
-        // In such a case, we'll default them to a location called "Start," which the game client
-        // usually has a location for.
-        var stringLocation = character.Location == Vector3.Zero
-            ? "Start"
-            : Util.GetCompactStringFromVector(character.Location, character.Orientation);
+        var zoneName = DetermineZone(character);
+        var location = DetermineLocation(character);
 
         var charSelectedMsg = new LOGIN_7_PROTOCOL.MSG_CHARACTERSELECTED() {
             // Set details about the game server.
@@ -71,8 +68,8 @@ internal class GameTransitionService : MessageService {
             UserID = account.AccountId,
             CharID = character.CharId,
             ZoneID = new GID((ulong) gameServer.Port),
-            ZoneName = character.Zone,
-            Location = stringLocation,
+            ZoneName = zoneName,
+            Location = location,
         };
 
         // Cache the message if the player is queued.
@@ -108,4 +105,35 @@ internal class GameTransitionService : MessageService {
 
         CloseSession();
     }
+
+    private string DetermineZone(Wizard wizard) {
+        // The player may have logged out in a zone we can't put them back into.
+
+        // Minigames:
+        if (wizard.Zone.Contains("Phantom")) {
+            if (string.IsNullOrEmpty(wizard.PreviousZone) || wizard.PreviousZone.Contains("Phantom")) {
+                return FALLBACK_ZONE_NAME;
+            }
+            
+            return wizard.PreviousZone;
+        }
+
+        return wizard.Zone;
+    }
+
+    private string DetermineLocation(Wizard wizard) {
+        if (wizard.Location == Vector3.Zero) {
+            return "Start";
+        }
+
+        // The player may have logged out in a zone we can't put them back into.
+
+        // Minigames:
+        if (wizard.Zone.Contains("Phantom")) {
+            return "Start";
+        }
+
+        return Util.GetCompactStringFromVector(wizard.Location, wizard.Orientation);
+    }
+
 }
