@@ -3,6 +3,7 @@
  * Proprietary and confidential.
  */
 
+using System;
 using System.Collections.Generic;
 using Akka.Actor;
 using Imlight.Common;
@@ -14,8 +15,9 @@ using Imlight.CoreLib.WizardData.Implementations;
 namespace Imlight.CoreLib.Game.World;
 
 public class GameWorld : ReceiveProtocolDispatcher {
-    
+
     private readonly Dictionary<string, IActorRef> _zones = [];
+    private readonly List<uint> _dynamicZoneIds = [];
     private readonly GameServer _server;
 
     // ctor
@@ -65,9 +67,19 @@ public class GameWorld : ReceiveProtocolDispatcher {
         zone.Forward(message);
     }
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONECLOSED))]
+    private void ReceiveZoneClosed(ZONE_102_PROTOCOL.MSG_ZONECLOSED message) {
+        var dynamicId = message.DynamicZoneId;
+        _dynamicZoneIds.Remove(dynamicId);
+    }
+
+    private static string SanitizeZoneName(string zoneName)
+        => zoneName.Replace('/', '-');
+
     private IActorRef CreatePublicZone(string zoneName) {
         var zoneActorName = SanitizeZoneName(zoneName);
-        var zone = Context.ActorOf(Zone.Core.Zone.Props(zoneName, 1), zoneActorName);
+        var zoneId = GetNextDynamicZoneId();
+        var zone = Context.ActorOf(Zone.Core.Zone.Props(zoneName, zoneId), zoneActorName);
 
         _zones.Add(zoneName, zone);
 
@@ -78,7 +90,16 @@ public class GameWorld : ReceiveProtocolDispatcher {
         return zone;
     }
 
-    private static string SanitizeZoneName(string zoneName) 
-        => zoneName.Replace('/', '-');
+    private uint GetNextDynamicZoneId() {
+        uint id;
+        var random = new Random();
+        do {
+            id = (uint) random.Next(1, int.MaxValue);
+        } while (_dynamicZoneIds.Contains(id));
+
+        _dynamicZoneIds.Add(id);
+
+        return id;
+    }
 
 }

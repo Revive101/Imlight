@@ -579,6 +579,8 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte MessageOrder { get; } = 36;
         public byte ServiceID { get; } = 102;
 
+        public uint DynamicZoneId;
+
     }
 
     /// <summary>

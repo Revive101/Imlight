@@ -113,7 +113,9 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     /// Closes the zone and stops all child actors.
     /// </summary>
     protected void CloseZone() {
-        var msg = new ZONE_102_PROTOCOL.MSG_ZONECLOSED();
+        var msg = new ZONE_102_PROTOCOL.MSG_ZONECLOSED() {
+            DynamicZoneId = _dynamicZoneId
+        };
         foreach (var supervisor in _supervisors) {
             supervisor.Tell(msg);
         }
@@ -130,6 +132,9 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
 
             player.Tell(rsp);
         }
+
+        // Inform the supervisor (GameWorld) that the zone is closing.
+        Context.Parent.Tell(msg);
 
         Context.Stop(Self);
     }
