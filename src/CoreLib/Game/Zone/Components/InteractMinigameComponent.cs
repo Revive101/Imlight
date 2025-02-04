@@ -15,7 +15,7 @@ namespace Imlight.CoreLib.Game.Zone.Components;
 internal sealed class InteractMinigameComponent(ZoneEntity entity) : ZoneEntityComponent(entity), IServiceComponent, IComponentFactory {
 
     public string ServiceName     => "KioskService";
-    public string NpcIcon         => "GUI/Art/Art_Quest/Minigame.dds";
+    public string NpcIcon         => "GUI/Art/Art_Quest_Minigame.dds";
     public string NpcNameKey      => "GUI_00002918";
     public string NpcTextKey      => "GUI_PlayMini";
     public string WizBang         => null;
