@@ -11,6 +11,7 @@ using Imlight.Common.Caches;
 using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty;
 using Imlight.Common.ObjectProperty.PropertyReflection;
+using Imlight.CoreLib.Game.World;
 using Imlight.CoreLib.Game.Zone;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Networking;
@@ -25,6 +26,7 @@ namespace Imlight.CoreLib.Game.Services;
 public class ZoneService : MessageService, IWithTimers {
     private const int ZONE_REMOVAL_WAIT_TIME_IN_SECONDS = 8;
     private const int ZONE_TRANSFER_CLEANUP_WAIT_TIME_IN_SECONDS = 1;
+    private const int ZONE_HEAL_TICK_INTERVAL_IN_SECONDS = 5;
     private const float TELEPORT_EFFECTS_TIME = 2.0f;
     private const string ENTER_ZONE_EVENT_NAME = "EnterZone";
 
@@ -44,7 +46,11 @@ public class ZoneService : MessageService, IWithTimers {
                 | SerializerOptions.PropertyFlags.Transmit
                 | SerializerOptions.PropertyFlags.AuthorityTransmit);
 
-    public ZoneService(SessionActor sessionActor) : base(sessionActor) { }
+    public ZoneService(SessionActor sessionActor) : base(sessionActor) {
+        // Start a timer for the healing tick.
+        var timeSpan = TimeSpan.FromSeconds(ZONE_HEAL_TICK_INTERVAL_IN_SECONDS);
+        //Timers.StartPeriodicTimer("healtick", new ZONE_102_PROTOCOL.MSG_HEALTICK(), timeSpan);
+    }
 
     protected static Props Props(SessionActor parentActor) => Akka.Actor.Props.Create(() => new ZoneService(parentActor));
 
@@ -58,8 +64,9 @@ public class ZoneService : MessageService, IWithTimers {
 
         // If the zone reference is not null, we'll tell the zone to remove the player.
         ZoneActor?.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER() {
-            Player = SessionActor.ActorRef,
-            GlobalId = globalId
+            PlayerActor = SessionActor.ActorRef,
+            GlobalId = globalId,
+            MobileId = gameObj.m_nMobileID,
         });
         ZoneActor = null;
 
@@ -181,10 +188,9 @@ public class ZoneService : MessageService, IWithTimers {
         SendHomeButtonData();
 
         var postEventMsg = new ZONE_102_PROTOCOL.MSG_POSTEVENT {
-            ZoneActor = ZoneActor,
             EventName = ENTER_ZONE_EVENT_NAME,
-            SenderActor = SessionActor.ActorRef,
-            SenderGameObject = GetActiveGameObject()
+            PlayerActor = SessionActor.ActorRef,
+            PlayerGameObject = GetActiveGameObject()
         };
         ZoneActor.Tell(postEventMsg);
     }
@@ -238,7 +244,7 @@ public class ZoneService : MessageService, IWithTimers {
     private void ReceiveNewPlayerAddedToZone(ZONE_102_PROTOCOL.MSG_PLAYERADDEDTOZONE message) {
         // A new player has been added to the zone. We need to spawn them.
         // Skip if this is myself.
-        if (message.Player == SessionActor.ActorRef) {
+        if (message.PlayerActor == SessionActor.ActorRef) {
             Logger.Error("{0} {1} received {2} for self.",
                 Logger.Args(SessionActor.ActorRef, SessionActor.SessionID, message.GetType()));
 
@@ -246,14 +252,14 @@ public class ZoneService : MessageService, IWithTimers {
         }
 
         // Spawn myself for the new player.
-        SpawnMyselfFor(message.Player);
+        SpawnMyselfFor(message.PlayerActor);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PLAYERREMOVEDFROMZONE))]
     private void ReceivePlayerRemovedFromZone(ZONE_102_PROTOCOL.MSG_PLAYERREMOVEDFROMZONE message) {
         // A player has been removed from the zone. We need to remove them.
         // Skip if this is myself.
-        if (message.Player == SessionActor.ActorRef) {
+        if (message.PlayerActor == SessionActor.ActorRef) {
             Logger.Error("{0} {1} received {2} for self.",
                 Logger.Args(SessionActor.ActorRef, SessionActor.SessionID, message.GetType()));
 
@@ -277,8 +283,8 @@ public class ZoneService : MessageService, IWithTimers {
         ZoneActor.Tell(message);
     }
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_FISHINTERACTION))]
-    private void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_FISHINTERACTION message) {
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PLAYERMOVE))]
+    private void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_PLAYERMOVE message) {
         // This is an exception. Sometimes the MoveService interval happens as we zone transfer.
         if (ZoneActor is null) {
             return;
@@ -287,8 +293,8 @@ public class ZoneService : MessageService, IWithTimers {
         ZoneActor.Forward(message);
     }
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT))]
-    private void ReceiveQueryZoneObject(ZONE_102_PROTOCOL.MSG_QUERYZONEOBJECT message) {
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY))]
+    private void ReceiveQueryZoneObject(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY message) {
         if (ZoneActor is null) {
             throw new Exception("Zone Reference was null.");
         }
@@ -324,8 +330,8 @@ public class ZoneService : MessageService, IWithTimers {
         SendTeleportEffects();
     }
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_HEALTICK))]
-    private void ReceiveZoneHealTick(ZONE_102_PROTOCOL.MSG_HEALTICK message) {
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEHEALTICK))]
+    private void ReceiveZoneHealTick(ZONE_102_PROTOCOL.MSG_ZONEHEALTICK message) {
         var w = GetActiveWizard();
 
         var currentWizardHealth = w.GameStats.m_currentHitpoints;
@@ -386,9 +392,10 @@ public class ZoneService : MessageService, IWithTimers {
         // before we continue on potentially a different thread.
         try {
             var removePlayerMsg = new ZONE_102_PROTOCOL.MSG_REMOVEPLAYER() {
-                Player = SessionActor.ActorRef,
+                PlayerActor = SessionActor.ActorRef,
                 GlobalId = GetActiveGameObject().m_globalID,
-                IsPlayerStillConnected = true
+                IsPlayerStillConnected = true,
+                MobileId = GetActiveGameObject().m_nMobileID
             };
             _ = ZoneActor.Ask<ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP>(removePlayerMsg, _zoneRemovalWaitTime).Result;
 

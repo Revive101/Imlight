@@ -32,7 +32,7 @@ public static class ServerTypeCache {
         0x774C0B33 => new ResDisplayText(),
         0x3C626744 => new ResPlaySound(),
         0xDa51FA8 => new ZoneRouter(),
-        478486736 => new CombatSigil(),
+        478486736 => new CombatSigilObjectInfo(),
         16312488 => new ResPlayCinematic(),
         338444955 => new ResActorDialog(),
         703672453 => new ResAddGold(),
@@ -103,6 +103,7 @@ public static class ServerTypeCache {
         74783451 => new ResReduceMana(),
         1486342711 => new ResInitiateCombat(),
         1839222684 => new UnknownSpawnObjectInfo(),
+        234614075 => new MinigameSigilInfo(),
         511049413 => new WizBangPriorityTemplate(),
         1349180726 => new ClientQuantityBehavior(),
         _ => null
@@ -789,7 +790,7 @@ public static class ServerTypeCache {
         // Property: m_sigilLabel (string)
     }
 
-    public class CombatSigil : CoreObjectInfo {
+    public class CombatSigilObjectInfo : CoreObjectInfo {
         public override uint GetHash() => 478486736;
 
         // Properties here are listed in order of their understanding.
@@ -799,17 +800,12 @@ public static class ServerTypeCache {
         [Property(0xADC3A56F, 31)] public ByteString m_zoneTag2;
         [Property(0x3AF933DF, 31)] public float m_radius;
         [Property(0x595FC144, 31)] public int m_firstTeamToAct;
-        [Property(0x4AFCF400, 2097183)] public TypeCache.Duel.SigilInitiativeSwitchMode m_initiativeSwitchMode;
+        [Property(0x4AFCF400, 2097183)] public Duel.SigilInitiativeSwitchMode m_initiativeSwitchMode;
         [Property(0x203340FD, 31)] public int m_initiativeSwitchRounds;
         [Property(0x975DE361, 268435463)] public List<ByteString>? m_lootTable;
         [Property(0x5DB0B6E8, 31)] public bool m_disableTimer;
-
-        // HASH : 0x7DB09CC1
-        // SIZE : 191 bits
-        // EXAM : StartZone
-        // Very confident about the type.
-        // This property is shared with the Trigger class.
-        [Property(0x7DB09CC1, 31)] public List<ByteString>? unknown_5;
+        [Property(0x7DB09CC1, 31)] public List<ByteString>? m_activateEvents;
+        [Property(0x62A2160A, 31)] public List<ByteString>? m_deactivateEvents;
 
         // HASH : 0x71FCB022
         // SIZE : 65 bits
@@ -829,11 +825,6 @@ public static class ServerTypeCache {
         // SIZE : 72 bits
         [Property(0x61B4E11E, 31)] public bool m_unknown_boolean_4;
 
-        // HASH : 0x62A2160A
-        // SIZE : 8
-        // This property is shared with the Trigger class.
-        [Property(0x62A2160A, 31)] public uint m_unknown_uint_1;
-
         // HASH : 0x37BEB1CF
         // SIZE : 8
         [Property(0x37BEB1CF, 31)] public int m_unknown_uint_2;
@@ -847,13 +838,89 @@ public static class ServerTypeCache {
         [Property(0x6FA14D24, 31)] public uint m_unknown_uint_4;
     }
 
-    public class UnknownSpawnObjectInfo : SpawnObjectInfo {
-        public override uint GetHash() => 1839222684;
-    }
-
     public class WizBangPriorityTemplate : PropertyClass {
         public override uint GetHash() => 511049413;
 
         [Property(2003411223, 31)] public List<ByteString> m_priorityList;
+    }
+
+    public class UnknownSpawnObjectInfo : SpawnObjectInfo {
+        public override uint GetHash() => 1839222684;
+
+        [Property(0x975DE361, 268435463)] public List<ByteString>? m_lootTable;
+    }
+
+    public class MinigameSigilInfo : CoreObjectInfo {
+        public override uint GetHash() => 234614075;
+
+        [Property(0x7B91Df78, 31)] public ByteString m_sigilType;
+        [Property(0xADC3A56F, 31)] public ByteString m_zoneTag2;
+        [Property(0x3AF933DF, 31)] public float m_radius;
+        [Property(0x71FCB022, 31)] public byte unknown_2;
+        [Property(0x3C345132, 31)] public bool m_unknown_boolean_3;
+        [Property(0x7DB09CC1, 31)] public List<ByteString>? m_activateEvents;
+        [Property(0x62A2160A, 31)] public List<ByteString>? m_deactivateEvents;
+        [Property(0x3BF5B2D, 31)] public bool m_unknown_boolean_2;
+        [Property(0xA955FFA6, 31)] public RequirementList? m_requirements;
+
+        // HASH : 0xC8C87586
+        // SIZE : 87 bits
+
+        // HASH : 0x842FF241
+        // SIZE : 80 bits
+
+        // HASH : 0x616A2C5E
+        // SIZE : 80 bits
+
+        // HASH : 0x5A66B8B0
+        // SIZE: 432 bits
+
+        // HASH : 0x916BBDD2
+        // SIZE: 80 bits
+
+        // HASH : 0x996A9C1F
+        // SIZE : 80 bits
+
+        // HASH : 0x8BAF14A0
+        // SIZE: 440 bits
+
+        // HASH : 0xAA85756F
+        // SIZE: 96 bits
+
+        // HASH : 0x24A5AA8F
+        // SIZE : 96 bits
+
+        // HASH : 0x3741C8F6
+        // SIZE : 65 bits
+
+        // HASH : 0x8D357D29
+        // SIZE : 232 bits
+
+        // HASH : 0x721F110C
+        // SIZE : 80 bits
+
+        // HASH : 0x23716AB9
+        // SIZE : 96 bits
+
+        // HASH : 0x8976BB77
+        // SIZE : 80 bits
+
+        // HASH : 0x9FC5C046
+        // SIZE : 80 bits
+
+        // HASH : 0xBD76D4A6
+        // SIZE : 80 bits
+
+        // HASH : 0xD12A0AB9
+        // SIZE : 80 bits
+
+        // HASH : 0x382DCB82
+        // SIZE : 96 bits
+
+        // HASH : 0x9C15DD8E
+        // SIZE : 96 bits
+
+        // HASH : 0x492B6BF1
+        // SIZE : 65 bits
     }
 }

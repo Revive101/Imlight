@@ -10,8 +10,8 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Shared.Behaviors;
 
-public class ServerSpellbookBehavior : ServerBehaviorInstance {
-    [JsonIgnore] public override bool NoTransfer { get; set; } = false;
+public class ServerSpellbookBehavior : IClientBehaviorProvider<ClientSpellbookBehavior> {
+    [JsonIgnore] public bool NoTransfer { get; set; } = false;
 
     public List<uint> LearnedSpellTemplateIds = new();
     [JsonIgnore] public List<SpellData> SpellList = new();
@@ -61,7 +61,7 @@ public class ServerSpellbookBehavior : ServerBehaviorInstance {
         return LearnedSpellTemplateIds.Contains(templateId);
     }
 
-    public override ClientSpellbookBehavior GetClientBehaviorInstance() {
+    public ClientSpellbookBehavior GetClientBehaviorInstance() {
         var spellIdList = new List<SpellIDTracker>();
         foreach (var spellTemplateId in LearnedSpellTemplateIds) {
             spellIdList.Add(new SpellIDTracker {

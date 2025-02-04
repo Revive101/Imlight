@@ -13,8 +13,8 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
-public class ServerPetSnackBehavior : ServerBehaviorInstance {
-    [JsonIgnore] public override bool NoTransfer { get; set; } = false;
+public class ServerPetSnackBehavior : IClientBehaviorProvider<ClientPetSnackBehavior> {
+    [JsonIgnore] public bool NoTransfer { get; set; } = false;
 
     private static readonly int s_maxSnacksAllowed = 999;
 
@@ -112,7 +112,7 @@ public class ServerPetSnackBehavior : ServerBehaviorInstance {
     /// <returns>Returns the snack object with the specified template ID, otherwise null.</returns>
     public ClientPetSnackItem GetSnack(ulong templateId) => Snacks?.FirstOrDefault(snack => snack.m_templateID == templateId) ?? null;
 
-    public override ClientPetSnackBehavior GetClientBehaviorInstance() => new() {
+    public ClientPetSnackBehavior GetClientBehaviorInstance() => new() {
         m_snackBag = new ObjectBag() {
             m_maxItemStack = s_maxSnacksAllowed,
             m_itemList = Snacks?.ConvertAll(item => (CoreObject) item) ?? []

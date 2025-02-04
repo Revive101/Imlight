@@ -7,12 +7,19 @@ using System.Linq;
 using Raven.Client.Documents;
 using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.World;
+using System.Collections;
+using System.Collections.Concurrent;
+using Raven.Client.Documents.Linq;
+using System.Collections.Generic;
 
 namespace Imlight.CoreLib.WizardData.Collections;
 
 public static class NpcInventoryCollection {
     public const string CollectionName = "NpcInventory";
     private static readonly IDocumentStore s_store;
+
+    private static readonly ConcurrentDictionary<ulong, NPCInventory> s_cachedInventories = new();
+    private static bool s_isPreloaded = false;
 
     static NpcInventoryCollection() {
         s_store = WorldDatabase.Instance.Store;
@@ -62,12 +69,31 @@ public static class NpcInventoryCollection {
     /// <param name="npcInventory">The NPC inventory containing the list of inventory items.</param>
     /// <returns>True if the NPC inventory was found, false otherwise.</returns>
     public static bool TryGetNpcInventory(ulong templateID, out NPCInventory npcInventory) {
+        if (!s_isPreloaded) {
+            PreloadInventories();
+        }
+
+        if (s_cachedInventories.TryGetValue(templateID, out npcInventory)) {
+            return true;
+        }
+
+        npcInventory = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Preloads the inventories for the specified template IDs.
+    /// </summary>
+    public static void PreloadInventories() {
         using var session = s_store.OpenSession();
 
-        npcInventory = session.Query<NPCInventory>(collectionName: CollectionName)
-            .Where(x => x.TemplateID == templateID)
-            .FirstOrDefault();
+        var npcInventories = session.Query<NPCInventory>(collectionName: CollectionName)
+            .ToList();
 
-        return npcInventory != null;
+        foreach (var npcInventory in npcInventories) {
+            s_cachedInventories.TryAdd(npcInventory.TemplateID, npcInventory);
+        }
+
+        s_isPreloaded = true;
     }
 }

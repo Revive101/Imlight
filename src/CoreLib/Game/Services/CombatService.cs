@@ -5,27 +5,20 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using Akka.Actor;
-using Akka.IO;
 using Imlight.Common;
 using Imlight.Common.Caches;
-using Imlight.Common.IO;
 using Imlight.Common.ObjectProperty;
-using Imlight.CoreLib.Game.Zone;
 using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
-using Imlight.CoreLib.WizardData.Models.Misc;
 using Imlight.CoreLib.WizardData.Models.Player;
 using static Imlight.Common.Caches.TypeCache;
 
-
 namespace Imlight.CoreLib.Game.Services;
 
-public class CombatService : MessageService {
-    private IActorRef _currentDuelActor;
-    private ulong _cachedMountId;
+public class CombatService(SessionActor sessionActor) : MessageService(sessionActor) {
+
     private readonly CoreObjectSerializer _effectSerializer = new CoreObjectSerializer()
                     .OnBehaviors(SerializerOptions.Behaviors.None)
                     .OnPropertyMask(SerializerOptions.PropertyFlags.Transmit
@@ -33,10 +26,11 @@ public class CombatService : MessageService {
     private readonly CoreObjectSerializer _itemSerializer = new CoreObjectSerializer()
                     .OnBehaviors(SerializerOptions.Behaviors.None)
                     .OnPropertyMask((SerializerOptions.PropertyFlags) 1);
+    private IActorRef _currentDuelActor;
+    private ulong _cachedMountId;
 
-    public CombatService(SessionActor sessionActor) : base(sessionActor) { }
-
-    protected static Props Props(SessionActor parentActor) => Akka.Actor.Props.Create(() => new CombatService(parentActor));
+    protected static Props Props(SessionActor parentActor) 
+        => Akka.Actor.Props.Create(() => new CombatService(parentActor));
 
     protected override void OnDispose() {
         var message = new GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT();
@@ -45,13 +39,13 @@ public class CombatService : MessageService {
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ACTORADDEDTODUEL))]
     private void RecieveDuelAdd(COMBAT_106_PROTOCOL.MSG_ACTORADDEDTODUEL message) {
-        var wizard = GetActiveWizard();
-
         _currentDuelActor = message.DuelActor;
+
         //Unequip mounts if the player has one equipped
         UnEquipMount();
 
         // Set the persistent location and orientation of the wizard
+        var wizard = GetActiveWizard();
         wizard.SetPersistentLocation(message.SlotPosition);
 
         // Orientation is given in radians. It must be converted to degrees and then to a byte.
@@ -96,10 +90,12 @@ public class CombatService : MessageService {
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT))]
-    private void ReceiveClientDisconnect(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT message) => _currentDuelActor?.Tell(message ,SessionActor.ActorRef);
+    private void ReceiveClientDisconnect(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT message) 
+        => _currentDuelActor?.Tell(message ,SessionActor.ActorRef);
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT))]
-    private void ReceiveQueryLogout(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT message) => _currentDuelActor?.Tell(message, SessionActor.ActorRef);
+    private void ReceiveQueryLogout(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT message) 
+        => _currentDuelActor?.Tell(message, SessionActor.ActorRef);
 
     private void EquipMount() {
         if (_cachedMountId == 0) {
@@ -241,4 +237,5 @@ public class CombatService : MessageService {
             });
         }
     }
+
 }
