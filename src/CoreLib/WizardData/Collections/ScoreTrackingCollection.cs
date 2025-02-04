@@ -21,7 +21,7 @@ public static class ScoreTrackingCollection {
     /// Adds a highscore to the collection.
     /// </summary>
     /// <param name="highscore">The highscore to add.</param>
-    public static void AddHighscore(ScoreTracking highscore) {
+    public static void AddScoreTracking(ScoreTracking highscore) {
         using var session = s_store.OpenSession();
 
         session.Store(highscore);
@@ -39,7 +39,7 @@ public static class ScoreTrackingCollection {
     public static ScoreTracking[] GetLeaderboard(string minigameName) {
         using var session = s_store.OpenSession();
 
-        var highscores = session.Query<ScoreTracking>()
+        var highscores = session.Query<ScoreTracking>(collectionName: CollectionName)
             .Where(x => x.MinigameName == minigameName)
             .OrderByDescending(x => x.GameScore)
             .Take(10)

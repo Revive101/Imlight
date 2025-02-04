@@ -11,6 +11,8 @@ using Imlight.Common.MessageLayer;
 using Imlight.CoreLib.Game.Minigames;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using System;
+using System.Linq;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -91,9 +93,9 @@ internal class MinigameService(SessionActor sessionActor) : MessageService(sessi
         var messageRaw = message.Message;
         var writer = new BitWriter();
 
-        // Write the magic header and the length of the message.
+        // Write the magic header and the length of the message. +8 is the size of the header.
         writer.WriteUInt16(MAGIC_HEADER);
-        writer.WriteUInt16((ushort) messageRaw.Length);
+        writer.WriteUInt16((ushort) (messageRaw.Length + 8));
 
         // Write the body.
         writer.WriteUInt8(0);  // IsControl
@@ -106,9 +108,11 @@ internal class MinigameService(SessionActor sessionActor) : MessageService(sessi
         // Deserialize using the MessageSerializer.
         var deserializedMsg = MessageSerializer.Decode(writer.GetData());
 
-        if (deserializedMsg == null) {
-            Logger.Error("Failed to deserialize message process {0}", 
-                Logger.Args(messageRaw));
+        if (deserializedMsg == null || deserializedMsg.Count <= 0) {
+            var hexStringRaw = BitConverter.ToString(messageRaw).Replace("-", " ");
+            var hexStringAdditions = BitConverter.ToString(writer.GetData()).Replace("-", " ");
+            Logger.Error("Failed to deserialize message process {0} (manually set as {1})", 
+                Logger.Args(hexStringRaw, hexStringAdditions));
 
             return;
         }
