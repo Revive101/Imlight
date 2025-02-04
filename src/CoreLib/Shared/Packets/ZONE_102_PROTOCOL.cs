@@ -98,6 +98,8 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte MessageOrder { get; } = 3;
         public byte ServiceID { get; } = 102;
 
+        public string ZonePath;
+
     }
 
     /// <summary>

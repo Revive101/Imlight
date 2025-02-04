@@ -26,7 +26,6 @@ namespace Imlight.CoreLib.Game.Zone.Core;
 public class Zone : ReceiveProtocolDispatcher, IWithTimers {
 
     private const ushort RESERVED_MOBILE_ID_MAX = ushort.MaxValue / 20; // 5% of the maximum mobile ID count is reserved for special objects.
-    private const ushort ZONE_LOAD_TIMEOUT_IN_SECONDS = 30;
     private static readonly Vector4 s_locationFailedGiveaway = new(float.MaxValue, float.MaxValue, float.MaxValue, float.MaxValue);
 
     /// <summary>
@@ -58,7 +57,6 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     private readonly uint _dynamicZoneId;
     private readonly Lock _mobileIdLock = new();
     private readonly List<IActorRef> _supervisors = [];
-    private readonly IActorRef _loaderRef;
     private readonly Stopwatch _zoneLoadTimer;
     private readonly Dictionary<IActorRef, IServerMessage> _pendingPlayerEvents = [];
     private readonly List<ushort> _mobileIdMap = [];
@@ -82,17 +80,6 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         _supervisors.Add(CreateSupervisor<ZonePlayerSupervisor>());
         _supervisors.Add(CreateSupervisor<ZonePathSupervisor>());
         _supervisors.Add(CreateSupervisor<ZoneSigilSupervisor>());
-
-        // Create the loader actor and prepare the loading of this zone.
-        _loaderRef = Context.ActorOf(Akka.Actor.Props.Create(() => new ZoneLoader()));
-
-        // Tell the loader to begin loading the zone and await the response.
-        var msg = new ZONE_102_PROTOCOL.MSG_ZONELOADBEGIN { ZonePath = zonePath };
-        _loaderRef.Tell(msg);
-
-        // Send a message to self in case the zone fails to load within the timeout.
-        var time = TimeSpan.FromSeconds(ZONE_LOAD_TIMEOUT_IN_SECONDS);
-        Timers.StartSingleTimer("ZoneLoadTimeout", new ZONE_102_PROTOCOL.MSG_ZONELOADTIMER(), time);
 
         _zoneLoadTimer.Restart();
         _isLoading = true;
@@ -205,11 +192,9 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     private void ReceiveZoneLoadResults(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS message) {
         Logger.Debug("Zone {ZoneName} client data gathered.", Logger.Args(ZoneName));
 
-        _loaderRef.Tell(PoisonPill.Instance);
-        _zoneLoadTimer.Restart();
-
         if (message.Error) {
-            Logger.Error("Zone {ZoneName} failed to load because {ErrorMessage}", Logger.Args(ZoneName, message.ErrorMessage));
+            Logger.Error("Zone {ZoneName} failed to load because {ErrorMessage}", 
+                Logger.Args(ZoneName, message.ErrorMessage));
             CloseZone();
 
             return;
@@ -246,14 +231,6 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
             foreach (var supervisor in _supervisors) {
                 supervisor.Tell(startMsg);
             }
-        }
-    }
-
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADTIMER))]
-    private void ReceiveZoneTimerEnd() {
-        if (_isLoading) {
-            Logger.Error("Zone {ZoneName} failed to load within the timeout.", Logger.Args(ZoneName));
-            CloseZone();
         }
     }
 
