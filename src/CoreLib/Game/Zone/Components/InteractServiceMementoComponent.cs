@@ -54,7 +54,7 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
     public static bool ShouldAttachToEntity(CoreTemplate template) 
         => true;
 
-    public override void OnZoneStart() 
+    public override void OnStart() 
         => RefreshServiceMomento(null);
 
     public override void OnPlayerJoin(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) 
