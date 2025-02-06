@@ -14,8 +14,8 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
-public class ServerMountOwnerBehavior : ServerBehaviorInstance {
-    [JsonIgnore] public override bool NoTransfer { get; set; } = false;
+public class ServerMountOwnerBehavior : IClientBehaviorProvider<ClientMountOwnerBehavior> {
+    [JsonIgnore] public bool NoTransfer { get; set; } = false;
 
     [JsonIgnore] public eGender MountGender;
     [JsonIgnore] public eRace MountRace;
@@ -70,7 +70,7 @@ public class ServerMountOwnerBehavior : ServerBehaviorInstance {
         return colorIndex;
     }
 
-    public override ClientMountOwnerBehavior GetClientBehaviorInstance() => new() {
+    public ClientMountOwnerBehavior GetClientBehaviorInstance() => new() {
         m_gender = MountGender,
         m_race = MountRace,
         m_eMountType = MountType,

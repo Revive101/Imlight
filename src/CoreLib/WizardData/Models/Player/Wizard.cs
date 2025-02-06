@@ -903,10 +903,12 @@ public class Wizard : IDisposable {
     }
 
     private void AfterDatabaseLoadPetOwnerBehavior() {
-        // Normal members regain 1 energy every 10 minutes.
-        // Subscribed members regain 1 energy have 7.5 minutes.
-        // All of our members are considered subscribed members. Calculate how much energy the player has regained
-        // while they were offline.
+        var magicSchool = MagicSchoolBehavior.MagicSchool;
+        var level = MagicSchoolBehavior.Level;
+        var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(magicSchool, level);
+        var normMaxEnergy = baseStats.m_petEnergy;
+        GameStats.m_energyMax = normMaxEnergy;
+
         if (PetOwnerBehavior is null) {
             PetOwnerBehavior = new ServerPetOwnerBehavior();
             PetOwnerBehavior.SetEnergy(GameStats.m_energyMax);
@@ -914,23 +916,35 @@ public class Wizard : IDisposable {
             return;
         }
 
-        //var currentTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        //var timeDifference = currentTime - PetOwnerBehavior.EnergyTickInSeconds;
-        //var energyRegained = timeDifference / 450; // 450 seconds = 7.5 minutes
-//
-        //// If the player has regained more energy than their max, set it to the max.
-        //if (PetOwnerBehavior.Energy + energyRegained > GameStats.m_energyMax) {
-        //    PetOwnerBehavior.SetEnergy(GameStats.m_energyMax);
-        //}
-        //else {
-        //    PetOwnerBehavior.SetEnergy((int) (PetOwnerBehavior.Energy + energyRegained));
-        //}
+        // If the last energy tick is in the future, don't bother.
+        if (PetOwnerBehavior.LastEnergyTickEpoch > DateTimeOffset.UtcNow.ToUnixTimeSeconds()) {
+            return;
+        }
+
+        // Deduce how much energy has been regained since the last tick.
+        var energyTickIntervalInSeconds = PetOwnerBehavior.EnergyTickIntervalInSeconds;
+        var lastEnergyTickEpoch = PetOwnerBehavior.LastEnergyTickEpoch;
+        var currentTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+        var timeDifference = currentTime - lastEnergyTickEpoch;
+        var energyRegained = timeDifference / energyTickIntervalInSeconds;
+
+        // If the player has regained more energy than their max, set it to the max.
+        if (PetOwnerBehavior.Energy + energyRegained > normMaxEnergy) {
+            UpdateEnergy(normMaxEnergy);
+        }
+        else {
+            UpdateEnergy((int) (PetOwnerBehavior.Energy + energyRegained));
+        }
     }
 
     private void AfterDatabaseLoadWizardGameStats() {
+        var highestLevelOnAcc = Account.GetHighestLevelWizard().MagicSchoolBehavior.Level;
+
         GameStats.Level = MagicSchoolBehavior.Level;
         GameStats.MagicSchool = MagicSchoolBehavior.MagicSchool;
         GameStats.m_schoolID = (uint) MagicSchoolBehavior.MagicSchool;
+        GameStats.m_highestCharacterLevelOnAccount = highestLevelOnAcc;
     }
 
     public void Dispose() =>

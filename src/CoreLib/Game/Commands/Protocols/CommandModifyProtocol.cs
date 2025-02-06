@@ -363,7 +363,7 @@ internal class CommandModifyProtocol : CommandProtocol {
             GlobalID = Context.Character.GameObject.m_globalID,
             Energy = Context.Character.PetOwnerBehavior.Energy,
             MaxEnergy = energyInt,
-            TickTime = (int) Context.Character.PetOwnerBehavior.NextEnergyTickEpoch
+            TickTime = (int) Context.Character.PetOwnerBehavior.LastEnergyTickEpoch
         };
         var maxMsg = new PET_9_PROTOCOL.MSG_PETENERGYMAX() {
             MaxEnergy = energyInt
@@ -456,7 +456,7 @@ internal class CommandModifyProtocol : CommandProtocol {
             GlobalID = Context.Character.GameObject.m_globalID,
             Energy = energyInt,
             MaxEnergy = normMaxEnergy,
-            TickTime = (int) Context.Character.PetOwnerBehavior.NextEnergyTickEpoch
+            TickTime = (int) Context.Character.PetOwnerBehavior.LastEnergyTickEpoch
         };
         Context.SessionActor.Tell(networkMessage, null);
 
@@ -527,7 +527,7 @@ internal class CommandModifyProtocol : CommandProtocol {
             GlobalID = Context.Character.GameObject.m_globalID,
             Energy = normMaxEnergy,
             MaxEnergy = normMaxEnergy,
-            TickTime = (int) Context.Character.PetOwnerBehavior.NextEnergyTickEpoch
+            TickTime = (int) Context.Character.PetOwnerBehavior.LastEnergyTickEpoch
         };
         Context.SessionActor.Tell(networkMessage, null);
     }

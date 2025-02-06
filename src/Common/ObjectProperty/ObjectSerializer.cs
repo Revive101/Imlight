@@ -431,7 +431,7 @@ public class ObjectSerializer {
             }
             else {
                 var hexHash = propertyHash.ToString("X");
-                Logger.Debug("No property with hash {0}(0x{1}) in PropertyClass {2} was found. Skipping by {3} bits.",
+                Logger.Verbose("No property with hash {0}(0x{1}) in PropertyClass {2} was found. Skipping by {3} bits.",
                     Logger.Args(propertyHash, hexHash, propertyClass.GetType().ToString().Split('+')[^1], propertySize));
             }
 
@@ -520,6 +520,9 @@ public class ObjectSerializer {
             var hash = reader.ReadUInt32();
             if (hash != 0) {
                 var skip = reader.ReadInt32();
+                if (skip <= 0 || reader.BitPos() + skip > reader.GetData().Length * 8) {
+                    return null;
+                }
                 reader.SeekBit(reader.BitPos() + skip - 32);
             }
         }

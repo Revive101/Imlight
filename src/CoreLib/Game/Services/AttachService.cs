@@ -3,6 +3,7 @@
  * Proprietary and confidential.
  */
 
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
@@ -84,6 +85,7 @@ internal class AttachService : MessageService {
 
         var loginCompleteMsg = new GAME_5_PROTOCOL.MSG_LOGINCOMPLETE() {
             RealmName = realmName,
+            ServerTime = (uint) DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
 
             // Set character data.
             Data = localGameObjectData,
@@ -190,7 +192,7 @@ internal class AttachService : MessageService {
 
     private void AddPlayerToZone(WizClientObject charObj, Wizard wizard) {
         var msg = new ZONE_102_PROTOCOL.MSG_ADDPLAYER {
-            Player = SessionActor.ActorRef,
+            PlayerActor = SessionActor.ActorRef,
             PlayerObject = charObj,
             Wizard = wizard,
             ActualWizardName = wizard.PlayerNameBehavior.GetWizardName(),

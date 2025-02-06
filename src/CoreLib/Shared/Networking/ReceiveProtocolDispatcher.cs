@@ -22,33 +22,30 @@ public class ReceiveProtocolDispatcher : ReceiveActor {
         ConfigureReceivers();
     }
 
-    protected virtual void ConfigureReceivers() {
-        Receive<IMessage>(message => {
-            // Find the method that handles this message type
-            if (MessageHandlers.TryGetValue(message.GetType(), out var method)) {
-                // Invoke the method with the message
-                method.Invoke(this, new object[] { message });
+    protected virtual void ConfigureReceivers() => Receive<object>(message => {
+        // Find the method that handles this message type
+        var messageType = message.GetType();
+        var handler = MessageHandlers
+            .Where(kvp => kvp.Key.IsAssignableFrom(messageType))
+            .Select(kvp => kvp.Value);
+
+        if (!handler.Any()) {
+            Unhandled(message);
+        }
+
+        // Invoke all methods that handle this message type
+        foreach (var method in handler) {
+            var parameters = method.GetParameters();
+            if (parameters.Length == 0) {
+                method.Invoke(this, null);
+            } else {
+                method.Invoke(this, [message]);
             }
-            else {
-                // No handler for this message type
-                Unhandled(message);
-            }
-        });
-        Receive<IServerMessage>(message => {
-            // Find the method that handles this message type
-            if (MessageHandlers.TryGetValue(message.GetType(), out var method)) {
-                // Invoke the method with the message
-                method.Invoke(this, new object[] { message });
-            }
-            else {
-                // No handler for this message type
-                Unhandled(message);
-            }
-        });
-    }
+        }
+    });
 
     private void SetMessageHandlers() {
-        MessageHandlers = new Dictionary<System.Type, MethodInfo>();
+        MessageHandlers = [];
 
         // Get all methods in this actor with a message handling attribute
         var methods = this
@@ -60,8 +57,8 @@ public class ReceiveProtocolDispatcher : ReceiveActor {
             .Where(method => method.GetCustomAttributes<MessageHandlerAttribute>().Any());
 
         foreach (var method in methods) {
-            var paramType = method.GetParameters()[0].ParameterType;
-            MessageHandlers.Add(paramType, method);
+            var type = method.GetCustomAttributes<MessageHandlerAttribute>().First().MessageType;
+            MessageHandlers.Add(type, method);
         }
     }
 }

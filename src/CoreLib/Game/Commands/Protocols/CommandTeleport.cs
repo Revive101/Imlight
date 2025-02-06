@@ -5,6 +5,7 @@
 
 using Akka.Actor;
 using Imlight.Common;
+using Imlight.CoreLib.Game.World;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models.Player;
