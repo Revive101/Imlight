@@ -477,8 +477,6 @@ public class Wizard : IDisposable {
             return false;
         }
 
-        CoreObjectFactory.InitializeCoreObjectBehaviors(reagent, reagent.m_templateID);
-
         // Ensure that the item is associated with this Wizard.
         reagent.m_characterId = (GID) CharId;
 
@@ -486,16 +484,13 @@ public class Wizard : IDisposable {
         if (!success) {
             Logger.Warning("Could not add reagent {0} to player {1}'s reagent bag.",
                 Logger.Args(reagent.m_globalID, PlayerNameBehavior.GetWizardName()));
+                
             return false;
         }
 
-        if (reagent.m_quantity > 1) {
-            // Persistent save.
-
-            return true;
-        }
-
         // Persistent save.
+        WizardReagentCollection.AddReagent(reagent);
+        WizardCollection.UpdateCharacterItems(this);
 
         return true;
     }

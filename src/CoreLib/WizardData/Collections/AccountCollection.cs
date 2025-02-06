@@ -122,6 +122,14 @@ public static class AccountCollection {
             character.PetSnackBehavior.Snacks = snackbag
                 .Where(i => character.PetSnackBehavior.SnackItemIds.Any(e => i.m_globalID == e)).ToList();
 
+            // Load the character's reagent bag.
+            var reagents = session.Query<ClientReagentItem>(collectionName: WizardReagentCollection.CollectionName)
+                .Where(i => i.m_characterId == character.CharId)
+                .ToList();
+            character.AlchemyBehavior ??= new ServerAlchemyBehavior();
+            character.AlchemyBehavior.Reagents = reagents
+                .Where(i => character.AlchemyBehavior.ReagentItemIds.Any(e => i.m_globalID == e)).ToList();
+
             // Load character dynamic modifications.
             var dynamods = session.Query<DynamodSet>(collectionName: DynamodCollection.CollectionName)
                 .Where(d => d.CharId == character.CharId)
