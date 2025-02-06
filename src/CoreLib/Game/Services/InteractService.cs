@@ -9,8 +9,10 @@ using Imlight.Common.Caches;
 using Imlight.Common.Cryptography;
 using Imlight.CoreLib.Game.Zone.Components;
 using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.World;
 using System;
+using System.Threading.Tasks;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -61,7 +63,15 @@ internal class InteractService(SessionActor sessionActor) : MessageService(sessi
         var gameObj = GetActiveGameObject();
 
         // Inform the service memento component that the player is interacting with it.
-        serviceMementoComponent.PlayerInteraction(actor, wizard, gameObj, getServiceName(message), getServiceIndex(message));
+        var msg = new ZONE_102_PROTOCOL.MSG_ZONEINTERACTION {
+            GlobalID = getObjectId(message),
+            ServiceName = getServiceName(message),
+            ServiceIndex = getServiceIndex(message),
+            PlayerActor = actor,
+            PlayerCharacter = wizard,
+            PlayerObject = gameObj
+        };
+        serviceMementoComponent.ActorRef.Tell(msg);
     }
 
     private void CloseShop(ulong charId) {

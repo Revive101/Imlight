@@ -167,6 +167,8 @@ public abstract class ZoneEntityComponent(ZoneEntity entity) : ReceiveProtocolDi
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTINITIALIZED))]
     public void ReceiveObjectStart() {
+        ActorRef = Self;
+        
         if (!_enabled) {
             Sender.Tell(new ZONE_102_PROTOCOL.MSG_ZONEOBJECTINITIALIZED());
             

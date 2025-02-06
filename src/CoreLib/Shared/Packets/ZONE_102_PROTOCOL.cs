@@ -593,4 +593,18 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
     }
 
+    public sealed class MSG_ZONEINTERACTION : IServerMessage {
+
+        public byte MessageOrder { get; } = 38;
+        public byte ServiceID { get; } = 102;
+
+        public ulong GlobalID;
+        public string ServiceName;
+        public uint ServiceIndex;
+        public IActorRef PlayerActor;
+        public Wizard PlayerCharacter;
+        public CoreObject PlayerObject;
+
+    }
+
 }
