@@ -13,8 +13,9 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
-public class ServerAlchemyBehavior : ServerBehaviorInstance {
-    [JsonIgnore] public override bool NoTransfer { get; set; } = false;
+public class ServerAlchemyBehavior : IClientBehaviorProvider<ClientAlchemyBehavior> {
+
+    [JsonIgnore] public bool NoTransfer { get; set; } = false;
 
     private static readonly int s_maxReagentStackAllowed = 999;
 
@@ -71,7 +72,7 @@ public class ServerAlchemyBehavior : ServerBehaviorInstance {
     /// <returns>Returns the reagent object with the specified template ID, otherwise null.</returns>
     public ClientReagentItem GetReagent(ulong templateId) => Reagents?.FirstOrDefault(reagent => reagent.m_templateID == templateId) ?? null;
 
-    public override ClientAlchemyBehavior GetClientBehaviorInstance() => new() {
+    public ClientAlchemyBehavior GetClientBehaviorInstance() => new() {
         m_reagentBag = new ObjectBag() {
             m_maxItemStack = s_maxReagentStackAllowed,
             m_itemList = Reagents?.ConvertAll(item => (CoreObject) item) ?? []
@@ -86,4 +87,5 @@ public class ServerAlchemyBehavior : ServerBehaviorInstance {
         },
         m_maxReagentStack = s_maxReagentStackAllowed
     };
+
 }

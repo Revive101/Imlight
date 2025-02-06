@@ -700,6 +700,7 @@ public class Wizard : IDisposable {
         AfterDatabaseLoadSpellbookBehavior();
         AfterDatabaseloadMountOwnerBehavior();
         AfterDatabaseLoadPetOwnerBehavior();
+        AfterDatabaseLoadAlchemyBehavior();
 
         ObjectStateBehavior ??= new ServerObjectStateBehavior("PlayerMobileStates");
     }
@@ -946,6 +947,14 @@ public class Wizard : IDisposable {
         GameStats.m_schoolID = (uint) MagicSchoolBehavior.MagicSchool;
         GameStats.m_highestCharacterLevelOnAccount = highestLevelOnAcc;
     }
+
+    private void AfterDatabaseLoadAlchemyBehavior() 
+        => AlchemyBehavior ??= new ServerAlchemyBehavior() {
+        Reagents = [],
+        Recipes = [],
+        CraftingSlots = [],
+        ReagentItemIds = []
+    };
 
     public void Dispose() =>
         // If this object is being disposed, the player probably left the server.
