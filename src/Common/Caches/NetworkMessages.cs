@@ -4361,6 +4361,7 @@ public sealed class WIZARDHOUSING_50_PROTOCOL : MessageProtocol {
 		[MessageElement("BYT")] public SByte SwitchTemplateID;
 		[MessageElement("BYT")] public SByte UseExtendedYaw;
 		[MessageElement("FLT")] public Single Scale;
+		[MessageElement("BYT")] public SByte Brightness;
 	}
 	public sealed class MSG_PATCHUPEXTENDEDTILE : IMessage {
 		// Tell the client to patch a blob if it can by setting the extended tile data.
@@ -4903,6 +4904,7 @@ public sealed class WIZARDHOUSING_50_PROTOCOL : MessageProtocol {
 		[MessageElement("UINT")] public UInt32 SwitchCastleBlock;
 		[MessageElement("BYT")] public SByte UseExtendedYaw;
 		[MessageElement("FLT")] public Single Scale;
+		[MessageElement("BYT")] public SByte Brightness;
 	}
 	public sealed class MSG_UPDATEHOUSINGPET : IMessage {
 		// Update the movement of a housing pet.
@@ -6767,6 +6769,7 @@ public sealed class WIZARD_12_PROTOCOL : MessageProtocol {
 		public byte ServiceId { get; } = 12;
 		[MessageElement("GID")] public UInt64 GlobalID;
 		[MessageElement("STR")] public ByteString Contents;
+		[MessageElement("BYT")] public SByte LastSegment;
 	}
 	public sealed class MSG_AUCTIONHOUSEMOREACKNOWLEDGEMENT : IMessage {
 		// Server to Client with buy or sell more acknowledgement info
@@ -11094,9 +11097,16 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 		[MessageElement("GID")] public UInt64 PlayerGID;
 		[MessageElement("UINT")] public UInt32 TemplateID;
 	}
+	public sealed class MSG_AUCTIONHOUSECSRMESSAGE : IMessage {
+		// Auction House server sends client a CSR message
+		public byte MessageOrder { get; } = 10;
+		public byte AccessLevel { get; } = 0;
+		public byte ServiceId { get; } = 56;
+		[MessageElement("STR")] public ByteString Buffer;
+	}
 	public sealed class MSG_AddZoneToken : IMessage {
 		// Server tells client to add a ZoneToken
-		public byte MessageOrder { get; } = 10;
+		public byte MessageOrder { get; } = 11;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 GlobalID;
@@ -11104,7 +11114,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_AdvPvPEloData : IMessage {
 		// Server forwarding ELO history data to the client or client requesting the ELO data
-		public byte MessageOrder { get; } = 11;
+		public byte MessageOrder { get; } = 12;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 GlobalID;
@@ -11114,7 +11124,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_AdvPvPLeaderboardData : IMessage {
 		// Server forwarding leader board data to the client
-		public byte MessageOrder { get; } = 12;
+		public byte MessageOrder { get; } = 13;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("UINT")] public UInt32 LeagueID;
@@ -11126,7 +11136,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_AdvPvPLeaderboardDataRequest : IMessage {
 		// Client requesting leader board data from the server
-		public byte MessageOrder { get; } = 13;
+		public byte MessageOrder { get; } = 14;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("UINT")] public UInt32 LeagueID;
@@ -11138,7 +11148,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_CANACQUIREGROUPELIXIR : IMessage {
 		// Client asks if it can acquire a group elixir
-		public byte MessageOrder { get; } = 14;
+		public byte MessageOrder { get; } = 15;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
@@ -11146,7 +11156,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_CANCELEDPARTYMESSAGE : IMessage {
 		// Server tells client about a canceled appointment
-		public byte MessageOrder { get; } = 15;
+		public byte MessageOrder { get; } = 16;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
@@ -11157,7 +11167,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_CHANGEGROUPLEADER : IMessage {
 		// Client requests server change the leader of a group
-		public byte MessageOrder { get; } = 16;
+		public byte MessageOrder { get; } = 17;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
@@ -11165,7 +11175,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_CHANGEPARTYNAME : IMessage {
 		// Client requests server change the name of an adventure party
-		public byte MessageOrder { get; } = 17;
+		public byte MessageOrder { get; } = 18;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("UINT")] public UInt32 PartyName;
@@ -11175,7 +11185,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_CHANGEPARTYOWNER : IMessage {
 		// Client requests server change the owner of an adventure party
-		public byte MessageOrder { get; } = 18;
+		public byte MessageOrder { get; } = 19;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
@@ -11184,7 +11194,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_CHANGERESPONSEPARTYMESSAGE : IMessage {
 		// Client requests server remove a message to an adventure party message board
-		public byte MessageOrder { get; } = 19;
+		public byte MessageOrder { get; } = 20;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
@@ -11195,7 +11205,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_CORE_PIIRADIALMENUEMOTE : IMessage {
 		// Client notifies that the player is requesting to perform an emote through the PII radial menu.
-		public byte MessageOrder { get; } = 20;
+		public byte MessageOrder { get; } = 21;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("STR")] public ByteString EmoteAnimationName;
@@ -11203,7 +11213,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_CREATEGUILDREQUEST : IMessage {
 		// Handles messaging for creating a guild
-		public byte MessageOrder { get; } = 21;
+		public byte MessageOrder { get; } = 22;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
@@ -11216,7 +11226,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_CREATEGUILDTESTOBJECT : IMessage {
 		// Zone server request guild info to create test object
-		public byte MessageOrder { get; } = 22;
+		public byte MessageOrder { get; } = 23;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
@@ -11225,7 +11235,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_CSRLOYALTYPAGEDATA : IMessage {
 		// Contains the loyalty page data requested by CSR
-		public byte MessageOrder { get; } = 23;
+		public byte MessageOrder { get; } = 24;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("STR")] public ByteString LoyaltyStartTime;
@@ -11234,7 +11244,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_CSRREQUESTRENAMEINFO : IMessage {
 		// Client requests rename info
-		public byte MessageOrder { get; } = 24;
+		public byte MessageOrder { get; } = 25;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 CharacterID;
@@ -11243,21 +11253,21 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_DISPLAYZONECOUNTERS : IMessage {
 		// Debug zone counter display
-		public byte MessageOrder { get; } = 25;
+		public byte MessageOrder { get; } = 26;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("STR")] public ByteString Data;
 	}
 	public sealed class MSG_EMPTYGUILDTRASH : IMessage {
 		// client request server empty the guilds trash
-		public byte MessageOrder { get; } = 26;
+		public byte MessageOrder { get; } = 27;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PartyGID;
 	}
 	public sealed class MSG_EnvironmentalDamage : IMessage {
 		// Server tells client of environmental damage
-		public byte MessageOrder { get; } = 27;
+		public byte MessageOrder { get; } = 28;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 GlobalID;
@@ -11265,7 +11275,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_FULLDYEREQUEST : IMessage {
 		// Send item to dye from client to server
-		public byte MessageOrder { get; } = 28;
+		public byte MessageOrder { get; } = 29;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 itemGlobalID;
@@ -11274,7 +11284,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_GUILDINFO : IMessage {
 		// CSR get guild info
-		public byte MessageOrder { get; } = 29;
+		public byte MessageOrder { get; } = 30;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
@@ -11285,7 +11295,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_GUILDITEMCONTROL : IMessage {
 		// Client requests to donate, trash or reclaim an item for a guild
-		public byte MessageOrder { get; } = 30;
+		public byte MessageOrder { get; } = 31;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
@@ -11295,7 +11305,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_GUILDMEMBERSHIP : IMessage {
 		// Handles messaging for guilds
-		public byte MessageOrder { get; } = 31;
+		public byte MessageOrder { get; } = 32;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
@@ -11306,14 +11316,14 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_GUILDMESSAGE : IMessage {
 		// Sever sends client a message about their guild
-		public byte MessageOrder { get; } = 32;
+		public byte MessageOrder { get; } = 33;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("UINT")] public UInt32 Status;
 	}
 	public sealed class MSG_GUILDUNLOCKREQUEST : IMessage {
 		// Server requests client open the unlock trigger window
-		public byte MessageOrder { get; } = 33;
+		public byte MessageOrder { get; } = 34;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 GlobalID;
@@ -11324,7 +11334,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_INCREMENTGUILDACHIEVEMENT : IMessage {
 		// Zone Server requests chat server increment a guild achievement
-		public byte MessageOrder { get; } = 34;
+		public byte MessageOrder { get; } = 35;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 GuildGID;
@@ -11332,7 +11342,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_INPERSONHATCHINGCHECK : IMessage {
 		// Check if in person hatching is allowed
-		public byte MessageOrder { get; } = 35;
+		public byte MessageOrder { get; } = 36;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("UBYT")] public Byte Status;
@@ -11344,7 +11354,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_LOADGUILDOBJECT : IMessage {
 		// Chat server requests that zone server load a Guild Object
-		public byte MessageOrder { get; } = 36;
+		public byte MessageOrder { get; } = 37;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
@@ -11360,34 +11370,34 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_LOCKLEVEL : IMessage {
 		// Client request level lock or unlock
-		public byte MessageOrder { get; } = 37;
+		public byte MessageOrder { get; } = 38;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("UBYT")] public Byte Unlock;
 	}
 	public sealed class MSG_LOGCSBATTLEREADYITEM : IMessage {
 		// Message sent from the client whenever the player closes the CrownShop to report the battle ready item
-		public byte MessageOrder { get; } = 38;
+		public byte MessageOrder { get; } = 39;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("UINT")] public UInt32 BRItemTemplateID;
 	}
 	public sealed class MSG_LOYALTYCLAIMLOYALTYTOKENS : IMessage {
 		// Client requests server give any tokens that can be claimed
-		public byte MessageOrder { get; } = 39;
+		public byte MessageOrder { get; } = 40;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 	}
 	public sealed class MSG_LOYALTYCLAIMLOYALTYTOKENSCONFIRM : IMessage {
 		// Server confirms the claim of loyalty tokens requested by the client
-		public byte MessageOrder { get; } = 40;
+		public byte MessageOrder { get; } = 41;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("BYT")] public SByte Failure;
 	}
 	public sealed class MSG_LOYALTYPROGRAMFORDAILYSPIRAL : IMessage {
 		// Client permanent shop requests from server the loyalty program flag and current member tokens that can be claimed
-		public byte MessageOrder { get; } = 41;
+		public byte MessageOrder { get; } = 42;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("BYT")] public SByte LoyaltyProgramFlag;
@@ -11395,14 +11405,14 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_LOYALTYSTORELISTREQUEST : IMessage {
 		// Sent from client to server to request the loyalty store item list
-		public byte MessageOrder { get; } = 42;
+		public byte MessageOrder { get; } = 43;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("UINT")] public UInt32 UpdateID;
 	}
 	public sealed class MSG_LOYALTYSTORE_PURCHASE_LOCK_REQUEST : IMessage {
 		// Sent from client when an item is selected to lock in the purchase
-		public byte MessageOrder { get; } = 43;
+		public byte MessageOrder { get; } = 44;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 Item;
@@ -11410,7 +11420,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_LOYALTYSTORE_PURCHASE_LOCK_RESPONSE : IMessage {
 		// Server sends the current locked purchase for the item about to be purchased
-		public byte MessageOrder { get; } = 44;
+		public byte MessageOrder { get; } = 45;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 Item;
@@ -11419,7 +11429,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_LOYALTYSTORE_PURCHASE_REQUEST : IMessage {
 		// Client sends confirmation of buying purchased locked item
-		public byte MessageOrder { get; } = 45;
+		public byte MessageOrder { get; } = 46;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 Item;
@@ -11428,7 +11438,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_LOYALTYSTORE_PURCHASE_RESPONSE : IMessage {
 		// Server sends result of transaction - Currently not used...
-		public byte MessageOrder { get; } = 46;
+		public byte MessageOrder { get; } = 47;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 Item;
@@ -11438,7 +11448,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_MONTHLYGAUNTLETCREDITSCLAIMED : IMessage {
 		// Server confirms the claiming of the Monthly Gauntlet credits
-		public byte MessageOrder { get; } = 47;
+		public byte MessageOrder { get; } = 48;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("UINT")] public UInt32 ProjectID;
@@ -11446,7 +11456,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_MOVEGUILDMUSEUMDOOR : IMessage {
 		// Server moves a guild museum door
-		public byte MessageOrder { get; } = 48;
+		public byte MessageOrder { get; } = 49;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 DoorGID;
@@ -11458,7 +11468,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_ModifyZoneToken : IMessage {
 		// Server tells client to update a ZoneToken
-		public byte MessageOrder { get; } = 49;
+		public byte MessageOrder { get; } = 50;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 GlobalID;
@@ -11467,20 +11477,20 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_OPENCANTRIPWINDOW : IMessage {
 		// Client requests recent wizards
-		public byte MessageOrder { get; } = 50;
+		public byte MessageOrder { get; } = 51;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("UINT")] public UInt32 TabNumber;
 	}
 	public sealed class MSG_PETPOWERWORLDFAILURE : IMessage {
 		// Server tells client to pet power failed
-		public byte MessageOrder { get; } = 51;
+		public byte MessageOrder { get; } = 52;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 	}
 	public sealed class MSG_PIIRADIALMENUPLAYEMOTE : IMessage {
 		// Server-initiated pii radial menu play emote response - send to all in range of player who requested pii radial menu play emote
-		public byte MessageOrder { get; } = 52;
+		public byte MessageOrder { get; } = 53;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("STR")] public ByteString SourceName;
@@ -11490,14 +11500,14 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PIIUPDATEEMOTESRADIALMENU : IMessage {
 		// Update the user pii emotes radial menu data from client to server
-		public byte MessageOrder { get; } = 53;
+		public byte MessageOrder { get; } = 54;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("STR")] public ByteString Data;
 	}
 	public sealed class MSG_PIXIEPOSTGUILDMAIL : IMessage {
 		// Zone server sends guild mail to chat server
-		public byte MessageOrder { get; } = 54;
+		public byte MessageOrder { get; } = 55;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("STR")] public ByteString Data;
@@ -11506,13 +11516,13 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PIXIEPOSTMAIL : IMessage {
 		// Zone server tells client that they have new mail
-		public byte MessageOrder { get; } = 55;
+		public byte MessageOrder { get; } = 56;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 	}
 	public sealed class MSG_PIXIEPOSTMESSAGE : IMessage {
 		// Client sends pixie post message
-		public byte MessageOrder { get; } = 56;
+		public byte MessageOrder { get; } = 57;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 ReceiverGID;
@@ -11526,7 +11536,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PLAYERINGUILDCOOLDOWN : IMessage {
 		// Server informs clients that player can't join a guild because they're in cooldown
-		public byte MessageOrder { get; } = 57;
+		public byte MessageOrder { get; } = 58;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
@@ -11538,7 +11548,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PLAYGRAPHIC : IMessage {
 		// Server tells client to play a graphic
-		public byte MessageOrder { get; } = 58;
+		public byte MessageOrder { get; } = 59;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("FLT")] public Single X;
@@ -11550,7 +11560,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PLAYPIXIEPOSTANIMATION : IMessage {
 		// Server plays a pixie post animation
-		public byte MessageOrder { get; } = 59;
+		public byte MessageOrder { get; } = 60;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
@@ -11558,7 +11568,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_POSTPARTYMESSAGE : IMessage {
 		// Client posts a message to an adventure party message board
-		public byte MessageOrder { get; } = 60;
+		public byte MessageOrder { get; } = 61;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
@@ -11571,7 +11581,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PROMOTEPROVISIONALPLAYER : IMessage {
 		// Client requests server change the promote a provisional player
-		public byte MessageOrder { get; } = 61;
+		public byte MessageOrder { get; } = 62;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
@@ -11580,7 +11590,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PVP5THAGECANJOINMATCH : IMessage {
 		// Client asks if it can join the 5th age pvp queue (Ranked or Practice)
-		public byte MessageOrder { get; } = 62;
+		public byte MessageOrder { get; } = 63;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("UINT")] public UInt32 LeagueID;
@@ -11588,14 +11598,14 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PVP5THAGECANJOINMATCHRESPONSE : IMessage {
 		// Server tells client if they can join the match (Ranked or Practice)
-		public byte MessageOrder { get; } = 63;
+		public byte MessageOrder { get; } = 64;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("UBYT")] public Byte CanJoinQueue;
 	}
 	public sealed class MSG_PVP5THAGEKIOSKREQUEST : IMessage {
 		// Server requests client open the pvp 5th age kiosk
-		public byte MessageOrder { get; } = 64;
+		public byte MessageOrder { get; } = 65;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
@@ -11605,7 +11615,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PVP5THAGEOPENPVPWINDOW : IMessage {
 		// Client requests to open the PvPWindow for the match type
-		public byte MessageOrder { get; } = 65;
+		public byte MessageOrder { get; } = 66;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("UBYT")] public Byte MatchType;
@@ -11614,13 +11624,13 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PVPDISABLED : IMessage {
 		// Server tells client pvp is disabled
-		public byte MessageOrder { get; } = 66;
+		public byte MessageOrder { get; } = 67;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 	}
 	public sealed class MSG_PVPREFUNDPVPTOURNEYCURRENCY : IMessage {
 		// Sending a message to the zone server to refund pvp tourney currency - the player is on from the tournament server
-		public byte MessageOrder { get; } = 67;
+		public byte MessageOrder { get; } = 68;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 CharacterID;
@@ -11632,7 +11642,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PlayerStatueChanged : IMessage {
 		// Push notification that a player statue has changed
-		public byte MessageOrder { get; } = 68;
+		public byte MessageOrder { get; } = 69;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("STR")] public ByteString Group;
@@ -11640,7 +11650,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PlayerStatueData : IMessage {
 		// Server updating a client side statue object
-		public byte MessageOrder { get; } = 69;
+		public byte MessageOrder { get; } = 70;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 GlobalID;
@@ -11649,7 +11659,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PlayerStatueGroup : IMessage {
 		// Client to server blob request
-		public byte MessageOrder { get; } = 70;
+		public byte MessageOrder { get; } = 71;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 GlobalID;
@@ -11660,14 +11670,14 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PlayerStatueInspect : IMessage {
 		// Sent when a client interacts with a statue object
-		public byte MessageOrder { get; } = 71;
+		public byte MessageOrder { get; } = 72;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 GlobalID;
 	}
 	public sealed class MSG_PvPStatueData : IMessage {
 		// Server updating a client side statue object
-		public byte MessageOrder { get; } = 72;
+		public byte MessageOrder { get; } = 73;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 GlobalID;
@@ -11675,14 +11685,14 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_PvPStatueInspect : IMessage {
 		// Sent when a client interacts with a statue object
-		public byte MessageOrder { get; } = 73;
+		public byte MessageOrder { get; } = 74;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 GlobalID;
 	}
 	public sealed class MSG_RAIDGATEUNLOCKREQUEST : IMessage {
 		// Server requests client open the unlock raid gate window
-		public byte MessageOrder { get; } = 74;
+		public byte MessageOrder { get; } = 75;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 GlobalID;
@@ -11693,7 +11703,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_RATEMYSTITCHADD : IMessage {
 		// Client submits an outfit to Rate My Stitch
-		public byte MessageOrder { get; } = 75;
+		public byte MessageOrder { get; } = 76;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 GlobalID;
@@ -11706,21 +11716,21 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_RATEMYSTITCHCLAIMJUDGESCHOICE : IMessage {
 		// CLient request to claim Judges Choice points
-		public byte MessageOrder { get; } = 76;
+		public byte MessageOrder { get; } = 77;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 GlobalID;
 	}
 	public sealed class MSG_RATEMYSTITCHCSRRESULTS : IMessage {
 		// Server sends csr results to client
-		public byte MessageOrder { get; } = 77;
+		public byte MessageOrder { get; } = 78;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("STR")] public ByteString Result;
 	}
 	public sealed class MSG_RATEMYSTITCHEREQUESTREMOVE : IMessage {
 		// Client requests their removeal of a Rate My Stitch outfit
-		public byte MessageOrder { get; } = 78;
+		public byte MessageOrder { get; } = 79;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 GlobalID;
@@ -11728,14 +11738,14 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_RATEMYSTITCHHELP : IMessage {
 		// Client requests Rate My Stitch Help
-		public byte MessageOrder { get; } = 79;
+		public byte MessageOrder { get; } = 80;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 GlobalID;
 	}
 	public sealed class MSG_RATEMYSTITCHHOLIDAYFLAGS : IMessage {
 		// Ask chat server for holiday flag status
-		public byte MessageOrder { get; } = 80;
+		public byte MessageOrder { get; } = 81;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("UBYT")] public Byte Christmas;
@@ -11744,7 +11754,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_RATEMYSTITCHPOSTRATE : IMessage {
 		// Housing job server tells player on zone server to get rating activity credit
-		public byte MessageOrder { get; } = 81;
+		public byte MessageOrder { get; } = 82;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 CharacterID;
@@ -11753,7 +11763,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_RATEMYSTITCHRATE : IMessage {
 		// Client submits an outfit to Rate My Stitch
-		public byte MessageOrder { get; } = 82;
+		public byte MessageOrder { get; } = 83;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 GlobalID;
@@ -11769,7 +11779,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_RATEMYSTITCHRATEFAIL : IMessage {
 		// Housing job server tells player it can't find a outfit to rate
-		public byte MessageOrder { get; } = 83;
+		public byte MessageOrder { get; } = 84;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 GlobalID;
@@ -11777,7 +11787,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_RATEMYSTITCHRATERESPONSE : IMessage {
 		// Post Rate My Stitch rating response
-		public byte MessageOrder { get; } = 84;
+		public byte MessageOrder { get; } = 85;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 CharacterID;
@@ -11785,7 +11795,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_RATEMYSTITCHREQUEST : IMessage {
 		// Server requests client open Rate My Stitch UI
-		public byte MessageOrder { get; } = 85;
+		public byte MessageOrder { get; } = 86;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 GlobalID;
@@ -11793,7 +11803,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_RATEMYSTITCHREQUESTLEADERBOARD : IMessage {
 		// Client submits an outfit to Rate My Stitch
-		public byte MessageOrder { get; } = 86;
+		public byte MessageOrder { get; } = 87;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 GlobalID;
@@ -11810,7 +11820,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_RATEMYSTITCHREQUESTOUTFITS : IMessage {
 		// Client requests their Rate My Stitch outfits
-		public byte MessageOrder { get; } = 87;
+		public byte MessageOrder { get; } = 88;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 GlobalID;
@@ -11819,7 +11829,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_REMOVEGUILDINVENTORYITEM : IMessage {
 		// Server tells client to delete guild inventory item
-		public byte MessageOrder { get; } = 88;
+		public byte MessageOrder { get; } = 89;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PartyGID;
@@ -11828,7 +11838,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_REMOVEPARTYMEMBER : IMessage {
 		// Client requests server remove a player from an adventure party
-		public byte MessageOrder { get; } = 89;
+		public byte MessageOrder { get; } = 90;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
@@ -11837,7 +11847,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_REMOVEPARTYMESSAGE : IMessage {
 		// Client requests server remove a message to an adventure party message board
-		public byte MessageOrder { get; } = 90;
+		public byte MessageOrder { get; } = 91;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
@@ -11847,7 +11857,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_REMOVESPELLFUSIONFROMDECK : IMessage {
 		// Update the user's deck by removing two spells from it; the ingredients of the fusion
-		public byte MessageOrder { get; } = 91;
+		public byte MessageOrder { get; } = 92;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("INT")] public Int32 SpellID1;
@@ -11857,7 +11867,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_REQUESTARTIFACTLOCATION : IMessage {
 		// Server requests client open Museum Curator UI
-		public byte MessageOrder { get; } = 92;
+		public byte MessageOrder { get; } = 93;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 GlobalID;
@@ -11866,7 +11876,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_REQUESTBADGELEADERBOARDFRIENDS : IMessage {
 		// Job Server requests friend list
-		public byte MessageOrder { get; } = 93;
+		public byte MessageOrder { get; } = 94;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
@@ -11875,7 +11885,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_REQUESTBADGELEADERBOARDPAGE : IMessage {
 		// Client requests a badge leaderboard page
-		public byte MessageOrder { get; } = 94;
+		public byte MessageOrder { get; } = 95;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("INT")] public Int32 Page;
@@ -11886,7 +11896,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_REQUESTBADGELOOT : IMessage {
 		// Client requests server send badge loot
-		public byte MessageOrder { get; } = 95;
+		public byte MessageOrder { get; } = 96;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("UINT")] public UInt32 BadgeID;
@@ -11896,7 +11906,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_REQUESTBADGEREWARD : IMessage {
 		// Client requests server send badge reward
-		public byte MessageOrder { get; } = 96;
+		public byte MessageOrder { get; } = 97;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("UINT")] public UInt32 BadgeID;
@@ -11904,7 +11914,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_REQUESTCLASSPROJECTMONTHLYGAUNTLETINFO : IMessage {
 		// Client requests, server sends class project Monthly Gauntlet Info
-		public byte MessageOrder { get; } = 97;
+		public byte MessageOrder { get; } = 98;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("UINT")] public UInt32 ProjectID;
@@ -11913,14 +11923,14 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_REQUESTDELETEMESSAGE : IMessage {
 		// Client requests server delete a pixie post message
-		public byte MessageOrder { get; } = 98;
+		public byte MessageOrder { get; } = 99;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 MailGID;
 	}
 	public sealed class MSG_REQUESTGUILDACHIEVEMENTS : IMessage {
 		// Send Guild Achievements to client
-		public byte MessageOrder { get; } = 99;
+		public byte MessageOrder { get; } = 100;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
@@ -11929,7 +11939,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_REQUESTGUILDINVENTORY : IMessage {
 		// Client requests guild inventory
-		public byte MessageOrder { get; } = 100;
+		public byte MessageOrder { get; } = 101;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
@@ -11937,7 +11947,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_REQUESTGUILDMUSEUMDOOR : IMessage {
 		// Client request a guild museum door change
-		public byte MessageOrder { get; } = 101;
+		public byte MessageOrder { get; } = 102;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("UINT")] public UInt32 WorldID;
@@ -11945,7 +11955,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_REQUESTGUILDOBJECT : IMessage {
 		// Chat server requests that zone server create a Guild Object
-		public byte MessageOrder { get; } = 102;
+		public byte MessageOrder { get; } = 103;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
@@ -11958,21 +11968,21 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_REQUESTGUILDUNLOCKDATA : IMessage {
 		// Client requests guild unlock info
-		public byte MessageOrder { get; } = 103;
+		public byte MessageOrder { get; } = 104;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
 	}
 	public sealed class MSG_REQUESTINPERSONHATCHINGCHANGE : IMessage {
 		// Client requests In Person Hatching change
-		public byte MessageOrder { get; } = 104;
+		public byte MessageOrder { get; } = 105;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("UBYT")] public Byte Status;
 	}
 	public sealed class MSG_REQUESTMUSEUMCURATOR : IMessage {
 		// Server requests client open Museum Curator UI
-		public byte MessageOrder { get; } = 105;
+		public byte MessageOrder { get; } = 106;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 GlobalID;
@@ -11982,7 +11992,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_REQUESTMUSEUMESSENCEDATA : IMessage {
 		// Zone server requests chat server museum data
-		public byte MessageOrder { get; } = 106;
+		public byte MessageOrder { get; } = 107;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PartyGID;
@@ -11991,20 +12001,20 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_REQUESTNEWBADGE : IMessage {
 		// Client requests new badge
-		public byte MessageOrder { get; } = 107;
+		public byte MessageOrder { get; } = 108;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("UINT")] public UInt32 BadgeID;
 	}
 	public sealed class MSG_REQUESTONDEMANDCONVERTEMOTESTOPIISYSTEM : IMessage {
 		// Request on demand convert emotes to the personal item inventory system
-		public byte MessageOrder { get; } = 108;
+		public byte MessageOrder { get; } = 109;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 	}
 	public sealed class MSG_REQUESTPACKODDS : IMessage {
 		// Client requests odds for a pack or loot table
-		public byte MessageOrder { get; } = 109;
+		public byte MessageOrder { get; } = 110;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 SourceID;
@@ -12012,7 +12022,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_REQUESTPERMISSIONCHANGE : IMessage {
 		// Client requests permissions change
-		public byte MessageOrder { get; } = 110;
+		public byte MessageOrder { get; } = 111;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
@@ -12022,7 +12032,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_REQUESTPIIRADIALMENUPLAYEMOTE : IMessage {
 		// Client-initiated pii radial menu play emote request
-		public byte MessageOrder { get; } = 111;
+		public byte MessageOrder { get; } = 112;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("STR")] public ByteString EmoteAnimationName;
@@ -12030,7 +12040,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_REQUESTPIXIEPOSTMESSAGE : IMessage {
 		// Client requests pixie post message
-		public byte MessageOrder { get; } = 112;
+		public byte MessageOrder { get; } = 113;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("UINT")] public UInt32 TimeOffset;
@@ -12050,7 +12060,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_REQUESTPLAYERBADGE : IMessage {
 		// Client requests player's badge
-		public byte MessageOrder { get; } = 113;
+		public byte MessageOrder { get; } = 114;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 GlobalID;
@@ -12060,7 +12070,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_REQUESTQUESTFRIENDFINDER : IMessage {
 		// Client requests quest friend finder
-		public byte MessageOrder { get; } = 114;
+		public byte MessageOrder { get; } = 115;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
@@ -12073,7 +12083,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_REQUESTRADIALADVENTURECHAT : IMessage {
 		// Client-initiated radial adventure chat request
-		public byte MessageOrder { get; } = 115;
+		public byte MessageOrder { get; } = 116;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
@@ -12085,7 +12095,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_REQUESTRADIALADVENTUREQUICKCHAT : IMessage {
 		// Client-initiated radial quickchat request
-		public byte MessageOrder { get; } = 116;
+		public byte MessageOrder { get; } = 117;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("UINT")] public UInt32 MessageID;
@@ -12097,7 +12107,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_REQUESTRADIALADVENTUREQUICKCHATEXT : IMessage {
 		// Client-initiated radial quickchat request that uses extended format for message
-		public byte MessageOrder { get; } = 117;
+		public byte MessageOrder { get; } = 118;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("STR")] public ByteString Message;
@@ -12109,7 +12119,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_REQUESTRECENTWIZARDS : IMessage {
 		// Client requests recent wizards
-		public byte MessageOrder { get; } = 118;
+		public byte MessageOrder { get; } = 119;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
@@ -12117,7 +12127,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_REQUESTRENAMECHARACTER : IMessage {
 		// Client requests to rename character
-		public byte MessageOrder { get; } = 119;
+		public byte MessageOrder { get; } = 120;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("UINT")] public UInt32 Status;
@@ -12127,34 +12137,34 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_REQUESTSHOWPVPOPTION : IMessage {
 		// Client has requested the show pvp option about a character
-		public byte MessageOrder { get; } = 120;
+		public byte MessageOrder { get; } = 121;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 	}
 	public sealed class MSG_REQUESTSIGILSLOT : IMessage {
 		// Client requests server change their sigil slot
-		public byte MessageOrder { get; } = 121;
+		public byte MessageOrder { get; } = 122;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("UINT")] public UInt32 SigilSlot;
 	}
 	public sealed class MSG_RESPONSESHOWPVPOPTION : IMessage {
 		// Server is providing show pvp option about a character
-		public byte MessageOrder { get; } = 122;
+		public byte MessageOrder { get; } = 123;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("UBYT")] public Byte ShowPVPOption;
 	}
 	public sealed class MSG_ROLLCAMERA : IMessage {
 		// Server tells client to roll the camera
-		public byte MessageOrder { get; } = 123;
+		public byte MessageOrder { get; } = 124;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("FLT")] public Single Roll;
 	}
 	public sealed class MSG_RemoveZoneToken : IMessage {
 		// Server tells client to remove a ZoneToken
-		public byte MessageOrder { get; } = 124;
+		public byte MessageOrder { get; } = 125;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 GlobalID;
@@ -12162,7 +12172,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_ResetZoneToken : IMessage {
 		// Server tells client to update a ZoneToken
-		public byte MessageOrder { get; } = 125;
+		public byte MessageOrder { get; } = 126;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 GlobalID;
@@ -12170,14 +12180,14 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_SENDYESNOREPLY : IMessage {
 		// Client sends a response to a yes no prompt
-		public byte MessageOrder { get; } = 126;
+		public byte MessageOrder { get; } = 127;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("UBYT")] public Byte Success;
 	}
 	public sealed class MSG_SETGROUPQUEST : IMessage {
 		// Client requests server change the quest of a group
-		public byte MessageOrder { get; } = 127;
+		public byte MessageOrder { get; } = 128;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
@@ -12187,7 +12197,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_SETSIGILSLOT : IMessage {
 		// Server broadcasts a sigil slot change
-		public byte MessageOrder { get; } = 128;
+		public byte MessageOrder { get; } = 129;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
@@ -12196,21 +12206,21 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_SETSKINTONEMESSAGE : IMessage {
 		// Client requests skin tone change
-		public byte MessageOrder { get; } = 129;
+		public byte MessageOrder { get; } = 130;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("UINT")] public UInt32 SkinTone;
 	}
 	public sealed class MSG_SETTESTREALMWATERMARK : IMessage {
 		// Server tells client to display the test realm watermark
-		public byte MessageOrder { get; } = 130;
+		public byte MessageOrder { get; } = 131;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("UINT")] public UInt32 Enable;
 	}
 	public sealed class MSG_SHOPLOYALTYLIST : IMessage {
 		// Send list of loyalty items can buy from server to client
-		public byte MessageOrder { get; } = 131;
+		public byte MessageOrder { get; } = 132;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("INT")] public Int32 Credits;
@@ -12221,7 +12231,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_SHOWCLIENTGROUPELIXIRPOPUP : IMessage {
 		// Server tells client to pop up a group elixir confirmation window
-		public byte MessageOrder { get; } = 132;
+		public byte MessageOrder { get; } = 133;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 SenderPlayerGID;
@@ -12229,7 +12239,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_SOCIALCONTROL : IMessage {
 		// Send social systems info
-		public byte MessageOrder { get; } = 133;
+		public byte MessageOrder { get; } = 134;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
@@ -12238,7 +12248,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_SOCIALKIOSKREQUEST : IMessage {
 		// Server requests client open the social kiosk
-		public byte MessageOrder { get; } = 134;
+		public byte MessageOrder { get; } = 135;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
@@ -12247,7 +12257,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_SetDeckArchmastery : IMessage {
 		// Sets the selected archmastery school on a deck
-		public byte MessageOrder { get; } = 135;
+		public byte MessageOrder { get; } = 136;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 ItemGID;
@@ -12255,14 +12265,14 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_UNLOADGUILDOBJECT : IMessage {
 		// Chat server requests that zone server unload a Guild Object
-		public byte MessageOrder { get; } = 136;
+		public byte MessageOrder { get; } = 137;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PartyGID;
 	}
 	public sealed class MSG_UNLOCKTRIGGERDATA : IMessage {
 		// Server sends unlock trigger data
-		public byte MessageOrder { get; } = 137;
+		public byte MessageOrder { get; } = 138;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
@@ -12272,14 +12282,14 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_UPDATEARCHMASTERY : IMessage {
 		// Update your Archmastery stat
-		public byte MessageOrder { get; } = 138;
+		public byte MessageOrder { get; } = 139;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("FLT")] public Single Stat;
 	}
 	public sealed class MSG_UPDATEGUILDHOUSEFLAGS : IMessage {
 		// Sever sends chat server guild house flags
-		public byte MessageOrder { get; } = 139;
+		public byte MessageOrder { get; } = 140;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 GuildGID;
@@ -12287,7 +12297,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_UPDATEGUILDNAME : IMessage {
 		// Server update guild name on a client
-		public byte MessageOrder { get; } = 140;
+		public byte MessageOrder { get; } = 141;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
@@ -12296,7 +12306,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_UPDATEGUILDUNLOCKTRIGGER : IMessage {
 		// Server requests client update unlock trigger reagents
-		public byte MessageOrder { get; } = 141;
+		public byte MessageOrder { get; } = 142;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PartyGID;
@@ -12307,14 +12317,14 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_UPDATELOYALTYPURCHASE : IMessage {
 		// Server update Client with a recent Loyalty Purchase Data
-		public byte MessageOrder { get; } = 142;
+		public byte MessageOrder { get; } = 143;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("STR")] public ByteString LoyaltyPurchaseData;
 	}
 	public sealed class MSG_UPDATEMUSEUMESSENCEDATA : IMessage {
 		// Zone server updates chat server museum data
-		public byte MessageOrder { get; } = 143;
+		public byte MessageOrder { get; } = 144;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
@@ -12323,7 +12333,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_UPDATEMUSEUMESSENCELEFT : IMessage {
 		// Zone server updates chat server museum essence remaining
-		public byte MessageOrder { get; } = 144;
+		public byte MessageOrder { get; } = 145;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 GuildGID;
@@ -12332,7 +12342,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_UPDATEMUSEUMEXHIBIT : IMessage {
 		// Server requests client update Museum Exhibit
-		public byte MessageOrder { get; } = 145;
+		public byte MessageOrder { get; } = 146;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("UINT")] public UInt32 WorldID;
@@ -12341,14 +12351,14 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_UPDATEOVERFLOWXP : IMessage {
 		// Server tells client to update overflow XP
-		public byte MessageOrder { get; } = 146;
+		public byte MessageOrder { get; } = 147;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("UINT")] public UInt32 OverflowXP;
 	}
 	public sealed class MSG_UPDATEPVPCURRENCY : IMessage {
 		// Update your pvpCurrency and max pvpCurrency
-		public byte MessageOrder { get; } = 147;
+		public byte MessageOrder { get; } = 148;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("INT")] public Int32 PvPCurrency;
@@ -12356,7 +12366,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_UPDATEPVPTOURNEYCURRENCY : IMessage {
 		// Update your pvpTourneyCurrency and max pvpTourneyCurrency
-		public byte MessageOrder { get; } = 148;
+		public byte MessageOrder { get; } = 149;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("INT")] public Int32 PvPTourneyCurrency;
@@ -12364,14 +12374,14 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_UPDATESHOWPVPOPTION : IMessage {
 		// Client is updating the server with the new show pvp option
-		public byte MessageOrder { get; } = 149;
+		public byte MessageOrder { get; } = 150;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("UINT")] public UInt32 ShowPVPOption;
 	}
 	public sealed class MSG_VISITGUILDHOUSE : IMessage {
 		// Client requests player teleport to guild house
-		public byte MessageOrder { get; } = 150;
+		public byte MessageOrder { get; } = 151;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 PlayerGID;
@@ -12385,7 +12395,7 @@ public sealed class WIZARD3_56_PROTOCOL : MessageProtocol {
 	}
 	public sealed class MSG_Visibility : IMessage {
 		// Adjusts the visibility of a client side object
-		public byte MessageOrder { get; } = 151;
+		public byte MessageOrder { get; } = 152;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 56;
 		[MessageElement("GID")] public UInt64 GlobalID;

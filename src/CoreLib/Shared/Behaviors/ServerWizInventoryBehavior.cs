@@ -15,8 +15,8 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
-public class ServerWizInventoryBehavior : ServerBehaviorInstance {
-    [JsonIgnore] public override bool NoTransfer { get; set; } = false;
+public class ServerWizInventoryBehavior : IClientBehaviorProvider<ClientWizInventoryBehavior> {
+    [JsonIgnore] public bool NoTransfer { get; set; } = false;
 
     private static int s_maxItemsAllowed = ConfigurationManager.Settings.MaxInventoryItems;
     private static readonly int s_maxJewelsAllowed = ConfigurationManager.Settings.MaxJewelsAllowed;
@@ -110,7 +110,7 @@ public class ServerWizInventoryBehavior : ServerBehaviorInstance {
     /// </summary>
     public WizClientObjectItem GetItem(ulong globalId) => Items.FirstOrDefault(item => item.m_globalID == globalId);
 
-    public override ClientWizInventoryBehavior GetClientBehaviorInstance() => new() {
+    public ClientWizInventoryBehavior GetClientBehaviorInstance() => new() {
         m_numItemsAllowed = s_maxItemsAllowed,
         m_numJewelsAllowed = s_maxJewelsAllowed,
         m_itemList = Items.ConvertAll(item => (CoreObject) item)

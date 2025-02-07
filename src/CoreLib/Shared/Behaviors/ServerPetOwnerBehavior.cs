@@ -12,8 +12,9 @@ using static Imlight.Common.Caches.TypeCache;
 namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
-public class ServerPetOwnerBehavior : ServerBehaviorInstance {
-    [JsonIgnore] public override bool NoTransfer { get; set; } = false;
+public class ServerPetOwnerBehavior : IClientBehaviorProvider<ClientPetOwnerBehavior> {
+    
+    [JsonIgnore] public bool NoTransfer { get; set; } = false;
 
     public readonly int EnergyTickIntervalInSeconds = ConfigurationManager.Settings.PetEnergyTickInSeconds;
 
@@ -28,13 +29,12 @@ public class ServerPetOwnerBehavior : ServerBehaviorInstance {
         LastEnergyTickEpoch = (uint) (DateTimeOffset.UtcNow.ToUnixTimeSeconds() + EnergyTickIntervalInSeconds);
     }
 
-    public override ClientPetOwnerBehavior GetClientBehaviorInstance() => new() {
-        // For `m_energyTickTimeSecs`, it doesn't matter what value we set here.
-        // In PetService.cs after attachment, the client will receive the correct value.
+    public ClientPetOwnerBehavior GetClientBehaviorInstance() => new() {
         m_maxSlots = MaxSlots,
         m_morphingSlots = MorphingSlots,
         m_energyTickTimeSecs = 0,
         m_energy = Energy,
         m_playingAsPet = PlayingAsPet
     };
+
 }

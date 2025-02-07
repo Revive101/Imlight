@@ -8,6 +8,7 @@ using Imlight.Common;
 using Imlight.Common.Caches;
 using Imlight.CoreLib.Game.Models.World;
 using Imlight.CoreLib.Game.Spells;
+using Imlight.CoreLib.Game.Zone.Components;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
@@ -26,6 +27,7 @@ internal enum CombatSlotType {
     Player
 }
 
+// todo: this should derive from ZoneEntityComponent
 public class CombatDuelSubCircle {
     private const float AGGRO_TIME_IN_SECONDS = 0.75f;
     private const byte MAX_PIP_COUNT = 7;
@@ -81,7 +83,7 @@ public class CombatDuelSubCircle {
     }
     internal bool IsAlive => ParticipantGameStats?.m_currentHitpoints > 0;
     internal CombatDeck _combatDeck;
-    internal readonly CombatDuelActor _duelActor;
+    internal readonly CombatDuelComponent _duelActor;
     internal Wizard _wizard;
 
     private readonly float _radius;
@@ -89,7 +91,7 @@ public class CombatDuelSubCircle {
     private readonly Color _color;
 
     // ctor
-    internal CombatDuelSubCircle(CombatDuelActor duelActor, float radius, float rotation, Color color, int index) {
+    internal CombatDuelSubCircle(CombatDuelComponent duelActor, float radius, float rotation, Color color, int index) {
         _duelActor = duelActor;
         _radius = radius;
         _rotation = rotation;

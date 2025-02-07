@@ -775,7 +775,7 @@ public static class Program {
         foreach (var objectInfo in objectList
                                              .Where(info => info != null)
                                              .Where(info => info.m_zoneTag != null)
-                                             .Where(info => info is not CombatSigil)
+                                             .Where(info => info is not CombatSigilObjectInfo)
                                              .Where(info => info is not SoundEmitterInfo)
                                              .Where(info => info is not PositionalSoundEmitterInfo)) {
             var name = objectInfo.m_zoneTag.ToString();

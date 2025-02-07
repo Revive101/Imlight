@@ -40,8 +40,8 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Shared.Behaviors;
 
-public sealed class ServerObjectStateBehavior : ServerBehaviorInstance {
-    public override bool NoTransfer { get; set; } = true;
+public sealed class ServerObjectStateBehavior : IClientBehaviorProvider<BehaviorInstance> {
+    public bool NoTransfer { get; set; } = true;
 
     [JsonIgnore] private readonly string _stateSetName;
     [JsonIgnore] private readonly ObjStateSet _stateSet;
@@ -56,7 +56,7 @@ public sealed class ServerObjectStateBehavior : ServerBehaviorInstance {
     }
 
     // This is a no transfer behavior !!
-    public override BehaviorInstance GetClientBehaviorInstance() => throw new NotImplementedException();
+    public BehaviorInstance GetClientBehaviorInstance() => throw new NotImplementedException();
 
     public ObjState SetState(string stateName) {
         // Find the category that the state belongs to.

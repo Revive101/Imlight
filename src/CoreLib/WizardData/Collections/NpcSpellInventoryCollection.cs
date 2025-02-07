@@ -7,12 +7,18 @@ using System.Linq;
 using Raven.Client.Documents;
 using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.World;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using Raven.Client.Documents.Linq;
 
 namespace Imlight.CoreLib.WizardData.Collections;
 
 public static class NpcSpellInventoryCollection {
     public const string CollectionName = "NpcSpellInventory";
     private static readonly IDocumentStore s_store;
+
+    private static readonly ConcurrentDictionary<ulong, NPCSpellInventory> s_npcSpellInventories = [];
+    private static bool s_isPreloaded = false;
 
     static NpcSpellInventoryCollection() {
         s_store = WorldDatabase.Instance.Store;
@@ -63,12 +69,30 @@ public static class NpcSpellInventoryCollection {
     /// <param name="npcSpellInventory">The NPC spell inventory containing the list of spell.</param>
     /// <returns>True if the NPC inventory was found, false otherwise.</returns>
     public static bool TryGetNpcInventory(ulong templateID, out NPCSpellInventory npcSpellInventory) {
+        if (!s_isPreloaded) {
+            PreloadNpcSpellInventories();
+        }
+
+        if (s_npcSpellInventories.TryGetValue(templateID, out npcSpellInventory)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Preloads the NPC spell inventories into memory.
+    /// </summary>
+    public static void PreloadNpcSpellInventories() {
         using var session = s_store.OpenSession();
 
-        npcSpellInventory = session.Query<NPCSpellInventory>(collectionName: CollectionName)
-            .Where(x => x.TemplateID == templateID)
-            .FirstOrDefault();
+        var npcSpellInventories = session.Query<NPCSpellInventory>(collectionName: CollectionName)
+            .ToList();
 
-        return npcSpellInventory != null;
+        foreach (var npcSpellInventory in npcSpellInventories) {
+            s_npcSpellInventories.TryAdd(npcSpellInventory.TemplateID, npcSpellInventory);
+        }
+
+        s_isPreloaded = true;
     }
 }

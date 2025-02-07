@@ -5,6 +5,7 @@
 
 using Akka.Actor;
 using Imlight.Common.Caches;
+using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Models.Player;
 using static Imlight.Common.Caches.ServerTypeCache;
@@ -76,4 +77,65 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
         public byte MessageOrder { get; } = 9;
         public byte ServiceID { get; } = 103;
     }
+
+    /// <summary>
+    /// Sent by a <see cref="ShopService"/> to a <see cref="IServiceComponent"/> to request a purchase of an item.
+    /// </summary>
+    internal sealed class MSG_SHOPBUYREQUEST : IServerMessage {
+
+        public byte MessageOrder { get; } = 10;
+        public byte ServiceID { get; } = 103;
+
+        /// <summary>
+        /// The <see cref="IActorRef"/> of the <see cref="SessionActor"/> that is making the purchase.
+        /// </summary>
+        public IActorRef PlayerActor;
+
+        /// <summary>
+        /// The <see cref="Wizard"/> that is making the purchase.
+        /// </summary>
+        public Wizard PlayerWizard;
+
+        /// <summary>
+        /// The <see cref="GID"/> of the item that is being purchased.
+        /// </summary>
+        public GID ItemID;
+
+        /// <summary>
+        /// The type of currency that is being used to purchase the item.
+        /// </summary>
+		public byte CurrencyType;
+
+        /// <summary>
+        /// The texture of the item that is being purchased, if applicable.
+        /// </summary>
+		public int Texture;
+
+        /// <summary>
+        /// The decal of the item that is being purchased, if applicable.
+        /// </summary>
+		public int Decal;
+
+        /// <summary>
+        /// The second decal of the item that is being purchased, if applicable.
+        /// </summary>
+		public int Decal2;
+
+        /// <summary>
+        /// The name of the pet that is being purchased, if applicable.
+        /// </summary>
+		public uint PetName;
+
+        /// <summary>
+        /// The global ID of the object that the item is being purchased from.
+        /// </summary>
+		public ulong InteractedObjectGlobalID;
+
+        /// <summary>
+        /// The quantity of the item that is being purchased.
+        /// </summary>
+		public uint Quantity;
+
+    }
+
 }

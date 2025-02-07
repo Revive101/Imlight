@@ -6,6 +6,7 @@
 using System.Collections.Generic;
 using Akka.Actor;
 using Imlight.CoreLib.Game.Combat;
+using Imlight.CoreLib.Game.Zone.Components;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Networking;
 using SharpDX;
@@ -60,7 +61,7 @@ namespace Imlight.CoreLib.Shared.Packets {
             public byte ServiceID => 106;
         }
 
-        public sealed class MSG_SLOTAVAILABLE : IServerMessage {
+        internal sealed class MSG_SLOTAVAILABLE : IServerMessage {
             public byte MessageOrder => 6;
             public byte ServiceID => 106;
 
@@ -81,12 +82,12 @@ namespace Imlight.CoreLib.Shared.Packets {
             public int Round;
         }
 
-        public sealed class MSG_ACTORADDEDTODUEL : IServerMessage {
+        internal sealed class MSG_ACTORADDEDTODUEL : IServerMessage {
             public byte MessageOrder => 9;
             public byte ServiceID => 106;
 
             public IActorRef DuelActor;
-            public CombatDuelActor Duel;
+            public CombatDuelComponent Duel;
             public CombatDuelSubCircle SubCircle;
             public Vector3 SlotPosition;
             public float SlotOrientation;

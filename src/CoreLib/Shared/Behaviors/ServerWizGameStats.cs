@@ -277,7 +277,9 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
             m_favoriteSlot = m_favoriteSlot,
             m_cantripLevel = m_cantripLevel,
             m_cantripXP = m_cantripXP,
-            m_levelScaled = m_levelScaled
+            m_levelScaled = m_levelScaled,
+            m_highestCharacterLevelOnAccount = m_highestCharacterLevelOnAccount,
+            m_highestCharacterWorldOnAccount = m_highestCharacterWorldOnAccount,
         };
     }
 }
