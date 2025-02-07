@@ -56,6 +56,14 @@ public class ReagentFactory : RootDirectoryResourceSingleton<ReagentFactory>, IM
             reagentName = "flax-01"; 
         }
 
+        if (reagentName.Contains("lron")) { // KI can't spell
+            reagentName = "scrapiron";
+        }
+
+        if (reagentName.Contains(' ')) {
+            reagentName = reagentName.Replace(" ", "");
+        }
+
         var allReagents = s_reagentTemplates.Keys.Where(x => x.Contains(reagentName)).ToList();
 
         foreach (var kp in s_reagentTemplates) {
@@ -164,7 +172,15 @@ public class ReagentFactory : RootDirectoryResourceSingleton<ReagentFactory>, IM
             reagentName = "flax-01"; 
         }
 
-        foreach (var kp in s_reagentTemplates) {
+        if (reagentName.Contains("lron")) { // KI can't spell
+            reagentName = "scrapiron";
+        }
+
+        if (reagentName.Contains(' ')) {
+            reagentName = reagentName.Replace(" ", "");
+        }
+
+         foreach (var kp in s_reagentTemplates) {
             if (kp.Key.Contains(reagentName)) {
                 return kp.Value;
             }
