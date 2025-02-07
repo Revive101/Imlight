@@ -79,6 +79,11 @@ public class ZoneEntity(
             m_despawnEffect = StringHash.Compute(effectName),
         };
 
+        // Send kill-pill to all components.
+        foreach (var (_, actor) in Components) {
+            actor.Tell(PoisonPill.Instance);
+        }
+        
         var serializedData = _serializer.Serialize(despawnEffects);
         var despawnMsg = new GAME_5_PROTOCOL.MSG_DELETEOBJECT {
             GameObjectID = ActiveGameObject.m_globalID,

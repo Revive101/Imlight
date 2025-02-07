@@ -500,7 +500,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public string DestinationLocation;
         public bool SendToClient = true;
         public bool IsPrivate = false;
-        public ulong OwnerCharId;
+        public IActorRef Owner;
 
     }
 

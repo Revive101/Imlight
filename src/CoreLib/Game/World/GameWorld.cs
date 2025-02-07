@@ -14,7 +14,6 @@ using Imlight.CoreLib.WizardData.Implementations;
 namespace Imlight.CoreLib.Game.World;
 
 public class GameWorld : ReceiveProtocolDispatcher {
-    
     private readonly Dictionary<string, IActorRef> _zones = [];
     private readonly GameServer _server;
 
@@ -80,5 +79,4 @@ public class GameWorld : ReceiveProtocolDispatcher {
 
     private static string SanitizeZoneName(string zoneName) 
         => zoneName.Replace('/', '-');
-
 }

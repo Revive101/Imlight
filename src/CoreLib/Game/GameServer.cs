@@ -18,6 +18,7 @@ using Imlight.Common;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.Game.Commands;
 using Imlight.CoreLib.WizardData.Databases;
+using Imlight.CoreLib.Game.Effects;
 using Imlight.CoreLib.Game.World;
 using Imlight.CoreLib.Game.Processes;
 

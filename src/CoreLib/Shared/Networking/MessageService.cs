@@ -215,7 +215,6 @@ public abstract class MessageService : ReceiveProtocolDispatcher {
             DestinationZone = destinationZone,
             SendToClient = true,
             IsPrivate = makePrivate,
-            OwnerCharId = GetActiveWizard().CharId
         };
         TellOtherServices(zoneTransfer);
     }

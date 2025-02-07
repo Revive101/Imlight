@@ -322,7 +322,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
 
                 return s_locationFailedGiveaway;
             }
-            
+
             actualLocation = (Vector4) searchedLoc.m_location;
             actualLocation.W = searchedLoc.m_direction;
         }
@@ -340,6 +340,15 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         };
 
         var actualLocation = GetLocationFromString(message.DestinationLocation);
+
+        if (actualLocation == s_locationFailedGiveaway) {
+            Logger.Error("Zone {ZoneName} tried to transfer to unknown location: {Location}",
+                Logger.Args(ZoneName, message.DestinationLocation));
+            rsp.ErrorCode = 1;
+            sender.Tell(rsp);
+
+            return;
+        }
 
         rsp.Location = (Vector3) actualLocation;
         rsp.Orientation = actualLocation.W;
