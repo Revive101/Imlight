@@ -72,6 +72,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     private CombatSigilTemplate _sigilTemplate;
     private bool _isActive;
     private bool _awaitingCombatMoves;
+
     public static bool ShouldAttachToEntity(CoreTemplate template)
         => template is GameObjectTemplate gameObjectTemplate
         && gameObjectTemplate.m_behaviors.Any(x => x is not null && x.m_behaviorName == "DuelBehavior");
@@ -283,6 +284,10 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_PLANNINGPHASEOVER))]
     private void ReceivePlanningPhaseOver(COMBAT_106_PROTOCOL.MSG_PLANNINGPHASEOVER message) {
+        if (!_isActive) {
+            return;
+        }
+
         Logger.Debug("Duel {0} | Round {1} over at {2}",
             Logger.Args(Duel.m_duelID, Duel.m_roundNum, DateTime.Now.ToString("HH:mm:ss")));
 
@@ -855,8 +860,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         ZoneBroadcast(duelEndedMsg);
 
         DespawnDuel();
-
-        Context.Stop(Self);
+        _isActive = false;
     }
 
     private void PlayerWin() {
@@ -934,4 +938,5 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
         return slotAvailable;
     }
+
 }

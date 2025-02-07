@@ -222,8 +222,12 @@ public sealed class ZonePath : ZoneEntity, IWithTimers {
             var result = objectActor.Ask<ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADRESULTS>(msg, timeout).WaitAndUnwrapException();
         }
         catch (Exception ex) {
+            var goTemplate = template as GameObjectTemplate;
             Logger.Error("Failed to create entity actor for {0} {1} ({2}).",
-                Logger.Args(nameof(CoreTemplate), template.GetType().Name, ex.Message));
+                Logger.Args(nameof(CoreTemplate), goTemplate.m_objectName, ex.Message));
+
+            // Kill the actor.
+            objectActor.Tell(PoisonPill.Instance);
 
             return null;
         }

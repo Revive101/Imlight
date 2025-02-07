@@ -39,7 +39,21 @@ internal sealed class ZoneObjectSupervisor(Core.Zone zone) : ZoneEntitySuperviso
             }
 
             var template = (GameObjectTemplate) CoreObjectFactory.GetCoreTemplate(objectInfo.m_templateID);
+            if (template is null) {
+                Logger.Warning("Could not create {0} because template ID {1} was not found.",
+                    Logger.Args(objectInfo.m_zoneTag, objectInfo.m_templateID));
+                
+                continue;
+            }
+
             var coreObject = CoreObjectFactory.FinalizeCoreObject(objectInfo, template);
+            if (coreObject is null) {
+                Logger.Warning("Could not finalize CoreObject {0} with template ID {1}.",
+                    Logger.Args(objectInfo.m_zoneTag, objectInfo.m_templateID));
+
+                continue;
+            }
+
             var objectActor = CreateEntityActor(coreObject, template);
         }
 
