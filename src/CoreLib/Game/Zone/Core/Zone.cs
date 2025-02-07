@@ -80,7 +80,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         _supervisors.Add(CreateSupervisor<ZonePlayerSupervisor>());
         _supervisors.Add(CreateSupervisor<ZonePathSupervisor>());
         _supervisors.Add(CreateSupervisor<ZoneSigilSupervisor>());
-
+        
         _zoneLoadTimer.Restart();
         _isLoading = true;
 
@@ -103,6 +103,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         var msg = new ZONE_102_PROTOCOL.MSG_ZONECLOSED() {
             DynamicZoneId = _dynamicZoneId
         };
+
         foreach (var supervisor in _supervisors) {
             supervisor.Tell(msg);
         }
@@ -122,7 +123,6 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
 
         // Inform the supervisor (GameWorld) that the zone is closing.
         Context.Parent.Tell(msg);
-
         Context.Stop(Self);
     }
 
@@ -195,11 +195,13 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         if (message.Error) {
             Logger.Error("Zone {ZoneName} failed to load because {ErrorMessage}", 
                 Logger.Args(ZoneName, message.ErrorMessage));
+
             CloseZone();
 
             return;
         }
 
+        _zoneLoadTimer.Restart();
         ZoneData = message.ZoneData;
 
         // Inform each supervisor of the loaded zone data. They are expected to give a reply
@@ -231,6 +233,14 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
             foreach (var supervisor in _supervisors) {
                 supervisor.Tell(startMsg);
             }
+        }
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADTIMER))]
+    private void ReceiveZoneTimerEnd() {
+        if (_isLoading) {
+            Logger.Error("Zone {ZoneName} failed to load within the timeout.", Logger.Args(ZoneName));
+            CloseZone();
         }
     }
 
@@ -304,7 +314,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
 
                 return s_locationFailedGiveaway;
             }
-            
+
             actualLocation = (Vector4) searchedLoc.m_location;
             actualLocation.W = searchedLoc.m_direction;
         }

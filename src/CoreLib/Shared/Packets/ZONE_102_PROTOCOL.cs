@@ -99,7 +99,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte ServiceID { get; } = 102;
 
         public string ZonePath;
-
+        
     }
 
     /// <summary>
