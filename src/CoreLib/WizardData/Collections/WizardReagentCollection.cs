@@ -73,6 +73,31 @@ internal sealed class WizardReagentCollection {
     }
 
     /// <summary>
+    /// Updates a reagent in the WizardReagent collection for a specific player.
+    /// </summary>
+    /// <param name="reagent">The updated reagent to be saved.</param>
+    /// <returns>True if the reagent was successfully updated, false otherwise.</returns>
+    public static bool UpdateReagent(ClientReagentItem reagent) {
+        using var session = s_store.OpenSession();
+
+        // Get the reagent from the reagents collection.
+        var associatedReagent = session
+            .Query<ClientReagentItem>(collectionName: CollectionName)
+            .FirstOrDefault(x => x.m_characterId == reagent.m_characterId && x.m_globalID == reagent.m_globalID);
+
+        // If the reagent was not found, return false.
+        if (associatedReagent == null) {
+            return false;
+        }
+
+        // Update the reagent in the reagents collection.
+        associatedReagent.m_quantity = reagent.m_quantity;
+
+        session.SaveChanges();
+        return true;
+    }
+
+    /// <summary>
     /// Removes all reagents from the reagent collection for a given character.
     /// </summary>
     /// <param name="charId">The character ID.</param>

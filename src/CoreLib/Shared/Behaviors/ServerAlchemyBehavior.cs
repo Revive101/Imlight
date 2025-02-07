@@ -52,6 +52,44 @@ public class ServerAlchemyBehavior : IClientBehaviorProvider<ClientAlchemyBehavi
     }
 
     /// <summary>
+    /// Removes a reagent from the player's reagent bag based on its unique identifier.
+    /// </summary>
+    /// <param name="reagentId">The unique identifier of the reagent to be removed.</param>
+    /// <returns><c>true</c> if the reagent was successfully removed; otherwise, <c>false</c>.</returns>
+    public bool RemoveReagent(ulong reagentId, out ClientReagentItem updatedReagent) {
+        Reagents ??= [];
+        ReagentItemIds ??= [];
+        updatedReagent = null;
+
+        // Get the actual item from the inventory.
+        var reagent = Reagents.FirstOrDefault(x => x.m_globalID == reagentId);
+        if (reagent is null) {
+            Logger.Debug("Tried to remove reagent with global id {0} that does not exist in player reagent bag.",
+                Logger.Args(reagentId));
+            return false;
+        }
+
+        reagent.m_quantity--;
+        updatedReagent = reagent;
+
+        if (reagent.m_quantity <= 0) {
+            if (!Reagents.Remove(reagent)) {
+                Logger.Debug("Tried to remove reagent with global id {0} that does not exist in player inventory.",
+                    Logger.Args(reagent.m_globalID));
+                return false;
+            }
+
+            if (!ReagentItemIds.Remove(reagentId)) {
+                Logger.Debug("Tried to remove reagent with global id {0} that does not exist in player inventory.",
+                    Logger.Args(reagent.m_globalID));
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>
     /// Checks if the reagent bag contains a reagent with the specified global ID.
     /// </summary>
     /// <param name="globalId">The global ID of the reagent to check.</param>

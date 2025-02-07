@@ -163,6 +163,39 @@ public class InventoryService : MessageService {
 
     #endregion
 
+    #region Reagents
+
+    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_REAGENTREMOVEREQUEST))]
+    private void ReceiveReagentRemoveRequest(WIZARD_12_PROTOCOL.MSG_REAGENTREMOVEREQUEST message) {
+        var wizard = GetActiveWizard();
+
+        var hasReagent = wizard.AlchemyBehavior.HasReageant(message.GlobalID);
+        if (!hasReagent) {
+            Logger.Log.Debug("Tried to remove reagent with global id {0} that does not exist in player reagent bag.",
+                Logger.Args(message.GlobalID));
+            return;
+        }
+
+        var reagent = wizard.AlchemyBehavior.GetReagent(message.GlobalID);
+        wizard.RemoveReagent(reagent.m_globalID, out var updatedReagent);
+
+        if (updatedReagent.m_quantity > 0) {
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_REAGENTUPDATE() {
+                GlobalID = wizard.CharId,
+                ItemID = updatedReagent.m_globalID,
+                Quantity = updatedReagent.m_quantity
+            });
+            return;
+        }
+
+        SendToSocket(new WIZARD_12_PROTOCOL.MSG_REAGENTREMOVE() {
+            GlobalID = wizard.CharId,
+            ItemID = updatedReagent.m_globalID,
+        });
+    }
+
+    #endregion
+
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_PLAYERWIZBANG))]
     private void ReceivePlayerWizbang(WIZARD_12_PROTOCOL.MSG_PLAYERWIZBANG message) {
         var wizard = GetActiveWizard();

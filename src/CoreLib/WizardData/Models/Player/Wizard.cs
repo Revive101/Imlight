@@ -443,7 +443,11 @@ public class Wizard : IDisposable {
     }
 
     public bool RemoveSnack(ulong globalId, out ClientPetSnackItem snack) {
-        PetSnackBehavior.RemoveSnack(globalId, out snack);
+        if (!PetSnackBehavior.RemoveSnack(globalId, out snack)) {
+            Logger.Warning("Could not remove snack with global ID {0} from player {1}'s snackbag.",
+                Logger.Args(globalId, PlayerNameBehavior.GetWizardName()));
+            return false;
+        }
 
         if (snack.m_quantity <= 0) {
             // Persistent save.
@@ -492,6 +496,26 @@ public class Wizard : IDisposable {
         WizardReagentCollection.AddReagent(reagent);
         WizardCollection.UpdateCharacterItems(this);
 
+        return true;
+    }
+
+    public bool RemoveReagent(ulong globalId, out ClientReagentItem reagent) {
+        if (!AlchemyBehavior.RemoveReagent(globalId, out reagent)) {
+            Logger.Warning("Could not remove reagent with global ID {0} from player {1}'s reagent bag.",
+                Logger.Args(globalId, PlayerNameBehavior.GetWizardName()));
+            return false;
+        }
+
+        if (reagent.m_quantity <= 0) {
+            // Persistent save.
+            WizardReagentCollection.RemoveReagent(reagent);
+            WizardCollection.UpdateCharacterItems(this);
+            return true;
+        }
+
+        // Persistent save.
+        WizardReagentCollection.UpdateReagent(reagent);
+        WizardCollection.UpdateCharacterItems(this);
         return true;
     }
 
