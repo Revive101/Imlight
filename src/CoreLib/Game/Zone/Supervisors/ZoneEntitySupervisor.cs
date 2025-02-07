@@ -99,8 +99,12 @@ internal abstract class ZoneEntitySupervisor(Core.Zone zone) : ReceiveProtocolDi
             EntityActors.Add(objectActor);
         }
         catch (Exception ex) {
-            Logger.Error("Failed to create entity actor for {0} {1} ({2}).", 
-                Logger.Args(nameof(CoreTemplate), template.GetType().Name, ex.Message));
+            var goTemplate = template as GameObjectTemplate;
+            Logger.Error("Failed to create entity actor for {0} {1} ({2}).",
+                Logger.Args(nameof(CoreTemplate), goTemplate.m_objectName, ex.Message));
+
+            // Kill the actor.
+            objectActor.Tell(PoisonPill.Instance);
 
             return null;
         }
