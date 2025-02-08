@@ -534,7 +534,13 @@ public class ZoneService : MessageService, IWithTimers {
     private void SendHomeButtonData() {
         var wizard = GetActiveWizard();
         var currentZone = wizard.Zone;
+
         var zoneMap = WorldHubZones.GetHubZoneMapping(currentZone);
+        if (zoneMap is null) {
+            // If it can't be found, it's an area where the compass isn't visible anyways.
+            return;
+        }
+
         var marklocation = new GAME_5_PROTOCOL.MSG_MARK_LOCATION_RESPONSE {
             Result = 2,
             CommonsZoneId = zoneMap.m_hubZoneDisplayName

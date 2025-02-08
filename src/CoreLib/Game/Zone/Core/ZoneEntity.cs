@@ -83,7 +83,7 @@ public class ZoneEntity(
         foreach (var (_, actor) in Components) {
             actor.Tell(PoisonPill.Instance);
         }
-
+        
         var serializedData = _serializer.Serialize(despawnEffects);
         var despawnMsg = new GAME_5_PROTOCOL.MSG_DELETEOBJECT {
             GameObjectID = ActiveGameObject.m_globalID,

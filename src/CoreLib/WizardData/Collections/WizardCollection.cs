@@ -104,6 +104,7 @@ public static class WizardCollection {
             return;
         }
 
+        existingCharacter.PreviousZone = existingCharacter.PreviousZone;
         existingCharacter.Zone = zoneName;
         existingCharacter.ZoneDisplayName = zoneDisplayName;
         session.SaveChanges();

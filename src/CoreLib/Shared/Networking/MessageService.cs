@@ -208,12 +208,13 @@ public abstract class MessageService : ReceiveProtocolDispatcher {
         return response.ZoneObject;
     }
 
-    protected void DoZoneTransfer(string destinationZone, string destinationLocation = "") {
+    protected void DoZoneTransfer(string destinationZone, bool makePrivate = false, string destinationLocation = "") {
         // If the destination location is nothing, default it to "Start."
         var zoneTransfer = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
             DestinationLocation = destinationLocation == "" ? "Start" : destinationLocation,
             DestinationZone = destinationZone,
             SendToClient = true,
+            IsPrivate = makePrivate,
         };
         TellOtherServices(zoneTransfer);
     }

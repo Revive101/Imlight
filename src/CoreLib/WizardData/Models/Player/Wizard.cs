@@ -29,6 +29,7 @@ public class Wizard : IDisposable {
     public ulong CharId { get; set; }
     public string Zone { get; set; }
     public string ZoneDisplayName { get; set; }
+    public string PreviousZone { get; set; }
     public string MarkedZone { get; set; }
     public long TimeHomeLastClicked { get; set; }
     public byte World { get; set; }
@@ -148,6 +149,8 @@ public class Wizard : IDisposable {
     }
 
     public void SetZone(string zone, string zoneDisplayName) {
+        PreviousZone = Zone;
+        
         Zone = zone;
         ZoneDisplayName = zoneDisplayName;
 
