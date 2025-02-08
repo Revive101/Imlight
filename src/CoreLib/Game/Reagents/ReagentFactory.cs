@@ -146,6 +146,13 @@ public class ReagentFactory : RootDirectoryResourceSingleton<ReagentFactory>, IM
             reagentName = "harvest-" + reagentName;
         }
 
+        // Remove any spaces in the reagent name.
+        reagentName = reagentName.Replace(" ", "");
+
+        if (reagentName.Contains("lron")) { // KI can't spell
+            reagentName = "scrapiron";
+        }
+
         // Find the reagent template that contains the reagent name, but is not the exact
         // reagent name. 
         var allReagents = s_reagentTemplates.Keys.Where(x => x.Contains(reagentName)).ToList();
