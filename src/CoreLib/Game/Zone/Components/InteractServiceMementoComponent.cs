@@ -10,6 +10,7 @@ using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Game.WizBang;
 using Imlight.CoreLib.Game.Zone.Core;
+using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System.Collections.Generic;
@@ -54,7 +55,7 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
     public static bool ShouldAttachToEntity(CoreTemplate template) 
         => true;
 
-    public override void OnZoneStart() 
+    public override void OnStart() 
         => RefreshServiceMomento(null);
 
     public override void OnPlayerJoin(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) 
@@ -82,12 +83,14 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
         }
     }
 
-    public void PlayerInteraction(
-        IActorRef playerActor,
-        Wizard playerCharacter,
-        CoreObject playerObject,
-        string serviceName,
-        uint serviceIndex) {
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEINTERACTION))]
+    private void PlayerInteraction(ZONE_102_PROTOCOL.MSG_ZONEINTERACTION message) {
+        var playerActor = message.PlayerActor;
+        var playerCharacter = message.PlayerCharacter;
+        var playerObject = message.PlayerObject;
+        var serviceName = message.ServiceName;
+        var serviceIndex = message.ServiceIndex;
+
         Logger.Debug("Player {0} interacted with NPC {1} using service {2} at index {3}",
             Logger.Args(playerActor.Path.Name, Entity.ActiveGameObject.m_globalID, serviceName, serviceIndex));
 

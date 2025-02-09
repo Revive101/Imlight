@@ -16,7 +16,7 @@ namespace Imlight.CoreLib.Shared.Behaviors;
 public class ServerPetSnackBehavior : IClientBehaviorProvider<ClientPetSnackBehavior> {
     [JsonIgnore] public bool NoTransfer { get; set; } = false;
 
-    private static readonly int s_maxSnacksAllowed = 999;
+    private static readonly int s_maxSnackStackAllowed = 999;
 
     public List<ulong> SnackItemIds { get; set; }
 
@@ -31,19 +31,14 @@ public class ServerPetSnackBehavior : IClientBehaviorProvider<ClientPetSnackBeha
         Snacks ??= [];
         SnackItemIds ??= [];
 
-        var totalSnacks = 0;
-        foreach (var s in Snacks) {
-            totalSnacks += s.m_quantity;
-        }
-
-        if (totalSnacks >= s_maxSnacksAllowed) {
-            Logger.Debug("Player snack bag is full. Cannot add snack with global id {0}.", Logger.Args(snack.m_globalID));
-            return false;
-        }
-
         // Check if the snack is already in the snack bag, update quantity
         var existingSnack = Snacks.FirstOrDefault(x => x.m_templateID == snack.m_templateID);
         if (existingSnack is not null) {
+            if (existingSnack.m_quantity >= s_maxSnackStackAllowed) {
+                Logger.Debug("Player snack stack is full. Cannot add snack with global id {0}.", Logger.Args(snack.m_globalID));
+                return false;
+            }
+
             existingSnack.m_quantity++;
             return true;
         }
@@ -114,7 +109,7 @@ public class ServerPetSnackBehavior : IClientBehaviorProvider<ClientPetSnackBeha
 
     public ClientPetSnackBehavior GetClientBehaviorInstance() => new() {
         m_snackBag = new ObjectBag() {
-            m_maxItemStack = s_maxSnacksAllowed,
+            m_maxItemStack = s_maxSnackStackAllowed,
             m_itemList = Snacks?.ConvertAll(item => (CoreObject) item) ?? []
         }
     };
