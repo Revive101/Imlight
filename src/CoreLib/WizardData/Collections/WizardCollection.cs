@@ -60,6 +60,7 @@ public static class WizardCollection {
         WizardItemCollection.DeleteInventory(id);
         WizardPetSnackCollection.DeleteSnackBag(id);
         DynamodCollection.DeleteAllDynamodSets(id);
+        WizardReagentCollection.DeleteReagentBag(id);
 
         session.Delete(character);
         session.SaveChanges();
@@ -167,6 +168,7 @@ public static class WizardCollection {
         existingCharacter.InventoryBehavior = wizard.InventoryBehavior;
         existingCharacter.EquipmentBehavior = wizard.EquipmentBehavior;
         existingCharacter.PetSnackBehavior = wizard.PetSnackBehavior;
+        existingCharacter.AlchemyBehavior = wizard.AlchemyBehavior;
         session.SaveChanges();
     }
 

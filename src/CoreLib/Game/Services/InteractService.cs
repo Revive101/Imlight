@@ -9,7 +9,10 @@ using Imlight.Common.Caches;
 using Imlight.Common.Cryptography;
 using Imlight.CoreLib.Game.Zone.Components;
 using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.World;
+using System;
+using System.Threading.Tasks;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -25,15 +28,24 @@ internal class InteractService(SessionActor sessionActor) : MessageService(sessi
         // A player is closing their shop
         if (message.ServiceName == "") {
             CloseShop(wizard.CharId);
-
             return;
         }
 
+        HandleInteraction(message, msg => msg.GlobalID, msg => msg.ServiceName, msg => msg.ServiceIndex);
+    }
+
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_INTERACTOPTION))]
+    private void ReceiveInteractOption(GAME_5_PROTOCOL.MSG_INTERACTOPTION message) 
+        => HandleInteraction(message, msg => msg.ObjectID, msg => "Interact", msg => (uint) msg.OptionIndex);
+
+    private void HandleInteraction<T>(T message, Func<T, ulong> getObjectId, Func<T, string> getServiceName, Func<T, uint> getServiceIndex) {
+        var wizard = GetActiveWizard();
+
         // Search for the interaction object.
-        var npc = GetZoneObject(message.GlobalID);
+        var npc = GetZoneObject(getObjectId(message));
         if (npc == null) {
             Logger.Error("{0} searched for NPC by global ID {1} but one was not found",
-                Logger.Args(wizard.CharId, message.GlobalID));
+                Logger.Args(wizard.CharId, getObjectId(message)));
 
             return;
         }
@@ -42,18 +54,24 @@ internal class InteractService(SessionActor sessionActor) : MessageService(sessi
         var serviceMementoComponent = npc.GetComponentOfType<InteractServiceMementoComponent>();
         if (serviceMementoComponent == null) {
             Logger.Error("{0} interacted with NPC {1} but it does not contain a service memento component",
-                Logger.Args(wizard.CharId, message.GlobalID));
+                Logger.Args(wizard.CharId, getObjectId(message)));
 
             return;
         }
 
         var actor = SessionActor.ActorRef;
         var gameObj = GetActiveGameObject();
-        var serviceName = message.ServiceName;
-        var serviceIndex = message.ServiceIndex;
-      
+
         // Inform the service memento component that the player is interacting with it.
-        serviceMementoComponent.PlayerInteraction(actor, wizard, gameObj, serviceName, serviceIndex);
+        var msg = new ZONE_102_PROTOCOL.MSG_ZONEINTERACTION {
+            GlobalID = getObjectId(message),
+            ServiceName = getServiceName(message),
+            ServiceIndex = getServiceIndex(message),
+            PlayerActor = actor,
+            PlayerCharacter = wizard,
+            PlayerObject = gameObj
+        };
+        serviceMementoComponent.ActorRef.Tell(msg);
     }
 
     private void CloseShop(ulong charId) {
@@ -70,5 +88,5 @@ internal class InteractService(SessionActor sessionActor) : MessageService(sessi
         };
         ZoneBroadcast(clearWizBangMsg, false);
     }
-    
+
 }

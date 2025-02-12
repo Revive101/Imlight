@@ -45,6 +45,7 @@ public static class WizardObjectLoader {
         SetMountOwnerBehavior(clientObject, ref character);
         SetPetSnackBehavior(clientObject, ref character);
         SetPetOwnerBehavior(clientObject, ref character);
+        SetAlchemyBehavior(clientObject, ref character);
 
         return clientObject;
     }
@@ -156,6 +157,16 @@ public static class WizardObjectLoader {
         }
         else {
             throw new Exception("Behavior ClientPetOwnerBehavior not found!");
+        }
+    }
+
+    public static void SetAlchemyBehavior(WizClientObject clientObject, ref Wizard character) {
+        if (CoreObjectFactory.FindBehaviorInstance<ClientAlchemyBehavior>(clientObject, out var alchemyBehavior)) {
+            var idx = clientObject.m_inactiveBehaviors.IndexOf(alchemyBehavior);
+            clientObject.m_inactiveBehaviors[idx] = character.AlchemyBehavior.GetClientBehaviorInstance();
+        }
+        else {
+            throw new Exception("Behavior ClientAlchemyBehavior not found!");
         }
     }
 }
