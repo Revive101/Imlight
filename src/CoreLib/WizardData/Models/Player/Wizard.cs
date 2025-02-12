@@ -29,6 +29,7 @@ public class Wizard : IDisposable {
     public ulong CharId { get; set; }
     public string Zone { get; set; }
     public string ZoneDisplayName { get; set; }
+    public string PreviousZone { get; set; }
     public string MarkedZone { get; set; }
     public long TimeHomeLastClicked { get; set; }
     public byte World { get; set; }
@@ -66,6 +67,7 @@ public class Wizard : IDisposable {
     public ServerWizSpellbookBehavior SpellbookBehavior { get; set; }
     public ServerMountOwnerBehavior MountOwnerBehavior { get; set; }
     public ServerPetSnackBehavior PetSnackBehavior { get; set; }
+    public ServerAlchemyBehavior AlchemyBehavior { get; set; }
     [JsonIgnore] public ServerObjectStateBehavior ObjectStateBehavior { get; set; }
     public ServerWizGameStats GameStats { get; set; }
     public ServerPetOwnerBehavior PetOwnerBehavior { get; set; }
@@ -122,6 +124,7 @@ public class Wizard : IDisposable {
         InitializeWizardGameStats(wizardSchoolType, level);
         InitializeDefaultPetSnackBehavior();
         InitializePetOwnerBehavior();
+        InitializeAlchemyBehavior();
 
         ObjectStateBehavior = new ServerObjectStateBehavior("PlayerMobileStates");
 
@@ -148,6 +151,8 @@ public class Wizard : IDisposable {
     }
 
     public void SetZone(string zone, string zoneDisplayName) {
+        PreviousZone = Zone;
+        
         Zone = zone;
         ZoneDisplayName = zoneDisplayName;
 
@@ -397,7 +402,7 @@ public class Wizard : IDisposable {
         return true;
     }
 
-    public bool AddSnackToSnackBag(ulong snackTemplateId, out ClientPetSnackItem snackObj) {
+    public bool AddSnack(ulong snackTemplateId, out ClientPetSnackItem snackObj) {
         if (PetSnackBehavior.HasSnack(snackTemplateId)) {
             snackObj = PetSnackBehavior.GetSnack(snackTemplateId);
         } else {
@@ -406,10 +411,10 @@ public class Wizard : IDisposable {
             snackObj.m_quantity = 1;
         }
 
-        return AddSnackToSnackBag(snackObj);
+        return AddSnack(snackObj);
     }
 
-    public bool AddSnackToSnackBag(ClientPetSnackItem snack) {
+    public bool AddSnack(ClientPetSnackItem snack) {
         if (snack is null) {
             Logger.Warning("Cannot add snack to snack bag because that snack does not exist.");
             return false;
@@ -440,8 +445,12 @@ public class Wizard : IDisposable {
         return true;
     }
 
-    public bool RemoveSnackFromSnackBag(ulong globalId, out ClientPetSnackItem snack) {
-        PetSnackBehavior.RemoveSnack(globalId, out snack);
+    public bool RemoveSnack(ulong globalId, out ClientPetSnackItem snack) {
+        if (!PetSnackBehavior.RemoveSnack(globalId, out snack)) {
+            Logger.Warning("Could not remove snack with global ID {0} from player {1}'s snackbag.",
+                Logger.Args(globalId, PlayerNameBehavior.GetWizardName()));
+            return false;
+        }
 
         if (snack.m_quantity <= 0) {
             // Persistent save.
@@ -452,6 +461,63 @@ public class Wizard : IDisposable {
 
         // Persistent save.
         WizardPetSnackCollection.UpdateSnack(snack);
+        WizardCollection.UpdateCharacterItems(this);
+        return true;
+    }
+
+    public bool AddReagent(ulong reagentTemplateId, out ClientReagentItem reagentObj) {
+        if (AlchemyBehavior.HasReageant(reagentTemplateId)) {
+            reagentObj = AlchemyBehavior.GetReagent(reagentTemplateId);
+        }
+        else {
+            reagentObj = (ClientReagentItem) CoreObjectFactory.FinalizeCoreObject(reagentTemplateId);
+            reagentObj.m_characterId = (GID) CharId;
+            reagentObj.m_quantity = 1;
+        }
+
+        return AddReagent(reagentObj);
+    }
+
+    public bool AddReagent(ClientReagentItem reagent) {
+        if (reagent is null) {
+            Logger.Warning("Cannot add reagent to reagent bag because that reagent does not exist.");
+            return false;
+        }
+
+        // Ensure that the item is associated with this Wizard.
+        reagent.m_characterId = (GID) CharId;
+
+        var success = AlchemyBehavior.AddReagent(reagent);
+        if (!success) {
+            Logger.Warning("Could not add reagent {0} to player {1}'s reagent bag.",
+                Logger.Args(reagent.m_globalID, PlayerNameBehavior.GetWizardName()));
+                
+            return false;
+        }
+
+        // Persistent save.
+        WizardReagentCollection.AddReagent(reagent);
+        WizardCollection.UpdateCharacterItems(this);
+
+        return true;
+    }
+
+    public bool RemoveReagent(ulong globalId, out ClientReagentItem reagent) {
+        if (!AlchemyBehavior.RemoveReagent(globalId, out reagent)) {
+            Logger.Warning("Could not remove reagent with global ID {0} from player {1}'s reagent bag.",
+                Logger.Args(globalId, PlayerNameBehavior.GetWizardName()));
+            return false;
+        }
+
+        if (reagent.m_quantity <= 0) {
+            // Persistent save.
+            WizardReagentCollection.RemoveReagent(reagent);
+            WizardCollection.UpdateCharacterItems(this);
+            return true;
+        }
+
+        // Persistent save.
+        WizardReagentCollection.UpdateReagent(reagent);
         WizardCollection.UpdateCharacterItems(this);
         return true;
     }
@@ -656,6 +722,7 @@ public class Wizard : IDisposable {
         AfterDatabaseLoadSpellbookBehavior();
         AfterDatabaseloadMountOwnerBehavior();
         AfterDatabaseLoadPetOwnerBehavior();
+        AfterDatabaseLoadAlchemyBehavior();
 
         ObjectStateBehavior ??= new ServerObjectStateBehavior("PlayerMobileStates");
     }
@@ -849,6 +916,15 @@ public class Wizard : IDisposable {
         PetOwnerBehavior.SetEnergy(GameStats.m_energyMax);
     }
 
+    private void InitializeAlchemyBehavior() {
+        AlchemyBehavior = new ServerAlchemyBehavior() {
+            Reagents = new List<ClientReagentItem>(),
+            Recipes = new List<Recipe>(),
+            CraftingSlots = new List<CraftingSlot>(),
+            ReagentItemIds = new List<ulong>()
+        };
+    }
+
     private void AfterDatabaseLoadPetOwnerBehavior() {
         var magicSchool = MagicSchoolBehavior.MagicSchool;
         var level = MagicSchoolBehavior.Level;
@@ -893,6 +969,14 @@ public class Wizard : IDisposable {
         GameStats.m_schoolID = (uint) MagicSchoolBehavior.MagicSchool;
         GameStats.m_highestCharacterLevelOnAccount = highestLevelOnAcc;
     }
+
+    private void AfterDatabaseLoadAlchemyBehavior() 
+        => AlchemyBehavior ??= new ServerAlchemyBehavior() {
+        Reagents = [],
+        Recipes = [],
+        CraftingSlots = [],
+        ReagentItemIds = []
+    };
 
     public void Dispose() =>
         // If this object is being disposed, the player probably left the server.

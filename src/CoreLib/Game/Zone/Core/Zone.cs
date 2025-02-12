@@ -312,8 +312,17 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         else {
             var searchedLoc = ZoneData.m_locationList.FirstOrDefault(x => x.m_locName == location);
             if (searchedLoc is null) {
+                var start = ZoneData.m_locationList.FirstOrDefault(x => x.m_locName == "Start");
+                if (start is not null) {
+                    actualLocation = (Vector4) start.m_location;
+                    actualLocation.W = start.m_direction;
+
+                    return actualLocation;
+                }
+
                 return s_locationFailedGiveaway;
             }
+
             actualLocation = (Vector4) searchedLoc.m_location;
             actualLocation.W = searchedLoc.m_direction;
         }
@@ -331,6 +340,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         };
 
         var actualLocation = GetLocationFromString(message.DestinationLocation);
+
         if (actualLocation == s_locationFailedGiveaway) {
             Logger.Error("Zone {ZoneName} tried to transfer to unknown location: {Location}",
                 Logger.Args(ZoneName, message.DestinationLocation));

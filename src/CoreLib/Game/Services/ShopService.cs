@@ -195,6 +195,10 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
         // A wizard has complete shopping and is leaving the shop.
         var wizard = GetActiveWizard();
 
+        if (wizard.Zone.Contains("Phantom")) {
+            return;
+        }
+
         // Reenable player movement
         var enableMovementStateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE() {
             GameObjectID = wizard.CharId,

@@ -7410,7 +7410,7 @@ public sealed class WIZARD_12_PROTOCOL : MessageProtocol {
 		public byte MessageOrder { get; } = 92;
 		public byte AccessLevel { get; } = 0;
 		public byte ServiceId { get; } = 12;
-		[MessageElement("GID")] public UInt64 GlobalID;
+		[MessageElement("USHRT")] public UInt16 GlobalID;
 		[MessageElement("STR")] public ByteString Data;
 		[MessageElement("STR")] public ByteString Scores;
 		[MessageElement("INT")] public Int32 MinigameIndex;

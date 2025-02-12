@@ -144,7 +144,7 @@ public class InventoryService : MessageService {
             return;
         }
 
-        wizard.RemoveSnackFromSnackBag(message.GlobalID, out var updatedSnack);
+        wizard.RemoveSnack(message.GlobalID, out var updatedSnack);
 
         if (updatedSnack.m_quantity > 0) {
             SendToSocket(new PET_9_PROTOCOL.MSG_PETSNACKUPDATE() {
@@ -158,6 +158,39 @@ public class InventoryService : MessageService {
         SendToSocket(new PET_9_PROTOCOL.MSG_PETSNACKREMOVE() {
             GlobalID = wizard.CharId,
             ItemID = updatedSnack.m_globalID,
+        });
+    }
+
+    #endregion
+
+    #region Reagents
+
+    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_REAGENTREMOVEREQUEST))]
+    private void ReceiveReagentRemoveRequest(WIZARD_12_PROTOCOL.MSG_REAGENTREMOVEREQUEST message) {
+        var wizard = GetActiveWizard();
+
+        var hasReagent = wizard.AlchemyBehavior.HasReageant(message.GlobalID);
+        if (!hasReagent) {
+            Logger.Log.Debug("Tried to remove reagent with global id {0} that does not exist in player reagent bag.",
+                Logger.Args(message.GlobalID));
+            return;
+        }
+
+        var reagent = wizard.AlchemyBehavior.GetReagent(message.GlobalID);
+        wizard.RemoveReagent(reagent.m_globalID, out var updatedReagent);
+
+        if (updatedReagent.m_quantity > 0) {
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_REAGENTUPDATE() {
+                GlobalID = wizard.CharId,
+                ItemID = updatedReagent.m_globalID,
+                Quantity = updatedReagent.m_quantity
+            });
+            return;
+        }
+
+        SendToSocket(new WIZARD_12_PROTOCOL.MSG_REAGENTREMOVE() {
+            GlobalID = wizard.CharId,
+            ItemID = updatedReagent.m_globalID,
         });
     }
 
