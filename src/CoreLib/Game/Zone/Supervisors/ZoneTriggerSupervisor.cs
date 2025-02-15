@@ -59,6 +59,10 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
         var databaseTriggers = ZoneDataCollection.GetZoneData(zoneName);
 
         foreach (var trigger in triggers) {
+            if (trigger is null) {
+                continue;
+            }
+
             // If there's persistent data associated with this trigger, load it.
             var persistentTriggerData = databaseTriggers?.Teleports
                 .FirstOrDefault(x => x.TriggerName == trigger.m_triggerName);
