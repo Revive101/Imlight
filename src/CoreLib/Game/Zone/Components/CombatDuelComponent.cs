@@ -276,6 +276,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         // If by this point all participants have inputted their moves, we can start the next phase.
         var participantCount = AlivePlayerCount + AliveCreatureCount;
         if (CombatResolver.HaveAllParticipantsEnqueuedActions()) {
+            _awaitingCombatMoves = false;
+
             // Adding a new timer will cancel the old one.
             var delay = TimeSpan.FromSeconds(1);
             Timers.StartSingleTimer(PLANNING_TIME_KEY, new COMBAT_106_PROTOCOL.MSG_PLANNINGPHASEOVER(), delay);
