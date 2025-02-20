@@ -174,7 +174,9 @@ public class CombatResolver {
             }
 
             // If our target is gone or we're stunned, pass the turn.
-            if (action.SpellCaster.CombatParticipant.m_stunned > 0 || !action.SelectedTarget.IsAlive) {
+            if (    action.SpellCaster.CombatParticipant.m_stunned > 0 
+                || !action.SelectedTarget.IsAlive
+                || !action.SelectedTarget.AddedToDuel) {
                 action.SpellCaster.CombatParticipant.m_stunned--;
 
                 cinematicTime += HandlePassAction(action, combatActionList);
