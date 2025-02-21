@@ -25,7 +25,16 @@ internal sealed class InstanceContainer(ulong instanceOwnerId) : ReceiveProtocol
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]
     public void ReceiveZoneTransfer(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message) {
-        Console.WriteLine("Received zone transfer request.");
+        Logger.Debug("Container (owned by: {0}) received zone transfer request for zone: {1}",
+            Logger.Args(_instanceOwnerId, message.DestinationZone));
+
+        // Throw an exception if we don't have this zone.
+        if (!_zones.ContainsKey(message.DestinationZone)) {
+            throw new Exception($"Zone {message.DestinationZone} not found in instance container {_instanceOwnerId}");
+        }
+
+        // Otherwise, forward this transfer message to the zone.
+        _zones[message.DestinationZone].Forward(message);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS))]
