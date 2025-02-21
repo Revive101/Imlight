@@ -98,6 +98,8 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte MessageOrder { get; } = 3;
         public byte ServiceID { get; } = 102;
 
+        public string ZonePath;
+        
     }
 
     /// <summary>
@@ -500,7 +502,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public string DestinationLocation;
         public bool SendToClient = true;
         public bool IsPrivate = false;
-        public IActorRef Owner;
+        public ulong OwnerCharId;
 
     }
 
@@ -579,6 +581,8 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte MessageOrder { get; } = 36;
         public byte ServiceID { get; } = 102;
 
+        public uint DynamicZoneId;
+
     }
 
     /// <summary>
@@ -604,6 +608,24 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public IActorRef PlayerActor;
         public Wizard PlayerCharacter;
         public CoreObject PlayerObject;
+
+    }
+
+    public sealed class MSG_INSTANCECONTAINERHASZONE : IServerMessage {
+
+        public byte MessageOrder { get; } = 39;
+        public byte ServiceID { get; } = 102;
+
+        public string ZoneName;
+
+    }
+
+    public sealed class MSG_INSTANCECONTAINERHASZONERSP : IServerMessage {
+
+        public byte MessageOrder { get; } = 40;
+        public byte ServiceID { get; } = 102;
+
+        public bool HasZone;
 
     }
 

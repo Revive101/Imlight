@@ -56,7 +56,8 @@ internal class CommandTeleport : CommandProtocol {
         var msg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER() {
             DestinationZone = actualZoneName,
             DestinationLocation = "Start",
-            SendToClient = true
+            SendToClient = true,
+            OwnerCharId = Context.Character.CharId
         };
         Context.SessionActor.Tell(msg);
     }

@@ -26,7 +26,6 @@ namespace Imlight.CoreLib.Game.Zone.Core;
 public class Zone : ReceiveProtocolDispatcher, IWithTimers {
 
     private const ushort RESERVED_MOBILE_ID_MAX = ushort.MaxValue / 20; // 5% of the maximum mobile ID count is reserved for special objects.
-    private const ushort ZONE_LOAD_TIMEOUT_IN_SECONDS = 30;
     private static readonly Vector4 s_locationFailedGiveaway = new(float.MaxValue, float.MaxValue, float.MaxValue, float.MaxValue);
 
     /// <summary>
@@ -58,7 +57,6 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     private readonly uint _dynamicZoneId;
     private readonly Lock _mobileIdLock = new();
     private readonly List<IActorRef> _supervisors = [];
-    private readonly IActorRef _loaderRef;
     private readonly Stopwatch _zoneLoadTimer;
     private readonly Dictionary<IActorRef, IServerMessage> _pendingPlayerEvents = [];
     private readonly List<ushort> _mobileIdMap = [];
@@ -82,18 +80,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         _supervisors.Add(CreateSupervisor<ZonePlayerSupervisor>());
         _supervisors.Add(CreateSupervisor<ZonePathSupervisor>());
         _supervisors.Add(CreateSupervisor<ZoneSigilSupervisor>());
-
-        // Create the loader actor and prepare the loading of this zone.
-        _loaderRef = Context.ActorOf(Akka.Actor.Props.Create(() => new ZoneLoader()));
-
-        // Tell the loader to begin loading the zone and await the response.
-        var msg = new ZONE_102_PROTOCOL.MSG_ZONELOADBEGIN { ZonePath = zonePath };
-        _loaderRef.Tell(msg);
-
-        // Send a message to self in case the zone fails to load within the timeout.
-        var time = TimeSpan.FromSeconds(ZONE_LOAD_TIMEOUT_IN_SECONDS);
-        Timers.StartSingleTimer("ZoneLoadTimeout", new ZONE_102_PROTOCOL.MSG_ZONELOADTIMER(), time);
-
+        
         _zoneLoadTimer.Restart();
         _isLoading = true;
 
@@ -113,7 +100,10 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     /// Closes the zone and stops all child actors.
     /// </summary>
     protected void CloseZone() {
-        var msg = new ZONE_102_PROTOCOL.MSG_ZONECLOSED();
+        var msg = new ZONE_102_PROTOCOL.MSG_ZONECLOSED() {
+            DynamicZoneId = _dynamicZoneId
+        };
+
         foreach (var supervisor in _supervisors) {
             supervisor.Tell(msg);
         }
@@ -131,6 +121,8 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
             player.Tell(rsp);
         }
 
+        // Inform the supervisor (GameWorld) that the zone is closing.
+        Context.Parent.Tell(msg);
         Context.Stop(Self);
     }
 
@@ -200,16 +192,16 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     private void ReceiveZoneLoadResults(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS message) {
         Logger.Debug("Zone {ZoneName} client data gathered.", Logger.Args(ZoneName));
 
-        _loaderRef.Tell(PoisonPill.Instance);
-        _zoneLoadTimer.Restart();
-
         if (message.Error) {
-            Logger.Error("Zone {ZoneName} failed to load because {ErrorMessage}", Logger.Args(ZoneName, message.ErrorMessage));
+            Logger.Error("Zone {ZoneName} failed to load because {ErrorMessage}", 
+                Logger.Args(ZoneName, message.ErrorMessage));
+
             CloseZone();
 
             return;
         }
 
+        _zoneLoadTimer.Restart();
         ZoneData = message.ZoneData;
 
         // Inform each supervisor of the loaded zone data. They are expected to give a reply
@@ -340,15 +332,6 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         };
 
         var actualLocation = GetLocationFromString(message.DestinationLocation);
-
-        if (actualLocation == s_locationFailedGiveaway) {
-            Logger.Error("Zone {ZoneName} tried to transfer to unknown location: {Location}",
-                Logger.Args(ZoneName, message.DestinationLocation));
-            rsp.ErrorCode = 1;
-            sender.Tell(rsp);
-
-            return;
-        }
 
         rsp.Location = (Vector3) actualLocation;
         rsp.Orientation = actualLocation.W;

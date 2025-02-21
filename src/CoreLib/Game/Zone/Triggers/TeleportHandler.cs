@@ -19,7 +19,8 @@ internal sealed class TeleportHandler<T>(ZoneTrigger trigger) : BaseResultHandle
         var msg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
             DestinationZone = Result.m_destinationZone,
             DestinationLocation = Result.m_destinationLoc,
-            SendToClient = true
+            SendToClient = true,
+            OwnerCharId = playerObj.m_globalID
         };
         
         playerRef.Tell(msg);

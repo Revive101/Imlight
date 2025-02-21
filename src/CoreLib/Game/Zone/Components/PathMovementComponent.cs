@@ -303,7 +303,7 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
                 );
 
                 Entity.DeleteObject();
-
+                
                 return false;
             }
 

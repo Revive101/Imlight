@@ -206,6 +206,7 @@ public class CantripService : MessageService, IWithTimers {
             DestinationLocation = "Start",
             DestinationZone = cantrip.m_effectParameter,
             SendToClient = true,
+            OwnerCharId = GetActiveWizard().CharId
         };
         Timers.StartSingleTimer("zonetransfer", tpmsg, _cantripCastTimeSpan);
     }
