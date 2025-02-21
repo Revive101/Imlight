@@ -185,7 +185,8 @@ internal class AttachService : MessageService {
         var zoneMsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
             DestinationZone = zoneName,
             DestinationLocation = location,
-            SendToClient = false
+            SendToClient = false,
+            OwnerCharId = _wizard.CharId,
         };
         return AskOtherService<ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP>(zoneMsg);
     }

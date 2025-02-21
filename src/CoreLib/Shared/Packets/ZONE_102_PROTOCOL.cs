@@ -611,4 +611,22 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
     }
 
+    public sealed class MSG_INSTANCECONTAINERHASZONE : IServerMessage {
+
+        public byte MessageOrder { get; } = 39;
+        public byte ServiceID { get; } = 102;
+
+        public string ZoneName;
+
+    }
+
+    public sealed class MSG_INSTANCECONTAINERHASZONERSP : IServerMessage {
+
+        public byte MessageOrder { get; } = 40;
+        public byte ServiceID { get; } = 102;
+
+        public bool HasZone;
+
+    }
+
 }

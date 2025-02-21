@@ -148,7 +148,8 @@ public class ZoneService : MessageService, IWithTimers {
         var tpmsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
             DestinationZone = zoneMap.m_hubZone,
             DestinationLocation = zoneMap.m_location,
-            SendToClient = true
+            SendToClient = true,
+            OwnerCharId = wizard.CharId,
         };
 
         wizard.SetTimeHomeLastClicked(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
@@ -167,7 +168,8 @@ public class ZoneService : MessageService, IWithTimers {
         var tpmsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
             DestinationZone = "WizardCity/QA_SpawnRate", // just teleporting to gm for now
             DestinationLocation = "Start",
-            SendToClient = true
+            SendToClient = true,
+            OwnerCharId = wizard.CharId,
         };
 
         wizard.SetTimeHomeLastClicked(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
