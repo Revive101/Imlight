@@ -80,6 +80,7 @@ public class Wizard : IDisposable {
     [JsonIgnore] public string QueuedZoneName;
     [JsonIgnore] public string QueuedZoneLocation;
     [JsonIgnore] internal DynamodSet DynamodSet { get; set; }
+    [JsonIgnore] internal bool IsInCombatGrace { get; set; }
 
     [JsonIgnore] private Vector3 _location;
     [JsonIgnore] private Vector3 _orientation;

@@ -60,8 +60,10 @@ internal static class CombatActionResolver {
 
         // Remove all charms that were applied to this spell from the caster's hanging effects.
         action.SpellCaster._hangingEffects.RemoveAll(x => charmsAffectingThisSpell.Contains(x));
-
         combatAction.m_effectChosen = effectStack.GetStackAsUint();
+
+        CheckForPolarCombatActionTargets(ref combatAction, action.SpellTemplate);
+
         return spellWorthCasting;
     }
 
@@ -113,6 +115,16 @@ internal static class CombatActionResolver {
             if (!combatAction.m_targetSubcircleList.Contains(target.SlotIndex)) {
                 combatAction.m_targetSubcircleList.Add(target.SlotIndex);
             }
+        }
+    }
+
+    private static void CheckForPolarCombatActionTargets(ref CombatAction combatAction, SpellTemplate spellTemplate) {
+        // Spells that target both the caster and target(s) should be treated as targeting the target(s) only.
+        // If the caster is left as a target, they will receive the benefit/curse from the spell twice.
+        var casterIndex = combatAction.m_spellCaster;
+        if (   combatAction.m_targetSubcircleList.Count > 1
+            && spellTemplate.m_effects.Any(x => x.m_effectTarget == SpellEffect.kEffectTarget.kSelf)) {
+            combatAction.m_targetSubcircleList.Remove(casterIndex);
         }
     }
 

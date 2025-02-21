@@ -276,6 +276,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         // If by this point all participants have inputted their moves, we can start the next phase.
         var participantCount = AlivePlayerCount + AliveCreatureCount;
         if (CombatResolver.HaveAllParticipantsEnqueuedActions()) {
+            _awaitingCombatMoves = false;
+
             // Adding a new timer will cancel the old one.
             var delay = TimeSpan.FromSeconds(1);
             Timers.StartSingleTimer(PLANNING_TIME_KEY, new COMBAT_106_PROTOCOL.MSG_PLANNINGPHASEOVER(), delay);
@@ -735,16 +737,18 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             CombatResolver.AddCombatMove(CombatMoveType.Pass, caster, null, null);
         }
 
-        var targetIdx = spellTarget;
-        var target = SubCircles[0];
-        if (targetIdx > 0 && targetIdx < SubCircles.Length) {
-            target = SubCircles[targetIdx];
+        // Find the target sub circle. Valid targets are 1-8.
+        // If the spell doesn't have a target like for AoE spells or self-heals,
+        // the value will be the integer cap.
+        var target = caster;
+        if (spellTarget >= 0 && spellTarget < SubCircles.Length) {
+            target = SubCircles[spellTarget];
         }
 
         CombatResolver.AddCombatMove(CombatMoveType.Attack, caster, target, spell);
 
         if (caster.OccupiedTeam == CombatTeam.Player) {
-            SendCombatMoveSelection(caster.ParticipantObject.m_globalID, (byte) CombatMoveType.Attack, spell, (byte) targetIdx);
+            SendCombatMoveSelection(caster.ParticipantObject.m_globalID, (byte) CombatMoveType.Attack, spell, (byte) spellTarget);
         }
     }
 

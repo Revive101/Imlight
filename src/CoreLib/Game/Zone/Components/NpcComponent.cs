@@ -110,7 +110,7 @@ internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, ICl
         // Check if the player is now in range of the object.
         if (IsInRadius(playerObj, Proximity) && !_playersInRange.ContainsKey(playerObj)) {
             // If the player is in range, trigger the enter events.
-            OnProximityEnter(playerObj, playerActor);
+            OnProximityEnter(playerObj, playerActor, playerWizard);
             _playersInRange.Add(playerObj, playerActor);
         } 
         else if (!IsInRadius(playerObj, Proximity) && _playersInRange.ContainsKey(playerObj)) {
@@ -123,8 +123,8 @@ internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, ICl
         m_wsNameOverride = NameOverride,
     };
 
-    private void OnProximityEnter(CoreObject playerObj, IActorRef playerActor) {
-        if (!IsMonster) {
+    private void OnProximityEnter(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) {
+        if (!IsMonster || playerWizard.IsInCombatGrace) {
             return;
         }
 

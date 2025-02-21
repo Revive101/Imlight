@@ -17,7 +17,12 @@ using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Services;
 
-public class CombatService(SessionActor sessionActor) : MessageService(sessionActor) {
+public class CombatService(SessionActor sessionActor) : MessageService(sessionActor), IWithTimers {
+
+    private const uint NO_AGGRO_EFFECT_STRINGID = 1618528611;
+    private const uint NO_AGGRO_EFFECT_DURATION_IN_SECONDS = 3;
+
+    public ITimerScheduler Timers { get; set; }
 
     private readonly CoreObjectSerializer _effectSerializer = new CoreObjectSerializer()
                     .OnBehaviors(SerializerOptions.Behaviors.None)
@@ -67,6 +72,14 @@ public class CombatService(SessionActor sessionActor) : MessageService(sessionAc
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_COMBATWIN))]
     private void ReceiveCombatVictory(COMBAT_106_PROTOCOL.MSG_COMBATWIN message) {
         EquipMount();
+        SetNoAggroGrace();
+
+        // Send a message to ourselves to end the no aggro grace period.
+        var noAggroGraceOverMsg = new COMBAT_106_PROTOCOL.MSG_NOAGGROGRACEOVER();
+        Timers.StartSingleTimer(
+            "NoAggroGraceOver",
+            noAggroGraceOverMsg,
+            TimeSpan.FromSeconds(NO_AGGRO_EFFECT_DURATION_IN_SECONDS));
     }
 
     [MessageHandler(typeof(WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATMOVE))]
@@ -88,6 +101,10 @@ public class CombatService(SessionActor sessionActor) : MessageService(sessionAc
         };
         _currentDuelActor.Tell(msg);
     }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_NOAGGROGRACEOVER))]
+    private void ReceiveNoAggroGraceOver() 
+        => RemoveNoAggroEffect();
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT))]
     private void ReceiveClientDisconnect(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT message) 
@@ -236,6 +253,50 @@ public class CombatService(SessionActor sessionActor) : MessageService(sessionAc
                 InternalID = effect.m_internalID,
             });
         }
+    }
+
+    private void SetNoAggroGrace() {
+        var wizard = GetActiveWizard();
+        var charObjId = GetActiveGameObject().m_globalID;
+        var effectInternalId = wizard.GameEffects.Count + 1;
+
+        var epoch = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var endTime = epoch + NO_AGGRO_EFFECT_DURATION_IN_SECONDS;
+
+        var effect = new NamedEffect {
+            m_effectNameID = NO_AGGRO_EFFECT_STRINGID,
+            m_internalID = effectInternalId,
+            m_endTime = (uint) endTime,
+            m_overrideName = "NoAggro"
+        };
+        
+        wizard.GameEffects.Add(effect);
+        wizard.IsInCombatGrace = true;
+
+        var effectSerializedData = _effectSerializer.Serialize(effect);
+        SendToSocket(new GAME_5_PROTOCOL.MSG_ADDEFFECT() {
+            GameObjectID = charObjId,
+            EffectData = effectSerializedData
+        });
+    }
+
+    private void RemoveNoAggroEffect() {
+        var wizard = GetActiveWizard();
+        var charObjId = GetActiveGameObject().m_globalID;
+
+        var effect = wizard.GameEffects.Find(e => e.m_effectNameID == NO_AGGRO_EFFECT_STRINGID);
+        if (effect is null) {
+            return;
+        }
+
+        wizard.GameEffects.Remove(effect);
+        wizard.IsInCombatGrace = false;
+
+        SendToSocket(new GAME_5_PROTOCOL.MSG_REMOVEEFFECT() {
+            GameObjectID = charObjId,
+            EffectNameID = effect.m_effectNameID,
+            InternalID = effect.m_internalID,
+        });
     }
 
 }
