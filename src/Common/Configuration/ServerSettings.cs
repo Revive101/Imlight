@@ -154,6 +154,9 @@ public sealed class ServerSettings {
     [DefaultValue(false)]
     public bool RandomizeCreatures { get; set; }
 
+    [DefaultValue(false)]
+    public bool RandomizeGateways { get; set; }
+
     #endregion
 
     #region Patch Server
