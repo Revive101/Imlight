@@ -6,6 +6,7 @@
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
+using Imlight.Common.Configuration;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
@@ -41,6 +42,8 @@ public sealed class ZonePath : ZoneEntity, IWithTimers {
     private readonly Dictionary<SpawnObject, byte> _creatureCount = [];
     private readonly List<IActorRef> _creatureActors = [];
     private readonly Dictionary<ulong, SpawnObject> _spawnObjectInfo = [];
+
+    private readonly bool _randomizeCreatures = ConfigurationManager.Settings.RandomizeCreatures;
 
     // ctor
     public ZonePath(PathObjectTemplate template, List<NodeObject> nodes, List<SpawnObject> creatures, IActorRef zoneRef, Zone zone)
@@ -111,11 +114,11 @@ public sealed class ZonePath : ZoneEntity, IWithTimers {
         // Get the node to spawn the creature at.
         var spawnNode = GetRelevantNode(spawnItemInfo);
 
+        if (_randomizeCreatures) {
+            spawnItemInfo.m_templateID = AprilFools.CreatureList.GetRandomCreatureTemplateID();
+        }
+
         // Create the creature using the data we have.
-
-        // !! April fools: All creatures are randomized.
-        spawnItemInfo.m_templateID = GetRandomTemplateID();
-
         var template = CoreObjectFactory.GetCoreTemplate(spawnItemInfo.m_templateID);
         var creatureObj = CoreObjectFactory.FinalizeCoreObject(spawnItemInfo, template);
         creatureObj = CoreObjectFactory.InitializeCoreObjectBehaviors(creatureObj, template);
@@ -247,16 +250,6 @@ public sealed class ZonePath : ZoneEntity, IWithTimers {
         actorName = new string([.. actorName.Where(c => char.IsLetterOrDigit(c) || c == '_')]);
 
         return actorName;
-    }
-
-    private static uint GetRandomTemplateID() {
-        // Open a file containing a list of template IDs.
-        var templateIDs = File.ReadAllLines($"C://Users//Jay//Downloads//creatures.txt");
-        var rng = new Random();
-        var rngIndex = rng.Next(0, templateIDs.Length);
-        var templateID = uint.Parse(templateIDs[rngIndex]);
-
-        return templateID;
     }
 
 }
