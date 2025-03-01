@@ -12,6 +12,7 @@ using Imlight.CoreLib.Shared.Resources;
 using Nito.AsyncEx.Synchronous;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using static Imlight.Common.Caches.TypeCache;
 
@@ -111,6 +112,10 @@ public sealed class ZonePath : ZoneEntity, IWithTimers {
         var spawnNode = GetRelevantNode(spawnItemInfo);
 
         // Create the creature using the data we have.
+
+        // !! April fools: All creatures are randomized.
+        spawnItemInfo.m_templateID = GetRandomTemplateID();
+
         var template = CoreObjectFactory.GetCoreTemplate(spawnItemInfo.m_templateID);
         var creatureObj = CoreObjectFactory.FinalizeCoreObject(spawnItemInfo, template);
         creatureObj = CoreObjectFactory.InitializeCoreObjectBehaviors(creatureObj, template);
@@ -242,6 +247,16 @@ public sealed class ZonePath : ZoneEntity, IWithTimers {
         actorName = new string([.. actorName.Where(c => char.IsLetterOrDigit(c) || c == '_')]);
 
         return actorName;
+    }
+
+    private static uint GetRandomTemplateID() {
+        // Open a file containing a list of template IDs.
+        var templateIDs = File.ReadAllLines($"C://Users//Jay//Downloads//creatures.txt");
+        var rng = new Random();
+        var rngIndex = rng.Next(0, templateIDs.Length);
+        var templateID = uint.Parse(templateIDs[rngIndex]);
+
+        return templateID;
     }
 
 }

@@ -37,11 +37,10 @@ internal sealed class CombatDeckComponent : ZoneEntityComponent, IComponentFacto
 
         if (DeckBehaviorTemplate == null) {
             Logger.Error(
-                "{0} {1} is missing {2} (DeckName: {3})",
+                "{0} {1} is missing {2}",
                 Logger.Args(nameof(ZoneEntity), 
                             entity.ActiveGameObject.m_debugName, 
-                            nameof(DeckBehaviorTemplate), 
-                            DeckBehaviorTemplate.m_defaultDeck
+                            nameof(DeckBehaviorTemplate) 
                 )
             );
 
