@@ -76,7 +76,7 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
                 // results to the random zone transfer.
                 if (_randomizeGateways) {
                     var randomZoneData = ZoneDataCollection.GetAprilFoolsRandomZoneData();
-                    var randomIdx = new Random().Next(randomZoneData.Teleports.Count);
+                    var randomIdx = new Random().Next(randomZoneData.Teleports.Count - 1);
                     var randomZoneTransfer = randomZoneData.Teleports[randomIdx];
 
                     persistentTriggerData.Teleport = randomZoneTransfer.Teleport;
