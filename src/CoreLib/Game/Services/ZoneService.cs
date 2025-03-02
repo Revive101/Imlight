@@ -4,6 +4,7 @@
  */
 
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Imlight.Common;
@@ -18,6 +19,7 @@ using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Collections;
+using Imlight.CoreLib.WizardData.Models.Misc;
 using Imlight.CoreLib.WizardData.Models.World;
 using static Imlight.Common.Caches.TypeCache;
 
@@ -240,6 +242,30 @@ public class ZoneService : MessageService, IWithTimers {
     private void ReceiveAddPlayerRsp(ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP message) {
         // I've just been added to a zone. I need to spawn myself for all the other players.
         SpawnMyself();
+        var wizard = GetActiveWizard();
+        Timers.StartPeriodicTimer("backflip", new ZONE_102_PROTOCOL.MSG_RANDOMFLIPS { ZoneName = wizard.Zone, SenderCharID = wizard.CharId }, TimeSpan.FromSeconds(25));
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_RANDOMFLIPS))]
+    private void ReceiveRandomFlips(ZONE_102_PROTOCOL.MSG_RANDOMFLIPS message) {
+        var rand = new Random();
+        var players = OnlinePlayerCollection.GetPlayersInZone(message.ZoneName);
+        players = players.Where(p => p.CharacterId != message.SenderCharID).ToArray();
+        if (players.Length < 1) {
+            return;
+        }
+
+        players = players.Where(p => p.CharacterId != message.SenderCharID).ToArray();
+        var randomPlayerIndex = rand.Next(0, players.Length - 1);
+        var randomPlayer = players[randomPlayerIndex];
+
+        var castEffect = new CANTRIPSMESSAGES_57_PROTOCOL.MSG_CASTEFFECT {
+            GameObjectID = randomPlayer.CharacterId,
+            SpellTemplateID = 1521398842,
+            AnimationName = "P_B_Cantrip_Emote_Backflip"
+        };
+
+        SendToSocket(castEffect);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PLAYERADDEDTOZONE))]
