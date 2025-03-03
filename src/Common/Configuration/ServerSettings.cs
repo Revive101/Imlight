@@ -157,6 +157,9 @@ public sealed class ServerSettings {
     [DefaultValue(false)]
     public bool RandomizeGateways { get; set; }
 
+    [DefaultValue(false)]
+    public bool RandomBackflips { get; set; }
+
     #endregion
 
     #region Patch Server

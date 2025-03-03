@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
+using Imlight.Common.Configuration;
 using Imlight.Common.Cryptography;
 using Imlight.Common.ObjectProperty;
 using Imlight.Common.ObjectProperty.PropertyReflection;
@@ -37,6 +38,7 @@ public class ZoneService : MessageService, IWithTimers {
 
     private readonly TimeSpan _zoneRemovalWaitTime = TimeSpan.FromSeconds(ZONE_REMOVAL_WAIT_TIME_IN_SECONDS);
     private bool _isTransferQueued;
+    private readonly bool _randomBackflips = ConfigurationManager.Settings.RandomBackflips;
 
     private readonly CoreObjectSerializer _effectSerializer = new CoreObjectSerializer()
                     .OnBehaviors(SerializerOptions.Behaviors.None)
@@ -242,10 +244,16 @@ public class ZoneService : MessageService, IWithTimers {
     private void ReceiveAddPlayerRsp(ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP message) {
         // I've just been added to a zone. I need to spawn myself for all the other players.
         SpawnMyself();
-        var wizard = GetActiveWizard();
-        Timers.StartPeriodicTimer("backflip", new ZONE_102_PROTOCOL.MSG_RANDOMFLIPS { ZoneName = wizard.Zone, SenderCharID = wizard.CharId }, TimeSpan.FromSeconds(25));
+
+        if (_randomBackflips) {
+            var wizard = GetActiveWizard();
+            Timers.StartPeriodicTimer("backflip", new ZONE_102_PROTOCOL.MSG_RANDOMFLIPS { ZoneName = wizard.Zone, SenderCharID = wizard.CharId }, TimeSpan.FromSeconds(25));
+        }
     }
 
+    // Every 25 seconds, a random player in your zone will do a backflip
+    // They will only be backflipping for you, nobody else, not even for themselves
+    // If you look at the first letter of each variable in this function, it actually spells out the word "gaslit"
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_RANDOMFLIPS))]
     private void ReceiveRandomFlips(ZONE_102_PROTOCOL.MSG_RANDOMFLIPS message) {
         var rand = new Random();
