@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.7.34031.279
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.Director", "Director\Imlight.Director.csproj", "{D75F750B-9988-4BC3-9DEE-7A1EC95E4D56}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.Director", "Imlight.Director\Imlight.Director.csproj", "{D75F750B-9988-4BC3-9DEE-7A1EC95E4D56}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.Common", "Common\Imlight.Common.csproj", "{88ED340C-8B4E-4E82-844C-BBD02183D2FF}"
 EndProject

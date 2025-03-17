@@ -21,6 +21,7 @@ using Imlight.CoreLib.WizardData.Collections;
 namespace Imlight.Director;
 
 internal static class Program {
+
     // Major versions in order:
     // Imlight - PROTO   -- Marks the beginning of the project. Very early serialization and networking.
     // Imlight - NETHRA  -- We are in-game. The game is playable and mostly stable, but not feature complete.
@@ -171,4 +172,5 @@ internal static class Program {
 		    return "canary";
         #endif
     }
+    
 }
