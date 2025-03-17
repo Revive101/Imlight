@@ -3,16 +3,17 @@
  * Proprietary and confidential.
  */
 
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Packets;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Combat;
 
 internal static class CombatActionResolver {
+
     internal static bool ProcessedQueuedCombatAction(QueuedCombatAction action, ref CombatAction combatAction, ref float cinematicTime) {
         var spellWorthCasting = false;
         var effectStack = new CombatEffectStack();
@@ -44,7 +45,7 @@ internal static class CombatActionResolver {
             // If the spell has a global target, it's worth casting.
             if (!spellWorthCasting && (targets.Any(x => x.IsAlive)
                                     || targets.Any(x => x.OccupiedTeam == action.SpellCaster.OccupiedTeam))
-                                    || chosenEffect.m_effectTarget == SpellEffect.kEffectTarget.kGlobal) {
+                                    || chosenEffect.m_effectTarget == kEffectTarget.kGlobal) {
                 spellWorthCasting = true;
             }
 
@@ -82,6 +83,7 @@ internal static class CombatActionResolver {
         // for each pip level of the spell.
         if (variableSpellEffect.m_effectList.Count != 14) {
             Logger.Error("Variable spell effect does not have 14 nested effects.");
+            
             return variableSpellEffect;
         }
 
@@ -102,7 +104,7 @@ internal static class CombatActionResolver {
         var pipCount = caster.CombatParticipant.m_pipCount;
 
         // x pip spells will consume all pips.
-        var totalCost = pipCount.m_genericPips;;
+        var totalCost = pipCount.m_genericPips; ;
 
         var isSpellMastered = caster.HasSchoolMastery(spell.m_magicSchoolID);
         totalCost += isSpellMastered ? (byte) (pipCount.m_powerPips * 2) : pipCount.m_powerPips;
@@ -122,8 +124,8 @@ internal static class CombatActionResolver {
         // Spells that target both the caster and target(s) should be treated as targeting the target(s) only.
         // If the caster is left as a target, they will receive the benefit/curse from the spell twice.
         var casterIndex = combatAction.m_spellCaster;
-        if (   combatAction.m_targetSubcircleList.Count > 1
-            && spellTemplate.m_effects.Any(x => x.m_effectTarget == SpellEffect.kEffectTarget.kSelf)) {
+        if (combatAction.m_targetSubcircleList.Count > 1
+            && spellTemplate.m_effects.Any(x => x.m_effectTarget == kEffectTarget.kSelf)) {
             combatAction.m_targetSubcircleList.Remove(casterIndex);
         }
     }
@@ -146,26 +148,27 @@ internal static class CombatActionResolver {
         var _activeSubCircles = caster._duelActor.ActiveSubCircles;
 
         switch (effect.m_effectTarget) {
-            case SpellEffect.kEffectTarget.kEnemySingle:
-            case SpellEffect.kEffectTarget.kFriendlySingle:
-                targets = new[] { target };
+            case kEffectTarget.kEnemySingle:
+            case kEffectTarget.kFriendlySingle:
+                targets = [target];
                 break;
-            case SpellEffect.kEffectTarget.kSelf:
-            case SpellEffect.kEffectTarget.kInvalidTarget:
-                targets = new[] { caster };
+            case kEffectTarget.kSelf:
+            case kEffectTarget.kInvalidTarget:
+                targets = [caster];
                 break;
-            case SpellEffect.kEffectTarget.kFriendlyTeam:
-            case SpellEffect.kEffectTarget.kFriendlyTeamAllAtOnce:
-                targets = _activeSubCircles.Where(x => x.OccupiedTeam == caster.OccupiedTeam).ToArray();
+            case kEffectTarget.kFriendlyTeam:
+            case kEffectTarget.kFriendlyTeamAllAtOnce:
+                targets = [.. _activeSubCircles.Where(x => x.OccupiedTeam == caster.OccupiedTeam)];
                 break;
-            case SpellEffect.kEffectTarget.kEnemyTeam:
-            case SpellEffect.kEffectTarget.kEnemyTeamAllAtOnce:
-                targets = _activeSubCircles.Where(x => x.OccupiedTeam != caster.OccupiedTeam).ToArray();
+            case kEffectTarget.kEnemyTeam:
+            case kEffectTarget.kEnemyTeamAllAtOnce:
+                targets = [.. _activeSubCircles.Where(x => x.OccupiedTeam != caster.OccupiedTeam)];
                 break;
-            case SpellEffect.kEffectTarget.kGlobal:
+            case kEffectTarget.kGlobal:
                 return Array.Empty<CombatDuelSubCircle>();
         }
 
         return targets;
     }
+
 }

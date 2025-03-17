@@ -6,14 +6,18 @@
 namespace Imlight.CoreLib.Game.Combat;
 
 internal enum CombatTeam {
+    
     Player = 0,
     Monster = 1,
+    
 }
 
 public enum CombatMoveType {
+    
     Attack = 0,
     Flee = 1,
     Discard = 2,
     Pass = 3,
     ChangeMind = 4,
+    
 }

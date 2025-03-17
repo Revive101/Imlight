@@ -4,31 +4,32 @@
  */
 
 using Akka.Actor;
+using Imcodec.Math;
+using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
-using Imlight.Common.Caches;
-using Imlight.CoreLib.Game.Models.World;
 using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.Game.Zone.Components;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
-using SharpDX;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using static Imlight.Common.Caches.TypeCache;
-using static Imlight.Common.Caches.TypeCache.CombatParticipant;
 
 namespace Imlight.CoreLib.Game.Combat;
 
 internal enum CombatSlotType {
+    
     Creature,
     Player
+
 }
 
 // todo: this should derive from ZoneEntityComponent
 public class CombatDuelSubCircle {
+    
     private const float AGGRO_TIME_IN_SECONDS = 0.75f;
     private const byte MAX_PIP_COUNT = 7;
     private const byte PLAYER_HAND_SIZE = 7;
@@ -48,7 +49,7 @@ public class CombatDuelSubCircle {
             return null;
         }
         if (CombatParticipant is not null && CombatParticipant.m_hangingEffects is null) {
-            CombatParticipant.m_hangingEffects = new List<SpellEffect>();
+            CombatParticipant.m_hangingEffects = [];
         }
 
         return CombatParticipant.m_hangingEffects;
@@ -193,6 +194,7 @@ public class CombatDuelSubCircle {
         }
 
         Logger.Warning("Failed to parse magic school \"{0}\" from string.", Logger.Args(school));
+
         return false;
     }
 
@@ -211,6 +213,7 @@ public class CombatDuelSubCircle {
         }
 
         var index = (int) MagicSchools.GetMagicSchool(magicSchool).m_schoolIndex;
+
         return list[index];
     }
 
@@ -524,4 +527,5 @@ public class CombatDuelSubCircle {
         var powerPipRoll = new Random().Next(0, 100);
         return powerPipRoll <= powerPipChance;
     }
+
 }

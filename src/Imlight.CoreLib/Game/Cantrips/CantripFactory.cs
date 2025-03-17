@@ -3,23 +3,29 @@
  * Proprietary and confidential.
  */
 
+using Imcodec.ObjectProperty;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
-using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Shared.Resources;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Cantrips;
 
 public class CantripFactory : RootSingleResourceSingleton<CantripFactory>, IMemoryStreamDisposable {
+
     protected override string ResourceName => "CantripXPConfig.xml";
 
-    private static CantripXPConfig _cantripXPConfig;
+    private static CantripXPConfig s_cantripXPConfig;
 
     protected override void AfterLoad() {
-        var serializer = new FileSerializer();
-        _cantripXPConfig = serializer.OpenClass<CantripXPConfig>(Stream);
+        var serializer = new BindSerializer();
+        var streamAsBytes = Stream.ToArray();
+        if (!serializer.Deserialize(streamAsBytes, out s_cantripXPConfig)) {
+            Logger.Error("Failed to load CantripXPConfig.xml.");
 
-        Logger.Information("Loaded {0} cantrip XP levels", Logger.Args(_cantripXPConfig.m_levelInfo.Count));
+            return;
+        }
+
+        Logger.Information("Loaded {0} cantrip XP levels", Logger.Args(s_cantripXPConfig.m_levelInfo.Count));
     }
 
     /// <summary>
@@ -48,12 +54,12 @@ public class CantripFactory : RootSingleResourceSingleton<CantripFactory>, IMemo
     /// <param name="level">The level of the cantrip.</param>
     /// <returns>The CantripLevelInfo object for the specified level, or null if the level is invalid.</returns>
     public static CantripLevelInfo GetCantripLevelInfo(int level) {
-        if (level < 0 || level > _cantripXPConfig.m_maxLevel) {
+        if (level < 0 || level > s_cantripXPConfig.m_maxLevel) {
             Logger.Warning("Tried to get cantrip level info for invalid level {0}.", Logger.Args(level));
             return null;
         }
 
-        return _cantripXPConfig.m_levelInfo[level];
+        return s_cantripXPConfig.m_levelInfo[level];
     }
 
     /// <summary>
@@ -62,19 +68,20 @@ public class CantripFactory : RootSingleResourceSingleton<CantripFactory>, IMemo
     /// <param name="xp">The XP of the cantrip.</param>
     /// <returns>The CantripLevelInfo object for the specified XP.</returns>
     public static CantripLevelInfo GetCantripLevelInfoFromXp(int xp) {
-        for (var i = 0; i < _cantripXPConfig.m_maxLevel; i++) {
-            if (xp < _cantripXPConfig.m_levelInfo[i].m_xpToLevel) {
-                return _cantripXPConfig.m_levelInfo[i];
+        for (var i = 0; i < s_cantripXPConfig.m_maxLevel; i++) {
+            if (xp < s_cantripXPConfig.m_levelInfo[i].m_xpToLevel) {
+                return s_cantripXPConfig.m_levelInfo[i];
             }
         }
 
-        return _cantripXPConfig.m_levelInfo[^1];
+        return s_cantripXPConfig.m_levelInfo[^1];
     }
 
-    public static int GetMaxCantripLevel() => _cantripXPConfig.m_maxLevel;
+    public static int GetMaxCantripLevel() => s_cantripXPConfig.m_maxLevel;
 
     public void DisposeStream() {
-        _cantripXPConfig = null;
+        s_cantripXPConfig = null;
         Stream.Dispose();
     }
+    
 }

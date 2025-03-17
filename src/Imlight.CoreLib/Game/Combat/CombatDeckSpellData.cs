@@ -6,8 +6,10 @@
 namespace Imlight.CoreLib.Game.Combat;
 
 internal class CombatDeckSpellData {
+    
     public uint TemplateId { get; set; }
     public uint Quantity { get; set; }
     public bool IsBattleCard { get; set; }
     public bool IsItemCard { get; set; }
+
 }

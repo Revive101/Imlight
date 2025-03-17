@@ -3,14 +3,11 @@
  * Proprietary and confidential.
  */
 
-using Imlight.Common;
-using Imlight.CoreLib.Game.Spells;
-using Imlight.CoreLib.Shared.Behaviors;
-using Imlight.CoreLib.Shared.Packets;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static Imlight.Common.Caches.TypeCache;
+using Imcodec.ObjectProperty.TypeCache;
+using Imlight.CoreLib.Game.Spells;
 
 namespace Imlight.CoreLib.Game.Combat;
 
@@ -18,6 +15,7 @@ namespace Imlight.CoreLib.Game.Combat;
 /// Provides utility methods for handling combat wards.
 /// </summary>
 internal static class CombatWards {
+
     /// <summary>
     /// Finds all applied wards on the target that match the given spell effect.
     /// </summary>
@@ -26,15 +24,15 @@ internal static class CombatWards {
     /// <returns>A list of applied wards.</returns>
     internal static List<SpellEffect> FindAppliedWards(CombatDuelSubCircle target,
                                                        SpellEffect spellEffect,
-                                                       SpellEffect.kHangingDisposition disposition = SpellEffect.kHangingDisposition.kBoth) {
+                                                       kHangingDisposition disposition = kHangingDisposition.kBoth) {
         var appliedCharms = new List<SpellEffect>();
 
         // Choose the beneficial or harmful wards based on the disposition.
         var beneficialWards = GetBeneficialWards(target);
         var harmfulWards = GetHarmfulWards(target);
         var wards = disposition switch {
-            SpellEffect.kHangingDisposition.kBeneficial => beneficialWards,
-            SpellEffect.kHangingDisposition.kHarmful => harmfulWards,
+            kHangingDisposition.kBeneficial => beneficialWards,
+            kHangingDisposition.kHarmful => harmfulWards,
             _ => beneficialWards.Concat(harmfulWards).ToList()
         };
 
@@ -49,7 +47,7 @@ internal static class CombatWards {
     /// <returns>The modified incoming damage.</returns>
     internal static int GetIncomingDamageFromWards(List<SpellEffect> wards, int initialDamage = 0) {
         foreach (var ward in wards) {
-            if (ward.m_effectType == SpellEffect.kSpellEffects.kAbsorbDamage) {
+            if (ward.m_effectType == kSpellEffects.kAbsorbDamage) {
                 // Absorbs will absorb the flat damage, up to the effect param.
                 var absorbAmount = ward.m_paramPerRound;
                 var absorbedDamage = Math.Min(initialDamage, absorbAmount);
@@ -79,7 +77,7 @@ internal static class CombatWards {
         finalSchool = school;
 
         foreach (var ward in wards) {
-            if (ward.m_effectType == SpellEffect.kSpellEffects.kModifyIncomingDamageType) {
+            if (ward.m_effectType == kSpellEffects.kModifyIncomingDamageType) {
                 finalSchool = MagicSchools.GetMagicSchool(ward.m_effectParam)?.m_schoolName ?? school;
             }
 
@@ -91,15 +89,14 @@ internal static class CombatWards {
         return schoolWards;
     }
 
-    private static List<SpellEffect> GetBeneficialWards(CombatDuelSubCircle target) => target._hangingEffects
-            .Where(x => x.m_effectType is SpellEffect.kSpellEffects.kModifyIncomingDamage && x.m_effectParam > 0
-                                       || x.m_effectType == SpellEffect.kSpellEffects.kAbsorbDamage)
-            .Reverse()
-            .ToList();
+    private static List<SpellEffect> GetBeneficialWards(CombatDuelSubCircle target) => [.. target._hangingEffects
+            .Where(x => x.m_effectType is kSpellEffects.kModifyIncomingDamage && x.m_effectParam > 0
+                                       || x.m_effectType == kSpellEffects.kAbsorbDamage)
+            .Reverse()];
 
-    private static List<SpellEffect> GetHarmfulWards(CombatDuelSubCircle target) => target._hangingEffects
-            .Where(x => x.m_effectType is SpellEffect.kSpellEffects.kModifyIncomingDamage && x.m_effectParam < 0 ||
-                        x.m_effectType == SpellEffect.kSpellEffects.kModifyIncomingDamageType)
-            .Reverse()
-            .ToList();
+    private static List<SpellEffect> GetHarmfulWards(CombatDuelSubCircle target) => [.. target._hangingEffects
+            .Where(x => x.m_effectType is kSpellEffects.kModifyIncomingDamage && x.m_effectParam < 0 ||
+                        x.m_effectType == kSpellEffects.kModifyIncomingDamageType)
+            .Reverse()];
+
 }

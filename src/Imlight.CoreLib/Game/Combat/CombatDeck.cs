@@ -3,15 +3,16 @@
  * Proprietary and confidential.
  */
 
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Spells;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Combat;
 
 internal class CombatDeck {
+
     internal List<Spell> LastGivenHand { get; private set; }
     internal int TotalCardCount => (int) _spellData.Sum(s => s.Quantity);
     internal int RemainingCardCount => (int) _usedUpSpellData.Sum(s => s.Quantity);
@@ -25,11 +26,11 @@ internal class CombatDeck {
     internal CombatDeck(List<CombatDeckSpellData> spellDatas, byte handSize) {
         this._spellData = spellDatas;
         this._handSize = handSize;
-        this.LastGivenHand = new List<Spell>();
-        this._cardsDiscardedThisTurn = new List<Spell>();
+        this.LastGivenHand = [];
+        this._cardsDiscardedThisTurn = [];
 
         // Clone the spell data into used up spell data.
-        this._usedUpSpellData = new List<CombatDeckSpellData>();
+        this._usedUpSpellData = [];
         foreach (var originalSpellData in _spellData) {
             _usedUpSpellData.Add(new CombatDeckSpellData() {
                 TemplateId = originalSpellData.TemplateId,
@@ -54,7 +55,7 @@ internal class CombatDeck {
                 continue;
             }
 
-            // Decrement the quantity of the spell, or remove it if the quantity is 0
+            // Decrement the quantity of the spell, or remove it if the quantity is 0.
             if (spellData.Quantity - 1 <= 0) {
                 _usedUpSpellData.Remove(spellData);
             }
@@ -64,11 +65,11 @@ internal class CombatDeck {
         }
         _cardsDiscardedThisTurn.Clear();
 
-        // Refill the hand with new cards
+        // Refill the hand with new cards.
         var cardsToRefill = _handSize - LastGivenHand.Count;
         for (var i = 0; i < cardsToRefill; i++) {
             if (RemainingCardCount <= 0) {
-                break; // No more spells available
+                break; // No more spells available.
             }
 
             var randomIndex = random.Next(0, _usedUpSpellData.Count);
@@ -83,7 +84,7 @@ internal class CombatDeck {
 
             newCards.Add(spell);
 
-            // Decrement the quantity of the spell, or remove it if the quantity is 0
+            // Decrement the quantity of the spell, or remove it if the quantity is 0.
             if (spellData.Quantity - 1 <= 0) {
                 _usedUpSpellData.RemoveAt(randomIndex);
             }
@@ -92,7 +93,7 @@ internal class CombatDeck {
             }
         }
 
-        // Update the LastGivenHand
+        // Update the LastGivenHand.
         LastGivenHand.AddRange(newCards);
 
         return new Hand() { m_spellList = LastGivenHand };
@@ -101,7 +102,7 @@ internal class CombatDeck {
     internal void Discard(Spell spell) => _cardsDiscardedThisTurn.Add(spell);
 
     internal void Reshuffle() {
-        // Copy spell data back to used up spell data
+        // Copy spell data back to used up spell data.
         _usedUpSpellData.Clear();
         foreach (var originalSpellData in _spellData) {
             _usedUpSpellData.Add(new CombatDeckSpellData() {
@@ -114,5 +115,6 @@ internal class CombatDeck {
 
         _cardsDiscardedThisTurn.Clear();
     }
+    
 }
 

@@ -10,18 +10,18 @@ using Imlight.CoreLib.Game.Spells;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Resources;
-using Imlight.CoreLib.WizardData.Models.Player;
-using static Imlight.Common.Caches.TypeCache;
-using Imlight.Common.Cryptography;
-using Imlight.CoreLib.Shared.Packets;
+using Imcodec.ObjectProperty.TypeCache;
+using Imcodec.Cryptography;
 
 namespace Imlight.CoreLib.Game.Combat;
 
 public class QueuedCombatAction {
+    
     public CombatDuelSubCircle SpellCaster;
     public CombatDuelSubCircle SelectedTarget;
     public Spell Spell;
     public SpellTemplate SpellTemplate;
+    
 }
 
 /// <summary>
@@ -29,6 +29,7 @@ public class QueuedCombatAction {
 /// It processes the queued combat actions and applies the effects of the spells to the targets.
 /// </summary>
 public class CombatResolver {
+    
     private const int SPELL_FIZZLE_TIME = 4;
     private const int SPELL_PASS_TIME = 1;
     private const float SPELL_CAST_TIME = 5.0f;
@@ -39,7 +40,7 @@ public class CombatResolver {
     private readonly Duel _duel;
 
     private readonly CombatDuelSubCircle[] _subCircles = new CombatDuelSubCircle[8];
-    private CombatDuelSubCircle[] ActiveSubCircles => _subCircles.Where(x => x.Occupied).ToArray();
+    private CombatDuelSubCircle[] ActiveSubCircles => [.. _subCircles.Where(x => x.Occupied)];
     private List<QueuedCombatAction> _queuedCombatActions;
 
     // ctor
@@ -48,10 +49,9 @@ public class CombatResolver {
         _subCircles = actorSubCircles;
     }
 
-    public void Reset() {
+    public void Reset() =>
         // Reset the rounds combat action list.
-        _queuedCombatActions = new List<QueuedCombatAction>();
-    }
+        _queuedCombatActions = [];
 
     public float ApplyQueuedCombatActions(out CombatActionListObj combatActionListObj) {
         Logger.Debug("Duel {0} | Applying combat actions..", Logger.Args(_duel.m_duelID, _duel.m_roundNum));
@@ -63,6 +63,7 @@ public class CombatResolver {
         SortQueuedActions();
 
         var cinematicTime = ProcessQueuedActions(combatActionListObj);
+
         return cinematicTime;
     }
 
@@ -103,6 +104,7 @@ public class CombatResolver {
 
     public bool HaveAllParticipantsEnqueuedActions() {
         var enqueuedPlayers = _subCircles.Where(circle => circle.AddedToDuel && circle.IsAlive);
+
         return enqueuedPlayers.Count() == _queuedCombatActions.Count;
     }
 
@@ -226,6 +228,7 @@ public class CombatResolver {
         }
 
         DoSpellCastConsequences(action.SpellCaster, combatAction);
+
         return GetActionCinematicTime(action) + cinematicTime;
     }
 
@@ -239,8 +242,8 @@ public class CombatResolver {
 
     private float InvokeOverTimeEffects(CombatDuelSubCircle caster) {
         // Get all DoT and HoT effects. Clone the list to avoid concurrent modification.
-        var dotEffects = caster._hangingEffects.Where(x => x.m_effectType == SpellEffect.kSpellEffects.kDamageOverTime).ToList();
-        var hotEffects = caster._hangingEffects.Where(x => x.m_effectType == SpellEffect.kSpellEffects.kHealOverTime).ToList();
+        var dotEffects = caster._hangingEffects.Where(x => x.m_effectType == kSpellEffects.kDamageOverTime).ToList();
+        var hotEffects = caster._hangingEffects.Where(x => x.m_effectType == kSpellEffects.kHealOverTime).ToList();
         var cinematicTime = (dotEffects.Count + hotEffects.Count) * OVER_TIME_ACTIVATION_TIME;
 
         foreach (var effect in dotEffects) {
@@ -285,6 +288,7 @@ public class CombatResolver {
         if (type == CombatMoveType.ChangeMind) {
             Logger.Debug("Duel {0} | Slot {1} | Caster changed their mind and is not casting a spell",
                 Logger.Args(_duel.m_duelID, caster.SlotIndex));
+
             return;
         }
 
@@ -407,7 +411,7 @@ public class CombatResolver {
 
     private static bool ConsumeDispell(CombatDuelSubCircle caster, uint magicSchoolId) {
         var dispellHangingEffect = caster._hangingEffects
-            .FirstOrDefault(x => x.m_effectType == SpellEffect.kSpellEffects.kDispel
+            .FirstOrDefault(x => x.m_effectType == kSpellEffects.kDispel
                      && StringHash.Compute(x.m_sDamageType) == magicSchoolId);
 
         if (dispellHangingEffect is not null) {
@@ -421,7 +425,7 @@ public class CombatResolver {
 
     private static int ConsumeHangingAccuracyEffects(int startingAccuracy, CombatDuelSubCircle caster, uint magicSchoolId) {
         var accuracyHangingEffects = caster._hangingEffects
-            .Where(x => x.m_effectType == SpellEffect.kSpellEffects.kModifyAccuracy)
+            .Where(x => x.m_effectType == kSpellEffects.kModifyAccuracy)
             .Where(x => x.m_damageType == magicSchoolId);
 
         foreach (var effect in accuracyHangingEffects) {
@@ -431,4 +435,5 @@ public class CombatResolver {
 
         return startingAccuracy;
     }
+
 }

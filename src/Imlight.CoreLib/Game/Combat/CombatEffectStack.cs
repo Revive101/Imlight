@@ -25,23 +25,18 @@ Frost Beetle 5/5 damage: 1111111111111111111111111111 0100
 A stack of all `1` means every effect was chosen.
 */
 
-using System;
-
 namespace Imlight.CoreLib.Game.Combat;
 
 public class CombatEffectStack {
+
     private uint _stack;
 
-    public CombatEffectStack() {
-        _stack = 0xFFFFFFFF;
-    }
+    public CombatEffectStack() => _stack = 0xFFFFFFFF;
 
-    public void PushRandomEffectChoice(int choiceIndex) {
+    public void PushRandomEffectChoice(int choiceIndex) =>
         // Shift 4 bits, then insert the choice index
         _stack = (_stack << 4) | (uint) (choiceIndex & 0b1111);
-    }
 
-    public uint GetStackAsUint() {
-        return _stack;
-    }
+    public uint GetStackAsUint() => _stack;
+
 }

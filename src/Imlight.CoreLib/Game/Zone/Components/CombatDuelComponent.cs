@@ -4,12 +4,11 @@
  */
 
 using Akka.Actor;
+using Imcodec.MessageLayer;
+using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
-using Imlight.Common.Caches;
-using Imlight.Common.IO;
-using Imlight.Common.MessageLayer;
-using Imlight.Common.ObjectProperty;
-using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Game.Combat;
 using Imlight.CoreLib.Game.Models.World;
 using Imlight.CoreLib.Game.Sigils;
@@ -18,12 +17,9 @@ using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
-using SharpDX;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static Imlight.Common.Caches.ServerTypeCache;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
@@ -295,7 +291,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
         // The execution phase begins. This is where combat actions take place and we actually see spell cinematics.
         _awaitingCombatMoves = false;
-        Duel.m_duelPhase = Duel.kDuelPhase.kPhase_Execution;
+        Duel.m_duelPhase = kDuelPhase.kPhase_Execution;
         SendCombatPhase((byte) Duel.m_duelPhase);
 
         // Determine how long the cinematics will take.
