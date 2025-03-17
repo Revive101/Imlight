@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using System.Globalization;
 using Akka.Actor;
 using Imlight.Common;
-using Imlight.Common.Configuration;
 using Imlight.CoreLib.Login;
 using Imlight.CoreLib.Patch;
 using Imlight.CoreLib.Shared.Packets;
@@ -17,6 +16,7 @@ using Imlight.CoreLib.WizardData;
 using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.CoreLib.WizardData.Collections;
+using System.IO;
 
 namespace Imlight.Director;
 
@@ -30,7 +30,6 @@ internal static class Program {
     private const string MajorVersion = "KALI";
 
     private static ActorSystem s_imlightSystem;
-    private static ResourceContainer s_resourceContainer;
 
     private static void Main() {
         // =============================================================
@@ -39,13 +38,22 @@ internal static class Program {
         PrintTitle();
 
         // =============================================================
+        // IMLIGHT CONFIGURATION
+        // =============================================================
+        Logger.Information("Getting Imlight configuration..");
+        ConfigurationManager.Initialize(
+            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Config/Imlight.config")
+        );
+        Logger.Information("Imlight configuration loaded.");
+
+        // =============================================================
         // AKKA.NET CONFIGURATION
         // =============================================================
         Logger.Information("Getting Akka.NET configuration..");
         if (!AkkaConfiguration.CreateActorSystem(ActorSystemName, out var system)) {
             Logger.Fatal($"Could not find Akka.NET config file!");
+            _ = Console.ReadKey();
 
-            Console.ReadKey();
             return;
         }
         Logger.Information("Akka.NET system created.");
@@ -58,10 +66,6 @@ internal static class Program {
         // missing resources may be downloaded from the patch server as needed.
         var task = StartPatchServer();
         task.Wait();
-
-        Logger.Information("Director is now explicitly loading resources..");
-        s_resourceContainer = new ResourceContainer();
-        Logger.Information("Director has called all resources to load.");
 
         // =============================================================
         // SERVERS
@@ -86,16 +90,16 @@ internal static class Program {
     }
 
     private static IActorRef StartLoginServer() {
-        var LoggerinServerName = ConfigurationManager.Settings.LoginServerName;
-        var LoggerinServerPort = ConfigurationManager.Settings.LoginServerPort;
+        var loginServerName = ConfigurationManager.Settings["LoginServerName"].AsString();
+        var loginServerPort = ConfigurationManager.Settings["LoginServerPort"].AsUShort();
 
-        var LoggerinProps = LoginServer.Props(LoggerinServerName, LoggerinServerPort);
-        var LoggerinServer = s_imlightSystem.ActorOf(LoggerinProps, LoggerinServerName);
+        var loginServerProps = LoginServer.Props(loginServerName, loginServerPort);
+        var loginServerActor = s_imlightSystem.ActorOf(loginServerProps, loginServerName);
 
         Logger.Debug("New actor created under {systemName}: {LoggerinServerName}",
-            Logger.Args(s_imlightSystem.Name, LoggerinServerName));
+            Logger.Args(s_imlightSystem.Name, loginServerName));
 
-        return LoggerinServer;
+        return loginServerActor;
     }
 
     private static void StartGameServer(IActorRef LoggerinActorRef) {
@@ -104,8 +108,8 @@ internal static class Program {
     }
 
     private static async Task StartPatchServer() {
-        var defaultPatchServerName = ConfigurationManager.Settings.PatchServerName;
-        var defaultPatchServerPort = ConfigurationManager.Settings.PatchServerPort;
+        var defaultPatchServerName = ConfigurationManager.Settings["PatchServerName"].AsString();
+        var defaultPatchServerPort = ConfigurationManager.Settings["PatchServerPort"].AsUShort();
 
         var patchProps = PatchServer.Props(defaultPatchServerName, defaultPatchServerPort);
         var actor = s_imlightSystem.ActorOf(patchProps, defaultPatchServerName);
@@ -119,8 +123,8 @@ internal static class Program {
 
     private static void CreateEmbeddedDatabaseAccounts() {
         // At least one account needs to exist.
-        var adminAccountUsername = ConfigurationManager.Settings.AdminAccountUsername;
-        var adminAccountPassword = ConfigurationManager.Settings.AdminAccountPassword;
+        var adminAccountUsername = ConfigurationManager.Settings["AdminAccountUsername"];
+        var adminAccountPassword = ConfigurationManager.Settings["AdminAccountPassword"];
         DatabaseUtilities.CreateEmbeddedDatabaseAccount(adminAccountUsername, "testtest@r101.com", adminAccountPassword, AuthLevel.Administrator);
         Logger.Information("Created admin account.");
 

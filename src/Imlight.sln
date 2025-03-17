@@ -5,17 +5,9 @@ VisualStudioVersion = 17.7.34031.279
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.Director", "Imlight.Director\Imlight.Director.csproj", "{D75F750B-9988-4BC3-9DEE-7A1EC95E4D56}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.Common", "Common\Imlight.Common.csproj", "{88ED340C-8B4E-4E82-844C-BBD02183D2FF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.Common", "Imlight.Common\Imlight.Common.csproj", "{88ED340C-8B4E-4E82-844C-BBD02183D2FF}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.CoreLib", "CoreLib\Imlight.CoreLib.csproj", "{454FBBD0-49B2-4A16-8DA7-EB6166A4D3E6}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tools", "Tools", "{8A28CCDB-E2C9-442A-9405-424D89137D7B}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DragonZoneTool", "Tools\DragonZoneTool\DragonZoneTool.csproj", "{A401E1A0-1042-4CAB-BF65-246D24865D29}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CacheGenerator", "Tools\CacheGenerator\CacheGenerator.csproj", "{1E219E57-85D4-4C77-B682-71307EF57D1B}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DragonNPCTool", "Tools\DragonNPCTool\DragonNPCTool.csproj", "{B5280924-D313-4C93-83FF-0BA5D7BBE597}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Imlight.CoreLib", "Imlight.CoreLib\Imlight.CoreLib.csproj", "{454FBBD0-49B2-4A16-8DA7-EB6166A4D3E6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
