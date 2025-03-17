@@ -3,20 +3,21 @@
  * Proprietary and confidential.
  */
 
-using Imlight.Common.Caches;
-using Imlight.Common.IO;
+using System;
+using Imcodec.IO;
+using Imcodec.MessageLayer.Generated;
 using Imlight.CoreLib.Shared.Cryptography;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models.Misc;
 using Imlight.CoreLib.WizardData.Models.Player;
-using System;
-using static Imlight.Common.Caches.LOGIN_7_PROTOCOL;
+using static Imcodec.MessageLayer.Generated.LOGIN_7_PROTOCOL;
 
 namespace Imlight.CoreLib.AntiAmbrose;
 
 internal enum UserAuthenResult {
+
     Success = 0,
     AccountBanned = 0x538FBC0,
     MachineBanned = 0x44FB7BF8,
@@ -26,6 +27,7 @@ internal enum UserAuthenResult {
     FtpCapped = 0x5BFF7366,
     ErrorNoLock = 0x67DD13EA,
     FailedUpload = 0x10857D75
+
 }
 
 /// <summary>
@@ -33,13 +35,22 @@ internal enum UserAuthenResult {
 /// as opposed to <see cref="UserValidator"/>, which happens when a client is already logged in and is starting the game.
 /// </summary>
 internal static class UserAuthenticator {
+
     internal class AuthenticationDetails {
+        
         internal Account _account;
         internal ByteString _sessionKey;
         internal ByteString _rec1;
         internal UserAuthenResult _result;
+
     }
 
+    /// <summary>
+    /// Authenticates the user using the provided <see cref="SessionActor"/> and <see cref="MSG_USER_AUTHEN_V3"/> message.
+    /// </summary>
+    /// <param name="sessionActor">The session actor.</param>
+    /// <param name="authMessage">The authentication message.</param>
+    /// <returns>The authentication details.</returns>
     internal static AuthenticationDetails Authenticate(SessionActor sessionActor, MSG_USER_AUTHEN_V3 authMessage) {
         var sessionId  = sessionActor.SessionID;
         var offerTime  = sessionActor.OfferTime;
@@ -122,4 +133,5 @@ internal static class UserAuthenticator {
 
         return (sId, split[1], split[2]);
     }
+    
 }

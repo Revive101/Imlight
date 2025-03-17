@@ -19,8 +19,11 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\Imlight.Common\Imlight.Common.csproj" />
         <ProjectReference Include="..\..\submodule\Imcodec\src\Imcodec.IO\Imcodec.IO.csproj" />
         <ProjectReference Include="..\..\submodule\Imcodec\src\Imcodec.Types\Imcodec.Types.csproj" />
+        <ProjectReference Include="..\..\submodule\Imcodec\src\Imcodec.MessageLayer\Imcodec.MessageLayer.csproj" />
+        <ProjectReference Include="..\..\submodule\Imcodec\src\Imcodec.ObjectProperty\Imcodec.ObjectProperty.csproj" />
     </ItemGroup>
 
 </Project>
