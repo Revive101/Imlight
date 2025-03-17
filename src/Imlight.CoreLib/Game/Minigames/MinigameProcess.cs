@@ -3,23 +3,21 @@
  * Proprietary and confidential.
  */
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Akka.Actor;
+using Imcodec.IO;
+using Imcodec.MessageLayer;
+using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
-using Imlight.Common.Caches;
-using Imlight.Common.MessageLayer;
-using Imlight.Common.ObjectProperty;
-using Imlight.Common.ObjectProperty.PropertyReflection;
-using Imlight.CoreLib.Game.Minigames;
 using Imlight.CoreLib.Game.Processes;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Collections;
-using Imlight.CoreLib.WizardData.Models.Misc;
 using Imlight.CoreLib.WizardData.Models.Player;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using static Imlight.Common.Caches.TypeCache;
 
 internal sealed class MinigameProcess : Process {
 
@@ -27,7 +25,7 @@ internal sealed class MinigameProcess : Process {
 
     private bool IsMinigameActive { get; set; }
 
-    // todo: disallow this below. The rewards should come from the actual drop tables.
+    // todo: change this below. The rewards should come from the actual drop tables.
     private static readonly RewardTier[] s_manaTiers = [
         new RewardTier(0, 0),          // No reward for first threshold
         new RewardTier(0.25f, 0.5f),   // Bronze tier
@@ -46,9 +44,9 @@ internal sealed class MinigameProcess : Process {
 
     private readonly byte _minigameIndex;
     private readonly MinigameInfo _minigameInfo;
-    private readonly ObjectSerializer _serializer = new ObjectSerializer()
-        .OnBehaviors(SerializerOptions.Behaviors.None)
-        .OnPropertyMask((SerializerOptions.PropertyFlags) 5);
+    private readonly ObjectSerializer _serializer = new(
+        Behaviors: SerializerFlags.None
+    );
     private readonly byte[] _allowedProtocolIds = [25, 40, 41, 42, 43, 44, 45, 46, 47, 54];
 
     // ctor
@@ -90,7 +88,12 @@ internal sealed class MinigameProcess : Process {
 
     private void HandleRewards(int score) {
         var leaderboard = CreateScoreTrackingList();
-        var leaderboardData = _serializer.Serialize(leaderboard);
+        if (!_serializer.Serialize(leaderboard, 5, out var leaderboardData)) {
+            Logger.Error("{0} {1} failed to serialize leaderboard data.",
+                Logger.Args(nameof(MinigameProcess), ProcessName));
+
+            return;
+        }
 
         // Handle leaderboard query before game completion.
         if (score == -1) {
@@ -116,7 +119,7 @@ internal sealed class MinigameProcess : Process {
         var reply = new WIZARD_12_PROTOCOL.MSG_MINIGAMEREWARDS {
             GlobalID = 0,
             Data = "",
-            Scores = leaderboardData,
+            Scores = new ByteString(leaderboardData),
             MinigameIndex = _minigameIndex,
             FinalPhase = 0,
             Score = -1,
@@ -127,13 +130,12 @@ internal sealed class MinigameProcess : Process {
 
     private void SendFinalRewardsResponse(int score, ScoreTrackingList leaderboard, LootInfoList loot, Wizard wizard) {
         // Track the score for the player.
-        var genderString = wizard.PlayerNameBehavior.Gender
-            .ToString()
-            .Replace("eGender.", "");
+        var genderString = wizard.PlayerNameBehavior.Gender.ToString();
+        genderString = genderString.Replace("eGender.", "");
         var scoreTrack = new Imlight.CoreLib.WizardData.Models.Misc.ScoreTracking {
             MinigameName = _minigameInfo.m_name,
             GameScore = score,
-            GamerId = (GID) wizard.CharId,
+            GamerId = (Imcodec.Types.GID) wizard.CharId,
             GamerNameIndices = wizard.PlayerNameBehavior.NameIndices,
             GamerNameOverride = wizard.PlayerNameBehavior.NameOverride,
             GamerGender = genderString
@@ -147,14 +149,29 @@ internal sealed class MinigameProcess : Process {
                 break;
             }
         }
-        var leaderboardData = _serializer.Serialize(leaderboard);
+
+        // Serialize the leaderboard data.
+        if (!_serializer.Serialize(leaderboard, 5, out var leaderboardData)) {
+            Logger.Error("{0} {1} failed to serialize leaderboard data.",
+                Logger.Args(nameof(MinigameProcess), ProcessName));
+
+            return;
+        }
+
+        // Serialize the loot.
+        if (!_serializer.Serialize(loot, 5, out var lootData)) {
+            Logger.Error("{0} {1} failed to serialize loot data.",
+                Logger.Args(nameof(MinigameProcess), ProcessName));
+
+            return;
+        }
 
         // Success is only true if the user has gotten any of the rewards.
         var success = loot.m_loot.Count > 0 || loot.m_goldInfo.m_goldAmount > 0 ? 1 : 0;
 
         var replyEnd = new WIZARD_12_PROTOCOL.MSG_MINIGAMEREWARDS {
             GlobalID = 0,
-            Data = _serializer.Serialize(loot),
+            Data = lootData,
             Scores = leaderboardData,
             MinigameIndex = _minigameIndex,
             FinalPhase = 1,
@@ -267,7 +284,7 @@ internal sealed class MinigameProcess : Process {
         var manaAmount = Math.Clamp(wizardMana * manaReward, 0, wizardMana);
 
         lootInfo.m_loot.Add(new ManaLootInfo {
-            m_lootType = LootInfo.LOOT_TYPE.LOOT_TYPE_MANA,
+            m_lootType = LOOT_TYPE.LOOT_TYPE_MANA,
             m_manaAmount = manaAmount
         });
     }
@@ -279,7 +296,7 @@ internal sealed class MinigameProcess : Process {
         }
 
         lootInfo.m_goldInfo = new GoldLootInfo {
-            m_lootType = LootInfo.LOOT_TYPE.LOOT_TYPE_GOLD,
+            m_lootType = LOOT_TYPE.LOOT_TYPE_GOLD,
             m_goldAmount = goldReward
         };
     }
