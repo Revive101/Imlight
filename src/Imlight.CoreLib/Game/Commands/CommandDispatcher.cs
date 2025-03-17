@@ -8,17 +8,24 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Akka.Actor;
+using Imcodec.MessageLayer.Generated;
 using Imlight.Common;
-using Imlight.Common.Caches;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Misc;
-using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Commands;
 
 internal class CommandDispatcher : ReceiveProtocolDispatcher {
+
+    /*
+        * This class is responsible for dispatching commands to the appropriate protocol.
+        * It will also handle the execution of the command and the response to the client.
+        * Note that this class is very crude. It is not meant to be a full-fledged command system.
+        * It is meant to be a simple way for QA to test game systems.
+    */
+
     private const string GrouplessCommandPrefix = "nogroup";
 
     public static IActorRef Instance { get; private set; }
@@ -27,7 +34,7 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
 
     public CommandDispatcher() {
         Instance = Self;
-        s_protocols = new Dictionary<string, CommandProtocol>();
+        s_protocols = [];
 
         // Get all types.
         var types = Assembly.GetExecutingAssembly().GetTypes();
@@ -145,7 +152,7 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
     }
 
     private void InformSenderClient(CommandContext context, string reason)
-        => context.SessionActor.Tell(new EXTENDEDBASE_2_PROTOCOL.MSG_SERVERMESSAGE() {Message = reason});
+        => context.SessionActor.Tell(new EXTENDEDBASE_2_PROTOCOL.MSG_SERVERMESSAGE() { Message = reason });
 
     private void InformSenderClientImportant(CommandContext context, string reason)
         => context.SessionActor.Tell(new EXTENDEDBASE_2_PROTOCOL.MSG_SERVERMESSAGE() { Message = reason, Modal = 1 });
@@ -159,4 +166,5 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
         // Return the narrowed trace.
         return narrowedTrace;
     }
+
 }

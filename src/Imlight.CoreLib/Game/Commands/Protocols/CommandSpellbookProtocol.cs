@@ -4,25 +4,18 @@
  */
 
 using Akka.Actor;
-using Akka.Util.Internal;
-using Imlight.Common.Caches;
-using Imlight.Common.Configuration;
-using Imlight.Common.Cryptography;
-using Imlight.Common.ObjectProperty;
+using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Spells;
-using Imlight.CoreLib.Shared.Behaviors;
-using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models.Player;
-using System;
 using System.Collections.Generic;
-using static Imlight.Common.Caches.TypeCache;
-using static Raven.Client.Documents.Commands.MultiGet.GetRequest;
 
 namespace Imlight.CoreLib.Game.Commands.Protocols;
 
 internal class CommandSpellbookProtocol : CommandProtocol {
+
     internal override string Group { get; set; } = "sb";
 
     [Command("learn")]
@@ -31,16 +24,19 @@ internal class CommandSpellbookProtocol : CommandProtocol {
         // Parse the spell template ID as a uint.
         if (!uint.TryParse(spellTemplateId, out var spellTemplateIdUint)) {
             InformSenderClient("Invalid spell template ID.");
+
             return;
         }
 
         var template = CoreObjectFactory.GetCoreTemplate(spellTemplateIdUint);
         if (template == null) {
             InformSenderClient("Invalid spell template ID.");
+
             return;
         }
         if (template is not SpellTemplate spellTemplate) {
             InformSenderClient("Invalid spell template ID.");
+
             return;
         }
         var spellName = spellTemplate.m_name;
@@ -48,6 +44,7 @@ internal class CommandSpellbookProtocol : CommandProtocol {
         var spell = SpellFactory.GetSpell(spellTemplateIdUint);
         if (spell == null) {
             InformSenderClient("Invalid spell template ID.");
+
             return;
         }
 
@@ -70,16 +67,19 @@ internal class CommandSpellbookProtocol : CommandProtocol {
         // Parse the spell template ID as a uint.
         if (!uint.TryParse(spellTemplateId, out var spellTemplateIdUint)) {
             InformSenderClient("Invalid spell template ID.");
+
             return;
         }
 
         var template = CoreObjectFactory.GetCoreTemplate(spellTemplateIdUint);
         if (template == null) {
             InformSenderClient("Invalid spell template ID.");
+
             return;
         }
         if (template is not SpellTemplate spellTemplate) {
             InformSenderClient("Invalid spell template ID.");
+
             return;
         }
         var spellName = spellTemplate.m_name;
@@ -87,6 +87,7 @@ internal class CommandSpellbookProtocol : CommandProtocol {
         var spell = SpellFactory.GetSpell(spellTemplateIdUint);
         if (spell == null) {
             InformSenderClient("Invalid spell template ID.");
+
             return;
         }
 
@@ -107,14 +108,9 @@ internal class CommandSpellbookProtocol : CommandProtocol {
     private void UnlearnallSpellCommand() {
 
         if (Context.Character.SpellbookBehavior.LearnedSpellTemplateIds != null) {
-            List<uint> spellList = new();
-            foreach (var spell in Context.Character.SpellbookBehavior.LearnedSpellTemplateIds) {
-                spellList.Add(spell);
-            }
+            List<uint> spellList = [.. Context.Character.SpellbookBehavior.LearnedSpellTemplateIds];
 
             foreach (var spell in spellList) {
-
-
                 var clientMsg = new WIZARD_12_PROTOCOL.MSG_REMOVESPELLFROMBOOK {
                     SpellID = (int) spell
                 };
@@ -138,12 +134,14 @@ internal class CommandSpellbookProtocol : CommandProtocol {
         // Parse the spell template ID as a uint.
         if (!uint.TryParse(spellTemplateId, out var spellTemplateIdUint)) {
             InformSenderClient("Invalid spell template ID.");
+
             return;
         }
 
         var spell = SpellFactory.GetSpell(spellTemplateIdUint);
         if (spell == null) {
             InformSenderClient("Invalid spell template ID.");
+
             return;
         }
 
@@ -157,16 +155,19 @@ internal class CommandSpellbookProtocol : CommandProtocol {
         // Parse the spell template ID as a uint.
         if (!uint.TryParse(spellTemplateId, out var spellTemplateIdUint)) {
             InformSenderClient("Invalid spell template ID.");
+
             return;
         }
 
         var spell = SpellFactory.GetSpell(spellTemplateIdUint);
         if (spell == null) {
             InformSenderClient("Invalid spell template ID.");
+
             return;
         }
 
         Context.Character.RemoveTemporarySpell(spellTemplateIdUint);
         InformSenderClient("You have removed the spell.");
     }
+
 }

@@ -7,7 +7,6 @@ using Akka.Actor;
 using Imlight.Common;
 using Imlight.CoreLib.Game.World;
 using Imlight.CoreLib.Shared.Packets;
-using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System.Linq;
 using System.Threading.Tasks;
@@ -15,12 +14,13 @@ using System.Threading.Tasks;
 namespace Imlight.CoreLib.Game.Commands.Protocols;
 
 internal class CommandTeleport : CommandProtocol {
+
     internal override string Group { get; set; } = "";
 
     private static readonly string s_gmIslandZoneName = "WizardCity/QA_SpawnRate";
-    private static readonly string[] s_gmIslandShortcutNames = new[] {
+    private static readonly string[] s_gmIslandShortcutNames = [
         "gm", "gmisland", "gm_island", "gmis", "gm_is", "gm_isl", "gm_isla", "gm_islan", "gm_island"
-    };
+    ];
 
     [Command("teleport")]
     [Alias("tp", "port")]
@@ -34,6 +34,7 @@ internal class CommandTeleport : CommandProtocol {
             if (actualZoneName == null | actualZoneName == "") {
                 Logger.Warning("Teleport command was given an invalid zone name {0}", Logger.Args(zone));
                 InformSenderClient($"Zone {zone} does not exist.");
+
                 return;
             }
         }
@@ -41,6 +42,7 @@ internal class CommandTeleport : CommandProtocol {
             // Check the account auth level to see if they can teleport to the GM Island.
             if (Context.Account.AuthLevel < AuthLevel.HallMonitor) {
                 InformSenderClient($"Zone {zone} does not exist.");
+
                 return;
             }
 
@@ -61,4 +63,5 @@ internal class CommandTeleport : CommandProtocol {
         };
         Context.SessionActor.Tell(msg);
     }
+
 }

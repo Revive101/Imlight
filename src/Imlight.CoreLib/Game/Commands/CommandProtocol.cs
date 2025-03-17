@@ -3,19 +3,19 @@
  * Proprietary and confidential.
  */
 
-using Akka.Actor;
-using Imlight.Common;
-using Imlight.Common.Caches;
-using Imlight.CoreLib.AntiAmbrose;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using Imlight.CoreLib.WizardData.Models.Player;
+using Akka.Actor;
+using Imlight.Common;
+using Imlight.CoreLib.AntiAmbrose;
+using System.Collections.Generic;
+using Imcodec.MessageLayer.Generated;
 
 namespace Imlight.CoreLib.Game.Commands;
 
 internal abstract class CommandProtocol {
+
     internal abstract string Group { get; set; }
     protected CommandContext Context;
 
@@ -102,30 +102,26 @@ internal abstract class CommandProtocol {
 
     protected void InformSenderClient(string reason, bool isImportant = false)
         => Context.SessionActor.Tell(new EXTENDEDBASE_2_PROTOCOL.MSG_SERVERMESSAGE {
-            Message = reason, Modal = (byte) (isImportant ? 1 : 0)
+            Message = reason,
+            Modal = (byte) (isImportant ? 1 : 0)
         });
 
-    private void InitiateHandlers()
-    {
+    private void InitiateHandlers() {
         _hasInitiated = true;
         _commandMethods = new Dictionary<string, MethodInfo>();
 
         // Get all the methods in this class that have the Command attribute.
         var bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-        foreach (var method in GetType().GetMethods(bindingFlags))
-        {
+        foreach (var method in GetType().GetMethods(bindingFlags)) {
             var commandAttribute = method.GetCustomAttribute<CommandAttribute>();
-            if (commandAttribute != null)
-            {
+            if (commandAttribute != null) {
                 _commandMethods[commandAttribute.Name.ToLower()] = method;
             }
 
             // Add an entry for each of the aliases on the Alias attribute, if it has one.
             var aliasAttribute = method.GetCustomAttribute<AliasAttribute>();
-            if (aliasAttribute != null)
-            {
-                foreach (var alias in aliasAttribute.Aliases)
-                {
+            if (aliasAttribute != null) {
+                foreach (var alias in aliasAttribute.Aliases) {
                     _commandMethods[alias.ToLower()] = method;
                 }
             }
@@ -174,4 +170,5 @@ internal abstract class CommandProtocol {
 
         InformSenderClient(sb.ToString(), true);
     }
+
 }

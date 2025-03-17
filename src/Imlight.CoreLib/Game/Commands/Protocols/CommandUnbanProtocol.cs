@@ -10,6 +10,7 @@ using Imlight.CoreLib.WizardData.Models.Player;
 namespace Imlight.CoreLib.Game.Commands.Protocols;
 
 internal class CommandUnbanProtocol : CommandProtocol {
+
     internal override string Group { get; set; } = "unban";
 
     [Command("account")]
@@ -19,17 +20,20 @@ internal class CommandUnbanProtocol : CommandProtocol {
         var account = AccountCollection.GetAccount(username);
         if (account is null) {
             InformSenderClient("Account not found.");
+
             return;
         }
 
         if (!account.InfractionHistory.IsCurrentlyBanned) {
             InformSenderClient("Account is not banned.");
+
             return;
         }
 
         var result = account.WaiveCurrentBan(Context.Account.Username);
         if (!result) {
             InformSenderClient("Failed to waive ban.");
+
             return;
         }
 
@@ -42,17 +46,20 @@ internal class CommandUnbanProtocol : CommandProtocol {
     private void UnbanMachineCommand(string machineId) {
         if (!ulong.TryParse(machineId, out var machineIdLong)) {
             InformSenderClient("Invalid machine ID");
+
             return;
         }
 
         if (!InfractionCollection.IsMachineBanned(machineIdLong)) {
             InformSenderClient("Machine is not banned");
+
             return;
         }
 
         var result = InfractionCollection.RemoveMachineBan(machineIdLong);
         if (!result) {
             InformSenderClient("Failed to unban machine.");
+
             return;
         }
 
@@ -64,15 +71,18 @@ internal class CommandUnbanProtocol : CommandProtocol {
     private void UnbanIpCommand(string ip) {
         if (!InfractionCollection.IsIpBanned(ip)) {
             InformSenderClient("IP is not banned");
+
             return;
         }
 
         var result = InfractionCollection.RemoveIpBan(ip);
         if (!result) {
             InformSenderClient("Failed to unban IP.");
+
             return;
         }
 
         InformSenderClient("IP unbanned.");
     }
+
 }

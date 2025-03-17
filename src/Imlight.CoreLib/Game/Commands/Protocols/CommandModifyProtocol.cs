@@ -3,39 +3,33 @@
  * Proprietary and confidential.
  */
 
-using Akka.Util.Internal;
-using Imlight.Common.Caches;
-using Imlight.Common.Configuration;
-using Imlight.Common.Cryptography;
-using Imlight.Common.ObjectProperty;
+using System;
+using Imcodec.CoreObject;
+using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Cantrips;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
-using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models.Player;
-using System;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Commands.Protocols;
 
 internal class CommandModifyProtocol : CommandProtocol {
-    internal override string Group { get; set; } = "mod";
 
-    private static readonly uint s_speedEffectName = 6543894;
-    private readonly CoreObjectSerializer _effectSerializer = new CoreObjectSerializer()
-                    .OnBehaviors(SerializerOptions.Behaviors.None)
-                    .OnPropertyMask(SerializerOptions.PropertyFlags.Transmit
-                                  | SerializerOptions.PropertyFlags.AuthorityTransmit);
+    private const uint SPEED_EFFECT_NAME = 6543894;
+
+    internal override string Group { get; set; } = "mod";
 
     [Command("levelup")]
     [AuthRequired(AuthLevel.QualityAssurance)]
     [Alias("lvlup")]
     private void LevelUpCommand() {
         // Inform the user of failure if the new level would be above the max level.
-        var newLevel = (byte)(Context.Character.MagicSchoolBehavior.Level + 1);
+        var newLevel = (byte) (Context.Character.MagicSchoolBehavior.Level + 1);
         if (newLevel > MagicLevelsConfig.MaxLevel) {
             InformSenderClient($"You cannot set level higher than the max level ({MagicLevelsConfig.MaxLevel}).");
+
             return;
         }
 
@@ -49,12 +43,14 @@ internal class CommandModifyProtocol : CommandProtocol {
         // Try to parse the level.
         if (!byte.TryParse(level, out var levelByte)) {
             InformSenderClient("Invalid level.");
+
             return;
         }
 
         // Inform the user of failure if the new level would be above the max level.
         if (levelByte > MagicLevelsConfig.MaxLevel) {
             InformSenderClient($"You cannot set level higher than the max level ({MagicLevelsConfig.MaxLevel}).");
+
             return;
         }
 
@@ -68,21 +64,29 @@ internal class CommandModifyProtocol : CommandProtocol {
         // Try to parse the speed multiplier.
         if (!int.TryParse(speedMultiplier, out var speedMultiplierInt)) {
             InformSenderClient("Invalid speed multiplier.");
+
             return;
         }
 
         // Create the speed effect.
         var effect = new SpeedEffect() {
             m_speedMultiplier = speedMultiplierInt,
-            m_effectNameID = s_speedEffectName,
+            m_effectNameID = SPEED_EFFECT_NAME,
             m_itemSlotID = 100
         };
-        var serializedEffect = _effectSerializer.Serialize(effect);
+        var coreObjectSerializer = new CoreObjectSerializer(
+            behaviors: Imcodec.ObjectProperty.SerializerFlags.None
+        );
+        if (!coreObjectSerializer.Serialize(effect, 1, out var serializedEffect)) {
+            InformSenderClient("Failed to serialize speed effect.");
+
+            return;
+        }
 
         // Create the network message and send it.
         var networkMessage = new GAME_5_PROTOCOL.MSG_ADDEFFECT() {
             GameObjectID = Context.Character.CharId,
-            EffectData = serializedEffect
+            EffectData = serializedEffect.ToString()
         };
         Context.SessionActor.Tell(networkMessage, null);
 
@@ -95,6 +99,7 @@ internal class CommandModifyProtocol : CommandProtocol {
         // Try to parse the item id.
         if (!ulong.TryParse(templateId, out var templateIdLong)) {
             InformSenderClient("Invalid item id.");
+
             return;
         }
 
@@ -102,28 +107,36 @@ internal class CommandModifyProtocol : CommandProtocol {
         var template = CoreObjectFactory.GetCoreTemplate(templateIdLong);
         if (template is null) {
             InformSenderClient("Invalid item id.");
+
             return;
         }
 
         // We can't add game objects to the inventory.
         if (template is not WizItemTemplate) {
             InformSenderClient($"Cannot add objects of type {template.GetType().Name} to inventory.");
+
             return;
         }
 
         var addedItemSuccess = Context.Character.AddItemToInventory(templateIdLong, out var coreObject);
         if (!addedItemSuccess) {
             InformSenderClient("Could not add item to inventory.");
+
             return;
         }
 
-        var serializer = new CoreObjectSerializer()
-            .OnBehaviors(SerializerOptions.Behaviors.None)
-            .OnPropertyMask((SerializerOptions.PropertyFlags)24);
+        var coSerializer = new CoreObjectSerializer(
+            behaviors: Imcodec.ObjectProperty.SerializerFlags.None
+        );
+        if (!coSerializer.Serialize(coreObject, 24, out var serializedCoreObject)) {
+            InformSenderClient("Failed to serialize core object.");
+
+            return;
+        }
 
         var networkMessage = new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
             GlobalID = Context.Character.CharId,
-            SerializedItem = serializer.Serialize(coreObject)
+            SerializedItem = serializedCoreObject
         };
         Context.SessionActor.Tell(networkMessage, null);
 
@@ -136,6 +149,7 @@ internal class CommandModifyProtocol : CommandProtocol {
         // Try to parse the item id.
         if (!ulong.TryParse(templateId, out var templateIdLong)) {
             InformSenderClient("Invalid item id.");
+
             return;
         }
 
@@ -143,29 +157,36 @@ internal class CommandModifyProtocol : CommandProtocol {
         var template = CoreObjectFactory.GetCoreTemplate(templateIdLong);
         if (template is null) {
             InformSenderClient("Invalid item id.");
+
             return;
         }
 
         // We can't non-snack objects to the snack bag.
         if (template is not PetSnackItemTemplate) {
             InformSenderClient($"Cannot add objects of type {template.GetType().Name} to snack bag.");
+
             return;
         }
 
         var addedSnackSuccess = Context.Character.AddSnack(templateIdLong, out var snackObj);
         if (!addedSnackSuccess) {
             InformSenderClient("Could not add snack to snack bag.");
+
             return;
         }
 
-        var serializer = new CoreObjectSerializer()
-              .OnMode(SerializerOptions.Mode.Compact)
-              .OnBehaviors(SerializerOptions.Behaviors.None)
-              .OnPropertyMask((SerializerOptions.PropertyFlags) 27);
+        var coSerializer = new CoreObjectSerializer(
+            behaviors: Imcodec.ObjectProperty.SerializerFlags.None
+        );
+        if (!coSerializer.Serialize(snackObj, 24, out var serializedSnackObj)) {
+            InformSenderClient("Failed to serialize core object.");
+
+            return;
+        }
 
         var networkMessage = new PET_9_PROTOCOL.MSG_PETSNACKADD {
             GlobalID = Context.Character.CharId,
-            Data = serializer.Serialize(snackObj)
+            Data = serializedSnackObj
         };
         Context.SessionActor.Tell(networkMessage, null);
 
@@ -192,6 +213,7 @@ internal class CommandModifyProtocol : CommandProtocol {
         // Try to parse the item id.
         if (!ulong.TryParse(templateId, out var templateIdLong)) {
             InformSenderClient("Invalid item id.");
+
             return;
         }
 
@@ -199,29 +221,36 @@ internal class CommandModifyProtocol : CommandProtocol {
         var template = CoreObjectFactory.GetCoreTemplate(templateIdLong);
         if (template is null) {
             InformSenderClient("Invalid item id.");
+
             return;
         }
 
         // We can't add non-reagent objects to the reagent bag.
         if (template is not ReagentItemTemplate) {
             InformSenderClient($"Cannot add objects of type {template.GetType().Name} to reagent bag.");
+
             return;
         }
 
         var addedReagentSuccess = Context.Character.AddReagent(templateIdLong, out var reagentObj);
         if (!addedReagentSuccess) {
             InformSenderClient("Could not add reagent to reagent bag.");
+
             return;
         }
 
-        var serializer = new CoreObjectSerializer()
-              .OnMode(SerializerOptions.Mode.Compact)
-              .OnBehaviors(SerializerOptions.Behaviors.None)
-              .OnPropertyMask((SerializerOptions.PropertyFlags) 27);
+        var coSerializer = new CoreObjectSerializer(
+            behaviors: Imcodec.ObjectProperty.SerializerFlags.None
+        );
+        if (!coSerializer.Serialize(reagentObj, 27, out var serializedReagentObj)) {
+            InformSenderClient("Failed to serialize core object.");
+
+            return;
+        }
 
         var networkMessage = new WIZARD_12_PROTOCOL.MSG_REAGENTADD {
             GlobalID = Context.Character.CharId,
-            Data = serializer.Serialize(reagentObj)
+            Data = serializedReagentObj
         };
         Context.SessionActor.Tell(networkMessage, null);
 
@@ -244,7 +273,7 @@ internal class CommandModifyProtocol : CommandProtocol {
 
     [Command("name")]
     [AuthRequired(AuthLevel.QualityAssurance)]
-    private void SetNameCommand([Remainder]string name) {
+    private void SetNameCommand([Remainder] string name) {
         // Set the name of the character.
         Context.Character.SetNameOverride(name);
 
@@ -253,7 +282,7 @@ internal class CommandModifyProtocol : CommandProtocol {
 
     [Command("badge")]
     [AuthRequired(AuthLevel.QualityAssurance)]
-    private void SetBadgeCommand([Remainder]string badge) {
+    private void SetBadgeCommand([Remainder] string badge) {
         // Set the badge of the character.
         Context.Character.SetBadgeOverride(badge);
 
@@ -266,6 +295,7 @@ internal class CommandModifyProtocol : CommandProtocol {
         // Try to parse the gold.
         if (!int.TryParse(gold, out var goldInt)) {
             InformSenderClient("Invalid maximum gold amount.");
+
             return;
         }
 
@@ -287,6 +317,7 @@ internal class CommandModifyProtocol : CommandProtocol {
         // Try to parse the gold.
         if (!int.TryParse(gold, out var goldInt)) {
             InformSenderClient("Invalid gold amount.");
+
             return;
         }
 
@@ -309,6 +340,7 @@ internal class CommandModifyProtocol : CommandProtocol {
         // Try to parse the health.
         if (!int.TryParse(health, out var healthInt)) {
             InformSenderClient("Invalid maximum health amount.");
+
             return;
         }
 
@@ -331,6 +363,7 @@ internal class CommandModifyProtocol : CommandProtocol {
         // Try to parse the mana.
         if (!int.TryParse(mana, out var manaInt)) {
             InformSenderClient("Invalid maximum mana amount.");
+
             return;
         }
 
@@ -353,6 +386,7 @@ internal class CommandModifyProtocol : CommandProtocol {
         // Try to parse the energy.
         if (!int.TryParse(energy, out var energyInt)) {
             InformSenderClient("Invalid maximum energy amount.");
+
             return;
         }
 
@@ -382,6 +416,7 @@ internal class CommandModifyProtocol : CommandProtocol {
         // Try to parse the health.
         if (!int.TryParse(health, out var healthInt)) {
             InformSenderClient("Invalid current health amount.");
+
             return;
         }
 
@@ -411,6 +446,7 @@ internal class CommandModifyProtocol : CommandProtocol {
         // Try to parse the mana.
         if (!int.TryParse(mana, out var manaInt)) {
             InformSenderClient("Invalid current mana amount.");
+
             return;
         }
 
@@ -440,6 +476,7 @@ internal class CommandModifyProtocol : CommandProtocol {
         // Try to parse the energy.
         if (!int.TryParse(energy, out var energyInt)) {
             InformSenderClient("Invalid current energy amount.");
+
             return;
         }
 
@@ -536,9 +573,10 @@ internal class CommandModifyProtocol : CommandProtocol {
     [AuthRequired(AuthLevel.QualityAssurance)]
     [Alias("clvlup")]
     private void CantripLevelUpCommand() {
-        var newLevel = (byte)(Context.Character.GameStats.m_cantripLevel + 1);
+        var newLevel = (byte) (Context.Character.GameStats.m_cantripLevel + 1);
         if (newLevel > CantripFactory.GetMaxCantripLevel()) {
             InformSenderClient($"You cannot set level higher than the max level (10).");
+
             return;
         }
 
@@ -558,11 +596,13 @@ internal class CommandModifyProtocol : CommandProtocol {
         // Try to parse the level.
         if (!byte.TryParse(level, out var levelByte)) {
             InformSenderClient("Invalid level.");
+
             return;
         }
 
         if (levelByte > CantripFactory.GetMaxCantripLevel()) {
             InformSenderClient($"You cannot set level higher than the max level (10).");
+
             return;
         }
 
@@ -582,6 +622,7 @@ internal class CommandModifyProtocol : CommandProtocol {
         // Try to parse the training points.
         if (!int.TryParse(trainingPoints, out var trainingPointsInt)) {
             InformSenderClient("Invalid training points amount.");
+
             return;
         }
 
@@ -604,6 +645,7 @@ internal class CommandModifyProtocol : CommandProtocol {
         // Try to parse the training points.
         if (!int.TryParse(trainingPoints, out var trainingPointsInt)) {
             InformSenderClient("Invalid training points amount.");
+
             return;
         }
 
@@ -616,4 +658,5 @@ internal class CommandModifyProtocol : CommandProtocol {
 
         InformSenderClient($"Set training points to {trainingPointsInt}.");
     }
+
 }

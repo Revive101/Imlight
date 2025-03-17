@@ -9,32 +9,27 @@ using System;
 namespace Imlight.CoreLib.Game.Commands;
 
 [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
-internal sealed class CommandAttribute : Attribute {
-    public string Name { get; }
+internal sealed class CommandAttribute(string name) : Attribute {
 
-    public CommandAttribute(string name) {
-        Name = name;
-    }
+    public string Name { get; } = name;
+
 }
 
 [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
-internal sealed class AliasAttribute : Attribute {
-    public string[] Aliases { get; }
+internal sealed class AliasAttribute(params string[] aliases) : Attribute {
 
-    public AliasAttribute(params string[] aliases) {
-        Aliases = aliases;
-    }
+    public string[] Aliases { get; } = aliases;
+
 }
 
 [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
-internal sealed class AuthRequiredAttribute : Attribute {
-    public AuthLevel Level { get; }
+internal sealed class AuthRequiredAttribute(AuthLevel level) : Attribute {
 
-    public AuthRequiredAttribute(AuthLevel level) {
-        Level = level;
-    }
+    public AuthLevel Level { get; } = level;
+
 }
 
 [AttributeUsage(AttributeTargets.Parameter)]
 internal class RemainderAttribute : Attribute {
+
 }

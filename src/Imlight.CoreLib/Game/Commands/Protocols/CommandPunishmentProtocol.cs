@@ -12,30 +12,34 @@ using System.Text;
 namespace Imlight.CoreLib.Game.Commands.Protocols;
 
 internal class CommandPunishmentProtocol : CommandProtocol {
+
     internal override string Group { get; set; } = "";
 
     [Command("mute")]
     [AuthRequired(AuthLevel.HallMonitor)]
-    public void MuteCommand(string time, [Remainder]string reason) {
+    public void MuteCommand(string time, [Remainder] string reason) {
         if (Context.SelectedAccount is null) {
             InformSenderClient("You must select a user to use this command.", true);
+
             return;
         }
         if (Context.SelectedAccount.InfractionHistory.IsCurrentlyMuted) {
             InformSenderClient("This account is already muted.", true);
+
             return;
         }
 
         // Parse the time.
         if (!CommandUtilities.TryParseDuration(time, out var duration)) {
             InformSenderClient("Invalid duration.", true);
+
             return;
         }
 
         // Convert the timespan into a DateTime of when it will end.
         var end = DateTime.UtcNow.Add(duration);
-
         var sourceName = Context.Account.Username;
+
         Context.SelectedAccount.AddInfraction(InfractionType.Mute, reason, sourceName, end);
 
         InformSenderClient($"Muted {Context.SelectedAccount.Username} until {end}.", true);
@@ -46,10 +50,12 @@ internal class CommandPunishmentProtocol : CommandProtocol {
     public void UnmuteCommand() {
         if (Context.SelectedAccount is null) {
             InformSenderClient("You must select a user to use this command.", true);
+
             return;
         }
         if (!Context.SelectedAccount.InfractionHistory.IsCurrentlyMuted) {
             InformSenderClient("This account is not muted.", true);
+
             return;
         }
 
@@ -61,9 +67,10 @@ internal class CommandPunishmentProtocol : CommandProtocol {
 
     [Command("kick")]
     [AuthRequired(AuthLevel.HallMonitor)]
-    public void KickCommand([Remainder]string reason) {
+    public void KickCommand([Remainder] string reason) {
         if (Context.SelectedAccount is null) {
             InformSenderClient("You must select a user to use this command.", true);
+
             return;
         }
 
@@ -78,9 +85,10 @@ internal class CommandPunishmentProtocol : CommandProtocol {
 
     [Command("warn")]
     [AuthRequired(AuthLevel.HallMonitor)]
-    public void WarnCommand([Remainder]string reason) {
+    public void WarnCommand([Remainder] string reason) {
         if (Context.SelectedAccount is null) {
             InformSenderClient("You must select a user to use this command.", true);
+
             return;
         }
 
@@ -95,6 +103,7 @@ internal class CommandPunishmentProtocol : CommandProtocol {
     private void GetAccountInfoCommand() {
         if (Context.SelectedAccount is null) {
             InformSenderClient("You must select a user to use this command.", true);
+
             return;
         }
 
@@ -136,4 +145,5 @@ internal class CommandPunishmentProtocol : CommandProtocol {
 
         InformSenderClient(sb.ToString(), true);
     }
+
 }

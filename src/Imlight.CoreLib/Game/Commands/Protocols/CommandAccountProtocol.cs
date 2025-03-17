@@ -14,6 +14,7 @@ using System.Text;
 namespace Imlight.CoreLib.Game.Commands.Protocols;
 
 internal class CommandAccountProtocol : CommandProtocol {
+
     internal override string Group { get; set; } = "account";
 
     [Command("create")]
@@ -33,18 +34,21 @@ internal class CommandAccountProtocol : CommandProtocol {
         var account = AccountCollection.GetAccount(username);
         if (account is null) {
             InformSenderClient("Account not found.");
+
             return;
         }
 
         var authorityReason = $"{Context.Account.Username} wants to delete account {username}.";
         if (!AuthorityRequester.RequestAuthority(account.AuthLevel, Context.Account, authorityReason)) {
             InformSenderClient("You cannot delete an account with a higher auth level than you.");
+
             return;
         }
 
         // Yeah, you can't delete your own account.
         if (username == Context.Account.Username) {
             InformSenderClient("You cannot delete your own account.");
+
             return;
         }
 
@@ -58,17 +62,18 @@ internal class CommandAccountProtocol : CommandProtocol {
         var account = AccountCollection.GetAccount(username);
         if (account is null) {
             InformSenderClient("Account not found.");
+
             return;
         }
 
         var authorityReason = $"{Context.Account.Username} wants to lock account {username}.";
         if (!AuthorityRequester.RequestAuthority(account.AuthLevel, Context.Account, authorityReason)) {
             InformSenderClient("You cannot lock an account with a higher auth level than you.");
+
             return;
         }
 
         var accountLockedSuccess = AccountCollection.LockAccount(username);
-
         var reply = accountLockedSuccess ? "Account locked successfully." : "Account lock failed.";
         InformSenderClient(reply);
     }
@@ -79,6 +84,7 @@ internal class CommandAccountProtocol : CommandProtocol {
         var account = AccountCollection.GetAccount(username);
         if (account is null) {
             InformSenderClient("Account not found.");
+
             return;
         }
 
@@ -93,12 +99,14 @@ internal class CommandAccountProtocol : CommandProtocol {
     private void ChangePasswordCommand(string username, string newPassword, string newPasswordConfirm) {
         if (newPassword != newPasswordConfirm) {
             InformSenderClient("Passwords do not match.");
+
             return;
         }
 
         var account = AccountCollection.GetAccount(username);
         if (account is null) {
             InformSenderClient("Account not found.");
+
             return;
         }
 
@@ -114,6 +122,7 @@ internal class CommandAccountProtocol : CommandProtocol {
         var account = AccountCollection.GetAccount(username);
         if (account is null) {
             InformSenderClient("Account not found.");
+
             return;
         }
 
@@ -121,24 +130,28 @@ internal class CommandAccountProtocol : CommandProtocol {
         var authorityReason = $"{Context.Account.Username} wants to change the auth level of account {username}.";
         if (!AuthorityRequester.RequestAuthority(account.AuthLevel, Context.Account, authorityReason)) {
             InformSenderClient("You cannot change the auth level of an account with a higher auth level than you.");
+
             return;
         }
 
         // You cannot change the auth level of your own account.
         if (username == Context.Account.Username) {
             InformSenderClient("You cannot change the auth level of your own account.");
+
             return;
         }
 
         // Parse the authLevel as an integer.
         if (!int.TryParse(authLevel, out var authLevelInt)) {
             InformSenderClient("Invalid auth level.");
+
             return;
         }
 
         // Make sure the auth level is valid.
         if (!Enum.IsDefined(typeof(AuthLevel), authLevelInt)) {
             InformSenderClient("Invalid auth level.");
+
             return;
         }
 
@@ -154,6 +167,7 @@ internal class CommandAccountProtocol : CommandProtocol {
         var account = AccountCollection.GetAccount(username);
         if (account is null) {
             InformSenderClient("Account not found.");
+
             return;
         }
 
@@ -201,6 +215,7 @@ internal class CommandAccountProtocol : CommandProtocol {
         var account = AccountCollection.GetAccount(username);
         if (account is null) {
             InformSenderClient("Account not found.");
+
             return;
         }
 
@@ -226,6 +241,7 @@ internal class CommandAccountProtocol : CommandProtocol {
         var account = AccountCollection.GetAccount(username);
         if (account is null) {
             InformSenderClient("Account not found.");
+
             return;
         }
 
@@ -241,12 +257,14 @@ internal class CommandAccountProtocol : CommandProtocol {
         // Parse the infraction index as an integer.
         if (!int.TryParse(infractionIndex, out var infractionIndexInt)) {
             InformSenderClient("Invalid infraction index.");
+
             return;
         }
 
         var account = AccountCollection.GetAccount(username);
         if (account is null) {
             InformSenderClient("Account not found.");
+
             return;
         }
 
@@ -255,4 +273,5 @@ internal class CommandAccountProtocol : CommandProtocol {
         var reply = infractionRemovedSuccess ? "Infraction removed successfully." : "Infraction remove failed.";
         InformSenderClient(reply);
     }
+
 }

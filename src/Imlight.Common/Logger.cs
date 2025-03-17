@@ -7,8 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
-using Imlight.Common.Configuration;
-using Newtonsoft.Json;
 using Serilog;
 using Serilog.Context;
 using Serilog.Core;
@@ -18,13 +16,13 @@ namespace Imlight.Common;
 
 public class Logger {
     private const byte MaxCallerNameLength = 40;
-    private static readonly string s_path = Configuration.ConfigurationManager.Settings?.LogPath
+    private static readonly string s_path = ConfigurationManager.Settings["LogPath"].AsString()
         ?? Path.Combine(Directory.GetCurrentDirectory(), "logs", "log.txt");
-    private static readonly string s_logFormat = Configuration.ConfigurationManager.Settings?.LogFormat
+    private static readonly string s_logFormat = ConfigurationManager.Settings["LogFormat"].AsString()
         ?? "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}";
-    private static readonly string s_logLevel = Configuration.ConfigurationManager.Settings?.LogLevel
+    private static readonly string s_logLevel = ConfigurationManager.Settings["LogLevel"].AsString()
         ?? "INFO";
-    private static readonly string s_seqUrl = Configuration.ConfigurationManager.Settings?.SeqSinkUrl
+    private static readonly string s_seqUrl = ConfigurationManager.Settings["SeqSinkUrl"].AsString()
         ?? "http://localhost:5341";
 
     public static ILogger Log { get; } = new LoggerConfiguration()

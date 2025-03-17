@@ -14,6 +14,7 @@ using Imlight.CoreLib.WizardData.Models.Player;
 namespace Imlight.CoreLib.Game.Commands.Protocols;
 
 internal class CommandBanProtocol : CommandProtocol {
+
     internal override string Group { get; set; } = "ban";
 
     [Command("account")]
@@ -23,17 +24,20 @@ internal class CommandBanProtocol : CommandProtocol {
         var account = AccountCollection.GetAccount(username);
         if (account == null) {
             InformSenderClient("Account not found");
+
             return;
         }
 
         if (account.InfractionHistory.IsCurrentlyBanned) {
             InformSenderClient("Account is already banned");
+
             return;
         }
 
         // The time will be in the format of 1d2h3m4s. Parse it into a TimeSpan.
         if (!CommandUtilities.TryParseDuration(time, out var timeSpan)) {
             InformSenderClient("Invalid time format");
+
             return;
         }
 
@@ -58,25 +62,26 @@ internal class CommandBanProtocol : CommandProtocol {
     private void BanMachineCommand(string machineId, string time, [Remainder] string reason) {
         if (!ulong.TryParse(machineId, out var machineIdLong)) {
             InformSenderClient("Invalid machine ID");
+
             return;
         }
 
         if (InfractionCollection.IsMachineBanned(machineIdLong)) {
             InformSenderClient("Machine is already banned");
+
             return;
         }
 
         // The time will be in the format of 1d2h3m4s. Parse it into a TimeSpan.
         if (!CommandUtilities.TryParseDuration(time, out var timeSpan)) {
             InformSenderClient("Invalid time format");
+
             return;
         }
 
         // Now with the timespan, get a DateTime for when the ban will expire.
         var banExpiration = DateTime.UtcNow + timeSpan;
-
         InfractionCollection.AddMachineBan(machineIdLong, banExpiration);
-
         InformSenderClient($"Machine {machineIdLong} has been banned until {banExpiration}");
     }
 
@@ -108,17 +113,19 @@ internal class CommandBanProtocol : CommandProtocol {
         var account = AccountCollection.GetAccount(username);
         if (account == null) {
             InformSenderClient("Account not found");
+
             return;
         }
 
-        var sb = new StringBuilder();
-        sb.AppendLine($"Account: {account.Username}");
-        sb.AppendLine($"Banned: {account.InfractionHistory.IsCurrentlyBanned}");
-        sb.AppendLine($"Ban ends at: {account.InfractionHistory.BanEndsAt}");
-        sb.AppendLine($"Muted: {account.InfractionHistory.IsCurrentlyMuted}");
-        sb.AppendLine($"Mute ends at: {account.InfractionHistory.MuteEndsAt}");
-        sb.AppendLine($"Last infraction: {account.InfractionHistory.LastInfractionTime}");
+        var sb = new StringBuilder()
+            .AppendLine($"Account: {account.Username}")
+            .AppendLine($"Banned: {account.InfractionHistory.IsCurrentlyBanned}")
+            .AppendLine($"Ban ends at: {account.InfractionHistory.BanEndsAt}")
+            .AppendLine($"Muted: {account.InfractionHistory.IsCurrentlyMuted}")
+            .AppendLine($"Mute ends at: {account.InfractionHistory.MuteEndsAt}")
+            .AppendLine($"Last infraction: {account.InfractionHistory.LastInfractionTime}");
 
         InformSenderClient(sb.ToString(), true);
     }
+
 }
