@@ -3,18 +3,18 @@
  * Proprietary and confidential.
  */
 
-using Imlight.Common;
-using Imlight.Common.Formats;
-using Imlight.Common.ObjectProperty;
-using Imlight.CoreLib.Shared.Resources;
-using System;
 using System.Collections.Generic;
 using System.IO;
-using static Imlight.Common.Caches.TypeCache;
+using Imcodec.ObjectProperty;
+using Imcodec.ObjectProperty.TypeCache;
+using Imcodec.Wad;
+using Imlight.Common;
+using Imlight.CoreLib.Shared.Resources;
 
 namespace Imlight.CoreLib.Game.Effects;
 
 public class GameEffectRuleData : RootDirectoryResourceSingleton<GameEffectRuleData>, IMemoryStreamDisposable {
+    
     protected override string DirectoryName => "GameEffectRuleData";
     private static Dictionary<string, WizardStatTable> s_statTables;
 
@@ -28,10 +28,10 @@ public class GameEffectRuleData : RootDirectoryResourceSingleton<GameEffectRuleD
     public static WizardStatTable GetWizardStatTable(string tableName) {
         if (s_statTables is null) {
             Logger.Error("Stat tables were null. Cannot gather stat table.");
+
             return null;
         }
 
-        var s = s_statTables;
         if (!s_statTables.ContainsKey(tableName)) {
             return null;
         }
@@ -39,8 +39,8 @@ public class GameEffectRuleData : RootDirectoryResourceSingleton<GameEffectRuleD
         return s_statTables[tableName];
     }
 
-    private static void ProcessStatTables(Dictionary<FileRecord, MemoryStream> files) {
-        s_statTables = new Dictionary<string, WizardStatTable>();
+    private static void ProcessStatTables(Dictionary<FileEntry, MemoryStream> files) {
+        s_statTables = [];
         foreach (var file in files) {
             var tableName = file.Key.FileName;
             var stream = file.Value;
@@ -66,10 +66,14 @@ public class GameEffectRuleData : RootDirectoryResourceSingleton<GameEffectRuleD
     }
 
     private static WizardStatTable ProcessStatTable(MemoryStream stream) {
-        var serializer = new FileSerializer();
-        var propClass = serializer.OpenClass<WizardStatTable>(stream);
+        var serializer = new BindSerializer();
+        if (!serializer.Deserialize<WizardStatTable>(stream.ToArray(), out var tableClass)) {
+            Logger.Error("Failed to deserialize stat table");
 
-        return propClass;
+            return null;
+        }
+
+        return tableClass;
     }
 
     public void DisposeStream() {
@@ -77,4 +81,5 @@ public class GameEffectRuleData : RootDirectoryResourceSingleton<GameEffectRuleD
             stream.Dispose();
         }
     }
+
 }

@@ -3,17 +3,17 @@
  * Proprietary and confidential.
  */
 
-using Imlight.Common;
-using Imlight.Common.ObjectProperty;
-using Imlight.CoreLib.Shared.Resources;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using static Imlight.Common.Caches.TypeCache;
+using Imcodec.ObjectProperty;
+using Imcodec.ObjectProperty.TypeCache;
+using Imlight.Common;
+using Imlight.CoreLib.Shared.Resources;
 
 namespace Imlight.CoreLib.Game.Effects;
 
 public class CanonicalStatEffects : RootSingleResourceSingleton<CanonicalStatEffects>, IMemoryStreamDisposable {
+
     /*
     Recall the docs @ https://revive101.github.io/Imlight-docs/internals/schemas.html#object-creation
     Effects that are 'canonical' are effects that change numerical player stats, such as health or damage.
@@ -43,10 +43,13 @@ public class CanonicalStatEffects : RootSingleResourceSingleton<CanonicalStatEff
     private static GameEffectTemplateList s_effectTable;
 
     protected override void AfterLoad() {
-        var serializer = new FileSerializer();
-        var propClass = serializer.OpenClass<GameEffectTemplateList>(Stream);
+        var serializer = new BindSerializer();
+        var streamAsBytes = Stream.ToArray();
+        if (!serializer.Deserialize(streamAsBytes, out s_effectTable)) {
+            Logger.Error("Failed to deserialize canonical stat effects");
 
-        s_effectTable = propClass;
+            return;
+        }
 
         Logger.Information("Loaded {0} canonical stat effects", Logger.Args(s_effectTable.m_effectTemplates.Count));
     }
@@ -69,7 +72,7 @@ public class CanonicalStatEffects : RootSingleResourceSingleton<CanonicalStatEff
         }
 
         // Cast to WizStatisticEffectTemplate to access the stat table name property.
-        var castedTemplate = (WizStatisticEffectTemplate)effectTemplate;
+        var castedTemplate = (WizStatisticEffectTemplate) effectTemplate;
         var statTable = GameEffectRuleData.GetWizardStatTable(castedTemplate.m_statTableName);
         if (statTable is null) {
             Logger.Error("Could not find stat table for template {0}", Logger.Args(effectTemplate.m_effectName));
@@ -112,5 +115,7 @@ public class CanonicalStatEffects : RootSingleResourceSingleton<CanonicalStatEff
         }
     }
 
-    public void DisposeStream() => Stream.Dispose();
+    public void DisposeStream()
+        => Stream.Dispose();
+
 }

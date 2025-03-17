@@ -6,13 +6,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Imcodec.Cryptography;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
-using Imlight.Common.Cryptography;
 using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.WizardData.Models.Player;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Effects;
 
@@ -20,6 +20,7 @@ namespace Imlight.CoreLib.Game.Effects;
 /// Helper class for adding and removing effects to/from a wizard character.
 /// </summary>
 internal static class CharacterEffectHelper {
+
     /// <summary>
     /// Adds effects to a wizard based on a given template.
     /// </summary>
@@ -432,4 +433,5 @@ internal static class CharacterEffectHelper {
         // Return null or an appropriate value if no match is found
         return null;
     }
+
 }
