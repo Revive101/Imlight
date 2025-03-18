@@ -8,7 +8,7 @@ using System.Linq;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 using Imlight.Common;
-using static Imlight.Common.Caches.TypeCache;
+using Imcodec.ObjectProperty.TypeCache;
 
 namespace Imlight.CoreLib.Shared.Behaviors;
 
@@ -39,15 +39,18 @@ public class ServerAlchemyBehavior : IClientBehaviorProvider<ClientAlchemyBehavi
         if (existingReagent is not null) {
             if (existingReagent.m_quantity >= s_maxReagentStackAllowed) {
                 Logger.Debug("Player reagent stack is full. Cannot add reagent with global id {0}.", Logger.Args(reagent.m_globalID));
+
                 return false;
             }
 
             existingReagent.m_quantity++;
+
             return true;
         }
 
         ReagentItemIds.Add(reagent.m_globalID);
         Reagents.Add(reagent);
+
         return true;
     }
 
@@ -66,6 +69,7 @@ public class ServerAlchemyBehavior : IClientBehaviorProvider<ClientAlchemyBehavi
         if (reagent is null) {
             Logger.Debug("Tried to remove reagent with global id {0} that does not exist in player reagent bag.",
                 Logger.Args(reagentId));
+
             return false;
         }
 
@@ -76,12 +80,14 @@ public class ServerAlchemyBehavior : IClientBehaviorProvider<ClientAlchemyBehavi
             if (!Reagents.Remove(reagent)) {
                 Logger.Debug("Tried to remove reagent with global id {0} that does not exist in player inventory.",
                     Logger.Args(reagent.m_globalID));
+
                 return false;
             }
 
             if (!ReagentItemIds.Remove(reagentId)) {
                 Logger.Debug("Tried to remove reagent with global id {0} that does not exist in player inventory.",
                     Logger.Args(reagent.m_globalID));
+                    
                 return false;
             }
         }

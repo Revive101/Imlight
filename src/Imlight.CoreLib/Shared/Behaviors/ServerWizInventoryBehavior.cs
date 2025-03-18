@@ -8,18 +8,17 @@ using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
 using Imlight.Common;
-using Imlight.Common.Configuration;
-using Imlight.CoreLib.WizardData.Implementations;
-using static Imlight.Common.Caches.TypeCache;
+using Imcodec.ObjectProperty.TypeCache;
 
 namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
 public class ServerWizInventoryBehavior : IClientBehaviorProvider<ClientWizInventoryBehavior> {
+
     [JsonIgnore] public bool NoTransfer { get; set; } = false;
 
-    private static int s_maxItemsAllowed = ConfigurationManager.Settings.MaxInventoryItems;
-    private static readonly int s_maxJewelsAllowed = ConfigurationManager.Settings.MaxJewelsAllowed;
+    private static int s_maxItemsAllowed = ConfigurationManager.Settings["MaxInventoryItems"].AsInt();
+    private static readonly int s_maxJewelsAllowed = ConfigurationManager.Settings["MaxJewelsAllowed"].AsInt();
     private static readonly int s_maxItemsAllowedFallback = 20;
 
     public List<ulong> InventoryItemIds { get; set; }
@@ -35,23 +34,26 @@ public class ServerWizInventoryBehavior : IClientBehaviorProvider<ClientWizInven
         if (s_maxItemsAllowed <= 0) {
             Logger.Warning("Configuration states that {0} is not allowed to have any items in their inventory! "
                 + "This is not possible, and causes many game-breaking bugs. Defaulting to {1} items.",
-                Logger.Args(nameof(ServerSettings.MaxInventoryItems), s_maxItemsAllowedFallback));
+                Logger.Args(nameof(s_maxItemsAllowed), s_maxItemsAllowedFallback));
 
             s_maxItemsAllowed = s_maxItemsAllowedFallback;
         }
 
         if (Items.Count >= s_maxItemsAllowed) {
             Logger.Debug("Player inventory is full. Cannot add item with global id {0}.", Logger.Args(item.m_globalID));
+
             return false;
         }
 
         if (HasItem(item.m_globalID)) {
             Logger.Error("Item with same global id {0} already exists in player inventory.", Logger.Args(item.m_globalID));
+
             return false;
         }
 
         InventoryItemIds.Add(item.m_globalID);
         Items.Add(item);
+        
         return true;
     }
 
@@ -68,6 +70,7 @@ public class ServerWizInventoryBehavior : IClientBehaviorProvider<ClientWizInven
         if (removedItem is null) {
             Logger.Debug("Tried to remove item with global id {0} that does not exist in player inventory.",
                 Logger.Args(itemId));
+
             return false;
         }
 
@@ -86,12 +89,14 @@ public class ServerWizInventoryBehavior : IClientBehaviorProvider<ClientWizInven
         if (!Items.Remove(item)) {
             Logger.Debug("Tried to remove item with global id {0} that does not exist in player inventory.",
                 Logger.Args(item.m_globalID));
+
             return false;
         }
 
         if (!InventoryItemIds.Remove(item.m_globalID)) {
             Logger.Debug("Tried to remove item with global id {0} that does not exist in player inventory.",
                 Logger.Args(item.m_globalID));
+
             return false;
         }
 
@@ -103,7 +108,8 @@ public class ServerWizInventoryBehavior : IClientBehaviorProvider<ClientWizInven
     /// </summary>
     /// <param name="globalId">The global ID of the item to check.</param>
     /// <returns>True if the inventory contains an item with the specified global ID, otherwise false.</returns>
-    public bool HasItem(ulong globalId) => Items.Any(item => item.m_globalID == globalId);
+    public bool HasItem(ulong globalId) 
+        => Items.Any(item => item.m_globalID == globalId);
 
     /// <summary>
     /// Represents an item in the wizard's inventory.
@@ -115,4 +121,5 @@ public class ServerWizInventoryBehavior : IClientBehaviorProvider<ClientWizInven
         m_numJewelsAllowed = s_maxJewelsAllowed,
         m_itemList = Items.ConvertAll(item => (CoreObject) item)
     };
+
 }

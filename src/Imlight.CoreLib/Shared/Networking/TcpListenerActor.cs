@@ -13,6 +13,7 @@ using Imlight.CoreLib.Shared.Packets;
 namespace Imlight.CoreLib.Shared.Networking;
 
 public class TcpListenerActor : ReceiveActor {
+
     public string Name { get; }
     public int Port { get; }
     public bool Listening { get; private set; }
@@ -31,9 +32,8 @@ public class TcpListenerActor : ReceiveActor {
         Start();
     }
 
-    public static Props Props(string name, int port, IActorRef serverRef) {
-        return Akka.Actor.Props.Create(() => new TcpListenerActor(name, port, serverRef));
-    }
+    public static Props Props(string name, int port, IActorRef serverRef) 
+        => Akka.Actor.Props.Create(() => new TcpListenerActor(name, port, serverRef));
 
     public async void Start() {
         this.Listening = true;
@@ -72,4 +72,5 @@ public class TcpListenerActor : ReceiveActor {
         var msg = new SERVER_100_PROTOCOL.MSG_ALLOCATESOCKET() { Socket = socket };
         _serverRef.Tell(msg);
     }
+
 }

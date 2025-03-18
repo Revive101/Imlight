@@ -11,6 +11,7 @@ using Imcodec.Types;
 namespace Imlight.CoreLib.Shared.Utilities;
 
 public static class RandomGen {
+    
     /// <summary>
     /// Represents a globally unique identifier (GUID) for the application.
     /// </summary>
@@ -33,4 +34,5 @@ public static class RandomGen {
         
         return hash;
     }
+
 }

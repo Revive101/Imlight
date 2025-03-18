@@ -5,28 +5,29 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Threading.Tasks;
+using Imcodec.Cryptography;
+using Imcodec.IO;
+using Imcodec.ObjectProperty;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
-using Imlight.Common.Caches;
-using Imlight.Common.Cryptography;
-using Imlight.Common.IO;
-using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Shared.Utilities;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Shared.Resources;
 
 public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>, IMemoryStreamDisposable {
+
     protected override string ResourceName { get; } = "TemplateManifest.xml";
 
     public static TemplateManifest TemplateManifest;
 
     protected override void AfterLoad() {
-        var fileSerializer = new FileSerializer();
-        TemplateManifest = fileSerializer.OpenClass<TemplateManifest>(Stream)
-            ?? throw new Exception("Could not deserialize TemplateManifest.xml");
+        var serializer = new BindSerializer();
+        if (!serializer.Deserialize(base.Stream.ToArray(), 1, out TemplateManifest)) {
+            Logger.Error("Could not deserialize TemplateManifest.xml.");
+
+            return;
+        }
 
         Logger.Information("Loaded {TCount} CoreTemplates.", Logger.Args(TemplateManifest.m_serializedTemplates.Count));
 
@@ -68,6 +69,7 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
         foreach (var behaviorTemplate in template.m_behaviors) {
             if (behaviorTemplate is null) {
                 coreObject.m_inactiveBehaviors.Add(null);
+
                 continue;
             }
 
@@ -77,6 +79,7 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
 
             if (behaviorInstance is null) {
                 coreObject.m_inactiveBehaviors.Add(null);
+
                 continue;
             }
 
@@ -98,10 +101,12 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
     public static bool FindBehaviorInstance<T>(CoreObject coreObj, out T behaviorInstance) where T : BehaviorInstance {
         foreach (var behavior in coreObj.m_inactiveBehaviors.OfType<T>()) {
             behaviorInstance = behavior;
+
             return true;
         }
 
         behaviorInstance = default;
+
         return false;
     }
 
@@ -114,6 +119,7 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
         var template = TemplateManifest.m_serializedTemplates.FirstOrDefault(x => x.m_id == id);
         if (template is null) {
             Logger.Error("Could not find CoreTemplate by ID {Tid}", Logger.Args(id));
+
             return null;
         }
 
@@ -121,6 +127,7 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
         if (template is null) {
             Logger.Error("Could not load CoreTemplate from {Loc}", Logger.Args(template.m_filename));
         }
+
         return templateObj ?? null;
     }
 
@@ -136,10 +143,11 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
 
         if (templateOrNull is null) {
             Logger.Error("Could not find CoreTemplate by predicate.");
+
             return 0;
         }
 
-        return (uint)templateOrNull.m_id;
+        return templateOrNull.m_id;
     }
 
     /// <summary>
@@ -192,6 +200,7 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
     public static CoreObject FinalizeCoreObject(CoreObjectInfo objInfo, CoreTemplate template) {
         if (template is null) {
             Logger.Error("Could not finalize CoreObject from TemplateID {Tid}", Logger.Args(objInfo.m_templateID));
+
             return null;
         }
 
@@ -210,7 +219,11 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
         // Check to see if the template has a field called "m_displayName."
         // If it does, set the debug name to the English name of the display name.
         if (template.GetType().GetField("m_displayName") is not null) {
-            var displayNameValue = ((ByteString)template.GetType().GetField("m_displayName").GetValue(template)).ToString();
+            var displayNameValue = ((ByteString) template
+                .GetType()
+                .GetField("m_displayName")
+                .GetValue(template))
+                .ToString();
             var englishName = Locale.GetEnglishName(displayNameValue);
             obj.m_debugName = englishName;
         }
@@ -218,17 +231,16 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
         return obj;
     }
 
-    private static CoreObject CreateCoreObjectFromTemplate(CoreTemplate template) {
-        return template switch {
+    private static CoreObject CreateCoreObjectFromTemplate(CoreTemplate template)
+        => template switch {
             ReagentItemTemplate => new ClientReagentItem(),
             PetSnackItemTemplate => new ClientPetSnackItem(),
             ItemTemplate => new WizClientObjectItem(),
             WizGameObjectTemplate => new WizClientObject(),
             _ => new ClientObject()
         };
-    }
 
-    public void DisposeStream() {
-        Stream?.Dispose();
-    }
+    public void DisposeStream()
+        => Stream?.Dispose();
+
 }

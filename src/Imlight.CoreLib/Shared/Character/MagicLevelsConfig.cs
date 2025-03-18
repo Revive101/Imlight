@@ -6,19 +6,18 @@
 using System;
 using System.Collections.Generic;
 using Imlight.Common;
-using Imlight.Common.Configuration;
-using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Shared.Resources;
-using Imlight.Common.Caches;
-using static Imlight.Common.Caches.TypeCache;
 using Imlight.CoreLib.Shared.Behaviors;
+using Imcodec.ObjectProperty.TypeCache;
+using Imcodec.ObjectProperty;
 
 namespace Imlight.CoreLib.Shared.Character;
 
 internal class MagicLevelsConfig : RootSingleResourceSingleton<MagicLevelsConfig>, IMemoryStreamDisposable {
+
     protected override string ResourceName => "MagicXPConfig.xml";
 
-    private readonly int _imlightMaxLevel = ConfigurationManager.Settings.MaxLevel;
+    private readonly int _imlightMaxLevel = ConfigurationManager.Settings["MaxLevel"].AsInt();
     private int _maxLevel;
     private Dictionary<int, int> _mobLevelConfig;
     private Dictionary<string, List<MagicLevelInfo>> _playerLevelConfig;
@@ -59,9 +58,8 @@ internal class MagicLevelsConfig : RootSingleResourceSingleton<MagicLevelsConfig
     /// <param name="magicSchool">The magic school.</param>
     /// <param name="level">The level.</param>
     /// <returns>The level information for the specified magic school and level.</returns>
-    public static MagicLevelInfo GetPlayerLevelInfo(MagicSchool magicSchool, int level) {
-        return GetPlayerLevelInfo(magicSchool.ToString(), level);
-    }
+    public static MagicLevelInfo GetPlayerLevelInfo(MagicSchool magicSchool, int level) 
+        => GetPlayerLevelInfo(magicSchool.ToString(), level);
 
     /// <summary>
     /// Retrieves the level information for a specific class and level.
@@ -80,9 +78,12 @@ internal class MagicLevelsConfig : RootSingleResourceSingleton<MagicLevelsConfig
     }
 
     protected override void AfterLoad() {
-        var serializer = new FileSerializer();
-        var magicXPConfig = serializer.OpenClass<TypeCache.MagicXPConfig>(Stream)
-            ?? throw new Exception("Failed to load MagicXPConfig.xml");
+        var serializer = new BindSerializer();
+        if (!serializer.Deserialize<MagicXPConfig>(base.Stream.ToArray(), 1, out var magicXPConfig)) {
+            Logger.Error("Failed to load MagicXPConfig.xml");
+
+            return;
+        }
 
         LoadMaxLevel(magicXPConfig);
         LoadMobLevelConfig(magicXPConfig);
@@ -91,7 +92,7 @@ internal class MagicLevelsConfig : RootSingleResourceSingleton<MagicLevelsConfig
         DisposeStream();
     }
 
-    private void LoadMaxLevel(TypeCache.MagicXPConfig magicXPConfig) {
+    private void LoadMaxLevel(MagicXPConfig magicXPConfig) {
         // If the configuration deems the max level to be lower than the one recorded here,
         // we will use the configuration's max level instead.
         _maxLevel = magicXPConfig.m_maxSchoolLevel;
@@ -102,8 +103,8 @@ internal class MagicLevelsConfig : RootSingleResourceSingleton<MagicLevelsConfig
         Logger.Information("Imlight max level set to {0}", Logger.Args(_maxLevel));
     }
 
-    private void LoadMobLevelConfig(TypeCache.MagicXPConfig magicXPConfig) {
-        _mobLevelConfig = new Dictionary<int, int>();
+    private void LoadMobLevelConfig(MagicXPConfig magicXPConfig) {
+        _mobLevelConfig = [];
         var counter = 0;
 
         foreach (var mobLevel in magicXPConfig.m_levelsConfig) {
@@ -114,12 +115,12 @@ internal class MagicLevelsConfig : RootSingleResourceSingleton<MagicLevelsConfig
         Logger.Information("Loaded {0} mob level configurations", Logger.Args(counter));
     }
 
-    private void LoadPlayerLevelConfig(TypeCache.MagicXPConfig magicXPConfig) {
+    private void LoadPlayerLevelConfig(MagicXPConfig magicXPConfig) {
         // There are two lists of data here. One is the `m_levelInfo` which is non-unique and shared
         // between all schools. It details how much mana, power pip chance, and xp is required to level up.
         // However, the `m_classInfo` is the same as `m_levelInfo` but is unique to each school, and details
         // how much base health the wizard has at any given level.
-        _playerLevelConfig = new Dictionary<string, List<MagicLevelInfo>>();
+        _playerLevelConfig = [];
         var allSchoolInfo = magicXPConfig.m_levelInfo;
 
         var counter = 0;
@@ -157,5 +158,7 @@ internal class MagicLevelsConfig : RootSingleResourceSingleton<MagicLevelsConfig
         Logger.Information("Loaded {0} player level configurations", Logger.Args(counter));
     }
 
-    public void DisposeStream() => base.Stream.Dispose();
+    public void DisposeStream() 
+        => base.Stream.Dispose();
+
 }

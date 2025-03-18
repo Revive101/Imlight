@@ -3,13 +3,12 @@
  * Proprietary and confidential.
  */
 
-using Akka.Actor;
-using Imlight.CoreLib.Patch;
-using Imlight.CoreLib.Shared.Packets;
-using Imlight.Common.Configuration;
 using System;
 using System.IO;
+using Akka.Actor;
 using Imlight.Common;
+using Imlight.CoreLib.Patch;
+using Imlight.CoreLib.Shared.Packets;
 
 namespace Imlight.CoreLib.Shared.Resources;
 
@@ -18,8 +17,9 @@ namespace Imlight.CoreLib.Shared.Resources;
 /// and what happens when the patch server is not available.
 /// </summary>
 internal static class PatchServerFascade {
-    private static readonly int s_pathServerWait = ConfigurationManager.Settings.LocalWadCacheWaitForPatchServerTimeout;
-    private static readonly int s_pathServerDownloadTimeout = ConfigurationManager.Settings.PatchServerDownloadTimeout;
+
+    private static readonly int s_pathServerWait = ConfigurationManager.Settings["LocalWadCacheWaitForPatchServerTimeout"].AsInt();
+    private static readonly int s_pathServerDownloadTimeout = ConfigurationManager.Settings["PatchServerDownloadTimeout"].AsInt();
     internal static bool EndpointReached => PatchServer.EndpointReached;
 
     /// <summary>
@@ -29,6 +29,7 @@ internal static class PatchServerFascade {
     internal static LatestFileList GetLatestFileList() {
         if (!EndpointReached) {
             Logger.Error("Could not get latest file list because the patch server is not available.");
+            
             return default;
         }
 
@@ -53,6 +54,7 @@ internal static class PatchServerFascade {
         fileStream = default;
         if (!EndpointReached) {
             Logger.Error("Could not get latest file list because the patch server is not available.");
+
             return false;
         }
 
@@ -71,13 +73,16 @@ internal static class PatchServerFascade {
             if (ex.Message.ToLower().Contains("task was cancelled")) {
                 Logger.Warning("Download of wad {WadName} failed because the timeout of {Timer} was reached.",
                     Logger.Args(wadName, s_pathServerDownloadTimeout));
+
                 return false;
             }
 
             // Unknown error occurred
             Logger.Error("Could not download wad {WadName}. Exception: {Ex}",
                 Logger.Args(wadName, ex.Message));
+
             return false;
         }
     }
+
 }

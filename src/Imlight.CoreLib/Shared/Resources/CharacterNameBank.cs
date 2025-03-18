@@ -3,17 +3,16 @@
  * Proprietary and confidential.
  */
 
-using Imlight.Common;
-using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Xml;
-using static Imlight.Common.Caches.TypeCache;
+using Imcodec.ObjectProperty.TypeCache;
+using Imlight.Common;
 
 namespace Imlight.CoreLib.Shared.Resources;
 
 public class WizardNameBank : RootSingleResourceSingleton<WizardNameBank>, IMemoryStreamDisposable {
+
     protected override string ResourceName => "CharacterNames.xml";
     private const string CharacterLocaleTable = "CharacterNames";
     private const string FirstNameHumanMaleTableName = "FirstName_HumanMale";
@@ -26,7 +25,6 @@ public class WizardNameBank : RootSingleResourceSingleton<WizardNameBank>, IMemo
     protected override void AfterLoad() {
         s_characterNameTable = GetCharacterNameTable(Stream);
         Logger.Information("Loaded {0} character name tables.", Logger.Args(s_characterNameTable.Count));
-
     }
 
     /// <summary>
@@ -44,12 +42,12 @@ public class WizardNameBank : RootSingleResourceSingleton<WizardNameBank>, IMemo
         var firstNameTableName = (gender == eGender.Male) ? FirstNameHumanMaleTableName : FirstNameHumanFemaleTableName;
         var firstName = GetEnglishNamePart(firstNameTableName, firstNameIndex);
 
-        string middleName = string.Empty;
+        var middleName = string.Empty;
         if (middleNameIndex != 0) {
             middleName = GetEnglishNamePart(MiddleNameHumanTableName, middleNameIndex);
         }
 
-        string lastName = string.Empty;
+        var lastName = string.Empty;
         if (lastNameIndex != 0) {
             lastName = GetEnglishNamePart(LastNameHumanTableName, lastNameIndex);
         }
@@ -108,5 +106,7 @@ public class WizardNameBank : RootSingleResourceSingleton<WizardNameBank>, IMemo
         return result;
     }
 
-    public void DisposeStream() => Stream.Dispose();
+    public void DisposeStream() 
+        => Stream.Dispose();
+
 }

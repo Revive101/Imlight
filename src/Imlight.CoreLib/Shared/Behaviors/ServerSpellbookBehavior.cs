@@ -5,17 +5,18 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Imcodec.ObjectProperty.TypeCache;
 using Newtonsoft.Json;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Shared.Behaviors;
 
 public class ServerSpellbookBehavior : IClientBehaviorProvider<ClientSpellbookBehavior> {
+
     [JsonIgnore] public bool NoTransfer { get; set; } = false;
 
-    public List<uint> LearnedSpellTemplateIds = new();
-    [JsonIgnore] public List<SpellData> SpellList = new();
-    [JsonIgnore] public List<Spell> TemporarySpells = new();
+    public List<uint> LearnedSpellTemplateIds = [];
+    [JsonIgnore] public List<SpellData> SpellList = [];
+    [JsonIgnore] public List<Spell> TemporarySpells = [];
 
     public virtual void AddSpellToBook(Spell spell) {
         if (LearnedSpellTemplateIds.Contains(spell.m_templateID)) {
@@ -39,7 +40,7 @@ public class ServerSpellbookBehavior : IClientBehaviorProvider<ClientSpellbookBe
     }
 
     public void AddTemporarySpellToBook(Spell spell) {
-        TemporarySpells ??= new List<Spell>();
+        TemporarySpells ??= [];
 
         if (spell != null) {
             TemporarySpells.Add(spell);
@@ -57,9 +58,8 @@ public class ServerSpellbookBehavior : IClientBehaviorProvider<ClientSpellbookBe
         }
     }
 
-    public bool HasSpell(uint templateId) {
-        return LearnedSpellTemplateIds.Contains(templateId);
-    }
+    public bool HasSpell(uint templateId) 
+        => LearnedSpellTemplateIds.Contains(templateId);
 
     public ClientSpellbookBehavior GetClientBehaviorInstance() {
         var spellIdList = new List<SpellIDTracker>();
@@ -81,4 +81,5 @@ public class ServerSpellbookBehavior : IClientBehaviorProvider<ClientSpellbookBe
 
         return SpellList.Sum(spellData => (int) spellData.m_quantity);
     }
+    
 }

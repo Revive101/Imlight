@@ -5,11 +5,12 @@
 
 using System;
 using Akka.Actor;
-using Imlight.Common.MessageLayer;
+using Imcodec.MessageLayer;
 
 namespace Imlight.CoreLib.Shared.Networking;
 
 public class QueueMember {
+
     /// <summary>
     /// The unique session ID of this queue member.
     /// </summary>
@@ -30,4 +31,5 @@ public class QueueMember {
         ActorRef = actorRef ?? throw new ArgumentNullException(nameof(actorRef));
         EndMessage = endMessage ?? throw new ArgumentNullException(nameof(endMessage));
     }
+    
 }

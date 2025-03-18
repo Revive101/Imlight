@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Akka.Actor;
-using Imlight.Common.MessageLayer;
 
 namespace Imlight.CoreLib.Shared.Networking;
 
@@ -15,6 +14,7 @@ namespace Imlight.CoreLib.Shared.Networking;
 /// An extension of a ReceiveActor that allows for receiving INetworkRecords directly to method attributes.
 /// </summary>
 public class ReceiveProtocolDispatcher : ReceiveActor {
+
     public Dictionary<System.Type, MethodInfo> MessageHandlers { get; private set; }
 
     protected ReceiveProtocolDispatcher() {
@@ -61,4 +61,5 @@ public class ReceiveProtocolDispatcher : ReceiveActor {
             MessageHandlers.Add(type, method);
         }
     }
+    
 }

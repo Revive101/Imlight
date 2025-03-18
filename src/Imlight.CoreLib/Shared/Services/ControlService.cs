@@ -6,17 +6,17 @@
 using System;
 using System.Diagnostics;
 using Akka.Actor;
+using Imcodec.MessageLayer;
 using Imlight.Common;
-using Imlight.Common.Caches;
-using Imlight.Common.Configuration;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 
 namespace Imlight.CoreLib.Shared.Services;
 
 public class ControlService : MessageService {
-    private readonly byte _keepAliveInterval = ConfigurationManager.Settings.KeepAliveInterval;
-    private readonly byte _keepAliveRspWaitTime = ConfigurationManager.Settings.KeepAliveRspWaitTime;
+
+    private readonly byte _keepAliveInterval = ConfigurationManager.Settings["KeepAliveInterval"].AsByte();
+    private readonly byte _keepAliveRspWaitTime = ConfigurationManager.Settings["KeepAliveRspWaitTime"].AsByte();
 
     private bool _sessionValid;
     private readonly Stopwatch _responseStopwatch;
@@ -29,7 +29,8 @@ public class ControlService : MessageService {
         SendSessionOffer();
     }
 
-    protected static Props Props(SessionActor parentActor) => Akka.Actor.Props.Create(() => new ControlService(parentActor));
+    protected static Props Props(SessionActor parentActor) 
+        => Akka.Actor.Props.Create(() => new ControlService(parentActor));
 
     protected override void ConfigureReceivers() {
         // These are sent from self on interval to remind the actor of the session heartbeat.
@@ -185,4 +186,5 @@ public class ControlService : MessageService {
                   "did not return a SessionAccept message in time", Logger.Args(SessionActor.SessionID));
         CloseSession();
     }
+
 }

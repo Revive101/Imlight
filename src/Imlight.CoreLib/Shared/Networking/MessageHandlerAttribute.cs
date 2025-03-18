@@ -8,15 +8,11 @@ using System;
 namespace Imlight.CoreLib.Shared.Networking;
 
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-public class MessageHandlerAttribute : Attribute {
-    public Type MessageType { get; }
+public class MessageHandlerAttribute(Type messageType) : Attribute {
 
-    public MessageHandlerAttribute(Type messageType) {
-        MessageType = messageType;
-    }
+    public Type MessageType { get; } = messageType;
+    
 }
 
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-public class InternalMessageHandlerAttribute : MessageHandlerAttribute {
-    public InternalMessageHandlerAttribute(Type messageType) : base(messageType) { }
-}
+public class InternalMessageHandlerAttribute(Type messageType) : MessageHandlerAttribute(messageType) { }

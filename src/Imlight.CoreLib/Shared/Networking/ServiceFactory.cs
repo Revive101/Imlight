@@ -12,19 +12,17 @@ using Imlight.CoreLib.Shared.Packets;
 namespace Imlight.CoreLib.Shared.Networking;
 
 public abstract class ServiceFactory : ReceiveActor {
+
     protected abstract HashSet<Type> ServiceTypes { get; set; }
 
-    public ServiceFactory() {
-        ConfigureReceivers();
-    }
+    public ServiceFactory() => ConfigureReceivers();
 
     /// <summary>
     /// Configures the available actor receivers.
     /// </summary>
-    private void ConfigureReceivers() {
-        Receive<SERVICE_101_PROTOCOL.MSG_QUERYUNLOADEDSERVICES>(x
+    private void ConfigureReceivers() 
+        => Receive<SERVICE_101_PROTOCOL.MSG_QUERYUNLOADEDSERVICES>(x
             => GetUnloadedActorMessageServices());
-    }
 
     /// <summary>
     /// Returns a HashSet of ActorMessageServices to give to a SessionActor before the session is loaded.
@@ -37,4 +35,5 @@ public abstract class ServiceFactory : ReceiveActor {
 
         Sender.Tell(rsp);
     }
+
 }

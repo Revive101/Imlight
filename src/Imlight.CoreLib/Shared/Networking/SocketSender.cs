@@ -3,18 +3,18 @@
  * Proprietary and confidential.
  */
 
-using Akka.Actor;
-using Imlight.Common;
-using Imlight.Common.Caches;
-using Imlight.Common.Configuration;
-using Imlight.Common.MessageLayer;
 using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
+using Akka.Actor;
+using Imcodec.MessageLayer;
+using Imcodec.MessageLayer.Generated;
+using Imlight.Common;
 
 namespace Imlight.CoreLib.Shared.Networking;
 
 internal sealed class SocketSender : ReceiveActor, IDisposable {
+    
     private readonly IActorRef _sessionActorRef;
     private readonly Socket _socket;
     private readonly ushort _sessionid;
@@ -61,13 +61,14 @@ internal sealed class SocketSender : ReceiveActor, IDisposable {
         if (_isSending) {
             Logger.Error("SessionActor {SessionId} send failure: " +
                          "Synchronous send operation already in progress.", Logger.Args(_sessionid));
+                         
             return;
         }
         if (_isDisposed) {
             return;
         }
 
-        var data = MessageSerializer.Encode(message);
+        var data = MessageEncoder.Encode(message);
         _isSending = true;
 
         try {
@@ -99,4 +100,5 @@ internal sealed class SocketSender : ReceiveActor, IDisposable {
                 Logger.Args(_sessionid, scopedMessageName));
         }
     }
+
 }

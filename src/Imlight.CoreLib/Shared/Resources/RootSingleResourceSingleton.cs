@@ -13,6 +13,7 @@ namespace Imlight.CoreLib.Shared.Resources;
 /// </summary>
 /// <typeparam name="T">The type of the derived class.</typeparam>
 public abstract class RootSingleResourceSingleton<T> where T : RootSingleResourceSingleton<T>, new() {
+
     private static readonly Lazy<T> s_instance = new(() => new T());
 
     public static T Instance => s_instance.Value;
@@ -42,4 +43,5 @@ public abstract class RootSingleResourceSingleton<T> where T : RootSingleResourc
     /// This method is called after the resource is loaded.
     /// </summary>
     protected abstract void AfterLoad();
+    
 }

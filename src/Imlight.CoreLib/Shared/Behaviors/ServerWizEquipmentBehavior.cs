@@ -3,22 +3,22 @@
  * Proprietary and confidential.
  */
 
-using Imlight.Common;
-using Imlight.Common.ObjectProperty.PropertyReflection;
-using Imlight.CoreLib.Shared.Character;
-using Imlight.CoreLib.Shared.Items;
-using Imlight.CoreLib.WizardData.Implementations;
-using Imlight.CoreLib.WizardData.Models.Player;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static Imlight.Common.Caches.TypeCache;
+using Newtonsoft.Json;
+using Imlight.Common;
+using Imlight.CoreLib.Shared.Character;
+using Imlight.CoreLib.Shared.Items;
+using Imlight.CoreLib.WizardData.Models.Player;
+using Imcodec.ObjectProperty.TypeCache;
+using Imcodec.Types;
 
 namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
 public class ServerWizEquipmentBehavior : IClientBehaviorProvider<ClientWizEquipmentBehavior> {
+
     [JsonIgnore] public bool NoTransfer { get; set; } = false;
 
     public List<EquipmentSlot> SlotList;
@@ -44,6 +44,7 @@ public class ServerWizEquipmentBehavior : IClientBehaviorProvider<ClientWizEquip
         UpdateEquipmentSlot(slotType, item.m_debugName, itemId);
         EquippedItemIds.Add(itemId);
         EquippedItems.Add(item);
+        
         return true;
     }
 
@@ -66,6 +67,7 @@ public class ServerWizEquipmentBehavior : IClientBehaviorProvider<ClientWizEquip
         ClearEquipmentSlot(slot.SlotType);
         EquippedItemIds.Remove(itemId);
         EquippedItems.Remove(item);
+
         return true;
     }
 
@@ -77,6 +79,7 @@ public class ServerWizEquipmentBehavior : IClientBehaviorProvider<ClientWizEquip
         // Cast the slot name to an enum value.
         if (!Enum.TryParse(typeof(EquipmentSlotType), slotName, true, out var slot)) {
             Logger.Error("Could not parse slot name {0} to an enum value.", Logger.Args(slotName));
+
             return false;
         }
 
@@ -92,17 +95,18 @@ public class ServerWizEquipmentBehavior : IClientBehaviorProvider<ClientWizEquip
         }
 
         index = (byte) slotIndex;
+
         return true;
     }
 
-    public WizClientObjectItem GetItem(ulong globalId) {
-        return EquippedItems.FirstOrDefault(item => item.m_globalID == globalId);
-    }
+    public WizClientObjectItem GetItem(ulong globalId) 
+        => EquippedItems.FirstOrDefault(item => item.m_globalID == globalId);
 
     public WizClientObjectItem GetItemInSlot(string slotName) {
         // Cast the slot name to an enum value.
         if (!Enum.TryParse(typeof(EquipmentSlotType), slotName, true, out var slot)) {
             Logger.Error("Could not parse slot name {0} to an enum value.", Logger.Args(slotName));
+
             return null;
         }
 
@@ -122,6 +126,7 @@ public class ServerWizEquipmentBehavior : IClientBehaviorProvider<ClientWizEquip
         // Cast the slot name to an enum value.
         if (!Enum.TryParse(typeof(EquipmentSlotType), slotName, true, out var slot)) {
             Logger.Error("Could not parse slot name {0} to an enum value.", Logger.Args(slotName));
+
             return null;
         }
 
@@ -174,4 +179,5 @@ public class ServerWizEquipmentBehavior : IClientBehaviorProvider<ClientWizEquip
         m_itemList = EquippedItems?.ConvertAll(item => item as CoreObject),
         m_publicItemList = CharacterHelper.GetEquipmentList(this).m_infoList,
     };
+    
 }

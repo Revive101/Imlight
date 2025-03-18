@@ -4,14 +4,13 @@
  */
 
 using System;
-using Imlight.Common.Configuration;
-using Imlight.CoreLib.WizardData.Implementations;
+using Imcodec.ObjectProperty.TypeCache;
 using Newtonsoft.Json;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Shared.Behaviors;
 
 public enum MagicSchool {
+
     None = 0,
     Ice = 72777,
     Life = 2330892,
@@ -24,10 +23,12 @@ public enum MagicSchool {
     Star = 2625203,
     Moon = 2504141,
     Shadow = 1429009101,
+
 }
 
 [Serializable]
 public class ServerMagicSchoolBehavior : IClientBehaviorProvider<ClientMagicSchoolBehavior> {
+
     [JsonIgnore] public bool NoTransfer { get; set; } = false;
 
     public MagicSchool MagicSchool;
@@ -47,4 +48,5 @@ public class ServerMagicSchoolBehavior : IClientBehaviorProvider<ClientMagicScho
         m_levelLocked = LevelIsLocked,
         m_equippedTeleportEffect = EquippedTeleportEffect
     };
+    
 }

@@ -10,14 +10,12 @@ using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Shared.Services;
 
-public class AccountService : MessageService {
+public class AccountService(SessionActor parentActor) : MessageService(parentActor) {
+    
     public Account Account { get; private set; }
 
-    public AccountService(SessionActor parentActor) : base(parentActor) { }
-
-    protected static Props Props(SessionActor parentActor) {
-        return Akka.Actor.Props.Create(() => new AccountService(parentActor));
-    }
+    protected static Props Props(SessionActor parentActor) 
+        => Akka.Actor.Props.Create(() => new AccountService(parentActor));
 
     [InternalMessageHandler(typeof(ACCOUNT_104_PROTOCOL.MSG_ACCOUNT))]
     private void InternalReceiveSetAccount(ACCOUNT_104_PROTOCOL.MSG_ACCOUNT message) {
@@ -31,4 +29,5 @@ public class AccountService : MessageService {
             Account = this.Account
         }, Context.Self);
     }
+
 }

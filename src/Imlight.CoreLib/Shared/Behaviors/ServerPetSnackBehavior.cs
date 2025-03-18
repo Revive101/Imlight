@@ -8,12 +8,13 @@ using System.Linq;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 using Imlight.Common;
-using static Imlight.Common.Caches.TypeCache;
+using Imcodec.ObjectProperty.TypeCache;
 
 namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
 public class ServerPetSnackBehavior : IClientBehaviorProvider<ClientPetSnackBehavior> {
+
     [JsonIgnore] public bool NoTransfer { get; set; } = false;
 
     private static readonly int s_maxSnackStackAllowed = 999;
@@ -36,15 +37,18 @@ public class ServerPetSnackBehavior : IClientBehaviorProvider<ClientPetSnackBeha
         if (existingSnack is not null) {
             if (existingSnack.m_quantity >= s_maxSnackStackAllowed) {
                 Logger.Debug("Player snack stack is full. Cannot add snack with global id {0}.", Logger.Args(snack.m_globalID));
+
                 return false;
             }
 
             existingSnack.m_quantity++;
+
             return true;
         }
 
         SnackItemIds.Add(snack.m_globalID);
         Snacks.Add(snack);
+
         return true;
     }
 
@@ -63,6 +67,7 @@ public class ServerPetSnackBehavior : IClientBehaviorProvider<ClientPetSnackBeha
         if (snack is null) {
             Logger.Debug("Tried to remove snack with global id {0} that does not exist in player snack bag.",
                 Logger.Args(snackId));
+
             return false;
         }
 
@@ -73,12 +78,14 @@ public class ServerPetSnackBehavior : IClientBehaviorProvider<ClientPetSnackBeha
             if (!Snacks.Remove(snack)) {
                 Logger.Debug("Tried to remove snack with global id {0} that does not exist in player inventory.",
                     Logger.Args(snack.m_globalID));
+
                 return false;
             }
 
             if (!SnackItemIds.Remove(snackId)) {
                 Logger.Debug("Tried to remove snack with global id {0} that does not exist in player inventory.",
                     Logger.Args(snack.m_globalID));
+
                 return false;
             }
         }
@@ -91,21 +98,24 @@ public class ServerPetSnackBehavior : IClientBehaviorProvider<ClientPetSnackBeha
     /// </summary>
     /// <param name="globalId">The global ID of the snack to check.</param>
     /// <returns>True if the snack bag contains an snack with the specified global ID, otherwise false.</returns>
-    public bool HasSnackID(ulong globalId) => Snacks?.Any(snack => snack.m_globalID == globalId) ?? false;
+    public bool HasSnackID(ulong globalId) 
+        => Snacks?.Any(snack => snack.m_globalID == globalId) ?? false;
 
     /// <summary>
     /// Checks if the snack bag contains a snack with the specified template ID.
     /// </summary>
     /// <param name="templateId">The template ID of the snack to check.</param>
     /// <returns>True if the snack bag contains an snack with the specified template ID, otherwise false.</returns>
-    public bool HasSnack(ulong templateId) => Snacks?.Any(snack => snack.m_templateID == templateId) ?? false;
+    public bool HasSnack(ulong templateId) 
+        => Snacks?.Any(snack => snack.m_templateID == templateId) ?? false;
 
     /// <summary>
     /// Returns the snack with the specified template ID.
     /// </summary>
     /// <param name="templateId">The template ID of the snack to get.</param>
     /// <returns>Returns the snack object with the specified template ID, otherwise null.</returns>
-    public ClientPetSnackItem GetSnack(ulong templateId) => Snacks?.FirstOrDefault(snack => snack.m_templateID == templateId) ?? null;
+    public ClientPetSnackItem GetSnack(ulong templateId) 
+        => Snacks?.FirstOrDefault(snack => snack.m_templateID == templateId) ?? null;
 
     public ClientPetSnackBehavior GetClientBehaviorInstance() => new() {
         m_snackBag = new ObjectBag() {
@@ -113,4 +123,5 @@ public class ServerPetSnackBehavior : IClientBehaviorProvider<ClientPetSnackBeha
             m_itemList = Snacks?.ConvertAll(item => (CoreObject) item) ?? []
         }
     };
+
 }

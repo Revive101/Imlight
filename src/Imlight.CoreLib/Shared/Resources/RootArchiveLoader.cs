@@ -3,14 +3,13 @@
  * Proprietary and confidential.
  */
 
-using Imlight.Common;
-using Imlight.Common.Formats;
-using Imlight.Common.ObjectProperty;
-using Imlight.Common.ObjectProperty.PropertyReflection;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Imcodec.ObjectProperty;
+using Imcodec.Wad;
+using Imlight.Common;
 
 namespace Imlight.CoreLib.Shared.Resources;
 
@@ -18,11 +17,12 @@ namespace Imlight.CoreLib.Shared.Resources;
 /// Loads the Root.wad archive into memory.
 /// </summary>
 public static class RootArchiveLoader {
-    internal const string RootWadName = "Root.wad";
-    internal static bool IsLoaded { get; private set; }
-    private static KiWad s_rootWad;
 
-    internal static KiWad GetRootWad() => s_rootWad;
+    internal const string ROOT_WAD_NAME = "Root.wad";
+
+    internal static bool IsLoaded { get; private set; }
+    internal static Archive GetRootWad() => s_rootWad;
+    private static Archive s_rootWad;
 
     /// <summary>
     /// Reloads the Root.wad file into memory.
@@ -49,9 +49,10 @@ public static class RootArchiveLoader {
         }
 
         var t = s_rootWad;
-        var file = s_rootWad.OpenFile(fileName) ?? throw new Exception($"Could not find file {fileName} in Root.wad!");
+        var file = s_rootWad.OpenFile(fileName) 
+            ?? throw new Exception($"Could not find file {fileName} in Root.wad!");
 
-        return file;
+        return new MemoryStream(file.ToArray());
     }
 
     /// <summary>
@@ -70,8 +71,18 @@ public static class RootArchiveLoader {
             return null;
         }
 
-        var serializer = new FileSerializer();
-        return serializer.OpenClass<T>(s_rootWad, fileName);
+        var fileData = s_rootWad.OpenFile(fileName);
+        if (fileData is null) {
+            return null;
+        }
+
+        // Deserialize the file data into the specified type.
+        var serializer = new BindSerializer();
+        if (!serializer.Deserialize(fileData?.ToArray(), 1, out T file)) {
+            return null;
+        }
+
+        return file;
     }
 
     /// <summary>
@@ -79,27 +90,28 @@ public static class RootArchiveLoader {
     /// </summary>
     /// <param name="directoryName">The name of the directory.</param>
     /// <returns>A dictionary containing file records as keys and memory streams as values.</returns>
-    internal static Dictionary<FileRecord, MemoryStream> GetDirectoryStream(string directoryName) {
+    internal static Dictionary<FileEntry, Memory<byte>?> GetDirectoryStream(string directoryName) {
         if (s_rootWad is null) {
             ReloadRootWad();
         }
 
-        var files = new Dictionary<FileRecord, MemoryStream>();
+        var files = new Dictionary<FileEntry, Memory<byte>?>();
 
-        foreach (var file in s_rootWad.Files.Where(x => x.Key.StartsWith(directoryName) && x.Key != directoryName)) {
+        foreach (var file in s_rootWad.Files
+            .Where(x => x.Key.StartsWith(directoryName) && x.Key != directoryName)) {
             var fileName = file.Key;
             var fileRecord = file.Value;
 
             var stream = s_rootWad.OpenFile(fileName);
-            files.Add(fileRecord, stream);
+            files.Add(fileRecord.Value, stream);
         }
 
         return files;
     }
 
-    private static KiWad ResourceWad() {
+    private static Archive ResourceWad() {
         // Check if the file is already cached. If it is, just return that.
-        var cachedWad = LocalWadCache.GetCachedWad(RootWadName);
+        var cachedWad = LocalWadCache.GetCachedWad(ROOT_WAD_NAME);
         if (cachedWad is not null) {
             return cachedWad;
         }
@@ -108,19 +120,22 @@ public static class RootArchiveLoader {
         // If Imlight is running without the patch server, we'll just return null.
         if (!PatchServerFascade.EndpointReached) {
             Logger.Warning($"Imlight tried to load an uncached KIWAD while the patch server was not available.");
+
             return null;
         }
 
-        if (!PatchServerFascade.DownloadWadFromPatchServer(RootWadName, out var stream)) {
-            Logger.Error("Failed to download wad {WadName} from patch server", Logger.Args(RootWadName));
+        if (!PatchServerFascade.DownloadWadFromPatchServer(ROOT_WAD_NAME, out var stream)) {
+            Logger.Error("Failed to download wad {WadName} from patch server", Logger.Args(ROOT_WAD_NAME));
+
             return null;
         }
 
         // If we successfully downloaded it, we'll also cache it so we don't have to do that again.
         stream.Seek(0, SeekOrigin.Begin);
-        var wad = new KiWad(stream);
-        LocalWadCache.CacheWad(RootWadName, wad);
+        var wad = ArchiveParser.Parse(stream);
+        LocalWadCache.CacheWad(ROOT_WAD_NAME, wad);
 
         return wad;
     }
+
 }

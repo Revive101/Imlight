@@ -5,19 +5,15 @@
 
 using System;
 using System.IO;
-using Akka.Actor;
+using Imcodec.ObjectProperty;
+using Imcodec.Wad;
 using Imlight.Common;
-using Imlight.Common.Formats;
-using Imlight.Common.ObjectProperty;
-using Imlight.Common.ObjectProperty.PropertyReflection;
-using Imlight.CoreLib.Patch;
-using Imlight.CoreLib.Shared.Packets;
-using Imlight.CoreLib.WizardData.Implementations;
 
 namespace Imlight.CoreLib.Shared.Resources;
 
 public static class ResourceManager {
-    private const string RootWadName = RootArchiveLoader.RootWadName;
+
+    private const string RootWadName = RootArchiveLoader.ROOT_WAD_NAME;
 
     /// <summary>
     /// Tries to load an archive with the specified name.
@@ -25,7 +21,7 @@ public static class ResourceManager {
     /// <param name="wadName">The name of the archive to load.</param>
     /// <param name="wad">When this method returns, contains the loaded KiWad object if the archive was successfully loaded; otherwise, the default value.</param>
     /// <returns><c>true</c> if the archive was successfully loaded; otherwise, <c>false</c>.</returns>
-    public static bool TryLoadArchive(string wadName, out KiWad wad) {
+    public static bool TryLoadArchive(string wadName, out Archive wad) {
         wad = default;
 
         // The root.wad is highly prevalent, so we cache it in memory.
@@ -40,6 +36,7 @@ public static class ResourceManager {
         }
 
         wad = cachedWad;
+
         return true;
     }
 
@@ -61,9 +58,12 @@ public static class ResourceManager {
             return false;
         }
 
-        fileStream = wad.OpenFile(fileName);
-        return true;
+        var fileMemory = wad.OpenFile(fileName);
+        fileStream = fileMemory.HasValue 
+            ? new MemoryStream(fileMemory.Value.ToArray()) 
+            : null;
 
+        return true;
     }
 
     /// <summary>
@@ -82,11 +82,20 @@ public static class ResourceManager {
             return null;
         }
 
-        var serializer = new FileSerializer();
-        return serializer.OpenClass<T>(wad, fileName);
+        var fileData = wad.OpenFile(fileName);
+        if (!fileData.HasValue) {
+            return null;
+        }
+
+        var serializer = new BindSerializer();
+        if (!serializer.Deserialize(fileData.Value.ToArray(), 1, out T deserializedFile)) {
+            return null;
+        }
+
+        return deserializedFile;
     }
 
-    private static KiWad ResourceWad(string wadName) {
+    private static Archive ResourceWad(string wadName) {
         // Check if the file is already cached. If it is, just return that.
         var cachedWad = LocalWadCache.GetCachedWad(wadName);
         if (cachedWad is not null) {
@@ -97,19 +106,22 @@ public static class ResourceManager {
         // If Imlight is running without the patch server, we'll just return null.
         if (!PatchServerFascade.EndpointReached) {
             Logger.Warning($"Imlight tried to load an uncached KIWAD while the patch server was not available.");
+
             return null;
         }
 
         if (!PatchServerFascade.DownloadWadFromPatchServer(wadName, out var stream)) {
             Logger.Error("Failed to download wad {WadName} from patch server", Logger.Args(wadName));
+
             return null;
         }
 
         // If we successfully downloaded it, we'll also cache it so we don't have to do that again.
         stream.Seek(0, SeekOrigin.Begin);
-        var wad = new KiWad(stream);
+        var wad = ArchiveParser.Parse(stream);
         LocalWadCache.CacheWad(wadName, wad);
 
         return wad;
     }
+
 }

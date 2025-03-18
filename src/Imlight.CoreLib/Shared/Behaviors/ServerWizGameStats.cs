@@ -6,16 +6,17 @@
 using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
-using Imlight.Common.Configuration;
-using Imlight.Common.IO;
 using Imlight.CoreLib.WizardData.Implementations;
-using static Imlight.Common.Caches.TypeCache;
 using Imlight.CoreLib.Shared.Character;
+using Imcodec.ObjectProperty.TypeCache;
+using Imcodec.IO;
+using Imlight.Common;
 
 namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
 public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
+
     // These are stats relevant to the player's character, and not ones we can calculate from any other data.
     public int m_currentHitpoints;
     public int m_currentGold;
@@ -154,7 +155,7 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
         MagicSchool = magicSchool;
         Level = level;
 
-        m_baseGoldPouch = ConfigurationManager.Settings.BaseGoldPouch;
+        m_baseGoldPouch = ConfigurationManager.Settings["BaseGoldPouch"].AsInt();
     }
 
     internal void SetBaseStats() {
@@ -282,4 +283,5 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
             m_highestCharacterWorldOnAccount = m_highestCharacterWorldOnAccount,
         };
     }
+    
 }

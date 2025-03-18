@@ -6,16 +6,15 @@
 using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
-using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.Game.Spells;
-using static Imlight.Common.Caches.TypeCache;
 using Imlight.Common;
-using System.Linq;
+using Imcodec.ObjectProperty.TypeCache;
 
 namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
 public class ServerWizSpellbookBehavior : ServerSpellbookBehavior {
+
     [JsonIgnore] public bool NoTransfer { get; set; } = false;
 
     [JsonIgnore] public MagicSchool PrimarySchool { get; set; }
@@ -64,6 +63,7 @@ public class ServerWizSpellbookBehavior : ServerSpellbookBehavior {
 
         if (TotalSpellCount() >= MaxSpells) {
             Logger.Debug("The deck already has the maximum amount of allowed spells.");
+            
             return false;
         }
 
@@ -71,6 +71,7 @@ public class ServerWizSpellbookBehavior : ServerSpellbookBehavior {
         var spellTemplate = SpellFactory.GetSpell(spellTemplateId);
         if (spellTemplate is null) {
             Logger.Debug("Failed to create spell from template {0}.", Logger.Args(spellTemplateId));
+            
             return false;
         }
 
@@ -83,12 +84,14 @@ public class ServerWizSpellbookBehavior : ServerSpellbookBehavior {
                 m_quantity = 1
             };
             SpellList.Add(spellData);
-        } else {
+        }
+        else {
             // Otherwise, we'll want to increase the quantity so long as the number of max instances hasn't been reached.
             var spellSchool = (MagicSchool) spellTemplate.m_magicSchoolID;
             var maxInstances = spellSchool == PrimarySchool ? SchoolMaxInstances : GenericMaxInstances;
             if (spellData.m_quantity >= maxInstances) {
                 Logger.Debug("The deck already has the maximum amount of allowed instances of spell {0}.", Logger.Args(spellTemplateId));
+                
                 return false;
             }
 
@@ -112,7 +115,8 @@ public class ServerWizSpellbookBehavior : ServerSpellbookBehavior {
         // Decrease the quantity, if we can. Otherwise, remove the spell data.
         if (spellData.m_quantity - 1 <= 0) {
             SpellList.Remove(spellData);
-        } else {
+        }
+        else {
             spellData.m_quantity--;
         }
 
@@ -149,4 +153,5 @@ public class ServerWizSpellbookBehavior : ServerSpellbookBehavior {
         this.MaxSpells = template.m_maxSpells;
         this.MaxTreasureCards = template.m_maxTreasureCards;
     }
+    
 }

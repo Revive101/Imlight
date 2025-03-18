@@ -3,14 +3,15 @@
  * Proprietary and confidential.
  */
 
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models.Player;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Shared.Items;
 
 public static class DyeMapper {
+
     /// <summary>
     /// Applies the primary dye color to the specified WizClientObjectItem.
     /// </summary>
@@ -21,7 +22,9 @@ public static class DyeMapper {
 
         var persistentSaveSuccess = WizardItemCollection.ApplyPrimaryDye(item, (int) primaryColor);
         if (!persistentSaveSuccess) {
-            Logger.Error("Failed to save primary dye {0} for item {1}", Logger.Args(primaryColor, item.m_globalID));
+            Logger.Error("Failed to save primary dye {0} for item {1}", 
+                Logger.Args(primaryColor, item.m_globalID));
+
             return;
         }
     }
@@ -36,7 +39,9 @@ public static class DyeMapper {
 
         var persistentSaveSuccess = WizardItemCollection.ApplySecondaryDye(item, (int) secondaryColor);
         if (!persistentSaveSuccess) {
-            Logger.Error("Failed to save secondary dye {0} for item {1}", Logger.Args(secondaryColor, item.m_globalID));
+            Logger.Error("Failed to save secondary dye {0} for item {1}", 
+                Logger.Args(secondaryColor, item.m_globalID));
+
             return;
         }
     }
@@ -55,8 +60,11 @@ public static class DyeMapper {
 
         var persistentSaveSuccess = WizardItemCollection.ApplyAllDye(item, (int) texture, (int) decal, (int) decal2);
         if (!persistentSaveSuccess) {
-            Logger.Error("Failed to save all dye {0} for item {1}", Logger.Args(texture, item.m_globalID));
+            Logger.Error("Failed to save all dye {0} for item {1}", 
+                Logger.Args(texture, item.m_globalID));
+
             return;
         }
     }
+
 }

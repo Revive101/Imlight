@@ -8,12 +8,13 @@ using System;
 namespace Imlight.CoreLib.Shared.Networking;
 
 public class TokenBucket {
+
     private readonly int _maxTokens;
     private readonly int _tokensPerSecond;
     private int _tokens;
     private int _failedAcquisitionCount;
     private DateTime _lastRefillTime;
-    private readonly object _tokenBucketLock = new object();
+    private readonly object _tokenBucketLock = new();
 
     public TokenBucket(int maxTokens, int tokensPerSecond) {
         this._maxTokens = maxTokens;
@@ -28,17 +29,18 @@ public class TokenBucket {
 
             if (_tokens > 0) {
                 _tokens--;
+
                 return true;
             }
 
             _failedAcquisitionCount++;
+
             return false;
         }
     }
 
-    public int GetFailedAcquisitionCount() {
-        return _failedAcquisitionCount;
-    }
+    public int GetFailedAcquisitionCount() 
+        => _failedAcquisitionCount;
 
     private void RefillTokens() {
         DateTime now = DateTime.Now;
@@ -50,4 +52,5 @@ public class TokenBucket {
             _lastRefillTime = now;
         }
     }
+
 }

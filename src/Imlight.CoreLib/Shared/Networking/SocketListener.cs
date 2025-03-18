@@ -8,20 +8,20 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using Akka.Actor;
+using Imcodec.MessageLayer;
+using Imcodec.MessageLayer.Generated;
 using Imlight.Common;
-using Imlight.Common.Caches;
-using Imlight.Common.Configuration;
-using Imlight.Common.MessageLayer;
 using Imlight.CoreLib.Shared.Packets;
 
 namespace Imlight.CoreLib.Shared.Networking;
 
 internal sealed class SocketListener : ReceiveActor, IDisposable {
-    private readonly int _bufferSize = ConfigurationManager.Settings.SessionActorBufferSize;
-    private readonly bool _closeOnSocketException = ConfigurationManager.Settings.SessionActorCloseOnException;
-    private readonly int _tokenBucketMax = ConfigurationManager.Settings.SessionTokenBucketMax;
-    private readonly int _tokenBucketPerSecond = ConfigurationManager.Settings.SessionTokenBucketPerSecond;
-    private readonly byte _tokenBucketFailedAcquisitionLimit = ConfigurationManager.Settings.SessionTokenBucketFailedAcquisitionLimit;
+
+    private readonly int _bufferSize = ConfigurationManager.Settings["SessionActorBufferSize"].AsInt();
+    private readonly bool _closeOnSocketException = ConfigurationManager.Settings["SessionActorCloseOnException"].AsBool();
+    private readonly int _tokenBucketMax = ConfigurationManager.Settings["SessionTokenBucketMax"].AsInt();
+    private readonly int _tokenBucketPerSecond = ConfigurationManager.Settings["SessionTokenBucketPerSecond"].AsInt();
+    private readonly byte _tokenBucketFailedAcquisitionLimit = ConfigurationManager.Settings["SessionTokenBucketFailedAcquisitionLimit"].AsByte();
     private readonly IActorRef _sessionActorRef;
     private readonly Socket _socket;
     private readonly ushort _sessionid;
@@ -89,6 +89,7 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
             if (bytesReceived <= 0) {
                 // If the bytes transferred is 0, the socket has disconnected.
                 this.Dispose();
+                
                 return;
             }
             if (!_tokenBucket.TryAcquire()) {
@@ -103,6 +104,7 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
 
                     // The session has exceeded the failed acquisition limit. We'll dispose of the session.
                     this.Dispose();
+
                     return;
                 }
 
@@ -134,15 +136,18 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
     private IMessage[] GetPacketsFromBuffer(byte[] buffer, int bytesReceived) {
         var bufferSpan = new ReadOnlySpan<byte>(buffer, 0, bytesReceived).ToArray();
         if (!IsKIPacket(bufferSpan)) {
-            Logger.Debug("SessionActor {SessionId} received non-KINP packet", Logger.Args(_sessionid));
+            Logger.Debug("SessionActor {SessionId} received non-KINP packet", 
+                Logger.Args(_sessionid));
+
             return null;
         }
 
         if (TryDeserializePacket(bufferSpan, out var records)) {
-            return records.ToArray();
+            return [.. records];
         }
         else {
-            Logger.Error("SessionActor {SessionID} packet deserialize failed.", Logger.Args(_sessionid));
+            Logger.Error("SessionActor {SessionID} packet deserialize failed.", 
+                Logger.Args(_sessionid));
         }
 
         // The packet failed to deserialize.
@@ -152,7 +157,8 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
 
     private bool TryDeserializePacket(byte[] buffer, out IReadOnlyCollection<IMessage> messages) {
         try {
-            messages = MessageSerializer.Decode(buffer);
+            messages = MessageEncoder.Decode(buffer);
+            
             return true;
         }
         catch (Exception ex) {
@@ -160,6 +166,7 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
                 Logger.Args(_sessionid, ex.InnerException?.Message ?? ex.Message));
 
             messages = null;
+
             return false;
         }
     }
@@ -183,4 +190,5 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
                 Logger.Args(_sessionid, scopedMessageName));
         }
     }
+
 }

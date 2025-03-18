@@ -4,16 +4,16 @@
  */
 
 using System;
-using Imlight.Common.IO;
+using Imcodec.IO;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Shared.Resources;
-using Imlight.CoreLib.WizardData.Implementations;
 using Newtonsoft.Json;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
 public class ServerWizPlayerNameBehavior : IClientBehaviorProvider<ClientWizPlayerNameBehavior> {
+
     [JsonIgnore] public bool NoTransfer { get; set; } = false;
 
     public uint NameIndices;
@@ -35,6 +35,7 @@ public class ServerWizPlayerNameBehavior : IClientBehaviorProvider<ClientWizPlay
         }
 
         var actualName = WizardNameBank.GetEnglishName(NameIndices, Gender);
+        
         return actualName;
     }
 
@@ -64,4 +65,5 @@ public class ServerWizPlayerNameBehavior : IClientBehaviorProvider<ClientWizPlay
             m_wsNameOverride = nameOverride
         };
     }
+    
 }

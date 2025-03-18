@@ -6,15 +6,15 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Imlight.Common.ObjectProperty.PropertyReflection;
-using Imlight.CoreLib.WizardData.Implementations;
+using Imcodec.ObjectProperty.TypeCache;
+using Imcodec.Types;
 using Newtonsoft.Json;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
 public class ServerMountOwnerBehavior : IClientBehaviorProvider<ClientMountOwnerBehavior> {
+    
     [JsonIgnore] public bool NoTransfer { get; set; } = false;
 
     [JsonIgnore] public eGender MountGender;
@@ -81,4 +81,5 @@ public class ServerMountOwnerBehavior : IClientBehaviorProvider<ClientMountOwner
         m_geometryOption = MountGeometryOption,
         m_lastMountID = LastMountId
     };
+    
 }

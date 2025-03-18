@@ -32,15 +32,15 @@ A state also has a number of blocked states that it cannot be in while that stat
 
 using System;
 using System.Linq;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.Game.States;
-using Imlight.CoreLib.WizardData.Models.Player;
 using Newtonsoft.Json;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Shared.Behaviors;
 
 public sealed class ServerObjectStateBehavior : IClientBehaviorProvider<BehaviorInstance> {
+
     public bool NoTransfer { get; set; } = true;
 
     [JsonIgnore] private readonly string _stateSetName;
@@ -63,6 +63,7 @@ public sealed class ServerObjectStateBehavior : IClientBehaviorProvider<Behavior
         var category = _stateSet.m_categories.FirstOrDefault(x => x.m_states.Any(y => y.m_stateName == stateName));
         if (category == null) {
             Logger.Error("State {0} not found in {1} {2}", Logger.Args(stateName, typeof(ObjStateSet), _stateSet));
+
             return null;
         }
 
@@ -73,6 +74,7 @@ public sealed class ServerObjectStateBehavior : IClientBehaviorProvider<Behavior
         var category = GetCategory(categoryName);
         if (category == null) {
             Logger.Error("Category {0} not found in {1}", Logger.Args(categoryName, _stateSetName));
+
             return null;
         }
 
@@ -80,6 +82,7 @@ public sealed class ServerObjectStateBehavior : IClientBehaviorProvider<Behavior
         if (newState == null) {
             Logger.Error("State {0} not found in category {1} in state set {2}",
                 Logger.Args(newStateName, categoryName, _stateSetName));
+
             return null;
         }
 
@@ -104,6 +107,7 @@ public sealed class ServerObjectStateBehavior : IClientBehaviorProvider<Behavior
         }
 
         category.m_baseState = newState.m_stateName;
+
         return newState;
     }
 
@@ -112,6 +116,7 @@ public sealed class ServerObjectStateBehavior : IClientBehaviorProvider<Behavior
             var category = GetCategory(categoryName);
             if (category == null) {
                 Logger.Error("Category {0} not found in {1} {2}", Logger.Args(categoryName, typeof(ObjStateSet), _stateSet));
+
                 return null;
             }
 
@@ -137,4 +142,5 @@ public sealed class ServerObjectStateBehavior : IClientBehaviorProvider<Behavior
 
     private ObjStateTransition GetTransitionFromCurrentState(string categoryName, string stateName)
         => GetCategoryState(categoryName)?.m_transitions.FirstOrDefault(x => x.m_targetState == stateName);
+        
 }

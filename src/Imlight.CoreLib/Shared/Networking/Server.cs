@@ -5,8 +5,6 @@
 
 using System;
 using System.Linq;
-using System.Net.Http;
-using System.Net.Sockets;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Packets;
@@ -15,6 +13,7 @@ using Imlight.CoreLib.Shared.Structures;
 namespace Imlight.CoreLib.Shared.Networking;
 
 public abstract class Server : ReceiveProtocolDispatcher {
+
     public string Name { get; }
     public string Ip { get; }
     public int Port { get; }
@@ -143,4 +142,5 @@ public abstract class Server : ReceiveProtocolDispatcher {
 
         return Context.ActorOf(_factoryProps, actorName);
     }
+    
 }

@@ -9,6 +9,7 @@ using SharpDX;
 namespace Imlight.CoreLib.Shared.Resources;
 
 public static class Util {
+
     public static string GetCompactStringFromVector(Vector4 vector)
         => $"{vector.X},{vector.Y},{vector.Z},{vector.W}";
 
@@ -38,6 +39,7 @@ public static class Util {
         var endWithCurrentYear = new DateTime(currentYear, end.Month, end.Day);
 
         // Check if DateTime.Now is between startWithCurrentYear and endWithCurrentYear
+      
         return DateTime.Now >= startWithCurrentYear && DateTime.Now <= endWithCurrentYear;
     }
 }

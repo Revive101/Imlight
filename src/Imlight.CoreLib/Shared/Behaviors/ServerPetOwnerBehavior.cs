@@ -5,17 +5,18 @@
 
 using System;
 using System.Collections.Generic;
-using Imlight.Common.Configuration;
+using Imcodec.ObjectProperty.TypeCache;
+using Imlight.Common;
 using Newtonsoft.Json;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
 public class ServerPetOwnerBehavior : IClientBehaviorProvider<ClientPetOwnerBehavior> {
+
     [JsonIgnore] public bool NoTransfer { get; set; } = false;
 
-    public readonly int EnergyTickIntervalInSeconds = ConfigurationManager.Settings.PetEnergyTickInSeconds;
+    public readonly int EnergyTickIntervalInSeconds = ConfigurationManager.Settings["PetEnergyTickInSeconds"].AsInt();
 
     public byte MaxSlots { get; set; }
     public List<CraftingSlot> MorphingSlots { get; set; }
@@ -37,4 +38,5 @@ public class ServerPetOwnerBehavior : IClientBehaviorProvider<ClientPetOwnerBeha
         m_energy = Energy,
         m_playingAsPet = PlayingAsPet
     };
+    
 }

@@ -5,14 +5,13 @@
 
 using System;
 using Akka.Actor;
+using Imcodec.MessageLayer;
+using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
-using Imlight.Common.Caches;
-using Imlight.Common.MessageLayer;
 using Imlight.CoreLib.Game.Services;
-using Imlight.CoreLib.Game.Zone;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Packets;
-using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models.Misc;
@@ -20,12 +19,9 @@ using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Shared.Networking;
 
-public abstract class MessageService : ReceiveProtocolDispatcher {
-    protected SessionActor SessionActor { get; init; }
+public abstract class MessageService(SessionActor sessionActor) : ReceiveProtocolDispatcher {
 
-    public MessageService(SessionActor sessionActor) {
-        this.SessionActor = sessionActor;
-    }
+    protected SessionActor SessionActor { get; init; } = sessionActor;
 
     /// <summary>
     /// Sends a message directly to the socket.
@@ -117,7 +113,9 @@ public abstract class MessageService : ReceiveProtocolDispatcher {
     protected T AskServer<T>(IServerMessage message)
         where T : IServerMessage {
         if (SessionActor is null) {
-            Logger.Error("{0} attempted to send message to undefined SessionActor.", Logger.Args(this.GetType()));
+            Logger.Error("{0} attempted to send message to undefined SessionActor.", 
+                Logger.Args(this.GetType()));
+
             return default(T);
         }
         if (message.ServiceID < 100) {
@@ -126,6 +124,7 @@ public abstract class MessageService : ReceiveProtocolDispatcher {
         }
 
         var task = SessionActor.AskServer<T>(message);
+
         return task;
     }
 
@@ -161,7 +160,7 @@ public abstract class MessageService : ReceiveProtocolDispatcher {
     /// <see cref="WizardService"/> as a running service.
     /// </summary>
     /// <returns></returns>
-    protected TypeCache.CoreObject GetActiveGameObject() {
+    protected CoreObject GetActiveGameObject() {
         var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
         var response = AskOtherService<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
 
@@ -229,6 +228,7 @@ public abstract class MessageService : ReceiveProtocolDispatcher {
         }
 
         onlinePlayer = potentialPlayer;
+        
         return true;
     }
 
@@ -288,4 +288,5 @@ public abstract class MessageService : ReceiveProtocolDispatcher {
     }
 
     #endregion
+    
 }

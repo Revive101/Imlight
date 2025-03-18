@@ -9,20 +9,17 @@ using System.Runtime.Serialization;
 namespace Imlight.CoreLib.Shared.Networking;
 
 public class SessionFatalException : Exception {
+
     public string CallingClass { get; private set; }
     public int LineNumber { get; private set; }
 
     public SessionFatalException() { }
 
     public SessionFatalException(string message)
-        : base(message) {
-        InitializeCallingMethod();
-    }
+        : base(message) => InitializeCallingMethod();
 
     public SessionFatalException(string message, Exception inner)
-        : base(message, inner) {
-        InitializeCallingMethod();
-    }
+        : base(message, inner) => InitializeCallingMethod();
 
     public SessionFatalException(string message, string callingClass, int lineNumber)
         : base(message) {
@@ -56,23 +53,21 @@ public class SessionFatalException : Exception {
             LineNumber = frame.GetFileLineNumber();
         }
     }
+
 }
 
 public class ServiceRetryException : Exception {
+
     public string CallingClass { get; private set; }
     public int LineNumber { get; private set; }
 
     public ServiceRetryException() { }
 
     public ServiceRetryException(string message)
-        : base(message) {
-        InitializeCallingMethod();
-    }
+        : base(message) => InitializeCallingMethod();
 
     public ServiceRetryException(string message, Exception inner)
-        : base(message, inner) {
-        InitializeCallingMethod();
-    }
+        : base(message, inner) => InitializeCallingMethod();
 
     public ServiceRetryException(string message, string callingClass, int lineNumber)
         : base(message) {
@@ -106,4 +101,5 @@ public class ServiceRetryException : Exception {
             LineNumber = frame.GetFileLineNumber();
         }
     }
+
 }

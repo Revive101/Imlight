@@ -3,12 +3,12 @@
  * Proprietary and confidential.
  */
 
-using Imlight.Common;
-using Imlight.Common.Formats;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using Imcodec.Wad;
+using Imlight.Common;
 
 namespace Imlight.CoreLib.Shared.Resources;
 
@@ -111,7 +111,7 @@ public class Locale : RootDirectoryResourceSingleton<Locale>, IMemoryStreamDispo
         }
     }
 
-    private static Dictionary<string, string> ProcessLocaleFile(FileRecord record, MemoryStream stream) {
+    private static Dictionary<string, string> ProcessLocaleFile(FileEntry record, MemoryStream stream) {
         // Interpret the stream as an array of strings.
         var strings = ReadStrings(stream);
         var data = new Dictionary<string, string>();
@@ -156,4 +156,5 @@ public class Locale : RootDirectoryResourceSingleton<Locale>, IMemoryStreamDispo
 
         return stringArray;
     }
+    
 }

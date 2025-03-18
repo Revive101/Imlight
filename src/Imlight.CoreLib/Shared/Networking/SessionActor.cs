@@ -7,12 +7,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
-using System.Threading;
 using Akka.Actor;
+using Imcodec.MessageLayer;
 using Imlight.Common;
-using Imlight.Common.Caches;
-using Imlight.Common.Configuration;
-using Imlight.Common.MessageLayer;
 using Imlight.CoreLib.Game.Services;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Services;
@@ -24,8 +21,9 @@ namespace Imlight.CoreLib.Shared.Networking;
 /// Represents a connected socket as a ReceiveActor.
 /// </summary>
 public sealed class SessionActor : ReceiveActor, IDisposable {
-    private readonly byte _serviceRetryCount                 = ConfigurationManager.Settings.SessionActorServiceRetryCount;
-    private readonly byte _serviceTimeRangeRetryInSeconds    = ConfigurationManager.Settings.SessionActorServiceRangeRetry;
+
+    private readonly byte _serviceRetryCount                 = ConfigurationManager.Settings["SessionActorServiceRetryCount"].AsByte();
+    private readonly byte _serviceTimeRangeRetryInSeconds    = ConfigurationManager.Settings["SessionActorServiceRangeRetry"].AsByte();
 
     public ushort SessionID                                  { get; }
     public uint OfferTime                                    { get; set; }
@@ -170,6 +168,7 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
 
             try {
                 var result = actorRef.Ask<T>(msg, timeout: TimeSpan.FromSeconds(20)).Result;
+
                 return result;
             }
             catch (Exception ex) {
@@ -179,6 +178,7 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
         }
 
         Unhandled(msg);
+
         return default(T);
     }
 
@@ -258,9 +258,9 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
         ActorRef.Tell(PoisonPill.Instance);
     }
 
-    protected override SupervisorStrategy SupervisorStrategy() {
+    protected override SupervisorStrategy SupervisorStrategy() =>
         // Recall that child actors of the SessionActor are the message services.
-        return new AllForOneStrategy(
+        new AllForOneStrategy(
             maxNrOfRetries: _serviceRetryCount,
             withinTimeRange: TimeSpan.FromSeconds(_serviceTimeRangeRetryInSeconds),
             localOnlyDecider: ex => {
@@ -280,7 +280,6 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
                 }
             }
         );
-    }
 
     protected override void PreStart() {
         // Ask the ActorFactory for this actor's message services.
@@ -370,6 +369,7 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
 
             Logger.Verbose("SessionActor {Id} cached message {MessageName} for later processing.",
                 Logger.Args(SessionID, packet.GetType().Name));
+                
             return;
         }
 
@@ -414,4 +414,5 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
             actorRef.Tell(new SERVICE_101_PROTOCOL.MSG_DISPOSE());
         }
     }
+    
 }
