@@ -13,25 +13,25 @@ using System.Net.Http;
 using System.Xml;
 using System.Threading.Tasks;
 using Akka.Actor;
-using Imlight.Common.Configuration;
-using Imlight.Common.IO;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Cryptography;
+using Imcodec.IO;
 
 namespace Imlight.CoreLib.Patch;
 
 public class PatchServer : Server {
+
     private const string PatchServerWadUrlPrefix = "Data/GameData";
     private const string LatestFileListNameBin = "LatestFileList.bin";
     private const string LatestFileListNameXml = "LatestFileList.xml";
     // Configuration values.
-    private readonly string _userAgentValue = ConfigurationManager.Settings.PatchServerUserAgent;
-    private readonly ushort _downloadBufferSize = ConfigurationManager.Settings.PatchServerBufferSize;
-    private readonly string _revision = ConfigurationManager.Settings.GameRevision;
-    private readonly uint _patchServerTimeout = ConfigurationManager.Settings.PatchServerInternalTimeout;
-    private readonly string _patchServerInternalUrl = ConfigurationManager.Settings.PatchServerInternalUrl;
+    private readonly string _userAgentValue = ConfigurationManager.Settings["PatchServerUserAgent"];
+    private readonly ushort _downloadBufferSize = ConfigurationManager.Settings["PatchServerBufferSize"].AsUShort();
+    private readonly string _revision = ConfigurationManager.Settings["GameRevision"];
+    private readonly uint _patchServerTimeout = ConfigurationManager.Settings["PatchServerInternalTimeout"].AsUInt();
+    private readonly string _patchServerInternalUrl = ConfigurationManager.Settings["PatchServerInternalUrl"];
 
     public static IActorRef Instance { get; private set; }
     public static bool EndpointReached { get; set; }
@@ -85,6 +85,7 @@ public class PatchServer : Server {
             Logger.Error("Patch server endpoint is not available! Continuing without patch server.");
 
             Sender.Tell(new SERVER_100_PROTOCOL.MSG_INITIALIZE_COMPLETE());
+            
             return;
         }
 
@@ -189,6 +190,7 @@ public class PatchServer : Server {
         catch (Exception webException) {
             Logger.Error("Error while downloading file {File} from patch server endpoint: {Ex}",
                 Logger.Args(url, webException.Message));
+
             return null;
         }
     }
@@ -201,6 +203,7 @@ public class PatchServer : Server {
             Logger.Args(workingUrl, _patchServerTimeout));
         if (!GetServerUrlStatus(workingUrl)) {
             Logger.Error("Patch server at URL {Url} is not available", Logger.Args(workingUrl));
+
             return false;
         }
 
@@ -217,6 +220,7 @@ public class PatchServer : Server {
 
         try {
             using var response = client.SendAsync(new HttpRequestMessage(HttpMethod.Head, url)).Result;
+
             // Any response returned means the server is up.
             return true;
         }
@@ -227,6 +231,7 @@ public class PatchServer : Server {
         catch (Exception ex) {
             Logger.Error("Error while checking patch server at URL {Url}. Exception: {Ex}",
                 Logger.Args(url, ex.Message));
+
             return false;
         }
     }
@@ -238,12 +243,14 @@ public class PatchServer : Server {
         var latestXml = DownloadStream(LatestFileListNameXml).Result;
         if (latestXml is null) {
             Logger.Error("Had trouble downloading {Name}", Logger.Args(LatestFileListNameXml));
+
             return false;
         }
 
         latestXml.Seek(0, SeekOrigin.Begin);
         if (!ParseLatestFileList(latestXml, out var latestXmlObj)) {
             Logger.Error("Could not successfully parse {Name}", Logger.Args(LatestFileListNameXml));
+
             return false;
         }
 
@@ -254,6 +261,7 @@ public class PatchServer : Server {
         var latestBin = DownloadStream(LatestFileListNameBin).Result;
         if (latestBin is null) {
             Logger.Error("Had trouble downloading the {Name}", Logger.Args(LatestFileListNameBin));
+
             return false;
         }
 
@@ -262,6 +270,7 @@ public class PatchServer : Server {
         var revisionEnd = _revision.IndexOf('.');
         if (revisionStart == -1 || revisionEnd == -1) {
             Logger.Error("Could not parse the revision from the revision string.");
+
             return false;
         }
         var actualRevision = _revision[revisionStart..revisionEnd];
@@ -294,6 +303,7 @@ public class PatchServer : Server {
             .FirstOrDefault();
         if (rootNode == null) {
             Logger.Error("XmlDocument does not contain a LatestFileList node.");
+
             return false;
         }
 
@@ -311,6 +321,7 @@ public class PatchServer : Server {
         }
 
         Logger.Error("XmlDocument does not contain a Base node.");
+
         return false;
     }
 
@@ -339,6 +350,7 @@ public class PatchServer : Server {
 
         if (internalRecord == null) {
             Logger.Error("LatestFile xml node did not contain a child RECORD.");
+
             return null;
         }
 
@@ -363,16 +375,20 @@ public class PatchServer : Server {
         try {
             var xmlDoc = new XmlDocument();
             xmlDoc.Load(content);
+
             return xmlDoc;
         }
         catch (Exception ex) {
             Logger.Error("Error parsing Stream to XmlDocument: {Ex}", Logger.Args(ex.Message));
+
             return null;
         }
     }
 
     private static uint TryParseUInt(string value) {
         uint.TryParse(value, out var result);
+
         return result;
     }
+
 }

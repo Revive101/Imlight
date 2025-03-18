@@ -13,13 +13,13 @@ using Imlight.CoreLib.Shared.Services;
 namespace Imlight.CoreLib.Patch;
 
 public class PatchServiceFactory : ServiceFactory {
-    protected override HashSet<Type> ServiceTypes { get; set; } = new HashSet<Type>()
-    {
+
+    protected override HashSet<Type> ServiceTypes { get; set; } = [
         typeof(ControlService),
         typeof(PatchService)
-    };
+    ];
 
-    public static Props Props() {
-        return Akka.Actor.Props.Create(() => new PatchServiceFactory());
-    }
+    public static Props Props() 
+        => Akka.Actor.Props.Create(() => new PatchServiceFactory());
+
 }

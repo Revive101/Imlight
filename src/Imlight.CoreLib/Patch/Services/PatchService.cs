@@ -4,15 +4,13 @@
  */
 
 using Akka.Actor;
-using Imlight.Common.Caches;
+using Imcodec.MessageLayer.Generated;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 
 namespace Imlight.CoreLib.Patch.Services;
 
-public class PatchService : MessageService
-{
-    public PatchService(SessionActor sessionActor) : base(sessionActor) { }
+public class PatchService(SessionActor sessionActor) : MessageService(sessionActor) {
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new PatchService(parentActor));
@@ -37,4 +35,5 @@ public class PatchService : MessageService
 
         SendToSocket(socketRsp);
     }
+    
 }
