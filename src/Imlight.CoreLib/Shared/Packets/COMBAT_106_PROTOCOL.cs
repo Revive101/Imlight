@@ -73,24 +73,6 @@ public sealed class COMBAT_106_PROTOCOL : IServerProtocol {
 
     }
 
-    internal sealed class MSG_SLOTAVAILABLE : IServerMessage {
-
-        public byte MessageOrder => 6;
-        public byte ServiceID => 106;
-
-        public CombatTeam Team;
-
-    }
-
-    public sealed class MSG_SLOTAVAILABLERSP : IServerMessage {
-
-        public byte MessageOrder => 7;
-        public byte ServiceID => 106;
-
-        public bool Available;
-
-    }
-
     public sealed class MSG_NEWROUND : IServerMessage {
 
         public byte MessageOrder => 8;

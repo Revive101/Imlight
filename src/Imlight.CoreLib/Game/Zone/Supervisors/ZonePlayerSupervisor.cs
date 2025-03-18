@@ -21,6 +21,7 @@ namespace Imlight.CoreLib.Game.Zone.Supervisors;
 /// <param name="zone">The zone that this supervisor is responsible for.</param>
 internal sealed class ZonePlayerSupervisor(Core.Zone zone) : ZoneEntitySupervisor(zone), IWithTimers {
 
+    private readonly Core.Zone _zone = zone;
     private const int HEAL_INTERVAL_PER_MINUTE_IN_SECONDS = 5;
 
     public ITimerScheduler Timers { get; set; }
@@ -90,7 +91,7 @@ internal sealed class ZonePlayerSupervisor(Core.Zone zone) : ZoneEntitySuperviso
         message.PlayerActor.Tell(rsp);
 
         Logger.Debug("{Name} added to zone {ZoneName}.",
-            Logger.Args(message.ActualWizardName, zone.ZoneName));
+            Logger.Args(message.ActualWizardName, _zone.ZoneName));
     }
 
     private void HandleRemovePlayer(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message) {
@@ -101,7 +102,7 @@ internal sealed class ZonePlayerSupervisor(Core.Zone zone) : ZoneEntitySuperviso
 
         // Inform the player that they have been removed from the zone.
         Logger.Debug("Player {Name} removed from zone {ZoneName}.",
-            Logger.Args(message.PlayerActor.Path.Name, zone.ZoneName));
+            Logger.Args(message.PlayerActor.Path.Name, _zone.ZoneName));
 
         // Inform all currently connected players that a player has left the zone.
         var notify = new ZONE_102_PROTOCOL.MSG_PLAYERREMOVEDFROMZONE {

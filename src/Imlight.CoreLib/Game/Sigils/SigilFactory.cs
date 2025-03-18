@@ -15,7 +15,7 @@ internal class SigilFactory : RootDirectoryResourceSingleton<SigilFactory>, IMem
 
     protected override string DirectoryName => "Sigils/";
 
-    private readonly Dictionary<string, SigilTemplate> _combatSigils = [];
+    private Dictionary<string, SigilTemplate> _combatSigils = [];
 
     protected override void AfterLoad() {
         var serializer = new BindSerializer();
@@ -25,7 +25,7 @@ internal class SigilFactory : RootDirectoryResourceSingleton<SigilFactory>, IMem
             var fileRecord = file.Key;
             var fileStream = file.Value;
 
-            if (!serializer.Deserialize<SigilTemplate>(fileStream.ToArray(), 1, out var sigil)) {
+            if (!serializer.Deserialize<SigilTemplate>(fileStream?.ToArray(), 1, out var sigil)) {
                 Logger.Error("Failed to deserialize sigil {0}.", 
                     Logger.Args(fileRecord));
 
@@ -47,10 +47,7 @@ internal class SigilFactory : RootDirectoryResourceSingleton<SigilFactory>, IMem
         return null;
     }
 
-    public void DisposeStream() {
-        foreach (var streams in base.Files.Values) {
-            streams.Dispose();
-        }
-    }
+    public void DisposeStream() 
+        => _combatSigils = null;
     
 }

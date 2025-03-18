@@ -30,7 +30,7 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
     public bool Stopped { get; set; }
     public ITimerScheduler Timers { get; set; }
 
-    private PathBehaviorTemplate.PathType _pathType;
+    private PathType _pathType;
     private int _pathDirection;
     private uint _pauseChance;
     private float _pauseDuration;

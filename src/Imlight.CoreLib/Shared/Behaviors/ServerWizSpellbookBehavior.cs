@@ -15,7 +15,7 @@ namespace Imlight.CoreLib.Shared.Behaviors;
 [Serializable]
 public class ServerWizSpellbookBehavior : ServerSpellbookBehavior {
 
-    [JsonIgnore] public bool NoTransfer { get; set; } = false;
+    [JsonIgnore] public new bool NoTransfer { get; set; } = false;
 
     [JsonIgnore] public MagicSchool PrimarySchool { get; set; }
     [JsonIgnore] public int GenericMaxRank { get; set; }
@@ -123,7 +123,7 @@ public class ServerWizSpellbookBehavior : ServerSpellbookBehavior {
         return true;
     }
 
-    public ClientSpellbookBehavior GetClientBehaviorInstance() {
+    public new ClientSpellbookBehavior GetClientBehaviorInstance() {
         var spellIdList = new List<SpellIDTracker>();
         foreach (var templateId in LearnedSpellTemplateIds) {
             spellIdList.Add(new SpellIDTracker {

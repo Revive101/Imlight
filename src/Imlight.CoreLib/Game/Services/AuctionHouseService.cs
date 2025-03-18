@@ -15,6 +15,7 @@ using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.CoreObject;
 using Imcodec.ObjectProperty;
 using Imlight.Common;
+using Imcodec.Types;
 
 namespace Imlight.CoreLib.Game.Services;
 

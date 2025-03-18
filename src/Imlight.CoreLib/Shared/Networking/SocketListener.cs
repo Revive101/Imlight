@@ -38,7 +38,6 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
             typeof(ControlMessageProtocol.KeepAliveResponse)
         };
     private bool _isDisposed;
-    private bool _isSending;
 
     // ctor
     public SocketListener(IActorRef sessionActor, Socket socket, ushort sessionid) {

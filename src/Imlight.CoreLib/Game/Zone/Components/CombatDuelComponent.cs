@@ -595,13 +595,19 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     }
 
     private void SendCombatStats() => EnactActionOnSubCircles(circle => {
+        // Serialize participant stats and send them to the participant, locally.
         var participantStats = circle.ParticipantGameStats;
-        _serializer.OnPropertyMask(_combatParticipantStatFlags);
-        var serializedStats = _serializer.Serialize(participantStats.GetCombatGameStats());
+        if (_serializer.Serialize(participantStats.GetCombatGameStats(), _combatParticipantStatFlags, out var buffer)) {
+            Logger.Error("Failed to serialize combat stats for duel {0}", 
+                Logger.Args(SigilId));
+
+            return;
+        }
+        
         var msg = new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATSTATS {
             DuelID = SigilId,
             PartID = circle.ParticipantObject.m_globalID,
-            StatsData = serializedStats,
+            StatsData = buffer,
         };
 
         DuelBroadcast(msg);

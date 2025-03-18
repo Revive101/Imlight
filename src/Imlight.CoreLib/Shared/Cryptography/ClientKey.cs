@@ -4,7 +4,6 @@
  */
 
 using System;
-using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using Imcodec.IO;
@@ -25,6 +24,7 @@ public static class ClientKey {
         var passwordHash = HashPassword(input);
 
         var salt = $"{sessionID}{timeSecs}{timeMillis}";
+        
         return SecondaryEncrypt(passwordHash, salt);
     }
 

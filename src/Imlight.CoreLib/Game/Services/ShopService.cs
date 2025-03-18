@@ -15,6 +15,7 @@ using Imlight.CoreLib.Game.Zone.Components;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.CoreObject;
+using Imcodec.Types;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -55,7 +56,7 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
         }
 
         // Ensure that the vendor has the item that the player is trying to purchase.
-        var itemTemplateID = new GID(message.ShopID).MParts.Id;
+        var itemTemplateID = new GID(message.ShopID).MParts.TemplateId;
         if (!vendorComponent.HasItem((GID) message.ShopID)) {
             HandleIllegalPurchaseAttempt(itemTemplateID, message.npcGlobalID);
 
@@ -174,7 +175,7 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
 
             // Serialize the public item and send it to the client.
             var pubItem = ItemHelper.GetPublicItem(item);
-            if (!s_itemSerializer.Serialize(pubItem, 0, out var data)) {
+            if (!s_itemSerializer.Serialize(pubItem, 1, out var data)) {
                 Logger.Error("Failed to serialize item {0} for dyeing", 
                     Logger.Args(item.m_globalID));
 

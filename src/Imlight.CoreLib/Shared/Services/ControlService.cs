@@ -13,7 +13,9 @@ using Imlight.CoreLib.Shared.Packets;
 
 namespace Imlight.CoreLib.Shared.Services;
 
-public class ControlService : MessageService {
+public class ControlService : MessageService, IWithTimers {
+
+    public ITimerScheduler Timers { get; set; }
 
     private readonly byte _keepAliveInterval = ConfigurationManager.Settings["KeepAliveInterval"].AsByte();
     private readonly byte _keepAliveRspWaitTime = ConfigurationManager.Settings["KeepAliveRspWaitTime"].AsByte();
@@ -65,11 +67,8 @@ public class ControlService : MessageService {
         _responseStopwatch.Restart();
 
         // Send a message to ourselves to check if we've received a response.
-        Context.System.Scheduler.ScheduleTellOnce(
-            TimeSpan.FromSeconds(_keepAliveRspWaitTime),
-            Self,
-            "SessionAcceptTimer",
-            Self);
+        var timer = TimeSpan.FromSeconds(_keepAliveRspWaitTime);
+        Timers.StartSingleTimer("SessionAcceptTimer", "SessionAcceptTimer", timer);
     }
 
     [MessageHandler(typeof(ControlMessageProtocol.SessionAccept))]
@@ -96,12 +95,7 @@ public class ControlService : MessageService {
         // Once the session is created, we need to send a heartbeat to keep it active.
         // To do that. we'll have this actor send a message to itself on interval to check on the heartbeat.
         var heartbeatInterval = TimeSpan.FromSeconds(_keepAliveInterval);
-        Context.System.Scheduler.ScheduleTellRepeatedly(
-            heartbeatInterval,
-            heartbeatInterval,
-            Context.Self,
-            "KeepAliveHeartbeat",
-            Context.Self);
+        Timers.StartPeriodicTimer("SessionAcceptTimer", "SessionAcceptTimer", heartbeatInterval, heartbeatInterval);
 
         _responseStopwatch.Reset();
     }
@@ -160,11 +154,7 @@ public class ControlService : MessageService {
         // Send message to self after x seconds to remind CommunicationActor to check
         // the status of the KeepAlive.
         var reminderTime = TimeSpan.FromSeconds(_keepAliveRspWaitTime);
-        Context.System.Scheduler.ScheduleTellOnce(
-            reminderTime,
-            Context.Self,
-            "KeepAliveEndTimes",
-            Context.Self);
+        Timers.StartSingleTimer("KeepAliveEndTimes", "KeepAliveEndTimes", reminderTime);
 
         _responseStopwatch.Start();
     }

@@ -11,7 +11,7 @@ namespace Imlight.CoreLib.Shared.Resources;
 
 public static class BehaviorCache {
 
-    public static BehaviorInstance? AllocateBehavior(uint hash) => hash switch {
+    public static BehaviorInstance AllocateBehavior(uint hash) => hash switch {
         // This list is updated as we go down and learn what each behavior does.
         // ======================================================================
         // PLAYER BEHAVIORS

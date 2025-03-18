@@ -25,7 +25,7 @@ internal class StateFactory : RootDirectoryResourceSingleton<StateFactory>, IMem
             var fileRecord = file.Key;
             var fileStream = file.Value;
 
-            if (!serializer.Deserialize<ObjStateSet>(fileStream.ToArray(), 1, out var set)) {
+            if (!serializer.Deserialize<ObjStateSet>(fileStream?.ToArray(), 1, out var set)) {
                 Logger.Error("Could not deserialize {0} as {1}", 
                     Logger.Args(fileRecord.FileName, nameof(ObjStateSet)));
 
@@ -47,10 +47,7 @@ internal class StateFactory : RootDirectoryResourceSingleton<StateFactory>, IMem
         return null;
     }
 
-    public void DisposeStream() {
-        foreach (var streams in base.Files.Values) {
-            streams.Dispose();
-        }
-    }
+    public void DisposeStream() 
+        => _objectStateSets.Clear();
     
 }

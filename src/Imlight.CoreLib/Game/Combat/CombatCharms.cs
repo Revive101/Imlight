@@ -33,8 +33,7 @@ internal static class CombatCharms {
                                                      or kSpellEffects.kDamagePerTotalPipPower
                                                      or kSpellEffects.kDivideDamage
                                                      or kSpellEffects.kStealHealth;
-            var isHealEffect = effect.m_effectType is kSpellEffects.kHeal
-                                                   .kSpellEffects.kHealOverTime;
+            var isHealEffect = effect.m_effectType is (kSpellEffects) 3 or (kSpellEffects) 76;
 
             // Choose the beneficial or harmful charms based on the disposition.
             var beneficialCharms = GetBeneficialCharms(caster);

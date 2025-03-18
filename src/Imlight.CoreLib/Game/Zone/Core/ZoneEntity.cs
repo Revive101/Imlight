@@ -139,7 +139,15 @@ public class ZoneEntity(
     /// <param name="emoteStateOverrideInfo">The override information for the emote state.</param>
     /// <param name="ignoreIfCurrentStateIsOff">Whether to ignore the state change if the current state is off.</param>
     public void ChangeState(uint stateHash, EmoteStateOverrideInfo emoteStateOverrideInfo = null, bool ignoreIfCurrentStateIsOff = false) {
-        var emoteData = _serializer.Serialize(emoteStateOverrideInfo);
+        var serializer = new ObjectSerializer(
+            Behaviors: SerializerFlags.None
+        );
+        if (!serializer.Serialize(emoteStateOverrideInfo, 1, out var emoteData)) {
+            Logger.Error("Failed to serialize emote state override info");
+
+            return;
+        }
+
         var stateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
             GameObjectID = ActiveGameObject.m_globalID,
             State = stateHash,

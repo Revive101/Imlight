@@ -13,7 +13,6 @@ using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.WizardData.Models.Player;
-using Raven.Client.Documents.Indexes.MapReduce;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
@@ -44,7 +43,7 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
 
     public override void OnStart() {
         // Check if the object should be spawned based on distance.
-        _doesDistanceCheck = entity.Template.m_behaviors
+        _doesDistanceCheck = Entity.Template.m_behaviors
                 .OfType<AnimationBehaviorTemplate>()
                 .Any(anim => anim.m_bFadesIn || anim.m_bFadesOut);
 

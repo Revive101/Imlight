@@ -17,7 +17,7 @@ public class MagicSchools : RootDirectoryResourceSingleton<SpellFactory>, IMemor
 
     protected override string DirectoryName => "MagicSchools/";
 
-    private static readonly Dictionary<int, MagicSchoolTemplate> s_magicSchools = new();
+    private static readonly Dictionary<int, MagicSchoolTemplate> s_magicSchools = [];
 
     protected override void AfterLoad() {
         var serializer = new BindSerializer();
@@ -27,7 +27,7 @@ public class MagicSchools : RootDirectoryResourceSingleton<SpellFactory>, IMemor
             var fileRecord = file.Key;
             var fileStream = file.Value;
 
-            if (!serializer.Deserialize<MagicSchoolTemplate>(fileStream.ToArray(), 1, out var magicSchoolTemplate)) {
+            if (!serializer.Deserialize<MagicSchoolTemplate>(fileStream?.ToArray(), 1, out var magicSchoolTemplate)) {
                 Logger.Error("Could not deserialize {0} as {1}", 
                     Logger.Args(fileRecord.FileName, nameof(MagicSchoolTemplate)));
 
@@ -74,10 +74,7 @@ public class MagicSchools : RootDirectoryResourceSingleton<SpellFactory>, IMemor
 
     public static uint GetMaxMagicSchoolIndex() => (uint) s_magicSchools.Keys.Max();
 
-    public void DisposeStream() {
-        foreach (var stream in base.Files.Values) {
-            stream.Dispose();
-        }
-    }
+    public void DisposeStream() 
+        => s_magicSchools.Clear();
     
 }

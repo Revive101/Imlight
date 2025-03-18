@@ -10,6 +10,7 @@ using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.CoreLib.Shared.Character;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
+using Imcodec.Math;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -102,7 +103,7 @@ public class WizardService(SessionActor sessionActor) : MessageService(sessionAc
         // Save the player's location and direction on interval.
         // Restore actual location information, as it is compressed by a factor of 4 and unsigned.
         // Yaw is represented in radians in the client, but transmitted to the server as degrees.
-        var position = new SharpDX.Vector3(
+        var position = new Vector3(
             unchecked((short) message.LocationX * 4),
             unchecked((short) message.LocationY * 4),
             unchecked((short) message.LocationZ * 4));

@@ -28,7 +28,7 @@ public class SpellFactory : RootDirectoryResourceSingleton<SpellFactory>, IMemor
             var fileRecord = file.Key;
             var fileStream = file.Value;
 
-            if (!serializer.Deserialize<SpellTemplate>(fileStream.ToArray(), 1, out var spellTemplate)) {
+            if (!serializer.Deserialize<SpellTemplate>(fileStream?.ToArray(), 1, out var spellTemplate)) {
                 Logger.Error("Could not deserialize {0} as {1}", 
                     Logger.Args(fileRecord.FileName, nameof(SpellTemplate)));
 

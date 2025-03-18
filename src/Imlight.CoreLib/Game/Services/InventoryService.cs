@@ -6,6 +6,7 @@
 using System;
 using Akka.Actor;
 using Imcodec.Cryptography;
+using Imcodec.IO;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
@@ -65,7 +66,8 @@ public class InventoryService(SessionActor sessionActor) : MessageService(sessio
         var wizard = GetActiveWizard();
         int goldSum = 0;
 
-        if (!serializer.Deserialize(message.Data, 4, out var quickSellItemList)) {
+        var dataRaw = new ByteString(message.Data);
+        if (!serializer.Deserialize<QuickSellItemList>(dataRaw, 4, out var quickSellItemList)) {
             Logger.Log.Error("Failed to deserialize quicksell item list.");
 
             return;

@@ -17,7 +17,7 @@ internal class SpellCinematics : RootDirectoryResourceSingleton<SpellCinematics>
 
     protected override string DirectoryName => "Cinematics";
 
-    private readonly Dictionary<string, CinematicTemplate> _cinematicTemplates = new();
+    private readonly Dictionary<string, CinematicTemplate> _cinematicTemplates = [];
 
     protected override void AfterLoad() {
         var serializer = new BindSerializer();
@@ -27,7 +27,7 @@ internal class SpellCinematics : RootDirectoryResourceSingleton<SpellCinematics>
             var fileRecord = file.Key;
             var fileStream = file.Value;
 
-            if (!serializer.Deserialize<CinematicTemplate>(fileStream.ToArray(), 1, out var cinematicTemplate)) {
+            if (!serializer.Deserialize<CinematicTemplate>(fileStream?.ToArray(), 1, out var cinematicTemplate)) {
                 Logger.Error("Could not deserialize {0} as {1}", 
                     Logger.Args(fileRecord.FileName, nameof(CinematicTemplate)));
 
@@ -151,10 +151,7 @@ internal class SpellCinematics : RootDirectoryResourceSingleton<SpellCinematics>
         return totalTime;
     }
 
-    public void DisposeStream() {
-        foreach (var streams in base.Files.Values) {
-            streams.Dispose();
-        }
-    }
+    public void DisposeStream() 
+        => _cinematicTemplates.Clear();
 
 }

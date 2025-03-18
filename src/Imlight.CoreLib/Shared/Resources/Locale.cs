@@ -13,10 +13,11 @@ using Imlight.Common;
 namespace Imlight.CoreLib.Shared.Resources;
 
 public class Locale : RootDirectoryResourceSingleton<Locale>, IMemoryStreamDisposable {
+
     protected override string DirectoryName => "Locale/English/";
 
-    private static readonly string s_QustFilePrefix = "WizQst";
-    private static Dictionary<string, Dictionary<string, string>> s_data = new();
+    private static readonly string s_qustFilePrefix = "WizQst";
+    private static Dictionary<string, Dictionary<string, string>> s_data = [];
 
     protected override void AfterLoad() {
         // There are aoubt ~5,000 files here. They take up about 200MB of memory.
@@ -31,7 +32,7 @@ public class Locale : RootDirectoryResourceSingleton<Locale>, IMemoryStreamDispo
             var record = file.Key;
 
             // We have no reason to keep any of these files in memory.
-            if (record.FileName.StartsWith(s_QustFilePrefix)) {
+            if (record.FileName.StartsWith(s_qustFilePrefix)) {
                 continue;
             }
 
@@ -105,13 +106,10 @@ public class Locale : RootDirectoryResourceSingleton<Locale>, IMemoryStreamDispo
         return value;
     }
 
-    public void DisposeStream() {
-        foreach (var streams in base.Files.Values) {
-            streams.Dispose();
-        }
-    }
+    public void DisposeStream() 
+        => Files.Clear();
 
-    private static Dictionary<string, string> ProcessLocaleFile(FileEntry record, MemoryStream stream) {
+    private static Dictionary<string, string> ProcessLocaleFile(FileEntry record, Memory<byte>? stream) {
         // Interpret the stream as an array of strings.
         var strings = ReadStrings(stream);
         var data = new Dictionary<string, string>();
@@ -148,11 +146,15 @@ public class Locale : RootDirectoryResourceSingleton<Locale>, IMemoryStreamDispo
         return data;
     }
 
-    private static string[] ReadStrings(MemoryStream stream) {
-        stream.Position = 0;
+    private static string[] ReadStrings(Memory<byte>? stream) {
+        if (stream is null) {
+            return [];
+        }
 
-        var bytes = stream.ToArray();
-        var stringArray = Encoding.Unicode.GetString(bytes).Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+        var bytes = stream?.ToArray();
+        var stringArray = Encoding.Unicode
+            .GetString(bytes)
+            .Split([Environment.NewLine], StringSplitOptions.None);
 
         return stringArray;
     }

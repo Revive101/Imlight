@@ -141,7 +141,7 @@ internal class CharacterService(SessionActor parentActor) : MessageService(paren
                 var loginScreenInfo = CharacterHelper.GetLoginScreenInfo(character);
 
                 // Serialize the character info to send to the client.
-                if (!serializer.Serialize(loginScreenInfo, out var data)) {
+                if (!serializer.Serialize(loginScreenInfo, 1, out var data)) {
                     Logger.Error("Account {accountUsername} failed to serialize character {characterId} for login screen.",
                         Logger.Args(account.Username, character.CharId));
 

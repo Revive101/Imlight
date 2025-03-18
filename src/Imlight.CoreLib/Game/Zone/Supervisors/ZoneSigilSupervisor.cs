@@ -33,7 +33,9 @@ internal sealed class ZoneSigilSupervisor(Core.Zone zone) : ZoneEntitySupervisor
             var coreObject = CoreObjectFactory.FinalizeCoreObject(objectInfo, template);
 
             // Sometimes the sigil may spawn in the ground.
-            coreObject.m_location.Z++;
+            var newLoc = coreObject.m_location;
+            newLoc.Y += 0.5f;
+            coreObject.m_location = newLoc;
 
             // Create the sigil actor and inform it of the details.
             var objectActor = CreateEntityActor(coreObject, template);

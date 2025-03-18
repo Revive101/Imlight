@@ -4,12 +4,14 @@
  */
 
 using System;
-using System.Runtime.Serialization;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace Imlight.CoreLib.Shared.Networking;
 
+// Modern approach using System.Text.Json for serialization
 public class SessionFatalException : Exception {
-
+    
     public string CallingClass { get; private set; }
     public int LineNumber { get; private set; }
 
@@ -33,24 +35,25 @@ public class SessionFatalException : Exception {
         LineNumber = lineNumber;
     }
 
-    protected SessionFatalException(SerializationInfo info, StreamingContext context)
-        : base(info, context) {
-        CallingClass = info.GetString("CallingClass");
-        LineNumber = info.GetInt32("LineNumber");
-    }
+    // Modern approach to getting caller information
+    private void InitializeCallingMethod([CallerMemberName] string memberName = "",
+                                        [CallerFilePath] string sourceFilePath = "",
+                                        [CallerLineNumber] int sourceLineNumber = 0) {
+        // For more precise control, still use StackTrace
+        var stackTrace = new StackTrace(true);
+        var frame = stackTrace.GetFrame(1); // Get the caller's frame
 
-    public override void GetObjectData(SerializationInfo info, StreamingContext context) {
-        base.GetObjectData(info, context);
-        info.AddValue("CallingClass", CallingClass);
-        info.AddValue("LineNumber", LineNumber);
-    }
-
-    private void InitializeCallingMethod() {
-        var stackTrace = new System.Diagnostics.StackTrace(this, true);
-        var frame = stackTrace.GetFrame(1); // Get the caller's frame (1 frame above the current one).
         if (frame != null) {
-            CallingClass = frame.GetMethod().DeclaringType.FullName;
-            LineNumber = frame.GetFileLineNumber();
+            var method = frame.GetMethod();
+            if (method?.DeclaringType != null) {
+                CallingClass = method.DeclaringType.FullName;
+                LineNumber = frame.GetFileLineNumber();
+            }
+            else {
+                // Fallback to CallerAttributes if StackTrace doesn't provide enough info
+                CallingClass = sourceFilePath;
+                LineNumber = sourceLineNumber;
+            }
         }
     }
 
@@ -81,24 +84,25 @@ public class ServiceRetryException : Exception {
         LineNumber = lineNumber;
     }
 
-    protected ServiceRetryException(SerializationInfo info, StreamingContext context)
-        : base(info, context) {
-        CallingClass = info.GetString("CallingClass");
-        LineNumber = info.GetInt32("LineNumber");
-    }
+    // Modern approach to getting caller information
+    private void InitializeCallingMethod([CallerMemberName] string memberName = "",
+                                        [CallerFilePath] string sourceFilePath = "",
+                                        [CallerLineNumber] int sourceLineNumber = 0) {
+        // For more precise control, still use StackTrace
+        var stackTrace = new StackTrace(true);
+        var frame = stackTrace.GetFrame(1); // Get the caller's frame
 
-    public override void GetObjectData(SerializationInfo info, StreamingContext context) {
-        base.GetObjectData(info, context);
-        info.AddValue("CallingClass", CallingClass);
-        info.AddValue("LineNumber", LineNumber);
-    }
-
-    private void InitializeCallingMethod() {
-        var stackTrace = new System.Diagnostics.StackTrace(this, true);
-        var frame = stackTrace.GetFrame(1); // Get the caller's frame (1 frame above the current one).
         if (frame != null) {
-            CallingClass = frame.GetMethod().DeclaringType.FullName;
-            LineNumber = frame.GetFileLineNumber();
+            var method = frame.GetMethod();
+            if (method?.DeclaringType != null) {
+                CallingClass = method.DeclaringType.FullName;
+                LineNumber = frame.GetFileLineNumber();
+            }
+            else {
+                // Fallback to CallerAttributes if StackTrace doesn't provide enough info
+                CallingClass = sourceFilePath;
+                LineNumber = sourceLineNumber;
+            }
         }
     }
 

@@ -27,7 +27,7 @@ public class ReagentFactory : RootDirectoryResourceSingleton<ReagentFactory>, IM
             var fileRecord = file.Key;
             var fileStream = file.Value;
 
-            if (!serializer.Deserialize<ReagentItemTemplate>(fileStream.ToArray(), out var reagentTemplate)) {
+            if (!serializer.Deserialize<ReagentItemTemplate>(fileStream?.ToArray(), out var reagentTemplate)) {
                 Logger.Error("Could not deserialize {0} as {1}", Logger.Args(fileRecord.FileName, nameof(ReagentItemTemplate)));
 
                 continue;
