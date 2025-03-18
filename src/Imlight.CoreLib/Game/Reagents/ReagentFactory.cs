@@ -4,11 +4,12 @@
  */
 
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using Imcodec.ObjectProperty;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
-using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Shared.Resources;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Reagents;
 
@@ -19,16 +20,16 @@ public class ReagentFactory : RootDirectoryResourceSingleton<ReagentFactory>, IM
     private static readonly Dictionary<string, ReagentItemTemplate> s_reagentTemplates = [];
 
     protected override void AfterLoad() {
-        var serializer = new FileSerializer();
+        var serializer = new BindSerializer();
         var counter = 0;
 
         foreach (var file in base.Files) {
             var fileRecord = file.Key;
             var fileStream = file.Value;
 
-            var reagentTemplate = serializer.OpenClass<ReagentItemTemplate>(fileStream);
-            if (reagentTemplate is null) {
-                Logger.Error("Could not deserialize {0} as {1}", Logger.Args(fileRecord.FileName, nameof(SpellTemplate)));
+            if (!serializer.Deserialize<ReagentItemTemplate>(fileStream.ToArray(), out var reagentTemplate)) {
+                Logger.Error("Could not deserialize {0} as {1}", Logger.Args(fileRecord.FileName, nameof(ReagentItemTemplate)));
+
                 continue;
             }
 
