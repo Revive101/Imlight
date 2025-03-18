@@ -5,7 +5,7 @@
 
 using System;
 using Akka.Actor;
-using Imlight.Common.Caches;
+using Imcodec.MessageLayer.Generated;
 using Imlight.CoreLib.AntiAmbrose;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
@@ -15,9 +15,8 @@ using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Login.Services;
 
-internal class AuthenticatorService : MessageService {
-    public AuthenticatorService(SessionActor parentActor) : base(parentActor) { }
-
+internal class AuthenticatorService(SessionActor parentActor) : MessageService(parentActor) {
+    
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new AuthenticatorService(parentActor));
 
@@ -145,4 +144,5 @@ internal class AuthenticatorService : MessageService {
 
         OnlinePlayerCollection.AddOnlinePlayer(onlinePlayer);
     }
+    
 }

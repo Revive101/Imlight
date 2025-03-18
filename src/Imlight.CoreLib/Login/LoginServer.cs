@@ -5,15 +5,13 @@
 
 using Akka.Actor;
 using Imlight.Common;
-using Imlight.Common.Caches;
-using Imlight.Common.Configuration;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
-using System.Linq;
 
 namespace Imlight.CoreLib.Login;
 
 public class LoginServer : Server {
+
     private readonly IActorRef _gamePoolServer;
     private const string GameServerPoolName = "GameServerPool";
 
@@ -25,9 +23,8 @@ public class LoginServer : Server {
             Logger.Args(serverName, serverPort));
     }
 
-    public static Props Props(string serverName, ushort serverPort) {
-        return Akka.Actor.Props.Create(() => new LoginServer(serverName, serverPort));
-    }
+    public static Props Props(string serverName, ushort serverPort) 
+        => Akka.Actor.Props.Create(() => new LoginServer(serverName, serverPort));
 
     [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_GETBESTSERVER))]
     private void ReceiveQueryGameServer(SERVER_100_PROTOCOL.MSG_GETBESTSERVER message) {
@@ -67,8 +64,8 @@ public class LoginServer : Server {
 
     [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_CREATEGAMESERVER))]
     private void ReceiveCreateGameServer(SERVER_100_PROTOCOL.MSG_CREATEGAMESERVER message) {
-        var defaultGameServerName = ConfigurationManager.Settings.GameServerName;
-        var defaultGameServerPort = ConfigurationManager.Settings.GameServerPort;
+        var defaultGameServerName = ConfigurationManager.Settings["GameServerName"].AsString();
+        var defaultGameServerPort = ConfigurationManager.Settings["GameServerPort"].AsUShort();
 
         // If the name or port is not set, use the default values.
         if (message.Name is "" or null) {
@@ -90,4 +87,5 @@ public class LoginServer : Server {
 
         return Context.ActorOf(poolProps, $"{Name}.{GameServerPoolName}");
     }
+
 }

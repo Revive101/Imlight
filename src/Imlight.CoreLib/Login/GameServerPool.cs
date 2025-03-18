@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
-using Imlight.Common.Configuration;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Game;
@@ -16,21 +15,21 @@ using Imlight.Common;
 namespace Imlight.CoreLib.Login;
 
 internal class GameServerPool : ReceiveProtocolDispatcher {
-    private readonly byte _maxGameServersAllowed = ConfigurationManager.Settings.MaxGameServersAllowed;
-    private readonly ushort _gameServerPlayerCount = ConfigurationManager.Settings.GameServerPlayerLimit;
+
+    private readonly byte _maxGameServersAllowed = ConfigurationManager.Settings["MaxGameServersAllowed"].AsByte();
+    private readonly ushort _gameServerPlayerCount = ConfigurationManager.Settings["GameServerPlayerLimit"].AsUShort();
     private readonly ushort _gameServerQueryTimeout = 10;
 
     private readonly Dictionary<ushort, IActorRef> _gameServers;
 
     public GameServerPool() {
-        this._gameServers = new Dictionary<ushort, IActorRef>();
+        this._gameServers = [];
 
         Logger.Information("GameServerPool created.");
     }
 
-    public static Props Props() {
-        return Akka.Actor.Props.Create(() => new GameServerPool());
-    }
+    public static Props Props() 
+        => Akka.Actor.Props.Create(() => new GameServerPool());
 
     [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_CREATEGAMESERVER))]
     private void ReceiveCreateGameServer(SERVER_100_PROTOCOL.MSG_CREATEGAMESERVER message) {
@@ -38,11 +37,13 @@ internal class GameServerPool : ReceiveProtocolDispatcher {
             Logger.Error("{Type} attempted to create a new game server, but the " +
                       $"internal limit has already been reached. Server has not been created.",
                 Logger.Args(GetType()));
+
             return;
         }
         if (_gameServers.Keys.Any(x => x == message.Port)) {
             Logger.Error("{Type} attempted to create a new game server, but the port" +
                       " {Port} was already in use", Logger.Args(GetType(), message.Port));
+
             return;
         }
 
@@ -69,6 +70,7 @@ internal class GameServerPool : ReceiveProtocolDispatcher {
             catch {
                 // The server did not respond in time, so we'll just ignore it.
                 Logger.Error("Failed to query game server {Name}.", Logger.Args(gameServer.Path.Name));
+
                 continue;
             }
         }
@@ -95,6 +97,7 @@ internal class GameServerPool : ReceiveProtocolDispatcher {
             .Select(gameServer => {
                 var msg = new SERVER_100_PROTOCOL.MSG_QUERYSERVER();
                 var rsp = gameServer.Ask<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg).Result;
+                
                 return rsp;
             })
             .ToList();
@@ -106,6 +109,7 @@ internal class GameServerPool : ReceiveProtocolDispatcher {
                     Found = true,
                 };
                 Sender.Tell(foundMsg);
+                
                 return;
             }
         }
@@ -116,4 +120,5 @@ internal class GameServerPool : ReceiveProtocolDispatcher {
         };
         Sender.Tell(failureMsg);
     }
+
 }

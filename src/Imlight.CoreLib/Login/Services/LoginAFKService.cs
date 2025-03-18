@@ -6,16 +6,17 @@
 using System;
 using System.Timers;
 using Akka.Actor;
-using Imlight.Common.Caches;
-using Imlight.Common.Configuration;
+using Imcodec.MessageLayer.Generated;
+using Imlight.Common;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 
 namespace Imlight.CoreLib.Login.Services;
 
 internal class LoginAFKService : MessageService {
-    private readonly ushort _afkTimeout = ConfigurationManager.Settings.LoginAfkTimeout;
-    private readonly ushort _afkCheckInterval = ConfigurationManager.Settings.LoginAfkCheckInterval;
+
+    private readonly ushort _afkTimeout = ConfigurationManager.Settings["LoginAfkTimeout"].AsUShort();
+    private readonly ushort _afkCheckInterval = ConfigurationManager.Settings["LoginAfkCheckInterval"].AsUShort();
 
     private bool _halted;
     private long _lastReceivedSeconds;
@@ -68,4 +69,5 @@ internal class LoginAFKService : MessageService {
             CloseSession();
         }
     }
+    
 }

@@ -4,16 +4,15 @@
  */
 
 using Akka.Actor;
+using Imcodec.IO;
+using Imcodec.Math;
+using Imcodec.MessageLayer.Generated;
+using Imcodec.Types;
 using Imlight.Common;
-using Imlight.Common.Caches;
-using Imlight.Common.IO;
-using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
-using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
-using SharpDX;
 
 namespace Imlight.CoreLib.Login.Services;
 
@@ -31,6 +30,7 @@ internal class GameTransitionService(SessionActor sessionActor) : MessageService
         if (account is null) {
             Logger.Error("Service {Type} socket account could not be retrieved!", Logger.Args(GetType()));
             SendErrorToSocket();
+            
             return;
         }
 
@@ -39,6 +39,7 @@ internal class GameTransitionService(SessionActor sessionActor) : MessageService
         if (character is null) {
             Logger.Warning("Account {Id} attempted to get a character it didn't have.", Logger.Args(account.AccountId));
             SendErrorToSocket();
+            
             return;
         }
 

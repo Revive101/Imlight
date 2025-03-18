@@ -13,17 +13,17 @@ using Imlight.CoreLib.Shared.Services;
 namespace Imlight.CoreLib.Login;
 
 public class LoginServiceFactory : ServiceFactory {
-    protected override HashSet<Type> ServiceTypes { get; set; } = new HashSet<Type>()
-    {
+
+    protected override HashSet<Type> ServiceTypes { get; set; } = [
         typeof(ControlService),
         typeof(AccountService),
         typeof(AuthenticatorService),
         typeof(CharacterService),
         typeof(GameTransitionService),
         typeof(LoginAFKService),
-    };
+    ];
 
-    public static Props Props() {
-        return Akka.Actor.Props.Create(() => new LoginServiceFactory());
-    }
+    public static Props Props() 
+        => Akka.Actor.Props.Create(() => new LoginServiceFactory());
+
 }

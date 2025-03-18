@@ -3,47 +3,51 @@
  * Proprietary and confidential.
  */
 
+using System;
 using Akka.Actor;
+using Imcodec.IO;
+using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
-using Imlight.Common.Caches;
-using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Implementations;
-using Imlight.CoreLib.WizardData.Models.Player;
-using Newtonsoft.Json;
-using System;
 
 namespace Imlight.CoreLib.Login.Services;
 
-internal class CharacterService : MessageService {
+internal class CharacterService(SessionActor parentActor) : MessageService(parentActor) {
+    
     private uint _characterCreationStage;
     private uint _characterCreationParameter;
 
-    public CharacterService(SessionActor parentActor) : base(parentActor) { }
-
-    protected static Props Props(SessionActor parentActor) {
-        return Akka.Actor.Props.Create(() => new CharacterService(parentActor));
-    }
+    protected static Props Props(SessionActor parentActor) 
+        => Akka.Actor.Props.Create(() => new CharacterService(parentActor));
 
     [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_CREATECHARACTER))]
     private void ReceiveCreateCharacter(LOGIN_7_PROTOCOL.MSG_CREATECHARACTER message) {
         var account = GetSocketAccount();
         if (account is null) {
             SendToSocket(new LOGIN_7_PROTOCOL.MSG_CREATECHARACTERRESPONSE { ErrorCode = 1 });
+            
             return;
         }
 
         // The client has sent us serialized WizardCharacterCreationData. We need to
         // deserialize it to add it to our account database.
-        var serializer = new ObjectSerializer();
+        var serializer = new ObjectSerializer(
+            Behaviors: SerializerFlags.None
+        );
 
         // Deserializing the creation data may sometimes fail if the client is using a different version of the game.
         // Instead of totally failing, we'll catch the exception and send an error message to the client.
-        TypeCache.WizardCharacterCreationInfo charData;
         try {
-            charData = (TypeCache.WizardCharacterCreationInfo) serializer.Deserialize(message.CreationInfo);
+            var creationInfo = new ByteString(message.CreationInfo);
+            if (!serializer.Deserialize(creationInfo, 1, out WizardCharacterCreationInfo charData)) {
+                throw new Exception("Failed to deserialize character creation data.");
+            }
+
             var newCharacter = CharacterHelper.CreateCharacterFromCreationInfo(charData);
             var createdCharacter = account.AddCharacter(newCharacter);
 
@@ -55,15 +59,19 @@ internal class CharacterService : MessageService {
 
             if (createdCharacter) {
                 Logger.Information("Account {accountUsername} created new character {wizardName}", logs);
+
                 SendToSocket(new LOGIN_7_PROTOCOL.MSG_CREATECHARACTERRESPONSE { ErrorCode = 0 });
             }
             else {
                 Logger.Error("Account {accountUsername} failed to add character to database.", logs);
+
                 SendToSocket(new LOGIN_7_PROTOCOL.MSG_CREATECHARACTERRESPONSE { ErrorCode = 1 });
             }
         }
         catch (Exception e) {
-            Logger.Error("Account {accountUsername} failed to deserialize character creation data. {Exception}", Logger.Args(account.Username, e.Message));
+            Logger.Error("Account {accountUsername} failed to deserialize character creation data. {Exception}", 
+                Logger.Args(account.Username, e.Message));
+
             SendToSocket(new LOGIN_7_PROTOCOL.MSG_CREATECHARACTERRESPONSE { ErrorCode = 1 });
         }
     }
@@ -74,6 +82,7 @@ internal class CharacterService : MessageService {
         var account = GetSocketAccount();
         if (account is null) {
             SendToSocket(new LOGIN_7_PROTOCOL.MSG_DELETECHARACTERRESPONSE { ErrorCode = 1 });
+
             return;
         }
 
@@ -111,6 +120,7 @@ internal class CharacterService : MessageService {
         var account = GetSocketAccount();
         if (account is null) {
             SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERLIST() { Error = 1 });
+
             return;
         }
 
@@ -119,13 +129,24 @@ internal class CharacterService : MessageService {
 
         // For every character, we're going to serialize the document and send to the client.
         if (account.Characters.Count > 0) {
-            var serializer = new ObjectSerializer();
+            var serializer = new ObjectSerializer(
+                Behaviors: SerializerFlags.None
+            );
+
             for (int i = 0; i < account.Characters.Count; i++) {
                 var character = account.Characters[i];
 
                 // Database is document-based. We need to serialize the document to send to the client.
                 var loginScreenInfo = CharacterHelper.GetLoginScreenInfo(character);
-                var data = serializer.Serialize(loginScreenInfo);
+
+                // Serialize the character info to send to the client.
+                if (!serializer.Serialize(loginScreenInfo, out var data)) {
+                    Logger.Error("Account {accountUsername} failed to serialize character {characterId} for login screen.",
+                        Logger.Args(account.Username, character.CharId));
+
+                    return;
+                }
+
                 SendToSocket(new LOGIN_7_PROTOCOL.MSG_CHARACTERINFO() { CharacterInfo = data });
             }
         }
@@ -139,4 +160,5 @@ internal class CharacterService : MessageService {
         this._characterCreationParameter = message.Parameter;
         this._characterCreationStage = message.Stage;
     }
+
 }
