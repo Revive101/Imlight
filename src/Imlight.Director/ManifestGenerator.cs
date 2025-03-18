@@ -3,17 +3,18 @@
  * Proprietary and confidential.
  */
 
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Resources;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.Director;
 
 internal class ManifestGenerator {
+
     private const string OUTPUT_DIR = "/manifests/";
     private const string GO_MANIFEST_NAME = "go.manifest";
     private const string ITEM_MANIFEST_NAME = "item.manifest";
@@ -44,8 +45,6 @@ internal class ManifestGenerator {
     private int _topDeckCharCount;
 
     internal ManifestGenerator() {
-        var resourceContainer = new ResourceContainer();
-
         EnsureOutputFiles();
         _goManifest = OpenManifest(GO_MANIFEST_NAME);
         _itemManifest = OpenManifest(ITEM_MANIFEST_NAME);
@@ -253,4 +252,5 @@ internal class ManifestGenerator {
             Logger.Information("Created spell.manifest");
         }
     }
+
 }

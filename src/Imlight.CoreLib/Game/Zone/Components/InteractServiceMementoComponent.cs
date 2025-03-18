@@ -189,7 +189,7 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
         }
 
         var madlibList = new List<MadlibArg> {
-            new MadlibArgT_std_string() {
+            new MadlibArgT_ByteString() {
                 m_madlibArgument = gameObjTemplate.m_displayName,
                 m_madlibToken = "NAME"
             },
