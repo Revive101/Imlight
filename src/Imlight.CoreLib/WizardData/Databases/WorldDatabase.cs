@@ -72,6 +72,6 @@ public class WorldDatabase : RavenDatabaseSingleton<WorldDatabase> {
             return null;
         }
 
-        return X509CertificateLoader.LoadCertificateFromFile(absolutePath);
+        return new X509Certificate2(absolutePath);
     }
 }
