@@ -3,8 +3,8 @@
  * Proprietary and confidential.
  */
 
+using Imcodec.Math;
 using System;
-using SharpDX;
 
 namespace Imlight.CoreLib.Shared.Resources;
 
