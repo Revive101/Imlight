@@ -3,10 +3,12 @@
  * Proprietary and confidential.
  */
 
-using Imlight.Common.ObjectProperty.PropertyReflection;
+using Imcodec.ObjectProperty;
 
 namespace Imlight.CoreLib.WizardData.Implementations;
 
 public interface IClientTypeProvider<T> where T : PropertyClass {
+
     public T GetClientTypeAlternative();
+
 }

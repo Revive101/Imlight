@@ -9,7 +9,7 @@ using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.World;
 using Raven.Client.Documents;
 
-namespace Imlight.CoreLib.WizardData.Implementations;
+namespace Imlight.CoreLib.WizardData.Collections;
 
 public static class CreatureSpellbookCollection {
 

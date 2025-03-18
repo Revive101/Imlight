@@ -8,12 +8,12 @@ using Raven.Client.Documents;
 using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.World;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using Raven.Client.Documents.Linq;
 
 namespace Imlight.CoreLib.WizardData.Collections;
 
 public static class NpcSpellInventoryCollection {
+
     public const string CollectionName = "NpcSpellInventory";
     private static readonly IDocumentStore s_store;
 
@@ -59,6 +59,7 @@ public static class NpcSpellInventoryCollection {
         }
 
         session.SaveChanges();
+
         return true;
     }
 
@@ -95,4 +96,5 @@ public static class NpcSpellInventoryCollection {
 
         s_isPreloaded = true;
     }
+    
 }

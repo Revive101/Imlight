@@ -3,13 +3,13 @@
  * Proprietary and confidential.
  */
 
-using Imlight.CoreLib.WizardData.Collections;
 using System;
 using System.Text.Json.Serialization;
 
 namespace Imlight.CoreLib.WizardData.Models.Player;
 
 public class DynamodSet {
+
     internal ulong CharId { get; set; }
     internal Dynamod[] Dynamods { get; set; }
 
@@ -68,11 +68,14 @@ public class DynamodSet {
 
         return false;
     }
+    
 }
 
 [Serializable]
 public class Dynamod {
+
     internal string ZoneName { get; set; }
     internal string ClientTag { get; set; }
     internal string ModState { get; set; }
+
 }

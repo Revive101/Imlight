@@ -3,9 +3,10 @@
  * Proprietary and confidential.
  */
 
-namespace Imlight.CoreLib.Game.Models.World;
+namespace Imlight.CoreLib.WizardData.Models.World;
 
 internal enum NPCStates {
+
     Idle = 2341033,
     Sigil = 82154771,
     Moving = 1966747187,
@@ -16,4 +17,5 @@ internal enum NPCStates {
     Unknown_6 = 1896147676,
     Unknown_7 = 1288150110,
     Unknown_8 = 1048309586,
+
 }

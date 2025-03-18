@@ -34,7 +34,7 @@ internal static class CombatActionResolver {
             };
             allEffects.Add(chosenEffect);
 
-            charmsAffectingThisSpell = CombatCharms.FindAppliedCharms(action.SpellCaster, allEffects.ToArray());
+            charmsAffectingThisSpell = CombatCharms.FindAppliedCharms(action.SpellCaster, [.. allEffects]);
 
             var targets = GetEffectTargets(chosenEffect, action.SpellCaster, action.SelectedTarget);
             if (targets.Length == 0) {
@@ -54,7 +54,7 @@ internal static class CombatActionResolver {
             InformDuelParticipantsOfEffect(action.SpellCaster, targets, chosenEffect);
 
             cinematicTime += CombatEffectApplicator.ApplyEffect(chosenEffect,
-                                                                charmsAffectingThisSpell.ToArray(),
+                                                                [.. charmsAffectingThisSpell],
                                                                 action.SpellCaster,
                                                                 targets);
         }

@@ -7,10 +7,12 @@ using System.Linq;
 using System.Collections.Generic;
 using Raven.Client.Documents;
 using Imlight.CoreLib.WizardData.Databases;
-using static Imlight.Common.Caches.TypeCache;
+using Imcodec.ObjectProperty.TypeCache;
 
 namespace Imlight.CoreLib.WizardData.Collections;
+
 internal class AuctionHouseCollection {
+    
     public const string CollectionName = "AuctionHouse";
 
     private static readonly IDocumentStore s_store;
@@ -33,14 +35,14 @@ internal class AuctionHouseCollection {
         using var session = s_store.OpenSession();
 
         // Retrieve all Auction House entries.
-        s_entries = session.Query<AuctionHouseEntry>(collectionName: CollectionName)
-            .ToList();
+        s_entries = [.. session.Query<AuctionHouseEntry>(collectionName: CollectionName)];
 
         if (s_entries is null) {
-            s_entries = new List<AuctionHouseEntry>();
+            s_entries = [];
         }
 
         s_isInitialized = true;
+
         return s_entries;
     }
 

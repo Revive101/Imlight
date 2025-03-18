@@ -3,17 +3,11 @@
  * Proprietary and confidential.
  */
 
-using System.Collections.Generic;
-
 namespace Imlight.CoreLib.WizardData.Models.World;
 
-public class CreatureSpellbook {
-    public string DeckName { get; init; }
-    public uint[] SpellTemplateIds { get; init; }
+public class CreatureSpellbook(string deckName, uint[] spellTemplateIds) {
 
-    // ctor
-    public CreatureSpellbook(string deckName, uint[] spellTemplateIds) {
-        DeckName = deckName;
-        SpellTemplateIds = spellTemplateIds;
-    }
+    public string DeckName { get; init; } = deckName;
+    public uint[] SpellTemplateIds { get; init; } = spellTemplateIds;
+    
 }

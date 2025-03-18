@@ -6,15 +6,16 @@
 using System.Linq;
 using Raven.Client.Documents;
 using Imlight.CoreLib.WizardData.Databases;
-using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Misc;
 using Imlight.CoreLib.WizardData.Models.Player;
-using static Imlight.Common.Caches.TypeCache;
 using Imlight.CoreLib.Shared.Behaviors;
+using Imlight.CoreLib.WizardData.Implementations;
+using Imcodec.ObjectProperty.TypeCache;
 
-namespace Imlight.CoreLib.WizardData.Implementations;
+namespace Imlight.CoreLib.WizardData.Collections;
 
 public static class AccountCollection {
+    
     private const string CollectionName = "Accounts";
     private static readonly IDocumentStore s_store;
 
@@ -46,6 +47,7 @@ public static class AccountCollection {
         metadata[Raven.Client.Constants.Documents.Metadata.Collection] = CollectionName;
 
         session.SaveChanges();
+        
         return true;
     }
 
@@ -105,30 +107,26 @@ public static class AccountCollection {
             var inventory = session.Query<WizClientObjectItem>(collectionName: WizardItemCollection.CollectionName)
                 .Where(i => i.m_characterId == character.CharId)
                 .ToList();
-            character.InventoryBehavior.Items = inventory
-                .Where(i => character.InventoryBehavior.InventoryItemIds.Contains(i.m_globalID)).ToList();
+            character.InventoryBehavior.Items = [.. inventory.Where(i => character.InventoryBehavior.InventoryItemIds.Contains(i.m_globalID))];
 
             // Load the character's equipment.
             // The equipped items are stored as global IDs in the character's EquipmentBehavior.
             // Find any items in the inventory that match the equipped item IDs.
-            character.EquipmentBehavior.EquippedItems = inventory
-                .Where(i => character.EquipmentBehavior.EquippedItemIds.Any(e => i.m_globalID == e)).ToList();
+            character.EquipmentBehavior.EquippedItems = [.. inventory.Where(i => character.EquipmentBehavior.EquippedItemIds.Any(e => i.m_globalID == e))];
 
             // Load the character's snack bag.
             var snackbag = session.Query<ClientPetSnackItem>(collectionName: WizardPetSnackCollection.CollectionName)
                 .Where(i => i.m_characterId == character.CharId)
                 .ToList();
             character.PetSnackBehavior ??= new ServerPetSnackBehavior();
-            character.PetSnackBehavior.Snacks = snackbag
-                .Where(i => character.PetSnackBehavior.SnackItemIds.Any(e => i.m_globalID == e)).ToList();
+            character.PetSnackBehavior.Snacks = [.. snackbag.Where(i => character.PetSnackBehavior.SnackItemIds.Any(e => i.m_globalID == e))];
 
             // Load the character's reagent bag.
             var reagents = session.Query<ClientReagentItem>(collectionName: WizardReagentCollection.CollectionName)
                 .Where(i => i.m_characterId == character.CharId)
                 .ToList();
             character.AlchemyBehavior ??= new ServerAlchemyBehavior();
-            character.AlchemyBehavior.Reagents = reagents
-                .Where(i => character.AlchemyBehavior.ReagentItemIds.Any(e => i.m_globalID == e)).ToList();
+            character.AlchemyBehavior.Reagents = [.. reagents.Where(i => character.AlchemyBehavior.ReagentItemIds.Any(e => i.m_globalID == e))];
 
             // Load character dynamic modifications.
             var dynamods = session.Query<DynamodSet>(collectionName: DynamodCollection.CollectionName)
@@ -178,14 +176,12 @@ public static class AccountCollection {
             var inventory = session.Query<WizClientObjectItem>(collectionName: WizardItemCollection.CollectionName)
                 .Where(i => i.m_characterId == character.CharId)
                 .ToList();
-            character.InventoryBehavior.Items = inventory
-                .Where(i => character.InventoryBehavior.InventoryItemIds.Contains(i.m_globalID)).ToList();
+            character.InventoryBehavior.Items = [.. inventory.Where(i => character.InventoryBehavior.InventoryItemIds.Contains(i.m_globalID))];
 
             // Load the character's equipment.
             // The equipped items are stored as global IDs in the character's EquipmentBehavior.
             // Find any items in the inventory that match the equipped item IDs.
-            character.EquipmentBehavior.EquippedItems = inventory
-                .Where(i => character.EquipmentBehavior.EquippedItemIds.Any(e => i.m_globalID == e)).ToList();
+            character.EquipmentBehavior.EquippedItems = [.. inventory.Where(i => character.EquipmentBehavior.EquippedItemIds.Any(e => i.m_globalID == e))];
 
             // Load character dynamic modifications.
             var dynamods = session.Query<DynamodSet>(collectionName: DynamodCollection.CollectionName)

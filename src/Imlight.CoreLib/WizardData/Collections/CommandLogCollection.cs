@@ -10,6 +10,7 @@ using Raven.Client.Documents;
 namespace Imlight.CoreLib.WizardData.Collections;
 
 public static class CommandLogCollection {
+    
     public const string CollectionName = "CommandLog";
     private static readonly IDocumentStore s_store;
 
@@ -30,4 +31,5 @@ public static class CommandLogCollection {
 
         session.SaveChanges();
     }
+    
 }

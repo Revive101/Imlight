@@ -214,7 +214,7 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
         // Out of the service options, deduce which WizBang is the highest priority.
         // Thankfully, game client data has a priority list for WizBangs.
         var wizBangs = _serviceComponents.Select(c => c.WizBang).Where(w => w != null);
-        var prioritySortedWizBangs = WizBangPriority.GetPrioritySortedWizBangs(wizBangs.ToList());
+        var prioritySortedWizBangs = WizBangPriority.GetPrioritySortedWizBangs([.. wizBangs]);
         var highestPriority = SortComponentsByPriority(_serviceComponents).FirstOrDefault();
 
         // Send the WizBang to the player.
@@ -230,7 +230,7 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
     private static IOrderedEnumerable<IServiceComponent> SortComponentsByPriority(IEnumerable<IServiceComponent> components) {
         // Sort by WizBang priority
         var wizBangs = components.Select(c => c.WizBang).Where(w => w != null);
-        var prioritySortedWizBangs = WizBangPriority.GetPrioritySortedWizBangs(wizBangs.ToList());
+        var prioritySortedWizBangs = WizBangPriority.GetPrioritySortedWizBangs([.. wizBangs]);
 
         return components.OrderBy(c => prioritySortedWizBangs.IndexOf(c.WizBang ?? "None"));
     }

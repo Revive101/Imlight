@@ -3,15 +3,16 @@
  * Proprietary and confidential.
  */
 
-using Imlight.Common.Caches;
-using Imlight.Common.IO;
-using Imlight.Common.ObjectProperty.PropertyReflection;
-using Imlight.CoreLib.Shared.Behaviors;
 using Newtonsoft.Json;
+using Imcodec.IO;
+using Imcodec.Types;
+using Imlight.CoreLib.Shared.Behaviors;
 
 namespace Imlight.CoreLib.WizardData.Models.Misc;
 
-public sealed class ScoreTracking : IClientBehaviorProvider<TypeCache.ScoreTracking> {
+public sealed class ScoreTracking 
+    : IClientBehaviorProvider<Imcodec.ObjectProperty.TypeCache.ScoreTracking> {
+
 
     [JsonIgnore] public bool NoTransfer { get; set; } = false;
 
@@ -22,7 +23,7 @@ public sealed class ScoreTracking : IClientBehaviorProvider<TypeCache.ScoreTrack
     public WideByteString GamerNameOverride { get; set; }
     public ByteString GamerGender { get; set; }
 
-    public TypeCache.ScoreTracking GetClientBehaviorInstance() 
+    public Imcodec.ObjectProperty.TypeCache.ScoreTracking GetClientBehaviorInstance() 
         => new() {
             m_gamerID = GamerId,
             m_gamerName = GamerNameOverride,
@@ -31,4 +32,5 @@ public sealed class ScoreTracking : IClientBehaviorProvider<TypeCache.ScoreTrack
             m_gamerGender = GamerGender,
             m_gamerRace = "Human"
         };
+
 }

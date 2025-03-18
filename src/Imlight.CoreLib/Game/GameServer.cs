@@ -10,7 +10,6 @@ using Akka.Actor;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.Common;
-using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.Game.Commands;
 using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.Game.World;
@@ -19,6 +18,7 @@ using Imlight.CoreLib.Shared.Cryptography;
 using Imlight.CoreLib.Shared.Structures;
 using Imcodec.IO;
 using Imcodec.MessageLayer.Generated;
+using Imlight.CoreLib.WizardData.Collections;
 
 namespace Imlight.CoreLib.Game;
 

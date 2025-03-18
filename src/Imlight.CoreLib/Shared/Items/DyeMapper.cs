@@ -5,7 +5,7 @@
 
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
-using Imlight.CoreLib.WizardData.Implementations;
+using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Shared.Items;

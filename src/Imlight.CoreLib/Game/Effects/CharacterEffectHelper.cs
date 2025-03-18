@@ -216,7 +216,7 @@ internal static class CharacterEffectHelper {
         var maxIndex = MagicSchools.GetMaxMagicSchoolIndex();
 
         // Set the list if it doesn't exist. Give it a count equal to how many schools there are.
-        effectList ??= Enumerable.Repeat(0f, (int) maxIndex).ToList();
+        effectList ??= [.. Enumerable.Repeat(0f, (int) maxIndex)];
 
         // Ensure that the effect list is the same length as the number of schools.
         if (effectList.Count != maxIndex) {

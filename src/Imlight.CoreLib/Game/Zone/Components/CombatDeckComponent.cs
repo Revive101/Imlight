@@ -10,7 +10,7 @@ using Imlight.Common;
 using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Resources;
-using Imlight.CoreLib.WizardData.Implementations;
+using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.World;
 
 namespace Imlight.CoreLib.Game.Zone.Components;

@@ -140,7 +140,7 @@ public class SpellFactory : RootDirectoryResourceSingleton<SpellFactory>, IMemor
             spells.Add(spell);
         }
 
-        return spells.ToArray();
+        return [.. spells];
     }
 
     /// <summary>

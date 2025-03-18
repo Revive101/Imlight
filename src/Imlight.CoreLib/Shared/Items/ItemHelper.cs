@@ -3,18 +3,18 @@
  * Proprietary and confidential.
  */
 
-using Imlight.Common;
-using Imlight.Common.Cryptography;
-using Imlight.Common.ObjectProperty.PropertyReflection;
-using Imlight.CoreLib.Shared.Resources;
-using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using System.Linq;
-using static Imlight.Common.Caches.TypeCache;
+using Imcodec.Cryptography;
+using Imcodec.ObjectProperty.Bit;
+using Imcodec.ObjectProperty.TypeCache;
+using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Shared.Items;
 
 internal static class ItemHelper {
+    
     /// <summary>
     /// Gets the <see cref="EquippedItemInfoList"/> for a <see cref="Wizard"/>. This is a lightweight version of the
     /// actual equipment that is used to publicly display the character's equipment.
@@ -39,6 +39,7 @@ internal static class ItemHelper {
     /// <returns>The template for the given item. Null, if it wasn't found.</returns>
     internal static WizItemTemplate GetItemTemplate(WizClientObjectItem item) {
         var template = CoreObjectFactory.GetCoreTemplate(item.m_templateID);
+
         return (WizItemTemplate) template;
     }
 
@@ -76,6 +77,8 @@ internal static class ItemHelper {
     internal static uint GetItemSlotHash(WizItemTemplate template) {
         var slotType = GetItemSlot(template).SlotType;
         var slotName = slotType.ToString().Split('.')[^1];
+        
         return StringHash.Compute(slotName);
     }
+    
 }

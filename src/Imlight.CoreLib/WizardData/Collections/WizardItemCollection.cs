@@ -3,20 +3,20 @@
  * Proprietary and confidential.
  */
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
+using Raven.Client.Documents;
+using Raven.Client.Documents.Operations;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.Player;
-using Raven.Client.Documents;
-using Raven.Client.Documents.Operations;
-using static Imlight.Common.Caches.TypeCache;
+using Imcodec.ObjectProperty.TypeCache;
 
-namespace Imlight.CoreLib.WizardData.Implementations;
+namespace Imlight.CoreLib.WizardData.Collections;
 
 public static class WizardItemCollection {
+
     public const string CollectionName = "WizardItems";
     private static readonly IDocumentStore s_store;
 
@@ -54,6 +54,7 @@ public static class WizardItemCollection {
         s_store.Operations.Send(patchRequest);
 
         session.SaveChanges();
+
         return true;
     }
 
@@ -79,6 +80,7 @@ public static class WizardItemCollection {
 
         // Save the changes.
         session.SaveChanges();
+
         return true;
     }
 
@@ -145,6 +147,7 @@ public static class WizardItemCollection {
             $"update {{ this.{nameof(Wizard.InventoryBehavior.InventoryItemIds)}.Remove('{itemId}'); }}");
 
         session.SaveChanges();
+
         return true;
     }
 
@@ -171,6 +174,7 @@ public static class WizardItemCollection {
 
         // Save the changes.
         session.SaveChanges();
+
         return true;
     }
 
@@ -197,6 +201,7 @@ public static class WizardItemCollection {
 
         // Save the changes.
         session.SaveChanges();
+
         return true;
     }
 
@@ -227,6 +232,7 @@ public static class WizardItemCollection {
 
         // Save the changes.
         session.SaveChanges();
+
         return true;
     }
 
@@ -250,7 +256,9 @@ public static class WizardItemCollection {
 
         // Search through the item behaviors to find the deck behavior.
         if (!CoreObjectFactory.FindBehaviorInstance<DeckBehavior>(associatedDeck, out var deckBehavior)) {
-            Logger.Error("Failed to find the deck behavior for item {0}.", Logger.Args(associatedDeck.m_globalID));
+            Logger.Error("Failed to find the deck behavior for item {0}.", 
+                Logger.Args(associatedDeck.m_globalID));
+
             return false;
         }
 
@@ -273,6 +281,7 @@ public static class WizardItemCollection {
         // Save the changes.
         deckBehavior.m_spellList = spellList;
         session.SaveChanges();
+
         return true;
     }
 
@@ -339,7 +348,8 @@ public static class WizardItemCollection {
         }
 
         // Set the WorldItem to the retrieved items.
-        inventory = items.ToList();
+        inventory = [.. items];
+        
         return true;
     }
 
@@ -368,6 +378,8 @@ public static class WizardItemCollection {
 
         // Save the changes.
         session.SaveChanges();
+
         return true;
     }
+    
 }

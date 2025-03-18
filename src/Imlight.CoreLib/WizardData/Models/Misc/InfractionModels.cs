@@ -10,13 +10,16 @@ using System.Linq;
 namespace Imlight.CoreLib.WizardData.Models.Misc;
 
 public enum InfractionType {
+
     SuspiciousBehavior,
     Warn,
     Mute,
     Ban
+
 }
 
 public class Infraction {
+
     public ulong InfractionId { get; set; }
     public ulong AccountId { get; set; }
     public ulong MachineId { get; set; }
@@ -28,9 +31,11 @@ public class Infraction {
     public string ResponsibleModerator { get; set; } = "Imlight";
     public bool WasWaived { get; set; }
     public string WasWaivedBy { get; set; }
+
 }
 
 public class InfractionHistory {
+
     public ulong AccountId { get; set; }
     public List<Infraction> Infractions { get; set; }
     public bool IsCurrentlyBanned
@@ -49,30 +54,32 @@ public class InfractionHistory {
     }
 
     public void AddInfraction(Infraction infraction) {
-        if (Infractions is null) {
-            Infractions = new List<Infraction>();
-        }
-
+        Infractions ??= [];
         Infractions.Add(infraction);
     }
+
 }
 
 internal class MachineBanRecord {
     public MachineBanRecord(ulong machineId, DateTime banExpiration) {
+        
         MachineId = machineId;
         BanExpiration = banExpiration;
     }
 
     internal ulong MachineId { get; set; }
     internal DateTime BanExpiration { get; set; }
+    
 }
 
 internal class IpBanRecord {
     public IpBanRecord(string ip, DateTime banExpiration) {
+        
         Ip = ip;
         BanExpiration = banExpiration;
     }
 
     internal string Ip { get; set; }
     internal DateTime BanExpiration { get; set; }
+    
 }

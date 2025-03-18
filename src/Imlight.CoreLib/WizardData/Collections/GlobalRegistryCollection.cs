@@ -5,12 +5,11 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.WizardData.Databases;
-using Imlight.CoreLib.WizardData.Models;
 using Imlight.CoreLib.WizardData.Models.World;
 using Raven.Client.Documents;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.WizardData.Collections;
 
@@ -64,6 +63,7 @@ public static class GlobalRegistryCollection {
             .FirstOrDefault();
 
         s_isInitialized = true;
+
         return s_model;
     }
 
@@ -81,7 +81,9 @@ public static class GlobalRegistryCollection {
         }
 
         if (!s_model.GlobalRegistryValues.ContainsKey(entry)) {
-            Logger.Warning("Global registry entry {0} does not exist.", Logger.Args(entry));
+            Logger.Warning("Global registry entry {0} does not exist.", 
+                Logger.Args(entry));
+
             return 0;
         }
 
@@ -94,13 +96,13 @@ public static class GlobalRegistryCollection {
     /// <param name="values"> The requirements to check. </param>
     /// <param name="operatorType"> The operator type to use. </param>
     /// <returns> True if all requirements are met, false otherwise. </returns>
-    public static bool CheckGlobalRegistryRequirements(List<Requirement> values, Requirement.Operator operatorType) {
+    public static bool CheckGlobalRegistryRequirements(List<Requirement> values, Operator operatorType) {
         var allMatched = true;
 
         foreach (var requirement in values) {
             if (requirement is ReqGlobalRegistryValue globalReq) {
                 if (!GlobalRegistryValueMet(globalReq)
-                    && operatorType == Requirement.Operator.ROP_AND) {
+                    && operatorType == Operator.ROP_AND) {
                     return false;
                 }
 
@@ -119,21 +121,21 @@ public static class GlobalRegistryCollection {
         var globalValue = GetRegistryEntry(value.m_entryName);
 
         switch (value.m_operatorType) {
-            case ReqNumeric.OPERATOR_TYPE.OPERATOR_EQUALS:
+            case OPERATOR_TYPE.OPERATOR_EQUALS:
                 return value.m_numericValue == globalValue;
-            case ReqNumeric.OPERATOR_TYPE.OPERATOR_LESS_THAN:
+            case OPERATOR_TYPE.OPERATOR_LESS_THAN:
                 return value.m_numericValue < globalValue;
-            case ReqNumeric.OPERATOR_TYPE.OPERATOR_LESS_THAN_EQ:
+            case OPERATOR_TYPE.OPERATOR_LESS_THAN_EQ:
                 return value.m_numericValue <= globalValue;
-            case ReqNumeric.OPERATOR_TYPE.OPERATOR_GREATER_THAN:
+            case OPERATOR_TYPE.OPERATOR_GREATER_THAN:
                 return value.m_numericValue > globalValue;
-            case ReqNumeric.OPERATOR_TYPE.OPERATOR_GREATER_THAN_EQ:
+            case OPERATOR_TYPE.OPERATOR_GREATER_THAN_EQ:
                 return value.m_numericValue >= globalValue;
-            case ReqNumeric.OPERATOR_TYPE.OPERATOR_UNKNOWN:
             default: {
                     Logger.Error("Zone contains a spawn requirement that " +
                                       "references a global registry value that does not exist. " +
                                       "Entry name: {EntryName}", Logger.Args(value.m_entryName));
+
                     return false;
                 }
         }

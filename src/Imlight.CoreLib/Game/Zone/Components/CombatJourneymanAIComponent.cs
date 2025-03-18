@@ -54,7 +54,7 @@ internal sealed class CombatJourneymanAIComponent(ZoneEntity entity) : ZoneEntit
 
     private Hand _roundHand;
     private CombatDuelSubCircle[] _friendlySubcircles
-        => _currentDuelComponent.ActiveSubCircles.Where(x => x.OccupiedTeam == _currentSubCircle.OccupiedTeam).ToArray();
+        => [.. _currentDuelComponent.ActiveSubCircles.Where(x => x.OccupiedTeam == _currentSubCircle.OccupiedTeam)];
     private bool _isHealingViable
         => _friendlySubcircles.Any(x => x.ParticipantGameStats.m_currentHitpoints / x.ParticipantGameStats.m_baseHitpoints < _healingThreshold);
     private bool _sentFinalKill;

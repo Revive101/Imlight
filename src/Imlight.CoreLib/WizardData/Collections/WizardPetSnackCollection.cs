@@ -3,18 +3,18 @@
  * Proprietary and confidential.
  */
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Operations;
 using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.Player;
-using static Imlight.Common.Caches.TypeCache;
+using Imcodec.ObjectProperty.TypeCache;
 
-namespace Imlight.CoreLib.WizardData.Implementations;
+namespace Imlight.CoreLib.WizardData.Collections;
 
 public static class WizardPetSnackCollection {
+
     public const string CollectionName = "WizardPetSnacks";
     private static readonly IDocumentStore s_store;
 
@@ -52,6 +52,7 @@ public static class WizardPetSnackCollection {
         s_store.Operations.Send(patchRequest);
 
         session.SaveChanges();
+        
         return true;
     }
 
@@ -77,6 +78,7 @@ public static class WizardPetSnackCollection {
         associatedSnack.m_quantity = snack.m_quantity;
 
         session.SaveChanges();
+        
         return true;
     }
 
@@ -142,6 +144,7 @@ public static class WizardPetSnackCollection {
             $"update {{ this.{nameof(Wizard.PetSnackBehavior.SnackItemIds)}.Remove('{snackId}'); }}");
 
         session.SaveChanges();
+
         return true;
     }
 
@@ -161,12 +164,14 @@ public static class WizardPetSnackCollection {
 
         // If no snacks were found, set the snack bag to null and return false.
         if (snacks.Count == 0) {
+
             snackBag = null;
             return false;
         }
 
         // Set the snack bag to the retrieved snacks.
-        snackBag = snacks.ToList();
+        snackBag = [.. snacks];
+
         return true;
     }
 
@@ -194,6 +199,8 @@ public static class WizardPetSnackCollection {
         }
 
         session.SaveChanges();
+
         return true;
     }
+
 }

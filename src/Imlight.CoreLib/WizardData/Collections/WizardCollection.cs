@@ -4,16 +4,17 @@
  */
 
 using System.Linq;
+using Raven.Client.Documents;
 using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
-using Raven.Client.Documents;
-using SharpDX;
-using static Imlight.Common.Caches.TypeCache;
+using Imcodec.ObjectProperty.TypeCache;
+using Imcodec.Math;
 
 namespace Imlight.CoreLib.WizardData.Implementations;
 
 public static class WizardCollection {
+
     public const string CollectionName = "Wizards";
     private static readonly IDocumentStore s_store;
 
@@ -40,6 +41,7 @@ public static class WizardCollection {
         metadata[Raven.Client.Constants.Documents.Metadata.Collection] = CollectionName;
 
         session.SaveChanges();
+        
         return true;
     }
 
@@ -64,6 +66,7 @@ public static class WizardCollection {
 
         session.Delete(character);
         session.SaveChanges();
+
         return true;
     }
 
@@ -84,7 +87,7 @@ public static class WizardCollection {
             var items = session.Query<WizClientObjectItem>(collectionName: WizardItemCollection.CollectionName)
                 .Where(x => x.m_characterId == id)
                 .ToList();
-            character.InventoryBehavior.Items = items.ToList();
+            character.InventoryBehavior.Items = [.. items];
         }
 
         return character;
@@ -344,4 +347,5 @@ public static class WizardCollection {
         existingCharacter.SpellbookBehavior.LearnedSpellTemplateIds.Remove(spellTemplateId);
         session.SaveChanges();
     }
+    
 }

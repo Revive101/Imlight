@@ -6,11 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using SharpDX;
 using Newtonsoft.Json;
-using Imlight.Common;
-using Imlight.Common.Configuration;
-using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Game.Effects;
 using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.Shared.Behaviors;
@@ -18,13 +14,17 @@ using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Implementations;
-using static Imlight.Common.Caches.TypeCache;
 using Imlight.CoreLib.Shared.Utilities;
+using Imcodec.Math;
+using Imcodec.ObjectProperty.TypeCache;
+using Imlight.Common;
+using Imcodec.Types;
 
 namespace Imlight.CoreLib.WizardData.Models.Player;
 
 [Serializable]
 public class Wizard : IDisposable {
+
     public ulong AccountId { get; set; }
     public ulong CharId { get; set; }
     public string Zone { get; set; }
@@ -74,7 +74,7 @@ public class Wizard : IDisposable {
 
     [JsonIgnore] public Account Account;
     [JsonIgnore] public WizClientObject GameObject;
-    [JsonIgnore] public List<GameEffectBase> GameEffects = new();
+    [JsonIgnore] public List<GameEffectBase> GameEffects = [];
     [JsonIgnore] public string GameServerIp;
     [JsonIgnore] public ushort GameServerPort;
     [JsonIgnore] public string QueuedZoneName;
@@ -84,7 +84,7 @@ public class Wizard : IDisposable {
 
     [JsonIgnore] private Vector3 _location;
     [JsonIgnore] private Vector3 _orientation;
-    [JsonIgnore] private readonly List<ulong> _defaultItems = new() {
+    [JsonIgnore] private readonly List<ulong> _defaultItems = [
         // warning: do not exceed 16 items! RavenDB has a batch limit of 16 items.
         // Quality assurance hats, 05-10-25-50-100
         1317127, 1317128, 1317125, 1317124, 1317126,
@@ -102,7 +102,7 @@ public class Wizard : IDisposable {
         126412, // Black Cat Pet
         284071, // Swift Gryphon (PERM)
         126983, // Starter Deck
-    };
+    ];
 
     // Constructor: Used for deserialization. If this is not present, the default constructor will be used.
     [JsonConstructor]
@@ -111,8 +111,8 @@ public class Wizard : IDisposable {
     // Constructor: Used for character creation.
     public Wizard(MagicSchool wizardSchoolType, WizardCharacterBehavior avatar, uint nameIndices, byte level = 1) {
         CharId = RandomGen.GenerateGUID();
-        Zone = ConfigurationManager.Settings.StartingZone;
-        World = ConfigurationManager.Settings.StartingWorld;
+        Zone = ConfigurationManager.Settings["StartingZone"];
+        World = ConfigurationManager.Settings["StartingWorld"].AsByte();
 
         // Do behaviors.
         WizardAvatar = avatar;
@@ -133,9 +133,11 @@ public class Wizard : IDisposable {
         DynamodCollection.AddDynamodSet(DynamodSet);
     }
 
-    public void SetCachedLocation(Vector3 loc) => Location = loc;
+    public void SetCachedLocation(Vector3 loc) 
+        => Location = loc;
 
-    public void SetCachedOrientation(float direction) => Orientation = new Vector3(0, 0, direction);
+    public void SetCachedOrientation(float direction) 
+        => Orientation = new Vector3(0, 0, direction);
 
     public void SetPersistentLocation(Vector3 loc) {
         Location = loc;
@@ -283,6 +285,7 @@ public class Wizard : IDisposable {
     public bool AddItemToInventory(WizClientObjectItem item) {
         if (item is null) {
             Logger.Warning("Cannot add item to inventory because that item does not exist.");
+
             return false;
         }
 
@@ -295,6 +298,7 @@ public class Wizard : IDisposable {
         if (!success) {
             Logger.Warning("Could not add item {0} to player {1}'s inventory.",
                 Logger.Args(item.m_globalID, PlayerNameBehavior.GetWizardName()));
+
             return false;
         }
 
@@ -308,7 +312,9 @@ public class Wizard : IDisposable {
     public bool RemoveItemFromInventory(ulong itemId) {
         var success = InventoryBehavior.RemoveItem(itemId, out var item);
         if (!success) {
-            Logger.Warning("Could not remove item {0} from player {1}'s inventory.", Logger.Args(itemId, PlayerNameBehavior.GetWizardName()));
+            Logger.Warning("Could not remove item {0} from player {1}'s inventory.", 
+                Logger.Args(itemId, PlayerNameBehavior.GetWizardName()));
+
             return false;
         }
 
@@ -336,7 +342,9 @@ public class Wizard : IDisposable {
         var replacedItem = EquipmentBehavior.GetItemInSlot(slot.SlotType);
         if (replacedItem != null) {
             if (!EquipmentToInventoryTransfer(replacedItem.m_globalID, out unequipEffects)) {
-                Logger.Warning("Could not replace item {0} from slot {1}.", Logger.Args(replacedItem.m_globalID, slot.SlotType));
+                Logger.Warning("Could not replace item {0} from slot {1}.", 
+                    Logger.Args(replacedItem.m_globalID, slot.SlotType));
+
                 return false;
             }
         }
@@ -344,7 +352,9 @@ public class Wizard : IDisposable {
         // Add the item to the equipment.
         var equipResult = EquipmentBehavior.EquipItem(inventoryItem, slot.SlotType);
         if (!equipResult) {
-            Logger.Warning("Tried to equip item with global id {0} that is already equipped.", Logger.Args(itemId));
+            Logger.Warning("Tried to equip item with global id {0} that is already equipped.", 
+                Logger.Args(itemId));
+
             return false;
         }
 
@@ -363,6 +373,7 @@ public class Wizard : IDisposable {
         Logger.Debug("{0} equips item {1}", Logger.Args(PlayerNameBehavior.GetWizardName(), itemId));
 
         equipEffects = CharacterEffectHelper.AddEffectsToWizard(this, template);
+
         return true;
     }
 
@@ -377,14 +388,18 @@ public class Wizard : IDisposable {
         // Remove the item from the equipment.
         var unequipResult = EquipmentBehavior.UnequipItem(itemId);
         if (!unequipResult) {
-            Logger.Warning("Tried to unequip item with global id {0} that is not equipped.", Logger.Args(itemId));
+            Logger.Warning("Tried to unequip item with global id {0} that is not equipped.", 
+                Logger.Args(itemId));
+
             return false;
         }
 
         // Add the item to the inventory.
         var invAddResult = InventoryBehavior.AddItem(item);
         if (!invAddResult) {
-            Logger.Warning("Tried to add item with global id {0} to inventory, but it already exists.", Logger.Args(itemId));
+            Logger.Warning("Tried to add item with global id {0} to inventory, but it already exists.", 
+                Logger.Args(itemId));
+
             return false;
         }
 
@@ -397,9 +412,11 @@ public class Wizard : IDisposable {
         WizardCollection.UpdateCharacterItems(this);
 
         // Debug log.
-        Logger.Debug("{0} unequips item {1}", Logger.Args(PlayerNameBehavior.GetWizardName(), itemId));
+        Logger.Debug("{0} unequips item {1}", 
+            Logger.Args(PlayerNameBehavior.GetWizardName(), itemId));
 
         unequipEffects = CharacterEffectHelper.RemoveEffectsFromWizard(this, template);
+
         return true;
     }
 
@@ -430,6 +447,7 @@ public class Wizard : IDisposable {
         if (!success) {
             Logger.Warning("Could not add snack {0} to player {1}'s snackbag.",
                 Logger.Args(snack.m_globalID, PlayerNameBehavior.GetWizardName()));
+
             return false;
         }
 
@@ -437,12 +455,14 @@ public class Wizard : IDisposable {
             // Persistent save.
             WizardPetSnackCollection.UpdateSnack(snack);
             WizardCollection.UpdateCharacterItems(this);
+
             return true;
         }
 
         // Persistent save.
         WizardPetSnackCollection.AddSnack(snack);
         WizardCollection.UpdateCharacterItems(this);
+
         return true;
     }
 
@@ -450,6 +470,7 @@ public class Wizard : IDisposable {
         if (!PetSnackBehavior.RemoveSnack(globalId, out snack)) {
             Logger.Warning("Could not remove snack with global ID {0} from player {1}'s snackbag.",
                 Logger.Args(globalId, PlayerNameBehavior.GetWizardName()));
+
             return false;
         }
 
@@ -457,12 +478,14 @@ public class Wizard : IDisposable {
             // Persistent save.
             WizardPetSnackCollection.RemoveSnack(snack);
             WizardCollection.UpdateCharacterItems(this);
+
             return true;
         }
 
         // Persistent save.
         WizardPetSnackCollection.UpdateSnack(snack);
         WizardCollection.UpdateCharacterItems(this);
+
         return true;
     }
 
@@ -482,6 +505,7 @@ public class Wizard : IDisposable {
     public bool AddReagent(ClientReagentItem reagent) {
         if (reagent is null) {
             Logger.Warning("Cannot add reagent to reagent bag because that reagent does not exist.");
+
             return false;
         }
 
@@ -507,6 +531,7 @@ public class Wizard : IDisposable {
         if (!AlchemyBehavior.RemoveReagent(globalId, out reagent)) {
             Logger.Warning("Could not remove reagent with global ID {0} from player {1}'s reagent bag.",
                 Logger.Args(globalId, PlayerNameBehavior.GetWizardName()));
+
             return false;
         }
 
@@ -514,12 +539,14 @@ public class Wizard : IDisposable {
             // Persistent save.
             WizardReagentCollection.RemoveReagent(reagent);
             WizardCollection.UpdateCharacterItems(this);
+
             return true;
         }
 
         // Persistent save.
         WizardReagentCollection.UpdateReagent(reagent);
         WizardCollection.UpdateCharacterItems(this);
+
         return true;
     }
 
@@ -541,6 +568,7 @@ public class Wizard : IDisposable {
         if (SpellbookBehavior.LearnedSpellTemplateIds.Contains(spell.m_templateID)) {
             Logger.Warning("{0} Tried to learn spell with template ID {1} that is already known.",
                 Logger.Args(PlayerNameBehavior.GetWizardName(), spell.m_templateID));
+
             return false;
         }
 
@@ -556,6 +584,7 @@ public class Wizard : IDisposable {
         if (!SpellbookBehavior.LearnedSpellTemplateIds.Contains(spellTemplateId)) {
             Logger.Warning("{0} Tried to unlearn spell with template ID {1} that is not known.",
                 Logger.Args(PlayerNameBehavior.GetWizardName(), spellTemplateId));
+
             return false;
         }
 
@@ -584,6 +613,7 @@ public class Wizard : IDisposable {
             if (item is null) {
                 Logger.Warning("Could not find item with global ID {0} in player {1}'s inventory or equipment.",
                     Logger.Args(deckId, PlayerNameBehavior.GetWizardName()));
+
                 return false;
             }
 
@@ -592,20 +622,24 @@ public class Wizard : IDisposable {
             if (!addedSuccess) {
                 Logger.Debug("Could not add spell with template ID {0} to player {1}'s deck.",
                     Logger.Args(spellTemplateId, PlayerNameBehavior.GetWizardName()));
+
                 return false;
             }
 
             WizardItemCollection.AddSpellToDeck(deckId, spellTemplateId);
+
             return true;
         }
 
         // Regardless, we'll want to add this spell to the deck item's DeckBehavior.
         if (!CoreObjectFactory.FindBehaviorInstance<DeckBehavior>(item, out var deckBehavior)) {
-            Logger.Error("Could not find deck behavior for item with global ID {0}.", Logger.Args(spellTemplateId));
+            Logger.Error("Could not find deck behavior for item with global ID {0}.", 
+                Logger.Args(spellTemplateId));
+
             return false;
         }
 
-        var spellList = deckBehavior.m_spellList ?? new List<SpellData>();
+        var spellList = deckBehavior.m_spellList ?? [];
         var spellDeckData = spellList.FirstOrDefault(s => s.m_templateID == spellTemplateId);
         if (spellDeckData is null) {
             // It may not be included yet. We'll add another entry.
@@ -635,6 +669,7 @@ public class Wizard : IDisposable {
             if (item is null) {
                 Logger.Warning("Could not find item with global ID {0} in player {1}'s inventory or equipment.",
                     Logger.Args(deckId, PlayerNameBehavior.GetWizardName()));
+
                 return false;
             }
 
@@ -643,24 +678,29 @@ public class Wizard : IDisposable {
             if (!removedSuccess) {
                 Logger.Warning("Could not remove spell with template ID {0} from player {1}'s deck.",
                     Logger.Args(spellTemplateId, PlayerNameBehavior.GetWizardName()));
+
                 return false;
             }
 
             WizardItemCollection.RemoveSpellFromDeck(deckId, spellTemplateId);
+
             return true;
         }
 
         // Regardless, we'll want to remove this spell from the deck item's DeckBehavior.
         if (!CoreObjectFactory.FindBehaviorInstance<DeckBehavior>(item, out var deckBehavior)) {
-            Logger.Error("Could not find deck behavior for item with global ID {0}.", Logger.Args(spellTemplateId));
+            Logger.Error("Could not find deck behavior for item with global ID {0}.", 
+                Logger.Args(spellTemplateId));
+
             return false;
         }
 
-        var spellList = deckBehavior.m_spellList ?? new List<SpellData>();
+        var spellList = deckBehavior.m_spellList ?? [];
         var spellDeckData = spellList.FirstOrDefault(s => s.m_templateID == spellTemplateId);
         if (spellDeckData is null) {
             Logger.Warning("Could not find spell with template ID {0} in player {1}'s deck.",
                 Logger.Args(spellTemplateId, PlayerNameBehavior.GetWizardName()));
+
             return false;
         }
 
@@ -677,7 +717,8 @@ public class Wizard : IDisposable {
         return true;
     }
 
-    public ObjState EnterState(string stateName) => ObjectStateBehavior.SetState(stateName);
+    public ObjState EnterState(string stateName) 
+        => ObjectStateBehavior.SetState(stateName);
 
     public bool AddDynamod(string zoneName, string clientTag, string modState) {
         DynamodSet ??= new DynamodSet(CharId);
@@ -691,7 +732,9 @@ public class Wizard : IDisposable {
         var addSuccess = DynamodSet.AddDynamod(dynamod);
 
         if (!addSuccess) {
-            Logger.Warning("Could not add Dynamod to player {0}'s DynamodSet.", Logger.Args(PlayerNameBehavior.GetWizardName()));
+            Logger.Warning("Could not add Dynamod to player {0}'s DynamodSet.", 
+                Logger.Args(PlayerNameBehavior.GetWizardName()));
+
             return false;
         }
 
@@ -731,7 +774,9 @@ public class Wizard : IDisposable {
     private void EquipMount(WizItemTemplate template, WizClientObjectItem item) {
         var mountEquipSuccess = MountOwnerBehavior.EquipMount(template, item);
         if (!mountEquipSuccess) {
-            Logger.Warning("Could not equip mount {0} to player {1}.", Logger.Args(template.m_objectName, PlayerNameBehavior.GetWizardName()));
+            Logger.Warning("Could not equip mount {0} to player {1}.", 
+                Logger.Args(template.m_objectName, PlayerNameBehavior.GetWizardName()));
+
             return;
         }
 
@@ -753,27 +798,33 @@ public class Wizard : IDisposable {
         // Get the actual item from equipment.
         var deckItem = EquipmentBehavior.EquippedItems.FirstOrDefault(i => i.m_globalID == deckGlobalId);
         if (deckItem is null) {
-            Logger.Error("Could not find deck item with global ID {0}.", Logger.Args(deckGlobalId));
+            Logger.Error("Could not find deck item with global ID {0}.", 
+                Logger.Args(deckGlobalId));
+
             return;
         }
 
         // Get the deck behavior.
         if (!CoreObjectFactory.FindBehaviorInstance<DeckBehavior>(deckItem, out var deckBehavior)) {
-            Logger.Error("Could not find deck behavior for item with global ID {0}.", Logger.Args(deckGlobalId));
+            Logger.Error("Could not find deck behavior for item with global ID {0}.", 
+                Logger.Args(deckGlobalId));
+
             return;
         }
 
         var deckEquipSuccess = SpellbookBehavior.EquipDeck(template, deckBehavior);
         if (!deckEquipSuccess) {
-            Logger.Warning("Could not equip deck {0} to player {1}.", Logger.Args(template.m_objectName, PlayerNameBehavior.GetWizardName()));
+            Logger.Warning("Could not equip deck {0} to player {1}.", 
+                Logger.Args(template.m_objectName, PlayerNameBehavior.GetWizardName()));
+
             return;
         }
     }
 
     private void InitializeDefaultInventory() {
         InventoryBehavior = new ServerWizInventoryBehavior {
-            Items = new List<WizClientObjectItem>(),
-            InventoryItemIds = new List<ulong>()
+            Items = [],
+            InventoryItemIds = []
         };
 
         // Add default items to the inventory.
@@ -790,17 +841,17 @@ public class Wizard : IDisposable {
         // This is a different method that bulk uploads items to the database.
         var success = WizardItemCollection.AddDefaultItems(itemsToAdd);
         if (!success) {
-            Logger.Error("Could not add default items for Wizard {0} to database.", Logger.Args(CharId));
+            Logger.Error("Could not add default items for Wizard {0} to database.", 
+                Logger.Args(CharId));
         }
     }
 
-    private void InitializeDefaultEquipment() {
-        EquipmentBehavior = new ServerWizEquipmentBehavior {
-            SlotList = new List<EquipmentSlot>(),
-            EquippedItemIds = new List<ulong>(),
-            EquippedItems = new List<WizClientObjectItem>(),
+    private void InitializeDefaultEquipment() 
+        => EquipmentBehavior = new ServerWizEquipmentBehavior {
+            SlotList = [],
+            EquippedItemIds = [],
+            EquippedItems = [],
         };
-    }
 
     private void InitializePlayerName(uint nameIndices) {
         PlayerNameBehavior = new ServerWizPlayerNameBehavior {
@@ -835,8 +886,8 @@ public class Wizard : IDisposable {
 
     private void InitializeDefaultPetSnackBehavior() {
         PetSnackBehavior = new ServerPetSnackBehavior() {
-            Snacks = new List<ClientPetSnackItem>(),
-            SnackItemIds = new List<ulong>()
+            Snacks = [],
+            SnackItemIds = []
         };
     }
 
@@ -851,26 +902,34 @@ public class Wizard : IDisposable {
         // Get the actual item.
         var deckItem = EquipmentBehavior.EquippedItems.FirstOrDefault(i => i.m_globalID == idInSlot);
         if (deckItem is null) {
-            Logger.Error("Could not find deck item with global ID {0}.", Logger.Args(idInSlot));
+            Logger.Error("Could not find deck item with global ID {0}.", 
+                Logger.Args(idInSlot));
+
             return;
         }
 
         // Get the deck behavior.
         if (!CoreObjectFactory.FindBehaviorInstance<DeckBehavior>(deckItem, out var deckBehavior)) {
-            Logger.Error("Could not find deck behavior for item with global ID {0}.", Logger.Args(idInSlot));
+            Logger.Error("Could not find deck behavior for item with global ID {0}.", 
+                Logger.Args(idInSlot));
+
             return;
         }
 
         // Get the template. This gives us information like the max instance count, what school the deck is, etc.
         var deckTemplate = CoreObjectFactory.GetCoreTemplate(deckItem.m_templateID);
         if (deckTemplate is null) {
-            Logger.Error("Could not find deck template with global ID {0}.", Logger.Args(idInSlot));
+            Logger.Error("Could not find deck template with global ID {0}.", 
+                Logger.Args(idInSlot));
+
             return;
         }
 
         // Get the DeckBehaviorTemplate within the deck template.
         if (deckTemplate.m_behaviors.FirstOrDefault(b => b is DeckBehaviorTemplate) is not DeckBehaviorTemplate deckBehaviorTemplate) {
-            Logger.Error("Could not find deck behavior template within deck template with global ID {0}.", Logger.Args(idInSlot));
+            Logger.Error("Could not find deck behavior template within deck template with global ID {0}.", 
+                Logger.Args(idInSlot));
+
             return;
         }
 
@@ -894,13 +953,14 @@ public class Wizard : IDisposable {
         // Get the actual item.
         var mountItem = EquipmentBehavior.EquippedItems.FirstOrDefault(i => i.m_globalID == idInSlot);
         if (mountItem is null) {
-            Logger.Error("Could not find mount item with global ID {0}.", Logger.Args(idInSlot));
+            Logger.Error("Could not find mount item with global ID {0}.", 
+                Logger.Args(idInSlot));
+
             return;
         }
 
         // Get the template for this item.
         var mountTemplate = ItemHelper.GetItemTemplate(mountItem);
-
         MountOwnerBehavior.EquipMount(mountTemplate, mountItem);
     }
 
@@ -919,10 +979,10 @@ public class Wizard : IDisposable {
 
     private void InitializeAlchemyBehavior() {
         AlchemyBehavior = new ServerAlchemyBehavior() {
-            Reagents = new List<ClientReagentItem>(),
-            Recipes = new List<Recipe>(),
-            CraftingSlots = new List<CraftingSlot>(),
-            ReagentItemIds = new List<ulong>()
+            Reagents = [],
+            Recipes = [],
+            CraftingSlots = [],
+            ReagentItemIds = []
         };
     }
 
@@ -983,4 +1043,5 @@ public class Wizard : IDisposable {
         // If this object is being disposed, the player probably left the server.
         // Save the character's location to the database.
         WizardCollection.UpdateCharacterLocation(this, Location, Orientation.Z);
+
 }

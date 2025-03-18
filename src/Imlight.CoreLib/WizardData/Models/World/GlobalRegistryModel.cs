@@ -8,5 +8,7 @@ using System.Collections.Generic;
 namespace Imlight.CoreLib.WizardData.Models.World;
 
 public class GlobalRegistryModel {
-    public Dictionary<string, float> GlobalRegistryValues { get; set; } = new();
+
+    public Dictionary<string, float> GlobalRegistryValues { get; set; } = [];
+
 }

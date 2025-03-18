@@ -6,16 +6,13 @@
 using System;
 using System.Security.Cryptography;
 using System.Text;
-using Imlight.CoreLib.WizardData.Implementations;
-using Imlight.Common.Utilities;
-using Imlight.Common;
-using Imlight.Common.ObjectProperty;
-using Imlight.Common.Caches;
 using Imlight.CoreLib.WizardData.Models.Player;
+using Imlight.CoreLib.WizardData.Collections;
 
 namespace Imlight.CoreLib.WizardData;
 
 public static class DatabaseUtilities {
+
     /// <summary>
     /// Creates a new account in the embedded database.
     /// </summary>
@@ -51,4 +48,5 @@ public static class DatabaseUtilities {
 
         return Convert.ToBase64String(sha512.ComputeHash(passwordBytes));
     }
+    
 }

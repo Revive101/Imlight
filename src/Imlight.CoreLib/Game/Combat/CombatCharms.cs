@@ -46,19 +46,16 @@ internal static class CombatCharms {
             };
 
             if (isDamageEffect) {
-                appliedCharms = beneficialCharms.Where(x => x.m_sDamageType == effect.m_sDamageType || x.m_sDamageType == "All")
-                                                .Reverse()
-                                                .ToList();
+                appliedCharms = [.. beneficialCharms.Where(x => x.m_sDamageType == effect.m_sDamageType || x.m_sDamageType == "All").Reverse()];
             }
             else if (isHealEffect) {
-                appliedCharms = beneficialCharms.Where(x => x.m_effectType is kSpellEffects.kModifyOutgoingHeal
+                appliedCharms = [.. beneficialCharms.Where(x => x.m_effectType is kSpellEffects.kModifyOutgoingHeal
                                                                            or kSpellEffects.kModifyOutgoingHealFlat)
-                                                .Reverse()
-                                                .ToList();
+                                                .Reverse()];
             }
         }
 
-        return appliedCharms.DistinctBy(x => x.m_spellTemplateID).ToList();
+        return [.. appliedCharms.DistinctBy(x => x.m_spellTemplateID)];
     }
 
     /// <summary>

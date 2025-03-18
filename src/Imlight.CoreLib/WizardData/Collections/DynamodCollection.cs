@@ -11,6 +11,7 @@ using System.Linq;
 namespace Imlight.CoreLib.WizardData.Collections;
 
 public static class DynamodCollection {
+
     public const string CollectionName = "DynamicMod";
 
     private static readonly IDocumentStore s_store;
@@ -42,6 +43,7 @@ public static class DynamodCollection {
         metaData[Raven.Client.Constants.Documents.Metadata.Collection] = CollectionName;
 
         session.SaveChanges();
+        
         return true;
     }
 
@@ -62,6 +64,7 @@ public static class DynamodCollection {
 
         session.Delete(dynamodSet);
         session.SaveChanges();
+
         return true;
     }
 
@@ -97,6 +100,7 @@ public static class DynamodCollection {
         metaData[Raven.Client.Constants.Documents.Metadata.Collection] = CollectionName;
 
         session.SaveChanges();
+
         return true;
     }
 
@@ -125,6 +129,8 @@ public static class DynamodCollection {
 
         // Save the changes.
         session.SaveChanges();
+
         return true;
     }
+
 }

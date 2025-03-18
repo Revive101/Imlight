@@ -4,11 +4,13 @@
  */
 
 using System.Collections.Generic;
-using Imlight.Common.ObjectProperty.PropertyReflection;
+using Imcodec.Types;
 
 namespace Imlight.CoreLib.WizardData.Models.World;
 
 public class NPCInventory {
+
     public ulong TemplateID { get; set; }
-    public List<GID> Inventory { get; set; } = new();
+    public List<GID> Inventory { get; set; } = [];
+
 }

@@ -30,7 +30,7 @@ public abstract class ServiceFactory : ReceiveActor {
     /// <returns></returns>
     private void GetUnloadedActorMessageServices() {
         var rsp = new SERVICE_101_PROTOCOL.MSG_SERVICESLIST() {
-            Services = ServiceTypes.ToList()
+            Services = [.. ServiceTypes]
         };
 
         Sender.Tell(rsp);

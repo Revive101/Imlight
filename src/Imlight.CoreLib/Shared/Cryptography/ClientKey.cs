@@ -79,7 +79,7 @@ public static class ClientKey {
         var passwordBytes = Encoding.UTF8.GetBytes(password);
         var seedBytes = Encoding.UTF8.GetBytes(seed);
 
-        var hash = sha512.ComputeHash(passwordBytes.Concat(seedBytes).ToArray());
+        var hash = sha512.ComputeHash([.. passwordBytes, .. seedBytes]);
 
         return Convert.ToBase64String(hash);
     }

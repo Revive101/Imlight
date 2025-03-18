@@ -15,13 +15,13 @@ using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Types;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Combat;
-using Imlight.CoreLib.Game.Models.World;
 using Imlight.CoreLib.Game.Sigils;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
+using Imlight.CoreLib.WizardData.Models.World;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 

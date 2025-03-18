@@ -3,23 +3,23 @@
  * Proprietary and confidential.
  */
 
-namespace Imlight.CoreLib.WizardData.Models.Player
-{
-    public enum DyeColor
-    {
-        Red,
-        Orange,
-        Yellow,
-        DarkGreen,
-        DarkBlue,
-        DarkPurple,
-        Black,
-        Silver,
-        Gold,
-        LightBlue,
-        LightPurple,
-        Green,
-        White,
-        Pink
-    }
+namespace Imlight.CoreLib.WizardData.Models.Player; 
+
+public enum DyeColor {
+    
+    Red,
+    Orange,
+    Yellow,
+    DarkGreen,
+    DarkBlue,
+    DarkPurple,
+    Black,
+    Silver,
+    Gold,
+    LightBlue,
+    LightPurple,
+    Green,
+    White,
+    Pink
+    
 }

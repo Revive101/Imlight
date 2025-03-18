@@ -5,28 +5,26 @@
 
 using System;
 using System.Linq;
-using Imlight.Common.IO;
-using Imlight.CoreLib.WizardData.Databases;
 using Raven.Client;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Operations;
 using Raven.Client.Documents.Queries;
+using Imlight.CoreLib.WizardData.Databases;
+using Imcodec.IO;
 
 namespace Imlight.CoreLib.WizardData.Collections;
 
-public class ClientKeyPair {
-    public ulong AccountId { get; set; }
-    public ulong MachineId { get; set; }
-    public string ClientKey2 { get; set; }
+public class ClientKeyPair(ulong accountId, ulong machineId, string clientKey2) {
 
-    public ClientKeyPair(ulong accountId, ulong machineId, string clientKey2) {
-        AccountId = accountId;
-        MachineId = machineId;
-        ClientKey2 = clientKey2 ?? throw new ArgumentNullException(nameof(clientKey2));
-    }
+    public ulong AccountId { get; set; } = accountId;
+    public ulong MachineId { get; set; } = machineId;
+    public string ClientKey2 { get; set; } = clientKey2 
+        ?? throw new ArgumentNullException(nameof(clientKey2));
+
 }
 
 public static class ClientKeyCollection {
+
     private const string CollectionName = "SessionKeys";
 
     private static readonly IDocumentStore Store;
@@ -80,4 +78,5 @@ public static class ClientKeyCollection {
 
         return pair?.ClientKey2;
     }
+    
 }

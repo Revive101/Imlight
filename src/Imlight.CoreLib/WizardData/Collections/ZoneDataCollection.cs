@@ -11,6 +11,7 @@ using Raven.Client.Documents;
 namespace Imlight.CoreLib.WizardData.Collections;
 
 public static class ZoneDataCollection {
+
     private const string CollectionName = "ZoneTransfer";
 
     private static readonly IDocumentStore s_store;
@@ -46,6 +47,8 @@ public static class ZoneDataCollection {
         var zoneData = session
             .Query<WizardZoneData>(collectionName: CollectionName)
             .FirstOrDefault(x => x.ZoneName == zoneName);
+            
         return zoneData;
     }
+
 }

@@ -90,7 +90,7 @@ internal abstract class CommandProtocol {
                 return true;
             }
 
-            method.Invoke(this, processedParameters.ToArray());
+            method.Invoke(this, [.. processedParameters]);
             return true;
         }
         else {

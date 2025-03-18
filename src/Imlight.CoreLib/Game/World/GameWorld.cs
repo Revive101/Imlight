@@ -13,7 +13,6 @@ using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Collections;
-using Imlight.CoreLib.WizardData.Implementations;
 
 namespace Imlight.CoreLib.Game.World;
 

@@ -5,11 +5,10 @@
 
 using System;
 using System.Collections.Generic;
-using Imlight.Common;
-using Imlight.Common.Configuration;
 using Raven.Client.Documents;
 using Raven.Client.ServerWide;
 using Raven.Embedded;
+using Imlight.Common;
 
 namespace Imlight.CoreLib.WizardData.Implementations;
 
@@ -26,18 +25,18 @@ public static class EmbeddedDatabaseManager {
 
             // Configure the embedded server.
             var serverOptions = new ServerOptions {
-                DataDirectory = ConfigurationManager.Settings.EmbeddedDatabaseDataDirectory,
-                ServerUrl = $"http://127.0.0.1:{ConfigurationManager.Settings.EmbeddedDatabasePort}",
+                DataDirectory = ConfigurationManager.Settings["EmbeddedDatabaseDataDirectory"],
+                ServerUrl = $"http://127.0.0.1:{ConfigurationManager.Settings["EmbeddedDatabasePort"]}",
                 MaxServerStartupTimeDuration =
-                    TimeSpan.FromSeconds(ConfigurationManager.Settings.EmbeddedDatabaseTimeoutTime),
-                CommandLineArgs = new List<string> { "--Databases.MaxIdleTimeInSec=-1" }
+                    TimeSpan.FromSeconds(ConfigurationManager.Settings["EmbeddedDatabaseTimeoutTime"].AsLong()),
+                CommandLineArgs = ["--Databases.MaxIdleTimeInSec=-1"]
             };
 
             // If we're using the full database, we need to set the server directory.
             // Otherwise, we're using the embedded database.
-            var useFullDb = ConfigurationManager.Settings.EmbeddedDatabaseUseFull;
+            var useFullDb = ConfigurationManager.Settings["EmbeddedDatabaseUseFull"].AsBool();
             if (useFullDb) {
-                serverOptions.ServerDirectory = ConfigurationManager.Settings.EmbeddedDatabaseFullPath;
+                serverOptions.ServerDirectory = ConfigurationManager.Settings["EmbeddedDatabaseFullPath"];
             }
 
             EmbeddedServer.Instance.StartServer(serverOptions);
@@ -63,6 +62,7 @@ public static class EmbeddedDatabaseManager {
 
         var databaseOptions = new DatabaseOptions(new DatabaseRecord { DatabaseName = databaseName });
         var docStore = EmbeddedServer.Instance.GetDocumentStore(databaseOptions);
+        
         return docStore;
     }
 }

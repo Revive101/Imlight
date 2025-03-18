@@ -204,7 +204,7 @@ internal static class CombatEffectApplicator {
 
             // Calculate damage changes from target hanging effects.
             var wards = CombatWards.FindAppliedWards(target, effect);
-            wards = CombatWards.GetWardsBySchool(wards.ToArray(), effect.m_sDamageType, out var finalSchool);
+            wards = CombatWards.GetWardsBySchool([.. wards], effect.m_sDamageType, out var finalSchool);
             cinematicTime += wards.Count * HANGING_EFFECT_CONSUME_TIME;
             damage = CombatWards.GetIncomingDamageFromWards(wards, damage);
 

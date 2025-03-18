@@ -3,15 +3,16 @@
  * Proprietary and confidential.
  */
 
-using Imlight.Common.Cryptography;
-using Imlight.Common.ObjectProperty.PropertyReflection;
-using Imlight.CoreLib.WizardData.Implementations;
 using System;
-using static Imlight.Common.Caches.TypeCache;
+using Imcodec.Cryptography;
+using Imcodec.ObjectProperty.TypeCache;
+using Imcodec.Types;
+using Imlight.CoreLib.WizardData.Implementations;
 
 namespace Imlight.CoreLib.WizardData.Models.Player;
 
 public enum EquipmentSlotType {
+
     Hat,
     Robe,
     Shoes,
@@ -22,6 +23,7 @@ public enum EquipmentSlotType {
     Pet,
     Mount,
     Deck
+
 }
 
 /// <summary>
@@ -30,6 +32,7 @@ public enum EquipmentSlotType {
 /// </summary>
 [Serializable]
 public class EquipmentSlot : IClientTypeProvider<EquippedSlotInfo> {
+    
     public EquipmentSlotType SlotType { get; set; }
     public string ItemName { get; set; }
     public GID ItemId { get; set; }
@@ -43,4 +46,5 @@ public class EquipmentSlot : IClientTypeProvider<EquippedSlotInfo> {
             m_itemSlotNameID = StringHash.Compute(slotType),
         };
     }
+    
 }

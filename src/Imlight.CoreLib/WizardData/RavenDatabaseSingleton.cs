@@ -11,6 +11,7 @@ using Raven.Client.Documents.Operations;
 namespace Imlight.CoreLib.WizardData;
 
 public abstract class RavenDatabaseSingleton<T> where T : RavenDatabaseSingleton<T> {
+    
     // Singleton manager: only one instance of the database is allowed to exist.
     // Make it lazy so that it is only created when needed.
     private static readonly Lazy<T> s_lazy = new(() => (Activator.CreateInstance(typeof(T), true) as T)!);
@@ -31,4 +32,5 @@ public abstract class RavenDatabaseSingleton<T> where T : RavenDatabaseSingleton
 
     public CollectionStatistics GetDatabaseStatistics()
         => Store.Maintenance.Send(new GetCollectionStatisticsOperation());
+        
 }

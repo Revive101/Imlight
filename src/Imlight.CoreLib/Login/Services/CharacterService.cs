@@ -13,6 +13,7 @@ using Imlight.Common;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Implementations;
 
 namespace Imlight.CoreLib.Login.Services;

@@ -33,10 +33,10 @@ internal static class CombatWards {
         var wards = disposition switch {
             kHangingDisposition.kBeneficial => beneficialWards,
             kHangingDisposition.kHarmful => harmfulWards,
-            _ => beneficialWards.Concat(harmfulWards).ToList()
+            _ => [.. beneficialWards, .. harmfulWards]
         };
 
-        return wards.DistinctBy(x => x.m_spellTemplateID).ToList();
+        return [.. wards.DistinctBy(x => x.m_spellTemplateID)];
     }
 
     /// <summary>

@@ -3,10 +3,10 @@
  * Proprietary and confidential.
  */
 
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.WizardData.Databases;
 using Raven.Client.Documents;
 using System.Linq;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.WizardData.Collections;
 

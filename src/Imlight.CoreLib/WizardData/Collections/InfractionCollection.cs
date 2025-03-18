@@ -12,6 +12,7 @@ using Raven.Client.Documents;
 namespace Imlight.CoreLib.WizardData.Collections;
 
 public static class InfractionCollection {
+
     public const string CollectionName = "Infractions";
     private const string BannedMachinesCollection = "BannedMachineIDs";
     private const string BannedIpsCollection = "BannedIPs";
@@ -65,6 +66,7 @@ public static class InfractionCollection {
         if (bannedMachine != null) {
             session.Delete(bannedMachine);
             session.SaveChanges();
+            
             return true;
         }
 
@@ -115,6 +117,7 @@ public static class InfractionCollection {
         if (bannedIp != null) {
             session.Delete(bannedIp);
             session.SaveChanges();
+            
             return true;
         }
 
@@ -188,4 +191,5 @@ public static class InfractionCollection {
 
         return infraction;
     }
+
 }

@@ -10,6 +10,7 @@ using Imlight.CoreLib.Game.Commands;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imcodec.MessageLayer.Generated;
+using Imlight.CoreLib.WizardData.Collections;
 
 namespace Imlight.CoreLib.Game.Services;
 

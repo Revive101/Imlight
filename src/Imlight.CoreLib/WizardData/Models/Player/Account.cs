@@ -7,17 +7,18 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
-using Imlight.Common.Configuration;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Misc;
 using Imlight.CoreLib.Shared.Utilities;
+using Imlight.Common;
 
 namespace Imlight.CoreLib.WizardData.Models.Player;
 
 [Flags]
 public enum AccountFlags {
+
     IsHallMonitor = 1 << 0,
     CanChat = 1 << 1,
     CanHaveCustomNames = 1 << 2,
@@ -31,27 +32,33 @@ public enum AccountFlags {
     Unknown3 = 1 << 10,
     CanEarnCrownsOffers = 1 << 11,
     CanEarnCrownsButton = 1 << 12,
+
 }
 
 [Serializable]
 public enum AuthLevel {
+
     None,
     QualityAssurance,
     HallMonitor,
     Developer,
     Administrator
+
 }
 
 [Serializable]
 public enum ChatMode {
+
     Open,
     Filtered,
     Closed
+
 }
 
 [Serializable]
 public class Account {
-    [JsonIgnore] public readonly byte MAX_ALLOWED_CHARACTERS = ConfigurationManager.Settings.MaxAllowedCharactersPerAccount;
+
+    [JsonIgnore] public readonly byte MAX_ALLOWED_CHARACTERS = ConfigurationManager.Settings["MaxAllowedCharactersPerAccount"].AsByte();
 
     public ulong AccountId { get; private set; }
     public string Username { get; private set; }
@@ -293,4 +300,5 @@ public class Account {
     public Wizard GetHighestLevelWizard() => Characters
         .OrderByDescending(c => c.GameStats.Level)
         .FirstOrDefault();
+
 }

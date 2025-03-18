@@ -3,12 +3,10 @@
  * Proprietary and confidential.
  */
 
-using Imlight.Common.Caches;
-using System.Collections.Generic;
-
 namespace Imlight.CoreLib.WizardData.Models.World;
 
 public enum WizBangs {
+
     None = 0,
     CompleteQuestGoal = 432425611,
     StartQuest = 660791182,
@@ -39,4 +37,5 @@ public enum WizBangs {
     DailyQuest = 666762553,
     WhirlyBurly = 931528087,
     RateMyStitch = 1442124734
+
 }

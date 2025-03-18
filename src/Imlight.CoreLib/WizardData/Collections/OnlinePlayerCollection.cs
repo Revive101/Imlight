@@ -11,6 +11,7 @@ using System.Linq;
 namespace Imlight.CoreLib.WizardData.Collections;
 
 public static class OnlinePlayerCollection {
+
     public const string CollectionName = "OnlinePlayers";
     private static readonly IDocumentStore s_store;
 
@@ -71,9 +72,7 @@ public static class OnlinePlayerCollection {
     public static OnlinePlayer[] GetOnlinePlayers() {
         using var session = s_store.OpenSession();
 
-        return session
-            .Query<OnlinePlayer>(collectionName: CollectionName)
-            .ToArray();
+        return [.. session.Query<OnlinePlayer>(collectionName: CollectionName)];
     }
 
     /// <summary>
@@ -97,10 +96,9 @@ public static class OnlinePlayerCollection {
     public static OnlinePlayer[] GetPlayersInZone(string zone) {
         using var session = s_store.OpenSession();
 
-        return session
+        return [.. session
             .Query<OnlinePlayer>(collectionName: CollectionName)
-            .Where(x => x.CurrentZone == zone)
-            .ToArray();
+            .Where(x => x.CurrentZone == zone)];
     }
 
     /// <summary>
@@ -111,10 +109,9 @@ public static class OnlinePlayerCollection {
     public static OnlinePlayer[] GetPlayersInRealm(string realm) {
         using var session = s_store.OpenSession();
 
-        return session
+        return [.. session
             .Query<OnlinePlayer>(collectionName: CollectionName)
-            .Where(x => x.CurrentRealm == realm)
-            .ToArray();
+            .Where(x => x.CurrentRealm == realm)];
     }
 
     public static void Clear() {
@@ -129,4 +126,5 @@ public static class OnlinePlayerCollection {
 
         session.SaveChanges();
     }
+    
 }

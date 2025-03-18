@@ -7,14 +7,13 @@ using System.Linq;
 using Raven.Client.Documents;
 using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.World;
-using System.Collections;
 using System.Collections.Concurrent;
 using Raven.Client.Documents.Linq;
-using System.Collections.Generic;
 
 namespace Imlight.CoreLib.WizardData.Collections;
 
 public static class NpcInventoryCollection {
+
     public const string CollectionName = "NpcInventory";
     private static readonly IDocumentStore s_store;
 
@@ -59,6 +58,7 @@ public static class NpcInventoryCollection {
         }
 
         session.SaveChanges();
+
         return true;
     }
 
@@ -78,6 +78,7 @@ public static class NpcInventoryCollection {
         }
 
         npcInventory = null;
+
         return false;
     }
 
@@ -96,4 +97,5 @@ public static class NpcInventoryCollection {
 
         s_isPreloaded = true;
     }
+    
 }

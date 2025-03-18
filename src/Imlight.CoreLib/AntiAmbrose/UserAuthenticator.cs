@@ -9,7 +9,6 @@ using Imcodec.MessageLayer.Generated;
 using Imlight.CoreLib.Shared.Cryptography;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Collections;
-using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models.Misc;
 using Imlight.CoreLib.WizardData.Models.Player;
 using static Imcodec.MessageLayer.Generated.LOGIN_7_PROTOCOL;
