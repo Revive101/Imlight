@@ -64,8 +64,8 @@ public class LoginServer : Server {
 
     [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_CREATEGAMESERVER))]
     private void ReceiveCreateGameServer(SERVER_100_PROTOCOL.MSG_CREATEGAMESERVER message) {
-        var defaultGameServerName = ConfigurationManager.Settings["GameServerName"].AsString();
-        var defaultGameServerPort = ConfigurationManager.Settings["GameServerPort"].AsUShort();
+        var defaultGameServerName = ConfigurationManager.Settings["Game Server.GameServerName"].AsString();
+        var defaultGameServerPort = ConfigurationManager.Settings["Game Server.GameServerPort"].AsUShort();
 
         // If the name or port is not set, use the default values.
         if (message.Name is "" or null) {

@@ -16,7 +16,7 @@ public class ServerPetOwnerBehavior : IClientBehaviorProvider<ClientPetOwnerBeha
 
     [JsonIgnore] public bool NoTransfer { get; set; } = false;
 
-    public readonly int EnergyTickIntervalInSeconds = ConfigurationManager.Settings["PetEnergyTickInSeconds"].AsInt();
+    public readonly int EnergyTickIntervalInSeconds = ConfigurationManager.Settings["Character.PetEnergyTickInSeconds"].AsInt();
 
     public byte MaxSlots { get; set; }
     public List<CraftingSlot> MorphingSlots { get; set; }

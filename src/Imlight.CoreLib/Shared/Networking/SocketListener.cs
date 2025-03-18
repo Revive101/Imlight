@@ -17,11 +17,11 @@ namespace Imlight.CoreLib.Shared.Networking;
 
 internal sealed class SocketListener : ReceiveActor, IDisposable {
 
-    private readonly int _bufferSize = ConfigurationManager.Settings["SessionActorBufferSize"].AsInt();
-    private readonly bool _closeOnSocketException = ConfigurationManager.Settings["SessionActorCloseOnException"].AsBool();
-    private readonly int _tokenBucketMax = ConfigurationManager.Settings["SessionTokenBucketMax"].AsInt();
-    private readonly int _tokenBucketPerSecond = ConfigurationManager.Settings["SessionTokenBucketPerSecond"].AsInt();
-    private readonly byte _tokenBucketFailedAcquisitionLimit = ConfigurationManager.Settings["SessionTokenBucketFailedAcquisitionLimit"].AsByte();
+    private readonly int _bufferSize = ConfigurationManager.Settings["Advanced.SessionActorBufferSize"].AsInt();
+    private readonly bool _closeOnSocketException = ConfigurationManager.Settings["Advanced.SessionActorCloseOnException"].AsBool();
+    private readonly int _tokenBucketMax = ConfigurationManager.Settings["Advanced.SessionTokenBucketMax"].AsInt();
+    private readonly int _tokenBucketPerSecond = ConfigurationManager.Settings["Advanced.SessionTokenBucketPerSecond"].AsInt();
+    private readonly byte _tokenBucketFailedAcquisitionLimit = ConfigurationManager.Settings["Advanced.SessionTokenBucketFailedAcquisitionLimit"].AsByte();
     private readonly IActorRef _sessionActorRef;
     private readonly Socket _socket;
     private readonly ushort _sessionid;

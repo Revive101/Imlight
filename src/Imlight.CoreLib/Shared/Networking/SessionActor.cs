@@ -22,8 +22,8 @@ namespace Imlight.CoreLib.Shared.Networking;
 /// </summary>
 public sealed class SessionActor : ReceiveActor, IDisposable {
 
-    private readonly byte _serviceRetryCount                 = ConfigurationManager.Settings["SessionActorServiceRetryCount"].AsByte();
-    private readonly byte _serviceTimeRangeRetryInSeconds    = ConfigurationManager.Settings["SessionActorServiceRangeRetry"].AsByte();
+    private readonly byte _serviceRetryCount                 = ConfigurationManager.Settings["Advanced.SessionActorServiceRetryCount"].AsByte();
+    private readonly byte _serviceTimeRangeRetryInSeconds    = ConfigurationManager.Settings["Advanced.SessionActorServiceRangeRetry"].AsByte();
 
     public ushort SessionID                                  { get; }
     public uint OfferTime                                    { get; set; }

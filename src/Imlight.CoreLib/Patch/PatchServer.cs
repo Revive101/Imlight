@@ -26,12 +26,18 @@ public class PatchServer : Server {
     private const string PatchServerWadUrlPrefix = "Data/GameData";
     private const string LatestFileListNameBin = "LatestFileList.bin";
     private const string LatestFileListNameXml = "LatestFileList.xml";
+
     // Configuration values.
-    private readonly string _userAgentValue = ConfigurationManager.Settings["PatchServerUserAgent"];
-    private readonly ushort _downloadBufferSize = ConfigurationManager.Settings["PatchServerBufferSize"].AsUShort();
-    private readonly string _revision = ConfigurationManager.Settings["GameRevision"];
-    private readonly uint _patchServerTimeout = ConfigurationManager.Settings["PatchServerInternalTimeout"].AsUInt();
-    private readonly string _patchServerInternalUrl = ConfigurationManager.Settings["PatchServerInternalUrl"];
+    private readonly string _userAgentValue 
+        = ConfigurationManager.Settings["Advanced.PatchServerUserAgent"];
+    private readonly ushort _downloadBufferSize 
+        = ConfigurationManager.Settings["Advanced.PatchServerBufferSize"].AsUShort();
+    private readonly string _revision 
+        = ConfigurationManager.Settings["Global Settings.GameRevision"];
+    private readonly uint _patchServerTimeout 
+        = ConfigurationManager.Settings["Patch Server.PatchServerInternalTimeout"].AsUInt();
+    private readonly string _patchServerInternalUrl 
+        = ConfigurationManager.Settings["Patch Server.PatchServerInternalUrl"];
 
     public static IActorRef Instance { get; private set; }
     public static bool EndpointReached { get; set; }

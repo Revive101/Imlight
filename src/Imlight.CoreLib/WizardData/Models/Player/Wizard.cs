@@ -111,8 +111,8 @@ public class Wizard : IDisposable {
     // Constructor: Used for character creation.
     public Wizard(MagicSchool wizardSchoolType, WizardCharacterBehavior avatar, uint nameIndices, byte level = 1) {
         CharId = RandomGen.GenerateGUID();
-        Zone = ConfigurationManager.Settings["StartingZone"];
-        World = ConfigurationManager.Settings["StartingWorld"].AsByte();
+        Zone = ConfigurationManager.Settings["Character.StartingZone"];
+        World = ConfigurationManager.Settings["Character.StartingWorld"].AsByte();
 
         // Do behaviors.
         WizardAvatar = avatar;

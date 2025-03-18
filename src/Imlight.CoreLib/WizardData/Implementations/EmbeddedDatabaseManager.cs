@@ -25,18 +25,18 @@ public static class EmbeddedDatabaseManager {
 
             // Configure the embedded server.
             var serverOptions = new ServerOptions {
-                DataDirectory = ConfigurationManager.Settings["EmbeddedDatabaseDataDirectory"],
-                ServerUrl = $"http://127.0.0.1:{ConfigurationManager.Settings["EmbeddedDatabasePort"]}",
+                DataDirectory = ConfigurationManager.Settings["Database.EmbeddedDatabaseDataDirectory"],
+                ServerUrl = $"http://127.0.0.1:{ConfigurationManager.Settings["Database.EmbeddedDatabasePort"]}",
                 MaxServerStartupTimeDuration =
-                    TimeSpan.FromSeconds(ConfigurationManager.Settings["EmbeddedDatabaseTimeoutTime"].AsLong()),
+                    TimeSpan.FromSeconds(ConfigurationManager.Settings["Database.EmbeddedDatabaseTimeoutTime"].AsLong()),
                 CommandLineArgs = ["--Databases.MaxIdleTimeInSec=-1"]
             };
 
             // If we're using the full database, we need to set the server directory.
             // Otherwise, we're using the embedded database.
-            var useFullDb = ConfigurationManager.Settings["EmbeddedDatabaseUseFull"].AsBool();
+            var useFullDb = ConfigurationManager.Settings["Database.EmbeddedDatabaseUseFull"].AsBool();
             if (useFullDb) {
-                serverOptions.ServerDirectory = ConfigurationManager.Settings["EmbeddedDatabaseFullPath"];
+                serverOptions.ServerDirectory = ConfigurationManager.Settings["Database.EmbeddedDatabaseFullPath"];
             }
 
             EmbeddedServer.Instance.StartServer(serverOptions);

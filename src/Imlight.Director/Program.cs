@@ -40,9 +40,8 @@ internal static class Program {
         // =============================================================
         // IMLIGHT CONFIGURATION
         // =============================================================
-        Logger.Information("Getting Imlight configuration..");
         ConfigurationManager.Initialize(
-            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Config/Imlight.config")
+            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Config/Imlight.ini")
         );
         Logger.Information("Imlight configuration loaded.");
 
@@ -90,8 +89,8 @@ internal static class Program {
     }
 
     private static IActorRef StartLoginServer() {
-        var loginServerName = ConfigurationManager.Settings["LoginServerName"].AsString();
-        var loginServerPort = ConfigurationManager.Settings["LoginServerPort"].AsUShort();
+        var loginServerName = ConfigurationManager.Settings["Login Server.LoginServerName"].AsString();
+        var loginServerPort = ConfigurationManager.Settings["Login Server.LoginServerPort"].AsUShort();
 
         var loginServerProps = LoginServer.Props(loginServerName, loginServerPort);
         var loginServerActor = s_imlightSystem.ActorOf(loginServerProps, loginServerName);
@@ -108,8 +107,8 @@ internal static class Program {
     }
 
     private static async Task StartPatchServer() {
-        var defaultPatchServerName = ConfigurationManager.Settings["PatchServerName"].AsString();
-        var defaultPatchServerPort = ConfigurationManager.Settings["PatchServerPort"].AsUShort();
+        var defaultPatchServerName = ConfigurationManager.Settings["Patch Server.PatchServerName"].AsString();
+        var defaultPatchServerPort = ConfigurationManager.Settings["Patch Server.PatchServerPort"].AsUShort();
 
         var patchProps = PatchServer.Props(defaultPatchServerName, defaultPatchServerPort);
         var actor = s_imlightSystem.ActorOf(patchProps, defaultPatchServerName);
@@ -123,8 +122,8 @@ internal static class Program {
 
     private static void CreateEmbeddedDatabaseAccounts() {
         // At least one account needs to exist.
-        var adminAccountUsername = ConfigurationManager.Settings["AdminAccountUsername"];
-        var adminAccountPassword = ConfigurationManager.Settings["AdminAccountPassword"];
+        var adminAccountUsername = ConfigurationManager.Settings["Database.AdminAccountUsername"];
+        var adminAccountPassword = ConfigurationManager.Settings["Database.AdminAccountPassword"];
         DatabaseUtilities.CreateEmbeddedDatabaseAccount(adminAccountUsername, "testtest@r101.com", adminAccountPassword, AuthLevel.Administrator);
         Logger.Information("Created admin account.");
 

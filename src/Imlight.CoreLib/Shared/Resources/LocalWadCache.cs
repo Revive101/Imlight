@@ -30,7 +30,7 @@ internal class FileDefinition {
 /// </summary>
 public static class LocalWadCache {
 
-    private static readonly string s_path = ConfigurationManager.Settings["LocalWadCachePath"];
+    private static readonly string s_path = ConfigurationManager.Settings["Patch Server.LocalWadCachePath"];
     private static bool s_hasInitialized;
 
     static LocalWadCache() => Initialize();

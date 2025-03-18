@@ -24,9 +24,9 @@ namespace Imlight.CoreLib.Game;
 
 public class GameServer : Server {
 
-    private readonly string _sessionKeyHashInput = ConfigurationManager.Settings["SessionKeyHashInput"].AsString();
-    private readonly ushort _sessionKeyValidityTime = ConfigurationManager.Settings["SessionKeyValidityTime"].AsUShort();
-    private readonly ushort _playerLimit = ConfigurationManager.Settings["GameServerPlayerLimit"].AsUShort();
+    private readonly string _sessionKeyHashInput = ConfigurationManager.Settings["Advanced.SessionKeyHashInput"].AsString();
+    private readonly ushort _sessionKeyValidityTime = ConfigurationManager.Settings["Game Server.SessionKeyValidityTime"].AsUShort();
+    private readonly ushort _playerLimit = ConfigurationManager.Settings["Game Server.GameServerPlayerLimit"].AsUShort();
 
     private readonly IActorRef _gameWorldRef;
     private readonly IActorRef _commandDispatcherRef;

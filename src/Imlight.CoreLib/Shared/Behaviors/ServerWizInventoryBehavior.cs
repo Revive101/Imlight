@@ -17,8 +17,8 @@ public class ServerWizInventoryBehavior : IClientBehaviorProvider<ClientWizInven
 
     [JsonIgnore] public bool NoTransfer { get; set; } = false;
 
-    private static int s_maxItemsAllowed = ConfigurationManager.Settings["MaxInventoryItems"].AsInt();
-    private static readonly int s_maxJewelsAllowed = ConfigurationManager.Settings["MaxJewelsAllowed"].AsInt();
+    private static int s_maxItemsAllowed = ConfigurationManager.Settings["Character.MaxInventoryItems"].AsInt();
+    private static readonly int s_maxJewelsAllowed = ConfigurationManager.Settings["Character.MaxJewelsAllowed"].AsInt();
     private static readonly int s_maxItemsAllowedFallback = 20;
 
     public List<ulong> InventoryItemIds { get; set; }

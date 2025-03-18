@@ -24,13 +24,13 @@ internal sealed class CombatJourneymanAIComponent(ZoneEntity entity) : ZoneEntit
 
     public ITimerScheduler Timers { get; set; }
 
-    private readonly float _healingThreshold = ConfigurationManager.Settings["HealingThreshold"].AsFloat();
-    private readonly float _healingPercentChance = ConfigurationManager.Settings["HealingPercentChance"].AsFloat();
-    private readonly float _preparePassChance = ConfigurationManager.Settings["PreparePassChance"].AsFloat();
-    private readonly int _damagedAggroIncrease = ConfigurationManager.Settings["DamagedAggroIncrease"].AsInt();
-    private readonly int _healingAggroIncrease = ConfigurationManager.Settings["HealingAggroIncrease"].AsInt();
-    private readonly int _provokeAggroIncrease = ConfigurationManager.Settings["ProvokeAggroIncrease"].AsInt();
-    private readonly int _pacifyAggroDecrease = ConfigurationManager.Settings["PacifyAggroDecrease"].AsInt();
+    private readonly float _healingThreshold = ConfigurationManager.Settings["Combat.HealingThreshold"].AsFloat();
+    private readonly float _healingPercentChance = ConfigurationManager.Settings["Combat.HealingPercentChance"].AsFloat();
+    private readonly float _preparePassChance = ConfigurationManager.Settings["Combat.PreparePassChance"].AsFloat();
+    private readonly int _damagedAggroIncrease = ConfigurationManager.Settings["Combat.DamagedAggroIncrease"].AsInt();
+    private readonly int _healingAggroIncrease = ConfigurationManager.Settings["Combat.HealingAggroIncrease"].AsInt();
+    private readonly int _provokeAggroIncrease = ConfigurationManager.Settings["Combat.ProvokeAggroIncrease"].AsInt();
+    private readonly int _pacifyAggroDecrease = ConfigurationManager.Settings["Combat.PacifyAggroDecrease"].AsInt();
     private readonly Dictionary<int, int> _hateTable = [];
     private readonly Random _random = new();
 

@@ -58,7 +58,7 @@ public enum ChatMode {
 [Serializable]
 public class Account {
 
-    [JsonIgnore] public readonly byte MAX_ALLOWED_CHARACTERS = ConfigurationManager.Settings["MaxAllowedCharactersPerAccount"].AsByte();
+    [JsonIgnore] public readonly byte MAX_ALLOWED_CHARACTERS = ConfigurationManager.Settings["Login Server.MaxAllowedCharactersPerAccount"].AsByte();
 
     public ulong AccountId { get; private set; }
     public string Username { get; private set; }

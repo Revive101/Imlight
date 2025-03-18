@@ -16,8 +16,8 @@ namespace Imlight.CoreLib.Login;
 
 internal class GameServerPool : ReceiveProtocolDispatcher {
 
-    private readonly byte _maxGameServersAllowed = ConfigurationManager.Settings["MaxGameServersAllowed"].AsByte();
-    private readonly ushort _gameServerPlayerCount = ConfigurationManager.Settings["GameServerPlayerLimit"].AsUShort();
+    private readonly byte _maxGameServersAllowed = ConfigurationManager.Settings["Game Server.MaxGameServersAllowed"].AsByte();
+    private readonly ushort _gameServerPlayerCount = ConfigurationManager.Settings["Game Server.GameServerPlayerLimit"].AsUShort();
     private readonly ushort _gameServerQueryTimeout = 10;
 
     private readonly Dictionary<ushort, IActorRef> _gameServers;

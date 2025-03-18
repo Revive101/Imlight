@@ -16,13 +16,13 @@ namespace Imlight.Common;
 
 public class Logger {
     private const byte MaxCallerNameLength = 40;
-    private static readonly string s_path = ConfigurationManager.Settings["LogPath"].AsString()
+    private static readonly string s_path = ConfigurationManager.Settings["Logging.LogPath"].AsString()
         ?? Path.Combine(Directory.GetCurrentDirectory(), "logs", "log.txt");
-    private static readonly string s_logFormat = ConfigurationManager.Settings["LogFormat"].AsString()
+    private static readonly string s_logFormat = ConfigurationManager.Settings["Logging.LogFormat"].AsString()
         ?? "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}";
-    private static readonly string s_logLevel = ConfigurationManager.Settings["LogLevel"].AsString()
+    private static readonly string s_logLevel = ConfigurationManager.Settings["Logging.LogLevel"].AsString()
         ?? "INFO";
-    private static readonly string s_seqUrl = ConfigurationManager.Settings["SeqSinkUrl"].AsString()
+    private static readonly string s_seqUrl = ConfigurationManager.Settings["Logging.SeqSinkUrl"].AsString()
         ?? "http://localhost:5341";
 
     public static ILogger Log { get; } = new LoggerConfiguration()

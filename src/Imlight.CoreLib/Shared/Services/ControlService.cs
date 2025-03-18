@@ -17,8 +17,8 @@ public class ControlService : MessageService, IWithTimers {
 
     public ITimerScheduler Timers { get; set; }
 
-    private readonly byte _keepAliveInterval = ConfigurationManager.Settings["KeepAliveInterval"].AsByte();
-    private readonly byte _keepAliveRspWaitTime = ConfigurationManager.Settings["KeepAliveRspWaitTime"].AsByte();
+    private readonly byte _keepAliveInterval = ConfigurationManager.Settings["Advanced.KeepAliveInterval"].AsByte();
+    private readonly byte _keepAliveRspWaitTime = ConfigurationManager.Settings["Advanced.KeepAliveRspWaitTime"].AsByte();
 
     private bool _sessionValid;
     private readonly Stopwatch _responseStopwatch;

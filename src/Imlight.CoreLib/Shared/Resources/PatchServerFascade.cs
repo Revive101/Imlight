@@ -18,8 +18,8 @@ namespace Imlight.CoreLib.Shared.Resources;
 /// </summary>
 internal static class PatchServerFascade {
 
-    private static readonly int s_pathServerWait = ConfigurationManager.Settings["LocalWadCacheWaitForPatchServerTimeout"].AsInt();
-    private static readonly int s_pathServerDownloadTimeout = ConfigurationManager.Settings["PatchServerDownloadTimeout"].AsInt();
+    private static readonly int s_pathServerWait = ConfigurationManager.Settings["ADvanced.LocalWadCacheWaitForPatchServerTimeout"].AsInt();
+    private static readonly int s_pathServerDownloadTimeout = ConfigurationManager.Settings["Patch Server.PatchServerDownloadTimeout"].AsInt();
     internal static bool EndpointReached => PatchServer.EndpointReached;
 
     /// <summary>

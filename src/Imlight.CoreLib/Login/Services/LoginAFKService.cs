@@ -15,8 +15,8 @@ namespace Imlight.CoreLib.Login.Services;
 
 internal class LoginAFKService : MessageService {
 
-    private readonly ushort _afkTimeout = ConfigurationManager.Settings["LoginAfkTimeout"].AsUShort();
-    private readonly ushort _afkCheckInterval = ConfigurationManager.Settings["LoginAfkCheckInterval"].AsUShort();
+    private readonly ushort _afkTimeout = ConfigurationManager.Settings["Login Server.LoginAfkTimeout"].AsUShort();
+    private readonly ushort _afkCheckInterval = ConfigurationManager.Settings["Login Server.LoginAfkCheckInterval"].AsUShort();
 
     private bool _halted;
     private long _lastReceivedSeconds;

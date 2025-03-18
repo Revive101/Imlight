@@ -14,18 +14,18 @@ namespace Imlight.CoreLib.WizardData.Databases;
 
 public class WorldDatabase : RavenDatabaseSingleton<WorldDatabase> {
     protected readonly byte MaxNumberOfRequestsPerSession
-        = ConfigurationManager.Settings["DatabaseMaxNumberOfRequestsPerSession"].AsByte();
+        = ConfigurationManager.Settings["Database.DatabaseMaxNumberOfRequestsPerSession"].AsByte();
     protected readonly byte RequestTimeoutInSeconds
-        = ConfigurationManager.Settings["DatabaseRequestTimeoutInSeconds"].AsByte();
+        = ConfigurationManager.Settings["Database.DatabaseRequestTimeoutInSeconds"].AsByte();
     protected readonly byte WaitForNonStaleResultsTimeoutInSeconds
-        = ConfigurationManager.Settings["DatabaseWaitForNonStaleResultsTimeout"].AsByte();
+        = ConfigurationManager.Settings["Database.DatabaseWaitForNonStaleResultsTimeout"].AsByte();
 
     protected override X509Certificate2 Certificate { get; }
-        = ConfigurationManager.Settings["WorldDatabaseUrl"] == string.Empty
+        = ConfigurationManager.Settings["Database.WorldDatabaseUrl"] == string.Empty
             ? null
             : GetCertificate();
-    protected override string DatabaseName { get; } = ConfigurationManager.Settings["WorldDatabaseName"];
-    protected override string Url { get; } = ConfigurationManager.Settings["WorldDatabaseUrl"];
+    protected override string DatabaseName { get; } = ConfigurationManager.Settings["Database.WorldDatabaseName"];
+    protected override string Url { get; } = ConfigurationManager.Settings["Database.WorldDatabaseUrl"];
 
     protected override IDocumentStore CreateStore() {
         // If this is the first time we're creating the store, we need to create the database.
@@ -56,18 +56,19 @@ public class WorldDatabase : RavenDatabaseSingleton<WorldDatabase> {
     }
 
     private static X509Certificate2 GetCertificate() {
-        if (ConfigurationManager.Settings["WorldDatabaseUrl"] == string.Empty) {
+        if (ConfigurationManager.Settings["Database.WorldDatabaseUrl"] == string.Empty) {
             return null;
         }
 
         // The certificate path is relative to the working directory.
         // We need to get the absolute path.
-        var absolutePath = Path.GetFullPath(ConfigurationManager.Settings["WorldDatabaseCertificatePath"]);
+        var absolutePath = Path.GetFullPath(ConfigurationManager.Settings["Database.WorldDatabaseCertificatePath"]);
 
         // If there is no file at this path, log an error and return null.
         if (!File.Exists(absolutePath)) {
             Logger.Error("No certificate found at path {0}",
                 Logger.Args(absolutePath));
+                
             return null;
         }
 

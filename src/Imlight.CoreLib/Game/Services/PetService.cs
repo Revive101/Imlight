@@ -16,7 +16,7 @@ namespace Imlight.CoreLib.Game.Services;
 internal class PetService(SessionActor sessionActor) : MessageService(sessionActor), IWithTimers {
 
     private static readonly int s_petEnergyTickIntervalInSeconds 
-        = ConfigurationManager.Settings["PetEnergyTickInSeconds"].AsInt();
+        = ConfigurationManager.Settings["Character.PetEnergyTickInSeconds"].AsInt();
     private const int PET_ENERGY_TICK_DELAY = 2;
 
     public ITimerScheduler Timers { get; set; }

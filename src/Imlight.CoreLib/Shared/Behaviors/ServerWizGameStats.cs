@@ -155,7 +155,7 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
         MagicSchool = magicSchool;
         Level = level;
 
-        m_baseGoldPouch = ConfigurationManager.Settings["BaseGoldPouch"].AsInt();
+        m_baseGoldPouch = ConfigurationManager.Settings["Character.BaseGoldPouch"].AsInt();
     }
 
     internal void SetBaseStats() {

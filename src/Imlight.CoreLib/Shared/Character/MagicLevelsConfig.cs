@@ -17,7 +17,7 @@ internal class MagicLevelsConfig : RootSingleResourceSingleton<MagicLevelsConfig
 
     protected override string ResourceName => "MagicXPConfig.xml";
 
-    private readonly int _imlightMaxLevel = ConfigurationManager.Settings["MaxLevel"].AsInt();
+    private readonly int _imlightMaxLevel = ConfigurationManager.Settings["Character.MaxLevel"].AsInt();
     private int _maxLevel;
     private Dictionary<int, int> _mobLevelConfig;
     private Dictionary<string, List<MagicLevelInfo>> _playerLevelConfig;
