@@ -4,17 +4,15 @@
  */
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using Imlight.Common.ObjectProperty.PropertyReflection;
+using Imcodec.ObjectProperty.TypeCache;
+using Imcodec.Types;
 using Imlight.CoreLib.Shared.Resources;
-using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models.Player;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game;
 
 public static class WizardObjectLoader {
+    
     public static WizClientObject GetPlayerGameObject(Wizard character) {
         var clientObject = CoreObjectFactory.InitializeCoreObjectBehaviors(new WizClientObject(), 1);
 
@@ -169,4 +167,5 @@ public static class WizardObjectLoader {
             throw new Exception("Behavior ClientAlchemyBehavior not found!");
         }
     }
+    
 }

@@ -13,8 +13,8 @@ using Imlight.CoreLib.Shared.Services;
 namespace Imlight.CoreLib.Game;
 
 public class GameServiceFactory : ServiceFactory {
-    protected override HashSet<Type> ServiceTypes { get; set; } = new HashSet<Type>()
-    {
+
+    protected override HashSet<Type> ServiceTypes { get; set; } = [
         typeof(ControlService),
         typeof(AttachService),
         typeof(AccountService),
@@ -36,9 +36,9 @@ public class GameServiceFactory : ServiceFactory {
         typeof(TrainService),
         typeof(PetService),
         typeof(MinigameService),
-    };
+    ];
 
-    public static Props Props() {
-        return Akka.Actor.Props.Create(() => new GameServiceFactory());
-    }
+    public static Props Props() 
+        => Akka.Actor.Props.Create(() => new GameServiceFactory());
+
 }

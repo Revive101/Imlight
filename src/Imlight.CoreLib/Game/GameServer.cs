@@ -7,11 +7,8 @@ using System;
 using System.Collections.Specialized;
 using System.Linq;
 using Akka.Actor;
-using Imlight.Common.Configuration;
-using Imlight.Common.IO;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
-using Imlight.Common.Caches;
 using Imlight.Common;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.Game.Commands;
@@ -20,14 +17,16 @@ using Imlight.CoreLib.Game.World;
 using Imlight.CoreLib.Game.Processes;
 using Imlight.CoreLib.Shared.Cryptography;
 using Imlight.CoreLib.Shared.Structures;
+using Imcodec.IO;
+using Imcodec.MessageLayer.Generated;
 
 namespace Imlight.CoreLib.Game;
 
 public class GameServer : Server {
 
-    private readonly string _sessionKeyHashInput = ConfigurationManager.Settings.SessionKeyHashInput;
-    private readonly ushort _sessionKeyValidityTime = ConfigurationManager.Settings.SessionKeyValidityTime;
-    private readonly ushort _playerLimit = ConfigurationManager.Settings.GameServerPlayerLimit;
+    private readonly string _sessionKeyHashInput = ConfigurationManager.Settings["SessionKeyHashInput"].AsString();
+    private readonly ushort _sessionKeyValidityTime = ConfigurationManager.Settings["SessionKeyValidityTime"].AsUShort();
+    private readonly ushort _playerLimit = ConfigurationManager.Settings["GameServerPlayerLimit"].AsUShort();
 
     private readonly IActorRef _gameWorldRef;
     private readonly IActorRef _commandDispatcherRef;
