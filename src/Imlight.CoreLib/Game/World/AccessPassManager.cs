@@ -36,7 +36,7 @@ public class AccessPassManager : RootSingleResourceSingleton<AccessPassManager>,
         Logger.Information("Loaded {Count} zones.", Logger.Args(zoneList.Count));
 
         s_zones = [.. zoneList];
-        ((IMemoryStreamDisposable)this).DisposeStream();
+        ((IMemoryStreamDisposable) this).DisposeStream();
     }
 
     public static bool DoesZoneExist(string zoneName)

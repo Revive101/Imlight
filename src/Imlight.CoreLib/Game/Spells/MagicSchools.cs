@@ -3,39 +3,41 @@
  * Proprietary and confidential.
  */
 
-using Imlight.Common;
-using Imlight.Common.Cryptography;
-using Imlight.Common.ObjectProperty;
-using Imlight.CoreLib.Shared.Resources;
-using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using static Imlight.Common.Caches.TypeCache;
+using Imcodec.Cryptography;
+using Imcodec.ObjectProperty;
+using Imcodec.ObjectProperty.TypeCache;
+using Imlight.Common;
+using Imlight.CoreLib.Shared.Resources;
 
 namespace Imlight.CoreLib.Game.Spells;
 
 public class MagicSchools : RootDirectoryResourceSingleton<SpellFactory>, IMemoryStreamDisposable {
+
     protected override string DirectoryName => "MagicSchools/";
 
     private static readonly Dictionary<int, MagicSchoolTemplate> s_magicSchools = new();
 
     protected override void AfterLoad() {
-        var serializer = new FileSerializer();
+        var serializer = new BindSerializer();
         var counter = 0;
 
         foreach (var file in base.Files) {
             var fileRecord = file.Key;
             var fileStream = file.Value;
 
-            var magicSchoolTemplate = serializer.OpenClass<MagicSchoolTemplate>(fileStream);
-            if (magicSchoolTemplate is null) {
-                Logger.Error("Could not deserialize {0} as {1}", Logger.Args(fileRecord.FileName, nameof(MagicSchoolTemplate)));
+            if (!serializer.Deserialize<MagicSchoolTemplate>(fileStream.ToArray(), 1, out var magicSchoolTemplate)) {
+                Logger.Error("Could not deserialize {0} as {1}", 
+                    Logger.Args(fileRecord.FileName, nameof(MagicSchoolTemplate)));
+
                 continue;
             }
 
             if (s_magicSchools.ContainsKey(magicSchoolTemplate.m_schoolIndex)) {
-                Logger.Error("Duplicate magic school {0} found in {1}.", Logger.Args(magicSchoolTemplate.m_schoolName, fileRecord.FileName));
+                Logger.Error("Duplicate magic school {0} found in {1}.", 
+                    Logger.Args(magicSchoolTemplate.m_schoolName, fileRecord.FileName));
+                    
                 continue;
             }
 
@@ -77,4 +79,5 @@ public class MagicSchools : RootDirectoryResourceSingleton<SpellFactory>, IMemor
             stream.Dispose();
         }
     }
+    
 }

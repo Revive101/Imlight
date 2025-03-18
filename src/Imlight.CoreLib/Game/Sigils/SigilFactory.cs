@@ -3,31 +3,32 @@
  * Proprietary and confidential.
  */
 
-using Imlight.Common;
-using Imlight.Common.ObjectProperty;
-using Imlight.CoreLib.Shared.Resources;
-using System;
 using System.Collections.Generic;
-using static Imlight.Common.Caches.TypeCache;
+using Imcodec.ObjectProperty;
+using Imcodec.ObjectProperty.TypeCache;
+using Imlight.Common;
+using Imlight.CoreLib.Shared.Resources;
 
 namespace Imlight.CoreLib.Game.Sigils;
 
 internal class SigilFactory : RootDirectoryResourceSingleton<SigilFactory>, IMemoryStreamDisposable {
+
     protected override string DirectoryName => "Sigils/";
 
-    private readonly Dictionary<string, SigilTemplate> _combatSigils = new();
+    private readonly Dictionary<string, SigilTemplate> _combatSigils = [];
 
     protected override void AfterLoad() {
-        var serializer = new FileSerializer();
+        var serializer = new BindSerializer();
         var counter = 0;
 
         foreach (var file in base.Files) {
             var fileRecord = file.Key;
             var fileStream = file.Value;
 
-            var sigil = serializer.OpenClass<SigilTemplate>(fileStream);
-            if (sigil is null) {
-                Logger.Error("Could not deserialize {0} as {1}", Logger.Args(fileRecord.FileName, nameof(CombatSigilTemplate)));
+            if (!serializer.Deserialize<SigilTemplate>(fileStream.ToArray(), 1, out var sigil)) {
+                Logger.Error("Failed to deserialize sigil {0}.", 
+                    Logger.Args(fileRecord));
+
                 continue;
             }
 
@@ -51,4 +52,5 @@ internal class SigilFactory : RootDirectoryResourceSingleton<SigilFactory>, IMem
             streams.Dispose();
         }
     }
+    
 }

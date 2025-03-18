@@ -3,16 +3,16 @@
  * Proprietary and confidential.
  */
 
-using System;
 using System.Collections.Generic;
+using Imcodec.ObjectProperty;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
-using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Shared.Resources;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Spells;
 
 internal class SpellCinematics : RootDirectoryResourceSingleton<SpellCinematics>, IMemoryStreamDisposable {
+
     private const float HANGING_EFFECT_ADD_TIME = 1.0f;
 
     protected override string DirectoryName => "Cinematics";
@@ -20,16 +20,17 @@ internal class SpellCinematics : RootDirectoryResourceSingleton<SpellCinematics>
     private readonly Dictionary<string, CinematicTemplate> _cinematicTemplates = new();
 
     protected override void AfterLoad() {
-        var serializer = new FileSerializer();
+        var serializer = new BindSerializer();
         var counter = 0;
 
         foreach (var file in base.Files) {
             var fileRecord = file.Key;
             var fileStream = file.Value;
 
-            var cinematicTemplate = serializer.OpenClass<CinematicTemplate>(fileStream);
-            if (cinematicTemplate is null) {
-                Logger.Error("Could not deserialize {0} as {1}", Logger.Args(fileRecord.FileName, nameof(CinematicTemplate)));
+            if (!serializer.Deserialize<CinematicTemplate>(fileStream.ToArray(), 1, out var cinematicTemplate)) {
+                Logger.Error("Could not deserialize {0} as {1}", 
+                    Logger.Args(fileRecord.FileName, nameof(CinematicTemplate)));
+
                 continue;
             }
 
@@ -155,4 +156,5 @@ internal class SpellCinematics : RootDirectoryResourceSingleton<SpellCinematics>
             streams.Dispose();
         }
     }
+
 }

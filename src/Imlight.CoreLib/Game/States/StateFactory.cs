@@ -3,31 +3,32 @@
  * Proprietary and confidential.
  */
 
-using Imlight.Common;
-using Imlight.Common.ObjectProperty;
-using Imlight.CoreLib.Shared.Resources;
-using System;
 using System.Collections.Generic;
-using static Imlight.Common.Caches.TypeCache;
+using Imcodec.ObjectProperty;
+using Imcodec.ObjectProperty.TypeCache;
+using Imlight.Common;
+using Imlight.CoreLib.Shared.Resources;
 
 namespace Imlight.CoreLib.Game.States;
 
 internal class StateFactory : RootDirectoryResourceSingleton<StateFactory>, IMemoryStreamDisposable {
+
     protected override string DirectoryName => "StateData/";
 
-    private readonly Dictionary<string, ObjStateSet> _objectStateSets = new();
+    private readonly Dictionary<string, ObjStateSet> _objectStateSets = [];
 
     protected override void AfterLoad() {
-        var serializer = new FileSerializer();
+        var serializer = new BindSerializer();
         var counter = 0;
 
         foreach (var file in base.Files) {
             var fileRecord = file.Key;
             var fileStream = file.Value;
 
-            var set = serializer.OpenClass<ObjStateSet>(fileStream);
-            if (set is null) {
-                Logger.Error("Could not deserialize {0} as {1}", Logger.Args(fileRecord.FileName, nameof(ObjStateSet)));
+            if (!serializer.Deserialize<ObjStateSet>(fileStream.ToArray(), 1, out var set)) {
+                Logger.Error("Could not deserialize {0} as {1}", 
+                    Logger.Args(fileRecord.FileName, nameof(ObjStateSet)));
+
                 continue;
             }
 
@@ -51,4 +52,5 @@ internal class StateFactory : RootDirectoryResourceSingleton<StateFactory>, IMem
             streams.Dispose();
         }
     }
+    
 }

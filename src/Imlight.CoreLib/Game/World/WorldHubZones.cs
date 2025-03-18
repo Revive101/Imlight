@@ -3,11 +3,11 @@
  * Proprietary and confidential.
  */
 
-using Imlight.Common;
-using Imlight.Common.ObjectProperty;
-using Imlight.CoreLib.Shared.Resources;
 using System.Linq;
-using static Imlight.Common.Caches.TypeCache;
+using Imcodec.ObjectProperty;
+using Imcodec.ObjectProperty.TypeCache;
+using Imlight.Common;
+using Imlight.CoreLib.Shared.Resources;
 
 namespace Imlight.CoreLib.Game.World;
 
@@ -16,11 +16,15 @@ public class WorldHubZones : RootSingleResourceSingleton<WorldHubZones>, IMemory
     protected override string ResourceName => "WorldHubZones.xml";
 
     private static WorldHubZoneMapper s_worldHubZoneMap;
-    protected override void AfterLoad() {
-        var serializer = new FileSerializer();
-        var propClass = serializer.OpenClass<WorldHubZoneMapper>(Stream);
 
-        s_worldHubZoneMap = propClass;
+    protected override void AfterLoad() {
+        var serializer = new BindSerializer();
+
+        if (!serializer.Deserialize(base.Stream.ToArray(), 1, out s_worldHubZoneMap)) {
+            Logger.Error("Failed to deserialize WorldHubZones.xml");
+
+            return;
+        }
 
         Logger.Information("Loaded {0} world hub zones", Logger.Args(s_worldHubZoneMap.m_hubZoneMapping.Count));
     }
@@ -36,4 +40,5 @@ public class WorldHubZones : RootSingleResourceSingleton<WorldHubZones>, IMemory
     }
 
     public void DisposeStream() => Stream.Dispose();
+
 }

@@ -3,34 +3,35 @@
  * Proprietary and confidential.
  */
 
-using Imlight.Common;
-using Imlight.Common.Cryptography;
-using Imlight.Common.ObjectProperty;
-using Imlight.CoreLib.Shared.Resources;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using static Imlight.Common.Caches.TypeCache;
+using Imcodec.Cryptography;
+using Imcodec.ObjectProperty;
+using Imcodec.ObjectProperty.TypeCache;
+using Imlight.Common;
+using Imlight.CoreLib.Shared.Resources;
 
 namespace Imlight.CoreLib.Game.Spells;
 
 public class SpellFactory : RootDirectoryResourceSingleton<SpellFactory>, IMemoryStreamDisposable {
+
     protected override string DirectoryName => "Spells/";
 
     private static readonly Dictionary<uint, SpellTemplate> s_spellTemplates = new();
     private static readonly Dictionary<uint, string> s_spellTemplatePaths = new();
 
     protected override void AfterLoad() {
-        var serializer = new FileSerializer();
+        var serializer = new BindSerializer();
         var counter = 0;
 
         foreach (var file in base.Files) {
             var fileRecord = file.Key;
             var fileStream = file.Value;
 
-            var spellTemplate = serializer.OpenClass<SpellTemplate>(fileStream);
-            if (spellTemplate is null) {
-                Logger.Error("Could not deserialize {0} as {1}", Logger.Args(fileRecord.FileName, nameof(SpellTemplate)));
+            if (!serializer.Deserialize<SpellTemplate>(fileStream.ToArray(), 1, out var spellTemplate)) {
+                Logger.Error("Could not deserialize {0} as {1}", 
+                    Logger.Args(fileRecord.FileName, nameof(SpellTemplate)));
+
                 continue;
             }
 
@@ -79,11 +80,13 @@ public class SpellFactory : RootDirectoryResourceSingleton<SpellFactory>, IMemor
 
         if (template is null) {
             Logger.Warning("Could not find spell template with ID {0}.", Logger.Args(templateId));
+            
             return null;
         }
 
         if (template is not SpellTemplate spellTemplate) {
             Logger.Warning("Template with ID {0} is not a spell template.", Logger.Args(templateId));
+            
             return null;
         }
 
@@ -126,6 +129,7 @@ public class SpellFactory : RootDirectoryResourceSingleton<SpellFactory>, IMemor
         var spell = GetSpell(effect.m_spellName);
         if (spell is null) {
             Logger.Warning("Could not create spell from effect {0}.", Logger.Args(effect.m_spellName));
+
             return null;
         }
 
@@ -146,6 +150,7 @@ public class SpellFactory : RootDirectoryResourceSingleton<SpellFactory>, IMemor
     /// <returns>The base spell name, or null if the template is not found.</returns>
     public static string GetBaseSpellName(uint templateId) {
         var template = (SpellTemplate) CoreObjectFactory.GetCoreTemplate(templateId);
+
         return template?.m_spellBase;
     }
 
@@ -153,4 +158,5 @@ public class SpellFactory : RootDirectoryResourceSingleton<SpellFactory>, IMemor
         s_spellTemplates.Clear();
         s_spellTemplatePaths.Clear();
     }
+    
 }

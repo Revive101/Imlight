@@ -3,26 +3,27 @@
  * Proprietary and confidential.
  */
 
-using Imlight.Common;
-using Imlight.Common.ObjectProperty;
-using Imlight.CoreLib.Shared.Resources;
-using System.Collections.Generic;
 using System.Linq;
-using static Imlight.Common.Caches.TypeCache;
+using Imcodec.ObjectProperty;
+using Imcodec.ObjectProperty.TypeCache;
+using Imlight.Common;
+using Imlight.CoreLib.Shared.Resources;
 
 namespace Imlight.CoreLib.Game.WizBang;
 
 internal class WizBangs : RootSingleResourceSingleton<WizBangs>, IMemoryStreamDisposable {
+
     protected override string ResourceName => "WizBangs.xml";
 
     private static WizBangTemplateManager s_templateManager;
 
     protected override void AfterLoad() {
-        var serializer = new FileSerializer();
+        var serializer = new BindSerializer();
 
-        s_templateManager = serializer.OpenClass<WizBangTemplateManager>(base.Stream);
-        if (s_templateManager is null) {
-            Logger.Error("Could not deserialize {0} as {1}", Logger.Args(ResourceName, nameof(WizBangTemplateManager)));
+        if (!serializer.Deserialize(base.Stream.ToArray(), 1, out s_templateManager)) {
+            Logger.Error("Could not deserialize {0} as {1}", 
+                Logger.Args(ResourceName, nameof(WizBangTemplateManager)));
+
             return;
         }
 
@@ -38,4 +39,5 @@ internal class WizBangs : RootSingleResourceSingleton<WizBangs>, IMemoryStreamDi
         => s_templateManager.m_templates.Any(x => x.m_name == wizBangName);
 
     public void DisposeStream() => base.Stream.Dispose();
+
 }
