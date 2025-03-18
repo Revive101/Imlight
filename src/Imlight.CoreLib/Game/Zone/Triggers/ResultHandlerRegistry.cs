@@ -3,14 +3,12 @@
  * Proprietary and confidential.
  */
 
-using Imlight.Common;
-using Imlight.CoreLib.Game.Zone.Components;
-using Imlight.CoreLib.Game.Zone.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using static Imlight.Common.Caches.TypeCache;
+using Imlight.Common;
+using Imlight.CoreLib.Game.Zone.Core;
 
 namespace Imlight.CoreLib.Game.Zone.Triggers;
 
@@ -32,11 +30,12 @@ public interface IResultHandlerFactory {
 /// Registry for all available trigger types
 /// </summary>
 public static class ResultHandlerRegistry {
+
     private static readonly Dictionary<Type, MethodInfo> s_componentFactories = [];
-    
+
     static ResultHandlerRegistry() {
         var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-        
+
         var componentTypes = assemblies
             .SelectMany(a => a.GetTypes())
             .Where(t => {
@@ -55,18 +54,18 @@ public static class ResultHandlerRegistry {
                     var constraints = param.GetGenericParameterConstraints();
 
                     // Check if it inherits from BaseResultHandler<>
-                    if (   t.BaseType.IsGenericType 
+                    if (t.BaseType.IsGenericType
                         && t.BaseType.GetGenericTypeDefinition() == typeof(BaseResultHandler<>)) {
                         return true;
                     }
                 }
-                
+
                 return false;
             });
 
         foreach (var type in componentTypes) {
             var shouldAttachMethod = type.GetMethod(
-                "ShouldAttachToEntity", 
+                "ShouldAttachToEntity",
                 BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy
             );
 
@@ -74,7 +73,7 @@ public static class ResultHandlerRegistry {
                 s_componentFactories.Add(type, shouldAttachMethod);
             }
             else {
-                Logger.Warning("Could not find ShouldAttachToEntity method on: {0}", 
+                Logger.Warning("Could not find ShouldAttachToEntity method on: {0}",
                     Logger.Args(type.FullName));
             }
         }
@@ -82,6 +81,7 @@ public static class ResultHandlerRegistry {
         Logger.Information("Registered {0} result handlers", Logger.Args(s_componentFactories.Count));
     }
 
-    public static IReadOnlyDictionary<Type, MethodInfo> GetRegisteredResultHandlers() 
+    public static IReadOnlyDictionary<Type, MethodInfo> GetRegisteredResultHandlers()
         => s_componentFactories;
+
 }

@@ -3,19 +3,18 @@
  * Proprietary and confidential.
  */
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Akka.Actor;
+using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
-using Imlight.Common.Caches;
-using Imlight.Common.Configuration;
 using Imlight.CoreLib.Game.Combat;
 using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
@@ -25,13 +24,13 @@ internal sealed class CombatJourneymanAIComponent(ZoneEntity entity) : ZoneEntit
 
     public ITimerScheduler Timers { get; set; }
 
-    private readonly float _healingThreshold = ConfigurationManager.Settings.HealingThreshold;
-    private readonly float _healingPercentChance = ConfigurationManager.Settings.HealingPercentChance;
-    private readonly float _preparePassChance = ConfigurationManager.Settings.PreparePassChance;
-    private readonly int _damagedAggroIncrease = ConfigurationManager.Settings.DamagedAggroIncrease;
-    private readonly int _healingAggroIncrease = ConfigurationManager.Settings.HealingAggroIncrease;
-    private readonly int _provokeAggroIncrease = ConfigurationManager.Settings.ProvokeAggroIncrease;
-    private readonly int _pacifyAggroDecrease = ConfigurationManager.Settings.PacifyAggroDecrease;
+    private readonly float _healingThreshold = ConfigurationManager.Settings["HealingThreshold"].AsFloat();
+    private readonly float _healingPercentChance = ConfigurationManager.Settings["HealingPercentChance"].AsFloat();
+    private readonly float _preparePassChance = ConfigurationManager.Settings["PreparePassChance"].AsFloat();
+    private readonly int _damagedAggroIncrease = ConfigurationManager.Settings["DamagedAggroIncrease"].AsInt();
+    private readonly int _healingAggroIncrease = ConfigurationManager.Settings["HealingAggroIncrease"].AsInt();
+    private readonly int _provokeAggroIncrease = ConfigurationManager.Settings["ProvokeAggroIncrease"].AsInt();
+    private readonly int _pacifyAggroDecrease = ConfigurationManager.Settings["PacifyAggroDecrease"].AsInt();
     private readonly Dictionary<int, int> _hateTable = [];
     private readonly Random _random = new();
 
@@ -150,9 +149,9 @@ internal sealed class CombatJourneymanAIComponent(ZoneEntity entity) : ZoneEntit
 
         // Determine if I am included in the target array.
         var isTarget = message.Targets.Any(x => x.SlotIndex == _currentSubCircle.SlotIndex);
-        var isHealing = message.Effect.m_effectType is SpellEffect.kSpellEffects.kHeal
-                                                    or SpellEffect.kSpellEffects.kHealOverTime
-                                                    or SpellEffect.kSpellEffects.kHealPercent;
+        var isHealing = message.Effect.m_effectType is kSpellEffects.kHeal
+                                                    or kSpellEffects.kHealOverTime
+                                                    or kSpellEffects.kHealPercent;
 
         // Ignore if the caster is on my team.
         var isOnMyTeam = message.Caster.OccupiedTeam == _currentSubCircle.OccupiedTeam;
@@ -161,8 +160,8 @@ internal sealed class CombatJourneymanAIComponent(ZoneEntity entity) : ZoneEntit
         }
 
         if (isTarget) {
-            var isPacify = message.Effect.m_effectType is SpellEffect.kSpellEffects.kPacify;
-            var isProvoke = message.Effect.m_effectType is SpellEffect.kSpellEffects.kTaunt;
+            var isPacify = message.Effect.m_effectType is kSpellEffects.kPacify;
+            var isProvoke = message.Effect.m_effectType is kSpellEffects.kTaunt;
 
             int hateValue;
             if (isPacify) {
@@ -191,7 +190,7 @@ internal sealed class CombatJourneymanAIComponent(ZoneEntity entity) : ZoneEntit
         }
 
         // I have died. Remove myself from the current duel.
-        _currentDuelComponent.DuelBroadcast(new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATREMOVE {
+        _currentDuelComponent.DuelBroadcast(new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATREMOVE {
             DuelID = _currentDuelComponent.SigilId,
             ParticipantID = _currentSubCircle.ParticipantObject.m_globalID
         });

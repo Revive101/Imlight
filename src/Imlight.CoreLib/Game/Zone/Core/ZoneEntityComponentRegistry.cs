@@ -3,13 +3,12 @@
  * Proprietary and confidential.
  */
 
-using Imlight.Common;
-using Imlight.CoreLib.Game.Zone.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using static Imlight.Common.Caches.TypeCache;
+using Imcodec.ObjectProperty.TypeCache;
+using Imlight.Common;
 
 namespace Imlight.CoreLib.Game.Zone.Core;
 
@@ -32,7 +31,7 @@ public interface IComponentFactory {
 /// </summary>
 public static class ZoneEntityComponentRegistry {
 
-    private static readonly Dictionary<Type, MethodInfo> s_componentFactories = [];
+    private static readonly Dictionary<System.Type, MethodInfo> s_componentFactories = [];
     
     static ZoneEntityComponentRegistry() {
         var componentTypes = AppDomain.CurrentDomain
@@ -58,7 +57,7 @@ public static class ZoneEntityComponentRegistry {
         Logger.Information("Registered {0} component factories", Logger.Args(s_componentFactories.Count));
     }
 
-    public static IReadOnlyDictionary<Type, MethodInfo> GetRegisteredComponents() 
+    public static IReadOnlyDictionary<System.Type, MethodInfo> GetRegisteredComponents() 
         => s_componentFactories;
 
 }

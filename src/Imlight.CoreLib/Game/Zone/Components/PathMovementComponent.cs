@@ -3,18 +3,18 @@
  * Proprietary and confidential.
  */
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Akka.Actor;
+using Imcodec.Math;
+using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
-using Imlight.Common.Caches;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
-using SharpDX;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
@@ -195,7 +195,7 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
         }
 
         // If the path type is chain, we move node1 -> node2 -> node3 -> node2 -> node1.
-        if (_pathType == PathBehaviorTemplate.PathType.PT_CHAIN) {
+        if (_pathType == PathType.PT_CHAIN) {
             var currentIndex = _nodes.IndexOf(_currentNode);
             var nextIndex = currentIndex + _currentChainDirection;
 
@@ -209,7 +209,7 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
         }
 
         // If the path type is loop, we move node1 -> node2 -> node3 -> node1 or reversed based on _pathDirection.
-        if (_pathType == PathBehaviorTemplate.PathType.PT_LOOP) {
+        if (_pathType == PathType.PT_LOOP) {
             var currentIndex = _nodes.IndexOf(_currentNode);
             var nextIndex = _pathDirection == 0 ? currentIndex + 1 : currentIndex - 1;
 
@@ -225,7 +225,7 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
         }
 
         // If the path type is random, we move to a random node.
-        if (_pathType == PathBehaviorTemplate.PathType.PT_RANDOM) {
+        if (_pathType == PathType.PT_RANDOM) {
             var randomIndex = new Random().Next(0, _nodes.Count);
 
             return _nodes[randomIndex];

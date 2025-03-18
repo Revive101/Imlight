@@ -3,15 +3,16 @@
  * Proprietary and confidential.
  */
 
+using System.Collections.Generic;
 using Akka.Actor;
-using Imlight.Common.Caches;
-using Imlight.Common.Cryptography;
-using Imlight.Common.ObjectProperty;
+using Imcodec.Cryptography;
+using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty;
+using Imcodec.ObjectProperty.TypeCache;
+using Imlight.Common;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
-using System.Collections.Generic;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
@@ -27,10 +28,6 @@ internal sealed class WorldTeleportDoorComponent(ZoneEntity entity) : ZoneEntity
     public string StateName       => "UniverseTeleport";
     public string InteractWizBang => "Registrar";
     public string DisplayKey      => "GUI_UniverseMap";
-
-    private readonly ObjectSerializer _serializer = new ObjectSerializer()
-            .OnBehaviors(SerializerOptions.Behaviors.None)
-            .OnPropertyMask((SerializerOptions.PropertyFlags) 4);
 
     public static bool ShouldAttachToEntity(CoreTemplate template) 
         => template is GameObjectTemplate goTemplate 
@@ -63,9 +60,19 @@ internal sealed class WorldTeleportDoorComponent(ZoneEntity entity) : ZoneEntity
             ]
         };
 
+        // Serialize the teleport door options and send it to the player.
+        var serializer = new ObjectSerializer(
+            Behaviors: SerializerFlags.None
+        );
+        if (!serializer.Serialize(teleportDoorOptions, 4, out var data)) {
+            Logger.Error("Failed to serialize teleport door options.");
+
+            return;
+        }
+
         var teleportDoorOpen = new WIZARD_12_PROTOCOL.MSG_WORLDTELEPORTLIST {
             GlobalID = Entity.ActiveGameObject.m_globalID,
-            Data = _serializer.Serialize(teleportDoorOptions)
+            Data = data
         };
         playerActor.Tell(teleportDoorOpen);
     }

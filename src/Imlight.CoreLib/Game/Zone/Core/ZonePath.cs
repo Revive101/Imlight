@@ -3,17 +3,17 @@
  * Proprietary and confidential.
  */
 
-using Akka.Actor;
-using Imlight.Common;
-using Imlight.Common.Caches;
-using Imlight.CoreLib.Shared.Networking;
-using Imlight.CoreLib.Shared.Packets;
-using Imlight.CoreLib.Shared.Resources;
-using Nito.AsyncEx.Synchronous;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static Imlight.Common.Caches.TypeCache;
+using Nito.AsyncEx.Synchronous;
+using Akka.Actor;
+using Imlight.Common;
+using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Resources;
+using Imcodec.ObjectProperty.TypeCache;
+using Imcodec.MessageLayer.Generated;
 
 namespace Imlight.CoreLib.Game.Zone.Core;
 
@@ -190,19 +190,19 @@ public sealed class ZonePath : ZoneEntity, IWithTimers {
 
     private NodeObject GetRelevantNode(SpawnObjectInfo spawnInfo) {
         switch (spawnInfo.m_kStartNodeType) {
-            case SpawnObjectInfo.StartNodeType.SNT_RANDOM:
+            case StartNodeType.SNT_RANDOM:
                 var rng = new Random();
                 var rngIndex = rng.Next(0, _nodes.Count);
                 return _nodes.ElementAt(rngIndex);
-            case SpawnObjectInfo.StartNodeType.SNT_RANDOM_UNIQUE:
+            case StartNodeType.SNT_RANDOM_UNIQUE:
                 var rng2 = new Random();
                 var rngIndex2 = rng2.Next(0, _nodes.Count);
                 return _nodes.ElementAt(rngIndex2);
-            case SpawnObjectInfo.StartNodeType.SNT_FIRST:
+            case StartNodeType.SNT_FIRST:
                 return _nodes.First();
-            case SpawnObjectInfo.StartNodeType.SNT_LAST:
+            case StartNodeType.SNT_LAST:
                 return _nodes.Last();
-            case SpawnObjectInfo.StartNodeType.SNT_SPECIFIC:
+            case StartNodeType.SNT_SPECIFIC:
                 return _nodes.FirstOrDefault();
             default:
                 throw new ArgumentOutOfRangeException(nameof(spawnInfo.m_kStartNodeType),

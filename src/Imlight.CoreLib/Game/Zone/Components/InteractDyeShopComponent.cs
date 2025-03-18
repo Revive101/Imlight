@@ -3,14 +3,14 @@
  * Proprietary and confidential.
  */
 
+using System.Collections.Generic;
 using Akka.Actor;
-using Imlight.Common.Caches;
-using Imlight.Common.Cryptography;
+using Imcodec.Cryptography;
+using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
-using System.Collections.Generic;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
@@ -20,20 +20,20 @@ internal sealed class InteractDyeShopComponent(ZoneEntity entity) : ZoneEntityCo
     private const string DYE_SHOP_NPC_CONTAINS = "Dye";
     private const string DYE_SHOP_TITLE = "WC-NPCs_00000718";
 
-    public string ServiceName     => "DyeShopService";
-    public string NpcIcon         => null;
-    public string NpcNameKey      => null;
-    public string NpcTextKey      => null;
-    public string WizBang         => "Shopping";
-    public string StateName       => "Shop";
+    public string ServiceName => "DyeShopService";
+    public string NpcIcon => null;
+    public string NpcNameKey => null;
+    public string NpcTextKey => null;
+    public string WizBang => "Shopping";
+    public string StateName => "Shop";
     public string InteractWizBang => "Registrar";
-    public string DisplayKey      => "GUI_DyeShop";
+    public string DisplayKey => "GUI_DyeShop";
 
-    public static bool ShouldAttachToEntity(CoreTemplate template) 
+    public static bool ShouldAttachToEntity(CoreTemplate template)
         => template is GameObjectTemplate gameObjectTemplate
         && gameObjectTemplate.m_objectName.ToString().Contains(DYE_SHOP_NPC_CONTAINS);
 
-    public IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard _) 
+    public IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard _)
         => [
             new DyeShopOption {
                 m_displayKey = DisplayKey,
@@ -84,5 +84,5 @@ internal sealed class InteractDyeShopComponent(ZoneEntity entity) : ZoneEntityCo
 
         Entity.ZoneRef.Tell(broadcastMsg);
     }
-    
+
 }

@@ -3,13 +3,12 @@
  * Proprietary and confidential.
  */
 
+using System.Linq;
 using Akka.Actor;
-using Akka.Util.Reflection;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
-using System.Linq;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Triggers;
 
@@ -30,10 +29,10 @@ public interface IResultHandler {
 /// <summary>
 /// Base class for all result handlers.
 /// </summary>
-public abstract class BaseResultHandler<T>(ZoneTrigger trigger) 
-    : ReceiveProtocolDispatcher, IResultHandler, IResultHandlerFactory 
+public abstract class BaseResultHandler<T>(ZoneTrigger trigger)
+    : ReceiveProtocolDispatcher, IResultHandler, IResultHandlerFactory
     where T : Result {
-        
+
     protected ZoneTrigger Trigger { get; } = trigger;
     protected Core.Zone Zone => Trigger.Zone;
     protected IActorRef ZoneActor => Trigger.ZoneRef;
@@ -42,14 +41,14 @@ public abstract class BaseResultHandler<T>(ZoneTrigger trigger)
     protected T Result => _result ??= Trigger.TriggerData?.m_results?.m_results?
         .FirstOrDefault(x => x is not null && x.GetType() == typeof(T)) as T;
 
-    public static bool ShouldAttachToEntity(ZoneTrigger trigger) 
+    public static bool ShouldAttachToEntity(ZoneTrigger trigger)
         => trigger.TriggerData?.m_results?.m_results?
             .Any(x => x is not null && x.GetType() == typeof(T)) ?? false;
 
     public abstract void Execute(IActorRef playerRef, CoreObject playerObj);
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_POSTEVENT))]
-    public void HandlePostEvent(ZONE_102_PROTOCOL.MSG_POSTEVENT message) 
+    public void HandlePostEvent(ZONE_102_PROTOCOL.MSG_POSTEVENT message)
         => Execute(message.PlayerActor, message.PlayerGameObject);
 
 }

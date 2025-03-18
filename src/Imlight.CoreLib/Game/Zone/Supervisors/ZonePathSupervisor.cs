@@ -3,17 +3,17 @@
  * Proprietary and confidential.
  */
 
+using Nito.AsyncEx.Synchronous;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Collections;
-using Nito.AsyncEx.Synchronous;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using static Imlight.Common.Caches.TypeCache;
+using Imcodec.ObjectProperty.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Supervisors;
 
@@ -40,7 +40,7 @@ internal sealed class ZonePathSupervisor(Core.Zone zone) : ZoneEntitySupervisor(
         ZoneRef.Tell(rsp);
     }
 
-    private static List<NodeObject> GetNodesForPath(PathObjectTemplate path, PathManager_NodeTemplateList nodeData) {
+    private static List<NodeObject> GetNodesForPath(PathObjectTemplate path, NodeTemplateList nodeData) {
         var nodeList = new List<NodeObject>();
         foreach (var id in path.m_nodeIDs) {
             var node = nodeData.m_nodeList.Find(n => n.m_id == id);

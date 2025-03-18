@@ -3,25 +3,19 @@
  * Proprietary and confidential.
  */
 
-using Akka.Actor;
-using Imlight.Common;
-using Imlight.Common.Caches;
-using Imlight.Common.ObjectProperty;
-using Imlight.Common.ObjectProperty.PropertyReflection;
-using Imlight.CoreLib.Game.Reagents;
-
-
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
- * Unauthorized copying of this file, via any medium is strictly prohibited
- * Proprietary and confidential.
- */
-
-using Imlight.CoreLib.Game.Zone.Core;
-using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static Imlight.Common.Caches.TypeCache;
+using Akka.Actor;
+using Imcodec.CoreObject;
+using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty;
+using Imcodec.ObjectProperty.TypeCache;
+using Imcodec.Types;
+using Imlight.Common;
+using Imlight.CoreLib.Game.Reagents;
+using Imlight.CoreLib.Game.Zone.Core;
+using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
@@ -57,19 +51,20 @@ internal sealed class InteractReagentComponent(ZoneEntity entity)
     public string DisplayKey => null;
 
     private static readonly Random s_random = new();
-    private static readonly CoreObjectSerializer s_reagentAddSerializer
-        = new CoreObjectSerializer()
-            .OnBehaviors(SerializerOptions.Behaviors.None);
-    private static readonly ObjectSerializer s_lootInfoSerializer = new();
+    private static readonly CoreObjectSerializer s_reagentAddSerializer = new(
+        behaviors: SerializerFlags.None
+    );
+    private static readonly ObjectSerializer s_lootInfoSerializer = new(
+        Versionable: false,
+        Behaviors: SerializerFlags.None
+    );
 
     public static bool ShouldAttachToEntity(CoreTemplate template)
         => template is GameObjectTemplate goTemplate
         && goTemplate.m_adjectiveList.Any(x => x == "Reagent");
 
-    public IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard playerCharacter)
-        => [new InteractableOption {
-            m_serviceName = ServiceName,
-        }];
+    public IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard _)
+        => [ new InteractableOption { m_serviceName = ServiceName }];
 
     public void OnServiceInteraction(IActorRef playerActor, Wizard playerCharacter, CoreObject playerObject, uint serviceOptionIndex) {
         var quantity = RollReagentQuantity();
@@ -151,14 +146,21 @@ internal sealed class InteractReagentComponent(ZoneEntity entity)
     private static LootInfoList GetLootInfoList(Dictionary<ulong, int> items) => new() {
         m_loot = [.. items.Select(item => (LootInfo) new ItemLootInfo {
             m_itemID = (GID) item.Key,
-            m_lootType = LootInfo.LOOT_TYPE.LOOT_TYPE_ITEM,
+            m_lootType = LOOT_TYPE.LOOT_TYPE_ITEM,
             m_numItems = item.Value
         })]
     };
 
     private static void SendPlayerReagentAddMessage(IActorRef playerActor, ClientReagentItem[] reagents, ulong globalId) {
         foreach (var reagent in reagents) {
-            var reagentData = s_reagentAddSerializer.Serialize(reagent);
+            // Serialize the reagent and send it to the player.
+            if (!s_reagentAddSerializer.Serialize(reagent, 1, out var reagentData)) {
+                Logger.Error("Failed to serialize reagent {0}", 
+                    Logger.Args(reagent));
+                    
+                return;
+            }
+
             var newReagentMsg = new WIZARD_12_PROTOCOL.MSG_REAGENTADD {
                 GlobalID = globalId,
                 Data = reagentData,
@@ -173,7 +175,15 @@ internal sealed class InteractReagentComponent(ZoneEntity entity)
         reagents = reagents.Where(x => x.Value > 0).ToDictionary(x => x.Key, x => x.Value);
 
         var lootInfoList = GetLootInfoList(reagents);
-        var lootInfoData = s_lootInfoSerializer.Serialize(lootInfoList);
+
+        // Serialize the loot info list and send it to the player.
+        if (!s_lootInfoSerializer.Serialize(lootInfoList, 1, out var lootInfoData)) {
+            Logger.Error("Failed to serialize loot info list {0}", 
+                Logger.Args(lootInfoList));
+                
+            return;
+        }
+
         var lootInfoMsg = new WIZARD_12_PROTOCOL.MSG_LOOT {
             GlobalID = globalId,
             LootList = lootInfoData,
@@ -184,7 +194,7 @@ internal sealed class InteractReagentComponent(ZoneEntity entity)
 
     private static void SendPlayerPickupSound(IActorRef playerActor) {
         var soundId = new GID();
-        soundId.MParts.Id = PICKUP_SOUND_TEMPLATE_ID;
+        soundId.MParts.TemplateId = PICKUP_SOUND_TEMPLATE_ID;
 
         var soundMsg = new GAME_5_PROTOCOL.MSG_PLAYSOUND {
             SoundID = soundId,
@@ -195,7 +205,7 @@ internal sealed class InteractReagentComponent(ZoneEntity entity)
 
     private static void SendPlayerRarePickupSound(IActorRef playerActor) {
         var soundId = new GID();
-        soundId.MParts.Id = RARE_PICKUP_SOUND_TEMPLATE_ID;
+        soundId.MParts.TemplateId = RARE_PICKUP_SOUND_TEMPLATE_ID;
 
         var soundMsg = new GAME_5_PROTOCOL.MSG_PLAYSOUND {
             SoundID = soundId,

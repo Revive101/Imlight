@@ -4,25 +4,23 @@
  */
 
 using Akka.Actor;
-using Imlight.Common.Caches;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Packets;
-using System;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Triggers;
 
-internal sealed class TeleportHandler<T>(ZoneTrigger trigger) : BaseResultHandler<ServerTypeCache.ResTeleport>(trigger) 
+internal sealed class TeleportHandler<T>(ZoneTrigger trigger) : BaseResultHandler<ResTeleport>(trigger)
     where T : Result {
 
-    public override void Execute(IActorRef playerRef, CoreObject playerObj)  {
+    public override void Execute(IActorRef playerRef, CoreObject playerObj) {
         var msg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
             DestinationZone = Result.m_destinationZone,
             DestinationLocation = Result.m_destinationLoc,
             SendToClient = true,
             OwnerCharId = playerObj.m_globalID
         };
-        
+
         playerRef.Tell(msg);
     }
 

@@ -3,19 +3,19 @@
  * Proprietary and confidential.
  */
 
+using System.Collections.Generic;
+using System.Linq;
 using Akka.Actor;
+using Imcodec.Cryptography;
+using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
-using Imlight.Common.Caches;
-using Imlight.Common.Cryptography;
-using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Game.WizBang;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
-using System.Collections.Generic;
-using System.Linq;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
@@ -26,12 +26,12 @@ public interface IServiceComponent {
 
     IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard playerCharacter);
     void OnServiceInteraction(IActorRef playerActor, Wizard playerCharacter, CoreObject playerObject, uint serviceOptionIndex);
-    
+
     string ServiceName { get; }
     string NpcIcon { get; }
     string NpcNameKey { get; }
     string NpcTextKey { get; }
-    string WizBang { get; } 
+    string WizBang { get; }
     string StateName { get; }
     string InteractWizBang { get; }
     string DisplayKey { get; }
@@ -45,20 +45,17 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
 
     private readonly float _interactionRadius = 300.0f;
     private readonly Dictionary<CoreObject, IActorRef> _playersInRange = [];
-    private readonly ObjectSerializer _serializer = new ObjectSerializer()
-            .OnBehaviors(SerializerOptions.Behaviors.None)
-            .OnPropertyMask((SerializerOptions.PropertyFlags) 4);
     private List<IServiceComponent> _serviceComponents = [];
     private ServiceMementoBase _serviceMemento;
     private MadlibBlock _madlibBlock;
 
-    public static bool ShouldAttachToEntity(CoreTemplate template) 
+    public static bool ShouldAttachToEntity(CoreTemplate template)
         => true;
 
-    public override void OnStart() 
+    public override void OnStart()
         => RefreshServiceMomento(null);
 
-    public override void OnPlayerJoin(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) 
+    public override void OnPlayerJoin(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard)
         => SendWizBang(playerActor);
 
     public override void OnPlayerLeave(IActorRef playerActor, ulong id) {
@@ -123,7 +120,17 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
             .Wizard;
         RefreshServiceMomento(wizard);
 
-        var data = _serializer.Serialize(_serviceMemento);
+        // Serialize the service memento and send it to the player.
+        var serializer = new ObjectSerializer(
+            Behaviors: SerializerFlags.None
+        );
+        if (!serializer.Serialize(_serviceMemento, 4, out var data)) {
+            Logger.Error("Failed to serialize service memento for NPC {0}", 
+                Logger.Args(Entity.ActiveGameObject.m_debugName));
+
+            return;
+        }
+
         var npcOptionsMsg = new QUEST_MESSAGES_52_PROTOCOL.MSG_SENDNPCOPTIONS {
             // Do not let this property name fool you. 
             // The client incorrectly labels this property as "MobileID." It is in fact

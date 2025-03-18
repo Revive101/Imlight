@@ -3,20 +3,20 @@
  * Proprietary and confidential.
  */
 
+using System.Collections.Generic;
+using System.Linq;
 using Akka.Actor;
+using Imcodec.Cryptography;
+using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty;
+using Imcodec.ObjectProperty.TypeCache;
+using Imcodec.Types;
 using Imlight.Common;
-using Imlight.Common.Caches;
-using Imlight.Common.Cryptography;
-using Imlight.Common.ObjectProperty;
-using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Game.World;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
-using System.Collections.Generic;
-using System.Linq;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
@@ -31,9 +31,6 @@ internal sealed class InteractVendorComponent(ZoneEntity entity) : ZoneEntityCom
     public string InteractWizBang => "Registrar";
     public string DisplayKey      => "GUI_ShopOptionEquipment";
 
-    private static readonly ObjectSerializer s_offeringsSerializer = new ObjectSerializer()
-            .OnBehaviors(SerializerOptions.Behaviors.None)
-            .OnPropertyMask((SerializerOptions.PropertyFlags) 4);
     private List<GID> _inventory;
 
     public static bool ShouldAttachToEntity(CoreTemplate template) 
@@ -71,7 +68,7 @@ internal sealed class InteractVendorComponent(ZoneEntity entity) : ZoneEntityCom
     }
 
     public bool HasItem(GID itemGID) 
-        => _inventory.Any(x => x.MParts.Id == itemGID.MParts.Id);
+        => _inventory.Any(x => x.MParts.TemplateId == itemGID.MParts.TemplateId);
 
     private void SendShopOfferings(IActorRef playerActor) {
         var shopOffering = new WizShopOffering() {
@@ -84,7 +81,18 @@ internal sealed class InteractVendorComponent(ZoneEntity entity) : ZoneEntityCom
             // 1 - PvP tickets
             m_shopType = 0,
         };
-        var data = s_offeringsSerializer.Serialize(shopOffering);
+
+        // Serialize the offerings and send them to the player.
+        var serializer = new ObjectSerializer(
+            Behaviors: SerializerFlags.None
+        );
+        if (!serializer.Serialize(shopOffering, 4, out var data)) {
+            Logger.Error("Failed to serialize shop offering for NPC {0}", 
+                Logger.Args(Entity.ActiveGameObject.m_templateID));
+
+            return;
+        }
+
         var shopListMsg = new WIZARD_12_PROTOCOL.MSG_SHOPLIST() {
             GlobalID = Entity.ActiveGameObject.m_globalID,
             Data = data,

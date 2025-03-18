@@ -3,11 +3,16 @@
  * Proprietary and confidential.
  */
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Akka.Actor;
+using Imcodec.Math;
 using Imcodec.MessageLayer;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
+using Imcodec.Types;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Combat;
 using Imlight.CoreLib.Game.Models.World;
@@ -17,9 +22,6 @@ using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
@@ -58,10 +60,15 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     public ulong SigilId => Entity.ActiveGameObject.m_globalID;
 
     private readonly Dictionary<CoreObject, IActorRef> _entitiesInRange = [];
-    private readonly ObjectSerializer _serializer = new ObjectSerializer().OnBehaviors(SerializerOptions.Behaviors.None);
-    private readonly SerializerOptions.PropertyFlags _combatParticipantFlags = (SerializerOptions.PropertyFlags) 4;
-    private readonly SerializerOptions.PropertyFlags _combatParticipantStatFlags = (SerializerOptions.PropertyFlags) 5;
-    private readonly SerializerOptions.PropertyFlags _combatParticipantHandFlags = (SerializerOptions.PropertyFlags) 5;
+    private readonly ObjectSerializer _serializer = new(
+        Behaviors: SerializerFlags.None
+    );
+    private readonly PropertyFlags _combatParticipantFlags     = (PropertyFlags) 4;
+    private readonly PropertyFlags _combatParticipantStatFlags = (PropertyFlags) 5;
+    private readonly PropertyFlags _combatParticipantHandFlags = (PropertyFlags) 5;
+    private readonly PropertyFlags _upFirstFlags = PropertyFlags.Prop_Transmit 
+                                                 | PropertyFlags.Prop_AuthorityTransmit 
+                                                 | PropertyFlags.Prop_Public;
 
     private CombatSigilObjectInfo _combatSigilObjectInfo;
     private RenderComponent _renderComponent;
@@ -208,7 +215,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         EnactActionOnSubCircles(circle => circle.ParticipantActor.Tell(message));
 
         // Pre-planning phase just wants to send who is up first.
-        Duel.m_duelPhase = Duel.kDuelPhase.kPhase_PrePlanning;
+        Duel.m_duelPhase = kDuelPhase.kPhase_PrePlanning;
         Duel.m_roundNum++;
         SendCombatPhase((byte) Duel.m_duelPhase);
         SendUpFirst(Duel.m_roundNum);
@@ -220,7 +227,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_PLANNINGPHASEBEGIN))]
     private void ReceivePlanningPhaseBegin() {
         // Planning phase is when each participant notices their new stats and "plans" accordingly.
-        Duel.m_duelPhase = Duel.kDuelPhase.kPhase_Planning;
+        Duel.m_duelPhase = kDuelPhase.kPhase_Planning;
         SendCombatPhase((byte) Duel.m_duelPhase);
 
         SendCombatStats();
@@ -300,9 +307,13 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         Duel.m_executionPhaseTimer = (float) actionExecutionTime.TotalSeconds;
 
         // Serialize the combat actions and send them to the clients.
-        _serializer.OnPropertyMask(_combatParticipantHandFlags);
-        var buffer = _serializer.Serialize(actions);
-        var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATACTIONS {
+        if (!_serializer.Serialize(actions, _combatParticipantHandFlags, out var buffer)) {
+            Logger.Error("Failed to serialize combat actions for duel {0}", 
+                Logger.Args(SigilId));
+
+            return;
+        }
+        var msg = new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATACTIONS {
             DuelID = SigilId,
             ActionData = buffer,
         };
@@ -323,7 +334,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         });
 
         // All spells have been called. Inform the client whether this duel continues or ends.
-        Duel.m_duelPhase = Duel.kDuelPhase.kPhase_Resolution;
+        Duel.m_duelPhase = kDuelPhase.kPhase_Resolution;
         SendCombatPhase((byte) Duel.m_duelPhase);
 
         var playersWin = AliveCreatureCount <= 0;
@@ -338,7 +349,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         EndDuel();
     }
 
-    [MessageHandler(typeof(WIZARDCOMBAT_51_PROTOCOL.MSG_ENDDUEL))]
+    [MessageHandler(typeof(DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_ENDDUEL))]
     private void DespawnDuel() {
         _isActive = false;
         _renderComponent?.Disable();
@@ -535,21 +546,20 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         // Determine what sigil slot is up first.
         var upFirstSigilSlot = GetUpFirstSigilSlot();
 
-        var serializer = new ObjectSerializer()
-                .OnMode(SerializerOptions.Mode.Verbose)
-                .OnBehaviors(SerializerOptions.Behaviors.None)
-                .OnPropertyMask(SerializerOptions.PropertyFlags.Public
-                              | SerializerOptions.PropertyFlags.Transmit
-                              | SerializerOptions.PropertyFlags.AuthorityTransmit);
-
-        // Unsure what m_resultType means here, but it's always recorded as 122.
-        var upFirstData = serializer.Serialize(new UpFirstData() {
-            m_resultType = 122,
+        // Serialize the up first data and send it to all the combat participants.
+        var upFirst = new UpFirstData {
+            m_resultType = 122, // Always recorded as 122, per packet captures.
             m_roundNum = Duel.m_roundNum,
             m_upFirst = upFirstSigilSlot,
-        });
+        };
+        if (!_serializer.Serialize(upFirst, _upFirstFlags, out var upFirstData)) {
+            Logger.Error("Failed to serialize up first data for duel {0}", 
+                Logger.Args(SigilId));
 
-        var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATPHASE() {
+            return;
+        }
+
+        var msg = new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATPHASE() {
             DuelID = SigilId,
             NewPhase = phase,
             PlayerID = 0, // Always recorded as 0
@@ -562,7 +572,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     private void SendUpFirst(int roundNum) {
         var upFirstSigilSlot = GetUpFirstSigilSlot();
 
-        var upFirstMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATUPFIRST {
+        var upFirstMsg = new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATUPFIRST {
             DuelID = SigilId,
             RoundNum = (ushort) roundNum,
             FirstTeamToAct = (byte) Duel.m_firstTeamToAct,
@@ -572,10 +582,10 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     }
 
     private void SendCombatUI(byte planningPhaseTimer) {
-        var combatUiMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_SHOWCOMBATUI {
+        var combatUiMsg = new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_SHOWCOMBATUI {
             DuelID = SigilId
         };
-        var planningMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_SETPLANNINGPHASETIMER {
+        var planningMsg = new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_SETPLANNINGPHASETIMER {
             DuelID = SigilId,
             Time = planningPhaseTimer,
         };
@@ -588,7 +598,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         var participantStats = circle.ParticipantGameStats;
         _serializer.OnPropertyMask(_combatParticipantStatFlags);
         var serializedStats = _serializer.Serialize(participantStats.GetCombatGameStats());
-        var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATSTATS {
+        var msg = new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATSTATS {
             DuelID = SigilId,
             PartID = circle.ParticipantObject.m_globalID,
             StatsData = serializedStats,
@@ -598,20 +608,24 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     });
 
     private void SendCombatHand() {
-        _serializer.OnPropertyMask(_combatParticipantHandFlags);
-
         // Serialize the combat hand and send it to the participant, locally.
         // We're skipping creatures for now.
         EnactActionOnSubCircles(circle => {
             if (circle.OccupiedTeam == CombatTeam.Monster) {
                 return;
             }
-;
+
             var newHand = circle.DrawHand();
-            var buffer = _serializer.Serialize(newHand);
+
+            if (!_serializer.Serialize(newHand, _combatParticipantHandFlags, out var buffer)) {
+                Logger.Error("Failed to serialize combat hand for duel {0}", 
+                    Logger.Args(SigilId));
+
+                return;
+            }
 
             var participantActor = circle.ParticipantActor;
-            var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATHAND {
+            var msg = new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATHAND {
                 DeckCount = (byte) circle.AvailableSpells,
                 TotalDeckCount = (ushort) circle.TotalSpells,
                 TreasureCardCount = 0,
@@ -648,10 +662,14 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         });
 
         // Serialize the combat pips and send it to each participant.
-        _serializer.OnPropertyMask(_combatParticipantStatFlags);
-        var buffer = _serializer.Serialize(pips);
+        if (!_serializer.Serialize(pips, _combatParticipantStatFlags, out var buffer)) {
+            Logger.Error("Failed to serialize combat pips for duel {0}", 
+                Logger.Args(SigilId));
 
-        ZoneBroadcast(new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATPIPS {
+            return;
+        }
+
+        ZoneBroadcast(new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATPIPS {
             DuelID = SigilId,
             PipData = buffer,
         });
@@ -677,12 +695,16 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         });
 
         // Serialize the combat health and send it to each participant.
-        _serializer.OnPropertyMask(_combatParticipantStatFlags);
-        var buffer = _serializer.Serialize(healthList);
+        if (!_serializer.Serialize(healthList, _combatParticipantStatFlags, out var healthBuffer)) {
+            Logger.Error("Failed to serialize combat health for duel {0}", 
+                Logger.Args(SigilId));
 
-        var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATHEALTH {
+            return;
+        }
+
+        var msg = new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATHEALTH {
             DuelID = SigilId,
-            HealthData = buffer,
+            HealthData = healthBuffer,
         };
         ZoneBroadcast(msg);
     }
@@ -694,7 +716,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
         var actualIndex = (byte) Math.Pow(2, targetIndex);
 
-        var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATMOVESELECTION {
+        var msg = new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATMOVESELECTION {
             DuelID = SigilId,
             ParticipantID = participantId,
             MoveType = moveType,
@@ -771,7 +793,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         Logger.Debug("Duel {0} | Slot {1} | Participant fled",
             Logger.Args(Duel.m_duelID, caster.SlotIndex));
 
-        ZoneBroadcast(new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATREMOVE {
+        ZoneBroadcast(new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATREMOVE {
             DuelID = SigilId,
             ParticipantID = participantObjId,
         });
@@ -808,12 +830,18 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             return;
         }
 
+        // Serialize the combat participant and send it to every client in the zone.
         var participant = circle.CombatParticipant;
-        _serializer.OnPropertyMask(_combatParticipantFlags);
-        var serializedData = _serializer.Serialize(participant);
-        var msg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATADD {
+        if (!_serializer.Serialize(participant, _combatParticipantFlags, out var buffer)) {
+            Logger.Error("Failed to serialize combat participant for duel {0}", 
+                Logger.Args(SigilId));
+
+            return;
+        }
+
+        var msg = new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATADD {
             DuelID = SigilId,
-            ParticipantData = serializedData,
+            ParticipantData = buffer,
         };
         ZoneBroadcast(msg);
 
@@ -846,17 +874,17 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         }
 
         // Broadcast to the zone of the result.
-        var combatMatchResult = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATMATCHRESULT {
+        var combatMatchResult = new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATMATCHRESULT {
             DuelID = SigilId,
             WinningTeam = playersWin ? (byte) CombatTeam.Player : (byte) CombatTeam.Monster,
         };
         ZoneBroadcast(combatMatchResult);
 
         // Inform the zone of the final phase, and the end of the duel.
-        Duel.m_duelPhase = Duel.kDuelPhase.kPhase_Ended;
+        Duel.m_duelPhase = kDuelPhase.kPhase_Ended;
         SendCombatPhase((byte) Duel.m_duelPhase);
 
-        var duelEndedMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_ENDDUEL { DuelID = SigilId };
+        var duelEndedMsg = new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_ENDDUEL { DuelID = SigilId };
         ZoneBroadcast(duelEndedMsg);
 
         DespawnDuel();
@@ -866,11 +894,11 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     private void PlayerWin() {
         Logger.Debug("Duel {0} | Duel ended. Players win.", Logger.Args(Duel.m_duelID));
 
-        Duel.m_duelPhase = Duel.kDuelPhase.kPhase_Victory;
+        Duel.m_duelPhase = kDuelPhase.kPhase_Victory;
         SendCombatPhase((byte) Duel.m_duelPhase);
 
         // Send the final messages to the participants.
-        var combatVictoryMsg = new WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATVICTORY();
+        var combatVictoryMsg = new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATVICTORY();
         EnactActionOnSubCircles(circle => {
             if (circle.OccupiedTeam == CombatTeam.Monster) {
                 return;

@@ -4,17 +4,16 @@
  */
 
 using Akka.Actor;
-using Imlight.Common.Caches;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Packets;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Triggers;
 
-internal sealed class AddDynamodHandler<T>(ZoneTrigger trigger) : BaseResultHandler<ServerTypeCache.ResAddDynaMod>(trigger) 
+internal sealed class AddDynamodHandler<T>(ZoneTrigger trigger) : BaseResultHandler<ResAddDynaMod>(trigger)
     where T : Result {
 
-    public override void Execute(IActorRef playerRef, CoreObject playerObj)  {
+    public override void Execute(IActorRef playerRef, CoreObject playerObj) {
         var msg = new CHARACTER_103_PROTOCOL.MSG_ADDDYNAMOD {
             DynaMod = Result,
             ContextActor = playerRef
@@ -29,10 +28,10 @@ internal sealed class AddDynamodHandler<T>(ZoneTrigger trigger) : BaseResultHand
 
 }
 
-internal sealed class RemoveDynamodHandler<T>(ZoneTrigger trigger) : BaseResultHandler<ServerTypeCache.ResRemoveDynaMod>(trigger) 
+internal sealed class RemoveDynamodHandler<T>(ZoneTrigger trigger) : BaseResultHandler<ResRemoveDynaMod>(trigger)
     where T : Result {
 
-    public override void Execute(IActorRef playerRef, CoreObject playerObj)  {
+    public override void Execute(IActorRef playerRef, CoreObject playerObj) {
         var msg = new CHARACTER_103_PROTOCOL.MSG_REMOVEDYNAMOD {
             DynaMod = Result,
             ContextActor = playerRef

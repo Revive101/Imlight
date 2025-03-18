@@ -3,18 +3,15 @@
  * Proprietary and confidential.
  */
 
+using System;
 using Akka.Actor;
-using Akka.Event;
+using Imcodec.ObjectProperty;
+using Imcodec.ObjectProperty.TypeCache;
+using Imcodec.Wad;
 using Imlight.Common;
-using Imlight.Common.Formats;
-using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
-using System;
-using System.Collections.Generic;
-using static Imlight.Common.Caches.ServerTypeCache;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Core;
 
@@ -27,7 +24,7 @@ internal sealed class ZoneLoader : ReceiveProtocolDispatcher {
     private const string VOLUME_DATA_FILE_NAME = "volumes.xml";
     private const string TRIGGER_DATA_FILE_NAME = "triggers.xml";
 
-    private KiWad _wad;
+    private Archive _wad;
     private readonly System.Diagnostics.Stopwatch _benchmarkTimer = new();
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADBEGIN))]
@@ -65,7 +62,7 @@ internal sealed class ZoneLoader : ReceiveProtocolDispatcher {
             LogLoadingStep("volume data");
 
             // Load trigger data
-            var triggerData = LoadTriggerData(); 
+            var triggerData = LoadTriggerData();
             LogLoadingStep("trigger data");
 
             // Send completion message with all loaded data
@@ -91,37 +88,127 @@ internal sealed class ZoneLoader : ReceiveProtocolDispatcher {
     }
 
     private WizZoneData LoadZoneData() {
-        var serializer = new FileSerializer();
-        return serializer.OpenClass<WizZoneData>(_wad, ZONE_DATA_FILE_NAME);
+        var data = _wad.OpenFile(ZONE_DATA_FILE_NAME);
+        if (data is null) {
+            Logger.Error("Failed to load zone data from {zone}", 
+                Logger.Args(ZONE_DATA_FILE_NAME));
+
+            return null;
+        }
+
+        var serializer = new BindSerializer();
+        if (!serializer.Deserialize<WizZoneData>(data?.ToArray(), 1, out var zoneData)) {
+            Logger.Error("Failed to deserialize zone data from {zone}", 
+                Logger.Args(ZONE_DATA_FILE_NAME));
+
+            return null;
+        }
+
+        return zoneData;
     }
 
     private SpawnManager LoadSpawnData() {
-        var serializer = new FileSerializer();
-        return serializer.OpenClass<SpawnManager>(_wad, SPAWN_DATA_FILE_NAME);
+        var data = _wad.OpenFile(SPAWN_DATA_FILE_NAME);
+        if (data is null) {
+            Logger.Error("Failed to load spawn data from {zone}", 
+                Logger.Args(SPAWN_DATA_FILE_NAME));
+
+            return null;
+        }
+
+        var serializer = new BindSerializer();
+        if (!serializer.Deserialize<SpawnManager>(data?.ToArray(), 1, out var spawnData)) {
+            Logger.Error("Failed to deserialize spawn data from {zone}", 
+                Logger.Args(SPAWN_DATA_FILE_NAME));
+
+            return null;
+        }
+
+        return spawnData;
     }
 
-    private PathManager_PathTemplateList LoadPathData() {
-        var serializer = new FileSerializer();
-        return serializer.OpenClass<PathManager_PathTemplateList>(_wad, PATH_DATA_FILE_NAME);
+    private PathTemplateList LoadPathData() {
+        var data = _wad.OpenFile(PATH_DATA_FILE_NAME);
+        if (data is null) {
+            Logger.Error("Failed to load path data from {zone}", 
+                Logger.Args(PATH_DATA_FILE_NAME));
+
+            return null;
+        }
+
+        var serializer = new BindSerializer();
+        if (!serializer.Deserialize<PathTemplateList>(data?.ToArray(), 1, out var pathData)) {
+            Logger.Error("Failed to deserialize path data from {zone}", 
+                Logger.Args(PATH_DATA_FILE_NAME));
+
+            return null;
+        }
+
+        return pathData;
     }
 
-    private PathManager_NodeTemplateList LoadNodeData() {
-        var serializer = new FileSerializer();
-        return serializer.OpenClass<PathManager_NodeTemplateList>(_wad, NODE_DATA_FILE_NAME);
+    private NodeTemplateList LoadNodeData() {
+        var data = _wad.OpenFile(NODE_DATA_FILE_NAME);
+        if (data is null) {
+            Logger.Error("Failed to load node data from {zone}", 
+                Logger.Args(NODE_DATA_FILE_NAME));
+
+            return null;
+        }
+
+        var serializer = new BindSerializer();
+        if (!serializer.Deserialize<NodeTemplateList>(data?.ToArray(), 1, out var nodeData)) {
+            Logger.Error("Failed to deserialize node data from {zone}", 
+                Logger.Args(NODE_DATA_FILE_NAME));
+
+            return null;
+        }
+
+        return nodeData;
     }
 
     private WizZoneVolumes LoadVolumeData() {
-        var serializer = new FileSerializer();
-        return serializer.OpenClass<WizZoneVolumes>(_wad, VOLUME_DATA_FILE_NAME);
+        var data = _wad.OpenFile(VOLUME_DATA_FILE_NAME);
+        if (data is null) {
+            Logger.Error("Failed to load volume data from {zone}", 
+                Logger.Args(VOLUME_DATA_FILE_NAME));
+
+            return null;
+        }
+
+        var serializer = new BindSerializer();
+        if (!serializer.Deserialize<WizZoneVolumes>(data?.ToArray(), 1, out var volumeData)) {
+            Logger.Error("Failed to deserialize volume data from {zone}", 
+                Logger.Args(VOLUME_DATA_FILE_NAME));
+
+            return null;
+        }
+
+        return volumeData;
     }
 
     private WizZoneTriggers LoadTriggerData() {
-        var serializer = new FileSerializer();
-        return serializer.OpenClass<WizZoneTriggers>(_wad, TRIGGER_DATA_FILE_NAME);
+        var data = _wad.OpenFile(TRIGGER_DATA_FILE_NAME);
+        if (data is null) {
+            Logger.Error("Failed to load trigger data from {zone}", 
+                Logger.Args(TRIGGER_DATA_FILE_NAME));
+
+            return null;
+        }
+
+        var serializer = new BindSerializer();
+        if (!serializer.Deserialize<WizZoneTriggers>(data?.ToArray(), 1, out var triggerData)) {
+            Logger.Error("Failed to deserialize trigger data from {zone}", 
+                Logger.Args(TRIGGER_DATA_FILE_NAME));
+
+            return null;
+        }
+
+        return triggerData;
     }
 
     private void LogLoadingStep(string step) {
-        Logger.Debug("Loaded {step} in {Time}ms", 
+        Logger.Debug("Loaded {step} in {Time}ms",
             Logger.Args(step, _benchmarkTimer.ElapsedMilliseconds));
         _benchmarkTimer.Restart();
     }

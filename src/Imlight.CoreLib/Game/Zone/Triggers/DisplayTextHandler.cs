@@ -4,10 +4,9 @@
  */
 
 using Akka.Actor;
-using Imlight.Common.Caches;
+using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Zone.Core;
-using static Imlight.Common.Caches.TypeCache;
-using static Imlight.Common.Caches.ServerTypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Triggers;
 

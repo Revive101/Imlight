@@ -4,12 +4,11 @@
  */
 
 using Akka.Actor;
-using Imlight.Common.Caches;
 using Imlight.CoreLib.Game.Zone.Core;
-using static Imlight.Common.Caches.TypeCache;
-using static Imlight.Common.Caches.ServerTypeCache;
 using Imlight.Common;
-using Imlight.Common.Cryptography;
+using Imcodec.ObjectProperty.TypeCache;
+using Imcodec.Cryptography;
+using Imcodec.MessageLayer.Generated;
 
 namespace Imlight.CoreLib.Game.Zone.Triggers;
 
@@ -18,11 +17,11 @@ internal sealed class ControlMusicHandler<T> : BaseResultHandler<ResControlBackg
     private readonly uint _actionHash;
 
     // ctor
-    public ControlMusicHandler(ZoneTrigger trigger) : base(trigger) { 
+    public ControlMusicHandler(ZoneTrigger trigger) : base(trigger) {
         var action = trigger.TriggerData.m_results.m_results[0];
         if (action is null) {
             _actionHash = 0;
-            
+
             return;
         }
 
@@ -36,7 +35,7 @@ internal sealed class ControlMusicHandler<T> : BaseResultHandler<ResControlBackg
         this._actionHash = StringHash.Compute(resControlBackgroundMusic.m_action);
     }
 
-    public override void Execute(IActorRef playerRef, CoreObject playerObj)  {
+    public override void Execute(IActorRef playerRef, CoreObject playerObj) {
         var msg = new WIZARD_12_PROTOCOL.MSG_CONTROLMUSIC {
             FadeTime = 2.0f, // todo: is this always 2.0?
             Action = (int) _actionHash,

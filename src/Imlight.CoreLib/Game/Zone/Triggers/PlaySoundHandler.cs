@@ -4,13 +4,12 @@
  */
 
 using Akka.Actor;
-using Imlight.Common.Caches;
 using Imlight.CoreLib.Game.Zone.Core;
-using static Imlight.Common.Caches.TypeCache;
-using static Imlight.Common.Caches.ServerTypeCache;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.Common;
-using Imlight.Common.ObjectProperty.PropertyReflection;
+using Imcodec.ObjectProperty.TypeCache;
+using Imcodec.MessageLayer.Generated;
+using Imcodec.Types;
 
 namespace Imlight.CoreLib.Game.Zone.Triggers;
 
@@ -20,7 +19,7 @@ internal sealed class PlaySoundHandler<T> : BaseResultHandler<ResPlaySound> wher
     private readonly uint _templateId;
 
     // ctor
-    public PlaySoundHandler(ZoneTrigger trigger) : base(trigger) { 
+    public PlaySoundHandler(ZoneTrigger trigger) : base(trigger) {
         this._soundName = Result.m_soundName;
         this._templateId = CoreObjectFactory.GetCoreTemplateID(x => x.m_filename.ToString().Contains(_soundName));
 
@@ -30,7 +29,7 @@ internal sealed class PlaySoundHandler<T> : BaseResultHandler<ResPlaySound> wher
         }
     }
 
-    public override void Execute(IActorRef playerRef, CoreObject playerObj)  {
+    public override void Execute(IActorRef playerRef, CoreObject playerObj) {
         if (_templateId == 0) {
             return;
         }

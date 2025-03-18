@@ -3,18 +3,17 @@
  * Proprietary and confidential.
  */
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Akka.Actor;
+using Nito.AsyncEx.Synchronous;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Collections;
-using Nito.AsyncEx.Synchronous;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using static Imlight.Common.Caches.ServerTypeCache;
-using static Imlight.Common.Caches.TypeCache;
+using Imcodec.ObjectProperty.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Supervisors;
 

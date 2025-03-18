@@ -3,14 +3,17 @@
  * Proprietary and confidential.
  */
 
-using Akka.Actor;
-using Imlight.Common.Caches;
-using Imlight.Common.ObjectProperty;
-using Imlight.CoreLib.Game.Zone.Core;
-using Imlight.CoreLib.WizardData.Models.Player;
 using System.Collections.Generic;
 using System.Linq;
-using static Imlight.Common.Caches.TypeCache;
+using Akka.Actor;
+using Imcodec.CoreObject;
+using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty;
+using Imcodec.ObjectProperty.TypeCache;
+using Imlight.Common;
+using Imlight.CoreLib.Game.Zone.Core;
+using Imlight.CoreLib.WizardData.Models.Player;
+using Raven.Client.Documents.Indexes.MapReduce;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
@@ -25,11 +28,12 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
     /// object if the client has not been told about it with MSG_NEWOBJECT   ///
     ////////////////////////////////////////////////////////////////////////////
 
-    private readonly CoreObjectSerializer _serializer = new CoreObjectSerializer()
-            .OnBehaviors(SerializerOptions.Behaviors.None)
-            .OnPropertyMask(SerializerOptions.PropertyFlags.Public
-                | SerializerOptions.PropertyFlags.Transmit
-                | SerializerOptions.PropertyFlags.AuthorityTransmit);
+    private readonly CoreObjectSerializer _serializer = new(
+        behaviors: SerializerFlags.None
+    );
+    private readonly PropertyFlags _propertyFlags = PropertyFlags.Prop_Public
+                                                  | PropertyFlags.Prop_Transmit
+                                                  | PropertyFlags.Prop_AuthorityTransmit;
     private readonly Dictionary<CoreObject, IActorRef> _playersInRange = [];
     private float _renderDistance;
     private bool _doesDistanceCheck = false;
@@ -50,10 +54,17 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
     }
 
     public override void OnEnabled() {
-        // Broadcast the creation of the object to all players.
+        // Serialize the client object.
         var clientObj = Entity.GetClientBehaviorInstance();
+        if (!_serializer.Serialize(clientObj, _propertyFlags, out var serializedData)) {
+            Logger.Error("Failed to serialize object data.");
+
+            return;
+        }
+
+        // Broadcast the creation of the object to all players.
         PlayerBroadcast(new GAME_5_PROTOCOL.MSG_NEWOBJECT {
-            Data = _serializer.Serialize(clientObj)
+            Data = serializedData
         });
     }
 
@@ -109,21 +120,33 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
     }
 
     private void CreateObjectForPlayer(IActorRef player) {
+        // Serialize the client object.
         var clientObj = Entity.GetClientBehaviorInstance();
+        if (!_serializer.Serialize(clientObj, _propertyFlags, out var serializedData)) {
+            Logger.Error("Failed to serialize object data.");
+
+            return;
+        }
 
         // Send object data to the player.
         var newObjectMsg = new GAME_5_PROTOCOL.MSG_NEWOBJECT {
-            Data = _serializer.Serialize(clientObj)
+            Data = serializedData
         };
         player.Tell(newObjectMsg);
     }
 
     private void CreateObjectForAllPlayers() {
+        // Serialize the client object.
         var clientObj = Entity.GetClientBehaviorInstance();
+        if (!_serializer.Serialize(clientObj, _propertyFlags, out var serializedData)) {
+            Logger.Error("Failed to serialize object data.");
+
+            return;
+        }
 
         // Send object data to all players.
         PlayerBroadcast(new GAME_5_PROTOCOL.MSG_NEWOBJECT {
-            Data = _serializer.Serialize(clientObj)
+            Data = serializedData
         });
     }
 

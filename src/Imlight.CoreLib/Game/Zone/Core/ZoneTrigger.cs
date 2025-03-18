@@ -3,16 +3,15 @@
  * Proprietary and confidential.
  */
 
-using Akka.Actor;
-using Imlight.Common.IO;
-using Imlight.CoreLib.Game.Zone.Triggers;
-using Imlight.CoreLib.Shared.Networking;
-using Imlight.CoreLib.Shared.Packets;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using static Imlight.Common.Caches.ServerTypeCache;
+using Akka.Actor;
+using Imcodec.ObjectProperty.TypeCache;
+using Imlight.CoreLib.Game.Zone.Triggers;
+using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.Shared.Packets;
 
 namespace Imlight.CoreLib.Game.Zone.Core;
 
@@ -22,16 +21,12 @@ namespace Imlight.CoreLib.Game.Zone.Core;
 /// </summary>
 /// <param name="zoneRef">The reference to the zone that this trigger is a part of.</param>
 /// <param name="zone">The zone that this trigger is a part of.</param>
-public sealed class ZoneTrigger : ZoneEntity {
+public sealed class ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger) 
+    : ZoneEntity(null, null, zoneRef, zone) {
 
-    public Trigger TriggerData { get; init; }
+    public Trigger TriggerData { get; init; } = trigger;
     private readonly Dictionary<IActorRef, DateTime> _cooldowns = [];
     private readonly List<IActorRef> _triggerActors = [];
-
-    // ctor
-    public ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger) : base(null, null, zoneRef, zone) {
-        TriggerData = trigger;
-    }
 
     // Unsure why this override is required, but it fails without it present.
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN))]
@@ -116,7 +111,7 @@ public sealed class ZoneTrigger : ZoneEntity {
         return true;
     }
 
-    private new void AddComponent(Type type) {
+    private new void AddComponent(System.Type type) {
         var props = Props.Create(type, this);
         var componentName = type.Name;
 
@@ -133,10 +128,11 @@ public sealed class ZoneTrigger : ZoneEntity {
 
     private static bool IsValidActorName(string name) {
         foreach (char c in name) {
-            if (!char.IsLetterOrDigit(c) && "-_.*$+:@&=,!~';()".IndexOf(c) == -1) {
+            if (!char.IsLetterOrDigit(c) && !"-_.*$+:@&=,!~';()".Contains(c)) {
                 return false;
             }
         }
+        
         return true;
     }
 

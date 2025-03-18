@@ -3,20 +3,21 @@
  * Proprietary and confidential.
  */
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Akka.Actor;
+using Imcodec.Cryptography;
+using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty;
+using Imcodec.ObjectProperty.TypeCache;
+using Imcodec.Types;
 using Imlight.Common;
-using Imlight.Common.Caches;
-using Imlight.Common.Cryptography;
-using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Game.Zone.Components;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Core;
 
@@ -50,8 +51,6 @@ public class ZoneEntity(
 
     protected readonly Dictionary<ZoneEntityComponent, IActorRef> Components = [];
 
-    private readonly ObjectSerializer _serializer = new();
-
     /// <summary>
     /// Gets a list of components of the specified type.
     /// </summary>
@@ -75,7 +74,7 @@ public class ZoneEntity(
     /// <param name="despawnEffect">The name of the despawn effect to play.</param>
     public void DeleteObject(string effectName = "", ulong killer = 0) {
         var despawnEffects = new DespawnInfo {
-            m_killer = (Common.ObjectProperty.PropertyReflection.GID) killer,
+            m_killer = (GID) killer,
             m_despawnEffect = StringHash.Compute(effectName),
         };
 
@@ -84,7 +83,15 @@ public class ZoneEntity(
             actor.Tell(PoisonPill.Instance);
         }
         
-        var serializedData = _serializer.Serialize(despawnEffects);
+        var serializer = new ObjectSerializer(
+            Behaviors: SerializerFlags.None
+        );
+        if (!serializer.Serialize(despawnEffects, 1, out var serializedData)) {
+            Logger.Error("Failed to serialize despawn");
+
+            return;
+        }
+
         var despawnMsg = new GAME_5_PROTOCOL.MSG_DELETEOBJECT {
             GameObjectID = ActiveGameObject.m_globalID,
             Data = serializedData,
@@ -223,7 +230,7 @@ public class ZoneEntity(
     /// Adds a component to this entity.
     /// </summary>
     /// <param name="type">The type of the component to add.</param>
-    protected void AddComponent(Type type) {
+    protected void AddComponent(System.Type type) {
         var props = Props.Create(type, this);
         var componentName = type.Name;
 
@@ -242,7 +249,7 @@ public class ZoneEntity(
 
     private static bool IsValidActorName(string name) {
         foreach (char c in name) {
-            if (!char.IsLetterOrDigit(c) && "-_.*$+:@&=,!~';()".IndexOf(c) == -1) {
+            if (!char.IsLetterOrDigit(c) && !"-_.*$+:@&=,!~';()".Contains(c)) {
                 return false;
             }
         }
@@ -276,7 +283,7 @@ public class ZoneEntity(
             m_zoneTagID = ActiveGameObject.m_zoneTagID,
             m_inactiveBehaviors = ActiveGameObject.m_inactiveBehaviors ?? [],
             m_fScale = 1,
-            m_characterId = (Common.ObjectProperty.PropertyReflection.GID) ActiveGameObject.m_globalID,
+            m_characterId = ActiveGameObject.m_globalID,
         };
 
         gameObj = CoreObjectFactory.InitializeCoreObjectBehaviors(gameObj, Template);

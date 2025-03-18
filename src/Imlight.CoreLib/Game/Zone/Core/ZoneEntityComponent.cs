@@ -4,11 +4,11 @@
  */
 
 using Akka.Actor;
-using Imlight.Common.MessageLayer;
+using Imcodec.MessageLayer;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Core;
 
