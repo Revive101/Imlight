@@ -3,16 +3,17 @@
  * Proprietary and confidential.
  */
 
+using System;
+using System.Linq;
+using System.Text;
 using Akka.Actor;
+using Imcodec.IO;
+using Imcodec.MessageLayer;
+using Imcodec.MessageLayer.Generated;
 using Imlight.Common;
-using Imlight.Common.Caches;
-using Imlight.Common.IO;
-using Imlight.Common.MessageLayer;
 using Imlight.CoreLib.Game.Minigames;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
-using System;
-using System.Linq;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -91,6 +92,7 @@ internal class MinigameService(SessionActor sessionActor) : MessageService(sessi
         // Our message serializer doesn't quite support that yet, so we'll be using a shortcut:
         // Add the magic header and body manually, then send it to the message serializer.
         var messageRaw = message.Message;
+        var messageRawBytes = Encoding.UTF8.GetBytes(messageRaw);
         var writer = new BitWriter();
 
         // Write the magic header and the length of the message. +8 is the size of the header.
@@ -103,13 +105,13 @@ internal class MinigameService(SessionActor sessionActor) : MessageService(sessi
         writer.WriteUInt16(0); // Padding
 
         // Write payload.
-        writer.WriteBytes(messageRaw);
+        writer.WriteBytes(messageRawBytes);
 
         // Deserialize using the MessageSerializer.
-        var deserializedMsg = MessageSerializer.Decode(writer.GetData());
+        var deserializedMsg = MessageEncoder.Decode(writer.GetData());
 
         if (deserializedMsg == null || deserializedMsg.Count <= 0) {
-            var hexStringRaw = BitConverter.ToString(messageRaw).Replace("-", " ");
+            var hexStringRaw = BitConverter.ToString(messageRawBytes).Replace("-", " ");
             var hexStringAdditions = BitConverter.ToString(writer.GetData()).Replace("-", " ");
             Logger.Error("Failed to deserialize message process {0} (manually set as {1})", 
                 Logger.Args(hexStringRaw, hexStringAdditions));

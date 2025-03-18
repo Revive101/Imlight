@@ -3,18 +3,20 @@
  * Proprietary and confidential.
  */
 
+using System;
 using Akka.Actor;
-using Imlight.Common.Caches;
-using Imlight.Common.Configuration;
+using Imcodec.MessageLayer.Generated;
+using Imlight.Common;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
-using System;
 
 namespace Imlight.CoreLib.Game.Services;
 
 internal class PetService(SessionActor sessionActor) : MessageService(sessionActor), IWithTimers {
-    private static readonly int s_petEnergyTickIntervalInSeconds = ConfigurationManager.Settings.PetEnergyTickInSeconds;
+
+    private static readonly int s_petEnergyTickIntervalInSeconds 
+        = ConfigurationManager.Settings["PetEnergyTickInSeconds"].AsInt();
     private const int PET_ENERGY_TICK_DELAY = 2;
 
     public ITimerScheduler Timers { get; set; }
@@ -83,4 +85,5 @@ internal class PetService(SessionActor sessionActor) : MessageService(sessionAct
             SendToSocket(tickMsg);
         }
     }
+    
 }

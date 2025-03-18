@@ -4,14 +4,12 @@
  */
 
 using Akka.Actor;
-using Imlight.Common;
-using Imlight.Common.Caches;
+using Imcodec.MessageLayer.Generated;
 using Imlight.CoreLib.Shared.Networking;
 
 namespace Imlight.CoreLib.Game.Services;
 
-public class SpellbookService : MessageService {
-    public SpellbookService(SessionActor sessionActor) : base(sessionActor) { }
+public class SpellbookService(SessionActor sessionActor) : MessageService(sessionActor) {
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new SpellbookService(parentActor));
@@ -39,4 +37,5 @@ public class SpellbookService : MessageService {
             Success = (byte) (deckRemoveSuccess ? 1 : 0)
         });
     }
+    
 }

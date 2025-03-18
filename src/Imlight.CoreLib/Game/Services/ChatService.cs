@@ -7,9 +7,10 @@ using System;
 using System.Text;
 using System.Text.RegularExpressions;
 using Akka.Actor;
+using Imcodec.IO;
+using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
-using Imlight.Common.Caches;
-using Imlight.Common.IO;
 using Imlight.CoreLib.Game.Commands;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
@@ -22,6 +23,7 @@ using Imlight.CoreLib.WizardData.Models.Player;
 namespace Imlight.CoreLib.Game.Services;
 
 public class ChatService(SessionActor sessionActor) : MessageService(sessionActor) {
+
     private const string FemaleSourcePrefix = "80";
     private const string MaleSourcePrefix = "82";
 
@@ -140,7 +142,7 @@ public class ChatService(SessionActor sessionActor) : MessageService(sessionActo
         return cleanedMessage;
     }
 
-    private static byte[] CraftSourceNameFromIndices(uint input, TypeCache.eGender gender) {
+    private static ByteString CraftSourceNameFromIndices(uint input, eGender gender) {
         // Drop the MSB from input, then convert it to a hex string.
         var raw = (input & 0x7FFFFFFF).ToString("X8");
         var sb = new StringBuilder(raw);
@@ -151,7 +153,7 @@ public class ChatService(SessionActor sessionActor) : MessageService(sessionActo
         var tail = sb.ToString().TrimStart();
 
         // Replace the first 2 characters depending on gender.
-        var newMsb = gender == TypeCache.eGender.Female ? FemaleSourcePrefix : MaleSourcePrefix;
+        var newMsb = gender == eGender.Female ? FemaleSourcePrefix : MaleSourcePrefix;
         tail = newMsb + tail[2..];
 
         return DataManipulation.SpacedHexStringToBytes(tail);
@@ -191,4 +193,5 @@ public class ChatService(SessionActor sessionActor) : MessageService(sessionActo
 
     private static void LogChatMessage(string name, string message, string zoneName) 
         => Logger.Information("[{0}] {1}: {2}", Logger.Args(zoneName, name, message));
+        
 }

@@ -3,16 +3,15 @@
  * Proprietary and confidential.
  */
 
+using System;
 using Akka.Actor;
+using Imcodec.Cryptography;
+using Imcodec.MessageLayer.Generated;
 using Imlight.Common;
-using Imlight.Common.Caches;
-using Imlight.Common.Cryptography;
 using Imlight.CoreLib.Game.Zone.Components;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.World;
-using System;
-using System.Threading.Tasks;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -35,7 +34,7 @@ internal class InteractService(SessionActor sessionActor) : MessageService(sessi
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_INTERACTOPTION))]
-    private void ReceiveInteractOption(GAME_5_PROTOCOL.MSG_INTERACTOPTION message) 
+    private void ReceiveInteractOption(GAME_5_PROTOCOL.MSG_INTERACTOPTION message)
         => HandleInteraction(message, msg => msg.ObjectID, msg => "Interact", msg => (uint) msg.OptionIndex);
 
     private void HandleInteraction<T>(T message, Func<T, ulong> getObjectId, Func<T, string> getServiceName, Func<T, uint> getServiceIndex) {

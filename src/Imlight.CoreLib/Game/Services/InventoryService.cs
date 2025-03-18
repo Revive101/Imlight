@@ -4,26 +4,19 @@
  */
 
 using System;
-using System.Linq;
-using System.Collections.Generic;
 using Akka.Actor;
-using Akka.Util.Internal;
+using Imcodec.Cryptography;
+using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
-using Imlight.Common.Caches;
-using Imlight.Common.Cryptography;
-using Imlight.Common.ObjectProperty;
-using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Resources;
-using static Imlight.Common.Caches.TypeCache;
-using static Imlight.Common.ObjectProperty.SerializerOptions;
 using Imlight.CoreLib.Shared.Utilities;
 
 namespace Imlight.CoreLib.Game.Services;
 
-public class InventoryService : MessageService {
-
-    public InventoryService(SessionActor sessionActor) : base(sessionActor) { }
+public class InventoryService(SessionActor sessionActor) : MessageService(sessionActor) {
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new InventoryService(parentActor));
@@ -65,14 +58,18 @@ public class InventoryService : MessageService {
 
     [MessageHandler(typeof(WIZARD2_53_PROTOCOL.MSG_QUICKSELLREQUEST))]
     private void ReceiveQuickSellRequest(WIZARD2_53_PROTOCOL.MSG_QUICKSELLREQUEST message) {
-        var serializer = new ObjectSerializer()
-          .OnBehaviors(SerializerOptions.Behaviors.None)
-          .OnPropertyMask((SerializerOptions.PropertyFlags) 4);
+        var serializer = new ObjectSerializer(
+            Behaviors: SerializerFlags.None
+        );
 
         var wizard = GetActiveWizard();
-
-        var quickSellItemList = (QuickSellItemList) serializer.Deserialize(message.Data);
         int goldSum = 0;
+
+        if (!serializer.Deserialize(message.Data, 4, out var quickSellItemList)) {
+            Logger.Log.Error("Failed to deserialize quicksell item list.");
+
+            return;
+        }
 
         // Remove items from inventory and equipment, tally up gold sum.
         foreach (QuickSellItem quickSellItem in quickSellItemList.m_quickSellItemList) {
@@ -105,7 +102,7 @@ public class InventoryService : MessageService {
         });
 
         // End quicksell process with empty message.
-        SendToSocket(new WIZARD2_53_PROTOCOL.MSG_QUICKSELLREQUEST() {});
+        SendToSocket(new WIZARD2_53_PROTOCOL.MSG_QUICKSELLREQUEST());
     }
 
     #endregion
@@ -141,6 +138,7 @@ public class InventoryService : MessageService {
         if (!hasSnack) {
             Logger.Log.Debug("Tried to remove snack with global id {0} that does not exist in player snack bag.",
                 Logger.Args(message.GlobalID));
+
             return;
         }
 
@@ -152,6 +150,7 @@ public class InventoryService : MessageService {
                 ItemID = updatedSnack.m_globalID,
                 Quantity = updatedSnack.m_quantity
             });
+
             return;
         }
 
@@ -173,6 +172,7 @@ public class InventoryService : MessageService {
         if (!hasReagent) {
             Logger.Log.Debug("Tried to remove reagent with global id {0} that does not exist in player reagent bag.",
                 Logger.Args(message.GlobalID));
+
             return;
         }
 
@@ -185,6 +185,7 @@ public class InventoryService : MessageService {
                 ItemID = updatedReagent.m_globalID,
                 Quantity = updatedReagent.m_quantity
             });
+
             return;
         }
 

@@ -4,32 +4,27 @@
  */
 
 using System;
-using System.Collections.Generic;
-using System.Net;
 using System.Threading.Tasks;
 using Akka.Actor;
-using Imlight.Common.Caches;
-using Imlight.Common.IO;
-using Imlight.Common.ObjectProperty;
-using Imlight.CoreLib.Game.Effects;
+using Imcodec.CoreObject;
+using Imcodec.IO;
+using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty;
+using Imcodec.ObjectProperty.TypeCache;
+using Imlight.Common;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
-using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Collections;
-using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models.Misc;
 using Imlight.CoreLib.WizardData.Models.Player;
-using SharpDX;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Services;
 
-internal class AttachService : MessageService {
+internal class AttachService(SessionActor sessionActor) : MessageService(sessionActor) {
+
     private Account _account;
     private Wizard _wizard;
-
-    public AttachService(SessionActor sessionActor) : base(sessionActor) { }
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new AttachService(parentActor));
@@ -44,8 +39,8 @@ internal class AttachService : MessageService {
         // zone, or create a new one. This is an internal zone transfer that does not involve the client.
         var zoneDetails = InternalZoneTransfer(message.ZoneName, message.Location);
         if (zoneDetails is null || zoneDetails.ErrorCode != 0) {
-            SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED { 
-                Error = zoneDetails?.ErrorCode ?? 1 
+            SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED {
+                Error = zoneDetails?.ErrorCode ?? 1
             });
             return;
         }
@@ -73,7 +68,14 @@ internal class AttachService : MessageService {
         _wizard.GameObject = charGameObject;
 
         // Serialize the GameObject and send it to the client.
-        var localGameObjectData = new CoreObjectSerializer().Serialize(charGameObject);
+        var coSerializer = new CoreObjectSerializer();
+        var flags = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
+        if (!coSerializer.Serialize(charGameObject, flags, out var localGameObjectData)) {
+            Logger.Error($"User {message.UserID} failed to serialize their player object.");
+
+            throw new ServiceRetryException($"User {message.UserID} failed to serialize their player object.");
+        }
+
         if (charGameObject is null || string.IsNullOrEmpty(localGameObjectData)) {
             throw new ServiceRetryException($"User {message.UserID} failed to grab or deserialize " +
                                             $"their player object.");
@@ -201,7 +203,9 @@ internal class AttachService : MessageService {
         TellOtherServices(msg);
     }
 
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
     private async void AddPlayerToOnlineCollection(Wizard wizard,
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
                                                    string zoneName,
                                                    string zoneDisplayName,
                                                    string realmName,
@@ -223,4 +227,5 @@ internal class AttachService : MessageService {
 
         return AskServer<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg);
     }
+
 }

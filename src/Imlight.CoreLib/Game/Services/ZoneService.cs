@@ -6,24 +6,24 @@
 using System;
 using System.Threading.Tasks;
 using Akka.Actor;
+using Imcodec.CoreObject;
+using Imcodec.Cryptography;
+using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
-using Imlight.Common.Caches;
-using Imlight.Common.Cryptography;
-using Imlight.Common.ObjectProperty;
-using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Game.World;
-using Imlight.CoreLib.Game.Zone;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.World;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Services;
 
-public class ZoneService : MessageService, IWithTimers {
+public class ZoneService(SessionActor sessionActor) : MessageService(sessionActor), IWithTimers {
+
     private const int ZONE_REMOVAL_WAIT_TIME_IN_SECONDS = 8;
     private const int ZONE_TRANSFER_CLEANUP_WAIT_TIME_IN_SECONDS = 1;
     private const int ZONE_HEAL_TICK_INTERVAL_IN_SECONDS = 5;
@@ -36,23 +36,15 @@ public class ZoneService : MessageService, IWithTimers {
     private readonly TimeSpan _zoneRemovalWaitTime = TimeSpan.FromSeconds(ZONE_REMOVAL_WAIT_TIME_IN_SECONDS);
     private bool _isTransferQueued;
 
-    private readonly CoreObjectSerializer _effectSerializer = new CoreObjectSerializer()
-                    .OnBehaviors(SerializerOptions.Behaviors.None)
-                    .OnPropertyMask(SerializerOptions.PropertyFlags.Transmit
-                                  | SerializerOptions.PropertyFlags.AuthorityTransmit);
-    private readonly CoreObjectSerializer _zoneObjectSerializer = new CoreObjectSerializer()
-            .OnBehaviors(SerializerOptions.Behaviors.None)
-            .OnPropertyMask(SerializerOptions.PropertyFlags.Public
-                | SerializerOptions.PropertyFlags.Transmit
-                | SerializerOptions.PropertyFlags.AuthorityTransmit);
+    private readonly CoreObjectSerializer _effectSerializer = new(
+        behaviors: Imcodec.ObjectProperty.SerializerFlags.None
+    );
+    private readonly CoreObjectSerializer _zoneObjectSerializer = new(
+        behaviors: Imcodec.ObjectProperty.SerializerFlags.None
+    );
 
-    public ZoneService(SessionActor sessionActor) : base(sessionActor) {
-        // Start a timer for the healing tick.
-        var timeSpan = TimeSpan.FromSeconds(ZONE_HEAL_TICK_INTERVAL_IN_SECONDS);
-        //Timers.StartPeriodicTimer("healtick", new ZONE_102_PROTOCOL.MSG_HEALTICK(), timeSpan);
-    }
-
-    protected static Props Props(SessionActor parentActor) => Akka.Actor.Props.Create(() => new ZoneService(parentActor));
+    protected static Props Props(SessionActor parentActor)
+        => Akka.Actor.Props.Create(() => new ZoneService(parentActor));
 
     protected override void OnPreDispose() {
         var gameObj = GetActiveGameObject();
@@ -88,6 +80,7 @@ public class ZoneService : MessageService, IWithTimers {
             // Check if the destination zone is the same as the current zone. If so, just teleport the player.
             if (message.DestinationZone == GetActiveWizard().Zone) {
                 DoTeleport(message.DestinationLocation);
+
                 return;
             }
 
@@ -206,12 +199,15 @@ public class ZoneService : MessageService, IWithTimers {
             };
 
             ZoneBroadcast(wizBangMsg, false);
+
             return;
         }
 
         var zoneMap = WorldHubZones.GetHubZoneMapping(message.World);
         if (zoneMap is null) {
-            Logger.Error("{0} tried to teleport to an invalid world: {1}", Logger.Args(GetActiveWizard().CharId, message.World));
+            Logger.Error("{0} tried to teleport to an invalid world: {1}",
+                Logger.Args(GetActiveWizard().CharId, message.World));
+
             return;
         }
 
@@ -311,7 +307,9 @@ public class ZoneService : MessageService, IWithTimers {
 
         var worldHubMap = WorldHubZones.GetHubZoneMapping(zoneName);
         if (worldHubMap is null) {
-            Logger.Error("Could not find world hub mapping for zone {0}", Logger.Args(zoneName));
+            Logger.Error("Could not find world hub mapping for zone {0}",
+                Logger.Args(zoneName));
+
             return;
         }
 
@@ -334,10 +332,9 @@ public class ZoneService : MessageService, IWithTimers {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEHEALTICK))]
     private void ReceiveZoneHealTick(ZONE_102_PROTOCOL.MSG_ZONEHEALTICK message) {
-        var w = GetActiveWizard();
-
-        var currentWizardHealth = w.GameStats.m_currentHitpoints;
-        var maxWizardHealth = w.GameStats.m_baseHitpoints;
+        var wizard = GetActiveWizard();
+        var currentWizardHealth = wizard.GameStats.m_currentHitpoints;
+        var maxWizardHealth = wizard.GameStats.m_baseHitpoints;
 
         // If this wizard is max health, skip.
         if (currentWizardHealth >= maxWizardHealth) {
@@ -349,17 +346,17 @@ public class ZoneService : MessageService, IWithTimers {
         float healAmount = healPercent / 100 * maxWizardHealth;
         var newHealth = Math.Min(currentWizardHealth + (int) healAmount, maxWizardHealth);
 
-        w.UpdateHealth(newHealth);
+        wizard.UpdateHealth(newHealth);
 
         // Inform the client about the new health changes.
         // The client has a max health increase effect applied, so sending it here would double the health client side.
-        var magicSchool = w.MagicSchoolBehavior.MagicSchool;
-        var level = w.MagicSchoolBehavior.Level;
+        var magicSchool = wizard.MagicSchoolBehavior.MagicSchool;
+        var level = wizard.MagicSchoolBehavior.Level;
         var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(magicSchool, level);
         var normMaxHealth = baseStats.m_hitpoints;
 
         var networkMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH() {
-            CharacterID = w.GameObject.m_globalID,
+            CharacterID = wizard.GameObject.m_globalID,
             NewHealth = newHealth,
             NewHealthMax = normMaxHealth,
             DisplayDiff = 1,
@@ -442,9 +439,9 @@ public class ZoneService : MessageService, IWithTimers {
         var compressedCoords = coords / 4;
 
         var serverTele = new GAME_5_PROTOCOL.MSG_SERVERTELEPORT() {
-            LocationX = (ushort)compressedCoords.X,
-            LocationY = (ushort)compressedCoords.Y,
-            LocationZ = (ushort)compressedCoords.Z,
+            LocationX = (ushort) compressedCoords.X,
+            LocationY = (ushort) compressedCoords.Y,
+            LocationZ = (ushort) compressedCoords.Z,
             Direction = (byte) coords.W,
             MobileID = GetActiveGameObject().m_nMobileID,
         };
@@ -454,7 +451,14 @@ public class ZoneService : MessageService, IWithTimers {
     private void SpawnMyself() {
         var wizard = GetActiveWizard();
         var properGameObj = WizardObjectLoader.GetPlayerGameObject(wizard);
-        var gameObjData = _zoneObjectSerializer.Serialize(properGameObj);
+
+        var flags = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
+        if (!_zoneObjectSerializer.Serialize(properGameObj, flags, out var gameObjData)) {
+            Logger.Error("Failed to serialize game object for {0}",
+                Logger.Args(wizard.CharId));
+
+            return;
+        }
 
         var addMsg = new GAME_5_PROTOCOL.MSG_NEWOBJECT {
             Data = gameObjData,
@@ -469,7 +473,14 @@ public class ZoneService : MessageService, IWithTimers {
     private void SpawnMyselfFor(IActorRef actorRef) {
         var wizard = GetActiveWizard();
         var properGameObj = WizardObjectLoader.GetPlayerGameObject(wizard);
-        var gameObjData = _zoneObjectSerializer.Serialize(properGameObj);
+
+        var flags = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
+        if (!_zoneObjectSerializer.Serialize(properGameObj, flags, out var gameObjData)) {
+            Logger.Error("Failed to serialize game object for {0}",
+                Logger.Args(wizard.CharId));
+
+            return;
+        }
 
         var addMsg = new GAME_5_PROTOCOL.MSG_NEWOBJECT {
             Data = gameObjData,
@@ -501,8 +512,16 @@ public class ZoneService : MessageService, IWithTimers {
             m_endTime = (uint) unixTimeStart.AddSeconds(30).ToUnixTimeSeconds(),
             m_internalID = wizard.GameEffects.Count,
         };
-        var serializedEffect = _effectSerializer.Serialize(effect);
+
         wizard.GameEffects.Add(effect);
+
+        var flags = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
+        if (!_zoneObjectSerializer.Serialize(effect, flags, out var serializedEffect)) {
+            Logger.Error("Failed to serialize game object for {0}",
+                Logger.Args(wizard.CharId));
+
+            return;
+        }
 
         var addEffect = new GAME_5_PROTOCOL.MSG_ADDEFFECT {
             GameObjectID = wizard.GameObject.m_globalID,
@@ -518,14 +537,22 @@ public class ZoneService : MessageService, IWithTimers {
         // on live servers, the end time is 200 seconds from the time gohome is sent. i still have no clue why.
         // also on live servers, when teleporting in zone, it will send the effects like 3 times. i also have no clue on this either.
         // all i know is that this works. in conclusion, do what makes sense, dont copy kingsisle, or you run into problems.
-        NamedEffect effect = new NamedEffect {
+        var effect = new NamedEffect {
             m_effectNameID = StringHash.Compute("RecallHome"),
             m_endTime = (uint) time.AddSeconds(2).ToUnixTimeSeconds(),
             m_internalID = wizard.GameEffects.Count,
         };
 
         wizard.GameEffects.Add(effect);
-        var serializedEffect = _effectSerializer.Serialize(effect);
+
+        var flags = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
+        if (!_effectSerializer.Serialize(effect, flags, out var serializedEffect)) {
+            Logger.Error("Failed to serialize game object for {0}",
+                Logger.Args(wizard.CharId));
+
+            return;
+        }
+
         var addEffect = new GAME_5_PROTOCOL.MSG_ADDEFFECT {
             GameObjectID = wizard.GameObject.m_globalID,
             EffectData = serializedEffect
@@ -549,4 +576,5 @@ public class ZoneService : MessageService, IWithTimers {
         };
         SendToSocket(marklocation);
     }
+
 }

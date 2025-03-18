@@ -1,35 +1,32 @@
-using Akka.Actor;
-using Imlight.Common;
-using Imlight.Common.Caches;
-using Imlight.Common.Cryptography;
-using Imlight.Common.IO;
-using Imlight.Common.ObjectProperty;
-using Imlight.Common.ObjectProperty.PropertyReflection;
-using Imlight.CoreLib.Game.Effects;
-using Imlight.CoreLib.Shared.Items;
-using Imlight.CoreLib.Shared.Networking;
-using Imlight.CoreLib.Shared.Packets;
-using Imlight.CoreLib.Shared.Resources;
-using Imlight.CoreLib.WizardData.Implementations;
-using Imlight.CoreLib.WizardData.Models.Misc;
-using Imlight.CoreLib.WizardData.Models.Player;
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static Imlight.Common.Caches.TypeCache;
+using Akka.Actor;
+using Imcodec.CoreObject;
+using Imcodec.IO;
+using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty.TypeCache;
+using Imlight.Common;
+using Imlight.CoreLib.Shared.Items;
+using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.WizardData.Models.Misc;
 
 namespace Imlight.CoreLib.Game.Services;
 
-public class EquipmentService : MessageService {
-    private readonly CoreObjectSerializer _itemSerializer = new CoreObjectSerializer()
-                    .OnBehaviors(SerializerOptions.Behaviors.None)
-                    .OnPropertyMask((SerializerOptions.PropertyFlags) 1);
-    private readonly CoreObjectSerializer _effectSerializer = new CoreObjectSerializer()
-                    .OnBehaviors(SerializerOptions.Behaviors.None)
-                    .OnPropertyMask(SerializerOptions.PropertyFlags.Transmit
-                                  | SerializerOptions.PropertyFlags.AuthorityTransmit);
+public class EquipmentService(SessionActor sessionActor) : MessageService(sessionActor) {
 
-    public EquipmentService(SessionActor sessionActor) : base(sessionActor) { }
+    private readonly CoreObjectSerializer _itemSerializer = new(
+        behaviors: Imcodec.ObjectProperty.SerializerFlags.None
+    );
+    private readonly CoreObjectSerializer _effectSerializer = new(
+        behaviors: Imcodec.ObjectProperty.SerializerFlags.None
+    );
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new InventoryService(parentActor));
@@ -58,7 +55,7 @@ public class EquipmentService : MessageService {
 
             SendAddEffects(effects.ToList());
         }
-        catch  (Exception ex) {
+        catch (Exception ex) {
             Logger.Error("Error while attaching effects: {0} {1}", Logger.Args(ex.Message, ex.StackTrace));
         }
     }
@@ -151,7 +148,14 @@ public class EquipmentService : MessageService {
 
         // Serialize item and broadcast equip action to other players.
         var pubItem = ItemHelper.GetPublicItem(item);
-        var data = _itemSerializer.Serialize(pubItem);
+
+        if (!_itemSerializer.Serialize(pubItem, 1, out var data)) {
+            Logger.Error("Failed to serialize item {0} for equip broadcast.",
+                Logger.Args(item.m_globalID));
+
+            return;
+        }
+
         ZoneBroadcast(new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM() {
             GlobalID = GetActiveGameObject().m_globalID,
             SerializedInfo = data
@@ -193,7 +197,13 @@ public class EquipmentService : MessageService {
         var charObjId = wizardObj.m_globalID;
 
         foreach (var effect in effects) {
-            var effectSerializedData = _effectSerializer.Serialize(effect);
+            if (!_effectSerializer.Serialize(effect, 1, out var effectSerializedData)) {
+                Logger.Error("Failed to serialize effect {0} for add effects broadcast.",
+                    Logger.Args(effect.m_effectNameID));
+
+                continue;
+            }
+
             SendToSocket(new GAME_5_PROTOCOL.MSG_ADDEFFECT() {
                 GameObjectID = charObjId,
                 EffectData = effectSerializedData
@@ -213,3 +223,4 @@ public class EquipmentService : MessageService {
         }
     }
 }
+

@@ -5,19 +5,18 @@
 
 using System;
 using Akka.Actor;
-using Imlight.Common.Caches;
-using Imlight.Common.Cryptography;
-using Imlight.Common.ObjectProperty.PropertyReflection;
-using Imlight.CoreLib.Game.Models.World;
+using Imcodec.Math;
+using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty.TypeCache;
+using Imcodec.Types;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
-using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models.Player;
-using SharpDX;
 
 namespace Imlight.CoreLib.Game.Services;
 
 internal class MoveService : MessageService, IWithTimers {
+
     private const byte MARK_MANA_COST_PERCENT = 20;
     private const int FISH_INTERACTION_INTERVAL_IN_MILLI = 250;
     private const int MOVE_THRESHOLD_IN_MILLI = FISH_INTERACTION_INTERVAL_IN_MILLI * 2;
@@ -28,7 +27,7 @@ internal class MoveService : MessageService, IWithTimers {
         = TimeSpan.FromMilliseconds(FISH_INTERACTION_INTERVAL_IN_MILLI);
     private readonly TimeSpan _moveThreshold
         = TimeSpan.FromMilliseconds(MOVE_THRESHOLD_IN_MILLI);
-    private TypeCache.CoreObject _activeCoreObject;
+    private CoreObject _activeCoreObject;
     private Wizard _wizard;
     private DateTime _lastMoveTime;
     private bool _sentStopMoveState;
@@ -227,4 +226,5 @@ internal class MoveService : MessageService, IWithTimers {
 
     private static byte CompressDirection(float direction)
         => (byte) Math.Round(direction / Math.PI / 2 * 250);
+        
 }

@@ -6,14 +6,16 @@
 using System;
 using System.Collections.Generic;
 using Akka.Actor;
+using Imcodec.CoreObject;
+using Imcodec.IO;
+using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
-using Imlight.Common.Caches;
-using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
-using static Imlight.Common.Caches.TypeCache;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -24,17 +26,17 @@ public class CombatService(SessionActor sessionActor) : MessageService(sessionAc
 
     public ITimerScheduler Timers { get; set; }
 
-    private readonly CoreObjectSerializer _effectSerializer = new CoreObjectSerializer()
-                    .OnBehaviors(SerializerOptions.Behaviors.None)
-                    .OnPropertyMask(SerializerOptions.PropertyFlags.Transmit
-                                  | SerializerOptions.PropertyFlags.AuthorityTransmit);
-    private readonly CoreObjectSerializer _itemSerializer = new CoreObjectSerializer()
-                    .OnBehaviors(SerializerOptions.Behaviors.None)
-                    .OnPropertyMask((SerializerOptions.PropertyFlags) 1);
+    private readonly CoreObjectSerializer _effectSerializer = new(
+        behaviors: SerializerFlags.None
+    );
+    private readonly CoreObjectSerializer _itemSerializer = new(
+        behaviors: SerializerFlags.None
+    );
+
     private IActorRef _currentDuelActor;
     private ulong _cachedMountId;
 
-    protected static Props Props(SessionActor parentActor) 
+    protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new CombatService(parentActor));
 
     protected override void OnDispose() {
@@ -55,8 +57,8 @@ public class CombatService(SessionActor sessionActor) : MessageService(sessionAc
 
         // Orientation is given in radians. It must be converted to degrees and then to a byte.
         var orientationRadians = message.SlotOrientation;
-        var orientationDegrees = (float)(orientationRadians * (180 / Math.PI));
-        var orientation = (byte)(orientationDegrees / 360 * 256);
+        var orientationDegrees = (float) (orientationRadians * (180 / Math.PI));
+        var orientation = (byte) (orientationDegrees / 360 * 256);
         wizard.SetPersistentOrientation(orientation);
     }
 
@@ -82,8 +84,8 @@ public class CombatService(SessionActor sessionActor) : MessageService(sessionAc
             TimeSpan.FromSeconds(NO_AGGRO_EFFECT_DURATION_IN_SECONDS));
     }
 
-    [MessageHandler(typeof(WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATMOVE))]
-    private void ReceiveCombatMove(WIZARDCOMBAT_51_PROTOCOL.MSG_COMBATMOVE message) {
+    [MessageHandler(typeof(DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATMOVE))]
+    private void ReceiveCombatMove(DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATMOVE message) {
         if (_currentDuelActor == null) {
             throw new Exception("Combat move received without a duel actor.");
         }
@@ -103,15 +105,15 @@ public class CombatService(SessionActor sessionActor) : MessageService(sessionAc
     }
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_NOAGGROGRACEOVER))]
-    private void ReceiveNoAggroGraceOver() 
+    private void ReceiveNoAggroGraceOver()
         => RemoveNoAggroEffect();
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT))]
-    private void ReceiveClientDisconnect(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT message) 
-        => _currentDuelActor?.Tell(message ,SessionActor.ActorRef);
+    private void ReceiveClientDisconnect(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT message)
+        => _currentDuelActor?.Tell(message, SessionActor.ActorRef);
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT))]
-    private void ReceiveQueryLogout(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT message) 
+    private void ReceiveQueryLogout(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT message)
         => _currentDuelActor?.Tell(message, SessionActor.ActorRef);
 
     private void EquipMount() {
@@ -193,14 +195,19 @@ public class CombatService(SessionActor sessionActor) : MessageService(sessionAc
 
         // Serialize item and broadcast equip action to other players.
         var pubItem = ItemHelper.GetPublicItem(item);
-        var data = _itemSerializer.Serialize(pubItem);
+
+        if (_itemSerializer.Serialize(pubItem, PropertyFlags.Prop_Transmit, out var data)) {
+            Logger.Error("Failed to serialize item {0}", Logger.Args(item.m_globalID));
+
+            return;
+        }
         ZoneBroadcast(new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM() {
             GlobalID = GetActiveGameObject().m_globalID,
             SerializedInfo = data
         }, false);
     }
 
-    private void SendUnequipItem(Common.IO.ByteString slotName, byte slot, ulong itemId) {
+    private void SendUnequipItem(ByteString slotName, byte slot, ulong itemId) {
         // This one goes to the client.
         SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPITEM() {
             ItemID = itemId,
@@ -235,7 +242,13 @@ public class CombatService(SessionActor sessionActor) : MessageService(sessionAc
         var charObjId = wizardObj.m_globalID;
 
         foreach (var effect in effects) {
-            var effectSerializedData = _effectSerializer.Serialize(effect);
+            var flags = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
+            if (!_effectSerializer.Serialize(effect, flags, out var effectSerializedData)) {
+                Logger.Error("Failed to serialize effect {0}", Logger.Args(effect.m_effectNameID));
+
+                continue;
+            }
+
             SendToSocket(new GAME_5_PROTOCOL.MSG_ADDEFFECT() {
                 GameObjectID = charObjId,
                 EffectData = effectSerializedData
@@ -269,11 +282,16 @@ public class CombatService(SessionActor sessionActor) : MessageService(sessionAc
             m_endTime = (uint) endTime,
             m_overrideName = "NoAggro"
         };
-        
+
         wizard.GameEffects.Add(effect);
         wizard.IsInCombatGrace = true;
 
-        var effectSerializedData = _effectSerializer.Serialize(effect);
+        if (!_effectSerializer.Serialize(effect, PropertyFlags.Prop_Transmit, out var effectSerializedData)) {
+            Logger.Error("Failed to serialize effect {0}", Logger.Args(effect.m_effectNameID));
+
+            return;
+        }
+
         SendToSocket(new GAME_5_PROTOCOL.MSG_ADDEFFECT() {
             GameObjectID = charObjId,
             EffectData = effectSerializedData

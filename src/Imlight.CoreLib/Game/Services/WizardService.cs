@@ -6,21 +6,19 @@
 using Akka.Actor;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
-using Imlight.Common.Caches;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.CoreLib.Shared.Character;
-using Imlight.Common.Cryptography;
-using Imlight.Common;
+using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty.TypeCache;
 
 namespace Imlight.CoreLib.Game.Services;
 
-public class WizardService : MessageService {
+public class WizardService(SessionActor sessionActor) : MessageService(sessionActor) {
+
     private const float ORIENTATION_TOLERANCE = 1.035f;
 
     private Wizard _activeWizard;
-    private TypeCache.CoreObject _activeWizardGameObject;
-
-    public WizardService(SessionActor sessionActor) : base(sessionActor) { }
+    private CoreObject _activeWizardGameObject;
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new WizardService(parentActor));
@@ -43,9 +41,9 @@ public class WizardService : MessageService {
     [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD))]
     private void ReceiveQueryActiveWIzard(CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD message)
         => Sender.Tell(new CHARACTER_103_PROTOCOL.MSG_CHARACTER() {
-        Wizard = _activeWizard,
-        WizardGameObject = _activeWizardGameObject
-    });
+            Wizard = _activeWizard,
+            WizardGameObject = _activeWizardGameObject
+        });
 
     [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_LEVELUP))]
     private void ReceiveSetLevel(CHARACTER_103_PROTOCOL.MSG_LEVELUP message) {
@@ -118,4 +116,5 @@ public class WizardService : MessageService {
     }
 
     #endregion
+    
 }

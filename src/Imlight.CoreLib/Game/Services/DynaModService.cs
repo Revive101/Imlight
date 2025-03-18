@@ -4,16 +4,15 @@
  */
 
 using Akka.Actor;
+using Imcodec.Cryptography;
+using Imcodec.MessageLayer.Generated;
 using Imlight.Common;
-using Imlight.Common.Caches;
-using Imlight.Common.Cryptography;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 
 namespace Imlight.CoreLib.Game.Services;
 
-public class DynaModService : MessageService {
-    public DynaModService(SessionActor sessionActor) : base(sessionActor) { }
+public class DynaModService(SessionActor sessionActor) : MessageService(sessionActor) {
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new DynaModService(parentActor));
@@ -26,6 +25,7 @@ public class DynaModService : MessageService {
         var objState = activeWizard.EnterState(message.StateName);
         if (objState is null) {
             Logger.Error("Failed to enter state {0} for wizard {1}", Logger.Args(message.StateName, activeWizard.CharId));
+
             return;
         }
 
@@ -61,4 +61,5 @@ public class DynaModService : MessageService {
 
         wizard.RemoveDynamod(dynaModClientTag);
     }
+
 }

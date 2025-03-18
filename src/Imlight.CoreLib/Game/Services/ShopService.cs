@@ -6,16 +6,15 @@
 using Akka.Actor;
 using System;
 using Imlight.Common;
-using Imlight.Common.Caches;
-using Imlight.Common.ObjectProperty;
 using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Models.World;
 using Imlight.CoreLib.WizardData.Models.Player;
-using static Imlight.Common.Caches.TypeCache;
 using Imlight.CoreLib.Game.Zone.Components;
-using Imlight.Common.ObjectProperty.PropertyReflection;
+using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty.TypeCache;
+using Imcodec.CoreObject;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -24,9 +23,9 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
     private const float SELL_MODIFIER = 0.05f;
     private const float DYED_ITEM_COST_MULTIPLIER = 1.225f;
 
-    private static readonly CoreObjectSerializer s_itemSerializer = new CoreObjectSerializer()
-                    .OnBehaviors(SerializerOptions.Behaviors.None)
-                    .OnPropertyMask((SerializerOptions.PropertyFlags) 1);
+    private static readonly CoreObjectSerializer s_itemSerializer = new(
+        behaviors: Imcodec.ObjectProperty.SerializerFlags.None
+    );
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new InteractService(parentActor));
@@ -36,7 +35,7 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
         // Ensure that the player has interacted with an object in the zone.
         var interactedObject = GetZoneObject(message.npcGlobalID);
         if (interactedObject is null) {
-            Logger.Warning("Failed to find NPC {0} in zone for shop purchase", 
+            Logger.Warning("Failed to find NPC {0} in zone for shop purchase",
                 Logger.Args(message.npcGlobalID));
             var shopDenyMsg = new WIZARD_12_PROTOCOL.MSG_SHOPBUYCONFIRM { Failure = 1 };
             SendToSocket(shopDenyMsg);
@@ -47,7 +46,7 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
         // Ensure that the interacted object is a vendor.
         var vendorComponent = interactedObject.GetComponentOfType<InteractVendorComponent>();
         if (vendorComponent is null) {
-            Logger.Warning("Failed to find VendorComponent for NPC {0} in zone for shop purchase", 
+            Logger.Warning("Failed to find VendorComponent for NPC {0} in zone for shop purchase",
                 Logger.Args(message.npcGlobalID));
             var shopDenyMsg = new WIZARD_12_PROTOCOL.MSG_SHOPBUYCONFIRM { Failure = 1 };
             SendToSocket(shopDenyMsg);
@@ -114,6 +113,7 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
 
                 var dyeDenyMsg = new WIZARD_12_PROTOCOL.MSG_DYECONFIRM { Failure = 1 };
                 SendToSocket(dyeDenyMsg);
+
                 return;
             }
             else {
@@ -127,6 +127,7 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
         if (dyeCost > wizard.GameStats.m_currentGold) {
             var dyeDenyMsg = new WIZARD_12_PROTOCOL.MSG_DYECONFIRM { Failure = 1 };
             SendToSocket(dyeDenyMsg);
+            
             return;
         }
 
@@ -171,8 +172,15 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
             };
             SendToSocket(equipMsg);
 
+            // Serialize the public item and send it to the client.
             var pubItem = ItemHelper.GetPublicItem(item);
-            var data = s_itemSerializer.Serialize(pubItem);
+            if (!s_itemSerializer.Serialize(pubItem, 0, out var data)) {
+                Logger.Error("Failed to serialize item {0} for dyeing", 
+                    Logger.Args(item.m_globalID));
+
+                return;
+            }
+
             ZoneBroadcast(new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM() {
                 GlobalID = wizard.CharId,
                 SerializedInfo = data
@@ -250,7 +258,13 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
     }
 
     private void ProcessSuccessfulPurchase(Wizard playerWizard, WizClientObjectItem item, uint itemTemplateID, int goldCost) {
-        var serializedItemWithoutBehaviors = s_itemSerializer.Serialize(item);
+        // Serialize the item without behaviors.
+        if (!s_itemSerializer.Serialize(item, 1, out var serializedItemWithoutBehaviors)) {
+            Logger.Error("Failed to serialize item {0} for purchase", 
+                Logger.Args(item.m_globalID));
+
+            return;
+        }
         playerWizard.AddItemToInventory(item);
         playerWizard.RemoveGold(goldCost);
 

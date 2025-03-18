@@ -4,24 +4,24 @@
  */
 
 using Akka.Actor;
-using Imlight.Common.Caches;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Game.Commands;
 using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models.Player;
+using Imcodec.MessageLayer.Generated;
 
 namespace Imlight.CoreLib.Game.Services;
 
-internal class CommandService : MessageService {
-    private readonly IActorRef _dispatcherRef;
+internal class CommandService(SessionActor sessionActor) : MessageService(sessionActor) {
+
+    private readonly IActorRef _dispatcherRef = CommandDispatcher.Instance;
 
     private Wizard _selectedWizard;
     private Account _selectedAccount;
 
-    public CommandService(SessionActor sessionActor) : base(sessionActor) => _dispatcherRef = CommandDispatcher.Instance;
-
-    protected static Props Props(SessionActor parentActor) => Akka.Actor.Props.Create(() => new CommandService(parentActor));
+    protected static Props Props(SessionActor parentActor)
+        => Akka.Actor.Props.Create(() => new CommandService(parentActor));
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_COMMAND))]
     private void ReceiveCommand(GAME_5_PROTOCOL.MSG_COMMAND message) {
@@ -62,4 +62,5 @@ internal class CommandService : MessageService {
         _selectedWizard = persistentWizard;
         _selectedAccount = account;
     }
+
 }
