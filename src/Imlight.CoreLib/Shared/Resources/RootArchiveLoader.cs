@@ -48,8 +48,7 @@ public static class RootArchiveLoader {
             ReloadRootWad();
         }
 
-        var t = s_rootWad;
-        var file = s_rootWad.OpenFile(fileName) 
+        var file = s_rootWad?.OpenFile(fileName) 
             ?? throw new Exception($"Could not find file {fileName} in Root.wad!");
 
         return new MemoryStream(file.ToArray());
@@ -119,9 +118,7 @@ public static class RootArchiveLoader {
         // Otherwise, download it from the patch server.
         // If Imlight is running without the patch server, we'll just return null.
         if (!PatchServerFascade.EndpointReached) {
-            Logger.Warning($"Imlight tried to load an uncached KIWAD while the patch server was not available.");
-
-            return null;
+            throw new Exception("Patch server is not reachable. Cannot load Root.wad.");
         }
 
         if (!PatchServerFascade.DownloadWadFromPatchServer(ROOT_WAD_NAME, out var stream)) {

@@ -15,6 +15,7 @@ using Serilog.Events;
 namespace Imlight.Common;
 
 public class Logger {
+
     private const byte MaxCallerNameLength = 40;
     private static readonly string s_path = ConfigurationManager.Settings["Logging.LogPath"].AsString()
         ?? Path.Combine(Directory.GetCurrentDirectory(), "logs", "log.txt");
@@ -208,4 +209,5 @@ public class Logger {
 
         return "Main".PadRight(MaxCallerNameLength);
     }
+    
 }

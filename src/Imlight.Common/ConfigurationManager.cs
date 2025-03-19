@@ -146,6 +146,7 @@ public static class ConfigurationManager {
                 currentSection = trimmedLine.Substring(1, trimmedLine.Length - 2).Trim();
                 currentSectionSettings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 s_sections[currentSection] = currentSectionSettings;
+                
                 continue;
             }
 
@@ -195,6 +196,7 @@ public static class ConfigurationManager {
     /// Represents a configuration value that can be converted to various types
     /// </summary>
     public class ConfigValue {
+
         private readonly string _value;
 
         /// <summary>

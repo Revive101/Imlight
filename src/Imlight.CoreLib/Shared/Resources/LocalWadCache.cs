@@ -3,15 +3,14 @@
  * Proprietary and confidential.
  */
 
-using Imcodec.Wad;
-using Imlight.Common;
-using Imlight.CoreLib.Patch;
-using Imlight.CoreLib.Shared.Cryptography;
-using LiteDB;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using LiteDB;
+using Imcodec.Wad;
+using Imlight.Common;
+using Imlight.CoreLib.Patch;
 
 namespace Imlight.CoreLib.Shared.Resources;
 
@@ -66,11 +65,17 @@ public static class LocalWadCache {
         var file = fs.Find(f => f.Filename == wadName)
             .FirstOrDefault();
 
-        var stream = file.OpenRead();
+        // The LiteDB stream is file IO and very slow.
+        // Instead, copy the stream to a memory stream.
+        var liteDbStream = fs.OpenRead(file.Id);
+        var fileStream = new MemoryStream();
+        liteDbStream.CopyTo(fileStream);
+        fileStream.Seek(0, SeekOrigin.Begin);
+        liteDbStream.Dispose();
 
         return file is null 
             ? null 
-            : ArchiveParser.Parse(stream);
+            : ArchiveParser.Parse(fileStream);
     }
 
     internal static List<FileDefinition> GetAllCachedFiles() {
@@ -104,7 +109,7 @@ public static class LocalWadCache {
             Crc = wadCrc,
         };
 
-        var contentStream = new MemoryStream(wad.Package().ToArray(), writable: false);
+        var contentStream = wad.GetData();
         fs.Upload(def, fileName, contentStream);
     }
 
@@ -128,6 +133,7 @@ public static class LocalWadCache {
     private static void UpdateCache() {
         if (!PatchServer.EndpointReached) {
             Logger.Warning($"Tried to update the local cache while the patch server was not available.");
+
             return;
         }
 
@@ -169,13 +175,9 @@ public static class LocalWadCache {
     private static void UpdateCachedFile(FileDefinition file) {
         DeleteWad(file.Filename);
 
-        // If the file is Root.wad, we'll also clear the cached version in memory.
-        if (file.Filename.Contains("Root")) {
-            RootArchiveLoader.ReloadRootWad();
-        }
-
         if (!PatchServerFascade.DownloadWadFromPatchServer(file.Filename, out var stream)) {
             Logger.Error("Failed to update wad {WadName}.", Logger.Args(file.Filename));
+
             return;
         }
 

@@ -4,7 +4,6 @@
  */
 
 using System;
-using System.Collections.Generic;
 using Raven.Client.Documents;
 using Raven.Client.ServerWide;
 using Raven.Embedded;
@@ -13,6 +12,7 @@ using Imlight.Common;
 namespace Imlight.CoreLib.WizardData.Implementations;
 
 public static class EmbeddedDatabaseManager {
+
     public static bool IsRunning { get; private set; }
 
     public static void Start() {
@@ -65,4 +65,5 @@ public static class EmbeddedDatabaseManager {
         
         return docStore;
     }
+
 }

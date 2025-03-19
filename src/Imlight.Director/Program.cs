@@ -66,6 +66,10 @@ internal static class Program {
         var task = StartPatchServer();
         task.Wait();
 
+        Logger.Information("Director is now explicitly loading resources..");
+        var resourceContainer = new ResourceContainer();
+        Logger.Information("Director has called all resources to load.");
+
         // =============================================================
         // SERVERS
         // =============================================================

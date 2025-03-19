@@ -35,6 +35,14 @@ public class SpellFactory : RootDirectoryResourceSingleton<SpellFactory>, IMemor
                 continue;
             }
 
+            if (   spellTemplate.m_name is null 
+                || spellTemplate.m_name.ToString().Length == 0) {
+                Logger.Error("Spell template {0} has an empty name.", 
+                    Logger.Args(fileRecord.FileName));
+
+                continue;
+            }
+
             var stringHash = StringHash.Compute(spellTemplate.m_name);
 
             s_spellTemplates.Add(stringHash, spellTemplate);

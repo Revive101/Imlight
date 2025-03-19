@@ -60,6 +60,7 @@ internal static class UserAuthenticator {
         // Check if the session id matches.
         if (returnedSessionid != sessionId) {
             details._result = UserAuthenResult.AuthenFailed;
+
             return details;
         }
 
@@ -67,6 +68,7 @@ internal static class UserAuthenticator {
         var matchedAccount = AccountCollection.GetAccount(username);
         if (matchedAccount is null) {
             details._result = UserAuthenResult.AuthenFailed;
+
             return details;
         }
 
@@ -76,6 +78,7 @@ internal static class UserAuthenticator {
             matchedAccount.AddInfraction(InfractionType.Warn, "Logged in with banned machine ID.", null);
 
             details._result = UserAuthenResult.MachineBanned;
+
             return details;
         }
 
@@ -83,14 +86,15 @@ internal static class UserAuthenticator {
         if (InfractionCollection.IsIpBanned(sessionActor.Ip)) {
             // Add an infraction to the account.
             matchedAccount.AddInfraction(InfractionType.Warn, "Logged in with banned IP.", null);
-
             details._result = UserAuthenResult.MachineBanned;
+
             return details;
         }
 
         // Check to see if this account is currently banned.
         if (matchedAccount.InfractionHistory.IsCurrentlyBanned || matchedAccount.IsLocked) {
             details._result = UserAuthenResult.AccountBanned;
+
             return details;
         }
 
@@ -111,10 +115,12 @@ internal static class UserAuthenticator {
             // Craft a successful reply and return.
             var rec1 = Rec1.Encode(sessionKey, sessionId, offerTime, offerMilli);
             details._rec1 = rec1;
+
             return details;
         }
         else {
             details._result = UserAuthenResult.AuthenFailed;
+
             return details;
         }
     }
@@ -126,7 +132,7 @@ internal static class UserAuthenticator {
 
         // Cast the session id to a ushort.
         if (!ushort.TryParse(split[0], out var sId)) {
-            throw new Exception($"{nameof(LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_V3)} Session ID is not a ushort. " +
+            throw new Exception($"{nameof(MSG_USER_AUTHEN_V3)} Session ID is not a ushort. " +
                                 $"Expected ushort, got {split[0]}");
         }
 

@@ -9,10 +9,13 @@ using System.Security.Cryptography.X509Certificates;
 using Raven.Client.Documents;
 using Imlight.Common;
 using Imlight.CoreLib.WizardData.Implementations;
+using Raven.Client.Json.Serialization.NewtonsoftJson;
+using Imlight.CoreLib.WizardData.JsonConverters;
 
 namespace Imlight.CoreLib.WizardData.Databases;
 
 public class WorldDatabase : RavenDatabaseSingleton<WorldDatabase> {
+
     protected readonly byte MaxNumberOfRequestsPerSession
         = ConfigurationManager.Settings["Database.DatabaseMaxNumberOfRequestsPerSession"].AsByte();
     protected readonly byte RequestTimeoutInSeconds
@@ -35,12 +38,14 @@ public class WorldDatabase : RavenDatabaseSingleton<WorldDatabase> {
         var store = new DocumentStore {
             Urls = [Url],
             Database = DatabaseName,
-            Conventions =
-            {
+            Conventions = {
                 MaxNumberOfRequestsPerSession = MaxNumberOfRequestsPerSession,
                 UseOptimisticConcurrency = true,
                 RequestTimeout = TimeSpan.FromSeconds(RequestTimeoutInSeconds),
                 WaitForNonStaleResultsTimeout = TimeSpan.FromSeconds(WaitForNonStaleResultsTimeoutInSeconds),
+                Serialization = new NewtonsoftJsonSerializationConventions {
+                    CustomizeJsonSerializer = serializer => serializer.Converters.Add(new GIDConverter())
+                }
             },
             Certificate = Certificate
         }.Initialize();
@@ -74,4 +79,5 @@ public class WorldDatabase : RavenDatabaseSingleton<WorldDatabase> {
 
         return new X509Certificate2(absolutePath);
     }
+    
 }
