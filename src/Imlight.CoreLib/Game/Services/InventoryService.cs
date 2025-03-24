@@ -66,8 +66,7 @@ public class InventoryService(SessionActor sessionActor) : MessageService(sessio
         var wizard = GetActiveWizard();
         int goldSum = 0;
 
-        var dataRaw = new ByteString(message.Data);
-        if (!serializer.Deserialize<QuickSellItemList>(dataRaw, 4, out var quickSellItemList)) {
+        if (!serializer.Deserialize<QuickSellItemList>(message.Data, 4, out var quickSellItemList)) {
             Logger.Log.Error("Failed to deserialize quicksell item list.");
 
             return;

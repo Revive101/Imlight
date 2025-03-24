@@ -20,8 +20,6 @@ internal class AuthenticatorService(SessionActor parentActor) : MessageService(p
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new AuthenticatorService(parentActor));
 
-    #region Handlers
-
     // Received when a user is trying to authenticate.
     [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_V3))]
     private void ReceiveUserAuth(LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_V3 message) {
@@ -33,6 +31,8 @@ internal class AuthenticatorService(SessionActor parentActor) : MessageService(p
                 Error = (int) UserAuthenResult.Timeout,
                 Reason = ex.Message,
             });
+
+            throw new SessionFatalException("User authentication failed.", ex);
         }
     }
 
@@ -47,10 +47,10 @@ internal class AuthenticatorService(SessionActor parentActor) : MessageService(p
                 Error = (int) UserValidateResult.Timeout,
                 Reason = ex.Message,
             });
+
+            throw new SessionFatalException("User validation failed.", ex);
         }
     }
-
-    #endregion
 
     private void AuthenticateUser(LOGIN_7_PROTOCOL.MSG_USER_AUTHEN_V3 message) {
         var authReply = UserAuthenticator.Authenticate(SessionActor, message);
@@ -61,6 +61,7 @@ internal class AuthenticatorService(SessionActor parentActor) : MessageService(p
                 Error = (int) authReply._result,
                 Reason = authReply._result.ToString(),
             });
+            
             return;
         }
         else {

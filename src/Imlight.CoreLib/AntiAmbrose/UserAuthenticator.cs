@@ -151,9 +151,20 @@ internal static class UserAuthenticator {
     }
 
     private static (ushort, string, string) DecodeRec1(ByteString rec1, SessionActor sessionActor) {
-        var decoded = Rec1.Decode(rec1, sessionActor.SessionID, sessionActor.OfferTime,
-            sessionActor.OfferMillisecondsIntoSecond);
+        var decoded = Rec1.Decode(
+            rec1, 
+            sessionActor.SessionID, 
+            sessionActor.OfferTime,
+            sessionActor.OfferMillisecondsIntoSecond
+        );
         var split = decoded.ToString().Split(' ');
+
+        // The split should be of 3 parts: session id, username, and client key.
+        if (split.Length != 3) {
+            var exceptionMessage = "Failed to decode rec1. " +
+                                   $"Expected 3 parts, got {split.Length}";
+            throw new Exception(exceptionMessage);
+        }
 
         // Cast the session id to a ushort.
         if (!ushort.TryParse(split[0], out var sId)) {

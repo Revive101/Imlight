@@ -44,8 +44,7 @@ internal class CharacterService(SessionActor parentActor) : MessageService(paren
         // Deserializing the creation data may sometimes fail if the client is using a different version of the game.
         // Instead of totally failing, we'll catch the exception and send an error message to the client.
         try {
-            var creationInfo = new ByteString(message.CreationInfo);
-            if (!serializer.Deserialize(creationInfo, 1, out WizardCharacterCreationInfo charData)) {
+            if (!serializer.Deserialize(message.CreationInfo, 1, out WizardCharacterCreationInfo charData)) {
                 throw new Exception("Failed to deserialize character creation data.");
             }
 

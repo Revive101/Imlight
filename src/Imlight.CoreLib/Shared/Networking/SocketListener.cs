@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using Akka.Actor;
@@ -113,6 +114,7 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
             var packets = GetPacketsFromBuffer(buffer, bytesReceived);
             if (packets is null) {
                 Logger.Verbose("SessionActor {Id} received invalid packet.", Logger.Args(_sessionid));
+                
                 return;
             }
 
