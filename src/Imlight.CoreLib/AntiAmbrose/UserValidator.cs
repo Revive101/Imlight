@@ -1,6 +1,30 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * USER VALIDATION
+ * ========================================================================
+ *
+ * PURPOSE:
+ * Provides an validation mechnism forclients already logged in through
+ * authentication and attempting to start the game.
+ *
+ * USAGE EXAMPLE:
+ * ValidationDetails validationResult = UserValidator.Validate(sessionActor, validateMessage);
+ * if (validationResult._result == UserValidateResult.Success) { ... }
+ *
+ * NOTE:
+ * - On DEBUG builds, the session key is always valid. This is to allow
+ *   developers to test the game without having to worry about session keys.
+ *
+ * TODO:
+ * - 
+ *
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Date: 3/19/2025
  */
 
 using System;
@@ -24,9 +48,11 @@ internal enum UserValidateResult {
 }
 
 /// <summary>
-/// This static class is responsible for validating users. Validation happens when a client is already logged in and is starting the game
-/// as opposed to <see cref="UserAuthenticator"/>, which happens during the login process.
+/// Manages user session validation for clients already logged in and starting the game.
 /// </summary>
+/// <remarks>
+/// Differentiates from <see cref="UserAuthenticator"/> by handling post-login session validation.
+/// </remarks>
 internal static class UserValidator {
 
     internal class ValidationDetails {

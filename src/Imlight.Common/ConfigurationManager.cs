@@ -1,3 +1,31 @@
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ *
+ * ========================================================================
+ * CONFIGURATION MANAGEMENT 
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Provides a robust, flexible configuration management solution for reading 
+ * and parsing INI configuration files with advanced type conversion features.
+ * 
+ * USAGE EXAMPLE:
+ * ConfigurationManager.Initialize("path/to/config.ini");
+ * var serverPort = ConfigurationManager.Settings["Server.Port"].AsInt();
+ * var serverName = ConfigurationManager.Settings["Server.Name"].AsString();
+ * 
+ * NOTE:
+ * Ensure ConfigurationManager.Initialize() is called before accessing settings.
+ *
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
+ */
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -5,7 +33,7 @@ using System.IO;
 namespace Imlight.Common;
 
 /// <summary>
-/// Configuration manager that reads settings from an INI file
+/// Manages configuration settings by reading and parsing INI configuration files.
 /// </summary>
 public static class ConfigurationManager {
 
@@ -146,7 +174,7 @@ public static class ConfigurationManager {
                 currentSection = trimmedLine.Substring(1, trimmedLine.Length - 2).Trim();
                 currentSectionSettings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 s_sections[currentSection] = currentSectionSettings;
-                
+
                 continue;
             }
 
@@ -179,7 +207,7 @@ public static class ConfigurationManager {
     }
 
     /// <summary>
-    /// Class that provides access to configuration settings with fluent type conversion
+    /// Provides a fluent interface for accessing configuration settings with type conversion.
     /// </summary>
     public class ConfigSettings {
 
@@ -193,7 +221,7 @@ public static class ConfigurationManager {
     }
 
     /// <summary>
-    /// Represents a configuration value that can be converted to various types
+    /// Represents a configuration value with flexible type conversion capabilities.
     /// </summary>
     public class ConfigValue {
 
@@ -203,21 +231,21 @@ public static class ConfigurationManager {
         /// Initializes a new instance of the ConfigValue class
         /// </summary>
         /// <param name="value">The string value</param>
-        public ConfigValue(string value) 
+        public ConfigValue(string value)
             => _value = value;
 
         /// <summary>
         /// Implicitly converts a ConfigValue to a string
         /// </summary>
         /// <param name="configValue">The ConfigValue to convert</param>
-        public static implicit operator string(ConfigValue configValue) 
+        public static implicit operator string(ConfigValue configValue)
             => configValue._value;
 
         /// <summary>
         /// Converts the value to a byte
         /// </summary>
         /// <returns>The byte value</returns>
-        public byte AsByte() 
+        public byte AsByte()
             => string.IsNullOrEmpty(_value) ? (byte) 0 : Convert.ToByte(_value);
 
         /// <summary>
@@ -238,7 +266,7 @@ public static class ConfigurationManager {
         /// Converts the value to a signed byte
         /// </summary>
         /// <returns>The signed byte value</returns>
-        public sbyte AsSByte() 
+        public sbyte AsSByte()
             => string.IsNullOrEmpty(_value) ? (sbyte) 0 : Convert.ToSByte(_value);
 
         /// <summary>
@@ -259,7 +287,7 @@ public static class ConfigurationManager {
         /// Converts the value to a short
         /// </summary>
         /// <returns>The short value</returns>
-        public short AsShort() 
+        public short AsShort()
             => string.IsNullOrEmpty(_value) ? (short) 0 : Convert.ToInt16(_value);
 
         /// <summary>
@@ -280,7 +308,7 @@ public static class ConfigurationManager {
         /// Converts the value to an unsigned short
         /// </summary>
         /// <returns>The unsigned short value</returns>
-        public ushort AsUShort() 
+        public ushort AsUShort()
             => string.IsNullOrEmpty(_value) ? (ushort) 0 : Convert.ToUInt16(_value);
 
         /// <summary>
@@ -301,7 +329,7 @@ public static class ConfigurationManager {
         /// Converts the value to an integer
         /// </summary>
         /// <returns>The integer value</returns>
-        public int AsInt() 
+        public int AsInt()
             => string.IsNullOrEmpty(_value) ? 0 : Convert.ToInt32(_value);
 
         /// <summary>
@@ -322,7 +350,7 @@ public static class ConfigurationManager {
         /// Converts the value to an unsigned integer
         /// </summary>
         /// <returns>The unsigned integer value</returns>
-        public uint AsUInt() 
+        public uint AsUInt()
             => string.IsNullOrEmpty(_value) ? 0u : Convert.ToUInt32(_value);
 
         /// <summary>
@@ -343,7 +371,7 @@ public static class ConfigurationManager {
         /// Converts the value to a long
         /// </summary>
         /// <returns>The long value</returns>
-        public long AsLong() 
+        public long AsLong()
             => string.IsNullOrEmpty(_value) ? 0L : Convert.ToInt64(_value);
 
         /// <summary>
@@ -364,7 +392,7 @@ public static class ConfigurationManager {
         /// Converts the value to an unsigned long
         /// </summary>
         /// <returns>The unsigned long value</returns>
-        public ulong AsULong() 
+        public ulong AsULong()
             => string.IsNullOrEmpty(_value) ? 0UL : Convert.ToUInt64(_value);
 
         /// <summary>
@@ -414,7 +442,7 @@ public static class ConfigurationManager {
         /// Converts the value to a string
         /// </summary>
         /// <returns>The string value</returns>
-        public string AsString() 
+        public string AsString()
             => _value ?? string.Empty;
 
         /// <summary>
@@ -422,14 +450,14 @@ public static class ConfigurationManager {
         /// </summary>
         /// <param name="defaultValue">The default value</param>
         /// <returns>The string value or default</returns>
-        public string AsString(string defaultValue) 
+        public string AsString(string defaultValue)
             => string.IsNullOrEmpty(_value) ? defaultValue : _value;
 
         /// <summary>
         /// Converts the value to a float
         /// </summary>
         /// <returns>The float value</returns>
-        public float AsFloat() 
+        public float AsFloat()
             => string.IsNullOrEmpty(_value) ? 0f : Convert.ToSingle(_value);
 
         /// <summary>
@@ -450,7 +478,7 @@ public static class ConfigurationManager {
         /// Converts the value to a double
         /// </summary>
         /// <returns>The double value</returns>
-        public double AsDouble() 
+        public double AsDouble()
             => string.IsNullOrEmpty(_value) ? 0d : Convert.ToDouble(_value);
 
         /// <summary>
@@ -471,7 +499,7 @@ public static class ConfigurationManager {
         /// Converts the value to a decimal
         /// </summary>
         /// <returns>The decimal value</returns>
-        public decimal AsDecimal() 
+        public decimal AsDecimal()
             => string.IsNullOrEmpty(_value) ? 0m : Convert.ToDecimal(_value);
 
         /// <summary>

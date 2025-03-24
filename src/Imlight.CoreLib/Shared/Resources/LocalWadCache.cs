@@ -65,6 +65,13 @@ public static class LocalWadCache {
         var file = fs.Find(f => f.Filename == wadName)
             .FirstOrDefault();
 
+        if (file is null) {
+            Logger.Warning("LocalCache does not contain a file definition for {FileName}!", 
+                Logger.Args(wadName));
+
+            return null;
+        }
+
         // The LiteDB stream is file IO and very slow.
         // Instead, copy the stream to a memory stream.
         var liteDbStream = fs.OpenRead(file.Id);

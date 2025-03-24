@@ -1,11 +1,33 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * USER AUTHENTICATION
+ * ========================================================================
+ *
+ * PURPOSE:
+ * Provides an authentication mechnism for user login. Includes
+ * checks for account existence, bans, and credential verification.
+ *
+ * USAGE EXAMPLE:
+ * AuthenticationDetails authResult = UserAuthenticator.Authenticate(sessionActor, authMessage);
+ * if (authResult._result == UserAuthenResult.Success) { ... }
+ *
+ * NOTE:
+ * - 
+ *
+ * TODO:
+ * - Last login time, machine ID, and IP should be saved to the database.
+ *
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Date: 3/19/2025
  */
 
 using System;
 using Imcodec.IO;
-using Imcodec.MessageLayer.Generated;
 using Imlight.CoreLib.Shared.Cryptography;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Collections;
@@ -30,9 +52,12 @@ internal enum UserAuthenResult {
 }
 
 /// <summary>
-/// This static class is responsible for authenticating users. Authentication happens during the login process
-/// as opposed to <see cref="UserValidator"/>, which happens when a client is already logged in and is starting the game.
+/// Manages user authentication during the login process.
 /// </summary>
+/// <remarks>
+/// Differentiates from <see cref="UserValidator"/> by handling initial login authentication.
+/// Performs checks for account existence, bans, and credential verification.
+/// </remarks>
 internal static class UserAuthenticator {
 
     internal class AuthenticationDetails {
@@ -132,8 +157,9 @@ internal static class UserAuthenticator {
 
         // Cast the session id to a ushort.
         if (!ushort.TryParse(split[0], out var sId)) {
-            throw new Exception($"{nameof(MSG_USER_AUTHEN_V3)} Session ID is not a ushort. " +
-                                $"Expected ushort, got {split[0]}");
+            var exceptionMessage = "Failed to decode rec1. " +
+                                   $"Expected ushort, got {split[0]}";
+            throw new Exception(exceptionMessage);
         }
 
         return (sId, split[1], split[2]);

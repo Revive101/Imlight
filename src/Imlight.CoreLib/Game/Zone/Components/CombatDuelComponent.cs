@@ -1,6 +1,29 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
- * Unauthorized copying of this file, via any medium is strictly prohibited
- * Proprietary and confidential.
+/*
+ * ========================================================================
+ * COMBAT DUEL SYSTEM
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages turn-based combat encounters between players and creatures.
+ * This component is responsible for handling duel initiation, combat moves,
+ * and duel resolution. It also manages the duel state and participant data.
+ * 
+ * USAGE EXAMPLE:
+ * This component may activate from an NpcComponent on a dueling creature.
+ * It may also activate as a result of `ResStartDuel` from a trigger.
+ * 
+ * NOTE:
+ * This class is merely the director of the duel. The actual combat logic is
+ * all handled within the `Imlight.CoreLib.Game.Combat` namespace.
+ * Combat positions are determined by sigil templates, with specific subcircle positions.
+ * 
+ * TODO:
+ * - Implementation of creature stunning functionality
+ * - Calculate the correct damage percent max as a limit function
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;
@@ -25,6 +48,18 @@ using Imlight.CoreLib.WizardData.Models.World;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
+/// <summary>
+/// Manages combat duels between players and creatures in the game world.
+/// Controls the full duel lifecycle including initialization, participant management,
+/// turn sequencing, spell casting, and resolution of combat.
+/// </summary>
+/// <remarks>
+/// Acts as the central orchestrator for the combat system, handling messaging between
+/// all participants, managing combat state transitions, and coordinating the various
+/// phases of combat (planning, execution, resolution). The component creates and 
+/// positions subcircles according to sigil templates and maintains combat state
+/// including team assignments, turn order, and participant status.
+/// </remarks>
 internal sealed class CombatDuelComponent(ZoneEntity entity) 
     : ZoneEntityComponent(entity), IComponentFactory, IWithTimers, IClientBehaviorProvider<WizardClientDuelBehavior> {
 

@@ -1,7 +1,31 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
- */
+ *
+ * ========================================================================
+ * CANTRIP FACTORY
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages the creation of cantrips from their templates, level configuration,
+ * and XP requirements as it is defined in 'Root.wad/CantripXPConfig.xml'. All
+ * cantrip templates are loaded from the 'Root.wad' file.
+ * 
+ * USAGE EXAMPLE:
+ * CantripsSpellTemplate template = CantripFactory.CreateCantripTemplateFromId(templateId);
+ * CantripLevelInfo levelInfo = CantripFactory.GetCantripLevelInfoFromXp(currentXp);
+ * 
+ * NOTE:
+ * Cantrips are a type of spell that can be casted outside of combat. 
+ *
+ * TODO:
+ * - 
+ *
+ * Created by: Jeff
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
+*/
 
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
@@ -25,7 +49,8 @@ public class CantripFactory : RootSingleResourceSingleton<CantripFactory>, IMemo
             return;
         }
 
-        Logger.Information("Loaded {0} cantrip XP levels", Logger.Args(s_cantripXPConfig.m_levelInfo.Count));
+        Logger.Information("Loaded {0} cantrip XP levels", 
+            Logger.Args(s_cantripXPConfig.m_levelInfo.Count));
     }
 
     /// <summary>
@@ -37,11 +62,15 @@ public class CantripFactory : RootSingleResourceSingleton<CantripFactory>, IMemo
         var template = (CantripsSpellTemplate) CoreObjectFactory.GetCoreTemplate(templateId);
 
         if (template == null) {
-            Logger.Warning("Tried to create cantrip from non-existent template {0}.", Logger.Args(templateId));
+            Logger.Warning("Tried to create cantrip from non-existent template {0}.", 
+                Logger.Args(templateId));
+
             return null;
         }
         if (template is not CantripsSpellTemplate cantripSpellTemplate) {
-            Logger.Warning("Tried to create cantrip from non-cantrip template {0}.", Logger.Args(templateId));
+            Logger.Warning("Tried to create cantrip from non-cantrip template {0}.", 
+                Logger.Args(templateId));
+
             return null;
         }
 
@@ -55,7 +84,8 @@ public class CantripFactory : RootSingleResourceSingleton<CantripFactory>, IMemo
     /// <returns>The CantripLevelInfo object for the specified level, or null if the level is invalid.</returns>
     public static CantripLevelInfo GetCantripLevelInfo(int level) {
         if (level < 0 || level > s_cantripXPConfig.m_maxLevel) {
-            Logger.Warning("Tried to get cantrip level info for invalid level {0}.", Logger.Args(level));
+            Logger.Warning("Tried to get cantrip level info for invalid level {0}.", 
+                Logger.Args(level));
             return null;
         }
 
@@ -77,7 +107,12 @@ public class CantripFactory : RootSingleResourceSingleton<CantripFactory>, IMemo
         return s_cantripXPConfig.m_levelInfo[^1];
     }
 
-    public static int GetMaxCantripLevel() => s_cantripXPConfig.m_maxLevel;
+    /// <summary>
+    /// Gets the maximum cantrip level as defined in the CantripXPConfig.xml file.
+    /// </summary>
+    /// <returns>The maximum cantrip level.</returns>
+    public static int GetMaxCantripLevel() 
+        => s_cantripXPConfig.m_maxLevel;
 
     public void DisposeStream() {
         s_cantripXPConfig = null;

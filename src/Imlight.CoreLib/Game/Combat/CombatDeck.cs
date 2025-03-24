@@ -1,6 +1,26 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ * 
+ * ========================================================================
+ * COMBAT SPELL DECK MANAGEMENT SYSTEM
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages the drawing, discarding, and tracking of spell cards during combat,
+ * providing randomized card selection from available spells.
+ * 
+ * USAGE EXAMPLE:
+ * var deck = new CombatDeck(spellDatas, handSize);
+ * Hand newHand = deck.GetHand();
+ * deck.Discard(spell);
+ * 
+ * NOTE:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using Imcodec.ObjectProperty.TypeCache;
@@ -11,6 +31,9 @@ using System.Linq;
 
 namespace Imlight.CoreLib.Game.Combat;
 
+/// <summary>
+/// Manages a participant's spell deck during combat, including drawing cards and handling discards.
+/// </summary>
 internal class CombatDeck {
 
     internal List<Spell> LastGivenHand { get; private set; }

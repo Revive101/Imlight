@@ -1,6 +1,28 @@
-﻿/* Copyright (C) Revive101 Development Team - All Rights Reserved
+﻿/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * AKKA.NET CONFIGURATION SYSTEM
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Provides a centralized mechanism for loading Akka.NET configuration files
+ * and creating properly configured actor systems.
+ * 
+ * USAGE EXAMPLE:
+ * if (AkkaConfiguration.CreateActorSystem("Imlight", out var actorSystem)) {
+ *     // Use the actorSystem
+ * }
+ * 
+ * NOTE:
+ * This system uses System.Reflection and System.IO for file operations.
+ * Configuration file must exist at Config/akka.conf relative to the assembly location.
+ *
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;
@@ -12,6 +34,9 @@ using Imlight.Common;
 
 namespace Imlight.Director;
 
+/// <summary>
+/// Handles the configuration and creation of Akka.NET actor systems.
+/// </summary>
 internal static class AkkaConfiguration {
 
     private const string CONFIGURATION_FILE_NAME = "akka.conf";

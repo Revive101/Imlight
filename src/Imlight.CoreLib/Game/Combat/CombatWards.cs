@@ -1,6 +1,28 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * COMBAT DEFENSIVE MODIFIER SYSTEM
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages damage resistance and absorption (wards) that modify incoming spell 
+ * effects based on magic school and effect type.
+ * 
+ * USAGE EXAMPLE:
+ * var wards = CombatWards.FindAppliedWards(target, effect);
+ * int modifiedDamage = CombatWards.GetIncomingDamageFromWards(wards, initialDamage);
+ * 
+ * NOTE:
+ * Handles different ward types including damage reductions, absorb shields,
+ * and damage type conversion effects. Maintains proper application order for
+ * multiple ward effects.
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;
@@ -12,8 +34,13 @@ using Imlight.CoreLib.Game.Spells;
 namespace Imlight.CoreLib.Game.Combat;
 
 /// <summary>
-/// Provides utility methods for handling combat wards.
+/// Provides utility methods for handling defensive combat modifiers (wards) in combat.
 /// </summary>
+/// <remarks>
+/// Manages the selection and application of incoming damage modifiers, determining which
+/// wards affect specific incoming spells based on damage type. Handles both beneficial
+/// (damage reducing, absorbing) and harmful (damage increasing) wards.
+/// </remarks>
 internal static class CombatWards {
 
     /// <summary>

@@ -1,6 +1,29 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * COMBAT EFFECT TRACKING SYSTEM
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Provides a bit-packed system to record spell effect choices during combat,
+ * ensuring consistent synchronization between server and client for randomly
+ * selected or variable effects.
+ * 
+ * USAGE EXAMPLE:
+ * var effectStack = new CombatEffectStack();
+ * effectStack.PushRandomEffectChoice(randomEffectIndex);
+ * uint choiceStack = effectStack.GetStackAsUint();
+ * 
+ * NOTE:
+ * The system uses a 32-bit unsigned integer where each 4-bit segment
+ * represents a choice in the effect selection hierarchy.
+ * 
+ * Created by: Revive101
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 /*
@@ -27,6 +50,14 @@ A stack of all `1` means every effect was chosen.
 
 namespace Imlight.CoreLib.Game.Combat;
 
+/// <summary>
+/// Manages the stack of effect choices for random and variable spell effects.
+/// </summary>
+/// <remarks>
+/// Uses a bit-packed unsigned 32-bit integer to record the selection of effects when a spell 
+/// contains random or variable effects. The stack records which specific effect variant was 
+/// chosen during spell resolution for proper client synchronization.
+/// </remarks>
 public class CombatEffectStack {
 
     private uint _stack;

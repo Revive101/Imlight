@@ -1,6 +1,27 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * COMBAT SPELL TARGETING SYSTEM
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Determines spell targets and processes the effects chain of combat actions,
+ * bridging between the queued actions and their actual application to targets.
+ * 
+ * USAGE EXAMPLE:
+ * bool spellWorthCasting = CombatActionResolver.ProcessedQueuedCombatAction(
+ *     action, ref combatAction, ref cinematicTime);
+ * 
+ * NOTE:
+ * Handles random spell selections, X-pip cost calculations, and manages
+ * the effect stack for proper client synchronization.
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using Imcodec.ObjectProperty.TypeCache;
@@ -12,6 +33,14 @@ using System.Linq;
 
 namespace Imlight.CoreLib.Game.Combat;
 
+/// <summary>
+/// Processes queued combat actions and determines their effects during spell resolution.
+/// </summary>
+/// <remarks>
+/// This utility class handles the selection of targets for specific effect types, resolves 
+/// random effect choices, and processes X-pip spell costs. It coordinates with the CombatEffectApplicator
+/// to apply the actual effects to targets.
+/// </remarks>
 internal static class CombatActionResolver {
 
     internal static bool ProcessedQueuedCombatAction(QueuedCombatAction action, ref CombatAction combatAction, ref float cinematicTime) {

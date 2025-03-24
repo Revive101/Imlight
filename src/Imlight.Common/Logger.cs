@@ -1,6 +1,31 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * LOGGING
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Provides a comprehensive logging mechanism using Serilog, with configurable 
+ * log levels, multiple output destinations, and rich contextual information.
+ * 
+ * USAGE EXAMPLE:
+ * Logger.Information("User logged in", Logger.Args(userId, username));
+ * Logger.Error("Database connection failed", Logger.Args(connectionString));
+ * 
+ * NOTE:
+ * - Requires ConfigurationManager to be initialized before use
+ * - Supports console, file, and Seq logging
+ * - Automatically captures caller information (class, method, line number)
+ * 
+ * TODO:
+ * - 
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;
@@ -14,6 +39,9 @@ using Serilog.Events;
 
 namespace Imlight.Common;
 
+/// <summary>
+/// Provides a static logging utility with multiple log levels and automatic contextual information capture.
+/// </summary>
 public class Logger {
 
     private const byte MaxCallerNameLength = 40;

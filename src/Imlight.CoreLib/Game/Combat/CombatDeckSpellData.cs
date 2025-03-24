@@ -5,6 +5,13 @@
 
 namespace Imlight.CoreLib.Game.Combat;
 
+/// <summary>
+/// Contains metadata about a spell card in a combat deck.
+/// </summary>
+/// <remarks>
+/// Tracks the template ID, quantity, and special properties of spell cards,
+/// distinguishing between regular, item, and battle cards.
+/// </remarks>
 internal class CombatDeckSpellData {
     
     public uint TemplateId { get; set; }

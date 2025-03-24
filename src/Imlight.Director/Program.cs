@@ -1,12 +1,38 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
- */
+ *
+ * ========================================================================
+ * IMLIGHT DIRECTOR SYSTEM
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Serves as the central orchestration point for initializing and managing 
+ * the Imlight server ecosystem including Login, Game, and Patch servers.
+ * 
+ * USAGE EXAMPLE:
+ * The application is launched directly with no command-line arguments.
+ * All configuration is loaded from Config/Imlight.ini and Config/akka.conf files.
+ * 
+ * NOTE:
+ * This system uses System.Threading and Akka.Actor for concurrency.
+ * Resource loading may take significant time, and timing is logged.
+ * Embedded database is initialized with a default admin account.
+ *
+ * TODO:
+ * - Implement different boot types beyond L&G (Login & Game server)
+ *
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
+*/
 
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Globalization;
+using System.IO;
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.CoreLib.Login;
@@ -16,10 +42,17 @@ using Imlight.CoreLib.WizardData;
 using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.CoreLib.WizardData.Collections;
-using System.IO;
 
 namespace Imlight.Director;
 
+/// <summary>
+/// Entry point for the Imlight Director - orchestrates the Login, Game, and Patch servers.
+/// </summary>
+/// <remarks>
+/// The Director handles the initialization sequence including configuration loading, 
+/// Akka.NET system setup, resource loading, server startup, and database preparation.
+/// The server runs indefinitely after initialization with periodic "still alive" status messages.
+/// </remarks>
 internal static class Program {
 
     // Major versions in order:
@@ -30,6 +63,19 @@ internal static class Program {
     private const string MajorVersion = "KALI";
 
     private static ActorSystem s_imlightSystem;
+
+    private static readonly string s_loginServerName = 
+        ConfigurationManager.Settings["Login Server.LoginServerName"].AsString();
+    private static readonly ushort s_loginServerPort = 
+        ConfigurationManager.Settings["Login Server.LoginServerPort"].AsUShort();
+    private static readonly string s_patchServerName = 
+        ConfigurationManager.Settings["Patch Server.PatchServerName"].AsString();
+    private static readonly ushort s_patchServerPort = 
+        ConfigurationManager.Settings["Patch Server.PatchServerPort"].AsUShort();
+    private static readonly string s_adminAccountUsername = 
+        ConfigurationManager.Settings["Database.AdminAccountUsername"].AsString();
+    private static readonly string s_adminAccountPassword = 
+        ConfigurationManager.Settings["Database.AdminAccountPassword"].AsString();
 
     private static void Main() {
         // =============================================================
@@ -66,9 +112,14 @@ internal static class Program {
         var task = StartPatchServer();
         task.Wait();
 
+        // Load resources. Record the time it takes to load resources.
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         Logger.Information("Director is now explicitly loading resources..");
         var resourceContainer = new ResourceContainer();
         Logger.Information("Director has called all resources to load.");
+        stopwatch.Stop();
+        Logger.Information($"Resource loading completed in {0} ms.",
+            Logger.Args(stopwatch.ElapsedMilliseconds));
 
         // =============================================================
         // SERVERS
@@ -93,8 +144,8 @@ internal static class Program {
     }
 
     private static IActorRef StartLoginServer() {
-        var loginServerName = ConfigurationManager.Settings["Login Server.LoginServerName"].AsString();
-        var loginServerPort = ConfigurationManager.Settings["Login Server.LoginServerPort"].AsUShort();
+        var loginServerName = s_loginServerName;
+        var loginServerPort = s_loginServerPort;
 
         var loginServerProps = LoginServer.Props(loginServerName, loginServerPort);
         var loginServerActor = s_imlightSystem.ActorOf(loginServerProps, loginServerName);
@@ -105,14 +156,14 @@ internal static class Program {
         return loginServerActor;
     }
 
-    private static void StartGameServer(IActorRef LoggerinActorRef) {
+    private static void StartGameServer(IActorRef loginServerActorRef) {
         var msg = new SERVER_100_PROTOCOL.MSG_CREATEGAMESERVER();
-        LoggerinActorRef.Tell(msg);
+        loginServerActorRef.Tell(msg);
     }
 
     private static async Task StartPatchServer() {
-        var defaultPatchServerName = ConfigurationManager.Settings["Patch Server.PatchServerName"].AsString();
-        var defaultPatchServerPort = ConfigurationManager.Settings["Patch Server.PatchServerPort"].AsUShort();
+        var defaultPatchServerName = s_patchServerName;
+        var defaultPatchServerPort = s_patchServerPort;
 
         var patchProps = PatchServer.Props(defaultPatchServerName, defaultPatchServerPort);
         var actor = s_imlightSystem.ActorOf(patchProps, defaultPatchServerName);
@@ -121,16 +172,22 @@ internal static class Program {
             Logger.Args(s_imlightSystem.Name, defaultPatchServerName));
 
         // Await initialization of the patch server.
-        await actor.Ask<SERVER_100_PROTOCOL.MSG_INITIALIZE_COMPLETE>(new SERVER_100_PROTOCOL.MSG_INITIALIZE());
+        _ = await actor.Ask<SERVER_100_PROTOCOL.MSG_INITIALIZE_COMPLETE>(
+            new SERVER_100_PROTOCOL.MSG_INITIALIZE()
+        );
     }
 
     private static void CreateEmbeddedDatabaseAccounts() {
         // At least one account needs to exist.
-        var adminAccountUsername = ConfigurationManager.Settings["Database.AdminAccountUsername"];
-        var adminAccountPassword = ConfigurationManager.Settings["Database.AdminAccountPassword"];
-        DatabaseUtilities.CreateEmbeddedDatabaseAccount(adminAccountUsername, "testtest@r101.com", adminAccountPassword, AuthLevel.Administrator);
-        Logger.Information("Created admin account.");
+        var adminAccountUsername = s_adminAccountUsername;
+        var adminAccountPassword = s_adminAccountPassword;
+        DatabaseUtilities.CreateEmbeddedDatabaseAccount(
+            adminAccountUsername,
+            "testtest@r101.com",
+            adminAccountPassword,
+            AuthLevel.Administrator);
 
+        Logger.Information("Created admin account.");
         Logger.Information("Embedded database accounts created.");
     }
 

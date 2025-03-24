@@ -1,6 +1,28 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * COMBAT EFFECT APPLICATION SYSTEM
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Applies spell effects to targets with appropriate stat-based modifications,
+ * handling damage calculation, healing, and status effects.
+ * 
+ * USAGE EXAMPLE:
+ * float cinematicTime = CombatEffectApplicator.ApplyEffect(
+ *     effect, charms, caster, targets);
+ * 
+ * NOTE:
+ * 
+ * TODO:
+ * - Implement correct damage percent max as a limit function
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using Imcodec.ObjectProperty.TypeCache;
@@ -10,8 +32,13 @@ using System.Linq;
 namespace Imlight.CoreLib.Game.Combat;
 
 /// <summary>
-/// Applies the effects of a spell to the targets.
+/// Applies the effects of spells to targets in combat, handling damage, healing, and status effects.
 /// </summary>
+/// <remarks>
+/// This static utility class processes all spell effect types by applying appropriate modifiers based on 
+/// caster and target stats, hanging effects, and global duel modifiers. It handles complex calculations
+/// for damage scaling, resistances, healing, and various utility effects like stuns, steals, and wards.
+/// </remarks>
 internal static class CombatEffectApplicator {
 
     private const float DAMAGE_PERCENT_MAX = 2.45f; // todo: not correct. this should be a limit function

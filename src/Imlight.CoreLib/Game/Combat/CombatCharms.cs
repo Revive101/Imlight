@@ -1,6 +1,27 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * COMBAT OFFENSIVE MODIFIER SYSTEM
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages damage and healing boosts (charms) that modify outgoing spell effects
+ * based on magic school and effect type.
+ * 
+ * USAGE EXAMPLE:
+ * var charms = CombatCharms.FindAppliedCharms(caster, effects);
+ * int modifiedDamage = CombatCharms.GetOutgoingDamageFromCharms(charms, initialDamage);
+ * 
+ * NOTE:
+ * Distinguishes between beneficial and harmful charms, ensuring proper
+ * application order and stacking behavior for damage and healing modifiers.
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using Imcodec.ObjectProperty.TypeCache;
@@ -11,8 +32,13 @@ using System.Linq;
 namespace Imlight.CoreLib.Game.Combat;
 
 /// <summary>
-/// Provides utility methods for handling combat charms in the game.
+/// Provides utility methods for handling offensive combat modifiers (charms) in combat.
 /// </summary>
+/// <remarks>
+/// Manages the selection and application of outgoing damage and healing modifiers, determining
+/// which charms affect specific spells based on the caster, target, and spell school. Handles
+/// both beneficial (damage/healing boosting) and harmful (damage reducing) charms.
+/// </remarks>
 internal static class CombatCharms {
 
     /// <summary>
