@@ -3,81 +3,17 @@
  * Proprietary and confidential.
  */
 
-using System;
-using System.IO;
-using System.Security.Cryptography.X509Certificates;
-using Raven.Client.Documents;
 using Imlight.Common;
-using Imlight.CoreLib.WizardData.Implementations;
-using Raven.Client.Json.Serialization.NewtonsoftJson;
-using Imlight.CoreLib.WizardData.JsonConverters;
 
 namespace Imlight.CoreLib.WizardData.Databases;
 
 public class WorldDatabase : RavenDatabaseSingleton<WorldDatabase> {
 
-    protected readonly byte MaxNumberOfRequestsPerSession
-        = ConfigurationManager.Settings["Database.DatabaseMaxNumberOfRequestsPerSession"].AsByte();
-    protected readonly byte RequestTimeoutInSeconds
-        = ConfigurationManager.Settings["Database.DatabaseRequestTimeoutInSeconds"].AsByte();
-    protected readonly byte WaitForNonStaleResultsTimeoutInSeconds
-        = ConfigurationManager.Settings["Database.DatabaseWaitForNonStaleResultsTimeout"].AsByte();
+    protected override string DatabaseName { get; } 
+        = ConfigurationManager.Settings["Database.WorldDatabaseName"];
+    protected override string Url { get; } 
+        = ConfigurationManager.Settings["Database.WorldDatabaseUrl"];
+    protected override string CertificatePath { get; } 
+        = ConfigurationManager.Settings["Database.WorldDatabaseCertificatePath"];
 
-    protected override X509Certificate2 Certificate { get; }
-        = ConfigurationManager.Settings["Database.WorldDatabaseUrl"] == string.Empty
-            ? null
-            : GetCertificate();
-    protected override string DatabaseName { get; } = ConfigurationManager.Settings["Database.WorldDatabaseName"];
-    protected override string Url { get; } = ConfigurationManager.Settings["Database.WorldDatabaseUrl"];
-
-    protected override IDocumentStore CreateStore() {
-        // If this is the first time we're creating the store, we need to create the database.
-        Logger.Information("Initializing remote RavenDB database for the first time..");
-        Logger.Information("Database name: {0}", Logger.Args(DatabaseName));
-
-        var store = new DocumentStore {
-            Urls = [Url],
-            Database = DatabaseName,
-            Conventions = {
-                MaxNumberOfRequestsPerSession = MaxNumberOfRequestsPerSession,
-                UseOptimisticConcurrency = true,
-                RequestTimeout = TimeSpan.FromSeconds(RequestTimeoutInSeconds),
-                WaitForNonStaleResultsTimeout = TimeSpan.FromSeconds(WaitForNonStaleResultsTimeoutInSeconds),
-                Serialization = new NewtonsoftJsonSerializationConventions {
-                    CustomizeJsonSerializer = serializer => serializer.Converters.Add(new GIDConverter())
-                }
-            },
-            Certificate = Certificate
-        }.Initialize();
-
-        Logger.Information("Database initialized.");
-
-        return store;
-    }
-
-    protected override IDocumentStore CreateEmbeddedStore() {
-        EmbeddedDatabaseManager.Start();
-        return EmbeddedDatabaseManager.GetDocumentStore(DatabaseName);
-    }
-
-    private static X509Certificate2 GetCertificate() {
-        if (ConfigurationManager.Settings["Database.WorldDatabaseUrl"] == string.Empty) {
-            return null;
-        }
-
-        // The certificate path is relative to the working directory.
-        // We need to get the absolute path.
-        var absolutePath = Path.GetFullPath(ConfigurationManager.Settings["Database.WorldDatabaseCertificatePath"]);
-
-        // If there is no file at this path, log an error and return null.
-        if (!File.Exists(absolutePath)) {
-            Logger.Error("No certificate found at path {0}",
-                Logger.Args(absolutePath));
-                
-            return null;
-        }
-
-        return new X509Certificate2(absolutePath);
-    }
-    
 }
