@@ -38,13 +38,15 @@ internal class CharacterService(SessionActor parentActor) : MessageService(paren
         // The client has sent us serialized WizardCharacterCreationData. We need to
         // deserialize it to add it to our account database.
         var serializer = new ObjectSerializer(
-            Behaviors: SerializerFlags.None
+            Behaviors: SerializerFlags.None,
+            Versionable: false
         );
 
         // Deserializing the creation data may sometimes fail if the client is using a different version of the game.
         // Instead of totally failing, we'll catch the exception and send an error message to the client.
         try {
-            if (!serializer.Deserialize(message.CreationInfo, 1, out WizardCharacterCreationInfo charData)) {
+            var flags = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
+            if (!serializer.Deserialize(message.CreationInfo, flags, out WizardCharacterCreationInfo charData)) {
                 throw new Exception("Failed to deserialize character creation data.");
             }
 
@@ -73,6 +75,8 @@ internal class CharacterService(SessionActor parentActor) : MessageService(paren
                 Logger.Args(account.Username, e.Message));
 
             SendToSocket(new LOGIN_7_PROTOCOL.MSG_CREATECHARACTERRESPONSE { ErrorCode = 1 });
+
+            throw;
         }
     }
 
@@ -130,7 +134,8 @@ internal class CharacterService(SessionActor parentActor) : MessageService(paren
         // For every character, we're going to serialize the document and send to the client.
         if (account.Characters.Count > 0) {
             var serializer = new ObjectSerializer(
-                Behaviors: SerializerFlags.None
+                Behaviors: SerializerFlags.None,
+                Versionable: false
             );
 
             for (int i = 0; i < account.Characters.Count; i++) {
@@ -140,7 +145,8 @@ internal class CharacterService(SessionActor parentActor) : MessageService(paren
                 var loginScreenInfo = CharacterHelper.GetLoginScreenInfo(character);
 
                 // Serialize the character info to send to the client.
-                if (!serializer.Serialize(loginScreenInfo, 1, out var data)) {
+                var flags = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
+                if (!serializer.Serialize(loginScreenInfo, flags, out var data)) {
                     Logger.Error("Account {accountUsername} failed to serialize character {characterId} for login screen.",
                         Logger.Args(account.Username, character.CharId));
 
