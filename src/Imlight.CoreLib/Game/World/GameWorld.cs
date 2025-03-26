@@ -97,6 +97,26 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS))]
     private void ReceiveZoneLoadResults(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS message) {
+        // If the zone failed to load, inform anyone waiting for the zone to load.
+        if (message.Error) {
+            Logger.Error("{Name} failed to load zone: {ErrorMessage}",
+                Logger.Args(nameof(GameWorld), message.ErrorMessage));
+
+            // Reply to any zone transfer requests with failure.
+            var reply = new ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP {
+                ErrorCode = StringHash.Compute(LOAD_ZONE_FAILURE_ERROR)
+            };
+            var transfers = _awaitingTransfers.Where(t => t.Key.DestinationZone == message.ZonePath);
+            foreach (var (transferMsg, transferActor) in transfers) {
+                transferActor.Tell(reply);
+                _awaitingTransfers.Remove(transferMsg);
+            }
+
+            RemoveZoneLoader(message.ZonePath);
+
+            return;
+        }
+
         // The game world has no obligation to validate the zone data.
         // If the zone data is invalid, the zone actor will handle it, and the game world will be notified
         // with a `MSG_ZONECLOSED` message.

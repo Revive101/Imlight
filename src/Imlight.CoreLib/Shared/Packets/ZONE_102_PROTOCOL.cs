@@ -47,6 +47,11 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte ServiceID { get; } = 102;
 
         /// <summary>
+        /// The path to the zone file as it would appear in the <see cref="AccessPassManager"/>.
+        /// </summary>
+        public string ZonePath;
+
+        /// <summary>
         /// The data for the zone, as it appears in the game client data.
         /// </summary>
         public WizZoneData ZoneData;

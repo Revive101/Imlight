@@ -30,40 +30,79 @@ internal sealed class ZoneLoader : ReceiveProtocolDispatcher {
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADBEGIN))]
     private void ReceiveZoneBeginLoad(ZONE_102_PROTOCOL.MSG_ZONELOADBEGIN message) {
         _benchmarkTimer.Restart();
-
         if (!ResourceManager.TryLoadArchive(message.ZonePath, out _wad)) {
             var failureMsg = new ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS {
                 Error = true,
                 ErrorMessage = $"Failed to load zone archive {message.ZonePath}"
             };
-
             Sender.Tell(failureMsg);
+
+            return;
         }
 
+        // Wrap each loading step in a try-catch block to ensure that the actor
+        // can still send a response to the client if an error occurs.
         try {
+            WizZoneData zoneData = null;
+            SpawnManager spawnData = null;
+            PathTemplateList pathData = null;
+            NodeTemplateList nodeData = null;
+            WizZoneVolumes volumeData = null;
+            WizZoneTriggers triggerData = null;
+
             // Load zone data
-            var zoneData = LoadZoneData();
-            LogLoadingStep("zone data");
+            try {
+                zoneData = LoadZoneData();
+                LogLoadingStep("zone data");
+            }
+            catch (Exception ex) {
+                throw new Exception($"Failed during zone data loading: {ex.Message}", ex);
+            }
 
             // Load spawn data
-            var spawnData = LoadSpawnData();
-            LogLoadingStep("spawn data");
+            try {
+                spawnData = LoadSpawnData();
+                LogLoadingStep("spawn data");
+            }
+            catch (Exception ex) {
+                throw new Exception($"Failed during spawn data loading: {ex.Message}", ex);
+            }
 
             // Load path data
-            var pathData = LoadPathData();
-            LogLoadingStep("path data");
+            try {
+                pathData = LoadPathData();
+                LogLoadingStep("path data");
+            }
+            catch (Exception ex) {
+                throw new Exception($"Failed during path data loading: {ex.Message}", ex);
+            }
 
             // Load node data
-            var nodeData = LoadNodeData();
-            LogLoadingStep("node data");
+            try {
+                nodeData = LoadNodeData();
+                LogLoadingStep("node data");
+            }
+            catch (Exception ex) {
+                throw new Exception($"Failed during node data loading: {ex.Message}", ex);
+            }
 
             // Load volume data
-            var volumeData = LoadVolumeData();
-            LogLoadingStep("volume data");
+            try {
+                volumeData = LoadVolumeData();
+                LogLoadingStep("volume data");
+            }
+            catch (Exception ex) {
+                throw new Exception($"Failed during volume data loading: {ex.Message}", ex);
+            }
 
             // Load trigger data
-            var triggerData = LoadTriggerData();
-            LogLoadingStep("trigger data");
+            try {
+                triggerData = LoadTriggerData();
+                LogLoadingStep("trigger data");
+            }
+            catch (Exception ex) {
+                throw new Exception($"Failed during trigger data loading: {ex.Message}", ex);
+            }
 
             // Send completion message with all loaded data
             var completionMsg = new ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS {
@@ -72,16 +111,17 @@ internal sealed class ZoneLoader : ReceiveProtocolDispatcher {
                 PathData = pathData,
                 NodeData = nodeData,
                 TriggerData = triggerData,
-                VolumeData = volumeData
+                VolumeData = volumeData,
+                ZonePath = message.ZonePath
             };
-
             Sender.Tell(completionMsg);
             _benchmarkTimer.Stop();
         }
         catch (Exception ex) {
             var failureMsg = new ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS {
                 Error = true,
-                ErrorMessage = ex.Message
+                ErrorMessage = ex.Message,
+                ZonePath = message.ZonePath
             };
             Sender.Tell(failureMsg);
         }
@@ -90,7 +130,7 @@ internal sealed class ZoneLoader : ReceiveProtocolDispatcher {
     private WizZoneData LoadZoneData() {
         var data = _wad.OpenFile(ZONE_DATA_FILE_NAME);
         if (data is null) {
-            Logger.Error("Failed to load zone data from {zone}", 
+            Logger.Error("Failed to load zone data from {zone}",
                 Logger.Args(ZONE_DATA_FILE_NAME));
 
             return null;
@@ -98,7 +138,7 @@ internal sealed class ZoneLoader : ReceiveProtocolDispatcher {
 
         var serializer = new BindSerializer();
         if (!serializer.Deserialize<WizZoneData>(data?.ToArray(), 1, out var zoneData)) {
-            Logger.Error("Failed to deserialize zone data from {zone}", 
+            Logger.Error("Failed to deserialize zone data from {zone}",
                 Logger.Args(ZONE_DATA_FILE_NAME));
 
             return null;
@@ -110,7 +150,7 @@ internal sealed class ZoneLoader : ReceiveProtocolDispatcher {
     private SpawnManager LoadSpawnData() {
         var data = _wad.OpenFile(SPAWN_DATA_FILE_NAME);
         if (data is null) {
-            Logger.Error("Failed to load spawn data from {zone}", 
+            Logger.Error("Failed to load spawn data from {zone}",
                 Logger.Args(SPAWN_DATA_FILE_NAME));
 
             return null;
@@ -118,7 +158,7 @@ internal sealed class ZoneLoader : ReceiveProtocolDispatcher {
 
         var serializer = new BindSerializer();
         if (!serializer.Deserialize<SpawnManager>(data?.ToArray(), 1, out var spawnData)) {
-            Logger.Error("Failed to deserialize spawn data from {zone}", 
+            Logger.Error("Failed to deserialize spawn data from {zone}",
                 Logger.Args(SPAWN_DATA_FILE_NAME));
 
             return null;
@@ -130,7 +170,7 @@ internal sealed class ZoneLoader : ReceiveProtocolDispatcher {
     private PathTemplateList LoadPathData() {
         var data = _wad.OpenFile(PATH_DATA_FILE_NAME);
         if (data is null) {
-            Logger.Error("Failed to load path data from {zone}", 
+            Logger.Error("Failed to load path data from {zone}",
                 Logger.Args(PATH_DATA_FILE_NAME));
 
             return null;
@@ -138,7 +178,7 @@ internal sealed class ZoneLoader : ReceiveProtocolDispatcher {
 
         var serializer = new BindSerializer();
         if (!serializer.Deserialize<PathTemplateList>(data?.ToArray(), 1, out var pathData)) {
-            Logger.Error("Failed to deserialize path data from {zone}", 
+            Logger.Error("Failed to deserialize path data from {zone}",
                 Logger.Args(PATH_DATA_FILE_NAME));
 
             return null;
@@ -150,7 +190,7 @@ internal sealed class ZoneLoader : ReceiveProtocolDispatcher {
     private NodeTemplateList LoadNodeData() {
         var data = _wad.OpenFile(NODE_DATA_FILE_NAME);
         if (data is null) {
-            Logger.Error("Failed to load node data from {zone}", 
+            Logger.Error("Failed to load node data from {zone}",
                 Logger.Args(NODE_DATA_FILE_NAME));
 
             return null;
@@ -158,7 +198,7 @@ internal sealed class ZoneLoader : ReceiveProtocolDispatcher {
 
         var serializer = new BindSerializer();
         if (!serializer.Deserialize<NodeTemplateList>(data?.ToArray(), 1, out var nodeData)) {
-            Logger.Error("Failed to deserialize node data from {zone}", 
+            Logger.Error("Failed to deserialize node data from {zone}",
                 Logger.Args(NODE_DATA_FILE_NAME));
 
             return null;
@@ -170,7 +210,7 @@ internal sealed class ZoneLoader : ReceiveProtocolDispatcher {
     private WizZoneVolumes LoadVolumeData() {
         var data = _wad.OpenFile(VOLUME_DATA_FILE_NAME);
         if (data is null) {
-            Logger.Error("Failed to load volume data from {zone}", 
+            Logger.Error("Failed to load volume data from {zone}",
                 Logger.Args(VOLUME_DATA_FILE_NAME));
 
             return null;
@@ -178,7 +218,7 @@ internal sealed class ZoneLoader : ReceiveProtocolDispatcher {
 
         var serializer = new BindSerializer();
         if (!serializer.Deserialize<WizZoneVolumes>(data?.ToArray(), 1, out var volumeData)) {
-            Logger.Error("Failed to deserialize volume data from {zone}", 
+            Logger.Error("Failed to deserialize volume data from {zone}",
                 Logger.Args(VOLUME_DATA_FILE_NAME));
 
             return null;
@@ -190,7 +230,7 @@ internal sealed class ZoneLoader : ReceiveProtocolDispatcher {
     private WizZoneTriggers LoadTriggerData() {
         var data = _wad.OpenFile(TRIGGER_DATA_FILE_NAME);
         if (data is null) {
-            Logger.Error("Failed to load trigger data from {zone}", 
+            Logger.Error("Failed to load trigger data from {zone}",
                 Logger.Args(TRIGGER_DATA_FILE_NAME));
 
             return null;
@@ -198,7 +238,7 @@ internal sealed class ZoneLoader : ReceiveProtocolDispatcher {
 
         var serializer = new BindSerializer();
         if (!serializer.Deserialize<WizZoneTriggers>(data?.ToArray(), 1, out var triggerData)) {
-            Logger.Error("Failed to deserialize trigger data from {zone}", 
+            Logger.Error("Failed to deserialize trigger data from {zone}",
                 Logger.Args(TRIGGER_DATA_FILE_NAME));
 
             return null;
