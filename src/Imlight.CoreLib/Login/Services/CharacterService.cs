@@ -47,7 +47,7 @@ internal class CharacterService(SessionActor parentActor) : MessageService(paren
         try {
             var flags = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
             if (!serializer.Deserialize(message.CreationInfo, flags, out WizardCharacterCreationInfo charData)) {
-                throw new Exception("Failed to deserialize character creation data.");
+                throw new SessionFatalException("Failed to deserialize character creation data.");
             }
 
             var newCharacter = CharacterHelper.CreateCharacterFromCreationInfo(charData);
@@ -76,7 +76,7 @@ internal class CharacterService(SessionActor parentActor) : MessageService(paren
 
             SendToSocket(new LOGIN_7_PROTOCOL.MSG_CREATECHARACTERRESPONSE { ErrorCode = 1 });
 
-            throw;
+            throw new SessionFatalException("Failed to deserialize character creation data.");
         }
     }
 
@@ -90,12 +90,15 @@ internal class CharacterService(SessionActor parentActor) : MessageService(paren
             return;
         }
 
-        var deletedCharacter = account.DeleteCharacter(message.CharID);
+        var characterWasSuccessfullyDeleted = account.DeleteCharacter(message.CharID);
 
         // If we had no problems deleting the character from the account, delete the character from the database.
-        if (deletedCharacter) {
+        if (characterWasSuccessfullyDeleted) {
+            // Delete the character from the database.
             var deletedCharacterFromCollection = WizardCollection
                 .DeleteCharacter(message.CharID);
+
+            // Delete the character's reference from the account.
             var deletedCharacterFromAccount = AccountCollection
                 .DeleteCharacterFromAccount(account.AccountId, message.CharID);
 
@@ -139,9 +142,9 @@ internal class CharacterService(SessionActor parentActor) : MessageService(paren
             );
 
             for (int i = 0; i < account.Characters.Count; i++) {
+                // Characters in the login screen are stripped down to the bare minimum,
+                // only the information needed to display the character.
                 var character = account.Characters[i];
-
-                // Database is document-based. We need to serialize the document to send to the client.
                 var loginScreenInfo = CharacterHelper.GetLoginScreenInfo(character);
 
                 // Serialize the character info to send to the client.

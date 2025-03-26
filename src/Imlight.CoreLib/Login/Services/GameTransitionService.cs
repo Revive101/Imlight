@@ -87,6 +87,7 @@ internal class GameTransitionService(SessionActor sessionActor) : MessageService
 
     private SERVER_100_PROTOCOL.MSG_SERVERINFO GetGameServer() {
         var msg = new SERVER_100_PROTOCOL.MSG_GETBESTSERVER();
+        
         return AskServer<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg);
     }
 
