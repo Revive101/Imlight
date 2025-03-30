@@ -118,14 +118,16 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
     public static CoreTemplate GetCoreTemplate(ulong id) {
         var template = TemplateManifest.m_serializedTemplates.FirstOrDefault(x => x.m_id == id);
         if (template is null) {
-            Logger.Error("Could not find CoreTemplate by ID {Tid}", Logger.Args(id));
+            Logger.Error("Could not find CoreTemplate by ID {Tid}. Finding the template failed.", 
+                Logger.Args(id));
 
             return null;
         }
 
         var templateObj = RootArchiveLoader.GetFile<CoreTemplate>(template.m_filename);
-        if (template is null) {
-            Logger.Error("Could not load CoreTemplate from {Loc}", Logger.Args(template.m_filename));
+        if (templateObj is null) {
+            Logger.Error("Could not load CoreTemplate from {Loc}. Could not get file from root archive.",
+                Logger.Args(template.m_filename));
         }
 
         return templateObj ?? null;
@@ -199,7 +201,8 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
     /// <returns>The finalized CoreObject.</returns>
     public static CoreObject FinalizeCoreObject(CoreObjectInfo objInfo, CoreTemplate template) {
         if (template is null) {
-            Logger.Error("Could not finalize CoreObject from TemplateID {Tid}", Logger.Args(objInfo.m_templateID));
+            Logger.Error("Could not finalize CoreObject from TemplateID {Tid}",
+                Logger.Args(objInfo.m_templateID.MParts.TemplateId));
 
             return null;
         }

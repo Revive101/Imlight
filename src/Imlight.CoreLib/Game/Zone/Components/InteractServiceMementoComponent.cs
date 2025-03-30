@@ -232,6 +232,11 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
         var wizBangs = components.Select(c => c.WizBang).Where(w => w != null);
         var prioritySortedWizBangs = WizBangPriority.GetPrioritySortedWizBangs([.. wizBangs]);
 
+        // If priority sorted WizBangs are empty, sort by default.
+        if (prioritySortedWizBangs is null || prioritySortedWizBangs.Count <= 0) {
+            return components.OrderBy(c => c.WizBang ?? "None");
+        }
+
         return components.OrderBy(c => prioritySortedWizBangs.IndexOf(c.WizBang ?? "None"));
     }
 

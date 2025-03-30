@@ -113,7 +113,7 @@ internal abstract class ZoneEntitySupervisor(Core.Zone zone) : ReceiveProtocolDi
     }
 
     protected static string CreateEntityActorName(CoreObject coreObject) {
-        var actorName = $"{coreObject.m_debugName}_{coreObject.m_globalID}";
+        var actorName = $"{coreObject.m_debugName}_{coreObject.m_globalID.Full}";
 
         // Only alphanumeric characters and underscores are allowed in actor names.
         actorName = new string([.. actorName.Where(c => char.IsLetterOrDigit(c) || c == '_')]);

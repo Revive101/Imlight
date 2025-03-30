@@ -28,6 +28,7 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
     ////////////////////////////////////////////////////////////////////////////
 
     private readonly CoreObjectSerializer _serializer = new(
+        versionable: false,
         behaviors: SerializerFlags.None
     );
     private readonly PropertyFlags _propertyFlags = PropertyFlags.Prop_Public
@@ -52,20 +53,8 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         CreateObjectForAllPlayers();
     }
 
-    public override void OnEnabled() {
-        // Serialize the client object.
-        var clientObj = Entity.GetClientBehaviorInstance();
-        if (!_serializer.Serialize(clientObj, _propertyFlags, out var serializedData)) {
-            Logger.Error("Failed to serialize object data.");
-
-            return;
-        }
-
-        // Broadcast the creation of the object to all players.
-        PlayerBroadcast(new GAME_5_PROTOCOL.MSG_NEWOBJECT {
-            Data = serializedData
-        });
-    }
+    public override void OnEnabled() 
+        => CreateObjectForAllPlayers();
 
     public override void OnDisabled() =>
         // Broadcast the removal of the object to all players.

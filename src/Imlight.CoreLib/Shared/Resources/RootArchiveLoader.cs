@@ -77,7 +77,7 @@ public static class RootArchiveLoader {
 
         // Deserialize the file data into the specified type.
         var serializer = new BindSerializer();
-        if (!serializer.Deserialize(fileData?.ToArray(), 1, out T file)) {
+        if (!serializer.Deserialize(fileData?.ToArray(), out T file)) {
             return null;
         }
 

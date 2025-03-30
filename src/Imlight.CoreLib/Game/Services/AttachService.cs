@@ -42,6 +42,7 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
             SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED {
                 Error = zoneDetails?.ErrorCode ?? 1
             });
+
             return;
         }
 
@@ -68,17 +69,15 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
         _wizard.GameObject = charGameObject;
 
         // Serialize the GameObject and send it to the client.
-        var coSerializer = new CoreObjectSerializer();
+        var coSerializer = new CoreObjectSerializer(
+            versionable: false,
+            behaviors: SerializerFlags.UseFlags | SerializerFlags.Compress
+        );
         var flags = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
         if (!coSerializer.Serialize(charGameObject, flags, out var localGameObjectData)) {
             Logger.Error($"User {message.UserID} failed to serialize their player object.");
 
-            throw new ServiceRetryException($"User {message.UserID} failed to serialize their player object.");
-        }
-
-        if (charGameObject is null || string.IsNullOrEmpty(localGameObjectData)) {
-            throw new ServiceRetryException($"User {message.UserID} failed to grab or deserialize " +
-                                            $"their player object.");
+            throw new SessionFatalException($"User {message.UserID} failed to serialize their player object.");
         }
 
         var account = GetActiveAccount();
@@ -127,6 +126,7 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
                 Error = 1,
                 Rejected = 1,
             });
+
             throw new SessionFatalException(
                 $"User [{message.UserID}] failed to validate login key: {message.LoginKey}.");
         }
@@ -136,6 +136,7 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
                 NoDisconnect = 1, // @todo: find out what these error codes mean.
                 Rejected = 1,
             });
+
             throw new SessionFatalException($"User [{message.UserID}] tried to attach with a character " +
                                             $"they did not have.");
         }
@@ -157,6 +158,7 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
         var rsp = AskServer<SERVER_100_PROTOCOL.MSG_VALIDATESESSIONKEYRSP>(msg);
 
         account = rsp.Account;
+
         return rsp.ErrorCode == 0;
     }
 
@@ -190,6 +192,7 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
             SendToClient = false,
             OwnerCharId = _wizard.CharId,
         };
+
         return AskOtherService<ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP>(zoneMsg);
     }
 
@@ -200,6 +203,7 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
             Wizard = wizard,
             ActualWizardName = wizard.PlayerNameBehavior.GetWizardName(),
         };
+
         TellOtherServices(msg);
     }
 

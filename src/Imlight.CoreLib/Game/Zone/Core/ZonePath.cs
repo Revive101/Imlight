@@ -98,7 +98,8 @@ public sealed class ZonePath : ZoneEntity, IWithTimers {
     private void ReceiveCreatureSpawnInterval(ZONE_102_PROTOCOL.MSG_PATHSPAWNINTERVAL message) {
         // Determine if the conditions match to spawn the objects.
         var spawnObject = message.SpawnObject;
-        if (!CanSpawn(spawnObject)) {
+        // todo: remove this true
+        if (!CanSpawn(spawnObject) || true) {
             return;
         }
 
