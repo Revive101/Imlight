@@ -10,6 +10,7 @@ using Akka.Actor;
 using Imcodec.CoreObject;
 using Imcodec.IO;
 using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Items;
@@ -22,9 +23,11 @@ namespace Imlight.CoreLib.Game.Services;
 public class EquipmentService(SessionActor sessionActor) : MessageService(sessionActor) {
 
     private readonly CoreObjectSerializer _itemSerializer = new(
+        versionable: false,
         behaviors: Imcodec.ObjectProperty.SerializerFlags.None
     );
     private readonly CoreObjectSerializer _effectSerializer = new(
+        versionable: false,
         behaviors: Imcodec.ObjectProperty.SerializerFlags.None
     );
 
@@ -49,14 +52,16 @@ public class EquipmentService(SessionActor sessionActor) : MessageService(sessio
     [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE))]
     private void ReceiveAttachComplete(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE message) {
         try {
-
             var playerCharacter = GetActiveWizard();
             var effects = playerCharacter.GameEffects;
 
-            SendAddEffects(effects.ToList());
+            SendAddEffects([.. effects]);
         }
         catch (Exception ex) {
-            Logger.Error("Error while attaching effects: {0} {1}", Logger.Args(ex.Message, ex.StackTrace));
+            Logger.Error("Error while attaching effects: {0} {1}", 
+                Logger.Args(ex.Message, ex.StackTrace));
+
+            throw new ServiceRetryException("Error while attaching effects.", ex);
         }
     }
 
@@ -78,7 +83,7 @@ public class EquipmentService(SessionActor sessionActor) : MessageService(sessio
         }
 
         // Check to see if the player already has this item equipped. If they do, broadcast the removal of it.
-        // We don't have to remove it here because the EquipItem method will do that for us.
+        // We don't have to remove it here because the InventoryToEquipmentTransfer method will do that for us.
         if (wizard.EquipmentBehavior.SlotInUse(message.SlotName, out var index)) {
             // Debug log.
             Logger.Debug("{0} tried to equip item {1} in slot {2} that is already in use. Unequipping from index {3}",
@@ -90,7 +95,9 @@ public class EquipmentService(SessionActor sessionActor) : MessageService(sessio
         }
 
         if (!wizard.InventoryToEquipmentTransfer(itemId, out var effects, out var removedEffects)) {
-            Logger.Warning("Equip failed on item {0}", Logger.Args(itemId));
+            Logger.Warning("Equip failed on item {0}", 
+                Logger.Args(itemId));
+
             return;
         }
 
@@ -130,7 +137,9 @@ public class EquipmentService(SessionActor sessionActor) : MessageService(sessio
             // Send a message to the client to assure them that the server does not have the item equipped.
             SendUnequipItem(message.SlotName, slot, itemId);
 
-            Logger.Warning("Unequip failed on item {0}", Logger.Args(itemId));
+            Logger.Warning("Unequip failed on item {0}", 
+                Logger.Args(itemId));
+
             return;
         }
 
@@ -186,18 +195,18 @@ public class EquipmentService(SessionActor sessionActor) : MessageService(sessio
         // hasn't had enough time to set its Wizard reference yet.
         var wizardObj = GetActiveGameObject();
         if (wizardObj is null) {
-            wizardObj = GetActiveWizard().GameObject;
+            wizardObj = GetActiveWizard()?.GameObject;
 
             if (wizardObj is null) {
-                Logger.Error("Failed to get wizard object for adding effects.");
-                return;
+                throw new ServiceRetryException("Failed to get active game object for add effects broadcast.");
             }
         }
 
         var charObjId = wizardObj.m_globalID;
 
         foreach (var effect in effects) {
-            if (!_effectSerializer.Serialize(effect, 1, out var effectSerializedData)) {
+            var flags = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
+            if (!_effectSerializer.Serialize(effect, flags, out var effectSerializedData)) {
                 Logger.Error("Failed to serialize effect {0} for add effects broadcast.",
                     Logger.Args(effect.m_effectNameID));
 
