@@ -8,6 +8,7 @@ using System.Linq;
 using Akka.Actor;
 using Imcodec.Math;
 using Imcodec.ObjectProperty.TypeCache;
+using Imlight.CoreLib.Game.Sigils;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
@@ -29,8 +30,11 @@ internal sealed class ZoneSigilSupervisor(Core.Zone zone) : ZoneEntitySupervisor
                 continue;
             }
 
-            var template = (GameObjectTemplate) CoreObjectFactory.GetCoreTemplate(objectInfo.m_templateID);
-            var coreObject = CoreObjectFactory.FinalizeCoreObject(objectInfo, template);
+            // Combat sigil template IDs are unreliable. Thankfully, we can use the
+            // sigil type to get the correct template.
+            var sigilType = ((CombatSigilObjectInfo) objectInfo).m_sigilType;
+            var sigilTemplate = SigilFactory.GetSigilTemplate(sigilType);
+            var coreObject = CoreObjectFactory.FinalizeCoreObject(objectInfo, sigilTemplate);
 
             // Sometimes the sigil may spawn in the ground.
             var newLoc = coreObject.m_location;
@@ -38,7 +42,7 @@ internal sealed class ZoneSigilSupervisor(Core.Zone zone) : ZoneEntitySupervisor
             coreObject.m_location = newLoc;
 
             // Create the sigil actor and inform it of the details.
-            var objectActor = CreateEntityActor(coreObject, template);
+            var objectActor = CreateEntityActor(coreObject, sigilTemplate);
             var detailsMsg = new ZONE_102_PROTOCOL.MSG_SIGILDETAILS {
                 CombatSigilObjectInfo = (CombatSigilObjectInfo) objectInfo,
             };
