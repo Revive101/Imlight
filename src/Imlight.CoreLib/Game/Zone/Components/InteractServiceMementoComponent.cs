@@ -44,7 +44,7 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
     private const string DEFAULT_TEXT_KEY = "GUI_NPCInteractText";
 
     private readonly float _interactionRadius = 300.0f;
-    private readonly Dictionary<CoreObject, IActorRef> _playersInRange = [];
+    private readonly Dictionary<ulong, IActorRef> _playersInRange = [];
     private List<IServiceComponent> _serviceComponents = [];
     private ServiceMementoBase _serviceMemento;
     private MadlibBlock _madlibBlock;
@@ -70,12 +70,14 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
             return;
         }
 
-        if (IsInRadius(playerObj, _interactionRadius) && !_playersInRange.ContainsKey(playerObj)) {
-            _playersInRange.Add(playerObj, playerActor);
+        if (   IsInRadius(playerObj, _interactionRadius) 
+            && !_playersInRange.ContainsKey(playerObj.m_globalID.Full)) {
+            _playersInRange.Add(playerObj.m_globalID.Full, playerActor);
             SendActorServiceOptions(playerActor);
         }
-        else if (!IsInRadius(playerObj, _interactionRadius) && _playersInRange.ContainsKey(playerObj)) {
-            _playersInRange.Remove(playerObj);
+        else if (   !IsInRadius(playerObj, _interactionRadius) 
+                 && _playersInRange.ContainsKey(playerObj.m_globalID.Full)) {
+            _playersInRange.Remove(playerObj.m_globalID.Full);
             SendLeaveServiceRange(playerActor);
         }
     }
@@ -89,10 +91,11 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
         var serviceIndex = message.ServiceIndex;
 
         Logger.Debug("Player {0} interacted with NPC {1} using service {2} at index {3}",
-            Logger.Args(playerActor.Path.Name, Entity.ActiveGameObject.m_globalID, serviceName, serviceIndex));
+            Logger.Args(playerActor.Path.Name, Entity.ActiveGameObject.m_globalID.Full, serviceName, serviceIndex));
 
         if (_serviceComponents.Count <= 0) {
-            Logger.Warning("No service components found for NPC {0}", Logger.Args(Entity.ActiveGameObject.m_debugName));
+            Logger.Warning("No service components found for NPC {0}", 
+                Logger.Args(Entity.ActiveGameObject.m_debugName));
 
             return;
         }
@@ -122,6 +125,7 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
 
         // Serialize the service memento and send it to the player.
         var serializer = new ObjectSerializer(
+            Versionable: false,
             Behaviors: SerializerFlags.None
         );
         if (!serializer.Serialize(_serviceMemento, 4, out var data)) {
@@ -135,7 +139,7 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
             // Do not let this property name fool you. 
             // The client incorrectly labels this property as "MobileID." It is in fact
             // the global ID of the NPC. It will not work if you set it to the mobile ID.
-            MobileID = Entity.ActiveGameObject.m_globalID,
+            MobileID = Entity.ActiveGameObject.m_globalID.Full,
             Options = data,
             Reinteract = 0
         };
@@ -148,7 +152,7 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
             // Do not let this property name fool you. 
             // The client incorrectly labels this property as "MobileID." It is in fact
             // the global ID of the NPC. It will not work if you set it to the mobile ID.
-            MobileID = Entity.ActiveGameObject.m_globalID
+            MobileID = Entity.ActiveGameObject.m_globalID.Full
         };
 
         playerActor.Tell(msg);
@@ -213,15 +217,13 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
 
         // Out of the service options, deduce which WizBang is the highest priority.
         // Thankfully, game client data has a priority list for WizBangs.
-        var wizBangs = _serviceComponents.Select(c => c.WizBang).Where(w => w != null);
-        var prioritySortedWizBangs = WizBangPriority.GetPrioritySortedWizBangs([.. wizBangs]);
         var highestPriority = SortComponentsByPriority(_serviceComponents).FirstOrDefault();
 
         // Send the WizBang to the player.
         var wizBang = highestPriority?.WizBang ?? "None";
         var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG {
             WizBangID = StringHash.Compute(wizBang),
-            GameObjectID = Entity.ActiveGameObject.m_globalID
+            GameObjectID = Entity.ActiveGameObject.m_globalID.Full
         };
 
         playerActor.Tell(wizBangMsg);
@@ -229,7 +231,9 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
 
     private static IOrderedEnumerable<IServiceComponent> SortComponentsByPriority(IEnumerable<IServiceComponent> components) {
         // Sort by WizBang priority
-        var wizBangs = components.Select(c => c.WizBang).Where(w => w != null);
+        var wizBangs = components
+            .Select(c => c.WizBang)
+            .Where(w => w != null);
         var prioritySortedWizBangs = WizBangPriority.GetPrioritySortedWizBangs([.. wizBangs]);
 
         // If priority sorted WizBangs are empty, sort by default.

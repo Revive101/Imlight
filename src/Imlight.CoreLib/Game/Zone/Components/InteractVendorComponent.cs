@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
 using Imcodec.Cryptography;
+using Imcodec.IO;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
@@ -27,23 +28,23 @@ internal sealed class InteractVendorComponent(ZoneEntity entity) : ZoneEntityCom
     public string NpcNameKey      => null;
     public string NpcTextKey      => null;
     public string WizBang         => "Shopping";
-    public string StateName       => "Shop";
+    public string StateName       => "Shop"; // Forbids the player from moving.
     public string InteractWizBang => "Registrar";
     public string DisplayKey      => "GUI_ShopOptionEquipment";
 
     private List<GID> _inventory;
 
-    public static bool ShouldAttachToEntity(CoreTemplate template) 
+    public static bool ShouldAttachToEntity(CoreTemplate template)
         // Attach if the template is an NPC and has an inventory in Dragon database,
         // or if the template is a vendor as per game client data.
-        => template is GameObjectTemplate goTemplate 
-        && goTemplate.m_behaviors.Any(x => x is NPCBehaviorTemplate) 
+        => template is GameObjectTemplate goTemplate
+        && goTemplate.m_behaviors.Any(x => x is NPCBehaviorTemplate)
         && (NpcInventoryCollection.TryGetNpcInventory(goTemplate.m_templateID, out _)
         || WorldVendorLocations.IsVendor(goTemplate.m_templateID));
 
     public override void OnStart() {
         if (!NpcInventoryCollection.TryGetNpcInventory(Entity.ActiveGameObject.m_templateID, out var inventory)) {
-            Logger.Error("Failed to get vendor inventory for NPC {0}", 
+            Logger.Error("Failed to get vendor inventory for NPC {0}",
                 Logger.Args(Entity.ActiveGameObject.m_templateID));
 
             return;
@@ -52,7 +53,7 @@ internal sealed class InteractVendorComponent(ZoneEntity entity) : ZoneEntityCom
         _inventory = inventory.Inventory;
     }
 
-    public IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard _) 
+    public IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard _)
         => [
             new EquipmentShopOption {
                 m_displayKey = DisplayKey,
@@ -67,7 +68,7 @@ internal sealed class InteractVendorComponent(ZoneEntity entity) : ZoneEntityCom
         SendPlayerIntoState(playerObject.m_globalID);
     }
 
-    public bool HasItem(GID itemGID) 
+    public bool HasItem(GID itemGID)
         => _inventory.Any(x => x.MParts.TemplateId == itemGID.MParts.TemplateId);
 
     private void SendShopOfferings(IActorRef playerActor) {
@@ -80,22 +81,26 @@ internal sealed class InteractVendorComponent(ZoneEntity entity) : ZoneEntityCom
             // 0 - Gold
             // 1 - PvP tickets
             m_shopType = 0,
+
+            // todo: figure this out for QA
+            m_CSRTestShop = false,
         };
 
         // Serialize the offerings and send them to the player.
         var serializer = new ObjectSerializer(
+            Versionable: false,
             Behaviors: SerializerFlags.None
         );
-        if (!serializer.Serialize(shopOffering, 4, out var data)) {
-            Logger.Error("Failed to serialize shop offering for NPC {0}", 
+        if (!serializer.Serialize(shopOffering, 4, out var serializedShopList)) {
+            Logger.Error("Failed to serialize shop offering for NPC {0}",
                 Logger.Args(Entity.ActiveGameObject.m_templateID));
 
             return;
         }
 
         var shopListMsg = new WIZARD_12_PROTOCOL.MSG_SHOPLIST() {
-            GlobalID = Entity.ActiveGameObject.m_globalID,
-            Data = data,
+            GlobalID = Entity.ActiveGameObject.m_globalID.Full,
+            Data = serializedShopList
         };
         playerActor.Tell(shopListMsg);
     }
