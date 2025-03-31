@@ -629,4 +629,11 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
     }
 
+    public sealed class MSG_RANDOMFLIPS : IServerMessage {
+        public byte MessageOrder { get; } = 41;
+        public byte ServiceID { get; } = 102;
+        public string ZoneName;
+        public ulong SenderCharID;
+    }
+
 }

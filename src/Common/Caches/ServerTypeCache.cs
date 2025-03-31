@@ -106,6 +106,7 @@ public static class ServerTypeCache {
         234614075 => new MinigameSigilInfo(),
         511049413 => new WizBangPriorityTemplate(),
         1349180726 => new ClientQuantityBehavior(),
+        88072 => new AuctionHouseContents(),
         _ => null
     };
 
@@ -922,5 +923,11 @@ public static class ServerTypeCache {
 
         // HASH : 0x492B6BF1
         // SIZE : 65 bits
+    }
+
+    public class AuctionHouseContents : PropertyClass {
+        public override uint GetHash() => 88072;
+
+        [Property(0x3F1DB764, 31)] public List<AuctionHouseEntry>? m_items;
     }
 }

@@ -14,6 +14,7 @@ using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Collections;
 using static Imlight.Common.Caches.TypeCache;
+using static Imlight.Common.Caches.ServerTypeCache;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -70,32 +71,14 @@ internal class AuctionHouseService : MessageService {
             return;
         }
 
-        var houseEntryList = new List<AuctionHouseEntry>(houseEntries);
-
-        while (houseEntryList.Count > 0) {
-            // Contents sent in blocks of up to 50 entries.
-            var houseEntryBlock = (houseEntryList.Count >= 50)
-                ? houseEntryList.GetRange(0, 50) : houseEntryList.GetRange(0, houseEntryList.Count);
-
-            var auctionHouseEntries = new AuctionHouseOffering {
-                m_auctionHousePurchaseKey = key,
-                m_auctionList = houseEntryBlock
-            };
-            var auctionHouseEntriesData = _serializer.Serialize(auctionHouseEntries);
-
-            var auctionHouseContentsMsg = new WIZARD_12_PROTOCOL.MSG_AUCTIONHOUSECONTENTS {
-                Contents = auctionHouseEntriesData,
-                GlobalID = npcId
-            };
-            SendToSocket(auctionHouseContentsMsg);
-
-            // Remove first 50 entries from list.
-            if (houseEntryList.Count >= 50) {
-                houseEntryList.RemoveRange(0, 50);
-            } else {
-                houseEntryList.RemoveRange(0, houseEntryList.Count);
-            }
-        }
+        // todo: test, remove later. Convert our current auction house entry type into the new one.
+        var newAuctionMap = new AuctionHouseContents { m_items = houseEntries };
+        var newAuctionMapData = _serializer.Serialize(newAuctionMap);
+        var newAuctionHouseMsg = new WIZARD_12_PROTOCOL.MSG_AUCTIONHOUSECONTENTS {
+            Contents = newAuctionMapData,
+            GlobalID = npcId
+        };
+        SendToSocket(newAuctionHouseMsg);
     }
 
     private void ConfirmBuyFromAuctionHouse(ulong templateId, uint key) {

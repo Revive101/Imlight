@@ -6,12 +6,14 @@
 using Akka.Actor;
 using Imlight.Common;
 using Imlight.Common.Caches;
+using Imlight.Common.Configuration;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 using Nito.AsyncEx.Synchronous;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using static Imlight.Common.Caches.TypeCache;
 
@@ -40,6 +42,8 @@ public sealed class ZonePath : ZoneEntity, IWithTimers {
     private readonly Dictionary<SpawnObject, byte> _creatureCount = [];
     private readonly List<IActorRef> _creatureActors = [];
     private readonly Dictionary<ulong, SpawnObject> _spawnObjectInfo = [];
+
+    private readonly bool _randomizeCreatures = ConfigurationManager.Settings.RandomizeCreatures;
 
     // ctor
     public ZonePath(PathObjectTemplate template, List<NodeObject> nodes, List<SpawnObject> creatures, IActorRef zoneRef, Zone zone)
@@ -109,6 +113,10 @@ public sealed class ZonePath : ZoneEntity, IWithTimers {
 
         // Get the node to spawn the creature at.
         var spawnNode = GetRelevantNode(spawnItemInfo);
+
+        if (_randomizeCreatures) {
+            spawnItemInfo.m_templateID = AprilFools.CreatureList.GetRandomCreatureTemplateID();
+        }
 
         // Create the creature using the data we have.
         var template = CoreObjectFactory.GetCoreTemplate(spawnItemInfo.m_templateID);

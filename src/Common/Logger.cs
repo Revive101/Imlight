@@ -161,7 +161,7 @@ public class Logger {
         foreach (var value in values) {
             if (seen.Add(value)) {
                 // Check if value is a class. If it is, serialize it as json.
-                if (value is not string and not ValueType) {
+                if (value is not null and not string and not ValueType) {
                     LogContext.PushProperty(value.GetType().Name, value, true);
                 }
                 else {

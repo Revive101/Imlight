@@ -147,6 +147,21 @@ public sealed class ServerSettings {
 
     #endregion
 
+    #region April Fools
+
+    [IniSection("April Fools")]
+
+    [DefaultValue(false)]
+    public bool RandomizeCreatures { get; set; }
+
+    [DefaultValue(false)]
+    public bool RandomizeGateways { get; set; }
+
+    [DefaultValue(false)]
+    public bool RandomBackflips { get; set; }
+
+    #endregion
+
     #region Patch Server
 
     [IniSection("Patch Server")]
