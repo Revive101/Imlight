@@ -98,8 +98,7 @@ public sealed class ZonePath : ZoneEntity, IWithTimers {
     private void ReceiveCreatureSpawnInterval(ZONE_102_PROTOCOL.MSG_PATHSPAWNINTERVAL message) {
         // Determine if the conditions match to spawn the objects.
         var spawnObject = message.SpawnObject;
-        // todo: remove this true
-        if (!CanSpawn(spawnObject) || true) {
+        if (!CanSpawn(spawnObject)) {
             return;
         }
 
@@ -237,7 +236,7 @@ public sealed class ZonePath : ZoneEntity, IWithTimers {
     }
 
     private static string CreateEntityActorName(CoreObject coreObject) {
-        var actorName = $"{coreObject.m_debugName}_{coreObject.m_globalID}";
+        var actorName = $"{coreObject.m_debugName}_{coreObject.m_globalID.Full}";
 
         // Only alphanumeric characters and underscores are allowed in actor names.
         actorName = new string([.. actorName.Where(c => char.IsLetterOrDigit(c) || c == '_')]);
