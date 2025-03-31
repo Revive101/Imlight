@@ -30,12 +30,17 @@ public static class ResourceManager {
         }
 
         // Otherwise, load it as normal.
-        var cachedWad = ResourceWad(wadName);
-        if (cachedWad is null) {
+        try {
+            var cachedWad = ResourceWad(wadName);
+            if (cachedWad is null) {
+                return false;
+            }
+
+            wad = cachedWad;
+        }
+        catch {
             return false;
         }
-
-        wad = cachedWad;
 
         return true;
     }
@@ -59,8 +64,8 @@ public static class ResourceManager {
         }
 
         var fileMemory = wad.OpenFile(fileName);
-        fileStream = fileMemory.HasValue 
-            ? new MemoryStream(fileMemory.Value.ToArray()) 
+        fileStream = fileMemory.HasValue
+            ? new MemoryStream(fileMemory.Value.ToArray())
             : null;
 
         return true;

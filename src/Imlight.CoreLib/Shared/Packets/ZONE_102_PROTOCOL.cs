@@ -524,6 +524,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public string ZoneDisplayName;
         public Vector3 Location;
         public float Orientation;
+        public string ErrorMessage;
         public uint ErrorCode;
 
     } 

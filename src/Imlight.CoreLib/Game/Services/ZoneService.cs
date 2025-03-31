@@ -86,6 +86,10 @@ public class ZoneService(SessionActor sessionActor) : MessageService(sessionActo
 
             ReadyClientForZoneTransfer(message);
         }
+        else if (zoneDetails.ErrorCode != 0) {
+            // The server has returned an error code. This means the zone transfer failed.
+            InformGameClient("Failed to transfer to zone: " + zoneDetails.ErrorMessage, true);
+        }
         else {
             // If we're not sending this message to the client, it means the zone is being loaded
             // for MSG_ATTACH. In which case, the client is already prepared for the zone transfer.

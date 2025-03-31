@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
+using Akka.Util.Internal;
 using Imcodec.Cryptography;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Zone.Core;
@@ -79,18 +80,18 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
             _zoneLoaderActors.Remove(message.ZonePath);
             Context.Stop(loaderRef);
 
-            Logger.Error("{Name} failed to load zone {ZoneName} within the timeout",
-                Logger.Args(nameof(GameWorld), message.ZonePath));
+            Logger.Error("Failed to load zone {ZoneName} within the timeout",
+                Logger.Args(message.ZonePath));
         }
 
         // Reply to any zone transfer requests with failure.
         var reply = new ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP {
+            ErrorMessage = "Failed to load zone within the timeout",
             ErrorCode = StringHash.Compute(LOAD_ZONE_FAILURE_ERROR)
         };
         var transfers = _awaitingTransfers.Where(t => t.Key.DestinationZone == message.ZonePath);
         foreach (var (transferMsg, transferActor) in transfers) {
             transferActor.Tell(reply);
-
             _awaitingTransfers.Remove(transferMsg);
         }
     }
@@ -99,11 +100,12 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
     private void ReceiveZoneLoadResults(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS message) {
         // If the zone failed to load, inform anyone waiting for the zone to load.
         if (message.Error) {
-            Logger.Error("{Name} failed to load zone: {ErrorMessage}",
-                Logger.Args(nameof(GameWorld), message.ErrorMessage));
+            Logger.Error("Failed to load zone: {ErrorMessage}",
+                Logger.Args(message.ErrorMessage));
 
             // Reply to any zone transfer requests with failure.
             var reply = new ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP {
+                ErrorMessage = message.ErrorMessage,
                 ErrorCode = StringHash.Compute(LOAD_ZONE_FAILURE_ERROR)
             };
             var transfers = _awaitingTransfers.Where(t => t.Key.DestinationZone == message.ZonePath);
@@ -164,7 +166,7 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
         // If the public zone already exists, we can transfer the player immediately to it.
         if (_publicZones.TryGetValue(message.DestinationZone, out var zone)) {
             zone.Forward(message);
-            
+
             return;
         }
 
@@ -204,7 +206,7 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
 
             // We want to wait until the zone is fully loaded before transferring the player.
             _awaitingTransfers.Add(message, Sender);
-            _instanceCreationCalledByMap.Add(message.DestinationZone, message.OwnerCharId);
+            _instanceCreationCalledByMap.AddOrSet(message.DestinationZone, message.OwnerCharId);
         }
         else {
             // If the zone is already loaded, we can transfer the player immediately.
@@ -260,13 +262,15 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     private void RemoveZoneLoader(string zonePath) {
-        if (_zoneLoaderActors.TryGetValue(zonePath, out var loaderRef)) {
-            _zoneLoaderActors.Remove(zonePath);
-            Context.Stop(loaderRef);
+        // Stop the timer.
+        var loadZoneTimeoutKey = $"loadZoneTimeout_{zonePath}";
+        Timers.Cancel(loadZoneTimeoutKey);
 
-            // Stop the timer.
-            var loadZoneTimeoutKey = $"loadZoneTimeout_{zonePath}";
-            Timers.Cancel(loadZoneTimeoutKey);
+        if (zonePath is not null) {
+            if (_zoneLoaderActors.TryGetValue(zonePath, out var loaderRef)) {
+                _zoneLoaderActors.Remove(zonePath);
+                Context.Stop(loaderRef);
+            }
         }
     }
 

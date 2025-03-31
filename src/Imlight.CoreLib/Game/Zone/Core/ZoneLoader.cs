@@ -32,8 +32,10 @@ internal sealed class ZoneLoader : ReceiveProtocolDispatcher {
         _benchmarkTimer.Restart();
         if (!ResourceManager.TryLoadArchive(message.ZonePath, out _wad)) {
             var failureMsg = new ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS {
+                ZonePath = message.ZonePath,
                 Error = true,
-                ErrorMessage = $"Failed to load zone archive {message.ZonePath}"
+                ErrorMessage = "Failed to load zone archive from local cache or patch server. "
+                             + "Likely, the patch server is unavailable."
             };
             Sender.Tell(failureMsg);
 
