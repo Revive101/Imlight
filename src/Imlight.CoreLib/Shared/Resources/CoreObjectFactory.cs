@@ -116,18 +116,18 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
     /// <param name="id">The ID of the CoreTemplate.</param>
     /// <returns>The CoreTemplate object if found; otherwise, null.</returns>
     public static CoreTemplate GetCoreTemplate(ulong id) {
-        var template = TemplateManifest.m_serializedTemplates.FirstOrDefault(x => x.m_id == id);
-        if (template is null) {
+        var templateLocation = TemplateManifest.m_serializedTemplates.FirstOrDefault(x => x.m_id == id);
+        if (templateLocation is null) {
             Logger.Error("Could not find CoreTemplate by ID {Tid}. Finding the template failed.", 
                 Logger.Args(id));
 
             return null;
         }
 
-        var templateObj = RootArchiveLoader.GetFile<CoreTemplate>(template.m_filename);
+        var templateObj = RootArchiveLoader.GetFile<CoreTemplate>(templateLocation.m_filename);
         if (templateObj is null) {
             Logger.Error("Could not load CoreTemplate from {Loc}. Could not get file from root archive.",
-                Logger.Args(template.m_filename));
+                Logger.Args(templateLocation.m_filename));
         }
 
         return templateObj ?? null;

@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using Imcodec.ObjectProperty;
 using Imcodec.Wad;
 using Imlight.Common;
@@ -22,6 +23,7 @@ public static class RootArchiveLoader {
 
     internal static bool IsLoaded { get; private set; }
     internal static Archive GetRootWad() => s_rootWad;
+    private static readonly Lock s_lock = new();
     private static Archive s_rootWad;
 
     /// <summary>
@@ -44,14 +46,16 @@ public static class RootArchiveLoader {
     /// <param name="fileName">The name of the file.</param>
     /// <returns>A <see cref="MemoryStream"/> containing the file data.</returns>
     internal static MemoryStream GetFileStream(string fileName) {
-        if (s_rootWad is null) {
-            ReloadRootWad();
+        lock (s_lock) {
+            if (s_rootWad is null) {
+                ReloadRootWad();
+            }
+
+            var file = s_rootWad?.OpenFile(fileName) 
+                ?? throw new Exception($"Could not find file {fileName} in Root.wad!");
+
+            return new MemoryStream(file.ToArray());
         }
-
-        var file = s_rootWad?.OpenFile(fileName) 
-            ?? throw new Exception($"Could not find file {fileName} in Root.wad!");
-
-        return new MemoryStream(file.ToArray());
     }
 
     /// <summary>
@@ -61,27 +65,29 @@ public static class RootArchiveLoader {
     /// <param name="fileName">The name of the file to retrieve.</param>
     /// <returns>The file of type T.</returns>
     internal static T GetFile<T>(string fileName) where T : PropertyClass {
-        if (s_rootWad is null) {
-            ReloadRootWad();
-        }
+        lock (s_lock) {
+            if (s_rootWad is null) {
+                ReloadRootWad();
+            }
 
-        // Validate that the file exists.
-        if (!s_rootWad.Files.TryGetValue(fileName, out var _)) {
-            return null;
-        }
+            // Validate that the file exists.
+            if (!s_rootWad.Files.TryGetValue(fileName, out var _)) {
+                return null;
+            }
 
-        var fileData = s_rootWad.OpenFile(fileName);
-        if (fileData is null) {
-            return null;
-        }
+            var fileData = s_rootWad.OpenFile(fileName);
+            if (fileData is null) {
+                return null;
+            }
 
-        // Deserialize the file data into the specified type.
-        var serializer = new BindSerializer();
-        if (!serializer.Deserialize(fileData?.ToArray(), out T file)) {
-            return null;
-        }
+            // Deserialize the file data into the specified type.
+            var serializer = new BindSerializer();
+            if (!serializer.Deserialize(fileData?.ToArray(), out T file)) {
+                return null;
+            }
 
-        return file;
+            return file;
+        }
     }
 
     /// <summary>

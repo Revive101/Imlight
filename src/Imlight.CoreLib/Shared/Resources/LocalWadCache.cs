@@ -78,7 +78,6 @@ public static class LocalWadCache {
         var fileStream = new MemoryStream();
         liteDbStream.CopyTo(fileStream);
         fileStream.Seek(0, SeekOrigin.Begin);
-        liteDbStream.Dispose();
 
         return file is null 
             ? null 

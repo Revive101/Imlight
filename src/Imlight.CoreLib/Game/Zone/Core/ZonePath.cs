@@ -112,6 +112,13 @@ public sealed class ZonePath : ZoneEntity, IWithTimers {
 
         // Create the creature using the data we have.
         var template = CoreObjectFactory.GetCoreTemplate(spawnItemInfo.m_templateID);
+        if (template is null) {
+            Logger.Error("Failed to get template for {0}.",
+                Logger.Args(spawnItemInfo.m_templateID));
+
+            return;
+        }
+
         var creatureObj = CoreObjectFactory.FinalizeCoreObject(spawnItemInfo, template);
         creatureObj = CoreObjectFactory.InitializeCoreObjectBehaviors(creatureObj, template);
         creatureObj.m_location = spawnNode.m_location;
