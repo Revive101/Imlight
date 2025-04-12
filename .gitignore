@@ -355,3 +355,4 @@ act.vault
 /src/Backend/ImlightEmbeddedDatabase/Databases/Playerdata/
 src/Director/cache
 src/cache
+src/Imlight.Director/cache

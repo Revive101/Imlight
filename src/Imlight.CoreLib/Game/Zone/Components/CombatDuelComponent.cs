@@ -20,6 +20,7 @@
  * TODO:
  * - Implementation of creature stunning functionality
  * - Calculate the correct damage percent max as a limit function
+ * - `IsNewbieZone` and `IsDangerousZone` should be elements of the zone itself
  * 
  * Created by: Jooty
  * Version: KALI 1.0
@@ -96,6 +97,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
     private readonly Dictionary<CoreObject, IActorRef> _entitiesInRange = [];
     private readonly ObjectSerializer _serializer = new(
+        Versionable: false,
         Behaviors: SerializerFlags.None
     );
     private readonly PropertyFlags _combatParticipantFlags     = (PropertyFlags) 4;
@@ -112,8 +114,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     private bool _awaitingCombatMoves;
 
     public static bool ShouldAttachToEntity(CoreTemplate template)
-        => template is GameObjectTemplate gameObjectTemplate
-        && gameObjectTemplate.m_behaviors.Any(x => x is not null && x.m_behaviorName == "DuelBehavior");
+        => template is CombatSigilTemplate csTemplate
+        && csTemplate.m_sigilType == "Combat";
 
     public override void OnStart() {
         // Disable the RenderComponent. We'll activate it when the sigil is activated.
@@ -221,6 +223,15 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL))]
     private void ReceiveDuelStart(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL message) {
         if (_isActive) {
+            return;
+        }
+
+        if (_renderComponent is null) {
+            Logger.Error("RenderComponent is null for duel {0}! Deleting sigil.", 
+                Logger.Args(SigilId));
+
+            Entity.DespawnObject();
+
             return;
         }
 
@@ -979,6 +990,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         if (!circle.IsAlive) {
             var defeatMsg = new COMBAT_106_PROTOCOL.MSG_COMBATDEFEAT();
             circle.ParticipantActor.Tell(defeatMsg);
+
             return;
         }
 
@@ -991,7 +1003,6 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     });
    
     private bool IsSlotAvailable(CombatTeam team) {
-        // todo: keep these variables in the zone
         var IsNewbieZone = false;
         var IsDangerousZone = false;
 

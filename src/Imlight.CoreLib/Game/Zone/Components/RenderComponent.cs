@@ -40,7 +40,8 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
 
     public static bool ShouldAttachToEntity(CoreTemplate template) 
         => template is GameObjectTemplate gameObjectTemplate
-        && gameObjectTemplate.m_behaviors.Any(x => x is RenderBehaviorTemplate);
+        && gameObjectTemplate.m_behaviors.Any(x => x is RenderBehaviorTemplate)
+        || template is CombatSigilTemplate; // bug fix: combat sigil templtaes don't have any behaviors
 
     public override void OnStart() {
         // Check if the object should be spawned based on distance.
