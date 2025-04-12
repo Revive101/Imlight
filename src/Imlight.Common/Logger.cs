@@ -189,7 +189,15 @@ public class Logger {
             if (seen.Add(value)) {
                 // Check if value is a class. If it is, serialize it as json.
                 if (value is not string and not ValueType) {
-                    LogContext.PushProperty(value.GetType().Name, value, true);
+                    if (value is null) {
+                        LogContext.PushProperty( "Unknown", "null", true);
+                    }
+                    else if (value is IEnumerable<object> enumerable) {
+                        LogContext.PushProperty(value.GetType().Name, string.Join(", ", enumerable), true);
+                    }
+                    else {
+                        LogContext.PushProperty(value.GetType().Name, value, true);
+                    }
                 }
                 else {
                     LogContext.PushProperty(value.GetType().Name, value);
