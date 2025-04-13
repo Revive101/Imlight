@@ -44,11 +44,23 @@ internal static class CombatEffectApplicator {
     private const float DAMAGE_PERCENT_MAX = 2.45f; // todo: not correct. this should be a limit function
     private const float HANGING_EFFECT_CONSUME_TIME = 1.0f;
 
-    internal static float ApplyEffect(SpellEffect effect, SpellEffect[] charms, CombatDuelSubCircle caster, CombatDuelSubCircle[] targets) {
+    /// <summary>
+    /// Applies the specified spell effect to the targets, modifying their stats and applying damage or healing as necessary.
+    /// </summary>
+    /// <param name="effect">The spell effect to apply.</param>
+    /// <param name="charms">The charms currently applied to the caster.</param>
+    /// <param name="caster">The caster of the spell.</param>
+    /// <param name="targets">The targets of the spell effect.</param>
+    /// <returns>The cinematic time required for the effect to be applied.</returns>
+    internal static float ApplyEffect(SpellEffect effect,
+                                      SpellEffect[] charms,
+                                      CombatDuelSubCircle caster,
+                                      CombatDuelSubCircle[] targets) {
         var cinematicTime = 0.0f;
 
         if (effect.m_effectTarget == kEffectTarget.kGlobal) {
             ApplyGlobalEffect(effect, caster._duelActor.Duel);
+
             return cinematicTime;
         }
 
@@ -110,12 +122,19 @@ internal static class CombatEffectApplicator {
         return cinematicTime;
     }
 
-    private static float ApplyFlatDamageEffect(SpellEffect effect, SpellEffect[] charms, CombatDuelSubCircle caster, CombatDuelSubCircle[] targets) {
+    private static float ApplyFlatDamageEffect(SpellEffect effect,
+                                               SpellEffect[] charms,
+                                               CombatDuelSubCircle caster,
+                                               CombatDuelSubCircle[] targets) {
         var (cinematicTime, _) = ApplyDamageEffect(effect, charms, caster, targets);
+
         return cinematicTime;
     }
 
-    private static float ApplyDamageOverTime(SpellEffect effect, SpellEffect[] charms, CombatDuelSubCircle caster, CombatDuelSubCircle[] targets) {
+    private static float ApplyDamageOverTime(SpellEffect effect,
+                                             SpellEffect[] charms,
+                                             CombatDuelSubCircle caster,
+                                             CombatDuelSubCircle[] targets) {
         var damageFromCaster = effect.m_effectParam;
         var cinematicTime = 0.0f;
 
@@ -161,7 +180,10 @@ internal static class CombatEffectApplicator {
         return cinematicTime;
     }
 
-    private static float ApplyHealOverTime(SpellEffect effect, SpellEffect[] charms, CombatDuelSubCircle caster, CombatDuelSubCircle[] targets) {
+    private static float ApplyHealOverTime(SpellEffect effect,
+                                           SpellEffect[] charms,
+                                           CombatDuelSubCircle caster,
+                                           CombatDuelSubCircle[] targets) {
         var healFromCaster = effect.m_effectParam;
         var cinematicTime = 0.0f;
 
@@ -197,10 +219,14 @@ internal static class CombatEffectApplicator {
         return cinematicTime;
     }
 
-    private static float ApplyStealHealthEffect(SpellEffect effect, SpellEffect[] charms, CombatDuelSubCircle caster, CombatDuelSubCircle[] targets) {
+    private static float ApplyStealHealthEffect(SpellEffect effect,
+                                                SpellEffect[] charms,
+                                                CombatDuelSubCircle caster,
+                                                CombatDuelSubCircle[] targets) {
         var (cinematicTime, damageDealt) = ApplyDamageEffect(effect, charms, caster, targets);
         var casterHealTotal = (int) Math.Floor(damageDealt * effect.m_healModifier);
         DoHealToTarget(caster, casterHealTotal);
+
         return cinematicTime;
     }
 
@@ -244,7 +270,10 @@ internal static class CombatEffectApplicator {
         return (cinematicTime, damageDealt);
     }
 
-    private static float ApplyFlatHealEffect(SpellEffect effect, SpellEffect[] charms, CombatDuelSubCircle caster, CombatDuelSubCircle[] targets) {
+    private static float ApplyFlatHealEffect(SpellEffect effect,
+                                             SpellEffect[] charms,
+                                             CombatDuelSubCircle caster,
+                                             CombatDuelSubCircle[] targets) {
         int healFromCaster = effect.m_effectParam;
         var cinematicTime = 0.0f;
 

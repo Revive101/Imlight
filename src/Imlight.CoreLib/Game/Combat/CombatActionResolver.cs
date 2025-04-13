@@ -43,6 +43,13 @@ namespace Imlight.CoreLib.Game.Combat;
 /// </remarks>
 internal static class CombatActionResolver {
 
+    /// <summary>
+    /// Processes a queued combat action and determines if it is worth casting.
+    /// </summary>
+    /// <param name="action">The queued combat action to process.</param>
+    /// <param name="combatAction">The combat action to be modified.</param>
+    /// <param name="cinematicTime">The cinematic time to be updated.</param>
+    /// <returns>True if the spell is worth casting, otherwise false.</returns>
     internal static bool ProcessedQueuedCombatAction(QueuedCombatAction action, ref CombatAction combatAction, ref float cinematicTime) {
         var spellWorthCasting = false;
         var effectStack = new CombatEffectStack();
@@ -194,7 +201,7 @@ internal static class CombatActionResolver {
                 targets = [.. _activeSubCircles.Where(x => x.OccupiedTeam != caster.OccupiedTeam)];
                 break;
             case kEffectTarget.kGlobal:
-                return Array.Empty<CombatDuelSubCircle>();
+                return [];
         }
 
         return targets;

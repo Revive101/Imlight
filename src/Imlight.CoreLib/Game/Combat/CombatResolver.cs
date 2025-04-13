@@ -68,7 +68,7 @@ public class QueuedCombatAction {
 /// the effects of spells on targets. Manages the flow of a combat turn by processing queued 
 /// actions and calculating cinematic timing for visual feedback.
 /// </remarks>
-public class CombatResolver {
+public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
     
     private const int SPELL_FIZZLE_TIME = 4;
     private const int SPELL_PASS_TIME = 1;
@@ -77,26 +77,25 @@ public class CombatResolver {
     private const float OVER_TIME_ACTIVATION_TIME = 2.0f;
     private const float DEATH_ANIMATION_TIME = 2.0f;
 
-    private readonly Duel _duel;
+    private readonly Duel _duel = duel;
 
-    private readonly CombatDuelSubCircle[] _subCircles = new CombatDuelSubCircle[8];
+    private readonly CombatDuelSubCircle[] _subCircles = actorSubCircles;
     private CombatDuelSubCircle[] ActiveSubCircles => [.. _subCircles.Where(x => x.Occupied)];
     private List<QueuedCombatAction> _queuedCombatActions;
 
-    // ctor
-    public CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
-        _duel = duel;
-        _subCircles = actorSubCircles;
-    }
-
     public void Reset() =>
-        // Reset the rounds combat action list.
         _queuedCombatActions = [];
 
+    /// <summary>
+    /// Applies queued combat actions to the duel, processing each action in order.
+    /// </summary>
+    /// <param name="combatActionListObj">The object that will hold the list of combat actions.</param>
+    /// <returns>The total cinematic time for the actions applied.</returns>
     public float ApplyQueuedCombatActions(out CombatActionListObj combatActionListObj) {
-        Logger.Debug("Duel {0} | Applying combat actions..", Logger.Args(_duel.m_duelID, _duel.m_roundNum));
+        Logger.Debug("Duel {0} | Applying combat actions..", 
+            Logger.Args(_duel.m_duelID.Full, _duel.m_roundNum));
 
-        combatActionListObj = new CombatActionListObj { m_actionList = new List<CombatAction>() };
+        combatActionListObj = new CombatActionListObj { m_actionList = [] };
 
         // Some subcircles may not have queued actions. Ensure they do by adding a pass action.
         AddCasterPassActionIfNeeded();
@@ -107,6 +106,13 @@ public class CombatResolver {
         return cinematicTime;
     }
 
+    /// <summary>
+    /// Adds a combat move to the queue for processing.
+    /// </summary>
+    /// <param name="type">The type of combat move (e.g., Attack, ChangeMind).</param>
+    /// <param name="caster">The caster of the spell.</param>
+    /// <param name="target">The target of the spell.</param>
+    /// <param name="spell">The spell being cast.</param>
     public void AddCombatMove(CombatMoveType type,
                               CombatDuelSubCircle caster,
                               CombatDuelSubCircle target,
@@ -126,7 +132,7 @@ public class CombatResolver {
 
             if (spellTemplate is null) {
                 Logger.Error("Duel {0} | Slot {1} | Spell template {2} not found",
-                    Logger.Args(_duel.m_duelID, caster.SlotIndex, spell.m_templateID));
+                    Logger.Args(_duel.m_duelID.Full, caster.SlotIndex, spell.m_templateID));
                 return;
             }
         }
@@ -142,6 +148,10 @@ public class CombatResolver {
         LogQueuedCombatAction(type, caster, target, spell);
     }
 
+    /// <summary>
+    /// Checks if all participants have enqueued actions.
+    /// </summary>
+    /// <returns>True if all participants have enqueued actions, false otherwise.</returns>
     public bool HaveAllParticipantsEnqueuedActions() {
         var enqueuedPlayers = _subCircles.Where(circle => circle.AddedToDuel && circle.IsAlive);
 
@@ -197,7 +207,8 @@ public class CombatResolver {
             // If the caster is dead, skip this action.
             if (!action.SpellCaster.IsAlive) {
                 Logger.Debug("Duel {0} | Slot {1} | Caster is dead. Skipping action.",
-                    Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex));
+                    Logger.Args(_duel.m_duelID.Full, action.SpellCaster.SlotIndex));
+
                 continue;
             }
 
@@ -208,7 +219,7 @@ public class CombatResolver {
             // A null spell indicates the caster is passing their turn.
             if (action.Spell is null || action.SelectedTarget is null) {
                 Logger.Debug("Duel {0} | Slot {1} | Caster is passing their turn.",
-                    Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex));
+                    Logger.Args(_duel.m_duelID.Full, action.SpellCaster.SlotIndex));
 
                 cinematicTime += HandlePassAction(action, combatActionList);
 
@@ -224,7 +235,7 @@ public class CombatResolver {
                 cinematicTime += HandlePassAction(action, combatActionList);
 
                 Logger.Debug("Duel {0} | Slot {1} | Spell cannot occur because target is dead or caster is stunned.",
-                    Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex));
+                    Logger.Args(_duel.m_duelID.Full, action.SpellCaster.SlotIndex));
 
                 continue;
             }
@@ -282,8 +293,12 @@ public class CombatResolver {
 
     private float InvokeOverTimeEffects(CombatDuelSubCircle caster) {
         // Get all DoT and HoT effects. Clone the list to avoid concurrent modification.
-        var dotEffects = caster._hangingEffects.Where(x => x.m_effectType == kSpellEffects.kDamageOverTime).ToList();
-        var hotEffects = caster._hangingEffects.Where(x => x.m_effectType == kSpellEffects.kHealOverTime).ToList();
+        var dotEffects = caster._hangingEffects
+            .Where(x => x.m_effectType == kSpellEffects.kDamageOverTime)
+            .ToList();
+        var hotEffects = caster._hangingEffects
+            .Where(x => x.m_effectType == kSpellEffects.kHealOverTime)
+            .ToList();
         var cinematicTime = (dotEffects.Count + hotEffects.Count) * OVER_TIME_ACTIVATION_TIME;
 
         foreach (var effect in dotEffects) {
@@ -327,7 +342,7 @@ public class CombatResolver {
     private void LogQueuedCombatAction(CombatMoveType type, CombatDuelSubCircle caster, CombatDuelSubCircle target, Spell spell) {
         if (type == CombatMoveType.ChangeMind) {
             Logger.Debug("Duel {0} | Slot {1} | Caster changed their mind and is not casting a spell",
-                Logger.Args(_duel.m_duelID, caster.SlotIndex));
+                Logger.Args(_duel.m_duelID.Full, caster.SlotIndex));
 
             return;
         }
@@ -336,25 +351,25 @@ public class CombatResolver {
             ? "null" : (target.SlotIndex == caster.SlotIndex ? "self" : target.SlotIndex.ToString());
         var spellOrPass = spell is null ? "pass" : spell.m_templateID.ToString();
         Logger.Debug("Duel {0} | Slot {1} | Caster is casting spell {2} against target {3}",
-            Logger.Args(_duel.m_duelID, caster.SlotIndex, spellOrPass, targetOrSelf));
+            Logger.Args(_duel.m_duelID.Full, caster.SlotIndex, spellOrPass, targetOrSelf));
     }
 
     private void LogCombatAction(QueuedCombatAction action, CombatAction combatAction, bool spellWorthCasting) {
         if (spellWorthCasting) {
             var targetsStringForLog = string.Join(", ", combatAction.m_targetSubcircleList);
             Logger.Debug("Duel {0} | Slot {1} | Spell {2} hits targets [{3}]",
-                Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex, action.Spell.m_templateID, targetsStringForLog));
+                Logger.Args(_duel.m_duelID.Full, action.SpellCaster.SlotIndex, action.Spell.m_templateID, targetsStringForLog));
         }
         else {
             Logger.Debug("Duel {0} | Slot {1} | Spell {3} not worth casting. Passing turn.",
-                Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex, action.Spell.m_templateID));
+                Logger.Args(_duel.m_duelID.Full, action.SpellCaster.SlotIndex, action.Spell.m_templateID));
             combatAction.m_spell = null;
         }
     }
 
     private static CombatAction InitializeCombatAction(QueuedCombatAction action) => new() {
         m_spellCaster = action.SpellCaster.SlotIndex,
-        m_targetSubcircleList = new List<int>(),
+        m_targetSubcircleList = [],
         m_showCast = true,
         m_spellHits = (char) 1,
         m_spell = action.Spell,
@@ -392,17 +407,6 @@ public class CombatResolver {
             return false;
         }
 
-        // Easter egg: Kevin has a 100% fizzle rate on storm spells. Fuck you, Kevin.
-        if (caster.OccupiedTeam == CombatTeam.Player && caster.Occupied) {
-            var wizardName = caster._wizard.PlayerNameBehavior.GetWizardName();
-            var wizardSchool = caster._wizard.MagicSchoolBehavior.MagicSchool;
-            var isStormKevin = wizardName == "Kevin" && wizardSchool == MagicSchool.Storm;
-
-            if (isStormKevin && spell.m_magicSchoolID == (uint) MagicSchool.Storm) {
-                return false;
-            }
-        }
-
         if (ConsumeDispell(caster, spell.m_magicSchoolID)) {
             return false;
         }
@@ -427,6 +431,7 @@ public class CombatResolver {
         spellAccuracy = ConsumeHangingAccuracyEffects(spellAccuracy, caster, spell.m_magicSchoolID);
 
         var hitChance = new Random().Next(0, 100);
+        
         return hitChance <= spellAccuracy;
     }
 

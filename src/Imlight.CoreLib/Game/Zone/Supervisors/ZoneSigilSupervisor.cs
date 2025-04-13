@@ -30,19 +30,16 @@ internal sealed class ZoneSigilSupervisor(Core.Zone zone) : ZoneEntitySupervisor
                 continue;
             }
 
-            // Combat sigil template IDs are unreliable. Thankfully, we can use the
-            // sigil type to get the correct template.
-            var sigilType = ((CombatSigilObjectInfo) objectInfo).m_sigilType;
-            var sigilTemplate = SigilFactory.GetSigilTemplate(sigilType);
-            var coreObject = CoreObjectFactory.FinalizeCoreObject(objectInfo, sigilTemplate);
+            var template = (GameObjectTemplate) CoreObjectFactory.GetCoreTemplate(objectInfo.m_templateID);
+            var coreObject = CoreObjectFactory.FinalizeCoreObject(objectInfo, template);
 
             // Sometimes the sigil may spawn in the ground.
             var newLoc = coreObject.m_location;
-            newLoc.Y += 0.5f;
+            newLoc.Y += 1.5f;
             coreObject.m_location = newLoc;
 
             // Create the sigil actor and inform it of the details.
-            var objectActor = CreateEntityActor(coreObject, sigilTemplate);
+            var objectActor = CreateEntityActor(coreObject, template);
             var detailsMsg = new ZONE_102_PROTOCOL.MSG_SIGILDETAILS {
                 CombatSigilObjectInfo = (CombatSigilObjectInfo) objectInfo,
             };

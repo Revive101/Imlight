@@ -64,6 +64,11 @@ internal class CombatDeck {
         }
     }
 
+    /// <summary>
+    /// Gets a new hand of spells, discarding any used or discarded cards.
+    /// </summary>
+    /// <returns>A new hand of spells.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when a spell cannot be created from the template id.</exception>
     internal Hand GetHand() {
         var newCards = new List<Spell>();
         var random = new Random();
@@ -122,8 +127,16 @@ internal class CombatDeck {
         return new Hand() { m_spellList = LastGivenHand };
     }
 
-    internal void Discard(Spell spell) => _cardsDiscardedThisTurn.Add(spell);
+    /// <summary>
+    /// Discards a spell from the current hand.
+    /// </summary>
+    /// <param name="spell">The spell to discard.</param>
+    internal void Discard(Spell spell) 
+        => _cardsDiscardedThisTurn.Add(spell);
 
+    /// <summary>
+    /// Reshuffles the deck, resetting the used up spell data and clearing the discarded cards.
+    /// </summary>
     internal void Reshuffle() {
         // Copy spell data back to used up spell data.
         _usedUpSpellData.Clear();

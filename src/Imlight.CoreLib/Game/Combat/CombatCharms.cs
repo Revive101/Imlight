@@ -67,7 +67,7 @@ internal static class CombatCharms {
             var charms = disposition switch {
                 kHangingDisposition.kBeneficial => beneficialCharms,
                 kHangingDisposition.kHarmful => harmfulCharms,
-                _ => beneficialCharms.Concat(harmfulCharms).Reverse().ToList()
+                _ => [.. beneficialCharms.Concat(harmfulCharms).Reverse()]
             };
 
             if (isDamageEffect) {

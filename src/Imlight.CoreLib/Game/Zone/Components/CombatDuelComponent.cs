@@ -15,6 +15,7 @@
  * NOTE:
  * This class is merely the director of the duel. The actual combat logic is
  * all handled within the `Imlight.CoreLib.Game.Combat` namespace.
+ * Start at the `CombatResolver` class and work your way down.
  * Combat positions are determined by sigil templates, with specific subcircle positions.
  * 
  * TODO:
@@ -114,8 +115,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     private bool _awaitingCombatMoves;
 
     public static bool ShouldAttachToEntity(CoreTemplate template)
-        => template is CombatSigilTemplate csTemplate
-        && csTemplate.m_sigilType == "Combat";
+        => template is GameObjectTemplate gameObjectTemplate
+        && gameObjectTemplate.m_behaviors.Any(x => x is not null && x.m_behaviorName == "DuelBehavior");
 
     public override void OnStart() {
         // Disable the RenderComponent. We'll activate it when the sigil is activated.
@@ -125,6 +126,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
     public WizardClientDuelBehavior GetClientBehaviorInstance() => new() {
         m_pDuel = Duel,
+        // todo: this is the sigil template itself, not for the game object
         m_sigilTemplateID = 1901671683,
     };
 
@@ -247,7 +249,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_NEWROUND))]
     private void ReceiveNewRound(COMBAT_106_PROTOCOL.MSG_NEWROUND message) {
         Logger.Debug("Duel {0} | New round {1} at {2}",
-            Logger.Args(Duel.m_duelID, Duel.m_roundNum, DateTime.Now.ToString("HH:mm:ss")));
+            Logger.Args(Duel.m_duelID.Full, Duel.m_roundNum, DateTime.Now.ToString("HH:mm:ss")));
 
         // Add the circles to combat if they are not already.
         AddWaitingCombatParticipants();
@@ -294,7 +296,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
         if (!_awaitingCombatMoves) {
             Logger.Warning("Duel {0} | Slot {1} | Received combat move while not expecting it.",
-                Logger.Args(Duel.m_duelID, caster.SlotIndex));
+                Logger.Args(Duel.m_duelID.Full, caster.SlotIndex));
+
             return;
         }
 
@@ -318,7 +321,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
                 break;
             default:
                 Logger.Warning("Duel {0} | Slot {1} | Invalid combat move type: {2}",
-                    Logger.Args(Duel.m_duelID, caster.SlotIndex, moveType));
+                    Logger.Args(Duel.m_duelID.Full, caster.SlotIndex, moveType));
                 break;
         }
 
@@ -340,7 +343,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         }
 
         Logger.Debug("Duel {0} | Round {1} over at {2}",
-            Logger.Args(Duel.m_duelID, Duel.m_roundNum, DateTime.Now.ToString("HH:mm:ss")));
+            Logger.Args(Duel.m_duelID.Full, Duel.m_roundNum, DateTime.Now.ToString("HH:mm:ss")));
 
         // The execution phase begins. This is where combat actions take place and we actually see spell cinematics.
         _awaitingCombatMoves = false;
@@ -458,7 +461,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         _isActive = true;
 
         Logger.Debug("Duel {0} | Created. Grace period over in {1}", 
-            Logger.Args(Duel.m_duelID, DUEL_GRACE_PERIOD_IN_SECONDS));
+            Logger.Args(Duel.m_duelID.Full, DUEL_GRACE_PERIOD_IN_SECONDS));
     }
 
     private Duel CreateDuelWithDefaults() => new() {
@@ -577,7 +580,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         var subCircle = isPlayer ? GetAvailableSubCircleTeamPlayer() : GetAvailableSubCircleTeamCreature();
         if (subCircle is null) {
             Logger.Warning("Duel {0} | No available sub circles for participant {1}",
-                Logger.Args(Duel.m_duelID, participantObject.m_globalID));
+                Logger.Args(Duel.m_duelID.Full, participantObject.m_globalID));
 
             return;
         }
@@ -585,7 +588,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         AssignParticipantToSubCircle(subCircle, participantActor, participantObject);
 
         Logger.Debug("Duel {0} | Slot {1} | Participant {2} joined",
-            Logger.Args(Duel.m_duelID, subCircle.SlotIndex, participantObject.m_debugName));
+            Logger.Args(Duel.m_duelID.Full, subCircle.SlotIndex, participantObject.m_debugName));
     }
 
     private void SendCombatPhase(byte phase) {
@@ -643,7 +646,15 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     private void SendCombatStats() => EnactActionOnSubCircles(circle => {
         // Serialize participant stats and send them to the participant, locally.
         var participantStats = circle.ParticipantGameStats;
-        if (_serializer.Serialize(participantStats.GetCombatGameStats(), _combatParticipantStatFlags, out var buffer)) {
+        var participantCombatsStats = participantStats?.GetCombatGameStats();
+        if (participantCombatsStats is null) {
+            Logger.Error("Failed to get combat stats for duel {0}", 
+                Logger.Args(SigilId));
+
+            return;
+        }
+
+        if (!_serializer.Serialize(participantCombatsStats, _combatParticipantStatFlags, out var buffer)) {
             Logger.Error("Failed to serialize combat stats for duel {0}", 
                 Logger.Args(SigilId));
 
@@ -786,7 +797,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         caster.DiscardCard(spell);
 
         Logger.Debug("Duel {0} | Slot {1} | Discarded a card: {2}",
-            Logger.Args(Duel.m_duelID, caster.SlotIndex, spell.m_templateID.ToString() ?? "None"));
+            Logger.Args(Duel.m_duelID.Full, caster.SlotIndex, spell.m_templateID.ToString() ?? "None"));
     }
 
     private void HandlePassMove(CombatDuelSubCircle caster) {
@@ -802,7 +813,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         var spell = caster.GetSpellFromLastHand((byte) spellSelection);
         if (!caster.HasPipsForSpell(spell)) {
             Logger.Warning("Duel {0} | Slot {1} | Participant does not have enough pips for spell {2}",
-                Logger.Args(Duel.m_duelID, caster.SlotIndex, spell.m_templateID));
+                Logger.Args(Duel.m_duelID.Full, caster.SlotIndex, spell.m_templateID));
 
             CombatResolver.AddCombatMove(CombatMoveType.Pass, caster, null, null);
         }
@@ -843,7 +854,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         caster.RemoveParticipant();
 
         Logger.Debug("Duel {0} | Slot {1} | Participant fled",
-            Logger.Args(Duel.m_duelID, caster.SlotIndex));
+            Logger.Args(Duel.m_duelID.Full, caster.SlotIndex));
 
         ZoneBroadcast(new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATREMOVE {
             DuelID = SigilId,
@@ -944,7 +955,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     }
 
     private void PlayerWin() {
-        Logger.Debug("Duel {0} | Duel ended. Players win.", Logger.Args(Duel.m_duelID));
+        Logger.Debug("Duel {0} | Duel ended. Players win.", Logger.Args(Duel.m_duelID.Full));
 
         Duel.m_duelPhase = kDuelPhase.kPhase_Victory;
         SendCombatPhase((byte) Duel.m_duelPhase);
@@ -964,7 +975,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     }
 
     private void CreatureWin() {
-        Logger.Debug("Duel {0} | Duel ended. Creatures win.", Logger.Args(Duel.m_duelID));
+        Logger.Debug("Duel {0} | Duel ended. Creatures win.", Logger.Args(Duel.m_duelID.Full));
 
         // Send combat death to all creatures anyways. This will get rid of their game object.
         var deathMsg = new COMBAT_106_PROTOCOL.MSG_COMBATDEATH();
