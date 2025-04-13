@@ -14,7 +14,7 @@ using Imlight.CoreLib.Shared.Resources;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
-internal sealed class CombatEquipmentComponent(ZoneEntity entity) 
+internal sealed class CombatCreatureEquipmentComponent(ZoneEntity entity) 
     : ZoneEntityComponent(entity), IComponentFactory, IClientBehaviorProvider<ClientWizEquipmentBehavior> {
 
     public bool NoTransfer { get; set; } = false;

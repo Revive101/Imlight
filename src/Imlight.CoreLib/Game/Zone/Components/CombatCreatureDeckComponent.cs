@@ -15,7 +15,7 @@ using Imlight.CoreLib.WizardData.Models.World;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
-internal sealed class CombatDeckComponent : ZoneEntityComponent, IComponentFactory {
+internal sealed class CombatCreatureDeckComponent : ZoneEntityComponent, IComponentFactory {
 
     public List<SpellData> Spells { get; } = [];
 
@@ -25,7 +25,7 @@ internal sealed class CombatDeckComponent : ZoneEntityComponent, IComponentFacto
         && gameObjectTemplate.m_behaviors.Any(x => x is DuelistBehaviorTemplate);
 
     // ctor
-    public CombatDeckComponent(ZoneEntity entity) : base(entity) { 
+    public CombatCreatureDeckComponent(ZoneEntity entity) : base(entity) { 
         var DeckBehaviorTemplate = entity.Template.m_behaviors
             .OfType<EquipmentBehaviorTemplate>()
             .SelectMany(x => x.m_itemList)

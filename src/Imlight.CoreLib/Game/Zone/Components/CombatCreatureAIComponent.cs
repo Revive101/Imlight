@@ -18,7 +18,7 @@ using Imlight.CoreLib.Shared.Packets;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
-internal sealed class CombatJourneymanAIComponent(ZoneEntity entity) : ZoneEntityComponent(entity), IComponentFactory, IWithTimers {
+internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityComponent(entity), IComponentFactory, IWithTimers {
 
     private const int FINAL_KILL_DELAY_IN_MS = 2000;
 
@@ -71,7 +71,7 @@ internal sealed class CombatJourneymanAIComponent(ZoneEntity entity) : ZoneEntit
             Logger.Warning(
                 "{0} requires component of type {1} to be attached to the entity. Found on GameObject {2}",
                 Logger.Args(
-                    nameof(CombatJourneymanAIComponent),
+                    nameof(CombatCreatureAIComponent),
                     nameof(PathMovementComponent),
                     Entity.ActiveGameObject.m_debugName
                 )
@@ -85,7 +85,7 @@ internal sealed class CombatJourneymanAIComponent(ZoneEntity entity) : ZoneEntit
             Logger.Warning(
                 "{0} requires component of type {1} to be attached to the entity. Found on GameObject {2}",
                 Logger.Args(
-                    nameof(CombatJourneymanAIComponent),
+                    nameof(CombatCreatureAIComponent),
                     nameof(NpcComponent),
                     Entity.ActiveGameObject.m_debugName
                 )
@@ -103,7 +103,7 @@ internal sealed class CombatJourneymanAIComponent(ZoneEntity entity) : ZoneEntit
             Logger.Warning(
                 "{0} requires component of type {1} to be attached to the entity. Found on GameObject {2}",
                 Logger.Args(
-                    nameof(CombatJourneymanAIComponent),
+                    nameof(CombatCreatureAIComponent),
                     nameof(StatsComponent),
                     Entity.ActiveGameObject.m_debugName
                 )
