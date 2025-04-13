@@ -596,12 +596,18 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         var upFirstSigilSlot = GetUpFirstSigilSlot();
 
         // Serialize the up first data and send it to all the combat participants.
+        // This is the one instance where the client sends a versionable object to the client.
+        var versionableSerializer = new ObjectSerializer(
+            Versionable: true,
+            Behaviors: SerializerFlags.None
+        );
+
         var upFirst = new UpFirstData {
             m_resultType = 122, // Always recorded as 122, per packet captures.
-            m_roundNum = Duel.m_roundNum,
             m_upFirst = upFirstSigilSlot,
+            m_roundNum = Duel.m_roundNum,
         };
-        if (!_serializer.Serialize(upFirst, _upFirstFlags, out var upFirstData)) {
+        if (!versionableSerializer.Serialize(upFirst, _upFirstFlags, out var upFirstData)) {
             Logger.Error("Failed to serialize up first data for duel {0}", 
                 Logger.Args(SigilId));
 
@@ -908,7 +914,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         };
         ZoneBroadcast(msg);
 
-        Logger.Debug("Duel {0} | Slot {1} | Serialized participant sent", Logger.Args(Duel.m_duelID, circle.SlotIndex));
+        Logger.Debug("Duel {0} | Slot {1} | Serialized participant sent", 
+            Logger.Args(Duel.m_duelID.Full, circle.SlotIndex));
 
         circle.AddedToDuel = true;
         Duel.m_flatParticipantList.Add(participant);
