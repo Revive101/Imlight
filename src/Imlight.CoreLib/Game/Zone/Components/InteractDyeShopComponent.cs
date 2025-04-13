@@ -8,6 +8,7 @@ using Akka.Actor;
 using Imcodec.Cryptography;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
+using Imlight.CoreLib.Game.WizBang;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
@@ -20,14 +21,14 @@ internal sealed class InteractDyeShopComponent(ZoneEntity entity) : ZoneEntityCo
     private const string DYE_SHOP_NPC_CONTAINS = "Dye";
     private const string DYE_SHOP_TITLE = "WC-NPCs_00000718";
 
-    public string ServiceName => "DyeShopService";
-    public string NpcIcon => null;
-    public string NpcNameKey => null;
-    public string NpcTextKey => null;
-    public string WizBang => "Shopping";
-    public string StateName => "Shop";
+    public string ServiceName     => "DyeShopService";
+    public string NpcIcon         => null;
+    public string NpcNameKey      => null;
+    public string NpcTextKey      => null;
+    public WizBangs WizBang       => WizBangs.Shopping;
+    public string StateName       => "Shop";
     public string InteractWizBang => "Registrar";
-    public string DisplayKey => "GUI_DyeShop";
+    public string DisplayKey      => "GUI_DyeShop";
 
     public static bool ShouldAttachToEntity(CoreTemplate template)
         => template is GameObjectTemplate gameObjectTemplate
@@ -60,7 +61,7 @@ internal sealed class InteractDyeShopComponent(ZoneEntity entity) : ZoneEntityCo
     private void SendPlayerIntoWizbang(ulong playerObjID) {
         // Create the wiz bang message, and wrap it in a broadcast message.
         var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG {
-            WizBangID = StringHash.Compute(WizBang),
+            WizBangID = (uint) WizBang,
             GameObjectID = playerObjID
         };
         var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {

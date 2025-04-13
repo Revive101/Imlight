@@ -13,6 +13,7 @@ using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Types;
 using Imlight.Common;
+using Imlight.CoreLib.Game.WizBang;
 using Imlight.CoreLib.Game.World;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Packets;
@@ -27,7 +28,7 @@ internal sealed class InteractVendorComponent(ZoneEntity entity) : ZoneEntityCom
     public string NpcIcon         => null;
     public string NpcNameKey      => null;
     public string NpcTextKey      => null;
-    public string WizBang         => "Shopping";
+    public WizBangs WizBang       => WizBangs.Shopping;
     public string StateName       => "Shop"; // Forbids the player from moving.
     public string InteractWizBang => "Registrar";
     public string DisplayKey      => "GUI_ShopOptionEquipment";
@@ -108,7 +109,7 @@ internal sealed class InteractVendorComponent(ZoneEntity entity) : ZoneEntityCom
     private void SendPlayerIntoWizbang(ulong playerObjID) {
         // Create the wiz bang message, and wrap it in a broadcast message.
         var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG {
-            WizBangID = StringHash.Compute(WizBang),
+            WizBangID = (uint) WizBang,
             GameObjectID = playerObjID
         };
         var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {

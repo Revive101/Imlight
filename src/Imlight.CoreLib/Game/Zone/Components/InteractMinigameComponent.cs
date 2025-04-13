@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using Akka.Actor;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
+using Imlight.CoreLib.Game.WizBang;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.WizardData.Models.Player;
 
@@ -18,7 +19,7 @@ internal sealed class InteractMinigameComponent(ZoneEntity entity) : ZoneEntityC
     public string NpcIcon         => "GUI/Art/Art_Quest_Minigame.dds";
     public string NpcNameKey      => "GUI_00002918";
     public string NpcTextKey      => "GUI_PlayMini";
-    public string WizBang         => null;
+    public WizBangs WizBang       => WizBangs.None;
     public string StateName       => null;
     public string InteractWizBang => null;
     public string DisplayKey      => "GUI_Kiosk";

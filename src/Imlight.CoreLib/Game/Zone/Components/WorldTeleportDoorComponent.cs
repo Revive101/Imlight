@@ -10,6 +10,7 @@ using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
+using Imlight.CoreLib.Game.WizBang;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
@@ -24,7 +25,7 @@ internal sealed class WorldTeleportDoorComponent(ZoneEntity entity) : ZoneEntity
     public string NpcIcon         => "GUI/Buttons/Button_Spiral.dds";
     public string NpcNameKey      => "WizardGameObjects_00000070";
     public string NpcTextKey      => "GUI_ObjectInteract";
-    public string WizBang         => null;
+    public WizBangs WizBang       => WizBangs.None;
     public string StateName       => "UniverseTeleport";
     public string InteractWizBang => "Registrar";
     public string DisplayKey      => "GUI_UniverseMap";

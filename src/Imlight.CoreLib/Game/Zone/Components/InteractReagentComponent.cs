@@ -14,6 +14,7 @@ using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Types;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Reagents;
+using Imlight.CoreLib.Game.WizBang;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.WizardData.Models.Player;
 
@@ -45,7 +46,7 @@ internal sealed class InteractReagentComponent(ZoneEntity entity)
         }
     }
     public string NpcTextKey => "GUI_CollectItem";
-    public string WizBang => null;
+    public WizBangs WizBang => WizBangs.None;
     public string StateName => null;
     public string InteractWizBang => null;
     public string DisplayKey => null;

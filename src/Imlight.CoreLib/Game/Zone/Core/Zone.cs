@@ -280,6 +280,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
 
     private IActorRef CreateSupervisor<T>() where T : ActorBase {
         var props = Akka.Actor.Props.Create(() => (T) Activator.CreateInstance(typeof(T), this));
+        
         return Context.ActorOf(props, typeof(T).Name);
     }
 

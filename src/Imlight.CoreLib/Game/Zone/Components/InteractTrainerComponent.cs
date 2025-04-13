@@ -8,6 +8,7 @@ using System.Linq;
 using Akka.Actor;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
+using Imlight.CoreLib.Game.WizBang;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Collections;
@@ -22,7 +23,7 @@ internal sealed class InteractTrainerComponent(ZoneEntity entity) : ZoneEntityCo
     public string NpcIcon         => null;
     public string NpcNameKey      => null;
     public string NpcTextKey      => "GUI_NPCInteractText";
-    public string WizBang         => "Training";
+    public WizBangs WizBang       => WizBangs.Training;
     public string StateName       => "Shop";
     public string InteractWizBang => "Registrar";
     public string DisplayKey      => "GUI_ShopOptionEquipment";
@@ -138,7 +139,7 @@ internal sealed class InteractTrainerComponent(ZoneEntity entity) : ZoneEntityCo
             }
 
             var spellOption = new WizTrainingOption {
-                m_iconKey = WizBang,
+                m_iconKey = WizBang.ToString(),
                 m_serviceName = ServiceName,
 
                 m_spellName = spellTemplate.m_name,

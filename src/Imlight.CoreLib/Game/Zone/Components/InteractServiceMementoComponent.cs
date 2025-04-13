@@ -31,7 +31,7 @@ public interface IServiceComponent {
     string NpcIcon { get; }
     string NpcNameKey { get; }
     string NpcTextKey { get; }
-    string WizBang { get; }
+    WizBangs WizBang { get; }
     string StateName { get; }
     string InteractWizBang { get; }
     string DisplayKey { get; }
@@ -220,9 +220,9 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
         var highestPriority = SortComponentsByPriority(_serviceComponents).FirstOrDefault();
 
         // Send the WizBang to the player.
-        var wizBang = highestPriority?.WizBang ?? "None";
+        var wizBang = highestPriority?.WizBang ?? WizBangs.None;
         var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG {
-            WizBangID = StringHash.Compute(wizBang),
+            WizBangID = (uint) wizBang,
             GameObjectID = Entity.ActiveGameObject.m_globalID.Full
         };
 
@@ -231,17 +231,15 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
 
     private static IOrderedEnumerable<IServiceComponent> SortComponentsByPriority(IEnumerable<IServiceComponent> components) {
         // Sort by WizBang priority
-        var wizBangs = components
-            .Select(c => c.WizBang)
-            .Where(w => w != null);
+        var wizBangs = components.Select(c => c.WizBang);
         var prioritySortedWizBangs = WizBangPriority.GetPrioritySortedWizBangs([.. wizBangs]);
 
         // If priority sorted WizBangs are empty, sort by default.
         if (prioritySortedWizBangs is null || prioritySortedWizBangs.Count <= 0) {
-            return components.OrderBy(c => c.WizBang ?? "None");
+            return components.OrderBy(c => c.WizBang);
         }
 
-        return components.OrderBy(c => prioritySortedWizBangs.IndexOf(c.WizBang ?? "None"));
+        return components.OrderBy(c => prioritySortedWizBangs.IndexOf(c.WizBang));
     }
 
 }

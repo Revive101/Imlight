@@ -25,6 +25,7 @@
  * Last Updated: 3/18/2025
  */
 
+using System;
 using System.Collections.Generic;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
@@ -41,6 +42,7 @@ internal class WizBangPriority : RootSingleResourceSingleton<WizBangPriority>, I
     protected override string ResourceName => "WizBangPriority.xml";
 
     private static WizBangPriorityTemplate s_wizBangPriority;
+    private static List<WizBangs> s_wizBangList = [];
 
     protected override void AfterLoad() {
         var serializer = new BindSerializer();
@@ -52,6 +54,20 @@ internal class WizBangPriority : RootSingleResourceSingleton<WizBangPriority>, I
             return;
         }
 
+        // Convert the WizBangPriorityTemplate, which is a list of string, into a list of our WizBang enum.
+        var priorityList = s_wizBangPriority.m_priorityList;
+        var wizBangList = new List<WizBangs>(priorityList.Count);
+        foreach (var wizBang in priorityList) {
+            if (Enum.TryParse(wizBang, out WizBangs wizBangEnum)) {
+                wizBangList.Add(wizBangEnum);
+            } else {
+                Logger.Error("Could not parse {0} as {1}", 
+                    Logger.Args(wizBang, nameof(WizBangs)));
+            }
+        }
+
+        s_wizBangList = wizBangList;
+
         Logger.Information("Loaded WizBang priority list with {0} entries",
             Logger.Args(s_wizBangPriority.m_priorityList.Count));
     }
@@ -61,19 +77,20 @@ internal class WizBangPriority : RootSingleResourceSingleton<WizBangPriority>, I
     /// </summary>
     /// <param name="wizBangs">The list of WizBangs to search.</param>
     /// <returns>The highest priority WizBang, or null if the WizBangPriority is null or no matching WizBang is found.</returns>
-    internal static string GetHighestPriorityWizBang(List<string> wizBangs) {
+    internal static WizBangs GetHighestPriorityWizBang(List<WizBangs> wizBangs) {
         if (s_wizBangPriority is null) {
             Logger.Error("WizBangPriority is null");
-            return null;
+
+            return WizBangs.None;
         }
 
-        foreach (var wizBang in s_wizBangPriority.m_priorityList) {
+        foreach (var wizBang in s_wizBangList) {
             if (wizBangs.Contains(wizBang)) {
                 return wizBang;
             }
         }
 
-        return null;
+        return WizBangs.None;
     }
 
     /// <summary>
@@ -81,14 +98,15 @@ internal class WizBangPriority : RootSingleResourceSingleton<WizBangPriority>, I
     /// </summary>
     /// <param name="wizBangs">The list of wiz bangs to sort.</param>
     /// <returns>A new list of wiz bangs sorted by priority.</returns>
-    internal static List<string> GetPrioritySortedWizBangs(List<string> wizBangs) {
+    internal static List<WizBangs> GetPrioritySortedWizBangs(List<WizBangs> wizBangs) {
         if (s_wizBangPriority is null) {
             Logger.Error("WizBangPriority is null");
+
             return null;
         }
 
-        var newList = new List<string>();
-        foreach (var wizBang in s_wizBangPriority.m_priorityList) {
+        var newList = new List<WizBangs>(wizBangs.Count);
+        foreach (var wizBang in s_wizBangList) {
             if (wizBangs.Contains(wizBang)) {
                 newList.Add(wizBang);
             }
