@@ -12,6 +12,7 @@ using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
+using Imlight.CoreLib.Game.WizBang;
 using Imlight.CoreLib.Game.World;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Networking;
@@ -141,7 +142,7 @@ public class ZoneService(SessionActor sessionActor) : MessageService(sessionActo
         SendTeleportEffects();
 
         var currentZone = wizard.Zone;
-        var zoneMap = WorldHubZones.GetHubZoneMapping(currentZone);
+        var zoneMap = WorldHubZones.GetHubForZone(currentZone);
         var tpmsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
             DestinationZone = zoneMap.m_hubZone,
             DestinationLocation = zoneMap.m_location,
@@ -207,7 +208,7 @@ public class ZoneService(SessionActor sessionActor) : MessageService(sessionActo
             return;
         }
 
-        var zoneMap = WorldHubZones.GetHubZoneMapping(message.World);
+        var zoneMap = WorldHubZones.GetHubForZone(message.World);
         if (zoneMap is null) {
             Logger.Error("{0} tried to teleport to an invalid world: {1}",
                 Logger.Args(GetActiveWizard().CharId, message.World));
@@ -309,7 +310,7 @@ public class ZoneService(SessionActor sessionActor) : MessageService(sessionActo
         var wizard = GetActiveWizard();
         var zoneName = wizard.Zone;
 
-        var worldHubMap = WorldHubZones.GetHubZoneMapping(zoneName);
+        var worldHubMap = WorldHubZones.GetHubForZone(zoneName);
         if (worldHubMap is null) {
             Logger.Error("Could not find world hub mapping for zone {0}",
                 Logger.Args(zoneName));
@@ -568,7 +569,7 @@ public class ZoneService(SessionActor sessionActor) : MessageService(sessionActo
         var wizard = GetActiveWizard();
         var currentZone = wizard.Zone;
 
-        var zoneMap = WorldHubZones.GetHubZoneMapping(currentZone);
+        var zoneMap = WorldHubZones.GetHubForZone(currentZone);
         if (zoneMap is null) {
             // If it can't be found, it's an area where the compass isn't visible anyways.
             return;

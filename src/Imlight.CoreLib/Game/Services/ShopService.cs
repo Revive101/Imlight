@@ -16,6 +16,7 @@ using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.CoreObject;
 using Imcodec.Types;
+using Imlight.CoreLib.Game.WizBang;
 
 namespace Imlight.CoreLib.Game.Services;
 

@@ -1,10 +1,31 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * WIZBANG PRIORITY MANAGEMENT SYSTEM
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Provides centralized loading and management of WizBang priority configurations
+ * with methods to determine and sort WizBangs based on predefined priority rules.
+ * Defined in the Root.wad
+ * 
+ * USAGE EXAMPLE:
+ * var highestPriorityWizBang = WizBangPriority.GetHighestPriorityWizBang(wizBangList);
+ * var sortedWizBangs = WizBangPriority.GetPrioritySortedWizBangs(wizBangList);
+ * 
+ * NOTE:
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System.Collections.Generic;
-using System.Linq;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
@@ -12,7 +33,10 @@ using Imlight.CoreLib.Shared.Resources;
 
 namespace Imlight.CoreLib.Game.WizBang;
 
-internal class WizBangPriority : RootSingleResourceSingleton<WizBangs>, IMemoryStreamDisposable {
+/// <summary>
+/// Manages the loading and prioritization of WizBang templates.
+/// </summary>
+internal class WizBangPriority : RootSingleResourceSingleton<WizBangPriority>, IMemoryStreamDisposable {
 
     protected override string ResourceName => "WizBangPriority.xml";
 
@@ -21,7 +45,7 @@ internal class WizBangPriority : RootSingleResourceSingleton<WizBangs>, IMemoryS
     protected override void AfterLoad() {
         var serializer = new BindSerializer();
 
-        if (!serializer.Deserialize<WizBangPriorityTemplate>(base.Stream.ToArray(), 1, out s_wizBangPriority)) {
+        if (!serializer.Deserialize(base.Stream.ToArray(), 1, out s_wizBangPriority)) {
             Logger.Error("Could not deserialize {0} as {1}", 
                 Logger.Args(ResourceName, nameof(WizBangTemplateManager)));
 
@@ -37,7 +61,7 @@ internal class WizBangPriority : RootSingleResourceSingleton<WizBangs>, IMemoryS
     /// </summary>
     /// <param name="wizBangs">The list of WizBangs to search.</param>
     /// <returns>The highest priority WizBang, or null if the WizBangPriority is null or no matching WizBang is found.</returns>
-    public static string GetHighestPriorityWizBang(List<string> wizBangs) {
+    internal static string GetHighestPriorityWizBang(List<string> wizBangs) {
         if (s_wizBangPriority is null) {
             Logger.Error("WizBangPriority is null");
             return null;
@@ -57,7 +81,7 @@ internal class WizBangPriority : RootSingleResourceSingleton<WizBangs>, IMemoryS
     /// </summary>
     /// <param name="wizBangs">The list of wiz bangs to sort.</param>
     /// <returns>A new list of wiz bangs sorted by priority.</returns>
-    public static List<string> GetPrioritySortedWizBangs(List<string> wizBangs) {
+    internal static List<string> GetPrioritySortedWizBangs(List<string> wizBangs) {
         if (s_wizBangPriority is null) {
             Logger.Error("WizBangPriority is null");
             return null;
@@ -73,6 +97,7 @@ internal class WizBangPriority : RootSingleResourceSingleton<WizBangs>, IMemoryS
         return newList;
     }
 
-    public void DisposeStream() => base.Stream.Dispose();
+    public void DisposeStream() 
+        => base.Stream.Dispose();
 
 }
