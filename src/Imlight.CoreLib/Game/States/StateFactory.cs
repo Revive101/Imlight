@@ -1,6 +1,26 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * STATE SET MANAGEMENT SYSTEM
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Provides centralized loading and retrieval of object state sets
+ * from resource files as they are defined in the Root.wad
+ * 
+ * USAGE EXAMPLE:
+ * var stateSet = StateFactory.GetStateSet("Player");
+ * 
+ * NOTE:
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System.Collections.Generic;
@@ -15,7 +35,7 @@ internal class StateFactory : RootDirectoryResourceSingleton<StateFactory>, IMem
 
     protected override string DirectoryName => "StateData/";
 
-    private readonly Dictionary<string, ObjStateSet> _objectStateSets = [];
+    private static readonly Dictionary<string, ObjStateSet> s_objectStateSets = [];
 
     protected override void AfterLoad() {
         var serializer = new BindSerializer();
@@ -32,15 +52,21 @@ internal class StateFactory : RootDirectoryResourceSingleton<StateFactory>, IMem
                 continue;
             }
 
-            _objectStateSets.Add(set.m_stateSetName, set);
+            s_objectStateSets.Add(set.m_stateSetName, set);
             counter++;
         }
 
-        Logger.Information("Loaded {0} state sets.", Logger.Args(counter));
+        Logger.Information("Loaded {0} state sets.", 
+            Logger.Args(counter));
     }
 
+    /// <summary>
+    /// Get the state set by name.
+    /// </summary>  
+    /// <param name="setName">The name of the state set.</param>
+    /// <returns>The state set.</returns>
     internal static ObjStateSet GetStateSet(string setName) {
-        if (Instance._objectStateSets.TryGetValue(setName, out var set)) {
+        if (s_objectStateSets.TryGetValue(setName, out var set)) {
             return set;
         }
 
@@ -48,6 +74,6 @@ internal class StateFactory : RootDirectoryResourceSingleton<StateFactory>, IMem
     }
 
     public void DisposeStream() 
-        => _objectStateSets.Clear();
+        => s_objectStateSets.Clear();
     
 }

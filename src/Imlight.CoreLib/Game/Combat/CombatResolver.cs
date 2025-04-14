@@ -384,17 +384,17 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
         var cinematicFactory = SpellCinematics.Instance;
 
         // All spells will always have a summon time.
-        var count = cinematicFactory.GetSpellSummonTime(spellName);
+        var count = SpellCinematics.GetSpellSummonTime(spellName);
 
         // Check if this spell has a special casting time. If not, just add the default casting time.
-        var castTime = cinematicFactory.GetSpellCastingTime(spellName);
+        var castTime = SpellCinematics.GetSpellCastingTime(spellName);
         count += castTime > 0.1f ? castTime : SPELL_CAST_TIME;
 
         // Check to see if the spell has an act time. If it does, add it to the total time.
         // Otherwise, return the total time.
-        var actTime = cinematicFactory.GetSpellActTime(spellName);
+        var actTime = SpellCinematics.GetSpellActTime(spellName);
         if (actTime <= 0.1f) {
-            return count + cinematicFactory.GetSpellTotalTime(spellName);
+            return count + SpellCinematics.GetSpellTotalTime(spellName);
         }
 
         count += actTime;

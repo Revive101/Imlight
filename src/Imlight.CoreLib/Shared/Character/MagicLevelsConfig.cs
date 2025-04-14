@@ -17,12 +17,11 @@ internal class MagicLevelsConfig : RootSingleResourceSingleton<MagicLevelsConfig
 
     protected override string ResourceName => "MagicXPConfig.xml";
 
-    private readonly int _imlightMaxLevel = ConfigurationManager.Settings["Character.MaxLevel"].AsInt();
-    private int _maxLevel;
-    private Dictionary<int, int> _mobLevelConfig;
-    private Dictionary<string, List<MagicLevelInfo>> _playerLevelConfig;
+    public static int MaxLevel { get; private set; }
 
-    public static int MaxLevel => Instance._maxLevel;
+    private static readonly int s_imlightMaxLevel = ConfigurationManager.Settings["Character.MaxLevel"].AsInt();
+    private static Dictionary<int, int> s_mobLevelConfig;
+    private static Dictionary<string, List<MagicLevelInfo>> s_playerLevelConfig;
 
     /// <summary>
     /// Gets the rank of a mob at the specified level.
@@ -30,7 +29,7 @@ internal class MagicLevelsConfig : RootSingleResourceSingleton<MagicLevelsConfig
     /// <param name="level">The level of the mob.</param>
     /// <returns>The rank of the mob at the specified level. Returns 0 if the rank is not found.</returns>
     public static int GetMobRankAtLevel(int level) {
-        foreach (var kvp in Instance._mobLevelConfig) {
+        foreach (var kvp in s_mobLevelConfig) {
             if (kvp.Key == level) {
                 return kvp.Value;
             }
@@ -45,7 +44,7 @@ internal class MagicLevelsConfig : RootSingleResourceSingleton<MagicLevelsConfig
     /// <param name="rank">The rank of the mob.</param>
     /// <returns>The level of the mob.</returns>
     public static int GetMobLevelByRank(int rank) {
-        if (Instance._mobLevelConfig.TryGetValue(rank, out var level)) {
+        if (s_mobLevelConfig.TryGetValue(rank, out var level)) {
             return level;
         }
 
@@ -58,7 +57,7 @@ internal class MagicLevelsConfig : RootSingleResourceSingleton<MagicLevelsConfig
     /// <param name="magicSchool">The magic school.</param>
     /// <param name="level">The level.</param>
     /// <returns>The level information for the specified magic school and level.</returns>
-    public static MagicLevelInfo GetPlayerLevelInfo(MagicSchool magicSchool, int level) 
+    public static MagicLevelInfo GetPlayerLevelInfo(MagicSchool magicSchool, int level)
         => GetPlayerLevelInfo(magicSchool.ToString(), level);
 
     /// <summary>
@@ -68,7 +67,7 @@ internal class MagicLevelsConfig : RootSingleResourceSingleton<MagicLevelsConfig
     /// <param name="level">The level of the player.</param>
     /// <returns>The level information for the specified magic school and level.</returns>
     public static MagicLevelInfo GetPlayerLevelInfo(string className, int level) {
-        if (Instance._playerLevelConfig.TryGetValue(className, out var levelInfo)) {
+        if (s_playerLevelConfig.TryGetValue(className, out var levelInfo)) {
             if (level < levelInfo.Count) {
                 return levelInfo[level];
             }
@@ -95,20 +94,20 @@ internal class MagicLevelsConfig : RootSingleResourceSingleton<MagicLevelsConfig
     private void LoadMaxLevel(MagicXPConfig magicXPConfig) {
         // If the configuration deems the max level to be lower than the one recorded here,
         // we will use the configuration's max level instead.
-        _maxLevel = magicXPConfig.m_maxSchoolLevel;
-        if (_imlightMaxLevel < _maxLevel) {
-            _maxLevel = _imlightMaxLevel;
+        MaxLevel = magicXPConfig.m_maxSchoolLevel;
+        if (s_imlightMaxLevel < MaxLevel) {
+            MaxLevel = s_imlightMaxLevel;
         }
 
-        Logger.Information("Imlight max level set to {0}", Logger.Args(_maxLevel));
+        Logger.Information("Imlight max level set to {0}", Logger.Args(MaxLevel));
     }
 
     private void LoadMobLevelConfig(MagicXPConfig magicXPConfig) {
-        _mobLevelConfig = [];
+        s_mobLevelConfig = [];
         var counter = 0;
 
         foreach (var mobLevel in magicXPConfig.m_levelsConfig) {
-            _mobLevelConfig.Add(mobLevel.m_rank, mobLevel.m_level);
+            s_mobLevelConfig.Add(mobLevel.m_rank, mobLevel.m_level);
             counter++;
         }
 
@@ -120,7 +119,7 @@ internal class MagicLevelsConfig : RootSingleResourceSingleton<MagicLevelsConfig
         // between all schools. It details how much mana, power pip chance, and xp is required to level up.
         // However, the `m_classInfo` is the same as `m_levelInfo` but is unique to each school, and details
         // how much base health the wizard has at any given level.
-        _playerLevelConfig = [];
+        s_playerLevelConfig = [];
         var allSchoolInfo = magicXPConfig.m_levelInfo;
 
         var counter = 0;
@@ -152,13 +151,13 @@ internal class MagicLevelsConfig : RootSingleResourceSingleton<MagicLevelsConfig
                 counter++;
             }
 
-            _playerLevelConfig.Add(key, val);
+            s_playerLevelConfig.Add(key, val);
         }
 
         Logger.Information("Loaded {0} player level configurations", Logger.Args(counter));
     }
 
-    public void DisposeStream() 
+    public void DisposeStream()
         => base.Stream.Dispose();
 
 }

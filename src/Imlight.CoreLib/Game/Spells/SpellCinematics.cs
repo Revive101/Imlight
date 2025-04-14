@@ -1,6 +1,28 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * SPELL CINEMATICS MANAGEMENT SYSTEM
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Provides centralized loading and retrieval of spell cinematic templates
+ * with methods to extract timing information for different spell stages
+ * as they are defined in the Root.wad
+ * 
+ * USAGE EXAMPLE:
+ * var summonTime = SpellCinematics.GetSpellSummonTime("Fire Cat");
+ * var totalTime = SpellCinematics.GetSpellTotalTime("Thunder Snake");
+ * 
+ * NOTE:
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System.Collections.Generic;
@@ -11,13 +33,16 @@ using Imlight.CoreLib.Shared.Resources;
 
 namespace Imlight.CoreLib.Game.Spells;
 
+/// <summary>
+/// Manages the loading, caching, and timing calculations for spell cinematic templates.
+/// </summary>
 internal class SpellCinematics : RootDirectoryResourceSingleton<SpellCinematics>, IMemoryStreamDisposable {
 
     private const float HANGING_EFFECT_ADD_TIME = 1.0f;
 
     protected override string DirectoryName => "Cinematics";
 
-    private readonly Dictionary<string, CinematicTemplate> _cinematicTemplates = [];
+    private static readonly Dictionary<string, CinematicTemplate> s_cinematicTemplates = [];
 
     protected override void AfterLoad() {
         var serializer = new BindSerializer();
@@ -35,15 +60,16 @@ internal class SpellCinematics : RootDirectoryResourceSingleton<SpellCinematics>
             }
 
             // SKip if the template is already in the dictionary.
-            if (_cinematicTemplates.ContainsKey(cinematicTemplate.m_name)) {
+            if (s_cinematicTemplates.ContainsKey(cinematicTemplate.m_name)) {
                 continue;
             }
 
-            _cinematicTemplates.Add(cinematicTemplate.m_name, cinematicTemplate);
+            s_cinematicTemplates.Add(cinematicTemplate.m_name, cinematicTemplate);
             counter++;
         }
 
-        Logger.Information("Loaded {0} cinematic templates.", Logger.Args(counter));
+        Logger.Information("Loaded {0} cinematic templates.", 
+            Logger.Args(counter));
     }
 
     /// <summary>
@@ -51,8 +77,8 @@ internal class SpellCinematics : RootDirectoryResourceSingleton<SpellCinematics>
     /// </summary>
     /// <param name="name">The name of the spell.</param>
     /// <returns>The <see cref="CinematicTemplate"/> of the spell. </returns>
-    public CinematicTemplate GetCinematicTemplate(string name) {
-        if (_cinematicTemplates.TryGetValue(name, out var cinematicTemplate)) {
+    internal static CinematicTemplate GetCinematicTemplate(string name) {
+        if (s_cinematicTemplates.TryGetValue(name, out var cinematicTemplate)) {
             return cinematicTemplate;
         }
 
@@ -64,7 +90,7 @@ internal class SpellCinematics : RootDirectoryResourceSingleton<SpellCinematics>
     /// </summary>
     /// <param name="name">The name of the spell.</param>
     /// <returns>The summon time of the spell.</returns>
-    public float GetSpellSummonTime(string name) {
+    internal static float GetSpellSummonTime(string name) {
         var cinematicTemplate = GetCinematicTemplate(name);
         if (cinematicTemplate is null) {
             return 0.0f;
@@ -85,7 +111,7 @@ internal class SpellCinematics : RootDirectoryResourceSingleton<SpellCinematics>
     /// </summary>
     /// <param name="name">The name of the spell.</param>
     /// <returns>The duration of the spell's cinematic act.</returns>
-    public float GetSpellActTime(string name) {
+    internal static float GetSpellActTime(string name) {
         var cinematicTemplate = GetCinematicTemplate(name);
         if (cinematicTemplate is null) {
             return 0.0f;
@@ -110,7 +136,7 @@ internal class SpellCinematics : RootDirectoryResourceSingleton<SpellCinematics>
     /// </summary>
     /// <param name="name">The name of the spell.</param>
     /// <returns>The casting time of the spell.</returns>
-    public float GetSpellCastingTime(string name) {
+    internal static float GetSpellCastingTime(string name) {
         var cinematicTemplate = GetCinematicTemplate(name);
         if (cinematicTemplate is null) {
             return 0.0f;
@@ -131,7 +157,7 @@ internal class SpellCinematics : RootDirectoryResourceSingleton<SpellCinematics>
     /// </summary>
     /// <param name="name">The name of the spell.</param>
     /// <returns>The total time of the spell's cinematic.</returns>
-    public float GetSpellTotalTime(string name) {
+    internal static float GetSpellTotalTime(string name) {
         var cinematicTemplate = GetCinematicTemplate(name);
         if (cinematicTemplate is null) {
             return 0.0f;
@@ -152,6 +178,6 @@ internal class SpellCinematics : RootDirectoryResourceSingleton<SpellCinematics>
     }
 
     public void DisposeStream() 
-        => _cinematicTemplates.Clear();
+        => s_cinematicTemplates.Clear();
 
 }

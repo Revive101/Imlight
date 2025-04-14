@@ -1,6 +1,26 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * SIGIL TEMPLATE MANAGEMENT SYSTEM
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Provides centralized loading and retrieval of sigil templates 
+ * from resource files as they are defined in the Root.wad.
+ * 
+ * USAGE EXAMPLE:
+ * var sigilTemplate = SigilFactory.GetSigilTemplate("Combat8SigilActor");
+ * 
+ * NOTE:
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System.Collections.Generic;
@@ -15,7 +35,7 @@ internal class SigilFactory : RootDirectoryResourceSingleton<SigilFactory>, IMem
 
     protected override string DirectoryName => "Sigils/";
 
-    private Dictionary<string, SigilTemplate> _combatSigils = [];
+    private static Dictionary<string, SigilTemplate> s_combatSigils = [];
 
     protected override void AfterLoad() {
         var serializer = new BindSerializer();
@@ -32,15 +52,21 @@ internal class SigilFactory : RootDirectoryResourceSingleton<SigilFactory>, IMem
                 continue;
             }
 
-            _combatSigils.Add(sigil.m_sigilName, sigil);
+            s_combatSigils.Add(sigil.m_sigilName, sigil);
             counter++;
         }
 
-        Logger.Information("Loaded {0} sigils.", Logger.Args(counter));
+        Logger.Information("Loaded {0} sigils.", 
+            Logger.Args(counter));
     }
 
+    /// <summary>
+    /// Get a sigil template by name.
+    /// </summary>
+    /// <param name="sigilName">The name of the sigil.</param>
+    /// <returns>The sigil template.</returns>
     internal static SigilTemplate GetSigilTemplate(string sigilName) {
-        if (Instance._combatSigils.TryGetValue(sigilName, out var sigil)) {
+        if (s_combatSigils.TryGetValue(sigilName, out var sigil)) {
             return sigil;
         }
 
@@ -48,6 +74,6 @@ internal class SigilFactory : RootDirectoryResourceSingleton<SigilFactory>, IMem
     }
 
     public void DisposeStream() 
-        => _combatSigils = null;
+        => s_combatSigils = null;
     
 }
