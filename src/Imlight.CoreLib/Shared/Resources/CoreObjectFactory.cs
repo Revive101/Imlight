@@ -21,6 +21,8 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
 
     public static TemplateManifest TemplateManifest;
 
+    private static readonly Dictionary<ulong, CoreTemplate> s_templateCache = [];
+
     protected override void AfterLoad() {
         var serializer = new BindSerializer();
         if (!serializer.Deserialize(base.Stream.ToArray(), 1, out TemplateManifest)) {
@@ -44,7 +46,9 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
     public static T InitializeCoreObjectBehaviors<T>(T coreObject, ulong id) where T : CoreObject, new() {
         var template = GetCoreTemplate(id);
         if (template is null) {
-            Logger.Error("Could not initialize CoreObject from TemplateID {Tid}", Logger.Args(coreObject.m_templateID));
+            Logger.Error("Could not initialize CoreObject from TemplateID {Tid}", 
+                Logger.Args(coreObject.m_templateID));
+
             return coreObject;
         }
 
@@ -116,6 +120,12 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
     /// <param name="id">The ID of the CoreTemplate.</param>
     /// <returns>The CoreTemplate object if found; otherwise, null.</returns>
     public static CoreTemplate GetCoreTemplate(ulong id) {
+        // Check if the template is already cached.
+        if (s_templateCache.TryGetValue(id, out var cachedTemplate)) {
+            return cachedTemplate;
+        }
+
+        // If not cached, load the template from the manifest.
         var templateLocation = TemplateManifest.m_serializedTemplates.FirstOrDefault(x => x.m_id == id);
         if (templateLocation is null) {
             Logger.Error("Could not find CoreTemplate by ID {Tid}. Finding the template failed.", 
@@ -128,6 +138,10 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
         if (templateObj is null) {
             Logger.Error("Could not load CoreTemplate from {Loc}. Could not get file from root archive.",
                 Logger.Args(templateLocation.m_filename));
+        }
+        else {
+            // Cache the template for future use.
+            s_templateCache[id] = templateObj;
         }
 
         return templateObj ?? null;
@@ -234,7 +248,7 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
         return obj;
     }
 
-    private static CoreObject CreateCoreObjectFromTemplate(CoreTemplate template)
+    private static ClientObject CreateCoreObjectFromTemplate(CoreTemplate template)
         => template switch {
             ReagentItemTemplate => new ClientReagentItem(),
             PetSnackItemTemplate => new ClientPetSnackItem(),
