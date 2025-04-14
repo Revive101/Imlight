@@ -1,6 +1,28 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * DYNAMOD SERVICE
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages dynamic character state modifications and state transitions 
+ * within the game server session.
+ * 
+ * USAGE EXAMPLE:
+ * Internal service handling character state changes and dynamic 
+ * modification management.
+ * 
+ * NOTE:
+ * - Manages addition and removal of dynamic modifications
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using Akka.Actor;

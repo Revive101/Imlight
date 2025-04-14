@@ -1,6 +1,27 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * COMBAT CREATURE EQUIPMENT COMPONENT SYSTEM
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages equipment initialization and stat modifications for combat creatures 
+ * based on predefined equipment behavior templates.
+ * 
+ * USAGE EXAMPLE:
+ * 
+ * NOTE:
+ * Creatures carry equipment just as players do. These equipments are responsible
+ * for school resistances, boosts, and other stats.
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System.Collections.Generic;

@@ -4,6 +4,7 @@
  */
 
 using System;
+using System.Threading;
 
 namespace Imlight.CoreLib.Shared.Networking;
 
@@ -14,7 +15,7 @@ public class TokenBucket {
     private int _tokens;
     private int _failedAcquisitionCount;
     private DateTime _lastRefillTime;
-    private readonly object _tokenBucketLock = new();
+    private readonly Lock _tokenBucketLock = new();
 
     public TokenBucket(int maxTokens, int tokensPerSecond) {
         this._maxTokens = maxTokens;

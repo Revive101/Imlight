@@ -1,6 +1,28 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ * 
+ * ========================================================================
+ * SPELL EFFECT FILTERING SYSTEM
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Provides static utility methods for filtering spells based on their effect types
+ * and targeting characteristics.
+ * 
+ * USAGE EXAMPLE:
+ * var damageSpells = SpellEffectFilter.FilterSpellsByOutgoingDamage(spellList);
+ * var healingSpells = SpellEffectFilter.FilterSpellsByHealing(spellList);
+ * 
+ * NOTE:
+ * Supports filtering for damage, healing, buffs, and debuffs.
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System.Collections.Generic;
@@ -9,9 +31,18 @@ using Imlight.CoreLib.Shared.Resources;
 
 namespace Imlight.CoreLib.Game.Spells;
 
-public static class SpellEffectFilter {
+/// <summary>
+/// Provides static methods for filtering spells based on their effect characteristics.
+/// </summary>
+internal static class SpellEffectFilter {
 
-    public static List<Spell> FilterSpellsByOutgoingDamage(List<Spell> spells) {
+    /// <summary>
+    /// Filters the given list of spells by their effects 
+    /// and returns a new list of spells that deal damage to the enemy team.
+    /// </summary>
+    /// <param name="spells">The list of spells to filter.</param>
+    /// <returns>A new list of spells that deal damage to the enemy team.</returns>
+    internal static List<Spell> FilterSpellsByOutgoingDamage(List<Spell> spells) {
         var filteredSpells = new List<Spell>();
         foreach (var spell in spells) {
             // The spell type doesn't carry spell effects. That instead comes from the spell template.
@@ -36,7 +67,13 @@ public static class SpellEffectFilter {
         return filteredSpells;
     }
 
-    public static List<Spell> FilterSpellsByHealing(List<Spell> spells) {
+    /// <summary>
+    /// Filters the given list of spells by their effects
+    /// and returns a new list of spells that heal the caster or their team.
+    /// </summary>
+    /// <param name="spells">The list of spells to filter.</param>
+    /// <returns>A new list of spells that heal the caster or their team.</returns>
+    internal static List<Spell> FilterSpellsByHealing(List<Spell> spells) {
         var filteredSpells = new List<Spell>();
         foreach (var spell in spells) {
             // The spell type doesn't carry spell effects. That instead comes from the spell template.
@@ -58,7 +95,13 @@ public static class SpellEffectFilter {
         return filteredSpells;
     }
 
-    public static List<Spell> FilterSpellsByBuff(List<Spell> spells) {
+    /// <summary>
+    /// Filters the given list of spells by their effects
+    /// and returns a new list of spells that buff the caster or their team.
+    /// </summary>
+    /// <param name="spells">The list of spells to filter.</param>
+    /// <returns>A new list of spells that buff the caster or their team.</returns>
+    internal static List<Spell> FilterSpellsByBuff(List<Spell> spells) {
         var filteredSpells = new List<Spell>();
         foreach (var spell in spells) {
             // The spell type doesn't carry spell effects. That instead comes from the spell template.
@@ -80,7 +123,13 @@ public static class SpellEffectFilter {
         return filteredSpells;
     }
 
-    public static List<Spell> FilterSpellsByDebuff(List<Spell> spells) {
+    /// <summary>
+    /// Filters the given list of spells by their effects
+    /// and returns a new list of spells that debuff the enemy team.
+    /// </summary>
+    /// <param name="spells">The list of spells to filter.</param>
+    /// <returns>A new list of spells that debuff the enemy team.</returns>
+    internal static List<Spell> FilterSpellsByDebuff(List<Spell> spells) {
         var filteredSpells = new List<Spell>();
         foreach (var spell in spells) {
             // The spell type doesn't carry spell effects. That instead comes from the spell template.

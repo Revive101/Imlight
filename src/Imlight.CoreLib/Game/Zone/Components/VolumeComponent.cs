@@ -1,6 +1,27 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * VOLUME COMPONENT
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages spatial trigger volumes in the game world, tracking player 
+ * proximity and triggering enter/exit events for specific areas.
+ * 
+ * USAGE EXAMPLE:
+ * 
+ * NOTE:
+ * Uses actor-based messaging for volume event triggering.
+ * Supports dynamic player tracking within defined spatial volumes.
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using Akka.Actor;

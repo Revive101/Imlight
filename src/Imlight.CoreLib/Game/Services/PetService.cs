@@ -1,6 +1,27 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * PET SERVICE
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages pet energy mechanics and periodic energy regeneration 
+ * for player characters.
+ * 
+ * USAGE EXAMPLE:
+ * Internal service handling pet energy tick and synchronization 
+ * within the game server session.
+ * 
+ * NOTE:
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;

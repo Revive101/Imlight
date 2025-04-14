@@ -1,6 +1,24 @@
-﻿/* Copyright (C) Revive101 Development Team - All Rights Reserved
+﻿/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * AUTHENTICATION SERVICE 
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Handles user authentication and session validation requests for the login server.
+ * 
+ * USAGE EXAMPLE:
+ * 
+ * NOTE:
+ * Authentication is the first step, where the user provides their credentials (username and password).
+ * Validation is the second step, where the server checks if the user is already logged in or if their session is valid.
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;

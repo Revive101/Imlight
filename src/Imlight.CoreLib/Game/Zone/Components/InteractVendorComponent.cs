@@ -1,13 +1,33 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * INTERACT VENDOR 
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages vendor interaction mechanics for NPCs, handling shop inventory 
+ * and player shopping interactions in the game world.
+ * 
+ * USAGE EXAMPLE:
+ * 
+ * NOTE:
+ * Dynamically resolves vendor inventory from World database.
+ * 
+ * TODO:
+ * - Investigate CSR test shop configuration
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
 using Imcodec.Cryptography;
-using Imcodec.IO;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;

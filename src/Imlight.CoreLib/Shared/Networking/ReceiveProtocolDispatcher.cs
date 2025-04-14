@@ -1,8 +1,34 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * RECEIVE PROTOCOL DISPATCHER
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Provides a flexible message handling mechanism for network protocol 
+ * dispatching using method attributes to route incoming messages.
+ * 
+ * USAGE EXAMPLE:
+ * // Define a message handler method
+ * [MessageHandler(typeof(SomeMessageType))]
+ * private void HandleSomeMessage(SomeMessageType message) { }
+ * 
+ * NOTE:
+ * - Extends Akka.NET ReceiveActor with dynamic message routing
+ * - Uses reflection to map message types to handler methods
+ * - Supports automatic message handler discovery
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -10,12 +36,22 @@ using Akka.Actor;
 
 namespace Imlight.CoreLib.Shared.Networking;
 
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+public class MessageHandlerAttribute(Type messageType) : Attribute {
+
+    public Type MessageType { get; } = messageType;
+    
+}
+
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+public class InternalMessageHandlerAttribute(Type messageType) : MessageHandlerAttribute(messageType) { }
+
 /// <summary>
 /// An extension of a ReceiveActor that allows for receiving INetworkRecords directly to method attributes.
 /// </summary>
 public class ReceiveProtocolDispatcher : ReceiveActor {
 
-    public Dictionary<System.Type, MethodInfo> MessageHandlers { get; private set; }
+    public Dictionary<Type, MethodInfo> MessageHandlers { get; private set; }
 
     protected ReceiveProtocolDispatcher() {
         SetMessageHandlers();

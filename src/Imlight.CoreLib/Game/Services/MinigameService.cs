@@ -1,10 +1,30 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * MINIGAME SERVICE
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages minigame interactions, including process initialization, 
+ * message routing, and zone transitions for minigame experiences.
+ * 
+ * USAGE EXAMPLE:
+ * Internal service handling minigame-related messages within the 
+ * game server session.
+ * 
+ * NOTE:
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;
-using System.Linq;
 using System.Text;
 using Akka.Actor;
 using Imcodec.IO;

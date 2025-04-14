@@ -1,6 +1,30 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * DYE MAPPER
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Provides static utility methods for applying dye colors 
+ * to items in the game's item system.
+ * 
+ * USAGE EXAMPLE:
+ * // Apply primary dye to an item
+ * DyeMapper.ApplyPrimaryDye(item, DyeColor.Red);
+ * 
+ * // Apply multiple dye colors to an item
+ * DyeMapper.ApplyAllDye(item, DyeColor.Blue, DyeColor.Green, DyeColor.Yellow);
+ * 
+ * NOTE:
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using Imcodec.ObjectProperty.TypeCache;

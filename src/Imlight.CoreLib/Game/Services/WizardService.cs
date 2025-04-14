@@ -1,6 +1,32 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ * 
+ * ========================================================================
+ * WIZARD SERVICE
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages wizard character state, including location tracking, 
+ * level management, and game state synchronization.
+ * 
+ * USAGE EXAMPLE:
+ * Internal service handling wizard-specific interactions within 
+ * the game server session.
+ * 
+ * NOTE:
+ * - Supports wizard location and orientation caching
+ * - Manages level-up mechanics and stat updates
+ * - Provides internal wizard state management
+ * 
+ * TODO:
+ * - Enhance level-up stat calculation
+ * - Review location and orientation compression logic
+ * 
+ * Created by: Jooty, Joji
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using Akka.Actor;

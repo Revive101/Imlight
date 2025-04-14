@@ -1,6 +1,34 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * COMPONENT FRAMEWORK
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Provides the base implementation for all entity components, handling lifecycle
+ * events and entity-component communication within the zone system.
+ * 
+ * USAGE EXAMPLE:
+ * public class CustomComponent : ZoneEntityComponent {
+ *     public CustomComponent(ZoneEntity entity) : base(entity) { }
+ *     
+ *     public override void OnStart() {
+ *         // Initialize component
+ *     }
+ * }
+ * 
+ * NOTE:
+ * Components use Akka message handlers for event communication.
+ * Lifecycle methods follow a specific order: OnAwake, OnStart, OnZoneStart.
+ *
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using Akka.Actor;

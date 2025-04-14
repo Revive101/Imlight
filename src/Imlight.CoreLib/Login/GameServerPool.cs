@@ -1,6 +1,29 @@
-﻿/* Copyright (C) Revive101 Development Team - All Rights Reserved
+﻿/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * GAME SERVER POOL
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages a pool of game servers, handles server creation, queries for best server 
+ * selection, and player location tracking across the network.
+ * 
+ * USAGE EXAMPLE:
+ * var gameServerPool = system.ActorOf(GameServerPool.Props(), "gameServerPool");
+ * gameServerPool.Tell(new SERVER_100_PROTOCOL.MSG_CREATEGAMESERVER { Name = "Server1", Port = 8080 });
+ * 
+ * NOTE:
+ * Requires Akka.NET for actor-based concurrency. Uses Ask pattern with timeouts
+ * for server queries which may impact performance under heavy load.
+ *
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;

@@ -9,7 +9,7 @@ using Org.BouncyCastle.Security;
 
 namespace Imlight.CoreLib.Shared.Cryptography;
 
-public static class Rec1 {
+internal static class Rec1 {
 
     private const byte TWOFISH_BLOCK_SIZE = 0x10;
     private const byte TWOFISH_KEY_SIZE = 2 * TWOFISH_BLOCK_SIZE;
@@ -26,7 +26,7 @@ public static class Rec1 {
     /// <param name="timeSecs">The number of seconds since the Unix epoch.</param>
     /// <param name="timeMillis">The number of milliseconds within the current second.</param>
     /// <returns>The encoded data.</returns>
-    public static ByteString Encode(ByteString data, ushort sid, uint timeSecs, uint timeMillis) {
+    internal static ByteString Encode(ByteString data, ushort sid, uint timeSecs, uint timeMillis) {
         var key = DeriveTwofishKey(sid, timeSecs, timeMillis);
         var nonce = DeriveTwofishNonce();
 
@@ -44,7 +44,7 @@ public static class Rec1 {
     /// <param name="timeSecs">The time in seconds to use for key derivation.</param>
     /// <param name="timeMillis">The time in milliseconds to use for key derivation.</param>
     /// <returns>The decoded data as a <see cref="ByteString"/>.</returns>
-    public static ByteString Decode(byte[] encodedData, ushort sid, uint timeSecs, uint timeMillis) {
+    internal static ByteString Decode(byte[] encodedData, ushort sid, uint timeSecs, uint timeMillis) {
         var key = DeriveTwofishKey(sid, timeSecs, timeMillis);
         var nonce = DeriveTwofishNonce();
 

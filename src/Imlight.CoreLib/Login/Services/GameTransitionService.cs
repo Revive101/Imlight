@@ -1,6 +1,27 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * GAME TRANSITION SERVICE
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages the process of transitioning a player from the login server 
+ * to the appropriate game server, handling character selection and 
+ * initial game server connection logic.
+ * 
+ * USAGE EXAMPLE:
+ * 
+ * NOTE:
+ * 
+ * TODO:
+ * - Source LoginServer name from configuration instead of hardcoding
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using Akka.Actor;

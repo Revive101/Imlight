@@ -8,13 +8,16 @@ using System.Linq;
 using Akka.Actor;
 using Imcodec.Math;
 using Imcodec.ObjectProperty.TypeCache;
-using Imlight.CoreLib.Game.Sigils;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
 
 namespace Imlight.CoreLib.Game.Zone.Supervisors;
 
+/// <summary>
+/// This class is responsible for managing the sigils within a zone. It handles the
+/// loading of sigils, their initialization, and the forwarding of messages to them.
+/// </summary>
 internal sealed class ZoneSigilSupervisor(Core.Zone zone) : ZoneEntitySupervisor(zone) {
 
     private readonly Dictionary<CoreObject, IActorRef> _sigils = [];

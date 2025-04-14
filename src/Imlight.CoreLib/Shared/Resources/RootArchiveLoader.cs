@@ -17,7 +17,7 @@ namespace Imlight.CoreLib.Shared.Resources;
 /// <summary>
 /// Loads the Root.wad archive into memory.
 /// </summary>
-public static class RootArchiveLoader {
+internal static class RootArchiveLoader {
 
     internal const string ROOT_WAD_NAME = "Root.wad";
 

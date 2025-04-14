@@ -1,6 +1,30 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * MINIGAME PROCESS MANAGEMENT SYSTEM
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages the lifecycle and reward calculation for individual minigame instances,
+ * handling player connections, score tracking, and reward distribution.
+ * 
+ * USAGE EXAMPLE:
+ * Create a new MinigameProcess with a process name, ID, and minigame index.
+ * Process automatically handles message routing, leaderboard updates, and rewards.
+ * 
+ * NOTE:
+ * Utilizes Akka.NET actor system for process management.
+ * Implements reward calculation with multiple tiers.
+ * 
+ * TODO:
+ * - Refactor reward calculation logic
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;
@@ -19,6 +43,9 @@ using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
 
+/// <summary>
+/// Manages the lifecycle and reward system for a specific minigame instance.
+/// </summary>
 internal sealed class MinigameProcess : Process {
 
     private const uint QUERY_WIZARD_TIMEOUT_IN_MS = 5000;

@@ -1,6 +1,27 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * MAGIC SCHOOLS MANAGEMENT SYSTEM
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Provides centralized loading and retrieval of magic school templates
+ * from resource files as they are defined in the Root.wad
+ * 
+ * USAGE EXAMPLE:
+ * var magicSchool = MagicSchools.GetMagicSchool(schoolIndex);
+ * var magicSchoolByName = MagicSchools.GetMagicSchool("Fire");
+ * 
+ * NOTE:
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System.Collections.Generic;
@@ -13,7 +34,10 @@ using Imlight.CoreLib.Shared.Resources;
 
 namespace Imlight.CoreLib.Game.Spells;
 
-public class MagicSchools : RootDirectoryResourceSingleton<SpellFactory>, IMemoryStreamDisposable {
+/// <summary>
+/// Manages the loading, caching, and retrieval of magic school templates.
+/// </summary>
+internal class MagicSchools : RootDirectoryResourceSingleton<SpellFactory>, IMemoryStreamDisposable {
 
     protected override string DirectoryName => "MagicSchools/";
 
@@ -46,10 +70,16 @@ public class MagicSchools : RootDirectoryResourceSingleton<SpellFactory>, IMemor
             counter++;
         }
 
-        Logger.Information("Loaded {0} magic schools.", Logger.Args(counter));
+        Logger.Information("Loaded {0} magic school configurations.", 
+            Logger.Args(counter));
     }
 
-    public static MagicSchoolTemplate GetMagicSchool(int schoolIndex) {
+    /// <summary>
+    /// Get the magic school template by index.
+    /// </summary>
+    /// <param name="schoolIndex">The index of the magic school.</param>
+    /// <returns>The magic school template.</returns>
+    internal static MagicSchoolTemplate GetMagicSchool(int schoolIndex) {
         if (s_magicSchools.TryGetValue(schoolIndex, out var magicSchool)) {
             return magicSchool;
         }
@@ -57,10 +87,20 @@ public class MagicSchools : RootDirectoryResourceSingleton<SpellFactory>, IMemor
         return null;
     }
 
-    public static MagicSchoolTemplate GetMagicSchool(string schoolName)
+    /// <summary>
+    /// Get the magic school template by name.
+    /// </summary>
+    /// <param name="schoolName">The name of the magic school.</param>
+    /// <returns>The magic school template.</returns>
+    internal static MagicSchoolTemplate GetMagicSchool(string schoolName)
         => s_magicSchools.Values.FirstOrDefault(x => x.m_schoolName == schoolName);
 
-    public static MagicSchoolTemplate GetMagicSchool(uint stringHash) {
+    /// <summary>
+    /// Get the magic school template by string hash.
+    /// </summary>
+    /// <param name="stringHash">The string hash of the magic school.</param>
+    /// <returns>The magic school template.</returns>
+    internal static MagicSchoolTemplate GetMagicSchool(uint stringHash) {
         foreach (var school in s_magicSchools.Values) {
             var hash = StringHash.Compute(school.m_schoolName);
 
@@ -72,7 +112,12 @@ public class MagicSchools : RootDirectoryResourceSingleton<SpellFactory>, IMemor
         return null;
     }
 
-    public static uint GetMaxMagicSchoolIndex() => (uint) s_magicSchools.Keys.Max();
+    /// <summary>
+    /// Gets the index of the highest magic school defined.
+    /// </summary>
+    /// <returns>The index of the highest magic school.</returns>
+    internal static uint GetMaxMagicSchoolIndex() 
+        => (uint) s_magicSchools.Keys.Max();
 
     public void DisposeStream() 
         => s_magicSchools.Clear();

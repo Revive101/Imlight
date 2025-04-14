@@ -1,6 +1,32 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * CANTRIP SERVICE
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages player cantrip (minor magic) interactions, including spell casting, 
+ * energy management, and special effect processing.
+ * 
+ * USAGE EXAMPLE:
+ * Internal service handling various cantrip-related messages and actions 
+ * within the game server's session management system.
+ * 
+ * NOTE:
+ * - Handles multiple types of cantrip effects (emote, teleport, invisibility)
+ * - Implements energy cost and cooldown management
+ * 
+ * TODO:
+ * - Review and complete unhandled ritual cantrip scenarios
+ * - Investigate string hash computations
+ * - Refine energy shop and energy refill logic
+ * 
+ * Created by: Jeff
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;

@@ -1,6 +1,31 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * COMBAT SERVICE
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages player combat interactions, including duel mechanics, 
+ * mount equipment, and post-combat state management.
+ * 
+ * USAGE EXAMPLE:
+ * Internal service handling combat-related messages and player 
+ * state transitions during battles.
+ * 
+ * NOTE:
+ * - Handles duel entry, combat moves, and victory/defeat scenarios
+ * - Manages mount equipment and unequipment during combat
+ * - Implements no-aggro grace period after combat
+ * 
+ * TODO:
+ * - Improve error handling for equipment transfers
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;

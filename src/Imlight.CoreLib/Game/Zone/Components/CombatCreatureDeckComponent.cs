@@ -1,6 +1,28 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * COMBAT CREATURE DECK
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages spelldecks for combat-enabled creature entities, initializing 
+ * their spellbooks based on specific behavior templates.
+ * 
+ * USAGE EXAMPLE:
+ * var deckComponent = new CombatCreatureDeckComponent(zoneEntity);
+ * var availableSpells = deckComponent.Spells;
+ * 
+ * NOTE:
+ * Requires prior initialization of CoreObjectFactory and SpellFactory.
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System.Collections.Generic;

@@ -1,10 +1,32 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * REAGENT FACTORY MANAGEMENT SYSTEM
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Provides centralized loading, management, and retrieval of reagent templates
+ * from resource files as they are defined in the Root.wad
+ * 
+ * USAGE EXAMPLE:
+ * var reagent = ReagentFactory.GetReagent("Mushroom");
+ * var harvestableReagent = ReagentFactory.GetHarvestable("Mushroom");
+ * 
+ * NOTE:
+ * Utilizes singleton pattern for resource management.
+ * Implements complex name normalization and resolution strategies.
+ * 
+ * TODO:
+ * 
+ * Created by: Joji, Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
@@ -13,7 +35,15 @@ using Imlight.CoreLib.Shared.Resources;
 
 namespace Imlight.CoreLib.Game.Reagents;
 
-public class ReagentFactory : RootDirectoryResourceSingleton<ReagentFactory>, IMemoryStreamDisposable {
+/// <summary>
+/// Manages the loading, caching, and retrieval of reagent templates from resource files.
+/// </summary>
+/// <remarks>
+/// Provides multiple methods for accessing reagent templates with flexible name resolution.
+/// Handles various edge cases in reagent naming and template retrieval.
+/// Supports harvestable and rare variant reagent lookups.
+/// </remarks>
+internal class ReagentFactory : RootDirectoryResourceSingleton<ReagentFactory>, IMemoryStreamDisposable {
 
     protected override string DirectoryName => "ObjectData/Reagents/";
 
@@ -28,7 +58,8 @@ public class ReagentFactory : RootDirectoryResourceSingleton<ReagentFactory>, IM
             var fileStream = file.Value;
 
             if (!serializer.Deserialize<ReagentItemTemplate>(fileStream?.ToArray(), out var reagentTemplate)) {
-                Logger.Error("Could not deserialize {0} as {1}", Logger.Args(fileRecord.FileName, nameof(ReagentItemTemplate)));
+                Logger.Error("Could not deserialize {0} as {1}", 
+                    Logger.Args(fileRecord.FileName, nameof(ReagentItemTemplate)));
 
                 continue;
             }
@@ -42,7 +73,8 @@ public class ReagentFactory : RootDirectoryResourceSingleton<ReagentFactory>, IM
             counter++;
         }
 
-        Logger.Information("Loaded {0} reagent templates.", Logger.Args(counter));
+        Logger.Information("Loaded {0} reagent templates.", 
+            Logger.Args(counter));
     }
 
     /// <summary>
@@ -50,7 +82,7 @@ public class ReagentFactory : RootDirectoryResourceSingleton<ReagentFactory>, IM
     /// </summary>
     /// <param name="reagentName">The name of the reagent.</param>
     /// <returns>The reagent with the specified name, or null if the reagent template is not found.</returns>
-    public static ClientReagentItem GetReagent(string reagentName) {
+    internal static ClientReagentItem GetReagent(string reagentName) {
         reagentName = reagentName.ToLower();
 
         if (reagentName.Contains("flax")) { // KI naming inconsistency
@@ -83,7 +115,7 @@ public class ReagentFactory : RootDirectoryResourceSingleton<ReagentFactory>, IM
     /// </summary>
     /// <param name="templateId">The ID of the reagent template.</param>
     /// <returns>The created reagent object.</returns>
-    public static ClientReagentItem GetReagent(uint templateId) {
+    internal static ClientReagentItem GetReagent(uint templateId) {
         var templateFound = s_reagentTemplates.FirstOrDefault(x => x.Value.m_templateID == templateId).Value;
 
         if (templateFound is null) {
@@ -111,7 +143,7 @@ public class ReagentFactory : RootDirectoryResourceSingleton<ReagentFactory>, IM
     /// </summary>
     /// <param name="reagentName">The name of the reagent.</param>
     /// <returns>The reagent with the specified name, or null if the reagent template is not found.</returns>
-    public static ClientReagentItem GetHarvestable(string reagentName) {
+    internal static ClientReagentItem GetHarvestable(string reagentName) {
         // Example reagent     : Harvest-Mushroom-01
         // Attach "harvest" prefix if not already present.
         if (!reagentName.Contains("harvest")) {
@@ -131,7 +163,7 @@ public class ReagentFactory : RootDirectoryResourceSingleton<ReagentFactory>, IM
     /// </summary>
     /// <param name="reagentName">The name of the reagent.</param>
     /// <returns>The rare variant of the reagent with the specified name, or null if the reagent template is not found.</returns>
-    public static ClientReagentItem GetHarvestableRareVariant(string reagentName) {
+    internal static ClientReagentItem GetHarvestableRareVariant(string reagentName) {
         // Example reagent     : Harvest-Mushroom-01
         // Example rare variant: Harvest-Mushroom-Nightshade-01
         // All rare harvestable variants follow the schema of Harvest-<reagentName>-<rareVariantName>-<variantNumber>
@@ -173,7 +205,7 @@ public class ReagentFactory : RootDirectoryResourceSingleton<ReagentFactory>, IM
     /// </summary>
     /// <param name="reagentName">The name of the reagent.</param>
     /// <returns>The reagent template with the specified name, or null if the reagent template is not found.</returns>
-    public static ReagentItemTemplate GetReagentTemplate(string reagentName) {
+    internal static ReagentItemTemplate GetReagentTemplate(string reagentName) {
         reagentName = reagentName.ToLower();
 
         if (reagentName.Contains("flax")) { // KI naming inconsistency

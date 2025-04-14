@@ -1,6 +1,27 @@
-﻿/* Copyright (C) Revive101 Development Team - All Rights Reserved
+﻿/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * SPELLBOOK SERVICE
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages player spell deck modifications, including adding and 
+ * removing spells from spell decks.
+ * 
+ * USAGE EXAMPLE:
+ * Internal service handling spellbook-related messages within 
+ * the game server session.
+ * 
+ * NOTE:
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using Akka.Actor;

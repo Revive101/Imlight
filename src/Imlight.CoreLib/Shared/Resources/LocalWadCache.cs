@@ -1,6 +1,31 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * LOCAL WAD CACHE
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages local caching and retrieval of game resource files (WAD files) 
+ * using a LiteDB database, supporting file versioning and patch management.
+ * 
+ * USAGE EXAMPLE:
+ * // Get a cached WAD file
+ * Archive cachedWad = LocalWadCache.GetCachedWad("SomeResourceFile");
+ * 
+ * // Cache a new WAD file
+ * LocalWadCache.CacheWad(fileName, wadArchive);
+ * 
+ * NOTE:
+ * 
+ * TODO:
+ * - Implement functional CRC32 hash calculation
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;
@@ -27,7 +52,7 @@ internal class FileDefinition {
 /// It is not recommended to source files from here. Instead, use <see cref="ResourceManager"/>,
 /// which will automatically source files from the cache or the patch server, whichever is available.
 /// </summary>
-public static class LocalWadCache {
+internal static class LocalWadCache {
 
     private static readonly string s_path = ConfigurationManager.Settings["Patch Server.LocalWadCachePath"];
     private static bool s_hasInitialized;

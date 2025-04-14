@@ -1,6 +1,27 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * ACCESS PASS 
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Provides centralized loading and validation of zone access passes
+ * as they appear in the ROot.wad
+ * 
+ * USAGE EXAMPLE:
+ * var zoneExists = AccessPassManager.DoesZoneExist("WizardCity/WC_Hub");
+ * var matchedZone = AccessPassManager.GetContainedZoneName("WC_Hub");
+ * 
+ * NOTE:
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System.Collections.Generic;
@@ -12,9 +33,9 @@ using Imlight.CoreLib.Shared.Resources;
 namespace Imlight.CoreLib.Game.World;
 
 /// <summary>
-/// Manages access passes for zones.
+/// Manages the loading and validation of zone access passes.
 /// </summary>
-public class AccessPassManager : RootSingleResourceSingleton<AccessPassManager>, IMemoryStreamDisposable {
+internal class AccessPassManager : RootSingleResourceSingleton<AccessPassManager>, IMemoryStreamDisposable {
 
     protected override string ResourceName { get; } = "AccessPass.xml";
 
@@ -39,11 +60,21 @@ public class AccessPassManager : RootSingleResourceSingleton<AccessPassManager>,
         ((IMemoryStreamDisposable) this).DisposeStream();
     }
 
-    public static bool DoesZoneExist(string zoneName)
-        => s_zones.Any(zone => zone.ToLower() == zoneName?.ToLower());
+    /// <summary>
+    /// Checks if a zone exists in the access pass list.
+    /// </summary>
+    /// <param name="zoneName">The name of the zone to check.</param>
+    /// <returns>True if the zone exists, false otherwise.</returns>
+    internal static bool DoesZoneExist(string zoneName)
+        => s_zones.Any(zone => zone.Equals(zoneName?.ToLower(), System.StringComparison.CurrentCultureIgnoreCase));
 
-    public static string GetContainedZoneName(string partialZoneName)
-        => s_zones.FirstOrDefault(zone => zone.ToLower().Contains(partialZoneName.ToLower()));
+    /// <summary>
+    /// Checks if a zone name contains a partial zone name.
+    /// </summary>
+    /// <param name="partialZoneName">The partial zone name to check.</param>
+    /// <returns>True if the zone name contains the partial zone name, false otherwise.</returns>
+    internal static string GetContainedZoneName(string partialZoneName)
+        => s_zones.FirstOrDefault(zone => zone.Contains(partialZoneName, System.StringComparison.CurrentCultureIgnoreCase));
 
     void IMemoryStreamDisposable.DisposeStream() => base.Stream?.Dispose();
 

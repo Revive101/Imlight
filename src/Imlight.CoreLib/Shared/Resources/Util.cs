@@ -8,7 +8,7 @@ using System;
 
 namespace Imlight.CoreLib.Shared.Resources;
 
-public static class Util {
+internal static class Util {
 
     public static string GetCompactStringFromVector(Vector4 vector)
         => $"{vector.X},{vector.Y},{vector.Z},{vector.W}";

@@ -1,6 +1,25 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * INTERACT MINIGAME 
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages interaction logic for minigame kiosk NPCs in the game world, 
+ * providing service options for player interactions.
+ * 
+ * USAGE EXAMPLE:
+ * 
+ * NOTE:
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System.Collections.Generic;

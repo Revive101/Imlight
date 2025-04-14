@@ -1,6 +1,27 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ * 
+ * ========================================================================
+ * MANA WISP
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages mana wisp interactions, providing mana replenishment mechanics 
+ * for players within a specific interaction radius.
+ * 
+ * USAGE EXAMPLE:
+ * 
+ * NOTE:
+ * Supports different mana restoration percentages for starter and non-starter wisps.
+ * 
+ * TODO:
+ * - Improve state change information sourcing
+ * 
+ * Created by: Joji
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using Akka.Actor;

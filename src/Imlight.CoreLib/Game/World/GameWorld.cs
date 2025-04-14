@@ -1,6 +1,30 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * GAME WORLD MANAGEMENT SYSTEM
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Provides comprehensive zone management and player transfer functionality
+ * using Akka.NET actor system for distributed zone loading and instancing.
+ * 
+ * USAGE EXAMPLE:
+ * Create GameWorld actor using GameWorld.Props(gameServer)
+ * Handle zone transfers and dynamic zone creation
+ * 
+ * NOTE:
+ * Utilizes Akka.NET actor system for scalable world management.
+ * Supports dynamic zone loading, instancing, and transfer mechanisms.
+ * Implements timeout and error handling for zone loading.
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;
@@ -17,6 +41,9 @@ using Imlight.CoreLib.WizardData.Collections;
 
 namespace Imlight.CoreLib.Game.World;
 
+/// <summary>
+/// Manages game world zone creation, loading, and player transfers.
+/// </summary>
 public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
 
     private const int LOAD_ZONE_TIMEOUT_IN_SECONDS = 15;

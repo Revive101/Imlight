@@ -1,6 +1,27 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * INTERACT SERVICE
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages player interactions with game world objects, NPCs, and services, 
+ * handling complex interaction routing mechanisms.
+ * 
+ * USAGE EXAMPLE:
+ * Internal service processing player interaction messages within 
+ * the game server session.
+ * 
+ * NOTE:
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;
@@ -12,7 +33,6 @@ using Imlight.CoreLib.Game.WizBang;
 using Imlight.CoreLib.Game.Zone.Components;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
-using Imlight.CoreLib.WizardData.Models.World;
 
 namespace Imlight.CoreLib.Game.Services;
 

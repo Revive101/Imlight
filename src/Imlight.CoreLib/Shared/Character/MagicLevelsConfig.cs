@@ -1,9 +1,33 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * opyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * MAGIC LEVELS CONFIGURATION
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages configuration and retrieval of magic level information 
+ * for player characters and mobs, including experience, health, and 
+ * progression details as they are defined in the Root.wad.
+ * 
+ * USAGE EXAMPLE:
+ * // Get level information for a specific magic school
+ * var levelInfo = MagicLevelsConfig.GetPlayerLevelInfo(MagicSchool.Fire, 10);
+ * 
+ * // Get max character level
+ * int maxLevel = MagicLevelsConfig.MaxLevel;
+ * 
+ * NOTE:
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
-using System;
 using System.Collections.Generic;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Resources;
@@ -23,12 +47,27 @@ internal class MagicLevelsConfig : RootSingleResourceSingleton<MagicLevelsConfig
     private static Dictionary<int, int> s_mobLevelConfig;
     private static Dictionary<string, List<MagicLevelInfo>> s_playerLevelConfig;
 
+    protected override void AfterLoad() {
+        var serializer = new BindSerializer();
+        if (!serializer.Deserialize<MagicXPConfig>(base.Stream.ToArray(), 1, out var magicXPConfig)) {
+            Logger.Error("Failed to load MagicXPConfig.xml");
+
+            return;
+        }
+
+        LoadMaxLevel(magicXPConfig);
+        LoadMobLevelConfig(magicXPConfig);
+        LoadPlayerLevelConfig(magicXPConfig);
+
+        DisposeStream();
+    }
+
     /// <summary>
     /// Gets the rank of a mob at the specified level.
     /// </summary>
     /// <param name="level">The level of the mob.</param>
     /// <returns>The rank of the mob at the specified level. Returns 0 if the rank is not found.</returns>
-    public static int GetMobRankAtLevel(int level) {
+    internal static int GetMobRankAtLevel(int level) {
         foreach (var kvp in s_mobLevelConfig) {
             if (kvp.Key == level) {
                 return kvp.Value;
@@ -43,7 +82,7 @@ internal class MagicLevelsConfig : RootSingleResourceSingleton<MagicLevelsConfig
     /// </summary>
     /// <param name="rank">The rank of the mob.</param>
     /// <returns>The level of the mob.</returns>
-    public static int GetMobLevelByRank(int rank) {
+    internal static int GetMobLevelByRank(int rank) {
         if (s_mobLevelConfig.TryGetValue(rank, out var level)) {
             return level;
         }
@@ -57,7 +96,7 @@ internal class MagicLevelsConfig : RootSingleResourceSingleton<MagicLevelsConfig
     /// <param name="magicSchool">The magic school.</param>
     /// <param name="level">The level.</param>
     /// <returns>The level information for the specified magic school and level.</returns>
-    public static MagicLevelInfo GetPlayerLevelInfo(MagicSchool magicSchool, int level)
+    internal static MagicLevelInfo GetPlayerLevelInfo(MagicSchool magicSchool, int level)
         => GetPlayerLevelInfo(magicSchool.ToString(), level);
 
     /// <summary>
@@ -66,7 +105,7 @@ internal class MagicLevelsConfig : RootSingleResourceSingleton<MagicLevelsConfig
     /// <param name="className">The class name of the player.</param>
     /// <param name="level">The level of the player.</param>
     /// <returns>The level information for the specified magic school and level.</returns>
-    public static MagicLevelInfo GetPlayerLevelInfo(string className, int level) {
+    internal static MagicLevelInfo GetPlayerLevelInfo(string className, int level) {
         if (s_playerLevelConfig.TryGetValue(className, out var levelInfo)) {
             if (level < levelInfo.Count) {
                 return levelInfo[level];
@@ -74,21 +113,6 @@ internal class MagicLevelsConfig : RootSingleResourceSingleton<MagicLevelsConfig
         }
 
         return null;
-    }
-
-    protected override void AfterLoad() {
-        var serializer = new BindSerializer();
-        if (!serializer.Deserialize<MagicXPConfig>(base.Stream.ToArray(), 1, out var magicXPConfig)) {
-            Logger.Error("Failed to load MagicXPConfig.xml");
-
-            return;
-        }
-
-        LoadMaxLevel(magicXPConfig);
-        LoadMobLevelConfig(magicXPConfig);
-        LoadPlayerLevelConfig(magicXPConfig);
-
-        DisposeStream();
     }
 
     private void LoadMaxLevel(MagicXPConfig magicXPConfig) {

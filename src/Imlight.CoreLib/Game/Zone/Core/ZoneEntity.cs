@@ -1,6 +1,31 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ * 
+ * ========================================================================
+ * ENTITY COMPONENT SYSTEM
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Provides a component-based architecture for all zone objects, enabling modular
+ * behavior composition and extensibility for game entities.
+ * 
+ * USAGE EXAMPLE:
+ * // Entities are typically created through the zone system
+ * // To access: zoneRef.Ask<ZONE_102_PROTOCOL.MSG_QUERYZONEENTITYRSP>(queryMsg)
+ * var component = entity.GetComponentOfType<PathMovementComponent>();
+ * 
+ * NOTE:
+ * Uses Akka actor model for component communication.
+ * Components are attached automatically based on entity templates.
+ * Requires mobile ID allocation from the zone.
+ *
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;

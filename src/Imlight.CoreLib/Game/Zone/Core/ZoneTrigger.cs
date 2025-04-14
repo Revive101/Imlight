@@ -1,6 +1,32 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * TRIGGER SYSTEM
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Handles event-based scripting within zones, allowing for interactive
+ * elements like gates, teleporters, and scripted sequences.
+ * 
+ * USAGE EXAMPLE:
+ * // Created by the Zone system during zone loading
+ * // Trigger triggerData = ...
+ * var triggerActor = Context.ActorOf(Props.Create(() => 
+ *     new ZoneTrigger(zoneRef, zone, triggerData)));
+ * 
+ * NOTE:
+ * Triggers are usually activated by volumes
+ * Supports player-specific cooldowns for trigger activation.
+ * Dynamically attaches result handlers based on trigger configuration.
+ *
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;

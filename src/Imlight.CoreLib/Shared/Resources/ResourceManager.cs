@@ -11,7 +11,7 @@ using Imlight.Common;
 
 namespace Imlight.CoreLib.Shared.Resources;
 
-public static class ResourceManager {
+internal static class ResourceManager {
 
     private const string RootWadName = RootArchiveLoader.ROOT_WAD_NAME;
 

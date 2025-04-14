@@ -1,10 +1,33 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * CHARACTER HELPER
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Provides utility methods for managing wizard character operations, 
+ * including stat recalculation, character creation, and equipment handling.
+ * 
+ * USAGE EXAMPLE:
+ * // Recalculate game stats for a wizard
+ * CharacterHelper.RecalculateGameStats(wizard);
+ * 
+ * // Create a new character
+ * Wizard newCharacter = CharacterHelper.CreateCharacterFromCreationInfo(creationInfo);
+ * 
+ * NOTE:
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Types;
@@ -16,7 +39,7 @@ using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Shared.Character;
 
-public static class CharacterHelper {
+internal static class CharacterHelper {
     
     internal const float OrientationCompressionFactor = 0.708f;
 
@@ -29,7 +52,7 @@ public static class CharacterHelper {
 
         // Reset the base stats to the default values.
         wizard.GameStats.SetBaseStats();
-        wizard.GameEffects = new List<GameEffectBase>();
+        wizard.GameEffects = [];
 
         // Iterate through the equipped items and apply their effects.
         foreach (var item in wizard.EquipmentBehavior.EquippedItems) {

@@ -1,6 +1,32 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * MESSAGE SERVICE
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Provides a base abstract class for handling message-based communication 
+ * and service interactions within a distributed actor-based networking system.
+ * 
+ * USAGE EXAMPLE:
+ * // Sending a message to socket
+ * SendToSocket(message);
+ * 
+ * // Asking another service for information
+ * var response = AskOtherService<ResponseType>(requestMessage);
+ * 
+ * NOTE:
+ * - SetWizBang() method
+ * - SetState() method
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;
@@ -18,7 +44,7 @@ using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Shared.Networking;
 
-public abstract class MessageService(SessionActor sessionActor) : ReceiveProtocolDispatcher {
+internal abstract class MessageService(SessionActor sessionActor) : ReceiveProtocolDispatcher {
 
     protected SessionActor SessionActor { get; init; } = sessionActor;
 
@@ -206,6 +232,12 @@ public abstract class MessageService(SessionActor sessionActor) : ReceiveProtoco
         return response.ZoneObject;
     }
 
+    /// <summary>
+    /// Transfers the current zone to another zone. 
+    /// </summary>
+    /// <param name="destinationZone">The zone to transfer to.</param>
+    /// <param name="makePrivate">Specifies whether the zone should be private or not. Default is false.</param>
+    /// <param name="destinationLocation">The location to transfer to. Default is "Start".</param>
     protected void DoZoneTransfer(string destinationZone, bool makePrivate = false, string destinationLocation = "") {
         // If the destination location is nothing, default it to "Start."
         var zoneTransfer = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
@@ -218,6 +250,12 @@ public abstract class MessageService(SessionActor sessionActor) : ReceiveProtoco
         TellOtherServices(zoneTransfer);
     }
 
+    /// <summary>
+    /// Checks if the player is online and retrieves the <see cref="OnlinePlayer"/> object.
+    /// </summary>
+    /// <param name="characterId">The character ID of the player.</param>
+    /// <param name="onlinePlayer">The online player object.</param>
+    /// <returns>True if the player is online, false otherwise.</returns>
     protected static bool TryGetOnlinePlayer(ulong characterId, out OnlinePlayer onlinePlayer) {
         onlinePlayer = default;
         var potentialPlayer = OnlinePlayerCollection.GetOnlinePlayer(characterId);

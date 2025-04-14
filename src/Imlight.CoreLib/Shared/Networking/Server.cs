@@ -1,6 +1,33 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * SERVER
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Provides a base implementation for network servers using Akka.NET 
+ * actor model, managing session creation, connection handling, 
+ * and server-level operations.
+ * 
+ * USAGE EXAMPLE:
+ * // Inherit and implement a custom server
+ * public class LoginServer : Server {
+ *     public LoginServer(string name, int port) : base(name, port, factoryProps) { }
+ * }
+ * 
+ * NOTE:
+ * - Abstract base class for network server implementations
+ * - Manages active sessions and TCP connections
+ * - Provides unique session ID generation and connection handling
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;

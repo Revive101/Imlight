@@ -1,6 +1,27 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * COMMAND SERVICE
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages in-game command processing and player selection mechanisms 
+ * for administrative and interactive game functions.
+ * 
+ * USAGE EXAMPLE:
+ * Internal service handling command routing and player context 
+ * management within the game server session.
+ * 
+ * NOTE:
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using Akka.Actor;

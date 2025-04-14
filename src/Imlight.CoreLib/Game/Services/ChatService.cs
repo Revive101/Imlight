@@ -1,6 +1,30 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * CHAT SERVICE
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages in-game chat functionality, including message processing, 
+ * command handling, and logging of player communications.
+ * 
+ * USAGE EXAMPLE:
+ * Internal service handling chat-related messages within the game server's 
+ * session management system.
+ * 
+ * NOTE:
+ * - Implements chat command processing for authorized users
+ * 
+ * TODO:
+ * - Review and enhance chat command authorization
+ * - Improve message sanitization logic
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;

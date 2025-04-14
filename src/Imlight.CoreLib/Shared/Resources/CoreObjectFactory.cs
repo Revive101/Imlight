@@ -1,6 +1,31 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * CORE OBJECT FACTORY
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages the creation, initialization, and finalization of core objects 
+ * using template-driven object generation with dynamic behavior allocation.
+ * 
+ * USAGE EXAMPLE:
+ * // Create a finalized core object from a template ID
+ * CoreObject obj = CoreObjectFactory.FinalizeCoreObject(templateId);
+ * 
+ * // Initialize behaviors for an existing core object
+ * CoreObjectFactory.InitializeCoreObjectBehaviors(coreObject, template);
+ * 
+ * NOTE:
+ * - Provides caching mechanism for templates
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;
@@ -15,7 +40,10 @@ using Imlight.CoreLib.Shared.Utilities;
 
 namespace Imlight.CoreLib.Shared.Resources;
 
-public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>, IMemoryStreamDisposable {
+/// <summary>
+/// Factory class for creating and managing core objects in the game.
+/// </summary>
+internal class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>, IMemoryStreamDisposable {
 
     protected override string ResourceName { get; } = "TemplateManifest.xml";
 

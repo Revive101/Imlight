@@ -1,6 +1,31 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/*
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * COMMAND DISPATCHER
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Provides a command handling framework for testing game systems by dispatching
+ * commands to appropriate protocols based on group names.
+ * 
+ * USAGE EXAMPLE:
+ * CommandDispatcher.Instance.Tell(new SERVER_100_PROTOCOL.MSG_COMMAND() { 
+ *     CommandText = "group command param1 param2",
+ *     ActorRef = sender
+ * });
+ * 
+ * NOTE:
+ * Uses System.Reflection to dynamically discover and instantiate command protocols.
+ * This class is intended for QA testing purposes only, not for production features.
+ *
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;
@@ -17,14 +42,15 @@ using Imlight.CoreLib.WizardData.Models.Misc;
 
 namespace Imlight.CoreLib.Game.Commands;
 
+/// <summary>
+/// Dispatches game commands to registered protocol handlers based on group prefixes.
+/// </summary>
+/// <remarks>
+/// Uses reflection to automatically discover and register command protocols.
+/// Commands follow the format: [group] [command] [parameters].
+/// For protocols without a group, the command itself is used as the lookup key.
+/// </remarks>
 internal class CommandDispatcher : ReceiveProtocolDispatcher {
-
-    /*
-        * This class is responsible for dispatching commands to the appropriate protocol.
-        * It will also handle the execution of the command and the response to the client.
-        * Note that this class is very crude. It is not meant to be a full-fledged command system.
-        * It is meant to be a simple way for QA to test game systems.
-    */
 
     private const string GrouplessCommandPrefix = "nogroup";
 
@@ -57,7 +83,8 @@ internal class CommandDispatcher : ReceiveProtocolDispatcher {
         }
     }
 
-    public static Props Props() => Akka.Actor.Props.Create(() => new CommandDispatcher());
+    public static Props Props() 
+        => Akka.Actor.Props.Create(() => new CommandDispatcher());
 
     private void ExecuteCommand(string commandName, CommandContext context) {
         commandName = commandName.Trim();

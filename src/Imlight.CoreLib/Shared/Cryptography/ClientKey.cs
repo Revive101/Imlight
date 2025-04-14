@@ -10,17 +10,17 @@ using Imcodec.IO;
 
 namespace Imlight.CoreLib.Shared.Cryptography;
 
-public static class ClientKey {
+internal static class ClientKey {
 
     /// <summary>
     /// Constructs a new salted ClientKey1 hash.
     /// </summary>
-    /// <param name="input"></param>
-    /// <param name="sessionID"></param>
-    /// <param name="timeSecs"></param>
-    /// <param name="timeMillis"></param>
-    /// <returns></returns>
-    public static string HaskCK1(string input, ushort sessionID, uint timeSecs, uint timeMillis) {
+    /// <param name="input">The input string to hash.</param>
+    /// <param name="sessionID">The ID of the given session.</param>
+    /// <param name="timeSecs">The seconds the session started at, since epoch.</param>
+    /// <param name="timeMillis">The milliseconds into the current second.</param>
+    /// <returns>The salted hash.</returns>
+    internal static string HaskCK1(string input, ushort sessionID, uint timeSecs, uint timeMillis) {
         var passwordHash = HashPassword(input);
 
         var salt = $"{sessionID}{timeSecs}{timeMillis}";
@@ -31,13 +31,13 @@ public static class ClientKey {
     /// <summary>
     /// Verify a ClientKey1 hash against an input.
     /// </summary>
-    /// <param name="input"></param>
-    /// <param name="sessionID"></param>
-    /// <param name="timeSecs"></param>
-    /// <param name="timeMillis"></param>
-    /// <param name="encodedString"></param>
-    /// <returns></returns>
-    public static bool VerifyCK1(string input, ushort sessionID, uint timeSecs, uint timeMillis, string encodedString) {
+    /// <param name="input">The input string to hash.</param>
+    /// <param name="sessionID">The ID of the given session.</param>
+    /// <param name="timeSecs">The seconds the session started at, since epoch.</param>
+    /// <param name="timeMillis">The milliseconds into the current second.</param>
+    /// <param name="encodedString">The encoded string to compare against.</param>
+    /// <returns>True if the hash matches, false otherwise.</returns>
+    internal static bool VerifyCK1(string input, ushort sessionID, uint timeSecs, uint timeMillis, string encodedString) {
         // Do not do the first pass.
         var salt = $"{sessionID}{timeSecs}{timeMillis}";
         var secondPass = SecondaryEncrypt(input, salt);
@@ -48,11 +48,11 @@ public static class ClientKey {
     /// <summary>
     /// Constructs a new salted session key hash.
     /// </summary>
-    /// <param name="sessionId"></param>
-    /// <param name="offerSeconds"></param>
-    /// <param name="offerMilli"></param>
-    /// <returns></returns>
-    public static ByteString HashSessionKey(ushort sessionId, uint offerSeconds, uint offerMilli) {
+    /// <param name="sessionId">The ID of the given session.</param>
+    /// <param name="offerSeconds">The seconds the session started at, since epoch.</param>
+    /// <param name="offerMilli">The milliseconds into the current second.</param>
+    /// <returns>The salted hash.</returns>
+    internal static ByteString HashSessionKey(ushort sessionId, uint offerSeconds, uint offerMilli) {
         // Generate a cryptographically safe number.
         using var rng = RandomNumberGenerator.Create();
         var randomBytes = new byte[4];

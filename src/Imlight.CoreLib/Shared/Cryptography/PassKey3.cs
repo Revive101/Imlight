@@ -9,7 +9,7 @@ using System.Security.Cryptography;
 
 namespace Imlight.CoreLib.Shared.Cryptography;
 
-public static class PassKey3 {
+internal static class PassKey3 {
 
     /// <summary>
     /// Encodes the input string using SHA512 algorithm and session information to generate a passkey.
@@ -19,7 +19,7 @@ public static class PassKey3 {
     /// <param name="timeSecs">The time in seconds.</param>
     /// <param name="timeMillis">The time in milliseconds.</param>
     /// <returns>The generated passkey.</returns>
-    public static string EncodePK3(string input, ushort sessionID, uint timeSecs, uint timeMillis) {
+    internal static string EncodePK3(string input, ushort sessionID, uint timeSecs, uint timeMillis) {
         using var sha512 = SHA512.Create();
         var bytes = Encoding.UTF8.GetBytes(input);
         sha512.TransformBlock(bytes, 0, bytes.Length, null, 0);
@@ -42,7 +42,7 @@ public static class PassKey3 {
     /// <param name="timeMillis">The time in milliseconds to generate the expected encoded string.</param>
     /// <param name="encodedString">The encoded string to verify.</param>
     /// <returns>True if the encoded string matches the expected encoded string, false otherwise.</returns>
-    public static bool VerifyPK3(string input, ushort sessionID, uint timeSecs, uint timeMillis, string encodedString) {
+    internal static bool VerifyPK3(string input, ushort sessionID, uint timeSecs, uint timeMillis, string encodedString) {
         var expectedEncodedString = EncodePK3(input, sessionID, timeSecs, timeMillis);
         
         return encodedString == expectedEncodedString;

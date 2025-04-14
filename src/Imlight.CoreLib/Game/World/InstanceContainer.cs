@@ -1,6 +1,28 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * INSTANCE CONTAINER MANAGEMENT SYSTEM
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages zone instances for a specific player using Akka.NET actor system,
+ * handling zone loading, transfer, and dynamic zone creation.
+ * 
+ * USAGE EXAMPLE:
+ * Create InstanceContainer using InstanceContainer.Props(ownerId)
+ * Handle zone transfers and dynamic zone loading for a specific player
+ * 
+ * NOTE:
+ * Utilizes Akka.NET actor system for per-player zone instancing.
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using Akka.Actor;
@@ -12,6 +34,9 @@ using System.Collections.Generic;
 
 namespace Imlight.CoreLib.Game.World;
 
+/// <summary>
+/// Manages zone instances for a specific player using Akka.NET actor system.
+/// </summary>
 internal sealed class InstanceContainer(ulong instanceOwnerId) : ReceiveProtocolDispatcher, IWithTimers {
 
     public ITimerScheduler Timers { get; set; }

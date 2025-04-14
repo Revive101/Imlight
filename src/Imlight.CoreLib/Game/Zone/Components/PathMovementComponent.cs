@@ -1,6 +1,26 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * PATH MOVEMENT COMPONENT 
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages dynamic movement mechanics for entities with predefined path behaviors, 
+ * supporting various path types and movement patterns.
+ * 
+ * USAGE EXAMPLE:
+ * 
+ * NOTE:
+ * Supports multiple path traversal types (chain, loop, random).
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;

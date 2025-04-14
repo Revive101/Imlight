@@ -9,7 +9,7 @@ using System.Text;
 
 namespace Imlight.CoreLib.Shared.Cryptography;
 
-public static class SessionKey {
+internal static class SessionKey {
 
     /// <summary>
     /// Generates a hash for the given input string and salt using SHA256 algorithm.
@@ -17,7 +17,7 @@ public static class SessionKey {
     /// <param name="input">The input string to generate hash for.</param>
     /// <param name="salt">The salt value to use for generating hash.</param>
     /// <returns>The generated hash as a base64 encoded string.</returns>
-    public static string GenerateHash(string input, ulong salt) {
+    internal static string GenerateHash(string input, ulong salt) {
         var saltBytes = BitConverter.GetBytes(salt);
         var inputBytes = Encoding.UTF8.GetBytes(input);
 
@@ -38,7 +38,7 @@ public static class SessionKey {
     /// <param name="salt">The salt used to generate the hash.</param>
     /// <param name="expectedHash">The expected hash to compare against the generated hash.</param>
     /// <returns>True if the generated hash matches the expected hash, false otherwise.</returns>
-    public static bool ValidateHash(string input, ulong salt, string expectedHash) {
+    internal static bool ValidateHash(string input, ulong salt, string expectedHash) {
         var generatedHash = GenerateHash(input, salt);
         return generatedHash.Equals(expectedHash);
     }

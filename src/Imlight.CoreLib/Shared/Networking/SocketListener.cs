@@ -1,11 +1,33 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * SOCKET LISTENER
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages socket-level packet receiving, decoding, and rate-limiting 
+ * for network sessions using a token bucket algorithm.
+ * 
+ * USAGE EXAMPLE:
+ * // Socket listener is typically created by SessionActor
+ * // Handles network packet reception and processing
+ * 
+ * NOTE:
+ * - Implements token bucket rate limiting
+ * 
+ * TODO:
+ * - Hardcoded suppressed packets list, consider making it configurable
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using Akka.Actor;
@@ -27,7 +49,7 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
     private readonly Socket _socket;
     private readonly ushort _sessionid;
     private readonly TokenBucket _tokenBucket;
-    private readonly List<Type> _suppressedPackets = new() {
+    private readonly List<Type> _suppressedPackets = [
             typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVE),
             typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVESTATE),
             typeof(GAME_5_PROTOCOL.MSG_SERVERMOVE),
@@ -37,7 +59,7 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
             typeof(LOGIN_7_PROTOCOL.MSG_LOGIN_NOT_AFK),
             typeof(ControlMessageProtocol.KeepAlive),
             typeof(ControlMessageProtocol.KeepAliveResponse)
-        };
+        ];
     private bool _isDisposed;
 
     // ctor

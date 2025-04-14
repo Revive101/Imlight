@@ -1,12 +1,40 @@
-﻿/* Copyright (C) Revive101 Development Team - All Rights Reserved
+﻿/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * SERVICE FACTORY
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Provides an abstract base for creating and managing actor-based 
+ * message services in a distributed networking system.
+ * 
+ * USAGE EXAMPLE:
+ * // Inherit and define available service types
+ * public class MyServiceFactory : ServiceFactory {
+ *     protected override HashSet<Type> ServiceTypes { get; set; } = new HashSet<Type> {
+ *         typeof(LoginService),
+ *         typeof(ChatService)
+ *     };
+ * }
+ * 
+ * NOTE:
+ * - Abstract base class for service type registration
+ * - Supports querying unloaded actor message services
+ * - Used in `SessionActor` initialization process
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
-using Akka.Actor;
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using Akka.Actor;
 using Imlight.CoreLib.Shared.Packets;
 
 namespace Imlight.CoreLib.Shared.Networking;

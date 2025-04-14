@@ -1,6 +1,26 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * WORLD TELEPORT DOOR
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages world teleportation interactions for universe map doors, 
+ * providing players with world selection and teleportation options.
+ * 
+ * USAGE EXAMPLE:
+ * 
+ * NOTE:
+ * 
+ * TODO:
+ * - Implement dynamic world list fetching from database
+ * 
+ * Created by: Jeff
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System.Collections.Generic;

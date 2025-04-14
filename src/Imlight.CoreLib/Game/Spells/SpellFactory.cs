@@ -1,6 +1,27 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * SPELL FACTORY MANAGEMENT SYSTEM
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Provides centralized loading, creation, and retrieval of spell templates
+ * as they are defined in the Root.wad
+ * 
+ * USAGE EXAMPLE:
+ * var spell = SpellFactory.GetSpell("Fire Cat");
+ * var spellById = SpellFactory.GetSpell(templateId);
+ * 
+ * NOTE:
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;
@@ -13,12 +34,15 @@ using Imlight.CoreLib.Shared.Resources;
 
 namespace Imlight.CoreLib.Game.Spells;
 
-public class SpellFactory : RootDirectoryResourceSingleton<SpellFactory>, IMemoryStreamDisposable {
+/// <summary>
+/// Manages the loading, creation, and retrieval of spell templates and instances.
+/// </summary>
+internal class SpellFactory : RootDirectoryResourceSingleton<SpellFactory>, IMemoryStreamDisposable {
 
     protected override string DirectoryName => "Spells/";
 
-    private static readonly Dictionary<uint, SpellTemplate> s_spellTemplates = new();
-    private static readonly Dictionary<uint, string> s_spellTemplatePaths = new();
+    private static readonly Dictionary<uint, SpellTemplate> s_spellTemplates = [];
+    private static readonly Dictionary<uint, string> s_spellTemplatePaths = [];
 
     protected override void AfterLoad() {
         var serializer = new BindSerializer();
@@ -52,7 +76,8 @@ public class SpellFactory : RootDirectoryResourceSingleton<SpellFactory>, IMemor
             s_spellTemplatePaths.Add(stringHash, fileRecord.FileName);
         }
 
-        Logger.Information("Loaded {0} spell templates.", Logger.Args(counter));
+        Logger.Information("Loaded {0} spell templates.", 
+            Logger.Args(counter));
     }
 
     /// <summary>
@@ -60,7 +85,7 @@ public class SpellFactory : RootDirectoryResourceSingleton<SpellFactory>, IMemor
     /// </summary>
     /// <param name="spellName">The name of the spell.</param>
     /// <returns>The spell with the specified name, or null if the spell template is not found.</returns>
-    public static Spell GetSpell(string spellName) {
+    internal static Spell GetSpell(string spellName) {
         var stringHash = StringHash.Compute(spellName);
         if (!s_spellTemplates.TryGetValue(stringHash, out var spellTemplate)) {
             Logger.Warning("Could not find spell template with name {0}.", Logger.Args(spellName));
@@ -83,7 +108,7 @@ public class SpellFactory : RootDirectoryResourceSingleton<SpellFactory>, IMemor
     /// </summary>
     /// <param name="templateId">The ID of the spell template.</param>
     /// <returns>The created spell object.</returns>
-    public static Spell GetSpell(uint templateId) {
+    internal static Spell GetSpell(uint templateId) {
         var template = CoreObjectFactory.GetCoreTemplate(templateId);
 
         if (template is null) {
@@ -107,7 +132,7 @@ public class SpellFactory : RootDirectoryResourceSingleton<SpellFactory>, IMemor
     /// <param name="template">The spell template to create the spell from.</param>
     /// <returns>The created spell object.</returns>
     /// <exception cref="ArgumentNullException"></exception>
-    public static Spell GetSpell(SpellTemplate template, uint templateId) {
+    internal static Spell GetSpell(SpellTemplate template, uint templateId) {
         if (template is null) {
             throw new ArgumentNullException(nameof(template));
         }
@@ -133,7 +158,7 @@ public class SpellFactory : RootDirectoryResourceSingleton<SpellFactory>, IMemor
     /// </summary>
     /// <param name="effect">The spell effect used to create the spells.</param>
     /// <returns>An array of spells created from the spell effect.</returns>
-    public static Spell[] CreateSpellsFromEffect(ProvideSpellEffect effect) {
+    internal static Spell[] CreateSpellsFromEffect(ProvideSpellEffect effect) {
         var spell = GetSpell(effect.m_spellName);
         if (spell is null) {
             Logger.Warning("Could not create spell from effect {0}.", Logger.Args(effect.m_spellName));
@@ -156,7 +181,7 @@ public class SpellFactory : RootDirectoryResourceSingleton<SpellFactory>, IMemor
     /// </summary>
     /// <param name="templateId">The ID of the spell template.</param>
     /// <returns>The base spell name, or null if the template is not found.</returns>
-    public static string GetBaseSpellName(uint templateId) {
+    internal static string GetBaseSpellName(uint templateId) {
         var template = (SpellTemplate) CoreObjectFactory.GetCoreTemplate(templateId);
 
         return template?.m_spellBase;

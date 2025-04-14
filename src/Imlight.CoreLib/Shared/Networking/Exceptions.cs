@@ -9,8 +9,7 @@ using System.Runtime.CompilerServices;
 
 namespace Imlight.CoreLib.Shared.Networking;
 
-// Modern approach using System.Text.Json for serialization
-public class SessionFatalException : Exception {
+internal class SessionFatalException : Exception {
     
     public string CallingClass { get; private set; }
     public int LineNumber { get; private set; }
@@ -35,13 +34,11 @@ public class SessionFatalException : Exception {
         LineNumber = lineNumber;
     }
 
-    // Modern approach to getting caller information
     private void InitializeCallingMethod([CallerMemberName] string memberName = "",
                                         [CallerFilePath] string sourceFilePath = "",
                                         [CallerLineNumber] int sourceLineNumber = 0) {
-        // For more precise control, still use StackTrace
         var stackTrace = new StackTrace(true);
-        var frame = stackTrace.GetFrame(1); // Get the caller's frame
+        var frame = stackTrace.GetFrame(1); // Get the caller's frame.
 
         if (frame != null) {
             var method = frame.GetMethod();
@@ -50,7 +47,7 @@ public class SessionFatalException : Exception {
                 LineNumber = frame.GetFileLineNumber();
             }
             else {
-                // Fallback to CallerAttributes if StackTrace doesn't provide enough info
+                // Fallback to CallerAttributes if StackTrace doesn't provide enough info.
                 CallingClass = sourceFilePath;
                 LineNumber = sourceLineNumber;
             }
@@ -59,7 +56,7 @@ public class SessionFatalException : Exception {
 
 }
 
-public class ServiceRetryException : Exception {
+internal class ServiceRetryException : Exception {
 
     public string CallingClass { get; private set; }
     public int LineNumber { get; private set; }
@@ -84,13 +81,11 @@ public class ServiceRetryException : Exception {
         LineNumber = lineNumber;
     }
 
-    // Modern approach to getting caller information
     private void InitializeCallingMethod([CallerMemberName] string memberName = "",
                                         [CallerFilePath] string sourceFilePath = "",
                                         [CallerLineNumber] int sourceLineNumber = 0) {
-        // For more precise control, still use StackTrace
         var stackTrace = new StackTrace(true);
-        var frame = stackTrace.GetFrame(1); // Get the caller's frame
+        var frame = stackTrace.GetFrame(1); // Get the caller's frame.
 
         if (frame != null) {
             var method = frame.GetMethod();
@@ -99,7 +94,7 @@ public class ServiceRetryException : Exception {
                 LineNumber = frame.GetFileLineNumber();
             }
             else {
-                // Fallback to CallerAttributes if StackTrace doesn't provide enough info
+                // Fallback to CallerAttributes if StackTrace doesn't provide enough info.
                 CallingClass = sourceFilePath;
                 LineNumber = sourceLineNumber;
             }

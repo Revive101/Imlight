@@ -1,6 +1,31 @@
-﻿/* Copyright (C) Revive101 Development Team - All Rights Reserved
+﻿/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * SESSION ACTOR
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages a network session lifecycle, handling socket connections, 
+ * message routing, and inter-service communication in a distributed 
+ * actor-based networking system.
+ * 
+ * USAGE EXAMPLE:
+ * // Session actor is typically created and managed by server infrastructure
+ * // Handles message dispatching, service initialization, and session management
+ * 
+ * NOTE:
+ * - Core component of distributed network communication
+ * - Manages socket listeners, message services, and session state
+ * - Supports dynamic service loading and message routing
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;
@@ -20,7 +45,7 @@ namespace Imlight.CoreLib.Shared.Networking;
 /// <summary>
 /// Represents a connected socket as a ReceiveActor.
 /// </summary>
-public sealed class SessionActor : ReceiveActor, IDisposable {
+internal sealed class SessionActor : ReceiveActor, IDisposable {
 
     private readonly byte _serviceRetryCount                 = ConfigurationManager.Settings["Advanced.SessionActorServiceRetryCount"].AsByte();
     private readonly byte _serviceTimeRangeRetryInSeconds    = ConfigurationManager.Settings["Advanced.SessionActorServiceRangeRetry"].AsByte();

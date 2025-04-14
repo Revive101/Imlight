@@ -1,6 +1,26 @@
-﻿/* Copyright (C) Revive101 Development Team - All Rights Reserved
+﻿/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * LOGIN AFK SERVICE
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages user session timeouts by tracking client activity and 
+ * automatically disconnecting inactive login sessions.
+ * 
+ * USAGE EXAMPLE:
+ * 
+ * NOTE:
+ * 
+ * TODO:
+ * - Clarify the meaning of Warning = 1 in disconnect message
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;

@@ -1,6 +1,27 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * INTERACT REAGENT
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages interaction mechanics for harvestable reagent entities in the game world, 
+ * handling player collection and inventory addition of reagents.
+ * 
+ * USAGE EXAMPLE:
+ * 
+ * NOTE:
+ * Implements complex reagent quantity and rarity rolling mechanics.
+ * 
+ * TODO:
+ * - Investigate icon sourcing for non-standard reagent types
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;

@@ -1,21 +1,41 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * SHOP SERVICE
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages player shop interactions, including item buying, selling, 
+ * and dyeing mechanics within the game server session.
+ * 
+ * USAGE EXAMPLE:
+ * Internal service handling shop-related messages and transactions 
+ * for player inventory and economic interactions.
+ * 
+ * NOTE:
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty, Joji
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
-using Akka.Actor;
 using System;
-using Imlight.Common;
-using Imlight.CoreLib.Shared.Items;
-using Imlight.CoreLib.Shared.Resources;
-using Imlight.CoreLib.Shared.Networking;
-using Imlight.CoreLib.WizardData.Models.World;
-using Imlight.CoreLib.WizardData.Models.Player;
-using Imlight.CoreLib.Game.Zone.Components;
+using Akka.Actor;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.CoreObject;
 using Imcodec.Types;
+using Imlight.Common;
+using Imlight.CoreLib.Shared.Items;
+using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.WizardData.Models.Player;
+using Imlight.CoreLib.Game.Zone.Components;
 using Imlight.CoreLib.Game.WizBang;
 
 namespace Imlight.CoreLib.Game.Services;

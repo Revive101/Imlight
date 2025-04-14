@@ -1,6 +1,29 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * ABSTRACT PROCESS MANAGEMENT SYSTEM
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Provides a base implementation for managing game processes with automatic 
+ * lifecycle management and activity tracking mechanisms.
+ * 
+ * USAGE EXAMPLE:
+ * Inherit from Process and implement specific process behaviors in derived classes.
+ * Override message handlers and process-specific logic as needed.
+ * 
+ * NOTE:
+ * Uses Akka.NET actor system for process management.
+ * Implements automatic process termination after 10 minutes of inactivity.
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;
@@ -13,6 +36,9 @@ using Imlight.CoreLib.Shared.Packets;
 
 namespace Imlight.CoreLib.Game.Processes;
 
+/// <summary>
+/// Abstract base class for managing game processes with automated lifecycle and activity tracking.
+/// </summary>
 internal abstract class Process : ReceiveProtocolDispatcher, IWithTimers {
 
     private const string ACTIVITY_CHECK_LOCK = "activity-check";
@@ -20,10 +46,9 @@ internal abstract class Process : ReceiveProtocolDispatcher, IWithTimers {
 
     public ITimerScheduler Timers { get; set; }
 
-    protected List<IActorRef> Participants { get; set; } = [];
-
     protected readonly string ProcessName;
     protected readonly uint ProcessId;
+    protected List<IActorRef> Participants { get; set; } = [];
     protected bool HadActivity;
 
     // ctor

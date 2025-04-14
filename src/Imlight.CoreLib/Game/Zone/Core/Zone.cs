@@ -1,6 +1,29 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * ZONE
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages a game world zone including loading, player transfers, entity tracking, 
+ * and communication between zone supervisors.
+ * 
+ * USAGE EXAMPLE:
+ * var zoneActor = Context.ActorOf(Zone.Props("WizardCity/Commons", 12345));
+ * 
+ * NOTE:
+ * Uses Akka actor model for asynchronous communication and supervisor pattern.
+ * Zone loading is handled asynchronously with a timeout mechanism.
+ * Mobile ID allocation is thread-safe using locks.
+ *
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;

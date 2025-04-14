@@ -1,6 +1,30 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * RENDER COMPONENT
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages object rendering and visibility mechanics for game entities, 
+ * handling player-specific object creation, spawning, and despawning.
+ * 
+ * USAGE EXAMPLE:
+ * 
+ * NOTE:
+ * Supports dynamic object rendering based on player proximity.
+ * There are two distinct messages to send to the client in regards to objects in the game.
+ * The first is MSG_NEWOBJECT, which is used to create a new object in the client's world.
+ * The second is MSG_ADDOBJECT, which respawns an object that was previously removed.
+ * You cannot send MSG_ADDOBJECT in regards to an object if the client has not been told about it with MSG_NEWOBJECT.
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System.Collections.Generic;
@@ -17,15 +41,6 @@ using Imlight.CoreLib.WizardData.Models.Player;
 namespace Imlight.CoreLib.Game.Zone.Components;
 
 internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(entity), IComponentFactory {
-
-    ////////////////////////////////////////////////////////////////////////////
-    /// There are two distinct messages to send to the client in regards to  ///
-    /// objects in the game. The first is MSG_NEWOBJECT, which is used to    ///
-    /// create a new object in the client's world.                           ///
-    /// The second is MSG_ADDOBJECT, which respawns an object that was       ///
-    /// previously removed. You cannot send MSG_ADDOBJECT in regards to an   ///
-    /// object if the client has not been told about it with MSG_NEWOBJECT   ///
-    ////////////////////////////////////////////////////////////////////////////
 
     private readonly CoreObjectSerializer _serializer = new(
         versionable: false,

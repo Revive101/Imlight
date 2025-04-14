@@ -1,6 +1,27 @@
-﻿/* Copyright (C) Revive101 Development Team - All Rights Reserved
+﻿/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * TCP LISTENER ACTOR
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages asynchronous TCP socket listening and new connection 
+ * allocation for network servers, handling incoming socket connections.
+ * 
+ * USAGE EXAMPLE:
+ * // TCP listener is typically created by a server instance
+ * // Handles incoming network connection acceptance
+ * 
+ * NOTE:
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System.Threading.Tasks;

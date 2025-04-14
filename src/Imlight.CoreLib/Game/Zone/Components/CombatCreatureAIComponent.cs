@@ -1,6 +1,28 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/*
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * JOURNEYMAN COMBAT AI
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Provides AI decision-making for NPCs in combat, handling targeting, spell selection,
+ * and behavioral traits based on configurable personality factors.
+ * 
+ * USAGE EXAMPLE:
+ * // Component is automatically attached to qualifying entities
+ * 
+ * NOTE:
+ * Requires PathMovementComponent, NpcComponent, and StatsComponent to be attached to the entity.
+ * Uses ConfigurationManager for combat behavior settings.
+ *
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;
@@ -18,19 +40,22 @@ using Imlight.CoreLib.Shared.Packets;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
+/// <summary>
+/// Handles AI decision-making at a "journeyman" level for NPC entities during combat encounters.
+/// </summary>
 internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityComponent(entity), IComponentFactory, IWithTimers {
 
-    private const int FINAL_KILL_DELAY_IN_MS = 2000;
+    private const int COMBAT_DEATH_ANIMATION_IN_MS = 2000;
 
     public ITimerScheduler Timers { get; set; }
 
-    private readonly float _healingThreshold = ConfigurationManager.Settings["Combat.HealingThreshold"].AsFloat();
+    private readonly float _healingThreshold     = ConfigurationManager.Settings["Combat.HealingThreshold"].AsFloat();
     private readonly float _healingPercentChance = ConfigurationManager.Settings["Combat.HealingPercentChance"].AsFloat();
-    private readonly float _preparePassChance = ConfigurationManager.Settings["Combat.PreparePassChance"].AsFloat();
-    private readonly int _damagedAggroIncrease = ConfigurationManager.Settings["Combat.DamagedAggroIncrease"].AsInt();
-    private readonly int _healingAggroIncrease = ConfigurationManager.Settings["Combat.HealingAggroIncrease"].AsInt();
-    private readonly int _provokeAggroIncrease = ConfigurationManager.Settings["Combat.ProvokeAggroIncrease"].AsInt();
-    private readonly int _pacifyAggroDecrease = ConfigurationManager.Settings["Combat.PacifyAggroDecrease"].AsInt();
+    private readonly float _preparePassChance    = ConfigurationManager.Settings["Combat.PreparePassChance"].AsFloat();
+    private readonly int _damagedAggroIncrease   = ConfigurationManager.Settings["Combat.DamagedAggroIncrease"].AsInt();
+    private readonly int _healingAggroIncrease   = ConfigurationManager.Settings["Combat.HealingAggroIncrease"].AsInt();
+    private readonly int _provokeAggroIncrease   = ConfigurationManager.Settings["Combat.ProvokeAggroIncrease"].AsInt();
+    private readonly int _pacifyAggroDecrease    = ConfigurationManager.Settings["Combat.PacifyAggroDecrease"].AsInt();
     private readonly Dictionary<int, int> _hateTable = [];
     private readonly Random _random = new();
 
@@ -198,7 +223,7 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
         // Send this message to ourselves again after a delay to delete the entity. This lets the combat death animation play out,
         // and then the entity will be deleted.
         _sentFinalKill = true;
-        var delay = TimeSpan.FromMilliseconds(FINAL_KILL_DELAY_IN_MS);
+        var delay = TimeSpan.FromMilliseconds(COMBAT_DEATH_ANIMATION_IN_MS);
         Timers.StartSingleTimer("FinalKill", new COMBAT_106_PROTOCOL.MSG_COMBATDEATH(), delay);
     }
 

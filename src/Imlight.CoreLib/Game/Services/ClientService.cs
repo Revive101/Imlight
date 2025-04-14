@@ -1,6 +1,27 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * CLIENT SERVICE
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages client connection lifecycle, handling disconnection and logout 
+ * processes for game server sessions.
+ * 
+ * USAGE EXAMPLE:
+ * Internal service for managing client connection state and graceful 
+ * disconnection mechanisms.
+ * 
+ * NOTE:
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;

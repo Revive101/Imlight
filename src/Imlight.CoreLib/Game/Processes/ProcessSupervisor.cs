@@ -1,6 +1,32 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * PROCESS SUPERVISOR SYSTEM
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages the creation and tracking of dynamic game processes using Akka.NET actor system,
+ * facilitating the generation of unique processes with dynamic ID allocation.
+ * 
+ * USAGE EXAMPLE:
+ * var processSupervisor = Context.ActorOf(ProcessSupervisor.Props());
+ * processSupervisor.Tell(new MSG_NEW_MINIGAME_PROCESS { 
+ *     MinigameName = "ExampleMinigame", 
+ *     MinigameIndex = 1 
+ * });
+ * 
+ * NOTE:
+ * Relies on Akka.NET actor system for process management.
+ * Uses cryptographically weak random ID generation.
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System.Collections.Generic;
@@ -10,6 +36,9 @@ using Imlight.CoreLib.Shared.Packets;
 
 namespace Imlight.CoreLib.Game.Processes;
 
+/// <summary>
+/// Supervises the creation and management of game processes using Akka.NET actor system.
+/// </summary>
 internal sealed class ProcessSupervisor : ReceiveProtocolDispatcher {
 
     private readonly Dictionary<uint, IActorRef> _processes = [];

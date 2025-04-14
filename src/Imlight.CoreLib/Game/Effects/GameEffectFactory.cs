@@ -1,6 +1,26 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * GAME EFFECT FACTORY SYSTEM
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Creates game effect instances from effect information data, instantiating
+ * the appropriate effect type based on the provided effect information.
+ * 
+ * USAGE EXAMPLE:
+ * var effect = GameEffectFactory.CreateEffectFromInfo(effectInfo, itemSlotId);
+ * 
+ * NOTE:
+ *
+ * TODO:
+ * 
+ * Created by: Joji, Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;
@@ -10,6 +30,9 @@ using Imlight.Common;
 
 namespace Imlight.CoreLib.Game.Effects;
 
+/// <summary>
+/// Factory class that creates game effect instances from effect information data.
+/// </summary>
 internal static class GameEffectFactory {
 
     /// <summary>

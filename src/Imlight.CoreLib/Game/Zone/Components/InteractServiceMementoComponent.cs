@@ -1,12 +1,32 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * INTERACT SERVICE MEMENTO
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages complex NPC interaction mechanics, tracking player proximity 
+ * and service component interactions for zone entities.
+ * 
+ * USAGE EXAMPLE:
+ * Always attached to an entity. Implement a service component to add functionality.
+ * 
+ * NOTE:
+ * Keeps track of any components of type `IServiceComponent` attached to the entity.
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
-using Imcodec.Cryptography;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;

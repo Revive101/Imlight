@@ -1,6 +1,27 @@
-﻿/* Copyright (C) Revive101 Development Team - All Rights Reserved
+﻿/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * LOGIN SERVER 
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages the login process for players, handles communication with game servers, 
+ * and facilitates player session tracking and server discovery.
+ * 
+ * USAGE EXAMPLE:
+ * var loginServer = system.ActorOf(LoginServer.Props("MainLogin", 7001), "loginServer");
+ * 
+ * NOTE:
+ * Creates and manages a GameServerPool actor.
+ *
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using Akka.Actor;

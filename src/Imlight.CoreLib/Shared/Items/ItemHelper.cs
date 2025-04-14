@@ -1,6 +1,31 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * ITEM HELPER
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Provides utility methods for item template and equipment slot operations, 
+ * including retrieving public item representations and determining 
+ * equipment slot types.
+ * 
+ * USAGE EXAMPLE:
+ * // Get the item template for a specific item
+ * var itemTemplate = ItemHelper.GetItemTemplate(wizClientItem);
+ * 
+ * // Get the equipment slot for an item template
+ * var equipmentSlot = ItemHelper.GetItemSlot(itemTemplate);
+ * 
+ * NOTE:
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;

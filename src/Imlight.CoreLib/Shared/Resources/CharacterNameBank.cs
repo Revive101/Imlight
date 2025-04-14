@@ -1,6 +1,29 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * WIZARD NAME BANK
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages the generation and retrieval of character names from 
+ * localized XML name tables, supporting complex name construction 
+ * with first, middle, and last name components as they are defined
+ * in the Root.wad.
+ * 
+ * USAGE EXAMPLE:
+ * // Get a character name based on name indices and gender
+ * string characterName = WizardNameBank.GetEnglishName(nameIndices, eGender.Male);
+ * 
+ * NOTE:
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System.Collections.Generic;

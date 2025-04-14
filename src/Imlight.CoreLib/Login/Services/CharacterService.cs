@@ -1,11 +1,28 @@
-﻿/* Copyright (C) Revive101 Development Team - All Rights Reserved
+﻿/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ * 
+ * ========================================================================
+ * CHARACTER MANAGEMENT SYSTEM
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages character creation, deletion, and listing operations within the login server.
+ * 
+ * USAGE EXAMPLE:
+ * 
+ * NOTE:
+ * This service relies on ObjectSerializer for character data serialization/deserialization
+ * and may throw SessionFatalException if serialization fails.
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;
 using Akka.Actor;
-using Imcodec.IO;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;

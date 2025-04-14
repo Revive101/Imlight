@@ -1,6 +1,34 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * PATH AND SPAWN MANAGEMENT SYSTEM
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages entity spawn points and movement paths within a zone, handling
+ * creature creation, path following, and respawn mechanics.
+ * 
+ * USAGE EXAMPLE:
+ * // Created by the Zone system during zone loading
+ * // PathObjectTemplate template = ...
+ * // List<NodeObject> nodes = ...
+ * // List<SpawnObject> creatures = ...
+ * var pathActor = Context.ActorOf(Props.Create(() => 
+ *     new ZonePath(template, nodes, creatures, zoneRef, zone)));
+ * 
+ * NOTE:
+ * Handles timed creature spawning based on configuration in SpawnObjects.
+ * Enforces spawn limits and ensures proper creature distribution.
+ * Uses timer-based respawn intervals for continuous population management.
+ *
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;

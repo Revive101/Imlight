@@ -1,6 +1,27 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * ZONE LOADING SYSTEM
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Loads and deserializes game zone data from archive files, providing 
+ * structured access to zone terrain, spawn points, paths, volumes, and triggers.
+ * 
+ * USAGE EXAMPLE:
+ * var loaderActor = Context.ActorOf(Props.Create<ZoneLoader>());
+ * loaderActor.Tell(new ZONE_102_PROTOCOL.MSG_ZONELOADBEGIN { ZonePath = "WizardCity/Commons" });
+ * 
+ * NOTE:
+ *
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;

@@ -1,11 +1,32 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * GAME EFFECT RULE DATA SYSTEM
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Loads and manages wizard stat tables from XML files in the game resources,
+ * providing access to numerical data used for calculating game effect values
+ * as they are defined in the Root.wad
+ * 
+ * USAGE EXAMPLE:
+ * WizardStatTable statTable = GameEffectRuleData.GetWizardStatTable("DamageBonus");
+ * 
+ * NOTE:
+ * Each table contains numerical values referenced by canonical effect lookups.
+ *
+ * TODO:
+ * 
+ * Created by: Joji, Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Wad;
@@ -14,7 +35,7 @@ using Imlight.CoreLib.Shared.Resources;
 
 namespace Imlight.CoreLib.Game.Effects;
 
-public class GameEffectRuleData : RootDirectoryResourceSingleton<GameEffectRuleData>, IMemoryStreamDisposable {
+internal class GameEffectRuleData : RootDirectoryResourceSingleton<GameEffectRuleData>, IMemoryStreamDisposable {
 
     protected override string DirectoryName => "GameEffectRuleData";
     private static Dictionary<string, WizardStatTable> s_statTables;
@@ -27,7 +48,7 @@ public class GameEffectRuleData : RootDirectoryResourceSingleton<GameEffectRuleD
     /// </summary>
     /// <param name="tableName">The name of the table to retrieve.</param>
     /// <returns>The WizardStatTable with the specified table name, or null if the table is not found.</returns>
-    public static WizardStatTable GetWizardStatTable(string tableName) {
+    internal static WizardStatTable GetWizardStatTable(string tableName) {
         if (s_statTables is null) {
             Logger.Error("Stat tables were null. Cannot gather stat table.");
 
@@ -67,7 +88,8 @@ public class GameEffectRuleData : RootDirectoryResourceSingleton<GameEffectRuleD
             s_statTables.Add(sanitizedTableName, table);
         }
 
-        Logger.Information("Loaded {0} stat tables", Logger.Args(s_statTables.Count));
+        Logger.Information("Loaded {0} stat tables", 
+            Logger.Args(s_statTables.Count));
     }
 
     private static WizardStatTable ProcessStatTable(Memory<byte> stream) {

@@ -1,6 +1,26 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * NPC COMPONENT 
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages core NPC behavior and interaction mechanics, including 
+ * combat, proximity detection, and statistical attributes.
+ * 
+ * USAGE EXAMPLE:
+ * 
+ * NOTE:
+ * Supports monster and non-monster NPC configurations.
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;

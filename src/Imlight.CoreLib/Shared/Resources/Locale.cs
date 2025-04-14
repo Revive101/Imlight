@@ -1,18 +1,40 @@
 /* Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ * 
+ * ========================================================================
+ * LOCALE
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages localization data retrieval and processing for English 
+ * language resources, providing efficient lookup of localized strings.
+ * 
+ * USAGE EXAMPLE:
+ * // Retrieve a localized name from a specific table
+ * string characterName = Locale.GetEnglishName("CharacterNames", "001");
+ * 
+ * // Retrieve a localized name using a full key
+ * string interactableName = Locale.GetEnglishName("Interactables_00000008");
+ * 
+ * NOTE:
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Text;
 using Imcodec.Wad;
 using Imlight.Common;
 
 namespace Imlight.CoreLib.Shared.Resources;
 
-public class Locale : RootDirectoryResourceSingleton<Locale>, IMemoryStreamDisposable {
+internal class Locale : RootDirectoryResourceSingleton<Locale>, IMemoryStreamDisposable {
 
     protected override string DirectoryName => "Locale/English/";
 
@@ -23,10 +45,11 @@ public class Locale : RootDirectoryResourceSingleton<Locale>, IMemoryStreamDispo
         // There are aoubt ~5,000 files here. They take up about 200MB of memory.
         // At this point, they are all loaded into memory. This function should process the locales
         // and give us data we actually need.
-        Logger.Information("Loaded {0} English locale files.", Logger.Args(Files.Count));
+        Logger.Information("Loaded {0} English locale files.", 
+            Logger.Args(Files.Count));
 
         // Process each file.
-        s_data = new Dictionary<string, Dictionary<string, string>>();
+        s_data = [];
         foreach (var file in Files) {
             var stream = file.Value;
             var record = file.Key;

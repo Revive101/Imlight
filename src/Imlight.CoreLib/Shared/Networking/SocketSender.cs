@@ -1,6 +1,27 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * SOCKET SENDER
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages socket-level packet sending for network sessions, 
+ * handling message encoding and transmission with error handling.
+ * 
+ * USAGE EXAMPLE:
+ * // Socket sender is typically created by SessionActor
+ * // Handles outgoing network packet transmission
+ * 
+ * NOTE:
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;

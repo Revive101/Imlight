@@ -1,11 +1,37 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * EQUIPMENT SERVICE
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages player equipment interactions, including item equipping, 
+ * unequipping, and associated effect handling.
+ * 
+ * USAGE EXAMPLE:
+ * Internal service handling equipment-related messages within the 
+ * game server session.
+ * 
+ * NOTE:
+ * - Supports item equip and unequip operations
+ * - Manages equipment-related effects and broadcasts
+ * - Implements security checks for suspicious equipment actions
+ * 
+ * TODO:
+ * - Enhance error handling for equipment transfers
+ * - Review and improve effect serialization mechanisms
+ * - Implement additional validation for equipment actions
+ * 
+ * Created by: Joji
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Akka.Actor;
 using Imcodec.CoreObject;
 using Imcodec.IO;
@@ -24,11 +50,11 @@ public class EquipmentService(SessionActor sessionActor) : MessageService(sessio
 
     private readonly CoreObjectSerializer _itemSerializer = new(
         versionable: false,
-        behaviors: Imcodec.ObjectProperty.SerializerFlags.None
+        behaviors: SerializerFlags.None
     );
     private readonly CoreObjectSerializer _effectSerializer = new(
         versionable: false,
-        behaviors: Imcodec.ObjectProperty.SerializerFlags.None
+        behaviors: SerializerFlags.None
     );
 
     protected static Props Props(SessionActor parentActor)

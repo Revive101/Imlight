@@ -1,6 +1,29 @@
-/* Copyright (C) Revive101 Development Team - All Rights Reserved
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * CHARACTER EFFECT MANAGEMENT SYSTEM
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Provides helper methods for managing game effects that modify character statistics,
+ * handling the application and removal of various effect types to wizard characters.
+ * 
+ * USAGE EXAMPLE:
+ * var addedEffects = CharacterEffectHelper.AddEffectsToWizard(wizard, itemTemplate);
+ * var removedEffects = CharacterEffectHelper.RemoveEffectsFromWizard(wizard, itemTemplate);
+ * 
+ * NOTE:
+ * Uses System.Text.RegularExpressions for parsing effect names to determine affected
+ * magic schools. Effect changes are applied directly to character statistics objects.
+ *
+ * TODO:
+ * 
+ * Created by: Joji, Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System.Collections.Generic;
@@ -19,6 +42,11 @@ namespace Imlight.CoreLib.Game.Effects;
 /// <summary>
 /// Helper class for adding and removing effects to/from a wizard character.
 /// </summary>
+/// <remarks>
+/// Handles the application and removal of effects from equipment templates to character statistics,
+/// including school-specific effects like damage bonuses, accuracy increases, and damage reduction.
+/// Manages special effects like school masteries and temporary spell grants.
+/// </remarks>
 internal static class CharacterEffectHelper {
 
     /// <summary>
@@ -118,6 +146,12 @@ internal static class CharacterEffectHelper {
         return removedEffects;
     }
 
+    /// <summary>
+    /// Adds a game effect to the specified game statistics.
+    /// </summary>
+    /// <param name="stats">The game statistics to modify.</param>
+    /// <param name="effectInfo">The effect information to apply.</param>
+    /// <returns>The created game effect.</returns>
     internal static GameEffectBase AddGameEffectToStats(ServerWizGameStats stats, GameEffectInfo effectInfo) {
         var gameEffect = GameEffectFactory.CreateEffectFromInfo(effectInfo, 0);
         if (gameEffect is null) {
@@ -137,6 +171,12 @@ internal static class CharacterEffectHelper {
         return gameEffect;
     }
 
+    /// <summary>
+    /// Adds a game effect to the specified game statistics.
+    /// </summary>
+    /// <param name="stats">The game statistics to modify.</param>
+    /// <param name="effectInfo">The effect information to apply.</param>
+    /// <returns>The created game effect.</returns>
     internal static GameEffectBase RemoveGameEffectFromStats(ServerWizGameStats stats, GameEffectInfo effectInfo) {
         var gameEffect = GameEffectFactory.CreateEffectFromInfo(effectInfo, 0);
         if (gameEffect is null) {
@@ -326,16 +366,18 @@ internal static class CharacterEffectHelper {
         var maxIndex = MagicSchools.GetMaxMagicSchoolIndex();
 
         // Ensure that the effect list is the same length as the number of schools.
-        effectList ??= new List<float>(new float[maxIndex]);
+        effectList ??= [.. new float[maxIndex]];
 
         if (effectList.Count != maxIndex) {
-            effectList = new List<float>(new float[maxIndex]);
+            effectList = [.. new float[maxIndex]];
         }
 
         var index = MagicSchools.GetMagicSchool(schoolName)?.m_schoolIndex ?? -1;
 
         if (index == -1) {
-            Logger.Warning("Could not find magic school {0}.", Logger.Args(schoolName));
+            Logger.Warning("Could not find magic school {0}.", 
+                Logger.Args(schoolName));
+
             return;
         }
 

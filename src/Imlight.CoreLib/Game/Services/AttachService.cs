@@ -1,6 +1,30 @@
-﻿/* Copyright (C) Revive101 Development Team - All Rights Reserved
+﻿/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
+ *
+ * ========================================================================
+ * PLAYER ATTACHMENT SERVICE
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages the process of authenticating and attaching a player to a game zone, 
+ * handling session validation, character initialization, and zone transfer.
+ * 
+ * USAGE EXAMPLE:
+ * Internal service used within the game server's session management system.
+ * Triggered automatically during player login process.
+ * 
+ * NOTE:
+ * - Relies on multiple microservices for authentication and zone management
+ * - Performs critical security checks during player attachment
+ * 
+ * TODO:
+ * - Implement proper realm name resolution (currently hardcoded)
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
  */
 
 using System;
