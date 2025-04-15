@@ -43,7 +43,7 @@ using Imlight.CoreLib.WizardData.Collections;
 
 namespace Imlight.CoreLib.Game.Services;
 
-public class ZoneService(SessionActor sessionActor) : MessageService(sessionActor), IWithTimers {
+internal class ZoneService(SessionActor sessionActor) : MessageService(sessionActor), IWithTimers {
 
     private const int ZONE_REMOVAL_WAIT_TIME_IN_SECONDS = 8;
     private const int ZONE_TRANSFER_CLEANUP_WAIT_TIME_IN_SECONDS = 1;

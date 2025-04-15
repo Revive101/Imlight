@@ -44,7 +44,7 @@ using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Services;
 
-public class CantripService(SessionActor sessionActor) : MessageService(sessionActor), IWithTimers {
+internal class CantripService(SessionActor sessionActor) : MessageService(sessionActor), IWithTimers {
 
     private const int CANTRIP_CAST_TIME = 3;
 

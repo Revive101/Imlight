@@ -46,7 +46,7 @@ using Imlight.CoreLib.WizardData.Models.Misc;
 
 namespace Imlight.CoreLib.Game.Services;
 
-public class EquipmentService(SessionActor sessionActor) : MessageService(sessionActor) {
+internal class EquipmentService(SessionActor sessionActor) : MessageService(sessionActor) {
 
     private readonly CoreObjectSerializer _itemSerializer = new(
         versionable: false,

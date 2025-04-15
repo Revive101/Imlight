@@ -43,7 +43,7 @@ namespace Imlight.CoreLib.Shared.Resources;
 /// <summary>
 /// Factory class for creating and managing core objects in the game.
 /// </summary>
-internal class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>, IMemoryStreamDisposable {
+public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>, IMemoryStreamDisposable {
 
     protected override string ResourceName { get; } = "TemplateManifest.xml";
 

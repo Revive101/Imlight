@@ -8,7 +8,7 @@ using Imlight.CoreLib.Shared.Networking;
 
 namespace Imlight.CoreLib.Shared.Packets;
 
-public sealed class SERVICE_101_PROTOCOL : IServerProtocol {
+internal sealed class SERVICE_101_PROTOCOL : IServerProtocol {
 
     public byte ServiceID { get; } = 104;
     public string ProtocolType { get; } = "ACCOUNT";

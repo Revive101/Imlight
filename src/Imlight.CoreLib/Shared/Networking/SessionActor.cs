@@ -45,7 +45,7 @@ namespace Imlight.CoreLib.Shared.Networking;
 /// <summary>
 /// Represents a connected socket as a ReceiveActor.
 /// </summary>
-internal sealed class SessionActor : ReceiveActor, IDisposable {
+public sealed class SessionActor : ReceiveActor, IDisposable {
 
     private readonly byte _serviceRetryCount                 = ConfigurationManager.Settings["Advanced.SessionActorServiceRetryCount"].AsByte();
     private readonly byte _serviceTimeRangeRetryInSeconds    = ConfigurationManager.Settings["Advanced.SessionActorServiceRangeRetry"].AsByte();

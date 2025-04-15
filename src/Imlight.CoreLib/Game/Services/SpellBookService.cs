@@ -30,7 +30,7 @@ using Imlight.CoreLib.Shared.Networking;
 
 namespace Imlight.CoreLib.Game.Services;
 
-public class SpellbookService(SessionActor sessionActor) : MessageService(sessionActor) {
+internal class SpellbookService(SessionActor sessionActor) : MessageService(sessionActor) {
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new SpellbookService(parentActor));

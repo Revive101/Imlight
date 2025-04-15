@@ -40,7 +40,7 @@ using Imcodec.Math;
 
 namespace Imlight.CoreLib.Game.Services;
 
-public class WizardService(SessionActor sessionActor) : MessageService(sessionActor) {
+internal class WizardService(SessionActor sessionActor) : MessageService(sessionActor) {
 
     private const float ORIENTATION_TOLERANCE = 1.035f;
 

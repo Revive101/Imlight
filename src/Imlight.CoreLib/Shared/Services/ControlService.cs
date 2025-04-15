@@ -13,7 +13,7 @@ using Imlight.CoreLib.Shared.Packets;
 
 namespace Imlight.CoreLib.Shared.Services;
 
-public class ControlService : MessageService, IWithTimers {
+internal class ControlService : MessageService, IWithTimers {
 
     public ITimerScheduler Timers { get; set; }
 

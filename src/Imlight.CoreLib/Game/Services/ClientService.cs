@@ -32,7 +32,7 @@ using Imlight.CoreLib.Shared.Networking;
 
 namespace Imlight.CoreLib.Game.Services;
 
-public class ClientService(SessionActor sessionActor) : MessageService(sessionActor) {
+internal class ClientService(SessionActor sessionActor) : MessageService(sessionActor) {
     
     protected static Props Props(SessionActor parentActor) 
         => Akka.Actor.Props.Create(() => new ClientService(parentActor));

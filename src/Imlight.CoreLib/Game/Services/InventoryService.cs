@@ -37,7 +37,7 @@ using Imlight.CoreLib.Shared.Utilities;
 
 namespace Imlight.CoreLib.Game.Services;
 
-public class InventoryService(SessionActor sessionActor) : MessageService(sessionActor) {
+internal class InventoryService(SessionActor sessionActor) : MessageService(sessionActor) {
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new InventoryService(parentActor));

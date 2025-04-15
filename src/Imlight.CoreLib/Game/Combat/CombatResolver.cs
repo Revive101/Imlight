@@ -260,7 +260,7 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
         combatActionList.m_actionList.Add(fizzleAction);
 
         Logger.Debug("Duel {0} | Slot {1} | Spell fizzled.",
-            Logger.Args(_duel.m_duelID, action.SpellCaster.SlotIndex));
+            Logger.Args(_duel.m_duelID.Full, action.SpellCaster.SlotIndex));
 
         return SPELL_FIZZLE_TIME;
     }

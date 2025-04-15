@@ -12,16 +12,17 @@ using Imlight.CoreLib.WizardData.Models.Player;
 namespace Imlight.CoreLib.Game;
 
 public static class WizardObjectLoader {
+
+    private const uint WIZARD_OBJECT_TEMPLATE_ID = 1;
     
     public static WizClientObject GetPlayerGameObject(Wizard character) {
         var clientObject = CoreObjectFactory.InitializeCoreObjectBehaviors(new WizClientObject(), 1);
 
         // Set the stats on the new object.
-        clientObject.m_templateID = 1;
+        clientObject.m_templateID = WIZARD_OBJECT_TEMPLATE_ID;
         clientObject.m_fScale = 1f;
         clientObject.m_globalID = character.CharId;
         clientObject.m_characterId = (GID) character.CharId;
-        clientObject.m_permID = 0; // What is this?
 
         // If the mobile ID isn't null, this game object currently exists in a wizard zone.
         if (character.GameObject is not null) {

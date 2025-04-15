@@ -10,7 +10,7 @@ using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Shared.Services;
 
-public class AccountService(SessionActor parentActor) : MessageService(parentActor) {
+internal class AccountService(SessionActor parentActor) : MessageService(parentActor) {
     
     public Account Account { get; private set; }
 

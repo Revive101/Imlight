@@ -8,7 +8,7 @@ namespace Imlight.CoreLib.Shared.Networking;
 /// <summary>
 /// Interface for server protocol implementations.
 /// </summary>
-internal interface IServerProtocol {
+public interface IServerProtocol {
     
     byte ServiceID { get; }
     string ProtocolType { get; }
@@ -20,7 +20,7 @@ internal interface IServerProtocol {
 /// <summary>
 /// Interface for server message implementations.
 /// </summary>
-internal interface IServerMessage {
+public interface IServerMessage {
     
     byte MessageOrder { get; }
     byte ServiceID { get; }

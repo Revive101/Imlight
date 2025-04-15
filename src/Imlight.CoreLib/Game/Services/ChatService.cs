@@ -46,7 +46,7 @@ using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Services;
 
-public class ChatService(SessionActor sessionActor) : MessageService(sessionActor) {
+internal class ChatService(SessionActor sessionActor) : MessageService(sessionActor) {
 
     private const string FemaleSourcePrefix = "80";
     private const string MaleSourcePrefix = "82";

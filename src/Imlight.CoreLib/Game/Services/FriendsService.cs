@@ -10,7 +10,7 @@ using Imlight.CoreLib.Shared.Networking;
 
 namespace Imlight.CoreLib.Game.Services;
 
-public class FriendsService(SessionActor sessionActor) : MessageService(sessionActor) {
+internal class FriendsService(SessionActor sessionActor) : MessageService(sessionActor) {
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new FriendsService(parentActor));

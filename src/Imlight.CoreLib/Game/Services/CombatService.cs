@@ -44,7 +44,7 @@ using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Services;
 
-public class CombatService(SessionActor sessionActor) : MessageService(sessionActor), IWithTimers {
+internal class CombatService(SessionActor sessionActor) : MessageService(sessionActor), IWithTimers {
 
     private const uint NO_AGGRO_EFFECT_STRINGID = 1618528611;
     private const uint NO_AGGRO_EFFECT_DURATION_IN_SECONDS = 3;
