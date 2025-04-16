@@ -1,56 +1,32 @@
-/*
- * Copyright (C) Revive101 Development Team - All Rights Reserved
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential.
- *
- * ========================================================================
- * AUCTION HOUSE SERVICE
- * ========================================================================
- * 
- * PURPOSE:
- * Manages player interactions with the in-game auction house, handling 
- * item buying, selling, and inventory management.
- * 
- * USAGE EXAMPLE:
- * Internal service used within the game server's session management system.
- * Handles various auction house commands through message routing.
- * 
- * NOTE:
- * 
- * TODO:
- * - Implement proper error handling for auction house transactions
- * - Complete implementation of unhandled command cases
- * - Review and refine gold calculation logic
- * 
- * Created by: Joji
- * Version: KALI 1.0
- * Last Updated: 3/18/2025
  */
 
 using System;
 using System.Linq;
 using System.Collections.Generic;
 using Akka.Actor;
+using Imlight.Common.Caches;
+using Imlight.Common.ObjectProperty;
+using Imlight.Common.ObjectProperty.PropertyReflection;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Collections;
-using Imcodec.MessageLayer.Generated;
-using Imcodec.ObjectProperty.TypeCache;
-using Imcodec.CoreObject;
-using Imcodec.ObjectProperty;
-using Imlight.Common;
-using Imcodec.Types;
+using static Imlight.Common.Caches.TypeCache;
+using static Imlight.Common.Caches.ServerTypeCache;
 
 namespace Imlight.CoreLib.Game.Services;
 
-internal class AuctionHouseService(SessionActor sessionActor) : MessageService(sessionActor) {
+internal class AuctionHouseService : MessageService {
+    private readonly CoreObjectSerializer _itemSerializer = new CoreObjectSerializer()
+                    .OnBehaviors(SerializerOptions.Behaviors.None)
+                    .OnPropertyMask((SerializerOptions.PropertyFlags) 1);
+    private readonly ObjectSerializer _serializer = new ObjectSerializer()
+                .OnBehaviors(SerializerOptions.Behaviors.None)
+                .OnPropertyMask((SerializerOptions.PropertyFlags) 1);
 
-    private readonly CoreObjectSerializer _itemSerializer = new(
-        behaviors: SerializerFlags.None
-    );
-    private readonly ObjectSerializer _serializer = new(
-        Behaviors: SerializerFlags.None
-    );
+    public AuctionHouseService(SessionActor sessionActor) : base(sessionActor) { }
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new AuctionHouseService(parentActor));
@@ -95,38 +71,14 @@ internal class AuctionHouseService(SessionActor sessionActor) : MessageService(s
             return;
         }
 
-        var houseEntryList = new List<AuctionHouseEntry>(houseEntries);
-
-        while (houseEntryList.Count > 0) {
-            // Contents sent in blocks of up to 50 entries.
-            var houseEntryBlock = (houseEntryList.Count >= 50)
-                ? houseEntryList.GetRange(0, 50) : houseEntryList.GetRange(0, houseEntryList.Count);
-
-            var auctionHouseEntries = new AuctionHouseOffering {
-                m_auctionHousePurchaseKey = key,
-                m_auctionList = houseEntryBlock
-            };
-
-            if (!_serializer.Serialize(auctionHouseEntries, 1, out var auctionHouseEntriesData)) {
-                Logger.Error("Failed to serialize auction house entries.");
-
-                return;
-            }
-
-            var auctionHouseContentsMsg = new WIZARD_12_PROTOCOL.MSG_AUCTIONHOUSECONTENTS {
-                Contents = auctionHouseEntriesData,
-                GlobalID = npcId
-            };
-            SendToSocket(auctionHouseContentsMsg);
-
-            // Remove first 50 entries from list.
-            if (houseEntryList.Count >= 50) {
-                houseEntryList.RemoveRange(0, 50);
-            }
-            else {
-                houseEntryList.RemoveRange(0, houseEntryList.Count);
-            }
-        }
+        // todo: test, remove later. Convert our current auction house entry type into the new one.
+        var newAuctionMap = new AuctionHouseContents { m_items = houseEntries };
+        var newAuctionMapData = _serializer.Serialize(newAuctionMap);
+        var newAuctionHouseMsg = new WIZARD_12_PROTOCOL.MSG_AUCTIONHOUSECONTENTS {
+            Contents = newAuctionMapData,
+            GlobalID = npcId
+        };
+        SendToSocket(newAuctionHouseMsg);
     }
 
     private void ConfirmBuyFromAuctionHouse(ulong templateId, uint key) {
@@ -153,13 +105,7 @@ internal class AuctionHouseService(SessionActor sessionActor) : MessageService(s
         var item = (WizClientObjectItem) CoreObjectFactory.FinalizeCoreObject(templateId);
         item.m_primaryColor = texture;
         item.m_secondaryColor = decal;
-
-        // Try serializing item data.
-        if (!_itemSerializer.Serialize(item, 1, out var itemData)) {
-            Logger.Error("Failed to serialize item data.");
-
-            return;
-        }
+        var itemData = _itemSerializer.Serialize(item);
 
         var entry = AuctionHouseCollection.GetAuctionHouseEntry(templateId);
         if (entry is null) { // Entry does not exist.
@@ -178,11 +124,7 @@ internal class AuctionHouseService(SessionActor sessionActor) : MessageService(s
         }
 
         // Inform of update.
-        if (!_serializer.Serialize(entry, 1, out var houseEntryData)) {
-            Logger.Error("Failed to serialize auction house entry.");
-
-            return;
-        }
+        var houseEntryData = _serializer.Serialize(entry);
         var auctionUpdateMsg = new GAME_5_PROTOCOL.MSG_AUCTIONHOUSEUPDATE {
             UpdateInfo = houseEntryData,
             CharacterID = wizard.CharId
@@ -243,7 +185,7 @@ internal class AuctionHouseService(SessionActor sessionActor) : MessageService(s
         }
 
         var template = (WizItemTemplate) CoreObjectFactory.GetCoreTemplate(item.m_templateID);
-
+        
         var isNoAuction = template.m_adjectiveList.Any(x => x == "FLAG_NoAuction");
         if (isNoAuction) { // The item cannot be sold to the bazaar.
             // Todo: respond with error
@@ -278,7 +220,7 @@ internal class AuctionHouseService(SessionActor sessionActor) : MessageService(s
                 m_templateID = (GID) item.m_templateID,
                 m_buyPrice = (int) template.m_baseCost * 2, // Bazaar sells items at 200% of their value.
                 m_numForSale = 1,
-                m_sellPrice = gold
+                m_sellPrice = gold 
             };
             AuctionHouseCollection.AddAuctionHouseEntry(entry);
         }
@@ -293,11 +235,7 @@ internal class AuctionHouseService(SessionActor sessionActor) : MessageService(s
         var removedItemSuccess = wizard.RemoveItemFromInventory(itemGlobalId);
 
         // Inform of update.
-        if (!_serializer.Serialize(entry, 1, out var houseEntryData)) {
-            Logger.Error("Failed to serialize auction house entry.");
-
-            return;
-        }
+        var houseEntryData = _serializer.Serialize(entry);
         var auctionUpdateMsg = new GAME_5_PROTOCOL.MSG_AUCTIONHOUSEUPDATE {
             UpdateInfo = houseEntryData,
             CharacterID = wizard.CharId

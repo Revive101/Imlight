@@ -5,14 +5,15 @@
 
 using System.Collections.Generic;
 using Akka.Actor;
+using Imlight.Common.IO;
+using Imlight.Common.MessageLayer;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Models.Player;
+using SharpDX;
+using static Imlight.Common.Caches.ServerTypeCache;
+using static Imlight.Common.Caches.TypeCache;
 using Imlight.CoreLib.Game.Zone.Components;
-using Imcodec.ObjectProperty.TypeCache;
-using Imcodec.MessageLayer;
-using Imcodec.IO;
-using Imcodec.Math;
 
 namespace Imlight.CoreLib.Shared.Packets;
 
@@ -47,11 +48,6 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte ServiceID { get; } = 102;
 
         /// <summary>
-        /// The path to the zone file as it would appear in the <see cref="AccessPassManager"/>.
-        /// </summary>
-        public string ZonePath;
-
-        /// <summary>
         /// The data for the zone, as it appears in the game client data.
         /// </summary>
         public WizZoneData ZoneData;
@@ -64,12 +60,12 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         /// <summary>
         /// The data for the zone's paths, as it appears in the game client data.
         /// </summary>
-        public PathTemplateList PathData;
+        public PathManager_PathTemplateList PathData;
 
         /// <summary>
         /// The data for the zone's node templates, as it appears in the game client data.
         /// </summary>
-        public NodeTemplateList NodeData;
+        public PathManager_NodeTemplateList NodeData;
 
         /// <summary>
         /// The data for the zone's volumes, as it appears in the game client data.
@@ -490,7 +486,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
         public ByteString EventName;
         public IActorRef PlayerActor;
-        public CoreObject PlayerGameObject;
+        public CoreObject? PlayerGameObject;
 
     }
 
@@ -524,7 +520,6 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public string ZoneDisplayName;
         public Vector3 Location;
         public float Orientation;
-        public string ErrorMessage;
         public uint ErrorCode;
 
     } 
@@ -632,6 +627,13 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
         public bool HasZone;
 
+    }
+
+    public sealed class MSG_RANDOMFLIPS : IServerMessage {
+        public byte MessageOrder { get; } = 41;
+        public byte ServiceID { get; } = 102;
+        public string ZoneName;
+        public ulong SenderCharID;
     }
 
 }
