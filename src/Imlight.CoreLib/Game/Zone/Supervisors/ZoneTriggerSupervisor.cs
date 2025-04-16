@@ -8,13 +8,12 @@ using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
 using Nito.AsyncEx.Synchronous;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
-using Imlight.Common.Configuration;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Collections;
-using Imcodec.ObjectProperty.TypeCache;
 
 namespace Imlight.CoreLib.Game.Zone.Supervisors;
 
@@ -27,7 +26,8 @@ namespace Imlight.CoreLib.Game.Zone.Supervisors;
 /// text, etc.</remarks>
 internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervisor(zone) {
 
-    private static readonly bool _randomizeGateways = ConfigurationManager.Settings.RandomizeGateways;
+    private static readonly bool s_randomizeGateways 
+        = ConfigurationManager.Settings["April Fools.RandomizeGateways"].AsBool();
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS))]
     public override void ReceiveZoneLoadResults(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS message) {
@@ -73,7 +73,7 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
                 // April Fools: if we've confirmed this is a zone transfer, we'll instead
                 // grab a random zone transfer from the database. Then, we'll set the trigger
                 // results to the random zone transfer.
-                if (_randomizeGateways) {
+                if (s_randomizeGateways) {
                     var randomZoneData = ZoneDataCollection.GetAprilFoolsRandomZoneData();
                     var randomIdx = new Random().Next(randomZoneData.Teleports.Count - 1);
                     var randomZoneTransfer = randomZoneData.Teleports[randomIdx];

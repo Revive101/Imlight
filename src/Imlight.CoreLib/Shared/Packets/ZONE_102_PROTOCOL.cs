@@ -5,15 +5,14 @@
 
 using System.Collections.Generic;
 using Akka.Actor;
-using Imlight.Common.IO;
-using Imlight.Common.MessageLayer;
+using Imcodec.Math;
+using Imcodec.IO;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Models.Player;
-using SharpDX;
-using static Imlight.Common.Caches.ServerTypeCache;
-using static Imlight.Common.Caches.TypeCache;
 using Imlight.CoreLib.Game.Zone.Components;
+using Imcodec.MessageLayer;
 
 namespace Imlight.CoreLib.Shared.Packets;
 
@@ -47,6 +46,8 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte MessageOrder { get; } = 2;
         public byte ServiceID { get; } = 102;
 
+        public string ZonePath;
+
         /// <summary>
         /// The data for the zone, as it appears in the game client data.
         /// </summary>
@@ -60,12 +61,12 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         /// <summary>
         /// The data for the zone's paths, as it appears in the game client data.
         /// </summary>
-        public PathManager_PathTemplateList PathData;
+        public PathTemplateList PathData;
 
         /// <summary>
         /// The data for the zone's node templates, as it appears in the game client data.
         /// </summary>
-        public PathManager_NodeTemplateList NodeData;
+        public NodeTemplateList NodeData;
 
         /// <summary>
         /// The data for the zone's volumes, as it appears in the game client data.
@@ -521,6 +522,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public Vector3 Location;
         public float Orientation;
         public uint ErrorCode;
+        public string ErrorMessage;
 
     } 
 

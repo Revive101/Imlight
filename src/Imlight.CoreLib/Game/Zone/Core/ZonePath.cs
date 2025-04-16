@@ -68,6 +68,8 @@ public sealed class ZonePath : ZoneEntity, IWithTimers {
     private readonly Dictionary<SpawnObject, byte> _creatureCount = [];
     private readonly List<IActorRef> _creatureActors = [];
     private readonly Dictionary<ulong, SpawnObject> _spawnObjectInfo = [];
+    private readonly bool _randomizeCreatures 
+        = ConfigurationManager.Settings["April Fools.RandomizeCreatures"].AsBool();
 
     // ctor
     public ZonePath(PathObjectTemplate template, List<NodeObject> nodes, List<SpawnObject> creatures, IActorRef zoneRef, Zone zone)
@@ -137,6 +139,11 @@ public sealed class ZonePath : ZoneEntity, IWithTimers {
 
         // Get the node to spawn the creature at.
         var spawnNode = GetRelevantNode(spawnItemInfo);
+
+        // If creatures are randomized, pick a random template ID.
+        if (_randomizeCreatures) {
+            spawnItemInfo.m_templateID = AprilFools.CreatureList.GetRandomCreatureTemplateID();
+        }
 
         // Create the creature using the data we have.
         var template = CoreObjectFactory.GetCoreTemplate(spawnItemInfo.m_templateID);

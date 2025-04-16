@@ -3,30 +3,27 @@
  * Proprietary and confidential.
  */
 
-using Akka.Actor;
-using Imlight.Common;
-using Imlight.Common.Caches;
-using Imlight.Common.Cryptography;
-using Imlight.Common.ObjectProperty;
-using Imlight.Common.ObjectProperty.PropertyReflection;
-using Imlight.CoreLib.Game.World;
-using Imlight.CoreLib.Game.Zone.Core;
-using Imlight.CoreLib.Shared.Packets;
-using Imlight.CoreLib.WizardData.Collections;
-using Imlight.CoreLib.WizardData.Models.Player;
 using System.Collections.Generic;
 using System.Linq;
-using static Imlight.Common.Caches.TypeCache;
+using Akka.Actor;
+using Imcodec.Cryptography;
+using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty.TypeCache;
+using Imlight.CoreLib.Game.WizBang;
+using Imlight.CoreLib.Game.Zone.Core;
+using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
-internal sealed class InteractAuctionHouseComponent(ZoneEntity entity) : ZoneEntityComponent(entity), IServiceComponent, IComponentFactory {
+internal sealed class InteractAuctionHouseComponent(ZoneEntity entity) 
+    : ZoneEntityComponent(entity), IServiceComponent, IComponentFactory {
 
     public string ServiceName => "AuctionHouseService";
     public string NpcIcon => null;
     public string NpcNameKey => null;
     public string NpcTextKey => null;
-    public string WizBang => "Shopping";
+    public WizBangs WizBang => WizBangs.Shopping;
     public string StateName => "Shop";
     public string InteractWizBang => "Registrar";
     public string DisplayKey => "GUI_AuctionHouse";
@@ -59,7 +56,7 @@ internal sealed class InteractAuctionHouseComponent(ZoneEntity entity) : ZoneEnt
     private void SendPlayerIntoWizbang(ulong playerObjID) {
         // Create the wiz bang message, and wrap it in a broadcast message.
         var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG {
-            WizBangID = StringHash.Compute(WizBang),
+            WizBangID = (uint) WizBang,
             GameObjectID = playerObjID
         };
         var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
