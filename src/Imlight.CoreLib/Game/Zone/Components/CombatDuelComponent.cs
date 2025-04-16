@@ -62,7 +62,7 @@ namespace Imlight.CoreLib.Game.Zone.Components;
 /// positions subcircles according to sigil templates and maintains combat state
 /// including team assignments, turn order, and participant status.
 /// </remarks>
-internal sealed class CombatDuelComponent(ZoneEntity entity) 
+internal sealed class CombatDuelComponent(ZoneEntity entity)
     : ZoneEntityComponent(entity), IComponentFactory, IWithTimers, IClientBehaviorProvider<WizardClientDuelBehavior> {
 
     private const byte PLANNING_TIME = 30;
@@ -101,11 +101,11 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         Versionable: false,
         Behaviors: SerializerFlags.None
     );
-    private readonly PropertyFlags _combatParticipantFlags     = (PropertyFlags) 4;
+    private readonly PropertyFlags _combatParticipantFlags = (PropertyFlags) 4;
     private readonly PropertyFlags _combatParticipantStatFlags = (PropertyFlags) 5;
     private readonly PropertyFlags _combatParticipantHandFlags = (PropertyFlags) 5;
-    private readonly PropertyFlags _upFirstFlags = PropertyFlags.Prop_Transmit 
-                                                 | PropertyFlags.Prop_AuthorityTransmit 
+    private readonly PropertyFlags _upFirstFlags = PropertyFlags.Prop_Transmit
+                                                 | PropertyFlags.Prop_AuthorityTransmit
                                                  | PropertyFlags.Prop_Public;
 
     private CombatSigilObjectInfo _combatSigilObjectInfo;
@@ -158,7 +158,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             if (IsSlotAvailable(CombatTeam.Player)) {
                 AddParticipant(playerObj, playerActor);
             }
-        } 
+        }
         else if (!IsInRadius(playerObj, _combatSigilObjectInfo.m_radius) && _entitiesInRange.ContainsKey(playerObj)) {
             _entitiesInRange.Remove(playerObj);
         }
@@ -178,7 +178,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             if (npcComponent != null && !npcComponent.IsMonster) {
                 return;
             }
-            
+
             if (IsSlotAvailable(CombatTeam.Monster)) {
                 AddParticipant(creature, suspect);
             }
@@ -187,7 +187,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
                 var deleteMsg = new COMBAT_106_PROTOCOL.MSG_COMBATDEATH();
                 suspect.Tell(deleteMsg);
             }
-        } 
+        }
         else if (!IsInRadius(creature, _combatSigilObjectInfo.m_radius) && _entitiesInRange.ContainsKey(creature)) {
             _entitiesInRange.Remove(creature);
         }
@@ -199,7 +199,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         Message = message
     });
 
-    internal void DuelBroadcast(IMessage message) 
+    internal void DuelBroadcast(IMessage message)
         => EnactActionOnSubCircles(circle => circle.ParticipantActor.Tell(message));
 
     internal void CreatureBroadcast(IMessage message) => EnactActionOnSubCircles(circle => {
@@ -229,7 +229,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         }
 
         if (_renderComponent is null) {
-            Logger.Error("RenderComponent is null for duel {0}! Deleting sigil.", 
+            Logger.Error("RenderComponent is null for duel {0}! Deleting sigil.",
                 Logger.Args(SigilId));
 
             Entity.DespawnObject();
@@ -357,7 +357,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
         // Serialize the combat actions and send them to the clients.
         if (!_serializer.Serialize(actions, _combatParticipantHandFlags, out var buffer)) {
-            Logger.Error("Failed to serialize combat actions for duel {0}", 
+            Logger.Error("Failed to serialize combat actions for duel {0}",
                 Logger.Args(SigilId));
 
             return;
@@ -460,7 +460,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
         _isActive = true;
 
-        Logger.Debug("Duel {0} | Created. Grace period over in {1}", 
+        Logger.Debug("Duel {0} | Created. Grace period over in {1}",
             Logger.Args(Duel.m_duelID.Full, DUEL_GRACE_PERIOD_IN_SECONDS));
     }
 
@@ -608,7 +608,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             m_roundNum = Duel.m_roundNum,
         };
         if (!versionableSerializer.Serialize(upFirst, _upFirstFlags, out var upFirstData)) {
-            Logger.Error("Failed to serialize up first data for duel {0}", 
+            Logger.Error("Failed to serialize up first data for duel {0}",
                 Logger.Args(SigilId));
 
             return;
@@ -654,19 +654,19 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         var participantStats = circle.ParticipantGameStats;
         var participantCombatsStats = participantStats?.GetCombatGameStats();
         if (participantCombatsStats is null) {
-            Logger.Error("Failed to get combat stats for duel {0}", 
+            Logger.Error("Failed to get combat stats for duel {0}",
                 Logger.Args(SigilId));
 
             return;
         }
 
         if (!_serializer.Serialize(participantCombatsStats, _combatParticipantStatFlags, out var buffer)) {
-            Logger.Error("Failed to serialize combat stats for duel {0}", 
+            Logger.Error("Failed to serialize combat stats for duel {0}",
                 Logger.Args(SigilId));
 
             return;
         }
-        
+
         var msg = new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATSTATS {
             DuelID = SigilId,
             PartID = circle.ParticipantObject.m_globalID,
@@ -687,7 +687,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             var newHand = circle.DrawHand();
 
             if (!_serializer.Serialize(newHand, _combatParticipantHandFlags, out var buffer)) {
-                Logger.Error("Failed to serialize combat hand for duel {0}", 
+                Logger.Error("Failed to serialize combat hand for duel {0}",
                     Logger.Args(SigilId));
 
                 return;
@@ -732,7 +732,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
         // Serialize the combat pips and send it to each participant.
         if (!_serializer.Serialize(pips, _combatParticipantStatFlags, out var buffer)) {
-            Logger.Error("Failed to serialize combat pips for duel {0}", 
+            Logger.Error("Failed to serialize combat pips for duel {0}",
                 Logger.Args(SigilId));
 
             return;
@@ -765,7 +765,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
         // Serialize the combat health and send it to each participant.
         if (!_serializer.Serialize(healthList, _combatParticipantStatFlags, out var healthBuffer)) {
-            Logger.Error("Failed to serialize combat health for duel {0}", 
+            Logger.Error("Failed to serialize combat health for duel {0}",
                 Logger.Args(SigilId));
 
             return;
@@ -873,7 +873,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         }
     }
 
-    private static CombatTeam DetermineFirstTeam() 
+    private static CombatTeam DetermineFirstTeam()
         => (CombatTeam) new Random().Next(0, 2);
 
     private byte GetUpFirstSigilSlot() {
@@ -902,7 +902,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         // Serialize the combat participant and send it to every client in the zone.
         var participant = circle.CombatParticipant;
         if (!_serializer.Serialize(participant, _combatParticipantFlags, out var buffer)) {
-            Logger.Error("Failed to serialize combat participant for duel {0}", 
+            Logger.Error("Failed to serialize combat participant for duel {0}",
                 Logger.Args(SigilId));
 
             return;
@@ -914,7 +914,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         };
         ZoneBroadcast(msg);
 
-        Logger.Debug("Duel {0} | Slot {1} | Serialized participant sent", 
+        Logger.Debug("Duel {0} | Slot {1} | Serialized participant sent",
             Logger.Args(Duel.m_duelID.Full, circle.SlotIndex));
 
         circle.AddedToDuel = true;
@@ -1019,7 +1019,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         };
         circle.ParticipantActor.Tell(stateMsg);
     });
-   
+
     private bool IsSlotAvailable(CombatTeam team) {
         var IsNewbieZone = false;
         var IsDangerousZone = false;
