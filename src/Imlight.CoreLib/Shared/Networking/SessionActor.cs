@@ -302,7 +302,8 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
                         }
                     default:
                         Logger.Error("SessionActor {Sid} service {Class} L:{LineNumber} threw unknown exception: " +
-                                  "{Message}", Logger.Args(SessionID, ex.TargetSite.DeclaringType, ex.TargetSite.Name, ex.Message));
+                                     "{Message}. Exception details: {Exception}. Inner exception: {InnerException}",
+                                     Logger.Args(SessionID, ex.TargetSite.DeclaringType, ex.TargetSite.Name, ex.Message, ex, ex.InnerException));
                         return Directive.Stop;
                 }
             }
