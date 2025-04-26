@@ -1,0 +1,172 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
+using System;
+using Imcodec.ObjectProperty.TypeCache;
+using Imcodec.Types;
+using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Models.Player;
+
+namespace Imlight.CoreLib.Game;
+
+public static class WizardObjectLoader {
+
+    private const uint WIZARD_OBJECT_TEMPLATE_ID = 1;
+    
+    public static WizClientObject GetPlayerGameObject(Wizard character) {
+        var clientObject = CoreObjectFactory.InitializeCoreObjectBehaviors(new WizClientObject(), 1);
+
+        // Set the stats on the new object.
+        clientObject.m_templateID = WIZARD_OBJECT_TEMPLATE_ID;
+        clientObject.m_fScale = 1f;
+        clientObject.m_globalID = character.CharId;
+        clientObject.m_characterId = (GID) character.CharId;
+
+        // If the mobile ID isn't null, this game object currently exists in a wizard zone.
+        if (character.GameObject is not null) {
+            clientObject.m_nMobileID = character.GameObject.m_nMobileID;
+        }
+
+        // Create the object at the location set in the character.
+        clientObject.m_location = character.Location;
+        clientObject.m_orientation = character.Orientation;
+
+        // todo: (Jooty) I hate this. We need to find a better way to handle this.
+        SetWizardAvatarBehavior(clientObject, ref character);
+        SetWizardGameStats(clientObject, ref character);
+        SetEquipmentBehavior(clientObject, character);
+        SetPlayerNameBehavior(clientObject, ref character);
+        SetInventoryBehavior(clientObject, ref character);
+        SetMagicSchoolBehavior(clientObject, ref character);
+        SetSpellbookBehavior(clientObject, ref character);
+        SetMountOwnerBehavior(clientObject, ref character);
+        SetPetSnackBehavior(clientObject, ref character);
+        SetPetOwnerBehavior(clientObject, ref character);
+        SetAlchemyBehavior(clientObject, ref character);
+
+        return clientObject;
+    }
+
+    public static void SetWizardAvatarBehavior(WizClientObject clientObject, ref Wizard character) {
+        if (CoreObjectFactory.FindBehaviorInstance<WizardCharacterBehavior>(clientObject, out var avatarBehavior)) {
+            var idx = clientObject.m_inactiveBehaviors.IndexOf(avatarBehavior);
+            clientObject.m_inactiveBehaviors[idx] = character.WizardAvatar;
+        }
+        else {
+            throw new Exception($"Behavior WizardCharacterBehavior was not found!");
+        }
+    }
+
+    public static void SetWizardGameStats(WizClientObject clientObject, ref Wizard character) {
+        // We want *only* base level/magic school stats here. The Wizard has already calculated it's own game stats.
+        // We can't send the character game stats because the EquipmentService will broadcast the equipment effects,
+        // causing each stat to duplicate.
+        clientObject.m_gameStats = character.GameStats.GetClientTypeAlternative();
+    }
+
+    public static void SetInventoryBehavior(WizClientObject clientObject, ref Wizard character) {
+        if (CoreObjectFactory.FindBehaviorInstance<ClientWizInventoryBehavior>(clientObject, out var inventoryBehavior)) {
+            var idx = clientObject.m_inactiveBehaviors.IndexOf(inventoryBehavior);
+            clientObject.m_inactiveBehaviors[idx] = character.InventoryBehavior.GetClientBehaviorInstance();
+        }
+        else {
+            throw new Exception("Behavior ClientWizInventoryBehavior not found!");
+        }
+    }
+
+    public static void SetEquipmentBehavior(WizClientObject clientObject, Wizard character) {
+        if (CoreObjectFactory.FindBehaviorInstance<ClientWizEquipmentBehavior>(clientObject, out var equipmentBehavior)) {
+            var idx = clientObject.m_inactiveBehaviors.IndexOf(equipmentBehavior);
+            clientObject.m_inactiveBehaviors[idx] = character.EquipmentBehavior.GetClientBehaviorInstance();
+        }
+        else {
+            throw new Exception("Behavior ClientWizEquipmentBehavior not found!");
+        }
+    }
+
+    public static void SetGameEffectBehavior(WizClientObject clientObject, ref Wizard character) {
+        if (CoreObjectFactory.FindBehaviorInstance<BaseGameEffectBehavior>(clientObject, out var effectBehavior)) {
+            var effectContainer = new GameEffectContainer {
+                // m_publicEffects = character.GameEffects
+            };
+
+            effectBehavior.m_gameEffects = effectContainer;
+        }
+        else {
+            throw new Exception("Behavior ClientGameEffectBehavior not found!");
+        }
+    }
+
+    public static void SetPlayerNameBehavior(WizClientObject clientObject, ref Wizard character) {
+        if (CoreObjectFactory.FindBehaviorInstance<ClientWizPlayerNameBehavior>(clientObject, out var nameBehavior)) {
+            var idx = clientObject.m_inactiveBehaviors.IndexOf(nameBehavior);
+            clientObject.m_inactiveBehaviors[idx] = character.PlayerNameBehavior.GetClientBehaviorInstance();
+        }
+        else {
+            throw new Exception("Behavior ClientWizPlayerNameBehavior not found!");
+        }
+    }
+
+    public static void SetMagicSchoolBehavior(WizClientObject clientObject, ref Wizard character) {
+        if (CoreObjectFactory.FindBehaviorInstance<ClientMagicSchoolBehavior>(clientObject, out var schoolBehavior)) {
+            var idx = clientObject.m_inactiveBehaviors.IndexOf(schoolBehavior);
+            clientObject.m_inactiveBehaviors[idx] = character.MagicSchoolBehavior.GetClientBehaviorInstance();
+        }
+        else {
+            throw new Exception("Behavior ClientMagicSchoolBehavior not found!");
+        }
+    }
+
+    public static void SetSpellbookBehavior(WizClientObject clientObject, ref Wizard character) {
+        if (CoreObjectFactory.FindBehaviorInstance<ClientSpellbookBehavior>(clientObject, out var spellbookBehavior)) {
+            var idx = clientObject.m_inactiveBehaviors.IndexOf(spellbookBehavior);
+            clientObject.m_inactiveBehaviors[idx] = character.SpellbookBehavior.GetClientBehaviorInstance();
+        }
+        else {
+            throw new Exception("Behavior ClientSpellbookBehavior not found!");
+        }
+    }
+
+    public static void SetMountOwnerBehavior(WizClientObject clientObject, ref Wizard character) {
+        if (CoreObjectFactory.FindBehaviorInstance<ClientMountOwnerBehavior>(clientObject, out var mountOwnerBehavior)) {
+            var idx = clientObject.m_inactiveBehaviors.IndexOf(mountOwnerBehavior);
+            clientObject.m_inactiveBehaviors[idx] = character.MountOwnerBehavior.GetClientBehaviorInstance();
+        }
+        else {
+            throw new Exception("Behavior ClientMountOwnerBehavior not found!");
+        }
+    }
+
+    public static void SetPetSnackBehavior(WizClientObject clientObject, ref Wizard character) {
+        if (CoreObjectFactory.FindBehaviorInstance<ClientPetSnackBehavior>(clientObject, out var petSnackBehavior)) {
+            var idx = clientObject.m_inactiveBehaviors.IndexOf(petSnackBehavior);
+            clientObject.m_inactiveBehaviors[idx] = character.PetSnackBehavior.GetClientBehaviorInstance();
+        }
+        else {
+            throw new Exception("Behavior ClientPetSnackBehavior not found!");
+        }
+    }
+  
+    public static void SetPetOwnerBehavior(WizClientObject clientObject, ref Wizard character) {
+        if (CoreObjectFactory.FindBehaviorInstance<ClientPetOwnerBehavior>(clientObject, out var petOwnerBehavior)) {
+            var idx = clientObject.m_inactiveBehaviors.IndexOf(petOwnerBehavior);
+            clientObject.m_inactiveBehaviors[idx] = character.PetOwnerBehavior.GetClientBehaviorInstance();
+        }
+        else {
+            throw new Exception("Behavior ClientPetOwnerBehavior not found!");
+        }
+    }
+
+    public static void SetAlchemyBehavior(WizClientObject clientObject, ref Wizard character) {
+        if (CoreObjectFactory.FindBehaviorInstance<ClientAlchemyBehavior>(clientObject, out var alchemyBehavior)) {
+            var idx = clientObject.m_inactiveBehaviors.IndexOf(alchemyBehavior);
+            clientObject.m_inactiveBehaviors[idx] = character.AlchemyBehavior.GetClientBehaviorInstance();
+        }
+        else {
+            throw new Exception("Behavior ClientAlchemyBehavior not found!");
+        }
+    }
+    
+}

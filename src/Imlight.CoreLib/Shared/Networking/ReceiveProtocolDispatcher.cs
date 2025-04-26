@@ -1,0 +1,101 @@
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ *
+ * ========================================================================
+ * RECEIVE PROTOCOL DISPATCHER
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Provides a flexible message handling mechanism for network protocol 
+ * dispatching using method attributes to route incoming messages.
+ * 
+ * USAGE EXAMPLE:
+ * // Define a message handler method
+ * [MessageHandler(typeof(SomeMessageType))]
+ * private void HandleSomeMessage(SomeMessageType message) { }
+ * 
+ * NOTE:
+ * - Extends Akka.NET ReceiveActor with dynamic message routing
+ * - Uses reflection to map message types to handler methods
+ * - Supports automatic message handler discovery
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
+ */
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using Akka.Actor;
+
+namespace Imlight.CoreLib.Shared.Networking;
+
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+public class MessageHandlerAttribute(Type messageType) : Attribute {
+
+    public Type MessageType { get; } = messageType;
+    
+}
+
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+public class InternalMessageHandlerAttribute(Type messageType) : MessageHandlerAttribute(messageType) { }
+
+/// <summary>
+/// An extension of a ReceiveActor that allows for receiving INetworkRecords directly to method attributes.
+/// </summary>
+public class ReceiveProtocolDispatcher : ReceiveActor {
+
+    public Dictionary<Type, MethodInfo> MessageHandlers { get; private set; }
+
+    protected ReceiveProtocolDispatcher() {
+        SetMessageHandlers();
+        ConfigureReceivers();
+    }
+
+    protected virtual void ConfigureReceivers() => Receive<object>(message => {
+        // Find the method that handles this message type
+        var messageType = message.GetType();
+        var handler = MessageHandlers
+            .Where(kvp => kvp.Key.IsAssignableFrom(messageType))
+            .Select(kvp => kvp.Value);
+
+        if (!handler.Any()) {
+            Unhandled(message);
+        }
+
+        // Invoke all methods that handle this message type
+        foreach (var method in handler) {
+            var parameters = method.GetParameters();
+            if (parameters.Length == 0) {
+                method.Invoke(this, null);
+            } else {
+                method.Invoke(this, [message]);
+            }
+        }
+    });
+
+    private void SetMessageHandlers() {
+        MessageHandlers = [];
+
+        // Get all methods in this actor with a message handling attribute
+        var methods = this
+            .GetType()
+            .GetMethods(BindingFlags.Instance
+                        | BindingFlags.Public
+                        | BindingFlags.NonPublic
+                        | BindingFlags.FlattenHierarchy)
+            .Where(method => method.GetCustomAttributes<MessageHandlerAttribute>().Any());
+
+        foreach (var method in methods) {
+            var type = method.GetCustomAttributes<MessageHandlerAttribute>().First().MessageType;
+            MessageHandlers.Add(type, method);
+        }
+    }
+    
+}

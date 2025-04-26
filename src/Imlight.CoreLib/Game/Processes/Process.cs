@@ -1,0 +1,108 @@
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ *
+ * ========================================================================
+ * ABSTRACT PROCESS MANAGEMENT SYSTEM
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Provides a base implementation for managing game processes with automatic 
+ * lifecycle management and activity tracking mechanisms.
+ * 
+ * USAGE EXAMPLE:
+ * Inherit from Process and implement specific process behaviors in derived classes.
+ * Override message handlers and process-specific logic as needed.
+ * 
+ * NOTE:
+ * Uses Akka.NET actor system for process management.
+ * Implements automatic process termination after 10 minutes of inactivity.
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
+ */
+
+using System;
+using System.Collections.Generic;
+using Akka.Actor;
+using Imcodec.MessageLayer.Generated;
+using Imlight.Common;
+using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.Shared.Packets;
+
+namespace Imlight.CoreLib.Game.Processes;
+
+/// <summary>
+/// Abstract base class for managing game processes with automated lifecycle and activity tracking.
+/// </summary>
+internal abstract class Process : ReceiveProtocolDispatcher, IWithTimers {
+
+    private const string ACTIVITY_CHECK_LOCK = "activity-check";
+    private const uint ACTIVITY_CHECK_INTERVAL_IN_SECONDS = 600; // 10 Minutes
+
+    public ITimerScheduler Timers { get; set; }
+
+    protected readonly string ProcessName;
+    protected readonly uint ProcessId;
+    protected List<IActorRef> Participants { get; set; } = [];
+    protected bool HadActivity;
+
+    // ctor
+    protected Process(string processName, uint processId, params IActorRef[] participants) {
+        this.ProcessName = processName;
+        this.ProcessId = processId;
+        this.HadActivity = false;
+        this.Participants.AddRange(participants);
+
+        // Start a periodic timer to check for activity.
+        var timespan = TimeSpan.FromSeconds(ACTIVITY_CHECK_INTERVAL_IN_SECONDS);
+        var msg = new PROCESS_107_PROTOCOL.MSG_PROCESS_ACTIVITY_CHECK();
+        Timers.StartPeriodicTimer(ACTIVITY_CHECK_LOCK, msg, timespan);
+    }
+
+    [MessageHandler(typeof(PROCESS_107_PROTOCOL.MSG_PROCESS_ACTIVITY_CHECK))]
+    private void ReceiveProcessLifeCycle() {
+        if (!HadActivity) {
+            KillProcess();
+
+            Logger.Debug("Process {0} killed after {1} seconds of inactivity.",
+                Logger.Args(ProcessName, ACTIVITY_CHECK_INTERVAL_IN_SECONDS));
+
+            return;
+        }
+
+        HadActivity = false;
+    }
+
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENT_PROCESS_TERMINATED))]
+    internal void ReceiveClientKilledProcess(GAME_5_PROTOCOL.MSG_CLIENT_PROCESS_TERMINATED message) {
+        if (message.JobID == ProcessId) {
+            Logger.Debug("Process {0} killed by client.", Logger.Args(ProcessName));
+            
+            KillProcess();
+        }
+    }
+
+    private void KillProcess() {
+        // Inform the supervisor that the process has been killed.
+        var supervisor = Context.Parent;
+        var killedMsg = new PROCESS_107_PROTOCOL.MSG_PROCESS_KILLED {
+            ProcessId = ProcessId
+        };
+        supervisor.Tell(killedMsg);
+
+        // Inform the participants that the process has been killed.
+        Sender.Tell(killedMsg);
+        foreach (var participant in Participants) {
+            participant.Tell(killedMsg);
+        }
+
+        Timers.Cancel(ACTIVITY_CHECK_LOCK);
+        Context.Stop(Self);
+    }
+
+}

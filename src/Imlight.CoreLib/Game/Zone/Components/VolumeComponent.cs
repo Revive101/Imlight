@@ -1,0 +1,98 @@
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ *
+ * ========================================================================
+ * VOLUME COMPONENT
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * Manages spatial trigger volumes in the game world, tracking player 
+ * proximity and triggering enter/exit events for specific areas.
+ * 
+ * USAGE EXAMPLE:
+ * 
+ * NOTE:
+ * Uses actor-based messaging for volume event triggering.
+ * Supports dynamic player tracking within defined spatial volumes.
+ * 
+ * TODO:
+ * 
+ * Created by: Jooty
+ * Version: KALI 1.0
+ * Last Updated: 3/18/2025
+ */
+
+using Akka.Actor;
+using Imcodec.ObjectProperty.TypeCache;
+using Imlight.CoreLib.Game.Zone.Core;
+using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.WizardData.Models.Player;
+using System.Collections.Generic;
+
+namespace Imlight.CoreLib.Game.Zone.Components;
+
+internal sealed class VolumeComponent(ZoneEntity entity) : ZoneEntityComponent(entity), IComponentFactory {
+
+    private readonly Dictionary<CoreObject, IActorRef> _playersInRange = [];
+    private Volume _volume;
+
+    public static bool ShouldAttachToEntity(CoreTemplate template) 
+        => template is GameObjectTemplate goT && goT.m_templateID == 1700;
+
+    public override void OnPlayerJoin(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) {
+        // If the player spawned within the volume, add them to the list of players in range but
+        // do not send any events.
+        if (_volume != null && IsInRadius(playerObj, _volume.m_radius) && !_playersInRange.ContainsKey(playerObj)) {
+            _playersInRange.Add(playerObj, playerActor);
+        }
+    }
+
+    public override void OnPlayerMove(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) {
+        if (_volume == null) {
+            return;
+        }
+
+        // Check if the player is now in range of the object.
+        if (IsInRadius(playerObj, _volume.m_radius) && !_playersInRange.ContainsKey(playerObj)) {
+            // If the player is in range, trigger the enter events.
+            OnProximityEnter(playerObj, playerActor);
+            _playersInRange.Add(playerObj, playerActor);
+        } else if (!IsInRadius(playerObj, _volume.m_radius) && _playersInRange.ContainsKey(playerObj)) {
+            // If the player is out of range, trigger the exit events.
+            OnProximityExit(playerObj, playerActor);
+            _playersInRange.Remove(playerObj);
+        }
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_VOLUMEDETAILS))]
+    private void ReceiveVolumeDetails(ZONE_102_PROTOCOL.MSG_VOLUMEDETAILS message) 
+        => _volume = message.Volume;
+
+    private void OnProximityEnter(CoreObject playerObj, IActorRef playerActor) {
+        foreach (var enterEvent in _volume.m_enterEvents) {
+            var postEventMsg = new ZONE_102_PROTOCOL.MSG_POSTEVENT {
+                EventName = enterEvent,
+                PlayerActor = playerActor,
+                PlayerGameObject = playerObj
+            };
+
+            Entity.ZoneRef.Tell(postEventMsg);
+        }
+    }
+
+    private void OnProximityExit(CoreObject playerObj, IActorRef playerActor) {
+        foreach (var exitEvent in _volume.m_exitEvents) {
+            var postEventMsg = new ZONE_102_PROTOCOL.MSG_POSTEVENT {
+                EventName = exitEvent,
+                PlayerActor = playerActor,
+                PlayerGameObject = playerObj
+            };
+
+            Entity.ZoneRef.Tell(postEventMsg);
+        }
+    }
+
+}
