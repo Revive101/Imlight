@@ -28,6 +28,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
@@ -51,188 +52,154 @@ internal class ReagentFactory : RootDirectoryResourceSingleton<ReagentFactory>, 
 
     protected override void AfterLoad() {
         var serializer = new BindSerializer();
-        var counter = 0;
+        var count = 0;
 
-        foreach (var file in base.Files) {
-            var fileRecord = file.Key;
-            var fileStream = file.Value;
-
-            if (!serializer.Deserialize<ReagentItemTemplate>(fileStream?.ToArray(), out var reagentTemplate)) {
-                Logger.Error("Could not deserialize {0} as {1}", 
-                    Logger.Args(fileRecord.FileName, nameof(ReagentItemTemplate)));
-
+        foreach (var (fileRecord, fileStream) in base.Files) {
+            if (!serializer.Deserialize<ReagentItemTemplate>(fileStream?.ToArray(), out var template)) {
+                Logger.Error("Could not deserialize {0} as {1}", Logger.Args(fileRecord.FileName, nameof(ReagentItemTemplate)));
                 continue;
             }
 
-            var name = reagentTemplate.m_objectName
-                .ToString()
-                .ToLower();
-
-            s_reagentTemplates.Add(name, reagentTemplate);
-
-            counter++;
+            var key = template.m_objectName.ToString().ToLower();
+            s_reagentTemplates[key] = template;
+            count++;
         }
 
         Logger.Information("Loaded {0} reagent templates.", 
-            Logger.Args(counter));
+            Logger.Args(count));
     }
 
     /// <summary>
-    /// Retrieves a reagent by its name.
+    /// Retrieves a reagent instance by name, applying normalization and searching loaded templates.
     /// </summary>
     /// <param name="reagentName">The name of the reagent.</param>
-    /// <returns>The reagent with the specified name, or null if the reagent template is not found.</returns>
+    /// <returns>A <see cref="ClientReagentItem"/> instance if found; otherwise, null.</returns>
     internal static ClientReagentItem GetReagent(string reagentName) {
-        reagentName = reagentName.ToLower();
-
-        if (reagentName.Contains("flax")) { // KI naming inconsistency
-            reagentName = "flax-01"; 
-        }
-
-        if (reagentName.Contains("lron")) { // KI can't spell
-            reagentName = "scrapiron";
-        }
-
-        if (reagentName.Contains(' ')) {
-            reagentName = reagentName.Replace(" ", "");
-        }
-
-        var allReagents = s_reagentTemplates.Keys.Where(x => x.Contains(reagentName)).ToList();
-
-        foreach (var kp in s_reagentTemplates) {
-            if (kp.Key.Contains(reagentName)) {
-                return GetReagent(kp.Value.m_templateID);
-            }
-        }
-
-        Logger.Warning("Could not find reagent template by name {0}.", Logger.Args(reagentName));
-
-        return null;
-    }
-
-    /// <summary>
-    /// Creates a reagent from a template ID.
-    /// </summary>
-    /// <param name="templateId">The ID of the reagent template.</param>
-    /// <returns>The created reagent object.</returns>
-    internal static ClientReagentItem GetReagent(uint templateId) {
-        var templateFound = s_reagentTemplates.FirstOrDefault(x => x.Value.m_templateID == templateId).Value;
-
-        if (templateFound is null) {
-            Logger.Warning("Could not find reagent template ID {0}.", 
-                Logger.Args(templateId));
+        var template = FindTemplateByName(reagentName);
+        if (template is null) {
+            Logger.Warning("Could not find reagent template by name {0}.", 
+                Logger.Args(reagentName));
 
             return null;
         }
 
-        if (templateFound is not ReagentItemTemplate) {
-            Logger.Warning("Could not find reagent template ID {0}.", 
-                Logger.Args(templateId));
-
-            return null;
-        }
-
-        var obj = (ClientReagentItem) CoreObjectFactory.FinalizeCoreObject(templateId);
-        obj.m_displayKey = templateFound.m_displayName;
-
-        return (ClientReagentItem) CoreObjectFactory.FinalizeCoreObject(templateId);
+        return CreateReagent(template.m_templateID, template.m_displayName);
     }
 
     /// <summary>
-    /// Retrieves a harvestable reagent by its name.
+    /// Retrieves a harvestable variant of a reagent by its base name.
     /// </summary>
-    /// <param name="reagentName">The name of the reagent.</param>
-    /// <returns>The reagent with the specified name, or null if the reagent template is not found.</returns>
+    /// <param name="reagentName">The base name of the reagent.</param>
+    /// <returns>A <see cref="ClientReagentItem"/> instance if found; otherwise, null.</returns>
     internal static ClientReagentItem GetHarvestable(string reagentName) {
-        // Example reagent     : Harvest-Mushroom-01
-        // Attach "harvest" prefix if not already present.
-        if (!reagentName.Contains("harvest")) {
-            reagentName = "harvest-" + reagentName;
+        var normalized = reagentName.ToLower();
+        if (!normalized.Contains("harvest")) {
+            normalized = "harvest-" + normalized;
         }
 
-        // Attach "-01" suffix if not already present.
-        if (!reagentName.Contains("-01")) {
-            reagentName += "-01";
+        if (!normalized.Contains("-01")) {
+            normalized += "-01";
         }
 
-        return GetReagent(reagentName);
+        return GetReagent(normalized);
     }
 
     /// <summary>
-    /// Retrieves a rare variant of a harvestable reagent by its non-rare counterpart's name.
+    /// Retrieves a rare variant of a harvestable reagent based on its base name.
     /// </summary>
-    /// <param name="reagentName">The name of the reagent.</param>
-    /// <returns>The rare variant of the reagent with the specified name, or null if the reagent template is not found.</returns>
+    /// <param name="reagentName">The base name of the reagent.</param>
+    /// <returns>A <see cref="ClientReagentItem"/> instance for the rare variant if found; otherwise, null.</returns>
     internal static ClientReagentItem GetHarvestableRareVariant(string reagentName) {
-        // Example reagent     : Harvest-Mushroom-01
-        // Example rare variant: Harvest-Mushroom-Nightshade-01
-        // All rare harvestable variants follow the schema of Harvest-<reagentName>-<rareVariantName>-<variantNumber>
-        reagentName = reagentName.ToLower();
+        var baseName = NormalizeName(reagentName);
 
-        // Edge case: Flax is the only reagent that doesn't follow the pattern.
-        if (reagentName.Contains("flax")) {
-            reagentName = "flax";
+        if (!baseName.Contains("harvest")) {
+            baseName = "harvest-" + baseName;
         }
 
-        // Put the harvest prefix if it doesn't exist.
-        if (!reagentName.Contains("harvest")) {
-            reagentName = "harvest-" + reagentName;
-        }
+        var baseVariantName = baseName + "-01";
 
-        // Remove any spaces in the reagent name.
-        reagentName = reagentName.Replace(" ", "");
+        var rareVariant = s_reagentTemplates
+            .Where(kvp => kvp.Key.Contains(baseName) && kvp.Key != baseVariantName)
+            .Select(kvp => kvp.Value)
+            .FirstOrDefault();
 
-        if (reagentName.Contains("lron")) { // KI can't spell
-            reagentName = "scrapiron";
-        }
-
-        // Find the reagent template that contains the reagent name, but is not the exact
-        // reagent name. 
-        var allReagents = s_reagentTemplates.Keys.Where(x => x.Contains(reagentName)).ToList();
-        foreach (var kp in s_reagentTemplates) {
-            var suffixAttachedReagentName = reagentName + "-01";
-
-            if (kp.Key.Contains(reagentName) && !kp.Key.Equals(suffixAttachedReagentName)) {
-                return GetReagent(kp.Value.m_templateID);
-            }
-        }
-
-        return null;
+        return rareVariant is null
+            ? null
+            : CreateReagent(rareVariant.m_templateID, rareVariant.m_displayName);
     }
 
     /// <summary>
-    /// Retrieves a reagent template by its name.
+    /// Retrieves a reagent template by its name using multiple resolution strategies.
     /// </summary>
     /// <param name="reagentName">The name of the reagent.</param>
-    /// <returns>The reagent template with the specified name, or null if the reagent template is not found.</returns>
+    /// <returns>A <see cref="ReagentItemTemplate"/> if found; otherwise, null.</returns>
     internal static ReagentItemTemplate GetReagentTemplate(string reagentName) {
-        reagentName = reagentName.ToLower();
+        var normalized = NormalizeName(reagentName);
 
-        if (reagentName.Contains("flax")) { // KI naming inconsistency
-            reagentName = "flax-01"; 
+        if (s_reagentTemplates.TryGetValue(normalized, out var exact)) {
+            return exact;
         }
 
-        if (reagentName.Contains("lron")) { // KI can't spell
-            reagentName = "scrapiron";
+        var prefixMatch = s_reagentTemplates
+            .FirstOrDefault(kp => kp.Key.StartsWith(normalized));
+        if (prefixMatch.Key is not null) {
+            return prefixMatch.Value;
         }
 
-        if (reagentName.Contains(' ')) {
-            reagentName = reagentName.Replace(" ", "");
+        var boundaryMatch = s_reagentTemplates
+            .FirstOrDefault(kp => Regex.IsMatch(kp.Key, $@"(^|[-_]){Regex.Escape(normalized)}($|[-_])"));
+        if (boundaryMatch.Key is not null) {
+            return boundaryMatch.Value;
         }
 
-         foreach (var kp in s_reagentTemplates) {
-            if (kp.Key.Contains(reagentName)) {
-                return kp.Value;
-            }
+        var substringMatch = s_reagentTemplates
+            .FirstOrDefault(kp => kp.Key.Contains(normalized));
+        if (substringMatch.Key is not null) {
+            return substringMatch.Value;
         }
 
-        Logger.Warning("Could not find reagent template by name {0}.", Logger.Args(reagentName));
+        Logger.Warning("Could not find reagent template by name {0}.", 
+            Logger.Args(reagentName));
 
         return null;
     }
 
-    public void DisposeStream() {
-        s_reagentTemplates.Clear();
+    private static string NormalizeName(string name) {
+        var normalized = name.ToLower();
+
+        if (normalized.Contains("flax")) {
+            return "flax-01";
+        }
+
+        if (normalized.Contains("lron")) {
+            normalized = normalized.Replace("lron", "scrapiron");
+        }
+
+        return normalized.Replace(" ", "");
     }
+
+    private static ReagentItemTemplate FindTemplateByName(string reagentName) {
+        var normalized = NormalizeName(reagentName);
+
+        return s_reagentTemplates
+            .FirstOrDefault(kp => kp.Key.Contains(normalized))
+            .Value;
+    }
+
+    private static ClientReagentItem CreateReagent(uint templateId, string displayName) {
+        if (CoreObjectFactory.FinalizeCoreObject(templateId) is not ClientReagentItem obj) {
+            Logger.Warning("Could not create reagent object for template ID {0}.", 
+                Logger.Args(templateId));
+
+            return null;
+        }
+
+        obj.m_displayKey = displayName;
+
+        return obj;
+    }
+
+    public void DisposeStream() 
+        => s_reagentTemplates.Clear();
 
 }
