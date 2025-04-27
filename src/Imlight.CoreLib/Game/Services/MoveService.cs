@@ -40,7 +40,9 @@ namespace Imlight.CoreLib.Game.Services;
 
 internal class MoveService : MessageService, IWithTimers {
 
-    private const byte MARK_MANA_COST_PERCENT = 20;
+    private const uint MARK_MANA_COST_LESS_THAN_50_MANA = 1;
+    private const uint MARK_MANA_COST_LESS_THAN_100_MANA = 5;
+    private const uint MARK_MANA_COST_ELSE = 10; 
     private const int FISH_INTERACTION_INTERVAL_IN_MILLI = 250;
     private const int MOVE_THRESHOLD_IN_MILLI = FISH_INTERACTION_INTERVAL_IN_MILLI * 2;
 
@@ -143,8 +145,15 @@ internal class MoveService : MessageService, IWithTimers {
     private void ReceiveMarkLocation(GAME_5_PROTOCOL.MSG_MARK_LOCATION message) {
         var wizard = GetActiveWizard();
 
+        // Determine the mana cost based on the wizard's current mana.
+        var manaCost = wizard.GameStats.m_currentMana < 50
+            ? MARK_MANA_COST_LESS_THAN_50_MANA
+            : wizard.GameStats.m_currentMana < 100
+                ? MARK_MANA_COST_LESS_THAN_100_MANA
+                : MARK_MANA_COST_ELSE;
+
         // If the character doesn't have enough mana, return.
-        if (wizard.GameStats.m_currentMana < wizard.GameStats.m_baseMana / MARK_MANA_COST_PERCENT) {
+        if (wizard.GameStats.m_currentMana < manaCost) {
             var failedRsp = new GAME_5_PROTOCOL.MSG_MARK_LOCATION_RESPONSE {
                 Result = 0,
                 MarkType = "1"
@@ -154,10 +163,11 @@ internal class MoveService : MessageService, IWithTimers {
             return;
         }
 
+        // Otherwise, set the marked location and orientation.
         wizard.SetMarkedLocation(wizard.Location, wizard.Orientation, wizard.Zone, wizard.ZoneDisplayName);
 
         var oldMana = wizard.GameStats.m_currentMana;
-        var newMana = oldMana - (wizard.GameStats.m_baseMana * ((float) MARK_MANA_COST_PERCENT / 100));
+        var newMana = oldMana - manaCost;
         wizard.GameStats.m_currentMana = (int) newMana;
 
         SendToSocket(new WIZARD_12_PROTOCOL.MSG_UPDATEMANA() {
