@@ -69,6 +69,7 @@ public class Wizard : IDisposable {
     public ServerMountOwnerBehavior MountOwnerBehavior { get; set; }
     public ServerPetSnackBehavior PetSnackBehavior { get; set; }
     public ServerAlchemyBehavior AlchemyBehavior { get; set; }
+    public ServerFriendBehavior FriendsBehavior { get; set; }
     [JsonIgnore] public ServerObjectStateBehavior ObjectStateBehavior { get; set; }
     public ServerWizGameStats GameStats { get; set; }
     public ServerPetOwnerBehavior PetOwnerBehavior { get; set; }
@@ -763,6 +764,109 @@ public class Wizard : IDisposable {
         return true;
     }
 
+    public bool AddPendingFriendRequest(ulong characterId) {
+        var addSuccess = FriendsBehavior.AddPendingFriendRequest(characterId);
+        if (!addSuccess) {
+            Logger.Warning("Could not add pending friend request ({0}) for player {1}.",
+                Logger.Args(characterId, PlayerNameBehavior.GetWizardName()));
+
+            return false;
+        }
+
+        // Persistent save.
+        WizardCollection.AddPendingFriendRequest(this, characterId);
+
+        return true;
+    }
+
+    public bool AddFriend(ulong newFriendId) {
+        // Check if the player is already friends with this player.
+        if (FriendsBehavior.HasRelationshipWith(newFriendId)) {
+            Logger.Warning("Player {0} is already friends with player {1}.",
+                Logger.Args(PlayerNameBehavior.GetWizardName(), newFriendId));
+
+            return false;
+        }
+
+        // Create a new relationship. We're then going to add it to the collection. The collection will return
+        // an existing, restored relationship if one exists. Otherwise, it'll return what we send it as a parameter.
+        var newRelationship = new Relationship {
+            FirstPlayerId = this.CharId,
+            SecondPlayerId = newFriendId,
+            RelationshipId = RandomGen.GenerateGUID(),
+            RelationshipEpochInSeconds = (uint) DateTimeOffset.Now.ToUnixTimeSeconds(),
+        };
+        var newOrExistingRelationship = BuddyRelationshipCollection.AddRelationship(newRelationship);
+
+        // If the relationship epoch is different, this is a restored relationship.
+        if (newRelationship.RelationshipEpochInSeconds != newOrExistingRelationship.RelationshipEpochInSeconds) {
+            // This is an existing relationship that has now been restored.
+            Logger.Debug("Player {0} has restored a relationship with player {1}.",
+                Logger.Args(PlayerNameBehavior.GetWizardName(), newFriendId));
+
+            FriendsBehavior.AddRelationship(newOrExistingRelationship);
+        }
+        else {
+            // Otherwise, this is a new relationship.
+            Logger.Debug("Player {0} has added player {1} as a friend.",
+                Logger.Args(PlayerNameBehavior.GetWizardName(), newFriendId));
+
+            FriendsBehavior.AddRelationship(newRelationship);
+        }
+
+        return true;
+    }
+
+    public bool AddRelationship(Relationship relationship) {
+        var newFriendId = relationship.FirstPlayerId == CharId
+            ? relationship.SecondPlayerId
+            : relationship.FirstPlayerId;
+
+        // Check if the player is already friends with this player.
+        if (FriendsBehavior.HasRelationshipWith(newFriendId)) {
+            Logger.Warning("Player {0} is already friends with player {1}.",
+                Logger.Args(PlayerNameBehavior.GetWizardName(), newFriendId));
+
+            return false;
+        }
+
+        FriendsBehavior.AddRelationship(relationship);
+
+        return true;
+    }
+
+    public bool RemovePendingFriendRequest(ulong friendId) {
+        var removeSuccess = FriendsBehavior.RemovePendingFriendRequest(friendId);
+        if (!removeSuccess) {
+            Logger.Warning("Could not remove pending friend request ({0}) for player {1}.",
+                Logger.Args(friendId, PlayerNameBehavior.GetWizardName()));
+
+            return false;
+        }
+
+        // Persistent save.
+        WizardCollection.RemovePendingFriendRequest(this, friendId);
+
+        return true;
+    }
+
+    public bool RemoveFriend(ulong friendId) {
+        var relationship = FriendsBehavior.RemoveRelationship(friendId);
+        if (relationship is null) {
+            Logger.Warning("Could not remove friend ({0}) for player {1}.",
+                Logger.Args(friendId, PlayerNameBehavior.GetWizardName()));
+                
+            return false;
+        }
+
+        // Persistent save.
+        BuddyRelationshipCollection.BreakupRelationship(relationship);
+        WizardCollection.RemoveRelationship(this, friendId);
+
+        return true;
+    }
+
+
     internal void AfterDatabaseLoad() {
         AfterDatabaseLoadWizardGameStats();
         AfterDatabaseLoadSpellbookBehavior();
@@ -771,6 +875,7 @@ public class Wizard : IDisposable {
         AfterDatabaseLoadAlchemyBehavior();
 
         ObjectStateBehavior ??= new ServerObjectStateBehavior("PlayerMobileStates");
+        FriendsBehavior ??= new ServerFriendBehavior();
     }
 
     private void EquipMount(WizItemTemplate template, WizClientObjectItem item) {
