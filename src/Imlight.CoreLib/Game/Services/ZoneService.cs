@@ -132,7 +132,13 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ZONETRANSFERNACK))]
     private void ReceiveZoneTransferNack(GAME_5_PROTOCOL.MSG_ZONETRANSFERNACK message) {
         // The client has denied the zone transfer.
-        Logger.Debug("Client was not OK with zone transfer! Possibly patching.");
+        Logger.Debug("Client was not OK with zone transfer!");
+        _isTransferQueued = false;
+    }
+
+    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_PATCHINGBLOCKED))]
+    private void ReceivePatchingBlocked(WIZARD_12_PROTOCOL.MSG_PATCHINGBLOCKED message) {
+        _isTransferQueued = false;
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_RETRYTELEPORT))]
