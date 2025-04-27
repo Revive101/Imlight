@@ -4,6 +4,7 @@
  */
 
 using Akka.Actor;
+using Imcodec.IO;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Types;
 using Imlight.CoreLib.Shared.Networking;
@@ -93,6 +94,42 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
         
         public byte MessageOrder { get; } = 9;
         public byte ServiceID { get; } = 103;
+        
+    }
+
+    public sealed class MSG_BUDDYREQUESTADDFWD : IServerMessage {
+        
+        public byte MessageOrder { get; } = 9;
+        public byte ServiceID { get; } = 103;
+
+        public ulong ListOwnerGID;
+        public ulong EntryGID;
+        public ByteString OwnerName;
+        public byte OwnerLevel;
+        public ByteString OwnerSchool;
+        public byte Remove;
+        
+    }
+
+    public sealed class MSG_BUDDYREQUESTREPLYFWD : IServerMessage {
+        
+        public byte MessageOrder { get; } = 10;
+        public byte ServiceID { get; } = 103;
+
+        public ulong ListOwnerGID;
+        public ulong EntryGID;
+        public bool Accept;
+        public Relationship NewRelationship;
+        
+    }
+
+    public sealed class MSG_BUDDYDROPFWD : IServerMessage {
+        
+        public byte MessageOrder { get; } = 11;
+        public byte ServiceID { get; } = 103;
+
+        public ulong ListOwnerGID;
+        public ulong EntryGID;
         
     }
 
