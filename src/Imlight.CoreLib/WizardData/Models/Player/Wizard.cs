@@ -31,6 +31,7 @@ public class Wizard : IDisposable {
     public string ZoneDisplayName { get; set; }
     public string PreviousZone { get; set; }
     public string MarkedZone { get; set; }
+    public string MarkedZoneDisplayName { get; set; }
     public long TimeHomeLastClicked { get; set; }
     public byte World { get; set; }
     public Vector3 Location {
@@ -186,13 +187,14 @@ public class Wizard : IDisposable {
         return true;
     }
 
-    public void SetMarkedLocation(Vector3 loc, Vector3 orientation, string zone) {
+    public void SetMarkedLocation(Vector3 loc, Vector3 orientation, string zone, string zoneDisplayName) {
         MarkedLocation = loc;
         MarkedOrientation = orientation;
         MarkedZone = zone;
+        MarkedZoneDisplayName = zoneDisplayName;
 
         // Persistent save.
-        WizardCollection.UpdateCharacterMarkedLocation(this, loc, orientation, zone);
+        WizardCollection.UpdateCharacterMarkedLocation(this, loc, orientation, zone, zoneDisplayName);
     }
 
     public void SetTimeHomeLastClicked(long time) {

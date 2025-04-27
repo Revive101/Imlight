@@ -25,11 +25,13 @@
  */
 
 using System;
+using System.Threading.Tasks;
 using Akka.Actor;
 using Imcodec.Math;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Types;
+using Imlight.CoreLib.Game.World;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
@@ -63,6 +65,28 @@ internal class MoveService : MessageService, IWithTimers {
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new MoveService(parentActor));
+
+    [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE))]
+    private void ReceivePostAttach(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE message) {
+        var wizard = GetActiveWizard();
+        var zoneMap = WorldHubZones.GetHubForZone(wizard.Zone);
+
+        var rsp = new GAME_5_PROTOCOL.MSG_MARK_LOCATION_RESPONSE {
+            Result = 2,
+            ZoneName = wizard.MarkedZone,
+            ZoneType = 0,
+            ZoneDisplayNameId = wizard.MarkedZoneDisplayName,
+            LocationX = wizard.MarkedLocation.X,
+            LocationY = wizard.MarkedLocation.Y,
+            LocationZ = wizard.MarkedLocation.Z,
+            Direction = wizard.Orientation.Z,
+            MarkType = "",
+            InstanceId = new GID(1),
+            CommonsZoneId = zoneMap?.m_hubZoneDisplayName ?? "0",
+        };
+
+        SendToSocket(rsp);
+    }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENTMOVE))]
     private void ReceiveClientMove(GAME_5_PROTOCOL.MSG_CLIENTMOVE message) {
@@ -126,10 +150,11 @@ internal class MoveService : MessageService, IWithTimers {
                 MarkType = "1"
             };
             SendToSocket(failedRsp);
+
             return;
         }
 
-        wizard.SetMarkedLocation(wizard.Location, wizard.Orientation, wizard.Zone);
+        wizard.SetMarkedLocation(wizard.Location, wizard.Orientation, wizard.Zone, wizard.ZoneDisplayName);
 
         var oldMana = wizard.GameStats.m_currentMana;
         var newMana = oldMana - (wizard.GameStats.m_baseMana * ((float) MARK_MANA_COST_PERCENT / 100));
@@ -144,13 +169,13 @@ internal class MoveService : MessageService, IWithTimers {
         var rsp = new GAME_5_PROTOCOL.MSG_MARK_LOCATION_RESPONSE {
             Result = 1,
             ZoneName = wizard.Zone,
-            ZoneType = 0,
-            ZoneDisplayNameId = "Zone_00000026", // Should be Wizard City, maybe .lang was updated
+            ZoneType = 1,
+            ZoneDisplayNameId = wizard.ZoneDisplayName,
             LocationX = wizard.MarkedLocation.X,
             LocationY = wizard.MarkedLocation.Y,
             LocationZ = wizard.MarkedLocation.Z,
             Direction = wizard.Orientation.Z,
-            MarkType = "1",
+            MarkType = "",
             InstanceId = new GID(1),
             CommonsZoneId = "0",
         };
@@ -160,6 +185,12 @@ internal class MoveService : MessageService, IWithTimers {
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_RECALL_LOCATION))]
     private void ReceiveRecallLocation(GAME_5_PROTOCOL.MSG_RECALL_LOCATION message) {
         var wizard = GetActiveWizard();
+
+        var teleportEffectsMsg = new CHARACTER_103_PROTOCOL.MSG_DOTELEPORTEFFECTS();
+        TellOtherServices(teleportEffectsMsg);
+
+        // Wait 2 seconds.
+        Task.Delay(2000).Wait();
 
         // If we are in the same zone as the marked location, teleport to it.
         if (wizard.MarkedZone == wizard.Zone) {
@@ -192,7 +223,11 @@ internal class MoveService : MessageService, IWithTimers {
         }
         // If we're not in the same zone, send a zone transfer prior to the server teleport.
         else {
-            DoZoneTransfer(wizard.MarkedZone);
+            var ml = wizard.MarkedLocation;
+            DoZoneTransfer(
+                destinationZone: wizard.MarkedZone,
+                destinationLocation: $"{ml.X},{ml.Y},{ml.Z},{ml.Z}"
+            );
 
             var recallRsp = new GAME_5_PROTOCOL.MSG_MARK_LOCATION_RESPONSE {
                 Result = 1,
@@ -200,6 +235,8 @@ internal class MoveService : MessageService, IWithTimers {
             };
             SendToSocket(recallRsp);
         }
+
+        wizard.SetMarkedLocation(Vector3.Zero, Vector3.Zero, "", "");
     }
 
     private void BroadcastClientMove(GAME_5_PROTOCOL.MSG_CLIENTMOVE message) {

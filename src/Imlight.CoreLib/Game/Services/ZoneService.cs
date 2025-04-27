@@ -214,7 +214,6 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         if (timeDifference.TotalSeconds < 30) {
             SendCantGoHomeEffect(timeHomeLastClicked);
         }
-        SendHomeButtonData();
 
         var postEventMsg = new ZONE_102_PROTOCOL.MSG_POSTEVENT {
             EventName = ENTER_ZONE_EVENT_NAME,
@@ -626,23 +625,6 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
             EffectData = serializedEffect
         };
         SendToSocket(addEffect);
-    }
-
-    private void SendHomeButtonData() {
-        var wizard = GetActiveWizard();
-        var currentZone = wizard.Zone;
-
-        var zoneMap = WorldHubZones.GetHubForZone(currentZone);
-        if (zoneMap is null) {
-            // If it can't be found, it's an area where the compass isn't visible anyways.
-            return;
-        }
-
-        var marklocation = new GAME_5_PROTOCOL.MSG_MARK_LOCATION_RESPONSE {
-            Result = 2,
-            CommonsZoneId = zoneMap.m_hubZoneDisplayName
-        };
-        SendToSocket(marklocation);
     }
 
 }
