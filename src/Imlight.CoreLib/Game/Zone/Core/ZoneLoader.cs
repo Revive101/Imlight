@@ -72,11 +72,18 @@ internal sealed class ZoneLoader : ReceiveProtocolDispatcher {
             NodeTemplateList nodeData = null;
             WizZoneVolumes volumeData = null;
             WizZoneTriggers triggerData = null;
+            var error = false;
+            var ErrorMessage = string.Empty;
 
             // Load zone data
             try {
                 zoneData = LoadZoneData();
                 LogLoadingStep("zone data");
+
+                if (zoneData == null) {
+                    error = true;
+                    ErrorMessage = "Failed to load zone data.";
+                }
             }
             catch (Exception ex) {
                 throw new Exception($"Failed during zone data loading: {ex.Message}", ex);
@@ -86,6 +93,11 @@ internal sealed class ZoneLoader : ReceiveProtocolDispatcher {
             try {
                 spawnData = LoadSpawnData();
                 LogLoadingStep("spawn data");
+
+                if (spawnData == null) {
+                    error = true;
+                    ErrorMessage = "Failed to load spawn data.";
+                }
             }
             catch (Exception ex) {
                 throw new Exception($"Failed during spawn data loading: {ex.Message}", ex);
@@ -95,6 +107,11 @@ internal sealed class ZoneLoader : ReceiveProtocolDispatcher {
             try {
                 pathData = LoadPathData();
                 LogLoadingStep("path data");
+
+                if (pathData == null) {
+                    error = true;
+                    ErrorMessage = "Failed to load path data.";
+                }
             }
             catch (Exception ex) {
                 throw new Exception($"Failed during path data loading: {ex.Message}", ex);
@@ -104,6 +121,11 @@ internal sealed class ZoneLoader : ReceiveProtocolDispatcher {
             try {
                 nodeData = LoadNodeData();
                 LogLoadingStep("node data");
+
+                if (nodeData == null) {
+                    error = true;
+                    ErrorMessage = "Failed to load node data.";
+                }
             }
             catch (Exception ex) {
                 throw new Exception($"Failed during node data loading: {ex.Message}", ex);
@@ -113,6 +135,11 @@ internal sealed class ZoneLoader : ReceiveProtocolDispatcher {
             try {
                 volumeData = LoadVolumeData();
                 LogLoadingStep("volume data");
+
+                if (volumeData == null) {
+                    error = true;
+                    ErrorMessage = "Failed to load volume data.";
+                }
             }
             catch (Exception ex) {
                 throw new Exception($"Failed during volume data loading: {ex.Message}", ex);
@@ -122,6 +149,11 @@ internal sealed class ZoneLoader : ReceiveProtocolDispatcher {
             try {
                 triggerData = LoadTriggerData();
                 LogLoadingStep("trigger data");
+
+                if (triggerData == null) {
+                    error = true;
+                    ErrorMessage = "Failed to load trigger data.";
+                }
             }
             catch (Exception ex) {
                 throw new Exception($"Failed during trigger data loading: {ex.Message}", ex);
@@ -135,7 +167,9 @@ internal sealed class ZoneLoader : ReceiveProtocolDispatcher {
                 NodeData = nodeData,
                 TriggerData = triggerData,
                 VolumeData = volumeData,
-                ZonePath = message.ZonePath
+                ZonePath = message.ZonePath,
+                Error = error,
+                ErrorMessage = error ? ErrorMessage : string.Empty
             };
             Sender.Tell(completionMsg);
             _benchmarkTimer.Stop();
