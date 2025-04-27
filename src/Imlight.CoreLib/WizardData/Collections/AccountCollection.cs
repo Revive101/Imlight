@@ -95,16 +95,7 @@ public static class AccountCollection {
         }
 
         // Load the characters.
-        var characters = WizardCollection.GetCharacters(account.AccountId, false);
-
-        foreach (var character in characters) {
-            if (!account.CharacterIds.Contains(character.CharId)) {
-                throw new System.Exception("Character does not belong to account.");
-            }
-
-            character.Account = account;
-            account.Characters.Add(character);
-        }
+        var _ = WizardCollection.LoadWizardsOntoAccount(account.AccountId, ref account);
 
         // Load infractions. The constructor will load the action history.
         var infractions = session.Query<Infraction>(collectionName: InfractionCollection.CollectionName)
@@ -133,15 +124,7 @@ public static class AccountCollection {
         }
 
         // Load the characters if the account is not null.
-        var characters = WizardCollection.GetCharacters(account.AccountId, false);
-        foreach (var character in characters) {
-            if (!account.CharacterIds.Contains(character.CharId)) {
-                throw new System.Exception("Character does not belong to account.");
-            }
-
-            character.Account = account;
-            account.Characters.Add(character);
-        }
+        var _ = WizardCollection.LoadWizardsOntoAccount(account.AccountId, ref account);
 
         // Load infractions. The constructor will load the action history.
         var infractions = session.Query<Infraction>(collectionName: InfractionCollection.CollectionName)

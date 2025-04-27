@@ -1130,7 +1130,8 @@ public class Wizard : IDisposable {
     }
 
     private void AfterDatabaseLoadWizardGameStats() {
-        var highestLevelOnAcc = Account.GetHighestLevelWizard().MagicSchoolBehavior.Level;
+        var highestLevelWizard = Account.GetHighestLevelWizard();
+        var highestLevelOnAcc = highestLevelWizard.MagicSchoolBehavior.Level;
 
         GameStats.Level = MagicSchoolBehavior.Level;
         GameStats.MagicSchool = MagicSchoolBehavior.MagicSchool;

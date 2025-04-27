@@ -92,12 +92,14 @@ public static class WizardCollection {
     }
 
     /// <summary>
-    /// Retrieves all characters found with a certain account ID.
+    /// Loads all characters based on the specified account ID. Returns the characters loaded, so
+    /// additional queries are made to load the character's inventory, equipment, etc.
     /// </summary>
     /// <param name="accountId">The account ID of the character to retrieve.</param>
-    /// <param name="getAccount">Whether to retrieve the account associated with the character.</param>
+    /// <param name="account">The account associated with the character. Characters will be added
+    /// to the account.</param>
     /// <returns>The character with the specified account ID, or null if not found.</returns>
-    public static Wizard[] GetCharacters(ulong accountId, bool getAccount = true) {
+    public static Wizard[] LoadWizardsOntoAccount(ulong accountId, ref Account account) {
         using var session = s_store.OpenSession();
 
         var characters = session.Query<Wizard>(collectionName: CollectionName)
@@ -105,13 +107,15 @@ public static class WizardCollection {
             .ToList();
 
         for (var i = 0; i < characters.Count; i++) {
-            characters[i] = LoadWizard(characters[i]);
+            characters[i].Account = account;
+            account.Characters.Add(characters[i]);
+        }
 
-            if (getAccount) {
-                var account = session.Query<Account>(collectionName: AccountCollection.CollectionName)
-                    .FirstOrDefault(x => x.AccountId == characters[i].AccountId);
-                characters[i].Account = account;
-            }
+        // Load all of the characters. We must do this here because
+        // `Wizard` initialization may require the account to be in full; aka, we need
+        // all the characters to be on the account ahead of time.
+        for (var i = 0 ; i < characters.Count; i++) {
+            characters[i] = LoadWizard(characters[i]);
         }
 
         return [.. characters];
