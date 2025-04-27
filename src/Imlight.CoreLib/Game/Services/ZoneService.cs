@@ -61,10 +61,11 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
     private bool _isTransferQueued;
 
     private readonly CoreObjectSerializer _effectSerializer = new(
-        behaviors: Imcodec.ObjectProperty.SerializerFlags.None
+        behaviors: SerializerFlags.None
     );
     private readonly CoreObjectSerializer _zoneObjectSerializer = new(
-        behaviors: Imcodec.ObjectProperty.SerializerFlags.None
+        versionable: false,
+        behaviors: SerializerFlags.None
     );
 
     protected static Props Props(SessionActor parentActor)
@@ -519,7 +520,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         var wizard = GetActiveWizard();
         var properGameObj = WizardObjectLoader.GetPlayerGameObject(wizard);
 
-        var flags = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
+        var flags = PropertyFlags.Prop_Public | PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
         if (!_zoneObjectSerializer.Serialize(properGameObj, flags, out var gameObjData)) {
             Logger.Error("Failed to serialize game object for {0}",
                 Logger.Args(wizard.CharId));
@@ -541,7 +542,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         var wizard = GetActiveWizard();
         var properGameObj = WizardObjectLoader.GetPlayerGameObject(wizard);
 
-        var flags = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
+        var flags = PropertyFlags.Prop_Public | PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
         if (!_zoneObjectSerializer.Serialize(properGameObj, flags, out var gameObjData)) {
             Logger.Error("Failed to serialize game object for {0}",
                 Logger.Args(wizard.CharId));
