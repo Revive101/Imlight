@@ -494,18 +494,12 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
             return;
         }
 
-        var teleportEffectsMsg = new CHARACTER_103_PROTOCOL.MSG_DOTELEPORTEFFECTS();
-        TellOtherServices(teleportEffectsMsg);
-
-        // Wait 2 seconds.
-        Task.Delay(2000).Wait();
-
-        var zoneTransferRequest = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
-            DestinationZone = onlinePlayer.CurrentZone,
-            DestinationLocation = "Start", // TODO
-            OwnerCharId = targetID,
-        };
-        TellOtherServices(zoneTransferRequest);
+        Teleport(
+            destinationZone: onlinePlayer.CurrentZone,
+            destinationLocation: "Start", // TODO
+            doTeleportEffects: true,
+            ownerCharId: targetID
+        );
     }
 
     private void SendBuddyEntry(Wizard buddy, Relationship relationship, ulong ownerID) {

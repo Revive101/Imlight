@@ -234,7 +234,7 @@ internal class MoveService : MessageService, IWithTimers {
         // If we're not in the same zone, send a zone transfer prior to the server teleport.
         else {
             var ml = wizard.MarkedLocation;
-            DoZoneTransfer(
+            Teleport(
                 destinationZone: wizard.MarkedZone,
                 destinationLocation: $"{ml.X},{ml.Y},{ml.Z},{ml.Z}"
             );

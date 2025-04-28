@@ -19,7 +19,7 @@
  * 
  * TODO:
  * 
- * Created by: Jooty
+ * Created by: Jooty, Jeff
  * Version: KALI 1.0
  * Last Updated: 3/18/2025
  */
@@ -513,7 +513,11 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
             Direction = (byte) coords.W,
             MobileID = GetActiveGameObject().m_nMobileID,
         };
-        SendToSocket(serverTele);
+        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+            Message = serverTele,
+            Selfless = false,
+        };
+        ReceiveZoneBroadcast(broadcastMsg);
     }
 
     private void SpawnMyself() {
@@ -562,13 +566,17 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         var now = DateTimeOffset.UtcNow;
 
         SendCantGoHomeEffect(now);
+
         // what does this do? who knows! its probably important.
         var enterState = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
             GameObjectID = wizard.GameObject.m_globalID,
             State = StringHash.Compute("Teleport"),
         };
-
-        SendToSocket(enterState);
+        var broadcastWrapper = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+            Message = enterState,
+            Selfless = false,
+        };
+        ReceiveZoneBroadcast(broadcastWrapper);
 
         SendRecallHomeEffect(now);
     }
@@ -625,7 +633,11 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
             GameObjectID = wizard.GameObject.m_globalID,
             EffectData = serializedEffect
         };
-        SendToSocket(addEffect);
+        var broadcastWrapper = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+            Message = addEffect,
+            Selfless = false,
+        };
+        ReceiveZoneBroadcast(broadcastWrapper);
     }
 
 }
