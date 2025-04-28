@@ -138,6 +138,7 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         }
 
         SendBuddyListEnd(charId);
+        InformBuddiesOfStatusChange(true);
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_BUDDYSTATS))]
@@ -523,6 +524,14 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         );
     }
 
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT))]
+    private void ReceiveClientDisconnect() 
+        => InformBuddiesOfStatusChange(false);
+
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT))]
+    private void ReceiveQueryLogout(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT message) 
+        => InformBuddiesOfStatusChange(false);
+
     private void SendBuddyEntry(Wizard buddy, Relationship relationship, ulong ownerID) {
         // Check if this buddy is online.
         var isOnline = TryGetOnlinePlayer(buddy.CharId, out var onlinePlayer);
@@ -553,40 +562,6 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
             PreviousName = string.Empty                               // TODO: Implement this
         };
         SendToSocket(buddyMsg);
-
-        // If this buddy is online, also send them our status.
-        if (isOnline) {
-            var buddyStatusMsg = new GAME_5_PROTOCOL.MSG_BUDDYSTATUSUPDATE {
-                ListOwnerGID = buddy.CharId,
-                EntryGID = ownerID,
-                Status = ONLINE_STATUS_CODE,
-                ZoneName = onlinePlayer.CurrentZoneDisplayName,
-                RealmName = onlinePlayer.CurrentRealm
-            };
-            var buddyActorPath = onlinePlayer.ActorPath;
-            Context.ActorSelection(buddyActorPath).Tell(buddyStatusMsg);
-        }
-    }
-
-    protected override void OnPreDispose() {
-        // Send all of our buddies a status update to inform them that we are offline.
-        var wizard = GetActiveWizard();
-        var buddies = BuddyRelationshipCollection.GetBuddiesForWizard(wizard.CharId);
-        foreach (var buddy in buddies.Where(buddy => buddy != null)) {
-            if (TryGetOnlinePlayer(buddy.CharId, out var onlinePlayer)) {
-                var buddyStatusMsg = new GAME_5_PROTOCOL.MSG_BUDDYSTATUSUPDATE {
-                    ListOwnerGID = buddy.CharId,
-                    EntryGID = wizard.CharId,
-                    Status = OFFLINE_STATUS_CODE,
-                    ZoneName = onlinePlayer.CurrentZoneDisplayName,
-                    RealmName = onlinePlayer.CurrentRealm
-                };
-                var buddyActorPath = onlinePlayer.ActorPath;
-                Context.ActorSelection(buddyActorPath).Tell(buddyStatusMsg);
-            }
-        }
-
-        base.OnPreDispose();
     }
 
     private void SendBuddyListEnd(ulong ownerID) {
@@ -594,6 +569,26 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
             ListOwnerGID = ownerID
         };
         SendToSocket(completeMsg);
+    }
+
+    private void InformBuddiesOfStatusChange(bool isOnline) {
+        var ownerID = GetActiveWizard().CharId;
+
+        // Inform all buddies of the status change.
+        var buddies = BuddyRelationshipCollection.GetBuddiesForWizard(ownerID);
+        foreach (var buddy in buddies.Where(buddy => buddy != null)) {
+            if (TryGetOnlinePlayer(buddy.CharId, out var onlinePlayer)) {
+                var buddyStatusMsg = new GAME_5_PROTOCOL.MSG_BUDDYSTATUSUPDATE {
+                    ListOwnerGID = buddy.CharId,
+                    EntryGID = ownerID,
+                    Status = isOnline ? ONLINE_STATUS_CODE : OFFLINE_STATUS_CODE,
+                    ZoneName = onlinePlayer.CurrentZoneDisplayName,
+                    RealmName = onlinePlayer.CurrentRealm
+                };
+                var buddyActorPath = onlinePlayer.ActorPath;
+                Context.ActorSelection(buddyActorPath).Tell(buddyStatusMsg);
+            }
+        }
     }
 
 }
