@@ -294,7 +294,7 @@ public class PatchServer : Server {
         latestBin.Seek(0, SeekOrigin.Begin);
         latestBin.CopyTo(ms);
         ms.Seek(0, SeekOrigin.Begin);
-        s_listFileCrc = Crc32.GetHash(uint.MaxValue, ms.ToArray()) ^ uint.MaxValue;
+        s_listFileCrc = Crc32.Calculate(uint.MaxValue, ms.ToArray()) ^ uint.MaxValue;
 
         return true;
     }
