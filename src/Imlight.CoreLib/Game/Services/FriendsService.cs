@@ -63,14 +63,13 @@
  * - For `MSG_BUDDYSTATS`, we need to implement the CRC32 hash check. Currently, we just send the stats regardless.
  * - Implement the `PreviousName` field in `MSG_BUDDYENTRY`.
  * 
- * Created by: JOOTY
+ * Created by: Jooty
  * Version: KALI 1.0
  * Last Updated: 04/27/2025
  */
 
 using System;
 using System.Linq;
-using System.Threading.Tasks;
 using Akka.Actor;
 using Imcodec.Cryptography;
 using Imcodec.MessageLayer;
@@ -532,6 +531,40 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
             PreviousName = string.Empty                               // TODO: Implement this
         };
         SendToSocket(buddyMsg);
+
+        // If this buddy is online, also send them our status.
+        if (isOnline) {
+            var buddyStatusMsg = new GAME_5_PROTOCOL.MSG_BUDDYSTATUSUPDATE {
+                ListOwnerGID = buddy.CharId,
+                EntryGID = ownerID,
+                Status = ONLINE_STATUS_CODE,
+                ZoneName = onlinePlayer.CurrentZoneDisplayName,
+                RealmName = onlinePlayer.CurrentRealm
+            };
+            var buddyActorPath = onlinePlayer.ActorPath;
+            Context.ActorSelection(buddyActorPath).Tell(buddyStatusMsg);
+        }
+    }
+
+    protected override void OnPreDispose() {
+        // Send all of our buddies a status update to inform them that we are offline.
+        var wizard = GetActiveWizard();
+        var buddies = BuddyRelationshipCollection.GetBuddiesForWizard(wizard.CharId);
+        foreach (var buddy in buddies.Where(buddy => buddy != null)) {
+            if (TryGetOnlinePlayer(buddy.CharId, out var onlinePlayer)) {
+                var buddyStatusMsg = new GAME_5_PROTOCOL.MSG_BUDDYSTATUSUPDATE {
+                    ListOwnerGID = buddy.CharId,
+                    EntryGID = wizard.CharId,
+                    Status = OFFLINE_STATUS_CODE,
+                    ZoneName = onlinePlayer.CurrentZoneDisplayName,
+                    RealmName = onlinePlayer.CurrentRealm
+                };
+                var buddyActorPath = onlinePlayer.ActorPath;
+                Context.ActorSelection(buddyActorPath).Tell(buddyStatusMsg);
+            }
+        }
+
+        base.OnPreDispose();
     }
 
     private void SendBuddyListEnd(ulong ownerID) {
