@@ -103,7 +103,32 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         // Iterate through the player's friends and send them an entry.
         var buddies = BuddyRelationshipCollection.GetBuddiesForWizard(charId);
         foreach (var buddy in buddies.Where(buddy => buddy != null)) {
-            if (wizard.FriendsBehavior.TryGetRelationship(buddy.CharId, out var relationship)) {
+            // When players add each other, they create a "Relationship." This is a record of their
+            // interactions. When a player unfriends/blocks/reports another, that relationship is still exist
+            // but is marked as "broken up." 
+            if (   !wizard.FriendsBehavior.TryGetRelationship(buddy.CharId, out var relationship) 
+                || relationship.IsBrokenUp) {
+                // Ignore the relationship if it is broken up.
+                Logger.Debug("{0} has a friend named {1} (ID: {2}), but the relationship is broken up.",
+                    Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), 
+                    buddy.PlayerNameBehavior.GetWizardName(), 
+                    buddy.CharId)
+                );
+
+                continue;
+            }
+            else if (relationship.Blocked) {
+                // Ignore the relationship if it is blocked.
+                Logger.Debug("{0} has a friend named {1} (ID: {2}), but the relationship is blocked.",
+                    Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), 
+                    buddy.PlayerNameBehavior.GetWizardName(), 
+                    buddy.CharId)
+                );
+
+                continue;
+            }
+            else if (!relationship.IsBrokenUp && !relationship.Blocked) {
+                // This relationship is valid. We can send it to the client.
                 SendBuddyEntry(buddy, relationship, charId);
             }
             else {
@@ -112,7 +137,6 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
             }
         }
 
-        RemoveBreakups();
         SendBuddyListEnd(charId);
     }
 
@@ -122,6 +146,10 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         // The client caches each friends stats and sends the server the CRC32 hash of their cached stats.
         // We will hash the respective fields on the server side and compare them with the client's hash.
         // If the hashes do not match, we will send a new byte blob containing the serialized data to update the client's cache.
+
+        if (message.BuddyID == 0) {
+            return;
+        }
 
         // TODO: Imlight currently doesn't care about the CRC. It will send the stats regardless.
         var wizard = WizardCollection.GetCharacter(message.BuddyID);
@@ -246,15 +274,9 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
             return;
         }
 
-        // Do we already have a pending request, or do we already have this person as a friend?
+        // Check to see if we already have this friend request pending.
         if (wizard.FriendsBehavior.HasPendingFriendRequest(message.ListOwnerGID)) {
             Logger.Warning("{0} tried to add character ID {1} as a friend, but the request is already pending.",
-                Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), message.ListOwnerGID));
-
-            return;
-        }
-        else if (wizard.FriendsBehavior.HasRelationshipWith(message.ListOwnerGID)) {
-            Logger.Warning("{0} tried to add character ID {1} as a friend, but they are already friends.",
                 Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), message.ListOwnerGID));
 
             return;
@@ -288,8 +310,8 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         }
 
         // Add the wizard as a friend. If they are already friends, log an error and return.
-        if (!wizard.AddFriend(message.ListOwnerGID)) {
-            Logger.Error("{0} tried to add character ID {1} as a friend, but they are already friends.",
+        if (!wizard.AddOrRepairRelationship(message.ListOwnerGID)) {
+            Logger.Error("{0} could not add or update the relationship with character ID {1}.",
                 Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), message.ListOwnerGID));
 
             return;
@@ -390,8 +412,8 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         if (message.Accept) {
             // The recipient has accepted the friend request.
             // Add the wizard as a friend. If they are already friends, log an error and return.
-            if (!myWizard.AddRelationship(message.NewRelationship)) {
-                Logger.Error("{0} tried to add character ID {1} as a friend, but they are already friends.",
+            if (!myWizard.AddOrRepairRelationship(message.NewRelationship)) {
+                Logger.Error("{0} could not add or update the relationship with character ID {1}.",
                     Logger.Args(myWizard.PlayerNameBehavior.GetWizardName(), message.EntryGID));
 
                 return;
@@ -430,8 +452,8 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         SendToSocket(clientMsg);
     }
 
-    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_BUDDYDROP))]
-    private void ReceiveBuddyDrop(GAME_5_PROTOCOL.MSG_BUDDYDROP message) {
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_BUDDYREQUESTDROP))]
+    private void ReceiveBuddyDrop(GAME_5_PROTOCOL.MSG_BUDDYREQUESTDROP message) {
         // A player wants to remove a friend from their list. Start by removing the friend from ourselves first.
         var wizard = GetActiveWizard();
 
@@ -471,8 +493,8 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
 
         // Inform the client that the friend has been removed.
         var clientMsg = new GAME_5_PROTOCOL.MSG_BUDDYDROP {
-            ListOwnerGID = message.ListOwnerGID,
-            EntryGID = message.EntryGID
+            ListOwnerGID = message.EntryGID,
+            EntryGID = message.ListOwnerGID
         };
         SendToSocket(clientMsg);
     }
@@ -572,21 +594,6 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
             ListOwnerGID = ownerID
         };
         SendToSocket(completeMsg);
-    }
-
-    private void RemoveBreakups() {
-        var wizard = GetActiveWizard();
-
-        var relationships = wizard.FriendsBehavior.Relationships;
-        foreach (var relationship in relationships) {
-            if (relationship.IsBrokenUp) {
-                var oppositeId = relationship.FirstPlayerId == wizard.CharId
-                    ? relationship.SecondPlayerId
-                    : relationship.FirstPlayerId;
-
-                wizard.RemoveFriend(oppositeId);
-            }
-        }
     }
 
 }

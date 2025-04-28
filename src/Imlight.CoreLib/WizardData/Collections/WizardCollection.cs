@@ -402,51 +402,11 @@ public static class WizardCollection {
     }
     
     /// <summary>
-    /// Adds a pending friend request to the friends behavior of a wizard.
-    /// </summary>
-    /// <param name="wizard">The wizard to add the friend request to.</param>
-    /// <param name="friendId">The ID of the friend to add.</param>
-    public static void AddPendingFriendRequest(Wizard wizard, ulong friendId) {
-        using var session = s_store.OpenSession();
-
-        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
-            .FirstOrDefault(x => x.CharId == wizard.CharId);
-        if (existingCharacter is null) {
-            return;
-        }
-
-        existingCharacter.FriendsBehavior ??= new();
-        existingCharacter.FriendsBehavior.AddPendingFriendRequest(friendId);
-
-        session.SaveChanges();
-    }
-
-    /// <summary>
-    /// Removes a pending friend request from the friends behavior of a wizard.
-    /// </summary>
-    /// <param name="wizard">The wizard to remove the friend request from.</param>
-    /// <param name="friendId">The ID of the friend to remove.</param>
-    public static void RemovePendingFriendRequest(Wizard wizard, ulong friendId) {
-        using var session = s_store.OpenSession();
-
-        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
-            .FirstOrDefault(x => x.CharId == wizard.CharId);
-        if (existingCharacter is null) {
-            return;
-        }
-
-        existingCharacter.FriendsBehavior ??= new();
-        existingCharacter.FriendsBehavior.RemovePendingFriendRequest(friendId);
-
-        session.SaveChanges();
-    }
-
-    /// <summary>
     /// Adds a new relationship to the friends behavior of a wizard.
     /// </summary>
     /// <param name="wizard">The wizard to add the relationship to.</param>
     /// <param name="relationship">The relationship to add.</param>
-    public static void AddRelationship(Wizard wizard, Relationship relationship) {
+    public static void AddOrUpdateRelationship(Wizard wizard, Relationship relationship) {
         using var session = s_store.OpenSession();
 
         var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
@@ -456,7 +416,7 @@ public static class WizardCollection {
         }
 
         existingCharacter.FriendsBehavior ??= new();
-        existingCharacter.FriendsBehavior.AddRelationship(relationship);
+        existingCharacter.FriendsBehavior.AddOrUpdateRelationship(relationship);
 
         session.SaveChanges();
     }
@@ -479,7 +439,7 @@ public static class WizardCollection {
             return;
         }
 
-        existingCharacter.FriendsBehavior.RemoveRelationship(friendId);
+        existingCharacter.FriendsBehavior.Breakup(friendId);
 
         session.SaveChanges();
     }

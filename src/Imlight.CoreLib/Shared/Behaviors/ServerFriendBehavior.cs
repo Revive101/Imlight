@@ -56,8 +56,7 @@ public class ServerFriendBehavior : IClientBehaviorProvider<BehaviorInstance> {
     /// <param name="characterId">The character ID of the player who sent the friend request.</param>
     /// <returns>True if the friend request was added, false if the friend request already exists.</returns>
     public bool AddPendingFriendRequest(ulong characterId) {
-        if (PendingFriendRequestsFromCharId.Contains(characterId)
-            || HasRelationshipWith(characterId)) {
+        if (PendingFriendRequestsFromCharId.Contains(characterId)) {
             return false;
         }
 
@@ -79,10 +78,14 @@ public class ServerFriendBehavior : IClientBehaviorProvider<BehaviorInstance> {
     /// </summary>
     /// <param name="relationship">The relationship to add.</param>
     /// <returns>True if the relationship was added, false if the relationship already exists.</returns>
-    public bool AddRelationship(Relationship relationship) {
-        if (HasRelationshipWith(relationship.FirstPlayerId)
-            || HasRelationshipWith(relationship.SecondPlayerId)) {
-            return false;
+    public bool AddOrUpdateRelationship(Relationship relationship) {
+        // Upsert the relationship if it already exists.
+        var existingRelationship = Relationships
+            .FirstOrDefault(x => x.FirstPlayerId == relationship.FirstPlayerId && x.SecondPlayerId == relationship.SecondPlayerId);
+        if (existingRelationship != null) {
+            existingRelationship = relationship;
+
+            return true;
         }
 
         Relationships.Add(relationship);
@@ -98,8 +101,16 @@ public class ServerFriendBehavior : IClientBehaviorProvider<BehaviorInstance> {
     /// <returns>The relationship between the two players,
     /// or null if the player is already a friend or the friend request does not exist.</returns>
     public Relationship AddFriend(ulong ownerId, ulong newFrienddId) {
-        if (HasRelationshipWith(newFrienddId)) {
-            return null;
+        // Upsert the relationship if it already exists.
+        var existingRelationship = Relationships
+            .FirstOrDefault(x => x.FirstPlayerId == newFrienddId && x.SecondPlayerId == ownerId);
+        if (existingRelationship != null) {
+            existingRelationship.FirstPlayerId = ownerId;
+            existingRelationship.SecondPlayerId = newFrienddId;
+            existingRelationship.IsBrokenUp = false;
+            existingRelationship.Blocked = false;
+
+            return existingRelationship;
         }
 
         PendingFriendRequestsFromCharId.Remove(newFrienddId);
@@ -122,8 +133,17 @@ public class ServerFriendBehavior : IClientBehaviorProvider<BehaviorInstance> {
     /// <returns>The relationship between the two players,
     /// or null if the player is already a friend or the friend request does not exist.</returns>
     public Relationship AddTrueFriend(ulong ownerId, ulong newFrienddId) {
-        if (HasRelationshipWith(newFrienddId)) {
-            return null;
+        // Upsert the relationship if it already exists.
+        var existingRelationship = Relationships
+            .FirstOrDefault(x => x.FirstPlayerId == newFrienddId && x.SecondPlayerId == ownerId);
+        if (existingRelationship != null) {
+            existingRelationship.FirstPlayerId = ownerId;
+            existingRelationship.SecondPlayerId = newFrienddId;
+            existingRelationship.IsBrokenUp = false;
+            existingRelationship.Blocked = false;
+            existingRelationship.AddedViaTrueFriend = true;
+
+            return existingRelationship;
         }
 
         PendingFriendRequestsFromCharId.Remove(newFrienddId);
@@ -162,21 +182,33 @@ public class ServerFriendBehavior : IClientBehaviorProvider<BehaviorInstance> {
         };
         Relationships.Add(relationship);
 
+        // Upsert the relationship if it already exists.
+        var existingRelationship = Relationships
+            .FirstOrDefault(x => x.FirstPlayerId == newFrienddId && x.SecondPlayerId == ownerId);
+        if (existingRelationship != null) {
+            existingRelationship.FirstPlayerId = ownerId;
+            existingRelationship.SecondPlayerId = newFrienddId;
+            existingRelationship.IsBrokenUp = false;
+            existingRelationship.Blocked = true;
+
+            return existingRelationship;
+        }
+
         return relationship;
     }
 
     /// <summary>
-    /// Removes a friend from the player's friend list.
+    /// Break up a relationship with a character.
     /// </summary>
     /// <param name="characterId">The character ID of the player who is being removed as a friend.</param>
     /// <returns>The relationship between the two players,
     /// or null if the player is not a friend.</returns>
-    public Relationship RemoveRelationship(ulong characterId) {
+    public Relationship Breakup(ulong characterId) {
         if (!TryGetRelationship(characterId, out var relationship)) {
             return null;
         }
 
-        Relationships.RemoveAll(x => x.FirstPlayerId == characterId || x.SecondPlayerId == characterId);
+        relationship.IsBrokenUp = true;
 
         return relationship;
     }

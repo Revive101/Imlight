@@ -773,21 +773,10 @@ public class Wizard : IDisposable {
             return false;
         }
 
-        // Persistent save.
-        WizardCollection.AddPendingFriendRequest(this, characterId);
-
         return true;
     }
 
-    public bool AddFriend(ulong newFriendId) {
-        // Check if the player is already friends with this player.
-        if (FriendsBehavior.HasRelationshipWith(newFriendId)) {
-            Logger.Warning("Player {0} is already friends with player {1}.",
-                Logger.Args(PlayerNameBehavior.GetWizardName(), newFriendId));
-
-            return false;
-        }
-
+    public bool AddOrRepairRelationship(ulong newFriendId) {
         // Create a new relationship. We're then going to add it to the collection. The collection will return
         // an existing, restored relationship if one exists. Otherwise, it'll return what we send it as a parameter.
         var newRelationship = new Relationship {
@@ -804,33 +793,21 @@ public class Wizard : IDisposable {
             Logger.Debug("Player {0} has restored a relationship with player {1}.",
                 Logger.Args(PlayerNameBehavior.GetWizardName(), newFriendId));
 
-            FriendsBehavior.AddRelationship(newOrExistingRelationship);
+            FriendsBehavior.AddOrUpdateRelationship(newOrExistingRelationship);
         }
         else {
             // Otherwise, this is a new relationship.
             Logger.Debug("Player {0} has added player {1} as a friend.",
                 Logger.Args(PlayerNameBehavior.GetWizardName(), newFriendId));
 
-            FriendsBehavior.AddRelationship(newRelationship);
+            FriendsBehavior.AddOrUpdateRelationship(newRelationship);
         }
 
         return true;
     }
 
-    public bool AddRelationship(Relationship relationship) {
-        var newFriendId = relationship.FirstPlayerId == CharId
-            ? relationship.SecondPlayerId
-            : relationship.FirstPlayerId;
-
-        // Check if the player is already friends with this player.
-        if (FriendsBehavior.HasRelationshipWith(newFriendId)) {
-            Logger.Warning("Player {0} is already friends with player {1}.",
-                Logger.Args(PlayerNameBehavior.GetWizardName(), newFriendId));
-
-            return false;
-        }
-
-        FriendsBehavior.AddRelationship(relationship);
+    public bool AddOrRepairRelationship(Relationship relationship) {
+        FriendsBehavior.AddOrUpdateRelationship(relationship);
 
         return true;
     }
@@ -844,14 +821,11 @@ public class Wizard : IDisposable {
             return false;
         }
 
-        // Persistent save.
-        WizardCollection.RemovePendingFriendRequest(this, friendId);
-
         return true;
     }
 
     public bool RemoveFriend(ulong friendId) {
-        var relationship = FriendsBehavior.RemoveRelationship(friendId);
+        var relationship = FriendsBehavior.Breakup(friendId);
         if (relationship is null) {
             Logger.Warning("Could not remove friend ({0}) for player {1}.",
                 Logger.Args(friendId, PlayerNameBehavior.GetWizardName()));
@@ -861,11 +835,9 @@ public class Wizard : IDisposable {
 
         // Persistent save.
         BuddyRelationshipCollection.BreakupRelationship(relationship);
-        WizardCollection.RemoveRelationship(this, friendId);
 
         return true;
     }
-
 
     internal void AfterDatabaseLoad() {
         AfterDatabaseLoadWizardGameStats();
