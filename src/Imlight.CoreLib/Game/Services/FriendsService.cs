@@ -45,18 +45,15 @@ using Imlight.Common;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Collections;
-using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Services;
 
-internal class FriendsService : MessageService {
+internal class FriendsService(SessionActor sessionActor) : MessageService(sessionActor) {
 
     private const byte OFFLINE_STATUS_CODE = 1;
     private const byte ONLINE_STATUS_CODE = 4;
     private readonly uint _englishLocaleHash = StringHash.Compute("English");
-
-    public FriendsService(SessionActor sessionActor) : base(sessionActor) { }
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new FriendsService(parentActor));
@@ -66,7 +63,7 @@ internal class FriendsService : MessageService {
         // When the player logs into the game, their client will request a list of their buddies.
         // We will iterate through the player's friends and send them an entry for each.
         var wizard = GetActiveWizard();
-        var charId = wizard.CharId;
+        var charId = wizard.GameObject?.m_globalID ?? wizard.CharId;
 
         // Iterate through the player's friends and send them an entry.
         var buddies = BuddyRelationshipCollection.GetBuddiesForWizard(charId);
@@ -87,7 +84,7 @@ internal class FriendsService : MessageService {
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_BUDDYSTATS))]
     private void ReceiveBuddyStats(GAME_5_PROTOCOL.MSG_BUDDYSTATS message) {
         // When the player clicks on a friend in their buddy list, they will request the friend's stats (`MSG_BUDDYSTATS`).
-        // The client caches each friend's stats and sends the server the CRC32 hash of their cached stats.
+        // The client caches each friends stats and sends the server the CRC32 hash of their cached stats.
         // We will hash the respective fields on the server side and compare them with the client's hash.
         // If the hashes do not match, we will send a new byte blob containing the serialized data to update the client's cache.
     }
@@ -306,9 +303,9 @@ internal class FriendsService : MessageService {
                 EntryGID = message.EntryGID,
                 OwnerName = myWizard.PlayerNameBehavior.GetWizardNameAsByteHexString(),
                 EntryName = entryWizard.PlayerNameBehavior.GetWizardNameAsByteHexString(),
-                SourceObjectID = myWizard.GameObject?.m_globalID ?? 0,
-                DestObjectID = entryWizard.GameObject?.m_globalID ?? 0,
-                Error = 0,                // TODO: What is this?
+                SourceObjectID = myWizard.GameObject?.m_globalID ?? myWizard.CharId,
+                DestObjectID = entryWizard.GameObject?.m_globalID ?? entryWizard.CharId,
+                Error = 0,
                 Permissions = 0,          // TODO: What is this?
                 EntryLocale = _englishLocaleHash,
                 FriendInfo = 197120,           // TODO: What is this?
@@ -375,7 +372,7 @@ internal class FriendsService : MessageService {
         SendToSocket(clientMsg);
     }
 
-    private void SendBuddyEntry(Wizard buddy, Relationship relationship, ulong ownerCharId) {
+    private void SendBuddyEntry(Wizard buddy, Relationship relationship, ulong ownerID) {
         // Check if this buddy is online.
         var isOnline = TryGetOnlinePlayer(buddy.CharId, out var onlinePlayer);
 
@@ -391,9 +388,9 @@ internal class FriendsService : MessageService {
             Logger.Args(ownerName, buddyWizardName, buddyHexName, buddy.CharId, statusMessage));
 
         var buddyMsg = new GAME_5_PROTOCOL.MSG_BUDDYENTRY {
-            ListOwnerGID = ownerCharId,
+            ListOwnerGID = ownerID,
             EntryGID = buddy.CharId,
-            GameObjectID = buddy.GameObject?.m_globalID ?? 0,
+            GameObjectID = buddy.GameObject?.m_globalID ?? buddy.CharId,
             Name = buddyHexName,
             Status = isOnline ? ONLINE_STATUS_CODE : OFFLINE_STATUS_CODE,
             FriendInfo = 0,                                           // TODO: What is this?
@@ -409,9 +406,9 @@ internal class FriendsService : MessageService {
         SendToSocket(buddyMsg);
     }
 
-    private void SendBuddyListEnd(ulong charId) {
+    private void SendBuddyListEnd(ulong ownerID) {
         var completeMsg = new GAME_5_PROTOCOL.MSG_BUDDYLISTCOMPLETE {
-            ListOwnerGID = charId
+            ListOwnerGID = ownerID
         };
         SendToSocket(completeMsg);
     }

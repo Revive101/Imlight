@@ -95,7 +95,7 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
         // Serialize the GameObject and send it to the client.
         var coSerializer = new CoreObjectSerializer(
             versionable: false,
-            behaviors: SerializerFlags.UseFlags | SerializerFlags.Compress
+            behaviors: SerializerFlags.Compress
         );
         var flags = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
         if (!coSerializer.Serialize(charGameObject, flags, out var localGameObjectData)) {

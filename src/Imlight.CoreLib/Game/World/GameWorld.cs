@@ -149,7 +149,7 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
         // The game world has no obligation to validate the zone data.
         // If the zone data is invalid, the zone actor will handle it, and the game world will be notified
         // with a `MSG_ZONECLOSED` message.
-        var zonePath = message.ZoneData.m_zoneName;
+        var zonePath = message.ZonePath;
 
         // Search for the user who called for the creation of this zone.
         var ownerId = _instanceCreationCalledByMap[zonePath];
