@@ -70,7 +70,7 @@ internal class CommandService(SessionActor sessionActor) : MessageService(sessio
         // it using the character ID.
         var id = message.BuddyID;
 
-        var persistentWizard = WizardCollection.GetCharacter(id);
+        var persistentWizard = WizardCollection.GetCharacterUnloaded(id);
         if (persistentWizard is null) {
             return;
         }

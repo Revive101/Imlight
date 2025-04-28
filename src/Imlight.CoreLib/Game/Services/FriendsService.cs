@@ -27,9 +27,41 @@
          is offline, we will have to go to the database directly to add the friend.
     6. Player A receives the response. If the response is an acceptance, they will add the friend to their list.
         Player A's game client will see a notification that the friend request has been accepted.
+
+    - The game client uses the Char ID and GameObject ID interchangeably:
+        - Instances where the GameObject ID is used:
+            - GAME_5_PROTOCOL.MSG_BUDDYSTATS.TargetCharacterGID
+            - GAME_5_PROTOCOL.MSG_BUDDYSTATS.BuddyID
+            - GAME_5_PROTOCOL.MSG_BUDDYENTRY.ListOwnerGID
+            - GAME_5_PROTOCOL.MSG_BUDDYLISTCOMPLETE.ListOwnerGID
+            - GAME_5_PROTOCOL.MSG_BUDDYSTATUSUPDATE.ListOwnerGID
+            - GAME_5_PROTOCOL.MSG_BUDDYREQUESTACCEPT.SourceObjectID
+            - GAME_5_PROTOCOL.MSG_BUDDYREQUESTACCEPT.DestObjectID
+            - GAME_5_PROTOCOL.MSG_BUDDYREQUESTADD.EntryGID
+        - Instances where the Char ID is used:
+            - GAME_5_PROTOCOL.MSG_BUDDYREQUESTACCEPT.ListOwnerGID
+            - GAME_5_PROTOCOL.MSG_BUDDYREQUESTACCEPT.EntryGID
+            - GAME_5_PROTOCOL.MSG_BUDDYSTATUSUPDATE.EntryGID
+
+    - The game client will not request buddy stats (`MSG_BUDDYSTATS`) if the friend is offline
+
+    ============ BUDDY STATS ============ 
+
+    !!! IN PROGRESS !!!
+
+    CharBlock    : 
+        - ObjectSerializer (StatefulFlags, CompactLength, StringEnum, Compress)
+        - Type: WizardCharacterBehavior
+    EquipBlock   : 
+        - ObjectSerializer (StatefulFlags, CompactLength, StringEnum, Compress)
+        - Type: ClientWizEquipmentBehavior
+    WishlistBlock:
+
+    =====================================
  * 
  * TODO:
  * - For `MSG_BUDDYSTATS`, we need to implement the CRC32 hash check. Currently, we just send the stats regardless.
+ * - Implement the `PreviousName` field in `MSG_BUDDYENTRY`.
  * 
  * Created by: JOOTY
  * Version: KALI 1.0
@@ -40,12 +72,14 @@ using System;
 using System.Linq;
 using Akka.Actor;
 using Imcodec.Cryptography;
+using Imcodec.IO;
 using Imcodec.MessageLayer;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Utilities;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
 
@@ -364,16 +398,21 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
                 return;
             }
 
+            var myWizardNameHex = myWizard.PlayerNameBehavior.GetWizardNameAsByteHexString();
+            var myWizardNameBytes = DataManipulation.SpacedHexStringToBytes(myWizardNameHex);
+            var entryWizardNameHex = entryWizard.PlayerNameBehavior.GetWizardNameAsByteHexString();
+            var entryWizardNameBytes = DataManipulation.SpacedHexStringToBytes(entryWizardNameHex);
+
             // Inform the game client that the friend request has been accepted.
             clientMsg = new GAME_5_PROTOCOL.MSG_BUDDYREQUESTACCEPT {
                 ListOwnerGID = message.ListOwnerGID,
                 EntryGID = message.EntryGID,
-                OwnerName = myWizard.PlayerNameBehavior.GetWizardNameAsByteHexString(),
-                EntryName = entryWizard.PlayerNameBehavior.GetWizardNameAsByteHexString(),
+                OwnerName = myWizardNameBytes,
+                EntryName = entryWizardNameBytes,
                 SourceObjectID = myWizard.GameObject?.m_globalID ?? myWizard.CharId,
                 DestObjectID = entryWizard.GameObject?.m_globalID ?? entryWizard.CharId,
                 Error = 0,
-                Permissions = 0,          // TODO: What is this?
+                Permissions = 0,               // TODO: What is this?
                 EntryLocale = _englishLocaleHash,
                 FriendInfo = 197120,           // TODO: What is this?
                 FriendDate = epochInSeconds,
@@ -439,13 +478,29 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         SendToSocket(clientMsg);
     }
 
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_GOTOPLAYER))]
+    private void ReceiveGoToPlayer(GAME_5_PROTOCOL.MSG_GOTOPLAYER message) {
+        var targetID = message.TargetCharacterID;
+        var originatorID = message.OriginatorID;
+
+        // Check if the target is online.
+        if (!TryGetOnlinePlayer(targetID, out var onlinePlayer)) {
+            Logger.Debug("Player {0} tried to teleport to character ID {1}, but the character is not online.",
+                Logger.Args(GetActiveWizard().PlayerNameBehavior.GetWizardName(), targetID));
+
+            SendToSocket(new GAME_5_PROTOCOL.MSG_GOTOPLAYERRESP {
+                Error = 1
+            });
+
+            return;
+        }
+    }
+
     private void SendBuddyEntry(Wizard buddy, Relationship relationship, ulong ownerID) {
         // Check if this buddy is online.
         var isOnline = TryGetOnlinePlayer(buddy.CharId, out var onlinePlayer);
-
-        // This is *not* the display name. Unsure what this is used for. However it's been observed
-        // as a hex string of the wizard's name indices, prefixed with gender. We also see this with chat messages.
         var buddyHexName = buddy.PlayerNameBehavior.GetWizardNameAsByteHexString();
+        var buddyByteName = DataManipulation.SpacedHexStringToBytes(buddyHexName);
 
         // Log
         var ownerName = GetActiveWizard().PlayerNameBehavior.GetWizardName();
@@ -458,14 +513,14 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
             ListOwnerGID = ownerID,
             EntryGID = buddy.CharId,
             GameObjectID = buddy.GameObject?.m_globalID ?? buddy.CharId,
-            Name = buddyHexName,
+            Name = buddyByteName,
             Status = isOnline ? ONLINE_STATUS_CODE : OFFLINE_STATUS_CODE,
-            FriendInfo = 0,                                           // TODO: What is this?
+            FriendInfo = 5702144,                                     // TODO: What is this?
             PasswordChat = 0,                                         // TODO: What is this?
             //Permissions = (uint) wizard.Account.GetAccountFlags(),
             ZoneName = onlinePlayer?.CurrentZoneDisplayName ?? string.Empty,
             RealmName = onlinePlayer?.CurrentRealm ?? string.Empty,
-            Locale = _englishLocaleHash,
+            Locale = 0,
             FriendDate = relationship.RelationshipEpochInSeconds, 
             FriendStatusDate = relationship.RelationshipEpochInSeconds,
             PreviousName = string.Empty                               // TODO: Implement this
