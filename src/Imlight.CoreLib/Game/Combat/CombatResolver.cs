@@ -413,11 +413,12 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
 
         var spellAccuracy = (int) spell.m_accuracy;
         var stats = caster.CombatParticipant.m_pGameStats;
-        var school = MagicSchools.GetMagicSchool(spell.m_magicSchoolID).m_schoolName;
+        var school = MagicSchools.GetMagicSchool(spell.m_magicSchoolID);
+        var schoolName = school.m_schoolName;
 
-        var percentIncrease = caster.GetStatBySchool(stats.m_accBonusPercent, school);
+        var percentIncrease = caster.GetStatBySchool(stats.m_accBonusPercent, schoolName);
         var percentIncreaseAll = stats.m_accBonusPercentAll;
-        var percentDecrease = caster.GetStatBySchool(stats.m_accReducePercent, school);
+        var percentDecrease = caster.GetStatBySchool(stats.m_accReducePercent, schoolName);
         var percentDecreaseAll = stats.m_accReducePercentAll;
 
         // Convert to percentages for calculation

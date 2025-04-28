@@ -61,10 +61,11 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
     private bool _isTransferQueued;
 
     private readonly CoreObjectSerializer _effectSerializer = new(
-        behaviors: Imcodec.ObjectProperty.SerializerFlags.None
+        behaviors: SerializerFlags.None
     );
     private readonly CoreObjectSerializer _zoneObjectSerializer = new(
-        behaviors: Imcodec.ObjectProperty.SerializerFlags.None
+        versionable: false,
+        behaviors: SerializerFlags.None
     );
 
     protected static Props Props(SessionActor parentActor)
@@ -132,7 +133,13 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ZONETRANSFERNACK))]
     private void ReceiveZoneTransferNack(GAME_5_PROTOCOL.MSG_ZONETRANSFERNACK message) {
         // The client has denied the zone transfer.
-        Logger.Debug("Client was not OK with zone transfer! Possibly patching.");
+        Logger.Debug("Client was not OK with zone transfer!");
+        _isTransferQueued = false;
+    }
+
+    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_PATCHINGBLOCKED))]
+    private void ReceivePatchingBlocked(WIZARD_12_PROTOCOL.MSG_PATCHINGBLOCKED message) {
+        _isTransferQueued = false;
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_RETRYTELEPORT))]
@@ -208,7 +215,6 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         if (timeDifference.TotalSeconds < 30) {
             SendCantGoHomeEffect(timeHomeLastClicked);
         }
-        SendHomeButtonData();
 
         var postEventMsg = new ZONE_102_PROTOCOL.MSG_POSTEVENT {
             EventName = ENTER_ZONE_EVENT_NAME,
@@ -514,7 +520,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         var wizard = GetActiveWizard();
         var properGameObj = WizardObjectLoader.GetPlayerGameObject(wizard);
 
-        var flags = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
+        var flags = PropertyFlags.Prop_Public | PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
         if (!_zoneObjectSerializer.Serialize(properGameObj, flags, out var gameObjData)) {
             Logger.Error("Failed to serialize game object for {0}",
                 Logger.Args(wizard.CharId));
@@ -536,7 +542,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         var wizard = GetActiveWizard();
         var properGameObj = WizardObjectLoader.GetPlayerGameObject(wizard);
 
-        var flags = PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
+        var flags = PropertyFlags.Prop_Public | PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit;
         if (!_zoneObjectSerializer.Serialize(properGameObj, flags, out var gameObjData)) {
             Logger.Error("Failed to serialize game object for {0}",
                 Logger.Args(wizard.CharId));
@@ -620,23 +626,6 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
             EffectData = serializedEffect
         };
         SendToSocket(addEffect);
-    }
-
-    private void SendHomeButtonData() {
-        var wizard = GetActiveWizard();
-        var currentZone = wizard.Zone;
-
-        var zoneMap = WorldHubZones.GetHubForZone(currentZone);
-        if (zoneMap is null) {
-            // If it can't be found, it's an area where the compass isn't visible anyways.
-            return;
-        }
-
-        var marklocation = new GAME_5_PROTOCOL.MSG_MARK_LOCATION_RESPONSE {
-            Result = 2,
-            CommonsZoneId = zoneMap.m_hubZoneDisplayName
-        };
-        SendToSocket(marklocation);
     }
 
 }

@@ -58,6 +58,10 @@ internal class MagicSchools : RootDirectoryResourceSingleton<SpellFactory>, IMem
                 continue;
             }
 
+            // The game client uses a 1-based index for magic schools for templates. However,
+            // when we send canonical data, it expects it as 0-based.
+            magicSchoolTemplate.m_schoolIndex--;
+
             if (s_magicSchools.ContainsKey(magicSchoolTemplate.m_schoolIndex)) {
                 Logger.Error("Duplicate magic school {0} found in {1}.", 
                     Logger.Args(magicSchoolTemplate.m_schoolName, fileRecord.FileName));
@@ -116,7 +120,7 @@ internal class MagicSchools : RootDirectoryResourceSingleton<SpellFactory>, IMem
     /// Gets the index of the highest magic school defined.
     /// </summary>
     /// <returns>The index of the highest magic school.</returns>
-    internal static uint GetMaxMagicSchoolIndex() 
+    internal static uint GetMaxMagicSchoolIndex()
         => (uint) s_magicSchools.Keys.Max();
 
     public void DisposeStream() 

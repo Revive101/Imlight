@@ -140,7 +140,12 @@ public static class WizardCollection {
     /// <param name="location">The new location of the character.</param>
     /// <param name="orientation">The new orientation of the character.</param>
     /// <param name="ZoneName">The new zone of the character.</param>
-    public static void UpdateCharacterMarkedLocation(Wizard character, Vector3 location, Vector3 orientation, string ZoneName) {
+    /// <param name="zoneDisplayName">The display name of the new zone.</param>
+    public static void UpdateCharacterMarkedLocation(Wizard character,
+                                                     Vector3 location,
+                                                     Vector3 orientation,
+                                                     string ZoneName,
+                                                     string zoneDisplayName) {
         using var session = s_store.OpenSession();
 
         var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
@@ -152,6 +157,7 @@ public static class WizardCollection {
         existingCharacter.MarkedLocation = location;
         existingCharacter.MarkedOrientation = orientation;
         existingCharacter.MarkedZone = ZoneName;
+        existingCharacter.MarkedZoneDisplayName = zoneDisplayName;
         session.SaveChanges();
     }
 
