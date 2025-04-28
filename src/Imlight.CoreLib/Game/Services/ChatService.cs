@@ -119,6 +119,113 @@ internal class ChatService(SessionActor sessionActor) : MessageService(sessionAc
         ZoneBroadcast(msg);
     }
 
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_REQUESTDIRECTEDQUICKCHAT))]
+    private void ReceiveWhisperRadialQuickChat(GAME_5_PROTOCOL.MSG_REQUESTDIRECTEDQUICKCHAT message) {
+        // A player is whispering to another player using the radial quick chat.
+        var targetID = message.TargetID;
+
+        // Check if the sender is muted.
+        var account = GetActiveAccount();
+        if (account.InfractionHistory.IsCurrentlyMuted) {
+            InformGameClient("You are currently muted.");
+
+            return;
+        }
+        
+        if (!TryGetOnlinePlayer(targetID, out var targetPlayer)) {
+            // Inform the user of error if the target is offline.
+            SendToSocket(new GAME_5_PROTOCOL.MSG_DIRECTEDCHATFAIL());
+
+            return;
+        }
+
+        // Send the quick chat to the target player.
+        var myWizard = GetActiveWizard();
+        var hexName = myWizard.PlayerNameBehavior.GetWizardNameAsByteHexString();
+        var sourceName = DataManipulation.SpacedHexStringToBytes(hexName);
+        var msg = new GAME_5_PROTOCOL.MSG_DIRECTEDQUICKCHAT {
+            SourceName = sourceName,
+            SourceID = myWizard.CharId,
+            MessageID = message.MessageID,
+            Filter = 0
+        };
+
+        var targetActorPath = targetPlayer.ActorPath;
+        Context.ActorSelection(targetActorPath).Tell(msg);
+    }
+
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_REQUESTDIRECTEDQUICKCHATEXT))]
+    private void ReceiveWhisperRadialChatExt(GAME_5_PROTOCOL.MSG_REQUESTDIRECTEDQUICKCHATEXT message) {
+        // A player is whispering to another player, directly.
+        // This message uses UTF-8 encoding.
+        var targetID = message.TargetID;
+
+        // Check if the sender is muted.
+        var account = GetActiveAccount();
+        if (account.InfractionHistory.IsCurrentlyMuted) {
+            InformGameClient("You are currently muted.");
+
+            return;
+        }
+
+        if (!TryGetOnlinePlayer(targetID, out var targetPlayer)) {
+            // Inform the user of error if the target is offline.
+            SendToSocket(new GAME_5_PROTOCOL.MSG_DIRECTEDCHATFAIL());
+
+            return;
+        }
+
+        // Send the directed chat to the target player.
+        var myWizard = GetActiveWizard();
+        var hexName = myWizard.PlayerNameBehavior.GetWizardNameAsByteHexString();
+        var sourceName = DataManipulation.SpacedHexStringToBytes(hexName);
+        var msg = new GAME_5_PROTOCOL.MSG_DIRECTEDQUICKCHATEXT {
+            SourceName = sourceName,
+            SourceID = myWizard.CharId,
+            Message = message.Message,
+            Filter = 0
+        };
+
+        var targetActorPath = targetPlayer.ActorPath;
+        Context.ActorSelection(targetActorPath).Tell(msg);
+    }
+
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_REQUESTDIRECTEDCHAT))]
+    private void ReceiveWhisperDirectChat(GAME_5_PROTOCOL.MSG_REQUESTDIRECTEDCHAT message) {
+        // A player is whispering to another player, directly.
+        // This message uses a wide-character string (16 bits per character).
+        var targetID = message.TargetID;
+
+        // Check if the sender is muted.
+        var account = GetActiveAccount();
+        if (account.InfractionHistory.IsCurrentlyMuted) {
+            InformGameClient("You are currently muted.");
+
+            return;
+        }
+
+        if (!TryGetOnlinePlayer(targetID, out var targetPlayer)) {
+            // Inform the user of error if the target is offline.
+            SendToSocket(new GAME_5_PROTOCOL.MSG_DIRECTEDCHATFAIL());
+
+            return;
+        }
+
+        // Send the directed chat to the target player.
+        var myWizard = GetActiveWizard();
+        var hexName = myWizard.PlayerNameBehavior.GetWizardNameAsByteHexString();
+        var sourceName = DataManipulation.SpacedHexStringToBytes(hexName);
+        var msg = new GAME_5_PROTOCOL.MSG_DIRECTEDCHAT {
+            SourceName = sourceName,
+            SourceID = myWizard.CharId,
+            Message = message.Message,
+            Filter = 0
+        };
+
+        var targetActorPath = targetPlayer.ActorPath;
+        Context.ActorSelection(targetActorPath).Tell(msg);
+    }
+
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_BUDDYSTATS))]
     private void ReceivePlayerSelect(GAME_5_PROTOCOL.MSG_BUDDYSTATS message) {
         // Regular players have no reason to be able to select other players
@@ -127,7 +234,7 @@ internal class ChatService(SessionActor sessionActor) : MessageService(sessionAc
         if (localAccount.AuthLevel < AuthLevel.HallMonitor) {
             return;
         }
-
+        
         // We only care about the ID sent here. It's the ID of the core object, but Imlight serialized
         // it using the character ID.
         var persistentCharacter = WizardCollection.GetCharacter(message.BuddyID);
