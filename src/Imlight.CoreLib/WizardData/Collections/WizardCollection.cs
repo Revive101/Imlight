@@ -70,6 +70,10 @@ public static class WizardCollection {
 
     /// <summary>
     /// Retrieves a character from the database based on the specified ID.
+    /// 
+    /// Completely loads the character, including their inventory, equipment, etc.
+    /// This is a blocking call and may take some time to complete. Alternatively, use
+    /// `GetCharacterUnloaded` to retrieve a character without loading their data.
     /// </summary>
     /// <param name="id">The ID of the character to retrieve.</param>
     /// <returns>The character with the specified ID, or null if not found.</returns>
@@ -77,18 +81,17 @@ public static class WizardCollection {
         using var session = s_store.OpenSession();
 
         var character = session.Query<Wizard>(collectionName: CollectionName)
-            .Include(i => i.InventoryBehavior.InventoryItemIds)
             .FirstOrDefault(x => x.CharId == id);
 
-        // Get each of the items for this character.
-        if (character is not null) {
-            var items = session.Query<WizClientObjectItem>(collectionName: WizardItemCollection.CollectionName)
-                .Where(x => x.m_characterId == id)
-                .ToList();
-            character.InventoryBehavior.Items = [.. items];
+        // Query for the account.
+        var account = session.Query<Account>(collectionName: AccountCollection.CollectionName)
+            .FirstOrDefault(x => x.AccountId == character.AccountId);
+        if (account is not null) {
+            character.Account = account;
+            account.Characters.Add(character);
         }
 
-        return character;
+        return LoadWizard(character);
     }
 
     /// <summary>
@@ -128,22 +131,13 @@ public static class WizardCollection {
     /// <param name="accountId">The account ID of the character to retrieve.</param>
     /// <param name="getAccount">Whether to retrieve the account associated with the character.</param>
     /// <returns>The character with the specified account ID, or null if not found.</returns>
-    public static Wizard[] GetCharactersUnloaded(ulong accountId, bool getAccount = false) {
+    public static Wizard GetCharacterUnloaded(ulong charId) {
         using var session = s_store.OpenSession();
 
-        var characters = session.Query<Wizard>(collectionName: CollectionName)
-            .Where(x => x.AccountId == accountId)
-            .ToList();
+        var character = session.Query<Wizard>(collectionName: CollectionName)
+            .FirstOrDefault(x => x.CharId == charId);
 
-        if (getAccount) {
-            for (var i = 0; i < characters.Count; i++) {
-                var account = session.Query<Account>(collectionName: AccountCollection.CollectionName)
-                    .FirstOrDefault(x => x.AccountId == characters[i].AccountId);
-                characters[i].Account = account;
-            }
-        }
-
-        return characters.ToArray();
+        return character;
     }
 
     /// <summary>

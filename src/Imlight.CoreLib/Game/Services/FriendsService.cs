@@ -29,6 +29,7 @@
         Player A's game client will see a notification that the friend request has been accepted.
  * 
  * TODO:
+ * - For `MSG_BUDDYSTATS`, we need to implement the CRC32 hash check. Currently, we just send the stats regardless.
  * 
  * Created by: JOOTY
  * Version: KALI 1.0
@@ -41,6 +42,7 @@ using Akka.Actor;
 using Imcodec.Cryptography;
 using Imcodec.MessageLayer;
 using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
@@ -87,6 +89,71 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         // The client caches each friends stats and sends the server the CRC32 hash of their cached stats.
         // We will hash the respective fields on the server side and compare them with the client's hash.
         // If the hashes do not match, we will send a new byte blob containing the serialized data to update the client's cache.
+
+        // TODO: Imlight currently doesn't care about the CRC. It will send the stats regardless.
+        var wizard = WizardCollection.GetCharacter(message.BuddyID);
+        if (wizard is null) {
+            Logger.Error("Player {0} requested stats for character ID {1}, but the character was not found.",
+                Logger.Args(GetActiveWizard().PlayerNameBehavior.GetWizardName(), message.BuddyID));
+
+            return;
+        }
+
+        var returnMessage = new GAME_5_PROTOCOL.MSG_BUDDYSTATS {
+            BuddyID = message.BuddyID,
+            Level = (uint) wizard.MagicSchoolBehavior.Level,
+            School = (uint) wizard.MagicSchoolBehavior.MagicSchool,
+            Gender = 0, // TODO: ?? Is 0 female? Male?
+
+            // Set each CRC as '1' to inform the client we're giving it new data.
+            StatBlockCRC = 1,
+            CharBlockCRC = 1,
+            EquipBlockCRC = 1
+        };
+
+        var statBlock = wizard.GameStats.GetClientTypeAlternative();
+        var charBlock = wizard.WizardAvatar;
+        var equipmentBlock = wizard.EquipmentBehavior.GetClientBehaviorInstance();
+
+        // Serialize each of the blocks.
+        var serializer = new ObjectSerializer(
+            Versionable: false,
+            Behaviors: SerializerFlags.SerializeFlags
+                     | SerializerFlags.CompactLength
+                     | SerializerFlags.StringEnums
+        );
+
+        var statBlockSerializationSuccess 
+            = serializer.Serialize(statBlock, 1, out var statBlockBytes);
+        var charBlockSerializationSuccess 
+            = serializer.Serialize(charBlock, 1, out var charBlockBytes);
+        var equipmentBlockSerializationSuccess 
+            = serializer.Serialize(equipmentBlock, 1, out var equipmentBlockBytes);
+
+        // Check if the serialization was successful.
+        if (!statBlockSerializationSuccess || !charBlockSerializationSuccess || !equipmentBlockSerializationSuccess) {
+            Logger.Error("Player {0} requested stats for character ID {1}, but the serialization failed.",
+                Logger.Args(GetActiveWizard().PlayerNameBehavior.GetWizardName(), message.BuddyID));
+
+            return;
+        }
+        else {
+            // Set the serialized data in the return message.
+            returnMessage.StatBlock = statBlockBytes;
+            returnMessage.CharBlock = charBlockBytes;
+            returnMessage.EquipBlock = equipmentBlockBytes;
+
+            // Log.
+            var wizardName = GetActiveWizard().PlayerNameBehavior.GetWizardName();
+            Logger.Debug("{0} has requested stats for character ID {1}.",
+                Logger.Args(wizardName, message.BuddyID));
+        }
+
+        var hexStatBlock = Convert.ToHexString(statBlockBytes);
+        var hexCharBlock = Convert.ToHexString(charBlockBytes);
+        var hexEquipBlock = Convert.ToHexString(equipmentBlockBytes);
+        
+        SendToSocket(returnMessage);
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_BUDDYREQUESTADD))]
