@@ -70,9 +70,9 @@
 
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using Akka.Actor;
 using Imcodec.Cryptography;
-using Imcodec.IO;
 using Imcodec.MessageLayer;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
@@ -481,7 +481,6 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_GOTOPLAYER))]
     private void ReceiveGoToPlayer(GAME_5_PROTOCOL.MSG_GOTOPLAYER message) {
         var targetID = message.TargetCharacterID;
-        var originatorID = message.OriginatorID;
 
         // Check if the target is online.
         if (!TryGetOnlinePlayer(targetID, out var onlinePlayer)) {
@@ -494,6 +493,19 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
 
             return;
         }
+
+        var teleportEffectsMsg = new CHARACTER_103_PROTOCOL.MSG_DOTELEPORTEFFECTS();
+        TellOtherServices(teleportEffectsMsg);
+
+        // Wait 2 seconds.
+        Task.Delay(2000).Wait();
+
+        var zoneTransferRequest = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
+            DestinationZone = onlinePlayer.CurrentZone,
+            DestinationLocation = "Start", // TODO
+            OwnerCharId = targetID,
+        };
+        TellOtherServices(zoneTransferRequest);
     }
 
     private void SendBuddyEntry(Wizard buddy, Relationship relationship, ulong ownerID) {
