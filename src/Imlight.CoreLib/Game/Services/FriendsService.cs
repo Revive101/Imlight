@@ -411,7 +411,7 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
                 SourceObjectID = myWizard.GameObject?.m_globalID ?? myWizard.CharId,
                 DestObjectID = entryWizard.GameObject?.m_globalID ?? entryWizard.CharId,
                 Error = 0,
-                Permissions = 0,               // TODO: What is this?
+                Permissions = (uint) entryWizard.Account.GetAccountFlags(),
                 EntryLocale = _englishLocaleHash,
                 FriendInfo = 197120,           // TODO: What is this?
                 FriendDate = epochInSeconds,
@@ -522,7 +522,7 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
             Status = isOnline ? ONLINE_STATUS_CODE : OFFLINE_STATUS_CODE,
             FriendInfo = 5702144,                                     // TODO: What is this?
             PasswordChat = 0,                                         // TODO: What is this?
-            //Permissions = (uint) wizard.Account.GetAccountFlags(),
+            Permissions = (uint) buddy.Account.GetAccountFlags(),
             ZoneName = onlinePlayer?.CurrentZoneDisplayName ?? string.Empty,
             RealmName = onlinePlayer?.CurrentRealm ?? string.Empty,
             Locale = 0,
