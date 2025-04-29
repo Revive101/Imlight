@@ -75,7 +75,9 @@ using Imcodec.Cryptography;
 using Imcodec.MessageLayer;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
+using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
+using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Utilities;
@@ -147,14 +149,13 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         // The client caches each friends stats and sends the server the CRC32 hash of their cached stats.
         // We will hash the respective fields on the server side and compare them with the client's hash.
         // If the hashes do not match, we will send a new byte blob containing the serialized data to update the client's cache.
-
         if (message.BuddyID == 0) {
             return;
         }
 
         // TODO: Imlight currently doesn't care about the CRC. It will send the stats regardless.
-        var wizard = WizardCollection.GetCharacter(message.BuddyID);
-        if (wizard is null) {
+        var buddyFromDatabase = WizardCollection.GetCharacter(message.BuddyID);
+        if (buddyFromDatabase is null) {
             Logger.Error("Player {0} requested stats for character ID {1}, but the character was not found.",
                 Logger.Args(GetActiveWizard().PlayerNameBehavior.GetWizardName(), message.BuddyID));
 
@@ -163,37 +164,24 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
 
         var returnMessage = new GAME_5_PROTOCOL.MSG_BUDDYSTATS {
             BuddyID = message.BuddyID,
-            Level = (uint) wizard.MagicSchoolBehavior.Level,
-            School = (uint) wizard.MagicSchoolBehavior.MagicSchool,
+            Level = (uint) buddyFromDatabase.MagicSchoolBehavior.Level,
+            School = (uint) buddyFromDatabase.MagicSchoolBehavior.MagicSchool,
             Gender = 0, // TODO: ?? Is 0 female? Male?
 
             // Set each CRC as '1' to inform the client we're giving it new data.
             StatBlockCRC = 1,
-            CharBlockCRC = 1,
-            EquipBlockCRC = 1
         };
 
-        var statBlock = wizard.GameStats.GetClientTypeAlternative();
-        var charBlock = wizard.WizardAvatar;
-        var equipmentBlock = wizard.EquipmentBehavior.GetClientBehaviorInstance();
+        var statBlock = GetBuddyGameStats(buddyFromDatabase);
 
         // Serialize each of the blocks.
         var serializer = new ObjectSerializer(
             Versionable: false,
             Behaviors: SerializerFlags.SerializeFlags
-                     | SerializerFlags.CompactLength
-                     | SerializerFlags.StringEnums
         );
 
-        var statBlockSerializationSuccess 
-            = serializer.Serialize(statBlock, 1, out var statBlockBytes);
-        var charBlockSerializationSuccess 
-            = serializer.Serialize(charBlock, 1, out var charBlockBytes);
-        var equipmentBlockSerializationSuccess 
-            = serializer.Serialize(equipmentBlock, 1, out var equipmentBlockBytes);
-
         // Check if the serialization was successful.
-        if (!statBlockSerializationSuccess || !charBlockSerializationSuccess || !equipmentBlockSerializationSuccess) {
+        if (!serializer.Serialize(statBlock, 1, out var statBlockBytes)) {
             Logger.Error("Player {0} requested stats for character ID {1}, but the serialization failed.",
                 Logger.Args(GetActiveWizard().PlayerNameBehavior.GetWizardName(), message.BuddyID));
 
@@ -202,8 +190,6 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         else {
             // Set the serialized data in the return message.
             returnMessage.StatBlock = statBlockBytes;
-            returnMessage.CharBlock = charBlockBytes;
-            returnMessage.EquipBlock = equipmentBlockBytes;
 
             // Log.
             var wizardName = GetActiveWizard().PlayerNameBehavior.GetWizardName();
@@ -211,9 +197,6 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
                 Logger.Args(wizardName, message.BuddyID));
         }
 
-        var hexStatBlock = Convert.ToHexString(statBlockBytes);
-        var hexCharBlock = Convert.ToHexString(charBlockBytes);
-        var hexEquipBlock = Convert.ToHexString(equipmentBlockBytes);
         
         SendToSocket(returnMessage);
     }
@@ -589,6 +572,18 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
                 Context.ActorSelection(buddyActorPath).Tell(buddyStatusMsg);
             }
         }
+    }
+
+    private WizGameStats GetBuddyGameStats(Wizard databaseBuddy) {
+        // Dragon database doesn't store any game stats because they follow a consistent
+        // pattern that allows us to recreate them when they log in. Since "database buddy"
+        // doesn't have any stats applied, this function must recreate them as if they were
+        // logging in themselves.
+        CharacterHelper.RecalculateGameStats(databaseBuddy);
+
+        // The client type alternative 'GetClientTypeAlternative' doesn't return applied
+        // stats, only base stats. Use 'GetCombatGameStats' to get the base stats + applied.
+        return databaseBuddy.GameStats.GetCombatGameStats();
     }
 
 }
