@@ -72,6 +72,7 @@ using System;
 using System.Linq;
 using Akka.Actor;
 using Imcodec.Cryptography;
+using Imcodec.Math;
 using Imcodec.MessageLayer;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
@@ -80,6 +81,7 @@ using Imlight.Common;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.Shared.Utilities;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
@@ -90,6 +92,7 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
 
     private const byte OFFLINE_STATUS_CODE = 1;
     private const byte ONLINE_STATUS_CODE = 4;
+    private const float QUERY_TELEPORT_WIZARD_TIMEOUT_IN_SECONDS = 2;
     private readonly uint _englishLocaleHash = StringHash.Compute("English");
 
     protected static Props Props(SessionActor parentActor)
@@ -499,12 +502,26 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
             return;
         }
 
-        Teleport(
-            destinationZone: onlinePlayer.CurrentZone,
-            destinationLocation: "Start", // TODO
-            doTeleportEffects: true,
-            ownerCharId: targetID
-        );
+        // Query for the target's Wizard so that we may get their X/Y/Z coordinates.
+        var queryResult = Context.ActorSelection(onlinePlayer.ActorPath)
+            .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(
+                message: new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD(),
+                timeout: TimeSpan.FromSeconds(QUERY_TELEPORT_WIZARD_TIMEOUT_IN_SECONDS)
+            )
+            .Result;
+
+        if (queryResult is not null) {
+            var coordinates = Util.GetCompactStringFromVector((Vector4) queryResult.Wizard.Location);
+
+            Teleport(
+                destinationZone: onlinePlayer.CurrentZone,
+                destinationLocation: coordinates,
+                doTeleportEffects: true,
+                ownerCharId: targetID
+            );
+        } else {
+            Logger.Error("Failed to query the target wizard for teleportation.");
+        }
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_IGNOREADD))]

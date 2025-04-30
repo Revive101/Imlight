@@ -51,7 +51,7 @@ public static class OnlinePlayerCollection {
     public static void AddOnlinePlayer(OnlinePlayer onlinePlayer) {
         // If the ID is already present in the cache, replace it with the new one.
         var existingPlayer = s_onlinePlayerCache
-            .FirstOrDefault(x => x.AccountId == onlinePlayer.AccountId);
+            .FirstOrDefault(x => x is not null && x.AccountId == onlinePlayer.AccountId);
         if (existingPlayer != null) {
             s_onlinePlayerCache.Remove(existingPlayer);
         }

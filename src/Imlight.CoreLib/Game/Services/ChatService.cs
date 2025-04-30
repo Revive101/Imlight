@@ -234,6 +234,13 @@ internal class ChatService(SessionActor sessionActor) : MessageService(sessionAc
         if (localAccount.AuthLevel < AuthLevel.HallMonitor) {
             return;
         }
+
+        if (message.BuddyID == 0) {
+            _selectedCharacter = null;
+            _selectedAccount = null;
+
+            return;
+        }
         
         // We only care about the ID sent here. It's the ID of the core object, but Imlight serialized
         // it using the character ID.
