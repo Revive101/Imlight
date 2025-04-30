@@ -235,6 +235,7 @@ internal class MoveService : MessageService, IWithTimers {
         else {
             var ml = wizard.MarkedLocation;
             Teleport(
+                doTeleportEffects: true,
                 destinationZone: wizard.MarkedZone,
                 destinationLocation: $"{ml.X},{ml.Y},{ml.Z},{ml.Z}"
             );
