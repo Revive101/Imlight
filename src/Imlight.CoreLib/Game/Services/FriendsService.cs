@@ -49,19 +49,19 @@
 
     !!! IN PROGRESS !!!
 
-    CharBlock    : 
-        - ObjectSerializer (StatefulFlags, CompactLength, StringEnum, Compress)
-        - Type: WizardCharacterBehavior
+    StatBlock    : 
+        - ObjectSerializer (StatefulFlags)
+        - Type: WizGameStats
     EquipBlock   : 
-        - ObjectSerializer (StatefulFlags, CompactLength, StringEnum, Compress)
+        - ObjectSerializer (StatefulFlags)
         - Type: ClientWizEquipmentBehavior
-    WishlistBlock:
 
     =====================================
  * 
  * TODO:
  * - For `MSG_BUDDYSTATS`, we need to implement the CRC32 hash check. Currently, we just send the stats regardless.
  * - Implement the `PreviousName` field in `MSG_BUDDYENTRY`.
+ * - Player ignoring
  * 
  * Created by: Jooty
  * Version: KALI 1.0
@@ -108,12 +108,12 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
             // When players add each other, they create a "Relationship." This is a record of their
             // interactions. When a player unfriends/blocks/reports another, that relationship is still exist
             // but is marked as "broken up." 
-            if (   !wizard.FriendsBehavior.TryGetRelationship(buddy.CharId, out var relationship) 
+            if (!wizard.FriendsBehavior.TryGetRelationship(buddy.CharId, out var relationship)
                 || relationship.IsBrokenUp) {
                 // Ignore the relationship if it is broken up.
                 Logger.Debug("{0} has a friend named {1} (ID: {2}), but the relationship is broken up.",
-                    Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), 
-                    buddy.PlayerNameBehavior.GetWizardName(), 
+                    Logger.Args(wizard.PlayerNameBehavior.GetWizardName(),
+                    buddy.PlayerNameBehavior.GetWizardName(),
                     buddy.CharId)
                 );
 
@@ -122,8 +122,8 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
             else if (relationship.Blocked) {
                 // Ignore the relationship if it is blocked.
                 Logger.Debug("{0} has a friend named {1} (ID: {2}), but the relationship is blocked.",
-                    Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), 
-                    buddy.PlayerNameBehavior.GetWizardName(), 
+                    Logger.Args(wizard.PlayerNameBehavior.GetWizardName(),
+                    buddy.PlayerNameBehavior.GetWizardName(),
                     buddy.CharId)
                 );
 
@@ -197,7 +197,7 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
                 Logger.Args(wizardName, message.BuddyID));
         }
 
-        
+
         SendToSocket(returnMessage);
     }
 
@@ -507,12 +507,68 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         );
     }
 
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_IGNOREADD))]
+    private void ReceiveIgnoreAdd(GAME_5_PROTOCOL.MSG_IGNOREADD message) {
+        return; // TODO: Another time.
+
+        // A player wants to ignore another player.
+        var wizard = GetActiveWizard();
+
+        if (!wizard.IgnorePlayer(message.CharacterGID)) {
+            Logger.Error("{0} tried to ignore character ID {1}, but they are already ignored.",
+                Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), message.CharacterGID));
+
+            return;
+        }
+    }
+
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_IGNOREDROP))]
+    private void ReceiveIgnoreDrop(GAME_5_PROTOCOL.MSG_IGNOREDROP message) {
+        // A player wants to unignore another player.
+        var wizard = GetActiveWizard();
+
+        if (!wizard.AddOrRepairRelationship(message.CharacterGID)) {
+            Logger.Error("{0} tried to unignore character ID {1}, but they are not ignored.",
+                Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), message.CharacterGID));
+
+            return;
+        }
+    }
+
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_IGNORELIST))]
+    private void ReceiveIgnoreList(GAME_5_PROTOCOL.MSG_IGNORELIST message) {
+        // A player is requesting a list of all the players they have ignored.
+        var wizard = GetActiveWizard();
+        var ignoredRelationships = wizard.FriendsBehavior.GetIgnoredPlayers();
+
+        // Serialize the ignored player list data.
+        var serializer = new ObjectSerializer(
+            Versionable: false,
+            Behaviors: SerializerFlags.None
+        );
+
+        if (!serializer.Serialize(ignoredRelationships, 1, out var ignoredListBytes)) {
+            var msg = new GAME_5_PROTOCOL.MSG_IGNORELIST {
+                ListOwnerGID = wizard.GameObject?.m_globalID ?? wizard.CharId,
+                ListData = ignoredListBytes
+            };
+
+            SendToSocket(msg);
+        }
+        else {
+            Logger.Error("Player {0} requested their ignore list, but the serialization failed.",
+                Logger.Args(wizard.PlayerNameBehavior.GetWizardName()));
+
+            return;
+        }
+    }
+
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT))]
-    private void ReceiveClientDisconnect() 
+    private void ReceiveClientDisconnect()
         => InformBuddiesOfStatusChange(false);
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT))]
-    private void ReceiveQueryLogout(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT message) 
+    private void ReceiveQueryLogout(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT message)
         => InformBuddiesOfStatusChange(false);
 
     private void SendBuddyEntry(Wizard buddy, Relationship relationship, ulong ownerID) {
@@ -540,7 +596,7 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
             ZoneName = onlinePlayer?.CurrentZoneDisplayName ?? string.Empty,
             RealmName = onlinePlayer?.CurrentRealm ?? string.Empty,
             Locale = 0,
-            FriendDate = relationship.RelationshipEpochInSeconds, 
+            FriendDate = relationship.RelationshipEpochInSeconds,
             FriendStatusDate = relationship.RelationshipEpochInSeconds,
             PreviousName = string.Empty                               // TODO: Implement this
         };

@@ -834,7 +834,22 @@ public class Wizard : IDisposable {
         }
 
         // Persistent save.
-        BuddyRelationshipCollection.BreakupRelationship(relationship);
+        BuddyRelationshipCollection.UpdateRelationship(relationship);
+
+        return true;
+    }
+
+    public bool IgnorePlayer(ulong playerId) {
+        var relationship = FriendsBehavior.Ignore(playerId);
+        if (relationship is null) {
+            Logger.Warning("Could not ignore player ({0}) for player {1}.",
+                Logger.Args(playerId, PlayerNameBehavior.GetWizardName()));
+
+            return false;
+        }
+
+        // Persistent save.
+        BuddyRelationshipCollection.UpdateRelationship(relationship);
 
         return true;
     }

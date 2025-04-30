@@ -98,34 +98,6 @@ public static class BuddyRelationshipCollection {
     }
 
     /// <summary>
-    /// Breaks up a relationship from the collection.
-    /// </summary>
-    /// <param name="relationship">The relationship to breakup.</param>
-    public static void BreakupRelationship(Relationship relationship) {
-        using var session = s_store.OpenSession();
-
-        var matchedRelationship = session.Query<Relationship>(collectionName: CollectionName)
-            .Where(r => r.FirstPlayerId == relationship.FirstPlayerId && r.SecondPlayerId == relationship.SecondPlayerId)
-            .FirstOrDefault();
-
-        if (matchedRelationship == null) {
-            return;
-        }
-
-        // Instead of outright removing the relationship, we'll just mark it as broken up.
-        // The relationship will be kept in the collection for 6 months before being removed. If the players
-        // become buddies again within that time, the relationship will be restored rather than creating a new one.
-        // This is solely for moderation purposes, to preserve the relationship history between two players.
-        matchedRelationship.IsBrokenUp = true;
-
-        var metadata = session.Advanced.GetMetadataFor(matchedRelationship);
-        metadata[Raven.Client.Constants.Documents.Metadata.Collection] = CollectionName;
-        metadata[Raven.Client.Constants.Documents.Metadata.Expires] = KeyExpireTimeInHours;
-
-        session.SaveChanges();
-    }
-
-    /// <summary>
     /// Updates a relationship in the collection.
     /// </summary>
     /// <param name="relationship">The relationship to update.</param>
@@ -139,10 +111,16 @@ public static class BuddyRelationshipCollection {
 
         if (existingRelationship == null) {
             return;
-        }
+        }   
 
         // Update the relationship.
-        existingRelationship = relationship;
+        existingRelationship.Blocked = relationship.Blocked;
+        existingRelationship.IsBrokenUp = relationship.IsBrokenUp;
+
+        var metadata = session.Advanced.GetMetadataFor(existingRelationship);
+        metadata[Raven.Client.Constants.Documents.Metadata.Collection] = CollectionName;
+        metadata[Raven.Client.Constants.Documents.Metadata.Expires] = KeyExpireTimeInHours;
+
         session.SaveChanges();
     }
 

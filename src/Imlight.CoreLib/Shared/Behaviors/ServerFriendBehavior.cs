@@ -39,6 +39,9 @@ using System.Linq;
 using Newtonsoft.Json;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.WizardData.Models.Player;
+using Imlight.CoreLib.WizardData.Collections;
+using Imlight.CoreLib.Shared.Utilities;
+using Imcodec.IO;
 
 namespace Imlight.CoreLib.Shared.Behaviors;
 
@@ -214,6 +217,57 @@ public class ServerFriendBehavior : IClientBehaviorProvider<BehaviorInstance> {
     }
 
     /// <summary>
+    /// Ignores a relationship with a character.
+    /// </summary>
+    /// <param name="characterId">The character ID of the player who is being ignored.</param>
+    /// <returns>The relationship between the two players,</returns>
+    public Relationship Ignore(ulong characterId) {
+        // Create the relationship if it doesn't already exist.
+        if (!TryGetRelationship(characterId, out var relationship)) {
+            relationship = new Relationship {
+                FirstPlayerId = characterId,
+                SecondPlayerId = characterId,
+            };
+            Relationships.Add(relationship);
+        }
+
+        relationship.Blocked = true;
+
+        return relationship;
+    }
+
+    /// <summary>
+    /// Gets all the ignored players.
+    /// </summary>
+    /// <returns>A list of ignored players.</returns>
+    public IgnoreEntryDataList GetIgnoredPlayers() {
+        var ignoreList = new IgnoreEntryDataList() {
+            m_ignoreDataList = []
+        };
+
+        foreach (var ignoredRelationship in Relationships
+                     .Where(x => x.Blocked && x.IsBrokenUp)) {
+            var otherPlayerID = ignoredRelationship.FirstPlayerId == ignoredRelationship.SecondPlayerId
+                ? ignoredRelationship.SecondPlayerId
+                : ignoredRelationship.FirstPlayerId;
+
+            var otherPlayerWizardData = WizardCollection.GetCharacterUnloaded(otherPlayerID);
+            var otherPlayerWizardHexName = otherPlayerWizardData.PlayerNameBehavior.GetWizardNameAsByteHexString();
+            var otherPlayerByteName = DataManipulation.SpacedHexStringToBytes(otherPlayerWizardHexName);
+
+            var ignoreEntry = new IgnoreEntryData {
+                m_ignoreName = new ByteString(otherPlayerByteName),
+                m_characterID = otherPlayerID,
+                m_gameObjectID = otherPlayerID,
+            };
+
+            ignoreList.m_ignoreDataList.Add(ignoreEntry);
+        }
+
+        return ignoreList;
+    }
+
+    /// <summary>
     /// Attempts to get a relationship with a character.
     /// </summary>
     /// <param name="characterId">The character ID of the player who is being checked.</param>
@@ -252,7 +306,7 @@ public class ServerFriendBehavior : IClientBehaviorProvider<BehaviorInstance> {
     /// </summary>
     /// <param name="characterId">The character ID of the player who is being checked.</param>
     /// <returns>True if the player has the other player blocked.</returns>
-    public bool IsBlocked(ulong characterId) {
+    public bool HasPlayerBlocked(ulong characterId) {
         if (!TryGetRelationship(characterId, out var relationship)) {
             return false;
         }
