@@ -28,6 +28,23 @@ Imlight uses [RavenDB](https://ravendb.net/) to store its persistent data. There
 If a URL is not present in the configuration, Imlight will instead employ an embedded database for either of the databases.
 If a database URL *is* present, _dragon_ requires certificates to be available at `./Imlight/Certificates/`. 
 
+#### Imcodec
+[Imcodec](https://github.com/Jooty/Imcodec) is imported as a submodule and provides tooling required by Imlight for handling proprietary game data. 
+
+##### Cloning with Imcodec
+When cloning Imlight, ensure that the `--recurse-submodules` flag is met to clone Imcodec alongside. If you've already cloned Imlight, `git submodule update --init --recursive` can also be used.
+
+##### Building Imcodec
+Imcodec relies on compile-time source generation to produce C# classes from game data definitions.
+1. Obtain a type dump JSON file using [wiztype](https://github.com/wizspoil/wiztype). This file should be saved in
+    ```
+    /submodule/Imcodec/src/Imcodec.ObjectProperty/GeneratorInput/
+    ```
+2. Unpack the `Root.wad` archive using Imcodec itself (via `imcodec wad unpack`). Inside, locate the message definition files which can be matched with a wildcard of `*Messages*.xml`. Place these files in:
+   ```
+   /submodule/Imcodec/src/Imcodec.MessageLayer/GeneratorInput/
+   ```
+
 ## Information
 * The Kronos teams' [Grimoire](https://kronos-project.github.io/grimoire/foreword.html).
 * Our [Documentation](https://revive101.github.io/Imlight-docs/) book.
