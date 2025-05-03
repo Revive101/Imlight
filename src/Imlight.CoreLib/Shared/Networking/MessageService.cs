@@ -30,6 +30,7 @@
  */
 
 using System;
+using System.Threading.Tasks;
 using Akka.Actor;
 using Imcodec.MessageLayer;
 using Imcodec.MessageLayer.Generated;
@@ -138,7 +139,7 @@ internal abstract class MessageService(SessionActor sessionActor) : ReceiveProto
     protected T AskServer<T>(IServerMessage message)
         where T : IServerMessage {
         if (SessionActor is null) {
-            Logger.Error("{0} attempted to send message to undefined SessionActor.", 
+            Logger.Error("{0} attempted to send message to undefined SessionActor.",
                 Logger.Args(this.GetType()));
 
             return default(T);
@@ -236,16 +237,31 @@ internal abstract class MessageService(SessionActor sessionActor) : ReceiveProto
     /// Transfers the current zone to another zone. 
     /// </summary>
     /// <param name="destinationZone">The zone to transfer to.</param>
+    /// <param name="doTeleportEffects">Specifies whether to show teleport effects. Default is true.</param>
     /// <param name="makePrivate">Specifies whether the zone should be private or not. Default is false.</param>
+    /// <param name="ownerCharId">The character ID of the owner. Default is self.</param>
     /// <param name="destinationLocation">The location to transfer to. Default is "Start".</param>
-    protected void DoZoneTransfer(string destinationZone, bool makePrivate = false, string destinationLocation = "") {
+    protected void Teleport(string destinationZone,
+                            bool doTeleportEffects = true,
+                            bool makePrivate = false,
+                            ulong ownerCharId = 0,
+                            string destinationLocation = "") {
+        // Broadcast teleport effects to the zone, if applicable.
+        if (doTeleportEffects) {
+            var teleportEffectsMsg = new CHARACTER_103_PROTOCOL.MSG_DOTELEPORTEFFECTS();
+            TellOtherServices(teleportEffectsMsg);
+
+            // Wait 2 seconds for the effects to finish.
+            Task.Delay(2000).Wait();
+        }
+
         // If the destination location is nothing, default it to "Start."
         var zoneTransfer = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
             DestinationLocation = destinationLocation == "" ? "Start" : destinationLocation,
             DestinationZone = destinationZone,
             SendToClient = true,
             IsPrivate = makePrivate,
-            OwnerCharId = GetActiveWizard().CharId
+            OwnerCharId = ownerCharId == 0 ? GetActiveWizard().CharId : ownerCharId
         };
         TellOtherServices(zoneTransfer);
     }
@@ -265,7 +281,7 @@ internal abstract class MessageService(SessionActor sessionActor) : ReceiveProto
         }
 
         onlinePlayer = potentialPlayer;
-        
+
         return true;
     }
 
@@ -325,5 +341,5 @@ internal abstract class MessageService(SessionActor sessionActor) : ReceiveProto
     }
 
     #endregion
-    
+
 }

@@ -4,6 +4,7 @@
  */
 
 using System;
+using System.Text;
 using Imcodec.IO;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Shared.Resources;
@@ -13,6 +14,9 @@ namespace Imlight.CoreLib.Shared.Behaviors;
 
 [Serializable]
 public class ServerWizPlayerNameBehavior : IClientBehaviorProvider<ClientWizPlayerNameBehavior> {
+
+    private const string FemaleSourcePrefix = "80";
+    private const string MaleSourcePrefix = "82";
 
     [JsonIgnore] public bool NoTransfer { get; set; } = false;
 
@@ -37,6 +41,23 @@ public class ServerWizPlayerNameBehavior : IClientBehaviorProvider<ClientWizPlay
         var actualName = WizardNameBank.GetEnglishName(NameIndices, Gender);
         
         return actualName;
+    }
+
+    public string GetWizardNameAsByteHexString() {
+        // Drop the MSB from input, then convert it to a hex string.
+        var raw = (NameIndices & 0x7FFFFFFF).ToString("X8");
+        var sb = new StringBuilder(raw);
+        for (int i = sb.Length - 2; i >= 0; i -= 2) {
+            sb.Insert(i, ' ');
+        }
+
+        var tail = sb.ToString().TrimStart();
+
+        // Replace the first 2 characters depending on gender.
+        var newMsb = Gender == eGender.Female ? FemaleSourcePrefix : MaleSourcePrefix;
+        tail = newMsb + tail[2..];
+
+        return tail;
     }
 
     public ClientWizPlayerNameBehavior GetClientBehaviorInstance() {

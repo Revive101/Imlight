@@ -28,7 +28,6 @@
  */
 
 using System;
-using System.Text;
 using System.Text.RegularExpressions;
 using Akka.Actor;
 using Imcodec.IO;
@@ -40,7 +39,6 @@ using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Utilities;
 using Imlight.CoreLib.WizardData.Collections;
-using Imlight.CoreLib.WizardData.Implementations;
 using Imlight.CoreLib.WizardData.Models.Misc;
 using Imlight.CoreLib.WizardData.Models.Player;
 
@@ -48,11 +46,10 @@ namespace Imlight.CoreLib.Game.Services;
 
 internal class ChatService(SessionActor sessionActor) : MessageService(sessionActor) {
 
-    private const string FemaleSourcePrefix = "80";
-    private const string MaleSourcePrefix = "82";
-
     // Always make sure this command prefix is within the bounds of the Regex.
     private const string CommandPrefix = ".";
+    private const string MessageRegex = "[^a-zA-Z0-9\\p{P} ]";
+
     private Wizard _selectedCharacter;
     private Account _selectedAccount;
 
@@ -67,28 +64,27 @@ internal class ChatService(SessionActor sessionActor) : MessageService(sessionAc
         var wizard = GetActiveWizard();
         var account = GetActiveAccount();
 
-        // Craft the wizard name.*
-        var nameIndices = wizard.PlayerNameBehavior.NameIndices;
-        var gender = wizard.WizardAvatar.m_eGender;
-        var sourceName = CraftSourceNameFromIndices(nameIndices, gender);
+        if (account.InfractionHistory.IsCurrentlyMuted) {
+            InformGameClient("You are currently muted.");
+
+            return;
+        }
+
+        // Craft the wizard name.
+        var byteName = wizard.PlayerNameBehavior.GetWizardNameAsByteHexString();
+        var sourceName = DataManipulation.SpacedHexStringToBytes(byteName);
+
         var cleanedMessage = CleanMessageTrash(message.Message);
 
         // Parse in-game chat commands. Do not broadcast it to the zone.
         if (cleanedMessage.StartsWith(CommandPrefix) && account.AuthLevel > AuthLevel.None) {
-            SendChatCommand(cleanedMessage);
+            SendChatCommand(cleanedMessage, charObj, wizard);
+
             return;
         }
 
-        if (account.InfractionHistory.IsCurrentlyMuted) {
-            InformGameClient("You are currently muted.");
-            return;
-        }
-
-        // Log the chat message both to console and database.
-        var wizardName = wizard.PlayerNameBehavior.GetWizardName();
-        var zoneName = wizard.ZoneDisplayName;
-        LogChatMessage(wizardName, cleanedMessage, zoneName);
-        SaveChatLog(cleanedMessage);
+        LogChatMessage(wizard.PlayerNameBehavior.GetWizardName(), cleanedMessage, wizard.Zone);
+        SaveChatLog(cleanedMessage, charObj, wizard);
 
         // Broadcast the message to the zone.
         var msg = new GAME_5_PROTOCOL.MSG_RADIALCHAT {
@@ -105,14 +101,14 @@ internal class ChatService(SessionActor sessionActor) : MessageService(sessionAc
         var account = GetActiveAccount();
         if (account.InfractionHistory.IsCurrentlyMuted) {
             InformGameClient("You are currently muted.");
+
             return;
         }
 
         var globalId = GetActiveGameObject().m_globalID;
         var character = GetActiveWizard();
-        var nameIndices = character.PlayerNameBehavior.NameIndices;
-        var gender = character.WizardAvatar.m_eGender;
-        var src = CraftSourceNameFromIndices(nameIndices, gender);
+        var byteName = character.PlayerNameBehavior.GetWizardNameAsByteHexString();
+        var src = DataManipulation.SpacedHexStringToBytes(byteName);
 
         var msg = new GAME_5_PROTOCOL.MSG_RADIALQUICKCHAT() {
             MessageID = message.MessageID,
@@ -123,18 +119,132 @@ internal class ChatService(SessionActor sessionActor) : MessageService(sessionAc
         ZoneBroadcast(msg);
     }
 
-    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_BUDDYSTATS))]
-    private void ReceivePlayerSelect(GAME_5_PROTOCOL.MSG_BUDDYSTATS message) {
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_REQUESTDIRECTEDQUICKCHAT))]
+    private void ReceiveWhisperRadialQuickChat(GAME_5_PROTOCOL.MSG_REQUESTDIRECTEDQUICKCHAT message) {
+        // A player is whispering to another player using the radial quick chat.
+        var targetID = message.TargetID;
+
+        // Check if the sender is muted.
         var account = GetActiveAccount();
-        if (account.AuthLevel < AuthLevel.HallMonitor) {
+        if (account.InfractionHistory.IsCurrentlyMuted) {
+            InformGameClient("You are currently muted.");
+
+            return;
+        }
+        
+        if (!TryGetOnlinePlayer(targetID, out var targetPlayer)) {
+            // Inform the user of error if the target is offline.
+            SendToSocket(new GAME_5_PROTOCOL.MSG_DIRECTEDCHATFAIL());
+
             return;
         }
 
+        // Send the quick chat to the target player.
+        var myWizard = GetActiveWizard();
+        var hexName = myWizard.PlayerNameBehavior.GetWizardNameAsByteHexString();
+        var sourceName = DataManipulation.SpacedHexStringToBytes(hexName);
+        var msg = new GAME_5_PROTOCOL.MSG_DIRECTEDQUICKCHAT {
+            SourceName = sourceName,
+            SourceID = myWizard.CharId,
+            MessageID = message.MessageID,
+            Filter = 0
+        };
+
+        var targetActorPath = targetPlayer.ActorPath;
+        Context.ActorSelection(targetActorPath).Tell(msg);
+    }
+
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_REQUESTDIRECTEDQUICKCHATEXT))]
+    private void ReceiveWhisperRadialChatExt(GAME_5_PROTOCOL.MSG_REQUESTDIRECTEDQUICKCHATEXT message) {
+        // A player is whispering to another player, directly.
+        // This message uses UTF-8 encoding.
+        var targetID = message.TargetID;
+
+        // Check if the sender is muted.
+        var account = GetActiveAccount();
+        if (account.InfractionHistory.IsCurrentlyMuted) {
+            InformGameClient("You are currently muted.");
+
+            return;
+        }
+
+        if (!TryGetOnlinePlayer(targetID, out var targetPlayer)) {
+            // Inform the user of error if the target is offline.
+            SendToSocket(new GAME_5_PROTOCOL.MSG_DIRECTEDCHATFAIL());
+
+            return;
+        }
+
+        // Send the directed chat to the target player.
+        var myWizard = GetActiveWizard();
+        var hexName = myWizard.PlayerNameBehavior.GetWizardNameAsByteHexString();
+        var sourceName = DataManipulation.SpacedHexStringToBytes(hexName);
+        var msg = new GAME_5_PROTOCOL.MSG_DIRECTEDQUICKCHATEXT {
+            SourceName = sourceName,
+            SourceID = myWizard.CharId,
+            Message = message.Message,
+            Filter = 0
+        };
+
+        var targetActorPath = targetPlayer.ActorPath;
+        Context.ActorSelection(targetActorPath).Tell(msg);
+    }
+
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_REQUESTDIRECTEDCHAT))]
+    private void ReceiveWhisperDirectChat(GAME_5_PROTOCOL.MSG_REQUESTDIRECTEDCHAT message) {
+        // A player is whispering to another player, directly.
+        // This message uses a wide-character string (16 bits per character).
+        var targetID = message.TargetID;
+
+        // Check if the sender is muted.
+        var account = GetActiveAccount();
+        if (account.InfractionHistory.IsCurrentlyMuted) {
+            InformGameClient("You are currently muted.");
+
+            return;
+        }
+
+        if (!TryGetOnlinePlayer(targetID, out var targetPlayer)) {
+            // Inform the user of error if the target is offline.
+            SendToSocket(new GAME_5_PROTOCOL.MSG_DIRECTEDCHATFAIL());
+
+            return;
+        }
+
+        // Send the directed chat to the target player.
+        var myWizard = GetActiveWizard();
+        var hexName = myWizard.PlayerNameBehavior.GetWizardNameAsByteHexString();
+        var sourceName = DataManipulation.SpacedHexStringToBytes(hexName);
+        var msg = new GAME_5_PROTOCOL.MSG_DIRECTEDCHAT {
+            SourceName = sourceName,
+            SourceID = myWizard.CharId,
+            Message = message.Message,
+            Filter = 0
+        };
+
+        var targetActorPath = targetPlayer.ActorPath;
+        Context.ActorSelection(targetActorPath).Tell(msg);
+    }
+
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_BUDDYSTATS))]
+    private void ReceivePlayerSelect(GAME_5_PROTOCOL.MSG_BUDDYSTATS message) {
+        // Regular players have no reason to be able to select other players
+        // for command context.
+        var localAccount = GetActiveAccount();
+        if (localAccount.AuthLevel < AuthLevel.HallMonitor) {
+            return;
+        }
+
+        if (message.BuddyID == 0) {
+            _selectedCharacter = null;
+            _selectedAccount = null;
+
+            return;
+        }
+        
         // We only care about the ID sent here. It's the ID of the core object, but Imlight serialized
         // it using the character ID.
-        var id = message.BuddyID;
-
-        var persistentCharacter = WizardCollection.GetCharacter(id);
+        var persistentCharacter = WizardCollection.GetCharacter(message.BuddyID);
         if (persistentCharacter is null) {
             return;
         }
@@ -146,12 +256,11 @@ internal class ChatService(SessionActor sessionActor) : MessageService(sessionAc
 
         // Cache for our next command.
         _selectedCharacter = persistentCharacter;
-        _selectedAccount = account;
+        _selectedAccount = selectedAccount;
     }
 
     private static string CleanMessageTrash(ByteString message) {
-        var sMessage = message.ToString();
-        if (sMessage == null) {
+        if (message == null) {
             return null;
         }
 
@@ -160,32 +269,26 @@ internal class ChatService(SessionActor sessionActor) : MessageService(sessionAc
             message = ((byte[])message)[1..];
         }
 
-        // Remove any non-printable characters.
-        var cleanedMessage = Regex.Replace(message.ToString(), @"[^\u0020-\u007E]", string.Empty);
+        // Define a regular expression pattern to keep alphanumeric characters and punctuation
+        string validCharactersPattern = MessageRegex; // \p{P} matches any punctuation character
+        var cleanedMessage = Regex.Replace(message.ToString(), validCharactersPattern, "").Trim();
 
         return cleanedMessage;
     }
 
-    private static ByteString CraftSourceNameFromIndices(uint input, eGender gender) {
-        // Drop the MSB from input, then convert it to a hex string.
-        var raw = (input & 0x7FFFFFFF).ToString("X8");
-        var sb = new StringBuilder(raw);
-        for (int i = sb.Length - 2; i >= 0; i -= 2) {
-            sb.Insert(i, ' ');
-        }
+    private static void LogChatMessage(string name, string message, string zoneName) 
+        => Logger.Information("[{0}] {1}: {2}", Logger.Args(zoneName, name, message));
 
-        var tail = sb.ToString().TrimStart();
+    private static void SaveChatLog(string message, CoreObject charObj, Wizard character) 
+        => ChatLogCollection.AddChatLog(new ChatLog() {
+            TimeStamp = DateTime.UtcNow,
+            ZoneName = character.Zone,
+            CharacterId = charObj.m_globalID,
+            AccountId = character.AccountId,
+            Message = message,
+        });
 
-        // Replace the first 2 characters depending on gender.
-        var newMsb = gender == eGender.Female ? FemaleSourcePrefix : MaleSourcePrefix;
-        tail = newMsb + tail[2..];
-
-        return DataManipulation.SpacedHexStringToBytes(tail);
-    }
-
-    private void SendChatCommand(string input) {
-        var charObj = GetActiveGameObject();
-        var character = GetActiveWizard();
+    private void SendChatCommand(string input, CoreObject charObj, Wizard character) {
         var account = GetActiveAccount();
 
         _dispatcherRef.Tell(new SERVER_100_PROTOCOL.MSG_COMMAND() {
@@ -201,21 +304,4 @@ internal class ChatService(SessionActor sessionActor) : MessageService(sessionAc
         });
     }
 
-    private void SaveChatLog(string message) {
-        var charObj = GetActiveGameObject();
-        var character = GetActiveWizard();
-
-        var chatLog = new ChatLog() {
-            TimeStamp = DateTime.UtcNow,
-            ZoneName = character.Zone,
-            CharacterId = charObj.m_globalID,
-            AccountId = character.AccountId,
-            Message = message,
-        };
-        ChatLogCollection.AddChatLog(chatLog);
-    }
-
-    private static void LogChatMessage(string name, string message, string zoneName) 
-        => Logger.Information("[{0}] {1}: {2}", Logger.Args(zoneName, name, message));
-        
 }

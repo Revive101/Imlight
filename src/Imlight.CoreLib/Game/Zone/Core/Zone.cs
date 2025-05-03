@@ -295,6 +295,10 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message) 
         => _supervisors.ForEach(supervisor => supervisor.Forward(message));
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST))]
+    private void ReceiveZoneSupervisorBroadcast(ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST message) 
+        => _supervisors.ForEach(supervisor => supervisor.Forward(message));
+
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL))]
     private void ReceiveRequestCombatSigil(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL message)
         => _supervisors.ForEach(supervisor => supervisor.Forward(message));

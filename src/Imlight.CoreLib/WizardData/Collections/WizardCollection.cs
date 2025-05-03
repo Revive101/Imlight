@@ -6,21 +6,19 @@
 using System.Linq;
 using Raven.Client.Documents;
 using Imlight.CoreLib.WizardData.Databases;
-using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Math;
 
-namespace Imlight.CoreLib.WizardData.Implementations;
+namespace Imlight.CoreLib.WizardData.Collections;
 
 public static class WizardCollection {
 
     public const string CollectionName = "Wizards";
     private static readonly IDocumentStore s_store;
 
-    static WizardCollection() {
-        s_store = PlayerDatabase.Instance.Store;
-    }
+    static WizardCollection() 
+        => s_store = PlayerDatabase.Instance.Store;
 
     /// <summary>
     /// Creates a character in the database.
@@ -72,6 +70,10 @@ public static class WizardCollection {
 
     /// <summary>
     /// Retrieves a character from the database based on the specified ID.
+    /// 
+    /// Completely loads the character, including their inventory, equipment, etc.
+    /// This is a blocking call and may take some time to complete. Alternatively, use
+    /// `GetCharacterUnloaded` to retrieve a character without loading their data.
     /// </summary>
     /// <param name="id">The ID of the character to retrieve.</param>
     /// <returns>The character with the specified ID, or null if not found.</returns>
@@ -79,16 +81,61 @@ public static class WizardCollection {
         using var session = s_store.OpenSession();
 
         var character = session.Query<Wizard>(collectionName: CollectionName)
-            .Include(i => i.InventoryBehavior.InventoryItemIds)
             .FirstOrDefault(x => x.CharId == id);
 
-        // Get each of the items for this character.
-        if (character is not null) {
-            var items = session.Query<WizClientObjectItem>(collectionName: WizardItemCollection.CollectionName)
-                .Where(x => x.m_characterId == id)
-                .ToList();
-            character.InventoryBehavior.Items = [.. items];
+        // Query for the account.
+        var account = session.Query<Account>(collectionName: AccountCollection.CollectionName)
+            .FirstOrDefault(x => x.AccountId == character.AccountId);
+        if (account is not null) {
+            character.Account = account;
+            account.Characters.Add(character);
         }
+
+        return LoadWizard(character);
+    }
+
+    /// <summary>
+    /// Loads all characters based on the specified account ID. Returns the characters loaded, so
+    /// additional queries are made to load the character's inventory, equipment, etc.
+    /// </summary>
+    /// <param name="accountId">The account ID of the character to retrieve.</param>
+    /// <param name="account">The account associated with the character. Characters will be added
+    /// to the account.</param>
+    /// <returns>The character with the specified account ID, or null if not found.</returns>
+    public static Wizard[] LoadWizardsOntoAccount(ulong accountId, ref Account account) {
+        using var session = s_store.OpenSession();
+
+        var characters = session.Query<Wizard>(collectionName: CollectionName)
+            .Where(x => x.AccountId == accountId)
+            .ToList();
+
+        for (var i = 0; i < characters.Count; i++) {
+            characters[i].Account = account;
+            account.Characters.Add(characters[i]);
+        }
+
+        // Load all of the characters. We must do this here because
+        // `Wizard` initialization may require the account to be in full; aka, we need
+        // all the characters to be on the account ahead of time.
+        for (var i = 0 ; i < characters.Count; i++) {
+            characters[i] = LoadWizard(characters[i]);
+        }
+
+        return [.. characters];
+    }
+
+    /// <summary>
+    /// Retrieves all characters based on the specified account ID. Returns the characters unloaded, so no
+    /// additional queries are made to load the character's inventory, equipment, etc.
+    /// </summary>
+    /// <param name="accountId">The account ID of the character to retrieve.</param>
+    /// <param name="getAccount">Whether to retrieve the account associated with the character.</param>
+    /// <returns>The character with the specified account ID, or null if not found.</returns>
+    public static Wizard GetCharacterUnloaded(ulong charId) {
+        using var session = s_store.OpenSession();
+
+        var character = session.Query<Wizard>(collectionName: CollectionName)
+            .FirstOrDefault(x => x.CharId == charId);
 
         return character;
     }
@@ -354,4 +401,94 @@ public static class WizardCollection {
         session.SaveChanges();
     }
     
+    /// <summary>
+    /// Adds a new relationship to the friends behavior of a wizard.
+    /// </summary>
+    /// <param name="wizard">The wizard to add the relationship to.</param>
+    /// <param name="relationship">The relationship to add.</param>
+    public static void AddOrUpdateRelationship(Wizard wizard, Relationship relationship) {
+        using var session = s_store.OpenSession();
+
+        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
+            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        if (existingCharacter is null) {
+            return;
+        }
+
+        existingCharacter.FriendsBehavior ??= new();
+        existingCharacter.FriendsBehavior.AddOrUpdateRelationship(relationship);
+
+        session.SaveChanges();
+    }
+
+    /// <summary>
+    /// Removes a relationship from the friends behavior of a wizard.
+    /// </summary>
+    /// <param name="wizard">The wizard to remove the relationship from.</param>
+    /// <param name="friendId">The ID of the friend to remove.</param>
+    public static void RemoveRelationship(Wizard wizard, ulong friendId) {
+        using var session = s_store.OpenSession();
+
+        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
+            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        if (existingCharacter is null) {
+            return;
+        }
+
+        if (existingCharacter.FriendsBehavior is null) {
+            return;
+        }
+
+        existingCharacter.FriendsBehavior.Breakup(friendId);
+
+        session.SaveChanges();
+    }
+
+    private static Wizard LoadWizard(Wizard wizard) {
+        using var session = s_store.OpenSession();
+
+        // `Wizard` only keeps track of the IDs of the items in the inventory.
+        // The actual items are stored in the `WizClientObjectItem` collection.
+        // Load the items in the inventory.
+        var items = session.Query<WizClientObjectItem>(collectionName: WizardItemCollection.CollectionName)
+            .Where(x => x.m_characterId == wizard.CharId)
+            .ToList();
+        wizard.InventoryBehavior.Items = [.. items
+            .Where(i => wizard.InventoryBehavior.InventoryItemIds
+            .Contains(i.m_globalID))
+        ];
+
+        // Load the character's equipment.
+        // The equipped items are stored as global IDs in the character's EquipmentBehavior.
+        // Find any items in the inventory that match the equipped item IDs.
+        wizard.EquipmentBehavior.EquippedItems = [.. items
+            .Where(i => wizard.EquipmentBehavior.EquippedItemIds
+            .Any(e => i.m_globalID == e))
+        ];
+
+        // The friends list is expanded to include a 'relationship' model
+        // which helps keep track of the relationship between two players for moderation purposes.
+        // `Wizard` only keeps track of the IDs of the relationships.
+        // The actual relationships are stored in the `BuddyRelationshipCollection`.
+        var relationships = session
+            .Query<Relationship>(collectionName: BuddyRelationshipCollection.CollectionName)
+            .Where(x => x.FirstPlayerId == wizard.CharId || x.SecondPlayerId == wizard.CharId)
+            .ToList();
+        wizard.FriendsBehavior ??= new();
+        wizard.FriendsBehavior.Relationships = relationships;
+
+        // Load character dynamic modifications.
+        var dynamods = session
+            .Query<DynamodSet>(collectionName: DynamodCollection.CollectionName)
+            .Where(d => d.CharId == wizard.CharId)
+            .ToList();
+        wizard.DynamodSet = dynamods.FirstOrDefault() ?? new DynamodSet(wizard.CharId);
+
+        // The wizard may still have some initialization to do. Inform the wizard
+        // that their data has been loaded from the database.
+        wizard.AfterDatabaseLoad();
+
+        return wizard;
+    }
+
 }

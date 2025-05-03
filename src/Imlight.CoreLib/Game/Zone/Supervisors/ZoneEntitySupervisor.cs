@@ -70,9 +70,9 @@ internal abstract class ZoneEntitySupervisor(Core.Zone zone) : ReceiveProtocolDi
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
     public virtual void ReceiveZonePlayerBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message) {
         foreach (var entity in EntityActors) {
-            if (   message.Sender is not null 
-                && entity.Path.Name == message.Sender.Path.Name 
-                && message.Selfless) {
+            if (   message.Selfless 
+                && message.Sender is not null 
+                && entity.Path.Name == message.Sender.Path.Name) {
                 continue;
             }
 

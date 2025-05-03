@@ -99,7 +99,11 @@ internal class MinigameService(SessionActor sessionActor) : MessageService(sessi
         Logger.Debug("{0} started minigame {1} at index {2}", 
             Logger.Args(wizardName, minigameInfo.m_name, minigameIndex));
 
-        DoZoneTransfer(minigameInfo.m_zone, true, "Start");
+        Teleport(
+            destinationZone: minigameInfo.m_zone, 
+            destinationLocation: "Start",
+            makePrivate: true
+        );
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_MESSAGE_PROCESS))]
@@ -165,7 +169,11 @@ internal class MinigameService(SessionActor sessionActor) : MessageService(sessi
             SendToSocket(leaveMinigameMsg);
 
             var wizard = GetActiveWizard();
-            DoZoneTransfer(wizard.PreviousZone, false, "Start");
+            Teleport(
+                destinationZone: wizard.PreviousZone,
+                destinationLocation: "Start",
+                makePrivate: true
+            );
         }
     }
 
