@@ -854,6 +854,14 @@ public class Wizard : IDisposable {
         return true;
     }
 
+    public void UpdatePotions(Single newPotionCharge, Single newPotionMax) {
+        GameStats.m_potionCharge = newPotionCharge;
+        GameStats.m_potionMax = newPotionMax;
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterGameStats(this);
+    }
+
     internal void AfterDatabaseLoad() {
         AfterDatabaseLoadWizardGameStats();
         AfterDatabaseLoadSpellbookBehavior();

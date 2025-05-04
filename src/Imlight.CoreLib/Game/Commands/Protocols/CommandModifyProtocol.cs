@@ -659,4 +659,24 @@ internal class CommandModifyProtocol : CommandProtocol {
         InformSenderClient($"Set training points to {trainingPointsInt}.");
     }
 
+    [Command("potionmax")]
+    [Alias("pmax")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void SetPotionMax(string potionMax) {
+        if (!int.TryParse(potionMax, out var potionMaxInt)) {
+            InformSenderClient("Invalid potion amount.");
+            return;
+        }
+
+        Context.Character.UpdatePotions(potionMaxInt, potionMaxInt);
+
+        // Inform the player's game client that their potion max has been updated.
+        var networkMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEPOTIONS {
+            PotionMax = potionMaxInt,
+            PotionCharge = potionMaxInt
+        };
+        Context.SessionActor.Tell(networkMessage, null);
+        InformSenderClient($"Set and filled potions to {potionMaxInt}.");
+    }
+
 }
