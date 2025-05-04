@@ -182,10 +182,51 @@ public class Wizard : IDisposable {
         GameStats.m_baseMana += manaDifference;
         GameStats.m_powerPipBase += powerPipDifference;
 
+        var xpAtLevel = MagicLevelsConfig.GetExperiencePointsAtLevel(level);
+        MagicSchoolBehavior.ExperiencePoints = xpAtLevel;
+
         // Persistent save.
         WizardCollection.UpdateCharacterLevel(this);
 
         return true;
+    }
+
+    public void AddExperiencePoints(int xp) {
+        MagicSchoolBehavior.ExperiencePoints += xp;
+
+        // If the level at XP is greater than the current level, we need to level up.
+        var levelAtXp = MagicLevelsConfig.GetPlayerLevelAtExperience(xp);
+        if (levelAtXp > MagicSchoolBehavior.Level) {
+            var levelUpSuccess = SetLevel(levelAtXp);
+            if (!levelUpSuccess) {
+                Logger.Warning("Could not level up player {0} to level {1}.", 
+                    Logger.Args(PlayerNameBehavior.GetWizardName(), levelAtXp));
+
+                return;
+            }
+        }
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterLevel(this);
+    }
+
+    public void RemoveExperiencePoints(int xp) {
+        MagicSchoolBehavior.ExperiencePoints -= xp;
+
+        // If the level at XP is less than the current level, we need to level down.
+        var levelAtXp = MagicLevelsConfig.GetPlayerLevelAtExperience(xp);
+        if (levelAtXp < MagicSchoolBehavior.Level) {
+            var levelDownSuccess = SetLevel(levelAtXp);
+            if (!levelDownSuccess) {
+                Logger.Warning("Could not level down player {0} to level {1}.", 
+                    Logger.Args(PlayerNameBehavior.GetWizardName(), levelAtXp));
+
+                return;
+            }
+        }
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterLevel(this);
     }
 
     public void SetMarkedLocation(Vector3 loc, Vector3 orientation, string zone, string zoneDisplayName) {

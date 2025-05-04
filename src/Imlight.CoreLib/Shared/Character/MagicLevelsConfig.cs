@@ -34,6 +34,7 @@ using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.ObjectProperty;
+using System.Linq;
 
 namespace Imlight.CoreLib.Shared.Character;
 
@@ -115,7 +116,50 @@ internal class MagicLevelsConfig : RootSingleResourceSingleton<MagicLevelsConfig
         return null;
     }
 
-    private void LoadMaxLevel(MagicXPConfig magicXPConfig) {
+    /// <summary>
+    /// Gets the level of a player based on the experience points.
+    /// </summary>
+    /// <param name="xp">The experience points.</param>
+    /// <returns>The level of the player based on the experience points.</returns>
+    internal static byte GetPlayerLevelAtExperience(int xp) {
+        if (s_playerLevelConfig is null || s_playerLevelConfig.Count == 0) {
+            return 0;
+        }
+
+        // All classes need the same amount of XP to level up.
+        // We will use the first class to determine the level.
+        var levelInfo = s_playerLevelConfig.Values.First();
+        for (int i = 0; i < levelInfo.Count; i++) {
+            var level = levelInfo[i];
+            if (xp < level.m_xpToLevel) {
+                return (byte) i;
+            }
+        }
+
+        return 0;
+    }
+
+    /// <summary>
+    /// Gets the experience points required to reach a specific level.
+    /// </summary>
+    /// <param name="level">The level.</param>
+    /// <returns>The experience points required to reach the specified level.</returns>
+    internal static int GetExperiencePointsAtLevel(int level) {
+        if (s_playerLevelConfig is null || s_playerLevelConfig.Count == 0) {
+            return 0;
+        }
+
+        // All classes need the same amount of XP to level up.
+        // We will use the first class to determine the level.
+        var levelInfo = s_playerLevelConfig.Values.First();
+        if (level < levelInfo.Count) {
+            return levelInfo[level].m_xpToLevel;
+        }
+
+        return 0;
+    }
+
+    private static void LoadMaxLevel(MagicXPConfig magicXPConfig) {
         // If the configuration deems the max level to be lower than the one recorded here,
         // we will use the configuration's max level instead.
         MaxLevel = magicXPConfig.m_maxSchoolLevel;
@@ -126,7 +170,7 @@ internal class MagicLevelsConfig : RootSingleResourceSingleton<MagicLevelsConfig
         Logger.Information("Imlight max level set to {0}", Logger.Args(MaxLevel));
     }
 
-    private void LoadMobLevelConfig(MagicXPConfig magicXPConfig) {
+    private static void LoadMobLevelConfig(MagicXPConfig magicXPConfig) {
         s_mobLevelConfig = [];
         var counter = 0;
 
@@ -138,7 +182,7 @@ internal class MagicLevelsConfig : RootSingleResourceSingleton<MagicLevelsConfig
         Logger.Information("Loaded {0} mob level configurations", Logger.Args(counter));
     }
 
-    private void LoadPlayerLevelConfig(MagicXPConfig magicXPConfig) {
+    private static void LoadPlayerLevelConfig(MagicXPConfig magicXPConfig) {
         // There are two lists of data here. One is the `m_levelInfo` which is non-unique and shared
         // between all schools. It details how much mana, power pip chance, and xp is required to level up.
         // However, the `m_classInfo` is the same as `m_levelInfo` but is unique to each school, and details

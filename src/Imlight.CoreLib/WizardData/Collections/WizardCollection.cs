@@ -242,6 +242,7 @@ public static class WizardCollection {
         }
 
         existingCharacter.MagicSchoolBehavior.Level = wizard.MagicSchoolBehavior.Level;
+        existingCharacter.MagicSchoolBehavior.ExperiencePoints = wizard.MagicSchoolBehavior.ExperiencePoints;
         session.SaveChanges();
     }
 
