@@ -28,6 +28,7 @@
 
 using System;
 using Imcodec.IO;
+using Imlight.Common;
 using Imlight.CoreLib.Shared.Cryptography;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Collections;
@@ -59,6 +60,9 @@ internal enum UserAuthenResult {
 /// Performs checks for account existence, bans, and credential verification.
 /// </remarks>
 internal static class UserAuthenticator {
+
+    private static readonly bool s_forceRevisionCheck 
+        = ConfigurationManager.Settings["Global Settings.EnforceRevision"].AsBool();
 
     internal class AuthenticationDetails {
         
