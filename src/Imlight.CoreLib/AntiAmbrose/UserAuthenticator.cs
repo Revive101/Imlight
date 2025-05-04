@@ -61,8 +61,10 @@ internal enum UserAuthenResult {
 /// </remarks>
 internal static class UserAuthenticator {
 
-    private static readonly bool s_forceRevisionCheck 
+    private static readonly bool s_enforceRevision 
         = ConfigurationManager.Settings["Global Settings.EnforceRevision"].AsBool();
+    private static readonly string s_serverRevision 
+        = ConfigurationManager.Settings["Global Settings.GameRevision"].AsString();
 
     internal class AuthenticationDetails {
         
@@ -91,6 +93,19 @@ internal static class UserAuthenticator {
             details._result = UserAuthenResult.AuthenFailed;
 
             return details;
+        }
+
+        // If the revision is enforced, check if the client revision matches the server revision.
+        if (s_enforceRevision) {
+            var clientRevision = authMessage.Revision;
+            if (clientRevision != s_serverRevision) {
+                Logger.Warning("SessionActor {0} was rejected due to revision mismatch. (Given: {1}, Expected: {2})",
+                    Logger.Args(sessionActor.SessionID, clientRevision, s_serverRevision));
+
+                details._result = UserAuthenResult.ErrorNoLock;
+
+                return details;
+            }
         }
 
         // Check if we can find the account.
