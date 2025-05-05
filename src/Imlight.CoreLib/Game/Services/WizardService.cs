@@ -37,6 +37,7 @@ using Imlight.CoreLib.Shared.Character;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Math;
+using Microsoft.Extensions.ObjectPool;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -118,6 +119,32 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
             MaxEnergy = baseStats.m_petEnergy
         };
         SendToSocket(petEnergyMessage);
+    }
+
+    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_GAINXP))]
+    private void ReceiverGainXP(CHARACTER_103_PROTOCOL.MSG_GAINXP message) {
+        var beforeLevel = _activeWizard.MagicSchoolBehavior.Level;
+        var beforeXP = _activeWizard.MagicSchoolBehavior.ExperiencePoints;
+        var xpGained = message.XP;
+        
+        _activeWizard.AddExperiencePoints(xpGained);
+        var afterLevel = _activeWizard.MagicSchoolBehavior.Level;
+
+        if (beforeLevel != afterLevel) {
+            // The player leveled up.
+            var levelUpMsg = new CHARACTER_103_PROTOCOL.MSG_LEVELUP() {
+                NewLevel = (byte) afterLevel
+            };
+            Context.Self.Tell(levelUpMsg);
+        }
+
+        // Inform the client of the XP change.
+        var addXpMsg = new WIZARD_12_PROTOCOL.MSG_UPDATEXP {
+            GlobalID = _activeWizard.CharId,
+            XP = xpGained,
+            OldXP = beforeXP,
+        };
+        SendToSocket(addXpMsg);
     }
 
     #endregion

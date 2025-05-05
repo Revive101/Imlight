@@ -152,8 +152,8 @@ internal class MagicLevelsConfig : RootSingleResourceSingleton<MagicLevelsConfig
         // All classes need the same amount of XP to level up.
         // We will use the first class to determine the level.
         var levelInfo = s_playerLevelConfig.Values.First();
-        if (level < levelInfo.Count) {
-            return levelInfo[level].m_xpToLevel;
+        if (level > 0 && level < levelInfo.Count) {
+            return levelInfo[level - 1].m_xpToLevel;
         }
 
         return 0;

@@ -195,7 +195,7 @@ public class Wizard : IDisposable {
         MagicSchoolBehavior.ExperiencePoints += xp;
 
         // If the level at XP is greater than the current level, we need to level up.
-        var levelAtXp = MagicLevelsConfig.GetPlayerLevelAtExperience(xp);
+        var levelAtXp = MagicLevelsConfig.GetPlayerLevelAtExperience(MagicSchoolBehavior.ExperiencePoints);
         if (levelAtXp > MagicSchoolBehavior.Level) {
             var levelUpSuccess = SetLevel(levelAtXp);
             if (!levelUpSuccess) {
@@ -214,7 +214,7 @@ public class Wizard : IDisposable {
         MagicSchoolBehavior.ExperiencePoints -= xp;
 
         // If the level at XP is less than the current level, we need to level down.
-        var levelAtXp = MagicLevelsConfig.GetPlayerLevelAtExperience(xp);
+        var levelAtXp = MagicLevelsConfig.GetPlayerLevelAtExperience(MagicSchoolBehavior.ExperiencePoints);
         if (levelAtXp < MagicSchoolBehavior.Level) {
             var levelDownSuccess = SetLevel(levelAtXp);
             if (!levelDownSuccess) {
