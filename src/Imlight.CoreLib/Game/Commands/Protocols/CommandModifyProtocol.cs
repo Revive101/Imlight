@@ -659,4 +659,22 @@ internal class CommandModifyProtocol : CommandProtocol {
         InformSenderClient($"Set training points to {trainingPointsInt}.");
     }
 
+    [Command("addxp")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void AddXPCommand(string xp) {
+        // Try to parse the XP.
+        if (!int.TryParse(xp, out var xpInt)) {
+            InformSenderClient("Invalid XP amount.");
+
+            return;
+        }
+
+       var msg = new CHARACTER_103_PROTOCOL.MSG_GAINXP() {
+            XP = xpInt
+        };
+        Context.SessionActor.Tell(msg, null);
+
+        InformSenderClient($"Added {xpInt} XP.");
+    }
+
 }
