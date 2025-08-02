@@ -244,6 +244,9 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
             var spellHits = SpellHits(action.SpellCaster, action.Spell);
             if (!spellHits) {
                 cinematicTime += HandleFizzleAction(action, combatActionList);
+
+                // Increase pips used counter by 1, even if the spell fizzled.
+                action.SpellCaster._usedPipsForExperienceGain++;
             }
             else {
                 cinematicTime += HandleSuccessfulAction(action, combatActionList);
@@ -448,9 +451,16 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
 
         // Reduce pips.
         if (action.m_spell.m_pipCost.m_xPipSpell) {
+            var pipCount = caster.CombatParticipant.m_pipCount;
+            caster._usedPipsForExperienceGain += pipCount.m_genericPips;
+
             caster.DeductAllPips();
         }
         else {
+            // Increase the used pips for experience gain by the rank of the spell.
+            // Even 0-rank spells will give the caster 1 pip for experience gain.
+            caster._usedPipsForExperienceGain += Math.Max((byte) 1, action.m_spell.m_pipCost.m_spellRank);
+
             caster.DeductPips((MagicSchool) action.m_spell.m_magicSchoolID, action.m_spell.m_pipCost.m_spellRank);
         }
     }

@@ -23,7 +23,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 07/26/2025
  */
 
 using System;
@@ -161,6 +161,14 @@ internal class Locale : RootDirectoryResourceSingleton<Locale>, IMemoryStreamDis
             // Remove the '/r' that may exist at the end of the value.
             if (value.EndsWith("\r")) {
                 value = value[..^1];
+            }
+
+            // Log warnings for duplicate keys.
+            if (data.ContainsKey(key)) {
+                Logger.Warning("Duplicate key {0} in {1}.",
+                    Logger.Args(key, record.FileName));
+
+                continue;
             }
 
             data.Add(key, value);

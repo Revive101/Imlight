@@ -107,6 +107,15 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
             "NoAggroGraceOver",
             noAggroGraceOverMsg,
             TimeSpan.FromSeconds(NO_AGGRO_EFFECT_DURATION_IN_SECONDS));
+
+        // Gain 3 XP per pip used in the duel.
+        var usedPips = message.UsedPips;
+        var xpGained = usedPips * 3;
+
+        var msg = new CHARACTER_103_PROTOCOL.MSG_GAINXP {
+            XP = xpGained,
+        };
+        TellOtherServices(msg);
     }
 
     [MessageHandler(typeof(DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATMOVE))]

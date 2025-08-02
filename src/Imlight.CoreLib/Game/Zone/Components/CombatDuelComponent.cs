@@ -976,7 +976,9 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
             circle.ParticipantActor.Tell(combatVictoryMsg);
 
-            var victoryMsg = new COMBAT_106_PROTOCOL.MSG_COMBATWIN();
+            var victoryMsg = new COMBAT_106_PROTOCOL.MSG_COMBATWIN() {
+                UsedPips = circle._usedPipsForExperienceGain
+            };
             circle.ParticipantActor.Tell(victoryMsg);
         });
     }

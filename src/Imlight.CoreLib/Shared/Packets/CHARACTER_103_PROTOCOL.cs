@@ -133,4 +133,13 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
         
     }
 
+    public sealed class MSG_GAINXP : IServerMessage {
+        
+        public byte MessageOrder { get; } = 12;
+        public byte ServiceID { get; } = 103;
+
+        public int XP;
+        
+    }
+
 }

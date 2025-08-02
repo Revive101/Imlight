@@ -156,6 +156,8 @@ public sealed class COMBAT_106_PROTOCOL : IServerProtocol {
         public byte MessageOrder => 16;
         public byte ServiceID => 106;
 
+        public int UsedPips;
+
     }
 
     public sealed class MSG_COMBATEFFECT : IServerMessage {
