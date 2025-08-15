@@ -148,11 +148,6 @@ internal class Locale : RootDirectoryResourceSingleton<Locale>, IMemoryStreamDis
             var key = strings[i];
             var value = strings[i + 2];
 
-            // Throw exception if the key already exists.
-            if (data.ContainsKey(key)) {
-                throw new Exception($"Duplicate key {key} in {record.FileName}");
-            }
-
             // Remove the '/r' that may exist at the end of the key.
             if (key.EndsWith("\r")) {
                 key = key[..^1];
