@@ -1,0 +1,46 @@
+/* Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ */
+
+using Akka.Actor;
+using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty;
+using Imcodec.ObjectProperty.TypeCache;
+using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.Shared.Utilities;
+using System;
+
+namespace Imlight.CoreLib.Game.Services;
+
+internal sealed class TutorialService(SessionActor sessionActor) : MessageService(sessionActor) {
+
+    private const uint TUTORIAL_NAME_STRING_ID = 600062081;
+    private const string TUTORIAL_EXTERIOR_ZONE_NAME = "WizardCity/Tutorial_Exterior";
+
+    internal static Props Props(SessionActor parentActor)
+        => Akka.Actor.Props.Create(() => new TutorialService(parentActor));
+
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ATTACH))]
+    private void ReceivePostAttach(GAME_5_PROTOCOL.MSG_ATTACH msg) {
+        if (msg.ZoneName != TUTORIAL_EXTERIOR_ZONE_NAME) return;
+        var tutorialInfo = new TutorialInfo {
+            m_tutorialNameID = TUTORIAL_NAME_STRING_ID,
+            m_tutorialStage = 0,
+        };
+
+        var ser = new ObjectSerializer(Behaviors: SerializerFlags.None);
+        ser.Serialize(tutorialInfo, PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit, out var tutorialInfoBuffer);
+        // var serializer2 = new BindSerializer();
+        // serializer2.Deserialize(DataManipulation.SpacedHexStringToBytes("BA 41 7D 39 81 38 C4 23 00 00 00 00"), 1, out var output);
+        var tutorialMsg = new GAME_5_PROTOCOL.MSG_TUTORIALS() {
+            GlobalID = 1,
+            Remove = 0,
+            TutorialInfo = tutorialInfoBuffer
+        };
+        SendToSocket(tutorialMsg);
+        SendToSocket(tutorialMsg);
+    }
+
+}
