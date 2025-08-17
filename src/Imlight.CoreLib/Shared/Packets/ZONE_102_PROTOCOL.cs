@@ -21,7 +21,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     public byte ServiceID { get; } = 102;
     public string ProtocolType { get; } = "ZONE";
     public int ProtocolVersion { get; } = 1;
-    public string ProtocolDescription { get; } = "Internal Zone General Messages."; 
+    public string ProtocolDescription { get; } = "Internal Zone General Messages.";
 
     /// <summary>
     /// Sent by the <see cref="Zone"/> to a <see cref="ZoneLoader"/> to begin loading a zone.
@@ -100,7 +100,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte ServiceID { get; } = 102;
 
         public string ZonePath;
-        
+
     }
 
     /// <summary>
@@ -524,7 +524,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public uint ErrorCode;
         public string ErrorMessage;
 
-    } 
+    }
 
     /// <summary>
     /// Sent by a <see cref="MoveService"/> to a <see cref="Zone"/> to indicate the player is moving.
@@ -638,4 +638,11 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public ulong SenderCharID;
     }
 
+    public sealed class MSG_ZONEPATHSPAWN : IServerMessage {
+
+        public byte MessageOrder { get; } = 42;
+        public byte ServiceID { get; } = 102;
+
+        public uint SpawnObjectID;
+    }
 }

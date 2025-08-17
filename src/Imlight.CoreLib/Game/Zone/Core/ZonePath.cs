@@ -81,8 +81,12 @@ public sealed class ZonePath : ZoneEntity, IWithTimers {
         base.Zone = zone;
 
         // Begin the creature spawn interval.
-        foreach (var spawnObject in creatures.Where(x => x.m_active)) {
+        foreach (var spawnObject in creatures) {
             _creatureCount.Add(spawnObject, 0);
+
+            if (!spawnObject.m_active) {
+                continue;
+            }
 
             var msg = new ZONE_102_PROTOCOL.MSG_PATHSPAWNINTERVAL { SpawnObject = spawnObject };
             var interval = TimeSpan.FromSeconds(spawnObject.m_spawnTime);
@@ -125,9 +129,19 @@ public sealed class ZonePath : ZoneEntity, IWithTimers {
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PATHSPAWNINTERVAL))]
-    private void ReceiveCreatureSpawnInterval(ZONE_102_PROTOCOL.MSG_PATHSPAWNINTERVAL message) {
+    private void ReceiveCreatureSpawnInterval(ZONE_102_PROTOCOL.MSG_PATHSPAWNINTERVAL message) 
+        => HandleCreatureSpawn(message.SpawnObject);
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEPATHSPAWN))]
+    private void ReceiveCreatureSpawn(ZONE_102_PROTOCOL.MSG_ZONEPATHSPAWN message) {
+        var spawnObject = _creatures.FirstOrDefault(x => x.m_id == message.SpawnObjectID);
+        if (spawnObject != null) {
+            HandleCreatureSpawn(spawnObject);
+        }
+    }
+
+    private void HandleCreatureSpawn(SpawnObject spawnObject) {
         // Determine if the conditions match to spawn the objects.
-        var spawnObject = message.SpawnObject;
         if (!CanSpawn(spawnObject)) {
             return;
         }
@@ -157,6 +171,12 @@ public sealed class ZonePath : ZoneEntity, IWithTimers {
         var creatureObj = CoreObjectFactory.FinalizeCoreObject(spawnItemInfo, template);
         creatureObj = CoreObjectFactory.InitializeCoreObjectBehaviors(creatureObj, template);
         creatureObj.m_location = spawnNode.m_location;
+        var Z = (float) (spawnNode.m_direction * (Math.PI / 180));
+        creatureObj.m_orientation = new Imcodec.Math.Vector3(
+            creatureObj.m_orientation.X,
+            creatureObj.m_orientation.Y,
+            Z
+        );
 
         // Create the creature actor.
         var creatureActor = CreateEntityActor(creatureObj, template);

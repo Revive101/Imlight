@@ -57,6 +57,7 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
 
     private void UpdateResSpawnResultTriggers(ref List<Trigger> clientTriggers, List<SpawnObject> spawners, List<PathObjectTemplate> paths, List<NodeObject> nodes) {
         foreach (var trigger in clientTriggers) {
+            if (trigger.m_results == null) continue;
             foreach (var result in trigger.m_results.m_results) {
                 if (result is ResSpawn) {
                     var resultResSpawn = (ResSpawn) result;

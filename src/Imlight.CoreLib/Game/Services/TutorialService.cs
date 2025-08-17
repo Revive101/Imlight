@@ -32,8 +32,6 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
 
         var ser = new ObjectSerializer(Behaviors: SerializerFlags.None);
         ser.Serialize(tutorialInfo, PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit, out var tutorialInfoBuffer);
-        // var serializer2 = new BindSerializer();
-        // serializer2.Deserialize(DataManipulation.SpacedHexStringToBytes("BA 41 7D 39 81 38 C4 23 00 00 00 00"), 1, out var output);
         var tutorialMsg = new GAME_5_PROTOCOL.MSG_TUTORIALS() {
             GlobalID = 1,
             Remove = 0,
