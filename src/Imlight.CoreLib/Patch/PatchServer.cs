@@ -28,15 +28,15 @@ public class PatchServer : Server {
     private const string LatestFileListNameXml = "LatestFileList.xml";
 
     // Configuration values.
-    private readonly string _userAgentValue 
+    private readonly string _userAgentValue
         = ConfigurationManager.Settings["Advanced.PatchServerUserAgent"];
-    private readonly ushort _downloadBufferSize 
+    private readonly ushort _downloadBufferSize
         = ConfigurationManager.Settings["Advanced.PatchServerBufferSize"].AsUShort();
-    private readonly string _revision 
+    private readonly string _revision
         = ConfigurationManager.Settings["Global Settings.GameRevision"];
-    private readonly uint _patchServerTimeout 
+    private readonly uint _patchServerTimeout
         = ConfigurationManager.Settings["Patch Server.PatchServerInternalTimeout"].AsUInt();
-    private readonly string _patchServerInternalUrl 
+    private readonly string _patchServerInternalUrl
         = ConfigurationManager.Settings["Patch Server.PatchServerInternalUrl"];
 
     public static IActorRef Instance { get; private set; }
@@ -91,7 +91,7 @@ public class PatchServer : Server {
             Logger.Error("Patch server endpoint is not available! Continuing without patch server.");
 
             Sender.Tell(new SERVER_100_PROTOCOL.MSG_INITIALIZE_COMPLETE());
-            
+
             return;
         }
 
@@ -207,7 +207,9 @@ public class PatchServer : Server {
         // Check to see if the patch server URL is available at all.
         Logger.Information("Checking patch server at URL {Url}. Timeout: {Timeout} s",
             Logger.Args(workingUrl, _patchServerTimeout));
-        if (!GetServerUrlStatus(workingUrl)) {
+
+        var serverStatus = GetServerUrlStatus(workingUrl).Result;
+        if (!serverStatus) {
             Logger.Error("Patch server at URL {Url} is not available", Logger.Args(workingUrl));
 
             return false;
@@ -219,19 +221,17 @@ public class PatchServer : Server {
         return true;
     }
 
-    private bool GetServerUrlStatus(string url) {
+    private async Task<bool> GetServerUrlStatus(string url) {
         using var client = new HttpClient();
         client.DefaultRequestHeaders.UserAgent.ParseAdd(_userAgentValue);
         client.Timeout = TimeSpan.FromSeconds(_patchServerTimeout);
 
         try {
-            using var response = client.SendAsync(new HttpRequestMessage(HttpMethod.Head, url)).Result;
+            using var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Head, url));
 
-            // Any response returned means the server is up.
             return true;
         }
         catch (HttpRequestException ex) when (ex.StatusCode >= HttpStatusCode.InternalServerError) {
-            // Any response other than a 5xx error means the server is up.
             return ex.StatusCode < HttpStatusCode.InternalServerError;
         }
         catch (Exception ex) {
