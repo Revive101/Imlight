@@ -30,7 +30,7 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
             m_tutorialStage = 0,
         };
 
-        var ser = new ObjectSerializer(Behaviors: SerializerFlags.None);
+        var ser = new ObjectSerializer(Behaviors: SerializerFlags.None, Versionable: false);
         ser.Serialize(tutorialInfo, PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit, out var tutorialInfoBuffer);
         var tutorialMsg = new GAME_5_PROTOCOL.MSG_TUTORIALS() {
             GlobalID = 1,
