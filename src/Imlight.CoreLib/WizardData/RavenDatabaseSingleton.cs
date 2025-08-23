@@ -10,6 +10,9 @@ using Raven.Client.Documents;
 using Raven.Client.Documents.Operations;
 using Imlight.Common;
 using Imlight.CoreLib.WizardData.Implementations;
+using Raven.Client.Http;
+using System.Net.Security;
+using Raven.Client.Documents.Linq;
 
 namespace Imlight.CoreLib.WizardData;
 
@@ -55,8 +58,22 @@ public abstract class RavenDatabaseSingleton<T> where T : RavenDatabaseSingleton
                 WaitForNonStaleResultsTimeout = TimeSpan.FromSeconds(WaitForNonStaleResultsTimeoutInSeconds),
             },
             Certificate = Certificate
-        }.Initialize();
+        };
 
+        // Add the certificate validation callback for self-signed certificates.
+        // TODO: In a production environment, ideally you should never accept self-signed certificates.
+        // This is only for development purposes.
+        RequestExecutor.RemoteCertificateValidationCallback += (message, cert, chain, sslPolicyErrors) => {
+            if (sslPolicyErrors == SslPolicyErrors.None) {
+                return true;
+            }
+
+            Logger.Information("Accepting self-signed certificate: {0}", Logger.Args(cert.Subject));
+            
+            return true;
+        };
+
+        store.Initialize();
         Logger.Information("Database initialized.");
 
         return store;
