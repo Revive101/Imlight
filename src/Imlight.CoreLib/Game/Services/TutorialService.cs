@@ -4,6 +4,7 @@
  */
 
 using Akka.Actor;
+using Imcodec.MessageLayer;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
@@ -11,6 +12,7 @@ using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.Shared.Utilities;
 using System;
+using System.Collections.Generic;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -41,4 +43,21 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         SendToSocket(tutorialMsg);
     }
 
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_SERVERTUTORIALCOMMAND))]
+    private void ReceiveServerTutorialCommand(GAME_5_PROTOCOL.MSG_SERVERTUTORIALCOMMAND msg) {
+        List<IMessage> messagesToSend = new List<IMessage>();
+        switch (msg.GoalToComplete) {
+            case "Trigger Storm":
+                messagesToSend.Add(
+                    new GAME_5_PROTOCOL.MSG_PLAYSOUND {
+                        SoundID = 89062101935790
+                    }
+                );
+                break;
+            default:
+                break;
+        }
+
+        messagesToSend.ForEach(SendToSocket);
+    }
 }
