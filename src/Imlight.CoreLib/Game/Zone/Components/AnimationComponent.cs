@@ -25,7 +25,6 @@
  */
 
 using System.Linq;
-using Imcodec.Cryptography;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
@@ -41,14 +40,17 @@ internal sealed class AnimationComponent(ZoneEntity entity) : ZoneEntityComponen
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ENTERSTATE))]
     public void ReceiveEnterState(ZONE_102_PROTOCOL.MSG_ENTERSTATE msg) {
-        var state = msg.StateName;
-        var stateHash = StringHash.Compute(state);
-
         // The behavior template has "m_datalookupassetname = AnimationData/myObj.xml"
         // In theory, we could use this to know what animations are possible for this object
         // to play.
+        if (Entity.Template is not GameObjectTemplate goTemplate) {
+            return;
+        }
 
-        Entity.ChangeState(stateHash, null);
+        if (msg.ObjectName == goTemplate.m_objectName) {
+            // If the name matches, we can be fairly certain this message is for us.
+            Entity.ChangeStateExclusiveSender(msg.StateName, msg.Sender);
+        }
     }
 
 }
