@@ -649,7 +649,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     public sealed class MSG_ENTERSTATE : IServerMessage {
 
         public byte MessageOrder { get; } = 43;
-        public byte ServiceID { get; } = 103;
+        public byte ServiceID { get; } = 102;
 
         public string StateName;
 
