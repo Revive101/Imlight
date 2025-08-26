@@ -652,6 +652,9 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte ServiceID { get; } = 102;
 
         public string StateName;
+        public string ObjectName;
+        public bool ExclusiveToSender = false;
+        public IActorRef Sender;
 
     }
     
