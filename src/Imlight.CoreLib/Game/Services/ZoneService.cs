@@ -349,6 +349,15 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         ZoneActor.Tell(message);
     }
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST))]
+    private void ReceiveZoneSupervisorBroadcast(ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST message) {
+        if (ZoneActor is null) {
+            throw new Exception("Zone Reference was null.");
+        }
+
+        ZoneActor.Tell(message);
+    }
+
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PLAYERMOVE))]
     private void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_PLAYERMOVE message) {
         // This is an exception. Sometimes the MoveService interval happens as we zone transfer.
