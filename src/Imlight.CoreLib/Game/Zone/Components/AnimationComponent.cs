@@ -37,7 +37,7 @@ internal sealed class AnimationComponent(ZoneEntity entity) : ZoneEntityComponen
 
     public static bool ShouldAttachToEntity(CoreTemplate template)
         => template is GameObjectTemplate goTemplate
-        && template.m_behaviors.Any(x => x.GetType() == typeof(AnimationBehaviorTemplate));
+        && template.m_behaviors.Any(x => x is AnimationBehaviorTemplate);
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ENTERSTATE))]
     public void ReceiveEnterState(ZONE_102_PROTOCOL.MSG_ENTERSTATE msg) {
