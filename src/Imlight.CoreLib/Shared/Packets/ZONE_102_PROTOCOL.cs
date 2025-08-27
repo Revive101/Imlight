@@ -657,5 +657,13 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public IActorRef Sender;
 
     }
+
+    public sealed class MSG_REMOVEOBJECT : IServerMessage {
+
+        public byte MessageOrder { get; } = 44;
+        public byte ServiceID { get; } = 102;
+        public string ObjectName;
+
+    }
     
 }

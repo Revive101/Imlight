@@ -60,6 +60,11 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
                     }
                 );
                 break;
+            case "Despawn Ambrose Outside": // not quite sure why it does this, but he probably gets replaced with a walking ambrose
+                ZoneBroadcastNoPlayers(new ZONE_102_PROTOCOL.MSG_REMOVEOBJECT {
+                    ObjectName = "WC-TUT-NPC01"
+                });
+                break;
             case "Trigger Rubble":
                 ZoneBroadcastNoPlayers(new ZONE_102_PROTOCOL.MSG_ENTERSTATE {
                     StateName = "Rubble",
@@ -75,6 +80,8 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
                     ExclusiveToSender = true,
                     Sender = SessionActor.ActorRef
                 });
+                break;
+            case "Walk Ambrose":
                 break;
             default:
                 break;

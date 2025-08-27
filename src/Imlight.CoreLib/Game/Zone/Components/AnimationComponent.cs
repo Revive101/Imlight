@@ -24,6 +24,7 @@
  * Last Updated: 8/25/2025
  */
 
+using System;
 using System.Linq;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.Zone.Core;
@@ -38,6 +39,10 @@ internal sealed class AnimationComponent(ZoneEntity entity) : ZoneEntityComponen
         => template is GameObjectTemplate goTemplate
         && template.m_behaviors.Any(x => x is AnimationBehaviorTemplate);
 
+    public override void OnAwake() {
+
+    }
+
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ENTERSTATE))]
     public void ReceiveEnterState(ZONE_102_PROTOCOL.MSG_ENTERSTATE msg) {
         // The behavior template has "m_datalookupassetname = AnimationData/myObj.xml"
@@ -50,6 +55,17 @@ internal sealed class AnimationComponent(ZoneEntity entity) : ZoneEntityComponen
         if (msg.ObjectName == goTemplate.m_objectName) {
             // If the name matches, we can be fairly certain this message is for us.
             Entity.ChangeStateExclusiveSender(msg.StateName, msg.Sender);
+        }
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVEOBJECT))]
+    public void ReceiveRemoveObject(ZONE_102_PROTOCOL.MSG_REMOVEOBJECT msg) {
+        if (Entity.Template is not GameObjectTemplate goTemplate) {
+            return;
+        }
+
+        if (msg.ObjectName == goTemplate.m_objectName) {
+            Entity.DespawnObject();
         }
     }
 
