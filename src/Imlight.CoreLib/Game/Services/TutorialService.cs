@@ -46,7 +46,6 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_SERVERTUTORIALCOMMAND))]
     private void ReceiveServerTutorialCommand(GAME_5_PROTOCOL.MSG_SERVERTUTORIALCOMMAND msg) {
-        List<IMessage> messagesToSend = new List<IMessage>();
         switch (msg.GoalToComplete) {
             case "Trigger Storm":
                 ZoneBroadcastNoPlayers(new ZONE_102_PROTOCOL.MSG_ENTERSTATE {
@@ -55,17 +54,22 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
                     ExclusiveToSender = true,
                     Sender = SessionActor.ActorRef
                 });
-
-                messagesToSend.Add(
+                SendToSocket(
                     new GAME_5_PROTOCOL.MSG_PLAYSOUND {
                         SoundID = 89062101935790
                     }
                 );
                 break;
+            case "Trigger Rubble":
+                ZoneBroadcastNoPlayers(new ZONE_102_PROTOCOL.MSG_ENTERSTATE {
+                    StateName = "Rubble",
+                    ObjectName = "WC-Rubble",
+                    ExclusiveToSender = true,
+                    Sender = SessionActor.ActorRef
+                });
+                break;
             default:
                 break;
         }
-
-        messagesToSend.ForEach(SendToSocket);
     }
 }
