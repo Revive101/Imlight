@@ -68,6 +68,14 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
                     Sender = SessionActor.ActorRef
                 });
                 break;
+            case "Trigger Silhouette":
+                ZoneBroadcastNoPlayers(new ZONE_102_PROTOCOL.MSG_ENTERSTATE {
+                    StateName = "walk", // why are you lower case? why cant you just be consistent kingsisle?
+                    ObjectName = "MalSilhouetteObj",
+                    ExclusiveToSender = true,
+                    Sender = SessionActor.ActorRef
+                });
+                break;
             default:
                 break;
         }
