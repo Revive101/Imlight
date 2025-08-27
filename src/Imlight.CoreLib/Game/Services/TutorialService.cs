@@ -82,6 +82,10 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
                 });
                 break;
             case "Walk Ambrose":
+                ZoneBroadcastNoPlayers(new ZONE_102_PROTOCOL.MSG_POSTEVENT {
+                    EventName = "WalkAmbrose",
+                    PlayerActor = SessionActor.ActorRef
+                });
                 break;
             default:
                 break;
