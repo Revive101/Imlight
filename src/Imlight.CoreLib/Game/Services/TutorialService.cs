@@ -21,6 +21,7 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
 
     private const uint TUTORIAL_NAME_STRING_ID = 600062081;
     private const string TUTORIAL_EXTERIOR_ZONE_NAME = "WizardCity/Tutorial_Exterior";
+    public ITimerScheduler Timers { get; set; }
 
     internal static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new TutorialService(parentActor));
@@ -86,6 +87,12 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
                     EventName = "WalkAmbrose",
                     PlayerActor = SessionActor.ActorRef
                 });
+                Timers.StartSingleTimer("DespawnA",
+                new ZONE_102_PROTOCOL.MSG_POSTEVENT {
+                    EventName = "DespawnA",
+                    PlayerActor = SessionActor.ActorRef
+                },
+                TimeSpan.FromSeconds(5));
                 break;
             default:
                 break;
