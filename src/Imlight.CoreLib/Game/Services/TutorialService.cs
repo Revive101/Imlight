@@ -21,6 +21,7 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
 
     private const uint TUTORIAL_NAME_STRING_ID = 600062081;
     private const string TUTORIAL_EXTERIOR_ZONE_NAME = "WizardCity/Tutorial_Exterior";
+
     public ITimerScheduler Timers { get; set; }
 
     internal static Props Props(SessionActor parentActor)
@@ -28,7 +29,10 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ATTACH))]
     private void ReceivePostAttach(GAME_5_PROTOCOL.MSG_ATTACH msg) {
-        if (msg.ZoneName != TUTORIAL_EXTERIOR_ZONE_NAME) return;
+        if (msg.ZoneName != TUTORIAL_EXTERIOR_ZONE_NAME) {
+            return;
+        }
+
         var tutorialInfo = new TutorialInfo {
             m_tutorialNameID = TUTORIAL_NAME_STRING_ID,
             m_tutorialStage = 0,
