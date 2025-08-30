@@ -73,6 +73,7 @@ public class Wizard : IDisposable {
     [JsonIgnore] public ServerObjectStateBehavior ObjectStateBehavior { get; set; }
     public ServerWizGameStats GameStats { get; set; }
     public ServerPetOwnerBehavior PetOwnerBehavior { get; set; }
+    public ServerQuestBehavior QuestBehavior { get; set; }
 
     [JsonIgnore] public Account Account;
     [JsonIgnore] public WizClientObject GameObject;
@@ -130,6 +131,7 @@ public class Wizard : IDisposable {
         InitializeAlchemyBehavior();
 
         ObjectStateBehavior = new ServerObjectStateBehavior("PlayerMobileStates");
+        QuestBehavior = new ServerQuestBehavior();
 
         DynamodSet = new DynamodSet(CharId);
         DynamodCollection.AddDynamodSet(DynamodSet);
@@ -895,6 +897,42 @@ public class Wizard : IDisposable {
         return true;
     }
 
+    public bool HasCompletedQuest(string questName) 
+        => QuestBehavior.HasCompletedQuest(questName);
+
+    public bool HasCompletedQuestGoal(string questName, string goalName) 
+        => QuestBehavior.HasCompletedQuestGoal(questName, goalName);
+
+    public bool MarkQuestCompleted(string questName) {
+        var questStatus = QuestBehavior.MarkQuestCompleted(questName);
+        if (!questStatus) {
+            Logger.Warning("Could not mark quest {0} as completed for player {1}.",
+                Logger.Args(questName, PlayerNameBehavior.GetWizardName()));
+
+            return false;
+        }
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterQuestBehavior(this);
+
+        return questStatus;
+    }
+
+    public bool MarkQuestGoalCompleted(string questName, string goalName) {
+        var questStatus = QuestBehavior.MarkQuestGoalCompleted(questName, goalName);
+        if (!questStatus) {
+            Logger.Warning("Could not mark quest goal {0} of quest {1} as completed for player {2}.",
+                Logger.Args(goalName, questName, PlayerNameBehavior.GetWizardName()));
+
+            return false;
+        }
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterQuestBehavior(this);
+
+        return questStatus;
+    }
+
     internal void AfterDatabaseLoad() {
         AfterDatabaseLoadWizardGameStats();
         AfterDatabaseLoadSpellbookBehavior();
@@ -904,6 +942,7 @@ public class Wizard : IDisposable {
 
         ObjectStateBehavior ??= new ServerObjectStateBehavior("PlayerMobileStates");
         FriendsBehavior ??= new ServerFriendBehavior();
+        QuestBehavior ??= new ServerQuestBehavior();
     }
 
     private void EquipMount(WizItemTemplate template, WizClientObjectItem item) {
