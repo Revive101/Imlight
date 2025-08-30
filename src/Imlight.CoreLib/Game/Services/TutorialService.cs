@@ -17,7 +17,7 @@ using System.Collections.Generic;
 
 namespace Imlight.CoreLib.Game.Services;
 
-internal sealed class TutorialService(SessionActor sessionActor) : MessageService(sessionActor) {
+internal sealed class TutorialService(SessionActor sessionActor) : MessageService(sessionActor), IWithTimers {
 
     private const uint TUTORIAL_NAME_STRING_ID = 600062081;
     private const string TUTORIAL_EXTERIOR_ZONE_NAME = "WizardCity/Tutorial_Exterior";
