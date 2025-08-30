@@ -50,6 +50,8 @@ namespace Imlight.CoreLib.Game.Zone.Core;
 public sealed class ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger) 
     : ZoneEntity(null, null, zoneRef, zone) {
 
+    private const uint RESULT_HANDLER_TIMEOUT_IN_MS = 5000;
+
     public Trigger TriggerData { get; init; } = trigger;
     private readonly Dictionary<IActorRef, DateTime> _cooldowns = [];
     private readonly List<IActorRef> _triggerActors = [];
@@ -71,7 +73,10 @@ public sealed class ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger)
             // Fire off all results that happen on this event.
             // We do that by simply dispatching the event to all components attached to this trigger.
             foreach (var triggerActor in _triggerActors) {
-                triggerActor.Tell(message);
+                triggerActor.Ask<ZONE_102_PROTOCOL.MSG_RESULTEXECUTED>(
+                    message,
+                    timeout: TimeSpan.FromMilliseconds(RESULT_HANDLER_TIMEOUT_IN_MS)
+                );
             }
         }
     }
