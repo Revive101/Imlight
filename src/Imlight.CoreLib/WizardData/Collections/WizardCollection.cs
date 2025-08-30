@@ -445,6 +445,31 @@ public static class WizardCollection {
         session.SaveChanges();
     }
 
+    /// <summary>
+    /// Update the quest behavior for a given wizard in the database.
+    /// </summary>
+    /// <param name="wizard">The wizard whose quest behavior needs to be updated.</param>
+    /// <returns>True if the update was successful; otherwise, false.</returns>
+    public static bool UpdateCharacterQuestBehavior(Wizard wizard) {
+        if (wizard is null || wizard.QuestBehavior is null) {
+            return false;
+        }
+
+        using var session = s_store.OpenSession();
+        var dbWizard = session.Query<Wizard>(CollectionName)
+                              .FirstOrDefault(w => w.CharId == wizard.CharId);
+
+        if (dbWizard is null) {
+            return false;
+        }
+
+        dbWizard.QuestBehavior = wizard.QuestBehavior;
+        session.Store(dbWizard);
+        session.SaveChanges();
+
+        return true;
+    }
+
     private static Wizard LoadWizard(Wizard wizard) {
         using var session = s_store.OpenSession();
 
