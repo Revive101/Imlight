@@ -456,7 +456,7 @@ public static class WizardCollection {
         }
 
         using var session = s_store.OpenSession();
-        var dbWizard = session.Query<Wizard>(CollectionName)
+        var dbWizard = session.Query<Wizard>(collectionName: CollectionName)
                               .FirstOrDefault(w => w.CharId == wizard.CharId);
 
         if (dbWizard is null) {
