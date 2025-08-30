@@ -13,7 +13,7 @@ namespace Imlight.CoreLib.Game.Zone.Triggers;
 internal sealed class AddDynamodHandler<T>(ZoneTrigger trigger) : BaseResultHandler<ResAddDynaMod>(trigger)
     where T : Result {
 
-    public override void Execute(IActorRef playerRef, CoreObject playerObj) {
+    public override bool Execute(IActorRef playerRef, CoreObject playerObj) {
         var msg = new CHARACTER_103_PROTOCOL.MSG_ADDDYNAMOD {
             DynaMod = Result,
             ContextActor = playerRef
@@ -24,6 +24,8 @@ internal sealed class AddDynamodHandler<T>(ZoneTrigger trigger) : BaseResultHand
 
         // Inform the player of this state change. This will remove the modification persistently.
         playerRef.Tell(msg);
+
+        return true;
     }
 
 }
@@ -31,7 +33,7 @@ internal sealed class AddDynamodHandler<T>(ZoneTrigger trigger) : BaseResultHand
 internal sealed class RemoveDynamodHandler<T>(ZoneTrigger trigger) : BaseResultHandler<ResRemoveDynaMod>(trigger)
     where T : Result {
 
-    public override void Execute(IActorRef playerRef, CoreObject playerObj) {
+    public override bool Execute(IActorRef playerRef, CoreObject playerObj) {
         var msg = new CHARACTER_103_PROTOCOL.MSG_REMOVEDYNAMOD {
             DynaMod = Result,
             ContextActor = playerRef
@@ -42,6 +44,8 @@ internal sealed class RemoveDynamodHandler<T>(ZoneTrigger trigger) : BaseResultH
 
         // Inform the player of this state change. This will remove the modification persistently.
         playerRef.Tell(msg);
+        
+        return true;
     }
 
 }

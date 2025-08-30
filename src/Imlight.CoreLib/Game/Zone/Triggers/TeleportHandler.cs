@@ -14,11 +14,11 @@ namespace Imlight.CoreLib.Game.Zone.Triggers;
 internal sealed class TeleportHandler<T>(ZoneTrigger trigger) : BaseResultHandler<ResTeleport>(trigger)
     where T : Result {
 
-    public override void Execute(IActorRef playerRef, CoreObject playerObj) {
+    public override bool Execute(IActorRef playerRef, CoreObject playerObj) {
         if (playerObj is null) {
             //throw new InvalidOperationException("Player object is null.");
 
-            return;
+            return false;
         }
 
         var msg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
@@ -29,6 +29,8 @@ internal sealed class TeleportHandler<T>(ZoneTrigger trigger) : BaseResultHandle
         };
 
         playerRef.Tell(msg);
+
+        return true;
     }
 
 }

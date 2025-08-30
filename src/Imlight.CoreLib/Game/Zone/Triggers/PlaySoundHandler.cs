@@ -29,13 +29,15 @@ internal sealed class PlaySoundHandler<T> : BaseResultHandler<ResPlaySound> wher
         }
     }
 
-    public override void Execute(IActorRef playerRef, CoreObject playerObj) {
+    public override bool Execute(IActorRef playerRef, CoreObject playerObj) {
         if (_templateId == 0) {
-            return;
+            return false;
         }
 
         var msg = new GAME_5_PROTOCOL.MSG_PLAYSOUND { SoundID = new GID(_templateId) };
         playerRef.Tell(msg);
+
+        return true;
     }
 
 }

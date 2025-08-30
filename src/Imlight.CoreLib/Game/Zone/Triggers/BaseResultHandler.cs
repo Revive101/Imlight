@@ -22,7 +22,7 @@ public interface IResultHandler {
     /// </summary>
     /// <param name="playerRef">The reference to the player that triggered the event.</param>
     /// <param name="zoneRef">The reference to the zone that the trigger is a part of.</param>
-    void Execute(IActorRef playerRef, CoreObject playerObj);
+    bool Execute(IActorRef playerRef, CoreObject playerObj);
 
 }
 
@@ -45,10 +45,15 @@ public abstract class BaseResultHandler<T>(ZoneTrigger trigger)
         => trigger.TriggerData?.m_results?.m_results?
             .Any(x => x is not null && x.GetType() == typeof(T)) ?? false;
 
-    public abstract void Execute(IActorRef playerRef, CoreObject playerObj);
+    public abstract bool Execute(IActorRef playerRef, CoreObject playerObj);
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_POSTEVENT))]
-    public void HandlePostEvent(ZONE_102_PROTOCOL.MSG_POSTEVENT message)
-        => Execute(message.PlayerActor, message.PlayerGameObject);
+    public virtual void HandlePostEvent(ZONE_102_PROTOCOL.MSG_POSTEVENT message) {
+        var executeSuccess = Execute(message.PlayerActor, message.PlayerGameObject);
+        var rsp = new ZONE_102_PROTOCOL.MSG_RESULTEXECUTED {
+            Success = executeSuccess
+        };
+        Sender.Tell(rsp);   
+    }
 
 }

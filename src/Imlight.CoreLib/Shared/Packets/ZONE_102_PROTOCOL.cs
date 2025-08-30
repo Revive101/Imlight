@@ -665,5 +665,14 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public string ObjectName;
 
     }
+
+    public sealed class MSG_RESULTEXECUTED : IServerMessage {
+
+        public byte MessageOrder { get; } = 45;
+        public byte ServiceID { get; } = 102;
+
+        public bool Success;
+
+    }
     
 }

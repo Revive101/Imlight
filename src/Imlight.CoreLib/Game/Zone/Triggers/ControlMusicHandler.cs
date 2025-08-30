@@ -35,13 +35,15 @@ internal sealed class ControlMusicHandler<T> : BaseResultHandler<ResControlBackg
         this._actionHash = StringHash.Compute(resControlBackgroundMusic.m_action);
     }
 
-    public override void Execute(IActorRef playerRef, CoreObject playerObj) {
+    public override bool Execute(IActorRef playerRef, CoreObject playerObj) {
         var msg = new WIZARD_12_PROTOCOL.MSG_CONTROLMUSIC {
             FadeTime = 2.0f, // todo: is this always 2.0?
             Action = (int) _actionHash,
         };
 
         playerRef.Tell(msg);
+
+        return true;
     }
 
 }

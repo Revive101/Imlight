@@ -11,7 +11,7 @@ namespace Imlight.CoreLib.Game.Zone.Triggers;
 
 internal sealed class ResSpawnHandler<T>(ZoneTrigger trigger) : BaseResultHandler<ResSpawn>(trigger) where T : Result {
     
-    public override void Execute(IActorRef playerRef, CoreObject playerObj) {
+    public override bool Execute(IActorRef playerRef, CoreObject playerObj) {
         var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST {
             Messages = [new ZONE_102_PROTOCOL.MSG_ZONEPATHSPAWN {
                 SpawnObjectID = (uint) Result.m_spawnID
@@ -19,6 +19,8 @@ internal sealed class ResSpawnHandler<T>(ZoneTrigger trigger) : BaseResultHandle
         };
 
         base.ZoneActor.Tell(broadcastMsg);
+        
+        return true;
     }
 
 }
