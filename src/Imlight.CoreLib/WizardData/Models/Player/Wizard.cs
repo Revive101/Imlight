@@ -897,7 +897,52 @@ public class Wizard : IDisposable {
         return true;
     }
 
-    public bool HasCompletedQuest(string questName) 
+    public bool AddQuest(string questName) {
+        var addSuccess = QuestBehavior.AddQuest(questName);
+        if (!addSuccess) {
+            Logger.Warning("Could not add quest {0} for player {1}.",
+                Logger.Args(questName, PlayerNameBehavior.GetWizardName()));
+
+            return false;
+        }
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterQuestBehavior(this);
+
+        return true;
+    }
+
+    public bool AddQuestGoal(string questName, string goalName) {
+        var addSuccess = QuestBehavior.AddQuestGoal(questName, goalName);
+        if (!addSuccess) {
+            Logger.Warning("Could not add quest goal {0} for quest {1} for player {2}.",
+                Logger.Args(goalName, questName, PlayerNameBehavior.GetWizardName()));
+
+            return false;
+        }
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterQuestBehavior(this);
+
+        return true;
+    }
+
+    public bool RemoveQuest(string questName) {
+        var removeSuccess = QuestBehavior.RemoveQuest(questName);
+        if (!removeSuccess) {
+            Logger.Warning("Could not remove quest {0} for player {1}.",
+                Logger.Args(questName, PlayerNameBehavior.GetWizardName()));
+
+            return false;
+        }
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterQuestBehavior(this);
+
+        return true;
+    }
+
+    public bool HasCompletedQuest(string questName)
         => QuestBehavior.HasCompletedQuest(questName);
 
     public bool HasCompletedQuestGoal(string questName, string goalName) 
