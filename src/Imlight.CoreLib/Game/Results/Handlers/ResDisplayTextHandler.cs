@@ -6,20 +6,18 @@
 using Akka.Actor;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
-using Imlight.CoreLib.Game.Zone.Core;
 
-namespace Imlight.CoreLib.Game.Zone.Triggers;
+namespace Imlight.CoreLib.Game.Results.Handlers;
 
-internal sealed class DisplayTextHandler<T>(ZoneTrigger trigger) : BaseResultHandler<ResDisplayText>(trigger) 
-    where T : Result {
+internal sealed class ResDisplayTextHandler : BaseResultHandler<ResDisplayText> {
 
-    public override bool Execute(IActorRef playerRef, CoreObject playerObj)  {
+    public override bool Execute(IResultContext context) {
         var msg = new GAME_5_PROTOCOL.MSG_CLIENTNOTIFYTEXT {
             NotifyText = Result.m_text,
             Type = Result.m_type
         };
 
-        playerRef.Tell(msg);
+        context.GetPlayerRef().Tell(msg);
         
         return true;
     }
