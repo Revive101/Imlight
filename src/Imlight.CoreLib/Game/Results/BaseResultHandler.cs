@@ -51,8 +51,11 @@ public abstract class BaseResultHandler<T> : ReceiveProtocolDispatcher, IResultH
         .FirstOrDefault(x => x is not null && x.GetType() == typeof(T)) as T;
 
     public static bool ShouldAttachToContext(IResultContext context)
-        => context.GetResults()?
-            .Any(x => x is not null && x.GetType() == typeof(T)) ?? false;
+        => context
+            .GetResults()?
+            .Any(x =>
+                 x is not null &&
+                 x.GetType() == typeof(T)) ?? false;
 
     public abstract bool Execute(IResultContext context);
 

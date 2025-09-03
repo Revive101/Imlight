@@ -49,33 +49,32 @@ public static class ResultDispatcher {
                                      string triggerName = null) {
         var context = new GenericResultContext(results, playerRef, playerObj, replyTo, zoneActor, questName, goalName, triggerName);
         var executor = CreateExecutorInstance(actorContext, context);
-        
+
         executor.Tell(new CHARACTER_103_PROTOCOL.MSG_EXECUTERESULTS());
     }
 
     /// <summary>
     /// Finds the appropriate handler type for a given result type (exposed for ResultExecutorActor)
     /// </summary>
-    internal static Type FindHandlerForResult(Type resultType)
-        => s_resultHandlers.Keys.FirstOrDefault(handlerType => {
-            if (handlerType.IsGenericTypeDefinition) {
-                var genericParam = handlerType.GetGenericArguments()[0];
-                var constraints = genericParam.GetGenericParameterConstraints();
+    internal static Type FindHandlerForResult(Type resultType, IResultContext context) {
+        foreach (var kv in s_resultHandlers) {
+            var handlerType = kv.Key;
+            var shouldAttachMethod = kv.Value;
 
-                return constraints.All(c => c.IsAssignableFrom(resultType));
-            }
-            else {
-                var baseType = handlerType.BaseType;
-                if (baseType?.IsGenericType == true &&
-                    baseType.GetGenericTypeDefinition() == typeof(BaseResultHandler<>)) {
-                    var handlerResultType = baseType.GetGenericArguments()[0];
-
-                    return handlerResultType == resultType;
+            // Call the static ShouldAttachToContext(context)
+            var shouldAttach = (bool) shouldAttachMethod.Invoke(null, [context]);
+            if (shouldAttach) {
+                // If it's an open generic, close it on the actual resultType
+                if (handlerType.IsGenericTypeDefinition) {
+                    return handlerType.MakeGenericType(resultType);
                 }
-            }
 
-            return false;
-        });
+                return handlerType;
+            }
+        }
+
+        return null;
+    }
 
     private static IActorRef CreateExecutorInstance(IActorContext actorContext, IResultContext resultContext)
         => actorContext.ActorOf(

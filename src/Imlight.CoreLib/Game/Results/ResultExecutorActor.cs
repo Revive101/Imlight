@@ -48,7 +48,7 @@ public class ResultExecutorActor(IResultContext context) : ReceiveProtocolDispat
         // Create handler actors for each result and execute them.
         foreach (var result in resultsList) {
             var resultType = result.GetType();
-            var handlerType = ResultDispatcher.FindHandlerForResult(resultType);
+            var handlerType = ResultDispatcher.FindHandlerForResult(resultType, _context);
 
             if (handlerType is null) {
                 Logger.Warning("No handler registered for result type: {0}",
