@@ -32,4 +32,16 @@ public static class QuestCollection {
                       .FirstOrDefault(q => q.m_questName.Equals(questName, StringComparison.OrdinalIgnoreCase));
     }
 
+    /// <summary>
+    /// Check if a quest exists by its name.
+    /// </summary>
+    /// <param name="questName">The name of the quest to check.</param>
+    /// <returns>True if the quest exists; otherwise, false.</returns>
+    public static bool DoesQuestExist(string questName) {
+        using var session = s_store.OpenSession();
+
+        return session.Query<QuestTemplate>(CollectionName)
+                      .Any(q => q.m_questName.Equals(questName, StringComparison.OrdinalIgnoreCase));
+    }
+
 }

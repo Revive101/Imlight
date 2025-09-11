@@ -949,7 +949,7 @@ public class Wizard : IDisposable {
         => QuestBehavior.HasCompletedQuestGoal(questName, goalName);
 
     public bool MarkQuestCompleted(string questName) {
-        var questStatus = QuestBehavior.MarkQuestCompleted(questName);
+        var questStatus = QuestBehavior.CompleteQuest(questName);
         if (!questStatus) {
             Logger.Warning("Could not mark quest {0} as completed for player {1}.",
                 Logger.Args(questName, PlayerNameBehavior.GetWizardName()));
@@ -964,7 +964,7 @@ public class Wizard : IDisposable {
     }
 
     public bool MarkQuestGoalCompleted(string questName, string goalName) {
-        var questStatus = QuestBehavior.MarkQuestGoalCompleted(questName, goalName);
+        var questStatus = QuestBehavior.CompleteQuestGoal(questName, goalName);
         if (!questStatus) {
             Logger.Warning("Could not mark quest goal {0} of quest {1} as completed for player {2}.",
                 Logger.Args(goalName, questName, PlayerNameBehavior.GetWizardName()));
@@ -984,6 +984,7 @@ public class Wizard : IDisposable {
         AfterDatabaseloadMountOwnerBehavior();
         AfterDatabaseLoadPetOwnerBehavior();
         AfterDatabaseLoadAlchemyBehavior();
+        AfterDatabaseLoadQuestBehavior();
 
         ObjectStateBehavior ??= new ServerObjectStateBehavior("PlayerMobileStates");
         FriendsBehavior ??= new ServerFriendBehavior();
@@ -1258,6 +1259,10 @@ public class Wizard : IDisposable {
         CraftingSlots = [],
         ReagentItemIds = []
     };
+
+    private void AfterDatabaseLoadQuestBehavior() {
+        QuestBehavior ??= new ServerQuestBehavior();
+    }
 
     public void Dispose() =>
         // If this object is being disposed, the player probably left the server.

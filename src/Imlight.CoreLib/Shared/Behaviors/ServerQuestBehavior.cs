@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using Imcodec.ObjectProperty.TypeCache;
 using Newtonsoft.Json;
 
 namespace Imlight.CoreLib.Shared.Behaviors;
@@ -14,19 +15,38 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
 
     [JsonIgnore] public bool NoTransfer { get; set; } = true;
 
-    public readonly List<string> Entries = [];
+    public readonly List<string> CurrentQuests = [];
+    public readonly List<string> CurrentGoals = [];
+    public readonly List<string> CompletedQuests = [];
+    public readonly List<string> CompletedGoals = [];
+
+    [JsonIgnore] public List<QuestTemplate> Quests { get; set; } = [];
 
     public bool AddQuest(string questName) {
         if (string.IsNullOrWhiteSpace(questName)) {
             return false;
         }
 
-        var completedSyntax = $"{questName}:Completed";
-        if (Entries.Contains(questName) || Entries.Contains(completedSyntax)) {
+        if (CurrentQuests.Contains(questName) || CompletedQuests.Contains(questName)) {
             return false;
         }
 
-        Entries.Add(questName);
+        CurrentQuests.Add(questName);
+
+        return true;
+    }
+
+    public bool CompleteQuest(string questName) {
+        if (string.IsNullOrWhiteSpace(questName)) {
+            return false;
+        }
+
+        if (!CurrentQuests.Contains(questName) || CompletedQuests.Contains(questName)) {
+            return false;
+        }
+
+        CurrentQuests.Remove(questName);
+        CompletedQuests.Add(questName);
 
         return true;
     }
@@ -36,14 +56,11 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
             return false;
         }
 
-        var completedSyntax = $"{questName}:Completed";
-
-        if (!Entries.Contains(questName) || !Entries.Contains(completedSyntax)) {
+        if (!CurrentQuests.Contains(questName)) {
             return false;
         }
 
-        _ = Entries.Remove(questName);
-        _ = Entries.Remove(completedSyntax);
+        CurrentQuests.Remove(questName);
 
         return true;
     }
@@ -53,47 +70,29 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
             return false;
         }
 
-        var keyName = $"{questName}:{goalName}";
-        var keyNameCompleted = $"{keyName}:Completed";
-
-        if (Entries.Contains(keyName) || Entries.Contains(keyNameCompleted)) {
+        if (!CurrentQuests.Contains(questName) || CurrentGoals.Contains(goalName) || CompletedGoals.Contains(goalName)) {
             return false;
         }
 
-        Entries.Add(keyName);
+        var formattedGoalName = $"{questName}_{goalName}";
+        CurrentGoals.Add(formattedGoalName);
 
         return true;
     }
 
-    public bool MarkQuestCompleted(string questName) {
-        if (string.IsNullOrWhiteSpace(questName)) {
-            return false;
-        }
-
-        var completedSyntax = $"{questName}:Completed";
-
-        if (Entries.Contains(completedSyntax)) {
-            return false;
-        }
-
-        Entries.Add(questName);
-        Entries.Add(completedSyntax);
-
-        return true;
-    }
-
-    public bool MarkQuestGoalCompleted(string questName, string goalName) {
+    public bool CompleteQuestGoal(string questName, string goalName) {
         if (string.IsNullOrWhiteSpace(questName) || string.IsNullOrWhiteSpace(goalName)) {
             return false;
         }
 
-        var keyName = $"{questName}:{goalName}:Completed";
-
-        if (Entries.Contains(keyName)) {
+        if (!CurrentQuests.Contains(questName) || !CurrentGoals.Contains(goalName) || CompletedGoals.Contains(goalName)) {
             return false;
         }
 
-        Entries.Add(keyName);
+        var formattedGoalName = $"{questName}_{goalName}";
+
+        CurrentGoals.Remove(formattedGoalName);
+        CompletedGoals.Add(formattedGoalName);
 
         return true;
     }
@@ -103,9 +102,7 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
             return false;
         }
 
-        var completedSyntax = $"{questName}:Completed";
-
-        return Entries.Contains(completedSyntax);
+        return CompletedQuests.Contains(questName);
     }
 
     public bool HasCompletedQuestGoal(string questName, string goalName) {
@@ -113,9 +110,8 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
             return false;
         }
 
-        var keyName = $"{questName}:{goalName}:Completed";
-
-        return Entries.Contains(keyName);
+        var formattedGoalName = $"{questName}_{goalName}";
+        return CompletedGoals.Contains(formattedGoalName);
     }
 
     public ServerQuestBehavior GetClientBehaviorInstance()
