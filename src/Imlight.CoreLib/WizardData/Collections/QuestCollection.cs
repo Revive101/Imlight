@@ -8,6 +8,7 @@ using Raven.Client.Documents;
 using Imlight.CoreLib.WizardData.Databases;
 using Imcodec.ObjectProperty.TypeCache;
 using System;
+using System.Collections.Generic;
 
 namespace Imlight.CoreLib.WizardData.Collections;
 
@@ -16,8 +17,24 @@ public static class QuestCollection {
     public const string CollectionName = "QuestTemplates";
     private static readonly IDocumentStore s_store;
 
+    private static readonly List<QuestTemplate> s_cachedQuests = [];
+
     static QuestCollection() {
         s_store = PlayerDatabase.Instance.Store;
+    }
+
+    /// <summary>
+    /// Get all quests from the database.
+    /// </summary>
+    /// <returns>A list of all quest templates.</returns>
+    public static List<QuestTemplate> GetAllQuests() {
+        using var session = s_store.OpenSession();
+
+        if (s_cachedQuests.Count == 0) {
+            s_cachedQuests.AddRange([.. session.Query<QuestTemplate>(collectionName: CollectionName)]);
+        }
+
+        return s_cachedQuests;
     }
 
     /// <summary>
@@ -28,7 +45,13 @@ public static class QuestCollection {
     public static QuestTemplate GetQuestByName(string questName) {
         using var session = s_store.OpenSession();
 
-        return session.Query<QuestTemplate>(CollectionName)
+        // Check the cache first!
+        var cachedQuest = s_cachedQuests.FirstOrDefault(q => q.m_questName.Equals(questName, StringComparison.OrdinalIgnoreCase));
+        if (cachedQuest != null) {
+            return cachedQuest;
+        }
+
+        return session.Query<QuestTemplate>(collectionName: CollectionName)
                       .FirstOrDefault(q => q.m_questName.Equals(questName, StringComparison.OrdinalIgnoreCase));
     }
 
@@ -40,7 +63,12 @@ public static class QuestCollection {
     public static bool DoesQuestExist(string questName) {
         using var session = s_store.OpenSession();
 
-        return session.Query<QuestTemplate>(CollectionName)
+        // Check the cache first!
+        if (s_cachedQuests.Any(q => q.m_questName.Equals(questName, StringComparison.OrdinalIgnoreCase))) {
+            return true;
+        }
+
+        return session.Query<QuestTemplate>(collectionName: CollectionName)
                       .Any(q => q.m_questName.Equals(questName, StringComparison.OrdinalIgnoreCase));
     }
 
