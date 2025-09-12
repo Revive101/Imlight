@@ -76,7 +76,7 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
         => RefreshServiceMomento(null);
 
     public override void OnPlayerJoin(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard)
-        => SendWizBang(playerActor);
+        => SendWizBang(playerActor, playerWizard);
 
     public override void OnPlayerLeave(IActorRef playerActor, ulong id) {
         if (_playersInRange.Any(x => x.Value == playerActor)) {
@@ -225,7 +225,7 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
         };
     }
 
-    private void SendWizBang(IActorRef playerActor) {
+    private void SendWizBang(IActorRef playerActor, Wizard playerWizard) {
         if (_serviceComponents.Count <= 0) {
             return;
         }
@@ -235,9 +235,17 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
         // This delay is to ensure that the player's game client has fully loaded.
         System.Threading.Tasks.Task.Delay(800).Wait();
 
+        // Get all of the services which actually have service options.
+        var availableServices = _serviceComponents
+            .Where(c => c.GetServiceOptions(playerWizard).Any())
+            .ToList();
+        if (availableServices.Count <= 0) {
+            return;
+        }
+
         // Out of the service options, deduce which WizBang is the highest priority.
         // Thankfully, game client data has a priority list for WizBangs.
-        var highestPriority = SortComponentsByPriority(_serviceComponents).FirstOrDefault();
+        var highestPriority = SortComponentsByPriority(availableServices).FirstOrDefault();
 
         // Send the WizBang to the player.
         var wizBang = highestPriority?.WizBang ?? WizBangs.None;

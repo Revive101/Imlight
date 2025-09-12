@@ -942,6 +942,12 @@ public class Wizard : IDisposable {
         return true;
     }
 
+    public bool HasQuest(string questName)
+        => QuestBehavior.HasQuest(questName);
+
+    public bool HasQuestGoal(string questName, string goalName)
+        => QuestBehavior.HasQuestGoal(questName, goalName);
+
     public bool HasCompletedQuest(string questName)
         => QuestBehavior.HasCompletedQuest(questName);
 

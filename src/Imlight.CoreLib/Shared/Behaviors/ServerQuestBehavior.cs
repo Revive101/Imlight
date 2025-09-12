@@ -97,12 +97,30 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
         return true;
     }
 
+    public bool HasQuest(string questName) {
+        if (string.IsNullOrWhiteSpace(questName)) {
+            return false;
+        }
+
+        return CurrentQuests.Contains(questName);
+    }
+
     public bool HasCompletedQuest(string questName) {
         if (string.IsNullOrWhiteSpace(questName)) {
             return false;
         }
 
         return CompletedQuests.Contains(questName);
+    }
+
+    public bool HasQuestGoal(string questName, string goalName) {
+        if (string.IsNullOrWhiteSpace(questName) || string.IsNullOrWhiteSpace(goalName)) {
+            return false;
+        }
+
+        var formattedGoalName = $"{questName}_{goalName}";
+        
+        return CurrentGoals.Contains(formattedGoalName);
     }
 
     public bool HasCompletedQuestGoal(string questName, string goalName) {
