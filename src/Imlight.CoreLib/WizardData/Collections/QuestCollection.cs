@@ -20,7 +20,7 @@ public static class QuestCollection {
     private static readonly List<QuestTemplate> s_cachedQuests = [];
 
     static QuestCollection() {
-        s_store = PlayerDatabase.Instance.Store;
+        s_store = WorldDatabase.Instance.Store;
     }
 
     /// <summary>
@@ -30,8 +30,11 @@ public static class QuestCollection {
     public static List<QuestTemplate> GetAllQuests() {
         using var session = s_store.OpenSession();
 
-        if (s_cachedQuests.Count == 0) {
-            s_cachedQuests.AddRange([.. session.Query<QuestTemplate>(collectionName: CollectionName)]);
+        if (s_cachedQuests.Count <= 0) {
+            s_cachedQuests.AddRange([.. session
+                .Query<QuestTemplate>(collectionName: CollectionName)
+                .ToList()
+            ]);
         }
 
         return s_cachedQuests;
