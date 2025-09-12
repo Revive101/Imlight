@@ -514,10 +514,12 @@ public static class WizardCollection {
         // Load the actual quests the character has.
         var questTemplates = new List<QuestTemplate>();
         if (wizard.QuestBehavior != null) {
-            questTemplates = [.. session
+            var currentQuestNames = wizard.QuestBehavior.CurrentQuests;
+            var allQuests = session
                 .Query<QuestTemplate>(collectionName: QuestCollection.CollectionName)
-                .Where(q => wizard.QuestBehavior.CurrentQuests
-                            .Any(aq => aq == q.m_questName))];
+                .ToList();
+            questTemplates = [.. allQuests
+                .Where(q => currentQuestNames.Contains(q.m_questName))];
         }
 
         // The wizard may still have some initialization to do. Inform the wizard
