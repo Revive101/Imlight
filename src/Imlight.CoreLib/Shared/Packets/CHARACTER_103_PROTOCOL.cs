@@ -150,7 +150,7 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
         public IActorRef PlayerRef;
         public CoreObject PlayerObj;
         public IActorRef ReplyTo;
-            
+
     }
 
     public sealed class MSG_RESULTEXECUTED : IServerMessage {
@@ -175,6 +175,15 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
 
         public byte MessageOrder { get; } = 16;
         public byte ServiceID { get; } = 103;
+
+    }
+
+    public sealed class MSG_SENDQUESTOFFERCACHEOPTION : IServerMessage {
+
+        public byte MessageOrder { get; } = 17;
+        public byte ServiceID { get; } = 103;
+
+        public QuestTemplate Quest;
 
     }
 

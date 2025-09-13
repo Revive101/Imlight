@@ -32,6 +32,7 @@ using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.Game.WizBang;
 using Imlight.CoreLib.Game.Zone.Core;
+using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
 
@@ -74,7 +75,7 @@ internal sealed class InteractQuestComponent(ZoneEntity entity) : ZoneEntityComp
 
     public override void OnStart() {
         // Get all of the quests that relate to this NPC.
-        var questTemplates = QuestCollection.GetAllQuests().Where(x => x is not null);
+        var questTemplates = QuestTemplateCollection.GetAllQuests().Where(x => x is not null);
 
         // Filter the quests to only those that are given by this NPC.
         // We can do that by checking the quest template "Prep" dialog.
@@ -115,13 +116,20 @@ internal sealed class InteractQuestComponent(ZoneEntity entity) : ZoneEntityComp
         // The player has interacted with this quest. If they don't have the quest, show them the quest info dialog.
         // Otherwise, show them the "Underway" dialog.
         if (!playerCharacter.HasQuest(interactedQuest.m_questName) && !playerCharacter.HasCompletedQuest(interactedQuest.m_questName)) {
-            ShowQuestInfoDialog(playerActor, playerCharacter, interactedQuest);
+            ShowQuestInfoDialog(playerActor, interactedQuest);
+            SendQuestOfferDialog(playerActor, interactedQuest);
+            SendQuestOfferCacheOption(playerActor, interactedQuest);
+
+            return;
+        }
+        else if (playerCharacter.HasQuest(interactedQuest.m_questName) && !playerCharacter.HasCompletedQuest(interactedQuest.m_questName)) {
+            ShowQuestUnderwayDialog(playerActor, interactedQuest);
 
             return;
         }
     }
 
-    private void ShowQuestInfoDialog(IActorRef playerActor, Wizard playerCharacter, QuestTemplate quest) {
+    private void ShowQuestInfoDialog(IActorRef playerActor, QuestTemplate quest) {
         if (quest.m_dialogList is not ActorDialogList dialogList) {
             Logger.Error("Quest {0} has no dialog list.",
                 Logger.Args(quest.m_questName));
@@ -156,6 +164,99 @@ internal sealed class InteractQuestComponent(ZoneEntity entity) : ZoneEntityComp
         };
 
         playerActor.Tell(dialogMsg);
+    }
+
+    private void ShowQuestUnderwayDialog(IActorRef playerActor, QuestTemplate quest) {
+        if (quest.m_dialogList is not ActorDialogList dialogList) {
+            Logger.Error("Quest {0} has no dialog list.",
+                Logger.Args(quest.m_questName));
+
+            return;
+        }
+
+        var underwayDialogList = dialogList.m_dialogs.FirstOrDefault(de => de.m_dialogTag == "Underway");
+        if (underwayDialogList is null) {
+            Logger.Error("Quest {0} has no 'Underway' dialog entry.",
+                Logger.Args(quest.m_questName));
+
+            return;
+        }
+
+        // Serialize and send the dialog to the player.
+        var serializer = new ObjectSerializer(Versionable: false);
+        if (!serializer.Serialize(underwayDialogList, 16, out var serializedData)) {
+            Logger.Error("Failed to serialize 'Underway' dialog for quest {0}.",
+                Logger.Args(quest.m_questName));
+
+            return;
+        }
+
+        var dialogMsg = new WIZARD_12_PROTOCOL.MSG_ACTORDIALOG {
+            MobileID = Entity.ActiveGameObject.m_nMobileID,
+            CompletionType = "QuestInfo",
+            ActorDialog = serializedData,
+            Persona = "", // TODO:
+            PersonaName = "", // TODO:
+            PersonaIcon = "", // TODO:
+        };
+
+        playerActor.Tell(dialogMsg);
+    }
+
+    private void SendQuestOfferDialog(IActorRef playerActor, QuestTemplate quest) {
+        // Serialize the starting goals for this quest.
+        var startingGoals = quest.m_goals
+            .Where(g => quest.m_startGoals.Contains(g.m_goalName))
+            .ToList();
+        var startingGoalCompilation = new GoalCompilation { m_goals = [] };
+
+        foreach (var goal in startingGoals) {
+            var goalEntry = new GoalEntryFull {
+                m_personaName = "",
+                m_goalType = (int) goal.m_goalType,
+                m_tallyText = goal.m_goalTitle,
+                m_goalLocation = goal.m_locationName,
+                m_goalDestinationZone = goal.m_destinationZone,
+                m_goalImage1 = goal.m_displayImage1,
+                m_goalImage2 = goal.m_displayImage2,
+                m_goalNameID = goal.m_goalNameID
+            };
+
+            startingGoalCompilation.m_goals.Add(goalEntry);
+        }
+
+        var serializer = new ObjectSerializer(Versionable: false);
+        if (!serializer.Serialize(startingGoalCompilation, 1, out var serializedGoals)) {
+            Logger.Error("Failed to serialize starting goals for quest {0}.",
+                Logger.Args(quest.m_questName));
+
+            return;
+        }
+
+        var questOfferMsg = new QUEST_MESSAGES_52_PROTOCOL.MSG_QUESTOFFER {
+            MobileID = Entity.ActiveGameObject.m_nMobileID,
+            QuestName = quest.m_questName,
+            QuestTitle = quest.m_questTitle,
+            QuestInfo = "", // ??
+            Level = quest.m_questLevel,
+            Rewards = "",
+            GoalData = serializedGoals,
+            Mainline = (byte) (quest.m_mainline ? 1 : 0),
+        };
+
+        playerActor.Tell(questOfferMsg);
+    }
+
+    private static void SendQuestOfferCacheOption(IActorRef playerActor, QuestTemplate quest) {
+        // The SessionActor (aka, the player) might send MSG_ACCEPTQUEST.
+        // We can't receive that here, so instead we're going to tell the player
+        // that we've sent them a quest offer. A MessageService can cache this request
+        // and when they do send that acception, we can process it. 
+        var cacheMsg = new CHARACTER_103_PROTOCOL.MSG_SENDQUESTOFFERCACHEOPTION {
+            Quest = quest,
+        };
+
+        playerActor.Tell(cacheMsg);
     }
 
 }
