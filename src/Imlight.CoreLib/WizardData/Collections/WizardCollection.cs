@@ -516,7 +516,7 @@ public static class WizardCollection {
         if (wizard.QuestBehavior != null) {
             var currentQuestNames = wizard.QuestBehavior.CurrentQuests;
             var allQuests = session
-                .Query<QuestTemplate>(collectionName: QuestCollection.CollectionName)
+                .Query<QuestTemplate>(collectionName: QuestTemplateCollection.CollectionName)
                 .ToList();
             questTemplates = [.. allQuests
                 .Where(q => currentQuestNames.Contains(q.m_questName))];

@@ -12,14 +12,14 @@ using System.Collections.Generic;
 
 namespace Imlight.CoreLib.WizardData.Collections;
 
-public static class QuestCollection {
+public static class QuestTemplateCollection {
 
     public const string CollectionName = "QuestTemplates";
     private static readonly IDocumentStore s_store;
 
     private static readonly List<QuestTemplate> s_cachedQuests = [];
 
-    static QuestCollection() {
+    static QuestTemplateCollection() {
         s_store = WorldDatabase.Instance.Store;
     }
 
