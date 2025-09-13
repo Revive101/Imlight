@@ -897,32 +897,18 @@ public class Wizard : IDisposable {
         return true;
     }
 
-    public bool AddQuest(string questName) {
-        var addSuccess = QuestBehavior.AddQuest(questName);
+    public bool AddQuest(QuestInstance quest) {
+        var addSuccess = QuestBehavior.AddQuest(quest);
         if (!addSuccess) {
             Logger.Warning("Could not add quest {0} for player {1}.",
-                Logger.Args(questName, PlayerNameBehavior.GetWizardName()));
+                Logger.Args(quest.QuestTitle, PlayerNameBehavior.GetWizardName()));
 
             return false;
         }
 
         // Persistent save.
         WizardCollection.UpdateCharacterQuestBehavior(this);
-
-        return true;
-    }
-
-    public bool AddQuestGoal(string questName, string goalName) {
-        var addSuccess = QuestBehavior.AddQuestGoal(questName, goalName);
-        if (!addSuccess) {
-            Logger.Warning("Could not add quest goal {0} for quest {1} for player {2}.",
-                Logger.Args(goalName, questName, PlayerNameBehavior.GetWizardName()));
-
-            return false;
-        }
-
-        // Persistent save.
-        WizardCollection.UpdateCharacterQuestBehavior(this);
+        QuestInstanceCollection.AddQuestInstance(quest);
 
         return true;
     }
@@ -945,35 +931,14 @@ public class Wizard : IDisposable {
     public bool HasQuest(string questName)
         => QuestBehavior.HasQuest(questName);
 
-    public bool HasQuestGoal(string questName, string goalName)
-        => QuestBehavior.HasQuestGoal(questName, goalName);
-
     public bool HasCompletedQuest(string questName)
         => QuestBehavior.HasCompletedQuest(questName);
-
-    public bool HasCompletedQuestGoal(string questName, string goalName) 
-        => QuestBehavior.HasCompletedQuestGoal(questName, goalName);
 
     public bool MarkQuestCompleted(string questName) {
         var questStatus = QuestBehavior.CompleteQuest(questName);
         if (!questStatus) {
             Logger.Warning("Could not mark quest {0} as completed for player {1}.",
                 Logger.Args(questName, PlayerNameBehavior.GetWizardName()));
-
-            return false;
-        }
-
-        // Persistent save.
-        WizardCollection.UpdateCharacterQuestBehavior(this);
-
-        return questStatus;
-    }
-
-    public bool MarkQuestGoalCompleted(string questName, string goalName) {
-        var questStatus = QuestBehavior.CompleteQuestGoal(questName, goalName);
-        if (!questStatus) {
-            Logger.Warning("Could not mark quest goal {0} of quest {1} as completed for player {2}.",
-                Logger.Args(goalName, questName, PlayerNameBehavior.GetWizardName()));
 
             return false;
         }

@@ -512,14 +512,15 @@ public static class WizardCollection {
         wizard.DynamodSet = dynamods.FirstOrDefault() ?? new DynamodSet(wizard.CharId);
 
         // Load the actual quests the character has.
-        var questTemplates = new List<QuestTemplate>();
+        var questInstances = new List<QuestInstance>();
         if (wizard.QuestBehavior != null) {
-            var currentQuestNames = wizard.QuestBehavior.CurrentQuests;
+            var currentQuestIDs = wizard.QuestBehavior.CurrentQuestIDs;
             var allQuests = session
-                .Query<QuestTemplate>(collectionName: QuestTemplateCollection.CollectionName)
+                .Query<QuestInstance>(collectionName: QuestInstanceCollection.CollectionName)
+                .Where(q => q.OwnerCharId == wizard.CharId)
                 .ToList();
-            questTemplates = [.. allQuests
-                .Where(q => currentQuestNames.Contains(q.m_questName))];
+            questInstances = [.. allQuests
+                .Where(q => currentQuestIDs.Contains(q.ID))];
         }
 
         // The wizard may still have some initialization to do. Inform the wizard
