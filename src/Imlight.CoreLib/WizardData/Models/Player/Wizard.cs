@@ -901,7 +901,7 @@ public class Wizard : IDisposable {
         var addSuccess = QuestBehavior.AddQuest(quest);
         if (!addSuccess) {
             Logger.Warning("Could not add quest {0} for player {1}.",
-                Logger.Args(quest.QuestTitle, PlayerNameBehavior.GetWizardName()));
+                Logger.Args(quest.QuestName, PlayerNameBehavior.GetWizardName()));
 
             return false;
         }

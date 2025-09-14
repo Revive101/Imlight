@@ -21,7 +21,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 9/03/2025
+ * Last Updated: 09/14/2025
  */
 
 using Akka.Actor;
@@ -52,7 +52,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         var wizard = GetActiveWizard();
 
         foreach (var qInstance in wizard.QuestBehavior.CurrentQuestInstances) {
-            var qTemplate = QuestTemplateCollection.GetQuestByName(qInstance.QuestTitle);
+            var qTemplate = QuestTemplateCollection.GetQuestByName(qInstance.QuestName);
 
             SendQuestResumeMessage(qTemplate, qInstance);
             SendQuestResumeGoalMessages(qTemplate, qInstance);
@@ -95,6 +95,15 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         // Otherwise, we're good to start the quest. Send them the send quest message and send goal message(s)
         // for any of the starting goals the quest has.
         var questInstance = new QuestInstance(quest, wizard.CharId);
+
+        // Find the starting goals and mark them as started.
+        var startingGoals = quest.m_goals
+            .Where(g => quest.m_startGoals.Contains(g.m_goalName))
+            .ToArray();
+        foreach (var gTemplate in startingGoals) {
+            questInstance.StartGoal(gTemplate.m_goalName);
+        }
+
         wizard.AddQuest(questInstance);
 
         SendQuestStartingMessage(quest, questInstance.ID);
@@ -115,7 +124,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             QuestNameID = quest.m_questNameID,
             QuestType = 0, // ?
             QuestLevel = quest.m_questLevel,
-            QuestTitle = quest.m_questName,
+            QuestTitle = quest.m_questTitle,
             QuestInfo = "", // ?
             New = 1,
             QuestMadlibs = madLibData,
@@ -148,7 +157,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             QuestNameID = qTemplate.m_questNameID,
             QuestType = 0, // ?
             QuestLevel = qTemplate.m_questLevel,
-            QuestTitle = qTemplate.m_questName,
+            QuestTitle = qTemplate.m_questTitle,
             QuestInfo = "", // ?
             New = 0,
             QuestMadlibs = madLibData,
@@ -191,7 +200,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
                 QuestID = questInstance.ID,
                 GoalID = goalInstance?.ID ?? 0,
                 GoalNameID = gTemplate.m_goalNameID,
-                GoalTitle = gTemplate.m_goalName,
+                GoalTitle = gTemplate.m_goalTitle,
                 GoalLocation = gTemplate.m_locationName,
                 GoalDestinationZone = gTemplate.m_destinationZone,
                 GoalImage1 = gTemplate.m_displayImage1,
@@ -215,6 +224,11 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
     private void SendQuestResumeGoalMessages(QuestTemplate quest, QuestInstance questInstance) {
         foreach (var gInstance in questInstance.GoalProgress) {
+            // Skip this goal if the player doesn't have it yet.
+            if (!gInstance.DoesPlayerHaveGoal()) {
+                continue;
+            }
+
             var gTemplate = quest.m_goals
                 .FirstOrDefault(g => g.m_goalName == gInstance.GoalName);
             if (gTemplate == null) {
@@ -237,7 +251,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
                 QuestID = questInstance.ID,
                 GoalID = gInstance.ID,
                 GoalNameID = gTemplate.m_goalNameID,
-                GoalTitle = gTemplate.m_goalName,
+                GoalTitle = gTemplate.m_goalTitle,
                 GoalLocation = gTemplate.m_locationName,
                 GoalDestinationZone = gTemplate.m_destinationZone,
                 GoalImage1 = gTemplate.m_displayImage1,
@@ -264,7 +278,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             m_madlibs = [
                 new MadlibArgT_string {
                     m_madlibToken = "NAME",
-                    m_madlibArgument = quest.m_questName
+                    m_madlibArgument = quest.m_questTitle
                 },
                 new MadlibArgT_string {
                     m_madlibToken = "LEVEL",

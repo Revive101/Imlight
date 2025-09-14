@@ -25,19 +25,9 @@ public class QuestInstance {
     /// <summary>
     /// The locale name of the quest, matching the quest template.
     /// </summary>
-    public string QuestTitle { get; set; } = string.Empty;
+    public string QuestName { get; set; } = string.Empty;
 
     public GoalInstance[] GoalProgress { get; set; } = [];
-
-    public bool IsReadyForTurnIn() {
-        foreach (var goal in GoalProgress) {
-            if (goal.CurrentProgress != int.MaxValue) {
-                return false;
-            }
-        }
-        
-        return true;
-    }
 
     [JsonConstructor]
     public QuestInstance() { }
@@ -46,7 +36,7 @@ public class QuestInstance {
     public QuestInstance(QuestTemplate qTemplate, ulong ownerCharId) {
         OwnerCharId = ownerCharId;
         ID = RandomGen.GenerateGUID();
-        QuestTitle = qTemplate.m_questName;
+        QuestName = qTemplate.m_questName;
 
         // Initialize goal progress array based on the number of goals in the template.
         var goalInstances = new List<GoalInstance>();
@@ -54,7 +44,27 @@ public class QuestInstance {
             var goalInstance = new GoalInstance(gTemplate, ownerCharId);
             goalInstances.Add(goalInstance);
         }
-        GoalProgress = goalInstances.ToArray();
+        GoalProgress = [.. goalInstances];
+    }
+
+    public void StartGoal(string goalName) {
+        foreach (var goal in GoalProgress) {
+            if (goal.GoalName == goalName) {
+                goal.BeginGoal();
+                
+                return;
+            }
+        }
+    }
+
+    public bool IsReadyForTurnIn() {
+        foreach (var goal in GoalProgress) {
+            if (goal.CurrentProgress != int.MaxValue) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
 }
@@ -82,7 +92,7 @@ public class GoalInstance {
     /// A value of 0 means the goal is in progress.
     /// A value of int.MaxValue indicates that the goal is completed.
     /// </summary>
-    public int CurrentProgress { get; set; } = -1;
+    public int CurrentProgress { get; private set; } = -1;
 
     [JsonConstructor]
     public GoalInstance() { }
@@ -92,6 +102,35 @@ public class GoalInstance {
         ID = RandomGen.GenerateGUID();
         OwnerCharId = ownerCharId;
         GoalName = gTemplate.m_goalName;
+    }
+
+    public bool DoesPlayerHaveGoal() {
+        return CurrentProgress >= 0;
+    }
+
+    public bool IsGoalCompleted() {
+        return CurrentProgress == int.MaxValue;
+    }
+
+    public void BeginGoal() {
+        if (CurrentProgress == -1) {
+            CurrentProgress = 0;
+        }
+    }
+
+    public void IncrementGoal() {
+        if (CurrentProgress >= 0 && CurrentProgress != int.MaxValue) {
+            CurrentProgress++;
+
+            // Cap at int.MaxValue to indicate completion.
+            if (CurrentProgress < 0) {
+                CurrentProgress = int.MaxValue;
+            }
+        }
+    }
+
+    public void CompleteGoal() {
+        CurrentProgress = int.MaxValue;
     }
     
 }

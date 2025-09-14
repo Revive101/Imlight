@@ -29,7 +29,7 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
             return false;
         }
 
-        if (CurrentQuestIDs.Contains(quest.ID) || CompletedQuests.Contains(quest.QuestTitle)) {
+        if (CurrentQuestIDs.Contains(quest.ID) || CompletedQuests.Contains(quest.QuestName)) {
             return false;
         }
 
@@ -44,7 +44,7 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
             return false;
         }
 
-        var quest = CurrentQuestInstances.Find(q => q.QuestTitle == questName);
+        var quest = CurrentQuestInstances.Find(q => q.QuestName == questName);
         if (quest == null) {
             return false;
         }
@@ -57,12 +57,12 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
             return false;
         }
 
-        if (!CurrentQuestIDs.Contains(quest.ID) || CompletedQuests.Contains(quest.QuestTitle)) {
+        if (!CurrentQuestIDs.Contains(quest.ID) || CompletedQuests.Contains(quest.QuestName)) {
             return false;
         }
 
         CurrentQuestIDs.Remove(quest.ID);
-        CompletedQuests.Add(quest.QuestTitle);
+        CompletedQuests.Add(quest.QuestName);
 
         return true;
     }
@@ -72,7 +72,7 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
             return false;
         }
 
-        var quest = CurrentQuestInstances.Find(q => q.QuestTitle == questName);
+        var quest = CurrentQuestInstances.Find(q => q.QuestName == questName);
         if (quest == null) {
             return false;
         }
@@ -99,7 +99,7 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
             return false;
         }
 
-        return CurrentQuestInstances.Any(q => q.QuestTitle == questName);
+        return CurrentQuestInstances.Any(q => q.QuestName == questName);
     }
 
     public bool HasCompletedQuest(string questName) {
