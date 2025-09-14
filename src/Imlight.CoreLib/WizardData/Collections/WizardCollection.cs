@@ -515,12 +515,12 @@ public static class WizardCollection {
         var questInstances = new List<QuestInstance>();
         if (wizard.QuestBehavior != null) {
             var currentQuestIDs = wizard.QuestBehavior.CurrentQuestIDs;
-            var allQuests = session
+            var myQuests = session
                 .Query<QuestInstance>(collectionName: QuestInstanceCollection.CollectionName)
                 .Where(q => q.OwnerCharId == wizard.CharId)
                 .ToList();
-            questInstances = [.. allQuests
-                .Where(q => currentQuestIDs.Contains(q.ID))];
+
+            wizard.QuestBehavior.CurrentQuestInstances = myQuests;
         }
 
         // The wizard may still have some initialization to do. Inform the wizard

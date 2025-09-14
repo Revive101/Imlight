@@ -53,7 +53,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
         foreach (var qInstance in wizard.QuestBehavior.CurrentQuestInstances) {
             var qTemplate = QuestTemplateCollection.GetQuestByName(qInstance.QuestTitle);
-            
+
             SendQuestResumeMessage(qTemplate, qInstance);
             SendQuestResumeGoalMessages(qTemplate, qInstance);
         }
@@ -177,7 +177,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         foreach (var gTemplate in startingGoals) {
             // Find the corresponding GoalInstance in the QuestInstance
             var goalInstance = questInstance.GoalProgress
-                .FirstOrDefault(g => g.GoalTitle == gTemplate.m_goalTitle);
+                .FirstOrDefault(g => g.GoalName == gTemplate.m_goalTitle);
 
             var madLibBlock = GetMadlibBlockForGoal(gTemplate);
             if (!_goalSerializer.Serialize(madLibBlock, 1, out var madLibData)) {
@@ -216,18 +216,19 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
     private void SendQuestResumeGoalMessages(QuestTemplate quest, QuestInstance questInstance) {
         foreach (var gInstance in questInstance.GoalProgress) {
             var gTemplate = quest.m_goals
-                .FirstOrDefault(g => g.m_goalTitle == gInstance.GoalTitle);
+                .FirstOrDefault(g => g.m_goalName == gInstance.GoalName);
             if (gTemplate == null) {
                 // This should never happen, but log it just in case.
                 Logger.Error("Quest '{0}' has goal instance '{1}' with no matching template.",
-                    Logger.Args(quest.m_questName, gInstance.GoalTitle));
+                    Logger.Args(quest.m_questName, gInstance.GoalName));
+
                 continue;
             }
 
             var madLibBlock = GetMadlibBlockForGoal(gTemplate);
             if (!_goalSerializer.Serialize(madLibBlock, 1, out var madLibData)) {
                 Logger.Error("Failed to serialize madlib data for goal '{0}' in quest '{1}'",
-                    Logger.Args(gTemplate.m_goalTitle, quest.m_questName));
+                    Logger.Args(gTemplate.m_goalName, quest.m_questName));
 
                 continue;
             }

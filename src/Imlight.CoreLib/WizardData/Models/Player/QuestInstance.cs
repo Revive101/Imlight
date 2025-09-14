@@ -74,7 +74,7 @@ public class GoalInstance {
     /// <summary>
     /// The locale name of the goal, matching the goal template.
     /// </summary>
-    public string GoalTitle { get; set; }
+    public string GoalName { get; set; }
 
     /// <summary>
     /// The current progress of the goal.
@@ -91,7 +91,7 @@ public class GoalInstance {
     public GoalInstance(GoalTemplate gTemplate, ulong ownerCharId) {
         ID = RandomGen.GenerateGUID();
         OwnerCharId = ownerCharId;
-        GoalTitle = gTemplate.m_goalTitle;
+        GoalName = gTemplate.m_goalName;
     }
     
 }
