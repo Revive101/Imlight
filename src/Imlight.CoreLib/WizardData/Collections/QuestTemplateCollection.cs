@@ -9,6 +9,7 @@ using Imlight.CoreLib.WizardData.Databases;
 using Imcodec.ObjectProperty.TypeCache;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace Imlight.CoreLib.WizardData.Collections;
 
@@ -18,6 +19,7 @@ public static class QuestTemplateCollection {
     private static readonly IDocumentStore s_store;
 
     private static readonly List<QuestTemplate> s_cachedQuests = [];
+    private static readonly Lock s_lockObject = new();
 
     static QuestTemplateCollection() {
         s_store = WorldDatabase.Instance.Store;
@@ -28,16 +30,17 @@ public static class QuestTemplateCollection {
     /// </summary>
     /// <returns>A list of all quest templates.</returns>
     public static List<QuestTemplate> GetAllQuests() {
-        using var session = s_store.OpenSession();
+        lock (s_lockObject) {
+            using var session = s_store.OpenSession();
+            if (s_cachedQuests.Count <= 0) {
+                s_cachedQuests.AddRange([.. session
+                    .Query<QuestTemplate>(collectionName: CollectionName)
+                    .ToList()
+                ]);
+            }
 
-        if (s_cachedQuests.Count <= 0) {
-            s_cachedQuests.AddRange([.. session
-                .Query<QuestTemplate>(collectionName: CollectionName)
-                .ToList()
-            ]);
+            return [.. s_cachedQuests];
         }
-
-        return s_cachedQuests;
     }
 
     /// <summary>

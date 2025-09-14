@@ -75,7 +75,10 @@ internal sealed class InteractQuestComponent(ZoneEntity entity) : ZoneEntityComp
 
     public override void OnStart() {
         // Get all of the quests that relate to this NPC.
-        var questTemplates = QuestTemplateCollection.GetAllQuests().Where(x => x is not null);
+        var questTemplates = QuestTemplateCollection
+            .GetAllQuests()
+            .Where(x => x is not null)
+            .ToList();
 
         // Filter the quests to only those that are given by this NPC.
         // We can do that by checking the quest template "Prep" dialog.
@@ -89,7 +92,7 @@ internal sealed class InteractQuestComponent(ZoneEntity entity) : ZoneEntityComp
             // of the first of the first one. If that matches our entity, we know that this
             // NPC gives this quest.
             var prepDialogEntry = dialogList.m_dialogs.FirstOrDefault(de => de.m_dialogTag == "Prep");
-            if (prepDialogEntry is null) {
+            if (prepDialogEntry is null || prepDialogEntry.m_dialogEntries == null || prepDialogEntry.m_dialogEntries.Count == 0) {
                 continue;
             }
 
