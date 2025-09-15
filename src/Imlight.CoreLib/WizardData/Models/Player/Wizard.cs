@@ -924,6 +924,7 @@ public class Wizard : IDisposable {
 
         // Persistent save.
         WizardCollection.UpdateCharacterQuestBehavior(this);
+        QuestInstanceCollection.RemoveQuestInstance(CharId, questName);
 
         return true;
     }
@@ -947,6 +948,38 @@ public class Wizard : IDisposable {
         WizardCollection.UpdateCharacterQuestBehavior(this);
 
         return questStatus;
+    }
+
+    public bool StartQuestGoal(string questName, string goalName) {
+        var startSuccess = QuestBehavior.StartQuestGoal(questName, goalName);
+        if (!startSuccess) {
+            Logger.Warning("Could not start quest goal {0} for quest {1} for player {2}.",
+                Logger.Args(goalName, questName, PlayerNameBehavior.GetWizardName()));
+
+            return false;
+        }
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterQuestBehavior(this);
+        QuestInstanceCollection.UpdateQuestInstance(CharId, questName);
+
+        return true;
+    }
+
+    public bool CompleteQuestGoal(string questName, string goalName) {
+        var completeSuccess = QuestBehavior.CompleteQuestGoal(questName, goalName);
+        if (!completeSuccess) {
+            Logger.Warning("Could not complete quest goal {0} for quest {1} for player {2}.",
+                Logger.Args(goalName, questName, PlayerNameBehavior.GetWizardName()));
+
+            return false;
+        }
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterQuestBehavior(this);
+        QuestInstanceCollection.UpdateQuestInstance(CharId, questName);
+
+        return true;
     }
 
     internal void AfterDatabaseLoad() {

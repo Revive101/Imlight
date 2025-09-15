@@ -6,6 +6,7 @@
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Shared.Utilities;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json.Serialization;
 
 namespace Imlight.CoreLib.WizardData.Models.Player;
@@ -45,6 +46,14 @@ public class QuestInstance {
             goalInstances.Add(goalInstance);
         }
         GoalProgress = [.. goalInstances];
+
+        // Mark starting goals as begun.
+        var startingGoals = qTemplate.m_goals
+            .Where(g => qTemplate.m_startGoals.Contains(g.m_goalName))
+            .ToArray();
+        foreach (var gTemplate in startingGoals) {
+            StartGoal(gTemplate.m_goalName);
+        }
     }
 
     public void StartGoal(string goalName) {
@@ -55,6 +64,26 @@ public class QuestInstance {
                 return;
             }
         }
+    }
+
+    public void CompleteGoal(string goalName) {
+        foreach (var goal in GoalProgress) {
+            if (goal.GoalName == goalName) {
+                goal.CompleteGoal();
+                
+                return;
+            }
+        }
+    }
+
+    public bool IsGoalActive(string goalName) {
+        foreach (var goal in GoalProgress) {
+            if (goal.GoalName == goalName) {
+                return goal.DoesPlayerHaveGoal() && !goal.IsGoalCompleted();
+            }
+        }
+
+        return false;
     }
 
     public bool IsReadyForTurnIn() {

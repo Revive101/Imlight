@@ -110,6 +110,36 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
         return CompletedQuests.Contains(questName);
     }
 
+    public bool StartQuestGoal(string questName, string goalName) {
+        if (string.IsNullOrWhiteSpace(questName) || string.IsNullOrWhiteSpace(goalName)) {
+            return false;
+        }
+
+        var quest = CurrentQuestInstances.Find(q => q.QuestName == questName);
+        if (quest == null) {
+            return false;
+        }
+
+        quest.StartGoal(goalName);
+
+        return true;
+    }
+
+    public bool CompleteQuestGoal(string questName, string goalName) {
+        if (string.IsNullOrWhiteSpace(questName) || string.IsNullOrWhiteSpace(goalName)) {
+            return false;
+        }
+
+        var quest = CurrentQuestInstances.Find(q => q.QuestName == questName);
+        if (quest == null) {
+            return false;
+        }
+
+        quest.CompleteGoal(goalName);
+
+        return true;
+    }
+
     public ServerQuestBehavior GetClientBehaviorInstance()
         => throw new NotImplementedException();
 
