@@ -141,7 +141,13 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
             .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryCharacterMsg)
             .Result
             .Wizard;
+
         RefreshServiceMomento(wizard);
+
+        // If we have no service options, do not send anything.
+        if (_serviceMemento.m_serviceOptions.Count <= 0) {
+            return;
+        }
 
         // Serialize the service memento and send it to the player.
         var serializer = new ObjectSerializer(
