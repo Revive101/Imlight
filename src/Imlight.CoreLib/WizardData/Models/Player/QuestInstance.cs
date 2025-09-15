@@ -65,12 +65,22 @@ public class QuestInstance {
             }
         }
     }
+    
+    public void IncrementGoal(string goalName) {
+        foreach (var goal in GoalProgress) {
+            if (goal.GoalName == goalName) {
+                goal.IncrementGoal();
+                
+                return;
+            }
+        }
+    }
 
     public void CompleteGoal(string goalName) {
         foreach (var goal in GoalProgress) {
             if (goal.GoalName == goalName) {
                 goal.CompleteGoal();
-                
+
                 return;
             }
         }
@@ -80,6 +90,16 @@ public class QuestInstance {
         foreach (var goal in GoalProgress) {
             if (goal.GoalName == goalName) {
                 return goal.DoesPlayerHaveGoal() && !goal.IsGoalCompleted();
+            }
+        }
+
+        return false;
+    }
+
+    public bool IsGoalCompleted(string goalName) {
+        foreach (var goal in GoalProgress) {
+            if (goal.GoalName == goalName) {
+                return goal.IsGoalCompleted();
             }
         }
 

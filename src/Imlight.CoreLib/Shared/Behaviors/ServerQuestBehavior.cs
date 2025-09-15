@@ -125,6 +125,21 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
         return true;
     }
 
+    public bool IncrementQuestGoal(string questName, string goalName, int amount = 1) {
+        if (string.IsNullOrWhiteSpace(questName) || string.IsNullOrWhiteSpace(goalName) || amount <= 0) {
+            return false;
+        }
+
+        var quest = CurrentQuestInstances.Find(q => q.QuestName == questName);
+        if (quest == null) {
+            return false;
+        }
+
+        quest.IncrementGoal(goalName);
+
+        return true;
+    }
+
     public bool CompleteQuestGoal(string questName, string goalName) {
         if (string.IsNullOrWhiteSpace(questName) || string.IsNullOrWhiteSpace(goalName)) {
             return false;

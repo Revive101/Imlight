@@ -512,7 +512,6 @@ public static class WizardCollection {
         wizard.DynamodSet = dynamods.FirstOrDefault() ?? new DynamodSet(wizard.CharId);
 
         // Load the actual quests the character has.
-        var questInstances = new List<QuestInstance>();
         if (wizard.QuestBehavior != null) {
             var currentQuestIDs = wizard.QuestBehavior.CurrentQuestIDs;
             var myQuests = session

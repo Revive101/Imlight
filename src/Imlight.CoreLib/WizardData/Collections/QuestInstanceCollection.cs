@@ -50,7 +50,7 @@ public static class QuestInstanceCollection {
     public static bool RemoveQuestInstance(ulong charId, string questName) {
         using var session = s_store.OpenSession();
 
-        var questInstance = session.Query<QuestInstance>(CollectionName)
+        var questInstance = session.Query<QuestInstance>(collectionName: CollectionName)
             .FirstOrDefault(q => q.OwnerCharId == charId && q.QuestName == questName);
         if (questInstance == null) {
             return false;
@@ -70,7 +70,7 @@ public static class QuestInstanceCollection {
     public static bool RemoveQuestInstance(ulong questInstanceID) {
         using var session = s_store.OpenSession();
 
-        var questInstance = session.Query<QuestInstance>(CollectionName)
+        var questInstance = session.Query<QuestInstance>(collectionName: CollectionName)
             .FirstOrDefault(q => q.ID == questInstanceID);
         if (questInstance == null) {
             return false;
@@ -83,39 +83,78 @@ public static class QuestInstanceCollection {
     }
 
     /// <summary>
-    /// Updates an existing quest instance in the database.
+    /// Starts tracking progress for a specific goal within a quest instance.
     /// </summary>
-    /// <param name="questInstance">The quest instance to update.</param>
-    /// <returns>True if the quest instance was updated successfully, false otherwise.</returns>
-    public static bool UpdateQuestInstance(QuestInstance questInstance) {
+    /// <param name="questInstanceID">The ID of the quest instance.</param>
+    /// <param name="goalName">The name of the goal to start.</param>
+    /// <returns>True if the goal was started successfully, false otherwise.</returns>
+    public static bool StartQuestGoal(ulong questInstanceID, string goalName) {
+        using var session = s_store.OpenSession();
+
+        var questInstance = session.Query<QuestInstance>(collectionName: CollectionName)
+            .FirstOrDefault(q => q.ID == questInstanceID);
         if (questInstance == null) {
             return false;
         }
 
-        using var session = s_store.OpenSession();
+        var goalInstance = questInstance.GoalProgress.FirstOrDefault(g => g.GoalName == goalName);
+        if (goalInstance == null) {
+            return false;
+        }
 
-        session.Store(questInstance);
+        goalInstance.BeginGoal();
         session.SaveChanges();
 
         return true;
     }
 
     /// <summary>
-    /// Updates a quest instance in the database by character ID and quest name.
+    /// Increments the progress of a specific goal within a quest instance.
     /// </summary>
-    /// <param name="charId">The character ID of the quest instance owner.</param>
-    /// <param name="questName">The name of the quest instance to update.</param>
-    /// <returns>True if the quest instance was updated successfully, false otherwise.</returns>
-    public static bool UpdateQuestInstance(ulong charId, string questName) {
+    /// <param name="questInstanceID">The ID of the quest instance.</param>
+    /// <param name="goalName">The name of the goal to increment.</param>
+    /// <returns>True if the goal was incremented successfully, false otherwise.</returns>
+    public static bool IncrementQuestGoal(ulong questInstanceID, string goalName) {
         using var session = s_store.OpenSession();
 
-        var questInstance = session.Query<QuestInstance>(CollectionName)
-            .FirstOrDefault(q => q.OwnerCharId == charId && q.QuestName == questName);
+        var questInstance = session.Query<QuestInstance>(collectionName: CollectionName)
+            .FirstOrDefault(q => q.ID == questInstanceID);
         if (questInstance == null) {
             return false;
         }
 
-        session.Store(questInstance);
+        var goalInstance = questInstance.GoalProgress.FirstOrDefault(g => g.GoalName == goalName);
+        if (goalInstance == null) {
+            return false;
+        }
+
+        goalInstance.IncrementGoal();
+        session.SaveChanges();
+
+        return true;
+    }
+
+    /// <summary>
+    /// Marks a specific goal within a quest instance as complete.
+    /// </summary>
+    /// <param name="questInstanceID">The ID of the quest instance.</param>
+    /// <param name="goalName">The name of the goal to complete.</param> 
+    /// <returns>True if the goal was completed successfully, false otherwise.</returns>
+    public static bool CompleteQuestGoal(ulong questInstanceID, string goalName) {
+        using var session = s_store.OpenSession();
+
+        var questInstance = session.Query<QuestInstance>(collectionName: CollectionName)
+            .FirstOrDefault(q => q.ID == questInstanceID);
+        if (questInstance == null) {
+            return false;
+        }
+
+        var goalInstance = questInstance.GoalProgress.FirstOrDefault(g => g.GoalName == goalName);
+        if (goalInstance == null) {
+            return false;
+        }
+
+        goalInstance.CompleteGoal();
         session.SaveChanges();
 
         return true;

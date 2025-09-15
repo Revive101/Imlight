@@ -959,9 +959,43 @@ public class Wizard : IDisposable {
             return false;
         }
 
+        var questId = QuestBehavior.CurrentQuestInstances
+            .FirstOrDefault(q => q is not null && q.QuestName == questName).ID;
+        if (questId is 0) {
+            Logger.Error("Could not find quest ID for quest {0} for player {1}.",
+                Logger.Args(questName, PlayerNameBehavior.GetWizardName()));
+
+            return false;
+        }
+
         // Persistent save.
         WizardCollection.UpdateCharacterQuestBehavior(this);
-        QuestInstanceCollection.UpdateQuestInstance(CharId, questName);
+        QuestInstanceCollection.StartQuestGoal(questId, goalName);
+
+        return true;
+    }
+
+    public bool IncrementQuestGoal(string questName, string goalName) {
+        var incrementSuccess = QuestBehavior.IncrementQuestGoal(questName, goalName);
+        if (!incrementSuccess) {
+            Logger.Warning("Could not increment quest goal {0} for quest {1} for player {2}.",
+                Logger.Args(goalName, questName, PlayerNameBehavior.GetWizardName()));
+
+            return false;
+        }
+
+        var questId = QuestBehavior.CurrentQuestInstances
+            .FirstOrDefault(q => q is not null && q.QuestName == questName).ID;
+        if (questId is 0) {
+            Logger.Error("Could not find quest ID for quest {0} for player {1}.",
+                Logger.Args(questName, PlayerNameBehavior.GetWizardName()));
+
+            return false;
+        }
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterQuestBehavior(this);
+        QuestInstanceCollection.IncrementQuestGoal(questId, goalName);
 
         return true;
     }
@@ -975,9 +1009,18 @@ public class Wizard : IDisposable {
             return false;
         }
 
+        var questId = QuestBehavior.CurrentQuestInstances
+            .FirstOrDefault(q => q is not null && q.QuestName == questName).ID;
+        if (questId is 0) {
+            Logger.Error("Could not find quest ID for quest {0} for player {1}.",
+                Logger.Args(questName, PlayerNameBehavior.GetWizardName()));
+
+            return false;
+        }
+
         // Persistent save.
         WizardCollection.UpdateCharacterQuestBehavior(this);
-        QuestInstanceCollection.UpdateQuestInstance(CharId, questName);
+        QuestInstanceCollection.CompleteQuestGoal(questId, goalName);
 
         return true;
     }
