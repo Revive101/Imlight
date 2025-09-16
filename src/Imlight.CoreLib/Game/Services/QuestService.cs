@@ -320,7 +320,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             return;
         }
 
-        SendGoalMessage(goalTemplate, questInstance);
+        SendGoalMessage(goalTemplate, questInstance, true);
 
         // Init goal activation results.
         var activationResults = goalTemplate.m_activateResults;
@@ -421,7 +421,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         );
     }
 
-    private void SendGoalMessage(GoalTemplate gTemplate, QuestInstance qInstance) {
+    private void SendGoalMessage(GoalTemplate gTemplate, QuestInstance qInstance, bool isNewGoal = false) {
         var gInstance = qInstance.GoalProgress
             .FirstOrDefault(g => g.GoalName == gTemplate.m_goalName);
         if (gInstance == null) {
@@ -468,7 +468,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             GoalTotal = gTemplate.m_tallyCounter?.m_count ?? 0,
             TallyText = gTemplate.m_tallyCounter?.m_descriptor ?? "",
             SubscriberGoalTotal = 0, // TODO:
-            SendType = 1, // ?
+            SendType = isNewGoal ? (byte) 1 : (byte) 0,
             GoalMadlibs = madLibData,
             ClientTags = clientTagData,
             NoQuestHelper = gTemplate.m_noQuestHelper ? (byte) 1 : (byte) 0
