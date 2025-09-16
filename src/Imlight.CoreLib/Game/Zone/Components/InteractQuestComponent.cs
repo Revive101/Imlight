@@ -31,6 +31,9 @@ using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Types;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Requirements;
+using Imlight.CoreLib.Game.Requirements.Contexts;
+using Imlight.CoreLib.Game.Results.Contexts;
 using Imlight.CoreLib.Game.WizBang;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Packets;
@@ -74,9 +77,25 @@ internal sealed class InteractQuestComponent(ZoneEntity entity) : ZoneEntityComp
         }
 
         foreach (var quest in _givesQuests) {
-            // If the player hasn't completed this quest and doesn't have it, show it.
-            // TODO: check requirements.
-            if (!wizard.HasQuest(quest.m_questName) || !wizard.HasCompletedQuest(quest.m_questName)) {
+            // If the player hasn't completed this quest and doesn't have it, we might be able
+            // to show it.
+            if (!wizard.HasQuest(quest.m_questName) && !wizard.HasCompletedQuest(quest.m_questName)) {
+                var questRequirements = quest.m_requirements;
+                var requirementsMet = questRequirements == null
+                    || RequirementDispatcher.EvaluateRequirements(
+                    requirements: questRequirements,
+                    context: new QuestRequirementContext(
+                        questRequirements,
+                        null,
+                        null,
+                        wizard,
+                        quest.m_questName)
+                    );
+
+                if (!requirementsMet) {
+                    continue;
+                }
+
                 yield return new PrepEntry {
                     m_displayKey = quest.m_questTitle,
                     m_iconKey = PREP_NPC_ICON,
@@ -203,7 +222,7 @@ internal sealed class InteractQuestComponent(ZoneEntity entity) : ZoneEntityComp
             if (questTemplate is null) {
                 Logger.Error("Player {0} has quest instance for unknown quest '{1}'.",
                     Logger.Args(playerCharacter.CharId, relevantQuest.QuestName));
-                    
+
                 return;
             }
 

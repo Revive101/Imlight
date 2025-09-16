@@ -63,8 +63,7 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
         CurrentQuestIDs.Remove(quest.ID);
 
         // Mark the quest as completed in the registry:
-        var completedKey = $"{quest.QuestName}_Completed";
-        Registry[completedKey] = 1;
+        AddToQuestRegistry(quest.QuestName, "Completed", 1);
 
         return true;
     }

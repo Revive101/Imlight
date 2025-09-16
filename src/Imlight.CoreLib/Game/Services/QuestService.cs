@@ -442,7 +442,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         }
 
         // Serialize the client tags, if present.
-        var tagList = GetClientTagList(gTemplate.m_clientTags.ToArray() ?? []);
+        var tagList = GetClientTagList(gTemplate.m_clientTags?.ToArray() ?? []);
         if (!_goalSerializer.Serialize(tagList, 1, out var clientTagData)) {
             Logger.Error("Failed to serialize client tag data for goal '{0}' in quest '{1}'",
                 Logger.Args(gTemplate.m_goalName, qInstance.QuestName));

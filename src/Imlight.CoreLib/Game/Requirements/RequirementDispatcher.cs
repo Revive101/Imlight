@@ -120,9 +120,7 @@ public static class RequirementDispatcher {
         try {
             // Create handler instance and evaluate.
             var handler = Activator.CreateInstance(handlerType) as IRequirementHandler;
-            if (handler is BaseRequirementHandler<Requirement> baseHandler) {
-                baseHandler.Initialize(context);
-            }
+            handler.Initialize(context);
 
             return handler?.Evaluate(context) ?? false;
         }

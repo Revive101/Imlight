@@ -32,6 +32,12 @@ public interface IRequirementHandler {
     /// </summary>
     /// <param name="context">The context containing all evaluation information.</param>
     bool Evaluate(IRequirementContext context);
+    
+    /// <summary>
+    /// Initializes the handler with the calling context
+    /// </summary>
+    /// <param name="context">The requirement context</param>
+    void Initialize(IRequirementContext context);
 
 }
 
