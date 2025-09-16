@@ -28,6 +28,7 @@ public class GenericRequirementContext(RequirementList requirements,
     private readonly string _goalName = goalName;
     private readonly string _triggerName = triggerName;
 
+    public RequirementList GetFullRequirementList() => _requirements;
     public List<Requirement> GetRequirements() => _requirements?.m_requirements;
     public IActorRef GetPlayerRef() => _playerRef;
     public CoreObject GetPlayerObj() => _playerObj;

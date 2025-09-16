@@ -24,6 +24,7 @@ public class QuestRequirementContext(RequirementList requirements,
     private readonly string _questName = questName;
     private readonly string _goalName = goalName;
 
+    public RequirementList GetFullRequirementList() => _requirements;
     public List<Requirement> GetRequirements() => _requirements?.m_requirements;
     public IActorRef GetPlayerRef() => _playerRef;
     public CoreObject GetPlayerObj() => _playerObj;

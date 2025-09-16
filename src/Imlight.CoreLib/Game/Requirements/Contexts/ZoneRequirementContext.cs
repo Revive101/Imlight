@@ -24,6 +24,7 @@ public class ZoneRequirementContext(RequirementList requirements,
     private readonly IActorRef _zoneRef = zoneRef;
     private readonly string _triggerName = triggerName;
 
+    public RequirementList GetFullRequirementList() => _requirements;
     public List<Requirement> GetRequirements() => _requirements?.m_requirements;
     public IActorRef GetPlayerRef() => _playerRef;
     public CoreObject GetPlayerObj() => _playerObj;

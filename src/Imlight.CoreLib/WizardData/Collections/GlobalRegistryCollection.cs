@@ -96,8 +96,10 @@ public static class GlobalRegistryCollection {
     /// <param name="values"> The requirements to check. </param>
     /// <param name="operatorType"> The operator type to use. </param>
     /// <returns> True if all requirements are met, false otherwise. </returns>
-    public static bool CheckGlobalRegistryRequirements(List<Requirement> values, Operator operatorType) {
+    public static bool CheckGlobalRegistryRequirements(RequirementList list) {
         var allMatched = true;
+        var values = list.m_requirements;
+        var operatorType = list.m_operator;
 
         foreach (var requirement in values) {
             if (requirement is ReqGlobalRegistryValue globalReq) {

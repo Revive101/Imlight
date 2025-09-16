@@ -16,6 +16,12 @@ namespace Imlight.CoreLib.Game.Requirements;
 public interface IRequirementContext {
 
     /// <summary>
+    /// Gets the full requirement list, including operator type
+    /// </summary>
+    /// <returns>The full requirement list</returns>
+    RequirementList GetFullRequirementList();
+
+    /// <summary>
     /// Gets the requirements to evaluate
     /// </summary>
     /// <returns>The list of requirements</returns>

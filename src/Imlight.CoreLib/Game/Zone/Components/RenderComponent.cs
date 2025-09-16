@@ -35,6 +35,8 @@ using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Requirements;
+using Imlight.CoreLib.Game.Requirements.Contexts;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.WizardData.Models.Player;
 
@@ -52,6 +54,7 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
     private readonly Dictionary<CoreObject, IActorRef> _playersInRange = [];
     private float _renderDistance;
     private bool _doesDistanceCheck = false;
+    private Dictionary<Wizard, IActorRef> _playersWithRequirementsMet = [];
 
     public static bool ShouldAttachToEntity(CoreTemplate template)
         => template is GameObjectTemplate gameObjectTemplate
@@ -69,7 +72,7 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         CreateObjectForAllPlayers();
     }
 
-    public override void OnEnabled() 
+    public override void OnEnabled()
         => CreateObjectForAllPlayers();
 
     public override void OnDisabled() =>
@@ -79,7 +82,26 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         });
 
     public override void OnPlayerJoin(CoreObject player, IActorRef suspect, Wizard wizard) {
-        CreateObjectForPlayer(suspect);
+        // Determine if this player meets the requirements to see the object.
+        var requirementsMet = true;
+        if (Entity.Info is not null && Entity.Info.m_spawnRequirements is not null) {
+            var requirements = Entity.Info.m_spawnRequirements;
+            requirementsMet = RequirementDispatcher.EvaluateRequirements(
+                requirements,
+                new ZoneRequirementContext(requirements, suspect, null, wizard, Entity.ZoneRef)
+            );
+        }
+
+        if (requirementsMet) {
+            _playersWithRequirementsMet.Add(wizard, suspect);
+
+            if (!_doesDistanceCheck || IsInRadius(player, _renderDistance)) {
+                _playersInRange.Add(player, suspect);
+                CreateObjectForPlayer(suspect);
+
+                return;
+            }
+        }
 
         // If the player is not within our render distance, despawn.
         if (!_doesDistanceCheck) {
@@ -96,6 +118,11 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
     }
 
     public override void OnPlayerLeave(IActorRef suspect, ulong id) {
+        var wizard = _playersWithRequirementsMet.FirstOrDefault(x => x.Value == suspect).Key;
+        if (wizard != null) {
+            _playersWithRequirementsMet.Remove(wizard);
+        }
+
         // Remove the player from the list of players in range.
         var player = _playersInRange.FirstOrDefault(x => x.Value == suspect).Key;
         if (player != null) {
@@ -112,8 +139,11 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
 
         // Check if the player is now in range of the object.
         if (IsInRadius(playerObj, _renderDistance) && !_playersInRange.ContainsKey(playerObj)) {
-            // If the player is in range, spawn the object for them.
-            RespawnObjectForPlayer(playerActor);
+            // Respawn the object if the player is in range and we've determined they meet the requirements.
+            if (playerWizard is not null && _playersWithRequirementsMet.ContainsKey(playerWizard)) {
+                RespawnObjectForPlayer(playerActor);
+            }
+
             _playersInRange.Add(playerObj, playerActor);
         }
         else if (!IsInRadius(playerObj, _renderDistance) && _playersInRange.ContainsKey(playerObj)) {
