@@ -29,6 +29,7 @@ using Akka.Actor;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
+using Imcodec.Types;
 using Imlight.Common;
 using Imlight.CoreLib.Game.WizBang;
 using Imlight.CoreLib.Game.Zone.Core;
@@ -217,7 +218,7 @@ internal sealed class InteractQuestComponent(ZoneEntity entity) : ZoneEntityComp
                 }
 
                 if (relevantQuest.IsGoalActive(goal.m_goalName) && goal.m_personaName == myName) {
-                    ShowQuestGoalCompletionDialog(playerActor, questTemplate, goal);
+                    ShowQuestGoalCompletionDialog(playerActor, questTemplate, goal, relevantQuest.ID, gInstance.ID);
 
                     return;
                 }
@@ -317,7 +318,11 @@ internal sealed class InteractQuestComponent(ZoneEntity entity) : ZoneEntityComp
         playerActor.Tell(dialogMsg);
     }
 
-    private void ShowQuestGoalCompletionDialog(IActorRef playerActor, QuestTemplate quest, GoalTemplate goal) {
+    private void ShowQuestGoalCompletionDialog(IActorRef playerActor,
+                                               QuestTemplate quest,
+                                               GoalTemplate goal,
+                                               ulong questId,
+                                               ulong goalId) {
         if (quest.m_dialogList is not ActorDialogList dialogList) {
             Logger.Error("Quest {0} has no dialog list.",
                 Logger.Args(quest.m_questName));
@@ -342,8 +347,21 @@ internal sealed class InteractQuestComponent(ZoneEntity entity) : ZoneEntityComp
             return;
         }
 
+        // Send a message informing the client that they are interacting with an NPC
+        // that will complete a quest goal.
+        var goalCompleteMsg = new WIZARD_12_PROTOCOL.MSG_INTERACTCOMPLETEGOAL {
+            MobileID = new GID(Entity.ActiveGameObject.m_nMobileID),
+            QuestID = questId,
+            GoalID = goalId,
+        };
+
+        playerActor.Tell(goalCompleteMsg);
+
+        // Finally, send the dialog.
         var dialogMsg = new WIZARD_12_PROTOCOL.MSG_ACTORDIALOG {
-            MobileID = Entity.ActiveGameObject.m_nMobileID,
+            MobileID = new GID(Entity.ActiveGameObject.m_nMobileID),
+            QuestID = questId,
+            GoalID = goalId,
             CompletionType = "Completion",
             ActorDialog = serializedData,
             Persona = "", // TODO:

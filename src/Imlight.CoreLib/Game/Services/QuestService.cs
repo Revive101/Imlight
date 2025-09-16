@@ -119,6 +119,61 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         _cachedQuestOffers.RemoveAll(q => q.m_questName == quest.m_questName);
     }
 
+    [MessageHandler(typeof(QUEST_MESSAGES_52_PROTOCOL.MSG_COMPLETEPERSONA))]
+    private void ReceiveCompletePersona(QUEST_MESSAGES_52_PROTOCOL.MSG_COMPLETEPERSONA message) {
+        var questId = message.QuestID;
+        var goalId = message.GoalID;
+
+        // Check if this player has this quest and goal active.
+        var wizard = GetActiveWizard();
+        var qInstance = wizard.QuestBehavior.CurrentQuestInstances
+            .FirstOrDefault(q => q.ID == questId);
+        if (qInstance == null) {
+            Logger.Warning("Player '{0}' attempted to complete goal ID '{1}' for quest ID '{2}' but does not have that quest active.",
+                Logger.Args(wizard.CharId, goalId, questId));
+
+            return;
+        }
+
+        var gInstance = qInstance.GoalProgress
+            .FirstOrDefault(g => g.ID == goalId);
+        if (gInstance == null || !qInstance.IsGoalActive(gInstance.GoalName)) {
+            Logger.Warning("Player '{0}' attempted to complete goal ID '{1}' for quest ID '{2}' but does not have that goal active.",
+                Logger.Args(wizard.CharId, goalId, questId));
+
+            return;
+        }
+
+        // Get the goal template for this goal.
+        var qTemplate = _cachedQuestTemplates
+            .FirstOrDefault(q => q.m_questName == qInstance.QuestName);
+        if (qTemplate == null) {
+            Logger.Error("Failed to find quest template for quest '{0}' when completing goal ID '{1}'",
+                Logger.Args(qInstance.QuestName, goalId));
+
+            return;
+        }
+
+        var gTemplate = qTemplate.m_goals
+            .FirstOrDefault(g => g.m_goalName == gInstance.GoalName);
+        if (gTemplate == null) {
+            Logger.Error("Failed to find goal template for goal '{0}' in quest '{1}' when completing goal ID '{2}'",
+                Logger.Args(gInstance.GoalName, qInstance.QuestName, goalId));
+
+            return;
+        }
+
+        if (gTemplate.m_goalType != GOAL_TYPE.GOAL_TYPE_PERSONA) {
+            Logger.Warning("Player '{0}' attempted to complete goal ID '{1}' for quest ID '{2}' but that goal is not a persona goal.",
+                Logger.Args(wizard.CharId, goalId, questId));
+
+            return;
+        }
+
+        // Mark the goal complete.
+        CompleteGoal(qInstance, gTemplate);
+    }
+
     private void SendQuestStartingMessage(QuestTemplate quest, QuestInstance questInstance) {
         var qMadLibs = GetMadLibForQuest(quest);
         if (!_goalSerializer.Serialize(qMadLibs, 1, out var madLibData)) {
@@ -342,7 +397,9 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         }
 
         if (!DetermineNextGoals(qTemplate, questInstance, out var gTemplate)) {
-            // No new goal. The player has completed the quest.
+            // No next goals, so either the quest is complete or there's no applicable goal logic.
+            CompleteQuest(questInstance);
+
             return;
         }
 
@@ -352,6 +409,19 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         }
     }
 
+    private void CompleteQuest(QuestInstance questInstance) {
+        var wizard = GetActiveWizard();
+
+        if (!wizard.MarkQuestCompleted(questInstance.QuestName)) {
+            Logger.Error("Failed to complete quest '{0}' for player '{1}'",
+                Logger.Args(questInstance.QuestName, wizard.CharId));
+
+            return;
+        }
+
+        SendCompleteQuest(questInstance.ID);
+    }
+
     private void SendCompleteGoal(ulong questId, ulong goalId) {
         var gCompleteMsg = new QUEST_MESSAGES_52_PROTOCOL.MSG_COMPLETEGOAL {
             QuestID = questId,
@@ -359,6 +429,18 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         };
 
         SendToSocket(gCompleteMsg);
+    }
+
+    private void SendCompleteQuest(ulong questId) {
+        var qCompleteMsg = new QUEST_MESSAGES_52_PROTOCOL.MSG_COMPLETEQUEST {
+            QuestID = questId,
+        };
+        var qRemoveMsg = new QUEST_MESSAGES_52_PROTOCOL.MSG_REMOVEQUEST {
+            QuestID = questId,
+        };
+
+        SendToSocket(qCompleteMsg);
+        SendToSocket(qRemoveMsg);
     }
 
     private static bool DetermineNextGoals(QuestTemplate qTemplate,
