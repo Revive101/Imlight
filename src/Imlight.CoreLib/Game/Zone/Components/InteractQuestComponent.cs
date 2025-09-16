@@ -40,8 +40,11 @@ namespace Imlight.CoreLib.Game.Zone.Components;
 
 internal sealed class InteractQuestComponent(ZoneEntity entity) : ZoneEntityComponent(entity), IServiceComponent, IComponentFactory {
 
+    private const string PREP_NPC_ICON = "Prep";
+    private const string COMPLETE_NPC_ICON = "Complete";
+
     public string ServiceName => "QuestingService";
-    public string NpcIcon => "Prep";
+    public string NpcIcon => "";
     public string NpcNameKey => null;
     public string NpcTextKey => null;
     public WizBangs WizBang => WizBangs.StartQuest;
@@ -49,27 +52,85 @@ internal sealed class InteractQuestComponent(ZoneEntity entity) : ZoneEntityComp
     public string InteractWizBang => "";
     public string DisplayKey => "";
 
-    private readonly List<QuestTemplate> _availableQuests = [];
+    private readonly List<QuestTemplate> _givesQuests = [];
+    private readonly List<PersonaGoalTemplate> _personaGoals = [];
 
     // Always attach since any NPC can be a quest giver.
     // We'll figure out if the quest can be available to the player when the join
     // the zone.
     public static bool ShouldAttachToEntity(CoreTemplate template)
-        => template is GameObjectTemplate;
+        => template is GameObjectTemplate
+        && template.m_behaviors.Any(x => x is NPCBehaviorTemplate)
+        && !template.m_behaviors.Any(x => x is DuelistBehaviorTemplate);
 
-    public IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard _) {
-        // Return a "PrepEntry" service option for each quest that this NPC can give.
-        // TODO: filter out the quest requirements here.
-        if (_availableQuests.Count == 0) {
+    public IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard wizard) {
+        if (wizard is null) {
             yield break;
         }
 
-        foreach (var quest in _availableQuests) {
-            yield return new PrepEntry {
-                m_displayKey = quest.m_questTitle,
-                m_iconKey = NpcIcon,
-                m_serviceName = ServiceName,
-            };
+        if (_givesQuests.Count <= 0 && _personaGoals.Count <= 0) {
+            yield break;
+        }
+
+        foreach (var quest in _givesQuests) {
+            // If the player hasn't completed this quest and doesn't have it, show it.
+            // TODO: check requirements.
+            if (!wizard.HasQuest(quest.m_questName) || !wizard.HasCompletedQuest(quest.m_questName)) {
+                yield return new PrepEntry {
+                    m_displayKey = quest.m_questTitle,
+                    m_iconKey = PREP_NPC_ICON,
+                    m_serviceName = ServiceName,
+                };
+            }
+        }
+
+        // If the player has this quest but has not completed it,
+        // check if any of their active goals are a persona goal for this NPC.
+        if (Entity.Template is not GameObjectTemplate goTemplate) {
+            yield break;
+        }
+
+        var myName = goTemplate.m_objectName;
+        var relevantQuests = wizard.QuestBehavior.CurrentQuestInstances
+            .Where(q => q.GoalProgress
+                .Any(g => _personaGoals.Any(pg => pg.m_goalName == g.GoalName && pg.m_personaName == myName)))
+            .ToList();
+
+        // If they do have the relevant quest, check to see if they have an active goal for this NPC.
+        foreach (var quest in relevantQuests) {
+            var qTemplate = QuestTemplateCollection.GetQuestByName(quest.QuestName);
+            if (qTemplate is null) {
+                Logger.Error("Player {0} has quest instance for unknown quest '{1}'.",
+                    Logger.Args(wizard.CharId, quest.QuestName));
+
+                continue;
+            }
+
+            foreach (var goal in _personaGoals) {
+                // Get the player's instance of this goal.
+                var gInstance = quest.GoalProgress
+                    .FirstOrDefault(g => g.GoalName == goal.m_goalName);
+                if (gInstance is null) {
+                    Logger.Error("Player {0} has quest {1} but is missing goal {2}.",
+                        Logger.Args(wizard.CharId, quest.QuestName, goal.m_goalName));
+
+                    continue;
+                }
+
+                if (quest.IsGoalActive(goal.m_goalName) && goal.m_personaName == myName) {
+                    yield return new GoalEntry {
+                        m_questID = quest.ID,
+                        m_goalID = gInstance.ID,
+                        m_goalTitle = goal.m_goalTitle,
+                        m_questTitle = qTemplate.m_questTitle,
+                        m_displayKey = qTemplate.m_questTitle,
+                        m_iconKey = COMPLETE_NPC_ICON,
+                        m_serviceName = ServiceName,
+                    };
+
+                    break;
+                }
+            }
         }
     }
 
@@ -99,36 +160,86 @@ internal sealed class InteractQuestComponent(ZoneEntity entity) : ZoneEntityComp
             var templateId = prepDialogEntry.m_dialogEntries.FirstOrDefault()?.m_actorTemplateID;
             if (templateId == entity.ActiveGameObject.m_templateID) {
                 // This NPC gives this quest.
-                _availableQuests.Add(questTemplate);
+                _givesQuests.Add(questTemplate);
+
+                return;
+            }
+
+            // Check to see if any of the persona goals for this quest template are me.
+            foreach (var goal in questTemplate.m_goals) {
+                if (goal is not PersonaGoalTemplate personaGoal) {
+                    continue;
+                }
+
+                if (entity.Template is not GameObjectTemplate goTemplate) {
+                    continue;
+                }
+
+                if (personaGoal.m_personaName == goTemplate.m_objectName) {
+                    // This NPC is a persona goal for this quest.
+                    _personaGoals.Add(personaGoal);
+                }
             }
         }
 
-        _availableQuests.Sort((a, b) => string.Compare(a.m_questTitle, b.m_questTitle, StringComparison.Ordinal));
+        _givesQuests.Sort((a, b) => string.Compare(a.m_questTitle, b.m_questTitle, StringComparison.Ordinal));
     }
 
     public void OnServiceInteraction(IActorRef playerActor, Wizard playerCharacter, CoreObject playerObject, uint serviceOptionIndex) {
-        var interactedQuest = _availableQuests.ElementAtOrDefault((int) serviceOptionIndex);
-
-        if (interactedQuest is null) {
-            Logger.Error("Player {0} attempted to interact with quest NPC {1} for a non-existent quest option index {2}.",
-                Logger.Args(playerCharacter.CharId, entity.ActiveGameObject.m_templateID, serviceOptionIndex));
-
+        if (Entity.Template is not GameObjectTemplate goTemplate) {
             return;
         }
 
-        // The player has interacted with this quest. If they don't have the quest, show them the quest info dialog.
-        // Otherwise, show them the "Underway" dialog.
-        if (!playerCharacter.HasQuest(interactedQuest.m_questName) && !playerCharacter.HasCompletedQuest(interactedQuest.m_questName)) {
-            ShowQuestInfoDialog(playerActor, interactedQuest);
-            SendQuestOfferDialog(playerActor, interactedQuest);
-            SendQuestOfferCacheOption(playerActor, interactedQuest);
+        var myName = goTemplate.m_objectName;
 
-            return;
+        // First, check if player has an active goal for this NPC (persona goal takes priority).
+        var relevantQuest = playerCharacter.QuestBehavior.CurrentQuestInstances
+            .FirstOrDefault(q => q.GoalProgress
+                .Any(g => _personaGoals.Any(pg => pg.m_goalName == g.GoalName && pg.m_personaName == myName)));
+
+        if (relevantQuest != null) {
+            var questTemplate = QuestTemplateCollection.GetQuestByName(relevantQuest.QuestName);
+            if (questTemplate is null) {
+                Logger.Error("Player {0} has quest instance for unknown quest '{1}'.",
+                    Logger.Args(playerCharacter.CharId, relevantQuest.QuestName));
+                    
+                return;
+            }
+
+            foreach (var goal in _personaGoals) {
+                var gInstance = relevantQuest.GoalProgress
+                    .FirstOrDefault(g => g.GoalName == goal.m_goalName);
+                if (gInstance is null) {
+                    Logger.Error("Player {0} has quest {1} but is missing goal {2}.",
+                        Logger.Args(playerCharacter.CharId, relevantQuest.QuestName, goal.m_goalName));
+
+                    continue;
+                }
+
+                if (relevantQuest.IsGoalActive(goal.m_goalName) && goal.m_personaName == myName) {
+                    ShowQuestGoalCompletionDialog(playerActor, questTemplate, goal);
+
+                    return;
+                }
+            }
         }
-        else if (playerCharacter.HasQuest(interactedQuest.m_questName) && !playerCharacter.HasCompletedQuest(interactedQuest.m_questName)) {
-            ShowQuestUnderwayDialog(playerActor, interactedQuest);
 
-            return;
+        // If no active persona goal, check if this NPC gives quests.
+        if (_givesQuests.Count > 0) {
+            var quest = _givesQuests.First();
+
+            if (!playerCharacter.HasQuest(quest.m_questName) && !playerCharacter.HasCompletedQuest(quest.m_questName)) {
+                ShowQuestInfoDialog(playerActor, quest);
+                SendQuestOfferDialog(playerActor, quest);
+                SendQuestOfferCacheOption(playerActor, quest);
+
+                return;
+            }
+            else if (playerCharacter.HasQuest(quest.m_questName) && !playerCharacter.HasCompletedQuest(quest.m_questName)) {
+                ShowQuestUnderwayDialog(playerActor, quest);
+
+                return;
+            }
         }
     }
 
@@ -197,6 +308,43 @@ internal sealed class InteractQuestComponent(ZoneEntity entity) : ZoneEntityComp
         var dialogMsg = new WIZARD_12_PROTOCOL.MSG_ACTORDIALOG {
             MobileID = Entity.ActiveGameObject.m_nMobileID,
             CompletionType = "QuestInfo",
+            ActorDialog = serializedData,
+            Persona = "", // TODO:
+            PersonaName = "", // TODO:
+            PersonaIcon = "", // TODO:
+        };
+
+        playerActor.Tell(dialogMsg);
+    }
+
+    private void ShowQuestGoalCompletionDialog(IActorRef playerActor, QuestTemplate quest, GoalTemplate goal) {
+        if (quest.m_dialogList is not ActorDialogList dialogList) {
+            Logger.Error("Quest {0} has no dialog list.",
+                Logger.Args(quest.m_questName));
+
+            return;
+        }
+
+        var completeDialogList = dialogList.m_dialogs.FirstOrDefault(de => de.m_dialogTag == "Completion");
+        if (completeDialogList is null) {
+            Logger.Error("Quest {0} has no 'Completion' dialog entry.",
+                Logger.Args(quest.m_questName));
+
+            return;
+        }
+
+        // Serialize and send the dialog to the player.
+        var serializer = new ObjectSerializer(Versionable: false);
+        if (!serializer.Serialize(completeDialogList, 16, out var serializedData)) {
+            Logger.Error("Failed to serialize 'Completion' dialog for quest {0}.",
+                Logger.Args(quest.m_questName));
+
+            return;
+        }
+
+        var dialogMsg = new WIZARD_12_PROTOCOL.MSG_ACTORDIALOG {
+            MobileID = Entity.ActiveGameObject.m_nMobileID,
+            CompletionType = "Completion",
             ActorDialog = serializedData,
             Persona = "", // TODO:
             PersonaName = "", // TODO:

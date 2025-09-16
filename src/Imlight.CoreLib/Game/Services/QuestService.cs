@@ -214,12 +214,22 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             return;
         }
 
-        var madLibBlock = GetMadlibBlockForGoal(gTemplate);
+        // Serialize the madlib block for the goal.
+        var madLibBlock = GetAppropriateMadlibBlockForGoal(gTemplate);
         if (!_goalSerializer.Serialize(madLibBlock, 1, out var madLibData)) {
             Logger.Error("Failed to serialize madlib data for goal '{0}' in quest '{1}'",
                 Logger.Args(gTemplate.m_goalName, qInstance.QuestName));
 
             return;
+        }
+
+        // Serialize the client tags, if present.
+        var tagList = GetClientTagList(gTemplate.m_clientTags.ToArray() ?? []);
+        if (!_goalSerializer.Serialize(tagList, 1, out var clientTagData)) {
+            Logger.Error("Failed to serialize client tag data for goal '{0}' in quest '{1}'",
+                Logger.Args(gTemplate.m_goalName, qInstance.QuestName));
+
+            clientTagData = string.Empty;
         }
 
         SendToSocket(new QUEST_MESSAGES_52_PROTOCOL.MSG_SENDGOAL {
@@ -242,6 +252,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             SubscriberGoalTotal = 0, // TODO:
             SendType = 0, // ?
             GoalMadlibs = madLibData,
+            ClientTags = clientTagData,
         });
     }
 
@@ -472,6 +483,11 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         return false;
     }
 
+    private static ClientTagList GetClientTagList(string[] tags)
+        => new() {
+            m_clientTags = [.. tags]
+        };
+
     private static MadlibBlock GetMadLibForQuest(QuestTemplate quest)
         => new() {
             m_madlibs = [
@@ -487,7 +503,14 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             m_blockToken = "QUEST"
         };
 
-    private static MadlibBlock GetMadlibBlockForGoal(GoalTemplate gTemplate)
+    private static MadlibBlock GetAppropriateMadlibBlockForGoal(GoalTemplate gTemplate)
+        => gTemplate.m_goalType switch {
+            GOAL_TYPE.GOAL_TYPE_WAYPOINT => GetMadlibBlockForWaypointGoal(gTemplate),
+            GOAL_TYPE.GOAL_TYPE_PERSONA => GetMadlibBlockForPersonaGoal(gTemplate),
+            _ => new MadlibBlock()
+        };
+
+    private static MadlibBlock GetMadlibBlockForWaypointGoal(GoalTemplate gTemplate)
         => new() {
             m_madlibs = [
                 new MadlibArgT_string {
@@ -506,6 +529,37 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
                     m_madlibToken = "TALLYTEXT2",
                     m_madlibArgument = gTemplate.m_tallyCounter?.m_descriptor2 ?? string.Empty
                 },
+            ],
+            m_blockToken = "GOAL"
+        };
+
+    private static MadlibBlock GetMadlibBlockForPersonaGoal(GoalTemplate gTemplate)
+        => new() {
+            m_madlibs = [
+                new MadlibArgT_string {
+                    m_madlibToken = "NAME",
+                    m_madlibArgument = gTemplate.m_goalTitle
+                },
+                new MadlibArgT_string {
+                    m_madlibToken = "LOCATION",
+                    m_madlibArgument = gTemplate.m_locationName
+                },
+                new MadlibArgT_string {
+                    m_madlibToken = "FIRSTNAME",
+                    m_madlibArgument = "",
+                },
+                new MadlibArgT_string {
+                    m_madlibToken = "LASTNAME",
+                    m_madlibArgument = "",
+                },
+                new MadlibArgT_string {
+                    m_madlibToken = "TITLE",
+                    m_madlibArgument = "",
+                },
+                new MadlibArgT_string {
+                    m_madlibToken = "FULLNAME",
+                    m_madlibArgument = "NPCFormats_Goal_First_Last"
+                }
             ],
             m_blockToken = "GOAL"
         };
