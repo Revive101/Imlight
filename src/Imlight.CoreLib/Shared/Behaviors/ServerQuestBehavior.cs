@@ -63,7 +63,7 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
         CurrentQuestIDs.Remove(quest.ID);
 
         // Mark the quest as completed in the registry:
-        var completedKey = $"{quest.QuestName}.completed";
+        var completedKey = $"{quest.QuestName}_Completed";
         Registry[completedKey] = 1;
 
         return true;
@@ -111,7 +111,7 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
 
         // Check the registry to find the completed quest key:
         // <quest_name>.completed
-        var completedKey = $"{questName}.completed";
+        var completedKey = $"{questName}_Completed";
 
         return Registry.ContainsKey(completedKey) && Registry[completedKey] > 0;
     }
@@ -182,7 +182,7 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
         }
 
         // Same as the normal registry, except prefixed with the quest name.
-        var fullEntryName = $"{questName}.{entryName}";
+        var fullEntryName = $"{questName}_{entryName}";
 
         return AddToRegistry(fullEntryName, value);
     }
@@ -200,7 +200,7 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
             return false;
         }
 
-        var fullEntryName = $"{questName}.{entryName}";
+        var fullEntryName = $"{questName}_{entryName}";
 
         return RemoveFromRegistry(fullEntryName);
     }
@@ -220,7 +220,7 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
             return false;
         }
 
-        var fullEntryName = $"{questName}.{entryName}";
+        var fullEntryName = $"{questName}_{entryName}";
         Registry[fullEntryName] = value;
 
         return true;
@@ -239,7 +239,7 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
             return false;
         }
 
-        var fullEntryName = $"{questName}.{entryName}";
+        var fullEntryName = $"{questName}_{entryName}";
 
         return HasRegistryValue(fullEntryName);
     }
