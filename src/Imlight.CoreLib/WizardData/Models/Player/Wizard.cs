@@ -935,7 +935,7 @@ public class Wizard : IDisposable {
     public bool HasCompletedQuest(string questName)
         => QuestBehavior.HasCompletedQuest(questName);
 
-    public bool MarkQuestCompleted(string questName) {
+    public bool CompleteQuest(string questName) {
         var questStatus = QuestBehavior.CompleteQuest(questName);
         if (!questStatus) {
             Logger.Warning("Could not mark quest {0} as completed for player {1}.",
@@ -1021,6 +1021,48 @@ public class Wizard : IDisposable {
         // Persistent save.
         WizardCollection.UpdateCharacterQuestBehavior(this);
         QuestInstanceCollection.CompleteQuestGoal(questId, goalName);
+
+        return true;
+    }
+
+    public bool HasRegistryValue(string key)
+        => QuestBehavior.HasRegistryValue(key);
+
+    public bool HasQuestRegistryValue(string questName, string key)
+        => QuestBehavior.HasQuestRegistryValue(questName, key);
+
+    public ulong GetRegistryValue(string key)
+        => QuestBehavior.GetRegistryValue(key);
+
+    public ulong GetQuestRegistryValue(string questName, string key)
+        => QuestBehavior.GetQuestRegistryValue(questName, key);
+
+    public bool SetRegistryValue(string key, ulong value) {
+        var setSuccess = QuestBehavior.SetRegistryValue(key, value);
+        if (!setSuccess) {
+            Logger.Warning("Could not set registry value {0} for player {1}.",
+                Logger.Args(key, PlayerNameBehavior.GetWizardName()));
+
+            return false;
+        }
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterQuestBehavior(this);
+
+        return true;
+    }
+
+    public bool SetQuestRegistryValue(string questName, string key, ulong value) {
+        var setSuccess = QuestBehavior.SetQuestRegistryValue(questName, key, value);
+        if (!setSuccess) {
+            Logger.Warning("Could not set quest registry value {0} for quest {1} for player {2}.",
+                Logger.Args(key, questName, PlayerNameBehavior.GetWizardName()));
+
+            return false;
+        }
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterQuestBehavior(this);
 
         return true;
     }

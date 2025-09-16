@@ -16,12 +16,11 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
 
     [JsonIgnore] public bool NoTransfer { get; set; } = true;
 
-    public readonly List<string> CompletedQuests = [];
+    public readonly Dictionary<string, ulong> Registry = [];
 
     // In database, only store the quest IDs to reduce storage size.
     // The quest instances are loaded from the quest instance database on demand.
     public readonly List<ulong> CurrentQuestIDs = [];
-
     [JsonIgnore] public List<QuestInstance> CurrentQuestInstances { get; set; } = [];
 
     public bool AddQuest(QuestInstance quest) {
@@ -29,7 +28,7 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
             return false;
         }
 
-        if (CurrentQuestIDs.Contains(quest.ID) || CompletedQuests.Contains(quest.QuestName)) {
+        if (CurrentQuestIDs.Contains(quest.ID) || HasCompletedQuest(quest.QuestName)) {
             return false;
         }
 
@@ -57,12 +56,15 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
             return false;
         }
 
-        if (!CurrentQuestIDs.Contains(quest.ID) || CompletedQuests.Contains(quest.QuestName)) {
+        if (!CurrentQuestIDs.Contains(quest.ID) || HasCompletedQuest(quest.QuestName)) {
             return false;
         }
 
         CurrentQuestIDs.Remove(quest.ID);
-        CompletedQuests.Add(quest.QuestName);
+
+        // Mark the quest as completed in the registry:
+        var completedKey = $"{quest.QuestName}.completed";
+        Registry[completedKey] = 1;
 
         return true;
     }
@@ -107,7 +109,11 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
             return false;
         }
 
-        return CompletedQuests.Contains(questName);
+        // Check the registry to find the completed quest key:
+        // <quest_name>.completed
+        var completedKey = $"{questName}.completed";
+
+        return Registry.ContainsKey(completedKey) && Registry[completedKey] > 0;
     }
 
     public bool StartQuestGoal(string questName, string goalName) {
@@ -153,6 +159,107 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
         quest.CompleteGoal(goalName);
 
         return true;
+    }
+
+    public bool AddToRegistry(string entryName, ulong value) {
+        if (string.IsNullOrWhiteSpace(entryName) || value == 0) {
+            return false;
+        }
+
+        if (Registry.ContainsKey(entryName)) {
+            Registry[entryName] += value;
+        }
+        else {
+            Registry[entryName] = value;
+        }
+
+        return true;
+    }
+
+    public bool AddToQuestRegistry(string questName, string entryName, ulong value) {
+        if (string.IsNullOrWhiteSpace(questName) || string.IsNullOrWhiteSpace(entryName) || value == 0) {
+            return false;
+        }
+
+        // Same as the normal registry, except prefixed with the quest name.
+        var fullEntryName = $"{questName}.{entryName}";
+
+        return AddToRegistry(fullEntryName, value);
+    }
+
+    public bool RemoveFromRegistry(string entryName) {
+        if (string.IsNullOrWhiteSpace(entryName)) {
+            return false;
+        }
+
+        return Registry.Remove(entryName);
+    }
+
+    public bool RemoveFromQuestRegistry(string questName, string entryName) {
+        if (string.IsNullOrWhiteSpace(questName) || string.IsNullOrWhiteSpace(entryName)) {
+            return false;
+        }
+
+        var fullEntryName = $"{questName}.{entryName}";
+
+        return RemoveFromRegistry(fullEntryName);
+    }
+
+    public bool SetRegistryValue(string entryName, ulong value) {
+        if (string.IsNullOrWhiteSpace(entryName)) {
+            return false;
+        }
+
+        Registry[entryName] = value;
+
+        return true;
+    }
+
+    public bool SetQuestRegistryValue(string questName, string entryName, ulong value) {
+        if (string.IsNullOrWhiteSpace(questName) || string.IsNullOrWhiteSpace(entryName)) {
+            return false;
+        }
+
+        var fullEntryName = $"{questName}.{entryName}";
+        Registry[fullEntryName] = value;
+
+        return true;
+    }
+
+    public bool HasRegistryValue(string key) {
+        if (string.IsNullOrWhiteSpace(key)) {
+            return false;
+        }
+
+        return Registry.ContainsKey(key);
+    }
+
+    public bool HasQuestRegistryValue(string questName, string entryName) {
+        if (string.IsNullOrWhiteSpace(questName) || string.IsNullOrWhiteSpace(entryName)) {
+            return false;
+        }
+
+        var fullEntryName = $"{questName}.{entryName}";
+
+        return HasRegistryValue(fullEntryName);
+    }
+
+    public ulong GetRegistryValue(string key) {
+        if (string.IsNullOrWhiteSpace(key)) {
+            return 0;
+        }
+
+        return Registry.TryGetValue(key, out var value) ? value : 0;
+    }
+
+    public ulong GetQuestRegistryValue(string questName, string entryName) {
+        if (string.IsNullOrWhiteSpace(questName) || string.IsNullOrWhiteSpace(entryName)) {
+            return 0;
+        }
+
+        var fullEntryName = $"{questName}.{entryName}";
+        
+        return GetRegistryValue(fullEntryName);
     }
 
     public ServerQuestBehavior GetClientBehaviorInstance()

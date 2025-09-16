@@ -29,6 +29,7 @@ using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Results;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Collections;
@@ -212,8 +213,18 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
                 continue;
             }
 
-            SendGoalMessage(gTemplate, questInstance);
+            StartGoal(questInstance, gTemplate);
         }
+
+        // Init quest start results.
+        var startResults = quest.m_startResults;
+        ResultDispatcher.ExecuteResults(
+            actorContext: Context,
+            results: startResults,
+            playerRef: SessionActor.ActorRef,
+            playerObj: GetActiveGameObject(),
+            questName: questInstance.QuestName
+        );
     }
 
     private void SendQuestResumeMessage(QuestTemplate qTemplate, QuestInstance qInstance) {
@@ -256,59 +267,6 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
             SendGoalMessage(gTemplate, qInstance);
         }
-    }
-
-    private void SendGoalMessage(GoalTemplate gTemplate, QuestInstance qInstance) {
-        var gInstance = qInstance.GoalProgress
-            .FirstOrDefault(g => g.GoalName == gTemplate.m_goalName);
-        if (gInstance == null) {
-            // This should never happen, but log it just in case.
-            Logger.Error("Quest '{0}' has no goal instance for template goal '{1}'.",
-                Logger.Args(qInstance.QuestName, gTemplate.m_goalName));
-
-            return;
-        }
-
-        // Serialize the madlib block for the goal.
-        var madLibBlock = GetAppropriateMadlibBlockForGoal(gTemplate);
-        if (!_goalSerializer.Serialize(madLibBlock, 1, out var madLibData)) {
-            Logger.Error("Failed to serialize madlib data for goal '{0}' in quest '{1}'",
-                Logger.Args(gTemplate.m_goalName, qInstance.QuestName));
-
-            return;
-        }
-
-        // Serialize the client tags, if present.
-        var tagList = GetClientTagList(gTemplate.m_clientTags.ToArray() ?? []);
-        if (!_goalSerializer.Serialize(tagList, 1, out var clientTagData)) {
-            Logger.Error("Failed to serialize client tag data for goal '{0}' in quest '{1}'",
-                Logger.Args(gTemplate.m_goalName, qInstance.QuestName));
-
-            clientTagData = string.Empty;
-        }
-
-        SendToSocket(new QUEST_MESSAGES_52_PROTOCOL.MSG_SENDGOAL {
-            QuestID = qInstance.ID,
-            GoalID = gInstance.ID,
-            GoalNameID = gTemplate.m_goalNameID,
-            GoalTitle = gTemplate.m_goalTitle,
-            GoalLocation = gTemplate.m_locationName,
-            GoalDestinationZone = gTemplate.m_destinationZone,
-            GoalImage1 = gTemplate.m_displayImage1,
-            GoalImage2 = gTemplate.m_displayImage2,
-            PersonaName = "", // Probably useless (?)
-            GoalType = (byte) gTemplate.m_goalType,
-            GoalStatus = 0, // TODO: Determine status based on progress
-            GoalCount = gInstance.CurrentProgress,
-
-            UseTally = (byte) (gTemplate.m_tallyCounter is not null ? 1 : 0),
-            GoalTotal = gTemplate.m_tallyCounter?.m_count ?? 0,
-            TallyText = gTemplate.m_tallyCounter?.m_descriptor ?? "",
-            SubscriberGoalTotal = 0, // TODO:
-            SendType = 0, // ?
-            GoalMadlibs = madLibData,
-            ClientTags = clientTagData,
-        });
     }
 
     private void CheckForWaypointGoalZoneEntry(Wizard wizard) {
@@ -363,6 +321,17 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         }
 
         SendGoalMessage(goalTemplate, questInstance);
+
+        // Init goal activation results.
+        var activationResults = goalTemplate.m_activateResults;
+        ResultDispatcher.ExecuteResults(
+            actorContext: Context,
+            results: activationResults,
+            playerRef: SessionActor.ActorRef,
+            playerObj: GetActiveGameObject(),
+            questName: questInstance.QuestName,
+            goalName: goalTemplate.m_goalName
+        );
     }
 
     private void CompleteGoal(QuestInstance questInstance, GoalTemplate goalTemplate) {
@@ -385,6 +354,17 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         }
 
         SendCompleteGoal(questInstance.ID, gInstance.ID);
+
+        // Init goal completion results.
+        var completionResults = goalTemplate.m_completeResults;
+        ResultDispatcher.ExecuteResults(
+            actorContext: Context,
+            results: completionResults,
+            playerRef: SessionActor.ActorRef,
+            playerObj: GetActiveGameObject(),
+            questName: questInstance.QuestName,
+            goalName: goalTemplate.m_goalName
+        );
 
         // Is there a next goal to start?
         var qTemplate = _cachedQuestTemplates
@@ -412,7 +392,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
     private void CompleteQuest(QuestInstance questInstance) {
         var wizard = GetActiveWizard();
 
-        if (!wizard.MarkQuestCompleted(questInstance.QuestName)) {
+        if (!wizard.CompleteQuest(questInstance.QuestName)) {
             Logger.Error("Failed to complete quest '{0}' for player '{1}'",
                 Logger.Args(questInstance.QuestName, wizard.CharId));
 
@@ -420,6 +400,79 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         }
 
         SendCompleteQuest(questInstance.ID);
+
+        // Init quest completion results.
+        var qTemplate = _cachedQuestTemplates
+            .FirstOrDefault(q => q.m_questName == questInstance.QuestName);
+        if (qTemplate == null) {
+            Logger.Error("Failed to find quest template for quest '{0}' when completing quest",
+                Logger.Args(questInstance.QuestName));
+
+            return;
+        }
+
+        var completionResults = qTemplate.m_endResults;
+        ResultDispatcher.ExecuteResults(
+            actorContext: Context,
+            results: completionResults,
+            playerRef: SessionActor.ActorRef,
+            playerObj: GetActiveGameObject(),
+            questName: questInstance.QuestName
+        );
+    }
+
+    private void SendGoalMessage(GoalTemplate gTemplate, QuestInstance qInstance) {
+        var gInstance = qInstance.GoalProgress
+            .FirstOrDefault(g => g.GoalName == gTemplate.m_goalName);
+        if (gInstance == null) {
+            // This should never happen, but log it just in case.
+            Logger.Error("Quest '{0}' has no goal instance for template goal '{1}'.",
+                Logger.Args(qInstance.QuestName, gTemplate.m_goalName));
+
+            return;
+        }
+
+        // Serialize the madlib block for the goal.
+        var madLibBlock = GetAppropriateMadlibBlockForGoal(gTemplate);
+        if (!_goalSerializer.Serialize(madLibBlock, 1, out var madLibData)) {
+            Logger.Error("Failed to serialize madlib data for goal '{0}' in quest '{1}'",
+                Logger.Args(gTemplate.m_goalName, qInstance.QuestName));
+
+            return;
+        }
+
+        // Serialize the client tags, if present.
+        var tagList = GetClientTagList(gTemplate.m_clientTags.ToArray() ?? []);
+        if (!_goalSerializer.Serialize(tagList, 1, out var clientTagData)) {
+            Logger.Error("Failed to serialize client tag data for goal '{0}' in quest '{1}'",
+                Logger.Args(gTemplate.m_goalName, qInstance.QuestName));
+
+            clientTagData = string.Empty;
+        }
+
+        SendToSocket(new QUEST_MESSAGES_52_PROTOCOL.MSG_SENDGOAL {
+            QuestID = qInstance.ID,
+            GoalID = gInstance.ID,
+            GoalNameID = gTemplate.m_goalNameID,
+            GoalTitle = gTemplate.m_goalTitle,
+            GoalLocation = gTemplate.m_locationName,
+            GoalDestinationZone = gTemplate.m_destinationZone,
+            GoalImage1 = gTemplate.m_displayImage1,
+            GoalImage2 = gTemplate.m_displayImage2,
+            PersonaName = "", // Probably useless (?)
+            GoalType = (byte) gTemplate.m_goalType,
+            GoalStatus = 0, // TODO: Determine status based on progress
+            GoalCount = gInstance.CurrentProgress,
+
+            UseTally = (byte) (gTemplate.m_tallyCounter is not null ? 1 : 0),
+            GoalTotal = gTemplate.m_tallyCounter?.m_count ?? 0,
+            TallyText = gTemplate.m_tallyCounter?.m_descriptor ?? "",
+            SubscriberGoalTotal = 0, // TODO:
+            SendType = 1, // ?
+            GoalMadlibs = madLibData,
+            ClientTags = clientTagData,
+            NoQuestHelper = gTemplate.m_noQuestHelper ? (byte) 1 : (byte) 0
+        });
     }
 
     private void SendCompleteGoal(ulong questId, ulong goalId) {
