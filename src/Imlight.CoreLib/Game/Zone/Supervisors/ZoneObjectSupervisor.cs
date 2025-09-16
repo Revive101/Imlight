@@ -30,11 +30,17 @@ internal sealed class ZoneObjectSupervisor(Core.Zone zone) : ZoneEntitySuperviso
 
         // Initialize any objects found within the zone data.
         foreach (var objectInfo in zoneData.m_objectList) {
+            // Note: 09/16/2025 (Jooty)
+            // THis has been commented out since it can now be handled by the new
+            // 'Requirements' namespace. I'm keeping this code here, in case we find performance
+            // is better to totally disable event objects rather than relying on the
+            // RenderComponent to constantly check if the object should be rendered or not.
+            //
             // Some objects may be flagged as holiday objects, which means they should only be
-            // spawned during certain times of the year.5
-            if (!IsObjectEligibleForSpawn(objectInfo)) {
-                continue;
-            }
+            // spawned during certain times of the year.
+            //if (!IsObjectEligibleForSpawn(objectInfo)) {
+            //    continue;
+            //}
 
             var template = (GameObjectTemplate) CoreObjectFactory.GetCoreTemplate(objectInfo.m_templateID);
             if (template is null) {
@@ -52,7 +58,7 @@ internal sealed class ZoneObjectSupervisor(Core.Zone zone) : ZoneEntitySuperviso
                 continue;
             }
 
-            var objectActor = CreateEntityActor(coreObject, template);
+            var objectActor = CreateEntityActor(coreObject, template, objectInfo);
         }
 
         // Inform the zone that we have finished initializing all objects.
@@ -60,24 +66,24 @@ internal sealed class ZoneObjectSupervisor(Core.Zone zone) : ZoneEntitySuperviso
         Sender.Tell(reply);
     }
 
-    private static bool IsObjectEligibleForSpawn(CoreObjectInfo objectInfo) {
-        if (objectInfo is null) {
-            return false;
-        }
-
-        // Do not spawn combat sigils within this supervisor.
-        if (objectInfo is CombatSigilObjectInfo) {
-            return false;
-        }
-
-        if (objectInfo.m_spawnRequirements is not null) {
-            var requirements = objectInfo.m_spawnRequirements.m_requirements.ToList();
-            var operatorType = objectInfo.m_spawnRequirements.m_operator;
-            
-            return GlobalRegistryCollection.CheckGlobalRegistryRequirements(requirements, operatorType);
-        }
-
-        return true;
-    }
+    //private static bool IsObjectEligibleForSpawn(CoreObjectInfo objectInfo) {
+    //    if (objectInfo is null) {
+    //        return false;
+    //    }
+    //
+    //    // Do not spawn combat sigils within this supervisor.
+    //    if (objectInfo is CombatSigilObjectInfo) {
+    //        return false;
+    //    }
+    //
+    //    if (objectInfo.m_spawnRequirements is not null) {
+    //        var requirements = objectInfo.m_spawnRequirements.m_requirements.ToList();
+    //        var operatorType = objectInfo.m_spawnRequirements.m_operator;
+    //        
+    //        return GlobalRegistryCollection.CheckGlobalRegistryRequirements(requirements, operatorType);
+    //    }
+    //
+    //    return true;
+    //}
 
 }

@@ -53,7 +53,7 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
     private float _renderDistance;
     private bool _doesDistanceCheck = false;
 
-    public static bool ShouldAttachToEntity(CoreTemplate template) 
+    public static bool ShouldAttachToEntity(CoreTemplate template)
         => template is GameObjectTemplate gameObjectTemplate
         && gameObjectTemplate.m_behaviors.Any(x => x is RenderBehaviorTemplate)
         || template is CombatSigilTemplate; // bug fix: combat sigil templtaes don't have any behaviors

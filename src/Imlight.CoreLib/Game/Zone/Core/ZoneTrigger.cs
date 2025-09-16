@@ -48,7 +48,7 @@ namespace Imlight.CoreLib.Game.Zone.Core;
 /// <param name="zoneRef">The reference to the zone that this trigger is a part of.</param>
 /// <param name="zone">The zone that this trigger is a part of.</param>
 public sealed class ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger) 
-    : ZoneEntity(null, null, zoneRef, zone) {
+    : ZoneEntity(null, null, null, zoneRef, zone) {
 
     public Trigger TriggerData { get; init; } = trigger;
     private readonly Dictionary<IActorRef, DateTime> _cooldowns = [];

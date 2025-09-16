@@ -73,7 +73,7 @@ public sealed class ZonePath : ZoneEntity, IWithTimers {
 
     // ctor
     public ZonePath(PathObjectTemplate template, List<NodeObject> nodes, List<SpawnObject> creatures, IActorRef zoneRef, Zone zone)
-        : base(null, null, zoneRef, zone) {
+        : base(null, null, null, zoneRef, zone) {
         this._template = template;
         this._nodes = nodes;
         this._creatures = creatures;
@@ -275,7 +275,7 @@ public sealed class ZonePath : ZoneEntity, IWithTimers {
 
     private IActorRef CreateEntityActor(CoreObject coreObject, CoreTemplate template) {
         var actorName = CreateEntityActorName(coreObject);
-        var objectActor = Context.ActorOf(Props.Create(() => new ZoneEntity(coreObject, template, ZoneRef, Zone)), actorName);
+        var objectActor = Context.ActorOf(Props.Create(() => new ZoneEntity(coreObject, template, null, ZoneRef, Zone)), actorName);
 
         try {
             // Send a message to the object and await a reply to ensure it has been created and initialized successfully.

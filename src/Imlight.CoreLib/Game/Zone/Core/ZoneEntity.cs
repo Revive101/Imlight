@@ -58,6 +58,7 @@ namespace Imlight.CoreLib.Game.Zone.Core;
 public class ZoneEntity(
     CoreObject activeGameObject,
     CoreTemplate template,
+    CoreObjectInfo info,
     IActorRef zoneRef,
     Zone zone) : ReceiveProtocolDispatcher, IClientBehaviorProvider<WizClientObject> {
 
@@ -66,6 +67,7 @@ public class ZoneEntity(
     public IActorRef SelfRef { get; protected set; } 
     public CoreObject ActiveGameObject { get; protected set; } = activeGameObject;
     public CoreTemplate Template { get; protected set; } = template;
+    public CoreObjectInfo Info { get; protected set; } = info;
     public Zone Zone { get; protected set; } = zone;
     public IActorRef SupervisorRef { get; protected set; } = Context.Parent;
     public IActorRef ZoneRef { get; protected set; } = zoneRef;
