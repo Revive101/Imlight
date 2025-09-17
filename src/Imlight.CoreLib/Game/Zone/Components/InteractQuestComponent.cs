@@ -242,18 +242,17 @@ internal sealed class InteractQuestComponent(ZoneEntity entity)
     }
 
     private (PersonaGoalTemplate Goal, ulong QuestId, ulong GoalId)? FindActivePersonaGoal(Wizard wizard) {
-        var relevantQuest = wizard.QuestBehavior.CurrentQuestInstances
-            .FirstOrDefault(q => q.GoalProgress
-                .Any(g => _personaGoals.Any(pg => pg.m_goalName == g.GoalName && pg.m_personaName == _npcName)));
+        var relevantQuests = wizard.QuestBehavior.CurrentQuestInstances
+            .Where(q => q.GoalProgress
+                .Any(g => _personaGoals.Any(pg => pg.m_goalName == g.GoalName && pg.m_personaName == _npcName)))
+            .ToList();
 
-        if (relevantQuest == null) {
-            return null;
-        }
-
-        foreach (var goal in _personaGoals) {
-            var gInstance = relevantQuest.GoalProgress.FirstOrDefault(g => g.GoalName == goal.m_goalName);
-            if (gInstance != null && relevantQuest.IsGoalActive(goal.m_goalName) && goal.m_personaName == _npcName) {
-                return (goal, relevantQuest.ID, gInstance.ID);
+        foreach (var quest in relevantQuests) {
+            foreach (var goal in _personaGoals) {
+                var gInstance = quest.GoalProgress.FirstOrDefault(g => g.GoalName == goal.m_goalName);
+                if (gInstance != null && quest.IsGoalActive(goal.m_goalName) && goal.m_personaName == _npcName) {
+                    return (goal, quest.ID, gInstance.ID);
+                }
             }
         }
 
