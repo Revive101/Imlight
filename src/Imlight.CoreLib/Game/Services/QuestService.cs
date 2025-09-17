@@ -35,12 +35,15 @@ using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Misc;
 using Imlight.CoreLib.WizardData.Models.Player;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace Imlight.CoreLib.Game.Services;
 
 internal class QuestService(SessionActor sessionActor) : MessageService(sessionActor) {
+
+    private const float DEFAULT_KILL_COLLECT_CHANCE = 0.5f;
 
     private readonly List<QuestTemplate> _cachedQuestOffers = [];
     private readonly List<QuestTemplate> _cachedQuestTemplates = [];
@@ -109,12 +112,11 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         var questInstance = new QuestInstance(quest, wizard.CharId);
         wizard.AddQuest(questInstance);
 
-        SendQuestStartingMessage(quest, questInstance);
-
-        // Cache the quest template so we can reference it later if needed.
         if (!_cachedQuestTemplates.Contains(quest)) {
             _cachedQuestTemplates.Add(quest);
         }
+
+        SendQuestStartingMessage(quest, questInstance);
 
         // Remove it from the cached offers now that it's accepted.
         _cachedQuestOffers.RemoveAll(q => q.m_questName == quest.m_questName);
@@ -173,6 +175,44 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
         // Mark the goal complete.
         CompleteGoal(qInstance, gTemplate);
+    }
+
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_COMBATWIN))]
+    private void ReceiveCombatVictory(COMBAT_106_PROTOCOL.MSG_COMBATWIN message) {
+        var wizard = GetActiveWizard();
+
+        foreach (var qInstance in wizard.QuestBehavior.CurrentQuestInstances) {
+            var qTemplate = _cachedQuestTemplates.FirstOrDefault(q => q.m_questName == qInstance.QuestName);
+            if (qTemplate == null) {
+                Logger.Error("Failed to find quest template for quest '{0}' when processing combat victory.",
+                    Logger.Args(qInstance.QuestName));
+
+                continue;
+            }
+
+            var combatGoals = qTemplate.m_goals
+                .Where(gTemplate => gTemplate.m_goalType == GOAL_TYPE.GOAL_TYPE_BOUNTY
+                    || gTemplate.m_goalType == GOAL_TYPE.GOAL_TYPE_BOUNTYCOLLECT);
+
+            if (!combatGoals.Any()) {
+                continue;
+            }
+
+            foreach (var goal in combatGoals) {
+                if (!qInstance.IsGoalActive(goal.m_goalName)) {
+                    continue;
+                }
+
+                if (goal is not BountyGoalTemplate bountyGoal) {
+                    Logger.Error("Combat goal '{0}' in quest '{1}' is not a valid bounty goal template.",
+                        Logger.Args(goal.m_goalName, qInstance.QuestName));
+
+                    continue;
+                }
+
+                ProcessCombatGoal(wizard, qInstance, bountyGoal, message.MobAdjectives);
+            }
+        }
     }
 
     private void SendQuestStartingMessage(QuestTemplate quest, QuestInstance questInstance) {
@@ -320,7 +360,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             return;
         }
 
-        SendGoalMessage(goalTemplate, questInstance, true);
+        SendGoalMessage(goalTemplate, questInstance, 1);
 
         // Init goal activation results.
         var activationResults = goalTemplate.m_activateResults;
@@ -421,7 +461,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         );
     }
 
-    private void SendGoalMessage(GoalTemplate gTemplate, QuestInstance qInstance, bool isNewGoal = false) {
+    private void SendGoalMessage(GoalTemplate gTemplate, QuestInstance qInstance, byte sendType = 0) {
         var gInstance = qInstance.GoalProgress
             .FirstOrDefault(g => g.GoalName == gTemplate.m_goalName);
         if (gInstance == null) {
@@ -433,7 +473,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         }
 
         // Serialize the madlib block for the goal.
-        var madLibBlock = GetAppropriateMadlibBlockForGoal(gTemplate);
+        var madLibBlock = GetAppropriateMadlibBlockForGoal(gTemplate, gInstance);
         if (!_goalSerializer.Serialize(madLibBlock, 1, out var madLibData)) {
             Logger.Error("Failed to serialize madlib data for goal '{0}' in quest '{1}'",
                 Logger.Args(gTemplate.m_goalName, qInstance.QuestName));
@@ -450,16 +490,26 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             clientTagData = string.Empty;
         }
 
-        SendToSocket(new QUEST_MESSAGES_52_PROTOCOL.MSG_SENDGOAL {
+        var patronIcon = GetPatronIconFromGoal(gTemplate);
+
+        // Force bounty goals to use SendType = 0 instead of 1.
+        if ((gTemplate.m_goalType == GOAL_TYPE.GOAL_TYPE_BOUNTY ||
+             gTemplate.m_goalType == GOAL_TYPE.GOAL_TYPE_BOUNTYCOLLECT) &&
+            sendType == 1) {
+            sendType = 0;
+        }
+
+        var packet = new QUEST_MESSAGES_52_PROTOCOL.MSG_SENDGOAL {
             QuestID = qInstance.ID,
             GoalID = gInstance.ID,
             GoalNameID = gTemplate.m_goalNameID,
             GoalTitle = gTemplate.m_goalTitle,
             GoalLocation = gTemplate.m_locationName,
-            GoalDestinationZone = gTemplate.m_destinationZone,
+            GoalDestinationZone = sendType == 2 ? "" : gTemplate.m_destinationZone,
             GoalImage1 = gTemplate.m_displayImage1,
             GoalImage2 = gTemplate.m_displayImage2,
             PersonaName = "", // Probably useless (?)
+            PatronIcon = patronIcon,
             GoalType = (byte) gTemplate.m_goalType,
             GoalStatus = 0, // TODO: Determine status based on progress
             GoalCount = gInstance.CurrentProgress,
@@ -467,12 +517,13 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             UseTally = (byte) (gTemplate.m_tallyCounter is not null ? 1 : 0),
             GoalTotal = gTemplate.m_tallyCounter?.m_count ?? 0,
             TallyText = gTemplate.m_tallyCounter?.m_descriptor ?? "",
-            SubscriberGoalTotal = 0, // TODO:
-            SendType = isNewGoal ? (byte) 1 : (byte) 0,
+            SubscriberGoalTotal = gTemplate.m_tallyCounter?.m_count ?? 0,
+            SendType = sendType,
             GoalMadlibs = madLibData,
             ClientTags = clientTagData,
             NoQuestHelper = gTemplate.m_noQuestHelper ? (byte) 1 : (byte) 0
-        });
+        };
+        SendToSocket(packet);
     }
 
     private void SendCompleteGoal(ulong questId, ulong goalId) {
@@ -494,6 +545,62 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
         SendToSocket(qCompleteMsg);
         SendToSocket(qRemoveMsg);
+    }
+
+    private void ProcessCombatGoal(Wizard wizard,
+                                   QuestInstance qInstance,
+                                   BountyGoalTemplate goalTemplate,
+                                   string[] defeatedMobAdjectives) {
+        var shouldIncrement = goalTemplate.m_goalType == GOAL_TYPE.GOAL_TYPE_BOUNTY;
+        var goalMobAdjectives = goalTemplate.m_npcAdjectives ?? [];
+
+        // Check to see if the defeated mob matches the goal's NPC adjectives.
+        if (!defeatedMobAdjectives.Any(adjective => goalMobAdjectives.Contains(adjective))) {
+            return;
+        }
+
+        // If there were, determine how many of the adjectives matched.
+        // We'll increment by that amount.
+        var matchCount = defeatedMobAdjectives
+            .Where(adjective => goalMobAdjectives.Contains(adjective))
+            .Count();
+
+        if (goalTemplate.m_goalType == GOAL_TYPE.GOAL_TYPE_BOUNTYCOLLECT) {
+            var chance = goalTemplate.m_tallyCounter?.m_percentChance ?? DEFAULT_KILL_COLLECT_CHANCE;
+            shouldIncrement = new Random().NextDouble() <= chance;
+        }
+
+        if (shouldIncrement) {
+            for (int i = 0; i < matchCount; i++) {
+                wizard.IncrementQuestGoal(qInstance.QuestName, goalTemplate.m_goalName);
+            }
+
+            var goalMax = goalTemplate.m_tallyCounter?.m_count ?? 0;
+            var gInstance = qInstance.GoalProgress.FirstOrDefault(g => g.GoalName == goalTemplate.m_goalName);
+
+            if (gInstance != null && gInstance.CurrentProgress >= goalMax) {
+                CompleteGoal(qInstance, goalTemplate);
+
+                return;
+            }
+
+            SendGoalMessage(goalTemplate, qInstance, 2);
+        }
+    }
+
+    private string GetPatronIconFromGoal(GoalTemplate gTemplate) {
+        var qTemplate = _cachedQuestTemplates
+            .FirstOrDefault(q => q.m_goals.Contains(gTemplate));
+        if (qTemplate == null) {
+            return "";
+        }
+
+        // Check the quest dialog for the "Prep" section.
+        // The patron will be whomever gave the player the quest.
+        var dialogList = qTemplate.m_dialogList as ActorDialogList;
+        var prepDialogList = dialogList?.m_dialogs.FirstOrDefault(de => de.m_dialogTag == "Prep");
+
+        return prepDialogList?.m_dialogEntries.FirstOrDefault()?.m_picture ?? "";
     }
 
     private static bool DetermineNextGoals(QuestTemplate qTemplate,
@@ -638,10 +745,11 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             m_blockToken = "QUEST"
         };
 
-    private static MadlibBlock GetAppropriateMadlibBlockForGoal(GoalTemplate gTemplate)
+    private static MadlibBlock GetAppropriateMadlibBlockForGoal(GoalTemplate gTemplate, GoalInstance gInstance)
         => gTemplate.m_goalType switch {
             GOAL_TYPE.GOAL_TYPE_WAYPOINT => GetMadlibBlockForWaypointGoal(gTemplate),
             GOAL_TYPE.GOAL_TYPE_PERSONA => GetMadlibBlockForPersonaGoal(gTemplate),
+            GOAL_TYPE.GOAL_TYPE_BOUNTY or GOAL_TYPE.GOAL_TYPE_BOUNTYCOLLECT => GetMadlibBlockForBountyGoal(gTemplate, gInstance),
             _ => new MadlibBlock()
         };
 
@@ -698,5 +806,45 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             ],
             m_blockToken = "GOAL"
         };
+
+    private static MadlibBlock GetMadlibBlockForBountyGoal(GoalTemplate gTemplate, GoalInstance gInstance) {
+        if (gTemplate is not BountyGoalTemplate bountyGoal) {
+            return new MadlibBlock();
+        }
+
+        return new MadlibBlock {
+            m_madlibs = [
+                new MadlibArgT_string {
+                    m_madlibToken = "NAME",
+                    m_madlibArgument = gTemplate.m_goalTitle
+                },
+                new MadlibArgT_string {
+                    m_madlibToken = "LOCATION",
+                    m_madlibArgument = gTemplate.m_locationName
+                },
+                new MadlibArgT_string {
+                    m_madlibToken = "TALLYTEXT",
+                    m_madlibArgument = bountyGoal.m_tallyCounter?.m_descriptor ?? string.Empty
+                },
+                new MadlibArgT_string {
+                    m_madlibToken = "TALLYTEXT2",
+                    m_madlibArgument = bountyGoal.m_tallyCounter?.m_descriptor2 ?? string.Empty
+                },
+                new MadlibArgT_int {
+                    m_madlibToken = "COUNT",
+                    m_madlibArgument = gInstance?.CurrentProgress ?? 0
+                },
+                new MadlibArgT_int {
+                    m_madlibToken = "TOTAL",
+                    m_madlibArgument = bountyGoal.m_tallyCounter?.m_count ?? 0
+                },
+                new MadlibArgT_int {
+                    m_madlibToken = "SUBSCRIBER_TOTAL",
+                    m_madlibArgument = bountyGoal.m_tallyCounter?.m_count ?? 0
+                }
+            ],
+            m_blockToken = "GOAL"
+        };
+    }
 
 }

@@ -45,6 +45,7 @@ using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.CoreLib.WizardData.Models.World;
 
@@ -967,6 +968,24 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         Duel.m_duelPhase = kDuelPhase.kPhase_Victory;
         SendCombatPhase((byte) Duel.m_duelPhase);
 
+        var adjectivesOfDefeatedMobs = new List<string>();
+        EnactActionOnSubCircles(circle => {
+            if (circle.OccupiedTeam == CombatTeam.Monster) {
+                var mobTemplateId = circle.ParticipantObject.m_templateID;
+                var mobTemplate = CoreObjectFactory.GetCoreTemplate(mobTemplateId);
+                if (mobTemplate is null) {
+                    return;
+                }
+
+                if (mobTemplate is not GameObjectTemplate gameObjectTemplate) {
+                    return;
+                }
+
+                var mobAdjectives = gameObjectTemplate.m_adjectiveList;
+                adjectivesOfDefeatedMobs.AddRange(mobAdjectives);
+            }
+        });
+
         // Send the final messages to the participants.
         var combatVictoryMsg = new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATVICTORY();
         EnactActionOnSubCircles(circle => {
@@ -977,7 +996,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             circle.ParticipantActor.Tell(combatVictoryMsg);
 
             var victoryMsg = new COMBAT_106_PROTOCOL.MSG_COMBATWIN() {
-                UsedPips = circle._usedPipsForExperienceGain
+                UsedPips = circle._usedPipsForExperienceGain,
+                MobAdjectives = [.. adjectivesOfDefeatedMobs],
             };
             circle.ParticipantActor.Tell(victoryMsg);
         });

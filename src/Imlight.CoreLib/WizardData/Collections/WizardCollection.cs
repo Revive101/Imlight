@@ -465,7 +465,6 @@ public static class WizardCollection {
         }
 
         dbWizard.QuestBehavior = wizard.QuestBehavior;
-        session.Store(dbWizard);
         session.SaveChanges();
 
         return true;

@@ -224,7 +224,7 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
     private void OnWizBangChanged() {
         RefreshServiceMomento(null);
 
-        foreach (var (playerId, playerActor) in _playersInRange) {
+        foreach (var playerActor in _playersInRange.Values.ToList()) {
             var queryCharacterMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
             var wizard = playerActor
                 .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryCharacterMsg)
