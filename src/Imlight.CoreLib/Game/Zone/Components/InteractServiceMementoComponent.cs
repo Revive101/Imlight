@@ -24,6 +24,7 @@
  * Last Updated: 3/18/2025
  */
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
@@ -56,6 +57,8 @@ public interface IServiceComponent {
     string InteractWizBang { get; }
     string DisplayKey { get; }
 
+    event System.Action WizBangChanged { add { } remove { } }
+
 }
 
 internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneEntityComponent(entity), IComponentFactory {
@@ -65,6 +68,7 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
 
     private readonly float _interactionRadius = 300.0f;
     private readonly Dictionary<ulong, IActorRef> _playersInRange = [];
+    private readonly Dictionary<IServiceComponent, System.Action> _eventSubscriptions = [];
     private List<IServiceComponent> _serviceComponents = [];
     private ServiceMementoBase _serviceMemento;
     private MadlibBlock _madlibBlock;
@@ -90,12 +94,12 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
             return;
         }
 
-        if (   IsInRadius(playerObj, _interactionRadius) 
+        if (IsInRadius(playerObj, _interactionRadius)
             && !_playersInRange.ContainsKey(playerObj.m_globalID.Full)) {
             _playersInRange.Add(playerObj.m_globalID.Full, playerActor);
             SendActorServiceOptions(playerActor);
         }
-        else if (   !IsInRadius(playerObj, _interactionRadius) 
+        else if (!IsInRadius(playerObj, _interactionRadius)
                  && _playersInRange.ContainsKey(playerObj.m_globalID.Full)) {
             _playersInRange.Remove(playerObj.m_globalID.Full);
             SendLeaveServiceRange(playerActor);
@@ -114,7 +118,7 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
             Logger.Args(playerActor.Path.Name, Entity.ActiveGameObject.m_globalID.Full, serviceName, serviceIndex));
 
         if (_serviceComponents.Count <= 0) {
-            Logger.Warning("No service components found for NPC {0}", 
+            Logger.Warning("No service components found for NPC {0}",
                 Logger.Args(Entity.ActiveGameObject.m_debugName));
 
             return;
@@ -155,7 +159,7 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
             Behaviors: SerializerFlags.None
         );
         if (!serializer.Serialize(_serviceMemento, 4, out var data)) {
-            Logger.Error("Failed to serialize service memento for NPC {0}", 
+            Logger.Error("Failed to serialize service memento for NPC {0}",
                 Logger.Args(Entity.ActiveGameObject.m_debugName));
 
             return;
@@ -190,6 +194,13 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
             return;
         }
 
+        // Subscribe to WizBangChanged events for all service components.
+        foreach (var component in _serviceComponents) {
+            var handler = () => OnWizBangChanged();
+            component.WizBangChanged += handler;
+            _eventSubscriptions[component] = handler;
+        }
+
         var gameObjTemplate = Entity.Template as GameObjectTemplate;
 
         // Get all service options.
@@ -208,6 +219,20 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
             m_serviceOptions = allOptions,
             m_personaMadlibs = _madlibBlock
         };
+    }
+
+    private void OnWizBangChanged() {
+        RefreshServiceMomento(null);
+
+        foreach (var (playerId, playerActor) in _playersInRange) {
+            var queryCharacterMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
+            var wizard = playerActor
+                .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryCharacterMsg)
+                .Result
+                .Wizard;
+
+            SendWizBang(playerActor, wizard);
+        }
     }
 
     private void SetMadLibBlock() {
@@ -241,17 +266,9 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
         // This delay is to ensure that the player's game client has fully loaded.
         System.Threading.Tasks.Task.Delay(800).Wait();
 
-        // Get all of the services which actually have service options.
-        var availableServices = _serviceComponents
-            .Where(c => c.GetServiceOptions(playerWizard).Any())
-            .ToList();
-        if (availableServices.Count <= 0) {
-            return;
-        }
-
         // Out of the service options, deduce which WizBang is the highest priority.
         // Thankfully, game client data has a priority list for WizBangs.
-        var highestPriority = SortComponentsByPriority(availableServices).FirstOrDefault();
+        var highestPriority = SortComponentsByPriority(_serviceComponents).FirstOrDefault();
 
         // Send the WizBang to the player.
         var wizBang = highestPriority?.WizBang ?? WizBangs.None;
