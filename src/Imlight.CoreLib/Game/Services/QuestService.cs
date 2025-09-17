@@ -29,6 +29,7 @@ using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Madlibs;
 using Imlight.CoreLib.Game.Results;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
@@ -216,7 +217,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
     }
 
     private void SendQuestStartingMessage(QuestTemplate quest, QuestInstance questInstance) {
-        var qMadLibs = GetMadLibForQuest(quest);
+        var qMadLibs = QuestMadlibs.GetMadLibForQuest(quest);
         if (!_goalSerializer.Serialize(qMadLibs, 1, out var madLibData)) {
             Logger.Error("Failed to serialize madlib data for quest '{0}'",
                 Logger.Args(quest.m_questName));
@@ -268,7 +269,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
     }
 
     private void SendQuestResumeMessage(QuestTemplate qTemplate, QuestInstance qInstance) {
-        var qMadLibs = GetMadLibForQuest(qTemplate);
+        var qMadLibs = QuestMadlibs.GetMadLibForQuest(qTemplate);
         if (!_goalSerializer.Serialize(qMadLibs, 1, out var madLibData)) {
             Logger.Error("Failed to serialize madlib data for quest '{0}'",
                 Logger.Args(qTemplate.m_questName));
@@ -473,7 +474,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         }
 
         // Serialize the madlib block for the goal.
-        var madLibBlock = GetAppropriateMadlibBlockForGoal(gTemplate, gInstance);
+        var madLibBlock = QuestMadlibs.GetAppropriateMadlibBlockForGoal(gTemplate, gInstance);
         if (!_goalSerializer.Serialize(madLibBlock, 1, out var madLibData)) {
             Logger.Error("Failed to serialize madlib data for goal '{0}' in quest '{1}'",
                 Logger.Args(gTemplate.m_goalName, qInstance.QuestName));
@@ -729,122 +730,5 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         => new() {
             m_clientTags = [.. tags]
         };
-
-    private static MadlibBlock GetMadLibForQuest(QuestTemplate quest)
-        => new() {
-            m_madlibs = [
-                new MadlibArgT_string {
-                    m_madlibToken = "NAME",
-                    m_madlibArgument = quest.m_questTitle
-                },
-                new MadlibArgT_string {
-                    m_madlibToken = "LEVEL",
-                    m_madlibArgument = quest.m_questLevel.ToString()
-                },
-            ],
-            m_blockToken = "QUEST"
-        };
-
-    private static MadlibBlock GetAppropriateMadlibBlockForGoal(GoalTemplate gTemplate, GoalInstance gInstance)
-        => gTemplate.m_goalType switch {
-            GOAL_TYPE.GOAL_TYPE_WAYPOINT => GetMadlibBlockForWaypointGoal(gTemplate),
-            GOAL_TYPE.GOAL_TYPE_PERSONA => GetMadlibBlockForPersonaGoal(gTemplate),
-            GOAL_TYPE.GOAL_TYPE_BOUNTY or GOAL_TYPE.GOAL_TYPE_BOUNTYCOLLECT => GetMadlibBlockForBountyGoal(gTemplate, gInstance),
-            _ => new MadlibBlock()
-        };
-
-    private static MadlibBlock GetMadlibBlockForWaypointGoal(GoalTemplate gTemplate)
-        => new() {
-            m_madlibs = [
-                new MadlibArgT_string {
-                    m_madlibToken = "NAME",
-                    m_madlibArgument = gTemplate.m_goalTitle
-                },
-                new MadlibArgT_string {
-                    m_madlibToken = "LOCATION",
-                    m_madlibArgument = gTemplate.m_locationName
-                },
-                new MadlibArgT_string {
-                    m_madlibToken = "TALLYTEXT",
-                    m_madlibArgument = gTemplate.m_tallyCounter?.m_descriptor ?? string.Empty
-                },
-                new MadlibArgT_string {
-                    m_madlibToken = "TALLYTEXT2",
-                    m_madlibArgument = gTemplate.m_tallyCounter?.m_descriptor2 ?? string.Empty
-                },
-            ],
-            m_blockToken = "GOAL"
-        };
-
-    private static MadlibBlock GetMadlibBlockForPersonaGoal(GoalTemplate gTemplate)
-        => new() {
-            m_madlibs = [
-                new MadlibArgT_string {
-                    m_madlibToken = "NAME",
-                    m_madlibArgument = gTemplate.m_goalTitle
-                },
-                new MadlibArgT_string {
-                    m_madlibToken = "LOCATION",
-                    m_madlibArgument = gTemplate.m_locationName
-                },
-                new MadlibArgT_string {
-                    m_madlibToken = "FIRSTNAME",
-                    m_madlibArgument = "",
-                },
-                new MadlibArgT_string {
-                    m_madlibToken = "LASTNAME",
-                    m_madlibArgument = "",
-                },
-                new MadlibArgT_string {
-                    m_madlibToken = "TITLE",
-                    m_madlibArgument = "",
-                },
-                new MadlibArgT_string {
-                    m_madlibToken = "FULLNAME",
-                    m_madlibArgument = "NPCFormats_Goal_First_Last"
-                }
-            ],
-            m_blockToken = "GOAL"
-        };
-
-    private static MadlibBlock GetMadlibBlockForBountyGoal(GoalTemplate gTemplate, GoalInstance gInstance) {
-        if (gTemplate is not BountyGoalTemplate bountyGoal) {
-            return new MadlibBlock();
-        }
-
-        return new MadlibBlock {
-            m_madlibs = [
-                new MadlibArgT_string {
-                    m_madlibToken = "NAME",
-                    m_madlibArgument = gTemplate.m_goalTitle
-                },
-                new MadlibArgT_string {
-                    m_madlibToken = "LOCATION",
-                    m_madlibArgument = gTemplate.m_locationName
-                },
-                new MadlibArgT_string {
-                    m_madlibToken = "TALLYTEXT",
-                    m_madlibArgument = bountyGoal.m_tallyCounter?.m_descriptor ?? string.Empty
-                },
-                new MadlibArgT_string {
-                    m_madlibToken = "TALLYTEXT2",
-                    m_madlibArgument = bountyGoal.m_tallyCounter?.m_descriptor2 ?? string.Empty
-                },
-                new MadlibArgT_int {
-                    m_madlibToken = "COUNT",
-                    m_madlibArgument = gInstance?.CurrentProgress ?? 0
-                },
-                new MadlibArgT_int {
-                    m_madlibToken = "TOTAL",
-                    m_madlibArgument = bountyGoal.m_tallyCounter?.m_count ?? 0
-                },
-                new MadlibArgT_int {
-                    m_madlibToken = "SUBSCRIBER_TOTAL",
-                    m_madlibArgument = bountyGoal.m_tallyCounter?.m_count ?? 0
-                }
-            ],
-            m_blockToken = "GOAL"
-        };
-    }
 
 }
