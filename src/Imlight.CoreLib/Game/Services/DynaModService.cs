@@ -74,6 +74,16 @@ internal class DynaModService(SessionActor sessionActor) : MessageService(sessio
         var dynaModState = message.DynaMod.m_dynaModState;
 
         wizard.AddDynamod(zoneName, dynaModClientTag, dynaModState);
+
+        // Broadcast the state change to the zone.
+        // Objects that match the client tag will apply the state change.
+        var stateChangeMsg = new ZONE_102_PROTOCOL.MSG_ENTERSTATE {
+            ObjectName = dynaModClientTag,
+            StateName = dynaModState,
+            ExclusiveToSender = true,
+            Sender = SessionActor.ActorRef
+        };
+        ZoneBroadcastNoPlayers(stateChangeMsg);
     }
 
     [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_REMOVEDYNAMOD))]

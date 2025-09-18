@@ -785,7 +785,7 @@ public class Wizard : IDisposable {
         }
 
         // Persistent save.
-        DynamodCollection.UpdateDynamodSet(DynamodSet);
+        DynamodCollection.UpdateDynamodSet(DynamodSet, dynamod);
 
         return true;
     }
@@ -802,7 +802,7 @@ public class Wizard : IDisposable {
         }
 
         // Persistent save.
-        DynamodCollection.UpdateDynamodSet(DynamodSet);
+        DynamodCollection.RemoveDynamod(DynamodSet.CharId, clientTag);
 
         return true;
     }
@@ -1078,6 +1078,7 @@ public class Wizard : IDisposable {
         ObjectStateBehavior ??= new ServerObjectStateBehavior("PlayerMobileStates");
         FriendsBehavior ??= new ServerFriendBehavior();
         QuestBehavior ??= new ServerQuestBehavior();
+        DynamodSet ??= new DynamodSet(CharId);
     }
 
     private void EquipMount(WizItemTemplate template, WizClientObjectItem item) {

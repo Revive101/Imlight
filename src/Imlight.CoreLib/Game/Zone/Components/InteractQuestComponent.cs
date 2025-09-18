@@ -31,6 +31,7 @@ using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Types;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Madlibs;
 using Imlight.CoreLib.Game.Requirements;
 using Imlight.CoreLib.Game.Requirements.Contexts;
 using Imlight.CoreLib.Game.WizBang;
@@ -287,7 +288,7 @@ internal sealed class InteractQuestComponent(ZoneEntity entity)
 
         switch (state.InteractionType) {
             case QuestInteractionType.GoalCompletion:
-                HandleGoalCompletion(playerActor, playerCharacter, state);
+                HandlePersonaGoalCompletion(playerActor, playerCharacter, state);
                 break;
 
             case QuestInteractionType.QuestOffer:
@@ -300,7 +301,7 @@ internal sealed class InteractQuestComponent(ZoneEntity entity)
         }
     }
 
-    private void HandleGoalCompletion(IActorRef playerActor, Wizard playerCharacter, PlayerQuestState state) {
+    private void HandlePersonaGoalCompletion(IActorRef playerActor, Wizard playerCharacter, PlayerQuestState state) {
         var questTemplate = QuestTemplateCollection.GetQuestByName(
             playerCharacter.QuestBehavior.CurrentQuestInstances
                 .FirstOrDefault(q => q.ID == state.ActiveQuestId)?.QuestName);
@@ -361,7 +362,7 @@ internal sealed class InteractQuestComponent(ZoneEntity entity)
     }
 
     private void ShowQuestGoalCompletionDialog(IActorRef playerActor, QuestTemplate quest, GoalTemplate goal, ulong questId, ulong goalId) {
-        var dialogList = quest.m_dialogList as ActorDialogList;
+        var dialogList = goal.m_dialogList as ActorDialogList;
         var completeDialogList = dialogList?.m_dialogs.FirstOrDefault(de => de.m_dialogTag == "Completion");
 
         if (completeDialogList == null) {
@@ -419,7 +420,8 @@ internal sealed class InteractQuestComponent(ZoneEntity entity)
                 m_goalDestinationZone = goal.m_destinationZone,
                 m_goalImage1 = goal.m_displayImage1,
                 m_goalImage2 = goal.m_displayImage2,
-                m_goalNameID = goal.m_goalNameID
+                m_goalNameID = goal.m_goalNameID,
+                m_goalMadlibs = QuestMadlibs.GetAppropriateMadlibBlockForGoal(goal, null)
             })]
         };
 
