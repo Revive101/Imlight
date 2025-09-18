@@ -61,7 +61,7 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
         }
 
         CurrentQuestIDs.Remove(quest.ID);
-        CurrentQuestInstances.Remove(quest);
+        CurrentQuestInstances.RemoveAll(q => q.QuestName == quest.QuestName);
 
         // Mark the quest as completed in the registry:
         AddToQuestRegistry(quest.QuestName, "Completed", 1);

@@ -946,6 +946,7 @@ public class Wizard : IDisposable {
 
         // Persistent save.
         WizardCollection.UpdateCharacterQuestBehavior(this);
+        QuestInstanceCollection.RemoveQuestInstance(CharId, questName);
 
         return questStatus;
     }
@@ -1352,6 +1353,33 @@ public class Wizard : IDisposable {
 
     private void AfterDatabaseLoadQuestBehavior() {
         QuestBehavior ??= new ServerQuestBehavior();
+
+        // Ensure that we have no duplicate quest instances active and remove completed quests.
+        var uniqueQuests = new List<QuestInstance>();
+        foreach (var quest in QuestBehavior.CurrentQuestInstances.ToList()) {
+            // Remove duplicate quests.
+            if (uniqueQuests.Any(q => q.QuestName == quest.QuestName)) {
+                Logger.Warning("Found duplicate quest instance {0} for player {1}. Removing duplicate.",
+                    Logger.Args(quest.QuestName, PlayerNameBehavior.GetWizardName()));
+
+                QuestBehavior.CurrentQuestInstances.Remove(quest);
+                QuestInstanceCollection.RemoveQuestInstance(CharId, quest.QuestName);
+                
+                continue;
+            }
+
+            // Remove completed quests.
+            if (QuestBehavior.HasCompletedQuest(quest.QuestName)) {
+                QuestBehavior.CurrentQuestInstances.Remove(quest);
+                QuestInstanceCollection.RemoveQuestInstance(CharId, quest.QuestName);
+
+                continue;
+            }
+
+            uniqueQuests.Add(quest);
+        }
+
+        QuestBehavior.CurrentQuestInstances = uniqueQuests;
     }
 
     public void Dispose() =>
