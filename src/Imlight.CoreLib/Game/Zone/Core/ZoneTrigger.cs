@@ -32,10 +32,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using Akka.Actor;
 using Imcodec.ObjectProperty.TypeCache;
-using Imlight.CoreLib.Game.Zone.Triggers;
+using Imlight.CoreLib.Game.Results;
+using Imlight.CoreLib.Game.Results.Contexts;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 
@@ -50,11 +50,8 @@ namespace Imlight.CoreLib.Game.Zone.Core;
 public sealed class ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger) 
     : ZoneEntity(null, null, zoneRef, zone) {
 
-    private const uint RESULT_HANDLER_TIMEOUT_IN_MS = 5000;
-
     public Trigger TriggerData { get; init; } = trigger;
     private readonly Dictionary<IActorRef, DateTime> _cooldowns = [];
-    private readonly List<IActorRef> _triggerActors = [];
 
     // Unsure why this override is required, but it fails without it present.
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN))]
@@ -70,61 +67,11 @@ public sealed class ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger)
                 return;
             }
 
-            // Fire off all results that happen on this event.
-            // We do that by simply dispatching the event to all components attached to this trigger.
-            foreach (var triggerActor in _triggerActors) {
-                triggerActor.Ask<ZONE_102_PROTOCOL.MSG_RESULTEXECUTED>(
-                    message,
-                    timeout: TimeSpan.FromMilliseconds(RESULT_HANDLER_TIMEOUT_IN_MS)
-                );
-            }
+            ResultDispatcher.ExecuteResults(Context, TriggerData.m_results, message.PlayerActor, message.PlayerGameObject, 
+                                           Sender, ZoneRef, triggerName: TriggerData.m_triggerName);
         }
     }
 
-    protected override void AutoAttachComponents() {
-        foreach (var (handlerType, shouldAttachMethod) in ResultHandlerRegistry.GetRegisteredResultHandlers()) {
-            // If it's a generic type definition, we need to construct it with the correct type
-            if (handlerType.IsGenericTypeDefinition) {
-                // Get the result types from the trigger data
-                var results = TriggerData?.m_results?.m_results;
-                if (results == null) {
-                    continue;
-                }
-
-                // Get the generic parameter constraints
-                var genericParam = handlerType.GetGenericArguments()[0];
-                var constraints = genericParam.GetGenericParameterConstraints();
-
-                // Find the first result that matches our constraints
-                var matchingResult = results
-                    .Where(r => r != null)
-                    .FirstOrDefault(r => constraints.All(c => c.IsAssignableFrom(r.GetType())));
-
-                if (matchingResult != null) {
-                    // Create the constructed type with our result type
-                    var constructedType = handlerType.MakeGenericType(matchingResult.GetType());
-
-                    // Get the method from the constructed type
-                    var constructedMethod = constructedType.GetMethod(
-                        "ShouldAttachToEntity",
-                        BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy
-                    );
-
-                    var shouldAttach = (bool) constructedMethod.Invoke(null, [this]);
-                    if (shouldAttach) {
-                        AddComponent(constructedType);
-                    }
-                }
-            }
-            else {
-                // Handle non-generic types as before
-                var shouldAttach = (bool) shouldAttachMethod.Invoke(null, [this]);
-                if (shouldAttach) {
-                    AddComponent(handlerType);
-                }
-            }
-        }
-    }
 
     private bool CooldownCheck(IActorRef playerRef) {
         if (_cooldowns.TryGetValue(playerRef, out var lastTriggered)) {
@@ -142,29 +89,5 @@ public sealed class ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger)
         return true;
     }
 
-    private new void AddComponent(System.Type type) {
-        var props = Props.Create(type, this);
-        var componentName = type.Name;
-
-        // Ensure the component name is valid for an actor path.
-        if (string.IsNullOrEmpty(componentName) || componentName.StartsWith('$') || !IsValidActorName(componentName)) {
-            componentName = $"Component_{Guid.NewGuid()}";
-        }
-
-        // Create the component actor and request its identity.
-        var componentActor = Context.ActorOf(props, componentName);
-
-        _triggerActors.Add(componentActor);
-    }
-
-    private static bool IsValidActorName(string name) {
-        foreach (char c in name) {
-            if (!char.IsLetterOrDigit(c) && !"-_.*$+:@&=,!~';()".Contains(c)) {
-                return false;
-            }
-        }
-        
-        return true;
-    }
 
 }
