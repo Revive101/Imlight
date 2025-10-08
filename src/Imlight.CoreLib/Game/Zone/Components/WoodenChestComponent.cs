@@ -121,6 +121,7 @@ internal sealed class WoodenChestComponent(ZoneEntity entity) : ZoneEntityCompon
         };
 
         playerActor.Tell(updateGold);
+        playerCharacter.AddGold(goldAmount);
     }
 
     private void PlaySound(IActorRef playerActor) {
