@@ -7,6 +7,7 @@ using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.Game.WizBang;
 using Imlight.CoreLib.Game.Zone.Core;
+using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System;
@@ -16,9 +17,12 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
-internal sealed class WoodenChestComponent(ZoneEntity entity) : ZoneEntityComponent(entity), IServiceComponent, IComponentFactory {
+internal sealed class WoodenChestComponent(ZoneEntity entity) : ZoneEntityComponent(entity), IServiceComponent, IComponentFactory, IWithTimers {
 
     private const uint TREASURE_CHEST_TEMPLATE_ID = 77823;
+    private const int ANIMATION_TIME = 1;
+
+    private readonly TimeSpan _chestOpenAnimationTimeSpan = TimeSpan.FromSeconds(ANIMATION_TIME);
 
     public string ServiceName => "Interact";
 
@@ -35,6 +39,8 @@ internal sealed class WoodenChestComponent(ZoneEntity entity) : ZoneEntityCompon
     public string InteractWizBang => "";
 
     public string DisplayKey => "";
+
+    public ITimerScheduler Timers { get; set; }
 
     public static bool ShouldAttachToEntity(CoreTemplate template) =>
         template is GameObjectTemplate goTemplate
@@ -55,7 +61,7 @@ internal sealed class WoodenChestComponent(ZoneEntity entity) : ZoneEntityCompon
         SendLoot(playerActor, goldAmount);
         UpdateGold(playerActor, playerCharacter, goldAmount);
         PlaySound(playerActor);
-        TriggerChestAnimation(); // Rename (doesn't actually trigger any animation)
+        TriggerChestAnimation();
         RemoveObject();
     }
 
@@ -139,6 +145,11 @@ internal sealed class WoodenChestComponent(ZoneEntity entity) : ZoneEntityCompon
             Selfless = false,
         };
 
-        Entity.ZoneRef.Tell(broadcastMsg);
+        Timers.StartSingleTimer("chestopen", broadcastMsg, _chestOpenAnimationTimeSpan);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
+    private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message) {
+        Entity.ZoneRef.Forward(message);
     }
 }
