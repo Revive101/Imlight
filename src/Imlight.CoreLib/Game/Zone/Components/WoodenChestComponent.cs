@@ -50,10 +50,12 @@ internal sealed class WoodenChestComponent(ZoneEntity entity) : ZoneEntityCompon
             }
          ];
     public void OnServiceInteraction(IActorRef playerActor, Wizard playerCharacter, CoreObject playerObject, uint serviceOptionIndex) {
-        TriggerChestAnimation();
-        SendLoot(playerActor);
-        UpdateGold(playerActor, playerCharacter);
+        var goldAmount = Random.Shared.Next(10, 101);
+
+        SendLoot(playerActor, goldAmount);
+        UpdateGold(playerActor, playerCharacter, goldAmount);
         PlaySound(playerActor);
+        TriggerChestAnimation();
         RemoveObject();
     }
 
@@ -73,11 +75,11 @@ internal sealed class WoodenChestComponent(ZoneEntity entity) : ZoneEntityCompon
         Entity.ZoneRef.Tell(broadcastMsg);
     }
 
-    private void SendLoot(IActorRef playerActor) {
+    private void SendLoot(IActorRef playerActor, int goldAmount) {
         var lootInfoList = new LootInfoList {
             m_loot = [],
             m_goldInfo = new GoldLootInfo {
-                m_goldAmount = 0,
+                m_goldAmount = goldAmount,
                 m_lootType = LOOT_TYPE.LOOT_TYPE_GOLD,
             },
             m_lootRarityList = new LootRarityList {
@@ -103,9 +105,9 @@ internal sealed class WoodenChestComponent(ZoneEntity entity) : ZoneEntityCompon
         playerActor.Tell(loot);
     }
 
-    private void UpdateGold(IActorRef playerActor, Wizard playerCharacter) {
+    private void UpdateGold(IActorRef playerActor, Wizard playerCharacter, int goldAmount) {
         var updateGold = new WIZARD_12_PROTOCOL.MSG_UPDATEGOLD {
-            Gold = Random.Shared.Next(10, 101),
+            Gold = goldAmount,
             MaxGold = playerCharacter.GameStats.m_baseGoldPouch
         };
 
