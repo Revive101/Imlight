@@ -52,7 +52,7 @@ internal sealed class WoodenChestComponent(ZoneEntity entity) : ZoneEntityCompon
     public void OnServiceInteraction(IActorRef playerActor, Wizard playerCharacter, CoreObject playerObject, uint serviceOptionIndex) {
         TriggerChestAnimation();
         SendLoot(playerActor);
-        UpdateGold(playerActor);
+        UpdateGold(playerActor, playerCharacter);
         PlaySound(playerActor);
         RemoveObject();
     }
@@ -103,10 +103,10 @@ internal sealed class WoodenChestComponent(ZoneEntity entity) : ZoneEntityCompon
         playerActor.Tell(loot);
     }
 
-    private void UpdateGold(IActorRef playerActor) {
+    private void UpdateGold(IActorRef playerActor, Wizard playerCharacter) {
         var updateGold = new WIZARD_12_PROTOCOL.MSG_UPDATEGOLD {
             Gold = Random.Shared.Next(10, 101),
-            MaxGold = 300_000 // 300.000 for non premium users ?
+            MaxGold = playerCharacter.GameStats.m_baseGoldPouch
         };
 
         playerActor.Tell(updateGold);
