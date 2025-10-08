@@ -55,24 +55,27 @@ internal sealed class WoodenChestComponent(ZoneEntity entity) : ZoneEntityCompon
         SendLoot(playerActor, goldAmount);
         UpdateGold(playerActor, playerCharacter, goldAmount);
         PlaySound(playerActor);
-        TriggerChestAnimation();
+        TriggerChestAnimation(); // Rename (doesn't actually trigger any animation)
         RemoveObject();
     }
 
     private void TriggerChestAnimation() {
-        var animation = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
-            State = StringHash.Compute(StateName),
-            Data = "",
-            IgnoreIfCurrentStateIsOff = 0,
-            GameObjectID = Entity.ActiveGameObject.m_globalID
-        };
+        var chestStates = new uint[] { StringHash.Compute(StateName), StringHash.Compute("NotInteracting") };
+        for (int i = 0; i < chestStates.Length; i++) {
+            var enterState = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
+                Data = "",
+                GameObjectID = Entity.ActiveGameObject.m_globalID,
+                IgnoreIfCurrentStateIsOff = 0,
+                State = chestStates[i]
+            };
 
-        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-            Message = animation,
-            Selfless = false,
-        };
+            var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+                Message = enterState,
+                Selfless = false,
+            };
 
-        Entity.ZoneRef.Tell(broadcastMsg);
+            Entity.ZoneRef.Tell(broadcastMsg);
+        }
     }
 
     private void SendLoot(IActorRef playerActor, int goldAmount) {
