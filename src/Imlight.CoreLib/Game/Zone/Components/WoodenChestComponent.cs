@@ -19,7 +19,8 @@ using System.Threading.Tasks;
 namespace Imlight.CoreLib.Game.Zone.Components;
 internal sealed class WoodenChestComponent(ZoneEntity entity) : ZoneEntityComponent(entity), IServiceComponent, IComponentFactory, IWithTimers {
 
-    private const uint TREASURE_CHEST_TEMPLATE_ID = 77823;
+    private static readonly uint[] TREASURE_CHEST_TEMPLATE_IDS = [1233729, 77825, 77884, 77826, 77827, 1562742, 77823, 470099];
+
     private const int ANIMATION_TIME = 1;
 
     private readonly TimeSpan _chestOpenAnimationTimeSpan = TimeSpan.FromSeconds(ANIMATION_TIME);
@@ -44,7 +45,7 @@ internal sealed class WoodenChestComponent(ZoneEntity entity) : ZoneEntityCompon
 
     public static bool ShouldAttachToEntity(CoreTemplate template) =>
         template is GameObjectTemplate goTemplate
-        && goTemplate.m_templateID == TREASURE_CHEST_TEMPLATE_ID;
+        && TREASURE_CHEST_TEMPLATE_IDS.Contains(goTemplate.m_templateID);
     public IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard _)
         => [
             new ServiceOptionBase() {
