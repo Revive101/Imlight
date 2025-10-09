@@ -153,5 +153,6 @@ internal sealed class WoodenChestComponent(ZoneEntity entity) : ZoneEntityCompon
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
     private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message) {
         Entity.ZoneRef.Forward(message);
+        Entity.DeleteObject(); // Please correct me if I'm wrong
     }
 }
