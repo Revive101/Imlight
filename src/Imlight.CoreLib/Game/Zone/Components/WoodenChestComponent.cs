@@ -1,6 +1,32 @@
+/* 
+ * Copyright (C) Revive101 Development Team - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential.
+ * 
+ * ========================================================================
+ * WOODEN CHEST COMPONENT
+ * ========================================================================
+ * 
+ * PURPOSE:
+ * This component handles the interaction logic for wooden chests in the game.
+ * The gold value is randomly generated between 10 and 100.
+ * 
+ * USAGE EXAMPLE:
+ * 
+ * NOTE:
+ * 
+ * TODO:
+ * 
+ * Created by: Phill
+ * Version: KALI 1.0
+ * Last Updated: 10/09/2025
+ */
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Akka.Actor;
 using Imcodec.Cryptography;
-using Imcodec.IO;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
@@ -10,42 +36,31 @@ using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
-internal sealed class WoodenChestComponent(ZoneEntity entity) : ZoneEntityComponent(entity), IServiceComponent, IComponentFactory, IWithTimers {
 
-    private static readonly uint[] TREASURE_CHEST_TEMPLATE_IDS = [1233729, 77825, 77884, 77826, 77827, 1562742, 77823, 470099];
+internal sealed class WoodenChestComponent(ZoneEntity entity) : ZoneEntityComponent(entity), IServiceComponent, IComponentFactory, IWithTimers {
 
     private const int ANIMATION_TIME = 1;
 
+    private static readonly uint[] s_treasureChestTemplateIDs = [1233729, 77825, 77884, 77826, 77827, 1562742, 77823, 470099];
     private readonly TimeSpan _chestOpenAnimationTimeSpan = TimeSpan.FromSeconds(ANIMATION_TIME);
 
     public string ServiceName => "Interact";
-
     public string NpcIcon => "GUI/QuestButtons/Art_Quest_Chest_Wood.dds";
-
     public string NpcNameKey => "WizardGameObjects_00000054";
-
     public string NpcTextKey => "GUI_ChestInteract";
-
     public WizBangs WizBang => WizBangs.None;
-
     public string StateName => "Open";
-
     public string InteractWizBang => "";
-
     public string DisplayKey => "";
 
     public ITimerScheduler Timers { get; set; }
 
     public static bool ShouldAttachToEntity(CoreTemplate template) =>
         template is GameObjectTemplate goTemplate
-        && TREASURE_CHEST_TEMPLATE_IDS.Contains(goTemplate.m_templateID);
+        && s_treasureChestTemplateIDs.Contains(goTemplate.m_templateID);
+
     public IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard _)
         => [
             new ServiceOptionBase() {
@@ -56,6 +71,7 @@ internal sealed class WoodenChestComponent(ZoneEntity entity) : ZoneEntityCompon
                 m_serviceIndex = 0
             }
          ];
+
     public void OnServiceInteraction(IActorRef playerActor, Wizard playerCharacter, CoreObject playerObject, uint serviceOptionIndex) {
         var goldAmount = Random.Shared.Next(10, 101);
 
@@ -104,6 +120,7 @@ internal sealed class WoodenChestComponent(ZoneEntity entity) : ZoneEntityCompon
 
         if (!serializer.Serialize(lootInfoList, 4, out var data)) {
             Logger.Error("Failed to serialize LootInfoList.");
+
             return;
         }
 
@@ -155,4 +172,5 @@ internal sealed class WoodenChestComponent(ZoneEntity entity) : ZoneEntityCompon
         Entity.ZoneRef.Forward(message);
         Entity.DeleteObject(); // Please correct me if I'm wrong
     }
+
 }
