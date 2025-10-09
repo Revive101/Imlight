@@ -30,6 +30,7 @@ using Imcodec.Cryptography;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
+using Imcodec.Types;
 using Imlight.Common;
 using Imlight.CoreLib.Game.WizBang;
 using Imlight.CoreLib.Game.Zone.Core;
@@ -44,6 +45,7 @@ internal sealed class WoodenChestComponent(ZoneEntity entity) : ZoneEntityCompon
     private const int ANIMATION_TIME = 1;
 
     private static readonly uint[] s_treasureChestTemplateIDs = [1233729, 77825, 77884, 77826, 77827, 1562742, 77823, 470099];
+    private static readonly uint s_openSoundTemplateID = 1374674914;
     private readonly TimeSpan _chestOpenAnimationTimeSpan = TimeSpan.FromSeconds(ANIMATION_TIME);
 
     public string ServiceName => "Interact";
@@ -143,8 +145,9 @@ internal sealed class WoodenChestComponent(ZoneEntity entity) : ZoneEntityCompon
     }
 
     private void PlaySound(IActorRef playerActor) {
+        var soundId = new GID(s_openSoundTemplateID);
         var playSound = new GAME_5_PROTOCOL.MSG_PLAYSOUND {
-            SoundID = 89061816524770,
+            SoundID = soundId,
             ReinteractTime = 0,
             SoundFilename = "",
             StartDelay = 0,
