@@ -81,7 +81,8 @@ internal sealed class WoodenChestComponent(ZoneEntity entity) : ZoneEntityCompon
         UpdateGold(playerActor, playerCharacter, goldAmount);
         PlaySound(playerActor);
         TriggerChestAnimation();
-        RemoveObject();
+
+        Timers.StartSingleTimer("deletechestobject", null, _chestOpenAnimationTimeSpan);
     }
 
     private void TriggerChestAnimation() {
@@ -157,23 +158,6 @@ internal sealed class WoodenChestComponent(ZoneEntity entity) : ZoneEntityCompon
         playerActor.Tell(playSound);
     }
 
-    private void RemoveObject() {
-        var removeObject = new GAME_5_PROTOCOL.MSG_REMOVEOBJECT {
-            GameObjectID = Entity.ActiveGameObject.m_globalID,
-        };
-
-        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-            Message = removeObject,
-            Selfless = false,
-        };
-
-        Timers.StartSingleTimer("chestopen", broadcastMsg, _chestOpenAnimationTimeSpan);
-    }
-
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
-    private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message) {
-        Entity.ZoneRef.Forward(message);
-        Entity.DeleteObject(); // Please correct me if I'm wrong
-    }
-
+    private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST _) => Entity.DeleteObject();
 }
