@@ -91,7 +91,7 @@ internal sealed class InteractQuestComponent(ZoneEntity entity)
     }
 
     private readonly List<QuestTemplate> _givesQuests = [];
-    private readonly List<PersonaGoalTemplate> _personaGoals = [];
+    private readonly Dictionary<string, List<PersonaGoalTemplate>> _personaGoalsByQuest = [];
     private readonly Dictionary<ulong, DateTime> _lastWizBangUpdate = [];
     private readonly Dictionary<ulong, PlayerQuestState> _cachedPlayerStates = [];
     private string _npcName;
@@ -102,7 +102,7 @@ internal sealed class InteractQuestComponent(ZoneEntity entity)
         && !template.m_behaviors.Any(x => x is DuelistBehaviorTemplate);
 
     public IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard wizard) {
-        if (wizard is null || (_givesQuests.Count <= 0 && _personaGoals.Count <= 0)) {
+        if (wizard is null || (_givesQuests.Count <= 0 && _personaGoalsByQuest.Count <= 0)) {
             yield break;
         }
 
@@ -165,13 +165,14 @@ internal sealed class InteractQuestComponent(ZoneEntity entity)
 
             if (templateId == entity.ActiveGameObject.m_templateID) {
                 _givesQuests.Add(questTemplate);
-
-                continue;
             }
 
             foreach (var goal in questTemplate.m_goals.OfType<PersonaGoalTemplate>()) {
                 if (goal.m_personaName == _npcName) {
-                    _personaGoals.Add(goal);
+                    if (!_personaGoalsByQuest.ContainsKey(questTemplate.m_questName)) {
+                        _personaGoalsByQuest[questTemplate.m_questName] = [];
+                    }
+                    _personaGoalsByQuest[questTemplate.m_questName].Add(goal);
                 }
             }
         }
@@ -180,7 +181,7 @@ internal sealed class InteractQuestComponent(ZoneEntity entity)
     }
 
     public override void OnPlayerJoin(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) {
-        if (_givesQuests.Count <= 0 && _personaGoals.Count <= 0) {
+        if (_givesQuests.Count <= 0 && _personaGoalsByQuest.Count <= 0) {
             WizBang = WizBangs.None;
 
             return;
@@ -192,7 +193,7 @@ internal sealed class InteractQuestComponent(ZoneEntity entity)
     }
 
     public override void OnPlayerMove(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) {
-        if (playerWizard is null || _givesQuests.Count <= 0 && _personaGoals.Count <= 0) {
+        if (playerWizard is null || _givesQuests.Count <= 0 && _personaGoalsByQuest.Count <= 0) {
             return;
         }
 
@@ -243,15 +244,20 @@ internal sealed class InteractQuestComponent(ZoneEntity entity)
     }
 
     private (PersonaGoalTemplate Goal, ulong QuestId, ulong GoalId)? FindActivePersonaGoal(Wizard wizard) {
+        // Find any of the player's current quests that have cached persona goals for this NPC.
         var relevantQuests = wizard.QuestBehavior.CurrentQuestInstances
-            .Where(q => q.GoalProgress
-                .Any(g => _personaGoals.Any(pg => pg.m_goalName == g.GoalName && pg.m_personaName == _npcName)))
+            .Where(q => _personaGoalsByQuest.ContainsKey(q.QuestName))
             .ToList();
 
+        // Then, check if any of those goals are active and can be completed with this NPC.
         foreach (var quest in relevantQuests) {
-            foreach (var goal in _personaGoals) {
+            if (!_personaGoalsByQuest.TryGetValue(quest.QuestName, out var questPersonaGoals)) {
+                continue;
+            }
+
+            foreach (var goal in questPersonaGoals) {
                 var gInstance = quest.GoalProgress.FirstOrDefault(g => g.GoalName == goal.m_goalName);
-                if (gInstance != null && quest.IsGoalActive(goal.m_goalName) && goal.m_personaName == _npcName) {
+                if (gInstance is not null && quest.IsGoalActive(goal.m_goalName)) {
                     return (goal, quest.ID, gInstance.ID);
                 }
             }

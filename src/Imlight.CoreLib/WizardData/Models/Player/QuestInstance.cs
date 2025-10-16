@@ -107,13 +107,14 @@ public class QuestInstance {
     }
 
     public bool IsReadyForTurnIn() {
-        foreach (var goal in GoalProgress) {
-            if (goal.CurrentProgress != int.MaxValue) {
-                return false;
-            }
-        }
+        // Check if all goals are completed.
+        var allCompleted = GoalProgress.All(goal => goal.CurrentProgress == int.MaxValue);
 
-        return true;
+        // Check if the last goal is a persona goal,
+        var lastIsPersona = GoalProgress.Length > 0 &&
+            GoalProgress[^1].GoalType == GOAL_TYPE.GOAL_TYPE_PERSONA;
+
+        return allCompleted || lastIsPersona;
     }
 
 }
@@ -136,6 +137,11 @@ public class GoalInstance {
     public string GoalName { get; set; }
 
     /// <summary>
+    /// The type of goal, as defined in the goal template.
+    /// </summary>
+    public GOAL_TYPE GoalType { get; set; }
+
+    /// <summary>
     /// The current progress of the goal.
     /// A value of -1 means the player does not have this goal yet.
     /// A value of 0 means the goal is in progress.
@@ -151,6 +157,7 @@ public class GoalInstance {
         ID = RandomGen.GenerateGUID();
         OwnerCharId = ownerCharId;
         GoalName = gTemplate.m_goalName;
+        GoalType = gTemplate.m_goalType;
     }
 
     public bool DoesPlayerHaveGoal() {

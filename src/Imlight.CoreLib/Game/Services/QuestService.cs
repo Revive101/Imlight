@@ -225,6 +225,18 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             return;
         }
 
+        // TODO: Replace with actual associated worlds from quest data.
+        // For now, we'll just use "WizardCity" as a placeholder.
+        var associatedWorlds = new AssociatedWorldsList {
+            m_associatedWorlds = ["WizardCity"]
+        };
+        if (!_goalSerializer.Serialize(associatedWorlds, 1, out var associatedWorldData)) {
+            Logger.Error("Failed to serialize associated world data for quest '{0}'",
+                Logger.Args(quest.m_questName));
+
+            associatedWorldData = string.Empty;
+        }
+
         var qSendMsg = new QUEST_MESSAGES_52_PROTOCOL.MSG_SENDQUEST {
             QuestID = questInstance.ID,
             QuestNameID = quest.m_questNameID,
@@ -237,7 +249,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             GoalData = "", // TODO:
             Rewards = "", // TODO:
             ClientTags = "",
-            AssociatedWorlds = "", // TODO:
+            AssociatedWorlds = associatedWorldData,
             NoQuestHelper = quest.m_noQuestHelper ? (byte) 1 : (byte) 0,
             Mainline = quest.m_mainline ? (byte) 1 : (byte) 0,
             ReadyToTurnIn = 0,
@@ -277,6 +289,18 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             return;
         }
 
+        // TODO: Replace with actual associated worlds from quest data.
+        // For now, we'll just use "WizardCity" as a placeholder.
+        var associatedWorlds = new AssociatedWorldsList {
+            m_associatedWorlds = ["WizardCity"]
+        };
+        if (!_goalSerializer.Serialize(associatedWorlds, 1, out var associatedWorldData)) {
+            Logger.Error("Failed to serialize associated world data for quest '{0}'",
+                Logger.Args(qTemplate.m_questName));
+
+            associatedWorldData = string.Empty;
+        }
+
         var qSendMsg = new QUEST_MESSAGES_52_PROTOCOL.MSG_SENDQUEST {
             QuestID = qInstance.ID,
             QuestNameID = qTemplate.m_questNameID,
@@ -289,7 +313,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             GoalData = "", // TODO:
             Rewards = "", // TODO:
             ClientTags = "",
-            AssociatedWorlds = "", // TODO:
+            AssociatedWorlds = associatedWorldData,
             NoQuestHelper = qTemplate.m_noQuestHelper ? (byte) 1 : (byte) 0,
             Mainline = qTemplate.m_mainline ? (byte) 1 : (byte) 0,
             ReadyToTurnIn = qInstance.IsReadyForTurnIn() ? (byte) 1 : (byte) 0,
@@ -484,7 +508,8 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
         // Serialize the client tags, if present.
         var tagList = GetClientTagList(gTemplate.m_clientTags?.ToArray() ?? []);
-        if (!_goalSerializer.Serialize(tagList, 1, out var clientTagData)) {
+        var newSerializer = new ObjectSerializer(false);
+        if (!newSerializer.Serialize(tagList, 1, out var clientTagData)) {
             Logger.Error("Failed to serialize client tag data for goal '{0}' in quest '{1}'",
                 Logger.Args(gTemplate.m_goalName, qInstance.QuestName));
 
@@ -492,13 +517,6 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         }
 
         var patronIcon = GetPatronIconFromGoal(gTemplate);
-
-        // Force bounty goals to use SendType = 0 instead of 1.
-        if ((gTemplate.m_goalType == GOAL_TYPE.GOAL_TYPE_BOUNTY ||
-             gTemplate.m_goalType == GOAL_TYPE.GOAL_TYPE_BOUNTYCOLLECT) &&
-            sendType == 1) {
-            sendType = 0;
-        }
 
         var packet = new QUEST_MESSAGES_52_PROTOCOL.MSG_SENDGOAL {
             QuestID = qInstance.ID,
