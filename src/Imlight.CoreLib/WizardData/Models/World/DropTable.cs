@@ -18,7 +18,11 @@ public class DropTable {
     public int Weight { get; set; } = 100;
     public double NoneChance { get; set; } = 0.0;
     public double PityCounter { get; set; } = 0.0;
-    public List<DropItem> Items { get; set; } = new();
+    public int MinGold { get; set; } = 0;
+    public int MaxGold { get; set; } = 0;
+    public int ExperienceAmount { get; set; } = 0;
+    public int TrainingPoints { get; set; } = 0;
+    public List<DropItem> Items { get; set; } = [];
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime ModifiedAt { get; set; } = DateTime.UtcNow;
     public string CreatedBy { get; set; } = Environment.UserName;
@@ -31,6 +35,6 @@ public class DropItem {
     public string ItemId { get; set; } = string.Empty;
     public string ItemName { get; set; } = string.Empty;
     public string Notes { get; set; } = string.Empty;
-    public RequirementList Requirements { get; set; } = null!;
+    public RequirementList? Requirements { get; set; } = null;
 
 }
