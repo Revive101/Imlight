@@ -31,6 +31,7 @@ using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Types;
 using Imlight.Common;
+using Imlight.CoreLib.Game.DropTables;
 using Imlight.CoreLib.Game.Madlibs;
 using Imlight.CoreLib.Game.Requirements;
 using Imlight.CoreLib.Game.Requirements.Contexts;
@@ -439,13 +440,21 @@ internal sealed class InteractQuestComponent(ZoneEntity entity)
             return;
         }
 
+        var rewards = GetQuestRewardsFromTemplate(quest, null, playerActor, null);
+        if (!serializer.Serialize(rewards, 1, out var serializedRewards)) {
+            Logger.Error("Failed to serialize rewards for quest {0}.",
+                Logger.Args(quest.m_questName));
+
+            return;
+        }
+
         var questOfferMsg = new QUEST_MESSAGES_52_PROTOCOL.MSG_QUESTOFFER {
             MobileID = Entity.ActiveGameObject.m_nMobileID,
             QuestName = quest.m_questName,
             QuestTitle = quest.m_questTitle,
             QuestInfo = "",
             Level = quest.m_questLevel,
-            Rewards = "",
+            Rewards = serializedRewards,
             GoalData = serializedGoals,
             Mainline = (byte) (quest.m_mainline ? 1 : 0),
         };
@@ -459,6 +468,30 @@ internal sealed class InteractQuestComponent(ZoneEntity entity)
         };
 
         playerActor.Tell(cacheMsg);
+    }
+
+    private static LootInfoList GetQuestRewardsFromTemplate(QuestTemplate qTemplate,
+                                                            CoreObject playerObj,
+                                                            IActorRef playerActor,
+                                                            Wizard playerWizard) {
+        // Quest rewards are listed in drop tables by "ResDropTable" in the completion results.
+        var dropTableResults = qTemplate.m_endResults
+            .m_results
+            .Where(x => x is ResDropTable);
+
+        var dropTableNames = dropTableResults
+            .Select(x => (x as ResDropTable).m_tableName)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct()
+            .ToArray();
+
+        // "Roll" the drop tables to get the actual items.
+        var rollResult = DropTableRoller.Roll(dropTableNames, playerActor, playerObj, playerWizard);
+
+        // Convert the result into something we can send over the network.
+        var convertedResults = DropTableConverter.ToLootInfoList(rollResult);
+
+        return convertedResults;
     }
 
 }

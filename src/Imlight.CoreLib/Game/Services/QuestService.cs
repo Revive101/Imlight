@@ -29,6 +29,7 @@ using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
+using Imlight.CoreLib.Game.DropTables;
 using Imlight.CoreLib.Game.Madlibs;
 using Imlight.CoreLib.Game.Results;
 using Imlight.CoreLib.Shared.Networking;
@@ -301,6 +302,14 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             associatedWorldData = string.Empty;
         }
 
+        var rewards = GetQuestRewardsFromTemplate(qTemplate, null, SessionActor.ActorRef, GetActiveWizard());
+        if (!_goalSerializer.Serialize(rewards, 1, out var serializedRewards)) {
+            Logger.Error("Failed to serialize rewards for quest {0}.",
+                Logger.Args(qTemplate.m_questName));
+
+            return;
+        }
+
         var qSendMsg = new QUEST_MESSAGES_52_PROTOCOL.MSG_SENDQUEST {
             QuestID = qInstance.ID,
             QuestNameID = qTemplate.m_questNameID,
@@ -311,7 +320,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             New = 0,
             QuestMadlibs = madLibData,
             GoalData = "", // TODO:
-            Rewards = "", // TODO:
+            Rewards = serializedRewards,
             ClientTags = "",
             AssociatedWorlds = associatedWorldData,
             NoQuestHelper = qTemplate.m_noQuestHelper ? (byte) 1 : (byte) 0,
@@ -748,5 +757,29 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         => new() {
             m_clientTags = [.. tags]
         };
+
+    private static LootInfoList GetQuestRewardsFromTemplate(QuestTemplate qTemplate,
+                                                            CoreObject playerObj,
+                                                            IActorRef playerActor,
+                                                            Wizard playerWizard) {
+        // Quest rewards are listed in drop tables by "ResDropTable" in the completion results.
+        var dropTableResults = qTemplate.m_endResults
+            .m_results
+            .Where(x => x is ResDropTable);
+
+        var dropTableNames = dropTableResults
+            .Select(x => (x as ResDropTable).m_tableName)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct()
+            .ToArray();
+
+        // "Roll" the drop tables to get the actual items.
+        var rollResult = DropTableRoller.Roll(dropTableNames, playerActor, playerObj, playerWizard);
+
+        // Convert the result into something we can send over the network.
+        var convertedResults = DropTableConverter.ToLootInfoList(rollResult);
+
+        return convertedResults;
+    }
 
 }
