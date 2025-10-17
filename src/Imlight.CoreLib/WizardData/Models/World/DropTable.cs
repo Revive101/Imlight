@@ -38,3 +38,27 @@ public class DropItem {
     public RequirementList? Requirements { get; set; } = null;
 
 }
+
+/// <summary>
+/// Represents the actual loot results after rolling a DropTable.
+/// This is the intermediate form between DropTable (configuration) and LootInfoList (network format).
+/// </summary>
+public class DropTableResult {
+
+    public string DropTableId { get; set; } = string.Empty;
+    public int GoldAmount { get; set; } = 0;
+    public int ExperienceAmount { get; set; } = 0;
+    public string MagicSchool { get; set; } = "All";
+    public int TrainingPoints { get; set; } = 0;
+    public List<DropItemResult> Items { get; set; } = [];
+    public bool HasRewards => GoldAmount > 0 || ExperienceAmount > 0 || TrainingPoints > 0 || Items.Count > 0;
+
+}
+
+public class DropItemResult {
+
+    public string ItemId { get; set; } = string.Empty;
+    public string ItemName { get; set; } = string.Empty;
+    public int Quantity { get; set; } = 1;
+
+}
