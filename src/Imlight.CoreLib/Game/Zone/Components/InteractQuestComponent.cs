@@ -309,18 +309,11 @@ internal sealed class InteractQuestComponent(ZoneEntity entity)
     }
 
     private void HandlePersonaGoalCompletion(IActorRef playerActor, Wizard playerCharacter, PlayerQuestState state) {
-        var questTemplate = QuestTemplateCollection.GetQuestByName(
-            playerCharacter.QuestBehavior.CurrentQuestInstances
-                .FirstOrDefault(q => q.ID == state.ActiveQuestId)?.QuestName);
-
-        if (questTemplate == null) {
-            Logger.Error("Player {0} has quest instance for unknown quest with ID '{1}'.",
-                Logger.Args(playerCharacter.CharId, state.ActiveQuestId));
-
-            return;
-        }
-
-        ShowQuestGoalCompletionDialog(playerActor, questTemplate, state.ActiveGoal, state.ActiveQuestId, state.ActiveGoalId);
+        var goalCompleteMsg = new CHARACTER_103_PROTOCOL.MSG_COMPLETEPERSONAGOAL {
+            QuestID = state.ActiveQuestId,
+            GoalID = state.ActiveGoalId,
+        };
+        playerActor.Tell(goalCompleteMsg);
 
         // Invalidate cached state since quest status has changed after goal completion.
         _cachedPlayerStates.Remove(playerCharacter.CharId);
@@ -368,34 +361,12 @@ internal sealed class InteractQuestComponent(ZoneEntity entity)
         SendActorDialog(playerActor, underwayDialogList, "QuestInfo");
     }
 
-    private void ShowQuestGoalCompletionDialog(IActorRef playerActor, QuestTemplate quest, GoalTemplate goal, ulong questId, ulong goalId) {
-        var dialogList = goal.m_dialogList as ActorDialogList;
-        var completeDialogList = dialogList?.m_dialogs.FirstOrDefault(de => de.m_dialogTag == "Completion");
-
-        if (completeDialogList == null) {
-            Logger.Error("Quest {0} has no 'Completion' dialog entry.",
-                Logger.Args(quest.m_questName));
-
-            return;
-        }
-
-        var goalCompleteMsg = new WIZARD_12_PROTOCOL.MSG_INTERACTCOMPLETEGOAL {
-            MobileID = new GID(Entity.ActiveGameObject.m_nMobileID),
-            QuestID = questId,
-            GoalID = goalId,
-        };
-        playerActor.Tell(goalCompleteMsg);
-
-        SendActorDialog(playerActor, completeDialogList, "Completion", questId, goalId);
-        WizBang = WizBangs.None;
-    }
 
     private void SendActorDialog(IActorRef playerActor, ActorDialog dialogEntry, string completionType, ulong questId = 0, ulong goalId = 0) {
         var serializer = new ObjectSerializer(Versionable: false);
         if (!serializer.Serialize(dialogEntry, 16, out var serializedData)) {
             Logger.Error("Failed to serialize '{0}' dialog.",
                 Logger.Args(completionType));
-
             return;
         }
 
