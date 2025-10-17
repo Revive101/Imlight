@@ -33,11 +33,11 @@ internal static class QuestMadlibs {
     internal static MadlibBlock GetMadLibForQuest(QuestTemplate quest)
         => new() {
             m_madlibs = [
-        new MadlibArgT_string {
+        new MadlibArgT_ByteString {
                         m_madlibToken = "NAME",
                         m_madlibArgument = quest.m_questTitle
                     },
-                    new MadlibArgT_string {
+                    new MadlibArgT_ByteString {
                         m_madlibToken = "LEVEL",
                         m_madlibArgument = quest.m_questLevel.ToString()
                     },
@@ -56,19 +56,19 @@ internal static class QuestMadlibs {
     private static MadlibBlock GetMadlibBlockForWaypointGoal(GoalTemplate gTemplate)
         => new() {
             m_madlibs = [
-                new MadlibArgT_string {
+                new MadlibArgT_ByteString {
                     m_madlibToken = "NAME",
                     m_madlibArgument = gTemplate.m_goalTitle
                 },
-                new MadlibArgT_string {
+                new MadlibArgT_ByteString {
                     m_madlibToken = "LOCATION",
                     m_madlibArgument = gTemplate.m_locationName
                 },
-                new MadlibArgT_string {
+                new MadlibArgT_ByteString {
                     m_madlibToken = "TALLYTEXT",
                     m_madlibArgument = gTemplate.m_tallyCounter?.m_descriptor ?? string.Empty
                 },
-                new MadlibArgT_string {
+                new MadlibArgT_ByteString {
                     m_madlibToken = "TALLYTEXT2",
                     m_madlibArgument = gTemplate.m_tallyCounter?.m_descriptor2 ?? string.Empty
                 },
@@ -79,27 +79,27 @@ internal static class QuestMadlibs {
     private static MadlibBlock GetMadlibBlockForPersonaGoal(GoalTemplate gTemplate)
         => new() {
             m_madlibs = [
-                new MadlibArgT_string {
+                new MadlibArgT_ByteString {
                     m_madlibToken = "NAME",
                     m_madlibArgument = gTemplate.m_goalTitle
                 },
-                new MadlibArgT_string {
+                new MadlibArgT_ByteString {
                     m_madlibToken = "LOCATION",
                     m_madlibArgument = gTemplate.m_locationName
                 },
-                new MadlibArgT_string {
+                new MadlibArgT_ByteString {
                     m_madlibToken = "FIRSTNAME",
                     m_madlibArgument = "",
                 },
-                new MadlibArgT_string {
+                new MadlibArgT_ByteString {
                     m_madlibToken = "LASTNAME",
                     m_madlibArgument = "",
                 },
-                new MadlibArgT_string {
+                new MadlibArgT_ByteString {
                     m_madlibToken = "TITLE",
                     m_madlibArgument = "",
                 },
-                new MadlibArgT_string {
+                new MadlibArgT_ByteString {
                     m_madlibToken = "FULLNAME",
                     m_madlibArgument = "NPCFormats_Goal_First_Last"
                 }
@@ -114,19 +114,19 @@ internal static class QuestMadlibs {
 
         return new MadlibBlock {
             m_madlibs = [
-                new MadlibArgT_string {
+                new MadlibArgT_ByteString {
                     m_madlibToken = "NAME",
                     m_madlibArgument = gTemplate.m_goalTitle
                 },
-                new MadlibArgT_string {
+                new MadlibArgT_ByteString {
                     m_madlibToken = "LOCATION",
                     m_madlibArgument = gTemplate.m_locationName
                 },
-                new MadlibArgT_string {
+                new MadlibArgT_ByteString {
                     m_madlibToken = "TALLYTEXT",
                     m_madlibArgument = bountyGoal.m_tallyCounter?.m_descriptor ?? string.Empty
                 },
-                new MadlibArgT_string {
+                new MadlibArgT_ByteString {
                     m_madlibToken = "TALLYTEXT2",
                     m_madlibArgument = bountyGoal.m_tallyCounter?.m_descriptor2 ?? string.Empty
                 },
