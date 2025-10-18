@@ -79,14 +79,14 @@ public static class RequirementDispatcher {
             switch (requirement.m_operator) {
                 case Operator.ROP_AND:
                     andResults.Add(requirementMet);
-                    break;
+                    continue;
                 case Operator.ROP_OR:
                     orResults.Add(requirementMet);
-                    break;
+                    continue;
                 default:
                     // Default to AND for unknown operators
                     andResults.Add(requirementMet);
-                    break;
+                    continue;
             }
         }
 
@@ -118,9 +118,8 @@ public static class RequirementDispatcher {
         }
 
         try {
-            // Create handler instance and evaluate.
             var handler = Activator.CreateInstance(handlerType) as IRequirementHandler;
-            handler.Initialize(context);
+            handler.Initialize(context, requirement);  // Pass the specific requirement
 
             return handler?.Evaluate(context) ?? false;
         }

@@ -361,7 +361,6 @@ internal sealed class InteractQuestComponent(ZoneEntity entity)
         SendActorDialog(playerActor, underwayDialogList, "QuestInfo");
     }
 
-
     private void SendActorDialog(IActorRef playerActor, ActorDialog dialogEntry, string completionType, ulong questId = 0, ulong goalId = 0) {
         var serializer = new ObjectSerializer(Versionable: false);
         if (!serializer.Serialize(dialogEntry, 16, out var serializedData)) {

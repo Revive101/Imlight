@@ -37,7 +37,7 @@ public interface IRequirementHandler {
     /// Initializes the handler with the calling context
     /// </summary>
     /// <param name="context">The requirement context</param>
-    void Initialize(IRequirementContext context);
+    void Initialize(IRequirementContext context, Requirement requirement);
 
 }
 
@@ -46,28 +46,20 @@ public interface IRequirementHandler {
 /// </summary>
 public abstract class BaseRequirementHandler<T> : IRequirementHandler, IRequirementHandlerFactory
     where T : Requirement {
-
+    
     protected IRequirementContext CallingContext { get; private set; }
-
-    private T _requirement;
-    protected T Requirement => _requirement ??= CallingContext?.GetRequirements()?
-        .FirstOrDefault(x => x is not null && x.GetType() == typeof(T)) as T;
+    protected T Requirement { get; private set; }
 
     public static bool ShouldAttachToContext(IRequirementContext context)
         => context
             .GetRequirements()?
-            .Any(x =>
-                 x is not null &&
-                 x.GetType() == typeof(T)) ?? false;
+            .Any(x => x is not null && x.GetType() == typeof(T)) ?? false;
 
     public abstract bool Evaluate(IRequirementContext context);
 
-    /// <summary>
-    /// Initializes the handler with the calling context
-    /// </summary>
-    /// <param name="context">The requirement context</param>
-    public void Initialize(IRequirementContext context) {
+    public void Initialize(IRequirementContext context, Requirement requirement) {
         CallingContext = context;
+        Requirement = requirement as T;
     }
-
+    
 }
