@@ -170,10 +170,12 @@ internal sealed class InteractQuestComponent(ZoneEntity entity)
 
             foreach (var goal in questTemplate.m_goals.OfType<PersonaGoalTemplate>()) {
                 if (goal.m_personaName == _npcName) {
-                    if (!_personaGoalsByQuest.ContainsKey(questTemplate.m_questName)) {
-                        _personaGoalsByQuest[questTemplate.m_questName] = [];
+                    if (!_personaGoalsByQuest.TryGetValue(questTemplate.m_questName, out var value)) {
+                        value = [];
+                        _personaGoalsByQuest[questTemplate.m_questName] = value;
                     }
-                    _personaGoalsByQuest[questTemplate.m_questName].Add(goal);
+
+                    value.Add(goal);
                 }
             }
         }
@@ -445,6 +447,10 @@ internal sealed class InteractQuestComponent(ZoneEntity entity)
                                                             IActorRef playerActor,
                                                             Wizard playerWizard) {
         // Quest rewards are listed in drop tables by "ResDropTable" in the completion results.
+        if (qTemplate?.m_endResults is null || qTemplate.m_endResults.m_results is null) {
+            return new LootInfoList();
+        }
+
         var dropTableResults = qTemplate.m_endResults
             .m_results
             .Where(x => x is ResDropTable);
