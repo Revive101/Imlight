@@ -138,7 +138,60 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             return;
         }
 
-        // Mark the goal complete - QuestService handles all dialogue centrally
+        CompleteGoal(qInstance, gTemplate);
+    }
+
+    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_COMPLETESCAVENGEGOAL))]
+    private void ReceiveCompleteScavengeGoal(CHARACTER_103_PROTOCOL.MSG_COMPLETESCAVENGEGOAL message) {
+        var questId = message.QuestID;
+        var goalId = message.GoalID;
+
+        // Check if this player has this quest and goal active.
+        var wizard = GetActiveWizard();
+        var qInstance = wizard.QuestBehavior.CurrentQuestInstances
+            .FirstOrDefault(q => q.ID == questId);
+        if (qInstance == null) {
+            Logger.Warning("Player '{0}' attempted to complete goal ID '{1}' for quest ID '{2}' but does not have that quest active.",
+                Logger.Args(wizard.CharId, goalId, questId));
+                
+            return;
+        }
+
+        var gInstance = qInstance.GoalProgress
+            .FirstOrDefault(g => g.ID == goalId);
+        if (gInstance == null || !qInstance.IsGoalActive(gInstance.GoalName)) {
+            Logger.Warning("Player '{0}' attempted to complete goal ID '{1}' for quest ID '{2}' but does not have that goal active.",
+                Logger.Args(wizard.CharId, goalId, questId));
+                
+            return;
+        }
+
+        // Get the goal template for this goal.
+        var qTemplate = _cachedQuestTemplates
+            .FirstOrDefault(q => q.m_questName == qInstance.QuestName);
+        if (qTemplate == null) {
+            Logger.Error("Failed to find quest template for quest '{0}' when completing goal ID '{1}'",
+                Logger.Args(qInstance.QuestName, goalId));
+                
+            return;
+        }
+
+        var gTemplate = qTemplate.m_goals
+            .FirstOrDefault(g => g.m_goalName == gInstance.GoalName);
+        if (gTemplate == null) {
+            Logger.Error("Failed to find goal template for goal '{0}' in quest '{1}' when completing goal ID '{2}'",
+                Logger.Args(gInstance.GoalName, qInstance.QuestName, goalId));
+                
+            return;
+        }
+
+        if (gTemplate.m_goalType != GOAL_TYPE.GOAL_TYPE_SCAVENGE) {
+            Logger.Warning("Player '{0}' attempted to complete goal ID '{1}' for quest ID '{2}' but that goal is not a scavenge goal.",
+                Logger.Args(wizard.CharId, goalId, questId));
+                
+            return;
+        }
+
         CompleteGoal(qInstance, gTemplate);
     }
 
