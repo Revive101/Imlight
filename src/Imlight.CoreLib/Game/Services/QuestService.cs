@@ -429,7 +429,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
                 if (gTemplate is not WaypointGoalTemplate waypointGoal) {
                     continue;
                 }
-                if (waypointGoal.m_destinationZone != currentZone) {
+                if (waypointGoal.m_zoneTag != currentZone) {
                     // Player is not in the correct zone for this goal.
                     continue;
                 }

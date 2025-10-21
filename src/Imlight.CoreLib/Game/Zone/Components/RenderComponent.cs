@@ -92,7 +92,8 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         // We don't need to check for spawns, only despawns.
         var relevantDynaMods = wizard?.DynamodSet?.Dynamods?
             .Where(d => d.ClientTag.Equals(Entity.Info?.m_zoneTag, System.StringComparison.OrdinalIgnoreCase))
-            .Where(d => d.ZoneName.Equals(Entity.Zone.ZoneData.m_zoneName, System.StringComparison.OrdinalIgnoreCase))
+            .Where(d => string.IsNullOrEmpty(d.ZoneName) 
+                     || d.ZoneName.Equals(Entity.Zone.ZoneData.m_zoneName, System.StringComparison.OrdinalIgnoreCase))
             .ToList() ?? [];
         foreach (var mod in relevantDynaMods) {
             // If the player has a dynamod that disables this object, do not spawn it for them.
