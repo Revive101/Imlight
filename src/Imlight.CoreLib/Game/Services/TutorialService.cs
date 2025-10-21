@@ -8,6 +8,7 @@ using Imcodec.MessageLayer;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
+using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
@@ -21,6 +22,11 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
 
     private const uint TUTORIAL_NAME_STRING_ID = 600062081;
     private const string TUTORIAL_EXTERIOR_ZONE_NAME = "WizardCity/Tutorial_Exterior";
+    private readonly ObjectSerializer _serializer = new(
+        Versionable: false,
+        Behaviors: SerializerFlags.None
+    );
+    private readonly PropertyFlags _combatParticipantHandFlags = (PropertyFlags) 5;
 
     public ITimerScheduler Timers { get; set; }
 
@@ -97,6 +103,19 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
                     PlayerActor = SessionActor.ActorRef
                 },
                 TimeSpan.FromSeconds(5));
+                break;
+            case "player damage 1":
+                var spell1 = SpellFactory.GetSpell(625720646);
+                var spell2 = SpellFactory.GetSpell(1356552154);
+                List<Spell> spells = [spell1, spell2];
+                Hand hand = new Hand {
+                    m_spellList = spells
+                };
+                _serializer.Serialize(hand, _combatParticipantHandFlags, out var buffer);
+                SendToSocket(new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATHAND {
+                    ParticipantID = GetActiveGameObject().m_globalID,
+                    HandData = buffer
+                });
                 break;
             default:
                 break;
