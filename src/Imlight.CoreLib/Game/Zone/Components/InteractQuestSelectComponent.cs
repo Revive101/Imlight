@@ -115,6 +115,8 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
             };
             playerActor.Tell(goalCompleteMsg);
         }
+
+        Entity.DeleteObject();
     }
 
     private bool HasActiveMatchingScavengeGoal(Wizard playerCharacter)
