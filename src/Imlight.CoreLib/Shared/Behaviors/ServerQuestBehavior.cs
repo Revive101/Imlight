@@ -28,7 +28,7 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
             return false;
         }
 
-        if (CurrentQuestIDs.Contains(quest.ID) || HasCompletedQuest(quest.QuestName)) {
+        if (CurrentQuestIDs.Contains(quest.ID)) {
             return false;
         }
 
@@ -56,7 +56,7 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
             return false;
         }
 
-        if (!CurrentQuestIDs.Contains(quest.ID) || HasCompletedQuest(quest.QuestName)) {
+        if (!CurrentQuestIDs.Contains(quest.ID)) {
             return false;
         }
 
@@ -167,7 +167,7 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
         }
 
         if (Registry.ContainsKey(entryName)) {
-            Registry[entryName] += value;
+            return true;
         }
         else {
             Registry[entryName] = value;

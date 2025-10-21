@@ -498,13 +498,13 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             return;
         }
 
-        if (!DetermineNextGoals(qTemplate, questInstance, out var gTemplate)) {
+        if (!DetermineNextGoals(qTemplate, questInstance, out var gTemplates)) {
             CompleteQuest(questInstance);
             
             return;
         }
 
-        foreach (var g in gTemplate) {
+        foreach (var g in gTemplates) {
             StartGoal(questInstance, g);
         }
     }
@@ -676,13 +676,13 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
     private static bool DetermineNextGoals(QuestTemplate qTemplate,
                                           QuestInstance qinstance,
-                                          out GoalTemplate[] gTemplate) {
+                                          out GoalTemplate[] newGoalTemplates) {
         var goalLogic = qTemplate.m_goalLogic;
         if (goalLogic == null || goalLogic.Count == 0) {
             Logger.Error("Quest '{0}' has no goal logic defined.",
                 Logger.Args(qTemplate.m_questName));
 
-            gTemplate = null;
+            newGoalTemplates = null;
 
             return false;
         }
@@ -778,20 +778,31 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
         // Quest completion takes precedence.
         if (questShouldComplete) {
-            gTemplate = null;
+            newGoalTemplates = null;
 
             return false;
         }
 
         // Return any goals we found to add
         if (allGoalsToAdd.Count > 0) {
-            gTemplate = [.. allGoalsToAdd];
+            newGoalTemplates = [.. allGoalsToAdd];
 
             return true;
         }
 
-        // No applicable goal logic found.
-        gTemplate = null;
+        // Check if there are still active goals - if so, continue quest.
+        var hasActiveGoals = qinstance.GoalProgress
+            .Any(g => g.DoesPlayerHaveGoal() && !g.IsGoalCompleted());
+
+        if (hasActiveGoals) {
+            // Quest should continue - there are still active goals.
+            newGoalTemplates = [];
+
+            return true;
+        }
+
+        // No active goals and no new goals to add - quest should complete.
+        newGoalTemplates = [];
 
         return false;
     }
