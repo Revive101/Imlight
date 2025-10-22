@@ -75,7 +75,7 @@ internal sealed class InteractQuestUnderwayComponent(ZoneEntity entity)
     private readonly Dictionary<ulong, PlayerQuestUnderwayState> _cachedPlayerStates = [];
 
     public static bool ShouldAttachToEntity(CoreTemplate template) {
-        if (template is not GameObjectTemplate goTemplate || 
+        if (template is not GameObjectTemplate goTemplate ||
             !template.m_behaviors.Any(x => x is NPCBehaviorTemplate) ||
             template.m_behaviors.Any(x => x is DuelistBehaviorTemplate)) {
             return false;
@@ -89,7 +89,7 @@ internal sealed class InteractQuestUnderwayComponent(ZoneEntity entity)
                 var dialogList = quest.m_dialogList as ActorDialogList;
                 var prepDialogEntry = dialogList.m_dialogs.FirstOrDefault(de => de.m_dialogTag == "Prep");
                 var templateId = prepDialogEntry?.m_dialogEntries?.FirstOrDefault()?.m_actorTemplateID;
-                
+
                 return templateId == goTemplate.m_templateID;
             });
     }
@@ -164,6 +164,13 @@ internal sealed class InteractQuestUnderwayComponent(ZoneEntity entity)
         WizBang = state.HasUnderwayQuest ? WizBangs.UnfinishedQuest : WizBangs.None;
     }
 
+    public void OnServiceInteraction(IActorRef playerActor, Wizard playerCharacter, CoreObject playerObject, uint serviceOptionIndex) {
+        var state = GetOrUpdatePlayerState(playerCharacter);
+        if (state.HasUnderwayQuest && state.UnderwayQuest != null) {
+            ShowQuestUnderwayDialog(playerActor, state.UnderwayQuest);
+        }
+    }
+
     private PlayerQuestUnderwayState GetOrUpdatePlayerState(Wizard wizard, bool forceUpdate = false) {
         var playerId = wizard.CharId;
         var now = DateTime.UtcNow;
@@ -193,13 +200,6 @@ internal sealed class InteractQuestUnderwayComponent(ZoneEntity entity)
         _cachedPlayerStates[playerId] = state;
 
         return state;
-    }
-
-    public void OnServiceInteraction(IActorRef playerActor, Wizard playerCharacter, CoreObject playerObject, uint serviceOptionIndex) {
-        var state = GetOrUpdatePlayerState(playerCharacter);
-        if (state.HasUnderwayQuest && state.UnderwayQuest != null) {
-            ShowQuestUnderwayDialog(playerActor, state.UnderwayQuest);
-        }
     }
 
     private void ShowQuestUnderwayDialog(IActorRef playerActor, QuestTemplate quest) {
@@ -238,5 +238,5 @@ internal sealed class InteractQuestUnderwayComponent(ZoneEntity entity)
 
         playerActor.Tell(dialogMsg);
     }
-    
+
 }

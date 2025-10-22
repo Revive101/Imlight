@@ -610,6 +610,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public IActorRef PlayerActor;
         public Wizard PlayerCharacter;
         public CoreObject PlayerObject;
+        public int Reinteract = 0; 
 
     }
 
@@ -670,6 +671,28 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
         public byte MessageOrder { get; } = 45;
         public byte ServiceID { get; } = 102;
+
+    }
+
+    public sealed class MSG_TRIGGERSEAMLESSTRANSITION : IServerMessage {
+
+        public byte MessageOrder { get; } = 46;
+        public byte ServiceID { get; } = 102;
+
+        public IActorRef PlayerActor;
+        public Wizard PlayerCharacter;
+        public CoreObject PlayerObject;
+
+    }
+
+    public sealed class MSG_STARTSEAMLESSTRANSITION : IServerMessage {
+
+        public byte MessageOrder { get; } = 47;
+        public byte ServiceID { get; } = 102;
+
+        public IActorRef PlayerActor;
+        public Wizard PlayerCharacter;
+        public CoreObject PlayerObject;
 
     }
     

@@ -36,6 +36,7 @@ using Imlight.CoreLib.Game.WizBang;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
@@ -144,15 +145,22 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity)
         var playerObject = message.PlayerObject;
         var serviceName = message.ServiceName;
         var serviceIndex = message.ServiceIndex;
+        var reinteract = message.Reinteract;
 
-        Logger.Debug("Player {0} interacted with NPC {1} using service {2} at index {3}",
-            Logger.Args(playerActor.Path.Name, Entity.ActiveGameObject.m_globalID.Full, serviceName, serviceIndex));
+        Logger.Debug("Player {0} interacted with NPC {1} using service {2} at index {3} (Reinteract: {4})",
+            Logger.Args(playerActor.Path.Name, Entity.ActiveGameObject.m_globalID.Full, serviceName, serviceIndex, reinteract));
 
         if (_serviceComponents.Count <= 0) {
             Logger.Warning("No service components found for NPC {0}",
                 Logger.Args(Entity.ActiveGameObject.m_debugName));
 
             return;
+        }
+
+        // If this is a reinteract scenario, send service range messages first.
+        if (reinteract == 2) {
+            SendLeaveServiceRange(playerActor);
+            SendActorServiceOptions(playerActor, reinteract);
         }
 
         // Find the service component that corresponds to the service name.
@@ -187,7 +195,7 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity)
         }
     }
 
-    private void SendActorServiceOptions(IActorRef playerActor) {
+    private void SendActorServiceOptions(IActorRef playerActor, int reinteract = 0) {
         var queryCharacterMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
         var wizard = playerActor
             .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryCharacterMsg)
@@ -219,7 +227,7 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity)
             // the global ID of the NPC. It will not work if you set it to the mobile ID.
             MobileID = Entity.ActiveGameObject.m_globalID.Full,
             Options = data,
-            Reinteract = 0
+            Reinteract = reinteract
         };
 
         playerActor.Tell(npcOptionsMsg);

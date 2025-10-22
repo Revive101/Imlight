@@ -28,9 +28,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
+using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
+using Imlight.Common;
 using Imlight.CoreLib.Game.WizBang;
 using Imlight.CoreLib.Game.Zone.Core;
+using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
@@ -48,10 +51,11 @@ internal class PlayerPersonaGoalState {
 }
 
 internal sealed class InteractPersonaGoalComponent(ZoneEntity entity)
-    : ZoneEntityComponent(entity), IServiceComponent, IComponentFactory {
+    : ZoneEntityComponent(entity), IServiceComponent, IComponentFactory, IWithTimers {
 
     private const string COMPLETE_NPC_ICON = "Complete";
     private const double WIZBANG_UPDATE_INTERVAL_SECONDS = 2.5;
+    private const float QUEST_COMPLETION_TRANSITION_DELAY_MS = 1500f;
 
     public string ServiceName => "QuestPersonaGoalService";
     public string NpcIcon => "";
@@ -60,6 +64,8 @@ internal sealed class InteractPersonaGoalComponent(ZoneEntity entity)
     public string StateName => "";
     public string InteractWizBang => "";
     public string DisplayKey => "";
+
+    public ITimerScheduler Timers { get; set; }
 
     private WizBangs _wizBang = WizBangs.None;
     public WizBangs WizBang {
@@ -75,7 +81,7 @@ internal sealed class InteractPersonaGoalComponent(ZoneEntity entity)
     private string _npcName;
 
     public static bool ShouldAttachToEntity(CoreTemplate template) {
-        if (template is not GameObjectTemplate goTemplate || 
+        if (template is not GameObjectTemplate goTemplate ||
             !template.m_behaviors.Any(x => x is NPCBehaviorTemplate) ||
             template.m_behaviors.Any(x => x is DuelistBehaviorTemplate)) {
 
@@ -83,7 +89,7 @@ internal sealed class InteractPersonaGoalComponent(ZoneEntity entity)
         }
 
         var npcName = goTemplate.m_objectName;
-        
+
         // Check if this NPC is referenced as a persona goal target in any quest.
         return QuestTemplateCollection
             .GetAllQuests()
@@ -178,6 +184,13 @@ internal sealed class InteractPersonaGoalComponent(ZoneEntity entity)
         WizBang = state.HasActiveGoal ? WizBangs.CompleteQuestGoal : WizBangs.None;
     }
 
+    public void OnServiceInteraction(IActorRef playerActor, Wizard playerCharacter, CoreObject playerObject, uint serviceOptionIndex) {
+        var state = GetOrUpdatePlayerState(playerCharacter);
+        if (state.HasActiveGoal) {
+            HandlePersonaGoalCompletion(playerActor, playerCharacter, playerObject, state);
+        }
+    }
+
     private PlayerPersonaGoalState GetOrUpdatePlayerState(Wizard wizard, bool forceUpdate = false) {
         var playerId = wizard.CharId;
         var now = DateTime.UtcNow;
@@ -220,7 +233,7 @@ internal sealed class InteractPersonaGoalComponent(ZoneEntity entity)
                 if (gInstance is null || !quest.IsGoalActive(goal.m_goalName)) {
                     continue;
                 }
-                
+
                 return (goal, quest.ID, gInstance.ID);
             }
         }
@@ -228,14 +241,7 @@ internal sealed class InteractPersonaGoalComponent(ZoneEntity entity)
         return null;
     }
 
-    public void OnServiceInteraction(IActorRef playerActor, Wizard playerCharacter, CoreObject playerObject, uint serviceOptionIndex) {
-        var state = GetOrUpdatePlayerState(playerCharacter);
-        if (state.HasActiveGoal) {
-            HandlePersonaGoalCompletion(playerActor, playerCharacter, state);
-        }
-    }
-
-    private void HandlePersonaGoalCompletion(IActorRef playerActor, Wizard playerCharacter, PlayerPersonaGoalState state) {
+    private void HandlePersonaGoalCompletion(IActorRef playerActor, Wizard playerCharacter, CoreObject playerObject, PlayerPersonaGoalState state) {
         var goalCompleteMsg = new CHARACTER_103_PROTOCOL.MSG_COMPLETEPERSONAGOAL {
             QuestID = state.ActiveQuestId,
             GoalID = state.ActiveGoalId,
@@ -248,6 +254,142 @@ internal sealed class InteractPersonaGoalComponent(ZoneEntity entity)
         // Recalculate wizbang immediately to check for new available goals.
         var newState = GetOrUpdatePlayerState(playerCharacter, forceUpdate: true);
         WizBang = newState.HasActiveGoal ? WizBangs.CompleteQuestGoal : WizBangs.None;
+
+        // Only trigger seamless transition if this persona goal completion will complete the quest
+        if (WillPersonaGoalCompletionCompleteQuest(playerCharacter, state)) {
+            // Schedule the seamless transition after quest completion processing.
+            var startTransitionMsg = new ZONE_102_PROTOCOL.MSG_STARTSEAMLESSTRANSITION {
+                PlayerActor = playerActor,
+                PlayerCharacter = playerCharacter,
+                PlayerObject = playerObject
+            };
+            Timers.StartSingleTimer(
+                "start_transition",
+                startTransitionMsg,
+                TimeSpan.FromMilliseconds(QUEST_COMPLETION_TRANSITION_DELAY_MS));
+        }
+    }
+
+    private static bool WillPersonaGoalCompletionCompleteQuest(Wizard playerCharacter, PlayerPersonaGoalState state) {
+        // Get the quest instance for this goal
+        var qInstance = playerCharacter.QuestBehavior.CurrentQuestInstances
+            .FirstOrDefault(q => q.ID == state.ActiveQuestId);
+        if (qInstance == null) {
+            return false;
+        }
+
+        // Get the quest template.
+        var qTemplate = QuestTemplateCollection.GetQuestByName(qInstance.QuestName);
+        if (qTemplate?.m_goalLogic == null || qTemplate.m_goalLogic.Count == 0) {
+            return false;
+        }
+
+        // Simulate what will happen after this persona goal is completed.
+        // We need to check if completing this goal will result in quest completion.
+        foreach (var gLogic in qTemplate.m_goalLogic) {
+            // Check if this logic entry has prerequisites.
+            if ((gLogic.m_goalsAND == null || gLogic.m_goalsAND.Count == 0) &&
+                (gLogic.m_goalsOR == null || gLogic.m_goalsOR.Count == 0)) {
+                continue;
+            }
+
+            // Check AND prerequisites - all must be complete (including our soon-to-be-completed goal).
+            bool andPrereqsMet = true;
+            if (gLogic.m_goalsAND != null) {
+                foreach (var goalName in gLogic.m_goalsAND) {
+                    // Consider our current goal as completed for this check.
+                    bool isCompleted = goalName == state.ActiveGoal.m_goalName || qInstance.IsGoalCompleted(goalName);
+                    if (!isCompleted) {
+                        andPrereqsMet = false;
+                        break;
+                    }
+                }
+            }
+
+            if (!andPrereqsMet) {
+                continue;
+            }
+
+            // Check OR prerequisites - required count must be complete.
+            if (gLogic.m_goalsOR != null && gLogic.m_goalsOR.Count > 0) {
+                int completedORCount = 0;
+                foreach (var goalName in gLogic.m_goalsOR) {
+                    // Consider our current goal as completed for this check.
+                    bool isCompleted = goalName == state.ActiveGoal.m_goalName || qInstance.IsGoalCompleted(goalName);
+                    if (isCompleted) {
+                        completedORCount++;
+                    }
+                }
+
+                if (completedORCount < gLogic.m_requiredORCount) {
+                    continue;
+                }
+            }
+
+            // If this logic entry will complete the quest, return true.
+            if (gLogic.m_completeQuest) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_STARTSEAMLESSTRANSITION))]
+    private void HandleStartSeamlessTransition(ZONE_102_PROTOCOL.MSG_STARTSEAMLESSTRANSITION message) {
+        var playerActor = message.PlayerActor;
+        var playerCharacter = message.PlayerCharacter;
+        var playerObject = message.PlayerObject;
+
+        var serviceMementoComponent = Entity.GetComponentOfType<InteractServiceMementoComponent>();
+        if (serviceMementoComponent == null) {
+            Logger.Warning("Cannot trigger service re-evaluation: NPC {0} does not have InteractServiceMementoComponent",
+                Logger.Args(Entity.ActiveGameObject.m_nMobileID));
+
+            return;
+        }
+
+        var reinteractMsg = new QUEST_MESSAGES_52_PROTOCOL.MSG_INTERACTNPC {
+            GlobalID = Entity.ActiveGameObject.m_nMobileID,
+            ServiceName = "",
+            Reinteract = 2,
+            ServiceIndex = 0,
+            RequestedSigilMode = 0
+        };
+        playerActor.Tell(reinteractMsg);
+
+        var delayedQuestOfferMsg = new ZONE_102_PROTOCOL.MSG_TRIGGERSEAMLESSTRANSITION {
+            PlayerActor = playerActor,
+            PlayerCharacter = playerCharacter,
+            PlayerObject = playerObject
+        };
+
+        Timers.StartSingleTimer(
+            "delayed_quest_offer",
+            delayedQuestOfferMsg,
+            TimeSpan.FromMilliseconds(QUEST_COMPLETION_TRANSITION_DELAY_MS));
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_TRIGGERSEAMLESSTRANSITION))]
+    private void HandleSeamlessTransition(ZONE_102_PROTOCOL.MSG_TRIGGERSEAMLESSTRANSITION message) {
+        var serviceMementoComponent = Entity.GetComponentOfType<InteractServiceMementoComponent>();
+        if (serviceMementoComponent == null) {
+            Logger.Warning("No service memento component found for delayed quest offer");
+
+            return;
+        }
+
+        var questOfferMsg = new ZONE_102_PROTOCOL.MSG_ZONEINTERACTION {
+            GlobalID = Entity.ActiveGameObject.m_nMobileID,
+            ServiceName = "QuestOfferService",
+            ServiceIndex = 0,
+            PlayerActor = message.PlayerActor,
+            PlayerCharacter = message.PlayerCharacter,
+            PlayerObject = message.PlayerObject,
+            Reinteract = 2
+        };
+
+        serviceMementoComponent.ActorRef.Tell(questOfferMsg);
     }
 
 }

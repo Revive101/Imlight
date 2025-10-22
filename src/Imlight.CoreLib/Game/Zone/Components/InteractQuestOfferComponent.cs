@@ -78,7 +78,7 @@ internal sealed class InteractQuestOfferComponent(ZoneEntity entity)
     private readonly Dictionary<ulong, PlayerQuestOfferState> _cachedPlayerStates = [];
 
     public static bool ShouldAttachToEntity(CoreTemplate template) {
-        if (template is not GameObjectTemplate goTemplate || 
+        if (template is not GameObjectTemplate goTemplate ||
             !template.m_behaviors.Any(x => x is NPCBehaviorTemplate) ||
             template.m_behaviors.Any(x => x is DuelistBehaviorTemplate)) {
 
@@ -167,6 +167,13 @@ internal sealed class InteractQuestOfferComponent(ZoneEntity entity)
         WizBang = state.HasAvailableQuest ? WizBangs.StartQuest : WizBangs.None;
     }
 
+    public void OnServiceInteraction(IActorRef playerActor, Wizard playerCharacter, CoreObject playerObject, uint serviceOptionIndex) {
+        var state = GetOrUpdatePlayerState(playerCharacter);
+        if (state.HasAvailableQuest && state.AvailableQuest != null) {
+            HandleQuestOffer(playerActor, state.AvailableQuest);
+        }
+    }
+
     private PlayerQuestOfferState GetOrUpdatePlayerState(Wizard wizard, bool forceUpdate = false) {
         var playerId = wizard.CharId;
         var now = DateTime.UtcNow;
@@ -206,14 +213,8 @@ internal sealed class InteractQuestOfferComponent(ZoneEntity entity)
         return state;
     }
 
-    public void OnServiceInteraction(IActorRef playerActor, Wizard playerCharacter, CoreObject playerObject, uint serviceOptionIndex) {
-        var state = GetOrUpdatePlayerState(playerCharacter);
-        if (state.HasAvailableQuest && state.AvailableQuest != null) {
-            HandleQuestOffer(playerActor, state.AvailableQuest);
-        }
-    }
-
     private void HandleQuestOffer(IActorRef playerActor, QuestTemplate quest) {
+        SendInteractAvailableQuest(playerActor, quest);
         ShowQuestInfoDialog(playerActor, quest);
         SendQuestOfferDialog(playerActor, quest);
         SendQuestOfferCacheOption(playerActor, quest);
@@ -279,7 +280,7 @@ internal sealed class InteractQuestOfferComponent(ZoneEntity entity)
         if (!serializer.Serialize(startingGoalCompilation, 1, out var serializedGoals)) {
             Logger.Error("Failed to serialize starting goals for quest {0}.",
                 Logger.Args(quest.m_questName));
-                
+
             return;
         }
 
@@ -287,7 +288,7 @@ internal sealed class InteractQuestOfferComponent(ZoneEntity entity)
         if (!serializer.Serialize(rewards, 1, out var serializedRewards)) {
             Logger.Error("Failed to serialize rewards for quest {0}.",
                 Logger.Args(quest.m_questName));
-                
+
             return;
         }
 
@@ -336,4 +337,14 @@ internal sealed class InteractQuestOfferComponent(ZoneEntity entity)
 
         return convertedResults;
     }
+
+    private void SendInteractAvailableQuest(IActorRef playerActor, QuestTemplate quest) {
+        var msg = new WIZARD_12_PROTOCOL.MSG_INTERACTAVAILABLEQUEST {
+            MobileID = Entity.ActiveGameObject.m_nMobileID,
+            QuestName = quest.m_questName
+        };
+
+        playerActor.Tell(msg);
+    }
+
 }
