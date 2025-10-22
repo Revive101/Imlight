@@ -273,11 +273,11 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         }
     }
 
-    private void SendQuestStartingMessage(QuestTemplate quest, QuestInstance questInstance) {
-        var qMadLibs = QuestMadlibs.GetMadLibForQuest(quest);
+    private void SendQuestStartingMessage(QuestTemplate qTemplate, QuestInstance questInstance) {
+        var qMadLibs = QuestMadlibs.GetMadLibForQuest(qTemplate);
         if (!_goalSerializer.Serialize(qMadLibs, 1, out var madLibData)) {
             Logger.Error("Failed to serialize madlib data for quest '{0}'",
-                Logger.Args(quest.m_questName));
+                Logger.Args(qTemplate.m_questName));
 
             return;
         }
@@ -289,39 +289,46 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         };
         if (!_goalSerializer.Serialize(associatedWorlds, 1, out var associatedWorldData)) {
             Logger.Error("Failed to serialize associated world data for quest '{0}'",
-                Logger.Args(quest.m_questName));
+                Logger.Args(qTemplate.m_questName));
 
             associatedWorldData = string.Empty;
         }
 
+        var rewards = GetQuestRewardsFromTemplate(qTemplate, null, SessionActor.ActorRef, GetActiveWizard());
+        if (!_goalSerializer.Serialize(rewards, 1, out var serializedRewards)) {
+            Logger.Error("Failed to serialize rewards for quest {0}.",
+                Logger.Args(qTemplate.m_questName));
+
+            return;
+        }
+
         var qSendMsg = new QUEST_MESSAGES_52_PROTOCOL.MSG_SENDQUEST {
             QuestID = questInstance.ID,
-            QuestNameID = quest.m_questNameID,
+            QuestNameID = qTemplate.m_questNameID,
             QuestType = 0, // ?
-            QuestLevel = quest.m_questLevel,
-            QuestTitle = quest.m_questTitle,
+            QuestLevel = qTemplate.m_questLevel,
+            QuestTitle = qTemplate.m_questTitle,
             QuestInfo = "", // ?
             New = 1,
             QuestMadlibs = madLibData,
-            GoalData = "", // TODO:
-            Rewards = "", // TODO:
+            GoalData = "", // This field is empty per packet captures.
+            Rewards = serializedRewards,
             ClientTags = "",
             AssociatedWorlds = associatedWorldData,
-            NoQuestHelper = quest.m_noQuestHelper ? (byte) 1 : (byte) 0,
-            Mainline = quest.m_mainline ? (byte) 1 : (byte) 0,
+            NoQuestHelper = qTemplate.m_noQuestHelper ? (byte) 1 : (byte) 0,
+            Mainline = qTemplate.m_mainline ? (byte) 1 : (byte) 0,
             ReadyToTurnIn = 0,
             SkipQHAutoSelect = 0,
-            PetOnlyQuest = quest.m_playAsYourPetNPC ? (byte) 1 : (byte) 0,
+            PetOnlyQuest = qTemplate.m_playAsYourPetNPC ? (byte) 1 : (byte) 0,
             ActivityType = 0, // ?
         };
 
         SendToSocket(qSendMsg);
-
-        ShowQuestStartDialogue(quest);
+        ShowQuestStartDialogue(qTemplate);
 
         // Send the quest starting goals now.
-        foreach (var gTemplate in quest.m_goals) {
-            if (!quest.m_startGoals.Contains(gTemplate.m_goalName)) {
+        foreach (var gTemplate in qTemplate.m_goals) {
+            if (!qTemplate.m_startGoals.Contains(gTemplate.m_goalName)) {
                 continue;
             }
 
@@ -329,7 +336,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         }
 
         // Init quest start results.
-        var startResults = quest.m_startResults;
+        var startResults = qTemplate.m_startResults;
         ResultDispatcher.ExecuteResults(
             actorContext: Context,
             results: startResults,
