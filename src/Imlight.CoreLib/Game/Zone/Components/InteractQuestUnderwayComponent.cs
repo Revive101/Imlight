@@ -99,6 +99,15 @@ internal sealed class InteractQuestUnderwayComponent(ZoneEntity entity)
             yield break;
         }
 
+        // Check if there's an active persona goal for this NPC - persona goals take priority.
+        var personaGoalComponent = Entity.GetComponentOfType<InteractPersonaGoalComponent>();
+        if (personaGoalComponent != null) {
+            var personaGoalOptions = personaGoalComponent.GetServiceOptions(wizard);
+            if (personaGoalOptions.Any()) {
+                yield break;
+            }
+        }
+
         var state = GetOrUpdatePlayerState(wizard);
         if (!state.HasUnderwayQuest || state.UnderwayQuest == null) {
             yield break;
