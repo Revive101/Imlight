@@ -665,5 +665,12 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public string ObjectName;
 
     }
+
+    public sealed class MSG_WIZBANGUPDATEINTERVAL : IServerMessage {
+
+        public byte MessageOrder { get; } = 45;
+        public byte ServiceID { get; } = 102;
+
+    }
     
 }
