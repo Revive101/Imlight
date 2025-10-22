@@ -57,36 +57,54 @@ public interface IServiceComponent {
     string InteractWizBang { get; }
     string DisplayKey { get; }
 
-    event System.Action WizBangChanged { add { } remove { } }
-
 }
 
-internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneEntityComponent(entity), IComponentFactory {
+internal sealed class InteractServiceMementoComponent(ZoneEntity entity) 
+    : ZoneEntityComponent(entity), IComponentFactory, IWithTimers {
 
     private const string DEFAULT_NAME_KEY = "NPCFormats_Name";
     private const string DEFAULT_TEXT_KEY = "GUI_NPCInteractText";
+    private const string WIZBANG_UPDATE_TIMER_KEY = "WIZBANG_UPDATE_TIMER";
+    private const double WIZBANG_UPDATE_INTERVAL_SECONDS = 2.5;
+    private const float DEFAULT_RENDER_DISTANCE = 5000.0f; // Default wizbang render distance.
 
     private readonly float _interactionRadius = 300.0f;
-    private readonly Dictionary<ulong, IActorRef> _playersInRange = [];
-    private readonly Dictionary<IServiceComponent, System.Action> _eventSubscriptions = [];
+    private readonly Dictionary<ulong, IActorRef> _playersInInteractionRange = [];
+    private readonly Dictionary<ulong, IActorRef> _playersInRenderRange = [];
+    private readonly Dictionary<ulong, WizBangs> _lastSentWizBangs = [];
     private List<IServiceComponent> _serviceComponents = [];
     private ServiceMementoBase _serviceMemento;
     private MadlibBlock _madlibBlock;
+    private float _renderDistance;
+
+    public ITimerScheduler Timers { get; set; }
 
     public static bool ShouldAttachToEntity(CoreTemplate template)
         => true;
 
-    public override void OnStart()
-        => RefreshServiceMomento(null);
+    public override void OnStart() {
+        // Set render distance - use zone far clip if available, otherwise default.
+        _renderDistance = Entity.Zone?.ZoneData?.m_farClip ?? DEFAULT_RENDER_DISTANCE;
+        
+        RefreshServiceMomento(null);
 
-    public override void OnPlayerJoin(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard)
-        => SendWizBang(playerActor, playerWizard);
+        var updateInterval = TimeSpan.FromSeconds(WIZBANG_UPDATE_INTERVAL_SECONDS);
+        var updateMsg = new ZONE_102_PROTOCOL.MSG_WIZBANGUPDATEINTERVAL();
+        Timers.StartPeriodicTimer(WIZBANG_UPDATE_TIMER_KEY, updateMsg, updateInterval);
+    }
 
     public override void OnPlayerLeave(IActorRef playerActor, ulong id) {
-        if (_playersInRange.Any(x => x.Value == playerActor)) {
-            var playerObj = _playersInRange.First(x => x.Value == playerActor).Key;
-            _playersInRange.Remove(playerObj);
+        if (_playersInInteractionRange.Any(x => x.Value == playerActor)) {
+            var playerObj = _playersInInteractionRange.First(x => x.Value == playerActor).Key;
+            _playersInInteractionRange.Remove(playerObj);
         }
+        
+        if (_playersInRenderRange.Any(x => x.Value == playerActor)) {
+            var playerObj = _playersInRenderRange.First(x => x.Value == playerActor).Key;
+            _playersInRenderRange.Remove(playerObj);
+        }
+
+        _lastSentWizBangs.Remove(id);
     }
 
     public override void OnPlayerMove(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) {
@@ -94,15 +112,28 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
             return;
         }
 
+        var playerId = playerObj.m_globalID.Full;
+
+        // Handle interaction range (for service options).
         if (IsInRadius(playerObj, _interactionRadius)
-            && !_playersInRange.ContainsKey(playerObj.m_globalID.Full)) {
-            _playersInRange.Add(playerObj.m_globalID.Full, playerActor);
+            && !_playersInInteractionRange.ContainsKey(playerId)) {
+            _playersInInteractionRange.Add(playerId, playerActor);
             SendActorServiceOptions(playerActor);
         }
         else if (!IsInRadius(playerObj, _interactionRadius)
-                 && _playersInRange.ContainsKey(playerObj.m_globalID.Full)) {
-            _playersInRange.Remove(playerObj.m_globalID.Full);
+                 && _playersInInteractionRange.ContainsKey(playerId)) {
+            _playersInInteractionRange.Remove(playerId);
             SendLeaveServiceRange(playerActor);
+        }
+
+        // Handle render range (for wizbangs).
+        if (IsInRadius(playerObj, _renderDistance)) {
+            if (!_playersInRenderRange.ContainsKey(playerId)) {
+                _playersInRenderRange.Add(playerId, playerActor);
+            }
+        }
+        else if (_playersInRenderRange.ContainsKey(playerId)) {
+            _playersInRenderRange.Remove(playerId);
         }
     }
 
@@ -138,8 +169,25 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
         serviceComponent.OnServiceInteraction(playerActor, playerCharacter, playerObject, serviceIndex);
     }
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_WIZBANGUPDATEINTERVAL))]
+    private void HandleWizBangUpdateInterval(ZONE_102_PROTOCOL.MSG_WIZBANGUPDATEINTERVAL message) {
+        if (_serviceComponents.Count <= 0) {
+            return;
+        }
+
+        // Update wizbangs for all players in render range.
+        foreach (var playerActor in _playersInRenderRange.Values.ToList()) {
+            var queryCharacterMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
+            var wizard = playerActor
+                .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryCharacterMsg)
+                .Result
+                .Wizard;
+
+            SendWizBang(playerActor, wizard);
+        }
+    }
+
     private void SendActorServiceOptions(IActorRef playerActor) {
-        // Get interacting wizard
         var queryCharacterMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
         var wizard = playerActor
             .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryCharacterMsg)
@@ -194,13 +242,6 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
             return;
         }
 
-        // Subscribe to WizBangChanged events for all service components.
-        foreach (var component in _serviceComponents) {
-            var handler = () => OnWizBangChanged();
-            component.WizBangChanged += handler;
-            _eventSubscriptions[component] = handler;
-        }
-
         var gameObjTemplate = Entity.Template as GameObjectTemplate;
 
         // Get all service options.
@@ -219,20 +260,6 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
             m_serviceOptions = allOptions,
             m_personaMadlibs = _madlibBlock
         };
-    }
-
-    private void OnWizBangChanged() {
-        RefreshServiceMomento(null);
-
-        foreach (var playerActor in _playersInRange.Values.ToList()) {
-            var queryCharacterMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
-            var wizard = playerActor
-                .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryCharacterMsg)
-                .Result
-                .Wizard;
-
-            SendWizBang(playerActor, wizard);
-        }
     }
 
     private void SetMadLibBlock() {
@@ -261,17 +288,32 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity) : ZoneE
             return;
         }
 
-        // There's a number of network speed factors that can cause this message
-        // to be received before the player's game client has fully loaded.
-        // This delay is to ensure that the player's game client has fully loaded.
-        System.Threading.Tasks.Task.Delay(800).Wait();
+        // Collect wizbangs from components that have service options for this player.
+        var activeWizBangs = new List<WizBangs>();
+        foreach (var component in _serviceComponents) {
+            var serviceOptions = component.GetServiceOptions(playerWizard);
+            if (serviceOptions.Any()) {
+                activeWizBangs.Add(component.WizBang);
+            }
+        }
 
-        // Out of the service options, deduce which WizBang is the highest priority.
-        // Thankfully, game client data has a priority list for WizBangs.
-        var highestPriority = SortComponentsByPriority(_serviceComponents).FirstOrDefault();
+        // Get highest priority wizbang for this player.
+        var wizBang = WizBangs.None;
+        if (activeWizBangs.Count > 0) {
+            var priorityWizBang = WizBangPriority.GetHighestPriorityWizBang(activeWizBangs);
+            wizBang = priorityWizBang;
+        }
 
-        // Send the WizBang to the player.
-        var wizBang = highestPriority?.WizBang ?? WizBangs.None;
+        var playerId = playerWizard.CharId;
+
+        // Check if this wizbang is different from the last one we sent.
+        if (_lastSentWizBangs.TryGetValue(playerId, out var lastWizBang) && lastWizBang == wizBang) {
+            return; 
+        }
+
+        // Cache the new wizbang and send the message.
+        _lastSentWizBangs[playerId] = wizBang;
+
         var wizBangMsg = new GAME_5_PROTOCOL.MSG_WIZBANG {
             WizBangID = (uint) wizBang,
             GameObjectID = Entity.ActiveGameObject.m_globalID.Full
