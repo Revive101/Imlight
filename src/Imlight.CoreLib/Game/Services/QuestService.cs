@@ -71,6 +71,9 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
         // Entering the zone may have triggered waypoint goals for quests.
         CheckForWaypointGoalZoneEntry(wizard);
+
+        // Exiting the previous zone may have triggered waypoint goals for quests.
+        CheckForWaypointGoalZoneExit(wizard);
     }
 
     [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_SENDQUESTOFFERCACHEOPTION))]
@@ -431,6 +434,47 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
                 }
                 if (waypointGoal.m_zoneTag != currentZone) {
                     // Player is not in the correct zone for this goal.
+                    continue;
+                }
+
+                CompleteGoal(qInstance, gTemplate);
+            }
+        }
+    }
+
+    private void CheckForWaypointGoalZoneExit(Wizard wizard) {
+        var previousZone = wizard.PreviousZone;
+
+        foreach (var quest in _cachedQuestTemplates) {
+            // Check to see if the quest has any waypoint goals that trigger on zone exit.
+            var waypointGoals = quest.m_goals
+                .Where(gTemplate => gTemplate.m_goalType == GOAL_TYPE.GOAL_TYPE_WAYPOINT)
+                .Where(wTemplate => wTemplate is WaypointGoalTemplate wGoalTemplate
+                    && wGoalTemplate.m_zoneExit);
+
+            if (!waypointGoals.Any()) {
+                // No waypoint goals for this quest.
+                continue;
+            }
+
+            // Check to see if the player has this goal active.
+            var qInstance = wizard.QuestBehavior.CurrentQuestInstances
+                .FirstOrDefault(q => q.QuestName == quest.m_questName);
+            if (qInstance == null) {
+                // Player doesn't have this quest.
+                continue;
+            }
+
+            var activeWaypointGoals = waypointGoals
+                .Where(gTemplate => qInstance.IsGoalActive(gTemplate.m_goalName));
+
+            // Mark each of the goals complete if the player has exited the zone.
+            foreach (var gTemplate in activeWaypointGoals) {
+                if (gTemplate is not WaypointGoalTemplate waypointGoal) {
+                    continue;
+                }
+                if (waypointGoal.m_zoneTag != previousZone) {
+                    // Player did not exit the correct zone for this goal.
                     continue;
                 }
 
@@ -861,6 +905,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         if (!serializer.Serialize(dialogEntry, 16, out var serializedData)) {
             Logger.Error("Failed to serialize '{0}' dialog.",
                 Logger.Args(completionType));
+                
             return;
         }
 
