@@ -168,6 +168,7 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
         public byte ServiceID { get; } = 103;
 
         public object Context;
+        public object Result;
 
     }
 

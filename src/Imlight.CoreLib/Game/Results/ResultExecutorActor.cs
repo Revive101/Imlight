@@ -67,7 +67,7 @@ public class ResultExecutorActor(IResultContext context) : ReceiveProtocolDispat
                 var props = Props.Create(handlerType);
                 var handlerActor = Context.ActorOf(props, $"Handler_{resultType.Name}_{Guid.NewGuid():N}");
 
-                handlerActor.Tell(new CHARACTER_103_PROTOCOL.MSG_INITIALIZEHANDLER { Context = _context });
+                handlerActor.Tell(new CHARACTER_103_PROTOCOL.MSG_INITIALIZEHANDLER { Context = _context, Result = result });
 
                 var executeMessage = new CHARACTER_103_PROTOCOL.MSG_EXECUTEHANDLER();
                 var executeTimeout = TimeSpan.FromMilliseconds(RESULT_HANDLER_TIMEOUT_MS);

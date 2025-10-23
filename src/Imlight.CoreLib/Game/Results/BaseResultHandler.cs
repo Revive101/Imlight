@@ -35,6 +35,12 @@ public interface IResultHandler {
     /// </summary>
     /// <param name="context">The context containing all execution information.</param>
     bool Execute(IResultContext context);
+    
+    /// <summary>
+    /// Initializes the handler with the calling context
+    /// </summary>
+    /// <param name="context">The result context</param>
+    void Initialize(IResultContext context, Result result);
 
 }
 
@@ -43,12 +49,9 @@ public interface IResultHandler {
 /// </summary>
 public abstract class BaseResultHandler<T> : ReceiveProtocolDispatcher, IResultHandler, IResultHandlerFactory
     where T : Result {
-
+    
     protected IResultContext CallingContext { get; private set; }
-
-    private T _result;
-    protected T Result => _result ??= CallingContext?.GetResults()?
-        .FirstOrDefault(x => x is not null && x.GetType() == typeof(T)) as T;
+    protected T Result { get; private set; }
 
     public static bool ShouldAttachToContext(IResultContext context)
         => context
@@ -59,9 +62,14 @@ public abstract class BaseResultHandler<T> : ReceiveProtocolDispatcher, IResultH
 
     public abstract bool Execute(IResultContext context);
 
+    public void Initialize(IResultContext context, Result result) {
+        CallingContext = context;
+        Result = result as T;
+    }
+
     [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_INITIALIZEHANDLER))]
     public void HandleInitialize(CHARACTER_103_PROTOCOL.MSG_INITIALIZEHANDLER message) {
-        CallingContext = (IResultContext)message.Context;
+        Initialize((IResultContext)message.Context, (Result)message.Result);
     }
 
     [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_EXECUTEHANDLER))]
