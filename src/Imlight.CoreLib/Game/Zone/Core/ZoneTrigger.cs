@@ -34,6 +34,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
 using Imcodec.ObjectProperty.TypeCache;
+using Imlight.CoreLib.Game.Requirements;
+using Imlight.CoreLib.Game.Requirements.Contexts;
 using Imlight.CoreLib.Game.Results;
 using Imlight.CoreLib.Game.Results.Contexts;
 using Imlight.CoreLib.Shared.Networking;
@@ -60,18 +62,43 @@ public sealed class ZoneTrigger(IActorRef zoneRef, Zone zone, Trigger trigger)
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_POSTEVENT))]
     private void ReceivePostEvent(ZONE_102_PROTOCOL.MSG_POSTEVENT message) {
-        // Determine if this event name matches either or enter or exit events.
-        if (TriggerData.m_fireEvents.Any(x => x == message.EventName)) {
-            // If the event name matches, we'll also want to check if the player is on cooldown.
-            if (TriggerData.m_cooldown > 0 && !CooldownCheck(message.PlayerActor)) {
+        // Early-out if the event name doesn't match any configured fire events.
+        if (!TriggerData.m_fireEvents.Any(x => x == message.EventName)) {
+            return;
+        }
+
+        // Early-out for per-player cooldowns.
+        if (TriggerData.m_cooldown > 0 && !CooldownCheck(message.PlayerActor)) {
+            return;
+        }
+
+        // Evaluate requirements when present.
+        if (   TriggerData.m_requirements is not null
+            && TriggerData.m_requirements.m_requirements is not null
+            && TriggerData.m_requirements.m_requirements.Count > 0) {
+            var queryWizardMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
+            var wizardResponse = message.PlayerActor.Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryWizardMsg).Result;
+
+            var requirementsMet = RequirementDispatcher.EvaluateRequirements(
+                requirements: TriggerData.m_requirements,
+                context: new ZoneRequirementContext(
+                    TriggerData.m_requirements,
+                    message.PlayerActor,
+                    message.PlayerGameObject,
+                    wizardResponse.Wizard,
+                    ZoneRef,
+                    TriggerData.m_triggerName
+                )
+            );
+
+            if (!requirementsMet) {
                 return;
             }
-
-            ResultDispatcher.ExecuteResults(Context, TriggerData.m_results, message.PlayerActor, message.PlayerGameObject, 
-                                           Sender, ZoneRef, triggerName: TriggerData.m_triggerName);
         }
-    }
 
+        ResultDispatcher.ExecuteResults(Context, TriggerData.m_results, message.PlayerActor, message.PlayerGameObject,
+                                       Sender, ZoneRef, triggerName: TriggerData.m_triggerName);
+    }
 
     private bool CooldownCheck(IActorRef playerRef) {
         if (_cooldowns.TryGetValue(playerRef, out var lastTriggered)) {
