@@ -66,7 +66,7 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity)
     private const string DEFAULT_NAME_KEY = "NPCFormats_Name";
     private const string DEFAULT_TEXT_KEY = "GUI_NPCInteractText";
     private const string WIZBANG_UPDATE_TIMER_KEY = "WIZBANG_UPDATE_TIMER";
-    private const double WIZBANG_UPDATE_INTERVAL_SECONDS = 2.5;
+    private const double WIZBANG_UPDATE_INTERVAL_SECONDS = 1.0;
     private const float DEFAULT_RENDER_DISTANCE = 5000.0f; // Default wizbang render distance.
 
     private readonly float _interactionRadius = 300.0f;

@@ -55,7 +55,7 @@ internal sealed class InteractQuestOfferComponent(ZoneEntity entity)
     : ZoneEntityComponent(entity), IServiceComponent, IComponentFactory {
 
     private const string PREP_NPC_ICON = "Prep";
-    private const double WIZBANG_UPDATE_INTERVAL_SECONDS = 2.5;
+    private const double WIZBANG_UPDATE_INTERVAL_SECONDS = 1.0;
 
     public string ServiceName => "QuestOfferService";
     public string NpcIcon => "";

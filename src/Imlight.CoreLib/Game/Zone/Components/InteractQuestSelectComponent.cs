@@ -116,7 +116,10 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
             playerActor.Tell(goalCompleteMsg);
         }
 
-        Entity.DeleteObject();
+        // Do not delete the object! Sometimes select objects will not be on path,
+        // meaning once we destroy them they won't respawn.
+        // Instead, let the quest template itself decide how to handle the object post-interaction.
+        //Entity.DeleteObject();
     }
 
     private bool HasActiveMatchingScavengeGoal(Wizard playerCharacter)
