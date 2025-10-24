@@ -59,7 +59,6 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
     private readonly bool _randomBackflips
         = ConfigurationManager.Settings["April Fools.RandomBackFlips"].AsBool();
     private bool _isTransferQueued;
-    private bool _sentClientZoned;
 
     private readonly CoreObjectSerializer _effectSerializer = new(
         behaviors: SerializerFlags.None
@@ -96,39 +95,23 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
 
     [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE))]
     private void ReceivePostAttach(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE message) {
-        if (!_sentClientZoned) {
-            // Echo the message again to ourselves so we can post the enter zone event.
-            Timers.StartSingleTimer("postattach", message, TimeSpan.FromSeconds(5));
-            _sentClientZoned = true;
+        // Send immediate effects.
+        var wizard = GetActiveWizard();
+        var timeHomeLastClicked = DateTimeOffset.FromUnixTimeSeconds(wizard.TimeHomeLastClicked);
+        var timeDifference = DateTimeOffset.UtcNow.Subtract(timeHomeLastClicked);
 
-            // Send immediate effects.
-            var wizard = GetActiveWizard();
-            var timeHomeLastClicked = DateTimeOffset.FromUnixTimeSeconds(wizard.TimeHomeLastClicked);
-            var timeDifference = DateTimeOffset.UtcNow.Subtract(timeHomeLastClicked);
-
-            if (timeDifference.TotalSeconds < 30) {
-                SendCantGoHomeEffect(timeHomeLastClicked);
-            }
-
-            var postEventMsg = new ZONE_102_PROTOCOL.MSG_POSTEVENT {
-                EventName = ENTER_ZONE_EVENT_NAME,
-                PlayerActor = SessionActor.ActorRef,
-                PlayerGameObject = GetActiveGameObject()
-            };
-            ZoneActor.Tell(postEventMsg);
-
-            return;
+        if (timeDifference.TotalSeconds < 30) {
+            SendCantGoHomeEffect(timeHomeLastClicked);
         }
 
-        // Now, send MSG_CLIENTZONED to inform the client that we've sent them all
-        // the data they need;
-        var currentZonePath = GetActiveWizard().Zone;
-        var currentZonePathHash = StringHash.Compute(currentZonePath);
-        var clientZonedMsg = new WIZARD2_53_PROTOCOL.MSG_CLIENTZONED {
-            ZoneNameID = currentZonePathHash
+        var postEventMsg = new ZONE_102_PROTOCOL.MSG_POSTEVENT {
+            EventName = ENTER_ZONE_EVENT_NAME,
+            PlayerActor = SessionActor.ActorRef,
+            PlayerGameObject = GetActiveGameObject()
         };
+        ZoneActor.Tell(postEventMsg);
 
-        SendToSocket(clientZonedMsg);
+        return;
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]

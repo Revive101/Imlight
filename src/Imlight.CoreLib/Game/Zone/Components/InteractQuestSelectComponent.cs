@@ -38,7 +38,7 @@ namespace Imlight.CoreLib.Game.Zone.Components;
 internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
     : ZoneEntityComponent(entity), IServiceComponent, IComponentFactory {
 
-    public string ServiceName => "Interact";
+    public string ServiceName => "QuestSelect";
     public string NpcIcon { get; private set; } = null;
     public string NpcNameKey { get; private set; } = null;
     public string NpcTextKey => "GUI_ChestInteract"; // TODO: Presumably the same for all quest interactables?
