@@ -102,7 +102,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         if (qInstance == null) {
             Logger.Warning("Player '{0}' attempted to complete goal ID '{1}' for quest ID '{2}' but does not have that quest active.",
                 Logger.Args(wizard.CharId, goalId, questId));
-                
+
             return;
         }
 
@@ -111,7 +111,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         if (gInstance == null || !qInstance.IsGoalActive(gInstance.GoalName)) {
             Logger.Warning("Player '{0}' attempted to complete goal ID '{1}' for quest ID '{2}' but does not have that goal active.",
                 Logger.Args(wizard.CharId, goalId, questId));
-                
+
             return;
         }
 
@@ -121,7 +121,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         if (qTemplate == null) {
             Logger.Error("Failed to find quest template for quest '{0}' when completing goal ID '{1}'",
                 Logger.Args(qInstance.QuestName, goalId));
-                
+
             return;
         }
 
@@ -130,14 +130,14 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         if (gTemplate == null) {
             Logger.Error("Failed to find goal template for goal '{0}' in quest '{1}' when completing goal ID '{2}'",
                 Logger.Args(gInstance.GoalName, qInstance.QuestName, goalId));
-                
+
             return;
         }
 
         if (gTemplate.m_goalType != GOAL_TYPE.GOAL_TYPE_PERSONA) {
             Logger.Warning("Player '{0}' attempted to complete goal ID '{1}' for quest ID '{2}' but that goal is not a persona goal.",
                 Logger.Args(wizard.CharId, goalId, questId));
-                
+
             return;
         }
 
@@ -156,7 +156,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         if (qInstance == null) {
             Logger.Warning("Player '{0}' attempted to complete goal ID '{1}' for quest ID '{2}' but does not have that quest active.",
                 Logger.Args(wizard.CharId, goalId, questId));
-                
+
             return;
         }
 
@@ -165,7 +165,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         if (gInstance == null || !qInstance.IsGoalActive(gInstance.GoalName)) {
             Logger.Warning("Player '{0}' attempted to complete goal ID '{1}' for quest ID '{2}' but does not have that goal active.",
                 Logger.Args(wizard.CharId, goalId, questId));
-                
+
             return;
         }
 
@@ -175,7 +175,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         if (qTemplate == null) {
             Logger.Error("Failed to find quest template for quest '{0}' when completing goal ID '{1}'",
                 Logger.Args(qInstance.QuestName, goalId));
-                
+
             return;
         }
 
@@ -184,14 +184,14 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         if (gTemplate == null) {
             Logger.Error("Failed to find goal template for goal '{0}' in quest '{1}' when completing goal ID '{2}'",
                 Logger.Args(gInstance.GoalName, qInstance.QuestName, goalId));
-                
+
             return;
         }
 
         if (gTemplate.m_goalType != GOAL_TYPE.GOAL_TYPE_SCAVENGE) {
             Logger.Warning("Player '{0}' attempted to complete goal ID '{1}' for quest ID '{2}' but that goal is not a scavenge goal.",
                 Logger.Args(wizard.CharId, goalId, questId));
-                
+
             return;
         }
 
@@ -282,21 +282,17 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             return;
         }
 
-        // TODO: Replace with actual associated worlds from quest data.
-        // For now, we'll just use "WizardCity" as a placeholder.
-        var associatedWorlds = new AssociatedWorldsList {
-            m_associatedWorlds = ["WizardCity"]
-        };
-        if (!_goalSerializer.Serialize(associatedWorlds, 1, out var associatedWorldData)) {
-            Logger.Error("Failed to serialize associated world data for quest '{0}'",
-                Logger.Args(qTemplate.m_questName));
-
-            associatedWorldData = string.Empty;
-        }
-
         var rewards = GetQuestRewardsFromTemplate(qTemplate, null, SessionActor.ActorRef, GetActiveWizard());
         if (!_goalSerializer.Serialize(rewards, 1, out var serializedRewards)) {
             Logger.Error("Failed to serialize rewards for quest {0}.",
+                Logger.Args(qTemplate.m_questName));
+
+            return;
+        }
+
+        var associatedWorlds = GetAssociatedWorlds(qTemplate);
+        if (!_goalSerializer.Serialize(associatedWorlds, 1, out var serializedWorlds)) {
+            Logger.Error("Failed to serialize associated worlds for quest {0}.",
                 Logger.Args(qTemplate.m_questName));
 
             return;
@@ -314,7 +310,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             GoalData = "", // This field is empty per packet captures.
             Rewards = serializedRewards,
             ClientTags = "",
-            AssociatedWorlds = associatedWorldData,
+            AssociatedWorlds = serializedWorlds,
             NoQuestHelper = qTemplate.m_noQuestHelper ? (byte) 1 : (byte) 0,
             Mainline = qTemplate.m_mainline ? (byte) 1 : (byte) 0,
             ReadyToTurnIn = 0,
@@ -355,21 +351,17 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             return;
         }
 
-        // TODO: Replace with actual associated worlds from quest data.
-        // For now, we'll just use "WizardCity" as a placeholder.
-        var associatedWorlds = new AssociatedWorldsList {
-            m_associatedWorlds = ["WizardCity"]
-        };
-        if (!_goalSerializer.Serialize(associatedWorlds, 1, out var associatedWorldData)) {
-            Logger.Error("Failed to serialize associated world data for quest '{0}'",
-                Logger.Args(qTemplate.m_questName));
-
-            associatedWorldData = string.Empty;
-        }
-
         var rewards = GetQuestRewardsFromTemplate(qTemplate, null, SessionActor.ActorRef, GetActiveWizard());
         if (!_goalSerializer.Serialize(rewards, 1, out var serializedRewards)) {
             Logger.Error("Failed to serialize rewards for quest {0}.",
+                Logger.Args(qTemplate.m_questName));
+
+            return;
+        }
+
+        var associatedWorlds = GetAssociatedWorlds(qTemplate);
+        if (!_goalSerializer.Serialize(associatedWorlds, 1, out var serializedWorlds)) {
+            Logger.Error("Failed to serialize associated worlds for quest {0}.",
                 Logger.Args(qTemplate.m_questName));
 
             return;
@@ -384,10 +376,10 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             QuestInfo = "", // ?
             New = 0,
             QuestMadlibs = madLibData,
-            GoalData = "", // TODO:
+            GoalData = "",
             Rewards = serializedRewards,
             ClientTags = "",
-            AssociatedWorlds = associatedWorldData,
+            AssociatedWorlds = serializedWorlds,
             NoQuestHelper = qTemplate.m_noQuestHelper ? (byte) 1 : (byte) 0,
             Mainline = qTemplate.m_mainline ? (byte) 1 : (byte) 0,
             ReadyToTurnIn = qInstance.IsReadyForTurnIn() ? (byte) 1 : (byte) 0,
@@ -404,7 +396,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
                 continue;
             }
 
-            SendGoalMessage(gTemplate, qInstance);
+            SendGoalMessage(gTemplate, qInstance, forceSendDestZone: true);
         }
     }
 
@@ -551,7 +543,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
         if (!DetermineNextGoals(qTemplate, questInstance, out var gTemplates)) {
             CompleteQuest(questInstance);
-            
+
             return;
         }
 
@@ -589,7 +581,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         );
     }
 
-    private void SendGoalMessage(GoalTemplate gTemplate, QuestInstance qInstance, byte sendType = 0) {
+    private void SendGoalMessage(GoalTemplate gTemplate, QuestInstance qInstance, byte sendType = 0, bool forceSendDestZone = true) {
         var gInstance = qInstance.GoalProgress
             .FirstOrDefault(g => g.GoalName == gTemplate.m_goalName);
         if (gInstance == null) {
@@ -618,8 +610,22 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
             clientTagData = string.Empty;
         }
+        // Or, send no data if the client tag list has no entries.
+        if (tagList.m_clientTags.Count <= 0) {
+            clientTagData = string.Empty;
+        }
 
         var patronIcon = GetPatronIconFromGoal(gTemplate);
+
+        // Determine the destination zone. Do not send it if the player is currently in that zone.
+        var wizard = GetActiveWizard();
+        var currentZone = wizard.Zone ?? "";
+        var destZone = gTemplate.m_destinationZone ?? "";
+        if (!forceSendDestZone
+            && !string.IsNullOrEmpty(destZone)
+            && destZone.Equals(currentZone, StringComparison.OrdinalIgnoreCase)) {
+            destZone = "";
+        }
 
         var packet = new QUEST_MESSAGES_52_PROTOCOL.MSG_SENDGOAL {
             QuestID = qInstance.ID,
@@ -627,24 +633,24 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             GoalNameID = gTemplate.m_goalNameID,
             GoalTitle = gTemplate.m_goalTitle,
             GoalLocation = gTemplate.m_locationName,
-            GoalDestinationZone = sendType == 2 ? "" : gTemplate.m_destinationZone,
+            GoalDestinationZone = (sendType == 2) ? "" : destZone,
             GoalImage1 = gTemplate.m_displayImage1,
             GoalImage2 = gTemplate.m_displayImage2,
-            PersonaName = "", // Probably useless (?)
+            PersonaName = "",                    // match capture
             PatronIcon = patronIcon,
             GoalType = (byte) gTemplate.m_goalType,
-            GoalStatus = 0, // TODO: Determine status based on progress
+            GoalStatus = 0,                      // *** ACTIVE on retail captures ***
             GoalCount = gInstance.CurrentProgress,
-
             UseTally = (byte) (gTemplate.m_tallyCounter is not null ? 1 : 0),
             GoalTotal = gTemplate.m_tallyCounter?.m_count ?? 0,
             TallyText = gTemplate.m_tallyCounter?.m_descriptor ?? "",
             SubscriberGoalTotal = gTemplate.m_tallyCounter?.m_count ?? 0,
-            SendType = sendType,
+            SendType = sendType,                 // 0=resume/start-of-zone, 1=start, 2=progress
             GoalMadlibs = madLibData,
             ClientTags = clientTagData,
-            NoQuestHelper = gTemplate.m_noQuestHelper ? (byte) 1 : (byte) 0
+            NoQuestHelper = gTemplate.m_noQuestHelper ? (byte) 1 : (byte) 0,
         };
+
         SendToSocket(packet);
     }
 
@@ -887,6 +893,34 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         return convertedResults;
     }
 
+    private static AssociatedWorldsList GetAssociatedWorlds(QuestTemplate qTemplate) {
+        var worlds = qTemplate.m_goals
+            .Select(g => g.m_destinationZone ?? "")
+            .Where(z => !string.IsNullOrWhiteSpace(z))
+            .Select(z => z.Split('/')[0])                 // "WizardCity/WC_..." -> "WizardCity"
+            .Where(root => !string.IsNullOrWhiteSpace(root))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        // Fallback: if the quest has no explicit destination zones but clearly belongs
+        // to a world (e.g., via zone-entry waypoint), you can infer from m_zoneTag roots.
+        if (worlds.Length == 0) {
+            worlds = [.. qTemplate.m_goals
+                .OfType<WaypointGoalTemplate>()
+                .Select(w => w.m_zoneTag ?? "")
+                .Where(z => !string.IsNullOrWhiteSpace(z))
+                .Select(z => z.Split('/')[0])
+                .Where(root => !string.IsNullOrWhiteSpace(root))
+                .Distinct(StringComparer.OrdinalIgnoreCase)];
+        }
+
+        var associatedWorlds = new AssociatedWorldsList {
+            m_associatedWorlds = [.. worlds]
+        };
+
+        return associatedWorlds;
+    }
+
     private void ShowQuestStartDialogue(QuestTemplate questTemplate)
          => ShowDialogue(questTemplate.m_dialogList, "Start", "QuestStart");
 
@@ -912,7 +946,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         if (!serializer.Serialize(dialogEntry, 16, out var serializedData)) {
             Logger.Error("Failed to serialize '{0}' dialog.",
                 Logger.Args(completionType));
-                
+
             return;
         }
 
