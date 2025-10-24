@@ -261,10 +261,20 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity)
 
         SetMadLibBlock();
 
+        var npcIconOrDefault = string.IsNullOrEmpty(highestPriority?.NpcIcon)
+            ? gameObjTemplate?.m_sIcon
+            : highestPriority.NpcIcon;
+        var npcNameKeyOrDefault = string.IsNullOrEmpty(highestPriority?.NpcNameKey)
+            ? DEFAULT_NAME_KEY
+            : highestPriority.NpcNameKey;
+        var npcTextKeyOrDefault = string.IsNullOrEmpty(highestPriority?.NpcTextKey)
+            ? DEFAULT_TEXT_KEY
+            : highestPriority.NpcTextKey;
+
         _serviceMemento = new ServiceMementoBase {
-            m_npcIcon = highestPriority?.NpcIcon ?? gameObjTemplate.m_sIcon,
-            m_npcNameKey = highestPriority?.NpcNameKey ?? DEFAULT_NAME_KEY,
-            m_npcTextKey = highestPriority?.NpcTextKey ?? DEFAULT_TEXT_KEY,
+            m_npcIcon = npcIconOrDefault ?? string.Empty,
+            m_npcNameKey = npcNameKeyOrDefault ?? DEFAULT_NAME_KEY,
+            m_npcTextKey = npcTextKeyOrDefault ?? DEFAULT_TEXT_KEY,
             m_serviceOptions = allOptions,
             m_personaMadlibs = _madlibBlock
         };
