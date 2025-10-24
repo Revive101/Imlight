@@ -24,7 +24,9 @@
  */
 
 using Imcodec.ObjectProperty.TypeCache;
+using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models.Player;
+using System.Linq;
 
 namespace Imlight.CoreLib.Game.Madlibs;
 
@@ -76,8 +78,29 @@ internal static class QuestMadlibs {
             m_blockToken = "GOAL"
         };
 
-    private static MadlibBlock GetMadlibBlockForPersonaGoal(GoalTemplate gTemplate)
-        => new() {
+    private static MadlibBlock GetMadlibBlockForPersonaGoal(GoalTemplate gTemplate) {
+        // Grab the completion dialog for this goal. It will determine the dialog that
+        // players see when they complete the goal. This dialog should always be from the NPC.
+        if (gTemplate.m_dialogList is not ActorDialogList dialogList) {
+            throw new System.Exception("Persona goals must have an ActorDialogList assigned to m_dialogList.");
+        }
+
+        var completionDialogEntry = dialogList.m_dialogs.FirstOrDefault(de => de.m_dialogTag == "Completion") 
+            ?? throw new System.Exception("Persona goals must have a Completion dialog entry in their ActorDialogList.");
+        var templateId = (completionDialogEntry?.m_dialogEntries?.FirstOrDefault()?.m_actorTemplateID)
+            ?? throw new System.Exception("Persona goals must have an ActorTemplateID assigned in their Completion dialog entry.");
+
+        // Grab the actual template from the template ID.
+        var npcTemplate = CoreObjectFactory.GetCoreTemplate(templateId);
+        if (npcTemplate is not GameObjectTemplate npcGameObjectTemplate) {
+            throw new System.Exception("Persona goals must have a valid GameObjectTemplate assigned to their Completion dialog entry.");
+        }
+
+        // Resolve the fullname display locale ID into a FIRSTNAME/LASTNAME format.
+        var npcFullname = npcGameObjectTemplate.m_displayName;
+        (string firstName, string lastName) = Locale.GetEnglishNameKeys(npcFullname);
+
+        var madLibs = new MadlibBlock() {
             m_madlibs = [
                 new MadlibArgT_ByteString {
                     m_madlibToken = "NAME",
@@ -89,11 +112,11 @@ internal static class QuestMadlibs {
                 },
                 new MadlibArgT_ByteString {
                     m_madlibToken = "FIRSTNAME",
-                    m_madlibArgument = "",
+                    m_madlibArgument = firstName
                 },
                 new MadlibArgT_ByteString {
                     m_madlibToken = "LASTNAME",
-                    m_madlibArgument = "",
+                    m_madlibArgument = lastName
                 },
                 new MadlibArgT_ByteString {
                     m_madlibToken = "TITLE",
@@ -106,6 +129,9 @@ internal static class QuestMadlibs {
             ],
             m_blockToken = "GOAL"
         };
+
+        return madLibs;
+    }
 
     private static MadlibBlock GetMadlibBlockForBountyGoal(GoalTemplate gTemplate, GoalInstance gInstance) {
         if (gTemplate is not BountyGoalTemplate bountyGoal) {
