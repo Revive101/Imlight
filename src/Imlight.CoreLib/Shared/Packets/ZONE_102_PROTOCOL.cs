@@ -13,6 +13,7 @@ using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.CoreLib.Game.Zone.Components;
 using Imcodec.MessageLayer;
+using Imcodec.MessageLayer.Generated;
 
 namespace Imlight.CoreLib.Shared.Packets;
 
@@ -696,4 +697,9 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
     }
     
+    public sealed class MSG_SENDQUESTS : IServerMessage {
+        public byte MessageOrder { get; } = 48;
+        public byte ServiceID { get; } = 102;
+        public GAME_5_PROTOCOL.MSG_LOGINCOMPLETE loginComplete;
+    }
 }

@@ -140,7 +140,9 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
                                                    SessionActor.ActorRef));
 
         // Complete the login process.
-        SendToSocket(loginCompleteMsg);
+        TellOtherServices(new ZONE_102_PROTOCOL.MSG_SENDQUESTS {
+            loginComplete = loginCompleteMsg
+        });
         TellOtherServices(new SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE());
     }
 

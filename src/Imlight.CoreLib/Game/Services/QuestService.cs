@@ -54,10 +54,9 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new QuestService(parentActor));
 
-    [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE))]
-    private void ReceivePostAttach(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE message) {
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_SENDQUESTS))]
+    private void ReceiveSendQuests(ZONE_102_PROTOCOL.MSG_SENDQUESTS message) {
         var wizard = GetActiveWizard();
-
         foreach (var qInstance in wizard.QuestBehavior.CurrentQuestInstances) {
             var qTemplate = QuestTemplateCollection.GetQuestByName(qInstance.QuestName);
 
@@ -68,6 +67,12 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
                 _cachedQuestTemplates.Add(qTemplate);
             }
         }
+        SendToSocket(message.loginComplete);
+    }
+
+    [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE))]
+    private void ReceivePostAttach(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE message) {
+        var wizard = GetActiveWizard();
 
         // Entering the zone may have triggered waypoint goals for quests.
         CheckForWaypointGoalZoneEntry(wizard);
