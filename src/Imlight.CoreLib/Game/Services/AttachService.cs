@@ -24,7 +24,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 10/26/2025
  */
 
 using System;
@@ -45,10 +45,15 @@ using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Services;
 
-internal class AttachService(SessionActor sessionActor) : MessageService(sessionActor) {
+internal class AttachService(SessionActor sessionActor) : MessageService(sessionActor), IWithTimers {
+
+    private const float PRELOGIN_DELAY_MS = 500.0f;
+
+    public ITimerScheduler Timers { get; set; }
 
     private Account _account;
     private Wizard _wizard;
+    private GAME_5_PROTOCOL.MSG_LOGINCOMPLETE _loginCompleteMessage;
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new AttachService(parentActor));
@@ -105,10 +110,9 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
         }
 
         var account = GetActiveAccount();
-        var accountFlags = account.GetAccountFlags();
         var realmName = "Centaur"; // todo
 
-        var loginCompleteMsg = new GAME_5_PROTOCOL.MSG_LOGINCOMPLETE() {
+        _loginCompleteMessage = new GAME_5_PROTOCOL.MSG_LOGINCOMPLETE() {
             RealmName = realmName,
             ServerTime = (uint) DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
 
@@ -129,20 +133,43 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
             TestServer = 1
         };
 
-        AddPlayerToZone(charGameObject, _wizard);
+        // Send MSG_PRELOGIN so other services may do their work before we send the final login complete message.
+        var preLoginMsg = new ZONE_102_PROTOCOL.MSG_PRELOGIN();
+        TellOtherServices(preLoginMsg);
+
+        // Send the same message to ourselves after a short delay to allow other services to prepare.
+        Timers.StartSingleTimer(
+            "PreLoginDelay",
+            preLoginMsg,
+            TimeSpan.FromMilliseconds(PRELOGIN_DELAY_MS)
+        );
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PRELOGIN))]
+    private void ReceivePreLogin(ZONE_102_PROTOCOL.MSG_PRELOGIN message) {
+        var charGameObject = _wizard.GameObject as WizClientObject;
+
+        // Wait for the zone to confirm the player was added
+        var addPlayerResponse = AddPlayerToZone(charGameObject, _wizard);
+        if (addPlayerResponse.WizardGameObject == null) {
+            Logger.Error($"Failed to add player {_wizard.CharId} to zone.");
+            SendToSocket(new GAME_5_PROTOCOL.MSG_ATTACHFAILED {
+                Error = 1
+            });
+
+            return;
+        }
 
         // Add the player to the online player collection.
         // I don't know why this is normally blocking. Put it on a background thread.
         Task.Run(() => AddPlayerToOnlineCollection(_wizard,
-                                                   message.ZoneName,
-                                                   zoneDetails.ZoneDisplayName,
-                                                   realmName,
+                                                   _wizard.Zone,
+                                                   _wizard.ZoneDisplayName,
+                                                   "Centaur",
                                                    SessionActor.ActorRef));
 
-        // Complete the login process.
-        TellOtherServices(new ZONE_102_PROTOCOL.MSG_SENDQUESTS {
-            loginComplete = loginCompleteMsg
-        });
+        // Now that the zone is ready and other services have been notified, send the final login complete message.
+        SendToSocket(_loginCompleteMessage);
         TellOtherServices(new SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE());
     }
 
@@ -222,7 +249,7 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
         return AskOtherService<ZONE_102_PROTOCOL.MSG_ZONETRANSFERRSP>(zoneMsg);
     }
 
-    private void AddPlayerToZone(WizClientObject charObj, Wizard wizard) {
+    private ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP AddPlayerToZone(WizClientObject charObj, Wizard wizard) {
         var msg = new ZONE_102_PROTOCOL.MSG_ADDPLAYER {
             PlayerActor = SessionActor.ActorRef,
             PlayerObject = charObj,
@@ -230,7 +257,7 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
             ActualWizardName = wizard.PlayerNameBehavior.GetWizardName(),
         };
 
-        TellOtherServices(msg);
+        return AskOtherService<ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP>(msg);
     }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously

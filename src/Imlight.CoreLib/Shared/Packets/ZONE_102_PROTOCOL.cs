@@ -697,9 +697,10 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
     }
     
-    public sealed class MSG_SENDQUESTS : IServerMessage {
+    public sealed class MSG_PRELOGIN : IServerMessage {
+        
         public byte MessageOrder { get; } = 48;
         public byte ServiceID { get; } = 102;
-        public GAME_5_PROTOCOL.MSG_LOGINCOMPLETE loginComplete;
+        
     }
 }

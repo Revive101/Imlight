@@ -171,6 +171,12 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         }
 
         InformZoneSupervisors(message.PlayerActor, message);
+        
+        // Send response to confirm player was added
+        var response = new ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP {
+            WizardGameObject = message.PlayerObject
+        };
+        Sender.Tell(response);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER))]
@@ -371,10 +377,21 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
             if (pendingEvent is ZONE_102_PROTOCOL.MSG_ZONETRANSFER transfer) {
                 ProcessZoneTransfer(transfer, playerActor);
             }
+            else if (pendingEvent is ZONE_102_PROTOCOL.MSG_ADDPLAYER addPlayer) {
+                InformZoneSupervisors(playerActor, addPlayer);
+                
+                // Send response to confirm player was added
+                var response = new ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP {
+                    WizardGameObject = addPlayer.PlayerObject
+                };
+                playerActor.Tell(response);
+            }
             else {
                 InformZoneSupervisors(playerActor, pendingEvent);
             }
         }
+        
+        _pendingPlayerEvents.Clear();
     }
 
     private ushort GenerateObjectIdentifier() {
