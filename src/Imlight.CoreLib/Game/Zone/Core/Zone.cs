@@ -35,6 +35,7 @@ using Akka.Actor;
 using Imcodec.IO;
 using Imcodec.Math;
 using Imcodec.ObjectProperty.TypeCache;
+using Imcodec.Types;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Zone.Supervisors;
 using Imlight.CoreLib.Shared.Networking;
@@ -84,6 +85,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     private readonly Dictionary<IActorRef, IServerMessage> _pendingPlayerEvents = [];
     private readonly List<ushort> _mobileIdMap = [];
     private readonly Dictionary<IActorRef, bool> _supervisorLoadResults = [];
+    private readonly HashSet<GID> _criticalObjectIds = [];
     private bool _isLoading;
 
     /// <summary>
@@ -273,6 +275,10 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         }
     }
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REGISTERCRITICALOBJECT))]
+    private void ReceiverRegisterCriticalObject(ZONE_102_PROTOCOL.MSG_REGISTERCRITICALOBJECT message) 
+        => _criticalObjectIds.Add(message.ObjectID);
+
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_GETRESERVEDMOBILEID))]
     private void ReceiveGetMobileId() {
         var rsp = new ZONE_102_PROTOCOL.MSG_GETRESERVEDMOBILEIDRSP {
@@ -362,7 +368,8 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
             DynamicZoneId = _dynamicZoneId,
             ErrorCode = 0,
             MobileId = GenerateObjectIdentifier(),
-            ZoneDisplayName = ZoneName
+            ZoneDisplayName = ZoneName,
+            CriticalObjects = [.. _criticalObjectIds]
         };
 
         var actualLocation = GetLocationFromString(message.DestinationLocation);

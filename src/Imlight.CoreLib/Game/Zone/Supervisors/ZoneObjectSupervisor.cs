@@ -3,14 +3,15 @@
  * Proprietary and confidential.
  */
 
+using System;
 using System.Linq;
 using Akka.Actor;
 using Imcodec.ObjectProperty.TypeCache;
+using Imcodec.Types;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
-using Imlight.CoreLib.WizardData.Collections;
 
 namespace Imlight.CoreLib.Game.Zone.Supervisors;
 
@@ -38,7 +39,7 @@ internal sealed class ZoneObjectSupervisor(Core.Zone zone) : ZoneEntitySuperviso
             if (template is null) {
                 Logger.Warning("Could not create {0} because template ID {1} was not found.",
                     Logger.Args(objectInfo.m_zoneTag, objectInfo.m_templateID));
-                
+
                 continue;
             }
 
@@ -48,6 +49,12 @@ internal sealed class ZoneObjectSupervisor(Core.Zone zone) : ZoneEntitySuperviso
                     Logger.Args(objectInfo.m_zoneTag, objectInfo.m_templateID));
 
                 continue;
+            }
+
+            // Determine if this is a critical object.
+            // If so, register it with the Zone.
+            if (IsCriticalObject(template)) {
+                RegisterCriticalObject(coreObject.m_globalID);
             }
 
             var objectActor = CreateEntityActor(coreObject, template, objectInfo);
@@ -62,13 +69,32 @@ internal sealed class ZoneObjectSupervisor(Core.Zone zone) : ZoneEntitySuperviso
         if (objectInfo is null) {
             return false;
         }
-    
+
         // Do not spawn combat sigils within this supervisor.
         if (objectInfo is CombatSigilObjectInfo) {
             return false;
         }
-    
+
         return true;
+    }
+
+    private static bool IsCriticalObject(CoreTemplate template) {
+        if (template is not GameObjectTemplate goTemplate) {
+            return false;
+        }
+
+        // Check if the adjectives contain "Critical."
+        var adjectives = goTemplate.m_adjectiveList;
+        return adjectives is not null
+            && adjectives.Any(adj => adj.Equals("Critical", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private void RegisterCriticalObject(GID id) {
+        var msg = new ZONE_102_PROTOCOL.MSG_REGISTERCRITICALOBJECT {
+            ObjectID = id
+        };
+
+        base.ZoneRef.Tell(msg);
     }
 
 }

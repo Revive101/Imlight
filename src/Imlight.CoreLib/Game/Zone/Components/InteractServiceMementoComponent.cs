@@ -315,6 +315,11 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity)
             }
         }
 
+        // If there are no wizbangs, don't continue.
+        if (activeWizBangs.Count <= 0) {
+            return;
+        }
+
         // Get highest priority wizbang for this player.
         var wizBang = WizBangs.None;
         if (activeWizBangs.Count > 0) {

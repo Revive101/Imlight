@@ -28,6 +28,7 @@
  */
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Imcodec.CoreObject;
@@ -35,6 +36,7 @@ using Imcodec.IO;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
+using Imcodec.Types;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Character;
 using Imlight.CoreLib.Shared.Networking;
@@ -109,6 +111,17 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
             throw new SessionFatalException($"User {message.UserID} failed to serialize their player object.");
         }
 
+        // Serialize the critical object list.
+        var serializer = new ObjectSerializer(
+            Versionable: false
+        );
+        var criticalObjects = GetCriticalObjects(zoneDetails.CriticalObjects);
+        if (!serializer.Serialize(criticalObjects, flags, out var criticalObjectData)) {
+            Logger.Error($"User {message.UserID} failed to serialize their critical object list.");
+
+            throw new SessionFatalException($"User {message.UserID} failed to serialize their critical object list.");
+        }
+
         var account = GetActiveAccount();
         var realmName = "Centaur"; // todo
 
@@ -127,6 +140,7 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
             ZoneID = message.ZoneID,
             DynamicZoneID = zoneDetails.DynamicZoneId,
             DynamicServerProcID = zoneDetails.DynamicZoneId,
+            CriticalObjects = criticalObjectData,
 
             // Misc
             ShowSubscriberIcon = 0,
@@ -284,5 +298,7 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
 
         return AskServer<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg);
     }
+
+    private static CriticalObjectList GetCriticalObjects(List<GID> objectIDs) => new() { m_objList = objectIDs };
 
 }
