@@ -120,6 +120,7 @@ public class CombatDuelSubCircle {
     internal CombatDeck _combatDeck;
     internal readonly CombatDuelComponent _duelActor;
     internal Wizard _wizard;
+    internal int _usedPipsForExperienceGain = 0;
 
     private readonly float _radius;
     private readonly float _rotation;
