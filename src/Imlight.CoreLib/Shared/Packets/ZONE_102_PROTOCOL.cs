@@ -638,4 +638,11 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public ulong SenderCharID;
     }
 
+    public sealed class MSG_DELAYEDDELETEOBJECT : IServerMessage {
+        
+        public byte MessageOrder { get; } = 42;
+        public byte ServiceID { get; } = 102;
+        
+    }
+
 }
