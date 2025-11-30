@@ -67,6 +67,9 @@ internal sealed class AnimationComponent(ZoneEntity entity) : ZoneEntityComponen
         if (msg.ObjectName == goTemplate.m_objectName) {
             Entity.DespawnObject();
         }
+        if (msg.TemplateID == goTemplate.m_templateID) {
+            Entity.DespawnObject();
+        }
     }
 
 }

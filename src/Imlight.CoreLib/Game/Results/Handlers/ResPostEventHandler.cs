@@ -17,6 +17,10 @@ internal sealed class ResPostEventHandler : BaseResultHandler<ResPostEvent> {
             return false;
         }
 
+        if (Result is null) {
+            return false;
+        }
+
         var msg = new ZONE_102_PROTOCOL.MSG_POSTEVENT {
             PlayerActor = context.GetPlayerRef(),
             PlayerGameObject = context.GetPlayerObj(),

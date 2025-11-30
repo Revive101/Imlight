@@ -29,3 +29,24 @@ internal sealed class ResSpawnHandler : BaseResultHandler<ResSpawn> {
     }
 
 }
+
+internal sealed class ResDespawnHandler : BaseResultHandler<ResDespawn> {
+    
+    public override bool Execute(IResultContext context) {
+        var zoneActor = context.GetZoneActor();
+        if (zoneActor == null) {
+            return false;
+        }
+
+        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST {
+            Messages = [new ZONE_102_PROTOCOL.MSG_REMOVEOBJECT {
+                TemplateID = Result.m_templateID,
+            }],
+        };
+
+        zoneActor.Tell(broadcastMsg);
+        
+        return true;
+    }
+
+}

@@ -667,6 +667,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte MessageOrder { get; } = 44;
         public byte ServiceID { get; } = 102;
         public string ObjectName;
+        public ulong TemplateID;
 
     }
 
