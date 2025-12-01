@@ -28,6 +28,7 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
     public int m_currentMana;
     public int m_currentArenaPoints;
     public List<int> m_spellChargeBase;
+    public float m_potionMax;
     public float m_potionCharge;
     public Ladder m_pArenaLadder;
     public Ladder m_pDerbyLadder;
@@ -81,7 +82,6 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
     [JsonIgnore] public int m_baseEventCurrency2Pouch;
     [JsonIgnore] public int m_basePvPCurrencyPouch;
     [JsonIgnore] public int m_energyMax;
-    [JsonIgnore] public float m_potionMax;
     [JsonIgnore] public List<float> m_dmgBonusPercent;
     [JsonIgnore] public List<float> m_dmgBonusFlat;
     [JsonIgnore] public List<float> m_accBonusPercent;
@@ -233,6 +233,7 @@ public class ServerWizGameStats : IClientTypeProvider<WizGameStats> {
             m_currentMana = m_currentMana,
             m_currentArenaPoints = m_currentArenaPoints,
             m_spellChargeBase = m_spellChargeBase,
+            m_potionMax = m_potionMax,
             m_potionCharge = m_potionCharge,
             m_pArenaLadder = m_pArenaLadder,
             m_pDerbyLadder = m_pDerbyLadder,
