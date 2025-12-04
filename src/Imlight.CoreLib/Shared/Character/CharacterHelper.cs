@@ -67,18 +67,16 @@ internal static class CharacterHelper {
                 Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), activatedEffects.Count, template.m_objectName));
         }
 
-        // Set the player's level based on how many experience points they have.
+        // Check for level/XP mismatches, but don't modify XP on login.
+        // Any mismatch will be corrected on the next XP gain.
         var xp = wizard.MagicSchoolBehavior.ExperiencePoints;
         var matchedLevel = MagicLevelsConfig.GetPlayerLevelAtExperience(xp);
         if (matchedLevel != wizard.MagicSchoolBehavior.Level) {
-            var newXp = MagicLevelsConfig.GetExperiencePointsAtLevel(matchedLevel);
-            wizard.MagicSchoolBehavior.ExperiencePoints = newXp;
-            wizard.SetLevel(matchedLevel);
-            
-            Logger.Warning("Player {0} had a level mismatch. XP: {1}, Level: {2}, New Level: {3}.",
-                Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), 
-                            xp, 
-                            wizard.MagicSchoolBehavior.Level, 
+            Logger.Warning("Player {0} has XP/Level mismatch on login. XP: {1}, Stored Level: {2}, Calculated Level: {3}. " +
+                          "This will be corrected on next XP gain.",
+                Logger.Args(wizard.PlayerNameBehavior.GetWizardName(),
+                            xp,
+                            wizard.MagicSchoolBehavior.Level,
                             matchedLevel));
         }
 

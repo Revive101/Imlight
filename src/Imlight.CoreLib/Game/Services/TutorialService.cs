@@ -53,8 +53,8 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
             Remove = 0,
             TutorialInfo = tutorialInfoBuffer
         };
-        SendToSocket(tutorialMsg);
-        SendToSocket(tutorialMsg);
+        //SendToSocket(tutorialMsg);
+        //SendToSocket(tutorialMsg);
 
         // We don't want to give the player the tutorial quest. The client's lua script handles that.
     }

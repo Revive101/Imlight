@@ -185,8 +185,8 @@ public class Wizard : IDisposable {
         GameStats.m_baseMana += manaDifference;
         GameStats.m_powerPipBase += powerPipDifference;
 
-        var xpAtLevel = MagicLevelsConfig.GetExperiencePointsAtLevel(level);
-        MagicSchoolBehavior.ExperiencePoints = xpAtLevel;
+        // Don't reset XP - preserve overflow XP when leveling up.
+        // XP is managed by AddExperiencePoints/RemoveExperiencePoints.
 
         // Persistent save.
         WizardCollection.UpdateCharacterLevel(this);
@@ -207,9 +207,12 @@ public class Wizard : IDisposable {
 
                 return;
             }
+
+            // SetLevel already saved to database, so we're done.
+            return;
         }
 
-        // Persistent save.
+        // Only save to database if we didn't level up (SetLevel already saved).
         WizardCollection.UpdateCharacterLevel(this);
     }
 
@@ -226,9 +229,12 @@ public class Wizard : IDisposable {
 
                 return;
             }
+
+            // SetLevel already saved to database, so we're done.
+            return;
         }
 
-        // Persistent save.
+        // Only save to database if we didn't level down (SetLevel already saved).
         WizardCollection.UpdateCharacterLevel(this);
     }
 
