@@ -57,6 +57,10 @@ internal sealed class ResDropTableHandler : BaseResultHandler<ResDropTable> {
         UpdateCharacterItems(wizard, rollResults.Items);
         SendLootInfoToClient(context.GetPlayerRef(), rollResults, wizard);
 
+        if (rollResults.GrantsPotionSlot) {
+            UpdateWizardPotionMax(context.GetPlayerRef(), wizard);
+        }
+
         return true;
     }
 
@@ -133,6 +137,20 @@ internal sealed class ResDropTableHandler : BaseResultHandler<ResDropTable> {
         }
     }
 
+    private static void UpdateWizardPotionMax(IActorRef playerActor, Wizard wizard) {
+        var currentWizardMaxPots = wizard.GameStats.m_potionMax;
+        var newWizardMaxPots = currentWizardMaxPots + 1;
+
+        wizard.UpdatePotions(newWizardMaxPots, newWizardMaxPots);
+
+        // Inform the player's game client that their potion charge has been updated.
+        var potionChargeUpdateMsg = new WIZARD_12_PROTOCOL.MSG_UPDATEPOTIONS {
+            PotionMax = newWizardMaxPots,
+            PotionCharge = newWizardMaxPots
+        };
+        playerActor.Tell(potionChargeUpdateMsg);
+    }
+
     private static void SendLootInfoToClient(IActorRef playerActor, DropTableResult results, Wizard wizard) {
         // Inform the game client of the loot results.
         if (results.Items.Count == 0) {
@@ -152,8 +170,8 @@ internal sealed class ResDropTableHandler : BaseResultHandler<ResDropTable> {
             GlobalID = wizard.CharId,
             LootList = serializedLootList
         };
-        playerActor.Tell(lootMsg);
 
+        playerActor.Tell(lootMsg);
     }
 
 }

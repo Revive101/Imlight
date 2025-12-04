@@ -46,6 +46,7 @@ public static class DropTableRoller {
             GoldAmount = 0,
             ExperienceAmount = 0,
             TrainingPoints = 0,
+            GrantsPotionSlot = false,
             Items = []
         };
 
@@ -72,6 +73,8 @@ public static class DropTableRoller {
             combinedResult.ExperienceAmount += tableResult.ExperienceAmount;
             combinedResult.TrainingPoints += tableResult.TrainingPoints;
             combinedResult.Items.AddRange(tableResult.Items);
+            combinedResult.GrantsPotionSlot = tableResult.GrantsPotionSlot;
+            
         }
 
         return combinedResult;

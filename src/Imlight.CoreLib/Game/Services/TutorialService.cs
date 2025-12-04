@@ -3,8 +3,6 @@
  * Proprietary and confidential.
  */
 
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
 using Imcodec.MessageLayer.Generated;
@@ -12,7 +10,6 @@ using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Results;
-using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Collections;
@@ -26,13 +23,11 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
     private const uint TUTORIAL_NAME_STRING_ID = 600062081;
     private const string TUTORIAL_EXTERIOR_ZONE_NAME = "WizardCity/Tutorial_Exterior";
     private const string TUTORIAL_INTERIOR_ZONE_NAME = "WizardCity/Tutorial_Interior";
-    private const string TUTORIAL_FALLBACK_ZONE_NAME = "WizardCity/Interiors/WC_Headmistress_House";
 
     private readonly ObjectSerializer _serializer = new(
         Versionable: false,
         Behaviors: SerializerFlags.None
     );
-    private readonly PropertyFlags _combatParticipantHandFlags = (PropertyFlags) 5;
     private readonly TutorialInfo _tutorialInfo = new() {
         m_tutorialNameID = TUTORIAL_NAME_STRING_ID,
         m_tutorialStage = 0,
@@ -86,7 +81,7 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         // the QuestToAdd and GoalToComplete in the same message.
         var commandSuccess = false;
         if (msg.GoalToComplete != string.Empty) {
-            commandSuccess = HandleCommandCompleteGoal(wizard, playerObj, SessionActor.ActorRef, msg.GoalToComplete);
+            commandSuccess = HandleCommandCompleteGoal(wizard, playerObj, msg.GoalToComplete);
         }
         else if (msg.QuestToAdd != string.Empty) {
             commandSuccess = HandleCommandAddQuest(wizard, msg.QuestToAdd);
@@ -156,10 +151,9 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         return removeSuccess;
     }
 
-    private static bool HandleCommandCompleteGoal(Wizard wizard,
-                                                  CoreObject playerObj,
-                                                  IActorRef sessionActor,
-                                                  string goalName) {
+    private bool HandleCommandCompleteGoal(Wizard wizard,
+                                           CoreObject playerObj,
+                                           string goalName) {
         // We need to find the quest that contains this goal.
         // We can search the player for quest/goal instances, as they do carry a name.
         var allWizardQuestInstances = wizard.QuestBehavior.CurrentQuestInstances;
@@ -191,10 +185,11 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
             ResultDispatcher.ExecuteResults(
                 actorContext: Context,
                 results: goalTemplate.m_completeResults,
-                playerRef: sessionActor,
+                playerRef: SessionActor.ActorRef,
                 playerObj: playerObj,
                 questName: goalInstance.quest.QuestName,
-                goalName: goalInstance.goal.GoalName
+                goalName: goalInstance.goal.GoalName,
+                zoneActor: SessionActor.GetZoneActor()
             );
 
             return removeSuccess;

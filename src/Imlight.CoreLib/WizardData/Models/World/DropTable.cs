@@ -22,6 +22,7 @@ public class DropTable {
     public int MaxGold { get; set; } = 0;
     public int ExperienceAmount { get; set; } = 0;
     public int TrainingPoints { get; set; } = 0;
+    public bool GrantsPotionSlot { get; set; } = false;
     public List<DropItem> Items { get; set; } = [];
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime ModifiedAt { get; set; } = DateTime.UtcNow;
@@ -50,6 +51,7 @@ public class DropTableResult {
     public int ExperienceAmount { get; set; } = 0;
     public string MagicSchool { get; set; } = "All";
     public int TrainingPoints { get; set; } = 0;
+    public bool GrantsPotionSlot { get; set; } = false;
     public List<DropItemResult> Items { get; set; } = [];
     public bool HasRewards => GoldAmount > 0 || ExperienceAmount > 0 || TrainingPoints > 0 || Items.Count > 0;
 
