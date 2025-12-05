@@ -25,6 +25,7 @@
  */
 
 using Akka.Actor;
+using Imcodec.Cryptography;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
@@ -304,7 +305,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
         var qSendMsg = new QUEST_MESSAGES_52_PROTOCOL.MSG_SENDQUEST {
             QuestID = questInstance.ID,
-            QuestNameID = qTemplate.m_questNameID,
+            QuestNameID = StringHash.Compute(qTemplate.m_questName),
             QuestType = 0, // ?
             QuestLevel = qTemplate.m_questLevel,
             QuestTitle = qTemplate.m_questTitle,
@@ -373,7 +374,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
         var qSendMsg = new QUEST_MESSAGES_52_PROTOCOL.MSG_SENDQUEST {
             QuestID = qInstance.ID,
-            QuestNameID = qTemplate.m_questNameID,
+            QuestNameID = StringHash.Compute(qTemplate.m_questName),
             QuestType = 0, // ?
             QuestLevel = qTemplate.m_questLevel,
             QuestTitle = qTemplate.m_questTitle,
