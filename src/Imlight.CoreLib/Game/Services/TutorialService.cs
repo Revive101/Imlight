@@ -48,13 +48,17 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
             return;
         }
 
+        if (msg.ZoneName.ToString() is not (TUTORIAL_EXTERIOR_ZONE_NAME or TUTORIAL_INTERIOR_ZONE_NAME)) {
+            return;
+        }
+
         var tutorialMsg = new GAME_5_PROTOCOL.MSG_TUTORIALS() {
             GlobalID = 1,
             Remove = 0,
             TutorialInfo = tutorialInfoBuffer
         };
-        //SendToSocket(tutorialMsg);
-        //SendToSocket(tutorialMsg);
+        SendToSocket(tutorialMsg);
+        SendToSocket(tutorialMsg);
 
         // We don't want to give the player the tutorial quest. The client's lua script handles that.
     }
@@ -98,11 +102,11 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
 
         if (!commandSuccess) {
             Logger.Error("Failed to process tutorial command:"
-                + "QuestToAdd='{0}'"
-                + "QuestToRemove='{1}'"
-                + "GoalToComplete='{2}"
-                + "EventToPost='{3}'"
-                + "ActionToPerform='{4}'",
+                + "QuestToAdd='{0}' "
+                + "QuestToRemove='{1}' "
+                + "GoalToComplete='{2}' "
+                + "EventToPost='{3}' "
+                + "ActionToPerform='{4}' ",
                 Logger.Args(
                     msg.QuestToAdd,
                     msg.QuestToRemove,
@@ -113,11 +117,11 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         }
         else {
             Logger.Debug("Processed tutorial command successfully:"
-                + "QuestToAdd='{0}',"
-                + "QuestToRemove='{1}'"
-                + "GoalToComplete='{2}'"
-                + "EventToPost='{3}'"
-                + "ActionToPerform='{4}'",
+                + "QuestToAdd='{0}', "
+                + "QuestToRemove='{1}' "
+                + "GoalToComplete='{2}' "
+                + "EventToPost='{3}' "
+                + "ActionToPerform='{4}' ",
                 Logger.Args(
                     msg.QuestToAdd,
                     msg.QuestToRemove,

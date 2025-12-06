@@ -13,6 +13,10 @@ namespace Imlight.CoreLib.Game.Results.Handlers;
 internal sealed class ResActorDialogHandler : BaseResultHandler<ResActorDialog> {
 
     public override bool Execute(IResultContext context) {
+        if (Result is null) {
+            return false;
+        }
+
         var dialog = Result.m_dialog;
 
         // Serialize the actor dialog into network format.

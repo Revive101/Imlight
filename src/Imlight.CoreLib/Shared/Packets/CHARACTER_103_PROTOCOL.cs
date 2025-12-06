@@ -208,4 +208,14 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
 
     }
 
+    public sealed class MSG_RESULTHANDLERCOMPLETED : IServerMessage {
+
+        public byte MessageOrder { get; } = 20;
+        public byte ServiceID { get; } = 103;
+
+        public bool Success { get; init; }
+        public System.Type ResultType { get; init; }
+
+    }
+
 }
