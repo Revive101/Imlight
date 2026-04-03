@@ -51,7 +51,10 @@ internal static class QuestMadlibs {
         => gTemplate.m_goalType switch {
             GOAL_TYPE.GOAL_TYPE_WAYPOINT => GetMadlibBlockForWaypointGoal(gTemplate),
             GOAL_TYPE.GOAL_TYPE_PERSONA => GetMadlibBlockForPersonaGoal(gTemplate),
-            GOAL_TYPE.GOAL_TYPE_BOUNTY or GOAL_TYPE.GOAL_TYPE_BOUNTYCOLLECT => GetMadlibBlockForBountyGoal(gTemplate, gInstance),
+            GOAL_TYPE.GOAL_TYPE_BOUNTY 
+                or GOAL_TYPE.GOAL_TYPE_BOUNTYCOLLECT 
+                or GOAL_TYPE.GOAL_TYPE_USAGE 
+                    => GetMadlibBlockForTalliedGoal(gTemplate, gInstance),
             _ => new MadlibBlock()
         };
 
@@ -133,12 +136,8 @@ internal static class QuestMadlibs {
         return madLibs;
     }
 
-    private static MadlibBlock GetMadlibBlockForBountyGoal(GoalTemplate gTemplate, GoalInstance gInstance) {
-        if (gTemplate is not BountyGoalTemplate bountyGoal) {
-            return new MadlibBlock();
-        }
-
-        return new MadlibBlock {
+    private static MadlibBlock GetMadlibBlockForTalliedGoal(GoalTemplate gTemplate, GoalInstance gInstance)
+        => new() {
             m_madlibs = [
                 new MadlibArgT_ByteString {
                     m_madlibToken = "NAME",
@@ -150,11 +149,11 @@ internal static class QuestMadlibs {
                 },
                 new MadlibArgT_ByteString {
                     m_madlibToken = "TALLYTEXT",
-                    m_madlibArgument = bountyGoal.m_tallyCounter?.m_descriptor ?? string.Empty
+                    m_madlibArgument = gTemplate.m_tallyCounter?.m_descriptor ?? string.Empty
                 },
                 new MadlibArgT_ByteString {
                     m_madlibToken = "TALLYTEXT2",
-                    m_madlibArgument = bountyGoal.m_tallyCounter?.m_descriptor2 ?? string.Empty
+                    m_madlibArgument = gTemplate.m_tallyCounter?.m_descriptor2 ?? string.Empty
                 },
                 new MadlibArgT_int {
                     m_madlibToken = "COUNT",
@@ -162,15 +161,14 @@ internal static class QuestMadlibs {
                 },
                 new MadlibArgT_int {
                     m_madlibToken = "TOTAL",
-                    m_madlibArgument = bountyGoal.m_tallyCounter?.m_count ?? 0
+                    m_madlibArgument = gTemplate.m_tallyCounter?.m_count ?? 0
                 },
                 new MadlibArgT_int {
                     m_madlibToken = "SUBSCRIBER_TOTAL",
-                    m_madlibArgument = bountyGoal.m_tallyCounter?.m_count ?? 0
+                    m_madlibArgument = gTemplate.m_tallyCounter?.m_count ?? 0
                 }
             ],
             m_blockToken = "GOAL"
         };
-    }
-    
+
 }

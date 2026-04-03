@@ -21,7 +21,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 09/14/2025
+ * Last Updated: 04/01/2026
  */
 
 using Akka.Actor;
@@ -509,6 +509,10 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             questName: questInstance.QuestName,
             goalName: goalTemplate.m_goalName
         );
+
+        // Play goal start dialogue if it exists.
+        var goalId = questInstance.GoalProgress.First(g => g.GoalName == goalTemplate.m_goalName).ID;
+        ShowGoalStartDialogue(goalTemplate, questInstance.ID, goalId);
     }
 
     private void CompleteGoal(QuestInstance questInstance, GoalTemplate goalTemplate) {
@@ -694,9 +698,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
         // If there were, determine how many of the adjectives matched.
         // We'll increment by that amount.
-        var matchCount = defeatedMobAdjectives
-            .Where(adjective => goalMobAdjectives.Contains(adjective))
-            .Count();
+        var matchCount = defeatedMobAdjectives.Count(goalMobAdjectives.Contains);
 
         if (goalTemplate.m_goalType == GOAL_TYPE.GOAL_TYPE_BOUNTYCOLLECT) {
             var chance = goalTemplate.m_tallyCounter?.m_percentChance ?? DEFAULT_KILL_COLLECT_CHANCE;
@@ -928,6 +930,9 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
 
     private void ShowQuestStartDialogue(QuestTemplate questTemplate)
          => ShowDialogue(questTemplate.m_dialogList, "Start", "QuestStart");
+
+    private void ShowGoalStartDialogue(GoalTemplate goalTemplate, ulong questId, ulong goalId)
+        => ShowDialogue(goalTemplate.m_dialogList, "Start", "QuestStart", questId, goalId);
 
     private void ShowGoalCompletionDialogue(GoalTemplate goalTemplate, ulong questId, ulong goalId)
         => ShowDialogue(goalTemplate.m_dialogList, "Completion", "Completion", questId, goalId);

@@ -66,7 +66,12 @@ internal class CommandQuest : CommandProtocol {
             m_goals = [.. startingGoals.Select(goal => new GoalEntryFull {
                 m_personaName = "",
                 m_goalType = (int) goal.m_goalType,
-                m_tallyText = goal.m_goalTitle,
+                m_goalCount = 0,
+                m_goalTotal = goal.m_tallyCounter?.m_count ?? 0,
+                m_useTally = goal.m_tallyCounter is not null,
+                m_tallyText = goal.m_tallyCounter?.m_descriptor ?? string.Empty,
+                m_tallyText2 = goal.m_tallyCounter?.m_descriptor2 ?? string.Empty,
+                m_goalTitle = goal.m_goalTitle,
                 m_goalLocation = goal.m_locationName,
                 m_goalDestinationZone = goal.m_destinationZone,
                 m_goalImage1 = goal.m_displayImage1,

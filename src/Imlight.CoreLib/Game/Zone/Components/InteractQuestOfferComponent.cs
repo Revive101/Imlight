@@ -266,15 +266,18 @@ internal sealed class InteractQuestOfferComponent(ZoneEntity entity)
             m_goals = [.. startingGoals.Select(goal => new GoalEntryFull {
                 m_personaName = "",
                 m_goalType = (int) goal.m_goalType,
+                m_goalCount = 0,
+                m_goalTotal = goal.m_tallyCounter?.m_count ?? 0,
                 m_useTally = goal.m_tallyCounter is not null,
-                m_tallyText = goal.m_goalTitle,
+                m_tallyText = goal.m_tallyCounter?.m_descriptor ?? string.Empty,
+                m_tallyText2 = goal.m_tallyCounter?.m_descriptor2 ?? string.Empty,
+                m_goalTitle = goal.m_goalTitle,
                 m_goalLocation = goal.m_locationName,
                 m_goalDestinationZone = goal.m_destinationZone,
                 m_goalImage1 = goal.m_displayImage1,
                 m_goalImage2 = goal.m_displayImage2,
                 m_goalNameID = goal.m_goalNameID,
-                m_goalMadlibs = QuestMadlibs.GetAppropriateMadlibBlockForGoal(goal, null),
-                m_clientTags = [.. goal.m_clientTags ?? []],
+                m_goalMadlibs = QuestMadlibs.GetAppropriateMadlibBlockForGoal(goal, null)
             })]
         };
 
