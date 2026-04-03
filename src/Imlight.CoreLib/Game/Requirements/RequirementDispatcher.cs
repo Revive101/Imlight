@@ -124,8 +124,8 @@ public static class RequirementDispatcher {
             return handler?.Evaluate(context) ?? false;
         }
         catch (Exception ex) {
-            Logger.Error("Error evaluating requirement {0}: {1}",
-                Logger.Args(requirementType.Name, ex.Message));
+            Logger.Error("Error evaluating requirement {0}: {1} | {2}",
+                Logger.Args(requirementType.Name, ex.Message, ex.StackTrace));
 
             return false;
         }
@@ -141,13 +141,21 @@ public static class RequirementDispatcher {
 
             // Call the static ShouldAttachToContext(context).
             var shouldAttach = (bool) shouldAttachMethod.Invoke(null, [context]);
-            if (shouldAttach) {
-                // If it's an open generic, close it on the actual requirementType.
-                if (handlerType.IsGenericTypeDefinition) {
-                    return handlerType.MakeGenericType(requirementType);
-                }
+            if (!shouldAttach) {
+                continue;
+            }
 
-                return handlerType;
+            // If it's an open generic, close it on the actual requirementType.
+            if (handlerType.IsGenericTypeDefinition) {
+                return handlerType.MakeGenericType(requirementType);
+            }
+
+            // For concrete handlers, verify the handler's generic argument matches the requirement type.
+            if (handlerType.BaseType?.IsGenericType == true) {
+                var handlerRequirementType = handlerType.BaseType.GetGenericArguments()[0];
+                if (handlerRequirementType == requirementType) {
+                    return handlerType;
+                }
             }
         }
 
