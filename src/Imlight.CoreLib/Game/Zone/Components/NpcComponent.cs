@@ -144,6 +144,12 @@ internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, ICl
     };
 
     private void OnProximityEnter(CoreObject playerObj, IActorRef playerActor, Wizard playerWizard) {
+        // Bug fix: There is an off chance the player spawns in the middle of our proximity radius,
+        // before the wizard even has time to load themselves into the world.
+        if (playerWizard is null) {
+            return;
+        }
+
         if (!IsMonster || playerWizard.IsInCombatGrace) {
             return;
         }
