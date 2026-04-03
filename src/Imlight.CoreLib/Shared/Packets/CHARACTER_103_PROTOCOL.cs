@@ -198,7 +198,7 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
 
     }
 
-    public sealed class MSG_COMPLETESCAVENGEGOAL : IServerMessage {
+    public sealed class MSG_COMPLETEUSAGEGOAL : IServerMessage {
 
         public byte MessageOrder { get; } = 19;
         public byte ServiceID { get; } = 103;

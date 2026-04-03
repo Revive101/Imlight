@@ -149,8 +149,8 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         CompleteGoal(qInstance, gTemplate);
     }
 
-    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_COMPLETESCAVENGEGOAL))]
-    private void ReceiveCompleteScavengeGoal(CHARACTER_103_PROTOCOL.MSG_COMPLETESCAVENGEGOAL message) {
+    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_COMPLETEUSAGEGOAL))]
+    private void ReceiveCompleteScavengeGoal(CHARACTER_103_PROTOCOL.MSG_COMPLETEUSAGEGOAL message) {
         var questId = message.QuestID;
         var goalId = message.GoalID;
 
@@ -193,8 +193,8 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             return;
         }
 
-        if (gTemplate.m_goalType != GOAL_TYPE.GOAL_TYPE_SCAVENGE) {
-            Logger.Warning("Player '{0}' attempted to complete goal ID '{1}' for quest ID '{2}' but that goal is not a scavenge goal.",
+        if (gTemplate.m_goalType != GOAL_TYPE.GOAL_TYPE_USAGE) {
+            Logger.Warning("Player '{0}' attempted to complete goal ID '{1}' for quest ID '{2}' but that goal is not a usage goal.",
                 Logger.Args(wizard.CharId, goalId, questId));
 
             return;
@@ -932,7 +932,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
          => ShowDialogue(questTemplate.m_dialogList, "Start", "QuestStart");
 
     private void ShowGoalStartDialogue(GoalTemplate goalTemplate, ulong questId, ulong goalId)
-        => ShowDialogue(goalTemplate.m_dialogList, "Start", "QuestStart", questId, goalId);
+        => ShowDialogue(goalTemplate.m_dialogList, "Prep", "QuestStart", questId, goalId);
 
     private void ShowGoalCompletionDialogue(GoalTemplate goalTemplate, ulong questId, ulong goalId)
         => ShowDialogue(goalTemplate.m_dialogList, "Completion", "Completion", questId, goalId);

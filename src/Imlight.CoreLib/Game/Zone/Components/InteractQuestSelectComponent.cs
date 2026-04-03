@@ -22,6 +22,8 @@
  * Last Updated: 10/21/2025
  */
 
+using System.Collections.Generic;
+using System.Linq;
 using Akka.Actor;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.CoreLib.Game.WizBang;
@@ -29,16 +31,13 @@ using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
 internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
     : ZoneEntityComponent(entity), IServiceComponent, IComponentFactory {
 
-    public string ServiceName => "QuestSelect";
+    public string ServiceName => "Interact";
     public string NpcIcon { get; private set; } = null;
     public string NpcNameKey { get; private set; } = null;
     public string NpcTextKey => "GUI_ChestInteract"; // TODO: Presumably the same for all quest interactables?
@@ -56,6 +55,17 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
 
     public IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard playerCharacter) {
         if (playerCharacter?.QuestBehavior?.CurrentQuestInstances == null) {
+            yield break;
+        }
+
+        // If we did not find any quests with active usage goals, don't show the interaction option at all.
+        if (_scavengeGoalsByQuest.Count == 0) {
+            yield break;
+        }
+
+        // If there are no quests with active usage goals, don't show the interaction option at all.
+        var questsWithActiveUsageGoals = GetQuestsWithActiveUsageGoals(playerCharacter);
+        if (questsWithActiveUsageGoals is null || questsWithActiveUsageGoals.Count == 0) {
             yield break;
         }
 
@@ -83,10 +93,12 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
         foreach (var qTemplate in questTemplates) {
             foreach (var goal in qTemplate.m_goals.OfType<ScavengeGoalTemplate>()) {
                 if (DoesGoalMatchObject(gameObjectTemplate, goal)) {
-                    if (!_scavengeGoalsByQuest.TryGetValue(qTemplate.m_questName, out var goalList)) {
-                        goalList = [];
-                        _scavengeGoalsByQuest[qTemplate.m_questName] = goalList;
+                    if (_scavengeGoalsByQuest.TryGetValue(qTemplate.m_questName, out var goalList)) {
+                        return;
                     }
+
+                    goalList = [];
+                    _scavengeGoalsByQuest[qTemplate.m_questName] = goalList;
                     goalList.Add(goal);
                 }
             }
@@ -109,7 +121,7 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
         // Check if the goal was completed after incrementing.
         var goalMax = goal.m_tallyCounter?.m_count ?? 1;
         if (goalProgress.CurrentProgress >= goalMax) {
-            var goalCompleteMsg = new CHARACTER_103_PROTOCOL.MSG_COMPLETESCAVENGEGOAL {
+            var goalCompleteMsg = new CHARACTER_103_PROTOCOL.MSG_COMPLETEUSAGEGOAL {
                 QuestID = quest.ID,
                 GoalID = goalProgress.ID,
             };
@@ -151,7 +163,7 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
         return null;
     }
 
-    private List<QuestInstance> GetQuestsWithActiveUsageGoals(Wizard playerCharacter)
+    private static List<QuestInstance> GetQuestsWithActiveUsageGoals(Wizard playerCharacter)
         => playerCharacter.QuestBehavior?.CurrentQuestInstances?
             .Where(quest => quest.GoalProgress.Any(gp =>
                 IsActiveUsageGoal(gp, null)))
