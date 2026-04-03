@@ -63,13 +63,21 @@ public static class ResultDispatcher {
 
             // Call the static ShouldAttachToContext(context)
             var shouldAttach = (bool) shouldAttachMethod.Invoke(null, [context]);
-            if (shouldAttach) {
-                // If it's an open generic, close it on the actual resultType
-                if (handlerType.IsGenericTypeDefinition) {
-                    return handlerType.MakeGenericType(resultType);
-                }
+            if (!shouldAttach) {
+                continue;
+            }
 
-                return handlerType;
+            // If it's an open generic, close it on the actual resultType
+            if (handlerType.IsGenericTypeDefinition) {
+                return handlerType.MakeGenericType(resultType);
+            }
+
+            // For concrete handlers, verify the handler's generic argument matches the result type.
+            if (handlerType.BaseType?.IsGenericType == true) {
+                var handlerResultType = handlerType.BaseType.GetGenericArguments()[0];
+                if (handlerResultType == resultType) {
+                    return handlerType;
+                }
             }
         }
 
