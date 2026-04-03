@@ -60,7 +60,7 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
         }
 
         // Only show interaction option if player has an active scavenge goal that matches this object.
-        if (HasActiveMatchingScavengeGoal(playerCharacter)) {
+        if (HasActiveMatchingUsageGoal(playerCharacter)) {
             yield return new InteractableOption { m_serviceName = ServiceName };
         }
     }
@@ -122,11 +122,11 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
         //Entity.DeleteObject();
     }
 
-    private bool HasActiveMatchingScavengeGoal(Wizard playerCharacter)
+    private bool HasActiveMatchingUsageGoal(Wizard playerCharacter)
         => FindActiveMatchingGoal(playerCharacter) != null;
 
     private (QuestInstance Quest, ScavengeGoalTemplate Goal, GoalInstance GoalProgress)? FindActiveMatchingGoal(Wizard playerCharacter) {
-        var questsWithActiveScavengeGoals = GetQuestsWithActiveScavengeGoals(playerCharacter);
+        var questsWithActiveScavengeGoals = GetQuestsWithActiveUsageGoals(playerCharacter);
         if (questsWithActiveScavengeGoals == null) {
             return null;
         }
@@ -140,7 +140,7 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
             // Return the first active goal found to ensure only one goal is processed per interaction.
             foreach (var goal in goals) {
                 var goalProgress = quest.GoalProgress.FirstOrDefault(gp =>
-                    IsActiveScavengeGoal(gp, goal.m_goalName));
+                    IsActiveUsageGoal(gp, goal.m_goalName));
 
                 if (goalProgress != null) {
                     return (quest, goal, goalProgress);
@@ -151,14 +151,14 @@ internal sealed class InteractQuestSelectComponent(ZoneEntity entity)
         return null;
     }
 
-    private List<QuestInstance> GetQuestsWithActiveScavengeGoals(Wizard playerCharacter)
+    private List<QuestInstance> GetQuestsWithActiveUsageGoals(Wizard playerCharacter)
         => playerCharacter.QuestBehavior?.CurrentQuestInstances?
             .Where(quest => quest.GoalProgress.Any(gp =>
-                IsActiveScavengeGoal(gp, null)))
+                IsActiveUsageGoal(gp, null)))
             .ToList();
 
-    private static bool IsActiveScavengeGoal(GoalInstance goalProgress, string goalName)
-        => goalProgress.GoalType == GOAL_TYPE.GOAL_TYPE_SCAVENGE
+    private static bool IsActiveUsageGoal(GoalInstance goalProgress, string goalName)
+        => goalProgress.GoalType == GOAL_TYPE.GOAL_TYPE_USAGE
                && goalProgress.CurrentProgress > -1
                && goalProgress.CurrentProgress != int.MaxValue
                && (goalName == null || goalProgress.GoalName == goalName);
