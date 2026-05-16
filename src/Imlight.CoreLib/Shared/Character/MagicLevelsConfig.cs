@@ -113,6 +113,15 @@ internal class MagicLevelsConfig : RootSingleResourceSingleton<MagicLevelsConfig
             }
         }
 
+        // Fallback: if the class isn't found (e.g., Sun, Star, Moon, Shadow),
+        // use the first available class's data so stat recalculation doesn't fail.
+        if (s_playerLevelConfig is not null && s_playerLevelConfig.Count > 0) {
+            var fallbackLevelInfo = s_playerLevelConfig.Values.First();
+            if (level < fallbackLevelInfo.Count) {
+                return fallbackLevelInfo[level];
+            }
+        }
+
         return null;
     }
 
