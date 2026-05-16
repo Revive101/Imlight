@@ -59,6 +59,8 @@ internal sealed class WoodenChestComponent(ZoneEntity entity) : ZoneEntityCompon
 
     public ITimerScheduler Timers { get; set; }
 
+    private bool _hasInteracted = false;
+
     public static bool ShouldAttachToEntity(CoreTemplate template) =>
         template is GameObjectTemplate goTemplate
         && s_treasureChestTemplateIDs.Contains(goTemplate.m_templateID);
@@ -75,6 +77,12 @@ internal sealed class WoodenChestComponent(ZoneEntity entity) : ZoneEntityCompon
          ];
 
     public void OnServiceInteraction(IActorRef playerActor, Wizard playerCharacter, CoreObject playerObject, uint serviceOptionIndex) {
+        if (_hasInteracted) {
+            return;
+        }
+
+        _hasInteracted = true;
+
         var goldAmount = Random.Shared.Next(10, 101);
 
         SendLoot(playerActor, goldAmount);
@@ -82,8 +90,13 @@ internal sealed class WoodenChestComponent(ZoneEntity entity) : ZoneEntityCompon
         PlaySound(playerActor);
         TriggerChestAnimation();
 
-        Timers.StartSingleTimer("deletechestobject", null, _chestOpenAnimationTimeSpan);
+        var delayedDeleteMsg = new ZONE_102_PROTOCOL.MSG_DELAYEDDELETEOBJECT();
+        Timers.StartSingleTimer("deletechestobject", delayedDeleteMsg, _chestOpenAnimationTimeSpan);
     }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_DELAYEDDELETEOBJECT))]
+    private void ReceivedDelayedDeleteMessage(ZONE_102_PROTOCOL.MSG_DELAYEDDELETEOBJECT _) 
+        => Entity.DeleteObject();
 
     private void TriggerChestAnimation() {
         var chestStates = new uint[] { StringHash.Compute(StateName), StringHash.Compute("NotInteracting") };
@@ -135,7 +148,7 @@ internal sealed class WoodenChestComponent(ZoneEntity entity) : ZoneEntityCompon
         playerActor.Tell(loot);
     }
 
-    private void UpdateGold(IActorRef playerActor, Wizard playerCharacter, int goldAmount) {
+    private static void UpdateGold(IActorRef playerActor, Wizard playerCharacter, int goldAmount) {
         var updateGold = new WIZARD_12_PROTOCOL.MSG_UPDATEGOLD {
             Gold = goldAmount,
             MaxGold = playerCharacter.GameStats.m_baseGoldPouch
@@ -145,7 +158,7 @@ internal sealed class WoodenChestComponent(ZoneEntity entity) : ZoneEntityCompon
         playerCharacter.AddGold(goldAmount);
     }
 
-    private void PlaySound(IActorRef playerActor) {
+    private static void PlaySound(IActorRef playerActor) {
         var soundId = new GID(s_openSoundTemplateID);
         var playSound = new GAME_5_PROTOCOL.MSG_PLAYSOUND {
             SoundID = soundId,
@@ -158,6 +171,4 @@ internal sealed class WoodenChestComponent(ZoneEntity entity) : ZoneEntityCompon
         playerActor.Tell(playSound);
     }
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
-    private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST _) => Entity.DeleteObject();
 }

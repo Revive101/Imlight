@@ -716,4 +716,12 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
     }
 
+    
+    public sealed class MSG_DELAYEDDELETEOBJECT : IServerMessage {
+
+        public byte MessageOrder { get; } = 50;
+        public byte ServiceID { get; } = 102;
+
+    }
+
 }
