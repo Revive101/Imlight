@@ -170,4 +170,25 @@ internal class CommandSpellbookProtocol : CommandProtocol {
         InformSenderClient("You have removed the spell.");
     }
 
+    [Command("allcantrips")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void LearnallCantripsCommand() {
+        List<uint> spellList = [ 1964703872, 1462882588, 290925625, 1521398842, 189772023, 1767938148, 536458141,
+            1189939434, 717871356, 999765474, 1494670771, 577368445, 1672654002, 1799150966, 1282482033, 1884951148, 467451672,
+            1419042141, 220931873, 466468632, 2083836762, 1992492243 ];
+
+        foreach (var spell in spellList) {
+            var learn_spell = SpellFactory.GetSpell(spell);
+            if (!Context.Character.LearnSpell(learn_spell)) {
+                continue;
+            }
+            var clientMsg = new WIZARD_12_PROTOCOL.MSG_ADDSPELLTOBOOK { 
+                SpellID = (int) spell
+            };
+            Context.SessionActor.Tell(clientMsg);
+        }
+
+        InformSenderClient($"You have learned all cantrips.");
+    }
+
 }

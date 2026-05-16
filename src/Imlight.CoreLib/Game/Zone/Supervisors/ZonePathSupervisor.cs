@@ -14,6 +14,9 @@ using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Collections;
 using Imcodec.ObjectProperty.TypeCache;
+using Microsoft.VisualBasic;
+using Imlight.CoreLib.Game.Requirements;
+using Imlight.CoreLib.Game.Requirements.Contexts;
 
 namespace Imlight.CoreLib.Game.Zone.Supervisors;
 
@@ -66,9 +69,19 @@ internal sealed class ZonePathSupervisor(Core.Zone zone) : ZoneEntitySupervisor(
             // Check the spawn requirements for this mob, if they exist.
             // If the requirements are not met, skip this mob.
             if (spawnObject.m_globalDynamicReqs is not null) {
-                var requirements = spawnObject.m_globalDynamicReqs.m_requirements.ToList();
-                var operatorType = spawnObject.m_globalDynamicReqs.m_operator;
-                if (!GlobalRegistryCollection.CheckGlobalRegistryRequirements(requirements, operatorType)) {
+                var requirementsMet = RequirementDispatcher.EvaluateRequirements(
+                    requirements: spawnObject.m_globalDynamicReqs,
+                    context: new ZoneRequirementContext(
+                        requirements: spawnObject.m_globalDynamicReqs,
+                        playerRef: null,
+                        playerObj: null,
+                        wizard: null,
+                        zoneRef: null,
+                        triggerName: null
+                    )
+                );
+
+                if (!requirementsMet) {
                     continue;
                 }
             }

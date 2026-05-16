@@ -35,12 +35,19 @@ using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Requirements;
+using Imlight.CoreLib.Game.Requirements.Contexts;
 using Imlight.CoreLib.Game.Zone.Core;
+using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Zone.Components;
 
 internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(entity), IComponentFactory {
+
+    private const string SPAWN_STATE_NAME = "On";
+    private const string DESPAWN_STATE_NAME = "Off";
 
     private readonly CoreObjectSerializer _serializer = new(
         versionable: false,
@@ -50,10 +57,12 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
                                                   | PropertyFlags.Prop_Transmit
                                                   | PropertyFlags.Prop_AuthorityTransmit;
     private readonly Dictionary<CoreObject, IActorRef> _playersInRange = [];
+    private readonly Dictionary<Wizard, IActorRef> _playersWithRequirementsMet = [];
+    private readonly List<IActorRef> _playerIgnoreBecauseDynamod = [];
     private float _renderDistance;
     private bool _doesDistanceCheck = false;
 
-    public static bool ShouldAttachToEntity(CoreTemplate template) 
+    public static bool ShouldAttachToEntity(CoreTemplate template)
         => template is GameObjectTemplate gameObjectTemplate
         && gameObjectTemplate.m_behaviors.Any(x => x is RenderBehaviorTemplate)
         || template is CombatSigilTemplate; // bug fix: combat sigil templtaes don't have any behaviors
@@ -69,7 +78,7 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         CreateObjectForAllPlayers();
     }
 
-    public override void OnEnabled() 
+    public override void OnEnabled()
         => CreateObjectForAllPlayers();
 
     public override void OnDisabled() =>
@@ -79,7 +88,42 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         });
 
     public override void OnPlayerJoin(CoreObject player, IActorRef suspect, Wizard wizard) {
-        CreateObjectForPlayer(suspect);
+        // Check to see if dynamods would enable/disable this object.
+        // We don't need to check for spawns, only despawns.
+        var relevantDynaMods = wizard?.DynamodSet?.Dynamods?
+            .Where(d => d.ClientTag.Equals(Entity.Info?.m_zoneTag, System.StringComparison.OrdinalIgnoreCase))
+            .Where(d => string.IsNullOrEmpty(d.ZoneName) 
+                     || d.ZoneName.Equals(Entity.Zone.ZoneData.m_zoneName, System.StringComparison.OrdinalIgnoreCase))
+            .ToList() ?? [];
+        foreach (var mod in relevantDynaMods) {
+            // If the player has a dynamod that disables this object, do not spawn it for them.
+            if (mod.ModState.Equals(DESPAWN_STATE_NAME, System.StringComparison.OrdinalIgnoreCase)) {
+                _playerIgnoreBecauseDynamod.Add(suspect);
+
+                return;
+            }
+        }
+
+        // Determine if this player meets the requirements to see the object.
+        var requirementsMet = true;
+        if (Entity.Info is not null && Entity.Info.m_spawnRequirements is not null) {
+            var requirements = Entity.Info.m_spawnRequirements;
+            requirementsMet = RequirementDispatcher.EvaluateRequirements(
+                requirements,
+                new ZoneRequirementContext(requirements, suspect, null, wizard, Entity.ZoneRef)
+            );
+        }
+
+        if (requirementsMet) {
+            _playersWithRequirementsMet.Add(wizard, suspect);
+
+            if (!_doesDistanceCheck || IsInRadius(player, _renderDistance)) {
+                _playersInRange.Add(player, suspect);
+                CreateObjectForPlayer(suspect);
+
+                return;
+            }
+        }
 
         // If the player is not within our render distance, despawn.
         if (!_doesDistanceCheck) {
@@ -96,10 +140,21 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
     }
 
     public override void OnPlayerLeave(IActorRef suspect, ulong id) {
+        var wizard = _playersWithRequirementsMet.FirstOrDefault(x => x.Value == suspect).Key;
+        if (wizard != null) {
+            _playersWithRequirementsMet.Remove(wizard);
+        }
+
         // Remove the player from the list of players in range.
         var player = _playersInRange.FirstOrDefault(x => x.Value == suspect).Key;
         if (player != null) {
             _playersInRange.Remove(player);
+        }
+
+        if (_playerIgnoreBecauseDynamod.Contains(suspect)) {
+            _playerIgnoreBecauseDynamod.Remove(suspect);
+
+            return;
         }
 
         DespawnObjectForPlayer(suspect);
@@ -110,16 +165,56 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
             return;
         }
 
+        // If this player is ignoring the object due to a dynamod, do nothing.
+        if (_playerIgnoreBecauseDynamod.Contains(playerActor)) {
+            return;
+        }
+
         // Check if the player is now in range of the object.
         if (IsInRadius(playerObj, _renderDistance) && !_playersInRange.ContainsKey(playerObj)) {
-            // If the player is in range, spawn the object for them.
-            RespawnObjectForPlayer(playerActor);
+            // Respawn the object if the player is in range and we've determined they meet the requirements.
+            if (playerWizard is not null && _playersWithRequirementsMet.ContainsKey(playerWizard)) {
+                RespawnObjectForPlayer(playerActor);
+            }
+
             _playersInRange.Add(playerObj, playerActor);
         }
         else if (!IsInRadius(playerObj, _renderDistance) && _playersInRange.ContainsKey(playerObj)) {
             // If the player is out of range, despawn the object for them.
             DespawnObjectForPlayer(playerActor);
             _playersInRange.Remove(playerObj);
+        }
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ENTERSTATE))]
+    public void ReceiveEnterState(ZONE_102_PROTOCOL.MSG_ENTERSTATE msg) {
+        // In the context of the RenderComponent, we only care if "On" or "Off" is the state.
+        var isDespawn = msg.StateName.Equals(DESPAWN_STATE_NAME, System.StringComparison.OrdinalIgnoreCase);
+        var isSpawn = msg.StateName.Equals(SPAWN_STATE_NAME, System.StringComparison.OrdinalIgnoreCase);
+        if (!isDespawn && !isSpawn) {
+            return;
+        }
+
+        // If so, despawn the object for the sender if the tag matches.
+        var zoneTag = msg.ObjectName;
+        if (Entity.Info is not null && Entity.Info.m_zoneTag.Equals(zoneTag, System.StringComparison.OrdinalIgnoreCase)) {
+            var player = msg.Sender;
+            if (player is null) {
+                return;
+            }
+
+            if (isDespawn) {
+                DespawnObjectForPlayer(player);
+                _playerIgnoreBecauseDynamod.Add(player);
+            }
+            else if (isSpawn) {
+                // Only respawn the object if the player meets the requirements.
+                var wizard = _playersWithRequirementsMet.FirstOrDefault(x => x.Value == player).Key;
+                if (wizard is not null) {
+                    CreateObjectForPlayer(player);
+                    _playerIgnoreBecauseDynamod.Remove(player);
+                }
+            }
         }
     }
 

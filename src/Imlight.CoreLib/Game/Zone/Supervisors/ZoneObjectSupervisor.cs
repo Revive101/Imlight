@@ -3,14 +3,15 @@
  * Proprietary and confidential.
  */
 
+using System;
 using System.Linq;
 using Akka.Actor;
 using Imcodec.ObjectProperty.TypeCache;
+using Imcodec.Types;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
-using Imlight.CoreLib.WizardData.Collections;
 
 namespace Imlight.CoreLib.Game.Zone.Supervisors;
 
@@ -30,8 +31,6 @@ internal sealed class ZoneObjectSupervisor(Core.Zone zone) : ZoneEntitySuperviso
 
         // Initialize any objects found within the zone data.
         foreach (var objectInfo in zoneData.m_objectList) {
-            // Some objects may be flagged as holiday objects, which means they should only be
-            // spawned during certain times of the year.5
             if (!IsObjectEligibleForSpawn(objectInfo)) {
                 continue;
             }
@@ -40,7 +39,7 @@ internal sealed class ZoneObjectSupervisor(Core.Zone zone) : ZoneEntitySuperviso
             if (template is null) {
                 Logger.Warning("Could not create {0} because template ID {1} was not found.",
                     Logger.Args(objectInfo.m_zoneTag, objectInfo.m_templateID));
-                
+
                 continue;
             }
 
@@ -52,7 +51,13 @@ internal sealed class ZoneObjectSupervisor(Core.Zone zone) : ZoneEntitySuperviso
                 continue;
             }
 
-            var objectActor = CreateEntityActor(coreObject, template);
+            // Determine if this is a critical object.
+            // If so, register it with the Zone.
+            if (IsCriticalObject(template)) {
+                RegisterCriticalObject(coreObject.m_globalID);
+            }
+
+            var objectActor = CreateEntityActor(coreObject, template, objectInfo);
         }
 
         // Inform the zone that we have finished initializing all objects.
@@ -70,14 +75,26 @@ internal sealed class ZoneObjectSupervisor(Core.Zone zone) : ZoneEntitySuperviso
             return false;
         }
 
-        if (objectInfo.m_spawnRequirements is not null) {
-            var requirements = objectInfo.m_spawnRequirements.m_requirements.ToList();
-            var operatorType = objectInfo.m_spawnRequirements.m_operator;
-            
-            return GlobalRegistryCollection.CheckGlobalRegistryRequirements(requirements, operatorType);
+        return true;
+    }
+
+    private static bool IsCriticalObject(CoreTemplate template) {
+        if (template is not GameObjectTemplate goTemplate) {
+            return false;
         }
 
-        return true;
+        // Check if the adjectives contain "Critical."
+        var adjectives = goTemplate.m_adjectiveList;
+        return adjectives is not null
+            && adjectives.Any(adj => adj.Equals("Critical", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private void RegisterCriticalObject(GID id) {
+        var msg = new ZONE_102_PROTOCOL.MSG_REGISTERCRITICALOBJECT {
+            ObjectID = id
+        };
+
+        base.ZoneRef.Tell(msg);
     }
 
 }

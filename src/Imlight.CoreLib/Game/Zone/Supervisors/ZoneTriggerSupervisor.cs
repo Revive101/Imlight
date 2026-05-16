@@ -35,6 +35,8 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
         // Our QA team has manually recreated this trigger data, and is available within the database.
         // Words cannot describe how thankful I am for QA. They are the unsung heroes of the development team.
         var replacedTriggers = ReplaceTriggerDataWithDatabase(message.TriggerData);
+        var spawners = message.SpawnData.m_spawners;
+        UpdateResSpawnResultTriggers(ref replacedTriggers, spawners, message.PathData.m_pathList, message.NodeData.m_nodeList);
 
         foreach (var trigger in replacedTriggers) {
             _ = CreateTriggerActor(trigger);
@@ -50,6 +52,27 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
         // Forward the event to all triggers.
         foreach (var trigger in EntityActors) {
             trigger.Forward(message);
+        }
+    }
+
+    private void UpdateResSpawnResultTriggers(ref List<Trigger> clientTriggers, List<SpawnObject> spawners, List<PathObjectTemplate> paths, List<NodeObject> nodes) {
+        foreach (var trigger in clientTriggers) {
+            if (trigger.m_results == null || trigger.m_results.m_results == null) {
+                continue;
+            }
+
+            foreach (var result in trigger.m_results.m_results) {
+                if (result is ResSpawn) {
+                    var resultResSpawn = (ResSpawn) result;
+                    var spawnObjectList = spawners.Find(x => x.m_id == resultResSpawn.m_spawnID);
+                    if (spawnObjectList != null) {
+                        var spawnObject = spawnObjectList.m_spawnList[0];
+                        var objectPath = paths.Find(x => x.m_id.Full == spawnObject.m_objectInfo.m_pathID.Full);
+                        resultResSpawn.nodes = nodes.FindAll(x => objectPath.m_nodeIDs.Contains(x.m_id));
+                        resultResSpawn.templateID = spawnObject.m_objectInfo.m_templateID;
+                    }
+                }
+            }
         }
     }
 

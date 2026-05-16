@@ -157,6 +157,7 @@ public sealed class COMBAT_106_PROTOCOL : IServerProtocol {
         public byte ServiceID => 106;
 
         public int UsedPips;
+        public string[] MobAdjectives;
 
     }
 

@@ -13,6 +13,8 @@ using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.CoreLib.Game.Zone.Components;
 using Imcodec.MessageLayer;
+using Imcodec.MessageLayer.Generated;
+using Imcodec.Types;
 
 namespace Imlight.CoreLib.Shared.Packets;
 
@@ -21,7 +23,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     public byte ServiceID { get; } = 102;
     public string ProtocolType { get; } = "ZONE";
     public int ProtocolVersion { get; } = 1;
-    public string ProtocolDescription { get; } = "Internal Zone General Messages."; 
+    public string ProtocolDescription { get; } = "Internal Zone General Messages.";
 
     /// <summary>
     /// Sent by the <see cref="Zone"/> to a <see cref="ZoneLoader"/> to begin loading a zone.
@@ -100,7 +102,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte ServiceID { get; } = 102;
 
         public string ZonePath;
-        
+
     }
 
     /// <summary>
@@ -523,8 +525,9 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public float Orientation;
         public uint ErrorCode;
         public string ErrorMessage;
+        public List<GID> CriticalObjects;
 
-    } 
+    }
 
     /// <summary>
     /// Sent by a <see cref="MoveService"/> to a <see cref="Zone"/> to indicate the player is moving.
@@ -610,6 +613,7 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public IActorRef PlayerActor;
         public Wizard PlayerCharacter;
         public CoreObject PlayerObject;
+        public int Reinteract = 0; 
 
     }
 
@@ -638,11 +642,86 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public ulong SenderCharID;
     }
 
-    public sealed class MSG_DELAYEDDELETEOBJECT : IServerMessage {
-        
+    public sealed class MSG_ZONEPATHSPAWN : IServerMessage {
+
         public byte MessageOrder { get; } = 42;
         public byte ServiceID { get; } = 102;
-        
+
+        public uint SpawnObjectID;
+    }
+
+    public sealed class MSG_ENTERSTATE : IServerMessage {
+
+        public byte MessageOrder { get; } = 43;
+        public byte ServiceID { get; } = 102;
+
+        public string StateName;
+        public string ObjectName;
+        public bool ExclusiveToSender = false;
+        public IActorRef Sender;
+
+    }
+
+    public sealed class MSG_REMOVEOBJECT : IServerMessage {
+
+        public byte MessageOrder { get; } = 44;
+        public byte ServiceID { get; } = 102;
+        public string ObjectName;
+        public ulong TemplateID;
+
+    }
+
+    public sealed class MSG_WIZBANGUPDATEINTERVAL : IServerMessage {
+
+        public byte MessageOrder { get; } = 45;
+        public byte ServiceID { get; } = 102;
+
+    }
+
+    public sealed class MSG_TRIGGERSEAMLESSTRANSITION : IServerMessage {
+
+        public byte MessageOrder { get; } = 46;
+        public byte ServiceID { get; } = 102;
+
+        public IActorRef PlayerActor;
+        public Wizard PlayerCharacter;
+        public CoreObject PlayerObject;
+
+    }
+
+    public sealed class MSG_STARTSEAMLESSTRANSITION : IServerMessage {
+
+        public byte MessageOrder { get; } = 47;
+        public byte ServiceID { get; } = 102;
+
+        public IActorRef PlayerActor;
+        public Wizard PlayerCharacter;
+        public CoreObject PlayerObject;
+
+    }
+
+    public sealed class MSG_PRELOGIN : IServerMessage {
+
+        public byte MessageOrder { get; } = 48;
+        public byte ServiceID { get; } = 102;
+
+    }
+    
+    public sealed class MSG_REGISTERCRITICALOBJECT : IServerMessage {
+
+        public byte MessageOrder { get; } = 49;
+        public byte ServiceID { get; } = 102;
+
+        public GID ObjectID;
+
+    }
+
+    
+    public sealed class MSG_DELAYEDDELETEOBJECT : IServerMessage {
+
+        public byte MessageOrder { get; } = 50;
+        public byte ServiceID { get; } = 102;
+
     }
 
 }
