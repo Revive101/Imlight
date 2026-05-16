@@ -93,6 +93,27 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         base.OnPreDispose();
     }
 
+    [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE))]
+    private void ReceivePostAttach(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE message) {
+        // Send immediate effects.
+        var wizard = GetActiveWizard();
+        var timeHomeLastClicked = DateTimeOffset.FromUnixTimeSeconds(wizard.TimeHomeLastClicked);
+        var timeDifference = DateTimeOffset.UtcNow.Subtract(timeHomeLastClicked);
+
+        if (timeDifference.TotalSeconds < 30) {
+            SendCantGoHomeEffect(timeHomeLastClicked);
+        }
+
+        var postEventMsg = new ZONE_102_PROTOCOL.MSG_POSTEVENT {
+            EventName = ENTER_ZONE_EVENT_NAME,
+            PlayerActor = SessionActor.ActorRef,
+            PlayerGameObject = GetActiveGameObject()
+        };
+        ZoneActor.Tell(postEventMsg);
+
+        return;
+    }
+
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONETRANSFER))]
     private void ReceiveZoneTransferRequest(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message) {
         if (_isTransferQueued) {
@@ -204,24 +225,6 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
 
         var delay = TimeSpan.FromSeconds(TELEPORT_EFFECTS_TIME);
         Timers.StartSingleTimer("zonetransfer", tpmsg, delay);
-    }
-
-    [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE))]
-    private void ReceiveAttachComplete(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE message) {
-        var wizard = GetActiveWizard();
-        var timeHomeLastClicked = DateTimeOffset.FromUnixTimeSeconds(wizard.TimeHomeLastClicked);
-        var timeDifference = DateTimeOffset.UtcNow.Subtract(timeHomeLastClicked);
-
-        if (timeDifference.TotalSeconds < 30) {
-            SendCantGoHomeEffect(timeHomeLastClicked);
-        }
-
-        var postEventMsg = new ZONE_102_PROTOCOL.MSG_POSTEVENT {
-            EventName = ENTER_ZONE_EVENT_NAME,
-            PlayerActor = SessionActor.ActorRef,
-            PlayerGameObject = GetActiveGameObject()
-        };
-        ZoneActor.Tell(postEventMsg);
     }
 
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_WORLDTELEPORTREQUEST))]
@@ -342,6 +345,15 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
     private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message) {
+        if (ZoneActor is null) {
+            throw new Exception("Zone Reference was null.");
+        }
+
+        ZoneActor.Tell(message);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST))]
+    private void ReceiveZoneSupervisorBroadcast(ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST message) {
         if (ZoneActor is null) {
             throw new Exception("Zone Reference was null.");
         }

@@ -3,6 +3,7 @@
  * Proprietary and confidential.
  */
 
+using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System.Text;
 
@@ -27,6 +28,42 @@ internal class CommandDebugProtocol : CommandProtocol {
             .AppendLine($"Zone: {zone}");
 
         InformSenderClient(message.ToString(), true);
+    }
+
+    [Command("disableobj")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void DisableObjectCommand([Remainder] string zoneTag) {
+        var stateChangeMsg = new ZONE_102_PROTOCOL.MSG_ENTERSTATE {
+            ObjectName = zoneTag,
+            StateName = "Off",
+            ExclusiveToSender = true,
+            Sender = Context.SessionActor
+        };
+
+        var message = new ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST {
+            Messages = [stateChangeMsg],
+            Sender = Context.SessionActor
+        };
+
+        Context.ZoneActor.Tell(message, Context.SessionActor);
+    }
+
+    [Command("enableobj")]
+    [AuthRequired(AuthLevel.QualityAssurance)]
+    private void EnableObjectCommand([Remainder] string zoneTag) {
+        var stateChangeMsg = new ZONE_102_PROTOCOL.MSG_ENTERSTATE {
+            ObjectName = zoneTag,
+            StateName = "On",
+            ExclusiveToSender = true,
+            Sender = Context.SessionActor
+        };
+
+        var message = new ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST {
+            Messages = [stateChangeMsg],
+            Sender = Context.SessionActor
+        };
+
+        Context.ZoneActor.Tell(message, Context.SessionActor);
     }
 
 }

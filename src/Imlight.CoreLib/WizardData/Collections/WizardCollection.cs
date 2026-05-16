@@ -9,6 +9,7 @@ using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Math;
+using System.Collections.Generic;
 
 namespace Imlight.CoreLib.WizardData.Collections;
 
@@ -17,7 +18,7 @@ public static class WizardCollection {
     public const string CollectionName = "Wizards";
     private static readonly IDocumentStore s_store;
 
-    static WizardCollection() 
+    static WizardCollection()
         => s_store = PlayerDatabase.Instance.Store;
 
     /// <summary>
@@ -39,7 +40,7 @@ public static class WizardCollection {
         metadata[Raven.Client.Constants.Documents.Metadata.Collection] = CollectionName;
 
         session.SaveChanges();
-        
+
         return true;
     }
 
@@ -117,7 +118,7 @@ public static class WizardCollection {
         // Load all of the characters. We must do this here because
         // `Wizard` initialization may require the account to be in full; aka, we need
         // all the characters to be on the account ahead of time.
-        for (var i = 0 ; i < characters.Count; i++) {
+        for (var i = 0; i < characters.Count; i++) {
             characters[i] = LoadWizard(characters[i]);
         }
 
@@ -401,7 +402,7 @@ public static class WizardCollection {
         existingCharacter.SpellbookBehavior.LearnedSpellTemplateIds.Remove(spellTemplateId);
         session.SaveChanges();
     }
-    
+
     /// <summary>
     /// Adds a new relationship to the friends behavior of a wizard.
     /// </summary>
@@ -445,6 +446,30 @@ public static class WizardCollection {
         session.SaveChanges();
     }
 
+    /// <summary>
+    /// Update the quest behavior for a given wizard in the database.
+    /// </summary>
+    /// <param name="wizard">The wizard whose quest behavior needs to be updated.</param>
+    /// <returns>True if the update was successful; otherwise, false.</returns>
+    public static bool UpdateCharacterQuestBehavior(Wizard wizard) {
+        if (wizard is null || wizard.QuestBehavior is null) {
+            return false;
+        }
+
+        using var session = s_store.OpenSession();
+        var dbWizard = session.Query<Wizard>(collectionName: CollectionName)
+                              .FirstOrDefault(w => w.CharId == wizard.CharId);
+
+        if (dbWizard is null) {
+            return false;
+        }
+
+        dbWizard.QuestBehavior = wizard.QuestBehavior;
+        session.SaveChanges();
+
+        return true;
+    }
+
     private static Wizard LoadWizard(Wizard wizard) {
         using var session = s_store.OpenSession();
 
@@ -484,6 +509,17 @@ public static class WizardCollection {
             .Where(d => d.CharId == wizard.CharId)
             .ToList();
         wizard.DynamodSet = dynamods.FirstOrDefault() ?? new DynamodSet(wizard.CharId);
+
+        // Load the actual quests the character has.
+        if (wizard.QuestBehavior != null) {
+            var currentQuestIDs = wizard.QuestBehavior.CurrentQuestIDs;
+            var myQuests = session
+                .Query<QuestInstance>(collectionName: QuestInstanceCollection.CollectionName)
+                .Where(q => q.OwnerCharId == wizard.CharId)
+                .ToList();
+
+            wizard.QuestBehavior.CurrentQuestInstances = myQuests;
+        }
 
         // The wizard may still have some initialization to do. Inform the wizard
         // that their data has been loaded from the database.

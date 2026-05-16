@@ -69,6 +69,32 @@ public static class DynamodCollection {
     }
 
     /// <summary>
+    /// Removes a specific Dynamod from a DynamodSet based on the character ID and client tag.
+    /// </summary>
+    /// <param name="charId">The character ID of the DynamodSet.</param>
+    /// <param name="clientTag">The client tag of the Dynamod to remove.</param>
+    /// <returns><c>true</c> if the Dynamod was successfully removed; otherwise, <c>false</c>.</returns>
+    public static bool RemoveDynamod(ulong charId, string clientTag) {
+        using var session = s_store.OpenSession();
+
+        var dynamodSet = session.Query<DynamodSet>(collectionName: CollectionName)
+            .FirstOrDefault(ds => ds.CharId == charId);
+
+        if (dynamodSet is null) {
+            return false;
+        }
+
+        var removed = dynamodSet.RemoveDynamod(clientTag);
+        if (!removed) {
+            return false;
+        }
+
+        session.SaveChanges();
+
+        return true;
+    }
+
+    /// <summary>
     /// Retrieves a DynamodSet from the collection based on the specified character ID.
     /// </summary>
     /// <param name="charId">The character ID of the DynamodSet to retrieve.</param>
@@ -85,19 +111,19 @@ public static class DynamodCollection {
     /// </summary>
     /// <param name="dynamodSet">The DynamodSet to update.</param>
     /// <returns>True if the DynamodSet was successfully updated, false otherwise.</returns>
-    public static bool UpdateDynamodSet(DynamodSet dynamodSet) {
+    public static bool UpdateDynamodSet(DynamodSet dynamodSet, Dynamod newDynamod) {
         using var session = s_store.OpenSession();
 
         // Ensure that this dynamod set exists. If not, we'll add it instead.
-        var dynamodSetExists = session.Query<DynamodSet>(collectionName: CollectionName)
-            .Any(ds => ds.CharId == dynamodSet.CharId);
-        if (!dynamodSetExists) {
-            AddDynamodSet(dynamodSet);
+        var existingDynamodSet = session.Query<DynamodSet>(collectionName: CollectionName)
+            .FirstOrDefault(ds => ds.CharId == dynamodSet.CharId);
+        if (existingDynamodSet is null) {
+            dynamodSet.AddDynamod(newDynamod);
+
+            return AddDynamodSet(dynamodSet);
         }
 
-        session.Store(dynamodSet);
-        var metaData = session.Advanced.GetMetadataFor(dynamodSet);
-        metaData[Raven.Client.Constants.Documents.Metadata.Collection] = CollectionName;
+        existingDynamodSet.AddDynamod(newDynamod);
 
         session.SaveChanges();
 

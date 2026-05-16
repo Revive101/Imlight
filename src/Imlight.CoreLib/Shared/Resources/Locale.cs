@@ -17,6 +17,9 @@
  * // Retrieve a localized name using a full key
  * string interactableName = Locale.GetEnglishName("Interactables_00000008");
  * 
+ * // Retrieve first and last name keys for a full name
+ * var (firstKey, lastKey) = Locale.GetEnglishNameKeys("WC-NPCs_00000024");
+ * 
  * NOTE:
  * 
  * TODO:
@@ -40,28 +43,27 @@ internal class Locale : RootDirectoryResourceSingleton<Locale>, IMemoryStreamDis
 
     private static readonly string s_qustFilePrefix = "WizQst";
     private static Dictionary<string, Dictionary<string, string>> s_data = [];
+    private static Dictionary<string, (string firstKey, string lastKey)> s_namePartsMapping = [];
 
     protected override void AfterLoad() {
         // There are aoubt ~5,000 files here. They take up about 200MB of memory.
         // At this point, they are all loaded into memory. This function should process the locales
         // and give us data we actually need.
-        Logger.Information("Loaded {0} English locale files.", 
+
+        Logger.Information("Loaded {0} English locale files.",
             Logger.Args(Files.Count));
 
-        // Process each file.
         s_data = [];
         foreach (var file in Files) {
             var stream = file.Value;
             var record = file.Key;
 
-            // We have no reason to keep any of these files in memory.
             if (record.FileName.StartsWith(s_qustFilePrefix)) {
                 continue;
             }
 
             var data = ProcessLocaleFile(record, stream);
 
-            // Santize the table name. Remove the path prefix and the file extension.
             var tableName = record.FileName;
             tableName = tableName.Replace(DirectoryName, "");
             tableName = tableName.Split('.')[0];
@@ -69,7 +71,7 @@ internal class Locale : RootDirectoryResourceSingleton<Locale>, IMemoryStreamDis
             s_data.Add(tableName, data);
         }
 
-        // Drop each file from memory after processing.
+        ProcessNameParts();
         DisposeStream();
     }
 
@@ -83,8 +85,6 @@ internal class Locale : RootDirectoryResourceSingleton<Locale>, IMemoryStreamDis
             return "";
         }
 
-        // Example: Interactables_0000008
-        // Split the key into the table name and the ID.
         var parts = key.Split('_');
         if (parts.Length != 2) {
             return "";
@@ -92,12 +92,10 @@ internal class Locale : RootDirectoryResourceSingleton<Locale>, IMemoryStreamDis
         var tableName = parts[0];
         var id = parts[1];
 
-        // Search for the table by name
         if (!s_data.TryGetValue(tableName, out var table)) {
             return "";
         }
 
-        // Search for the ID in the table
         if (!table.TryGetValue(id, out var value)) {
             return "";
         }
@@ -116,12 +114,10 @@ internal class Locale : RootDirectoryResourceSingleton<Locale>, IMemoryStreamDis
             return "";
         }
 
-        // Search for the table by name
         if (!s_data.TryGetValue(tableName, out var table)) {
             return "";
         }
 
-        // Search for the ID in the table
         if (!table.TryGetValue(key, out var value)) {
             return "";
         }
@@ -129,18 +125,31 @@ internal class Locale : RootDirectoryResourceSingleton<Locale>, IMemoryStreamDis
         return value;
     }
 
-    public void DisposeStream() 
+    /// <summary>
+    /// Retrieves the first and last name keys for a full name entry.
+    /// </summary>
+    /// <param name="fullNameKey">The full key (e.g., "WC-NPCs_00000024") of the full name entry.</param>
+    /// <returns>A tuple containing the first name key and last name key, or empty strings if no mapping exists.</returns>
+    public static (string firstNameKey, string lastNameKey) GetEnglishNameKeys(string fullNameKey) {
+        if (string.IsNullOrEmpty(fullNameKey)) {
+            return ("", "");
+        }
+
+        if (s_namePartsMapping.TryGetValue(fullNameKey, out var nameParts)) {
+            return nameParts;
+        }
+
+        return ("", "");
+    }
+
+    public void DisposeStream()
         => Files.Clear();
 
     private static Dictionary<string, string> ProcessLocaleFile(FileEntry record, Memory<byte>? stream) {
-        // Interpret the stream as an array of strings.
         var strings = ReadStrings(stream);
         var data = new Dictionary<string, string>();
 
-        // The first string is the key, the second string is two lines down and is the value.
-        // Skip the first line, which is just an echo of the file name.
         for (int i = 1; i < strings.Length; i += 3) {
-            // If adding 3 to i would go out of bounds, then we are at the end of the file.
             if (i + 2 >= strings.Length) {
                 break;
             }
@@ -148,17 +157,14 @@ internal class Locale : RootDirectoryResourceSingleton<Locale>, IMemoryStreamDis
             var key = strings[i];
             var value = strings[i + 2];
 
-            // Remove the '/r' that may exist at the end of the key.
             if (key.EndsWith("\r")) {
                 key = key[..^1];
             }
 
-            // Remove the '/r' that may exist at the end of the value.
             if (value.EndsWith("\r")) {
                 value = value[..^1];
             }
 
-            // Log warnings for duplicate keys.
             if (data.ContainsKey(key)) {
                 Logger.Warning("Duplicate key {0} in {1}.",
                     Logger.Args(key, record.FileName));
@@ -184,5 +190,62 @@ internal class Locale : RootDirectoryResourceSingleton<Locale>, IMemoryStreamDis
 
         return stringArray;
     }
-    
+
+    private static void ProcessNameParts() {
+        s_namePartsMapping = [];
+
+        if (!s_data.TryGetValue("WC-NPCs", out var table)) {
+            Logger.Warning("WC-NPCs locale table not found; cannot process name parts mapping.");
+
+            return;
+        }
+
+        var tableName = "WC-NPCs";
+        foreach (var entry in table) {
+            var key = entry.Key;
+            var value = entry.Value.Trim();
+
+            if (string.IsNullOrEmpty(value) || !value.Contains(' ')) {
+                continue;
+            }
+
+            var parts = value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length != 2) {
+                continue;
+            }
+
+            var firstName = parts[0];
+            var lastName = parts[1];
+
+            string? firstNameKey = null;
+            string? lastNameKey = null;
+
+            foreach (var searchEntry in table) {
+                var searchValue = searchEntry.Value.Trim();
+
+                if (firstNameKey == null && searchValue == firstName) {
+                    firstNameKey = searchEntry.Key;
+                }
+
+                if (lastNameKey == null && searchValue == lastName) {
+                    lastNameKey = searchEntry.Key;
+                }
+
+                if (firstNameKey != null && lastNameKey != null) {
+                    break;
+                }
+            }
+
+            if (firstNameKey != null && lastNameKey != null) {
+                var fullKey = $"{tableName}_{key}";
+                var firstFullKey = $"{tableName}_{firstNameKey}";
+                var lastFullKey = $"{tableName}_{lastNameKey}";
+                s_namePartsMapping[fullKey] = (firstFullKey, lastFullKey);
+            }
+        }
+
+        Logger.Information("Processed {0} NPC name part mappings.",
+            Logger.Args(s_namePartsMapping.Count));
+    }
+
 }

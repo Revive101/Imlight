@@ -73,6 +73,7 @@ public class Wizard : IDisposable {
     [JsonIgnore] public ServerObjectStateBehavior ObjectStateBehavior { get; set; }
     public ServerWizGameStats GameStats { get; set; }
     public ServerPetOwnerBehavior PetOwnerBehavior { get; set; }
+    public ServerQuestBehavior QuestBehavior { get; set; }
 
     [JsonIgnore] public Account Account;
     [JsonIgnore] public WizClientObject GameObject;
@@ -86,7 +87,8 @@ public class Wizard : IDisposable {
 
     [JsonIgnore] private Vector3 _location;
     [JsonIgnore] private Vector3 _orientation;
-    [JsonIgnore] private readonly List<ulong> _defaultItems = [
+    [JsonIgnore]
+    private readonly List<ulong> _defaultItems = [
         // warning: do not exceed 16 items! RavenDB has a batch limit of 16 items.
         // Quality assurance hats, 05-10-25-50-100
         1317127, 1317128, 1317125, 1317124, 1317126,
@@ -130,15 +132,16 @@ public class Wizard : IDisposable {
         InitializeAlchemyBehavior();
 
         ObjectStateBehavior = new ServerObjectStateBehavior("PlayerMobileStates");
+        QuestBehavior = new ServerQuestBehavior();
 
         DynamodSet = new DynamodSet(CharId);
         DynamodCollection.AddDynamodSet(DynamodSet);
     }
 
-    public void SetCachedLocation(Vector3 loc) 
+    public void SetCachedLocation(Vector3 loc)
         => Location = loc;
 
-    public void SetCachedOrientation(float direction) 
+    public void SetCachedOrientation(float direction)
         => Orientation = new Vector3(0, 0, direction);
 
     public void SetPersistentLocation(Vector3 loc) {
@@ -157,7 +160,7 @@ public class Wizard : IDisposable {
 
     public void SetZone(string zone, string zoneDisplayName) {
         PreviousZone = Zone;
-        
+
         Zone = zone;
         ZoneDisplayName = zoneDisplayName;
 
@@ -182,8 +185,8 @@ public class Wizard : IDisposable {
         GameStats.m_baseMana += manaDifference;
         GameStats.m_powerPipBase += powerPipDifference;
 
-        var xpAtLevel = MagicLevelsConfig.GetExperiencePointsAtLevel(level);
-        MagicSchoolBehavior.ExperiencePoints = xpAtLevel;
+        // Don't reset XP - preserve overflow XP when leveling up.
+        // XP is managed by AddExperiencePoints/RemoveExperiencePoints.
 
         // Persistent save.
         WizardCollection.UpdateCharacterLevel(this);
@@ -199,14 +202,17 @@ public class Wizard : IDisposable {
         if (levelAtXp > MagicSchoolBehavior.Level) {
             var levelUpSuccess = SetLevel(levelAtXp);
             if (!levelUpSuccess) {
-                Logger.Warning("Could not level up player {0} to level {1}.", 
+                Logger.Warning("Could not level up player {0} to level {1}.",
                     Logger.Args(PlayerNameBehavior.GetWizardName(), levelAtXp));
 
                 return;
             }
+
+            // SetLevel already saved to database, so we're done.
+            return;
         }
 
-        // Persistent save.
+        // Only save to database if we didn't level up (SetLevel already saved).
         WizardCollection.UpdateCharacterLevel(this);
     }
 
@@ -218,14 +224,17 @@ public class Wizard : IDisposable {
         if (levelAtXp < MagicSchoolBehavior.Level) {
             var levelDownSuccess = SetLevel(levelAtXp);
             if (!levelDownSuccess) {
-                Logger.Warning("Could not level down player {0} to level {1}.", 
+                Logger.Warning("Could not level down player {0} to level {1}.",
                     Logger.Args(PlayerNameBehavior.GetWizardName(), levelAtXp));
 
                 return;
             }
+
+            // SetLevel already saved to database, so we're done.
+            return;
         }
 
-        // Persistent save.
+        // Only save to database if we didn't level down (SetLevel already saved).
         WizardCollection.UpdateCharacterLevel(this);
     }
 
@@ -255,7 +264,8 @@ public class Wizard : IDisposable {
     public void AddGold(int gold) {
         if (GameStats.m_currentGold + gold > GameStats.m_baseGoldPouch) {
             GameStats.m_currentGold = GameStats.m_baseGoldPouch; // Do not exceed gold pouch.
-        } else {
+        }
+        else {
             GameStats.m_currentGold += gold;
         }
 
@@ -356,7 +366,7 @@ public class Wizard : IDisposable {
     public bool RemoveItemFromInventory(ulong itemId) {
         var success = InventoryBehavior.RemoveItem(itemId, out var item);
         if (!success) {
-            Logger.Warning("Could not remove item {0} from player {1}'s inventory.", 
+            Logger.Warning("Could not remove item {0} from player {1}'s inventory.",
                 Logger.Args(itemId, PlayerNameBehavior.GetWizardName()));
 
             return false;
@@ -386,7 +396,7 @@ public class Wizard : IDisposable {
         var replacedItem = EquipmentBehavior.GetItemInSlot(slot.SlotType);
         if (replacedItem != null) {
             if (!EquipmentToInventoryTransfer(replacedItem.m_globalID, out unequipEffects)) {
-                Logger.Warning("Could not replace item {0} from slot {1}.", 
+                Logger.Warning("Could not replace item {0} from slot {1}.",
                     Logger.Args(replacedItem.m_globalID, slot.SlotType));
 
                 return false;
@@ -396,7 +406,7 @@ public class Wizard : IDisposable {
         // Add the item to the equipment.
         var equipResult = EquipmentBehavior.EquipItem(inventoryItem, slot.SlotType);
         if (!equipResult) {
-            Logger.Warning("Tried to equip item with global id {0} that is already equipped.", 
+            Logger.Warning("Tried to equip item with global id {0} that is already equipped.",
                 Logger.Args(itemId));
 
             return false;
@@ -432,7 +442,7 @@ public class Wizard : IDisposable {
         // Remove the item from the equipment.
         var unequipResult = EquipmentBehavior.UnequipItem(itemId);
         if (!unequipResult) {
-            Logger.Warning("Tried to unequip item with global id {0} that is not equipped.", 
+            Logger.Warning("Tried to unequip item with global id {0} that is not equipped.",
                 Logger.Args(itemId));
 
             return false;
@@ -441,7 +451,7 @@ public class Wizard : IDisposable {
         // Add the item to the inventory.
         var invAddResult = InventoryBehavior.AddItem(item);
         if (!invAddResult) {
-            Logger.Warning("Tried to add item with global id {0} to inventory, but it already exists.", 
+            Logger.Warning("Tried to add item with global id {0} to inventory, but it already exists.",
                 Logger.Args(itemId));
 
             return false;
@@ -456,7 +466,7 @@ public class Wizard : IDisposable {
         WizardCollection.UpdateCharacterItems(this);
 
         // Debug log.
-        Logger.Debug("{0} unequips item {1}", 
+        Logger.Debug("{0} unequips item {1}",
             Logger.Args(PlayerNameBehavior.GetWizardName(), itemId));
 
         unequipEffects = CharacterEffectHelper.RemoveEffectsFromWizard(this, template);
@@ -467,7 +477,8 @@ public class Wizard : IDisposable {
     public bool AddSnack(ulong snackTemplateId, out ClientPetSnackItem snackObj) {
         if (PetSnackBehavior.HasSnack(snackTemplateId)) {
             snackObj = PetSnackBehavior.GetSnack(snackTemplateId);
-        } else {
+        }
+        else {
             snackObj = (ClientPetSnackItem) CoreObjectFactory.FinalizeCoreObject(snackTemplateId);
             snackObj.m_characterId = (GID) CharId;
             snackObj.m_quantity = 1;
@@ -560,7 +571,7 @@ public class Wizard : IDisposable {
         if (!success) {
             Logger.Warning("Could not add reagent {0} to player {1}'s reagent bag.",
                 Logger.Args(reagent.m_globalID, PlayerNameBehavior.GetWizardName()));
-                
+
             return false;
         }
 
@@ -677,7 +688,7 @@ public class Wizard : IDisposable {
 
         // Regardless, we'll want to add this spell to the deck item's DeckBehavior.
         if (!CoreObjectFactory.FindBehaviorInstance<DeckBehavior>(item, out var deckBehavior)) {
-            Logger.Error("Could not find deck behavior for item with global ID {0}.", 
+            Logger.Error("Could not find deck behavior for item with global ID {0}.",
                 Logger.Args(spellTemplateId));
 
             return false;
@@ -733,7 +744,7 @@ public class Wizard : IDisposable {
 
         // Regardless, we'll want to remove this spell from the deck item's DeckBehavior.
         if (!CoreObjectFactory.FindBehaviorInstance<DeckBehavior>(item, out var deckBehavior)) {
-            Logger.Error("Could not find deck behavior for item with global ID {0}.", 
+            Logger.Error("Could not find deck behavior for item with global ID {0}.",
                 Logger.Args(spellTemplateId));
 
             return false;
@@ -761,7 +772,7 @@ public class Wizard : IDisposable {
         return true;
     }
 
-    public ObjState EnterState(string stateName) 
+    public ObjState EnterState(string stateName)
         => ObjectStateBehavior.SetState(stateName);
 
     public bool AddDynamod(string zoneName, string clientTag, string modState) {
@@ -776,14 +787,14 @@ public class Wizard : IDisposable {
         var addSuccess = DynamodSet.AddDynamod(dynamod);
 
         if (!addSuccess) {
-            Logger.Warning("Could not add Dynamod to player {0}'s DynamodSet.", 
+            Logger.Warning("Could not add Dynamod to player {0}'s DynamodSet.",
                 Logger.Args(PlayerNameBehavior.GetWizardName()));
 
             return false;
         }
 
         // Persistent save.
-        DynamodCollection.UpdateDynamodSet(DynamodSet);
+        DynamodCollection.UpdateDynamodSet(DynamodSet, dynamod);
 
         return true;
     }
@@ -800,7 +811,7 @@ public class Wizard : IDisposable {
         }
 
         // Persistent save.
-        DynamodCollection.UpdateDynamodSet(DynamodSet);
+        DynamodCollection.RemoveDynamod(DynamodSet.CharId, clientTag);
 
         return true;
     }
@@ -870,7 +881,7 @@ public class Wizard : IDisposable {
         if (relationship is null) {
             Logger.Warning("Could not remove friend ({0}) for player {1}.",
                 Logger.Args(friendId, PlayerNameBehavior.GetWizardName()));
-                
+
             return false;
         }
 
@@ -895,6 +906,177 @@ public class Wizard : IDisposable {
         return true;
     }
 
+    public bool AddQuest(QuestInstance quest) {
+        var addSuccess = QuestBehavior.AddQuest(quest);
+        if (!addSuccess) {
+            Logger.Warning("Could not add quest {0} for player {1}.",
+                Logger.Args(quest.QuestName, PlayerNameBehavior.GetWizardName()));
+
+            return false;
+        }
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterQuestBehavior(this);
+        QuestInstanceCollection.AddQuestInstance(quest);
+
+        return true;
+    }
+
+    public bool RemoveQuest(string questName) {
+        var removeSuccess = QuestBehavior.RemoveQuest(questName);
+        if (!removeSuccess) {
+            Logger.Warning("Could not remove quest {0} for player {1}.",
+                Logger.Args(questName, PlayerNameBehavior.GetWizardName()));
+
+            return false;
+        }
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterQuestBehavior(this);
+        QuestInstanceCollection.RemoveQuestInstance(CharId, questName);
+
+        return true;
+    }
+
+    public bool HasQuest(string questName)
+        => QuestBehavior.HasQuest(questName);
+
+    public bool HasCompletedQuest(string questName)
+        => QuestBehavior.HasCompletedQuest(questName);
+
+    public bool CompleteQuest(string questName) {
+        var questStatus = QuestBehavior.CompleteQuest(questName);
+        if (!questStatus) {
+            Logger.Warning("Could not mark quest {0} as completed for player {1}.",
+                Logger.Args(questName, PlayerNameBehavior.GetWizardName()));
+
+            return false;
+        }
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterQuestBehavior(this);
+        QuestInstanceCollection.RemoveQuestInstance(CharId, questName);
+
+        return questStatus;
+    }
+
+    public bool StartQuestGoal(string questName, string goalName) {
+        var startSuccess = QuestBehavior.StartQuestGoal(questName, goalName);
+        if (!startSuccess) {
+            Logger.Warning("Could not start quest goal {0} for quest {1} for player {2}.",
+                Logger.Args(goalName, questName, PlayerNameBehavior.GetWizardName()));
+
+            return false;
+        }
+
+        var questId = QuestBehavior.CurrentQuestInstances
+            .FirstOrDefault(q => q is not null && q.QuestName == questName).ID;
+        if (questId is 0) {
+            Logger.Error("Could not find quest ID for quest {0} for player {1}.",
+                Logger.Args(questName, PlayerNameBehavior.GetWizardName()));
+
+            return false;
+        }
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterQuestBehavior(this);
+        QuestInstanceCollection.StartQuestGoal(questId, goalName);
+
+        return true;
+    }
+
+    public bool IncrementQuestGoal(string questName, string goalName) {
+        var incrementSuccess = QuestBehavior.IncrementQuestGoal(questName, goalName);
+        if (!incrementSuccess) {
+            Logger.Warning("Could not increment quest goal {0} for quest {1} for player {2}.",
+                Logger.Args(goalName, questName, PlayerNameBehavior.GetWizardName()));
+
+            return false;
+        }
+
+        var questId = QuestBehavior.CurrentQuestInstances
+            .FirstOrDefault(q => q is not null && q.QuestName == questName).ID;
+        if (questId is 0) {
+            Logger.Error("Could not find quest ID for quest {0} for player {1}.",
+                Logger.Args(questName, PlayerNameBehavior.GetWizardName()));
+
+            return false;
+        }
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterQuestBehavior(this);
+        QuestInstanceCollection.IncrementQuestGoal(questId, goalName);
+
+        return true;
+    }
+
+    public bool CompleteQuestGoal(string questName, string goalName) {
+        var completeSuccess = QuestBehavior.CompleteQuestGoal(questName, goalName);
+        if (!completeSuccess) {
+            Logger.Warning("Could not complete quest goal {0} for quest {1} for player {2}.",
+                Logger.Args(goalName, questName, PlayerNameBehavior.GetWizardName()));
+
+            return false;
+        }
+
+        var questId = QuestBehavior.CurrentQuestInstances
+            .FirstOrDefault(q => q is not null && q.QuestName == questName).ID;
+        if (questId is 0) {
+            Logger.Error("Could not find quest ID for quest {0} for player {1}.",
+                Logger.Args(questName, PlayerNameBehavior.GetWizardName()));
+
+            return false;
+        }
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterQuestBehavior(this);
+        QuestInstanceCollection.CompleteQuestGoal(questId, goalName);
+
+        return true;
+    }
+
+    public bool HasRegistryValue(string key)
+        => QuestBehavior.HasRegistryValue(key);
+
+    public bool HasQuestRegistryValue(string questName, string key)
+        => QuestBehavior.HasQuestRegistryValue(questName, key);
+
+    public ulong GetRegistryValue(string key)
+        => QuestBehavior.GetRegistryValue(key);
+
+    public ulong GetQuestRegistryValue(string questName, string key)
+        => QuestBehavior.GetQuestRegistryValue(questName, key);
+
+    public bool SetRegistryValue(string key, ulong value) {
+        var setSuccess = QuestBehavior.SetRegistryValue(key, value);
+        if (!setSuccess) {
+            Logger.Warning("Could not set registry value {0} for player {1}.",
+                Logger.Args(key, PlayerNameBehavior.GetWizardName()));
+
+            return false;
+        }
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterQuestBehavior(this);
+
+        return true;
+    }
+
+    public bool SetQuestRegistryValue(string questName, string key, ulong value) {
+        var setSuccess = QuestBehavior.SetQuestRegistryValue(questName, key, value);
+        if (!setSuccess) {
+            Logger.Warning("Could not set quest registry value {0} for quest {1} for player {2}.",
+                Logger.Args(key, questName, PlayerNameBehavior.GetWizardName()));
+
+            return false;
+        }
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterQuestBehavior(this);
+
+        return true;
+    }
+
     public void UpdatePotions(Single newPotionCharge, Single newPotionMax) {
         GameStats.m_potionCharge = newPotionCharge;
         GameStats.m_potionMax = newPotionMax;
@@ -909,15 +1091,18 @@ public class Wizard : IDisposable {
         AfterDatabaseloadMountOwnerBehavior();
         AfterDatabaseLoadPetOwnerBehavior();
         AfterDatabaseLoadAlchemyBehavior();
+        AfterDatabaseLoadQuestBehavior();
 
         ObjectStateBehavior ??= new ServerObjectStateBehavior("PlayerMobileStates");
         FriendsBehavior ??= new ServerFriendBehavior();
+        QuestBehavior ??= new ServerQuestBehavior();
+        DynamodSet ??= new DynamodSet(CharId);
     }
 
     private void EquipMount(WizItemTemplate template, WizClientObjectItem item) {
         var mountEquipSuccess = MountOwnerBehavior.EquipMount(template, item);
         if (!mountEquipSuccess) {
-            Logger.Warning("Could not equip mount {0} to player {1}.", 
+            Logger.Warning("Could not equip mount {0} to player {1}.",
                 Logger.Args(template.m_objectName, PlayerNameBehavior.GetWizardName()));
 
             return;
@@ -941,7 +1126,7 @@ public class Wizard : IDisposable {
         // Get the actual item from equipment.
         var deckItem = EquipmentBehavior.EquippedItems.FirstOrDefault(i => i.m_globalID == deckGlobalId);
         if (deckItem is null) {
-            Logger.Error("Could not find deck item with global ID {0}.", 
+            Logger.Error("Could not find deck item with global ID {0}.",
                 Logger.Args(deckGlobalId));
 
             return;
@@ -949,7 +1134,7 @@ public class Wizard : IDisposable {
 
         // Get the deck behavior.
         if (!CoreObjectFactory.FindBehaviorInstance<DeckBehavior>(deckItem, out var deckBehavior)) {
-            Logger.Error("Could not find deck behavior for item with global ID {0}.", 
+            Logger.Error("Could not find deck behavior for item with global ID {0}.",
                 Logger.Args(deckGlobalId));
 
             return;
@@ -957,7 +1142,7 @@ public class Wizard : IDisposable {
 
         var deckEquipSuccess = SpellbookBehavior.EquipDeck(template, deckBehavior);
         if (!deckEquipSuccess) {
-            Logger.Warning("Could not equip deck {0} to player {1}.", 
+            Logger.Warning("Could not equip deck {0} to player {1}.",
                 Logger.Args(template.m_objectName, PlayerNameBehavior.GetWizardName()));
 
             return;
@@ -984,12 +1169,12 @@ public class Wizard : IDisposable {
         // This is a different method that bulk uploads items to the database.
         var success = WizardItemCollection.AddDefaultItems(itemsToAdd);
         if (!success) {
-            Logger.Error("Could not add default items for Wizard {0} to database.", 
+            Logger.Error("Could not add default items for Wizard {0} to database.",
                 Logger.Args(CharId));
         }
     }
 
-    private void InitializeDefaultEquipment() 
+    private void InitializeDefaultEquipment()
         => EquipmentBehavior = new ServerWizEquipmentBehavior {
             SlotList = [],
             EquippedItemIds = [],
@@ -1045,7 +1230,7 @@ public class Wizard : IDisposable {
         // Get the actual item.
         var deckItem = EquipmentBehavior.EquippedItems.FirstOrDefault(i => i.m_globalID == idInSlot);
         if (deckItem is null) {
-            Logger.Error("Could not find deck item with global ID {0}.", 
+            Logger.Error("Could not find deck item with global ID {0}.",
                 Logger.Args(idInSlot));
 
             return;
@@ -1053,7 +1238,7 @@ public class Wizard : IDisposable {
 
         // Get the deck behavior.
         if (!CoreObjectFactory.FindBehaviorInstance<DeckBehavior>(deckItem, out var deckBehavior)) {
-            Logger.Error("Could not find deck behavior for item with global ID {0}.", 
+            Logger.Error("Could not find deck behavior for item with global ID {0}.",
                 Logger.Args(idInSlot));
 
             return;
@@ -1062,7 +1247,7 @@ public class Wizard : IDisposable {
         // Get the template. This gives us information like the max instance count, what school the deck is, etc.
         var deckTemplate = CoreObjectFactory.GetCoreTemplate(deckItem.m_templateID);
         if (deckTemplate is null) {
-            Logger.Error("Could not find deck template with global ID {0}.", 
+            Logger.Error("Could not find deck template with global ID {0}.",
                 Logger.Args(idInSlot));
 
             return;
@@ -1070,7 +1255,7 @@ public class Wizard : IDisposable {
 
         // Get the DeckBehaviorTemplate within the deck template.
         if (deckTemplate.m_behaviors.FirstOrDefault(b => b is DeckBehaviorTemplate) is not DeckBehaviorTemplate deckBehaviorTemplate) {
-            Logger.Error("Could not find deck behavior template within deck template with global ID {0}.", 
+            Logger.Error("Could not find deck behavior template within deck template with global ID {0}.",
                 Logger.Args(idInSlot));
 
             return;
@@ -1096,7 +1281,7 @@ public class Wizard : IDisposable {
         // Get the actual item.
         var mountItem = EquipmentBehavior.EquippedItems.FirstOrDefault(i => i.m_globalID == idInSlot);
         if (mountItem is null) {
-            Logger.Error("Could not find mount item with global ID {0}.", 
+            Logger.Error("Could not find mount item with global ID {0}.",
                 Logger.Args(idInSlot));
 
             return;
@@ -1175,13 +1360,44 @@ public class Wizard : IDisposable {
         GameStats.m_highestCharacterLevelOnAccount = highestLevelOnAcc;
     }
 
-    private void AfterDatabaseLoadAlchemyBehavior() 
+    private void AfterDatabaseLoadAlchemyBehavior()
         => AlchemyBehavior ??= new ServerAlchemyBehavior() {
-        Reagents = [],
-        Recipes = [],
-        CraftingSlots = [],
-        ReagentItemIds = []
-    };
+            Reagents = [],
+            Recipes = [],
+            CraftingSlots = [],
+            ReagentItemIds = []
+        };
+
+    private void AfterDatabaseLoadQuestBehavior() {
+        QuestBehavior ??= new ServerQuestBehavior();
+
+        // Ensure that we have no duplicate quest instances active and remove completed quests.
+        var uniqueQuests = new List<QuestInstance>();
+        foreach (var quest in QuestBehavior.CurrentQuestInstances.ToList()) {
+            // Remove duplicate quests.
+            if (uniqueQuests.Any(q => q.QuestName == quest.QuestName)) {
+                Logger.Warning("Found duplicate quest instance {0} for player {1}. Removing duplicate.",
+                    Logger.Args(quest.QuestName, PlayerNameBehavior.GetWizardName()));
+
+                QuestBehavior.CurrentQuestInstances.Remove(quest);
+                QuestInstanceCollection.RemoveQuestInstance(CharId, quest.QuestName);
+
+                continue;
+            }
+
+            // Remove completed quests.
+            if (QuestBehavior.HasCompletedQuest(quest.QuestName)) {
+                QuestBehavior.CurrentQuestInstances.Remove(quest);
+                QuestInstanceCollection.RemoveQuestInstance(CharId, quest.QuestName);
+
+                continue;
+            }
+
+            uniqueQuests.Add(quest);
+        }
+
+        QuestBehavior.CurrentQuestInstances = uniqueQuests;
+    }
 
     public void Dispose() =>
         // If this object is being disposed, the player probably left the server.

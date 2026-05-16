@@ -42,7 +42,7 @@ internal sealed class ZoneSigilSupervisor(Core.Zone zone) : ZoneEntitySupervisor
             coreObject.m_location = newLoc;
 
             // Create the sigil actor and inform it of the details.
-            var objectActor = CreateEntityActor(coreObject, template);
+            var objectActor = CreateEntityActor(coreObject, template, objectInfo);
             var detailsMsg = new ZONE_102_PROTOCOL.MSG_SIGILDETAILS {
                 CombatSigilObjectInfo = (CombatSigilObjectInfo) objectInfo,
             };

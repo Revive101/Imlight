@@ -5,15 +5,18 @@
 
 using Akka.Actor;
 using Imcodec.ObjectProperty.TypeCache;
-using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Packets;
 
-namespace Imlight.CoreLib.Game.Zone.Triggers;
+namespace Imlight.CoreLib.Game.Results.Handlers;
 
-internal sealed class TeleportHandler<T>(ZoneTrigger trigger) : BaseResultHandler<ResTeleport>(trigger)
-    where T : Result {
+internal sealed class ResTeleportHandler : BaseResultHandler<ResTeleport> {
 
-    public override void Execute(IActorRef playerRef, CoreObject playerObj) {
+    public override bool Execute(IResultContext context) {
+        var playerObj = context.GetPlayerObj();
+        if (playerObj is null) {
+            return false;
+        }
+
         var msg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
             DestinationZone = Result.m_destinationZone,
             DestinationLocation = Result.m_destinationLoc,
@@ -21,7 +24,9 @@ internal sealed class TeleportHandler<T>(ZoneTrigger trigger) : BaseResultHandle
             OwnerCharId = playerObj.m_globalID
         };
 
-        playerRef.Tell(msg);
+        context.GetPlayerRef().Tell(msg);
+
+        return true;
     }
 
 }

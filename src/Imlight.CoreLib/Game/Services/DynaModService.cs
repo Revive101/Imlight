@@ -69,11 +69,29 @@ internal class DynaModService(SessionActor sessionActor) : MessageService(sessio
     [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_ADDDYNAMOD))]
     private void ReceiveAddDynaMod(CHARACTER_103_PROTOCOL.MSG_ADDDYNAMOD message) {
         var wizard = GetActiveWizard();
+
+        if (message.DynaMod is null) {
+            Logger.Error("Received MSG_ADDDYNAMOD with null DynaMod data for wizard {0}",
+                Logger.Args(wizard.CharId));
+                
+            return;
+        }
+
         var zoneName = message.DynaMod.m_zoneName;
         var dynaModClientTag = message.DynaMod.m_dynaModClientTag;
         var dynaModState = message.DynaMod.m_dynaModState;
 
         wizard.AddDynamod(zoneName, dynaModClientTag, dynaModState);
+
+        // Broadcast the state change to the zone.
+        // Objects that match the client tag will apply the state change.
+        var stateChangeMsg = new ZONE_102_PROTOCOL.MSG_ENTERSTATE {
+            ObjectName = dynaModClientTag,
+            StateName = dynaModState,
+            ExclusiveToSender = true,
+            Sender = SessionActor.ActorRef
+        };
+        ZoneBroadcastNoPlayers(stateChangeMsg);
     }
 
     [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_REMOVEDYNAMOD))]

@@ -35,7 +35,7 @@ internal sealed class ZoneVolumeSupervisor(Core.Zone zone) : ZoneEntitySuperviso
             coreObject.m_debugName = volume.m_volumeName;
 
             var template = CoreObjectFactory.GetCoreTemplate(volume.m_templateID);
-            var objectActor = CreateEntityActor(coreObject, template);
+            var objectActor = CreateEntityActor(coreObject, template, null);
 
             EntityActors.Add(objectActor);
 

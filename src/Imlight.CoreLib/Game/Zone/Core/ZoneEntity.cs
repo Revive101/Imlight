@@ -33,6 +33,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
 using Imcodec.Cryptography;
+using Imcodec.IO;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
@@ -57,6 +58,7 @@ namespace Imlight.CoreLib.Game.Zone.Core;
 public class ZoneEntity(
     CoreObject activeGameObject,
     CoreTemplate template,
+    CoreObjectInfo info,
     IActorRef zoneRef,
     Zone zone) : ReceiveProtocolDispatcher, IClientBehaviorProvider<WizClientObject> {
 
@@ -65,6 +67,7 @@ public class ZoneEntity(
     public IActorRef SelfRef { get; protected set; } 
     public CoreObject ActiveGameObject { get; protected set; } = activeGameObject;
     public CoreTemplate Template { get; protected set; } = template;
+    public CoreObjectInfo Info { get; protected set; } = info;
     public Zone Zone { get; protected set; } = zone;
     public IActorRef SupervisorRef { get; protected set; } = Context.Parent;
     public IActorRef ZoneRef { get; protected set; } = zoneRef;
@@ -165,9 +168,12 @@ public class ZoneEntity(
     /// <param name="ignoreIfCurrentStateIsOff">Whether to ignore the state change if the current state is off.</param>
     public void ChangeState(uint stateHash, EmoteStateOverrideInfo emoteStateOverrideInfo = null, bool ignoreIfCurrentStateIsOff = false) {
         var serializer = new ObjectSerializer(
+            Versionable: false,
             Behaviors: SerializerFlags.None
         );
-        if (!serializer.Serialize(emoteStateOverrideInfo, 1, out var emoteData)) {
+
+        ByteString emoteData = new ByteString();
+        if (emoteStateOverrideInfo is not null && !serializer.Serialize(emoteStateOverrideInfo, 1, out emoteData)) {
             Logger.Error("Failed to serialize emote state override info");
 
             return;
@@ -185,6 +191,39 @@ public class ZoneEntity(
             Selfless = false
         };
         ZoneRef.Tell(broadcastMsg);
+    }
+
+    /// <summary>
+    /// Changes the state of the entity, sending the message exclusively to a specific sender.
+    /// </summary>
+    /// <param name="stateName">The name of the state to change to.</param>
+    /// <param name="sender">The actor reference of the sender to send the message to.</param>
+    /// <param name="emoteStateOverrideInfo">The override information for the emote state.</param>
+    /// <param name="ignoreIfCurrentStateIsOff">Whether to ignore the state change if the current state is off.</param>
+    public void ChangeStateExclusiveSender(string stateName,
+                                           IActorRef sender,
+                                           EmoteStateOverrideInfo emoteStateOverrideInfo = null,
+                                           bool ignoreIfCurrentStateIsOff = false) {
+        var serializer = new ObjectSerializer(
+            Versionable: false,
+            Behaviors: SerializerFlags.None
+        );
+        
+        ByteString emoteData = new ByteString();
+        if (emoteStateOverrideInfo is not null && !serializer.Serialize(emoteStateOverrideInfo, 1, out emoteData)) {
+            Logger.Error("Failed to serialize emote state override info");
+
+            return;
+        }
+
+        var stateMsg = new GAME_5_PROTOCOL.MSG_ENTERSTATE {
+            GameObjectID = ActiveGameObject.m_globalID,
+            State = StringHash.Compute(stateName),
+            Data = emoteData,
+            IgnoreIfCurrentStateIsOff = (byte) (ignoreIfCurrentStateIsOff ? 1 : 0),
+        };
+
+        sender.Tell(stateMsg);
     }
 
     #region Message Handlers

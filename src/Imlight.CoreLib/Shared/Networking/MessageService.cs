@@ -110,6 +110,24 @@ internal abstract class MessageService(SessionActor sessionActor) : ReceiveProto
     }
 
     /// <summary>
+    /// Broadcasts a message to the entire zone, excluding all players.
+    /// </summary>
+    /// <param name="originalMessage"></param>
+    /// <exception cref="ActorKilledException"></exception>
+    protected void ZoneBroadcastNoPlayers(IServerMessage originalMessage) {
+        if (SessionActor is null) {
+            throw new ActorKilledException($"{GetType()} attempted to send message to undefined SessionActor.");
+        }
+
+        var message = new ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST {
+            Messages = [originalMessage],
+            Sender = SessionActor.ActorRef
+        };
+
+        SessionActor.ActorRef.Tell(message, Self);
+    }
+
+    /// <summary>
     /// Asks the SessionActor for a return. Used to get data from another service of the SessionActor.
     /// </summary>
     /// <param name="message"></param>

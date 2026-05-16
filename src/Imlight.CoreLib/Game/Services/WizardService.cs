@@ -122,20 +122,52 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
     }
 
     [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_GAINXP))]
-    private void ReceiverGainXP(CHARACTER_103_PROTOCOL.MSG_GAINXP message) {
+    private void ReceiveGainXP(CHARACTER_103_PROTOCOL.MSG_GAINXP message) {
         var beforeLevel = _activeWizard.MagicSchoolBehavior.Level;
         var beforeXP = _activeWizard.MagicSchoolBehavior.ExperiencePoints;
         var xpGained = message.XP;
-        
+
         _activeWizard.AddExperiencePoints(xpGained);
         var afterLevel = _activeWizard.MagicSchoolBehavior.Level;
 
         if (beforeLevel != afterLevel) {
-            // The player leveled up.
-            var levelUpMsg = new CHARACTER_103_PROTOCOL.MSG_LEVELUP() {
-                NewLevel = (byte) afterLevel
+            // The player leveled up. AddExperiencePoints already called SetLevel internally,
+            // so we just need to broadcast the level-up and send stat updates to the client.
+            var levelUpMessage = new WIZARD_12_PROTOCOL.MSG_LEVELUP {
+                GlobalID = _activeWizard.CharId,
+                NewLevel = afterLevel,
+                Data = "0000000000"
             };
-            Context.Self.Tell(levelUpMsg);
+            ZoneBroadcast(levelUpMessage, false);
+
+            // Send stat updates to client (health, mana, power pips, energy).
+            var magicSchool = _activeWizard.MagicSchoolBehavior.MagicSchool;
+            var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(magicSchool, afterLevel);
+
+            var healthMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH() {
+                CharacterID = _activeWizardGameObject.m_globalID,
+                NewHealth = baseStats.m_hitpoints,
+                NewHealthMax = baseStats.m_hitpoints,
+                DisplayDiff = 1,
+            };
+            SendToSocket(healthMessage);
+
+            var manaMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEMANA() {
+                Mana = baseStats.m_mana,
+                MaxMana = baseStats.m_mana,
+                DisplayDiff = 1,
+            };
+            SendToSocket(manaMessage);
+
+            var powerPipsMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEPOWERPIP() {
+                PowerPip = baseStats.m_pipChance
+            };
+            SendToSocket(powerPipsMessage);
+
+            var petEnergyMessage = new PET_9_PROTOCOL.MSG_PETENERGYMAX() {
+                MaxEnergy = baseStats.m_petEnergy
+            };
+            SendToSocket(petEnergyMessage);
         }
 
         // Inform the client of the XP change.
