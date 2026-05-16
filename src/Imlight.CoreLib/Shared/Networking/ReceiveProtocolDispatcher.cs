@@ -53,6 +53,8 @@ public class ReceiveProtocolDispatcher : ReceiveActor {
 
     public Dictionary<Type, MethodInfo> MessageHandlers { get; private set; }
 
+    private readonly Dictionary<Type, MethodInfo[]> _handlerCache = [];
+
     protected ReceiveProtocolDispatcher() {
         SetMessageHandlers();
         ConfigureReceivers();
@@ -61,16 +63,23 @@ public class ReceiveProtocolDispatcher : ReceiveActor {
     protected virtual void ConfigureReceivers() => Receive<object>(message => {
         // Find the method that handles this message type
         var messageType = message.GetType();
-        var handler = MessageHandlers
-            .Where(kvp => kvp.Key.IsAssignableFrom(messageType))
-            .Select(kvp => kvp.Value);
 
-        if (!handler.Any()) {
+        if (!_handlerCache.TryGetValue(messageType, out var handlers)) {
+            handlers = MessageHandlers
+                .Where(kvp => kvp.Key.IsAssignableFrom(messageType))
+                .Select(kvp => kvp.Value)
+                .ToArray();
+            _handlerCache[messageType] = handlers;
+        }
+
+        if (handlers.Length == 0) {
             Unhandled(message);
+
+            return;
         }
 
         // Invoke all methods that handle this message type
-        foreach (var method in handler) {
+        foreach (var method in handlers) {
             var parameters = method.GetParameters();
             if (parameters.Length == 0) {
                 method.Invoke(this, null);
