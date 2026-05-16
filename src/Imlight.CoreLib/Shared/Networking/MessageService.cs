@@ -49,6 +49,9 @@ internal abstract class MessageService(SessionActor sessionActor) : ReceiveProto
 
     protected SessionActor SessionActor { get; init; } = sessionActor;
 
+    private Wizard _cachedWizard;
+    private CoreObject _cachedWizardGameObject;
+
     /// <summary>
     /// Sends a message directly to the socket.
     /// </summary>
@@ -199,39 +202,29 @@ internal abstract class MessageService(SessionActor sessionActor) : ReceiveProto
         OnlinePlayerCollection.RemoveOnlinePlayer(SessionActor.SessionID);
     }
 
-    /// <summary>
-    /// Gets the active <see cref="TypeCache.CoreObject"/> of this session. Requires an active
-    /// <see cref="WizardService"/> as a running service.
-    /// </summary>
-    /// <returns></returns>
+    private void EnsureActiveWizardCached() {
+        if (_cachedWizard is not null) {
+            return;
+        }
+
+        var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
+        var response = AskOtherService<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
+        _cachedWizard = response.Wizard;
+        _cachedWizardGameObject = response.WizardGameObject;
+    }
+
     protected CoreObject GetActiveGameObject() {
-        var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
-        var response = AskOtherService<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
-
-        return response.WizardGameObject;
+        EnsureActiveWizardCached();
+        return _cachedWizardGameObject;
     }
 
-    /// <summary>
-    /// Gets the active <see cref="Wizard"/> of this session. Requires an active
-    /// <see cref="WizardService"/> as a running service.
-    /// </summary>
-    /// <returns></returns>
     protected Wizard GetActiveWizard() {
-        var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
-        var response = AskOtherService<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
-
-        return response.Wizard;
+        EnsureActiveWizardCached();
+        return _cachedWizard;
     }
 
-    /// <summary>
-    /// Gets the active <see cref="Account"/> of this session. Requires an active
-    /// <see cref="WizardService"/> as a running service.
-    /// </summary>
-    /// <returns></returns>
     protected Account GetActiveAccount() {
-        var character = GetActiveWizard();
-
-        return AccountCollection.GetAccount(character.AccountId);
+        return GetActiveWizard().Account;
     }
 
     /// <summary>
