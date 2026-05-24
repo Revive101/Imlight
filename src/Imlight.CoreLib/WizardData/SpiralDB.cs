@@ -19,6 +19,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using Imlight.Common;
 using Imlight.CoreLib.WizardData.Models.World;
@@ -29,149 +30,247 @@ namespace Imlight.CoreLib.WizardData;
 
 public static class SpiralDB {
 
-    private static readonly string s_spiralDBPath
-        = ConfigurationManager.Settings["Database.SpiralDBPath"];
+    // ── Config ───────────────────────────────────────────────────────
+
+    private static readonly string s_remote
+        = ConfigurationManager.Settings["Database.SpiralDBRemote"];
+    private static readonly string s_branch
+        = ConfigurationManager.Settings["Database.SpiralDBBranch"];
+    private static readonly string s_localPath
+        = ConfigurationManager.Settings["Database.SpiralDBLocalPath"];
+    private static readonly bool s_autoFetch
+        = ConfigurationManager.Settings["Database.SpiralDBAutoFetch"].AsBool();
+    private static readonly bool s_disableRemote
+        = ConfigurationManager.Settings["Database.SpiralDBDisableRemote"].AsBool();
+    private static readonly int s_fetchTimeoutSec
+        = ConfigurationManager.Settings["Database.SpiralDBFetchTimeout"].AsInt();
+    private static readonly bool s_rollbackOnFailure
+        = ConfigurationManager.Settings["Database.SpiralDBRollbackOnFailure"].AsBool();
 
     private static readonly JsonSerializerSettings s_jsonSettings = new() {
         TypeNameHandling = TypeNameHandling.Auto,
         NullValueHandling = NullValueHandling.Ignore
     };
 
-    // ── Creature Spellbooks ──────────────────────────────────────────
-    private static readonly ConcurrentDictionary<string, CreatureSpellbook> s_creatureSpellbooks = new(StringComparer.OrdinalIgnoreCase);
+    private static ConcurrentDictionary<string, CreatureSpellbook> s_creatureSpellbooks
+        = new(StringComparer.OrdinalIgnoreCase);
+    private static ConcurrentDictionary<string, DropTable> s_dropTables
+        = new(StringComparer.OrdinalIgnoreCase);
+    private static GlobalRegistryModel s_globalRegistry = new();
+    private static ConcurrentDictionary<ulong, NPCInventory> s_npcInventories = new();
+    private static ConcurrentDictionary<ulong, NPCSpellInventory> s_npcSpellInventories = new();
+    private static List<QuestTemplate> s_questTemplates = [];
+    private static ConcurrentDictionary<string, QuestTemplate> s_questTemplatesByName
+        = new(StringComparer.OrdinalIgnoreCase);
+    private static ConcurrentDictionary<string, WizardZoneData> s_zoneData
+        = new(StringComparer.OrdinalIgnoreCase);
+
     public static IReadOnlyDictionary<string, CreatureSpellbook> CreatureSpellbooks => s_creatureSpellbooks;
-
-    // ── Drop Tables ──────────────────────────────────────────────────
-    private static readonly ConcurrentDictionary<string, DropTable> s_dropTables = new(StringComparer.OrdinalIgnoreCase);
     public static IReadOnlyDictionary<string, DropTable> DropTables => s_dropTables;
-
-    // ── Global Registry ──────────────────────────────────────────────
-    public static GlobalRegistryModel GlobalRegistry { get; } = new();
-
-    // ── NPC Inventories ──────────────────────────────────────────────
-    private static readonly ConcurrentDictionary<ulong, NPCInventory> s_npcInventories = new();
+    public static GlobalRegistryModel GlobalRegistry => s_globalRegistry;
     public static IReadOnlyDictionary<ulong, NPCInventory> NpcInventories => s_npcInventories;
-
-    // ── NPC Spell Inventories ────────────────────────────────────────
-    private static readonly ConcurrentDictionary<ulong, NPCSpellInventory> s_npcSpellInventories = new();
     public static IReadOnlyDictionary<ulong, NPCSpellInventory> NpcSpellInventories => s_npcSpellInventories;
-
-    // ── Quest Templates ──────────────────────────────────────────────
-    private static readonly List<QuestTemplate> s_questTemplates = [];
-    private static readonly ConcurrentDictionary<string, QuestTemplate> s_questTemplatesByName = new(StringComparer.OrdinalIgnoreCase);
     public static IReadOnlyList<QuestTemplate> QuestTemplates => s_questTemplates;
-
-    // ── Zone Data ────────────────────────────────────────────────────
-    private static readonly ConcurrentDictionary<string, WizardZoneData> s_zoneData = new(StringComparer.OrdinalIgnoreCase);
     public static IReadOnlyDictionary<string, WizardZoneData> ZoneData => s_zoneData;
 
     /// <summary>
-    /// Loads all spiralDB JSON files into memory.
-    /// Must be called once on server boot before any collection is accessed.
+    /// Fetches the spiralDB repository (if remote is enabled) and loads all JSON
+    /// files into memory. Must be called once on server boot before any collection
+    /// is accessed.
     /// </summary>
     public static void Load() {
-        var basePath = Path.GetFullPath(s_spiralDBPath);
+        var basePath = Path.GetFullPath(s_localPath);
+
+        if (!s_disableRemote) {
+            try {
+                SyncRepository(basePath);
+            }
+            catch (Exception ex) {
+                Logger.Error("Failed to sync SpiralDB repository: {0}", Logger.Args(ex.Message));
+                if (s_rollbackOnFailure && Directory.Exists(basePath)) {
+                    Logger.Information("Rolling back — using existing local SpiralDB data.");
+                }
+                else if (!Directory.Exists(basePath)) {
+                    Logger.Error("No local SpiralDB data available and remote sync failed. " +
+                                 "SpiralDB will be empty.");
+
+                    return;
+                }
+            }
+        }
 
         if (!Directory.Exists(basePath)) {
-            Logger.Error("SpiralDB path does not exist: {0}", Logger.Args(basePath));
+            Logger.Error("SpiralDB local path does not exist: {0}", Logger.Args(basePath));
 
             return;
         }
 
         Logger.Information("Loading SpiralDB from {0}...", Logger.Args(basePath));
 
-        LoadCreatureSpellbooks(basePath);
-        LoadDropTables(basePath);
-        LoadGlobalRegistry(basePath);
-        LoadNpcInventories(basePath);
-        LoadNpcSpellInventories(basePath);
-        LoadQuestTemplates(basePath);
-        LoadZoneData(basePath);
+        try {
+            // Build into temporary containers so a parse failure leaves old data intact.
+            var spellbooks = new ConcurrentDictionary<string, CreatureSpellbook>(StringComparer.OrdinalIgnoreCase);
+            var dropTables = new ConcurrentDictionary<string, DropTable>(StringComparer.OrdinalIgnoreCase);
+            var globalRegistry = new GlobalRegistryModel();
+            var npcInventories = new ConcurrentDictionary<ulong, NPCInventory>();
+            var npcSpellInventories = new ConcurrentDictionary<ulong, NPCSpellInventory>();
+            var questTemplates = new List<QuestTemplate>();
+            var questTemplatesByName = new ConcurrentDictionary<string, QuestTemplate>(StringComparer.OrdinalIgnoreCase);
+            var zoneData = new ConcurrentDictionary<string, WizardZoneData>(StringComparer.OrdinalIgnoreCase);
 
-        Logger.Information(
-            "SpiralDB loaded: {0} spellbooks, {1} drop tables, {2} NPC inventories, " +
-            "{3} NPC spell inventories, {4} quest templates, {5} zone data entries.",
-            Logger.Args(
-                s_creatureSpellbooks.Count,
-                s_dropTables.Count,
-                s_npcInventories.Count,
-                s_npcSpellInventories.Count,
-                s_questTemplates.Count,
-                s_zoneData.Count));
+            var filesLoaded = 0;
+
+            filesLoaded += LoadCreatureSpellbooks(basePath, spellbooks);
+            filesLoaded += LoadDropTables(basePath, dropTables);
+            filesLoaded += LoadGlobalRegistry(basePath, globalRegistry);
+            filesLoaded += LoadNpcInventories(basePath, npcInventories);
+            filesLoaded += LoadNpcSpellInventories(basePath, npcSpellInventories);
+            filesLoaded += LoadQuestTemplates(basePath, questTemplates, questTemplatesByName);
+            filesLoaded += LoadZoneData(basePath, zoneData);
+
+            // Atomically swap.
+            s_creatureSpellbooks = spellbooks;
+            s_dropTables = dropTables;
+            s_globalRegistry = globalRegistry;
+            s_npcInventories = npcInventories;
+            s_npcSpellInventories = npcSpellInventories;
+            s_questTemplates = questTemplates;
+            s_questTemplatesByName = questTemplatesByName;
+            s_zoneData = zoneData;
+
+            Logger.Information(
+                "SpiralDB loaded {0} files: {1} spellbooks, {2} drop tables, {3} NPC inventories, " +
+                "{4} NPC spell inventories, {5} quest templates, {6} zone data entries.",
+                Logger.Args(
+                    filesLoaded,
+                    s_creatureSpellbooks.Count,
+                    s_dropTables.Count,
+                    s_npcInventories.Count,
+                    s_npcSpellInventories.Count,
+                    s_questTemplates.Count,
+                    s_zoneData.Count));
+        }
+        catch (Exception ex) {
+            Logger.Error("Failed to load SpiralDB: {0}", Logger.Args(ex.Message));
+            if (!s_rollbackOnFailure) {
+                // Clear everything.
+                s_creatureSpellbooks.Clear();
+                s_dropTables.Clear();
+                s_globalRegistry = new();
+                s_npcInventories.Clear();
+                s_npcSpellInventories.Clear();
+                s_questTemplates.Clear();
+                s_questTemplatesByName.Clear();
+                s_zoneData.Clear();
+            }
+            // On rollback, the old references are still live — nothing to do.
+        }
     }
 
-    /// <summary>
-    /// Gets a creature spellbook by deck name.
-    /// </summary>
     public static CreatureSpellbook GetCreatureSpellbook(string deckName) {
         s_creatureSpellbooks.TryGetValue(deckName, out var spellbook);
 
         return spellbook;
     }
 
-    /// <summary>
-    /// Gets a drop table by name.
-    /// </summary>
     public static DropTable GetDropTable(string tableName) {
         s_dropTables.TryGetValue(tableName, out var dropTable);
 
         return dropTable;
     }
 
-    /// <summary>
-    /// Gets an NPC inventory by template ID.
-    /// </summary>
     public static bool TryGetNpcInventory(ulong templateID, out NPCInventory npcInventory)
         => s_npcInventories.TryGetValue(templateID, out npcInventory);
 
-    /// <summary>
-    /// Gets an NPC spell inventory by template ID.
-    /// </summary>
     public static bool TryGetNpcSpellInventory(ulong templateID, out NPCSpellInventory npcSpellInventory)
         => s_npcSpellInventories.TryGetValue(templateID, out npcSpellInventory);
 
-    /// <summary>
-    /// Gets a quest template by name.
-    /// </summary>
     public static QuestTemplate GetQuestByName(string questName) {
         s_questTemplatesByName.TryGetValue(questName, out var quest);
 
         return quest;
     }
 
-    /// <summary>
-    /// Checks whether a quest template exists by name.
-    /// </summary>
-    public static bool QuestExists(string questName) => s_questTemplatesByName.ContainsKey(questName);
+    public static bool QuestExists(string questName)
+        => s_questTemplatesByName.ContainsKey(questName);
 
-    /// <summary>
-    /// Gets zone data by zone name.
-    /// </summary>
     public static WizardZoneData GetZoneData(string zoneName) {
         s_zoneData.TryGetValue(zoneName, out var zone);
 
         return zone;
     }
 
-    /// <summary>
-    /// Gets all zone data for random selection (April Fools, etc.).
-    /// </summary>
     public static IReadOnlyCollection<WizardZoneData> GetAllZoneData()
         => (IReadOnlyCollection<WizardZoneData>) s_zoneData.Values;
 
-    private static void LoadCreatureSpellbooks(string basePath) {
-        var dir = Path.Combine(basePath, "CreatureSpellbook");
-        if (!Directory.Exists(dir)) {
-            return;
+    private static void SyncRepository(string basePath) {
+        // @todo: maybe sometime in the future, allow for remotes not hosted on Github.
+        var repoUrl = $"https://github.com/{s_remote}.git";
+
+        if (!Directory.Exists(basePath)) {
+            Logger.Information("Cloning SpiralDB from {0} (branch {1})...",
+                Logger.Args(repoUrl, s_branch));
+
+            var cloneArgs = $"clone --branch {s_branch} --depth 1 --single-branch {repoUrl} \"{basePath}\"";
+            RunGit(cloneArgs);
+        }
+        else if (s_autoFetch) {
+            Logger.Information("Fetching SpiralDB updates from {0} (branch {1})...",
+                Logger.Args(repoUrl, s_branch));
+
+            RunGit($"-C \"{basePath}\" fetch origin {s_branch}", s_fetchTimeoutSec);
+            RunGit($"-C \"{basePath}\" checkout {s_branch}");
+            RunGit($"-C \"{basePath}\" reset --hard origin/{s_branch}");
+
+            Logger.Information("SpiralDB updated.");
+        }
+        else {
+            Logger.Information("SpiralDB auto-fetch disabled — using existing local data.");
+        }
+    }
+
+    private static void RunGit(string arguments, int timeoutSec = 0) {
+        if (timeoutSec <= 0) {
+            timeoutSec = s_fetchTimeoutSec;
         }
 
+        var startInfo = new ProcessStartInfo("git", arguments) {
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        using var process = Process.Start(startInfo)
+            ?? throw new InvalidOperationException("Failed to start git process. Is git installed?");
+
+        if (!process.WaitForExit(timeoutSec * 1000)) {
+            process.Kill();
+            throw new TimeoutException($"Git command timed out after {timeoutSec}s: git {arguments}");
+        }
+
+        if (process.ExitCode != 0) {
+            var err = process.StandardError.ReadToEnd().Trim();
+            throw new InvalidOperationException(
+                $"Git command failed (exit {process.ExitCode}): git {arguments}\n{err}");
+        }
+    }
+
+    private static int LoadCreatureSpellbooks(string basePath,
+                                              ConcurrentDictionary<string, CreatureSpellbook> target) {
+        var dir = Path.Combine(basePath, "CreatureSpellbook");
+        if (!Directory.Exists(dir)) {
+            return 0;
+        }
+
+        var count = 0;
         foreach (var file in Directory.EnumerateFiles(dir, "*.json")) {
             try {
                 var json = File.ReadAllText(file);
-                var spellbook = JsonConvert.DeserializeObject<CreatureSpellbook>(
-                    json, s_jsonSettings);
+                var spellbook = JsonConvert.DeserializeObject<CreatureSpellbook>(json, s_jsonSettings);
                 if (spellbook != null) {
-                    s_creatureSpellbooks[spellbook.DeckName] = spellbook;
+                    target[spellbook.DeckName] = spellbook;
+                    count++;
                 }
             }
             catch (Exception ex) {
@@ -179,21 +278,25 @@ public static class SpiralDB {
                     Logger.Args(Path.GetFileName(file), ex.Message));
             }
         }
+
+        return count;
     }
 
-    private static void LoadDropTables(string basePath) {
+    private static int LoadDropTables(string basePath,
+                                      ConcurrentDictionary<string, DropTable> target) {
         var dir = Path.Combine(basePath, "DropTables");
         if (!Directory.Exists(dir)) {
-            return;
+            return 0;
         }
 
+        var count = 0;
         foreach (var file in Directory.EnumerateFiles(dir, "*.json")) {
             try {
                 var json = File.ReadAllText(file);
-                var dropTable = JsonConvert.DeserializeObject<DropTable>(
-                    json, s_jsonSettings);
+                var dropTable = JsonConvert.DeserializeObject<DropTable>(json, s_jsonSettings);
                 if (dropTable != null) {
-                    s_dropTables[dropTable.Name] = dropTable;
+                    target[dropTable.Name] = dropTable;
+                    count++;
                 }
             }
             catch (Exception ex) {
@@ -201,24 +304,27 @@ public static class SpiralDB {
                     Logger.Args(Path.GetFileName(file), ex.Message));
             }
         }
+
+        return count;
     }
 
-    private static void LoadGlobalRegistry(string basePath) {
+    private static int LoadGlobalRegistry(string basePath, GlobalRegistryModel target) {
         var dir = Path.Combine(basePath, "GlobalRegistry");
         if (!Directory.Exists(dir)) {
-            return;
+            return 0;
         }
 
+        var count = 0;
         foreach (var file in Directory.EnumerateFiles(dir, "*.json")) {
             try {
                 var json = File.ReadAllText(file);
-                var registry = JsonConvert.DeserializeObject<GlobalRegistryModel>(
-                    json, s_jsonSettings);
+                var registry = JsonConvert.DeserializeObject<GlobalRegistryModel>(json, s_jsonSettings);
                 if (registry != null) {
-                    // Merge all GlobalRegistry files into one model
                     foreach (var kvp in registry.GlobalRegistryValues) {
-                        GlobalRegistry.GlobalRegistryValues[kvp.Key] = kvp.Value;
+                        target.GlobalRegistryValues[kvp.Key] = kvp.Value;
                     }
+
+                    count++;
                 }
             }
             catch (Exception ex) {
@@ -226,21 +332,25 @@ public static class SpiralDB {
                     Logger.Args(Path.GetFileName(file), ex.Message));
             }
         }
+
+        return count;
     }
 
-    private static void LoadNpcInventories(string basePath) {
+    private static int LoadNpcInventories(string basePath,
+                                          ConcurrentDictionary<ulong, NPCInventory> target) {
         var dir = Path.Combine(basePath, "NpcInventory");
         if (!Directory.Exists(dir)) {
-            return;
+            return 0;
         }
 
+        var count = 0;
         foreach (var file in Directory.EnumerateFiles(dir, "*.json")) {
             try {
                 var json = File.ReadAllText(file);
-                var inventory = JsonConvert.DeserializeObject<NPCInventory>(
-                    json, s_jsonSettings);
+                var inventory = JsonConvert.DeserializeObject<NPCInventory>(json, s_jsonSettings);
                 if (inventory != null) {
-                    s_npcInventories[inventory.TemplateID] = inventory;
+                    target[inventory.TemplateID] = inventory;
+                    count++;
                 }
             }
             catch (Exception ex) {
@@ -248,21 +358,25 @@ public static class SpiralDB {
                     Logger.Args(Path.GetFileName(file), ex.Message));
             }
         }
+
+        return count;
     }
 
-    private static void LoadNpcSpellInventories(string basePath) {
+    private static int LoadNpcSpellInventories(string basePath,
+                                               ConcurrentDictionary<ulong, NPCSpellInventory> target) {
         var dir = Path.Combine(basePath, "NpcSpellInventory");
         if (!Directory.Exists(dir)) {
-            return;
+            return 0;
         }
 
+        var count = 0;
         foreach (var file in Directory.EnumerateFiles(dir, "*.json")) {
             try {
                 var json = File.ReadAllText(file);
-                var inventory = JsonConvert.DeserializeObject<NPCSpellInventory>(
-                    json, s_jsonSettings);
+                var inventory = JsonConvert.DeserializeObject<NPCSpellInventory>(json, s_jsonSettings);
                 if (inventory != null) {
-                    s_npcSpellInventories[inventory.TemplateID] = inventory;
+                    target[inventory.TemplateID] = inventory;
+                    count++;
                 }
             }
             catch (Exception ex) {
@@ -270,22 +384,27 @@ public static class SpiralDB {
                     Logger.Args(Path.GetFileName(file), ex.Message));
             }
         }
+
+        return count;
     }
 
-    private static void LoadQuestTemplates(string basePath) {
+    private static int LoadQuestTemplates(string basePath,
+                                          List<QuestTemplate> targetList,
+                                          ConcurrentDictionary<string, QuestTemplate> targetDict) {
         var dir = Path.Combine(basePath, "QuestTemplates");
         if (!Directory.Exists(dir)) {
-            return;
+            return 0;
         }
 
+        var count = 0;
         foreach (var file in Directory.EnumerateFiles(dir, "*.json")) {
             try {
                 var json = File.ReadAllText(file);
-                var quest = JsonConvert.DeserializeObject<QuestTemplate>(
-                    json, s_jsonSettings);
+                var quest = JsonConvert.DeserializeObject<QuestTemplate>(json, s_jsonSettings);
                 if (quest != null) {
-                    s_questTemplates.Add(quest);
-                    s_questTemplatesByName[quest.m_questName] = quest;
+                    targetList.Add(quest);
+                    targetDict[quest.m_questName] = quest;
+                    count++;
                 }
             }
             catch (Exception ex) {
@@ -293,21 +412,25 @@ public static class SpiralDB {
                     Logger.Args(Path.GetFileName(file), ex.Message));
             }
         }
+
+        return count;
     }
 
-    private static void LoadZoneData(string basePath) {
+    private static int LoadZoneData(string basePath,
+                                    ConcurrentDictionary<string, WizardZoneData> target) {
         var dir = Path.Combine(basePath, "ZoneTransfer");
         if (!Directory.Exists(dir)) {
-            return;
+            return 0;
         }
 
+        var count = 0;
         foreach (var file in Directory.EnumerateFiles(dir, "*.json")) {
             try {
                 var json = File.ReadAllText(file);
-                var zone = JsonConvert.DeserializeObject<WizardZoneData>(
-                    json, s_jsonSettings);
+                var zone = JsonConvert.DeserializeObject<WizardZoneData>(json, s_jsonSettings);
                 if (zone != null) {
-                    s_zoneData[zone.ZoneName] = zone;
+                    target[zone.ZoneName] = zone;
+                    count++;
                 }
             }
             catch (Exception ex) {
@@ -315,6 +438,8 @@ public static class SpiralDB {
                     Logger.Args(Path.GetFileName(file), ex.Message));
             }
         }
+
+        return count;
     }
 
 }

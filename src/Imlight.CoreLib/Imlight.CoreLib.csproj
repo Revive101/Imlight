@@ -27,8 +27,4 @@
         <ProjectReference Include="..\..\submodule\Imcodec\src\Imcodec.Wad\Imcodec.Wad.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-        <Content Include="..\..\submodule\spiraldb\**\*.json" CopyToOutputDirectory="PreserveNewest" LinkBase="spiraldb\%(RecursiveDir)" />
-    </ItemGroup>
-
 </Project>

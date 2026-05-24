@@ -356,3 +356,6 @@ act.vault
 src/Director/cache
 src/cache
 src/Imlight.Director/cache
+
+# SpiralDB local cache
+spiraldb-cache/
