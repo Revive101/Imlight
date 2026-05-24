@@ -1,3 +1,6 @@
 [submodule "submodule/Imcodec"]
 	path = submodule/Imcodec
 	url = https://github.com/Jooty/Imcodec
+[submodule "submodule/spiraldb"]
+	path = submodule/spiraldb
+	url = https://github.com/Revive101/spiraldb
