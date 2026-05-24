@@ -16,64 +16,11 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-using System.Linq;
-using Raven.Client.Documents;
-using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.World;
-using System.Collections.Concurrent;
-using Raven.Client.Documents.Linq;
 
 namespace Imlight.CoreLib.WizardData.Collections;
 
 public static class NpcInventoryCollection {
-
-    public const string CollectionName = "NpcInventory";
-    private static readonly IDocumentStore s_store;
-
-    private static readonly ConcurrentDictionary<ulong, NPCInventory> s_cachedInventories = new();
-    private static bool s_isPreloaded = false;
-
-    static NpcInventoryCollection() {
-        s_store = WorldDatabase.Instance.Store;
-    }
-
-    /// <summary>
-    /// Adds the inventory to the NPCInventory collection for a specific NPC.
-    /// </summary>
-    /// <param name="npcInventory">The inventory to be added.</param>
-    public static void AddNpcInventory(NPCInventory npcInventory) {
-        using var session = s_store.OpenSession();
-
-        session.Store(npcInventory);
-        var metadata = session.Advanced.GetMetadataFor(npcInventory);
-        metadata[Raven.Client.Constants.Documents.Metadata.Collection] = CollectionName;
-
-        session.SaveChanges();
-    }
-
-    /// <summary>
-    /// Updates the inventory in the NPCInventory collection for a specific NPC.
-    /// </summary>
-    /// <param name="npcInventory">The inventory to update with.</param>
-    /// <returns>True if the NPC inventory was updated, false if the NPC could not be found.</returns>
-    public static bool UpdateNpcInventory(NPCInventory npcInventory) {
-        using var session = s_store.OpenSession();
-
-        // Check if the NPCInventory already exists
-        var existingNpcInventory = session.Query<NPCInventory>(collectionName: CollectionName)
-            .Where(x => x.TemplateID == npcInventory.TemplateID)
-            .FirstOrDefault();
-
-        if (existingNpcInventory != null) {
-            existingNpcInventory.Inventory = npcInventory.Inventory;
-        } else {
-            return false;
-        }
-
-        session.SaveChanges();
-
-        return true;
-    }
 
     /// <summary>
     /// Attempts to retrieve the inventory using the template ID of the NPC.
@@ -81,34 +28,13 @@ public static class NpcInventoryCollection {
     /// <param name="templateID">The template ID of the NPC to be retrieved.</param>
     /// <param name="npcInventory">The NPC inventory containing the list of inventory items.</param>
     /// <returns>True if the NPC inventory was found, false otherwise.</returns>
-    public static bool TryGetNpcInventory(ulong templateID, out NPCInventory npcInventory) {
-        if (!s_isPreloaded) {
-            PreloadInventories();
-        }
-
-        if (s_cachedInventories.TryGetValue(templateID, out npcInventory)) {
-            return true;
-        }
-
-        npcInventory = null;
-
-        return false;
-    }
+    public static bool TryGetNpcInventory(ulong templateID, out NPCInventory npcInventory) 
+        => SpiralDB.TryGetNpcInventory(templateID, out npcInventory);
 
     /// <summary>
-    /// Preloads the inventories for the specified template IDs.
+    /// Preloads the inventories.
+    /// SpiralDB loads all data at boot; this is a no-op kept for API compatibility.
     /// </summary>
-    public static void PreloadInventories() {
-        using var session = s_store.OpenSession();
+    public static void PreloadInventories() { }
 
-        var npcInventories = session.Query<NPCInventory>(collectionName: CollectionName)
-            .ToList();
-
-        foreach (var npcInventory in npcInventories) {
-            s_cachedInventories.TryAdd(npcInventory.TemplateID, npcInventory);
-        }
-
-        s_isPreloaded = true;
-    }
-    
 }

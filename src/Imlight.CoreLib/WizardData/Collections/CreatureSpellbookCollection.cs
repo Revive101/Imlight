@@ -16,18 +16,12 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-using System.Collections.Generic;
-using System.Linq;
-using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.World;
-using Raven.Client.Documents;
 
 namespace Imlight.CoreLib.WizardData.Collections;
 
 public static class CreatureSpellbookCollection {
 
-    public const string CollectionName = "CreatureSpellbook";
-    private static readonly IDocumentStore s_store;
     private static readonly uint[] s_defaultSpellIds = [
         84361,      // Imp
         2062265892, // Thundersnake
@@ -36,45 +30,14 @@ public static class CreatureSpellbookCollection {
         1731857280, // Dark sprite
         1067010286, // Bloodbat
     ];
-    private static readonly List<CreatureSpellbook> s_spellbooks = [];
-
-    static CreatureSpellbookCollection() {
-        s_store = WorldDatabase.Instance.Store;
-    }
 
     /// <summary>
     /// Retrieves a creature spellbook by deck name.
     /// </summary>
     /// <param name="deckName">The name of the deck.</param>
     /// <returns>The creature spellbook with the specified deck name, or null if not found.</returns>
-    public static CreatureSpellbook GetCreatureSpellbook(string deckName) {
-        using var session = s_store.OpenSession();
-
-        // Check if the creature spellbook is already loaded.
-        var cachedSpellbook = s_spellbooks.FirstOrDefault(x => x.DeckName == deckName);
-        if (cachedSpellbook != null) {
-            return cachedSpellbook;
-        }
-
-        var creatureSpellbook = session.Query<CreatureSpellbook>(collectionName: CollectionName)
-            .FirstOrDefault(x => x.DeckName == deckName);
-
-        return creatureSpellbook;
-    }
-
-    /// <summary>
-    /// Adds a creature spellbook to the collection.
-    /// </summary>
-    /// <param name="creatureSpellbook">The creature spellbook to add.</param>
-    public static void AddCreatureSpellbook(CreatureSpellbook creatureSpellbook) {
-        using var session = s_store.OpenSession();
-
-        session.Store(creatureSpellbook);
-        var metaData = session.Advanced.GetMetadataFor(creatureSpellbook);
-        metaData[Raven.Client.Constants.Documents.Metadata.Collection] = CollectionName;
-
-        session.SaveChanges();
-    }
+    public static CreatureSpellbook GetCreatureSpellbook(string deckName) 
+        => SpiralDB.GetCreatureSpellbook(deckName);
 
     /// <summary>
     /// Retrieves the default creature spellbook.
@@ -84,11 +47,8 @@ public static class CreatureSpellbookCollection {
 
     /// <summary>
     /// Preloads all creature spellbooks.
+    /// SpiralDB loads all data at boot; this is a no-op kept for API compatibility.
     /// </summary>
-    public static void PreloadSpellbooks() {
-        using var session = s_store.OpenSession();
-
-        s_spellbooks.AddRange(session.Query<CreatureSpellbook>(collectionName: CollectionName));
-    }
+    public static void PreloadSpellbooks() { }
 
 }

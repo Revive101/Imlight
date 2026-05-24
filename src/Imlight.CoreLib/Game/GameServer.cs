@@ -43,7 +43,7 @@ using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Commands;
-using Imlight.CoreLib.WizardData.Databases;
+using Imlight.CoreLib.WizardData;
 using Imlight.CoreLib.Game.World;
 using Imlight.CoreLib.Game.Processes;
 using Imlight.CoreLib.Shared.Cryptography;
@@ -210,8 +210,8 @@ public class GameServer : Server {
     }
 
     private void LoadResources() {
-        // Force the world database to load.
-        _ = WorldDatabase.Instance.Store;
+        // Load SpiralDB — the in-memory world database from JSON files.
+        SpiralDB.Load();
     }
 
     private void ActiveSessionsChangedEvent(object obj, NotifyCollectionChangedEventArgs args) {
