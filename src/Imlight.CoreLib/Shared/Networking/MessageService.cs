@@ -215,7 +215,7 @@ internal abstract class MessageService(SessionActor sessionActor) : ReceiveProto
     }
 
     private void EnsureActiveWizardCached() {
-        if (_cachedWizard is not null) {
+        if (_cachedWizard is not null && _cachedWizardGameObject is not null) {
             return;
         }
 
