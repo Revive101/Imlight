@@ -24,16 +24,19 @@ If you care to contribute to the data recollection effort, you may use [Imview](
 
 ### What you can expect
 - [x] Character management
-- [x] Moving through the world
+- [x] Moving through the world *
 - [x] Zone objects
 - [x] Mobs
 - [x] Inventory and equipment
 - [x] Multiplayer
 - [x] Chat
 - [x] Friends
-- [x] Shops
-- [x] Spell Training
-- [x] Combat
+- [x] Shops *
+- [x] Dye Shop
+- [x] Mounts
+- [ ] Multi-person Mounts
+- [x] Spell Training *
+- [x] Most parts of combat
 - [x] Reagents 
 - [x] Minigames
 - [x] Creating spell decks
@@ -42,14 +45,16 @@ If you care to contribute to the data recollection effort, you may use [Imview](
 - [x] In-game commands
 - [x] Potions
 - [x] NPC interactions
-- [ ] Bazaar
+- [x] Bazaar
 - [ ] Realms
-- [ ] Pets
+- [x] Pets (partial)
 - [ ] Pet minigames
 - [ ] Crafting
 - [ ] Housing
-- [x] Quests (Very few)
-- [x] Drop tables (Very few)
+- [x] Quests *
+- [x] Drop tables *
+
+* Engine is fully implemented. However, actual content depends on [SpiralDB](https://github.com/Revive101/spiraldb) data, which may not be available in all places.
 
 ## Getting Started
 The only true requirement is the patch server. The rest of the components are optional, but are recommended.
@@ -59,18 +64,16 @@ You may use our open source option, [Aurorium](https://github.com/Revive101/Auro
 
 Aurorium's first boot will take time.
 
-#### Dragon Database
-Imlight uses [RavenDB](https://ravendb.net/) to store its persistent data. There are two databases used by Imlight.
-* `SpiralData`: The world data, which contains all of the static content the game client does not ship with.
-* `PlayerData`: User accounts, characters, chat logs, and other player-generated content.
+#### Player Database
+Imlight uses [RavenDB](https://ravendb.net/) for player-generated data such as accounts, characters, chat logs, and friendships. If you do not provide a remote URL in the configuration, Imlight will spool up an embedded instance. If you <i>do</i> provide one, a certificate path must be provided as well.
 
-Imlight's configuration defines database behavior. If you do not provide a remote URL, Imlight will spool up an embedded instance of RavenDB for each database. If you <i>do</i> provide one, a certificate path must be provided as well.
+#### Spiral Database 
+World data — NPC inventories, zone transfers, quest templates, drop tables, and other static content the game client does not ship with — is served by **SpiralDB**. On boot, Imlight fetches the latest data from the [spiraldb](https://github.com/Revive101/spiraldb) GitHub repository (or uses a local cache) and loads it directly into memory. No RavenDB instance is needed for world data.
 
-### Spiral Data
-On boot, Imlight will compare the spiral data in your database with the data in the [spiraldb](https://github.com/Revive101/spiraldb) repository. It is capable of automatically importing missing data. Imlight's configuration allows for a number of tweaks, such as disabling this check, changing the remote repository, or auto-importing missing data without confirmation.
+You may control the SpiralDB behaviors in the configuration file, such as changing the remote and cache paths, and whether to fetch the latest data on boot.
 
 ### Configuration
-Imlight's configuration is stored in 'Imlight.ini'. It is recommended to review the configuration file and adjust it to your needs before booting the server. Additionally, an admin account is always created and the details for this account can be found in the configuration file as well. You should change these details before booting the server.
+Imlight's configuration is stored in `Imlight.ini`. It is recommended to review the configuration file and adjust it to your needs before booting the server. Additionally, an admin account is always created and the details for this account can be found in the configuration file as well. You should change these details before booting the server.
 
 ## Building
 

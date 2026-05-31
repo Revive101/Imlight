@@ -30,8 +30,6 @@ namespace Imlight.CoreLib.WizardData;
 
 public static class SpiralDB {
 
-    // ── Config ───────────────────────────────────────────────────────
-
     private static readonly string s_remote
         = ConfigurationManager.Settings["Database.SpiralDBRemote"];
     private static readonly string s_branch
@@ -186,6 +184,10 @@ public static class SpiralDB {
         => s_npcSpellInventories.TryGetValue(templateID, out npcSpellInventory);
 
     public static QuestTemplate GetQuestByName(string questName) {
+        if (questName is null) {
+            return null;
+        }
+
         s_questTemplatesByName.TryGetValue(questName, out var quest);
 
         return quest;
