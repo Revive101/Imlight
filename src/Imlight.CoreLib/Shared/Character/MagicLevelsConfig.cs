@@ -1,7 +1,19 @@
-/* 
- * opyright (C) Revive101 Development Team - All Rights Reserved
- * Unauthorized copying of this file, via any medium is strictly prohibited
- * Proprietary and confidential.
+/*
+ * Imlight
+ * Copyright (C) 2025 Revive101
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
  * ========================================================================
  * MAGIC LEVELS CONFIGURATION
@@ -110,6 +122,15 @@ internal class MagicLevelsConfig : RootSingleResourceSingleton<MagicLevelsConfig
         if (s_playerLevelConfig.TryGetValue(className, out var levelInfo)) {
             if (level < levelInfo.Count) {
                 return levelInfo[level];
+            }
+        }
+
+        // Fallback: if the class isn't found (e.g., Sun, Star, Moon, Shadow),
+        // use the first available class's data so stat recalculation doesn't fail.
+        if (s_playerLevelConfig is not null && s_playerLevelConfig.Count > 0) {
+            var fallbackLevelInfo = s_playerLevelConfig.Values.First();
+            if (level < fallbackLevelInfo.Count) {
+                return fallbackLevelInfo[level];
             }
         }
 

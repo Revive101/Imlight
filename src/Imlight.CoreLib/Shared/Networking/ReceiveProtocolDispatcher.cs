@@ -1,7 +1,19 @@
-/* 
- * Copyright (C) Revive101 Development Team - All Rights Reserved
- * Unauthorized copying of this file, via any medium is strictly prohibited
- * Proprietary and confidential.
+/*
+ * Imlight
+ * Copyright (C) 2025 Revive101
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
  * ========================================================================
  * RECEIVE PROTOCOL DISPATCHER
@@ -53,6 +65,8 @@ public class ReceiveProtocolDispatcher : ReceiveActor {
 
     public Dictionary<Type, MethodInfo> MessageHandlers { get; private set; }
 
+    private readonly Dictionary<Type, MethodInfo[]> _handlerCache = [];
+
     protected ReceiveProtocolDispatcher() {
         SetMessageHandlers();
         ConfigureReceivers();
@@ -61,16 +75,23 @@ public class ReceiveProtocolDispatcher : ReceiveActor {
     protected virtual void ConfigureReceivers() => Receive<object>(message => {
         // Find the method that handles this message type
         var messageType = message.GetType();
-        var handler = MessageHandlers
-            .Where(kvp => kvp.Key.IsAssignableFrom(messageType))
-            .Select(kvp => kvp.Value);
 
-        if (!handler.Any()) {
+        if (!_handlerCache.TryGetValue(messageType, out var handlers)) {
+            handlers = MessageHandlers
+                .Where(kvp => kvp.Key.IsAssignableFrom(messageType))
+                .Select(kvp => kvp.Value)
+                .ToArray();
+            _handlerCache[messageType] = handlers;
+        }
+
+        if (handlers.Length == 0) {
             Unhandled(message);
+
+            return;
         }
 
         // Invoke all methods that handle this message type
-        foreach (var method in handler) {
+        foreach (var method in handlers) {
             var parameters = method.GetParameters();
             if (parameters.Length == 0) {
                 method.Invoke(this, null);
