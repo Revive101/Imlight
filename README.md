@@ -75,6 +75,9 @@ You may control the SpiralDB behaviors in the configuration file, such as changi
 ### Configuration
 Imlight's configuration is stored in `Imlight.ini`. It is recommended to review the configuration file and adjust it to your needs before booting the server. Additionally, an admin account is always created and the details for this account can be found in the configuration file as well. You should change these details before booting the server.
 
+### Client
+You can start the game client with a launch argument to connect to your server. `-L 127.0.0.1 12000` will work fine.
+
 ## Building
 
 #### Imcodec
