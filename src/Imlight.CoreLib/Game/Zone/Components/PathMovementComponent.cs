@@ -57,6 +57,7 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
     private const uint INITIAL_MOVEMENT_DELAY_MINIMUM_IN_MS = 1000;
     private const uint INITIAL_MOVEMENT_DELAY_MAXIMUM_IN_MS = 3000;
     private const uint TRAVEL_TIME_CLAMP_MINIMUM_IN_MS = 1000;
+    private const uint CREATURE_FISH_INTERVAL_IN_MS = 250;
     private const uint PATH_DETAILS_FAILURE_COUNT_MAXIMUM = 5;
 
     public bool Stopped { get; set; }
@@ -75,6 +76,7 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
     private bool _receivedPathDetails;
     private uint _pathDetailsFailureCount;
     private DateTime _lastMoveTime;
+    private Vector3 _lastStartLocation;
     // todo: do actions
 
     public static bool ShouldAttachToEntity(CoreTemplate template)
@@ -104,7 +106,7 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
         RestartMoveInterval(randomDelay);
 
         // Begin the creature fish interaction interval.
-        var fishInteractionInterval = TimeSpan.FromMilliseconds(TRAVEL_TIME_CLAMP_MINIMUM_IN_MS);
+        var fishInteractionInterval = TimeSpan.FromMilliseconds(CREATURE_FISH_INTERVAL_IN_MS);
         var fishInteractionMsg = new ZONE_102_PROTOCOL.MSG_CREATUREFISHINTERACTIONINTERVAL();
         Timers.StartPeriodicTimer(CREATURE_FISH_INTERVAL_LOCK, fishInteractionMsg, fishInteractionInterval);
     }
@@ -143,6 +145,7 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
         // The ZonePath spawned us at one of the nodes, and our location is currently set to it.
         // Find the node that has the same location as us and set it as the current node.
         _currentNode = _nodes.FirstOrDefault(node => node.m_location == Entity.ActiveGameObject.m_location);
+        _lastStartLocation = Entity.ActiveGameObject.m_location;
         if (_currentNode is null) {
             Logger.Error(
                 "Creature {0} in zone {1} was spawned at an unknown location.",
@@ -174,10 +177,13 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
         _justPaused = false;
 
         // Target a new node and begin moving towards it.
+        // Capture the current position as the start of this movement segment for
+        // interpolation before UpdateGameObjectLocation overwrites m_location.
+        _lastStartLocation = Entity.ActiveGameObject.m_location;
         _currentNode = GetNextNode();
 
         // Determine how long it will take to reach the new node.
-        var distanceToNewNode = Vector3.Distance(Entity.ActiveGameObject.m_location, _currentNode.m_location);
+        var distanceToNewNode = Vector3.Distance(_lastStartLocation, _currentNode.m_location);
         var travelTimeInSeconds = distanceToNewNode / (_movementSpeed * _movementScale);
         var travelTimeInMilli = (uint) travelTimeInSeconds * 1000;
 
@@ -304,18 +310,24 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
             return Entity.ActiveGameObject.m_location;
         }
 
-        var lastLocation = Entity.ActiveGameObject.m_location;
+        var startLocation = _lastStartLocation;
         var targetNode = _currentNode.m_location;
-        var totalDistance = Vector3.Distance(lastLocation, targetNode);
-        var elapsedTimeInMsg = (DateTime.Now - _lastMoveTime).TotalMilliseconds;
-        var distanceTraveled = _movementSpeed * _movementScale * elapsedTimeInMsg / 1000;
+        var totalDistance = Vector3.Distance(startLocation, targetNode);
+
+        // Guard against zero-distance (creature is stationary — spawned, paused, or arrived).
+        if (totalDistance < 0.001f) {
+            return targetNode;
+        }
+
+        var elapsedTimeInMs = (DateTime.Now - _lastMoveTime).TotalMilliseconds;
+        var distanceTraveled = _movementSpeed * _movementScale * elapsedTimeInMs / 1000;
 
         // Clamp t between 0 and 1 to prevent overshooting.
         var t = Math.Clamp(distanceTraveled / totalDistance, 0, 1);
 
-        var x = lastLocation.X + t * (targetNode.X - lastLocation.X);
-        var y = lastLocation.Y + t * (targetNode.Y - lastLocation.Y);
-        var z = lastLocation.Z + t * (targetNode.Z - lastLocation.Z);
+        var x = startLocation.X + t * (targetNode.X - startLocation.X);
+        var y = startLocation.Y + t * (targetNode.Y - startLocation.Y);
+        var z = startLocation.Z + t * (targetNode.Z - startLocation.Z);
 
         return new Vector3((float) x, (float) y, (float) z);
     }
