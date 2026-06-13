@@ -67,7 +67,8 @@ public class GameServer : Server {
     private readonly ListQueue<SessionActor> _playerQueue;
 
     public GameServer(string serverName, ushort serverPort)
-        : base(serverName, serverPort, GameServiceFactory.Props()) {
+        : base(serverName, serverPort, GameServiceFactory.Props(),
+              ConfigurationManager.Settings["Game Server.GameServerIP"].AsString()) {
         this._playerQueue = new ListQueue<SessionActor>();
         this._sessionKeys = new Cache<ByteString, ulong>();
         this.ActiveSessions.CollectionChanged += ActiveSessionsChangedEvent;

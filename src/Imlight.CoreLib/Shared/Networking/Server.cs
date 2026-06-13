@@ -64,19 +64,24 @@ public abstract class Server : ReceiveProtocolDispatcher {
     private readonly long _serverStartTime;
     private readonly Props _factoryProps;
 
-    public Server(string name, int port, Props factoryProps) {
+    public Server(string name, int port, Props factoryProps, string ip = null) {
         this.Name = name;
         this.Port = port;
         this.ActiveSessions = new ObservableHashSet<SessionActor>();
         this._serverStartTime = DateTimeOffset.Now.ToUnixTimeSeconds();
         this._factoryProps = factoryProps;
 
-        // Get outside IP.
-        #if !DEBUG
-        this.Ip = new HttpClient().GetStringAsync("https://api.ipify.org/").Result;
-        #else
-        this.Ip = "127.0.0.1";
-        #endif
+        // Use provided IP if set, otherwise auto-detect.
+        if (!string.IsNullOrWhiteSpace(ip)) {
+            this.Ip = ip;
+        }
+        else {
+#if !DEBUG
+            this.Ip = new HttpClient().GetStringAsync("https://api.ipify.org/").Result;
+#else
+            this.Ip = "127.0.0.1";
+#endif
+        }
 
         CreateTcpListener();
         _actorFactoryRef = CreateActorFactory();
@@ -182,5 +187,5 @@ public abstract class Server : ReceiveProtocolDispatcher {
 
         return Context.ActorOf(_factoryProps, actorName);
     }
-    
+
 }
