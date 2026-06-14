@@ -176,6 +176,21 @@ public static class BuddyRelationshipCollection {
     }
 
     /// <summary>
+    /// Checks whether a specific player has blocked another player.
+    /// </summary>
+    /// <param name="blockerId">The character ID of the player who may have blocked.</param>
+    /// <param name="targetId">The character ID of the player who may have been blocked.</param>
+    /// <returns>True if the blocker has blocked the target.</returns>
+    public static bool HasBlocked(ulong blockerId, ulong targetId) {
+        using var session = s_store.OpenSession();
+
+        return session.Query<Relationship>(collectionName: CollectionName)
+            .Any(r => r.FirstPlayerId == blockerId
+                   && r.SecondPlayerId == targetId
+                   && r.Blocked);
+    }
+
+    /// <summary>
     /// Gets the character IDs of all players who have blocked the given character.
     /// </summary>
     /// <param name="targetId">The character ID of the player who may have been blocked.</param>
