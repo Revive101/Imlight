@@ -56,6 +56,13 @@ internal class GameTransitionService(SessionActor sessionActor) : MessageService
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new GameTransitionService(parentActor));
 
+    [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_REQUESTSERVERLIST))]
+    private void ReceiveRequestServerList(LOGIN_7_PROTOCOL.MSG_REQUESTSERVERLIST message) {
+        // Signal to the client that the server list is available.
+        // MSG_SERVERLIST has no payload — it's just a protocol acknowledgment.
+        SendToSocket(new LOGIN_7_PROTOCOL.MSG_SERVERLIST());
+    }
+
     [MessageHandler(typeof(LOGIN_7_PROTOCOL.MSG_SELECTCHARACTER))]
     private void ReceiveSelectCharacter(LOGIN_7_PROTOCOL.MSG_SELECTCHARACTER message) {
         // If the socket account cannot be found, send the client an error.

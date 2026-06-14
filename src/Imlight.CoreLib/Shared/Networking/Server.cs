@@ -57,6 +57,7 @@ public abstract class Server : ReceiveProtocolDispatcher {
     public string Name { get; }
     public string Ip { get; }
     public int Port { get; }
+    public virtual string RealmName { get; protected set; }
 
     protected readonly ObservableHashSet<SessionActor> ActiveSessions;
 
@@ -127,7 +128,8 @@ public abstract class Server : ReceiveProtocolDispatcher {
             Port = Port,
             PlayerCount = (ushort) ActiveSessions.Count,
             ActorRef = Context.Self,
-            ConnectedIps = ips
+            ConnectedIps = ips,
+            RealmName = RealmName
         };
 
         Sender.Tell(msg);

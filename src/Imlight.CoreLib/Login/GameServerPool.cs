@@ -58,6 +58,7 @@ internal class GameServerPool : ReceiveProtocolDispatcher {
     private readonly ushort _gameServerQueryTimeout = 10;
 
     private readonly Dictionary<ushort, IActorRef> _gameServers;
+    private readonly Dictionary<string, ushort> _realmToPort = [];
 
     public GameServerPool() {
         this._gameServers = [];
@@ -84,13 +85,17 @@ internal class GameServerPool : ReceiveProtocolDispatcher {
             return;
         }
 
-        var gameProps = GameServer.Props(message.Name, message.Port);
+        var gameProps = GameServer.Props(message.Name, message.Port, message.RealmName);
         var gameServerRef = Context.ActorOf(gameProps, $"{message.Name}.{message.Port}");
 
         _gameServers.Add(message.Port, gameServerRef);
 
-        Logger.Debug("Game server pool registered new game server {Name} created on port {Port}.",
-            Logger.Args(message.Name, message.Port));
+        if (!string.IsNullOrEmpty(message.RealmName)) {
+            _realmToPort[message.RealmName] = message.Port;
+        }
+
+        Logger.Debug("Game server pool registered new game server {Name} (realm: {Realm}) on port {Port}.",
+            Logger.Args(message.Name, message.RealmName, message.Port));
     }
 
     [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_GETBESTSERVER))]
@@ -156,6 +161,72 @@ internal class GameServerPool : ReceiveProtocolDispatcher {
             Found = false,
         };
         Sender.Tell(failureMsg);
+    }
+
+    [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_CREATEPLAYERKEY))]
+    private void ReceiveCreatePlayerKey(SERVER_100_PROTOCOL.MSG_CREATEPLAYERKEY message) {
+        if (!_realmToPort.TryGetValue(message.TargetRealmName, out var port)
+            || !_gameServers.TryGetValue(port, out var serverRef)) {
+            Sender.Tell(new SERVER_100_PROTOCOL.MSG_CREATEPLAYERKEYRSP { Success = false });
+
+            return;
+        }
+
+        // Forward the key creation request to the target game server.
+        // The game server handles MSG_CREATEPLAYERKEY and returns MSG_CREATEPLAYERKEYRSP.
+        serverRef.Forward(message);
+    }
+
+    [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_QUERYREALMSERVER))]
+    private void ReceiveQueryRealmServer(SERVER_100_PROTOCOL.MSG_QUERYREALMSERVER message) {
+        if (!_realmToPort.TryGetValue(message.RealmName, out var port)
+            || !_gameServers.TryGetValue(port, out var serverRef)) {
+            Sender.Tell(new SERVER_100_PROTOCOL.MSG_SERVERINFO { RealmName = null });
+
+            return;
+        }
+
+        try {
+            var msg = new SERVER_100_PROTOCOL.MSG_QUERYSERVER();
+            var timeout = TimeSpan.FromSeconds(_gameServerQueryTimeout);
+            var rsp = serverRef.Ask<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg, timeout).Result;
+            Sender.Tell(rsp);
+        }
+        catch {
+            Sender.Tell(new SERVER_100_PROTOCOL.MSG_SERVERINFO { RealmName = null });
+        }
+    }
+
+    [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_REALMLIST))]
+    private void ReceiveRealmList(SERVER_100_PROTOCOL.MSG_REALMLIST message) {
+        var realmNames = new List<string>();
+        var playerCounts = new List<ushort>();
+        var playerLimits = new List<ushort>();
+
+        foreach (var (realmName, port) in _realmToPort) {
+            if (!_gameServers.TryGetValue(port, out var serverRef)) {
+                continue;
+            }
+
+            try {
+                var msg = new SERVER_100_PROTOCOL.MSG_QUERYSERVER();
+                var timeout = TimeSpan.FromSeconds(_gameServerQueryTimeout);
+                var rsp = serverRef.Ask<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg, timeout).Result;
+
+                realmNames.Add(realmName);
+                playerCounts.Add(rsp.PlayerCount);
+                playerLimits.Add(_gameServerPlayerCount);
+            }
+            catch {
+                // Server unreachable — skip it.
+            }
+        }
+
+        Sender.Tell(new SERVER_100_PROTOCOL.MSG_REALMLIST {
+            RealmNames = [.. realmNames],
+            PlayerCounts = [.. playerCounts],
+            PlayerLimits = [.. playerLimits]
+        });
     }
 
 }
