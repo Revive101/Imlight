@@ -545,8 +545,6 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_IGNOREADD))]
     private void ReceiveIgnoreAdd(GAME_5_PROTOCOL.MSG_IGNOREADD message) {
-        return; // TODO: Another time.
-
         // A player wants to ignore another player.
         var wizard = GetActiveWizard();
 
