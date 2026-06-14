@@ -166,6 +166,23 @@ internal class SpellFactory : RootDirectoryResourceSingleton<SpellFactory>, IMem
     }
 
     /// <summary>
+    /// Resolves a spell name hash to its template ID.
+    /// </summary>
+    /// <param name="spellHash">The hash of the spell name (StringHash.Compute result).</param>
+    /// <returns>The template ID, or 0 if not found.</returns>
+    internal static uint GetTemplateIdByHash(uint spellHash) {
+        if (!s_spellTemplates.TryGetValue(spellHash, out _)) {
+            return 0;
+        }
+
+        if (!s_spellTemplatePaths.TryGetValue(spellHash, out var path)) {
+            return 0;
+        }
+
+        return CoreObjectFactory.GetCoreTemplateID(x => x.m_filename == path);
+    }
+
+    /// <summary>
     /// Creates an array of spells based on the provided spell effect.
     /// </summary>
     /// <param name="effect">The spell effect used to create the spells.</param>

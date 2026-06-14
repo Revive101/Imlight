@@ -785,6 +785,59 @@ public class Wizard : IDisposable {
         return true;
     }
 
+    /// <summary>
+    /// Adds a treasure card to a deck, consuming one copy from the player's treasure card book.
+    /// </summary>
+    /// <param name="spellTemplateId">The template ID of the spell.</param>
+    /// <param name="deckId">The global ID of the deck item.</param>
+    /// <returns>True if the card was added successfully.</returns>
+    public bool AddTreasureCardToDeck(uint spellTemplateId, ulong deckId) {
+        // Verify the player owns this treasure card.
+        var ownedCount = SpellbookBehavior.TreasureCardCount(spellTemplateId);
+        if (ownedCount <= 0) {
+            Logger.Warning("Player {0} tried to add treasure card {1} to deck but owns none.",
+                Logger.Args(PlayerNameBehavior.GetWizardName(), spellTemplateId));
+
+            return false;
+        }
+
+        // Use the existing spell-to-deck logic, then consume from the book.
+        var addedToDeck = AddSpellToDeck(spellTemplateId, deckId);
+        if (!addedToDeck) {
+            return false;
+        }
+
+        // Consume one copy from the treasure card book.
+        SpellbookBehavior.RemoveTreasureCard(spellTemplateId);
+        WizardCollection.RemoveTreasureCard(this, spellTemplateId);
+
+        return true;
+    }
+
+    /// <summary>
+    /// Removes a treasure card from a deck, returning it to the player's treasure card book
+    /// (unless <paramref name="destroy"/> is true).
+    /// </summary>
+    /// <param name="spellTemplateId">The template ID of the spell.</param>
+    /// <param name="deckId">The global ID of the deck item.</param>
+    /// <param name="destroy">If true, the card is destroyed instead of returned to the book.</param>
+    /// <returns>True if the card was removed successfully.</returns>
+    public bool RemoveTreasureCardFromDeck(uint spellTemplateId, ulong deckId, bool destroy = false) {
+        // Remove from the deck.
+        var removedFromDeck = RemoveSpellFromDeck(spellTemplateId, deckId);
+        if (!removedFromDeck) {
+            return false;
+        }
+
+        if (!destroy) {
+            // Return the card to the treasure book.
+            SpellbookBehavior.AddTreasureCard(spellTemplateId);
+            WizardCollection.AddTreasureCard(this, spellTemplateId);
+        }
+
+        return true;
+    }
+
     public ObjState EnterState(string stateName)
         => ObjectStateBehavior.SetState(stateName);
 

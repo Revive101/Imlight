@@ -435,6 +435,42 @@ public static class WizardCollection {
     }
 
     /// <summary>
+    /// Adds a treasure card to the spellbook of a wizard.
+    /// </summary>
+    /// <param name="wizard">The wizard to add the treasure card to.</param>
+    /// <param name="spellTemplateId">The template ID of the spell to add as a treasure card.</param>
+    public static void AddTreasureCard(Wizard wizard, uint spellTemplateId) {
+        using var session = s_store.OpenSession();
+
+        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
+            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        if (existingCharacter is null) {
+            return;
+        }
+
+        existingCharacter.SpellbookBehavior.AddTreasureCard(spellTemplateId);
+        session.SaveChanges();
+    }
+
+    /// <summary>
+    /// Removes a treasure card from the spellbook of a wizard.
+    /// </summary>
+    /// <param name="wizard">The wizard whose spellbook will be modified.</param>
+    /// <param name="spellTemplateId">The template ID of the treasure card to remove.</param>
+    public static void RemoveTreasureCard(Wizard wizard, uint spellTemplateId) {
+        using var session = s_store.OpenSession();
+
+        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
+            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        if (existingCharacter is null) {
+            return;
+        }
+
+        existingCharacter.SpellbookBehavior.RemoveTreasureCard(spellTemplateId);
+        session.SaveChanges();
+    }
+
+    /// <summary>
     /// Adds a new relationship to the friends behavior of a wizard.
     /// </summary>
     /// <param name="wizard">The wizard to add the relationship to.</param>

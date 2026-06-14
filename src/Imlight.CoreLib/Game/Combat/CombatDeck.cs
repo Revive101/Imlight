@@ -51,18 +51,25 @@ internal class CombatDeck {
     internal List<Spell> LastGivenHand { get; private set; }
     internal int TotalCardCount => (int) _spellData.Sum(s => s.Quantity);
     internal int RemainingCardCount => (int) _usedUpSpellData.Sum(s => s.Quantity);
+    internal int VaultTotalCount => (int) _treasureVault.Sum(s => s.Quantity);
+    internal int VaultRemainingCount => (int) _treasureVaultUsed.Sum(s => s.Quantity);
+    internal int TreasureCardsInHand { get; private set; }
 
     private readonly List<CombatDeckSpellData> _spellData;
+    private readonly List<CombatDeckSpellData> _treasureVault;
     private readonly byte _handSize;
     private readonly List<CombatDeckSpellData> _usedUpSpellData;
+    private readonly List<CombatDeckSpellData> _treasureVaultUsed;
     private readonly List<Spell> _cardsDiscardedThisTurn;
 
     // ctor
-    internal CombatDeck(List<CombatDeckSpellData> spellDatas, byte handSize) {
+    internal CombatDeck(List<CombatDeckSpellData> spellDatas, List<CombatDeckSpellData> treasureVault, byte handSize) {
         this._spellData = spellDatas;
+        this._treasureVault = treasureVault ?? [];
         this._handSize = handSize;
         this.LastGivenHand = [];
         this._cardsDiscardedThisTurn = [];
+        this.TreasureCardsInHand = 0;
 
         // Clone the spell data into used up spell data.
         this._usedUpSpellData = [];
@@ -71,7 +78,20 @@ internal class CombatDeck {
                 TemplateId = originalSpellData.TemplateId,
                 Quantity = originalSpellData.Quantity,
                 IsBattleCard = originalSpellData.IsBattleCard,
-                IsItemCard = originalSpellData.IsItemCard
+                IsItemCard = originalSpellData.IsItemCard,
+                IsTreasureCard = false
+            });
+        }
+
+        // Clone the treasure vault.
+        this._treasureVaultUsed = [];
+        foreach (var vaultCard in _treasureVault) {
+            _treasureVaultUsed.Add(new CombatDeckSpellData() {
+                TemplateId = vaultCard.TemplateId,
+                Quantity = vaultCard.Quantity,
+                IsBattleCard = vaultCard.IsBattleCard,
+                IsItemCard = vaultCard.IsItemCard,
+                IsTreasureCard = true
             });
         }
     }
@@ -140,14 +160,122 @@ internal class CombatDeck {
     }
 
     /// <summary>
-    /// Discards a spell from the current hand.
+    /// Discards a spell from the current hand. Treasure cards are returned to the vault.
     /// </summary>
     /// <param name="spell">The spell to discard.</param>
-    internal void Discard(Spell spell) 
-        => _cardsDiscardedThisTurn.Add(spell);
+    internal void Discard(Spell spell) {
+        if (spell.m_treasureCard) {
+            ReturnToVault(spell);
+        }
+        else {
+            _cardsDiscardedThisTurn.Add(spell);
+        }
+    }
+
+    /// <summary>
+    /// Draws a random treasure card from the vault and adds it to the current hand.
+    /// </summary>
+    /// <returns>The drawn spell, or null if the vault is empty or hand is full.</returns>
+    internal Spell DrawFromVault() {
+        if (VaultRemainingCount <= 0) {
+            return null;
+        }
+
+        if (LastGivenHand.Count >= _handSize) {
+            return null;
+        }
+
+        // Player must have more total cards available than hand size to draw from vault.
+        // This prevents drawing from the sideboard when the regular deck still has cards.
+        var totalAvailableCards = RemainingCardCount + VaultRemainingCount + LastGivenHand.Count;
+        if (totalAvailableCards <= _handSize) {
+            return null;
+        }
+
+        var random = new Random();
+        var randomIndex = random.Next(0, _treasureVaultUsed.Count);
+        var vaultData = _treasureVaultUsed[randomIndex];
+
+        var spell = SpellFactory.GetSpell(vaultData.TemplateId);
+        if (spell == null) {
+            return null;
+        }
+
+        spell.m_treasureCard = true;
+        LastGivenHand.Add(spell);
+        TreasureCardsInHand++;
+
+        // Decrement or remove from vault.
+        if (vaultData.Quantity - 1 <= 0) {
+            _treasureVaultUsed.RemoveAt(randomIndex);
+        }
+        else {
+            vaultData.Quantity--;
+        }
+
+        return spell;
+    }
+
+    /// <summary>
+    /// Returns a treasure card to the vault (e.g., on discard or fizzle).
+    /// </summary>
+    internal void ReturnToVault(Spell spell) {
+        if (!spell.m_treasureCard) {
+            return;
+        }
+
+        // Remove from hand.
+        LastGivenHand.Remove(spell);
+        if (TreasureCardsInHand > 0) {
+            TreasureCardsInHand--;
+        }
+
+        // Return to vault used list.
+        var existing = _treasureVaultUsed.Find(v => v.TemplateId == spell.m_templateID);
+        if (existing != null) {
+            existing.Quantity++;
+        }
+        else {
+            _treasureVaultUsed.Add(new CombatDeckSpellData {
+                TemplateId = spell.m_templateID,
+                Quantity = 1,
+                IsTreasureCard = true
+            });
+        }
+    }
+
+    /// <summary>
+    /// Permanently consumes a successfully cast treasure card from the vault.
+    /// Returns the template ID so the caller can persist the removal.
+    /// </summary>
+    internal uint ConsumeFromVault(Spell spell) {
+        if (!spell.m_treasureCard) {
+            return 0;
+        }
+
+        // Remove from hand.
+        LastGivenHand.Remove(spell);
+        if (TreasureCardsInHand > 0) {
+            TreasureCardsInHand--;
+        }
+
+        // Remove from the persistent vault list (not the used copy — this removes it permanently).
+        var vaultEntry = _treasureVault.Find(v => v.TemplateId == spell.m_templateID);
+        if (vaultEntry != null) {
+            if (vaultEntry.Quantity - 1 <= 0) {
+                _treasureVault.Remove(vaultEntry);
+            }
+            else {
+                vaultEntry.Quantity--;
+            }
+        }
+
+        return spell.m_templateID;
+    }
 
     /// <summary>
     /// Reshuffles the deck, resetting the used up spell data and clearing the discarded cards.
+    /// Vault cards are NOT returned to the deck on reshuffle.
     /// </summary>
     internal void Reshuffle() {
         // Copy spell data back to used up spell data.
@@ -157,7 +285,8 @@ internal class CombatDeck {
                 TemplateId = originalSpellData.TemplateId,
                 Quantity = originalSpellData.Quantity,
                 IsBattleCard = originalSpellData.IsBattleCard,
-                IsItemCard = originalSpellData.IsItemCard
+                IsItemCard = originalSpellData.IsItemCard,
+                IsTreasureCard = false
             });
         }
 

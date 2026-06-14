@@ -305,6 +305,28 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         Timers.StartSingleTimer(PLANNING_TIME_KEY, new COMBAT_106_PROTOCOL.MSG_PLANNINGPHASEOVER(), delay);
     }
 
+    [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ACTORCOMBATDRAW))]
+    private void ReceiveCombatDraw(COMBAT_106_PROTOCOL.MSG_ACTORCOMBATDRAW message) {
+        // Find which sub circle this draw request is for.
+        var caster = SubCircles.FirstOrDefault(x => x.ParticipantActor == message.Actor);
+        if (caster is null) {
+            Logger.Warning("Duel {0} | Combat draw received from an actor that is not in the duel.",
+                Logger.Args(Duel.m_duelID.Full));
+
+            return;
+        }
+
+        // Draw a random treasure card from the vault.
+        var drawnSpell = caster.DrawFromVault();
+        if (drawnSpell != null) {
+            Logger.Debug("Duel {0} | Slot {1} | Drew treasure card {2} from vault.",
+                Logger.Args(Duel.m_duelID.Full, caster.SlotIndex, drawnSpell.m_templateID));
+        }
+
+        // Send the updated hand to the participant.
+        SendCombatHand();
+    }
+
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE))]
     private void ReceiveCombatMove(COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE message) {
         // Find which sub circle this is.
@@ -714,7 +736,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             var msg = new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATHAND {
                 DeckCount = (byte) circle.AvailableSpells,
                 TotalDeckCount = (ushort) circle.TotalSpells,
-                TreasureCardCount = 0,
+                TreasureCardCount = (ushort) circle.VaultRemainingCount,
                 ParticipantID = circle.ParticipantObject.m_globalID,
                 HandData = buffer,
             };
@@ -821,6 +843,9 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
         Logger.Debug("Duel {0} | Slot {1} | Discarded a card: {2}",
             Logger.Args(Duel.m_duelID.Full, caster.SlotIndex, spell.m_templateID.ToString() ?? "None"));
+
+        // Send the updated hand so the client sees the new vault count and replacement card.
+        SendCombatHand();
     }
 
     private void HandlePassMove(CombatDuelSubCircle caster) {
