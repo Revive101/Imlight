@@ -28,6 +28,7 @@ public class ServerSpellbookBehavior : IClientBehaviorProvider<ClientSpellbookBe
     [JsonIgnore] public bool NoTransfer { get; set; } = false;
 
     public List<uint> LearnedSpellTemplateIds = [];
+    public List<uint> TreasureCardTemplateIds = [];
     [JsonIgnore] public List<SpellData> SpellList = [];
     [JsonIgnore] public List<Spell> TemporarySpells = [];
 
@@ -73,6 +74,27 @@ public class ServerSpellbookBehavior : IClientBehaviorProvider<ClientSpellbookBe
 
     public bool HasSpell(uint templateId) 
         => LearnedSpellTemplateIds.Contains(templateId);
+
+    public void AddTreasureCard(uint templateId) {
+        TreasureCardTemplateIds ??= [];
+        TreasureCardTemplateIds.Add(templateId);
+    }
+
+    public bool RemoveTreasureCard(uint templateId) {
+        if (TreasureCardTemplateIds is null) {
+            return false;
+        }
+
+        return TreasureCardTemplateIds.Remove(templateId);
+    }
+
+    public int TreasureCardCount(uint templateId) {
+        if (TreasureCardTemplateIds is null) {
+            return 0;
+        }
+
+        return TreasureCardTemplateIds.Count(x => x == templateId);
+    }
 
     public ClientSpellbookBehavior GetClientBehaviorInstance() {
         var spellIdList = new List<SpellIDTracker>();
