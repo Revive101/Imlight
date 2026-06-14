@@ -919,6 +919,21 @@ public class Wizard : IDisposable {
         return true;
     }
 
+    public bool UnignorePlayer(ulong playerId) {
+        var relationship = FriendsBehavior.Unignore(playerId);
+        if (relationship is null) {
+            Logger.Warning("Could not unignore player ({0}) for player {1}.",
+                Logger.Args(playerId, PlayerNameBehavior.GetWizardName()));
+
+            return false;
+        }
+
+        // Persistent save.
+        BuddyRelationshipCollection.UpdateRelationship(relationship);
+
+        return true;
+    }
+
     public bool AddQuest(QuestInstance quest) {
         var addSuccess = QuestBehavior.AddQuest(quest);
         if (!addSuccess) {

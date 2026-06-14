@@ -251,6 +251,21 @@ public class ServerFriendBehavior : IClientBehaviorProvider<BehaviorInstance> {
     }
 
     /// <summary>
+    /// Unignores a relationship with a character, clearing the blocked flag.
+    /// </summary>
+    /// <param name="characterId">The character ID of the player who is being unignored.</param>
+    /// <returns>The relationship between the two players, or null if no relationship exists.</returns>
+    public Relationship Unignore(ulong characterId) {
+        if (!TryGetRelationship(characterId, out var relationship)) {
+            return null;
+        }
+
+        relationship.Blocked = false;
+
+        return relationship;
+    }
+
+    /// <summary>
     /// Gets all the ignored players.
     /// </summary>
     /// <param name="ownerId">The character ID of the player whose ignore list is being requested.</param>

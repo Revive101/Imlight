@@ -560,7 +560,7 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         // A player wants to unignore another player.
         var wizard = GetActiveWizard();
 
-        if (!wizard.AddOrRepairRelationship(message.CharacterGID)) {
+        if (!wizard.UnignorePlayer(message.CharacterGID)) {
             Logger.Error("{0} tried to unignore character ID {1}, but they are not ignored.",
                 Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), message.CharacterGID));
 
