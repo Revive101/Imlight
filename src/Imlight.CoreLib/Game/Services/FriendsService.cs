@@ -380,11 +380,11 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
             }
         }
         else {
-            // The player is still online, so we can forward the acceptance.
+            // The player is still online, so we can forward the denial.
             var fwdMsg = new CHARACTER_103_PROTOCOL.MSG_BUDDYREQUESTREPLYFWD {
                 ListOwnerGID = message.ListOwnerGID,
                 EntryGID = wizard.CharId,
-                Accept = true
+                Accept = false
             };
             Context.ActorSelection(onlinePlayer.ActorPath).Tell(fwdMsg);
         }
