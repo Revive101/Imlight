@@ -73,7 +73,6 @@
  * TODO:
  * - For `MSG_BUDDYSTATS`, we need to implement the CRC32 hash check. Currently, we just send the stats regardless.
  * - Implement the `PreviousName` field in `MSG_BUDDYENTRY`.
- * - Player ignoring
  * 
  * Created by: Jooty
  * Version: KALI 1.0
@@ -329,6 +328,8 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
 
                 return;
             }
+
+            WizardCollection.UpdateCharacterFriendBehavior(offlineWizard);
         }
         else {
             if (!wizard.FriendsBehavior.TryGetRelationship(message.ListOwnerGID, out var relationship)) {
@@ -350,6 +351,15 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
 
         // Echo the packet back to the client.
         SendToSocket(message);
+
+        // Send a buddy entry so the accepter sees the new friend immediately.
+        if (wizard.FriendsBehavior.TryGetRelationship(message.ListOwnerGID, out var newRelationship)) {
+            var buddyWizard = WizardCollection.GetCharacter(message.ListOwnerGID);
+            if (buddyWizard != null) {
+                SendBuddyEntry(buddyWizard, newRelationship, wizard.CharId);
+                SendBuddyListEnd(wizard.CharId);
+            }
+        }
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_BUDDYREQUESTDENY))]
@@ -378,13 +388,15 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
 
                 return;
             }
+
+            WizardCollection.UpdateCharacterFriendBehavior(offlineWizard);
         }
         else {
-            // The player is still online, so we can forward the acceptance.
+            // The player is still online, so we can forward the denial.
             var fwdMsg = new CHARACTER_103_PROTOCOL.MSG_BUDDYREQUESTREPLYFWD {
                 ListOwnerGID = message.ListOwnerGID,
                 EntryGID = wizard.CharId,
-                Accept = true
+                Accept = false
             };
             Context.ActorSelection(onlinePlayer.ActorPath).Tell(fwdMsg);
         }
@@ -395,21 +407,20 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         // (SEE TOP OF FILE FOR FLOW) Step 6:
         // We are informing player A that player B has accepted or denied their friend request.
         var myWizard = GetActiveWizard();
-        var entryWizard = WizardCollection.GetCharacter(message.EntryGID);
-        var epochInSeconds = (uint) DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         IMessage clientMsg;
 
         myWizard.RemovePendingFriendRequest(message.EntryGID);
 
-        // Log
-        var myName = myWizard.PlayerNameBehavior.GetWizardName();
-        var entryName = entryWizard.PlayerNameBehavior.GetWizardName();
-        var statusMessage = message.Accept ? "They have accepted" : "They have denied";
-        Logger.Debug("{0} (ID {1}) has received a friend request reply from {2} (ID {3}). {4}.",
-            Logger.Args(myName, myWizard.CharId, entryName, entryWizard.CharId, statusMessage));
-
         if (message.Accept) {
-            // The recipient has accepted the friend request.
+            var entryWizard = WizardCollection.GetCharacter(message.EntryGID);
+            var epochInSeconds = (uint) DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+            // Log
+            var myName = myWizard.PlayerNameBehavior.GetWizardName();
+            var entryName = entryWizard.PlayerNameBehavior.GetWizardName();
+            Logger.Debug("{0} (ID {1}) has received a friend request reply from {2} (ID {3}). They have accepted.",
+                Logger.Args(myName, myWizard.CharId, entryName, entryWizard.CharId));
+
             // Add the wizard as a friend. If they are already friends, log an error and return.
             if (!myWizard.AddOrRepairRelationship(message.NewRelationship)) {
                 Logger.Error("{0} could not add or update the relationship with character ID {1}.",
@@ -438,9 +449,19 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
                 FriendDate = epochInSeconds,
                 FriendStatusDate = epochInSeconds,
             };
+
+            // Send a buddy entry so the requester sees the new friend immediately.
+            if (myWizard.FriendsBehavior.TryGetRelationship(message.EntryGID, out var newRel)) {
+                SendBuddyEntry(entryWizard, newRel, myWizard.CharId);
+                SendBuddyListEnd(myWizard.CharId);
+            }
         }
         else {
-            // The recipient has denied the friend request.
+            // Log
+            var myName = myWizard.PlayerNameBehavior.GetWizardName();
+            Logger.Debug("{0} (ID {1}) has received a friend request reply from character ID {2}. They have denied.",
+                Logger.Args(myName, myWizard.CharId, message.EntryGID));
+
             // Inform the game client that the friend request has been denied.
             clientMsg = new GAME_5_PROTOCOL.MSG_BUDDYREQUESTDENY {
                 ListOwnerGID = message.ListOwnerGID,
@@ -538,8 +559,6 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_IGNOREADD))]
     private void ReceiveIgnoreAdd(GAME_5_PROTOCOL.MSG_IGNOREADD message) {
-        return; // TODO: Another time.
-
         // A player wants to ignore another player.
         var wizard = GetActiveWizard();
 
@@ -549,6 +568,10 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
 
             return;
         }
+
+        // Send the updated ignore list as a single-entry confirmation.
+        // The client expects MSG_IGNORELIST with Add=1 to confirm individual additions.
+        SendIgnoreListConfirmation(wizard, add: true);
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_IGNOREDROP))]
@@ -556,40 +579,48 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         // A player wants to unignore another player.
         var wizard = GetActiveWizard();
 
-        if (!wizard.AddOrRepairRelationship(message.CharacterGID)) {
+        if (!wizard.UnignorePlayer(message.CharacterGID)) {
             Logger.Error("{0} tried to unignore character ID {1}, but they are not ignored.",
                 Logger.Args(wizard.PlayerNameBehavior.GetWizardName(), message.CharacterGID));
 
             return;
         }
+
+        // Send the full updated ignore list so the client refreshes.
+        SendIgnoreListConfirmation(wizard, add: false);
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_IGNORELIST))]
     private void ReceiveIgnoreList(GAME_5_PROTOCOL.MSG_IGNORELIST message) {
         // A player is requesting a list of all the players they have ignored.
         var wizard = GetActiveWizard();
-        var ignoredRelationships = wizard.FriendsBehavior.GetIgnoredPlayers();
+        SendIgnoreListConfirmation(wizard, add: false);
+    }
 
-        // Serialize the ignored player list data.
+    /// Send the serialized ignore list to the client.
+    /// <param name="add">When true, sends as a single-entry confirmation (Add=1);
+    /// when false, sends the full list (Add=0).</param>
+    private void SendIgnoreListConfirmation(Wizard wizard, bool add) {
+        var ignoredList = wizard.FriendsBehavior.GetIgnoredPlayers(wizard.CharId);
+
         var serializer = new ObjectSerializer(
             Versionable: false,
             Behaviors: SerializerFlags.None
         );
 
-        if (!serializer.Serialize(ignoredRelationships, 1, out var ignoredListBytes)) {
-            var msg = new GAME_5_PROTOCOL.MSG_IGNORELIST {
-                ListOwnerGID = wizard.GameObject?.m_globalID ?? wizard.CharId,
-                ListData = ignoredListBytes
-            };
-
-            SendToSocket(msg);
-        }
-        else {
+        if (!serializer.Serialize(ignoredList, 1, out var listBytes)) {
             Logger.Error("Player {0} requested their ignore list, but the serialization failed.",
                 Logger.Args(wizard.PlayerNameBehavior.GetWizardName()));
 
             return;
         }
+
+        var msg = new GAME_5_PROTOCOL.MSG_IGNORELIST {
+            ListOwnerGID = wizard.GameObject?.m_globalID ?? wizard.CharId,
+            ListData = listBytes,
+            Add = add ? (byte)1 : (byte)0
+        };
+        SendToSocket(msg);
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT))]

@@ -98,7 +98,8 @@ public class ServerFriendBehavior : IClientBehaviorProvider<BehaviorInstance> {
         var existingRelationship = Relationships
             .FirstOrDefault(x => x.FirstPlayerId == relationship.FirstPlayerId && x.SecondPlayerId == relationship.SecondPlayerId);
         if (existingRelationship != null) {
-            existingRelationship = relationship;
+            var index = Relationships.IndexOf(existingRelationship);
+            Relationships[index] = relationship;
 
             return true;
         }
@@ -231,14 +232,16 @@ public class ServerFriendBehavior : IClientBehaviorProvider<BehaviorInstance> {
     /// <summary>
     /// Ignores a relationship with a character.
     /// </summary>
-    /// <param name="characterId">The character ID of the player who is being ignored.</param>
-    /// <returns>The relationship between the two players,</returns>
-    public Relationship Ignore(ulong characterId) {
+    /// <param name="ownerId">The character ID of the player who is ignoring.</param>
+    /// <param name="targetId">The character ID of the player who is being ignored.</param>
+    /// <returns>The relationship between the two players.</returns>
+    public Relationship Ignore(ulong ownerId, ulong targetId) {
         // Create the relationship if it doesn't already exist.
-        if (!TryGetRelationship(characterId, out var relationship)) {
+        if (!TryGetRelationship(targetId, out var relationship)) {
             relationship = new Relationship {
-                FirstPlayerId = characterId,
-                SecondPlayerId = characterId,
+                FirstPlayerId = ownerId,
+                SecondPlayerId = targetId,
+                IsBrokenUp = true, // born broken — un-ignoring won't create a friendship
             };
             Relationships.Add(relationship);
         }
@@ -249,17 +252,33 @@ public class ServerFriendBehavior : IClientBehaviorProvider<BehaviorInstance> {
     }
 
     /// <summary>
+    /// Unignores a relationship with a character, clearing the blocked flag.
+    /// </summary>
+    /// <param name="characterId">The character ID of the player who is being unignored.</param>
+    /// <returns>The relationship between the two players, or null if no relationship exists.</returns>
+    public Relationship Unignore(ulong characterId) {
+        if (!TryGetRelationship(characterId, out var relationship)) {
+            return null;
+        }
+
+        relationship.Blocked = false;
+
+        return relationship;
+    }
+
+    /// <summary>
     /// Gets all the ignored players.
     /// </summary>
+    /// <param name="ownerId">The character ID of the player whose ignore list is being requested.</param>
     /// <returns>A list of ignored players.</returns>
-    public IgnoreEntryDataList GetIgnoredPlayers() {
+    public IgnoreEntryDataList GetIgnoredPlayers(ulong ownerId) {
         var ignoreList = new IgnoreEntryDataList() {
             m_ignoreDataList = []
         };
 
         foreach (var ignoredRelationship in Relationships
-                     .Where(x => x.Blocked && x.IsBrokenUp)) {
-            var otherPlayerID = ignoredRelationship.FirstPlayerId == ignoredRelationship.SecondPlayerId
+                     .Where(x => x.Blocked && !x.IsBrokenUp)) {
+            var otherPlayerID = ignoredRelationship.FirstPlayerId == ownerId
                 ? ignoredRelationship.SecondPlayerId
                 : ignoredRelationship.FirstPlayerId;
 

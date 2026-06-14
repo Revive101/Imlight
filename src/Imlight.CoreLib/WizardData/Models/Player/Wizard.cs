@@ -905,9 +905,25 @@ public class Wizard : IDisposable {
     }
 
     public bool IgnorePlayer(ulong playerId) {
-        var relationship = FriendsBehavior.Ignore(playerId);
+        var relationship = FriendsBehavior.Ignore(this.CharId, playerId);
         if (relationship is null) {
             Logger.Warning("Could not ignore player ({0}) for player {1}.",
+                Logger.Args(playerId, PlayerNameBehavior.GetWizardName()));
+
+            return false;
+        }
+
+        // Persistent save — use AddRelationship so the row is created when this
+        // is the very first interaction between the two characters.
+        BuddyRelationshipCollection.AddRelationship(relationship);
+
+        return true;
+    }
+
+    public bool UnignorePlayer(ulong playerId) {
+        var relationship = FriendsBehavior.Unignore(playerId);
+        if (relationship is null) {
+            Logger.Warning("Could not unignore player ({0}) for player {1}.",
                 Logger.Args(playerId, PlayerNameBehavior.GetWizardName()));
 
             return false;

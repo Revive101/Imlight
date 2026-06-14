@@ -88,7 +88,12 @@ public static class BuddyRelationshipCollection {
                               || (r.FirstPlayerId == secondId && r.SecondPlayerId == firstId));
 
         if (existingRelationship != null) {
-            existingRelationship.IsBrokenUp = false;
+            // Only clear IsBrokenUp when this is a friendship (not a block).
+            // If we're setting Blocked, preserve whatever breakup state existed before.
+            if (!relationship.Blocked) {
+                existingRelationship.IsBrokenUp = false;
+            }
+            existingRelationship.Blocked = relationship.Blocked;
 
             // Update the metadata so that the entry no longer expires.
             var existingMetadata = session.Advanced.GetMetadataFor(existingRelationship);
@@ -116,10 +121,12 @@ public static class BuddyRelationshipCollection {
     public static void UpdateRelationship(Relationship relationship) {
         using var session = s_store.OpenSession();
 
-        // Get the relationship using either the first or second player ID.
+        // Get the relationship matching either ID order (bidirectional).
+        var firstId = relationship.FirstPlayerId;
+        var secondId = relationship.SecondPlayerId;
         var existingRelationship = session.Query<Relationship>(collectionName: CollectionName)
-            .Where(r => r.FirstPlayerId == relationship.FirstPlayerId && r.SecondPlayerId == relationship.SecondPlayerId)
-            .FirstOrDefault();
+            .FirstOrDefault(r => (r.FirstPlayerId == firstId  && r.SecondPlayerId == secondId)
+                              || (r.FirstPlayerId == secondId && r.SecondPlayerId == firstId));
 
         if (existingRelationship == null) {
             return;
@@ -173,6 +180,35 @@ public static class BuddyRelationshipCollection {
         }
 
         return [.. buddies];
+    }
+
+    /// <summary>
+    /// Checks whether a specific player has blocked another player.
+    /// </summary>
+    /// <param name="blockerId">The character ID of the player who may have blocked.</param>
+    /// <param name="targetId">The character ID of the player who may have been blocked.</param>
+    /// <returns>True if the blocker has blocked the target.</returns>
+    public static bool HasBlocked(ulong blockerId, ulong targetId) {
+        using var session = s_store.OpenSession();
+
+        return session.Query<Relationship>(collectionName: CollectionName)
+            .Any(r => r.FirstPlayerId == blockerId
+                   && r.SecondPlayerId == targetId
+                   && r.Blocked);
+    }
+
+    /// <summary>
+    /// Gets the character IDs of all players who have blocked the given character.
+    /// </summary>
+    /// <param name="targetId">The character ID of the player who may have been blocked.</param>
+    /// <returns>An array of character IDs that have blocked the target.</returns>
+    public static ulong[] GetCharactersWhoBlocked(ulong targetId) {
+        using var session = s_store.OpenSession();
+
+        return session.Query<Relationship>(collectionName: CollectionName)
+            .Where(r => r.SecondPlayerId == targetId && r.Blocked)
+            .Select(r => r.FirstPlayerId)
+            .ToArray();
     }
 
 }

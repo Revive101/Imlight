@@ -381,6 +381,24 @@ public static class WizardCollection {
     }
 
     /// <summary>
+    /// Updates the friend behavior for a wizard — persists pending friend requests
+    /// and other in-memory friend state to the database.
+    /// </summary>
+    /// <param name="wizard">The wizard whose friend behavior should be persisted.</param>
+    public static void UpdateCharacterFriendBehavior(Wizard wizard) {
+        using var session = s_store.OpenSession();
+
+        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
+            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        if (existingCharacter is null) {
+            return;
+        }
+
+        existingCharacter.FriendsBehavior = wizard.FriendsBehavior;
+        session.SaveChanges();
+    }
+
+    /// <summary>
     /// Adds a spell to the spellbook of a wizard.
     /// </summary>
     /// <param name="wizard">The wizard to add the spell to.</param>

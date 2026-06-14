@@ -40,9 +40,11 @@
  */
 
 using System;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Akka.Actor;
 using Imcodec.IO;
+using Imcodec.MessageLayer;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
@@ -98,14 +100,14 @@ internal class ChatService(SessionActor sessionActor) : MessageService(sessionAc
         LogChatMessage(wizard.PlayerNameBehavior.GetWizardName(), cleanedMessage, wizard.Zone);
         SaveChatLog(cleanedMessage, charObj, wizard);
 
-        // Broadcast the message to the zone.
+        // Broadcast the message to the zone, skipping players who have ignored the sender.
         var msg = new GAME_5_PROTOCOL.MSG_RADIALCHAT {
             Message = message.Message,
             SourceID = charObj.m_globalID,
             SourceName = sourceName,
             Filter = 2,
         };
-        ZoneBroadcast(msg);
+        SendFilteredZoneMessage(msg, wizard.CharId, wizard.Zone);
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_REQUESTRADIALQUICKCHAT))]
@@ -128,7 +130,7 @@ internal class ChatService(SessionActor sessionActor) : MessageService(sessionAc
             SourceName = src,
             Filter = 0,
         };
-        ZoneBroadcast(msg);
+        SendFilteredZoneMessage(msg, character.CharId, character.Zone);
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_REQUESTDIRECTEDQUICKCHAT))]
@@ -143,6 +145,12 @@ internal class ChatService(SessionActor sessionActor) : MessageService(sessionAc
 
             return;
         }
+
+        // Check if the target has ignored the sender.
+        var myWizard = GetActiveWizard();
+        if (BuddyRelationshipCollection.HasBlocked(targetID, myWizard.CharId)) {
+            return;
+        }
         
         if (!TryGetOnlinePlayer(targetID, out var targetPlayer)) {
             // Inform the user of error if the target is offline.
@@ -152,7 +160,6 @@ internal class ChatService(SessionActor sessionActor) : MessageService(sessionAc
         }
 
         // Send the quick chat to the target player.
-        var myWizard = GetActiveWizard();
         var hexName = myWizard.PlayerNameBehavior.GetWizardNameAsByteHexString();
         var sourceName = DataManipulation.SpacedHexStringToBytes(hexName);
         var msg = new GAME_5_PROTOCOL.MSG_DIRECTEDQUICKCHAT {
@@ -180,6 +187,12 @@ internal class ChatService(SessionActor sessionActor) : MessageService(sessionAc
             return;
         }
 
+        // Check if the target has ignored the sender.
+        var myWizard = GetActiveWizard();
+        if (BuddyRelationshipCollection.HasBlocked(targetID, myWizard.CharId)) {
+            return;
+        }
+
         if (!TryGetOnlinePlayer(targetID, out var targetPlayer)) {
             // Inform the user of error if the target is offline.
             SendToSocket(new GAME_5_PROTOCOL.MSG_DIRECTEDCHATFAIL());
@@ -188,7 +201,6 @@ internal class ChatService(SessionActor sessionActor) : MessageService(sessionAc
         }
 
         // Send the directed chat to the target player.
-        var myWizard = GetActiveWizard();
         var hexName = myWizard.PlayerNameBehavior.GetWizardNameAsByteHexString();
         var sourceName = DataManipulation.SpacedHexStringToBytes(hexName);
         var msg = new GAME_5_PROTOCOL.MSG_DIRECTEDQUICKCHATEXT {
@@ -216,6 +228,12 @@ internal class ChatService(SessionActor sessionActor) : MessageService(sessionAc
             return;
         }
 
+        // Check if the target has ignored the sender.
+        var myWizard = GetActiveWizard();
+        if (BuddyRelationshipCollection.HasBlocked(targetID, myWizard.CharId)) {
+            return;
+        }
+
         if (!TryGetOnlinePlayer(targetID, out var targetPlayer)) {
             // Inform the user of error if the target is offline.
             SendToSocket(new GAME_5_PROTOCOL.MSG_DIRECTEDCHATFAIL());
@@ -224,7 +242,6 @@ internal class ChatService(SessionActor sessionActor) : MessageService(sessionAc
         }
 
         // Send the directed chat to the target player.
-        var myWizard = GetActiveWizard();
         var hexName = myWizard.PlayerNameBehavior.GetWizardNameAsByteHexString();
         var sourceName = DataManipulation.SpacedHexStringToBytes(hexName);
         var msg = new GAME_5_PROTOCOL.MSG_DIRECTEDCHAT {
@@ -299,6 +316,29 @@ internal class ChatService(SessionActor sessionActor) : MessageService(sessionAc
             AccountId = character.AccountId,
             Message = message,
         });
+
+    /// <summary>
+    /// Sends a zone chat message to all online players in the zone, skipping those
+    /// who have ignored the sender.
+    /// </summary>
+    private void SendFilteredZoneMessage(IMessage msg, ulong senderCharId, string zoneName) {
+        var blockedBy = BuddyRelationshipCollection.GetCharactersWhoBlocked(senderCharId);
+        var playersInZone = OnlinePlayerCollection.GetPlayersInZone(zoneName);
+
+        foreach (var player in playersInZone) {
+            // Skip the sender (they see their own message client-side).
+            if (player.CharacterId == senderCharId) {
+                continue;
+            }
+
+            // Skip players who have blocked the sender.
+            if (blockedBy.Contains(player.CharacterId)) {
+                continue;
+            }
+
+            Context.ActorSelection(player.ActorPath).Tell(msg);
+        }
+    }
 
     private void SendChatCommand(string input, CoreObject charObj, Wizard character) {
         var account = GetActiveAccount();
