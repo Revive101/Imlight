@@ -36,9 +36,17 @@
  * Last Updated: 3/18/2025
  */
 
+using System.Linq;
 using Akka.Actor;
+using Imcodec.Cryptography;
 using Imcodec.MessageLayer.Generated;
+using Imcodec.ObjectProperty.TypeCache;
+using Imlight.Common;
+using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.WizardData.Models.Player;
+using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Resources;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -69,6 +77,153 @@ internal class SpellbookService(SessionActor sessionActor) : MessageService(sess
             DeckID = message.DeckID,
             Success = (byte) (deckRemoveSuccess ? 1 : 0)
         });
+    }
+
+    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_ADDTREASURESPELLTODECK))]
+    private void ReceiveAddTreasureSpellToDeck(WIZARD_12_PROTOCOL.MSG_ADDTREASURESPELLTODECK message) {
+        var wizard = GetActiveWizard();
+
+        // Resolve the spell hash to a template ID.
+        var templateId = SpellFactory.GetTemplateIdByHash((uint) message.SpellID);
+        if (templateId == 0) {
+            Logger.Warning("Could not resolve treasure card spell hash {0} to a template ID.",
+                Logger.Args(message.SpellID));
+
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_ADDTREASURESPELLTODECK() {
+                SpellID = message.SpellID,
+                EnchantmentID = message.EnchantmentID,
+                DeckID = message.DeckID,
+                NewSpell = 0,
+                Success = 0
+            });
+
+            return;
+        }
+
+        var deckAddSuccess = wizard.AddTreasureCardToDeck(templateId, message.DeckID);
+
+        SendToSocket(new WIZARD_12_PROTOCOL.MSG_ADDTREASURESPELLTODECK() {
+            SpellID = message.SpellID,
+            EnchantmentID = message.EnchantmentID,
+            DeckID = message.DeckID,
+            NewSpell = 0,
+            Success = (byte) (deckAddSuccess ? 1 : 0)
+        });
+    }
+
+    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_REMOVETREASURESPELLFROMDECK))]
+    private void ReceiveRemoveTreasureSpellFromDeck(WIZARD_12_PROTOCOL.MSG_REMOVETREASURESPELLFROMDECK message) {
+        var wizard = GetActiveWizard();
+
+        // Resolve the spell hash to a template ID.
+        var templateId = SpellFactory.GetTemplateIdByHash((uint) message.SpellID);
+        if (templateId == 0) {
+            Logger.Warning("Could not resolve treasure card spell hash {0} to a template ID.",
+                Logger.Args(message.SpellID));
+
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_REMOVETREASURESPELLFROMDECK() {
+                SpellID = message.SpellID,
+                EnchantmentID = message.EnchantmentID,
+                DeckID = message.DeckID,
+                Success = 0,
+                Destroy = 0
+            });
+
+            return;
+        }
+
+        var destroy = message.Destroy != 0;
+        var deckRemoveSuccess = wizard.RemoveTreasureCardFromDeck(templateId, message.DeckID, destroy);
+
+        SendToSocket(new WIZARD_12_PROTOCOL.MSG_REMOVETREASURESPELLFROMDECK() {
+            SpellID = message.SpellID,
+            EnchantmentID = message.EnchantmentID,
+            DeckID = message.DeckID,
+            Success = (byte) (deckRemoveSuccess ? 1 : 0),
+            Destroy = message.Destroy
+        });
+    }
+
+    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_REMOVETREASURESPELLFROMBOOK))]
+    private void ReceiveRemoveTreasureSpellFromBook(WIZARD_12_PROTOCOL.MSG_REMOVETREASURESPELLFROMBOOK message) {
+        var wizard = GetActiveWizard();
+
+        // Resolve the spell hash to a template ID.
+        var templateId = SpellFactory.GetTemplateIdByHash((uint) message.SpellID);
+        if (templateId == 0) {
+            Logger.Warning("Could not resolve treasure card spell hash {0} to a template ID.",
+                Logger.Args(message.SpellID));
+
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_REMOVETREASURESPELLFROMBOOK() {
+                SpellID = message.SpellID,
+                EnchantmentID = message.EnchantmentID
+            });
+
+            return;
+        }
+
+        // Remove one copy from the book and persist.
+        wizard.SpellbookBehavior.RemoveTreasureCard(templateId);
+        WizardData.Collections.WizardCollection.RemoveTreasureCard(wizard, templateId);
+
+        // Echo back to the client to confirm.
+        SendToSocket(new WIZARD_12_PROTOCOL.MSG_REMOVETREASURESPELLFROMBOOK() {
+            SpellID = message.SpellID,
+            EnchantmentID = message.EnchantmentID
+        });
+    }
+
+    [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE))]
+    private void ReceiveAttachComplete(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE message) {
+        var wizard = GetActiveWizard();
+
+        // Find the equipped deck.
+        var deckSlot = wizard.EquipmentBehavior.SlotList
+            .FirstOrDefault(s => s.SlotType == EquipmentSlotType.Deck);
+        if (deckSlot?.ItemId is null) {
+            return;
+        }
+
+        var deckItem = wizard.EquipmentBehavior.EquippedItems
+            .FirstOrDefault(i => i.m_globalID == deckSlot.ItemId);
+        if (deckItem is null) {
+            return;
+        }
+
+        if (!CoreObjectFactory.FindBehaviorInstance<DeckBehavior>(deckItem, out var deckBehavior)) {
+            return;
+        }
+
+        var spellList = deckBehavior.m_spellList;
+        if (spellList is null) {
+            return;
+        }
+
+        // Send MSG_ADDTREASURESPELLTODECK for each treasure card in the deck.
+        foreach (var spellData in spellList) {
+            var template = CoreObjectFactory.GetCoreTemplate(spellData.m_templateID);
+            if (template is not SpellTemplate spellTemplate) {
+                continue;
+            }
+
+            // Only send treasure cards — regular spells are handled separately.
+            if (!spellTemplate.m_Treasure) {
+                continue;
+            }
+
+            var spellHash = StringHash.Compute(spellTemplate.m_name);
+
+            // Send one message per copy.
+            for (var i = 0; i < spellData.m_quantity; i++) {
+                SendToSocket(new WIZARD_12_PROTOCOL.MSG_ADDTREASURESPELLTODECK() {
+                    SpellID = (int) spellHash,
+                    EnchantmentID = 0,
+                    DeckID = deckItem.m_globalID,
+                    NewSpell = 0,
+                    Success = 0
+                });
+            }
+        }
     }
     
 }
