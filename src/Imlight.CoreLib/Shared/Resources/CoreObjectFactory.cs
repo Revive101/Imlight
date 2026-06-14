@@ -62,6 +62,7 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
     public static TemplateManifest TemplateManifest;
 
     private static readonly Dictionary<ulong, CoreTemplate> s_templateCache = [];
+    private static readonly object s_templateCacheLock = new();
 
     protected override void AfterLoad() {
         var serializer = new BindSerializer();
@@ -161,8 +162,10 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
     /// <returns>The CoreTemplate object if found; otherwise, null.</returns>
     public static CoreTemplate GetCoreTemplate(ulong id) {
         // Check if the template is already cached.
-        if (s_templateCache.TryGetValue(id, out var cachedTemplate)) {
-            return cachedTemplate;
+        lock (s_templateCacheLock) {
+            if (s_templateCache.TryGetValue(id, out var cachedTemplate)) {
+                return cachedTemplate;
+            }
         }
 
         // If not cached, load the template from the manifest.
@@ -181,7 +184,9 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
         }
         else {
             // Cache the template for future use.
-            s_templateCache[id] = templateObj;
+            lock (s_templateCacheLock) {
+                s_templateCache[id] = templateObj;
+            }
         }
 
         return templateObj ?? null;
