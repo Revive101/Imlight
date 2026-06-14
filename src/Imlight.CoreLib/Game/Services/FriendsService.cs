@@ -329,6 +329,8 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
 
                 return;
             }
+
+            WizardCollection.UpdateCharacterFriendBehavior(offlineWizard);
         }
         else {
             if (!wizard.FriendsBehavior.TryGetRelationship(message.ListOwnerGID, out var relationship)) {
@@ -378,6 +380,8 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
 
                 return;
             }
+
+            WizardCollection.UpdateCharacterFriendBehavior(offlineWizard);
         }
         else {
             // The player is still online, so we can forward the denial.
