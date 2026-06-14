@@ -88,7 +88,12 @@ public static class BuddyRelationshipCollection {
                               || (r.FirstPlayerId == secondId && r.SecondPlayerId == firstId));
 
         if (existingRelationship != null) {
-            existingRelationship.IsBrokenUp = false;
+            // Only clear IsBrokenUp when this is a friendship (not a block).
+            // If we're setting Blocked, preserve whatever breakup state existed before.
+            if (!relationship.Blocked) {
+                existingRelationship.IsBrokenUp = false;
+            }
+            existingRelationship.Blocked = relationship.Blocked;
 
             // Update the metadata so that the entry no longer expires.
             var existingMetadata = session.Advanced.GetMetadataFor(existingRelationship);
@@ -116,10 +121,12 @@ public static class BuddyRelationshipCollection {
     public static void UpdateRelationship(Relationship relationship) {
         using var session = s_store.OpenSession();
 
-        // Get the relationship using either the first or second player ID.
+        // Get the relationship matching either ID order (bidirectional).
+        var firstId = relationship.FirstPlayerId;
+        var secondId = relationship.SecondPlayerId;
         var existingRelationship = session.Query<Relationship>(collectionName: CollectionName)
-            .Where(r => r.FirstPlayerId == relationship.FirstPlayerId && r.SecondPlayerId == relationship.SecondPlayerId)
-            .FirstOrDefault();
+            .FirstOrDefault(r => (r.FirstPlayerId == firstId  && r.SecondPlayerId == secondId)
+                              || (r.FirstPlayerId == secondId && r.SecondPlayerId == firstId));
 
         if (existingRelationship == null) {
             return;

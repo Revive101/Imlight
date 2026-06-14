@@ -913,8 +913,9 @@ public class Wizard : IDisposable {
             return false;
         }
 
-        // Persistent save.
-        BuddyRelationshipCollection.UpdateRelationship(relationship);
+        // Persistent save — use AddRelationship so the row is created when this
+        // is the very first interaction between the two characters.
+        BuddyRelationshipCollection.AddRelationship(relationship);
 
         return true;
     }

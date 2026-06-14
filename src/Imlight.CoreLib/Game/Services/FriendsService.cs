@@ -73,7 +73,6 @@
  * TODO:
  * - For `MSG_BUDDYSTATS`, we need to implement the CRC32 hash check. Currently, we just send the stats regardless.
  * - Implement the `PreviousName` field in `MSG_BUDDYENTRY`.
- * - Player ignoring
  * 
  * Created by: Jooty
  * Version: KALI 1.0
@@ -554,6 +553,10 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
 
             return;
         }
+
+        // Send the updated ignore list as a single-entry confirmation.
+        // The client expects MSG_IGNORELIST with Add=1 to confirm individual additions.
+        SendIgnoreListConfirmation(wizard, add: true);
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_IGNOREDROP))]
@@ -567,21 +570,30 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
 
             return;
         }
+
+        // Send the full updated ignore list so the client refreshes.
+        SendIgnoreListConfirmation(wizard, add: false);
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_IGNORELIST))]
     private void ReceiveIgnoreList(GAME_5_PROTOCOL.MSG_IGNORELIST message) {
         // A player is requesting a list of all the players they have ignored.
         var wizard = GetActiveWizard();
-        var ignoredRelationships = wizard.FriendsBehavior.GetIgnoredPlayers(wizard.CharId);
+        SendIgnoreListConfirmation(wizard, add: false);
+    }
 
-        // Serialize the ignored player list data.
+    /// Send the serialized ignore list to the client.
+    /// <param name="add">When true, sends as a single-entry confirmation (Add=1);
+    /// when false, sends the full list (Add=0).</param>
+    private void SendIgnoreListConfirmation(Wizard wizard, bool add) {
+        var ignoredList = wizard.FriendsBehavior.GetIgnoredPlayers(wizard.CharId);
+
         var serializer = new ObjectSerializer(
             Versionable: false,
             Behaviors: SerializerFlags.None
         );
 
-        if (!serializer.Serialize(ignoredRelationships, 1, out var ignoredListBytes)) {
+        if (!serializer.Serialize(ignoredList, 1, out var listBytes)) {
             Logger.Error("Player {0} requested their ignore list, but the serialization failed.",
                 Logger.Args(wizard.PlayerNameBehavior.GetWizardName()));
 
@@ -590,7 +602,8 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
 
         var msg = new GAME_5_PROTOCOL.MSG_IGNORELIST {
             ListOwnerGID = wizard.GameObject?.m_globalID ?? wizard.CharId,
-            ListData = ignoredListBytes
+            ListData = listBytes,
+            Add = add ? (byte)1 : (byte)0
         };
         SendToSocket(msg);
     }

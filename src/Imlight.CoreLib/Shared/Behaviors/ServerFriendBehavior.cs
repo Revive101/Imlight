@@ -241,6 +241,7 @@ public class ServerFriendBehavior : IClientBehaviorProvider<BehaviorInstance> {
             relationship = new Relationship {
                 FirstPlayerId = ownerId,
                 SecondPlayerId = targetId,
+                IsBrokenUp = true, // born broken — un-ignoring won't create a friendship
             };
             Relationships.Add(relationship);
         }
