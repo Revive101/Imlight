@@ -253,15 +253,16 @@ public class ServerFriendBehavior : IClientBehaviorProvider<BehaviorInstance> {
     /// <summary>
     /// Gets all the ignored players.
     /// </summary>
+    /// <param name="ownerId">The character ID of the player whose ignore list is being requested.</param>
     /// <returns>A list of ignored players.</returns>
-    public IgnoreEntryDataList GetIgnoredPlayers() {
+    public IgnoreEntryDataList GetIgnoredPlayers(ulong ownerId) {
         var ignoreList = new IgnoreEntryDataList() {
             m_ignoreDataList = []
         };
 
         foreach (var ignoredRelationship in Relationships
-                     .Where(x => x.Blocked && x.IsBrokenUp)) {
-            var otherPlayerID = ignoredRelationship.FirstPlayerId == ignoredRelationship.SecondPlayerId
+                     .Where(x => x.Blocked && !x.IsBrokenUp)) {
+            var otherPlayerID = ignoredRelationship.FirstPlayerId == ownerId
                 ? ignoredRelationship.SecondPlayerId
                 : ignoredRelationship.FirstPlayerId;
 

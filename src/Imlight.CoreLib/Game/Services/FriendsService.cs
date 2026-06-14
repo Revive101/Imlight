@@ -572,7 +572,7 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
     private void ReceiveIgnoreList(GAME_5_PROTOCOL.MSG_IGNORELIST message) {
         // A player is requesting a list of all the players they have ignored.
         var wizard = GetActiveWizard();
-        var ignoredRelationships = wizard.FriendsBehavior.GetIgnoredPlayers();
+        var ignoredRelationships = wizard.FriendsBehavior.GetIgnoredPlayers(wizard.CharId);
 
         // Serialize the ignored player list data.
         var serializer = new ObjectSerializer(
