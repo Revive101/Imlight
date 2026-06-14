@@ -50,6 +50,7 @@ using Imlight.CoreLib.Game.Spells;
 using Imlight.CoreLib.Game.Zone.Components;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.WizardData.Models.Player;
 using System;
 using System.Collections.Generic;
@@ -388,6 +389,27 @@ public class CombatDuelSubCircle {
 
     internal void Reshuffle() => _combatDeck.Reshuffle();
 
+    /// <summary>
+    /// Draws a random treasure card from the vault and adds it to the current hand.
+    /// </summary>
+    /// <returns>The drawn spell, or null if no vault cards available or hand is full.</returns>
+    internal Spell DrawFromVault() => _combatDeck.DrawFromVault();
+
+    /// <summary>
+    /// Gets the number of treasure cards remaining in the vault.
+    /// </summary>
+    internal int VaultRemainingCount => _combatDeck.VaultRemainingCount;
+
+    /// <summary>
+    /// Gets the number of treasure cards currently in the hand.
+    /// </summary>
+    internal int TreasureCardsInHand => _combatDeck.TreasureCardsInHand;
+
+    /// <summary>
+    /// Permanently consumes a successfully cast treasure card from the vault.
+    /// </summary>
+    internal uint ConsumeFromVault(Spell spell) => _combatDeck.ConsumeFromVault(spell);
+
     private void InitializePlayerSubCircle() {
         // todo: this method is a mess.
         var queryCharacterMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
@@ -403,17 +425,31 @@ public class CombatDuelSubCircle {
         var combatStats = ParticipantGameStats.GetCombatGameStats();
 
         // Collage spells the player has learned and temporary spells (perhaps from equipment)
-        // into one list to create the combat hand.
+        // into one list to create the combat hand. Treasure cards go into a separate vault.
         var allSpells = new List<CombatDeckSpellData>();
+        var vaultSpells = new List<CombatDeckSpellData>();
         if (_wizard.SpellbookBehavior.SpellList is not null) {
-            // We want to convert the spell data to the server spell data.
-            var convertedSpells = _wizard.SpellbookBehavior.SpellList
-                .Select(spell => new CombatDeckSpellData {
-                    TemplateId = spell.m_templateID,
-                    Quantity = spell.m_quantity,
-                })
-                .ToList();
-            allSpells.AddRange(convertedSpells);
+            foreach (var spell in _wizard.SpellbookBehavior.SpellList) {
+                var template = CoreObjectFactory.GetCoreTemplate(spell.m_templateID);
+                var isTreasureCard = template is SpellTemplate spellTemplate
+                    && (spellTemplate.m_Treasure || spellTemplate.m_name.EndsWith(" TC"));
+
+                if (isTreasureCard) {
+                    // Treasure cards go to the vault (separate pool, drawn on demand).
+                    vaultSpells.Add(new CombatDeckSpellData {
+                        TemplateId = spell.m_templateID,
+                        Quantity = spell.m_quantity,
+                        IsTreasureCard = true
+                    });
+                }
+                else {
+                    // Regular spells go to the main deck.
+                    allSpells.Add(new CombatDeckSpellData {
+                        TemplateId = spell.m_templateID,
+                        Quantity = spell.m_quantity,
+                    });
+                }
+            }
         }
 
         // Count temporary spells as 1 quantity.
@@ -433,7 +469,7 @@ public class CombatDuelSubCircle {
             }
         }
         allSpells.AddRange(temporarySpells);
-        _combatDeck = new CombatDeck(allSpells, PLAYER_HAND_SIZE);
+        _combatDeck = new CombatDeck(allSpells, vaultSpells, PLAYER_HAND_SIZE);
 
         CombatParticipant = new CombatParticipant {
             m_ownerID = ParticipantObject.m_globalID,
@@ -483,7 +519,7 @@ public class CombatDuelSubCircle {
             });
         }
 
-        _combatDeck = new CombatDeck(spellData, PLAYER_HAND_SIZE);
+        _combatDeck = new CombatDeck(spellData, [], PLAYER_HAND_SIZE);
 
         ParticipantGameStats = creatureStats.GameStats;
         CombatParticipant = new CombatParticipant {

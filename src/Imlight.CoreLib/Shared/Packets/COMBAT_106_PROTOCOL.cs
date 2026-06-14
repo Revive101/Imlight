@@ -198,5 +198,14 @@ public sealed class COMBAT_106_PROTOCOL : IServerProtocol {
         public byte ServiceID => 106;
         
     }
+
+    public sealed class MSG_ACTORCOMBATDRAW : IServerMessage {
+
+        public byte MessageOrder => 20;
+        public byte ServiceID => 106;
+
+        public IActorRef Actor;
+
+    }
     
 }

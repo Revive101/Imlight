@@ -130,6 +130,18 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
         TellOtherServices(msg);
     }
 
+    [MessageHandler(typeof(DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATDRAW))]
+    private void ReceiveCombatDraw(DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATDRAW message) {
+        if (_currentDuelActor == null) {
+            return;
+        }
+
+        var msg = new COMBAT_106_PROTOCOL.MSG_ACTORCOMBATDRAW {
+            Actor = SessionActor.ActorRef
+        };
+        _currentDuelActor.Tell(msg);
+    }
+
     [MessageHandler(typeof(DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATMOVE))]
     private void ReceiveCombatMove(DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATMOVE message) {
         if (_currentDuelActor == null) {

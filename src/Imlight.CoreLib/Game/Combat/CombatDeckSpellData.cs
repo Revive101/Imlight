@@ -31,5 +31,6 @@ internal class CombatDeckSpellData {
     public uint Quantity { get; set; }
     public bool IsBattleCard { get; set; }
     public bool IsItemCard { get; set; }
+    public bool IsTreasureCard { get; set; }
 
 }

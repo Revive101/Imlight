@@ -54,10 +54,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Akka.Actor;
+using Imcodec.MessageLayer.Generated;
 using Imlight.CoreLib.Game.Spells;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Collections;
+using Imlight.CoreLib.WizardData.Models.Player;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Cryptography;
 
@@ -456,9 +460,43 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
             return;
         }
 
-        // If this spell action us successful, remove it from the combat deck of the caster.
+        // Treasure cards are permanently consumed on successful cast.
+        // Regular spells are discarded and return to the deck on reshuffle.
+        if (action.m_spell.m_treasureCard) {
+            var consumedTemplateId = caster.ConsumeFromVault(action.m_spell);
+            if (consumedTemplateId != 0 && caster._wizard != null) {
+                // Persist the removal from the player's treasure card book.
+                caster._wizard.SpellbookBehavior.RemoveTreasureCard(consumedTemplateId);
+                WizardCollection.RemoveTreasureCard(caster._wizard, consumedTemplateId);
+
+                // Also remove from the equipped deck's spell list so it doesn't
+                // reappear when the player re-opens their deck after combat.
+                var deckSlot = caster._wizard.EquipmentBehavior.SlotList
+                    .FirstOrDefault(s => s.SlotType == EquipmentSlotType.Deck);
+                if (deckSlot?.ItemId != null) {
+                    caster._wizard.RemoveSpellFromDeck(consumedTemplateId, deckSlot.ItemId.Value);
+
+                    // Tell the client to remove the TC from the deck UI.
+                    var spellTemplate = CoreObjectFactory.GetCoreTemplate(consumedTemplateId) as SpellTemplate;
+                    if (spellTemplate != null) {
+                        var spellHash = StringHash.Compute(spellTemplate.m_name);
+                        caster.ParticipantActor.Tell(
+                            new WIZARD_12_PROTOCOL.MSG_REMOVETREASURESPELLFROMDECK {
+                                SpellID = (int) spellHash,
+                                EnchantmentID = 0,
+                                DeckID = deckSlot.ItemId.Value,
+                                Success = 1,
+                                Destroy = 0
+                            }, ActorRefs.NoSender);
+                    }
+                }
+            }
+        }
+        else {
+            caster.DiscardCard(action.m_spell);
+        }
+
         // Deduce the players mana by the rank of the spell.
-        caster.DiscardCard(action.m_spell);
         caster.DeductMana(action.m_spell.m_pipCost.m_spellRank);
 
         // Reduce pips.
