@@ -231,4 +231,16 @@ public class CHARACTER_103_PROTOCOL : IServerProtocol {
 
     }
 
+    /// <summary>
+    /// Internal timer message: fired when a pet egg's hatch time arrives.
+    /// </summary>
+    public sealed class MSG_DOEGGHATCH : IServerMessage {
+
+        public byte MessageOrder { get; } = 21;
+        public byte ServiceID { get; } = 103;
+
+        public ulong EggGlobalId;
+
+    }
+
 }

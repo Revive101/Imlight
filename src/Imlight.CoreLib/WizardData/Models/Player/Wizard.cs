@@ -98,6 +98,12 @@ public class Wizard : IDisposable {
     [JsonIgnore] internal DynamodSet DynamodSet { get; set; }
     [JsonIgnore] internal bool IsInCombatGrace { get; set; }
 
+    /// <summary>
+    /// Tracks hatched pets for MSG_PETTOMEPETADDED. Key: pet global ID, Value: pet template ID.
+    /// Runtime-only; not persisted (the pet tome behavior blob handles persistence).
+    /// </summary>
+    [JsonIgnore] public readonly Dictionary<ulong, uint> OwnedPets = [];
+
     [JsonIgnore] private Vector3 _location;
     [JsonIgnore] private Vector3 _orientation;
     [JsonIgnore]
@@ -133,7 +139,6 @@ public class Wizard : IDisposable {
 
         // Do behaviors.
         WizardAvatar = avatar;
-        InitializeDefaultInventory();
         InitializeDefaultEquipment();
         InitializePlayerName(nameIndices);
         InitializeMagicSchoolBehavior(wizardSchoolType, level);
@@ -142,6 +147,7 @@ public class Wizard : IDisposable {
         InitializeWizardGameStats(wizardSchoolType, level);
         InitializeDefaultPetSnackBehavior();
         InitializePetOwnerBehavior();
+        InitializeDefaultInventory();
         InitializeAlchemyBehavior();
 
         ObjectStateBehavior = new ServerObjectStateBehavior("PlayerMobileStates");
@@ -1244,6 +1250,24 @@ public class Wizard : IDisposable {
             CoreObjectFactory.InitializeCoreObjectBehaviors(cObj, templateId);
             cObj.m_characterId = (GID) CharId;
 
+            // If this is a pet item, set the hatch timer so the client shows
+            // the correct countdown instead of "29091 days" (epoch 0).
+            // Also register a matching server-side egg so MSG_HATCHEGGNOW can
+            // find it by the same GlobalID the client uses.
+            if (CoreObjectFactory.FindBehaviorInstance<ClientPetItemBehavior>(cObj, out var petItemBehavior)) {
+                var idx = cObj.m_inactiveBehaviors.IndexOf(petItemBehavior);
+                petItemBehavior = (ClientPetItemBehavior) cObj.m_inactiveBehaviors[idx];
+                petItemBehavior.m_hatchedTimeSecs = (uint)(DateTimeOffset.UtcNow.ToUnixTimeSeconds() + 600);
+                cObj.m_inactiveBehaviors[idx] = petItemBehavior;
+
+                // Create the server-side egg with the SAME GlobalID the client
+                // uses (the item's m_globalID), so MSG_HATCHEGGNOW can find it.
+                PetOwnerBehavior.CreatePetEgg(templateId, 600, cObj.m_globalID);
+
+                Logger.Debug("Set hatch timer for pet item template {0} (egg GID {1})",
+                    Logger.Args(templateId, cObj.m_globalID));
+            }
+
             itemsToAdd.Add(cObj);
             InventoryBehavior.InventoryItemIds.Add(cObj.m_globalID);
         });
@@ -1383,7 +1407,9 @@ public class Wizard : IDisposable {
     }
 
     private void InitializePetOwnerBehavior() {
-        PetOwnerBehavior = new ServerPetOwnerBehavior();
+        PetOwnerBehavior = new ServerPetOwnerBehavior {
+            MaxSlots = 1
+        };
         PetOwnerBehavior.SetEnergy(GameStats.m_energyMax);
     }
 
@@ -1409,6 +1435,9 @@ public class Wizard : IDisposable {
 
             return;
         }
+
+        // Rebuild runtime MorphingSlots from persisted Eggs DTO.
+        PetOwnerBehavior.RebuildRuntimeSlots();
 
         // If the last energy tick is in the future, don't bother.
         if (PetOwnerBehavior.LastEnergyTickEpoch > DateTimeOffset.UtcNow.ToUnixTimeSeconds()) {
