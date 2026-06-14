@@ -232,14 +232,15 @@ public class ServerFriendBehavior : IClientBehaviorProvider<BehaviorInstance> {
     /// <summary>
     /// Ignores a relationship with a character.
     /// </summary>
-    /// <param name="characterId">The character ID of the player who is being ignored.</param>
-    /// <returns>The relationship between the two players,</returns>
-    public Relationship Ignore(ulong characterId) {
+    /// <param name="ownerId">The character ID of the player who is ignoring.</param>
+    /// <param name="targetId">The character ID of the player who is being ignored.</param>
+    /// <returns>The relationship between the two players.</returns>
+    public Relationship Ignore(ulong ownerId, ulong targetId) {
         // Create the relationship if it doesn't already exist.
-        if (!TryGetRelationship(characterId, out var relationship)) {
+        if (!TryGetRelationship(targetId, out var relationship)) {
             relationship = new Relationship {
-                FirstPlayerId = characterId,
-                SecondPlayerId = characterId,
+                FirstPlayerId = ownerId,
+                SecondPlayerId = targetId,
             };
             Relationships.Add(relationship);
         }

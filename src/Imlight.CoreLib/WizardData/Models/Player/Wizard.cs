@@ -905,7 +905,7 @@ public class Wizard : IDisposable {
     }
 
     public bool IgnorePlayer(ulong playerId) {
-        var relationship = FriendsBehavior.Ignore(playerId);
+        var relationship = FriendsBehavior.Ignore(this.CharId, playerId);
         if (relationship is null) {
             Logger.Warning("Could not ignore player ({0}) for player {1}.",
                 Logger.Args(playerId, PlayerNameBehavior.GetWizardName()));
