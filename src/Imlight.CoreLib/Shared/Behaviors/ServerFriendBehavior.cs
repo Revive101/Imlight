@@ -98,7 +98,8 @@ public class ServerFriendBehavior : IClientBehaviorProvider<BehaviorInstance> {
         var existingRelationship = Relationships
             .FirstOrDefault(x => x.FirstPlayerId == relationship.FirstPlayerId && x.SecondPlayerId == relationship.SecondPlayerId);
         if (existingRelationship != null) {
-            existingRelationship = relationship;
+            var index = Relationships.IndexOf(existingRelationship);
+            Relationships[index] = relationship;
 
             return true;
         }
