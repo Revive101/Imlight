@@ -581,19 +581,17 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         );
 
         if (!serializer.Serialize(ignoredRelationships, 1, out var ignoredListBytes)) {
-            var msg = new GAME_5_PROTOCOL.MSG_IGNORELIST {
-                ListOwnerGID = wizard.GameObject?.m_globalID ?? wizard.CharId,
-                ListData = ignoredListBytes
-            };
-
-            SendToSocket(msg);
-        }
-        else {
             Logger.Error("Player {0} requested their ignore list, but the serialization failed.",
                 Logger.Args(wizard.PlayerNameBehavior.GetWizardName()));
 
             return;
         }
+
+        var msg = new GAME_5_PROTOCOL.MSG_IGNORELIST {
+            ListOwnerGID = wizard.GameObject?.m_globalID ?? wizard.CharId,
+            ListData = ignoredListBytes
+        };
+        SendToSocket(msg);
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT))]
