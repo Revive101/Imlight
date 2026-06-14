@@ -175,4 +175,18 @@ public static class BuddyRelationshipCollection {
         return [.. buddies];
     }
 
+    /// <summary>
+    /// Gets the character IDs of all players who have blocked the given character.
+    /// </summary>
+    /// <param name="targetId">The character ID of the player who may have been blocked.</param>
+    /// <returns>An array of character IDs that have blocked the target.</returns>
+    public static ulong[] GetCharactersWhoBlocked(ulong targetId) {
+        using var session = s_store.OpenSession();
+
+        return session.Query<Relationship>(collectionName: CollectionName)
+            .Where(r => r.SecondPlayerId == targetId && r.Blocked)
+            .Select(r => r.FirstPlayerId)
+            .ToArray();
+    }
+
 }
