@@ -399,21 +399,20 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
         // (SEE TOP OF FILE FOR FLOW) Step 6:
         // We are informing player A that player B has accepted or denied their friend request.
         var myWizard = GetActiveWizard();
-        var entryWizard = WizardCollection.GetCharacter(message.EntryGID);
-        var epochInSeconds = (uint) DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         IMessage clientMsg;
 
         myWizard.RemovePendingFriendRequest(message.EntryGID);
 
-        // Log
-        var myName = myWizard.PlayerNameBehavior.GetWizardName();
-        var entryName = entryWizard.PlayerNameBehavior.GetWizardName();
-        var statusMessage = message.Accept ? "They have accepted" : "They have denied";
-        Logger.Debug("{0} (ID {1}) has received a friend request reply from {2} (ID {3}). {4}.",
-            Logger.Args(myName, myWizard.CharId, entryName, entryWizard.CharId, statusMessage));
-
         if (message.Accept) {
-            // The recipient has accepted the friend request.
+            var entryWizard = WizardCollection.GetCharacter(message.EntryGID);
+            var epochInSeconds = (uint) DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+            // Log
+            var myName = myWizard.PlayerNameBehavior.GetWizardName();
+            var entryName = entryWizard.PlayerNameBehavior.GetWizardName();
+            Logger.Debug("{0} (ID {1}) has received a friend request reply from {2} (ID {3}). They have accepted.",
+                Logger.Args(myName, myWizard.CharId, entryName, entryWizard.CharId));
+
             // Add the wizard as a friend. If they are already friends, log an error and return.
             if (!myWizard.AddOrRepairRelationship(message.NewRelationship)) {
                 Logger.Error("{0} could not add or update the relationship with character ID {1}.",
@@ -444,7 +443,11 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
             };
         }
         else {
-            // The recipient has denied the friend request.
+            // Log
+            var myName = myWizard.PlayerNameBehavior.GetWizardName();
+            Logger.Debug("{0} (ID {1}) has received a friend request reply from character ID {2}. They have denied.",
+                Logger.Args(myName, myWizard.CharId, message.EntryGID));
+
             // Inform the game client that the friend request has been denied.
             clientMsg = new GAME_5_PROTOCOL.MSG_BUDDYREQUESTDENY {
                 ListOwnerGID = message.ListOwnerGID,
