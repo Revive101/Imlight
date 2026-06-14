@@ -135,7 +135,7 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
         }
 
         var account = GetActiveAccount();
-        var realmName = "Centaur"; // todo
+        var realmName = gameServer.RealmName ?? "Imlight";
 
         _loginCompleteMessage = new GAME_5_PROTOCOL.MSG_LOGINCOMPLETE() {
             RealmName = realmName,

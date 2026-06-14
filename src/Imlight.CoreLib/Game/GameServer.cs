@@ -66,9 +66,10 @@ public class GameServer : Server {
     private readonly Cache<ByteString, ulong> _sessionKeys;
     private readonly ListQueue<SessionActor> _playerQueue;
 
-    public GameServer(string serverName, ushort serverPort)
+    public GameServer(string serverName, ushort serverPort, string realmName = null)
         : base(serverName, serverPort, GameServiceFactory.Props(),
               ConfigurationManager.Settings["Game Server.GameServerIP"].AsString()) {
+        RealmName = realmName ?? serverName;
         this._playerQueue = new ListQueue<SessionActor>();
         this._sessionKeys = new Cache<ByteString, ulong>();
         this.ActiveSessions.CollectionChanged += ActiveSessionsChangedEvent;
@@ -96,8 +97,8 @@ public class GameServer : Server {
             Logger.Args(serverName, serverPort));
     }
 
-    public static Props Props(string serverName, ushort serverPort)
-        => Akka.Actor.Props.Create(() => new GameServer(serverName, serverPort));
+    public static Props Props(string serverName, ushort serverPort, string realmName = null)
+        => Akka.Actor.Props.Create(() => new GameServer(serverName, serverPort, realmName));
 
     [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_CREATEKEY))]
     private void ReceiveCreateKey(SERVER_100_PROTOCOL.MSG_CREATEKEY message) {
@@ -105,6 +106,39 @@ public class GameServer : Server {
 
         var rsp = new SERVER_100_PROTOCOL.MSG_CREATEKEYRSP() { Key = key };
         Sender.Tell(rsp);
+    }
+
+    [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_CREATEPLAYERKEY))]
+    private void ReceiveCreatePlayerKey(SERVER_100_PROTOCOL.MSG_CREATEPLAYERKEY message) {
+        // If this server is the target realm, create the key locally.
+        if (message.TargetRealmName == RealmName) {
+            var key = CreateKey(message.Account.AccountId);
+
+            Sender.Tell(new SERVER_100_PROTOCOL.MSG_CREATEPLAYERKEYRSP {
+                Key = key,
+                IP = Ip,
+                Port = (ushort) Port,
+                RealmName = RealmName,
+                Success = true
+            });
+
+            return;
+        }
+
+        // Otherwise, forward to the GameServerPool to route to the correct realm.
+        Context.Parent.Forward(message);
+    }
+
+    [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_REALMLIST))]
+    private void ReceiveRealmList(SERVER_100_PROTOCOL.MSG_REALMLIST message) {
+        // Forward to GameServerPool — it knows about all realms.
+        Context.Parent.Forward(message);
+    }
+
+    [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_QUERYREALMSERVER))]
+    private void ReceiveQueryRealmServer(SERVER_100_PROTOCOL.MSG_QUERYREALMSERVER message) {
+        // Forward to GameServerPool — it knows about all realms.
+        Context.Parent.Forward(message);
     }
 
     [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_VALIDATESESSIONKEY))]

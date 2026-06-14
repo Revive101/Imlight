@@ -64,6 +64,21 @@ public class LoginServer : Server {
         _gamePoolServer.Forward(message);
     }
 
+    [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_CREATEPLAYERKEY))]
+    private void ReceiveCreatePlayerKey(SERVER_100_PROTOCOL.MSG_CREATEPLAYERKEY message) {
+        _gamePoolServer.Forward(message);
+    }
+
+    [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_QUERYREALMSERVER))]
+    private void ReceiveQueryRealmServer(SERVER_100_PROTOCOL.MSG_QUERYREALMSERVER message) {
+        _gamePoolServer.Forward(message);
+    }
+
+    [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_REALMLIST))]
+    private void ReceiveRealmList(SERVER_100_PROTOCOL.MSG_REALMLIST message) {
+        _gamePoolServer.Forward(message);
+    }
+
     [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_PLAYERENQUEUED))]
     private void ReceivePlayerEnqueued(SERVER_100_PROTOCOL.MSG_PLAYERENQUEUED message) {
         var rsp = new SERVER_100_PROTOCOL.MSG_PLAYERENQUEUEDRSP();

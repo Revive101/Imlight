@@ -40,6 +40,7 @@ public sealed class SERVER_100_PROTOCOL : IServerProtocol {
 
         public string Name;
         public ushort Port;
+        public string RealmName;
 
     }
 
@@ -115,6 +116,7 @@ public sealed class SERVER_100_PROTOCOL : IServerProtocol {
         public TcpListener TcpClient;
         public IActorRef ActorRef;
         public string[] ConnectedIps;
+        public string RealmName;
 
     }
 
@@ -259,6 +261,59 @@ public sealed class SERVER_100_PROTOCOL : IServerProtocol {
         public byte ServiceID { get; } = 100;
 
         public IMessage Packet;
+    }
+
+    /// <summary>
+    /// Sent to the GameServerPool to create a session key on a specific realm's game server.
+    /// Used for cross-server realm transfers.
+    /// </summary>
+    public class MSG_CREATEPLAYERKEY : IServerMessage {
+
+        public byte MessageOrder { get; } = 24;
+        public byte ServiceID { get; } = 100;
+
+        public Account Account;
+        public string TargetRealmName;
+
+    }
+
+    public class MSG_CREATEPLAYERKEYRSP : IServerMessage {
+
+        public byte MessageOrder { get; } = 25;
+        public byte ServiceID { get; } = 100;
+
+        public ByteString Key;
+        public string IP;
+        public ushort Port;
+        public string RealmName;
+        public bool Success;
+
+    }
+
+    /// <summary>
+    /// Query the GameServerPool for info about a specific realm's game server.
+    /// </summary>
+    public class MSG_QUERYREALMSERVER : IServerMessage {
+
+        public byte MessageOrder { get; } = 26;
+        public byte ServiceID { get; } = 100;
+
+        public string RealmName;
+
+    }
+
+    /// <summary>
+    /// Returns the list of all realm names with their player counts.
+    /// </summary>
+    public class MSG_REALMLIST : IServerMessage {
+
+        public byte MessageOrder { get; } = 27;
+        public byte ServiceID { get; } = 100;
+
+        public string[] RealmNames;
+        public ushort[] PlayerCounts;
+        public ushort[] PlayerLimits;
+
     }
     
 }

@@ -84,6 +84,14 @@ internal static class Program {
         ConfigurationManager.Settings["Patch Server.PatchServerName"].AsString();
     private static readonly ushort s_patchServerPort = 
         ConfigurationManager.Settings["Patch Server.PatchServerPort"].AsUShort();
+    private static readonly byte s_gameServerCount = 
+        ConfigurationManager.Settings["Game Server.GameServerCount"].AsByte();
+    private static readonly string s_gameServerName = 
+        ConfigurationManager.Settings["Game Server.GameServerName"].AsString();
+    private static readonly ushort s_gameServerPort = 
+        ConfigurationManager.Settings["Game Server.GameServerPort"].AsUShort();
+    private static readonly string[] s_realmNames = 
+        ConfigurationManager.Settings["Game Server.RealmNames"].AsString().Split(',');
     private static readonly string s_adminAccountUsername = 
         ConfigurationManager.Settings["Database.AdminAccountUsername"].AsString();
     private static readonly string s_adminAccountPassword = 
@@ -137,7 +145,7 @@ internal static class Program {
         // SERVERS
         // =============================================================
         var loginServer = StartLoginServer();
-        StartGameServer(loginServer);
+        StartGameServers(loginServer);
 
         // Force load dragon database. Create a dud account if the database ends up using the embedded database.
         _ = PlayerDatabase.Instance.Store;
@@ -168,9 +176,27 @@ internal static class Program {
         return loginServerActor;
     }
 
-    private static void StartGameServer(IActorRef loginServerActorRef) {
-        var msg = new SERVER_100_PROTOCOL.MSG_CREATEGAMESERVER();
-        loginServerActorRef.Tell(msg);
+    private static void StartGameServers(IActorRef loginServerActorRef) {
+        var count = Math.Max(s_gameServerCount, (byte) 1);
+        var basePort = s_gameServerPort;
+
+        for (byte i = 0; i < count; i++) {
+            var realmName = i < s_realmNames.Length 
+                ? s_realmNames[i].Trim() 
+                : $"Realm-{i + 1}";
+            var serverName = $"{s_gameServerName}.{realmName}";
+            var port = (ushort) (basePort + i);
+
+            var msg = new SERVER_100_PROTOCOL.MSG_CREATEGAMESERVER {
+                Name = serverName,
+                Port = port,
+                RealmName = realmName
+            };
+            loginServerActorRef.Tell(msg);
+
+            Logger.Information("Director requested game server '{Name}' on port {Port} (realm: {Realm}).",
+                Logger.Args(serverName, port, realmName));
+        }
     }
 
     private static async Task StartPatchServer() {

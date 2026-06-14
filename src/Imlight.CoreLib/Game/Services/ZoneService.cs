@@ -37,9 +37,11 @@
  */
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Akka.Actor;
+using Imcodec.Types;
 using Imcodec.CoreObject;
 using Imcodec.Cryptography;
 using Imcodec.MessageLayer.Generated;
@@ -454,6 +456,144 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
             DisplayDiff = 1,
         };
         SendToSocket(networkMessage);
+    }
+
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_REALM_INFO_QUERY))]
+    private void ReceiveRealmInfoQuery(GAME_5_PROTOCOL.MSG_REALM_INFO_QUERY message) {
+        // Query the LoginServer's GameServerPool for the realm list.
+        var realmListMsg = new SERVER_100_PROTOCOL.MSG_REALMLIST();
+        var realmList = AskServer<SERVER_100_PROTOCOL.MSG_REALMLIST>(realmListMsg);
+
+        var currentRealm = "Imlight";
+        var currentZone = GetActiveWizard()?.Zone ?? "";
+
+        // Query our own game server for the current realm name.
+        try {
+            var serverInfo = AskServer<SERVER_100_PROTOCOL.MSG_SERVERINFO>(
+                new SERVER_100_PROTOCOL.MSG_QUERYSERVER());
+            currentRealm = serverInfo.RealmName ?? currentRealm;
+        }
+        catch { }
+
+        // Serialize the realm list as a RealmInfoList PropertyClass blob.
+        // The client expects this exact type — we cannot fabricate the format.
+        var realmInfoList = new RealmInfoList {
+            m_infoList = []
+        };
+        for (int i = 0; i < realmList.RealmNames.Length; i++) {
+            realmInfoList.m_infoList.Add(new RealmInfo {
+                m_realmName = realmList.RealmNames[i],
+                m_displayName = realmList.RealmNames[i],
+                m_realmPopulation = realmList.PlayerCounts[i]
+            });
+        }
+
+        var serializer = new ObjectSerializer(
+            Versionable: false,
+            Behaviors: SerializerFlags.None
+        );
+        if (!serializer.Serialize(realmInfoList, (PropertyFlags) 31, out var realmInfoBlob)) {
+            Logger.Error("Failed to serialize RealmInfoList for MSG_REALM_INFO_QUERY.");
+
+            return;
+        }
+
+        // Serialize an empty instance list — the client requires a valid
+        // InstanceInfoList PropertyClass blob, not an empty string.
+        var instanceInfoList = new InstanceInfoList {
+            m_instanceList = new List<InstanceInfo>()
+        };
+        if (!serializer.Serialize(instanceInfoList, (PropertyFlags) 31, out var instanceInfoBlob)) {
+            Logger.Error("Failed to serialize InstanceInfoList for MSG_REALM_INFO_QUERY.");
+
+            return;
+        }
+
+        var rsp = new GAME_5_PROTOCOL.MSG_REALM_INFO_QUERY {
+            RealmInfoList = realmInfoBlob,
+            CurrentRealm = currentRealm,
+            InstanceInfoList = instanceInfoBlob,
+            CurrentZone = currentZone
+        };
+        SendToSocket(rsp);
+    }
+
+    [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_TRANSFER_REALMS))]
+    private void ReceiveTransferRealms(GAME_5_PROTOCOL.MSG_TRANSFER_REALMS message) {
+        var wizard = GetActiveWizard();
+        var account = GetActiveAccount();
+
+        if (wizard is null || account is null) {
+            return;
+        }
+
+        // Ask the LoginServer to create a session key on the target realm's game server.
+        var createKeyMsg = new SERVER_100_PROTOCOL.MSG_CREATEPLAYERKEY {
+            Account = account,
+            TargetRealmName = message.RealmName
+        };
+
+        SERVER_100_PROTOCOL.MSG_CREATEPLAYERKEYRSP keyRsp;
+        try {
+            keyRsp = AskServer<SERVER_100_PROTOCOL.MSG_CREATEPLAYERKEYRSP>(createKeyMsg);
+        }
+        catch {
+            Logger.Error("Failed to create player key for realm transfer to {Realm}.",
+                Logger.Args(message.RealmName));
+
+            return;
+        }
+
+        if (!keyRsp.Success) {
+            Logger.Warning("Realm transfer to {Realm} failed — realm not found.",
+                Logger.Args(message.RealmName));
+
+            return;
+        }
+
+        // Send MSG_SERVERTRANSFER to redirect the client to the new game server.
+        var serverTransfer = new GAME_5_PROTOCOL.MSG_SERVERTRANSFER {
+            IP = keyRsp.IP,
+            TCPPort = keyRsp.Port,
+            UDPPort = keyRsp.Port,
+            Key = 0, // Session key is already stored on the target server.
+            UserID = account.AccountId,
+            CharID = wizard.CharId,
+            ZoneName = wizard.Zone,
+            ZoneID = new Imcodec.Types.GID((ulong) keyRsp.Port),
+            Location = Util.GetCompactStringFromVector(wizard.Location, wizard.Orientation),
+            Slot = 0,
+            SessionSlot = 0,
+            SessionID = 0,
+            TargetPlayerID = wizard.CharId,
+            TransitionID = 1,
+            FallbackIP = keyRsp.IP,
+            FallbackTCPPort = keyRsp.Port,
+            FallbackUDPPort = keyRsp.Port,
+            FallbackZone = wizard.Zone,
+            FallbackZoneID = new Imcodec.Types.GID((ulong) keyRsp.Port)
+        };
+        SendToSocket(serverTransfer);
+    }
+
+    [MessageHandler(typeof(GAME2_55_PROTOCOL.MSG_CURRENTREALM))]
+    private void ReceiveCurrentRealm(GAME2_55_PROTOCOL.MSG_CURRENTREALM message) {
+        var wizard = GetActiveWizard();
+        var currentZone = wizard?.Zone ?? "";
+
+        var currentRealm = "Imlight";
+        try {
+            var serverInfo = AskServer<SERVER_100_PROTOCOL.MSG_SERVERINFO>(
+                new SERVER_100_PROTOCOL.MSG_QUERYSERVER());
+            currentRealm = serverInfo.RealmName ?? currentRealm;
+        }
+        catch { }
+
+        var rsp = new GAME2_55_PROTOCOL.MSG_CURRENTREALM {
+            CurrentRealm = currentRealm,
+            CurrentZone = currentZone
+        };
+        SendToSocket(rsp);
     }
 
     private void SetZone(IActorRef actorRef) {
