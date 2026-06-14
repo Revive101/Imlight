@@ -351,6 +351,15 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
 
         // Echo the packet back to the client.
         SendToSocket(message);
+
+        // Send a buddy entry so the accepter sees the new friend immediately.
+        if (wizard.FriendsBehavior.TryGetRelationship(message.ListOwnerGID, out var newRelationship)) {
+            var buddyWizard = WizardCollection.GetCharacter(message.ListOwnerGID);
+            if (buddyWizard != null) {
+                SendBuddyEntry(buddyWizard, newRelationship, wizard.CharId);
+                SendBuddyListEnd(wizard.CharId);
+            }
+        }
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_BUDDYREQUESTDENY))]
@@ -440,6 +449,12 @@ internal class FriendsService(SessionActor sessionActor) : MessageService(sessio
                 FriendDate = epochInSeconds,
                 FriendStatusDate = epochInSeconds,
             };
+
+            // Send a buddy entry so the requester sees the new friend immediately.
+            if (myWizard.FriendsBehavior.TryGetRelationship(message.EntryGID, out var newRel)) {
+                SendBuddyEntry(entryWizard, newRel, myWizard.CharId);
+                SendBuddyListEnd(myWizard.CharId);
+            }
         }
         else {
             // Log
