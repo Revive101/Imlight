@@ -24,10 +24,10 @@
  * as they are defined in the Root.wad
  * 
  * USAGE EXAMPLE:
- * var hubZone = WorldHubZones.GetHubForZone("WizardCity/Streets/WC_Unicorn");
+ * var hubZone = WorldHubZones.GetHubForZone("MyWorld/Hub");
  * 
  * NOTE:
- * Hubs are usually the player gathering areas in the game, such as Wizard City Commons.
+ * Hubs are usually the player gathering areas in the game.
  * They are safe spaces.
  * 
  * TODO:

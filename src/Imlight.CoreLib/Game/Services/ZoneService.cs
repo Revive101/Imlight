@@ -776,7 +776,6 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
 
         // on live servers, the end time is 200 seconds from the time gohome is sent. i still have no clue why.
         // also on live servers, when teleporting in zone, it will send the effects like 3 times. i also have no clue on this either.
-        // all i know is that this works. in conclusion, do what makes sense, dont copy kingsisle, or you run into problems.
         var effect = new NamedEffect {
             m_effectNameID = StringHash.Compute("RecallHome"),
             m_endTime = (uint) time.AddSeconds(2).ToUnixTimeSeconds(),

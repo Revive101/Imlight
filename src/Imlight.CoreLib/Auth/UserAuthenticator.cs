@@ -48,7 +48,7 @@ using Imlight.CoreLib.WizardData.Models.Misc;
 using Imlight.CoreLib.WizardData.Models.Player;
 using static Imcodec.MessageLayer.Generated.LOGIN_7_PROTOCOL;
 
-namespace Imlight.CoreLib.AntiAmbrose;
+namespace Imlight.CoreLib.Auth;
 
 internal enum UserAuthenResult {
 

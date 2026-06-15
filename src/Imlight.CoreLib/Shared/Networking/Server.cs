@@ -136,7 +136,7 @@ public abstract class Server : ReceiveProtocolDispatcher {
     }
 
     protected override SupervisorStrategy SupervisorStrategy() =>
-        // There is no attempting to stabilize the connection server side. The Wizard101 client will attempt to
+        // There is no attempting to stabilize the connection server side. The client will attempt to
         // reconnect on any given failure. This is a good thing, as it allows us to simply stop the session actor
         // and let the client handle the rest.
         new OneForOneStrategy(

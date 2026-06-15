@@ -36,7 +36,7 @@
 using System;
 using Akka.Actor;
 using Imcodec.MessageLayer.Generated;
-using Imlight.CoreLib.AntiAmbrose;
+using Imlight.CoreLib.Auth;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Collections;

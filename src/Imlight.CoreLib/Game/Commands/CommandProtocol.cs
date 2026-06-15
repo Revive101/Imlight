@@ -23,7 +23,7 @@ using System.Collections.Generic;
 using Akka.Actor;
 using Imcodec.MessageLayer.Generated;
 using Imlight.Common;
-using Imlight.CoreLib.AntiAmbrose;
+using Imlight.CoreLib.Auth;
 using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Commands;

@@ -44,7 +44,7 @@ using Imlight.Common;
 using Imlight.CoreLib.WizardData.Models.Misc;
 using Imlight.CoreLib.WizardData.Models.Player;
 
-namespace Imlight.CoreLib.AntiAmbrose;
+namespace Imlight.CoreLib.Auth;
 
 /// <summary>
 /// Manages account authorization level checks and logging for privileged actions.
