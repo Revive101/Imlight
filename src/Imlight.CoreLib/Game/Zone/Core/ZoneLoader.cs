@@ -25,7 +25,7 @@
  * 
  * USAGE EXAMPLE:
  * var loaderActor = Context.ActorOf(Props.Create<ZoneLoader>());
- * loaderActor.Tell(new ZONE_102_PROTOCOL.MSG_ZONELOADBEGIN { ZonePath = "WizardCity/Commons" });
+ * loaderActor.Tell(new ZONE_102_PROTOCOL.MSG_ZONELOADBEGIN { ZonePath = "MyWorld/Hub" });
  * 
  * NOTE:
  *

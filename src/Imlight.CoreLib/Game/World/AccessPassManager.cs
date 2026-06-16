@@ -24,8 +24,8 @@
  * as they appear in the ROot.wad
  * 
  * USAGE EXAMPLE:
- * var zoneExists = AccessPassManager.DoesZoneExist("WizardCity/WC_Hub");
- * var matchedZone = AccessPassManager.GetContainedZoneName("WC_Hub");
+ * var zoneExists = AccessPassManager.DoesZoneExist("MyWorld/Hub");
+ * var matchedZone = AccessPassManager.GetContainedZoneName("Hub");
  * 
  * NOTE:
  * 

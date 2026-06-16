@@ -39,10 +39,6 @@ public enum EquipmentSlotType {
 
 }
 
-/// <summary>
-/// Represents a slot in the player's equipment. This is an abstraction on top of Wizard101's
-/// type to make it easier to work with.
-/// </summary>
 [Serializable]
 public class EquipmentSlot : IClientTypeProvider<EquippedSlotInfo> {
     
