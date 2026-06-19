@@ -298,6 +298,7 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
             ReagentItemTemplate => new ClientReagentItem(),
             PetSnackItemTemplate => new ClientPetSnackItem(),
             ItemTemplate => new WizClientObjectItem(),
+            WizPetTemplate => new WizClientPet(),
             WizGameObjectTemplate => new WizClientObject(),
             _ => new ClientObject()
         };

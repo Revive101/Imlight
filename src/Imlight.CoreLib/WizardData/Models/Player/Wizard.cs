@@ -438,6 +438,9 @@ public class Wizard : IDisposable {
         if (slot.SlotType == EquipmentSlotType.Deck) {
             InformSpellbookOfNewDeck(template, inventoryItem.m_globalID);
         }
+        if (slot.SlotType == EquipmentSlotType.Pet) {
+            EquipPet(template, inventoryItem);
+        }
 
         // Persistent save.
         WizardCollection.UpdateCharacterItems(this);
@@ -479,6 +482,9 @@ public class Wizard : IDisposable {
         // If this object is a mount, we'll also want to update the mount owner behavior.
         if (slot.SlotType == EquipmentSlotType.Mount) {
             UnequipMount();
+        }
+        if (slot.SlotType == EquipmentSlotType.Pet) {
+            UnequipPet();
         }
 
         // Persistent save.
@@ -1207,6 +1213,20 @@ public class Wizard : IDisposable {
         WizardCollection.UpdateCharacterMount(this);
     }
 
+    private void EquipPet(WizItemTemplate template, WizClientObjectItem item) {
+        PetOwnerBehavior.EquipPet(template, item);
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterPetOwnerBehavior(this);
+    }
+
+    private void UnequipPet() {
+        PetOwnerBehavior.UnequipPet();
+
+        // Persistent save.
+        WizardCollection.UpdateCharacterPetOwnerBehavior(this);
+    }
+
     private void InformSpellbookOfNewDeck(WizItemTemplate template, ulong deckGlobalId) {
         // The caller of this method has already equipped the deck to the player.
         // This method just updates the spellbook behavior to reflect the new deck.
@@ -1250,22 +1270,13 @@ public class Wizard : IDisposable {
             CoreObjectFactory.InitializeCoreObjectBehaviors(cObj, templateId);
             cObj.m_characterId = (GID) CharId;
 
-            // If this is a pet item, set the hatch timer so the client shows
-            // the correct countdown instead of "29091 days" (epoch 0).
-            // Also register a matching server-side egg so MSG_HATCHEGGNOW can
-            // find it by the same GlobalID the client uses.
             if (CoreObjectFactory.FindBehaviorInstance<ClientPetItemBehavior>(cObj, out var petItemBehavior)) {
                 var idx = cObj.m_inactiveBehaviors.IndexOf(petItemBehavior);
                 petItemBehavior = (ClientPetItemBehavior) cObj.m_inactiveBehaviors[idx];
                 petItemBehavior.m_hatchedTimeSecs = (uint)(DateTimeOffset.UtcNow.ToUnixTimeSeconds() + 600);
                 cObj.m_inactiveBehaviors[idx] = petItemBehavior;
-
-                // Create the server-side egg with the SAME GlobalID the client
-                // uses (the item's m_globalID), so MSG_HATCHEGGNOW can find it.
+                
                 PetOwnerBehavior.CreatePetEgg(templateId, 600, cObj.m_globalID);
-
-                Logger.Debug("Set hatch timer for pet item template {0} (egg GID {1})",
-                    Logger.Args(templateId, cObj.m_globalID));
             }
 
             itemsToAdd.Add(cObj);

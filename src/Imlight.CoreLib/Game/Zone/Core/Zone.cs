@@ -24,7 +24,7 @@
  * and communication between zone supervisors.
  * 
  * USAGE EXAMPLE:
- * var zoneActor = Context.ActorOf(Zone.Props("WizardCity/Commons", 12345));
+ * var zoneActor = Context.ActorOf(Zone.Props("MyWorld/Hub", 12345));
  * 
  * NOTE:
  * Uses Akka actor model for asynchronous communication and supervisor pattern.
@@ -325,6 +325,10 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL))]
     private void ReceiveRequestCombatSigil(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL message)
+        => _supervisors.ForEach(supervisor => supervisor.Forward(message));
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_SPAWNENTITY))]
+    private void ReceiveSpawnEntity(ZONE_102_PROTOCOL.MSG_SPAWNENTITY message)
         => _supervisors.ForEach(supervisor => supervisor.Forward(message));
 
     #endregion

@@ -53,6 +53,7 @@ using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.Shared.Networking;
+using Imlight.CoreLib.Shared.Resources;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.WizardData.Models.Misc;
 
@@ -94,6 +95,11 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
             var effects = playerCharacter.GameEffects;
 
             SendAddEffects([.. effects]);
+
+            // Spawn the equipped pet as a zone entity if one is equipped.
+            if (playerCharacter.PetOwnerBehavior.EquippedPetTemplateId != 0) {
+                SpawnPetEntity();
+            }
         }
         catch (Exception ex) {
             Logger.Error("Error while attaching effects: {0} {1}", 
@@ -147,6 +153,82 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
         if (removedEffects is not null) {
             SendRemoveEffects(removedEffects);
         }
+
+        // If this is a pet, spawn it as a zone entity so it appears in the world.
+        if (message.SlotName == "Pet") {
+            SpawnPetEntity(item);
+        }
+    }
+
+    /// <summary>
+    /// Sends MSG_SPAWNENTITY to the zone to create the pet as a zone entity.
+    /// The response (MSG_SPAWNENTITYRSP) is handled by ReceiveSpawnEntityResponse.
+    /// </summary>
+    private void SpawnPetEntity(WizClientObjectItem petItem = null) {
+        var zoneActor = SessionActor.GetZoneActor();
+        if (zoneActor is null) return;
+
+        // The generic "PetObject" template (ID 2) is used for all pet zone entities.
+        // The specific breed appearance comes from behaviors on the template.
+        const ulong PET_OBJECT_TEMPLATE_ID = 2;
+
+        var template = CoreObjectFactory.GetCoreTemplate(PET_OBJECT_TEMPLATE_ID);
+        if (template is null) {
+            Logger.Debug("SpawnPetEntity: no PetObject template (ID 2)");
+            return;
+        }
+
+        var coreObj = CoreObjectFactory.FinalizeCoreObject(PET_OBJECT_TEMPLATE_ID);
+        if (coreObj is null) return;
+
+        // Initialize behaviors from the template, then set the breed race.
+        coreObj = CoreObjectFactory.InitializeCoreObjectBehaviors(coreObj, template);
+
+        // The client reads the pet race from ClientPetNameBehavior.m_eRace
+        // (inherited from ClientWizPlayerNameBehavior), not WizardCharacterBehavior.
+        if (CoreObjectFactory.FindBehaviorInstance<ClientPetNameBehavior>(coreObj, out var petNameBeh)) {
+            petNameBeh.m_eRace = eRace.Firecat; // Black Cat pet uses Firecat avatar
+        }
+
+        // Place the pet at the player's location.
+        var playerObj = GetActiveGameObject();
+        if (playerObj is not null) {
+            coreObj.m_location = playerObj.m_location;
+        }
+
+        var spawnMsg = new ZONE_102_PROTOCOL.MSG_SPAWNENTITY {
+            CoreObject = coreObj,
+            Template = template,
+            Requester = SessionActor.ActorRef
+        };
+
+        zoneActor.Tell(spawnMsg, Self);
+    }
+
+    /// <summary>
+    /// Handles the zone's response to MSG_SPAWNENTITY for a pet.
+    /// Sends MSG_LEASH to attach the spawned entity to the player.
+    /// </summary>
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_SPAWNENTITYRSP))]
+    private void ReceiveSpawnEntityResponse(ZONE_102_PROTOCOL.MSG_SPAWNENTITYRSP message) {
+        if (message.SpawnedObject is null) return;
+
+        var playerObj = GetActiveGameObject();
+        if (playerObj is null) return;
+
+        // MSG_LEASH: tell the client this zone entity is leashed to the player.
+        SendToSocket(new WIZARD_12_PROTOCOL.MSG_LEASH {
+            GlobalID = message.SpawnedObject.m_globalID,
+            OwnerID = playerObj.m_globalID,
+            Leashed = 1
+        });
+
+        // MSG_LEASHOFFSET: position the pet behind the player.
+        SendToSocket(new WIZARD_12_PROTOCOL.MSG_LEASHOFFSET {
+            GlobalID = message.SpawnedObject.m_globalID,
+            Radius = 75f,
+            Angle = 180f
+        });
     }
 
     private void UnEquipItem(GAME_5_PROTOCOL.MSG_EQUIPITEM message) {
@@ -183,6 +265,8 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
 
         SendUnequipItem(message.SlotName, slot, itemId);
         SendRemoveEffects(removedEffects);
+
+        // TODO: Unleash pet zone entity when spawn/despawn is implemented.
     }
 
     private void SendEquipItem(WizClientObjectItem item, string slotName) {

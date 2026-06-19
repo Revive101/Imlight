@@ -737,4 +737,33 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
     }
 
+    /// <summary>
+    /// Requests the zone to spawn a new entity from a CoreObject and template.
+    /// Used for dynamic objects like equipped pets.
+    /// </summary>
+    public sealed class MSG_SPAWNENTITY : IServerMessage {
+
+        public byte MessageOrder { get; } = 51;
+        public byte ServiceID { get; } = 102;
+
+        public CoreObject CoreObject;
+        public CoreTemplate Template;
+        /// <summary>Optional: the player actor requesting the spawn (for routing).</summary>
+        public IActorRef Requester;
+
+    }
+
+    /// <summary>
+    /// Response to MSG_SPAWNENTITY with the created entity actor reference.
+    /// </summary>
+    public sealed class MSG_SPAWNENTITYRSP : IServerMessage {
+
+        public byte MessageOrder { get; } = 52;
+        public byte ServiceID { get; } = 102;
+
+        public IActorRef EntityActor;
+        public CoreObject SpawnedObject;
+
+    }
+
 }

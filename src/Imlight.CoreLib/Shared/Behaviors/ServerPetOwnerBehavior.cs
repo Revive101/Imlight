@@ -56,6 +56,16 @@ public class ServerPetOwnerBehavior : IClientBehaviorProvider<ClientPetOwnerBeha
     /// </summary>
     [JsonIgnore] public List<CraftingSlot> MorphingSlots { get; private set; }
 
+    /// <summary>
+    /// The template ID of the currently equipped pet (0 if none).
+    /// </summary>
+    public ulong EquippedPetTemplateId { get; set; }
+
+    /// <summary>
+    /// The inventory item GlobalID of the currently equipped pet (0 if none).
+    /// </summary>
+    public ulong EquippedPetGlobalId { get; set; }
+
     // ctor
     public ServerPetOwnerBehavior() 
         => MorphingSlots = [];
@@ -178,6 +188,24 @@ public class ServerPetOwnerBehavior : IClientBehaviorProvider<ClientPetOwnerBeha
         var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
         return [.. MorphingSlots.Where(e => e.m_timeFinished > now)];
+    }
+
+    /// <summary>
+    /// Marks a pet as equipped, storing its template and item IDs.
+    /// </summary>
+    public void EquipPet(WizItemTemplate template, WizClientObjectItem item) {
+        EquippedPetTemplateId = item.m_templateID;
+        EquippedPetGlobalId = item.m_globalID;
+        PlayingAsPet = true;
+    }
+
+    /// <summary>
+    /// Marks the pet as unequipped.
+    /// </summary>
+    public void UnequipPet() {
+        EquippedPetTemplateId = 0;
+        EquippedPetGlobalId = 0;
+        PlayingAsPet = false;
     }
 
     /// <summary>
