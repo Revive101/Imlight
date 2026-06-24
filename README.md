@@ -46,7 +46,7 @@ If you care to contribute to the data recollection effort, you may use [Imview](
 - [x] Potions
 - [x] NPC interactions
 - [x] Bazaar
-- [ ] Realms
+- [x] Realms
 - [x] Pets (partial)
 - [ ] Pet minigames
 - [ ] Crafting
