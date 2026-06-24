@@ -916,7 +916,7 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         var worlds = qTemplate.m_goals
             .Select(g => g.m_destinationZone ?? "")
             .Where(z => !string.IsNullOrWhiteSpace(z))
-            .Select(z => z.Split('/')[0])                 // "WizardCity/WC_..." -> "WizardCity"
+            .Select(z => z.Split('/')[0])                 // "MyWorld/HubZone..." -> "MyWorld"
             .Where(root => !string.IsNullOrWhiteSpace(root))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();

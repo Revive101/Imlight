@@ -1270,15 +1270,6 @@ public class Wizard : IDisposable {
             CoreObjectFactory.InitializeCoreObjectBehaviors(cObj, templateId);
             cObj.m_characterId = (GID) CharId;
 
-            if (CoreObjectFactory.FindBehaviorInstance<ClientPetItemBehavior>(cObj, out var petItemBehavior)) {
-                var idx = cObj.m_inactiveBehaviors.IndexOf(petItemBehavior);
-                petItemBehavior = (ClientPetItemBehavior) cObj.m_inactiveBehaviors[idx];
-                petItemBehavior.m_hatchedTimeSecs = (uint)(DateTimeOffset.UtcNow.ToUnixTimeSeconds() + 600);
-                cObj.m_inactiveBehaviors[idx] = petItemBehavior;
-                
-                PetOwnerBehavior.CreatePetEgg(templateId, 600, cObj.m_globalID);
-            }
-
             itemsToAdd.Add(cObj);
             InventoryBehavior.InventoryItemIds.Add(cObj.m_globalID);
         });

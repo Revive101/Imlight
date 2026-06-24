@@ -19,8 +19,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
+using Imlight.CoreLib.Shared.Utilities;
 using Imlight.CoreLib.Shared.Utilities;
 using Newtonsoft.Json;
 
@@ -32,10 +34,18 @@ public record PetEggData {
     public int HatchTimeEpoch { get; set; }
 }
 
+public record PetEggData {
+    public ulong GlobalId { get; set; }
+    public ulong PetTemplateId { get; set; }
+    public int HatchTimeEpoch { get; set; }
+}
+
 public class ServerPetOwnerBehavior : IClientBehaviorProvider<ClientPetOwnerBehavior> {
 
     [JsonIgnore] public bool NoTransfer { get; set; } = false;
 
+    public readonly int EnergyTickIntervalInSeconds = ConfigurationManager
+        .Settings["Character.PetEnergyTickInSeconds"].AsInt();
     public readonly int EnergyTickIntervalInSeconds = ConfigurationManager
         .Settings["Character.PetEnergyTickInSeconds"].AsInt();
 
@@ -215,6 +225,7 @@ public class ServerPetOwnerBehavior : IClientBehaviorProvider<ClientPetOwnerBeha
     /// </summary>
     public ClientPetOwnerBehavior GetClientBehaviorInstance() => new() {
         m_maxSlots = MaxSlots,
+        m_morphingSlots = null,
         m_morphingSlots = null,
         m_energyTickTimeSecs = 0,
         m_energy = Energy,

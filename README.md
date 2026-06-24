@@ -13,7 +13,7 @@
 ## About
 The "<B>Imlight</B>" project began as a learning exercise to explore the mechanics and architecture of MMORPG server design. We have the utmost respect for the original developers and have taken steps to ensure our project does not infringe on their intellectual property. 
 
-That being said, Imlight has a BYOD (bring-your-own-data) philosophy and does not distribute any copyrighted game files. Users must obtain the original client and any necessary assets independently.
+That being saiyd, Imlight has a BYOD (bring-your-own-data) philosophy and does not distribute any copyrighted game files. Users must obtain the original client and any necessary assets independently.
 
 ## Disclaimers
 Imlight is a framework for building a private server. Do not expect a full game experience OOTB.
@@ -46,7 +46,7 @@ If you care to contribute to the data recollection effort, you may use [Imview](
 - [x] Potions
 - [x] NPC interactions
 - [x] Bazaar
-- [ ] Realms
+- [x] Realms
 - [x] Pets (partial)
 - [ ] Pet minigames
 - [ ] Crafting

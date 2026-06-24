@@ -34,8 +34,8 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
 
     private const string TUTORIAL_QUEST_NAME = "WC-TUT-C05-001";
     private const uint TUTORIAL_NAME_STRING_ID = 600062081;
-    private const string TUTORIAL_EXTERIOR_ZONE_NAME = "WizardCity/Tutorial_Exterior";
-    private const string TUTORIAL_INTERIOR_ZONE_NAME = "WizardCity/Tutorial_Interior";
+    private const string TUTORIAL_EXTERIOR_ZONE_NAME_CONTENTS = "Tutorial_Exterior";
+    private const string TUTORIAL_INTERIOR_ZONE_NAME_CONTENTS = "Tutorial_Interior";
 
     private readonly ObjectSerializer _serializer = new(
         Versionable: false,
@@ -61,7 +61,8 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
             return;
         }
 
-        if (msg.ZoneName.ToString() is not (TUTORIAL_EXTERIOR_ZONE_NAME or TUTORIAL_INTERIOR_ZONE_NAME)) {
+        if (   msg.ZoneName.ToString().Contains(TUTORIAL_EXTERIOR_ZONE_NAME_CONTENTS) 
+            || msg.ZoneName.ToString().Contains(TUTORIAL_INTERIOR_ZONE_NAME_CONTENTS)) {
             return;
         }
 
@@ -84,7 +85,8 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         // For starters, we only want to allow tutorial commands if they are in the tutorial area 
         // and have not completed the tutorial quest yet.
         var wizard = GetActiveWizard();
-        if (wizard.Zone is not (TUTORIAL_EXTERIOR_ZONE_NAME or TUTORIAL_INTERIOR_ZONE_NAME)) {
+        if (   wizard.Zone.Contains(TUTORIAL_EXTERIOR_ZONE_NAME_CONTENTS) 
+            || wizard.Zone.Contains(TUTORIAL_INTERIOR_ZONE_NAME_CONTENTS)) {
             return;
         }
         if (wizard.HasCompletedQuest(TUTORIAL_QUEST_NAME)) {

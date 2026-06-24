@@ -275,7 +275,7 @@ public class PatchServer : Server {
 
         _latestFileList = latestXmlObj;
 
-        // The second interpretation is the `.bin`, which is what the Wizard101 client uses.
+        // The second interpretation is the `.bin`, which is what the client uses.
         // Download the `.bin` interpretation and cache the file stats.
         var latestBin = DownloadStream(LatestFileListNameBin).Result;
         if (latestBin is null) {

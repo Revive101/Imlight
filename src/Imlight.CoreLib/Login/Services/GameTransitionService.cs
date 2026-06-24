@@ -51,8 +51,6 @@ namespace Imlight.CoreLib.Login.Services;
 
 internal class GameTransitionService(SessionActor sessionActor) : MessageService(sessionActor) {
 
-    private const string FALLBACK_ZONE_NAME = "WizardCity/WC_Hub";
-
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new GameTransitionService(parentActor));
 
@@ -153,10 +151,6 @@ internal class GameTransitionService(SessionActor sessionActor) : MessageService
 
         // Minigames:
         if (wizard.Zone.Contains("Phantom")) {
-            if (string.IsNullOrEmpty(wizard.PreviousZone) || wizard.PreviousZone.Contains("Phantom")) {
-                return FALLBACK_ZONE_NAME;
-            }
-            
             return wizard.PreviousZone;
         }
 
