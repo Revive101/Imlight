@@ -55,7 +55,7 @@ namespace Imlight.CoreLib.Game.Services;
 
 internal class PetService(SessionActor sessionActor) : MessageService(sessionActor), IWithTimers {
 
-    private static readonly int s_petEnergyTickIntervalInSeconds 
+    private static readonly int s_petEnergyTickIntervalInSeconds
         = ConfigurationManager.Settings["Character.PetEnergyTickInSeconds"].AsInt();
     private const int PET_ENERGY_TICK_DELAY = 2;
     private const int DEFAULT_PET_OVERALL_RATING = 30;
@@ -121,6 +121,36 @@ internal class PetService(SessionActor sessionActor) : MessageService(sessionAct
         }
     }
 
+    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_DOEGGHATCH))]
+    private void ReceiveEggHatch(CHARACTER_103_PROTOCOL.MSG_DOEGGHATCH message) {
+        var wizard = GetActiveWizard();
+        var egg = wizard.PetOwnerBehavior.MorphingSlots
+            ?.FirstOrDefault(e => e.m_globalID == message.EggGlobalId);
+
+        if (egg == null) {
+            Logger.Debug("MSG_DOEGGHATCH for unknown egg {0}.", Logger.Args(message.EggGlobalId));
+            return;
+        }
+
+        HatchEgg(wizard, egg);
+    }
+
+    [MessageHandler(typeof(PET_9_PROTOCOL.MSG_HATCHEGGNOW))]
+    private void ReceiveHatchEggNow(PET_9_PROTOCOL.MSG_HATCHEGGNOW message) {
+        var wizard = GetActiveWizard();
+        var egg = wizard.PetOwnerBehavior.MorphingSlots
+            ?.FirstOrDefault(e => e.m_globalID == message.EggGID);
+
+        if (egg == null) {
+            Logger.Debug("MSG_HATCHEGGNOW for unknown egg {0}.", Logger.Args(message.EggGID));
+            return;
+        }
+
+        // TODO: validate gold cost against message.Gold
+        // For now, just hatch immediately.
+        HatchEgg(wizard, egg);
+    }
+
     private void InitializeEggs(Wizard wizard) {
         var morphingSlots = wizard.PetOwnerBehavior.MorphingSlots;
         if (morphingSlots == null || morphingSlots.Count == 0) {
@@ -177,39 +207,6 @@ internal class PetService(SessionActor sessionActor) : MessageService(sessionAct
         );
     }
 
-    [MessageHandler(typeof(CHARACTER_103_PROTOCOL.MSG_DOEGGHATCH))]
-    private void ReceiveEggHatch(CHARACTER_103_PROTOCOL.MSG_DOEGGHATCH message) {
-        var wizard = GetActiveWizard();
-        var egg = wizard.PetOwnerBehavior.MorphingSlots
-            ?.FirstOrDefault(e => e.m_globalID == message.EggGlobalId);
-
-        if (egg == null) {
-            Logger.Debug("MSG_DOEGGHATCH for unknown egg {0}.", Logger.Args(message.EggGlobalId));
-            return;
-        }
-
-        HatchEgg(wizard, egg);
-    }
-
-    [MessageHandler(typeof(PET_9_PROTOCOL.MSG_HATCHEGGNOW))]
-    private void ReceiveHatchEggNow(PET_9_PROTOCOL.MSG_HATCHEGGNOW message) {
-        var wizard = GetActiveWizard();
-        var egg = wizard.PetOwnerBehavior.MorphingSlots
-            ?.FirstOrDefault(e => e.m_globalID == message.EggGID);
-
-        if (egg == null) {
-            Logger.Debug("MSG_HATCHEGGNOW for unknown egg {0}.", Logger.Args(message.EggGID));
-            return;
-        }
-
-        // TODO: validate gold cost against message.Gold
-        // For now, just hatch immediately.
-        HatchEgg(wizard, egg);
-    }
-
-    /// <summary>
-    /// Serializes a ClientPetOwnerBehavior into a ByteString for MSG_PETUPDATEBEHAVIOR.
-    /// </summary>
     private static ByteString SerializeBehaviorBlob(ServerPetOwnerBehavior behavior) {
         var clientBehavior = behavior.GetClientBehaviorInstance();
         var serializer = new ObjectSerializer(
@@ -225,16 +222,12 @@ internal class PetService(SessionActor sessionActor) : MessageService(sessionAct
         return blob;
     }
 
-    /// <summary>
-    /// Performs the full hatch sequence: removes egg from slot, sends the four
-    /// hatch notification messages to the client, and adds the pet to the tome.
-    /// </summary>
     private void HatchEgg(Wizard wizard, CraftingSlot egg) {
         // Resolve the pet template from the egg's recipe name.
         if (!ServerPetOwnerBehavior.TryGetPetTemplateFromEgg(egg, out var petTemplateId)) {
             Logger.Debug("HatchEgg: could not parse pet template from egg {0}, recipe='{1}'.",
                 Logger.Args(egg.m_globalID, egg.m_recipeName));
-                
+
             return;
         }
 
@@ -284,5 +277,5 @@ internal class PetService(SessionActor sessionActor) : MessageService(sessionAct
         Logger.Information("Pet hatched! Egg {0} → template {1} (tome entry: {2})",
             Logger.Args(egg.m_globalID, petTemplateId, petTomeGlobalId));
     }
-    
+
 }

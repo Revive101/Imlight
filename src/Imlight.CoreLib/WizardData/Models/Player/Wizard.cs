@@ -32,6 +32,7 @@ using Imcodec.Math;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imcodec.Types;
+using Imlight.CoreLib.Game.Pet;
 
 namespace Imlight.CoreLib.WizardData.Models.Player;
 
@@ -122,10 +123,10 @@ public class Wizard : IDisposable {
         87256,   // Antiquated Wand (starting wand)
         1456120, // Celebration Staff
 
-        126412, // Black Cat Pet
         284071, // Swift Gryphon (PERM)
         126983, // Starter Deck
     ];
+    [JsonIgnore] private readonly uint _defaultPetTemplateId = 126412; // Black Cat Pet;
 
     // Constructor: Used for deserialization. If this is not present, the default constructor will be used.
     [JsonConstructor]
@@ -1273,6 +1274,12 @@ public class Wizard : IDisposable {
             itemsToAdd.Add(cObj);
             InventoryBehavior.InventoryItemIds.Add(cObj.m_globalID);
         });
+
+        // The default pet must be created through the pet factory. 
+        var defaultPet = PetFactory.CreateHatchedPet((uint) CharId, _defaultPetTemplateId);
+
+        // Add pet to inventory.
+        itemsToAdd.Add(defaultPet);
 
         // This is a different method that bulk uploads items to the database.
         var success = WizardItemCollection.AddDefaultItems(itemsToAdd);
