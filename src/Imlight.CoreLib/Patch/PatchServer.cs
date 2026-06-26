@@ -63,12 +63,7 @@ public class PatchServer : Server {
     public static IActorRef Instance { get; private set; }
     public static bool EndpointReached { get; set; }
 
-    /// <summary>
-    /// Cached properties of the LatestFileList.bin — populated during initialization
-    /// and served to clients via <see cref="ReceiveLatestFileCacheProperties"/>.
-    /// </summary>
     private PatchCacheProperties _patchCacheProperties;
-
     private LatestFileList _latestFileList;
     private Stopwatch _diagnosticStopwatch;
     private string _patchServerWorkingUrl;
@@ -297,28 +292,19 @@ public class PatchServer : Server {
             return false;
         }
 
-        // Process the actual revision from the revision string. It is right after the 'r' and before the '.'.
-        var revisionStartIdx = _revision.IndexOf('r');
-        var revisionEndIdx = _revision.IndexOf('.');
-        if (revisionStartIdx == -1 || revisionEndIdx == -1) {
-            Logger.Error("Could not parse the revision from the revision string.");
-
-            return false;
-        }
-        var actualRevision = _revision[(revisionStartIdx + 1)..revisionEndIdx];
-
         // Compute CRC32 of the binary list.
+        // Algorithm: CRC-32 with init=0, reflected polynomial 0xEDB88320, no final XOR.
         latestBin.Seek(0, SeekOrigin.Begin);
         uint crc;
         using (var ms = new MemoryStream()) {
             latestBin.CopyTo(ms);
             ms.Seek(0, SeekOrigin.Begin);
-            crc = Crc32.Calculate(uint.MaxValue, ms.ToArray()) ^ uint.MaxValue;
+            crc = Crc32.Calculate(0, ms.ToArray());
         }
 
         // Cache the `.bin` file properties into the instance record.
         _patchCacheProperties = new PatchCacheProperties {
-            Version = Convert.ToUInt32(actualRevision),
+            Version = 1,
             Name = LatestFileListNameBin,
             Url = $"{_patchServerWorkingUrl}/{LatestFileListNameBin}",
             Size = Convert.ToUInt32(latestBin.Length),
