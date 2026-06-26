@@ -37,3 +37,19 @@ public record LatestFile {
     public uint HeaderCrc { get; init; }
     
 }
+
+/// <summary>
+/// Cached properties of the LatestFileList.bin download, used to serve
+/// <see cref="PATCH_8_PROTOCOL.MSG_LATEST_FILE_LIST_V2"/> responses to clients.
+/// </summary>
+public record PatchCacheProperties {
+
+    public string Name { get; init; }
+    public string Url { get; init; }
+    public string UrlPrefix { get; init; }
+    public string UrlSuffix { get; init; }
+    public uint Version { get; init; }
+    public uint Crc { get; init; }
+    public uint Size { get; init; }
+
+}
