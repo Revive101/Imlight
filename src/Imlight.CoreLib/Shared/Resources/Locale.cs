@@ -52,7 +52,8 @@ namespace Imlight.CoreLib.Shared.Resources;
 
 internal class Locale : RootDirectoryResourceSingleton<Locale>, IMemoryStreamDisposable {
 
-    protected override string DirectoryName => "Locale/English/";
+    protected override string DirectoryName =>
+        $"Locale/{ConfigurationManager.GetValue("Locale.Language", "en-US")}/";
 
     private static readonly string s_qustFilePrefix = "WizQst";
     private static Dictionary<string, Dictionary<string, string>> s_data = [];
