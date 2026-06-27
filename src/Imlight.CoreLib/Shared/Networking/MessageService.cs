@@ -57,7 +57,9 @@ using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Shared.Networking;
 
-internal abstract class MessageService(SessionActor sessionActor) : ReceiveProtocolDispatcher {
+internal abstract class MessageService(SessionActor sessionActor) : ReceiveProtocolDispatcher, IWithTimers {
+
+    public ITimerScheduler Timers { get; set; }
 
     protected SessionActor SessionActor { get; init; } = sessionActor;
 
@@ -269,22 +271,45 @@ internal abstract class MessageService(SessionActor sessionActor) : ReceiveProto
                             bool makePrivate = false,
                             ulong ownerCharId = 0,
                             string destinationLocation = "") {
-        // Broadcast teleport effects to the zone, if applicable.
+        // If the destination location is nothing, default it to "Start."
+        var location = destinationLocation == "" ? "Start" : destinationLocation;
+        var ownerId = ownerCharId == 0 ? GetActiveWizard().CharId : ownerCharId;
+
         if (doTeleportEffects) {
             var teleportEffectsMsg = new CHARACTER_103_PROTOCOL.MSG_DOTELEPORTEFFECTS();
             TellOtherServices(teleportEffectsMsg);
 
-            // Wait 2 seconds for the effects to finish.
-            Task.Delay(2000).Wait();
+            // Defer the actual zone transfer by 2s so the client can play
+            // teleport effects.  Uses an Akka timer instead of blocking the
+            // actor thread.
+            var delayMsg = new SERVICE_101_PROTOCOL.MSG_TELEPORT_DELAY {
+                DestinationZone = destinationZone,
+                DestinationLocation = location,
+                MakePrivate = makePrivate,
+                OwnerCharId = ownerId
+            };
+            Timers.StartSingleTimer("teleport-delay", delayMsg, TimeSpan.FromSeconds(2));
+
+            return;
         }
 
-        // If the destination location is nothing, default it to "Start."
+        // No effects — transfer immediately.
+        DoTeleport(destinationZone, location, makePrivate, ownerId);
+    }
+
+    [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_TELEPORT_DELAY))]
+    private void OnTeleportDelay(SERVICE_101_PROTOCOL.MSG_TELEPORT_DELAY msg) {
+        DoTeleport(msg.DestinationZone, msg.DestinationLocation, msg.MakePrivate, msg.OwnerCharId);
+    }
+
+    private void DoTeleport(string destinationZone, string destinationLocation,
+                            bool makePrivate, ulong ownerCharId) {
         var zoneTransfer = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
-            DestinationLocation = destinationLocation == "" ? "Start" : destinationLocation,
+            DestinationLocation = destinationLocation,
             DestinationZone = destinationZone,
             SendToClient = true,
             IsPrivate = makePrivate,
-            OwnerCharId = ownerCharId == 0 ? GetActiveWizard().CharId : ownerCharId
+            OwnerCharId = ownerCharId
         };
         TellOtherServices(zoneTransfer);
     }

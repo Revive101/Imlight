@@ -109,4 +109,39 @@ internal sealed class SERVICE_101_PROTOCOL : IServerProtocol {
 
     }
 
+    /// <summary>
+    /// Timer callback carrying deferred teleport parameters through a 2s delay.
+    /// </summary>
+    public class MSG_TELEPORT_DELAY : IServerMessage {
+
+        public byte MessageOrder { get; } = 12;
+        public byte ServiceID { get; } = 101;
+
+        public string DestinationZone;
+        public string DestinationLocation;
+        public bool MakePrivate;
+        public ulong OwnerCharId;
+
+    }
+
+    /// <summary>
+    /// Timer signal indicating the 2s recall delay has elapsed.
+    /// </summary>
+    public class MSG_RECALL_DELAY : IServerMessage {
+
+        public byte MessageOrder { get; } = 13;
+        public byte ServiceID { get; } = 101;
+
+    }
+
+    /// <summary>
+    /// Timer signal indicating the zone-transfer cleanup delay has elapsed.
+    /// </summary>
+    public class MSG_ZONETRANSFER_DELAY : IServerMessage {
+
+        public byte MessageOrder { get; } = 14;
+        public byte ServiceID { get; } = 101;
+
+    }
+
 }

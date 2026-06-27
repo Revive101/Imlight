@@ -737,4 +737,19 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
     }
 
+    /// <summary>
+    /// PipeTo aggregate carrying the result of an instance-container zone-exists query
+    /// back to GameWorld for final processing.
+    /// </summary>
+    public sealed class MSG_INSTANCECONTAINER_QUERY_RESULT : IServerMessage {
+
+        public byte MessageOrder { get; } = 51;
+        public byte ServiceID { get; } = 102;
+
+        public IActorRef OriginalSender;
+        public MSG_INSTANCECONTAINERHASZONERSP Response;
+        public MSG_ZONETRANSFER OriginalTransfer;
+
+    }
+
 }
