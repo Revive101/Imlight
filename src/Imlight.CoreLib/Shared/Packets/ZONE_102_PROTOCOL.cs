@@ -752,4 +752,17 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
     }
 
+    /// <summary>
+    /// PipeTo aggregate carrying concurrent wizard-query results for a wizbang update tick.
+    /// </summary>
+    public sealed class MSG_WIZBANG_UPDATE_RESULT : IServerMessage {
+
+        public byte MessageOrder { get; } = 52;
+        public byte ServiceID { get; } = 102;
+
+        public IActorRef[] PlayerActors;
+        public Wizard[] Wizards;
+
+    }
+
 }
