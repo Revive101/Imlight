@@ -619,7 +619,7 @@ public class CombatDuelSubCircle {
         var stats = participant.m_pGameStats;
         var powerPipChance = 100 * (stats.m_powerPipBase + stats.m_powerPipBonusPercentAll);
 
-        var powerPipRoll = new Random().Next(0, 100);
+        var powerPipRoll = Random.Shared.Next(0, 100);
         return powerPipRoll <= powerPipChance;
     }
 

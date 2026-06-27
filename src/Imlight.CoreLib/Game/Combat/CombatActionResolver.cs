@@ -120,7 +120,7 @@ internal static class CombatActionResolver {
 
     private static SpellEffect ChooseRandomEffect(RandomSpellEffect randomSpellEffect, CombatEffectStack effectStack) {
         var count = randomSpellEffect.m_effectList.Count;
-        var randomEffectIndex = new Random().Next(0, count);
+        var randomEffectIndex = Random.Shared.Next(0, count);
         var chosenEffect = randomSpellEffect.m_effectList[randomEffectIndex];
 
         effectStack.PushRandomEffectChoice(randomEffectIndex);
