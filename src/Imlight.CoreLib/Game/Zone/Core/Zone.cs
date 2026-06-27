@@ -93,6 +93,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     private readonly uint _dynamicZoneId;
     private readonly Lock _mobileIdLock = new();
     private readonly List<IActorRef> _supervisors = [];
+    private IActorRef _sigilSupervisor;
     private readonly Stopwatch _zoneLoadTimer;
     private readonly Dictionary<IActorRef, IServerMessage> _pendingPlayerEvents = [];
     private readonly List<ushort> _mobileIdMap = [];
@@ -116,7 +117,8 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         _supervisors.Add(CreateSupervisor<ZoneTriggerSupervisor>());
         _supervisors.Add(CreateSupervisor<ZonePlayerSupervisor>());
         _supervisors.Add(CreateSupervisor<ZonePathSupervisor>());
-        _supervisors.Add(CreateSupervisor<ZoneSigilSupervisor>());
+        _sigilSupervisor = CreateSupervisor<ZoneSigilSupervisor>();
+        _supervisors.Add(_sigilSupervisor);
         
         _zoneLoadTimer.Restart();
         _isLoading = true;
@@ -228,7 +230,11 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
             return;
         }
 
-        InformZoneSupervisors(message.CreatureActor, message);
+        var broadcast = new ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST {
+            Sender = message.CreatureActor,
+            Messages = [message]
+        };
+        _sigilSupervisor.Forward(broadcast);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS))]
