@@ -99,7 +99,7 @@ internal class CommandModifyProtocol : CommandProtocol {
         // Create the network message and send it.
         var networkMessage = new GAME_5_PROTOCOL.MSG_ADDEFFECT() {
             GameObjectID = Context.Character.CharId,
-            EffectData = serializedEffect.ToString()
+            EffectData = serializedEffect
         };
         Context.SessionActor.Tell(networkMessage, null);
 
