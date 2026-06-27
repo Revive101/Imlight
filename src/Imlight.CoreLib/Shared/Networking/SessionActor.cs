@@ -37,7 +37,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 06/27/2026
  */
 
 using System;
@@ -85,7 +85,7 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
     private bool _isDisposed;
 
     // ctor
-    public SessionActor(Socket socket, ushort sessionId, IActorRef server) {
+    public SessionActor(Socket socket, ushort sessionId, IActorRef server, IActorRef actorFactoryRef = null) {
         this._socket = socket;
         this.Ip = socket.RemoteEndPoint.ToString();
         this.RemoteIp = socket.RemoteEndPoint.ToString().Split(':')[0];
@@ -93,11 +93,16 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
         this._services = new Dictionary<IActorRef, MessageService>();
         this.ServerRef = server;
 
-        // To get the actor factory reference, we'll ask the server.
-        var query = new SERVER_100_PROTOCOL.MSG_QUERYACTORFACTORY();
-        this._actorFactoryRef = server.Ask<SERVER_100_PROTOCOL.MSG_ACTORFACTORYINFO>(query)
-            .Result
-            .Reference;
+        if (actorFactoryRef != null) {
+            this._actorFactoryRef = actorFactoryRef;
+        }
+        else {
+            // Fallback for callers that don't provide the ref.
+            var query = new SERVER_100_PROTOCOL.MSG_QUERYACTORFACTORY();
+            this._actorFactoryRef = server.Ask<SERVER_100_PROTOCOL.MSG_ACTORFACTORYINFO>(query)
+                .Result
+                .Reference;
+        }
 
         ActorRef = Context.Self;
 
@@ -106,8 +111,8 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
     }
 
     // Akka.NET ctor
-    public static Props Props(Socket socket, ushort sessionId, IActorRef server)
-        => Akka.Actor.Props.Create(() => new SessionActor(socket, sessionId, server));
+    public static Props Props(Socket socket, ushort sessionId, IActorRef server, IActorRef actorFactoryRef = null)
+        => Akka.Actor.Props.Create(() => new SessionActor(socket, sessionId, server, actorFactoryRef));
 
     /// <summary>
     /// Places the session in the queue.
