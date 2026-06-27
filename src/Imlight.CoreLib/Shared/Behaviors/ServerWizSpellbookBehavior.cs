@@ -38,6 +38,8 @@ public class ServerWizSpellbookBehavior : ServerSpellbookBehavior {
     [JsonIgnore] public int MaxSpells { get; set; }
     [JsonIgnore] public int MaxTreasureCards { get; set; }
 
+    public Dictionary<ulong, HashSet<uint>> ExcludedItemSpellIds { get; set; } = [];
+
     public void InitializeProperties(DeckBehaviorTemplate deckTemplate) {
         SetPropertiesFromDeckTemplate(deckTemplate);
     }
@@ -135,6 +137,37 @@ public class ServerWizSpellbookBehavior : ServerSpellbookBehavior {
 
         return true;
     }
+
+    /// <summary>
+    /// Adds or removes a spell template ID from a deck item's exclusion list.
+    /// </summary>
+    /// <param name="deckId">The global ID of the deck item.</param>
+    /// <param name="spellTemplateId">The spell template ID to exclude/include.</param>
+    /// <param name="exclude">True to exclude, false to include (un-exclude).</param>
+    public void SetItemSpellExclusion(ulong deckId, uint spellTemplateId, bool exclude) {
+        if (exclude) {
+            if (!ExcludedItemSpellIds.TryGetValue(deckId, out var set)) {
+                set = [];
+                ExcludedItemSpellIds[deckId] = set;
+            }
+            set.Add(spellTemplateId);
+        }
+        else {
+            if (ExcludedItemSpellIds.TryGetValue(deckId, out var set)) {
+                set.Remove(spellTemplateId);
+                if (set.Count == 0) {
+                    ExcludedItemSpellIds.Remove(deckId);
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Returns true if the given spell template ID is excluded for the given deck item.
+    /// </summary>
+    public bool IsItemSpellExcluded(ulong deckId, uint spellTemplateId) 
+        => ExcludedItemSpellIds.TryGetValue(deckId, out var set)
+            && set.Contains(spellTemplateId);
 
     public new ClientSpellbookBehavior GetClientBehaviorInstance() {
         var spellIdList = new List<SpellIDTracker>();

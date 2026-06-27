@@ -452,9 +452,18 @@ public class CombatDuelSubCircle {
             }
         }
 
-        // Count temporary spells as 1 quantity.
+        // Count temporary spells as 1 quantity, skipping any that the player
+        // has excluded via the spell deck UI (MSG_UPDATEITEMSPELLEXCLUSIONLIST).
         var temporarySpells = new List<CombatDeckSpellData>();
+        var equippedDeckId = _wizard.EquipmentBehavior.SlotList
+            .FirstOrDefault(s => s.SlotType == EquipmentSlotType.Deck)?.ItemId;
         foreach (var tempSpell in _wizard.SpellbookBehavior.TemporarySpells) {
+            // Check if this item spell is excluded for the equipped deck.
+            if (equippedDeckId != null
+                && _wizard.SpellbookBehavior.IsItemSpellExcluded(equippedDeckId.Value, tempSpell.m_templateID)) {
+                continue;
+            }
+
             // If the spell data already exists, increase the quantity.. otherwise add it.
             var existingSpell = temporarySpells.Find(s => s.TemplateId == tempSpell.m_templateID);
             if (existingSpell is not null) {
