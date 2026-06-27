@@ -150,6 +150,7 @@ public class PatchServer : Server {
             Version = cache?.Version ?? 0,
             CRC = cache?.Crc ?? 0,
             Size = cache?.Size ?? 0,
+            FileTime = cache?.FileTime ?? 0,
         };
 
         Sender.Tell(rsp);
@@ -310,7 +311,8 @@ public class PatchServer : Server {
             Size = Convert.ToUInt32(latestBin.Length),
             UrlPrefix = _patchServerWorkingUrl,
             UrlSuffix = "",
-            Crc = crc
+            Crc = crc,
+            FileTime = (uint) DateTimeOffset.UtcNow.ToUnixTimeSeconds()
         };
 
         return true;

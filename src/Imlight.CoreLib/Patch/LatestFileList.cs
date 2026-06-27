@@ -51,5 +51,6 @@ public record PatchCacheProperties {
     public uint Version { get; init; }
     public uint Crc { get; init; }
     public uint Size { get; init; }
+    public uint FileTime { get; init; }
 
 }
