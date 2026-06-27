@@ -95,6 +95,7 @@ internal sealed class WorldTeleportDoorComponent(ZoneEntity entity) : ZoneEntity
 
         // Serialize the teleport door options and send it to the player.
         var serializer = new ObjectSerializer(
+            Versionable: false,
             Behaviors: SerializerFlags.None
         );
         if (!serializer.Serialize(teleportDoorOptions, 4, out var data)) {
