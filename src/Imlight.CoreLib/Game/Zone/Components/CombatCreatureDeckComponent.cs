@@ -39,6 +39,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Imcodec.IO;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.Game.Spells;
@@ -60,30 +61,41 @@ internal sealed class CombatCreatureDeckComponent : ZoneEntityComponent, ICompon
 
     // ctor
     public CombatCreatureDeckComponent(ZoneEntity entity) : base(entity) { 
-        var DeckBehaviorTemplate = entity.Template.m_behaviors
+        // Collect every behavior from the creature's equipment items.
+        var equipmentItemBehaviors = entity.Template.m_behaviors
             .OfType<EquipmentBehaviorTemplate>()
             .SelectMany(x => x.m_itemList)
             .Select(x => CoreObjectFactory.GetCoreTemplate(x))
-            .OfType<WizItemTemplate>()
-            .SelectMany(x => x.m_behaviors)
-            .OfType<DeckBehaviorTemplate>()
-            .FirstOrDefault();
+            .Where(x => x != null)
+            .SelectMany(x => x.m_behaviors ?? []);
 
-        if (DeckBehaviorTemplate == null) {
-            Logger.Error(
-                "{0} {1} is missing {2}",
-                Logger.Args(nameof(ZoneEntity), 
-                            entity.ActiveGameObject.m_debugName, 
-                            nameof(DeckBehaviorTemplate) 
-                )
-            );
+        // Combine equipment item behaviors with the entity's own behaviors.
+        // MobDeckBehaviorTemplate can appear in either location.
+        var allBehaviors = entity.Template.m_behaviors
+            .Concat(equipmentItemBehaviors);
 
+        // MobDeckBehaviorTemplate stores spell names directly, if it exists.
+        var mobDeck = allBehaviors.OfType<MobDeckBehaviorTemplate>().FirstOrDefault();
+        if (mobDeck != null) {
+            InitializeSpellbookFromNames(mobDeck.m_spellList);
             return;
         }
 
-        var deckName = DeckBehaviorTemplate.m_defaultDeck;
-        var creatureSpellbook = GetCreatureSpellbook(deckName);
-        InitializeSpellbook(creatureSpellbook);
+        // DeckBehaviorTemplate stores a deck name that maps to a SpiralDB spellbook.
+        var deckBehavior = allBehaviors.OfType<DeckBehaviorTemplate>().FirstOrDefault();
+        if (deckBehavior != null) {
+            var creatureSpellbook = GetCreatureSpellbook(deckBehavior.m_defaultDeck);
+            InitializeSpellbook(creatureSpellbook);
+            return;
+        }
+
+        // Neither deck type found — fall back to the default spellbook so the
+        // creature can at least cast basic spells instead of passing all the time.
+        Logger.Warning(
+            "{0} {1} has no deck behavior — falling back to default spellbook.",
+            Logger.Args(nameof(ZoneEntity), entity.ActiveGameObject.m_debugName)
+        );
+        InitializeSpellbook(GetCreatureSpellbook(null));
     }
 
     private void InitializeSpellbook(CreatureSpellbook spellbook) {
@@ -109,6 +121,30 @@ internal sealed class CombatCreatureDeckComponent : ZoneEntityComponent, ICompon
                 m_quantity = 9999,
             };
             Spells.Add(spellData);
+        }
+    }
+
+    private void InitializeSpellbookFromNames(List<ByteString> spellNames) {
+        foreach (var spellName in spellNames) {
+            if (spellName.ToString().Length == 0) {
+                continue;
+            }
+
+            var spell = SpellFactory.GetSpell(spellName.ToString());
+            if (spell == null) {
+                Logger.Error(
+                    "{0} {1} has unknown spell \"{2}\" in MobDeckBehaviorTemplate.",
+                    Logger.Args(nameof(ZoneEntity),
+                                Entity.ActiveGameObject.m_debugName,
+                                spellName)
+                );
+                continue;
+            }
+
+            Spells.Add(new SpellData {
+                m_templateID = spell.m_templateID,
+                m_quantity = 9999,
+            });
         }
     }
 
