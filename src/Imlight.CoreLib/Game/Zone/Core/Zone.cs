@@ -46,6 +46,7 @@ using System.Threading;
 using Akka.Actor;
 using Imcodec.IO;
 using Imcodec.Math;
+using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Types;
 using Imlight.Common;
@@ -94,6 +95,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     private readonly Lock _mobileIdLock = new();
     private readonly List<IActorRef> _supervisors = [];
     private IActorRef _sigilSupervisor;
+    private IActorRef _playerSupervisor;
     private readonly Stopwatch _zoneLoadTimer;
     private readonly Dictionary<IActorRef, IServerMessage> _pendingPlayerEvents = [];
     private readonly List<ushort> _mobileIdMap = [];
@@ -115,7 +117,8 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         _supervisors.Add(CreateSupervisor<ZoneObjectSupervisor>());
         _supervisors.Add(CreateSupervisor<ZoneVolumeSupervisor>());
         _supervisors.Add(CreateSupervisor<ZoneTriggerSupervisor>());
-        _supervisors.Add(CreateSupervisor<ZonePlayerSupervisor>());
+        _playerSupervisor = CreateSupervisor<ZonePlayerSupervisor>();
+        _supervisors.Add(_playerSupervisor);
         _supervisors.Add(CreateSupervisor<ZonePathSupervisor>());
         _sigilSupervisor = CreateSupervisor<ZoneSigilSupervisor>();
         _supervisors.Add(_sigilSupervisor);
@@ -322,8 +325,17 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
-    private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message) 
-        => _supervisors.ForEach(supervisor => supervisor.Forward(message));
+    private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message) {
+        // MSG_SERVERMOVE and MSG_MOVESTATE are client-render messages.
+        if (message.Message is GAME_5_PROTOCOL.MSG_SERVERMOVE
+                            or GAME_5_PROTOCOL.MSG_MOVESTATE) {
+            _playerSupervisor.Forward(message);
+
+            return;
+        }
+
+        _supervisors.ForEach(supervisor => supervisor.Forward(message));
+    }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST))]
     private void ReceiveZoneSupervisorBroadcast(ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST message) 
