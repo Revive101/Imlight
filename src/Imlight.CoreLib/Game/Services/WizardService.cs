@@ -105,7 +105,8 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
         var magicSchool = _activeWizard.MagicSchoolBehavior.MagicSchool;
         var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(magicSchool, message.NewLevel);
 
-        // Update health.
+        // Update health — heal to full and sync server state with what the client was told.
+        _activeWizard.UpdateHealth(_activeWizard.GameStats.m_baseHitpoints);
         var healthMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH() {
             CharacterID = _activeWizardGameObject.m_globalID,
             NewHealth = baseStats.m_hitpoints,
@@ -115,6 +116,7 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
         SendToSocket(healthMessage);
 
         // Update mana.
+        _activeWizard.UpdateMana(_activeWizard.GameStats.m_baseMana);
         var manaMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEMANA() {
             Mana = baseStats.m_mana,
             MaxMana = baseStats.m_mana,
@@ -127,6 +129,7 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
         SendToSocket(powerPipsMessage);
 
         // Update energy.
+        _activeWizard.UpdateEnergy(baseStats.m_petEnergy);
         var petEnergyMessage = new PET_9_PROTOCOL.MSG_PETENERGYMAX() {
             MaxEnergy = baseStats.m_petEnergy
         };
@@ -156,6 +159,8 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
             var magicSchool = _activeWizard.MagicSchoolBehavior.MagicSchool;
             var baseStats = MagicLevelsConfig.GetPlayerLevelInfo(magicSchool, afterLevel);
 
+            // Heal to full and sync server state with what the client was told.
+            _activeWizard.UpdateHealth(_activeWizard.GameStats.m_baseHitpoints);
             var healthMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH() {
                 CharacterID = _activeWizardGameObject.m_globalID,
                 NewHealth = baseStats.m_hitpoints,
@@ -164,6 +169,7 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
             };
             SendToSocket(healthMessage);
 
+            _activeWizard.UpdateMana(_activeWizard.GameStats.m_baseMana);
             var manaMessage = new WIZARD_12_PROTOCOL.MSG_UPDATEMANA() {
                 Mana = baseStats.m_mana,
                 MaxMana = baseStats.m_mana,
@@ -176,6 +182,7 @@ internal class WizardService(SessionActor sessionActor) : MessageService(session
             };
             SendToSocket(powerPipsMessage);
 
+            _activeWizard.UpdateEnergy(baseStats.m_petEnergy);
             var petEnergyMessage = new PET_9_PROTOCOL.MSG_PETENERGYMAX() {
                 MaxEnergy = baseStats.m_petEnergy
             };
