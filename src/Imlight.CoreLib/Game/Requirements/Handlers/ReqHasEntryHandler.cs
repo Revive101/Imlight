@@ -30,7 +30,7 @@ internal sealed class ReqHasEntryHandler : BaseRequirementHandler<ReqHasEntry> {
         }
 
         var questName = Requirement.m_questName;
-        if (string.IsNullOrEmpty(questName)) {
+        if (Requirement.m_isQuestRegistry && string.IsNullOrEmpty(questName)) {
             return false;
         }
 
