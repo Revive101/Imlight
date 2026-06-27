@@ -94,16 +94,17 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     private readonly uint _dynamicZoneId;
     private readonly Lock _mobileIdLock = new();
     private readonly List<IActorRef> _supervisors = [];
-    private IActorRef _sigilSupervisor;
-    private IActorRef _playerSupervisor;
-    private IActorRef _objectSupervisor;
-    private IActorRef _volumeSupervisor;
+    private readonly IActorRef _sigilSupervisor;
+    private readonly IActorRef _playerSupervisor;
+    private readonly IActorRef _objectSupervisor;
+    private readonly IActorRef _volumeSupervisor;
     private readonly Stopwatch _zoneLoadTimer;
     private readonly Dictionary<IActorRef, IServerMessage> _pendingPlayerEvents = [];
     private readonly List<ushort> _mobileIdMap = [];
     private readonly Dictionary<IActorRef, bool> _supervisorLoadResults = [];
     private readonly HashSet<GID> _criticalObjectIds = [];
     private bool _isLoading;
+    private int _playerCount;
 
     /// <summary>
     /// Creates a new zone from the path of the zone, formatted as it would be in the access pass.
@@ -193,6 +194,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
             return;
         }
 
+        _playerCount++;
         InformZoneSupervisors(message.PlayerActor, message);
         
         // Send response to confirm player was added
@@ -208,6 +210,10 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
             _pendingPlayerEvents.Remove(message.PlayerActor);
 
             return;
+        }
+
+        if (_playerCount > 0) {
+            _playerCount--;
         }
 
         InformZoneSupervisors(message.PlayerActor, message);
@@ -238,6 +244,11 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_CREATUREMOVE))]
     protected virtual void ReceiveCreatureMove(ZONE_102_PROTOCOL.MSG_CREATUREMOVE message) {
+        // Nobody to interact with — drop early.
+        if (_playerCount <= 0) {
+            return;
+        }
+
         // If the actor is not a part of this zone, do not bother processing.
         if (!_mobileIdMap.Contains(message.CreatureObject.m_nMobileID)) {
             return;
@@ -336,11 +347,13 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
     private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message) {
-        // MSG_SERVERMOVE and MSG_MOVESTATE are client-render messages.
+        // MSG_SERVERMOVE and MSG_MOVESTATE are client-render messages —
+        // when the zone is empty there is nobody to see them.
         if (message.Message is GAME_5_PROTOCOL.MSG_SERVERMOVE
                             or GAME_5_PROTOCOL.MSG_MOVESTATE) {
-            _playerSupervisor.Forward(message);
-
+            if (_playerCount > 0) {
+                _playerSupervisor.Forward(message);
+            }
             return;
         }
 
@@ -425,6 +438,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
                 ProcessZoneTransfer(transfer, playerActor);
             }
             else if (pendingEvent is ZONE_102_PROTOCOL.MSG_ADDPLAYER addPlayer) {
+                _playerCount++;
                 InformZoneSupervisors(playerActor, addPlayer);
                 
                 // Send response to confirm player was added
