@@ -94,26 +94,24 @@ internal static class QuestMadlibs {
         };
 
     private static MadlibBlock GetMadlibBlockForPersonaGoal(GoalTemplate gTemplate) {
-        // Grab the completion dialog for this goal. It will determine the dialog that
-        // players see when they complete the goal. This dialog should always be from the NPC.
-        if (gTemplate.m_dialogList is not ActorDialogList dialogList) {
-            throw new System.Exception("Persona goals must have an ActorDialogList assigned to m_dialogList.");
+        string firstName = string.Empty;
+        string lastName = string.Empty;
+
+        // Try to resolve the NPC's display name from the Completion dialog entry.
+        if (gTemplate.m_dialogList is ActorDialogList dialogList) {
+            var completionDialogEntry = dialogList.m_dialogs
+                .FirstOrDefault(de => de.m_dialogTag == "Completion");
+            var templateId = completionDialogEntry?.m_dialogEntries
+                ?.FirstOrDefault()?.m_actorTemplateID ?? 0;
+
+            if (templateId != 0) {
+                var npcTemplate = CoreObjectFactory.GetCoreTemplate(templateId);
+                if (npcTemplate is GameObjectTemplate npcGameObjectTemplate) {
+                    var npcFullname = npcGameObjectTemplate.m_displayName;
+                    (firstName, lastName) = Locale.GetEnglishNameKeys(npcFullname);
+                }
+            }
         }
-
-        var completionDialogEntry = dialogList.m_dialogs.FirstOrDefault(de => de.m_dialogTag == "Completion") 
-            ?? throw new System.Exception("Persona goals must have a Completion dialog entry in their ActorDialogList.");
-        var templateId = (completionDialogEntry?.m_dialogEntries?.FirstOrDefault()?.m_actorTemplateID)
-            ?? throw new System.Exception("Persona goals must have an ActorTemplateID assigned in their Completion dialog entry.");
-
-        // Grab the actual template from the template ID.
-        var npcTemplate = CoreObjectFactory.GetCoreTemplate(templateId);
-        if (npcTemplate is not GameObjectTemplate npcGameObjectTemplate) {
-            throw new System.Exception("Persona goals must have a valid GameObjectTemplate assigned to their Completion dialog entry.");
-        }
-
-        // Resolve the fullname display locale ID into a FIRSTNAME/LASTNAME format.
-        var npcFullname = npcGameObjectTemplate.m_displayName;
-        (string firstName, string lastName) = Locale.GetEnglishNameKeys(npcFullname);
 
         var madLibs = new MadlibBlock() {
             m_madlibs = [

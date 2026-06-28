@@ -41,7 +41,7 @@
 using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.Misc;
 using Raven.Client.Documents;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Linq;
 
 namespace Imlight.CoreLib.WizardData.Collections;
@@ -51,7 +51,7 @@ public static class OnlinePlayerCollection {
     public const string CollectionName = "OnlinePlayers";
     private static readonly IDocumentStore s_store;
 
-    private static readonly List<OnlinePlayer> s_onlinePlayerCache = [];
+    private static readonly ConcurrentDictionary<ulong, OnlinePlayer> s_onlinePlayerCache = new();
 
     static OnlinePlayerCollection() 
         => s_store = PlayerDatabase.Instance.Store;
@@ -61,13 +61,11 @@ public static class OnlinePlayerCollection {
     /// </summary>
     /// <param name="onlinePlayer">The online player to add.</param>
     public static void AddOnlinePlayer(OnlinePlayer onlinePlayer) {
-        // If the ID is already present in the cache, replace it with the new one.
-        var existingPlayer = s_onlinePlayerCache
-            .FirstOrDefault(x => x is not null && x.AccountId == onlinePlayer.AccountId);
-        if (existingPlayer != null) {
-            s_onlinePlayerCache.Remove(existingPlayer);
-        }
-        s_onlinePlayerCache.Add(onlinePlayer);
+        s_onlinePlayerCache.AddOrUpdate(
+            onlinePlayer.AccountId,
+            onlinePlayer,
+            (_, _) => onlinePlayer
+        );
 
         // Store the online player in the database.
         using var session = s_store.OpenSession();
@@ -85,7 +83,7 @@ public static class OnlinePlayerCollection {
     /// <param name="accountId">The character ID of the online player to remove.</param>
     public static void RemoveOnlinePlayer(ulong accountId) {
         // Remove from the cache.
-        s_onlinePlayerCache.RemoveAll(x => x.AccountId == accountId);
+        s_onlinePlayerCache.TryRemove(accountId, out _);
 
         using var session = s_store.OpenSession();
 
@@ -103,8 +101,12 @@ public static class OnlinePlayerCollection {
     /// </summary>
     /// <param name="sessionId">The session ID of the online player to remove.</param>
     public static void RemoveOnlinePlayer(ushort sessionId) {
-        // Remove from the cache.
-        s_onlinePlayerCache.RemoveAll(x => x.SessionId == sessionId);
+        // Scan the snapshot and remove every entry with a matching SessionId.
+        foreach (var kvp in s_onlinePlayerCache) {
+            if (kvp.Value.SessionId == sessionId) {
+                s_onlinePlayerCache.TryRemove(kvp.Key, out _);
+            }
+        }
 
         using var session = s_store.OpenSession();
 
@@ -123,24 +125,24 @@ public static class OnlinePlayerCollection {
     /// <returns>An array of online players.</returns>
     public static OnlinePlayer[] GetOnlinePlayers() {
         // If the cache is not empty, return the cached players.
-        if (s_onlinePlayerCache.Count > 0) {
-            return [.. s_onlinePlayerCache];
+        if (!s_onlinePlayerCache.IsEmpty) {
+            return s_onlinePlayerCache.Values.ToArray();
         }
 
         // Otherwise, query the database for online players.
         using var session = s_store.OpenSession();
 
-        return [.. session.Query<OnlinePlayer>(collectionName: CollectionName)];
+        return session.Query<OnlinePlayer>(collectionName: CollectionName).ToArray();
     }
 
     /// <summary>
-    /// Retrieves the online player with the specified account ID from the collection.
+    /// Retrieves the online player with the specified character ID from the collection.
     /// </summary>
     /// <param name="characterId">The character ID of the online player to retrieve.</param>
-    /// <returns>The online player with the specified account ID, or null if not found.</returns>
+    /// <returns>The online player with the specified character ID, or null if not found.</returns>
     public static OnlinePlayer GetOnlinePlayer(ulong characterId) {
-        // Check the cache first.
-        var cachedPlayer = s_onlinePlayerCache
+        // Check the cache first.  Values snapshot is safe for concurrent reads.
+        var cachedPlayer = s_onlinePlayerCache.Values
             .FirstOrDefault(x => x.CharacterId == characterId);
         if (cachedPlayer != null) {
             return cachedPlayer;
@@ -161,7 +163,7 @@ public static class OnlinePlayerCollection {
     /// <returns>An array of online players in the specified zone.</returns>
     public static OnlinePlayer[] GetPlayersInZone(string zone) {
         // Check the cache first.
-        var cachedPlayers = s_onlinePlayerCache
+        var cachedPlayers = s_onlinePlayerCache.Values
             .Where(x => x.CurrentZone == zone)
             .ToArray();
         if (cachedPlayers.Length > 0) {
@@ -171,9 +173,10 @@ public static class OnlinePlayerCollection {
         // If not found in the cache, query the database.
         using var session = s_store.OpenSession();
 
-        return [.. session
+        return session
             .Query<OnlinePlayer>(collectionName: CollectionName)
-            .Where(x => x.CurrentZone == zone)];
+            .Where(x => x.CurrentZone == zone)
+            .ToArray();
     }
 
     /// <summary>
@@ -183,7 +186,7 @@ public static class OnlinePlayerCollection {
     /// <returns>An array of online players in the specified realm.</returns>
     public static OnlinePlayer[] GetPlayersInRealm(string realm) {
         // Check the cache first.
-        var cachedPlayers = s_onlinePlayerCache
+        var cachedPlayers = s_onlinePlayerCache.Values
             .Where(x => x.CurrentRealm == realm)
             .ToArray();
         if (cachedPlayers.Length > 0) {
@@ -193,9 +196,10 @@ public static class OnlinePlayerCollection {
         // If not found in the cache, query the database.
         using var session = s_store.OpenSession();
 
-        return [.. session
+        return session
             .Query<OnlinePlayer>(collectionName: CollectionName)
-            .Where(x => x.CurrentRealm == realm)];
+            .Where(x => x.CurrentRealm == realm)
+            .ToArray();
     }
 
     public static void Clear() {

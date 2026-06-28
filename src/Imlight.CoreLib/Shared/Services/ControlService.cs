@@ -26,9 +26,7 @@ using Imlight.CoreLib.Shared.Packets;
 
 namespace Imlight.CoreLib.Shared.Services;
 
-internal class ControlService : MessageService, IWithTimers {
-
-    public ITimerScheduler Timers { get; set; }
+internal class ControlService : MessageService {
 
     private readonly byte _keepAliveInterval = ConfigurationManager.Settings["Advanced.KeepAliveInterval"].AsByte();
     private readonly byte _keepAliveRspWaitTime = ConfigurationManager.Settings["Advanced.KeepAliveRspWaitTime"].AsByte();

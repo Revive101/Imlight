@@ -50,15 +50,13 @@ using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Services;
 
-internal class MoveService : MessageService, IWithTimers {
+internal class MoveService : MessageService {
 
     private const uint MARK_MANA_COST_LESS_THAN_50_MANA = 1;
     private const uint MARK_MANA_COST_LESS_THAN_100_MANA = 5;
     private const uint MARK_MANA_COST_ELSE = 10; 
     private const int FISH_INTERACTION_INTERVAL_IN_MILLI = 250;
     private const int MOVE_THRESHOLD_IN_MILLI = FISH_INTERACTION_INTERVAL_IN_MILLI * 2;
-
-    public ITimerScheduler Timers { get; set; }
 
     private readonly TimeSpan _fishInteractionInterval
         = TimeSpan.FromMilliseconds(FISH_INTERACTION_INTERVAL_IN_MILLI);
@@ -206,13 +204,17 @@ internal class MoveService : MessageService, IWithTimers {
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_RECALL_LOCATION))]
     private void ReceiveRecallLocation(GAME_5_PROTOCOL.MSG_RECALL_LOCATION message) {
-        var wizard = GetActiveWizard();
-
         var teleportEffectsMsg = new CHARACTER_103_PROTOCOL.MSG_DOTELEPORTEFFECTS();
         TellOtherServices(teleportEffectsMsg);
 
-        // Wait 2 seconds.
-        Task.Delay(2000).Wait();
+        // Defer the actual recall by 2s so the client can play teleport effects.
+        Timers.StartSingleTimer("recall-delay", new SERVICE_101_PROTOCOL.MSG_RECALL_DELAY(),
+                                TimeSpan.FromSeconds(2));
+    }
+
+    [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_RECALL_DELAY))]
+    private void OnRecallDelay(SERVICE_101_PROTOCOL.MSG_RECALL_DELAY _) {
+        var wizard = GetActiveWizard();
 
         // If we are in the same zone as the marked location, teleport to it.
         if (wizard.MarkedZone == wizard.Zone) {
@@ -220,7 +222,6 @@ internal class MoveService : MessageService, IWithTimers {
             var deflatedDir = CompressDirection(wizard.MarkedOrientation.Z);
 
             var serverTeleportRsp = new GAME_5_PROTOCOL.MSG_SERVERTELEPORT {
-                // Compress the location by a factor of 4 and convert to unsigned.
                 Direction = deflatedDir,
                 LocationX = (ushort) deflatedPos.X,
                 LocationY = (ushort) deflatedPos.Y,
@@ -232,7 +233,6 @@ internal class MoveService : MessageService, IWithTimers {
                 MarkType = "1"
             };
 
-            // Broadcast the server teleport.
             var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST() {
                 Sender = SessionActor.ActorRef,
                 Message = serverTeleportRsp,
@@ -240,14 +240,13 @@ internal class MoveService : MessageService, IWithTimers {
             };
             TellOtherServices(broadcastMsg);
 
-            // Send the recall response to the client.
             SendToSocket(recallRsp);
         }
-        // If we're not in the same zone, send a zone transfer prior to the server teleport.
         else {
             var ml = wizard.MarkedLocation;
+            // doTeleportEffects: false — effects already played during the 2s delay above.
             Teleport(
-                doTeleportEffects: true,
+                doTeleportEffects: false,
                 destinationZone: wizard.MarkedZone,
                 destinationLocation: $"{ml.X},{ml.Y},{ml.Z},{ml.Z}"
             );

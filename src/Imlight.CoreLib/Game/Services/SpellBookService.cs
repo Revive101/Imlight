@@ -173,6 +173,42 @@ internal class SpellbookService(SessionActor sessionActor) : MessageService(sess
         });
     }
 
+    [MessageHandler(typeof(WIZARD2_53_PROTOCOL.MSG_UPDATEITEMSPELLEXCLUSIONLIST))]
+    private void ReceiveUpdateItemSpellExclusionList(WIZARD2_53_PROTOCOL.MSG_UPDATEITEMSPELLEXCLUSIONLIST message) {
+        var wizard = GetActiveWizard();
+        var exclude = message.Exclude != 0;
+
+        // Resolve the spell hash (SpellID) to a template ID.
+        var spellTemplateId = SpellFactory.GetTemplateIdByHash((uint) message.SpellID);
+        if (spellTemplateId == 0) {
+            Logger.Warning("Could not resolve item spell exclusion hash {0} to a template ID.",
+                Logger.Args(message.SpellID));
+
+            SendToSocket(new WIZARD2_53_PROTOCOL.MSG_UPDATEITEMSPELLEXCLUSIONLIST {
+                SpellID = message.SpellID,
+                DeckID = message.DeckID,
+                Exclude = message.Exclude,
+                Success = 0
+            });
+
+            return;
+        }
+
+        // Update the in-memory exclusion list.
+        wizard.SpellbookBehavior.SetItemSpellExclusion(message.DeckID, spellTemplateId, exclude);
+
+        // Persist the change.
+        WizardData.Collections.WizardCollection.UpdateCharacterSpellbookBehavior(wizard);
+
+        // Echo success back to the client.
+        SendToSocket(new WIZARD2_53_PROTOCOL.MSG_UPDATEITEMSPELLEXCLUSIONLIST {
+            SpellID = message.SpellID,
+            DeckID = message.DeckID,
+            Exclude = message.Exclude,
+            Success = 1
+        });
+    }
+
     [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE))]
     private void ReceiveAttachComplete(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE message) {
         var wizard = GetActiveWizard();
@@ -194,7 +230,26 @@ internal class SpellbookService(SessionActor sessionActor) : MessageService(sess
             return;
         }
 
+        // Send MSG_UPDATEITEMSPELLEXCLUSIONLIST for each excluded item spell so the
+        // client restores the X'd-out state of item cards on login.
+        foreach (var (excludedDeckId, excludedTemplateIds) in wizard.SpellbookBehavior.ExcludedItemSpellIds) {
+            foreach (var templateId in excludedTemplateIds) {
+                var spell = SpellFactory.GetSpell(templateId);
+                if (spell == null) {
+                    continue;
+                }
+
+                SendToSocket(new WIZARD2_53_PROTOCOL.MSG_UPDATEITEMSPELLEXCLUSIONLIST {
+                    SpellID = (int) spell.m_spellID,
+                    DeckID = excludedDeckId,
+                    Exclude = 1,
+                    Success = 1
+                });
+            }
+        }
+
         var spellList = deckBehavior.m_spellList;
+
         if (spellList is null) {
             return;
         }

@@ -56,11 +56,9 @@ using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Services;
 
-internal class CantripService(SessionActor sessionActor) : MessageService(sessionActor), IWithTimers {
+internal class CantripService(SessionActor sessionActor) : MessageService(sessionActor) {
 
     private const int CANTRIP_CAST_TIME = 3;
-
-    public ITimerScheduler Timers { get; set; }
 
     private readonly TimeSpan _cantripCastTimeSpan = TimeSpan.FromSeconds(CANTRIP_CAST_TIME);
     private readonly CoreObjectSerializer _effectSerializer = new(

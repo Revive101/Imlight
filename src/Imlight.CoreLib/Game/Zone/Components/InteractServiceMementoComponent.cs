@@ -39,6 +39,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Akka.Actor;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
@@ -191,19 +192,42 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity)
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_WIZBANGUPDATEINTERVAL))]
     private void HandleWizBangUpdateInterval(ZONE_102_PROTOCOL.MSG_WIZBANGUPDATEINTERVAL message) {
-        if (_serviceComponents.Count <= 0) {
+        if (_serviceComponents.Count <= 0 || _playersInRenderRange.Count == 0) {
             return;
         }
 
-        // Update wizbangs for all players in render range.
-        foreach (var playerActor in _playersInRenderRange.Values.ToList()) {
-            var queryCharacterMsg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
-            var wizard = playerActor
-                .Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(queryCharacterMsg)
-                .Result
-                .Wizard;
+        // Query every nearby player's wizard concurrently instead of
+        // blocking on each one sequentially.
+        var playerActors = _playersInRenderRange.Values.ToArray();
+        var queryTasks = playerActors.Select(async playerActor => {
+            try {
+                var msg = new CHARACTER_103_PROTOCOL.MSG_QUERYACTIVEWIZARD();
+                var rsp = await playerActor.Ask<CHARACTER_103_PROTOCOL.MSG_CHARACTER>(msg);
+                return rsp.Wizard;
+            }
+            catch {
+                return null;
+            }
+        });
 
-            SendWizBang(playerActor, wizard);
+        Task.WhenAll(queryTasks)
+            .ContinueWith(t => {
+                var wizards = t.Result.ToArray();
+                return new ZONE_102_PROTOCOL.MSG_WIZBANG_UPDATE_RESULT {
+                    PlayerActors = playerActors,
+                    Wizards = wizards
+                };
+            })
+            .PipeTo(Self);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_WIZBANG_UPDATE_RESULT))]
+    private void HandleWizBangUpdateResult(ZONE_102_PROTOCOL.MSG_WIZBANG_UPDATE_RESULT result) {
+        for (int i = 0; i < result.PlayerActors.Length; i++) {
+            var wizard = result.Wizards[i];
+            if (wizard != null) {
+                SendWizBang(result.PlayerActors[i], wizard);
+            }
         }
     }
 

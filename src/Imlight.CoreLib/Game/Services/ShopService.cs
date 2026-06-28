@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty, Joji
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 06/27/2026
  */
 
 using System;
@@ -179,45 +179,38 @@ internal class ShopService(SessionActor sessionActor) : MessageService(sessionAc
         var decal2 = (DyeColor) message.decal2;
         DyeMapper.ApplyAllDye(item, texture, decal, decal2);
 
-        // If the item was equipped, tell the client to re-equip it
+        // If the item is equipped, update the client's local item cache with the
+        // new colors IN PLACE using MSG_EQUIPMENTBEHAVIOR_EQUIPITEM. 
         if (isEquipped) {
-            var slotIndex = wizard.EquipmentBehavior.GetSlotOfItem(item.m_globalID);
             var slotName = ItemHelper.GetItemSlot(template).ToString();
 
-            // Unequip newly dyed item
-            var unequipMsg = new GAME_5_PROTOCOL.MSG_EQUIPITEM() {
-                ItemID = item.m_globalID,
-                SlotName = slotName,
-                IsEquip = 0
-            };
-            SendToSocket(unequipMsg);
-
-            var publicUnequipMsg = new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICUNEQUIPITEM() {
-                GlobalID = wizard.CharId,
-                IndexToRemove = slotIndex
-            };
-            ZoneBroadcast(publicUnequipMsg, false);
-
-            // Reequip item
-            var equipMsg = new GAME_5_PROTOCOL.MSG_EQUIPITEM() {
-                ItemID = item.m_globalID,
-                SlotName = slotName,
-                IsEquip = 1
-            };
-            SendToSocket(equipMsg);
-
-            // Serialize the public item and send it to the client.
-            var pubItem = ItemHelper.GetPublicItem(item);
-            if (!s_itemSerializer.Serialize(pubItem, 1, out var data)) {
-                Logger.Error("Failed to serialize item {0} for dyeing", 
+            // Serialize the item with new colors for the local player's cache.
+            if (!s_itemSerializer.Serialize(item, 1, out var localData)) {
+                Logger.Error("Failed to serialize dyed item {0} for local update",
                     Logger.Args(item.m_globalID));
 
                 return;
             }
 
-            ZoneBroadcast(new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM() {
+            SendToSocket(new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_EQUIPITEM {
                 GlobalID = wizard.CharId,
-                SerializedInfo = data
+                SlotName = slotName,
+                IsValid = 1,
+                SerializedItem = localData
+            });
+
+            // Broadcast updated public appearance so other players see the new colors.
+            var pubItem = ItemHelper.GetPublicItem(item);
+            if (!s_itemSerializer.Serialize(pubItem, 1, out var pubData)) {
+                Logger.Error("Failed to serialize item {0} for dye broadcast",
+                    Logger.Args(item.m_globalID));
+                    
+                return;
+            }
+
+            ZoneBroadcast(new GAME_5_PROTOCOL.MSG_EQUIPMENTBEHAVIOR_PUBLICEQUIPITEM {
+                GlobalID = wizard.CharId,
+                SerializedInfo = pubData
             }, false);
         }
 

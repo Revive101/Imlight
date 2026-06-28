@@ -21,7 +21,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Xml;
 using System.Threading.Tasks;
@@ -30,10 +29,19 @@ using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Cryptography;
-using Imcodec.IO;
 
 namespace Imlight.CoreLib.Patch;
 
+/// <summary>
+/// Akka.NET actor that manages communication with the remote patch server.
+/// Downloads and caches the LatestFileList, serves file-list metadata to connected
+/// clients, and downloads individual WAD archives on demand.
+/// </summary>
+/// <remarks>
+/// Only one instance may exist (singleton enforced via <see cref="Instance"/>).
+/// Initialization is triggered by <see cref="SERVER_100_PROTOCOL.MSG_INITIALIZE"/>
+/// and blocks the caller until the remote endpoint is checked and the file list is cached.
+/// </remarks>
 public class PatchServer : Server {
 
     private const string PatchServerWadUrlPrefix = "Data/GameData";
@@ -54,20 +62,15 @@ public class PatchServer : Server {
 
     public static IActorRef Instance { get; private set; }
     public static bool EndpointReached { get; set; }
-    // LatestFileList cached information.
-    private static uint s_latestVersion;
-    private static ByteString s_listFileName;
-    private static uint s_listFileSize;
-    private static uint s_listFileCrc;
-    private static ByteString s_listFileUrl;
-    private static ByteString s_urlPrefix;
-    private static ByteString s_urlSuffix;
 
+    private PatchCacheProperties _patchCacheProperties;
     private LatestFileList _latestFileList;
     private Stopwatch _diagnosticStopwatch;
     private string _patchServerWorkingUrl;
 
-    public PatchServer(string name, int port, Props factoryProps) : base(name, port, factoryProps) {
+    // ctor
+    public PatchServer(string name, int port, Props factoryProps)
+        : base(name, port, factoryProps) {
         if (Instance is not null) {
             throw new Exception("Attempted to create more than one patch server! This is not possible!");
         }
@@ -122,7 +125,7 @@ public class PatchServer : Server {
     }
 
     [MessageHandler(typeof(PATCH_105_PROTOCOL.MSG_DOWNLOAD_WAD_REQUEST))]
-    public void ReceiveDownloadRequest(PATCH_105_PROTOCOL.MSG_DOWNLOAD_WAD_REQUEST message) {
+    private void ReceiveDownloadRequest(PATCH_105_PROTOCOL.MSG_DOWNLOAD_WAD_REQUEST message) {
         var rsp = new PATCH_105_PROTOCOL.MSG_DOWNLOAD_FILE_RESULT {
             FileStream = DownloadWadStream(message.WadName).Result
         };
@@ -130,30 +133,32 @@ public class PatchServer : Server {
         Sender.Tell(rsp);
     }
 
+    [MessageHandler(typeof(PATCH_105_PROTOCOL.MSG_LATESTFILELIST))]
+    private void ReceiveLatestFileList(PATCH_105_PROTOCOL.MSG_LATESTFILELIST message) {
+        var rsp = new PATCH_105_PROTOCOL.MSG_LATESTFILELIST() { LatestFileList = this._latestFileList };
+        Sender.Tell(rsp);
+    }
+
     [MessageHandler(typeof(PATCH_105_PROTOCOL.MSG_LATEST_CACHE_PROPERTIES))]
-    public void ReceiveLatestFileCacheProperties(PATCH_105_PROTOCOL.MSG_LATEST_CACHE_PROPERTIES message) {
-        var rsp = new PATCH_105_PROTOCOL.MSG_LATEST_CACHE_PROPERTIES() {
-            Name = s_listFileName,
-            URL = s_listFileUrl,
-            URLPrefix = s_urlPrefix,
-            URLSuffix = s_urlSuffix,
-            Version = s_latestVersion,
-            CRC = s_listFileCrc,
-            Size = s_listFileSize,
+    private void ReceiveLatestFileCacheProperties(PATCH_105_PROTOCOL.MSG_LATEST_CACHE_PROPERTIES message) {
+        var cache = _patchCacheProperties;
+        var rsp = new PATCH_105_PROTOCOL.MSG_LATEST_CACHE_PROPERTIES {
+            Name = cache?.Name,
+            URL = cache?.Url,
+            URLPrefix = cache?.UrlPrefix,
+            URLSuffix = cache?.UrlSuffix,
+            Version = cache?.Version ?? 0,
+            CRC = cache?.Crc ?? 0,
+            Size = cache?.Size ?? 0,
+            FileTime = cache?.FileTime ?? 0,
         };
 
         Sender.Tell(rsp);
     }
 
-    [MessageHandler(typeof(PATCH_105_PROTOCOL.MSG_LATESTFILELIST))]
-    public void ReceiveLatestFileList(PATCH_105_PROTOCOL.MSG_LATESTFILELIST message) {
-        var rsp = new PATCH_105_PROTOCOL.MSG_LATESTFILELIST() { LatestFileList = this._latestFileList };
-        Sender.Tell(rsp);
-    }
-
     private async Task<MemoryStream> DownloadWadStream(string wadName) {
         if (!EndpointReached) {
-            throw new Exception("By this point, the patch server endpoint has not yet been reached!");
+            throw new InvalidOperationException("Patch server endpoint is not available.");
         }
 
         // Remove the `.wad` extension if one exists.
@@ -163,7 +168,10 @@ public class PatchServer : Server {
 
         var url = $"{_patchServerWorkingUrl}/{PatchServerWadUrlPrefix}/{wadName}.wad";
 
-        return await DownloadFileStream(url);
+        var stream = await DownloadFileStream(url)
+            ?? throw new InvalidOperationException($"Failed to download WAD '{wadName}' from patch server.");
+
+        return stream;
     }
 
     private async Task<MemoryStream> DownloadStream(string fileName) {
@@ -242,13 +250,14 @@ public class PatchServer : Server {
         try {
             using var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Head, url));
 
+            // Any response (2xx, 3xx, 4xx) means the server is reachable —
+            // we only care that the endpoint exists, not that the path is valid.
             return true;
         }
-        catch (HttpRequestException ex) when (ex.StatusCode >= HttpStatusCode.InternalServerError) {
-            return ex.StatusCode < HttpStatusCode.InternalServerError;
-        }
-        catch (Exception ex) {
-            Logger.Error("Error while checking patch server at URL {Url}. Exception: {Ex}",
+        catch (HttpRequestException ex) {
+            // Network-level failure (DNS, connection refused, TLS error) or
+            // 5xx server error — the endpoint is not reachable.
+            Logger.Warning("Patch server at URL {Url} is not reachable: {Reason}",
                 Logger.Args(url, ex.Message));
 
             return false;
@@ -284,30 +293,27 @@ public class PatchServer : Server {
             return false;
         }
 
-        // Process the actual revision from the revision string. It is right after the 'r' and before the '.'.
-        var revisionStart = _revision.IndexOf('r') + 1;
-        var revisionEnd = _revision.IndexOf('.');
-        if (revisionStart == -1 || revisionEnd == -1) {
-            Logger.Error("Could not parse the revision from the revision string.");
-
-            return false;
-        }
-        var actualRevision = _revision[revisionStart..revisionEnd];
-
-        // Cache the `.bin` file properties.
-        s_latestVersion = Convert.ToUInt32(actualRevision);
-        s_listFileName = LatestFileListNameBin;
-        s_listFileUrl = $"{_patchServerWorkingUrl}/{LatestFileListNameBin}";
-        s_listFileSize = Convert.ToUInt32(latestBin.Length);
-        s_urlPrefix = _patchServerWorkingUrl;
-        s_urlSuffix = "";
-
-        // Convert the stream to a byte array to compute the crc32 hash.
-        var ms = new MemoryStream();
+        // Compute CRC32 of the binary list.
+        // Algorithm: CRC-32 with init=0, reflected polynomial 0xEDB88320, no final XOR.
         latestBin.Seek(0, SeekOrigin.Begin);
-        latestBin.CopyTo(ms);
-        ms.Seek(0, SeekOrigin.Begin);
-        s_listFileCrc = Crc32.Calculate(uint.MaxValue, ms.ToArray()) ^ uint.MaxValue;
+        uint crc;
+        using (var ms = new MemoryStream()) {
+            latestBin.CopyTo(ms);
+            ms.Seek(0, SeekOrigin.Begin);
+            crc = Crc32.Calculate(0, ms.ToArray());
+        }
+
+        // Cache the `.bin` file properties into the instance record.
+        _patchCacheProperties = new PatchCacheProperties {
+            Version = 1,
+            Name = LatestFileListNameBin,
+            Url = $"{_patchServerWorkingUrl}/{LatestFileListNameBin}",
+            Size = Convert.ToUInt32(latestBin.Length),
+            UrlPrefix = _patchServerWorkingUrl,
+            UrlSuffix = "",
+            Crc = crc,
+            FileTime = (uint) DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+        };
 
         return true;
     }
@@ -315,6 +321,9 @@ public class PatchServer : Server {
     private static bool ParseLatestFileList(Stream content, out LatestFileList latestFileList) {
         latestFileList = null;
         var xml = StreamToXmlDoc(content);
+        if (xml is null) {
+            return false;
+        }
 
         var rootNode = xml
             .GetElementsByTagName("LatestFileList")
@@ -327,24 +336,24 @@ public class PatchServer : Server {
         }
 
         latestFileList = new LatestFileList { Files = new List<LatestFile>() };
-        if (!ParseChildNodes(rootNode, latestFileList)) {
-            return false;
-        }
+        ParseChildNodes(rootNode, latestFileList);
 
         var baseNode = xml
             .GetElementsByTagName("Base")
             .Cast<XmlElement>()
             .FirstOrDefault();
-        if (baseNode != null) {
-            return ParseChildNodes(baseNode, latestFileList);
+        if (baseNode == null) {
+            Logger.Error("XmlDocument does not contain a Base node.");
+
+            return false;
         }
 
-        Logger.Error("XmlDocument does not contain a Base node.");
+        ParseChildNodes(baseNode, latestFileList);
 
-        return false;
+        return true;
     }
 
-    private static bool ParseChildNodes(XmlNode parentNode, LatestFileList latestFileList) {
+    private static void ParseChildNodes(XmlNode parentNode, LatestFileList latestFileList) {
         foreach (var latestFileNode in parentNode.ChildNodes.Cast<XmlElement>()) {
             if (latestFileNode.Name is "_TableList" or "About") {
                 continue;
@@ -352,10 +361,10 @@ public class PatchServer : Server {
 
             var isRecord = latestFileNode.Name == "RECORD";
             var def = ParseLatestFileXmlNode(latestFileNode, isRecord);
-            latestFileList.Files.Add(def);
+            if (def is not null) {
+                latestFileList.Files.Add(def);
+            }
         }
-
-        return true;
     }
 
     private static LatestFile ParseLatestFileXmlNode(XmlNode latestFileNode, bool isRecord = false) {
@@ -389,8 +398,9 @@ public class PatchServer : Server {
     }
 
     private static XmlDocument StreamToXmlDoc(Stream content) {
-        // XmlDocument will not break on exception, for whatever god forsaken reason. Fuck you, Microsoft.
-        // This is our own catch to continue willingly even on exception.
+        // XmlDocument.Load does not throw on all malformed XML — it can return
+        // a partially-loaded document. We wrap in a try/catch to handle the cases
+        // it does throw, and let callers validate the resulting document.
         try {
             var xmlDoc = new XmlDocument();
             xmlDoc.Load(content);
@@ -405,7 +415,7 @@ public class PatchServer : Server {
     }
 
     private static uint TryParseUInt(string value) {
-        uint.TryParse(value, out var result);
+        _ = uint.TryParse(value, out var result);
 
         return result;
     }

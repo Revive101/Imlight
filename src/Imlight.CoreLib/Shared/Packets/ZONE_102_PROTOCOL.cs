@@ -17,6 +17,7 @@
  */
 
 using System.Collections.Generic;
+using System;
 using Akka.Actor;
 using Imcodec.Math;
 using Imcodec.IO;
@@ -30,6 +31,22 @@ using Imcodec.MessageLayer.Generated;
 using Imcodec.Types;
 
 namespace Imlight.CoreLib.Shared.Packets;
+
+/// <summary>
+/// Bitmask selecting which zone supervisors receive a broadcast.
+/// </summary>
+[Flags]
+public enum ZoneBroadcastTarget : byte {
+    None    = 0,
+    Players = 1 << 0,
+    Objects = 1 << 1,
+    Volumes = 1 << 2,
+    Triggers = 1 << 3,
+    Paths   = 1 << 4,
+    Sigils  = 1 << 5,
+    All         = Players | Objects | Volumes | Triggers | Paths | Sigils,
+    AllNoPlayers = All & ~Players,
+}
 
 public class ZONE_102_PROTOCOL : IServerProtocol {
 
@@ -352,8 +369,9 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     }
 
     /// <summary>
-    /// Called and sent to a <see cref="Zone"/> to broadcast a particular message
-    /// to other <see cref="SessionActor"/>s within that zone.
+    /// Called and sent to a <see cref="Zone"/> to broadcast a message
+    /// to the zone.  Carries an optional client-visible <see cref="IMessage"/>
+    /// and/or optional server-internal <see cref="IServerMessage"/> array.
     /// </summary>
     public class MSG_ZONEBROADCAST : IServerMessage {
 
@@ -366,35 +384,26 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public IActorRef Sender;
 
         /// <summary>
-        /// The message to broadcast.
+        /// Client-visible message (e.g. movement, state change, wizbang).
+        /// May be null when only server messages are present.
         /// </summary>
         public IMessage Message;
+
+        /// <summary>
+        /// Server-internal messages to forward to zone entities.
+        /// May be null when only a client message is present.
+        /// </summary>
+        public IServerMessage[] Messages;
 
         /// <summary>
         /// True, if the message should not be sent to the sender.
         /// </summary>
         public bool Selfless;
 
-    }
-
-    /// <summary>
-    /// Called and sent to a <see cref="Zone"/> to broadcast a particular message
-    /// to all <see cref="ZoneEntity"/>s within that zone.
-    /// </summary>
-    public class MSG_ZONESUPERVISORBROADCAST : IServerMessage {
-
-        public byte MessageOrder { get; } = 21;
-        public byte ServiceID { get; } = 102;
-
         /// <summary>
-        /// The actor that sent the message.
+        /// Which supervisors the zone should forward this message to.
         /// </summary>
-        public IActorRef Sender;
-
-        /// <summary>
-        /// The messages to broadcast.
-        /// </summary>
-        public IServerMessage[] Messages;
+        public ZoneBroadcastTarget Targets = ZoneBroadcastTarget.All;
 
     }
 
@@ -738,31 +747,40 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     }
 
     /// <summary>
-    /// Requests the zone to spawn a new entity from a CoreObject and template.
-    /// Used for dynamic objects like equipped pets.
+    /// PipeTo aggregate carrying the result of an instance-container zone-exists query
+    /// back to GameWorld for final processing.
     /// </summary>
-    public sealed class MSG_SPAWNENTITY : IServerMessage {
+    public sealed class MSG_INSTANCECONTAINER_QUERY_RESULT : IServerMessage {
 
         public byte MessageOrder { get; } = 51;
         public byte ServiceID { get; } = 102;
 
-        public CoreObject CoreObject;
-        public CoreTemplate Template;
-        /// <summary>Optional: the player actor requesting the spawn (for routing).</summary>
-        public IActorRef Requester;
+        public IActorRef OriginalSender;
+        public MSG_INSTANCECONTAINERHASZONERSP Response;
+        public MSG_ZONETRANSFER OriginalTransfer;
 
     }
 
     /// <summary>
-    /// Response to MSG_SPAWNENTITY with the created entity actor reference.
+    /// PipeTo aggregate carrying concurrent wizard-query results for a wizbang update tick.
     /// </summary>
-    public sealed class MSG_SPAWNENTITYRSP : IServerMessage {
+    public sealed class MSG_WIZBANG_UPDATE_RESULT : IServerMessage {
 
         public byte MessageOrder { get; } = 52;
         public byte ServiceID { get; } = 102;
 
-        public IActorRef EntityActor;
-        public CoreObject SpawnedObject;
+        public IActorRef[] PlayerActors;
+        public Wizard[] Wizards;
+
+    }
+
+    /// <summary>
+    /// Periodic timer tick that flushes batched player/creature moves to supervisors.
+    /// </summary>
+    public sealed class MSG_FLUSHMOVES : IServerMessage {
+
+        public byte MessageOrder { get; } = 53;
+        public byte ServiceID { get; } = 102;
 
     }
 

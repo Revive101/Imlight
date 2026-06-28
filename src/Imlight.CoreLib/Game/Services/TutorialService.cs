@@ -30,7 +30,7 @@ using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Services;
 
-internal sealed class TutorialService(SessionActor sessionActor) : MessageService(sessionActor), IWithTimers {
+internal sealed class TutorialService(SessionActor sessionActor) : MessageService(sessionActor) {
 
     private const string TUTORIAL_QUEST_NAME = "WC-TUT-C05-001";
     private const uint TUTORIAL_NAME_STRING_ID = 600062081;
@@ -45,8 +45,6 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         m_tutorialNameID = TUTORIAL_NAME_STRING_ID,
         m_tutorialStage = 0,
     };
-
-    public ITimerScheduler Timers { get; set; }
 
     internal static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new TutorialService(parentActor));

@@ -80,6 +80,9 @@ internal static class CombatEffectApplicator {
             case kSpellEffects.kDamage:
                 cinematicTime += ApplyFlatDamageEffect(effect, charms, caster, targets);
                 break;
+            case kSpellEffects.kDamagePerTotalPipPower:
+                cinematicTime += ApplyFlatDamageEffect(effect, charms, caster, targets);
+                break;
             case kSpellEffects.kDamageOverTime:
                 cinematicTime += ApplyDamageOverTime(effect, charms, caster, targets);
                 break;
@@ -186,8 +189,6 @@ internal static class CombatEffectApplicator {
             };
             target._hangingEffects.Add(effectClone);
         }
-
-        effect.m_paramPerRound = damageFromCaster / effect.m_numRounds;
 
         return cinematicTime;
     }

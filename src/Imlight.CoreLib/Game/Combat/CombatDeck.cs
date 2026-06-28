@@ -103,8 +103,6 @@ internal class CombatDeck {
     /// <exception cref="InvalidOperationException">Thrown when a spell cannot be created from the template id.</exception>
     internal Hand GetHand() {
         var newCards = new List<Spell>();
-        var random = new Random();
-
         // Discard the cards that were used up or discarded.
         foreach (var spell in _cardsDiscardedThisTurn) {
             LastGivenHand.Remove(spell);
@@ -132,7 +130,7 @@ internal class CombatDeck {
                 break; // No more spells available.
             }
 
-            var randomIndex = random.Next(0, _usedUpSpellData.Count);
+            var randomIndex = Random.Shared.Next(0, _usedUpSpellData.Count);
             var spellData = _usedUpSpellData[randomIndex];
             var spellTemplateId = spellData.TemplateId;
 
@@ -192,8 +190,7 @@ internal class CombatDeck {
             return null;
         }
 
-        var random = new Random();
-        var randomIndex = random.Next(0, _treasureVaultUsed.Count);
+        var randomIndex = Random.Shared.Next(0, _treasureVaultUsed.Count);
         var vaultData = _treasureVaultUsed[randomIndex];
 
         var spell = SpellFactory.GetSpell(vaultData.TemplateId);

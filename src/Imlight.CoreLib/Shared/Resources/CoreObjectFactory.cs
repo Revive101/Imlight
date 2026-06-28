@@ -37,10 +37,11 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 06/27/2026
  */
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using Imcodec.Cryptography;
@@ -61,8 +62,7 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
 
     public static TemplateManifest TemplateManifest;
 
-    private static readonly Dictionary<ulong, CoreTemplate> s_templateCache = [];
-    private static readonly object s_templateCacheLock = new();
+    private static readonly ConcurrentDictionary<ulong, CoreTemplate> s_templateCache = new();
 
     protected override void AfterLoad() {
         var serializer = new BindSerializer();
@@ -161,35 +161,28 @@ public class CoreObjectFactory : RootSingleResourceSingleton<CoreObjectFactory>,
     /// <param name="id">The ID of the CoreTemplate.</param>
     /// <returns>The CoreTemplate object if found; otherwise, null.</returns>
     public static CoreTemplate GetCoreTemplate(ulong id) {
-        // Check if the template is already cached.
-        lock (s_templateCacheLock) {
-            if (s_templateCache.TryGetValue(id, out var cachedTemplate)) {
-                return cachedTemplate;
+        if (s_templateCache.TryGetValue(id, out var cachedTemplate)) {
+            return cachedTemplate;
+        }
+
+        // Slow path: load from disk.
+        return s_templateCache.GetOrAdd(id, _ => {
+            var templateLocation = TemplateManifest.m_serializedTemplates
+                .FirstOrDefault(x => x.m_id == id);
+            if (templateLocation is null) {
+                Logger.Error("Could not find CoreTemplate by ID {Tid}. Finding the template failed.", 
+                    Logger.Args(id));
+                return null;
             }
-        }
 
-        // If not cached, load the template from the manifest.
-        var templateLocation = TemplateManifest.m_serializedTemplates.FirstOrDefault(x => x.m_id == id);
-        if (templateLocation is null) {
-            Logger.Error("Could not find CoreTemplate by ID {Tid}. Finding the template failed.", 
-                Logger.Args(id));
-
-            return null;
-        }
-
-        var templateObj = RootArchiveLoader.GetFile<CoreTemplate>(templateLocation.m_filename);
-        if (templateObj is null) {
-            Logger.Error("Could not load CoreTemplate from {Loc}. Could not get file from root archive.",
-                Logger.Args(templateLocation.m_filename));
-        }
-        else {
-            // Cache the template for future use.
-            lock (s_templateCacheLock) {
-                s_templateCache[id] = templateObj;
+            var templateObj = RootArchiveLoader.GetFile<CoreTemplate>(templateLocation.m_filename);
+            if (templateObj is null) {
+                Logger.Error("Could not load CoreTemplate from {Loc}. Could not get file from root archive.",
+                    Logger.Args(templateLocation.m_filename));
             }
-        }
 
-        return templateObj ?? null;
+            return templateObj;
+        });
     }
 
     /// <summary>

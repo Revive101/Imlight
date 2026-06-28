@@ -42,8 +42,10 @@ internal class PatchService(SessionActor sessionActor) : MessageService(sessionA
             ListFileCRC = rsp.CRC,
             ListFileURL = rsp.URL,
             ListFileType = 1, // This causes the client to fail parsing the file if it is not 1. Do not change !
+            ListFileTime = rsp.FileTime,
             URLPrefix = rsp.URLPrefix,
             URLSuffix = rsp.URLSuffix,
+            Locale = message.Locale,
         };
 
         SendToSocket(socketRsp);

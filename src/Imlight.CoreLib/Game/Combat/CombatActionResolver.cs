@@ -77,9 +77,11 @@ internal static class CombatActionResolver {
             // to the effect stack.
             chosenEffect = spellEffect switch {
                 RandomSpellEffect randomSpellEffect => ChooseRandomEffect(randomSpellEffect, effectStack),
-                VariableSpellEffect variableSpellEffect => ChooseVariableEffect(variableSpellEffect, combatAction.m_xPipCost, effectStack),
+                VariableSpellEffect variableSpellEffect => ChooseEffectByPipCount(variableSpellEffect.m_effectList, combatAction.m_xPipCost, effectStack),
+                EffectListSpellEffect effectListSpellEffect => ChooseFromEffectList(effectListSpellEffect, combatAction.m_xPipCost, effectStack),
                 _ => spellEffect,
             };
+
             allEffects.Add(chosenEffect);
 
             charmsAffectingThisSpell = CombatCharms.FindAppliedCharms(action.SpellCaster, [.. allEffects]);
@@ -118,7 +120,7 @@ internal static class CombatActionResolver {
 
     private static SpellEffect ChooseRandomEffect(RandomSpellEffect randomSpellEffect, CombatEffectStack effectStack) {
         var count = randomSpellEffect.m_effectList.Count;
-        var randomEffectIndex = new Random().Next(0, count);
+        var randomEffectIndex = Random.Shared.Next(0, count);
         var chosenEffect = randomSpellEffect.m_effectList[randomEffectIndex];
 
         effectStack.PushRandomEffectChoice(randomEffectIndex);
@@ -126,22 +128,26 @@ internal static class CombatActionResolver {
         return chosenEffect;
     }
 
-    private static SpellEffect ChooseVariableEffect(VariableSpellEffect variableSpellEffect, int parameter, CombatEffectStack effectStack) {
-        // Variable spell effects are for x pip spells. There should be a total of 14 nested spell effects
-        // for each pip level of the spell.
-        if (variableSpellEffect.m_effectList.Count != 14) {
-            Logger.Error("Variable spell effect does not have 14 nested effects.");
-            
-            return variableSpellEffect;
+    private static SpellEffect ChooseEffectByPipCount(List<SpellEffect> effectList, int pipCost, CombatEffectStack effectStack) {
+        // Selects a nested effect from a VariableSpellEffect by pip count.
+        // VariableSpellEffect entries are 0-indexed: entry 0 = 0 pips, entry 5 = 5 pips.
+        var index = Math.Min(pipCost, effectList.Count - 1);
+        effectStack.PushRandomEffectChoice(index);
+
+        return effectList[index];
+    }
+
+    private static SpellEffect ChooseFromEffectList(EffectListSpellEffect effect, int pipCost, CombatEffectStack effectStack) {
+        // Selects a nested effect from an EffectListSpellEffect by pip count.
+        // EffectListSpellEffect entries are 1-indexed via m_pipNum: entry 0 = 1 pip, entry 4 = 5 pips.
+        var idx = Math.Max(0, pipCost - 1);
+        if (idx >= effect.m_effectList.Count) {
+            idx = effect.m_effectList.Count - 1;
         }
 
-        // Make sure we're not out of bounds.
-        parameter = Math.Min(parameter, 13);
+        effectStack.PushRandomEffectChoice(idx);
 
-        effectStack.PushRandomEffectChoice(parameter);
-        var chosenEffect = variableSpellEffect.m_effectList[parameter];
-
-        return chosenEffect;
+        return effect.m_effectList[idx];
     }
 
     private static byte GetXPipCost(Spell spell, CombatDuelSubCircle caster) {

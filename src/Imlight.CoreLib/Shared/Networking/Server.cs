@@ -78,7 +78,18 @@ public abstract class Server : ReceiveProtocolDispatcher {
         }
         else {
 #if !DEBUG
-            this.Ip = new HttpClient().GetStringAsync("https://api.ipify.org/").Result;
+            try {
+                this.Ip = new HttpClient()
+                    .GetStringAsync("https://api.ipify.org/")
+                    .GetAwaiter()
+                    .GetResult();
+            }
+            catch {
+                // If the ipify call fails (offline, timeout, blocked), fall back
+                // to loopback so the server can still start.
+                Logger.Warning("Failed to resolve public IP from ipify.org — falling back to 127.0.0.1.");
+                this.Ip = "127.0.0.1";
+            }
 #else
             this.Ip = "127.0.0.1";
 #endif
@@ -92,7 +103,7 @@ public abstract class Server : ReceiveProtocolDispatcher {
     protected virtual void ReceiveAllocateSocket(SERVER_100_PROTOCOL.MSG_ALLOCATESOCKET message) {
         // Create a new child actor, which represents the active socket connection.
         var id = GetNewUniqueId();
-        var sessionProps = SessionActor.Props(message.Socket, id, Context.Self);
+        var sessionProps = SessionActor.Props(message.Socket, id, Context.Self, _actorFactoryRef);
         Context.ActorOf(sessionProps, $"SessionActor.{id}");
 
         // Logger

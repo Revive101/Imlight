@@ -35,7 +35,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 06/28/2026
  */
 
 using System;
@@ -46,6 +46,7 @@ using System.Threading;
 using Akka.Actor;
 using Imcodec.IO;
 using Imcodec.Math;
+using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Types;
 using Imlight.Common;
@@ -93,12 +94,21 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     private readonly uint _dynamicZoneId;
     private readonly Lock _mobileIdLock = new();
     private readonly List<IActorRef> _supervisors = [];
+    private readonly IActorRef _sigilSupervisor;
+    private readonly IActorRef _playerSupervisor;
+    private readonly IActorRef _objectSupervisor;
+    private readonly IActorRef _volumeSupervisor;
+    private readonly IActorRef _triggerSupervisor;
+    private readonly IActorRef _pathSupervisor;
     private readonly Stopwatch _zoneLoadTimer;
     private readonly Dictionary<IActorRef, IServerMessage> _pendingPlayerEvents = [];
     private readonly List<ushort> _mobileIdMap = [];
     private readonly Dictionary<IActorRef, bool> _supervisorLoadResults = [];
     private readonly HashSet<GID> _criticalObjectIds = [];
     private bool _isLoading;
+    private int _playerCount;
+    private readonly List<ZONE_102_PROTOCOL.MSG_PLAYERMOVE> _pendingPlayerMoves = [];
+    private readonly List<ZONE_102_PROTOCOL.MSG_CREATUREMOVE> _pendingCreatureMoves = [];
 
     /// <summary>
     /// Creates a new zone from the path of the zone, formatted as it would be in the access pass.
@@ -111,13 +121,22 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         this._isLoading = true;
         this._zoneLoadTimer = new Stopwatch();
 
-        _supervisors.Add(CreateSupervisor<ZoneObjectSupervisor>());
-        _supervisors.Add(CreateSupervisor<ZoneVolumeSupervisor>());
-        _supervisors.Add(CreateSupervisor<ZoneTriggerSupervisor>());
-        _supervisors.Add(CreateSupervisor<ZonePlayerSupervisor>());
-        _supervisors.Add(CreateSupervisor<ZonePathSupervisor>());
-        _supervisors.Add(CreateSupervisor<ZoneSigilSupervisor>());
-        
+        _objectSupervisor = CreateSupervisor<ZoneObjectSupervisor>();
+        _supervisors.Add(_objectSupervisor);
+        _volumeSupervisor = CreateSupervisor<ZoneVolumeSupervisor>();
+        _supervisors.Add(_volumeSupervisor);
+        _triggerSupervisor = CreateSupervisor<ZoneTriggerSupervisor>();
+        _supervisors.Add(_triggerSupervisor);
+        _playerSupervisor = CreateSupervisor<ZonePlayerSupervisor>();
+        _supervisors.Add(_playerSupervisor);
+        _pathSupervisor = CreateSupervisor<ZonePathSupervisor>();
+        _supervisors.Add(_pathSupervisor);
+        _sigilSupervisor = CreateSupervisor<ZoneSigilSupervisor>();
+        _supervisors.Add(_sigilSupervisor);
+
+        Timers.StartPeriodicTimer("flush-moves", new ZONE_102_PROTOCOL.MSG_FLUSHMOVES(),
+            TimeSpan.FromMilliseconds(250), TimeSpan.FromMilliseconds(250));
+
         _zoneLoadTimer.Restart();
         _isLoading = true;
 
@@ -126,7 +145,8 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
 
     // Props
     public static Props Props(string zonePath, uint dynamicZoneId)
-        => Akka.Actor.Props.Create(() => new Zone(zonePath, dynamicZoneId));
+        => Akka.Actor.Props.Create(() => new Zone(zonePath, dynamicZoneId))
+            .WithMailbox("zone-priority");
 
     protected override void PreRestart(Exception reason, object message) {
         Logger.Error("Zone {ZoneName} restarts for: {Exception}", Logger.Args(ZoneName, reason));
@@ -184,6 +204,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
             return;
         }
 
+        _playerCount++;
         InformZoneSupervisors(message.PlayerActor, message);
         
         // Send response to confirm player was added
@@ -201,6 +222,10 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
             return;
         }
 
+        if (_playerCount > 0) {
+            _playerCount--;
+        }
+
         InformZoneSupervisors(message.PlayerActor, message);
         ReleaseObjectIdentifier(message.MobileId);
     }
@@ -209,26 +234,50 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     protected virtual void ReceivePlayerMove(ZONE_102_PROTOCOL.MSG_PLAYERMOVE message) {
         if (_isLoading) {
             _pendingPlayerEvents[message.PlayerActor] = message;
-
             return;
         }
 
-        // If the actor is not a part of this zone, do not bother processing.
         if (!_mobileIdMap.Contains(message.PlayerObject.m_nMobileID)) {
             return;
         }
 
-        InformZoneSupervisors(message.PlayerActor, message);
+        _pendingPlayerMoves.Add(message);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_CREATUREMOVE))]
     protected virtual void ReceiveCreatureMove(ZONE_102_PROTOCOL.MSG_CREATUREMOVE message) {
-        // If the actor is not a part of this zone, do not bother processing.
+        if (_playerCount <= 0) {
+            return;
+        }
+
         if (!_mobileIdMap.Contains(message.CreatureObject.m_nMobileID)) {
             return;
         }
 
-        InformZoneSupervisors(message.CreatureActor, message);
+        _pendingCreatureMoves.Add(message);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_FLUSHMOVES))]
+    private void ReceiveFlushMoves(ZONE_102_PROTOCOL.MSG_FLUSHMOVES _) {
+        if (_pendingPlayerMoves.Count > 0) {
+            var moves = _pendingPlayerMoves.ToArray();
+            _pendingPlayerMoves.Clear();
+            DispatchBroadcast(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+                Messages = moves,
+                Targets = ZoneBroadcastTarget.Objects
+                        | ZoneBroadcastTarget.Volumes
+                        | ZoneBroadcastTarget.Sigils,
+            });
+        }
+
+        if (_pendingCreatureMoves.Count > 0) {
+            var moves = _pendingCreatureMoves.ToArray();
+            _pendingCreatureMoves.Clear();
+            DispatchBroadcast(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+                Messages = moves,
+                Targets = ZoneBroadcastTarget.Sigils,
+            });
+        }
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS))]
@@ -316,12 +365,9 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
-    private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message) 
-        => _supervisors.ForEach(supervisor => supervisor.Forward(message));
-
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST))]
-    private void ReceiveZoneSupervisorBroadcast(ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST message) 
-        => _supervisors.ForEach(supervisor => supervisor.Forward(message));
+    private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message) {
+        DispatchBroadcast(message);
+    }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL))]
     private void ReceiveRequestCombatSigil(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL message)
@@ -333,6 +379,17 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
 
     #endregion
 
+    private void DispatchBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message) {
+        if ((message.Targets & ZoneBroadcastTarget.Players) != 0) {
+            if (_playerCount > 0) _playerSupervisor.Forward(message);
+        }
+        if ((message.Targets & ZoneBroadcastTarget.Objects)  != 0) _objectSupervisor.Forward(message);
+        if ((message.Targets & ZoneBroadcastTarget.Volumes)  != 0) _volumeSupervisor.Forward(message);
+        if ((message.Targets & ZoneBroadcastTarget.Triggers) != 0) _triggerSupervisor.Forward(message);
+        if ((message.Targets & ZoneBroadcastTarget.Paths)    != 0) _pathSupervisor.Forward(message);
+        if ((message.Targets & ZoneBroadcastTarget.Sigils)   != 0) _sigilSupervisor.Forward(message);
+    }
+
     private IActorRef CreateSupervisor<T>() where T : ActorBase {
         var props = Akka.Actor.Props.Create(() => (T) Activator.CreateInstance(typeof(T), this));
         
@@ -340,14 +397,11 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     private void InformZoneSupervisors(IActorRef player, IServerMessage message) {
-        var broadcast = new ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST {
+        DispatchBroadcast(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
             Sender = player,
-            Messages = [message]
-        };
-
-        foreach (var supervisor in _supervisors) {
-            supervisor.Forward(broadcast);
-        }
+            Messages = [message],
+            Targets = ZoneBroadcastTarget.All,
+        });
     }
 
     private Vector4 GetLocationFromString(ByteString location) {
@@ -401,6 +455,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
                 ProcessZoneTransfer(transfer, playerActor);
             }
             else if (pendingEvent is ZONE_102_PROTOCOL.MSG_ADDPLAYER addPlayer) {
+                _playerCount++;
                 InformZoneSupervisors(playerActor, addPlayer);
                 
                 // Send response to confirm player was added

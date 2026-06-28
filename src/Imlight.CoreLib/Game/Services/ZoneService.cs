@@ -58,7 +58,7 @@ using Imlight.CoreLib.WizardData.Collections;
 
 namespace Imlight.CoreLib.Game.Services;
 
-internal class ZoneService(SessionActor sessionActor) : MessageService(sessionActor), IWithTimers {
+internal class ZoneService(SessionActor sessionActor) : MessageService(sessionActor) {
 
     private const int ZONE_REMOVAL_WAIT_TIME_IN_SECONDS = 8;
     private const int ZONE_TRANSFER_CLEANUP_WAIT_TIME_IN_SECONDS = 1;
@@ -67,7 +67,6 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
     private const string ENTER_ZONE_EVENT_NAME = "EnterZone";
 
     public IActorRef ZoneActor;
-    public ITimerScheduler Timers { get; set; }
 
     private readonly TimeSpan _zoneRemovalWaitTime = TimeSpan.FromSeconds(ZONE_REMOVAL_WAIT_TIME_IN_SECONDS);
     private readonly bool _randomBackflips
@@ -366,15 +365,6 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         ZoneActor.Tell(message);
     }
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST))]
-    private void ReceiveZoneSupervisorBroadcast(ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST message) {
-        if (ZoneActor is null) {
-            throw new Exception("Zone Reference was null.");
-        }
-
-        ZoneActor.Tell(message);
-    }
-
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PLAYERMOVE))]
     private void ReceiveZoneInteraction(ZONE_102_PROTOCOL.MSG_PLAYERMOVE message) {
         // This is an exception. Sometimes the MoveService interval happens as we zone transfer.
@@ -616,9 +606,6 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
     }
 
     private void DoZoneTransfer() {
-        var account = GetSocketAccount();
-        var character = GetActiveWizard();
-
         // Remove the player from their current zone. We're awaiting a reply so the zone can properly clean up
         // before we continue on potentially a different thread.
         try {
@@ -636,34 +623,37 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         catch {
             Logger.Warning("Zone removal timeout of {0} seconds exceeded.", Logger.Args(ZONE_REMOVAL_WAIT_TIME_IN_SECONDS));
         }
-        finally {
-            // The zone has removed the player, but the client may not have had time to clean up
-            // all the zone items. We'll wait a short time here before we send zone transfer.
-            var delay = TimeSpan.FromSeconds(ZONE_TRANSFER_CLEANUP_WAIT_TIME_IN_SECONDS);
-            Task.Run(async () => await Task.Delay(delay)).Wait();
 
-            // When we send this message, the client will disconnect from the current zone and reconnect to the next.
-            // This means attach will happen again, so this is all we need to do here.
-            var serverTransfer = new GAME_5_PROTOCOL.MSG_SERVERTRANSFER() {
-                IP = character.GameServerIp,
-                TCPPort = character.GameServerPort,
-                UDPPort = character.GameServerPort,
-                UserID = account.AccountId,
-                CharID = character.CharId,
-                ZoneName = character.QueuedZoneName,
-                Location = character.QueuedZoneLocation,
-                Slot = 0,
-                SessionSlot = 0,
-                SessionID = 0,
-                TargetPlayerID = character.CharId,
-                TransitionID = 1,
-                FallbackIP = character.GameServerIp,
-                FallbackTCPPort = character.GameServerPort,
-                FallbackUDPPort = character.GameServerPort,
-                FallbackZone = character.Zone
-            };
-            SendToSocket(serverTransfer);
-        }
+        // Defer the server transfer by the cleanup wait time so the client can
+        // finish tearing down zone objects.
+        Timers.StartSingleTimer("zone-transfer-delay", new SERVICE_101_PROTOCOL.MSG_ZONETRANSFER_DELAY(),
+                                TimeSpan.FromSeconds(ZONE_TRANSFER_CLEANUP_WAIT_TIME_IN_SECONDS));
+    }
+
+    [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_ZONETRANSFER_DELAY))]
+    private void OnZoneTransferDelay(SERVICE_101_PROTOCOL.MSG_ZONETRANSFER_DELAY _) {
+        var account = GetSocketAccount();
+        var character = GetActiveWizard();
+
+        var serverTransfer = new GAME_5_PROTOCOL.MSG_SERVERTRANSFER() {
+            IP = character.GameServerIp,
+            TCPPort = character.GameServerPort,
+            UDPPort = character.GameServerPort,
+            UserID = account.AccountId,
+            CharID = character.CharId,
+            ZoneName = character.QueuedZoneName,
+            Location = character.QueuedZoneLocation,
+            Slot = 0,
+            SessionSlot = 0,
+            SessionID = 0,
+            TargetPlayerID = character.CharId,
+            TransitionID = 1,
+            FallbackIP = character.GameServerIp,
+            FallbackTCPPort = character.GameServerPort,
+            FallbackUDPPort = character.GameServerPort,
+            FallbackZone = character.Zone
+        };
+        SendToSocket(serverTransfer);
     }
 
     private void DoTeleport(string location) {
