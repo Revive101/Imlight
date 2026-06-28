@@ -17,6 +17,7 @@
  */
 
 using System.Collections.Generic;
+using System;
 using Akka.Actor;
 using Imcodec.Math;
 using Imcodec.IO;
@@ -30,6 +31,22 @@ using Imcodec.MessageLayer.Generated;
 using Imcodec.Types;
 
 namespace Imlight.CoreLib.Shared.Packets;
+
+/// <summary>
+/// Bitmask selecting which zone supervisors receive a broadcast.
+/// </summary>
+[Flags]
+public enum ZoneBroadcastTarget : byte {
+    None    = 0,
+    Players = 1 << 0,
+    Objects = 1 << 1,
+    Volumes = 1 << 2,
+    Triggers = 1 << 3,
+    Paths   = 1 << 4,
+    Sigils  = 1 << 5,
+    All         = Players | Objects | Volumes | Triggers | Paths | Sigils,
+    AllNoPlayers = All & ~Players,
+}
 
 public class ZONE_102_PROTOCOL : IServerProtocol {
 
@@ -352,8 +369,9 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     }
 
     /// <summary>
-    /// Called and sent to a <see cref="Zone"/> to broadcast a particular message
-    /// to other <see cref="SessionActor"/>s within that zone.
+    /// Called and sent to a <see cref="Zone"/> to broadcast a message
+    /// to the zone.  Carries an optional client-visible <see cref="IMessage"/>
+    /// and/or optional server-internal <see cref="IServerMessage"/> array.
     /// </summary>
     public class MSG_ZONEBROADCAST : IServerMessage {
 
@@ -366,35 +384,26 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public IActorRef Sender;
 
         /// <summary>
-        /// The message to broadcast.
+        /// Client-visible message (e.g. movement, state change, wizbang).
+        /// May be null when only server messages are present.
         /// </summary>
         public IMessage Message;
+
+        /// <summary>
+        /// Server-internal messages to forward to zone entities.
+        /// May be null when only a client message is present.
+        /// </summary>
+        public IServerMessage[] Messages;
 
         /// <summary>
         /// True, if the message should not be sent to the sender.
         /// </summary>
         public bool Selfless;
 
-    }
-
-    /// <summary>
-    /// Called and sent to a <see cref="Zone"/> to broadcast a particular message
-    /// to all <see cref="ZoneEntity"/>s within that zone.
-    /// </summary>
-    public class MSG_ZONESUPERVISORBROADCAST : IServerMessage {
-
-        public byte MessageOrder { get; } = 21;
-        public byte ServiceID { get; } = 102;
-
         /// <summary>
-        /// The actor that sent the message.
+        /// Which supervisors the zone should forward this message to.
         /// </summary>
-        public IActorRef Sender;
-
-        /// <summary>
-        /// The messages to broadcast.
-        /// </summary>
-        public IServerMessage[] Messages;
+        public ZoneBroadcastTarget Targets = ZoneBroadcastTarget.All;
 
     }
 

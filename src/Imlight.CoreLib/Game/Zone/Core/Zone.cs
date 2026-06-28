@@ -98,6 +98,8 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     private readonly IActorRef _playerSupervisor;
     private readonly IActorRef _objectSupervisor;
     private readonly IActorRef _volumeSupervisor;
+    private readonly IActorRef _triggerSupervisor;
+    private readonly IActorRef _pathSupervisor;
     private readonly Stopwatch _zoneLoadTimer;
     private readonly Dictionary<IActorRef, IServerMessage> _pendingPlayerEvents = [];
     private readonly List<ushort> _mobileIdMap = [];
@@ -121,10 +123,12 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         _supervisors.Add(_objectSupervisor);
         _volumeSupervisor = CreateSupervisor<ZoneVolumeSupervisor>();
         _supervisors.Add(_volumeSupervisor);
-        _supervisors.Add(CreateSupervisor<ZoneTriggerSupervisor>());
+        _triggerSupervisor = CreateSupervisor<ZoneTriggerSupervisor>();
+        _supervisors.Add(_triggerSupervisor);
         _playerSupervisor = CreateSupervisor<ZonePlayerSupervisor>();
         _supervisors.Add(_playerSupervisor);
-        _supervisors.Add(CreateSupervisor<ZonePathSupervisor>());
+        _pathSupervisor = CreateSupervisor<ZonePathSupervisor>();
+        _supervisors.Add(_pathSupervisor);
         _sigilSupervisor = CreateSupervisor<ZoneSigilSupervisor>();
         _supervisors.Add(_sigilSupervisor);
         
@@ -233,13 +237,13 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
             return;
         }
 
-        var broadcast = new ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST {
+        DispatchBroadcast(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
             Sender = message.PlayerActor,
-            Messages = [message]
-        };
-        _objectSupervisor.Forward(broadcast);
-        _volumeSupervisor.Forward(broadcast);
-        _sigilSupervisor.Forward(broadcast);
+            Messages = [message],
+            Targets = ZoneBroadcastTarget.Objects
+                    | ZoneBroadcastTarget.Volumes
+                    | ZoneBroadcastTarget.Sigils,
+        });
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_CREATUREMOVE))]
@@ -254,11 +258,11 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
             return;
         }
 
-        var broadcast = new ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST {
+        DispatchBroadcast(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
             Sender = message.CreatureActor,
-            Messages = [message]
-        };
-        _sigilSupervisor.Forward(broadcast);
+            Messages = [message],
+            Targets = ZoneBroadcastTarget.Sigils,
+        });
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS))]
@@ -347,28 +351,25 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
     private void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message) {
-        // MSG_SERVERMOVE and MSG_MOVESTATE are client-render messages —
-        // when the zone is empty there is nobody to see them.
-        if (message.Message is GAME_5_PROTOCOL.MSG_SERVERMOVE
-                            or GAME_5_PROTOCOL.MSG_MOVESTATE) {
-            if (_playerCount > 0) {
-                _playerSupervisor.Forward(message);
-            }
-            return;
-        }
-
-        _supervisors.ForEach(supervisor => supervisor.Forward(message));
+        DispatchBroadcast(message);
     }
-
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST))]
-    private void ReceiveZoneSupervisorBroadcast(ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST message) 
-        => _supervisors.ForEach(supervisor => supervisor.Forward(message));
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL))]
     private void ReceiveRequestCombatSigil(ZONE_102_PROTOCOL.MSG_REQUESTCOMBATSIGIL message)
         => _supervisors.ForEach(supervisor => supervisor.Forward(message));
 
     #endregion
+
+    private void DispatchBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message) {
+        if ((message.Targets & ZoneBroadcastTarget.Players) != 0) {
+            if (_playerCount > 0) _playerSupervisor.Forward(message);
+        }
+        if ((message.Targets & ZoneBroadcastTarget.Objects)  != 0) _objectSupervisor.Forward(message);
+        if ((message.Targets & ZoneBroadcastTarget.Volumes)  != 0) _volumeSupervisor.Forward(message);
+        if ((message.Targets & ZoneBroadcastTarget.Triggers) != 0) _triggerSupervisor.Forward(message);
+        if ((message.Targets & ZoneBroadcastTarget.Paths)    != 0) _pathSupervisor.Forward(message);
+        if ((message.Targets & ZoneBroadcastTarget.Sigils)   != 0) _sigilSupervisor.Forward(message);
+    }
 
     private IActorRef CreateSupervisor<T>() where T : ActorBase {
         var props = Akka.Actor.Props.Create(() => (T) Activator.CreateInstance(typeof(T), this));
@@ -377,14 +378,11 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     private void InformZoneSupervisors(IActorRef player, IServerMessage message) {
-        var broadcast = new ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST {
+        DispatchBroadcast(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
             Sender = player,
-            Messages = [message]
-        };
-
-        foreach (var supervisor in _supervisors) {
-            supervisor.Forward(broadcast);
-        }
+            Messages = [message],
+            Targets = ZoneBroadcastTarget.All,
+        });
     }
 
     private Vector4 GetLocationFromString(ByteString location) {

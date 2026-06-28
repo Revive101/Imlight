@@ -34,10 +34,11 @@ internal sealed class ResSpawnHandler : BaseResultHandler<ResSpawn> {
             return false;
         }
 
-        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST {
+        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
             Messages = [new ZONE_102_PROTOCOL.MSG_ZONEPATHSPAWN {
                 SpawnObjectID = (uint) Result.m_spawnID
             }],
+            Targets = ZoneBroadcastTarget.Paths,
         };
 
         zoneActor.Tell(broadcastMsg);
@@ -59,10 +60,11 @@ internal sealed class ResDespawnHandler : BaseResultHandler<ResDespawn> {
             return false;
         }
 
-        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST {
+        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
             Messages = [new ZONE_102_PROTOCOL.MSG_REMOVEOBJECT {
                 TemplateID = Result.m_templateID,
             }],
+            Targets = ZoneBroadcastTarget.Objects,
         };
 
         zoneActor.Tell(broadcastMsg);

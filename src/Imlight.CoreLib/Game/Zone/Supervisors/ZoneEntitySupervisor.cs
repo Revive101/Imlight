@@ -45,19 +45,6 @@ internal abstract class ZoneEntitySupervisor(Core.Zone zone) : ReceiveProtocolDi
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS))]
     public abstract void ReceiveZoneLoadResults(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS message);
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST))]
-    public virtual void ReceiveZoneSupervisorBroadcast(ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST message) {
-        foreach (var entity in EntityActors) {
-            if (entity is null) {
-                continue;
-            }
-
-            foreach (var internalMessage in message.Messages) {
-                entity.Forward(internalMessage);
-            }
-        }
-    }
-
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY))]
     public virtual void ReceiveQueryEntityObject(ZONE_102_PROTOCOL.MSG_QUERYZONEENTITY message) {
         foreach (var entity in EntityActors) {
@@ -81,15 +68,28 @@ internal abstract class ZoneEntitySupervisor(Core.Zone zone) : ReceiveProtocolDi
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
-    public virtual void ReceiveZonePlayerBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message) {
+    public virtual void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message) {
         foreach (var entity in EntityActors) {
-            if (   message.Selfless 
-                && message.Sender is not null 
-                && entity.Path.Name == message.Sender.Path.Name) {
+            if (entity is null) {
                 continue;
             }
 
-            entity.Forward(message.Message);
+            // Client-visible payload — forward to entities, respecting Selfless.
+            if (message.Message is not null) {
+                if (message.Selfless
+                    && message.Sender is not null
+                    && entity.Path.Name == message.Sender.Path.Name) {
+                    continue;
+                }
+                entity.Forward(message.Message);
+            }
+
+            // Server-internal payload — forward each message to entities.
+            if (message.Messages is not null) {
+                foreach (var internalMessage in message.Messages) {
+                    entity.Forward(internalMessage);
+                }
+            }
         }
     }
 

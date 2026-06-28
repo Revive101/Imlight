@@ -251,8 +251,10 @@ public abstract class ZoneEntityComponent(ZoneEntity entity) : ReceiveProtocolDi
     /// </summary>
     /// <param name="message">The message to broadcast.</param>
     protected void PlayerBroadcast(IMessage message) {
-        // Wrap the message in a zone broadcast message.
-        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST { Message = message };
+        var broadcastMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+            Message = message,
+            Targets = ZoneBroadcastTarget.Players,
+        };
         ZoneActor.Tell(broadcastMsg);
     }
 

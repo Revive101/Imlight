@@ -107,12 +107,12 @@ internal abstract class MessageService(SessionActor sessionActor) : ReceiveProto
     }
 
     /// <summary>
-    /// Broadcasts a message to the entire zone.
+    /// Broadcasts a client-visible message to the zone, optionally restricted to
+    /// specific supervisor targets.
     /// </summary>
-    /// <param name="originalMessage"></param>
-    /// <param name="isSelfless"></param>
-    /// <exception cref="ActorKilledException"></exception>
-    protected void ZoneBroadcast(IMessage originalMessage, bool isSelfless = true) {
+    protected void ZoneBroadcast(IMessage originalMessage,
+                                 bool isSelfless = true,
+                                 ZoneBroadcastTarget targets = ZoneBroadcastTarget.All) {
         if (SessionActor is null) {
             throw new ActorKilledException($"{GetType()} attempted to send message to undefined SessionActor.");
         }
@@ -120,25 +120,26 @@ internal abstract class MessageService(SessionActor sessionActor) : ReceiveProto
         var message = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
             Message = originalMessage,
             Selfless = isSelfless,
-            Sender = SessionActor.ActorRef
+            Sender = SessionActor.ActorRef,
+            Targets = targets,
         };
 
         SessionActor.ActorRef.Tell(message, Self);
     }
 
     /// <summary>
-    /// Broadcasts a message to the entire zone, excluding all players.
+    /// Broadcasts a server-protocol message to zone supervisors, excluding players
+    /// (e.g. trigger post events, spawn commands).
     /// </summary>
-    /// <param name="originalMessage"></param>
-    /// <exception cref="ActorKilledException"></exception>
     protected void ZoneBroadcastNoPlayers(IServerMessage originalMessage) {
         if (SessionActor is null) {
             throw new ActorKilledException($"{GetType()} attempted to send message to undefined SessionActor.");
         }
 
-        var message = new ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST {
+        var message = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
             Messages = [originalMessage],
-            Sender = SessionActor.ActorRef
+            Sender = SessionActor.ActorRef,
+            Targets = ZoneBroadcastTarget.AllNoPlayers,
         };
 
         SessionActor.ActorRef.Tell(message, Self);
