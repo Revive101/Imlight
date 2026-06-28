@@ -35,7 +35,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 06/28/2026
  */
 
 using System;
@@ -107,6 +107,8 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     private readonly HashSet<GID> _criticalObjectIds = [];
     private bool _isLoading;
     private int _playerCount;
+    private readonly List<ZONE_102_PROTOCOL.MSG_PLAYERMOVE> _pendingPlayerMoves = [];
+    private readonly List<ZONE_102_PROTOCOL.MSG_CREATUREMOVE> _pendingCreatureMoves = [];
 
     /// <summary>
     /// Creates a new zone from the path of the zone, formatted as it would be in the access pass.
@@ -131,7 +133,10 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         _supervisors.Add(_pathSupervisor);
         _sigilSupervisor = CreateSupervisor<ZoneSigilSupervisor>();
         _supervisors.Add(_sigilSupervisor);
-        
+
+        Timers.StartPeriodicTimer("flush-moves", new ZONE_102_PROTOCOL.MSG_FLUSHMOVES(),
+            TimeSpan.FromMilliseconds(250), TimeSpan.FromMilliseconds(250));
+
         _zoneLoadTimer.Restart();
         _isLoading = true;
 
@@ -140,7 +145,8 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
 
     // Props
     public static Props Props(string zonePath, uint dynamicZoneId)
-        => Akka.Actor.Props.Create(() => new Zone(zonePath, dynamicZoneId));
+        => Akka.Actor.Props.Create(() => new Zone(zonePath, dynamicZoneId))
+            .WithMailbox("zone-priority");
 
     protected override void PreRestart(Exception reason, object message) {
         Logger.Error("Zone {ZoneName} restarts for: {Exception}", Logger.Args(ZoneName, reason));
@@ -228,41 +234,50 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     protected virtual void ReceivePlayerMove(ZONE_102_PROTOCOL.MSG_PLAYERMOVE message) {
         if (_isLoading) {
             _pendingPlayerEvents[message.PlayerActor] = message;
-
             return;
         }
 
-        // If the actor is not a part of this zone, do not bother processing.
         if (!_mobileIdMap.Contains(message.PlayerObject.m_nMobileID)) {
             return;
         }
 
-        DispatchBroadcast(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-            Sender = message.PlayerActor,
-            Messages = [message],
-            Targets = ZoneBroadcastTarget.Objects
-                    | ZoneBroadcastTarget.Volumes
-                    | ZoneBroadcastTarget.Sigils,
-        });
+        _pendingPlayerMoves.Add(message);
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_CREATUREMOVE))]
     protected virtual void ReceiveCreatureMove(ZONE_102_PROTOCOL.MSG_CREATUREMOVE message) {
-        // Nobody to interact with — drop early.
         if (_playerCount <= 0) {
             return;
         }
 
-        // If the actor is not a part of this zone, do not bother processing.
         if (!_mobileIdMap.Contains(message.CreatureObject.m_nMobileID)) {
             return;
         }
 
-        DispatchBroadcast(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-            Sender = message.CreatureActor,
-            Messages = [message],
-            Targets = ZoneBroadcastTarget.Sigils,
-        });
+        _pendingCreatureMoves.Add(message);
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_FLUSHMOVES))]
+    private void ReceiveFlushMoves(ZONE_102_PROTOCOL.MSG_FLUSHMOVES _) {
+        if (_pendingPlayerMoves.Count > 0) {
+            var moves = _pendingPlayerMoves.ToArray();
+            _pendingPlayerMoves.Clear();
+            DispatchBroadcast(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+                Messages = moves,
+                Targets = ZoneBroadcastTarget.Objects
+                        | ZoneBroadcastTarget.Volumes
+                        | ZoneBroadcastTarget.Sigils,
+            });
+        }
+
+        if (_pendingCreatureMoves.Count > 0) {
+            var moves = _pendingCreatureMoves.ToArray();
+            _pendingCreatureMoves.Clear();
+            DispatchBroadcast(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+                Messages = moves,
+                Targets = ZoneBroadcastTarget.Sigils,
+            });
+        }
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS))]

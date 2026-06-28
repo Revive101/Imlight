@@ -774,4 +774,14 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
     }
 
+    /// <summary>
+    /// Periodic timer tick that flushes batched player/creature moves to supervisors.
+    /// </summary>
+    public sealed class MSG_FLUSHMOVES : IServerMessage {
+
+        public byte MessageOrder { get; } = 53;
+        public byte ServiceID { get; } = 102;
+
+    }
+
 }
