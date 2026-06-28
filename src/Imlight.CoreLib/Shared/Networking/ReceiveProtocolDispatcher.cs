@@ -37,12 +37,13 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 06/28/2026
  */
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using Akka.Actor;
 
@@ -65,7 +66,7 @@ public class ReceiveProtocolDispatcher : ReceiveActor {
 
     public Dictionary<Type, MethodInfo> MessageHandlers { get; private set; }
 
-    private readonly Dictionary<Type, MethodInfo[]> _handlerCache = [];
+    private readonly Dictionary<Type, Action<object>> _handlerCache = [];
 
     protected ReceiveProtocolDispatcher() {
         SetMessageHandlers();
@@ -73,33 +74,56 @@ public class ReceiveProtocolDispatcher : ReceiveActor {
     }
 
     protected virtual void ConfigureReceivers() => Receive<object>(message => {
-        // Find the method that handles this message type
         var messageType = message.GetType();
 
-        if (!_handlerCache.TryGetValue(messageType, out var handlers)) {
-            handlers = MessageHandlers
-                .Where(kvp => kvp.Key.IsAssignableFrom(messageType))
-                .Select(kvp => kvp.Value)
-                .ToArray();
-            _handlerCache[messageType] = handlers;
+        if (!_handlerCache.TryGetValue(messageType, out var handler)) {
+            handler = BuildCompiledHandler(messageType);
+            _handlerCache[messageType] = handler; // null is a valid sentinel — means "no handler"
         }
 
-        if (handlers.Length == 0) {
+        if (handler is null) {
             Unhandled(message);
-
             return;
         }
 
-        // Invoke all methods that handle this message type
-        foreach (var method in handlers) {
+        handler(message);
+    });
+
+    private Action<object> BuildCompiledHandler(Type messageType) {
+        var matching = MessageHandlers
+            .Where(kvp => kvp.Key.IsAssignableFrom(messageType))
+            .Select(kvp => kvp.Value)
+            .ToList();
+
+        if (matching.Count == 0) {
+            return null;
+        }
+
+        // Chain multiple handlers (rare, but supported) via delegate combination.
+        Action<object> combined = null;
+
+        foreach (var method in matching) {
+            var instance = Expression.Constant(this);
             var parameters = method.GetParameters();
+
             if (parameters.Length == 0) {
-                method.Invoke(this, null);
+                // Parameterless handler (just ignore the incoming message)
+                var call = Expression.Call(instance, method);
+                var lambda = Expression.Lambda<Action<object>>(
+                    call, Expression.Parameter(typeof(object), "_"));
+                combined += lambda.Compile();
             } else {
-                method.Invoke(this, [message]);
+                // Single-parameter handler: cast object -> concrete type.
+                var param = Expression.Parameter(typeof(object));
+                var cast = Expression.Convert(param, parameters[0].ParameterType);
+                var call = Expression.Call(instance, method, cast);
+                var lambda = Expression.Lambda<Action<object>>(call, param);
+                combined += lambda.Compile();
             }
         }
-    });
+
+        return combined;
+    }
 
     private void SetMessageHandlers() {
         MessageHandlers = [];
