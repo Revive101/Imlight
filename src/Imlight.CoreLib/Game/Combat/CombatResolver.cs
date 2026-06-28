@@ -450,7 +450,7 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
         // Apply any hanging accuracy effects
         spellAccuracy = ConsumeHangingAccuracyEffects(spellAccuracy, caster, spell.m_magicSchoolID);
 
-        var hitChance = new Random().Next(0, 100);
+        var hitChance = Random.Shared.Next(0, 100);
         
         return hitChance <= spellAccuracy;
     }

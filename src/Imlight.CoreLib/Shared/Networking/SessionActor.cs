@@ -37,7 +37,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 06/27/2026
  */
 
 using System;
@@ -78,6 +78,7 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
 
     private readonly IActorRef _actorFactoryRef;
     private readonly Dictionary<IActorRef, MessageService> _services;
+    private readonly Dictionary<Type, List<IActorRef>> _dispatchTable = [];
     private readonly Socket _socket;
     private readonly List<IMessage> _preInitMessages = new();
     private IActorRef _socketListenerRef;
@@ -85,7 +86,7 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
     private bool _isDisposed;
 
     // ctor
-    public SessionActor(Socket socket, ushort sessionId, IActorRef server) {
+    public SessionActor(Socket socket, ushort sessionId, IActorRef server, IActorRef actorFactoryRef = null) {
         this._socket = socket;
         this.Ip = socket.RemoteEndPoint.ToString();
         this.RemoteIp = socket.RemoteEndPoint.ToString().Split(':')[0];
@@ -93,11 +94,16 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
         this._services = new Dictionary<IActorRef, MessageService>();
         this.ServerRef = server;
 
-        // To get the actor factory reference, we'll ask the server.
-        var query = new SERVER_100_PROTOCOL.MSG_QUERYACTORFACTORY();
-        this._actorFactoryRef = server.Ask<SERVER_100_PROTOCOL.MSG_ACTORFACTORYINFO>(query)
-            .Result
-            .Reference;
+        if (actorFactoryRef != null) {
+            this._actorFactoryRef = actorFactoryRef;
+        }
+        else {
+            // Fallback for callers that don't provide the ref.
+            var query = new SERVER_100_PROTOCOL.MSG_QUERYACTORFACTORY();
+            this._actorFactoryRef = server.Ask<SERVER_100_PROTOCOL.MSG_ACTORFACTORYINFO>(query)
+                .Result
+                .Reference;
+        }
 
         ActorRef = Context.Self;
 
@@ -106,8 +112,8 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
     }
 
     // Akka.NET ctor
-    public static Props Props(Socket socket, ushort sessionId, IActorRef server)
-        => Akka.Actor.Props.Create(() => new SessionActor(socket, sessionId, server));
+    public static Props Props(Socket socket, ushort sessionId, IActorRef server, IActorRef actorFactoryRef = null)
+        => Akka.Actor.Props.Create(() => new SessionActor(socket, sessionId, server, actorFactoryRef));
 
     /// <summary>
     /// Places the session in the queue.
@@ -162,25 +168,23 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
     /// </summary>
     /// <param name="msg"></param>
     private void HandleInternalTell(IServerMessage msg) {
-        // Iterate through services and forward the message to any service that can handle the message.
-        var wasDispatched = false;
-        foreach (var (actorRef, type) in _services) {
-            if (type.MessageHandlers.All(x => x.Key != msg.GetType())) {
-                continue;
+        if (_dispatchTable.TryGetValue(msg.GetType(), out var handlers)) {
+            var wasDispatched = false;
+            foreach (var handler in handlers) {
+                if (handler == Sender) {
+                    continue;
+                }
+                handler.Forward(msg);
+                wasDispatched = true;
             }
 
-            // If the handler is the sender, skip.
-            if (actorRef == Sender) {
-                continue;
+            if (!wasDispatched) {
+                Unhandled(msg);
             }
-
-            actorRef.Forward(msg);
-            wasDispatched = true;
+            return;
         }
 
-        if (!wasDispatched) {
-            Unhandled(msg);
-        }
+        Unhandled(msg);
     }
 
     /// <summary>
@@ -192,25 +196,19 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
     /// <returns></returns>
     public T HandleInternalAsk<T>(IServerMessage msg)
         where T : IServerMessage {
-        // Iterate our services and see if any of them can handle this message.
-        foreach (var (actorRef, type) in _services) {
-            if (type.MessageHandlers.All(x => x.Key != msg.GetType())) {
-                continue;
-            }
+        if (_dispatchTable.TryGetValue(msg.GetType(), out var handlers)) {
+            foreach (var handler in handlers) {
+                if (handler == Sender) {
+                    continue;
+                }
 
-            // If the handler is the sender, skip.
-            if (actorRef == Sender) {
-                continue;
-            }
-
-            try {
-                var result = actorRef.Ask<T>(msg, timeout: TimeSpan.FromSeconds(20)).Result;
-
-                return result;
-            }
-            catch (Exception ex) {
-                Logger.Error("SessionActor service attempted to ask another service with {0}, but the timeout " +
-                          "was exceeded. {1}", Logger.Args(msg.GetType(), ex.Message));
+                try {
+                    return handler.Ask<T>(msg, timeout: TimeSpan.FromSeconds(20)).Result;
+                }
+                catch (Exception ex) {
+                    Logger.Error("SessionActor service attempted to ask another service with {0}, but the timeout " +
+                              "was exceeded. {1}", Logger.Args(msg.GetType(), ex.Message));
+                }
             }
         }
 
@@ -394,6 +392,15 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
                 .Result
                 .Service;
             _services.Add(childRef, identity);
+
+            // Populate the dispatch table.
+            foreach (var msgType in identity.MessageHandlers.Keys) {
+                if (!_dispatchTable.TryGetValue(msgType, out var list)) {
+                    list = [];
+                    _dispatchTable[msgType] = list;
+                }
+                list.Add(childRef);
+            }
         }
     }
 
@@ -413,20 +420,14 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
             return;
         }
 
-        // Iterate through services and forward the message to any service that can handle the message.
-        var wasDispatched = false;
-        foreach (var (actorRef, type) in _services) {
-            if (type.MessageHandlers.All(x => x.Key != packet.GetType())) {
-                continue;
+        if (_dispatchTable.TryGetValue(packet.GetType(), out var handlers)) {
+            foreach (var handler in handlers) {
+                handler.Forward(packet);
             }
-
-            actorRef.Forward(packet);
-            wasDispatched = true;
+            return;
         }
 
-        if (!wasDispatched) {
-            Unhandled(packet);
-        }
+        Unhandled(packet);
     }
 
     private void SendPreDisposeToServices() {

@@ -312,6 +312,24 @@ public static class WizardCollection {
     }
 
     /// <summary>
+    /// Updates the character spellbook behavior for a wizard — persists the
+    /// excluded item spell list and other spellbook state to the database.
+    /// </summary>
+    /// <param name="wizard">The wizard whose spellbook behavior should be persisted.</param>
+    public static void UpdateCharacterSpellbookBehavior(Wizard wizard) {
+        using var session = s_store.OpenSession();
+
+        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
+            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        if (existingCharacter is null) {
+            return;
+        }
+
+        existingCharacter.SpellbookBehavior = wizard.SpellbookBehavior;
+        session.SaveChanges();
+    }
+
+    /// <summary>
     /// Updates the character game stats for a wizard.
     /// </summary>
     /// <param name="wizard">The wizard object containing the updated game stats</param>

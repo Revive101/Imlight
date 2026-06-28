@@ -16,12 +16,12 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System.Linq;
 using Imcodec.ObjectProperty.TypeCache;
-using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Requirements.Handlers;
 
-internal sealed class ReqHasEntryHandler : BaseRequirementHandler<ReqHasEntry> {
+internal sealed class ReqHasGoalHandler : BaseRequirementHandler<ReqHasGoal> {
 
     public override bool Evaluate(IRequirementContext context) {
         var wizard = context.GetWizard();
@@ -30,25 +30,33 @@ internal sealed class ReqHasEntryHandler : BaseRequirementHandler<ReqHasEntry> {
         }
 
         var questName = Requirement.m_questName;
-        if (Requirement.m_isQuestRegistry && string.IsNullOrEmpty(questName)) {
+        if (string.IsNullOrEmpty(questName)) {
             return false;
         }
 
-        var entryName = Requirement.m_entryName;
-        if (string.IsNullOrEmpty(entryName)) {
+        var goalName = Requirement.m_goalName;
+        if (string.IsNullOrEmpty(goalName)) {
             return false;
         }
 
-        return GetEntryValue(wizard, questName, entryName);
-    }
+        var quest = wizard.QuestBehavior.CurrentQuestInstances
+            .FirstOrDefault(q => q.QuestName == questName);
+        if (quest == null) {
+            return false;
+        }
 
-    private bool GetEntryValue(Wizard wizard, string questName, string entryName) {
-        if (Requirement.m_isQuestRegistry) {
-            return wizard.HasQuestRegistryValue(questName, entryName);
+        var goal = quest.GoalProgress
+            .FirstOrDefault(g => g.GoalName == goalName);
+        if (goal == null) {
+            return false;
         }
-        else {
-            return wizard.HasRegistryValue(entryName);
-        }
+
+        return Requirement.m_requiredStatus switch {
+            GoalStatusRequirement.DontCare => true,
+            GoalStatusRequirement.Complete => goal.IsGoalCompleted(),
+            GoalStatusRequirement.Incomplete => goal.DoesPlayerHaveGoal() && !goal.IsGoalCompleted(),
+            _ => false
+        };
     }
 
 }

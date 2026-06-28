@@ -270,7 +270,7 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
             return 0;
         }
 
-        var fullEntryName = $"{questName}.{entryName}";
+        var fullEntryName = $"{questName}_{entryName}";
         
         return GetRegistryValue(fullEntryName);
     }

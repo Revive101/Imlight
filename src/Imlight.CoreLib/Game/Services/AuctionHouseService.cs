@@ -50,6 +50,8 @@ using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.CoreObject;
 using Imcodec.ObjectProperty;
+using Imcodec.IO;
+using Imcodec.Cryptography;
 using Imlight.Common;
 using Imcodec.Types;
 
@@ -60,9 +62,36 @@ internal class AuctionHouseService(SessionActor sessionActor) : MessageService(s
     private readonly CoreObjectSerializer _itemSerializer = new(
         behaviors: SerializerFlags.None
     );
-    private readonly ObjectSerializer _serializer = new(
-        Behaviors: SerializerFlags.None
-    );
+
+    private static ByteString WriteAuctionBlob(uint categoryHash, IReadOnlyCollection<AuctionHouseEntry> entries) {
+        // Writes auction house entries as binary. This is very similar to PropertyClass serialization.
+        //
+        // Format:
+        //   [0-3]  Category hash (uint32) — StringHash of category name (hat, robe, boots), or 0 for empty
+        //   [4-7]  Entry count (uint32)
+        //   [8..]  Array of entries, each 20 bytes:
+        //          [0-7]  GID / template ID (uint64, little-endian)
+        //          [8-11] Stock quantity (int32)
+        //          [12-15] Buy price (int32)
+        //          [16-19] Sell price (int32)
+        var writer = new BitWriter();
+        writer.WriteUInt32(categoryHash);
+        writer.WriteUInt32((uint) entries.Count);
+
+        foreach (var entry in entries) {
+            // Ensure the GID has Type=9
+            // Live bazaar entries use Type=9; our database entries may
+            // have Type=0 from direct ulong→GID casts.
+            var gid = new GID(entry.m_templateID.Full | (9UL << 40));
+
+            writer.WriteUInt64(gid);
+            writer.WriteInt32(entry.m_numForSale);
+            writer.WriteInt32(entry.m_buyPrice);
+            writer.WriteInt32(entry.m_sellPrice);
+        }
+
+        return writer.GetData();
+    }
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new AuctionHouseService(parentActor));
@@ -71,7 +100,7 @@ internal class AuctionHouseService(SessionActor sessionActor) : MessageService(s
     private void ReceiveAuctionHouseRequest(WIZARD_12_PROTOCOL.MSG_AUCTIONHOUSEREQUEST message) {
         switch (message.Command) {
             case 0:
-                SendAuctionHouseContents(message.npcGlobalID, message.key);
+                SendAuctionHouseContents(message.npcGlobalID, message.category, message.key);
                 break;
             case 1:
                 ConfirmBuyFromAuctionHouse(message.itemTemplateID, message.key);
@@ -99,46 +128,24 @@ internal class AuctionHouseService(SessionActor sessionActor) : MessageService(s
         }
     }
 
-    private void SendAuctionHouseContents(ulong npcId, uint key) {
+    private void SendAuctionHouseContents(ulong npcId, uint category, uint key) {
         // Retrieve all Auction House entries.
         var houseEntries = AuctionHouseCollection.GetAllAuctionHouseEntries();
 
-        if (houseEntries is null) {
-            return;
-        }
+        var entryList = houseEntries is null
+            ? new List<AuctionHouseEntry>()
+            : [.. houseEntries];
 
-        var houseEntryList = new List<AuctionHouseEntry>(houseEntries);
+        // Serialize in the compact binary format the client expects.
+        // category=0 is reserved for empty/update signals per the live capture.
+        var contentsData = WriteAuctionBlob(category, entryList);
 
-        while (houseEntryList.Count > 0) {
-            // Contents sent in blocks of up to 50 entries.
-            var houseEntryBlock = (houseEntryList.Count >= 50)
-                ? houseEntryList.GetRange(0, 50) : houseEntryList.GetRange(0, houseEntryList.Count);
-
-            var auctionHouseEntries = new AuctionHouseOffering {
-                m_auctionHousePurchaseKey = key,
-                m_auctionList = houseEntryBlock
-            };
-
-            if (!_serializer.Serialize(auctionHouseEntries, 1, out var auctionHouseEntriesData)) {
-                Logger.Error("Failed to serialize auction house entries.");
-
-                return;
-            }
-
-            var auctionHouseContentsMsg = new WIZARD_12_PROTOCOL.MSG_AUCTIONHOUSECONTENTS {
-                Contents = auctionHouseEntriesData,
-                GlobalID = npcId
-            };
-            SendToSocket(auctionHouseContentsMsg);
-
-            // Remove first 50 entries from list.
-            if (houseEntryList.Count >= 50) {
-                houseEntryList.RemoveRange(0, 50);
-            }
-            else {
-                houseEntryList.RemoveRange(0, houseEntryList.Count);
-            }
-        }
+        var auctionHouseContentsMsg = new WIZARD_12_PROTOCOL.MSG_AUCTIONHOUSECONTENTS {
+            Contents = contentsData,
+            GlobalID = npcId,
+            LastSegment = 0
+        };
+        SendToSocket(auctionHouseContentsMsg);
     }
 
     private void ConfirmBuyFromAuctionHouse(ulong templateId, uint key) {
@@ -190,11 +197,7 @@ internal class AuctionHouseService(SessionActor sessionActor) : MessageService(s
         }
 
         // Inform of update.
-        if (!_serializer.Serialize(entry, 1, out var houseEntryData)) {
-            Logger.Error("Failed to serialize auction house entry.");
-
-            return;
-        }
+        var houseEntryData = WriteAuctionBlob(0, [entry]);
         var auctionUpdateMsg = new GAME_5_PROTOCOL.MSG_AUCTIONHOUSEUPDATE {
             UpdateInfo = houseEntryData,
             CharacterID = wizard.CharId
@@ -288,7 +291,7 @@ internal class AuctionHouseService(SessionActor sessionActor) : MessageService(s
         if (entry is null) {
             entry = new AuctionHouseEntry {
                 m_templateID = (GID) item.m_templateID,
-                m_buyPrice = (int) template.m_baseCost * 2, // Bazaar sells items at 200% of their value.
+                m_buyPrice = (int)(template.m_baseCost * 2), // Bazaar sells items at 200% of their value.
                 m_numForSale = 1,
                 m_sellPrice = gold
             };
@@ -305,11 +308,7 @@ internal class AuctionHouseService(SessionActor sessionActor) : MessageService(s
         var removedItemSuccess = wizard.RemoveItemFromInventory(itemGlobalId);
 
         // Inform of update.
-        if (!_serializer.Serialize(entry, 1, out var houseEntryData)) {
-            Logger.Error("Failed to serialize auction house entry.");
-
-            return;
-        }
+        var houseEntryData = WriteAuctionBlob(0, [entry]);
         var auctionUpdateMsg = new GAME_5_PROTOCOL.MSG_AUCTIONHOUSEUPDATE {
             UpdateInfo = houseEntryData,
             CharacterID = wizard.CharId

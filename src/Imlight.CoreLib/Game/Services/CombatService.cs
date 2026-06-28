@@ -56,12 +56,10 @@ using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Services;
 
-internal class CombatService(SessionActor sessionActor) : MessageService(sessionActor), IWithTimers {
+internal class CombatService(SessionActor sessionActor) : MessageService(sessionActor) {
 
     private const uint NO_AGGRO_EFFECT_STRINGID = 1618528611;
     private const uint NO_AGGRO_EFFECT_DURATION_IN_SECONDS = 3;
-
-    public ITimerScheduler Timers { get; set; }
 
     private readonly CoreObjectSerializer _effectSerializer = new(
         behaviors: SerializerFlags.None

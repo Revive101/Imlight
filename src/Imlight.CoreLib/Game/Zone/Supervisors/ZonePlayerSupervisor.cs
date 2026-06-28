@@ -61,19 +61,22 @@ internal sealed class ZonePlayerSupervisor(Core.Zone zone) : ZoneEntitySuperviso
         }
     }
 
-    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST))]
-    public override void ReceiveZoneSupervisorBroadcast(ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST message) {
-        foreach (var internalMessage in message.Messages) {
-            // Check if this is the add player or remove player message.
-            switch (internalMessage) {
-                case ZONE_102_PROTOCOL.MSG_ADDPLAYER addPlayer:
-                    HandleAddPlayer(addPlayer);
-                    return;
-                case ZONE_102_PROTOCOL.MSG_REMOVEPLAYER removePlayer:
-                    HandleRemovePlayer(removePlayer);
-                    return;
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST))]
+    public override void ReceiveZoneBroadcast(ZONE_102_PROTOCOL.MSG_ZONEBROADCAST message) {
+        if (message.Messages is not null) {
+            foreach (var internalMessage in message.Messages) {
+                switch (internalMessage) {
+                    case ZONE_102_PROTOCOL.MSG_ADDPLAYER addPlayer:
+                        HandleAddPlayer(addPlayer);
+                        return;
+                    case ZONE_102_PROTOCOL.MSG_REMOVEPLAYER removePlayer:
+                        HandleRemovePlayer(removePlayer);
+                        return;
+                }
             }
         }
+
+        base.ReceiveZoneBroadcast(message);
     }
 
     // If this handler was left to the base class, it would cause a stack overflow.

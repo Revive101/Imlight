@@ -321,7 +321,6 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
     }
 
     private COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE DetermineDefensiveBehavior() {
-        // We want to prepare.
         var msg = new COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE {
             Actor = Entity.SelfRef,
             MoveType = (byte) CombatMoveType.Attack,
@@ -335,9 +334,11 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
                 Logger.Args(_currentDuelComponent.SigilId, _currentSubCircle.SlotIndex));
 
             msg.MoveType = (byte) CombatMoveType.Pass;
+            
             return msg;
         }
 
+        // Healing is the highest priority defensive action.
         if (_isHealingViable && _random.NextDouble() < _healingPercentChance) {
             var healingSpells = GetCastableHealingSpells(_roundHand.m_spellList);
             if (healingSpells.Count > 0) {
@@ -345,10 +346,21 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
             }
         }
 
+        // Check what we have available to "prepare" with.
         var buffSpells = GetCastableBuffSpells(_roundHand.m_spellList);
         var debuffSpells = GetCastableDebuffSpells(_roundHand.m_spellList);
+
+        // If we have nothing to prepare with, fall back to attacking.
+        // Otherwise damage-only creatures pass every time the aggressiveness RNG fails.
         if (buffSpells.Count == 0 && debuffSpells.Count == 0) {
-            // If we have no buff or debuff spells, we'll just pass.
+            return DetermineAggressiveBehavior();
+        }
+
+        // We have buffs or debuffs available. There's a small chance we pass anyway.
+        if (_random.NextDouble() < _preparePassChance) {
+            Logger.Debug("Duel {0} | Slot {1} | Preparing, but passing.",
+                Logger.Args(_currentDuelComponent.SigilId, _currentSubCircle.SlotIndex));
+
             msg.MoveType = (byte) CombatMoveType.Pass;
             return msg;
         }
@@ -356,12 +368,12 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
         // Flip a coin to either cast a buff or a debuff.
         var coinFlip = _random.NextDouble();
         if (coinFlip < 0.5 && buffSpells.Count > 0) {
-            // cast a buff.
+            // Cast a buff.
             var randomIdx = _random.Next(buffSpells.Count);
             var selectedSpell = buffSpells[randomIdx];
             msg.SpellSelection = (byte) _roundHand.m_spellList.IndexOf(selectedSpell);
 
-            // Are we selfish? If so, cast it on ourselves. Otherwise, cast it on a teammate.
+            // Are we selfish? If so, cast it on ourselves.
             if (_determinedSelfishThisTurn) {
                 msg.SpellTarget = (uint) _currentSubCircle.SlotIndex;
             }
@@ -372,12 +384,11 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
             }
         }
         else if (debuffSpells.Count > 0) {
-            // cast a debuff.
+            // Cast a debuff on our most hated enemy.
             var randomIdx = _random.Next(debuffSpells.Count);
             var selectedSpell = debuffSpells[randomIdx];
             msg.SpellSelection = (byte) _roundHand.m_spellList.IndexOf(selectedSpell);
 
-            // Select our most hated enemy.
             var targetIdx = GetMostHatedTarget();
             msg.SpellTarget = (byte) targetIdx;
         }

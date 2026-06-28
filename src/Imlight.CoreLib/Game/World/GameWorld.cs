@@ -42,6 +42,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Util.Internal;
 using Imcodec.Cryptography;
@@ -209,32 +210,38 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
             return;
         }
 
-        // Ask the instance container if it has the zone loaded.
+        // Capture sender before async work — Akka Sender is context-bound.
+        var originalSender = Sender;
+
         var hasZoneMsg = new ZONE_102_PROTOCOL.MSG_INSTANCECONTAINERHASZONE {
             ZoneName = message.DestinationZone
         };
         var timeOut = TimeSpan.FromSeconds(5);
-        var response = _instanceContainers[message.OwnerCharId]
+
+        _instanceContainers[message.OwnerCharId]
             .Ask<ZONE_102_PROTOCOL.MSG_INSTANCECONTAINERHASZONERSP>(hasZoneMsg, timeOut)
-            .Result;
+            .ContinueWith(t => new ZONE_102_PROTOCOL.MSG_INSTANCECONTAINER_QUERY_RESULT {
+                OriginalSender = originalSender,
+                OriginalTransfer = message,
+                Response = t.IsFaulted || t.IsCanceled ? null : t.Result
+            })
+            .PipeTo(Self);
+    }
 
-        // If the instance container does not have the zone loaded, we need to create it.
-        if (!response.HasZone) {
-            // Create the zone loader.
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_INSTANCECONTAINER_QUERY_RESULT))]
+    private void ReceiveInstanceContainerQueryResult(ZONE_102_PROTOCOL.MSG_INSTANCECONTAINER_QUERY_RESULT result) {
+        var message = result.OriginalTransfer;
+
+        if (result.Response == null || !result.Response.HasZone) {
             CreateZoneLoader(message.DestinationZone);
-
-            // We want to wait until the zone is fully loaded before transferring the player.
-            _awaitingTransfers.Add(message, Sender);
-
-            // Add the owner ID to the map so we know who called for the creation of this zone.
+            _awaitingTransfers.Add(message, result.OriginalSender);
             _instanceCreationCalledByMap.Add(message.DestinationZone, message.OwnerCharId);
 
             return;
         }
-        else {
-            // If the instance container already exists, we can transfer the player immediately.
-            _instanceContainers[message.OwnerCharId].Forward(message);
-        }
+
+        // Instance container has the zone — forward the transfer to it.
+        _instanceContainers[message.OwnerCharId].Tell(message, result.OriginalSender);
     }
 
     public void HandleOtherZoneTransfer(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message) {

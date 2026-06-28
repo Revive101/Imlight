@@ -59,11 +59,9 @@ using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Services;
 
-internal class AttachService(SessionActor sessionActor) : MessageService(sessionActor), IWithTimers {
+internal class AttachService(SessionActor sessionActor) : MessageService(sessionActor) {
 
     private const float PRELOGIN_DELAY_MS = 500.0f;
-
-    public ITimerScheduler Timers { get; set; }
 
     private Account _account;
     private Wizard _wizard;

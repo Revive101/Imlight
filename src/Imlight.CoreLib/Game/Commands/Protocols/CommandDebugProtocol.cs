@@ -53,9 +53,10 @@ internal class CommandDebugProtocol : CommandProtocol {
             Sender = Context.SessionActor
         };
 
-        var message = new ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST {
+        var message = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
             Messages = [stateChangeMsg],
-            Sender = Context.SessionActor
+            Sender = Context.SessionActor,
+            Targets = ZoneBroadcastTarget.Objects,
         };
 
         Context.ZoneActor.Tell(message, Context.SessionActor);
@@ -71,9 +72,10 @@ internal class CommandDebugProtocol : CommandProtocol {
             Sender = Context.SessionActor
         };
 
-        var message = new ZONE_102_PROTOCOL.MSG_ZONESUPERVISORBROADCAST {
+        var message = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
             Messages = [stateChangeMsg],
-            Sender = Context.SessionActor
+            Sender = Context.SessionActor,
+            Targets = ZoneBroadcastTarget.Objects,
         };
 
         Context.ZoneActor.Tell(message, Context.SessionActor);

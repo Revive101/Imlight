@@ -315,5 +315,50 @@ public sealed class SERVER_100_PROTOCOL : IServerProtocol {
         public ushort[] PlayerLimits;
 
     }
+
+    /// <summary>
+    /// Internal aggregate carrying concurrent game-server query results back to
+    /// GameServerPool for final "best server" selection.  Carries the original
+    /// requester so the follow-up handler can reply to the correct session.
+    /// </summary>
+    public class MSG_QUERYGAMESERVER_AGGREGATE : IServerMessage {
+
+        public byte MessageOrder { get; } = 28;
+        public byte ServiceID { get; } = 100;
+
+        public IActorRef OriginalSender;
+        public MSG_SERVERINFO[] ServerInfos;
+
+    }
+
+    /// <summary>
+    /// Internal aggregate carrying concurrent find-player query results back to
+    /// GameServerPool so it can check whether the target IP is connected.
+    /// </summary>
+    public class MSG_FINDPLAYER_AGGREGATE : IServerMessage {
+
+        public byte MessageOrder { get; } = 29;
+        public byte ServiceID { get; } = 100;
+
+        public IActorRef OriginalSender;
+        public string TargetIp;
+        public MSG_SERVERINFO[] ServerInfos;
+
+    }
+
+    /// <summary>
+    /// Internal aggregate carrying concurrent realm-list query results back to
+    /// GameServerPool for final assembly of the MSG_REALMLIST response.
+    /// </summary>
+    public class MSG_REALMLIST_AGGREGATE : IServerMessage {
+
+        public byte MessageOrder { get; } = 30;
+        public byte ServiceID { get; } = 100;
+
+        public IActorRef OriginalSender;
+        public string[] RealmNames;
+        public ushort[] PlayerCounts;
+
+    }
     
 }

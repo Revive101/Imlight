@@ -53,14 +53,12 @@ using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Services;
 
-internal class PetService(SessionActor sessionActor) : MessageService(sessionActor), IWithTimers {
+internal class PetService(SessionActor sessionActor) : MessageService(sessionActor) {
 
     private static readonly int s_petEnergyTickIntervalInSeconds 
         = ConfigurationManager.Settings["Character.PetEnergyTickInSeconds"].AsInt();
     private const int PET_ENERGY_TICK_DELAY = 2;
     private const int DEFAULT_PET_OVERALL_RATING = 30;
-
-    public ITimerScheduler Timers { get; set; }
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new PetService(parentActor));

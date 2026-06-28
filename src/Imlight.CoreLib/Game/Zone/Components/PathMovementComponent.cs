@@ -279,7 +279,8 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
             NewState = 0
         };
         var movestateMsgBroadcast = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-            Message = movestateMsg
+            Message = movestateMsg,
+            Targets = ZoneBroadcastTarget.Players,
         };
         Entity.ZoneRef.Tell(movestateMsgBroadcast);
 
@@ -293,7 +294,8 @@ internal sealed class PathMovementComponent(ZoneEntity entity) : ZoneEntityCompo
             MobileID = Entity.MobileID
         };
         var movementMsgBroadcast = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
-            Message = movementMsg
+            Message = movementMsg,
+            Targets = ZoneBroadcastTarget.Players,
         };
         Entity.ZoneRef.Tell(movementMsgBroadcast);
     }

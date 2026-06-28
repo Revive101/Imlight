@@ -35,7 +35,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 06/28/2026
  */
 
 using System;
@@ -74,6 +74,15 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
         ];
     private bool _isDisposed;
 
+    private sealed class SocketReadCompleted {
+        public byte[] Buffer;
+        public int ByteCount;
+    }
+
+    private sealed class SocketReadFailed {
+        public Exception Error;
+    }
+
     // ctor
     public SocketListener(IActorRef sessionActor, Socket socket, ushort sessionid) {
         this._sessionActorRef = sessionActor;
@@ -82,6 +91,8 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
         this._tokenBucket = new TokenBucket(_tokenBucketMax, _tokenBucketPerSecond);
 
         Receive<string>(x => x == "Close", x => Dispose());
+        Receive<SocketReadCompleted>(OnSocketReadCompleted);
+        Receive<SocketReadFailed>(OnSocketReadFailed);
 
         StartReceive();
     }
@@ -103,19 +114,37 @@ internal sealed class SocketListener : ReceiveActor, IDisposable {
             return;
         }
 
-        _socket.ReceiveTimeout = 0; // No timeout for synchronous receives
         var buffer = new byte[_bufferSize];
+        _socket.ReceiveAsync(new ArraySegment<byte>(buffer), SocketFlags.None)
+            .ContinueWith(t => {
+                if (t.IsFaulted) {
+                    return (object) new SocketReadFailed {
+                        Error = t.Exception?.InnerException ?? t.Exception!
+                    };
+                }
+                return new SocketReadCompleted {
+                    Buffer = buffer,
+                    ByteCount = t.Result
+                };
+            })
+            .PipeTo(Self);
+    }
 
-        try {
-            int bytesReceived = _socket.Receive(buffer);
-            ProcessReceivedData(buffer, bytesReceived);
+    private void OnSocketReadCompleted(SocketReadCompleted result) {
+        ProcessReceivedData(result.Buffer, result.ByteCount);
+    }
+
+    private void OnSocketReadFailed(SocketReadFailed result) {
+        if (_closeOnSocketException) {
+            Logger.Error("SessionActor {Id} receive operation failed: {Message}",
+                Logger.Args(_sessionid, result.Error.Message));
+            Dispose();
+            return;
         }
-        catch (SocketException ex) {
-            if (_closeOnSocketException) {
-                Logger.Error("SessionActor {Id} receive operation failed: {Message}", Logger.Args(_sessionid, ex.Message));
-                this.Dispose();
-            }
-        }
+
+        // Schedule the next read — the socket stays open when
+        // _closeOnSocketException is false.
+        StartReceive();
     }
 
     private void ProcessReceivedData(byte[] buffer, int bytesReceived) {

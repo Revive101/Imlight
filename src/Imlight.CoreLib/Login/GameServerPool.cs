@@ -35,12 +35,13 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 06/27/2026
  */
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Akka.Actor;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
@@ -100,67 +101,88 @@ internal class GameServerPool : ReceiveProtocolDispatcher {
 
     [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_GETBESTSERVER))]
     private void ReceiveQueryGameServer(SERVER_100_PROTOCOL.MSG_GETBESTSERVER message) {
-        // Iterate through the game servers we have registered and query them to check if they're still active.
-        var gameServerInfos = new List<SERVER_100_PROTOCOL.MSG_SERVERINFO>();
-        foreach (var gameServer in _gameServers.Values) {
+        // Capture the sender before any async work.
+        var originalSender = Sender;
+
+        var queryTasks = _gameServers.Values.Select(async gameServer => {
             try {
                 var msg = new SERVER_100_PROTOCOL.MSG_QUERYSERVER();
                 var timeout = TimeSpan.FromSeconds(_gameServerQueryTimeout);
-                var rsp = gameServer.Ask<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg, timeout).Result;
-                gameServerInfos.Add(rsp);
+                return await gameServer.Ask<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg, timeout);
             }
             catch {
                 // The server did not respond in time, so we'll just ignore it.
                 Logger.Error("Failed to query game server {Name}.", Logger.Args(gameServer.Path.Name));
-
-                continue;
+                return null;
             }
-        }
+        });
 
-        if (gameServerInfos.Count <= 0) {
-            throw new Exception("No game servers were available to query.");
+        // Aggregate results and pipe back to self for final processing.
+        Task.WhenAll(queryTasks)
+            .ContinueWith(t => new SERVER_100_PROTOCOL.MSG_QUERYGAMESERVER_AGGREGATE {
+                OriginalSender = originalSender,
+                ServerInfos = t.Result.Where(r => r != null).ToArray()
+            })
+            .PipeTo(Self);
+    }
+
+    [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_QUERYGAMESERVER_AGGREGATE))]
+    private void ReceiveQueryGameServerAggregate(SERVER_100_PROTOCOL.MSG_QUERYGAMESERVER_AGGREGATE result) {
+        var gameServerInfos = result.ServerInfos;
+
+        if (gameServerInfos.Length <= 0) {
+            Logger.Error("No game servers were available to query.");
+            return;
         }
 
         // Sort the servers by player count in descending order
-        gameServerInfos.Sort((s1, s2) => s2.PlayerCount.CompareTo(s1.PlayerCount));
+        Array.Sort(gameServerInfos, (s1, s2) => s2.PlayerCount.CompareTo(s1.PlayerCount));
 
         // Find the first non-full server or choose a random one if all servers are full
         var chosenServer = gameServerInfos
                                .FirstOrDefault(server => server.PlayerCount < _gameServerPlayerCount)
-                           ?? gameServerInfos[new Random().Next(0, gameServerInfos.Count)];
+                           ?? gameServerInfos[new Random().Next(0, gameServerInfos.Length)];
 
-        // Send the chosen server details back to the session actor
-        Sender.Tell(chosenServer);
+        // Send the chosen server details back to the original requester
+        result.OriginalSender.Tell(chosenServer);
     }
 
     [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_FINDPLAYER))]
     private void ReceiveFindPlayer(SERVER_100_PROTOCOL.MSG_FINDPLAYER message) {
-        var gameServers = _gameServers.Values
-            .Select(gameServer => {
-                var msg = new SERVER_100_PROTOCOL.MSG_QUERYSERVER();
-                var rsp = gameServer.Ask<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg).Result;
-                
-                return rsp;
-            })
-            .ToList();
+        var originalSender = Sender;
+        var targetIp = message.Ip;
 
-        foreach (var server in gameServers) {
-            var connectedPlayers = server.ConnectedIps;
-            if (server.ConnectedIps.Contains(message.Ip)) {
-                var foundMsg = new SERVER_100_PROTOCOL.MSG_PLAYERFOUND() {
-                    Found = true,
-                };
-                Sender.Tell(foundMsg);
-                
+        // Query all game servers concurrently for their connected IPs.
+        var queryTasks = _gameServers.Values.Select(async gameServer => {
+            try {
+                var msg = new SERVER_100_PROTOCOL.MSG_QUERYSERVER();
+                return await gameServer.Ask<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg);
+            }
+            catch {
+                return null;
+            }
+        });
+
+        Task.WhenAll(queryTasks)
+            .ContinueWith(t => new SERVER_100_PROTOCOL.MSG_FINDPLAYER_AGGREGATE {
+                OriginalSender = originalSender,
+                TargetIp = targetIp,
+                ServerInfos = t.Result.Where(r => r != null).ToArray()
+            })
+            .PipeTo(Self);
+    }
+
+    [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_FINDPLAYER_AGGREGATE))]
+    private void ReceiveFindPlayerAggregate(SERVER_100_PROTOCOL.MSG_FINDPLAYER_AGGREGATE result) {
+        foreach (var server in result.ServerInfos) {
+            if (server.ConnectedIps.Contains(result.TargetIp)) {
+                result.OriginalSender.Tell(new SERVER_100_PROTOCOL.MSG_PLAYERFOUND { Found = true });
                 return;
             }
         }
 
         // Inform the sender that this player was not found on any game servers.
-        var failureMsg = new SERVER_100_PROTOCOL.MSG_PLAYERFOUND() {
-            Found = false,
-        };
-        Sender.Tell(failureMsg);
+        result.OriginalSender.Tell(new SERVER_100_PROTOCOL.MSG_PLAYERFOUND { Found = false });
     }
 
     [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_CREATEPLAYERKEY))]
@@ -179,53 +201,72 @@ internal class GameServerPool : ReceiveProtocolDispatcher {
 
     [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_QUERYREALMSERVER))]
     private void ReceiveQueryRealmServer(SERVER_100_PROTOCOL.MSG_QUERYREALMSERVER message) {
+        var originalSender = Sender;
+
         if (!_realmToPort.TryGetValue(message.RealmName, out var port)
             || !_gameServers.TryGetValue(port, out var serverRef)) {
-            Sender.Tell(new SERVER_100_PROTOCOL.MSG_SERVERINFO { RealmName = null });
-
+            originalSender.Tell(new SERVER_100_PROTOCOL.MSG_SERVERINFO { RealmName = null });
             return;
         }
 
-        try {
-            var msg = new SERVER_100_PROTOCOL.MSG_QUERYSERVER();
-            var timeout = TimeSpan.FromSeconds(_gameServerQueryTimeout);
-            var rsp = serverRef.Ask<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg, timeout).Result;
-            Sender.Tell(rsp);
-        }
-        catch {
-            Sender.Tell(new SERVER_100_PROTOCOL.MSG_SERVERINFO { RealmName = null });
-        }
+        var msg = new SERVER_100_PROTOCOL.MSG_QUERYSERVER();
+        var timeout = TimeSpan.FromSeconds(_gameServerQueryTimeout);
+
+        serverRef.Ask<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg, timeout)
+            .ContinueWith(t => {
+                if (t.IsFaulted || t.IsCanceled) {
+                    return new SERVER_100_PROTOCOL.MSG_SERVERINFO { RealmName = null };
+                }
+                return t.Result;
+            })
+            .PipeTo(originalSender);
     }
 
     [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_REALMLIST))]
     private void ReceiveRealmList(SERVER_100_PROTOCOL.MSG_REALMLIST message) {
-        var realmNames = new List<string>();
-        var playerCounts = new List<ushort>();
-        var playerLimits = new List<ushort>();
+        var originalSender = Sender;
 
-        foreach (var (realmName, port) in _realmToPort) {
+        // Query every realm concurrently.
+        var realmQueries = _realmToPort.Select(async kvp => {
+            var (realmName, port) = kvp;
             if (!_gameServers.TryGetValue(port, out var serverRef)) {
-                continue;
+                return null;
             }
 
             try {
                 var msg = new SERVER_100_PROTOCOL.MSG_QUERYSERVER();
                 var timeout = TimeSpan.FromSeconds(_gameServerQueryTimeout);
-                var rsp = serverRef.Ask<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg, timeout).Result;
-
-                realmNames.Add(realmName);
-                playerCounts.Add(rsp.PlayerCount);
-                playerLimits.Add(_gameServerPlayerCount);
+                var rsp = await serverRef.Ask<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg, timeout);
+                return ((string realmName, ushort playerCount)?) (realmName, rsp.PlayerCount);
             }
             catch {
                 // Server unreachable — skip it.
+                return ((string realmName, ushort playerCount)?) null;
             }
-        }
+        });
 
-        Sender.Tell(new SERVER_100_PROTOCOL.MSG_REALMLIST {
-            RealmNames = [.. realmNames],
-            PlayerCounts = [.. playerCounts],
-            PlayerLimits = [.. playerLimits]
+        Task.WhenAll(realmQueries)
+            .ContinueWith(t => {
+                var entries = t.Result.Where(r => r.HasValue).Select(r => r.Value).ToList();
+                return new SERVER_100_PROTOCOL.MSG_REALMLIST_AGGREGATE {
+                    OriginalSender = originalSender,
+                    RealmNames = entries.Select(e => e.realmName).ToArray(),
+                    PlayerCounts = entries.Select(e => e.playerCount).ToArray()
+                };
+            })
+            .PipeTo(Self);
+    }
+
+    [MessageHandler(typeof(SERVER_100_PROTOCOL.MSG_REALMLIST_AGGREGATE))]
+    private void ReceiveRealmListAggregate(SERVER_100_PROTOCOL.MSG_REALMLIST_AGGREGATE result) {
+        var realmNames = result.RealmNames;
+        var playerCounts = result.PlayerCounts;
+        var playerLimits = realmNames.Select(_ => _gameServerPlayerCount).ToArray();
+
+        result.OriginalSender.Tell(new SERVER_100_PROTOCOL.MSG_REALMLIST {
+            RealmNames = realmNames,
+            PlayerCounts = playerCounts,
+            PlayerLimits = playerLimits
         });
     }
 

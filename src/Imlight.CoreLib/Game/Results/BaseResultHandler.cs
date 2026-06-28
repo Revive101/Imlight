@@ -91,7 +91,11 @@ public abstract class BaseResultHandler<T> : ReceiveProtocolDispatcher, IResultH
         var rsp = new CHARACTER_103_PROTOCOL.MSG_RESULTEXECUTED {
             Success = executeSuccess
         };
-        Sender.Tell(rsp);   
+        Sender.Tell(rsp);
+
+        // Self-destruct after replying so handler actors don't accumulate
+        // as orphan children of the ResultExecutorActor.
+        Context.Stop(Self);
     }
 
 }

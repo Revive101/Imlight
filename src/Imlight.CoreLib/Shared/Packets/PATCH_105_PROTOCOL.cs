@@ -41,7 +41,8 @@ public sealed class PATCH_105_PROTOCOL : IServerProtocol {
         public uint Version;
         public uint CRC;
         public uint Size;
-        
+        public uint FileTime;
+
     }
 
     public class MSG_DOWNLOAD_WAD_REQUEST : IServerMessage {
