@@ -61,8 +61,8 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
             return;
         }
 
-        if (   msg.ZoneName.ToString().Contains(TUTORIAL_EXTERIOR_ZONE_NAME_CONTENTS) 
-            || msg.ZoneName.ToString().Contains(TUTORIAL_INTERIOR_ZONE_NAME_CONTENTS)) {
+        if (   !msg.ZoneName.ToString().Contains(TUTORIAL_EXTERIOR_ZONE_NAME_CONTENTS) 
+            || !msg.ZoneName.ToString().Contains(TUTORIAL_INTERIOR_ZONE_NAME_CONTENTS)) {
             return;
         }
 
