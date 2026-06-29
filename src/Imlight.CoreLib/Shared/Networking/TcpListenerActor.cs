@@ -36,11 +36,13 @@
  * Last Updated: 3/18/2025
  */
 
+using System;
 using System.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using Akka.Actor;
+using Imlight.Common;
 using Imlight.CoreLib.Shared.Packets;
 
 namespace Imlight.CoreLib.Shared.Networking;
@@ -69,39 +71,59 @@ public class TcpListenerActor : ReceiveActor {
         => Akka.Actor.Props.Create(() => new TcpListenerActor(name, port, serverRef));
 
     public async void Start() {
-        this.Listening = true;
-        this.Listener.Start();
+        try {
+            this.Listener.Start();
+            this.Listening = true;
 
-        var token = this._tokenSource.Token;
+            Logger.Information("TcpListener for {Name} bound to port {Port} — listening.",
+                Logger.Args(Name, Port));
 
-        await ListenAsync(token, Context);
+            var token = this._tokenSource.Token;
+            await ListenAsync(token);
+        }
+        catch (Exception ex) {
+            Logger.Fatal("TcpListener for {Name} on port {Port} failed: {Exception}",
+                Logger.Args(Name, Port, ex));
+        }
     }
 
     public void Stop() {
         this.Listening = false;
         this._tokenSource.Cancel();
         Listener.Stop();
+
+        Logger.Debug("TcpListener for {Name} on port {Port} stopped.",
+            Logger.Args(Name, Port));
     }
 
     /// <summary>
-    /// Asyncronously listen for incoming connections.
+    /// Asynchronously listen for incoming connections.
     /// </summary>
-    /// <param name="token">The cancellation token.</param>
-    /// <returns></returns>
-    protected async Task ListenAsync(CancellationToken token, IUntypedActorContext context) {
-        // Listen for any incoming sockets and accept data they send.
+    protected async Task ListenAsync(CancellationToken token) {
         while (!token.IsCancellationRequested) {
-            if (!this.Listening) {
-                continue;
+            try {
+                var socket = await Listener.AcceptSocketAsync(token);
+                AllocateNewSocket(socket);
             }
-
-            // Accept socket and create a new SessionActor for them.
-            var socket = await Listener.AcceptSocketAsync();
-            AllocateNewSocket(socket, context);
+            catch (OperationCanceledException) {
+                // Normal shutdown — token was cancelled.
+                break;
+            }
+            catch (ObjectDisposedException) {
+                // Listener was disposed — normal during shutdown.
+                break;
+            }
+            catch (Exception ex) {
+                Logger.Error("TcpListener for {Name} on port {Port} accept error: {Exception}",
+                    Logger.Args(Name, Port, ex));
+            }
         }
     }
 
-    private void AllocateNewSocket(Socket socket, IUntypedActorContext context) {
+    private void AllocateNewSocket(Socket socket) {
+        Logger.Debug("TcpListener for {Name} accepted connection from {RemoteEndPoint}.",
+            Logger.Args(Name, socket.RemoteEndPoint?.ToString()));
+
         var msg = new SERVER_100_PROTOCOL.MSG_ALLOCATESOCKET() { Socket = socket };
         _serverRef.Tell(msg);
     }

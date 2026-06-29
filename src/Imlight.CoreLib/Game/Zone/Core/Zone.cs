@@ -146,7 +146,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     // Props
     public static Props Props(string zonePath, uint dynamicZoneId)
         => Akka.Actor.Props.Create(() => new Zone(zonePath, dynamicZoneId))
-            .WithMailbox("zone-priority");
+            .WithMailbox("akka.actor.mailbox.zone-priority");
 
     protected override void PreRestart(Exception reason, object message) {
         Logger.Error("Zone {ZoneName} restarts for: {Exception}", Logger.Args(ZoneName, reason));
