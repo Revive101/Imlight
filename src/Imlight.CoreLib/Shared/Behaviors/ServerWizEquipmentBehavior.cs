@@ -186,6 +186,11 @@ public class ServerWizEquipmentBehavior : IClientBehaviorProvider<ClientWizEquip
         }
     }
 
+    public ulong GetEquippedPetId() {
+        var petSlot = SlotList?.FirstOrDefault(s => s.SlotType == EquipmentSlotType.Pet);
+        return petSlot?.ItemId ?? 0;
+    }
+
     public ClientWizEquipmentBehavior GetClientBehaviorInstance() => new() {
         m_equipmentSets = new List<EquipmentSet>(),
         m_slotList = SlotList?.Select(slot => slot.GetClientTypeAlternative()).ToList(),

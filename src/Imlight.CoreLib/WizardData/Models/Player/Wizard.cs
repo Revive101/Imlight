@@ -99,12 +99,6 @@ public class Wizard : IDisposable {
     [JsonIgnore] internal DynamodSet DynamodSet { get; set; }
     [JsonIgnore] internal bool IsInCombatGrace { get; set; }
 
-    /// <summary>
-    /// Tracks hatched pets for MSG_PETTOMEPETADDED. Key: pet global ID, Value: pet template ID.
-    /// Runtime-only; not persisted (the pet tome behavior blob handles persistence).
-    /// </summary>
-    [JsonIgnore] public readonly Dictionary<ulong, uint> OwnedPets = [];
-
     [JsonIgnore] private Vector3 _location;
     [JsonIgnore] private Vector3 _orientation;
     [JsonIgnore]
@@ -1276,10 +1270,16 @@ public class Wizard : IDisposable {
         });
 
         // The default pet must be created through the pet factory. 
-        var defaultPet = PetFactory.CreateHatchedPet((uint) CharId, _defaultPetTemplateId);
-
-        // Add pet to inventory.
-        itemsToAdd.Add(defaultPet);
+        var defaultPet = PetFactory.CreateHatchedPet(CharId, _defaultPetTemplateId);
+        if (defaultPet is null) {
+            Logger.Error("Could not create default pet (template {0}) for Wizard {1}.",
+                Logger.Args(_defaultPetTemplateId, CharId));
+        }
+        else {
+            // Add pet to inventory.
+            itemsToAdd.Add(defaultPet);
+            InventoryBehavior.InventoryItemIds.Add(defaultPet.m_globalID);
+        }
 
         // This is a different method that bulk uploads items to the database.
         var success = WizardItemCollection.AddDefaultItems(itemsToAdd);

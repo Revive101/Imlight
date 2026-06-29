@@ -28,7 +28,6 @@ public record PetObjectItem : WizClientObjectItem {
     public ServerPetNameBehavior ServerPetNameBehavior { get; set; }
     public ServerWizardCharacterBehavior ServerWizardCharacterBehavior { get; set; }
     public ServerPetItemBehavior ServerPetItemBehavior { get; set; }
-    public bool NoTransfer { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
 
     // Paramless ctor for deserialization.
     // Must be initialized by calling Initialize() after deserialization.
@@ -42,6 +41,15 @@ public record PetObjectItem : WizClientObjectItem {
         ServerWizardCharacterBehavior = new ServerWizardCharacterBehavior();
         ServerPetItemBehavior = new ServerPetItemBehavior();
     }
+
+    internal CoreObject ToClientObject() => new WizClientObjectItem {
+        m_globalID = m_globalID,
+        m_templateID = m_templateID,
+        m_characterId = m_characterId,
+        m_inactiveBehaviors = [
+                ServerPetItemBehavior.GetClientBehaviorInstance(),
+            ]
+    };
 
     public void Initialize() {
         // We can't initialize this in the constructor because the properties will not yet

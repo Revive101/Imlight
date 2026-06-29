@@ -265,7 +265,6 @@ internal class PetService(SessionActor sessionActor) : MessageService(sessionAct
 
         // 4. MSG_PETTOMEPETADDED — adds the pet to the player's pet tome.
         var petTomeGlobalId = RandomGen.GenerateGUID();
-        wizard.OwnedPets[petTomeGlobalId] = (uint) petTemplateId;
 
         SendToSocket(new WIZARD2_53_PROTOCOL.MSG_PETTOMEPETADDED {
             GlobalID = petTomeGlobalId,

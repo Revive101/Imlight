@@ -18,8 +18,10 @@
 
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
+using Imcodec.Types;
 using Imlight.Common;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.Shared.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -30,16 +32,16 @@ public class PetFactory : RootDirectoryResourceSingleton<PetFactory>, IMemoryStr
 
     protected override string DirectoryName => "ObjectData/Pets/";
 
-    private static readonly Dictionary<uint, WizItemTemplate> s_petTemplates = [];
+    private static readonly Dictionary<uint, GameObjectTemplate> s_petTemplates = [];
 
     protected override void AfterLoad() {
         var serializer = new BindSerializer();
         var count = 0;
 
         foreach (var (fileRecord, fileStream) in base.Files) {
-            if (!serializer.Deserialize<WizItemTemplate>(fileStream?.ToArray(), out var template)) {
+            if (!serializer.Deserialize<GameObjectTemplate>(fileStream?.ToArray(), out var template)) {
                 Logger.Error("Could not deserialize {0} as {1}",
-                    Logger.Args(fileRecord.FileName, nameof(WizItemTemplate)));
+                    Logger.Args(fileRecord.FileName, nameof(GameObjectTemplate)));
 
                 continue;
             }
@@ -84,7 +86,12 @@ public class PetFactory : RootDirectoryResourceSingleton<PetFactory>, IMemoryStr
             return null;
         }
 
-        var pet = new WizardData.Models.Pet.PetObjectItem(ownerId, templateId);
+        var pet = new WizardData.Models.Pet.PetObjectItem(ownerId, templateId) {
+            m_characterId = (GID) ownerId,
+            m_globalID = RandomGen.GenerateGUID(),
+            m_templateID = template.m_templateID
+        };
+
         pet.ServerPetNameBehavior.TemplateID = template.m_templateID;
         pet.ServerPetNameBehavior.Race = petItemBehaviorTemplate.m_eRace;
         pet.ServerPetNameBehavior.Gender = petItemBehaviorTemplate.m_eGender;

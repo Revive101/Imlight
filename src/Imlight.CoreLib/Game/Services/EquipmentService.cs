@@ -265,7 +265,7 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
 
         var spawnMsg = new ZONE_102_PROTOCOL.MSG_SPAWNENTITY {
             CoreObject = coreObj,
-            Template = template,
+            Template = CoreObjectFactory.GetCoreTemplate(2),
             Requester = SessionActor.ActorRef
         };
 
