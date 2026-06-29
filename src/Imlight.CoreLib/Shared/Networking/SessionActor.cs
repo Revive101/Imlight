@@ -281,7 +281,9 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
         };
         ServerRef.Tell(msg);
 
-        _socketListenerRef.Tell("Close");
+        // Don't preemptively close the socket — the client disconnects itself
+        // after receiving the final message (e.g. MSG_CHARACTERSELECTED).
+        // Closing it here races with any pending SocketSender messages.
 
         // Dispose services.
         SendPreDisposeToServices();
