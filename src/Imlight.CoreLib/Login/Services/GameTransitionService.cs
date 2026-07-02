@@ -119,7 +119,6 @@ internal class GameTransitionService(SessionActor sessionActor) : MessageService
         else {
             // There is no queue. Send the message to the game server.
             SendToSocket(charSelectedMsg);
-            CloseSession();
         }
     }
 

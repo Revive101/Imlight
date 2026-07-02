@@ -87,6 +87,11 @@ internal sealed class SocketSender : ReceiveActor, IDisposable {
         _socket?.Dispose();
     }
 
+    protected override void PostStop() {
+        Dispose();
+        base.PostStop();
+    }
+
     private void SendToSocket(IMessage message) {
         if (!_socket.Connected) {
             Dispose();
