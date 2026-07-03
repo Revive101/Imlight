@@ -268,7 +268,8 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
                 Messages = moves,
                 Targets = ZoneBroadcastTarget.Objects
                         | ZoneBroadcastTarget.Volumes
-                        | ZoneBroadcastTarget.Sigils,
+                        | ZoneBroadcastTarget.Sigils
+                        | ZoneBroadcastTarget.Paths,
             });
         }
 
