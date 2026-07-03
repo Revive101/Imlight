@@ -258,6 +258,15 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         InitializeDuel(message.StartingParticipants);
         _renderComponent.Enable();
 
+        // Broadcast MSG_DUEL to inform all clients a duel is now active.
+        // The live server sends this to enable 3D combat targeting.
+        var duelBehavior = GetClientBehaviorInstance();
+        if (_serializer.Serialize(duelBehavior, _combatParticipantFlags, out var duelData)) {
+            ZoneBroadcast(new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_DUEL {
+                Data = duelData,
+            });
+        }
+
         // Fire a message to self to start the duel after the grace period has ended.
         var delay = TimeSpan.FromSeconds(DUEL_GRACE_PERIOD_IN_SECONDS);
         Timers.StartSingleTimer(GRACE_TIME_KEY, new COMBAT_106_PROTOCOL.MSG_NEWROUND(), delay);
