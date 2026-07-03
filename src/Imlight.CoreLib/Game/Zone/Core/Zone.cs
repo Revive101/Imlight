@@ -218,6 +218,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     protected virtual void ReceiveRemovePlayer(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message) {
         if (_isLoading) {
             _pendingPlayerEvents.Remove(message.PlayerActor);
+            Sender.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP());
 
             return;
         }
@@ -228,6 +229,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
 
         InformZoneSupervisors(message.PlayerActor, message);
         ReleaseObjectIdentifier(message.MobileId);
+        Sender.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP());
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PLAYERMOVE))]
