@@ -299,7 +299,7 @@ internal abstract class MessageService(SessionActor sessionActor) : ReceiveProto
     }
 
     [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_TELEPORT_DELAY))]
-    private void OnTeleportDelay(SERVICE_101_PROTOCOL.MSG_TELEPORT_DELAY msg) {
+    protected void OnTeleportDelay(SERVICE_101_PROTOCOL.MSG_TELEPORT_DELAY msg) {
         DoTeleport(msg.DestinationZone, msg.DestinationLocation, msg.MakePrivate, msg.OwnerCharId);
     }
 
