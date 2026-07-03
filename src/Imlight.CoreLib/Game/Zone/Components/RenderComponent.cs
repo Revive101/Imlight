@@ -36,7 +36,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 07/02/2026
  */
 
 using System.Collections.Generic;
@@ -129,15 +129,24 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         if (requirementsMet) {
             _playersWithRequirementsMet.Add(wizard, suspect);
 
-            if (!_doesDistanceCheck || IsInRadius(player, _renderDistance)) {
-                _playersInRange.Add(player, suspect);
-                CreateObjectForPlayer(suspect);
+            // Always send MSG_NEWOBJECT so the client registers this object,
+            // even if the player is outside the render distance. Without this,
+            // the client will ignore subsequent MSG_ADDOBJECT messages.
+            // See: "You cannot send MSG_ADDOBJECT in regards to an object if
+            // the client has not been told about it with MSG_NEWOBJECT."
+            CreateObjectForPlayer(suspect);
 
-                return;
-            }
+            // Always add the player to the in-range list so the next
+            // OnPlayerMove tick can correctly evaluate distance and send
+            // MSG_REMOVEOBJECT if the player is outside the render radius.
+            // The client needs the ~250ms gap between MSG_NEWOBJECT and
+            // any MSG_REMOVEOBJECT to register the object properly.
+            _playersInRange.Add(player, suspect);
+
+            return;
         }
 
-        // If the player is not within our render distance, despawn.
+        // If the player doesn't meet spawn requirements, nothing to do.
         if (!_doesDistanceCheck) {
             return;
         }

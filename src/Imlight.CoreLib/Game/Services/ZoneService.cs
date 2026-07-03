@@ -72,6 +72,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
     private readonly bool _randomBackflips
         = ConfigurationManager.Settings["April Fools.RandomBackFlips"].AsBool();
     private bool _isTransferQueued;
+    private uint _currentDynamicZoneId;
 
     private readonly CoreObjectSerializer _effectSerializer = new(
         behaviors: SerializerFlags.None
@@ -153,6 +154,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
             // If we're not sending this message to the client, it means the zone is being loaded
             // for MSG_ATTACH. In which case, the client is already prepared for the zone transfer.
             SetZone(zoneDetails.ZoneActorRef);
+            _currentDynamicZoneId = zoneDetails.DynamicZoneId;
         }
 
         Sender.Tell(zoneDetails);
@@ -635,6 +637,11 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         var account = GetSocketAccount();
         var character = GetActiveWizard();
 
+        // Persist the current zone and location as explicit fallback data so the
+        // Wizard record reflects where the player should return if the new attach fails.
+        WizardCollection.UpdateCharacterZone(character, character.Zone, character.ZoneDisplayName);
+        WizardCollection.UpdateCharacterLocation(character, character.Location, character.Orientation.Z);
+
         var serverTransfer = new GAME_5_PROTOCOL.MSG_SERVERTRANSFER() {
             IP = character.GameServerIp,
             TCPPort = character.GameServerPort,
@@ -651,9 +658,23 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
             FallbackIP = character.GameServerIp,
             FallbackTCPPort = character.GameServerPort,
             FallbackUDPPort = character.GameServerPort,
-            FallbackZone = character.Zone
+            FallbackZone = character.Zone,
+            FallbackZoneID = _currentDynamicZoneId
         };
         SendToSocket(serverTransfer);
+
+        // Register fallback data on the GameServer so the new session can
+        // proactively recover if MSG_ATTACH never arrives.
+        SessionActor.ServerRef.Tell(new SERVICE_101_PROTOCOL.MSG_REGISTER_FALLBACK {
+            RemoteIp = SessionActor.RemoteIp,
+            UserId = account.AccountId,
+            CharId = character.CharId,
+            FallbackZone = character.Zone,
+            FallbackZoneId = _currentDynamicZoneId,
+            FallbackLocation = Util.GetCompactStringFromVector(character.Location, character.Orientation),
+            GameServerIp = character.GameServerIp,
+            GameServerPort = character.GameServerPort
+        });
     }
 
     private void DoTeleport(string location) {

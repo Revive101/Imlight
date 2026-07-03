@@ -35,7 +35,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 06/28/2026
+ * Last Updated: 07/02/2026
  */
 
 using System;
@@ -218,6 +218,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     protected virtual void ReceiveRemovePlayer(ZONE_102_PROTOCOL.MSG_REMOVEPLAYER message) {
         if (_isLoading) {
             _pendingPlayerEvents.Remove(message.PlayerActor);
+            Sender.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP());
 
             return;
         }
@@ -228,6 +229,7 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
 
         InformZoneSupervisors(message.PlayerActor, message);
         ReleaseObjectIdentifier(message.MobileId);
+        Sender.Tell(new ZONE_102_PROTOCOL.MSG_REMOVEPLAYERRSP());
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_PLAYERMOVE))]
@@ -266,7 +268,8 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
                 Messages = moves,
                 Targets = ZoneBroadcastTarget.Objects
                         | ZoneBroadcastTarget.Volumes
-                        | ZoneBroadcastTarget.Sigils,
+                        | ZoneBroadcastTarget.Sigils
+                        | ZoneBroadcastTarget.Paths,
             });
         }
 
@@ -497,9 +500,21 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     private void ReleaseObjectIdentifier(ushort mobileId) {
+        // Derfer the actual release on a short cooldown. This is a direct fix
+        // for https://github.com/Revive101/Imlight/issues/131, I think.
+        // Without this, a rapid leave+join cycle can cause the new player's
+        // MSG_NEWOBJECT to race ahead of the old player's MSG_REMOVEOBJECT.
+        var key = $"release-mobile-{mobileId}";
+        Timers.StartSingleTimer(key, new ZONE_102_PROTOCOL.MSG_RELEASEMOBILEID {
+            MobileId = mobileId
+        }, TimeSpan.FromSeconds(2));
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_RELEASEMOBILEID))]
+    private void ReceiveReleaseMobileId(ZONE_102_PROTOCOL.MSG_RELEASEMOBILEID message) {
         lock (_mobileIdLock) {
-            if (_mobileIdMap.Contains(mobileId)) {
-                _mobileIdMap.Remove(mobileId);
+            if (_mobileIdMap.Contains(message.MobileId)) {
+                _mobileIdMap.Remove(message.MobileId);
             }
         }
     }

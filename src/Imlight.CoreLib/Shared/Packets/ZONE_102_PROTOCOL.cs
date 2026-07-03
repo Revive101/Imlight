@@ -784,4 +784,17 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
 
     }
 
+    /// <summary>
+    /// Timer-fired message that releases a mobile ID back to the pool after a cooldown,
+    /// preventing races between MSG_REMOVEOBJECT delivery and mobile ID reuse.
+    /// </summary>
+    public sealed class MSG_RELEASEMOBILEID : IServerMessage {
+
+        public byte MessageOrder { get; } = 54;
+        public byte ServiceID { get; } = 102;
+
+        public ushort MobileId;
+
+    }
+
 }

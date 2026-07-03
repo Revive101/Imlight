@@ -97,6 +97,7 @@ public class Wizard : IDisposable {
     [JsonIgnore] public string QueuedZoneLocation;
     [JsonIgnore] internal DynamodSet DynamodSet { get; set; }
     [JsonIgnore] internal bool IsInCombatGrace { get; set; }
+    [JsonIgnore] internal bool IsInDuel { get; set; }
 
     /// <summary>
     /// Tracks hatched pets for MSG_PETTOMEPETADDED. Key: pet global ID, Value: pet template ID.

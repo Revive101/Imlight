@@ -103,9 +103,17 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
             return;
         }
 
+        var hasContainer = _instanceContainers.TryGetValue(message.OwnerCharId, out var instanceContainer);
+
+        // If IsPrivate is set but no instance container exists, create one proactively.
+        if (message.IsPrivate && !hasContainer) {
+            instanceContainer = CreateInstanceContainer(message.OwnerCharId);
+            hasContainer = true;
+        }
+
         // If this owner has an instance container, we'll first check with it to see if it has the zone loaded.
         // If it does, we'll forward the transfer request to it.
-        if (_instanceContainers.TryGetValue(message.OwnerCharId, out var instanceContainer)) {
+        if (hasContainer) {
             HandleInstancedZoneTransfer(message);
         }
         else {

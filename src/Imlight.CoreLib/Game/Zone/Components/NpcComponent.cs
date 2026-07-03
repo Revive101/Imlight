@@ -162,7 +162,7 @@ internal sealed class NpcComponent : ZoneEntityComponent, IComponentFactory, ICl
             return;
         }
 
-        if (!IsMonster || playerWizard.IsInCombatGrace) {
+        if (!IsMonster || playerWizard.IsInCombatGrace || playerWizard.IsInDuel) {
             return;
         }
 
