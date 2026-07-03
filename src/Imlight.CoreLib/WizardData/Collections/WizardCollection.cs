@@ -22,7 +22,6 @@ using Imlight.CoreLib.WizardData.Databases;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imcodec.ObjectProperty.TypeCache;
 using Imcodec.Math;
-using System.Collections.Generic;
 
 namespace Imlight.CoreLib.WizardData.Collections;
 
@@ -563,6 +562,7 @@ public static class WizardCollection {
         var items = session.Query<WizClientObjectItem>(collectionName: WizardItemCollection.CollectionName)
             .Where(x => x.m_characterId == wizard.CharId)
             .ToList();
+
         wizard.InventoryBehavior.Items = [.. items
             .Where(i => wizard.InventoryBehavior.InventoryItemIds
             .Contains(i.m_globalID))

@@ -356,8 +356,6 @@ public class ZoneEntity(
     }
 
     public WizClientObject GetClientBehaviorInstance() {
-        // Use WizClientPet when the active object is one, so the client
-        // dispatches to the correct PropertyClass type.
         var gameObj = ActiveGameObject is WizClientPet
             ? new WizClientPet()
             : new WizClientObject();
@@ -381,7 +379,6 @@ public class ZoneEntity(
                 if (serverBehavior.NoTransfer) {
                     continue;
                 }
-
 
                 // Check to see if there is already a behavior of this type in the list.
                 // If there is, replace it.

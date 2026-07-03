@@ -30,6 +30,8 @@ namespace Imlight.CoreLib.Game.Pet;
 
 public class PetFactory : RootDirectoryResourceSingleton<PetFactory>, IMemoryStreamDisposable {
 
+    private const uint GENERIC_PET_TEMPLATE_ID = 2;
+
     protected override string DirectoryName => "ObjectData/Pets/";
 
     private static readonly Dictionary<uint, GameObjectTemplate> s_petTemplates = [];
@@ -55,10 +57,10 @@ public class PetFactory : RootDirectoryResourceSingleton<PetFactory>, IMemoryStr
             Logger.Args(count));
     }
 
-    public static WizardData.Models.Pet.PetObjectItem CreateHatchedPet(ulong ownerId, uint templateId)
+    public static WizClientObjectItem CreateHatchedPet(ulong ownerId, uint templateId)
         => CreatePet(ownerId, templateId, preHatch: true);
 
-    public static WizardData.Models.Pet.PetObjectItem CreatePet(
+    public static WizClientObjectItem CreatePet(
             ulong ownerId,
             uint templateId,
             bool preHatch = false
@@ -70,47 +72,98 @@ public class PetFactory : RootDirectoryResourceSingleton<PetFactory>, IMemoryStr
             return null;
         }
 
-        // Get the avatar info for this pet, which is important for gender and race.
-        var avatarInfo = template.m_behaviors.FirstOrDefault(s => s.m_behaviorName == "PetItemBehavior");
-        if (avatarInfo == null) {
-            Logger.Error("Pet template with ID {0} has no avatar info.",
-                Logger.Args(templateId));
-
-            return null;
-        }
-        if (avatarInfo is not PetItemBehaviorTemplate petItemBehaviorTemplate) {
-            // WHAT !!!
-            Logger.Error("Pet template with ID {0} has avatar info that is not a petItemBehaviorTemplate.",
-                Logger.Args(templateId));
+        // Important behavior that can tell us race, egg name, hatch rate.
+        var behaviorTemplate = template.m_behaviors
+            .FirstOrDefault(s => s.m_behaviorName == "PetItemBehavior");
+        if (behaviorTemplate == null || behaviorTemplate is not PetItemBehaviorTemplate petItemBehaviorTemplate) {
+            Logger.Error("Pet template with ID {0} has no pet item behavior, or it is not of type {1}.",
+                Logger.Args(templateId, nameof(PetItemBehaviorTemplate)));
 
             return null;
         }
 
-        var pet = new WizardData.Models.Pet.PetObjectItem(ownerId, templateId) {
+        var parsedHatchRate = ParseHatchRate(petItemBehaviorTemplate.m_sHatchRate);
+        var pet = new WizClientObjectItem {
             m_characterId = (GID) ownerId,
             m_globalID = RandomGen.GenerateGUID(),
-            m_templateID = template.m_templateID
+            m_templateID = template.m_templateID,
+            m_inactiveBehaviors = [
+                new ClientPetItemBehavior() {
+                    m_level = (byte) (preHatch ? 1 : 0),
+                    m_XP = 0,
+                    m_hatchedTimeSecs = (uint) (preHatch ? 0 : parsedHatchRate),
+                },
+                new ClientPetNameBehavior() {
+                    m_eRace = petItemBehaviorTemplate.m_eRace,
+                    m_eGender = petItemBehaviorTemplate.m_eGender,
+                }
+            ]
         };
-
-        pet.ServerPetNameBehavior.TemplateID = template.m_templateID;
-        pet.ServerPetNameBehavior.Race = petItemBehaviorTemplate.m_eRace;
-        pet.ServerPetNameBehavior.Gender = petItemBehaviorTemplate.m_eGender;
-        pet.ServerWizardCharacterBehavior.Race = petItemBehaviorTemplate.m_eRace;
-
-        // The pet item behavior template will tell us the hatch time for this pet.
-        // Or, this might be a pre-hatched pet if parameters indicate so.
-        var hatchRateString = petItemBehaviorTemplate.m_sHatchRate;
-        pet.ServerPetItemBehavior.Level = (byte) (preHatch ? 1 : 0);
-        pet.ServerPetItemBehavior.HatchedTimeInSeconds = (uint) (preHatch ? 0 : ParseHatchRate(hatchRateString));
 
         return pet;
     }
 
     public static WizClientPet CreatePetGameObject(WizClientObjectItem pet) {
-        var clientPet = new WizClientPet();
-        CoreObjectFactory.InitializeCoreObjectBehaviors(clientPet, pet.m_templateID);
+        var genericPetObject = new WizClientPet();
+        CoreObjectFactory.InitializeCoreObjectBehaviors(genericPetObject, GENERIC_PET_TEMPLATE_ID);
 
-        return clientPet;
+        genericPetObject.m_globalID = pet.m_globalID;
+        genericPetObject.m_templateID = GENERIC_PET_TEMPLATE_ID;
+        genericPetObject.m_leashed = true;
+
+        // This single behavior on the pet can help us build both of the behaviors
+        // on the game object.
+        if (!CoreObjectFactory.FindBehaviorInstance<ClientPetNameBehavior>(pet, out var petNameBehaviorInstanceOnPet)) {
+            Logger.Error("Pet {0} should've contained behavior {1}, but it did not.",
+                Logger.Args(pet.m_globalID.Full, nameof(ClientPetNameBehavior)));
+
+            return null;
+        }
+
+        // Replace the generic pet's behaviors with the pet's behaviors.
+        genericPetObject = SetPetGameObjectBehaviors(genericPetObject, pet);
+
+        return genericPetObject;
+    }
+
+    private static WizClientPet SetPetGameObjectBehaviors(WizClientPet petGameObject, WizClientObjectItem pet) {
+        // This single behavior on the pet can help us build both of the behaviors
+        // on the game object.
+        if (!CoreObjectFactory.FindBehaviorInstance<ClientPetNameBehavior>(pet, out var petNameBehaviorInstanceOnPet)) {
+            Logger.Error("Pet {0} should've contained behavior {1}, but it did not.",
+                Logger.Args(pet.m_globalID.Full, nameof(ClientPetNameBehavior)));
+
+            return null;
+        }
+
+        // Replace the generic pet's behaviors with the pet's behaviors.
+        if (CoreObjectFactory.FindBehaviorInstance<ClientPetNameBehavior>(petGameObject, out var petNameBehaviorInstance)) {
+            // Now find the behavior instance on the pet and replace the generic pet's behavior with it.
+            var idx = petGameObject.m_inactiveBehaviors.IndexOf(petNameBehaviorInstance);
+            // Flat replace with the pet's behavior instance.
+            petGameObject.m_inactiveBehaviors[idx] = petNameBehaviorInstanceOnPet;
+        }
+        else {
+            Logger.Error("Generic pet {0} should've contained behavior {1}, but it did not.",
+                Logger.Args(petGameObject.m_globalID.Full, nameof(ClientPetNameBehavior)));
+        }
+
+        // Find the game object's WizardCharacterBehavior and create a new one that sets the race and gender.
+        if (CoreObjectFactory.FindBehaviorInstance<WizardCharacterBehavior>(petGameObject, out var wizardCharacterBehaviorInstance)) {
+            // Now find the behavior instance on the pet and replace the generic pet's behavior with it.
+            var idx = petGameObject.m_inactiveBehaviors.IndexOf(wizardCharacterBehaviorInstance);
+            // Flat replace with the pet's behavior instance.
+            petGameObject.m_inactiveBehaviors[idx] = new WizardCharacterBehavior() {
+                m_eRace = petNameBehaviorInstanceOnPet.m_eRace,
+                m_eGender = petNameBehaviorInstanceOnPet.m_eGender,
+            };
+        }
+        else {
+            Logger.Error("Generic pet {0} should've contained behavior {1}, but it did not.",
+                Logger.Args(petGameObject.m_globalID.Full, nameof(WizardCharacterBehavior)));
+        }
+
+        return petGameObject;
     }
 
     private static long ParseHatchRate(string hatchRateString) {
