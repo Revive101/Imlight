@@ -36,6 +36,7 @@
  */
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Specialized;
 using System.Linq;
 using Akka.Actor;
@@ -65,6 +66,7 @@ public class GameServer : Server {
     private readonly IActorRef _processSupervisorRef;
     private readonly Cache<ByteString, ulong> _sessionKeys;
     private readonly ListQueue<SessionActor> _playerQueue;
+    private readonly ConcurrentDictionary<string, FallbackEntry> _fallbackEntries = [];
 
     public GameServer(string serverName, ushort serverPort, string realmName = null)
         : base(serverName, serverPort, GameServiceFactory.Props(),
@@ -227,6 +229,47 @@ public class GameServer : Server {
     private void ReceiveNewProcess(PROCESS_107_PROTOCOL.MSG_NEW_MINIGAME_PROCESS message) 
         => _processSupervisorRef.Forward(message);
 
+    [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_REGISTER_FALLBACK))]
+    private void ReceiveRegisterFallback(SERVICE_101_PROTOCOL.MSG_REGISTER_FALLBACK message) {
+        _fallbackEntries[message.RemoteIp] = new FallbackEntry {
+            UserId = message.UserId,
+            CharId = message.CharId,
+            FallbackZone = message.FallbackZone,
+            FallbackZoneId = message.FallbackZoneId,
+            FallbackLocation = message.FallbackLocation,
+            GameServerIp = message.GameServerIp,
+            GameServerPort = message.GameServerPort,
+            RegisteredAt = DateTime.UtcNow
+        };
+
+        Logger.Debug("Fallback registered for IP {RemoteIp} → zone {Zone}",
+            Logger.Args(message.RemoteIp, message.FallbackZone));
+    }
+
+    [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_QUERY_FALLBACK))]
+    private void ReceiveQueryFallback(SERVICE_101_PROTOCOL.MSG_QUERY_FALLBACK message) {
+        if (_fallbackEntries.TryGetValue(message.RemoteIp, out var entry)) {
+            Sender.Tell(new SERVICE_101_PROTOCOL.MSG_QUERY_FALLBACK_RSP {
+                Found = true,
+                UserId = entry.UserId,
+                CharId = entry.CharId,
+                FallbackZone = entry.FallbackZone,
+                FallbackZoneId = entry.FallbackZoneId,
+                FallbackLocation = entry.FallbackLocation,
+                GameServerIp = entry.GameServerIp,
+                GameServerPort = entry.GameServerPort
+            });
+        }
+        else {
+            Sender.Tell(new SERVICE_101_PROTOCOL.MSG_QUERY_FALLBACK_RSP { Found = false });
+        }
+    }
+
+    [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_REMOVE_FALLBACK))]
+    private void ReceiveRemoveFallback(SERVICE_101_PROTOCOL.MSG_REMOVE_FALLBACK message) {
+        _fallbackEntries.TryRemove(message.RemoteIp, out _);
+    }
+
     protected override ushort GetNewUniqueId() {
         ushort newId = 0;
         var isUniqueId = false;
@@ -290,6 +333,19 @@ public class GameServer : Server {
         _sessionKeys.Store(key, accountId, timeSpan);
 
         return key;
+    }
+
+    private sealed class FallbackEntry {
+
+        public ulong UserId;
+        public ulong CharId;
+        public string FallbackZone;
+        public uint FallbackZoneId;
+        public string FallbackLocation;
+        public string GameServerIp;
+        public ushort GameServerPort;
+        public DateTime RegisteredAt;
+
     }
 
 }
