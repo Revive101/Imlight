@@ -18,16 +18,21 @@
 
 using Imcodec.Math;
 using System;
+using System.Globalization;
 
 namespace Imlight.CoreLib.Shared.Resources;
 
 internal static class Util {
 
-    public static string GetCompactStringFromVector(Vector4 vector)
-        => $"{vector.X},{vector.Y},{vector.Z},{vector.W}";
+    public static string GetCompactStringFromVector(Vector4 vector) {
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        return $"{vector.X.ToString(inv)},{vector.Y.ToString(inv)},{vector.Z.ToString(inv)},{vector.W.ToString(inv)}";
+    }
 
-    public static string GetCompactStringFromVector(Vector3 vector, Vector3 orientation)
-        => $"{vector.X},{vector.Y},{vector.Z},{orientation.Z}";
+    public static string GetCompactStringFromVector(Vector3 vector, Vector3 orientation) {
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        return $"{vector.X.ToString(inv)},{vector.Y.ToString(inv)},{vector.Z.ToString(inv)},{orientation.Z.ToString(inv)}";
+    }
 
     public static Vector4 GetVectorFromCompactString(string loc) {
         if (loc.Split(',').Length != 4) {
@@ -35,10 +40,10 @@ internal static class Util {
         }
 
         var components = loc.Split(",");
-        var x = float.TryParse(components[0], out var xVal) ? xVal : 0;
-        var y = float.TryParse(components[1], out var yVal) ? yVal : 0;
-        var z = float.TryParse(components[2], out var zVal) ? zVal : 0;
-        var d = float.TryParse(components[3], out var dVal) ? dVal : 0;
+        var x = float.TryParse(components[0], NumberStyles.Float, CultureInfo.InvariantCulture, out var xVal) ? xVal : 0;
+        var y = float.TryParse(components[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var yVal) ? yVal : 0;
+        var z = float.TryParse(components[2], NumberStyles.Float, CultureInfo.InvariantCulture, out var zVal) ? zVal : 0;
+        var d = float.TryParse(components[3], NumberStyles.Float, CultureInfo.InvariantCulture, out var dVal) ? dVal : 0;
 
         return new Vector4(x, y, z, d);
     }
