@@ -36,7 +36,7 @@ The behavior must be agnostic to the source of its data. It simply represents th
 
 The **Session Actor** is a transient object that represents a player's connection to the server. It is created when a player connects and destroyed when they disconnect. The Session Actor is responsible for managing the player's network connection, handling incoming messages, and sending outgoing messages.
 
-See the [Session Actor article](/imlight/concepts/sessionactor) for more information.
+See the [Session Actor article](./sessionactor.md) for more information.
 
 ### Game Object
 

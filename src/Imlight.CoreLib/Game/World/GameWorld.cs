@@ -103,9 +103,17 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
             return;
         }
 
+        var hasContainer = _instanceContainers.TryGetValue(message.OwnerCharId, out var instanceContainer);
+
+        // If IsPrivate is set but no instance container exists, create one proactively.
+        if (message.IsPrivate && !hasContainer) {
+            instanceContainer = CreateInstanceContainer(message.OwnerCharId);
+            hasContainer = true;
+        }
+
         // If this owner has an instance container, we'll first check with it to see if it has the zone loaded.
         // If it does, we'll forward the transfer request to it.
-        if (_instanceContainers.TryGetValue(message.OwnerCharId, out var instanceContainer)) {
+        if (hasContainer) {
             HandleInstancedZoneTransfer(message);
         }
         else {
@@ -210,7 +218,7 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
             return;
         }
 
-        // Capture sender before async work — Akka Sender is context-bound.
+        // Capture sender before async work; Akka Sender is context-bound.
         var originalSender = Sender;
 
         var hasZoneMsg = new ZONE_102_PROTOCOL.MSG_INSTANCECONTAINERHASZONE {
@@ -233,14 +241,21 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
         var message = result.OriginalTransfer;
 
         if (result.Response == null || !result.Response.HasZone) {
-            CreateZoneLoader(message.DestinationZone);
+            // A loader may already be in progress; a second player can enter the same instance zone while it
+            // is still loading. Only spin up one loader (and register its owner once); the extra transfer just
+            // queues and is handled when the zone finishes loading. These results arrive one at a time on the
+            // GameWorld actor thread, so even though the Asks ran concurrently, this guard still prevents a
+            // duplicate loader or a duplicate owner registration.
+            if (!_zoneLoaderActors.ContainsKey(message.DestinationZone)) {
+                CreateZoneLoader(message.DestinationZone);
+                _instanceCreationCalledByMap.Add(message.DestinationZone, message.OwnerCharId);
+            }
             _awaitingTransfers.Add(message, result.OriginalSender);
-            _instanceCreationCalledByMap.Add(message.DestinationZone, message.OwnerCharId);
 
             return;
         }
 
-        // Instance container has the zone — forward the transfer to it.
+        // Instance container has the zone; forward the transfer to it.
         _instanceContainers[message.OwnerCharId].Tell(message, result.OriginalSender);
     }
 
@@ -262,8 +277,22 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
     }
 
     private IActorRef CreateZoneLoader(string zonePath) {
-        // Create the loader actor and prepare the loading of this zone.
-        var loaderRef = Context.ActorOf(Akka.Actor.Props.Create(() => new ZoneLoader()));
+        // Run the loader on the dedicated zone-loading dispatcher (see akka.conf). Its work, a synchronous WAD
+        // open plus six deserializes, would otherwise run on the default dispatcher, where a burst of
+        // concurrent loads can starve session and handshake processing and drop entering players. Fail-safe:
+        // if the dispatcher cannot be resolved, fall back to the default rather than failing every zone load.
+        IActorRef loaderRef;
+        try {
+            loaderRef = Context.ActorOf(
+                Akka.Actor.Props.Create(() => new ZoneLoader()).WithDispatcher("zone-loading-dispatcher"));
+        }
+        catch (Exception ex) {
+            Logger.Warning("zone-loading-dispatcher unavailable ({Reason}); loading '{ZoneName}' on the default " +
+                "dispatcher instead.", Logger.Args(ex.Message, zonePath));
+            loaderRef = Context.ActorOf(Akka.Actor.Props.Create(() => new ZoneLoader()));
+        }
+
+        Logger.Information("Game world starting zone load: {ZoneName}", Logger.Args(zonePath));
 
         // Tell the loader to begin loading the zone and await the response.
         var msg = new ZONE_102_PROTOCOL.MSG_ZONELOADBEGIN { ZonePath = zonePath };

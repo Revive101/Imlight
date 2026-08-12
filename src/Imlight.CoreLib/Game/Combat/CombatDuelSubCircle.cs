@@ -42,6 +42,7 @@
  */
 
 using Akka.Actor;
+using Imcodec.Cryptography;
 using Imcodec.Math;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty.TypeCache;
@@ -191,6 +192,11 @@ public class CombatDuelSubCircle {
         CombatParticipant.m_pHand = newHand;
 
         return newHand;
+    }
+
+    internal Hand GetCurrentHand() {
+        // As-is, no draw or refill: a discard frees a slot this turn and the client must see it open.
+        return new() { m_spellList = _combatDeck.LastGivenHand ?? [] };
     }
 
     internal void DiscardCard(Spell spell) {
@@ -434,6 +440,14 @@ public class CombatDuelSubCircle {
                 var isTreasureCard = template is SpellTemplate spellTemplate
                     && (spellTemplate.m_Treasure || spellTemplate.m_name.EndsWith(" TC"));
 
+                // A deck entry the player hasn't learned can only be a treasure card (item cards live in
+                // TemporarySpells). Guarded on a populated list so an empty list can't misclassify the deck.
+                if (!isTreasureCard
+                    && _wizard.SpellbookBehavior.LearnedSpellTemplateIds is { Count: > 0 }
+                    && !_wizard.SpellbookBehavior.LearnedSpellTemplateIds.Contains(spell.m_templateID)) {
+                    isTreasureCard = true;
+                }
+
                 if (isTreasureCard) {
                     // Treasure cards go to the vault (separate pool, drawn on demand).
                     vaultSpells.Add(new CombatDeckSpellData {
@@ -484,6 +498,7 @@ public class CombatDuelSubCircle {
             m_ownerID = ParticipantObject.m_globalID,
             m_templateID = 219902325553, // recorded from live
             m_isPlayer = true,
+            m_zoneID = _duelActor.SigilId,
             m_isMonster = 0,
             m_teamID = 0,
             m_primaryMagicSchoolID = (int) _wizard.MagicSchoolBehavior.MagicSchool,
@@ -535,9 +550,10 @@ public class CombatDuelSubCircle {
             m_ownerID = ParticipantObject.m_globalID,
             m_templateID = 2199023290637, // Captured 2199023290637 from live
             m_isPlayer = false,
-            m_isMonster = 1, // Doesn't seem to be used.
+            m_zoneID = _duelActor.SigilId,
+            m_isMonster = 0, // Live server sends 0
             m_teamID = 1,
-            m_originalTeam = 1,
+            m_originalTeam = 0,
             m_maxHandSize = PLAYER_HAND_SIZE,
             m_primaryMagicSchoolID = (int) creatureStats.MagicSchool,
             m_pipCount = DetermineStartingPips(),
@@ -558,11 +574,11 @@ public class CombatDuelSubCircle {
     }
 
     private async Task PlayEntranceAnimation(CoreObject participantObject, IActorRef participantActor) {
-        // Set the state of the participant to entering sigil.
-        var stateMsg = new CHARACTER_103_PROTOCOL.MSG_ENTERSTATE {
-            StateName = "Sigil"
-        };
-        participantActor.Tell(stateMsg);
+        // Send the "Sigil" state to the zone so the client transitions the object.
+        _duelActor.ZoneBroadcast(new GAME_5_PROTOCOL.MSG_ENTERSTATE {
+            GameObjectID = participantObject.m_globalID,
+            State = StringHash.Compute("Sigil")
+        });
 
         // Send aggro to the participant.
         _duelActor.ZoneBroadcast(new WIZARD_12_PROTOCOL.MSG_AGGRO {
@@ -579,14 +595,15 @@ public class CombatDuelSubCircle {
         participantObject.m_orientation = new Vector3(0, 0, WorldRotation);
 
         // Wait the amount of time it takes for the actor to enter the sigil, then set
-        // their state to combat idle.
+        // their state to stationary.
         await Task.Delay((int) (AGGRO_TIME_IN_SECONDS * 1000));
 
-        // Set state to stationary.
-        stateMsg = new CHARACTER_103_PROTOCOL.MSG_ENTERSTATE {
-            StateName = "Stationary"
-        };
-        participantActor.Tell(stateMsg);
+        // Broadcast the "Stationary" state to the zone so the client knows the
+        // entrance animation is complete and the participant is now at the sigil.
+        _duelActor.ZoneBroadcast(new GAME_5_PROTOCOL.MSG_ENTERSTATE {
+            GameObjectID = participantObject.m_globalID,
+            State = StringHash.Compute("Stationary")
+        });
     }
 
     private PipCount DetermineStartingPips() {

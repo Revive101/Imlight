@@ -167,6 +167,9 @@ internal class CombatDeck {
         }
         else {
             _cardsDiscardedThisTurn.Add(spell);
+
+            // Free the slot now so a vault draw can be made this turn; GetHand's removal is a no-op.
+            LastGivenHand.Remove(spell);
         }
     }
 
@@ -256,7 +259,7 @@ internal class CombatDeck {
             TreasureCardsInHand--;
         }
 
-        // Remove from the persistent vault list (not the used copy — this removes it permanently).
+        // Remove from the persistent vault list (not the used copy; this removes it permanently).
         var vaultEntry = _treasureVault.Find(v => v.TemplateId == spell.m_templateID);
         if (vaultEntry != null) {
             if (vaultEntry.Quantity - 1 <= 0) {

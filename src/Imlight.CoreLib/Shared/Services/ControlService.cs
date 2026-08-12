@@ -26,7 +26,7 @@ using Imlight.CoreLib.Shared.Packets;
 
 namespace Imlight.CoreLib.Shared.Services;
 
-internal class ControlService : MessageService {
+internal class ControlService : MessageService, IHandshakeService {
 
     private readonly byte _keepAliveInterval = ConfigurationManager.Settings["Advanced.KeepAliveInterval"].AsByte();
     private readonly byte _keepAliveRspWaitTime = ConfigurationManager.Settings["Advanced.KeepAliveRspWaitTime"].AsByte();
@@ -175,6 +175,10 @@ internal class ControlService : MessageService {
             return;
         }
 
+        // A heartbeat-response timeout is a real drop the player sees as "connection lost"; it needs to be
+        // visible in the log. It only fires outside the game server (_isInGameServer guards it above).
+        Logger.Warning("SessionActor {SessionID} heartbeat response timed out after {Wait}s; closing session.",
+            Logger.Args(SessionActor.SessionID, _keepAliveRspWaitTime));
         CloseSession();
     }
 
@@ -183,8 +187,11 @@ internal class ControlService : MessageService {
             return;
         }
 
-        Logger.Verbose("SessionActor {SessionID} " +
-                  "did not return a SessionAccept message in time", Logger.Args(SessionActor.SessionID));
+        // This is the initial-handshake timeout; the drop players see as "connection lost" on game-world
+        // entry / character switch. It needs to be visible in the log so it can be correlated with
+        // concurrent zone loads.
+        Logger.Warning("SessionActor {SessionID} did not return a SessionAccept within {Wait}s; closing session " +
+                  "(initial-handshake timeout).", Logger.Args(SessionActor.SessionID, _keepAliveRspWaitTime));
         CloseSession();
     }
 

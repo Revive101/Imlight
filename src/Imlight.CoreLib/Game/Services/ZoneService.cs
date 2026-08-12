@@ -72,6 +72,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
     private readonly bool _randomBackflips
         = ConfigurationManager.Settings["April Fools.RandomBackFlips"].AsBool();
     private bool _isTransferQueued;
+    private uint _currentDynamicZoneId;
 
     private readonly CoreObjectSerializer _effectSerializer = new(
         behaviors: SerializerFlags.None
@@ -153,6 +154,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
             // If we're not sending this message to the client, it means the zone is being loaded
             // for MSG_ATTACH. In which case, the client is already prepared for the zone transfer.
             SetZone(zoneDetails.ZoneActorRef);
+            _currentDynamicZoneId = zoneDetails.DynamicZoneId;
         }
 
         Sender.Tell(zoneDetails);
@@ -286,6 +288,9 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
     private void ReceiveAddPlayerRsp(ZONE_102_PROTOCOL.MSG_ADDPLAYERRSP message) {
         // I've just been added to a zone. I need to spawn myself for all the other players.
         SpawnMyself();
+
+        // Dismount in no-mount zones, re-equip on leaving (EquipmentService owns the reconcile).
+        SessionActor.ActorRef.Tell(new ZONE_102_PROTOCOL.MSG_ENFORCEINTERIORMOUNT());
 
         if (_randomBackflips) {
             var wizard = GetActiveWizard();
@@ -466,7 +471,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         catch { }
 
         // Serialize the realm list as a RealmInfoList PropertyClass blob.
-        // The client expects this exact type — we cannot fabricate the format.
+        // The client expects this exact type; we cannot fabricate the format.
         var realmInfoList = new RealmInfoList {
             m_infoList = []
         };
@@ -488,7 +493,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
             return;
         }
 
-        // Serialize an empty instance list — the client requires a valid
+        // Serialize an empty instance list; the client requires a valid
         // InstanceInfoList PropertyClass blob, not an empty string.
         var instanceInfoList = new InstanceInfoList {
             m_instanceList = new List<InstanceInfo>()
@@ -535,7 +540,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         }
 
         if (!keyRsp.Success) {
-            Logger.Warning("Realm transfer to {Realm} failed — realm not found.",
+            Logger.Warning("Realm transfer to {Realm} failed; realm not found.",
                 Logger.Args(message.RealmName));
 
             return;
@@ -635,6 +640,11 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         var account = GetSocketAccount();
         var character = GetActiveWizard();
 
+        // Persist the current zone and location as explicit fallback data so the
+        // Wizard record reflects where the player should return if the new attach fails.
+        WizardCollection.UpdateCharacterZone(character, character.Zone, character.ZoneDisplayName);
+        WizardCollection.UpdateCharacterLocation(character, character.Location, character.Orientation.Z);
+
         var serverTransfer = new GAME_5_PROTOCOL.MSG_SERVERTRANSFER() {
             IP = character.GameServerIp,
             TCPPort = character.GameServerPort,
@@ -651,9 +661,23 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
             FallbackIP = character.GameServerIp,
             FallbackTCPPort = character.GameServerPort,
             FallbackUDPPort = character.GameServerPort,
-            FallbackZone = character.Zone
+            FallbackZone = character.Zone,
+            FallbackZoneID = _currentDynamicZoneId
         };
         SendToSocket(serverTransfer);
+
+        // Register fallback data on the GameServer so the new session can
+        // proactively recover if MSG_ATTACH never arrives.
+        SessionActor.ServerRef.Tell(new SERVICE_101_PROTOCOL.MSG_REGISTER_FALLBACK {
+            RemoteIp = SessionActor.RemoteIp,
+            UserId = account.AccountId,
+            CharId = character.CharId,
+            FallbackZone = character.Zone,
+            FallbackZoneId = _currentDynamicZoneId,
+            FallbackLocation = Util.GetCompactStringFromVector(character.Location, character.Orientation),
+            GameServerIp = character.GameServerIp,
+            GameServerPort = character.GameServerPort
+        });
     }
 
     private void DoTeleport(string location) {

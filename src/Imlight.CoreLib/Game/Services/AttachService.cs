@@ -62,16 +62,21 @@ namespace Imlight.CoreLib.Game.Services;
 internal class AttachService(SessionActor sessionActor) : MessageService(sessionActor) {
 
     private const float PRELOGIN_DELAY_MS = 500.0f;
+    private const float ATTACH_TIMEOUT_SECONDS = 15.0f;
 
     private Account _account;
     private Wizard _wizard;
     private GAME_5_PROTOCOL.MSG_LOGINCOMPLETE _loginCompleteMessage;
+    private bool _attachReceived;
 
     protected static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new AttachService(parentActor));
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ATTACH))]
     private void ReceiveAttach(GAME_5_PROTOCOL.MSG_ATTACH message) {
+        _attachReceived = true;
+        Timers.Cancel("attach-timeout");
+
         // Use the session key given in the message to ensure that the user didn't bypass our login server.
         // The key will be associated with the account they're trying to log into.
         ValidateAttach(message);
@@ -195,6 +200,12 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
         // Now that the zone is ready and other services have been notified, send the final login complete message.
         SendToSocket(_loginCompleteMessage);
         TellOtherServices(new SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE());
+
+        // Attach succeeded — remove the fallback registration so stale entries
+        // don't accumulate on the GameServer.
+        SessionActor.ServerRef.Tell(new SERVICE_101_PROTOCOL.MSG_REMOVE_FALLBACK {
+            RemoteIp = SessionActor.RemoteIp
+        });
     }
 
     private void ValidateAttach(GAME_5_PROTOCOL.MSG_ATTACH message) {
@@ -307,6 +318,70 @@ internal class AttachService(SessionActor sessionActor) : MessageService(session
         var msg = new SERVER_100_PROTOCOL.MSG_QUERYSERVER();
 
         return AskServer<SERVER_100_PROTOCOL.MSG_SERVERINFO>(msg);
+    }
+
+    protected override void PreStart() {
+        Timers.StartSingleTimer(
+            "attach-timeout",
+            new SERVICE_101_PROTOCOL.MSG_ATTACH_TIMEOUT(),
+            TimeSpan.FromSeconds(ATTACH_TIMEOUT_SECONDS)
+        );
+
+        base.PreStart();
+    }
+
+    [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_ATTACH_TIMEOUT))]
+    private void ReceiveAttachTimeout(SERVICE_101_PROTOCOL.MSG_ATTACH_TIMEOUT _) {
+        if (_attachReceived) {
+            return;
+        }
+
+        Logger.Warning("Attach timeout for session {SessionId} — attempting fallback zone transfer.",
+            Logger.Args(SessionActor.SessionID));
+
+        // Query the GameServer for fallback data registered by the old session.
+        var query = new SERVICE_101_PROTOCOL.MSG_QUERY_FALLBACK {
+            RemoteIp = SessionActor.RemoteIp
+        };
+        var rsp = AskServer<SERVICE_101_PROTOCOL.MSG_QUERY_FALLBACK_RSP>(query);
+
+        if (rsp is not null && rsp.Found) {
+            Logger.Information("Fallback found for {RemoteIp} — redirecting to zone {Zone}.",
+                Logger.Args(SessionActor.RemoteIp, rsp.FallbackZone));
+
+            var serverTransfer = new GAME_5_PROTOCOL.MSG_SERVERTRANSFER {
+                IP = rsp.GameServerIp,
+                TCPPort = rsp.GameServerPort,
+                UDPPort = rsp.GameServerPort,
+                UserID = rsp.UserId,
+                CharID = rsp.CharId,
+                ZoneName = rsp.FallbackZone,
+                ZoneID = rsp.FallbackZoneId,
+                Location = rsp.FallbackLocation,
+                Slot = 0,
+                SessionSlot = 0,
+                SessionID = 0,
+                TargetPlayerID = rsp.CharId,
+                TransitionID = 1,
+                FallbackIP = rsp.GameServerIp,
+                FallbackTCPPort = rsp.GameServerPort,
+                FallbackUDPPort = rsp.GameServerPort,
+                FallbackZone = rsp.FallbackZone,
+                FallbackZoneID = rsp.FallbackZoneId
+            };
+            SendToSocket(serverTransfer);
+
+            // Remove the fallback entry now that we've consumed it.
+            SessionActor.ServerRef.Tell(new SERVICE_101_PROTOCOL.MSG_REMOVE_FALLBACK {
+                RemoteIp = SessionActor.RemoteIp
+            });
+
+            return;
+        }
+
+        Logger.Warning("No fallback found for {RemoteIp} — closing session.",
+            Logger.Args(SessionActor.RemoteIp));
+        CloseSession();
     }
 
     private static CriticalObjectList GetCriticalObjects(List<GID> objectIDs) => new() { m_objList = objectIDs };

@@ -281,7 +281,7 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
         };
         ServerRef.Tell(msg);
 
-        // Don't preemptively close the socket — the client disconnects itself
+        // Don't preemptively close the socket; the client disconnects itself
         // after receiving the final message (e.g. MSG_CHARACTERSELECTED).
         // Closing it here races with any pending SocketSender messages.
 
@@ -379,7 +379,10 @@ public sealed class SessionActor : ReceiveActor, IDisposable {
     }
 
     private void SetServices(List<Type> services) {
-        foreach (var service in services) {
+        // Create handshake services (ControlService) first. Their constructor sends the SessionOffer, the
+        // first thing the client waits for on connect, so they must not queue behind the other services'
+        // blocking identity Asks in this loop. See IHandshakeService.
+        foreach (var service in services.OrderByDescending(t => typeof(IHandshakeService).IsAssignableFrom(t))) {
             var serviceName = $"{service}";
             var props = Akka.Actor.Props.Create(service, this);
             var childRef = Context.ActorOf(props, serviceName);

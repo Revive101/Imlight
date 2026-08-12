@@ -144,4 +144,80 @@ internal sealed class SERVICE_101_PROTOCOL : IServerProtocol {
 
     }
 
+    /// <summary>
+    /// Timer signal indicating the attach timeout has elapsed — the client
+    /// never sent MSG_ATTACH after opening a new connection.
+    /// </summary>
+    public class MSG_ATTACH_TIMEOUT : IServerMessage {
+
+        public byte MessageOrder { get; } = 15;
+        public byte ServiceID { get; } = 101;
+
+    }
+
+    /// <summary>
+    /// Registers fallback zone data on the GameServer, keyed by the client's
+    /// remote IP, so the new session can recover if MSG_ATTACH never arrives.
+    /// </summary>
+    public class MSG_REGISTER_FALLBACK : IServerMessage {
+
+        public byte MessageOrder { get; } = 16;
+        public byte ServiceID { get; } = 101;
+
+        public string RemoteIp;
+        public ulong UserId;
+        public ulong CharId;
+        public string FallbackZone;
+        public uint FallbackZoneId;
+        public string FallbackLocation;
+        public string GameServerIp;
+        public ushort GameServerPort;
+
+    }
+
+    /// <summary>
+    /// Queries the GameServer for fallback zone data by remote IP.
+    /// </summary>
+    public class MSG_QUERY_FALLBACK : IServerMessage {
+
+        public byte MessageOrder { get; } = 17;
+        public byte ServiceID { get; } = 101;
+
+        public string RemoteIp;
+
+    }
+
+    /// <summary>
+    /// Response to <see cref="MSG_QUERY_FALLBACK"/> with fallback zone data
+    /// (if found).
+    /// </summary>
+    public class MSG_QUERY_FALLBACK_RSP : IServerMessage {
+
+        public byte MessageOrder { get; } = 18;
+        public byte ServiceID { get; } = 101;
+
+        public bool Found;
+        public ulong UserId;
+        public ulong CharId;
+        public string FallbackZone;
+        public uint FallbackZoneId;
+        public string FallbackLocation;
+        public string GameServerIp;
+        public ushort GameServerPort;
+
+    }
+
+    /// <summary>
+    /// Removes a fallback registration from the GameServer (called on
+    /// successful attach to clean up).
+    /// </summary>
+    public class MSG_REMOVE_FALLBACK : IServerMessage {
+
+        public byte MessageOrder { get; } = 19;
+        public byte ServiceID { get; } = 101;
+
+        public string RemoteIp;
+
+    }
+
 }

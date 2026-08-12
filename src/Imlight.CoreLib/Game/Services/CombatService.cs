@@ -88,6 +88,7 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
 
         // Set the persistent location and orientation of the wizard
         var wizard = GetActiveWizard();
+        wizard.IsInDuel = true;
         wizard.SetPersistentLocation(message.SlotPosition);
 
         // Orientation is given in radians. It must be converted to degrees and then to a byte.
@@ -99,6 +100,7 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_COMBATDEFEAT))]
     private void ReceiveCombatDefeat(COMBAT_106_PROTOCOL.MSG_COMBATDEFEAT message) {
+        GetActiveWizard().IsInDuel = false;
         EquipMountSubtle();
 
         // We've fled or have been defeated in this duel. Send us back to the world hub.
@@ -108,6 +110,7 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_COMBATWIN))]
     private void ReceiveCombatVictory(COMBAT_106_PROTOCOL.MSG_COMBATWIN message) {
+        GetActiveWizard().IsInDuel = false;
         EquipMount();
         SetNoAggroGrace();
 
@@ -165,12 +168,20 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
         => RemoveNoAggroEffect();
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT))]
-    private void ReceiveClientDisconnect(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT message)
-        => _currentDuelActor?.Tell(message, SessionActor.ActorRef);
+    private void ReceiveClientDisconnect(GAME_5_PROTOCOL.MSG_CLIENT_DISCONNECT message) {
+        if (_currentDuelActor != null) {
+            GetActiveWizard().IsInDuel = false;
+        }
+        _currentDuelActor?.Tell(message, SessionActor.ActorRef);
+    }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT))]
-    private void ReceiveQueryLogout(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT message)
-        => _currentDuelActor?.Tell(message, SessionActor.ActorRef);
+    private void ReceiveQueryLogout(GAME_5_PROTOCOL.MSG_QUERY_LOGOUT message) {
+        if (_currentDuelActor != null) {
+            GetActiveWizard().IsInDuel = false;
+        }
+        _currentDuelActor?.Tell(message, SessionActor.ActorRef);
+    }
 
     private void EquipMount() {
         if (_cachedMountId == 0) {
