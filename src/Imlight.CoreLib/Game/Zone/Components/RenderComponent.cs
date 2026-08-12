@@ -80,8 +80,9 @@ internal sealed class RenderComponent(ZoneEntity entity) : ZoneEntityComponent(e
         || template is CombatSigilTemplate; // bug fix: combat sigil templtaes don't have any behaviors
 
     public override void OnStart() {
-        // Check if the object should be spawned based on distance.
-        _doesDistanceCheck = Entity.Template.m_behaviors
+        // A combat minion never distance-culls; it lives only for the duel.
+        _doesDistanceCheck = !Entity.IsCombatOnlyMinion
+            && Entity.Template.m_behaviors
                 .OfType<AnimationBehaviorTemplate>()
                 .Any(anim => anim.m_bFadesIn || anim.m_bFadesOut);
 

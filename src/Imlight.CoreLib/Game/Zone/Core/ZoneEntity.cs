@@ -82,6 +82,8 @@ public class ZoneEntity(
     public CoreObjectInfo Info { get; protected set; } = info;
     public Zone Zone { get; protected set; } = zone;
     public IActorRef SupervisorRef { get; protected set; } = Context.Parent;
+
+    public virtual bool IsCombatOnlyMinion => false;
     public IActorRef ZoneRef { get; protected set; } = zoneRef;
     public bool NoTransfer { get; set; } = false;
     public ushort MobileID { 
@@ -303,11 +305,44 @@ public class ZoneEntity(
         var template = Template;
 
         foreach (var (componentType, shouldAttachMethod) in ZoneEntityComponentRegistry.GetRegisteredComponents()) {
+            // A minion keeps its combat brain but must not path around the world.
+            if (IsCombatOnlyMinion && componentType == typeof(PathMovementComponent)) {
+                continue;
+            }
+
             var shouldAttach = (bool) shouldAttachMethod.Invoke(null, [template]);
             if (shouldAttach) {
                 AddComponent(componentType);
             }
         }
+    }
+
+    /// <summary>
+    /// Spawns a creature entity actor as a child of this entity, used for combat minions. Mirrors
+    /// ZonePath.CreateEntityActor's load handshake; returns null on init failure.
+    /// </summary>
+    public IActorRef SpawnCombatMinionActor(CoreObject coreObject, CoreTemplate template) {
+        var actorName = $"Minion_{coreObject.m_globalID.Full}";
+        if (!IsValidActorName(actorName)) {
+            actorName = $"Minion_{Guid.NewGuid():N}";
+        }
+
+        // CombatMinionEntity suppresses PathMovement and the distance-cull.
+        var minionActor = Context.ActorOf(
+            Props.Create(() => new CombatMinionEntity(coreObject, template, null, ZoneRef, Zone)), actorName);
+        try {
+            var timeout = TimeSpan.FromMilliseconds(5000);
+            _ = minionActor.Ask<ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADRESULTS>(
+                new ZONE_102_PROTOCOL.MSG_ZONEOBJECTLOADBEGIN(), timeout).Result;
+        }
+        catch (Exception ex) {
+            Logger.Error("Failed to spawn combat minion actor ({0}).", Logger.Args(ex.Message));
+            minionActor.Tell(PoisonPill.Instance);
+
+            return null;
+        }
+
+        return minionActor;
     }
 
     /// <summary>

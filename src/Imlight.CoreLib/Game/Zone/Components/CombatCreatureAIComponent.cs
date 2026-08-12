@@ -103,8 +103,9 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
         && gameObjectTemplate.m_behaviors.Any(x => x is DuelistBehaviorTemplate);
 
     public override void OnStart() {
+        // Optional for a summoned minion, which must not roam or trip the sigil's OnCreatureMove.
         _pathMovementComponent = Entity.GetComponentOfType<PathMovementComponent>();
-        if (_pathMovementComponent is null) {
+        if (_pathMovementComponent is null && !Entity.IsCombatOnlyMinion) {
             Logger.Warning(
                 "{0} requires component of type {1} to be attached to the entity. Found on GameObject {2}",
                 Logger.Args(
@@ -113,8 +114,6 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
                     Entity.ActiveGameObject.m_debugName
                 )
             );
-
-            return;
         }
 
         _npcComponent = Entity.GetComponentOfType<NpcComponent>();
@@ -159,7 +158,7 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
         _isInDuel = true;
         _currentDuelComponent = message.Duel;
         _currentSubCircle = message.SubCircle;
-        _pathMovementComponent.Stop();
+        _pathMovementComponent?.Stop(); // null for a summoned minion, which has no world movement
         InitiatizeHateTable();
     }
 
@@ -222,6 +221,21 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
     private void ReceiveCombatDeath(COMBAT_106_PROTOCOL.MSG_COMBATDEATH message) {
         if (_sentFinalKill || !_isInDuel) {
             Entity.DeleteObject();
+
+            return;
+        }
+
+        // A minion has no world to return to: remove and delete now, no death-animation timer.
+        if (_currentSubCircle?.IsSummonedMinion == true) {
+            _currentDuelComponent.DuelBroadcast(new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATREMOVE {
+                DuelID = _currentDuelComponent.SigilId,
+                ParticipantID = _currentSubCircle.ParticipantObject.m_globalID
+            });
+            _sentFinalKill = true;
+            Entity.DeleteObject();
+
+            // Free the sub-circle so a future summon can reuse the slot.
+            _currentDuelComponent.OnMinionRemoved(_currentSubCircle);
 
             return;
         }

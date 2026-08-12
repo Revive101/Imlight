@@ -110,6 +110,9 @@ internal static class CombatEffectApplicator {
             case kSpellEffects.kStun:
                 cinematicTime += ApplyStunEffect(effect, targets);
                 break;
+            case kSpellEffects.kSummonCreature:
+                ApplySummonCreature(effect, caster);
+                break;
             case kSpellEffects.kPacify:
             case kSpellEffects.kTaunt:
                 // If you're looking for the implementation, we don't do it here. It happens in the CombatEffectProcessor, when the
@@ -405,6 +408,15 @@ internal static class CombatEffectApplicator {
 
             target._hangingEffects.Add(effect);
         }
+    }
+
+    // m_effectParam is the creature template id to spawn.
+    private static void ApplySummonCreature(SpellEffect effect, CombatDuelSubCircle caster) {
+        if (effect.m_effectParam <= 0 || caster?._duelActor is null) {
+            return;
+        }
+
+        caster._duelActor.SummonMinion((uint) effect.m_effectParam, caster);
     }
 
     private static float ApplyStunEffect(SpellEffect effect, CombatDuelSubCircle[] targets) {

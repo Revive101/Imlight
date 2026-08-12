@@ -92,6 +92,7 @@ public class CombatDuelSubCircle {
     internal ServerWizGameStats ParticipantGameStats { get; private set; }
     internal CombatParticipant CombatParticipant { get; private set; }
     internal bool AddedToDuel { get; set;}
+    internal bool IsSummonedMinion { get; private set; }
     internal List<SpellEffect> _hangingEffects { get {
         if (CombatParticipant is null) {
             return null;
@@ -127,6 +128,10 @@ public class CombatDuelSubCircle {
                 return CombatTeam.Player;
             }
 
+            if (IsSummonedMinion) {
+                return CombatTeam.Player;
+            }
+
             return ParticipantObject.m_templateID == 1 ? CombatTeam.Player : CombatTeam.Monster;
         }
     }
@@ -149,17 +154,19 @@ public class CombatDuelSubCircle {
         SlotIndex = index;
     }
 
-    internal CombatParticipant AssignParticipant(IActorRef actor, CoreObject participantObject) {
+    internal CombatParticipant AssignParticipant(IActorRef actor, CoreObject participantObject, bool isSummonedMinion = false) {
         ParticipantActor = actor;
         ParticipantObject = participantObject;
-        var team = participantObject.m_templateID == 1 ? CombatTeam.Player : CombatTeam.Monster;
+        IsSummonedMinion = isSummonedMinion;
+
+        var isHumanPlayer = participantObject.m_templateID == 1;
 
         // Set the CombatParticipant based on what team they are.
-        if (team == CombatTeam.Player) {
+        if (isHumanPlayer) {
             InitializePlayerSubCircle();
         }
         else {
-            InitializeCreatureSubCircle();
+            InitializeCreatureSubCircle(isSummonedMinion);
         }
 
         // Inform the actor that they've been added to a duel.
@@ -275,6 +282,11 @@ public class CombatDuelSubCircle {
     }
 
     internal bool HasPipsForSpell(Spell spell) {
+        // X-pip spells scale to any pip count; no fixed minimum.
+        if (CombatActionResolver.IsXPipSpell(spell)) {
+            return true;
+        }
+
         var spellRank = spell.m_pipCost.m_spellRank;
         var genericPips = CombatParticipant.m_pipCount.m_genericPips;
         var powerPips = CombatParticipant.m_pipCount.m_powerPips;
@@ -521,7 +533,7 @@ public class CombatDuelSubCircle {
         };
     }
 
-    private void InitializeCreatureSubCircle() {
+    private void InitializeCreatureSubCircle(bool asMinion = false) {
         var queryGameStatsMsg = new COMBAT_106_PROTOCOL.MSG_QUERYCREATURESTATS();
         var creatureStats = ParticipantActor
             .Ask<COMBAT_106_PROTOCOL.MSG_CREATURESTATS>(queryGameStatsMsg)
@@ -552,8 +564,10 @@ public class CombatDuelSubCircle {
             m_isPlayer = false,
             m_zoneID = _duelActor.SigilId,
             m_isMonster = 0, // Live server sends 0
-            m_teamID = 1,
+            // Minions are creatures on the player team; m_isPlayer stays false.
+            m_teamID = asMinion ? 0 : 1,
             m_originalTeam = 0,
+            m_isMinion = asMinion,
             m_maxHandSize = PLAYER_HAND_SIZE,
             m_primaryMagicSchoolID = (int) creatureStats.MagicSchool,
             m_pipCount = DetermineStartingPips(),
