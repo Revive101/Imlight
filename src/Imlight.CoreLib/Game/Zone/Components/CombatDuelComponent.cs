@@ -332,8 +332,9 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
                 Logger.Args(Duel.m_duelID.Full, caster.SlotIndex, drawnSpell.m_templateID));
         }
 
-        // Send the updated hand to the participant.
-        SendCombatHand();
+        // Send the current hand so only the drawn treasure is added. A refilling SendCombatHand would
+        // also top every open slot up from the main deck; the refill happens at the next round.
+        SendCurrentCombatHand(caster);
     }
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE))]
@@ -640,8 +641,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     }
 
     private void SendCombatPhase(byte phase) {
-        // Determine what sigil slot is up first.
-        var upFirstSigilSlot = GetUpFirstSigilSlot();
+        // Determine which participant the client should point its turn indicator at.
+        var upFirstListIndex = GetUpFirstListIndex();
 
         // Serialize the up first data and send it to all the combat participants.
         // This is the one instance where the client sends a versionable object to the client.
@@ -652,7 +653,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
         var upFirst = new UpFirstData {
             m_resultType = 122, // Always recorded as 122, per packet captures.
-            m_upFirst = upFirstSigilSlot,
+            m_upFirst = upFirstListIndex,
             m_roundNum = Duel.m_roundNum,
         };
         if (!versionableSerializer.Serialize(upFirst, _upFirstFlags, out var upFirstData)) {
@@ -673,13 +674,13 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     }
 
     private void SendUpFirst(int roundNum) {
-        var upFirstSigilSlot = GetUpFirstSigilSlot();
+        var upFirstListIndex = GetUpFirstListIndex();
 
         var upFirstMsg = new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATUPFIRST {
             DuelID = SigilId,
             RoundNum = (ushort) roundNum,
             FirstTeamToAct = (byte) Duel.m_firstTeamToAct,
-            UpFirst = upFirstSigilSlot,
+            UpFirst = upFirstListIndex,
         };
         ZoneBroadcast(upFirstMsg);
     }
@@ -752,6 +753,34 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
             participantActor.Tell(msg);
         });
+    }
+
+    /// <summary>
+    /// Re-sends one participant's hand exactly as it stands now, with no draw or refill. Used after a
+    /// discard (which frees a slot this turn) so the client sees the open slot and can enable the vault
+    /// draw. DrawHand would refill the freed slot from the deck.
+    /// </summary>
+    private void SendCurrentCombatHand(CombatDuelSubCircle circle) {
+        if (circle is null || circle.OccupiedTeam == CombatTeam.Monster) {
+            return;
+        }
+
+        var hand = circle.GetCurrentHand();
+        if (!_serializer.Serialize(hand, _combatParticipantHandFlags, out var buffer)) {
+            Logger.Error("Failed to serialize current combat hand for duel {0}", Logger.Args(SigilId));
+
+            return;
+        }
+
+        var msg = new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATHAND {
+            DeckCount = (byte) circle.AvailableSpells,
+            TotalDeckCount = (ushort) circle.TotalSpells,
+            TreasureCardCount = (ushort) circle.VaultRemainingCount,
+            ParticipantID = circle.ParticipantObject.m_globalID,
+            HandData = buffer,
+        };
+
+        circle.ParticipantActor.Tell(msg);
     }
 
     private void SendCombatPips() {
@@ -848,13 +877,21 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
     private void HandleDiscardMove(CombatDuelSubCircle caster, int spellSelection) {
         var spell = caster.GetSpellFromLastHand((byte) spellSelection);
+        if (spell is null) {
+            Logger.Warning("Duel {0} | Slot {1} | Discard received for an empty hand slot ({2}).",
+                Logger.Args(Duel.m_duelID.Full, caster.SlotIndex, spellSelection));
+
+            return;
+        }
+
         caster.DiscardCard(spell);
 
         Logger.Debug("Duel {0} | Slot {1} | Discarded a card: {2}",
             Logger.Args(Duel.m_duelID.Full, caster.SlotIndex, spell.m_templateID.ToString() ?? "None"));
 
-        // Send the updated hand so the client sees the new vault count and replacement card.
-        SendCombatHand();
+        // Re-send the hand as-is so the client sees the freed slot and can offer the vault draw.
+        // SendCombatHand would refill the slot from the deck instead.
+        SendCurrentCombatHand(caster);
     }
 
     private void HandlePassMove(CombatDuelSubCircle caster) {
@@ -868,6 +905,15 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
     private void HandleAttackMove(CombatDuelSubCircle caster, int spellSelection, uint spellTarget) {
         var spell = caster.GetSpellFromLastHand((byte) spellSelection);
+        if (spell is null) {
+            Logger.Warning("Duel {0} | Slot {1} | Attack received for an empty hand slot ({2}).",
+                Logger.Args(Duel.m_duelID.Full, caster.SlotIndex, spellSelection));
+
+            CombatResolver.AddCombatMove(CombatMoveType.Pass, caster, null, null);
+
+            return;
+        }
+
         if (!caster.HasPipsForSpell(spell)) {
             Logger.Warning("Duel {0} | Slot {1} | Participant does not have enough pips for spell {2}",
                 Logger.Args(Duel.m_duelID.Full, caster.SlotIndex, spell.m_templateID));
@@ -879,7 +925,20 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         // If the spell doesn't have a target like for AoE spells or self-heals,
         // the value will be the integer cap.
         var target = caster;
-        if (spellTarget >= 0 && spellTarget < SubCircles.Length) {
+        if (caster.OccupiedTeam == CombatTeam.Player) {
+            // The client's list is MSG_COMBATADD minus MSG_COMBATREMOVE. Dead creatures broadcast
+            // REMOVE on death and drop off it; dead players stay listed (they can be revived), so only
+            // creature corpses go uncounted.
+            var orderedParticipants = SubCircles
+                .Where(s => s is not null && s.AddedToDuel
+                    && (s.IsAlive || s.OccupiedTeam == CombatTeam.Player))
+                .OrderBy(s => s.SlotIndex)
+                .ToList();
+            if (spellTarget < orderedParticipants.Count) {
+                target = orderedParticipants[(int) spellTarget];
+            }
+        }
+        else if (spellTarget < SubCircles.Length) {
             target = SubCircles[spellTarget];
         }
 
@@ -927,22 +986,31 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     private static CombatTeam DetermineFirstTeam()
         => (CombatTeam) new Random().Next(0, 2);
 
-    private byte GetUpFirstSigilSlot() {
-        var upFirstSigilSlot = 0;
+    private byte GetUpFirstListIndex() {
+        // Prefer the first living participant of the team that acts first, then fall back to any
+        // living participant so the client still has something to point at.
+        var upFirst = SubCircles.FirstOrDefault(s => s is not null && s.AddedToDuel && s.IsAlive
+            && s.SlotType == (Duel.m_firstTeamToAct == (int) CombatTeam.Player
+                ? CombatSlotType.Player
+                : CombatSlotType.Creature))
+            ?? SubCircles.FirstOrDefault(s => s is not null && s.AddedToDuel && s.IsAlive);
+        if (upFirst is null) {
+            return 0;
+        }
 
-        // Define the relevant CombatSlotType
-        var targetType = Duel.m_firstTeamToAct == (int) CombatTeam.Player
-                                     ? CombatSlotType.Player
-                                     : CombatSlotType.Creature;
-
-        for (int i = 0; i < SubCircles.Length; i++) {
-            if (SubCircles[i].SlotType == targetType && SubCircles[i].IsAlive) {
-                upFirstSigilSlot = SubCircles[i].SlotIndex;
-                break;
+        // The client points its indicator at its own participant list (MSG_COMBATADD minus
+        // MSG_COMBATREMOVE) in slot order. Dead creatures broadcast REMOVE on death and drop off that
+        // list, so they must not be counted; dead players stay listed (they can be revived), so they
+        // still count. Anything else shifts the indicator one slot off.
+        byte listIndex = 0;
+        for (var i = 0; i < upFirst.SlotIndex; i++) {
+            if (SubCircles[i] is not null && SubCircles[i].AddedToDuel
+                && (SubCircles[i].IsAlive || SubCircles[i].OccupiedTeam == CombatTeam.Player)) {
+                listIndex++;
             }
         }
 
-        return (byte) upFirstSigilSlot;
+        return listIndex;
     }
 
     private void AddWaitingCombatParticipants() => EnactActionOnSubCircles(circle => {
