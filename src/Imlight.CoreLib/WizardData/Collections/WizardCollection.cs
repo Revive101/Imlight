@@ -295,6 +295,23 @@ public static class WizardCollection {
     }
 
     /// <summary>
+    /// Persists <see cref="Wizard.InteriorStowedMountId"/>: the mount auto-stowed for an interior, to be
+    /// re-equipped outdoors. Written the moment it changes because a zone transfer is a disconnect.
+    /// </summary>
+    public static void UpdateCharacterInteriorStowedMount(Wizard wizard) {
+        using var session = s_store.OpenSession();
+
+        var existingCharacter = session.Query<Wizard>(collectionName: CollectionName)
+            .FirstOrDefault(x => x.CharId == wizard.CharId);
+        if (existingCharacter is null) {
+            return;
+        }
+
+        existingCharacter.InteriorStowedMountId = wizard.InteriorStowedMountId;
+        session.SaveChanges();
+    }
+
+    /// <summary>
     /// Updates the character badge override for a wizard.
     /// </summary>
     /// <param name="wizard">The wizard object containing the updated character badge override.</param>
@@ -312,7 +329,7 @@ public static class WizardCollection {
     }
 
     /// <summary>
-    /// Updates the character spellbook behavior for a wizard — persists the
+    /// Updates the character spellbook behavior for a wizard; persists the
     /// excluded item spell list and other spellbook state to the database.
     /// </summary>
     /// <param name="wizard">The wizard whose spellbook behavior should be persisted.</param>
@@ -398,7 +415,7 @@ public static class WizardCollection {
     }
 
     /// <summary>
-    /// Updates the friend behavior for a wizard — persists pending friend requests
+    /// Updates the friend behavior for a wizard; persists pending friend requests
     /// and other in-memory friend state to the database.
     /// </summary>
     /// <param name="wizard">The wizard whose friend behavior should be persisted.</param>

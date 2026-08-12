@@ -54,7 +54,9 @@ using Imlight.Common;
 using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Misc;
+using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Services;
 
@@ -142,6 +144,12 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
         SendEquipItem(item, message.SlotName);
         SendAddEffects(effects);
 
+        // A mount equipped indoors is dismounted right away; the reconcile no-ops in the open world.
+        if (Enum.TryParse<EquipmentSlotType>(message.SlotName, true, out var equippedSlot)
+            && equippedSlot == EquipmentSlotType.Mount) {
+            SessionActor.ActorRef.Tell(new ZONE_102_PROTOCOL.MSG_ENFORCEINTERIORMOUNT());
+        }
+
         // If removedEffects is not null, the Wizard replaced an item with another item that has different effects.
         // We need to remove the old effects from the client.
         if (removedEffects is not null) {
@@ -183,6 +191,76 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
 
         SendUnequipItem(message.SlotName, slot, itemId);
         SendRemoveEffects(removedEffects);
+
+        // A manual unequip abandons any pending auto-remount.
+        if (Enum.TryParse<EquipmentSlotType>(message.SlotName, true, out var unequippedSlot)
+            && unequippedSlot == EquipmentSlotType.Mount
+            && wizard.InteriorStowedMountId != 0) {
+            wizard.InteriorStowedMountId = 0;
+            WizardCollection.UpdateCharacterInteriorStowedMount(wizard);
+        }
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ENFORCEINTERIORMOUNT))]
+    private void ReceiveEnforceInteriorMount(ZONE_102_PROTOCOL.MSG_ENFORCEINTERIORMOUNT message) {
+        // Zone data flags disallow mounts (m_noMounts): really unequip on entry (model and speed effect) and
+        // re-equip on leaving. The stowed GID is persisted so it survives the zone transfer.
+        try {
+            var wizard = GetActiveWizard();
+            var equip = wizard.EquipmentBehavior;
+
+            if (ZoneDisallowsMounts()) {
+                var mount = equip.GetItemInSlot(EquipmentSlotType.Mount);
+                if (mount is null) {
+                    return; // not mounted, nothing to dismount
+                }
+
+                var slot = equip.GetSlotOfItem(mount.m_globalID);
+                if (!wizard.EquipmentToInventoryTransfer(mount.m_globalID, out var removedEffects)) {
+                    Logger.Warning("Interior dismount transfer failed for mount {0}", Logger.Args(mount.m_globalID));
+
+                    return;
+                }
+
+                wizard.InteriorStowedMountId = mount.m_globalID;
+                WizardCollection.UpdateCharacterInteriorStowedMount(wizard);
+                SendUnequipItem("Mount", slot, mount.m_globalID); // drops the model client-side
+                SendRemoveEffects(removedEffects);                // drops the mount speed effect
+            }
+            else if (wizard.InteriorStowedMountId != 0) {
+                var gid = wizard.InteriorStowedMountId;
+                wizard.InteriorStowedMountId = 0;
+                WizardCollection.UpdateCharacterInteriorStowedMount(wizard);
+
+                if (!wizard.InventoryToEquipmentTransfer(gid, out var addedEffects, out _)) {
+                    Logger.Warning("Outdoor remount transfer failed for mount {0}", Logger.Args(gid));
+
+                    return;
+                }
+
+                var item = equip.GetItemInSlot(EquipmentSlotType.Mount);
+                if (item is not null) {
+                    SendEquipItem(item, "Mount");
+                }
+                SendAddEffects(addedEffects); // restores the mount speed
+            }
+        }
+        catch (Exception ex) {
+            Logger.Error("Error while reconciling the mount for the zone: {0} {1}",
+                Logger.Args(ex.Message, ex.StackTrace));
+        }
+    }
+
+    private bool ZoneDisallowsMounts() {
+        var zoneActor = SessionActor.GetZoneActor();
+        if (zoneActor is null) {
+            return false;
+        }
+
+        var rsp = zoneActor.Ask<ZONE_102_PROTOCOL.MSG_QUERYZONEDATARSP>(
+            new ZONE_102_PROTOCOL.MSG_QUERYZONEDATA(), TimeSpan.FromSeconds(5)).Result;
+
+        return rsp?.ZoneData?.m_noMounts ?? false;
     }
 
     private void SendEquipItem(WizClientObjectItem item, string slotName) {

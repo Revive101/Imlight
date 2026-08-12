@@ -351,6 +351,13 @@ public class Zone : ReceiveProtocolDispatcher, IWithTimers {
         Sender.Tell(rsp);
     }
 
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_QUERYZONEDATA))]
+    private void ReceiveQueryZoneData() {
+        Sender.Tell(new ZONE_102_PROTOCOL.MSG_QUERYZONEDATARSP {
+            ZoneData = ZoneData
+        });
+    }
+
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_POSTEVENT))]
     private void ReceiveTriggerPost(ZONE_102_PROTOCOL.MSG_POSTEVENT message) {
         Logger.Verbose("Zone {ZoneName} received post event {EventName}.", Logger.Args(ZoneName, message.EventName));
