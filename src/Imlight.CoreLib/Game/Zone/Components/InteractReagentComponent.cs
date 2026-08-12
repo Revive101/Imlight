@@ -73,9 +73,15 @@ internal sealed class InteractReagentComponent(ZoneEntity entity)
     }
     public string NpcNameKey {
         get {
-            var goTemplate = Entity.Template as GameObjectTemplate;
+            if (Entity.Template is not GameObjectTemplate goTemplate) {
+                return "";
+            }
+
+            // An object name that doesn't resolve to a reagent template used to throw here, and the memento
+            // reads this key unguarded while building the press-X banner, suppressing the prompt for the
+            // whole node. Fall back to empty so the banner still appears.
             var reagentItemTemplate = ReagentFactory.GetReagentTemplate(goTemplate.m_objectName);
-            return reagentItemTemplate.m_displayName;
+            return reagentItemTemplate?.m_displayName ?? "";
         }
     }
     public string NpcTextKey => "GUI_CollectItem";
@@ -96,7 +102,8 @@ internal sealed class InteractReagentComponent(ZoneEntity entity)
     public static bool ShouldAttachToEntity(CoreTemplate template)
         => template is GameObjectTemplate goTemplate
         && goTemplate.m_adjectiveList is not null
-        && goTemplate.m_adjectiveList.Any(x => x == "Reagent");
+        && goTemplate.m_adjectiveList.Any(a => a is not null
+            && string.Equals(a.Trim(), "Reagent", StringComparison.OrdinalIgnoreCase));
 
     public IEnumerable<ServiceOptionBase> GetServiceOptions(Wizard _)
         => [ new InteractableOption { m_serviceName = ServiceName }];
