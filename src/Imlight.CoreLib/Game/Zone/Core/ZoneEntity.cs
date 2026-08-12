@@ -305,11 +305,6 @@ public class ZoneEntity(
         var template = Template;
 
         foreach (var (componentType, shouldAttachMethod) in ZoneEntityComponentRegistry.GetRegisteredComponents()) {
-            // A minion keeps its combat brain but must not path around the world.
-            if (IsCombatOnlyMinion && componentType == typeof(PathMovementComponent)) {
-                continue;
-            }
-
             var shouldAttach = (bool) shouldAttachMethod.Invoke(null, [template]);
             if (shouldAttach) {
                 AddComponent(componentType);

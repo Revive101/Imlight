@@ -90,6 +90,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     private const string PLANNING_TIME_KEY = "PlanningPhase";
     private const string PREPLANNING_TIME_KEY = "PrePlanningPhase";
     private const string RESOUTION_TIME_KEY = "ResolutionPhase";
+    private const double MINION_SUMMON_ANIMATION_DELAY = 5.5;
 
     public bool NoTransfer { get; set; } = false;
     public ITimerScheduler Timers { get; set; }
@@ -135,6 +136,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     private CombatSigilTemplate _sigilTemplate;
     private bool _isActive;
     private bool _awaitingCombatMoves;
+    // Seconds of cinematics before a caster's cast; SummonMinion adds the animation delay to it.
+    internal float CurrentActionCinematicOffsetSeconds;
 
     public static bool ShouldAttachToEntity(CoreTemplate template)
         => template is GameObjectTemplate gameObjectTemplate
@@ -660,17 +663,6 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         return true;
     }
 
-    // Seconds of cinematics before a caster's cast; SummonMinion adds the animation delay to it.
-    internal float CurrentActionCinematicOffsetSeconds;
-
-    // Cast + summon animation duration, tunable.
-    private const double MINION_SUMMON_ANIMATION_DELAY = 5.5;
-
-    private sealed class DeferredMinionSummon {
-        public uint CreatureTid { get; init; }
-        public CombatDuelSubCircle Caster { get; init; }
-    }
-
     // A minion is a creature on the CASTER's team: it takes a player-team slot, not the enemy slot
     // AddParticipant gives non-players. Deferred so the caster's cast plays first.
     internal void SummonMinion(uint creatureTid, CombatDuelSubCircle caster) {
@@ -686,12 +678,12 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         var spawnDelay = castOffset + MINION_SUMMON_ANIMATION_DELAY;
         Timers.StartSingleTimer(
             $"minionSummon_{Guid.NewGuid():N}",
-            new DeferredMinionSummon { CreatureTid = creatureTid, Caster = caster },
+            new ZONE_102_PROTOCOL.MSG_DEFERREDMINIONSUMMON { CreatureTid = creatureTid, Caster = caster },
             TimeSpan.FromSeconds(spawnDelay));
     }
 
-    [MessageHandler(typeof(DeferredMinionSummon))]
-    private void ReceiveDeferredMinionSummon(DeferredMinionSummon message) {
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_DEFERREDMINIONSUMMON))]
+    private void ReceiveDeferredMinionSummon(ZONE_102_PROTOCOL.MSG_DEFERREDMINIONSUMMON message) {
         // Drop if the duel ended or restarted during the summon animation.
         if (!_isActive || message.Caster is null || Array.IndexOf(SubCircles, message.Caster) < 0) {
             Logger.Information("Duel {0} | deferred minion summon (tid {1}) dropped, duel no longer active.",
