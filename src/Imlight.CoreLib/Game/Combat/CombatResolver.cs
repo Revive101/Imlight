@@ -174,6 +174,11 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
         return enqueuedPlayers.Count() == _queuedCombatActions.Count;
     }
 
+    /// <summary>The move a given caster has queued this round, or null if none. Used to re-broadcast a
+    /// summoned minion's AI-chosen move at planning-phase start so the client telegraphs it.</summary>
+    public QueuedCombatAction GetQueuedAction(CombatDuelSubCircle caster)
+        => _queuedCombatActions.FirstOrDefault(a => a.SpellCaster == caster);
+
     private void AddCasterPassActionIfNeeded() {
         var castersWithoutActions = ActiveSubCircles
             .Where(subCircle => subCircle.AddedToDuel && subCircle.IsAlive)
@@ -265,6 +270,8 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
                 action.SpellCaster._usedPipsForExperienceGain++;
             }
             else {
+                // Record when this caster's cinematic begins so a summoned minion appears with its cast.
+                action.SpellCaster._duelActor.CurrentActionCinematicOffsetSeconds = cinematicTime;
                 cinematicTime += HandleSuccessfulAction(action, combatActionList);
             }
         }
@@ -499,12 +506,12 @@ public class CombatResolver(Duel duel, CombatDuelSubCircle[] actorSubCircles) {
         // Deduce the players mana by the rank of the spell.
         caster.DeductMana(action.m_spell.m_pipCost.m_spellRank);
 
-        // Reduce pips.
-        if (action.m_spell.m_pipCost.m_xPipSpell) {
-            var pipCount = caster.CombatParticipant.m_pipCount;
-            caster._usedPipsForExperienceGain += pipCount.m_genericPips;
+        // X-pip spells spend what they used (same GetXPipCost that chose the tier).
+        if (CombatActionResolver.IsXPipSpell(action.m_spell)) {
+            var xCost = CombatActionResolver.GetXPipCost(action.m_spell, caster);
+            caster._usedPipsForExperienceGain += xCost;
 
-            caster.DeductAllPips();
+            caster.DeductPips((MagicSchool) action.m_spell.m_magicSchoolID, xCost);
         }
         else {
             // Increase the used pips for experience gain by the rank of the spell.
