@@ -168,8 +168,7 @@ internal class CombatDeck {
         else {
             _cardsDiscardedThisTurn.Add(spell);
 
-            // Free the slot now so a vault draw can be made this turn. GetHand removes the same card
-            // again next round, which is a harmless no-op.
+            // Free the slot now so a vault draw can be made this turn; GetHand's removal is a no-op.
             LastGivenHand.Remove(spell);
         }
     }

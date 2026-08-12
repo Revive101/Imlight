@@ -166,7 +166,7 @@ internal sealed class ResDropTableHandler : BaseResultHandler<ResDropTable> {
 
     private static void SendLootInfoToClient(IActorRef playerActor, DropTableResult results, Wizard wizard) {
         // Inform the game client of the loot results.
-        if (results.Items.Count == 0) {
+        if (!DropTableConverter.HasRewards(results)) {
             return;
         }
 

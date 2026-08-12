@@ -194,12 +194,10 @@ public class CombatDuelSubCircle {
         return newHand;
     }
 
-    /// <summary>
-    /// The hand exactly as it stands now, with no draw or refill. After a discard frees a slot, this lets
-    /// the client see the open slot so it can offer the vault draw. DrawHand would refill the slot instead.
-    /// </summary>
-    internal Hand GetCurrentHand()
-        => new() { m_spellList = _combatDeck.LastGivenHand ?? [] };
+    internal Hand GetCurrentHand() {
+        // As-is, no draw or refill: a discard frees a slot this turn and the client must see it open.
+        return new() { m_spellList = _combatDeck.LastGivenHand ?? [] };
+    }
 
     internal void DiscardCard(Spell spell) {
         _combatDeck.Discard(spell);
@@ -442,10 +440,8 @@ public class CombatDuelSubCircle {
                 var isTreasureCard = template is SpellTemplate spellTemplate
                     && (spellTemplate.m_Treasure || spellTemplate.m_name.EndsWith(" TC"));
 
-                // A deck entry the player hasn't learned can only be a treasure card: the deck editor
-                // accepts learned spells and TCs, and item cards live in TemporarySpells. This catches
-                // TCs whose template m_Treasure flag isn't set. Guarded on a populated list so an empty
-                // list can't misclassify the whole deck.
+                // A deck entry the player hasn't learned can only be a treasure card (item cards live in
+                // TemporarySpells). Guarded on a populated list so an empty list can't misclassify the deck.
                 if (!isTreasureCard
                     && _wizard.SpellbookBehavior.LearnedSpellTemplateIds is { Count: > 0 }
                     && !_wizard.SpellbookBehavior.LearnedSpellTemplateIds.Contains(spell.m_templateID)) {

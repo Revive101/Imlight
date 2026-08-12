@@ -332,8 +332,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
                 Logger.Args(Duel.m_duelID.Full, caster.SlotIndex, drawnSpell.m_templateID));
         }
 
-        // Send the current hand so only the drawn treasure is added. A refilling SendCombatHand would
-        // also top every open slot up from the main deck; the refill happens at the next round.
+        // Send the hand as-is: a refilling send would also pull real deck cards into the open slots.
         SendCurrentCombatHand(caster);
     }
 
@@ -755,12 +754,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         });
     }
 
-    /// <summary>
-    /// Re-sends one participant's hand exactly as it stands now, with no draw or refill. Used after a
-    /// discard (which frees a slot this turn) so the client sees the open slot and can enable the vault
-    /// draw. DrawHand would refill the freed slot from the deck.
-    /// </summary>
     private void SendCurrentCombatHand(CombatDuelSubCircle circle) {
+        // As-is, no draw or refill, so a discarded slot stays visibly open for the vault draw.
         if (circle is null || circle.OccupiedTeam == CombatTeam.Monster) {
             return;
         }
@@ -889,8 +884,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         Logger.Debug("Duel {0} | Slot {1} | Discarded a card: {2}",
             Logger.Args(Duel.m_duelID.Full, caster.SlotIndex, spell.m_templateID.ToString() ?? "None"));
 
-        // Re-send the hand as-is so the client sees the freed slot and can offer the vault draw.
-        // SendCombatHand would refill the slot from the deck instead.
+        // Re-send as-is so the freed slot stays open; SendCombatHand would refill it from the deck.
         SendCurrentCombatHand(caster);
     }
 
@@ -926,9 +920,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         // the value will be the integer cap.
         var target = caster;
         if (caster.OccupiedTeam == CombatTeam.Player) {
-            // The client's list is MSG_COMBATADD minus MSG_COMBATREMOVE. Dead creatures broadcast
-            // REMOVE on death and drop off it; dead players stay listed (they can be revived), so only
-            // creature corpses go uncounted.
+            // The client's list is MSG_COMBATADD minus MSG_COMBATREMOVE: creature corpses drop off on
+            // death, dead players stay (they can be revived), so only creature corpses go uncounted.
             var orderedParticipants = SubCircles
                 .Where(s => s is not null && s.AddedToDuel
                     && (s.IsAlive || s.OccupiedTeam == CombatTeam.Player))
@@ -987,8 +980,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         => (CombatTeam) new Random().Next(0, 2);
 
     private byte GetUpFirstListIndex() {
-        // Prefer the first living participant of the team that acts first, then fall back to any
-        // living participant so the client still has something to point at.
+        // Prefer the acting team's first living participant, else any living participant.
         var upFirst = SubCircles.FirstOrDefault(s => s is not null && s.AddedToDuel && s.IsAlive
             && s.SlotType == (Duel.m_firstTeamToAct == (int) CombatTeam.Player
                 ? CombatSlotType.Player
@@ -998,10 +990,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             return 0;
         }
 
-        // The client points its indicator at its own participant list (MSG_COMBATADD minus
-        // MSG_COMBATREMOVE) in slot order. Dead creatures broadcast REMOVE on death and drop off that
-        // list, so they must not be counted; dead players stay listed (they can be revived), so they
-        // still count. Anything else shifts the indicator one slot off.
+        // The client counts its own list (COMBATADD minus COMBATREMOVE): creature corpses dropped off,
+        // dead players still listed. Counting anything else shifts the indicator one slot.
         byte listIndex = 0;
         for (var i = 0; i < upFirst.SlotIndex; i++) {
             if (SubCircles[i] is not null && SubCircles[i].AddedToDuel
