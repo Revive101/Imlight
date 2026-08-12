@@ -800,6 +800,18 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     /// Requests the zone to spawn a new entity from a CoreObject + CoreTemplate.
     /// </summary>
     public sealed class MSG_SPAWNENTITY : IServerMessage {
+
+        public byte MessageOrder { get; } = 57;
+        public byte ServiceID { get; } = 102;
+
+        public CoreObject CoreObject;
+        public CoreTemplate Template;
+        /// <summary>Optional: the player actor requesting the spawn (for routing).</summary>
+        public IActorRef Requester;
+
+    }
+
+    /// <summary>
     /// Timer-fired message that releases a mobile ID back to the pool after a cooldown,
     /// preventing races between MSG_REMOVEOBJECT delivery and mobile ID reuse.
     /// </summary>
@@ -808,10 +820,6 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte MessageOrder { get; } = 54;
         public byte ServiceID { get; } = 102;
 
-        public CoreObject CoreObject;
-        public CoreTemplate Template;
-        /// <summary>Optional: the player actor requesting the spawn (for routing).</summary>
-        public IActorRef Requester;
         public ushort MobileId;
 
     }
@@ -820,6 +828,16 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     /// Response to MSG_SPAWNENTITY with the created entity actor reference.
     /// </summary>
     public sealed class MSG_SPAWNENTITYRSP : IServerMessage {
+
+        public byte MessageOrder { get; } = 58;
+        public byte ServiceID { get; } = 102;
+
+        public IActorRef EntityActor;
+        public CoreObject SpawnedObject;
+
+    }
+
+    /// <summary>
     /// Sent by a session service to a <see cref="Zone"/> to fetch its loaded <see cref="WizZoneData"/>,
     /// e.g. to check zone flags like m_noMounts.
     /// </summary>
@@ -828,8 +846,6 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte MessageOrder { get; } = 55;
         public byte ServiceID { get; } = 102;
 
-        public IActorRef EntityActor;
-        public CoreObject SpawnedObject;
     }
 
     /// <summary>

@@ -102,6 +102,12 @@ public class Wizard : IDisposable {
     [JsonIgnore] internal bool IsInCombatGrace { get; set; }
     [JsonIgnore] internal bool IsInDuel { get; set; }
 
+    /// <summary>
+    /// Tracks hatched pets for MSG_PETTOMEPETADDED. Key: pet global ID, Value: pet template ID.
+    /// Runtime-only; not persisted (the pet tome behavior blob handles persistence).
+    /// </summary>
+    [JsonIgnore] public readonly Dictionary<ulong, uint> OwnedPets = [];
+
     [JsonIgnore] private Vector3 _location;
     [JsonIgnore] private Vector3 _orientation;
     [JsonIgnore]

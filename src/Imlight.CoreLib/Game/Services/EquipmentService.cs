@@ -232,6 +232,14 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
         SendUnequipItem(message.SlotName, slot, itemId);
         SendRemoveEffects(removedEffects);
 
+        // A manual unequip abandons any pending auto-remount.
+        if (Enum.TryParse<EquipmentSlotType>(message.SlotName, true, out var unequippedSlot)
+            && unequippedSlot == EquipmentSlotType.Mount
+            && wizard.InteriorStowedMountId != 0) {
+            wizard.InteriorStowedMountId = 0;
+            WizardCollection.UpdateCharacterInteriorStowedMount(wizard);
+        }
+
         // TODO: Unleash pet zone entity when spawn/despawn is implemented.
     }
 
@@ -278,13 +286,6 @@ internal class EquipmentService(SessionActor sessionActor) : MessageService(sess
         };
 
         zoneActor.Tell(spawnMsg, Self);
-        // A manual unequip abandons any pending auto-remount.
-        if (Enum.TryParse<EquipmentSlotType>(message.SlotName, true, out var unequippedSlot)
-            && unequippedSlot == EquipmentSlotType.Mount
-            && wizard.InteriorStowedMountId != 0) {
-            wizard.InteriorStowedMountId = 0;
-            WizardCollection.UpdateCharacterInteriorStowedMount(wizard);
-        }
     }
 
     [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_ENFORCEINTERIORMOUNT))]
