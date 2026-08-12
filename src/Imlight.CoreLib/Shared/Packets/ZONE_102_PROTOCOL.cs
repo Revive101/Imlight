@@ -408,6 +408,18 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
     }
 
     /// <summary>
+    /// Server-internal nudge telling EquipmentService to reconcile the equipped mount with the current
+    /// zone: really unequip it on entering an interior and re-equip it on returning outdoors. Sent by
+    /// ZoneService on zone entry.
+    /// </summary>
+    public sealed class MSG_ENFORCEINTERIORMOUNT : IServerMessage {
+
+        public byte MessageOrder { get; } = 21;
+        public byte ServiceID { get; } = 102;
+
+    }
+
+    /// <summary>
     /// Called by a <see cref="ZonePath"/> to itself to indicate that it's time to spawn a creature,
     /// if possible.
     /// </summary>
@@ -794,6 +806,29 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte ServiceID { get; } = 102;
 
         public ushort MobileId;
+
+    }
+
+    /// <summary>
+    /// Sent by a session service to a <see cref="Zone"/> to fetch its loaded <see cref="WizZoneData"/>,
+    /// e.g. to check zone flags like m_noMounts.
+    /// </summary>
+    public sealed class MSG_QUERYZONEDATA : IServerMessage {
+
+        public byte MessageOrder { get; } = 55;
+        public byte ServiceID { get; } = 102;
+
+    }
+
+    /// <summary>
+    /// Sent by a <see cref="Zone"/> in response to <see cref="MSG_QUERYZONEDATA"/>.
+    /// </summary>
+    public sealed class MSG_QUERYZONEDATARSP : IServerMessage {
+
+        public byte MessageOrder { get; } = 56;
+        public byte ServiceID { get; } = 102;
+
+        public WizZoneData ZoneData;
 
     }
 

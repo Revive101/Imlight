@@ -289,6 +289,9 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         // I've just been added to a zone. I need to spawn myself for all the other players.
         SpawnMyself();
 
+        // Dismount in no-mount zones, re-equip on leaving (EquipmentService owns the reconcile).
+        SessionActor.ActorRef.Tell(new ZONE_102_PROTOCOL.MSG_ENFORCEINTERIORMOUNT());
+
         if (_randomBackflips) {
             var wizard = GetActiveWizard();
             Timers.StartPeriodicTimer("backflip", new ZONE_102_PROTOCOL.MSG_RANDOMFLIPS {
@@ -468,7 +471,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         catch { }
 
         // Serialize the realm list as a RealmInfoList PropertyClass blob.
-        // The client expects this exact type — we cannot fabricate the format.
+        // The client expects this exact type; we cannot fabricate the format.
         var realmInfoList = new RealmInfoList {
             m_infoList = []
         };
@@ -490,7 +493,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
             return;
         }
 
-        // Serialize an empty instance list — the client requires a valid
+        // Serialize an empty instance list; the client requires a valid
         // InstanceInfoList PropertyClass blob, not an empty string.
         var instanceInfoList = new InstanceInfoList {
             m_instanceList = new List<InstanceInfo>()
@@ -537,7 +540,7 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         }
 
         if (!keyRsp.Success) {
-            Logger.Warning("Realm transfer to {Realm} failed — realm not found.",
+            Logger.Warning("Realm transfer to {Realm} failed; realm not found.",
                 Logger.Args(message.RealmName));
 
             return;
