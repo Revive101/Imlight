@@ -1182,6 +1182,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         SendCombatPhase((byte) Duel.m_duelPhase);
 
         var adjectivesOfDefeatedMobs = new List<string>();
+        var templateIdsOfDefeatedMobs = new List<ulong>();
         EnactActionOnSubCircles(circle => {
             if (circle.OccupiedTeam == CombatTeam.Monster) {
                 var mobTemplateId = circle.ParticipantObject.m_templateID;
@@ -1196,6 +1197,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
                 var mobAdjectives = gameObjectTemplate.m_adjectiveList;
                 adjectivesOfDefeatedMobs.AddRange(mobAdjectives);
+                templateIdsOfDefeatedMobs.Add(gameObjectTemplate.m_templateID);
             }
         });
 
@@ -1211,6 +1213,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             var victoryMsg = new COMBAT_106_PROTOCOL.MSG_COMBATWIN() {
                 UsedPips = circle._usedPipsForExperienceGain,
                 MobAdjectives = [.. adjectivesOfDefeatedMobs],
+                MobTemplateIds = [.. templateIdsOfDefeatedMobs],
             };
             circle.ParticipantActor.Tell(victoryMsg);
         });

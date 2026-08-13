@@ -171,6 +171,7 @@ public sealed class COMBAT_106_PROTOCOL : IServerProtocol {
 
         public int UsedPips;
         public string[] MobAdjectives;
+        public ulong[] MobTemplateIds;
 
     }
 
