@@ -36,13 +36,12 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 08/13/2026
  */
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Util.Internal;
 using Imcodec.Cryptography;
@@ -73,7 +72,7 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
     private readonly GameServer _server;
 
     private readonly Dictionary<ulong, IActorRef> _instanceContainers = [];
-    private readonly Dictionary<string, ulong> _instanceCreationCalledByMap = [];
+    private readonly Dictionary<string, (ulong Owner, bool Private)> _instanceCreationCalledByMap = [];
 
     // ctor
     public GameWorld(GameServer server) {
@@ -115,6 +114,14 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
         // If this owner has an instance container, we'll first check with it to see if it has the zone loaded.
         // If it does, we'll forward the transfer request to it.
         if (hasContainer) {
+            // A fresh SIGIL entry starts a NEW run: drop any stale copy of this zone so the transfer below
+            // builds a FRESH one.
+            if (message.ResetInstance) {
+                instanceContainer.Tell(new ZONE_102_PROTOCOL.MSG_DROPINSTANCEZONE {
+                    ZoneName = message.DestinationZone,
+                });
+            }
+
             HandleInstancedZoneTransfer(message);
         }
         else {
@@ -174,11 +181,16 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
         var zonePath = message.ZonePath;
 
         // Search for the user who called for the creation of this zone.
-        var ownerId = _instanceCreationCalledByMap[zonePath];
+        var (ownerId, wasPrivateRequest) = _instanceCreationCalledByMap[zonePath];
         _instanceCreationCalledByMap.Remove(zonePath);
 
-        // Determine if this zone is instanced based on the hard limit.
-        var isInstancedZone = message.ZoneData.m_nHardLimit <= HARD_LIMIT_INSTANCE_THRESHHOLD;
+        // Determine if this zone is instanced. It is instanced when ANY of:
+        //   - the triggering transfer explicitly asked for a PRIVATE instance (a sigil dungeon / solo
+        //     entry); WITHOUT this, a dungeon whose hard limit is > the raid threshold loads as a shared
+        //     PUBLIC zone, so two independent owners collapse into one copy;
+        //   - its hard limit is small enough to be an instance (normal dungeons).
+        var isInstancedZone = wasPrivateRequest
+                           || message.ZoneData.m_nHardLimit <= HARD_LIMIT_INSTANCE_THRESHHOLD;
         if (isInstancedZone) {
             // Create a new instance container for this zone, if one does not already exist.
             if (!_instanceContainers.TryGetValue(ownerId, out var instanceContainer)) {
@@ -212,8 +224,9 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
         => zoneName.Replace('/', '-');
 
     private void HandleInstancedZoneTransfer(ZONE_102_PROTOCOL.MSG_ZONETRANSFER message) {
-        // If the public zone already exists, we can transfer the player immediately to it.
-        if (_publicZones.TryGetValue(message.DestinationZone, out var zone)) {
+        // A PRIVATE transfer (sigil dungeon / solo entry) must NEVER be satisfied by a shared public copy;
+        // that would drop the player into a public instance of a dungeon they asked to enter privately.
+        if (!message.IsPrivate && _publicZones.TryGetValue(message.DestinationZone, out var zone)) {
             zone.Forward(message);
 
             return;
@@ -249,7 +262,7 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
             // duplicate loader or a duplicate owner registration.
             if (!_zoneLoaderActors.ContainsKey(message.DestinationZone)) {
                 CreateZoneLoader(message.DestinationZone);
-                _instanceCreationCalledByMap.Add(message.DestinationZone, message.OwnerCharId);
+                _instanceCreationCalledByMap.Add(message.DestinationZone, (message.OwnerCharId, message.IsPrivate));
             }
             _awaitingTransfers.Add(message, result.OriginalSender);
 
@@ -268,7 +281,7 @@ public class GameWorld : ReceiveProtocolDispatcher, IWithTimers {
 
             // We want to wait until the zone is fully loaded before transferring the player.
             _awaitingTransfers.Add(message, Sender);
-            _instanceCreationCalledByMap.AddOrSet(message.DestinationZone, message.OwnerCharId);
+            _instanceCreationCalledByMap.AddOrSet(message.DestinationZone, (message.OwnerCharId, message.IsPrivate));
         }
         else {
             // If the zone is already loaded, we can transfer the player immediately.
