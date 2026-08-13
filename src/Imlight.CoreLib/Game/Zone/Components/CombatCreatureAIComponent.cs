@@ -498,8 +498,9 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
             _hateTable.Add(i, 0);
         }
 
-        // Our initial target will be whomever is across from us.
-        var targetIdx = _currentSubCircle.SlotIndex + 4 % _currentDuelComponent.SubCircles.Length;
+        // Our initial target will be whomever is across from us. The wrap matters for a summoned
+        // minion, which sits in a player slot (4-7): +4 alone would land outside the hate table.
+        var targetIdx = (_currentSubCircle.SlotIndex + 4) % _currentDuelComponent.SubCircles.Length;
         UpdateHateTable(targetIdx, 1);
     }
 
