@@ -305,9 +305,18 @@ public class ZoneEntity(
         var template = Template;
 
         foreach (var (componentType, shouldAttachMethod) in ZoneEntityComponentRegistry.GetRegisteredComponents()) {
-            var shouldAttach = (bool) shouldAttachMethod.Invoke(null, [template]);
-            if (shouldAttach) {
-                AddComponent(componentType);
+            // One component's ShouldAttachToEntity (or AddComponent) throwing must never abort the rest of
+            // this entity's components or wedge the zone load. Reflection Invoke wraps the real error in a
+            // TargetInvocationException; log the inner message and skip only that one component.
+            try {
+                var shouldAttach = (bool) shouldAttachMethod.Invoke(null, [template]);
+                if (shouldAttach) {
+                    AddComponent(componentType);
+                }
+            }
+            catch (Exception ex) {
+                Logger.Warning("Component {0} threw while attaching to a '{1}' entity, skipping it: {2}",
+                    Logger.Args(componentType.Name, template?.GetType().Name ?? "?", (ex.InnerException ?? ex).Message));
             }
         }
     }
