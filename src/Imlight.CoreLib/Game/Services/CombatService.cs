@@ -49,6 +49,7 @@ using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Combat;
 using Imlight.CoreLib.Game.DropTables;
 using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.Shared.Networking;
@@ -206,6 +207,18 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
         if (_currentDuelActor != null) {
             GetActiveWizard().IsInDuel = false;
         }
+        _currentDuelActor?.Tell(message, SessionActor.ActorRef);
+    }
+
+    [MessageHandler(typeof(TUTORIAL_108_PROTOCOL.MSG_TUTORIALREBUILDDUELHAND))]
+    private void ReceiveTutorialRebuildDuelHand(TUTORIAL_108_PROTOCOL.MSG_TUTORIALREBUILDDUELHAND message) {
+        // Sender is forced to SessionActor.ActorRef so the duel matches it to this player's sub-circle; null out
+        // of combat is a harmless no-op.
+        _currentDuelActor?.Tell(message, SessionActor.ActorRef);
+    }
+
+    [MessageHandler(typeof(TUTORIAL_108_PROTOCOL.MSG_TUTORIALGRANTPIPS))]
+    private void ReceiveTutorialGrantPips(TUTORIAL_108_PROTOCOL.MSG_TUTORIALGRANTPIPS message) {
         _currentDuelActor?.Tell(message, SessionActor.ActorRef);
     }
 
