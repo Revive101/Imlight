@@ -38,7 +38,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 08/13/2026
  */
 
 using Akka.Actor;
@@ -79,7 +79,7 @@ internal enum CombatSlotType {
 public class CombatDuelSubCircle {
     
     private const float AGGRO_TIME_IN_SECONDS = 0.75f;
-    private const byte MAX_PIP_COUNT = 7;
+    internal const byte MAX_PIP_COUNT = 7;
     private const byte PLAYER_HAND_SIZE = 7;
 
     internal string SlotName { get; set; }

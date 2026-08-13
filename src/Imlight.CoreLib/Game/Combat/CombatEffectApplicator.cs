@@ -117,6 +117,9 @@ internal static class CombatEffectApplicator {
             case kSpellEffects.kKillCreature:
                 cinematicTime += ApplyKillCreatureEffect(effect, targets);
                 break;
+            case kSpellEffects.kModifyPips:
+                ApplyModifyPipsEffect(effect, targets);
+                break;
             case kSpellEffects.kPacify:
             case kSpellEffects.kTaunt:
                 // If you're looking for the implementation, we don't do it here. It happens in the CombatEffectProcessor, when the
@@ -411,6 +414,26 @@ internal static class CombatEffectApplicator {
             }
 
             target._hangingEffects.Add(effect);
+        }
+    }
+
+    // Adds or removes generic pips (signed m_effectParam). Gains respect the 7-pip cap; steals
+    // only take generic pips, so a power-pip-only target keeps them.
+    private static void ApplyModifyPipsEffect(SpellEffect effect, CombatDuelSubCircle[] targets) {
+        foreach (var target in targets) {
+            if (!target.IsAlive) {
+                continue;
+            }
+
+            var pipCount = target.CombatParticipant.m_pipCount;
+            var genericPips = pipCount.m_genericPips;
+            if (effect.m_effectParam >= 0) {
+                pipCount.m_genericPips = (byte) Math.Min(genericPips + effect.m_effectParam,
+                                                        CombatDuelSubCircle.MAX_PIP_COUNT - pipCount.m_powerPips);
+            }
+            else {
+                pipCount.m_genericPips = (byte) Math.Max(genericPips + effect.m_effectParam, 0);
+            }
         }
     }
 
