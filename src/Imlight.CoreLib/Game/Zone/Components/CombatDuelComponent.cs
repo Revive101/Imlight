@@ -41,7 +41,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 08/13/2026
  */
 
 using System;
@@ -325,13 +325,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         Timers.StartSingleTimer(PLANNING_TIME_KEY, new COMBAT_106_PROTOCOL.MSG_PLANNINGPHASEOVER(), delay);
     }
 
-    // Re-send minion AI moves as MSG_COMBATMOVESELECTION, in client list-index order like a human's.
+    // Re-send minion AI moves as MSG_COMBATMOVESELECTION, with the target's raw sigil slot.
     private void ResendMinionMoveSelections() {
-        var ordered = SubCircles
-            .Where(s => s.AddedToDuel && (s.IsAlive || s.OccupiedTeam == CombatTeam.Player))
-            .OrderBy(s => s.SlotIndex)
-            .ToList();
-
         EnactActionOnSubCircles(circle => {
             if (!circle.IsSummonedMinion || !circle.IsAlive || circle.ParticipantObject is null) {
                 return;
@@ -343,9 +338,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
                 return;
             }
 
-            var targetListIndex = ordered.IndexOf(action.SelectedTarget);
             SendCombatMoveSelection(circle.ParticipantObject.m_globalID, (byte) CombatMoveType.Attack,
-                action.Spell, (byte) targetListIndex);
+                action.Spell, (byte) action.SelectedTarget.SlotIndex);
         });
     }
 
@@ -769,8 +763,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     }
 
     private void SendCombatPhase(byte phase) {
-        // Determine which participant the client should point its turn indicator at.
-        var upFirstListIndex = GetUpFirstListIndex();
+        // Determine which sigil slot the client should point its turn indicator at.
+        var upFirstSigilSlot = GetUpFirstSigilSlot();
 
         // Serialize the up first data and send it to all the combat participants.
         // This is the one instance where the client sends a versionable object to the client.
@@ -781,7 +775,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
         var upFirst = new UpFirstData {
             m_resultType = 122, // Always recorded as 122, per packet captures.
-            m_upFirst = upFirstListIndex,
+            m_upFirst = upFirstSigilSlot,
             m_roundNum = Duel.m_roundNum,
         };
         if (!versionableSerializer.Serialize(upFirst, _upFirstFlags, out var upFirstData)) {
@@ -802,13 +796,13 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     }
 
     private void SendUpFirst(int roundNum) {
-        var upFirstListIndex = GetUpFirstListIndex();
+        var upFirstSigilSlot = GetUpFirstSigilSlot();
 
         var upFirstMsg = new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATUPFIRST {
             DuelID = SigilId,
             RoundNum = (ushort) roundNum,
             FirstTeamToAct = (byte) Duel.m_firstTeamToAct,
-            UpFirst = upFirstListIndex,
+            UpFirst = upFirstSigilSlot,
         };
         ZoneBroadcast(upFirstMsg);
     }
@@ -1048,20 +1042,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         // If the spell doesn't have a target like for AoE spells or self-heals,
         // the value will be the integer cap.
         var target = caster;
-        if (!caster.IsSummonedMinion && caster.OccupiedTeam == CombatTeam.Player) {
-            // The client's list is MSG_COMBATADD minus MSG_COMBATREMOVE: creature corpses drop off on
-            // death, dead players stay (they can be revived), so only creature corpses go uncounted.
-            var orderedParticipants = SubCircles
-                .Where(s => s is not null && s.AddedToDuel
-                    && (s.IsAlive || s.OccupiedTeam == CombatTeam.Player))
-                .OrderBy(s => s.SlotIndex)
-                .ToList();
-            if (spellTarget < orderedParticipants.Count) {
-                target = orderedParticipants[(int) spellTarget];
-            }
-        }
-        else if (spellTarget < SubCircles.Length) {
-            // A minion's AI sends a raw slot index, like any creature.
+        if (spellTarget < SubCircles.Length) {
+            // The client sends raw sigil slots for spell targets (see GetUpFirstSigilSlot).
             target = SubCircles[spellTarget];
         }
 
@@ -1110,7 +1092,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     private static CombatTeam DetermineFirstTeam()
         => (CombatTeam) new Random().Next(0, 2);
 
-    private byte GetUpFirstListIndex() {
+    private byte GetUpFirstSigilSlot() {
         // Prefer the acting team's first living participant, else any living participant.
         var upFirst = SubCircles.FirstOrDefault(s => s is not null && s.AddedToDuel && s.IsAlive
             && s.SlotType == (Duel.m_firstTeamToAct == (int) CombatTeam.Player
@@ -1121,17 +1103,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             return 0;
         }
 
-        // The client counts its own list (COMBATADD minus COMBATREMOVE): creature corpses dropped off,
-        // dead players still listed. Counting anything else shifts the indicator one slot.
-        byte listIndex = 0;
-        for (var i = 0; i < upFirst.SlotIndex; i++) {
-            if (SubCircles[i] is not null && SubCircles[i].AddedToDuel
-                && (SubCircles[i].IsAlive || SubCircles[i].OccupiedTeam == CombatTeam.Player)) {
-                listIndex++;
-            }
-        }
-
-        return listIndex;
+        // The modern client resolves the indicator against its sigil slots, not a list index.
+        return (byte) upFirst.SlotIndex;
     }
 
     private void AddWaitingCombatParticipants() => EnactActionOnSubCircles(circle => {
