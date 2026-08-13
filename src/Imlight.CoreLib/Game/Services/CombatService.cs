@@ -132,16 +132,13 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
         };
         TellOtherServices(msg);
 
-        // Roll and grant drop-table loot for every mob this player helped defeat. Each player runs
-        // this handler independently, so each rolls their own loot (shared drops in multiplayer).
-        // Mobs without an NpcDropTable entry drop nothing.
         GrantMobLoot(message.MobTemplateIds);
     }
 
-    // Rolls and grants drop-table loot for the defeated mobs (raw template ids). Each mob's tables
-    // come from NpcDropTableCollection; a single roll across all of a mob's tables yields one combined
-    // loot popup for that mob.
     private void GrantMobLoot(ulong[] defeatedMobTemplateIds) {
+        // Rolls and grants drop-table loot for the defeated mobs (raw template ids). Each mob's tables
+        // come from NpcDropTableCollection; a single roll across all of a mob's tables yields one combined
+        // loot popup for that mob.
         if (defeatedMobTemplateIds is not { Length: > 0 }) {
             return;
         }
