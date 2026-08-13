@@ -78,7 +78,7 @@
 - [ ] Changing realms
 
 ## Drop Tables
-- [ ] After combat rewards
+- [x] After combat rewards
 - [ ] Tool to remake drop tables
 - [ ] Minigame rewards
 

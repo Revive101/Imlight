@@ -49,9 +49,11 @@ using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
+using Imlight.CoreLib.Game.DropTables;
 using Imlight.CoreLib.Shared.Items;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
+using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
 
 namespace Imlight.CoreLib.Game.Services;
@@ -129,6 +131,30 @@ internal class CombatService(SessionActor sessionActor) : MessageService(session
             XP = xpGained,
         };
         TellOtherServices(msg);
+
+        GrantMobLoot(message.MobTemplateIds);
+    }
+
+    private void GrantMobLoot(ulong[] defeatedMobTemplateIds) {
+        // Rolls and grants drop-table loot for the defeated mobs (raw template ids). Each mob's tables
+        // come from NpcDropTableCollection; a single roll across all of a mob's tables yields one combined
+        // loot popup for that mob.
+        if (defeatedMobTemplateIds is not { Length: > 0 }) {
+            return;
+        }
+
+        var wizard = GetActiveWizard();
+        var playerRef = SessionActor.ActorRef;
+        var playerObj = GetActiveGameObject();
+
+        foreach (var templateId in defeatedMobTemplateIds) {
+            if (!NpcDropTableCollection.TryGetDropTable(templateId, out var npcDropTable)) {
+                continue;
+            }
+
+            var loot = DropTableRoller.Roll(npcDropTable.DropTableNames.ToArray(), playerRef, playerObj, wizard);
+            LootGranter.GrantAndDisplay(playerRef, wizard, loot);
+        }
     }
 
     [MessageHandler(typeof(DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATDRAW))]

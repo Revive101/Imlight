@@ -57,6 +57,7 @@ public static class SpiralDB {
     private static GlobalRegistryModel s_globalRegistry = new();
     private static ConcurrentDictionary<ulong, NPCInventory> s_npcInventories = new();
     private static ConcurrentDictionary<ulong, NPCSpellInventory> s_npcSpellInventories = new();
+    private static ConcurrentDictionary<ulong, NpcDropTable> s_npcDropTables = new();
     private static List<QuestTemplate> s_questTemplates = [];
     private static ConcurrentDictionary<string, QuestTemplate> s_questTemplatesByName
         = new(StringComparer.OrdinalIgnoreCase);
@@ -69,6 +70,7 @@ public static class SpiralDB {
     public static GlobalRegistryModel GlobalRegistry => s_globalRegistry;
     public static IReadOnlyDictionary<ulong, NPCInventory> NpcInventories => s_npcInventories;
     public static IReadOnlyDictionary<ulong, NPCSpellInventory> NpcSpellInventories => s_npcSpellInventories;
+    public static IReadOnlyDictionary<ulong, NpcDropTable> NpcDropTables => s_npcDropTables;
     public static IReadOnlyList<QuestTemplate> QuestTemplates => s_questTemplates;
     public static IReadOnlyDictionary<string, WizardZoneData> ZoneData => s_zoneData;
     public static IReadOnlyDictionary<ulong, NpcTreasureCardInventory> TreasureCardInventories => s_treasureCardInventories;
@@ -114,6 +116,7 @@ public static class SpiralDB {
             var globalRegistry = new GlobalRegistryModel();
             var npcInventories = new ConcurrentDictionary<ulong, NPCInventory>();
             var npcSpellInventories = new ConcurrentDictionary<ulong, NPCSpellInventory>();
+            var npcDropTables = new ConcurrentDictionary<ulong, NpcDropTable>();
             var questTemplates = new List<QuestTemplate>();
             var questTemplatesByName = new ConcurrentDictionary<string, QuestTemplate>(StringComparer.OrdinalIgnoreCase);
             var zoneData = new ConcurrentDictionary<string, WizardZoneData>(StringComparer.OrdinalIgnoreCase);
@@ -126,6 +129,7 @@ public static class SpiralDB {
             filesLoaded += LoadGlobalRegistry(basePath, globalRegistry);
             filesLoaded += LoadNpcInventories(basePath, npcInventories);
             filesLoaded += LoadNpcSpellInventories(basePath, npcSpellInventories);
+            filesLoaded += LoadNpcDropTables(basePath, npcDropTables);
             filesLoaded += LoadTreasureCardInventories(basePath, treasureCardInventories);
             filesLoaded += LoadQuestTemplates(basePath, questTemplates, questTemplatesByName);
             filesLoaded += LoadZoneData(basePath, zoneData);
@@ -136,6 +140,7 @@ public static class SpiralDB {
             s_globalRegistry = globalRegistry;
             s_npcInventories = npcInventories;
             s_npcSpellInventories = npcSpellInventories;
+            s_npcDropTables = npcDropTables;
             s_questTemplates = questTemplates;
             s_questTemplatesByName = questTemplatesByName;
             s_zoneData = zoneData;
@@ -143,13 +148,15 @@ public static class SpiralDB {
 
             Logger.Information(
                 "SpiralDB loaded {0} files: {1} spellbooks, {2} drop tables, {3} NPC inventories, " +
-                "{4} NPC spell inventories, {5} treasure card inventories, {6} quest templates, {7} zone data entries.",
+                "{4} NPC spell inventories, {5} NPC drop tables, {6} treasure card inventories, " +
+                "{7} quest templates, {8} zone data entries.",
                 Logger.Args(
                     filesLoaded,
                     s_creatureSpellbooks.Count,
                     s_dropTables.Count,
                     s_npcInventories.Count,
                     s_npcSpellInventories.Count,
+                    s_npcDropTables.Count,
                     s_treasureCardInventories.Count,
                     s_questTemplates.Count,
                     s_zoneData.Count));
@@ -163,6 +170,7 @@ public static class SpiralDB {
                 s_globalRegistry = new();
                 s_npcInventories.Clear();
                 s_npcSpellInventories.Clear();
+                s_npcDropTables.Clear();
                 s_treasureCardInventories.Clear();
                 s_questTemplates.Clear();
                 s_questTemplatesByName.Clear();
@@ -189,6 +197,9 @@ public static class SpiralDB {
 
     public static bool TryGetNpcSpellInventory(ulong templateID, out NPCSpellInventory npcSpellInventory)
         => s_npcSpellInventories.TryGetValue(templateID, out npcSpellInventory);
+
+    public static bool TryGetNpcDropTable(ulong templateID, out NpcDropTable npcDropTable)
+        => s_npcDropTables.TryGetValue(templateID, out npcDropTable);
 
     public static bool TryGetTreasureCardInventory(ulong templateID, out NpcTreasureCardInventory inventory)
         => s_treasureCardInventories.TryGetValue(templateID, out inventory);
@@ -393,6 +404,32 @@ public static class SpiralDB {
             }
             catch (Exception ex) {
                 Logger.Warning("Failed to load NPC spell inventory {0}: {1}",
+                    Logger.Args(Path.GetFileName(file), ex.Message));
+            }
+        }
+
+        return count;
+    }
+
+    private static int LoadNpcDropTables(string basePath,
+                                         ConcurrentDictionary<ulong, NpcDropTable> target) {
+        var dir = Path.Combine(basePath, "NpcDropTable");
+        if (!Directory.Exists(dir)) {
+            return 0;
+        }
+
+        var count = 0;
+        foreach (var file in Directory.EnumerateFiles(dir, "*.json")) {
+            try {
+                var json = File.ReadAllText(file);
+                var dropTable = JsonConvert.DeserializeObject<NpcDropTable>(json, s_jsonSettings);
+                if (dropTable != null) {
+                    target[dropTable.TemplateID] = dropTable;
+                    count++;
+                }
+            }
+            catch (Exception ex) {
+                Logger.Warning("Failed to load NPC drop table {0}: {1}",
                     Logger.Args(Path.GetFileName(file), ex.Message));
             }
         }
