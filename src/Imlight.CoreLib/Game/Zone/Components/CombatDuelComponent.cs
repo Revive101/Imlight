@@ -764,8 +764,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     }
 
     private void SendCombatPhase(byte phase) {
-        // Determine which sigil slot the client should point its turn indicator at.
-        var upFirstSigilSlot = GetUpFirstSigilSlot();
+        // Determine which participant the client should point its turn indicator at.
+        var upFirstListIndex = GetUpFirstListIndex();
 
         // Serialize the up first data and send it to all the combat participants.
         // This is the one instance where the client sends a versionable object to the client.
@@ -776,7 +776,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
         var upFirst = new UpFirstData {
             m_resultType = 122, // Always recorded as 122, per packet captures.
-            m_upFirst = upFirstSigilSlot,
+            m_upFirst = upFirstListIndex,
             m_roundNum = Duel.m_roundNum,
         };
         if (!versionableSerializer.Serialize(upFirst, _upFirstFlags, out var upFirstData)) {
@@ -797,13 +797,13 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     }
 
     private void SendUpFirst(int roundNum) {
-        var upFirstSigilSlot = GetUpFirstSigilSlot();
+        var upFirstListIndex = GetUpFirstListIndex();
 
         var upFirstMsg = new DOODLEDOUG_MESSAGES_51_PROTOCOL.MSG_COMBATUPFIRST {
             DuelID = SigilId,
             RoundNum = (ushort) roundNum,
             FirstTeamToAct = (byte) Duel.m_firstTeamToAct,
-            UpFirst = upFirstSigilSlot,
+            UpFirst = upFirstListIndex,
         };
         ZoneBroadcast(upFirstMsg);
     }
@@ -1104,7 +1104,6 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             return 0;
         }
 
-        // The modern client resolves the indicator against its sigil slots, not a list index.
         return (byte) upFirst.SlotIndex;
     }
 

@@ -1,22 +1,24 @@
 import { defineConfig } from 'vitepress'
 import taskLists from 'markdown-it-task-lists';
 
+const base = "/Imlight/";
+
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
   title: "Imlight",
   description: "Rewriting Magic",
   srcDir: "modules",
-  base: "/Imlight-docs/",
+  base,
   markdown: {
     config: async (md) => {
       md.use(taskLists);
     }
   },
   head: [
-    ['link', { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" }],
-    ['link', { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-32x32.png" }],
-    ['link', { rel: "icon", type: "image/png", sizes: "16x16", href: "/favicon-16x16.png" }],
-    ['link', { rel: "shortcut icon", href: "/favicon.ico" }],
+    ['link', { rel: "apple-touch-icon", sizes: "180x180", href: `${base}apple-touch-icon.png` }],
+    ['link', { rel: "icon", type: "image/png", sizes: "32x32", href: `${base}favicon-32x32.png` }],
+    ['link', { rel: "icon", type: "image/png", sizes: "16x16", href: `${base}favicon-16x16.png` }],
+    ['link', { rel: "shortcut icon", href: `${base}favicon.ico` }],
   ],
   themeConfig: {
     logo: '/logo-nobg.png',
@@ -132,7 +134,7 @@ export default defineConfig({
     },
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/Revive101/Imlight-docs' }
+      { icon: 'github', link: 'https://github.com/Revive101/Imlight' }
     ]
   }
 })
