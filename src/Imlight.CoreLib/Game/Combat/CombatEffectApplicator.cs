@@ -111,6 +111,7 @@ internal static class CombatEffectApplicator {
                 cinematicTime += ApplyStunEffect(effect, targets);
                 break;
             case kSpellEffects.kSummonCreature:
+            case kSpellEffects.kSpawnCreature:
                 ApplySummonCreature(effect, caster);
                 break;
             case kSpellEffects.kInstantKill:
@@ -119,6 +120,9 @@ internal static class CombatEffectApplicator {
                 break;
             case kSpellEffects.kModifyPips:
                 ApplyModifyPipsEffect(effect, targets);
+                break;
+            case kSpellEffects.kMaxHealthDamage:
+                cinematicTime += ApplyMaxHealthDamageEffect(effect, targets);
                 break;
             case kSpellEffects.kPacify:
             case kSpellEffects.kTaunt:
@@ -415,6 +419,22 @@ internal static class CombatEffectApplicator {
 
             target._hangingEffects.Add(effect);
         }
+    }
+
+    // Deals a percentage of the target's maximum health; m_effectParam is the percent.
+    private static float ApplyMaxHealthDamageEffect(SpellEffect effect, CombatDuelSubCircle[] targets) {
+        var cinematicTime = 0.0f;
+        foreach (var target in targets) {
+            if (!target.IsAlive) {
+                continue;
+            }
+
+            var maxHealth = target.ParticipantGameStats.m_baseHitpoints;
+            var damage = (int) Math.Floor(maxHealth * (effect.m_effectParam / 100.0f));
+            target.DamageParticipant(damage);
+        }
+
+        return cinematicTime;
     }
 
     // Adds or removes generic pips (signed m_effectParam). Gains respect the 7-pip cap; steals
