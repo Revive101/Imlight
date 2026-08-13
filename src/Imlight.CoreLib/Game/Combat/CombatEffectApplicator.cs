@@ -34,7 +34,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 08/13/2026
  */
 
 using Imcodec.ObjectProperty.TypeCache;
@@ -112,6 +112,10 @@ internal static class CombatEffectApplicator {
                 break;
             case kSpellEffects.kSummonCreature:
                 ApplySummonCreature(effect, caster);
+                break;
+            case kSpellEffects.kInstantKill:
+            case kSpellEffects.kKillCreature:
+                cinematicTime += ApplyKillCreatureEffect(effect, targets);
                 break;
             case kSpellEffects.kPacify:
             case kSpellEffects.kTaunt:
@@ -408,6 +412,25 @@ internal static class CombatEffectApplicator {
 
             target._hangingEffects.Add(effect);
         }
+    }
+
+    // Kills the effect's targets outright; the round cleanup sends MSG_COMBATDEATH for the corpse.
+    // kKillCreature only kills the named creature: m_effectParam is the template id to match.
+    private static float ApplyKillCreatureEffect(SpellEffect effect, CombatDuelSubCircle[] targets) {
+        foreach (var target in targets) {
+            if (target is null || target.ParticipantObject is null || !target.IsAlive) {
+                continue;
+            }
+
+            if (effect.m_effectType == kSpellEffects.kKillCreature
+                && target.ParticipantObject.m_templateID.Full != (ulong) effect.m_effectParam) {
+                continue;
+            }
+
+            target.DamageParticipant(target.ParticipantGameStats.m_currentHitpoints);
+        }
+
+        return 0.0f;
     }
 
     // m_effectParam is the creature template id to spawn.
