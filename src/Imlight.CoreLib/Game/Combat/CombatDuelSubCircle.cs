@@ -578,6 +578,9 @@ public class CombatDuelSubCircle {
             m_pGameStats = creatureStats.GameStats.GetCombatGameStats(),
             m_mobLevel = creatureStats.CombatLevel,
 
+            m_minionStartingHealth = asMinion ? creatureStats.GameStats.m_currentHitpoints : 0,
+            m_curMaxHP = asMinion ? creatureStats.GameStats.m_baseHitpoints : 0,
+
             m_subcircle = SlotIndex,
             m_dynamicSymbol = dynamicSymbol,
 
