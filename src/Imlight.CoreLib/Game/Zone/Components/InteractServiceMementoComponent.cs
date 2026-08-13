@@ -71,6 +71,8 @@ public interface IServiceComponent {
     string InteractWizBang { get; }
     string DisplayKey { get; }
 
+    float DEFAULT_INTERACTION_RADIUS => 300.0f;
+
 }
 
 internal sealed class InteractServiceMementoComponent(ZoneEntity entity) 
@@ -129,13 +131,18 @@ internal sealed class InteractServiceMementoComponent(ZoneEntity entity)
 
         var playerId = playerObj.m_globalID.Full;
 
+        // Effective interaction radius = the SMALLEST any attached service asks for (default 300).
+        var interactionRadius = _serviceComponents.Count > 0
+            ? _serviceComponents.Min(c => c.DEFAULT_INTERACTION_RADIUS)
+            : _interactionRadius;
+
         // Handle interaction range (for service options).
-        if (IsInRadius(playerObj, _interactionRadius)
+        if (IsInRadius(playerObj, interactionRadius)
             && !_playersInInteractionRange.ContainsKey(playerId)) {
             _playersInInteractionRange.Add(playerId, playerActor);
             SendActorServiceOptions(playerActor);
         }
-        else if (!IsInRadius(playerObj, _interactionRadius)
+        else if (!IsInRadius(playerObj, interactionRadius)
                  && _playersInInteractionRange.ContainsKey(playerId)) {
             _playersInInteractionRange.Remove(playerId);
             SendLeaveServiceRange(playerActor);
