@@ -40,7 +40,7 @@ If you care to contribute to the data recollection effort, you may use [Imview](
 - [x] Reagents 
 - [x] Minigames
 - [x] Creating spell decks
-- [ ] Dungeons (exist, but entrance sigils are not yet implemented)
+- [x] Dungeons
 - [x] Cantrips
 - [x] In-game commands
 - [x] Potions
