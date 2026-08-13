@@ -117,5 +117,68 @@ internal class PotionService(SessionActor sessionActor) : MessageService(session
         SendToSocket(potionChargeUpdateMsg);
         wizard.UpdatePotions(newPotionCharge, potionMax);
     }
-    
+
+    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_POTIONBUYREQUEST))]
+    private void ReceivePotionBuyRequest(WIZARD_12_PROTOCOL.MSG_POTIONBUYREQUEST message) {
+        var wizard = GetActiveWizard();
+        if (wizard is null) {
+            return;
+        }
+
+        var stats = wizard.GameStats;
+        var charge = stats.m_potionCharge;
+        var max = stats.m_potionMax;
+
+        // Whole potions still missing. Nothing to fill, so confirm success as a benign no-op.
+        var missing = (int) Math.Ceiling(max - charge);
+        if (missing <= 0) {
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_POTIONBUYCONFIRM { Failure = 0 });
+
+            return;
+        }
+
+        // todo: in-game verify the AmountEnum mapping (assumed 0 = Fill One, else Fill All).
+        var fillAll = message.AmountEnum != 0;
+        var potionsToFill = fillAll ? missing : 1;
+
+        var level = Math.Max(1, stats.Level);
+        var perPotion = PotionCostPerBottle(level);
+        var cost = perPotion * potionsToFill;
+
+        // Can't afford. AddGold only clamps at the pouch max, so a negative delta would dip below zero.
+        if (stats.m_currentGold < cost) {
+            Logger.Information("Wizard {0} can't afford {1} potion(s): {2} gold needed, {3} held (level {4}).",
+                Logger.Args(wizard.CharId, potionsToFill, cost, stats.m_currentGold, level));
+            SendToSocket(new WIZARD_12_PROTOCOL.MSG_POTIONBUYCONFIRM { Failure = 1 });
+
+            return;
+        }
+
+        // Charge gold and echo it.
+        wizard.AddGold(-cost);
+        SendToSocket(new WIZARD_12_PROTOCOL.MSG_UPDATEGOLD {
+            Gold = stats.m_currentGold,
+            MaxGold = stats.m_baseGoldPouch,
+        });
+
+        // Refill the potion charge (capped at max) and echo it.
+        var newCharge = Math.Min(max, charge + potionsToFill);
+        wizard.UpdatePotions(newCharge, max);
+        SendToSocket(new WIZARD_12_PROTOCOL.MSG_UPDATEPOTIONS {
+            PotionMax = max,
+            PotionCharge = newCharge,
+        });
+
+        SendToSocket(new WIZARD_12_PROTOCOL.MSG_POTIONBUYCONFIRM { Failure = 0 });
+        Logger.Information("Wizard {0} filled {1} potion(s) for {2} gold (level {3}, {4} each); charge {5} to {6} of {7}.",
+            Logger.Args(wizard.CharId, potionsToFill, cost, level, perPotion, charge, newCharge, max));
+    }
+
+    private static int PotionCostPerBottle(int level)
+        => level < 11 ? 100
+         : level < 21 ? level * 10
+         : level < 31 ? level * 15
+         : level < 41 ? level * 20
+         : level * 30;
+
 }
