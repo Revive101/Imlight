@@ -154,7 +154,8 @@ public class CombatDuelSubCircle {
         SlotIndex = index;
     }
 
-    internal CombatParticipant AssignParticipant(IActorRef actor, CoreObject participantObject, bool isSummonedMinion = false) {
+    internal CombatParticipant AssignParticipant(IActorRef actor, CoreObject participantObject, bool isSummonedMinion = false,
+                                                 int minionOwnerSubCircle = 0) {
         ParticipantActor = actor;
         ParticipantObject = participantObject;
         IsSummonedMinion = isSummonedMinion;
@@ -166,7 +167,7 @@ public class CombatDuelSubCircle {
             InitializePlayerSubCircle();
         }
         else {
-            InitializeCreatureSubCircle(isSummonedMinion);
+            InitializeCreatureSubCircle(isSummonedMinion, minionOwnerSubCircle);
         }
 
         // Inform the actor that they've been added to a duel.
@@ -533,7 +534,7 @@ public class CombatDuelSubCircle {
         };
     }
 
-    private void InitializeCreatureSubCircle(bool asMinion = false) {
+    private void InitializeCreatureSubCircle(bool asMinion = false, int minionOwnerSubCircle = 0) {
         var queryGameStatsMsg = new COMBAT_106_PROTOCOL.MSG_QUERYCREATURESTATS();
         var creatureStats = ParticipantActor
             .Ask<COMBAT_106_PROTOCOL.MSG_CREATURESTATS>(queryGameStatsMsg)
@@ -580,6 +581,8 @@ public class CombatDuelSubCircle {
 
             m_minionStartingHealth = asMinion ? creatureStats.GameStats.m_currentHitpoints : 0,
             m_curMaxHP = asMinion ? creatureStats.GameStats.m_baseHitpoints : 0,
+            // The client links a minion to its owner through this sub-circle.
+            m_minionSubCircle = asMinion ? minionOwnerSubCircle : 0,
 
             m_subcircle = SlotIndex,
             m_dynamicSymbol = dynamicSymbol,

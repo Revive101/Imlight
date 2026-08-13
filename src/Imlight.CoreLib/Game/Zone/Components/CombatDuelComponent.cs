@@ -647,12 +647,12 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     }
 
     private bool AssignParticipantToSubCircle(CombatDuelSubCircle subCircle, IActorRef actorRef, CoreObject coreObject,
-                                              bool isSummonedMinion = false) {
+                                              bool isSummonedMinion = false, int minionOwnerSubCircle = 0) {
         if (subCircle.ParticipantActor != null) {
             return false;
         }
 
-        subCircle.AssignParticipant(actorRef, coreObject, isSummonedMinion);
+        subCircle.AssignParticipant(actorRef, coreObject, isSummonedMinion, minionOwnerSubCircle);
 
         return true;
     }
@@ -725,7 +725,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         }
 
         try {
-            AssignParticipantToSubCircle(slot, minionActor, minionObj, isSummonedMinion: true);
+            AssignParticipantToSubCircle(slot, minionActor, minionObj, isSummonedMinion: true,
+                                         minionOwnerSubCircle: caster.SlotIndex);
         }
         catch (Exception ex) {
             Logger.Error("Duel {0} | minion summon: failed to assign tid {1} to slot {2}: {3}",
