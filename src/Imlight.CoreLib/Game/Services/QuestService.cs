@@ -44,6 +44,8 @@ using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
 using Imlight.CoreLib.Game.DropTables;
 using Imlight.CoreLib.Game.Madlibs;
+using Imlight.CoreLib.Game.Requirements;
+using Imlight.CoreLib.Game.Requirements.Contexts;
 using Imlight.CoreLib.Game.Results;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
@@ -59,6 +61,7 @@ namespace Imlight.CoreLib.Game.Services;
 internal class QuestService(SessionActor sessionActor) : MessageService(sessionActor) {
 
     private const float DEFAULT_KILL_COLLECT_CHANCE = 0.5f;
+    private const string QUEST_COMPLETED_ENTRY = "Completed";
 
     private readonly List<QuestTemplate> _cachedQuestOffers = [];
     private readonly List<QuestTemplate> _cachedQuestTemplates = [];
@@ -85,6 +88,11 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
     [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE))]
     private void ReceivePostAttach(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE message) {
         var wizard = GetActiveWizard();
+
+        // Dungeon quests are force-added on entry (a quest marked by a ReqInZone requirement for this
+        // zone). Grant BEFORE the waypoint check so a fresh quest's enter-the-dungeon goal completes on
+        // this same attach.
+        TryGrantDungeonQuests(wizard);
 
         // Entering the zone may have triggered waypoint goals for quests.
         CheckForWaypointGoalZoneEntry(wizard);
@@ -600,6 +608,10 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
             playerObj: GetActiveGameObject(),
             questName: questInstance.QuestName
         );
+
+        // Chain advance: completion stamps the "Completed" registry entry, which is the ReqHasEntry
+        // prerequisite of the next quest in the dungeon's chain.
+        TryGrantDungeonQuests(wizard);
     }
 
     private void SendGoalMessage(GoalTemplate gTemplate, QuestInstance qInstance, byte sendType = 0, bool forceSendDestZone = true) {
@@ -984,6 +996,43 @@ internal class QuestService(SessionActor sessionActor) : MessageService(sessionA
         };
 
         SendToSocket(dialogMsg);
+    }
+
+    private void TryGrantDungeonQuests(Wizard wizard) {
+        if (wizard is null) {
+            return;
+        }
+
+        foreach (var template in DungeonQuestIndex.GetQuestsForZone(wizard.Zone)) {
+            if (wizard.HasQuest(template.m_questName)
+                || wizard.HasQuestRegistryValue(template.m_questName, QUEST_COMPLETED_ENTRY)) {
+                continue;
+            }
+
+            if (template.m_requirements is not null) {
+                var context = new GenericRequirementContext(
+                    requirements: template.m_requirements,
+                    playerRef: null,
+                    playerObj: null,
+                    wizard: wizard);
+
+                if (!RequirementDispatcher.EvaluateRequirements(template.m_requirements, context)) {
+                    continue;
+                }
+            }
+
+            var questInstance = new QuestInstance(template, wizard.CharId);
+            wizard.AddQuest(questInstance);
+
+            if (!_cachedQuestTemplates.Contains(template)) {
+                _cachedQuestTemplates.Add(template);
+            }
+
+            SendQuestStartingMessage(template, questInstance);
+
+            Logger.Information("Granted dungeon quest '{0}' to {1} in '{2}'.",
+                Logger.Args(template.m_questName, wizard.CharId, wizard.Zone));
+        }
     }
 
 }
