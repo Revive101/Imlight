@@ -22,6 +22,7 @@ using Akka.Actor;
 using Imcodec.Math;
 using Imcodec.IO;
 using Imcodec.ObjectProperty.TypeCache;
+using Imlight.CoreLib.Game.Combat;
 using Imlight.CoreLib.Game.Zone.Core;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.WizardData.Models.Player;
@@ -829,6 +830,20 @@ public class ZONE_102_PROTOCOL : IServerProtocol {
         public byte ServiceID { get; } = 102;
 
         public WizZoneData ZoneData;
+
+    }
+
+    /// <summary>
+    /// Server-internal: tells a duel component to spawn a summoned minion once the summon cast
+    /// animation has played.
+    /// </summary>
+    public sealed class MSG_DEFERREDMINIONSUMMON : IServerMessage {
+
+        public byte MessageOrder { get; } = 59;
+        public byte ServiceID { get; } = 102;
+
+        public uint CreatureTid;
+        public CombatDuelSubCircle Caster;
 
     }
 
