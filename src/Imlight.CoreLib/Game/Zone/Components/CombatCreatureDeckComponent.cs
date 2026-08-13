@@ -78,24 +78,29 @@ internal sealed class CombatCreatureDeckComponent : ZoneEntityComponent, ICompon
         var mobDeck = allBehaviors.OfType<MobDeckBehaviorTemplate>().FirstOrDefault();
         if (mobDeck != null) {
             InitializeSpellbookFromNames(mobDeck.m_spellList);
-            return;
+        }
+        else {
+            // DeckBehaviorTemplate stores a deck name that maps to a SpiralDB spellbook.
+            var deckBehavior = allBehaviors.OfType<DeckBehaviorTemplate>().FirstOrDefault();
+            if (deckBehavior != null) {
+                InitializeSpellbook(GetCreatureSpellbook(deckBehavior.m_defaultDeck));
+            }
+            else {
+                // Neither deck type found — fall back to the default spellbook so the
+                // creature can at least cast basic spells instead of passing all the time.
+                Logger.Warning(
+                    "{0} {1} has no deck behavior — falling back to default spellbook.",
+                    Logger.Args(nameof(ZoneEntity), entity.ActiveGameObject.m_debugName)
+                );
+                InitializeSpellbook(CreatureSpellbookCollection.GetDefaultCreatureSpellbook());
+            }
         }
 
-        // DeckBehaviorTemplate stores a deck name that maps to a SpiralDB spellbook.
-        var deckBehavior = allBehaviors.OfType<DeckBehaviorTemplate>().FirstOrDefault();
-        if (deckBehavior != null) {
-            var creatureSpellbook = GetCreatureSpellbook(deckBehavior.m_defaultDeck);
-            InitializeSpellbook(creatureSpellbook);
-            return;
+        // A creature with an empty deck (deck absent from SpiralDB, or a mob deck with no usable
+        // names) falls back to the default spellbook so it can cast instead of passing every round.
+        if (Spells.Count == 0) {
+            InitializeSpellbook(CreatureSpellbookCollection.GetDefaultCreatureSpellbook());
         }
-
-        // Neither deck type found — fall back to the default spellbook so the
-        // creature can at least cast basic spells instead of passing all the time.
-        Logger.Warning(
-            "{0} {1} has no deck behavior — falling back to default spellbook.",
-            Logger.Args(nameof(ZoneEntity), entity.ActiveGameObject.m_debugName)
-        );
-        InitializeSpellbook(GetCreatureSpellbook(null));
     }
 
     private void InitializeSpellbook(CreatureSpellbook spellbook) {
@@ -149,6 +154,10 @@ internal sealed class CombatCreatureDeckComponent : ZoneEntityComponent, ICompon
     }
 
     private static CreatureSpellbook GetCreatureSpellbook(string deckName) {
+        if (string.IsNullOrEmpty(deckName)) {
+            return CreatureSpellbookCollection.GetDefaultCreatureSpellbook();
+        }
+
         var creatureSpellbook = CreatureSpellbookCollection.GetCreatureSpellbook(deckName);
         creatureSpellbook ??= CreatureSpellbookCollection.GetDefaultCreatureSpellbook();
 
