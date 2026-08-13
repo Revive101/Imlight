@@ -33,7 +33,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 08/13/2026
  */
 
 using Imcodec.ObjectProperty.TypeCache;
@@ -241,6 +241,24 @@ internal static class CombatActionResolver {
             case kEffectTarget.kEnemySingle:
             case kEffectTarget.kFriendlySingle:
                 targets = [target];
+                break;
+            case kEffectTarget.kMinion:
+            case kEffectTarget.kFriendlyMinion:
+            case kEffectTarget.kCasterMinion:
+                // The client drives minion selection; validate the pick belongs to the caster's team.
+                targets = target is not null && target.IsSummonedMinion && target.OccupiedTeam == caster.OccupiedTeam
+                    ? [target]
+                    : [];
+                break;
+            case kEffectTarget.kEnemyMinion:
+                targets = target is not null && target.IsSummonedMinion && target.OccupiedTeam != caster.OccupiedTeam
+                    ? [target]
+                    : [];
+                break;
+            case kEffectTarget.kTargetMinion:
+                targets = target is not null && target.IsSummonedMinion
+                    ? [target]
+                    : [];
                 break;
             case kEffectTarget.kSelf:
             case kEffectTarget.kInvalidTarget:
