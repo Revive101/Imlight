@@ -42,6 +42,7 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
     private const string TUTORIAL_HEALTH_REFILL_QUEST = "WC-TUT-C09-014";
     private const string TUTORIAL_MANA_REFILL_QUEST = "WC-TUT-C09-016";
     private const ulong AMBROSE_TEMPLATE_ID = 39394;
+    private const ulong WALKING_AMBROSE_TEMPLATE_ID = 114120;
     private const double WALKING_AMBROSE_DESPAWN_SECONDS = 7.5;
 
     private static readonly Dictionary<string, string> s_goalEventPosts = new() {
@@ -306,7 +307,7 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         // through to the normal goal path that posts WalkAmbrose (the client spawns the walking Ambrose).
         if (goalName == "Walk Ambrose") {
             DespawnTutorialObject(AMBROSE_TEMPLATE_ID, 0);
-            DespawnTutorialObject(AMBROSE_TEMPLATE_ID, WALKING_AMBROSE_DESPAWN_SECONDS);
+            DespawnTutorialObject(WALKING_AMBROSE_TEMPLATE_ID, WALKING_AMBROSE_DESPAWN_SECONDS);
         }
 
         // Trigger Wand Effect: the wand glare beat. The starter wand and deck were granted at character
@@ -445,7 +446,7 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
             Messages = [new ZONE_102_PROTOCOL.MSG_REMOVEOBJECT {
                 TemplateID = templateId,
             }],
-            Targets = ZoneBroadcastTarget.Objects,
+            Targets = ZoneBroadcastTarget.Objects | ZoneBroadcastTarget.Paths,
         };
 
         if (delaySeconds <= 0) {

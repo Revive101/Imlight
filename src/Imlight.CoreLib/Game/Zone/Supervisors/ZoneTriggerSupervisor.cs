@@ -49,7 +49,7 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
         // Words cannot describe how thankful I am for QA. They are the unsung heroes of the development team.
         var replacedTriggers = ReplaceTriggerDataWithDatabase(message.TriggerData);
         var spawners = message.SpawnData.m_spawners;
-        UpdateResSpawnResultTriggers(ref replacedTriggers, spawners, message.PathData.m_pathList, message.NodeData.m_nodeList);
+        UpdateSpawnResultTriggers(ref replacedTriggers, spawners, message.PathData.m_pathList, message.NodeData.m_nodeList);
 
         foreach (var trigger in replacedTriggers) {
             _ = CreateTriggerActor(trigger);
@@ -68,21 +68,27 @@ internal sealed class ZoneTriggerSupervisor(Core.Zone zone) : ZoneEntitySupervis
         }
     }
 
-    private void UpdateResSpawnResultTriggers(ref List<Trigger> clientTriggers, List<SpawnObject> spawners, List<PathObjectTemplate> paths, List<NodeObject> nodes) {
+    private void UpdateSpawnResultTriggers(ref List<Trigger> clientTriggers, List<SpawnObject> spawners, List<PathObjectTemplate> paths, List<NodeObject> nodes) {
         foreach (var trigger in clientTriggers) {
             if (trigger.m_results == null || trigger.m_results.m_results == null) {
                 continue;
             }
 
             foreach (var result in trigger.m_results.m_results) {
-                if (result is ResSpawn) {
-                    var resultResSpawn = (ResSpawn) result;
-                    var spawnObjectList = spawners.Find(x => x.m_id == resultResSpawn.m_spawnID);
+                if (result is ResSpawn resSpawn) {
+                    var spawnObjectList = spawners.Find(x => x.m_id == resSpawn.m_spawnID);
                     if (spawnObjectList != null) {
                         var spawnObject = spawnObjectList.m_spawnList[0];
                         var objectPath = paths.Find(x => x.m_id.Full == spawnObject.m_objectInfo.m_pathID.Full);
-                        resultResSpawn.nodes = nodes.FindAll(x => objectPath.m_nodeIDs.Contains(x.m_id));
-                        resultResSpawn.templateID = spawnObject.m_objectInfo.m_templateID;
+                        resSpawn.nodes = nodes.FindAll(x => objectPath.m_nodeIDs.Contains(x.m_id));
+                        resSpawn.templateID = spawnObject.m_objectInfo.m_templateID;
+                    }
+                }
+                else if (result is ResDespawn resDespawn) {
+                    // The wad data only names the spawner; resolve the template so the removal can match an entity.
+                    var spawnObjectList = spawners.Find(x => x.m_id == resDespawn.m_spawnID);
+                    if (spawnObjectList != null) {
+                        resDespawn.m_templateID = spawnObjectList.m_spawnList[0].m_objectInfo.m_templateID;
                     }
                 }
             }
