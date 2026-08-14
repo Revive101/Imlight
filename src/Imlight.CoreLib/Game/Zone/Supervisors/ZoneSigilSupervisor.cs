@@ -21,6 +21,7 @@ using System.Linq;
 using Akka.Actor;
 using Imcodec.Math;
 using Imcodec.ObjectProperty.TypeCache;
+using Imlight.Common;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
@@ -39,6 +40,35 @@ internal sealed class ZoneSigilSupervisor(Core.Zone zone) : ZoneEntitySupervisor
     public override void ReceiveZoneLoadResults(ZONE_102_PROTOCOL.MSG_ZONELOADRESULTS message) {
         // We only care about the ZoneData section of the message.
         var zoneData = message.ZoneData;
+
+        foreach (var objectInfo in zoneData.m_objectList) {
+            if (objectInfo is not MinigameSigilInfo) {
+                continue;
+            }
+
+            var template = CoreObjectFactory.GetCoreTemplate(objectInfo.m_templateID) as GameObjectTemplate;
+            if (template is null) {
+                Logger.Warning("Dungeon sigil template {0} not found; skipping.",
+                    Logger.Args(objectInfo.m_templateID));
+
+                continue;
+            }
+
+            var coreObject = CoreObjectFactory.FinalizeCoreObject(objectInfo, template);
+            if (coreObject is null) {
+                Logger.Warning("Could not finalize dungeon sigil (template {0}); skipping.",
+                    Logger.Args(objectInfo.m_templateID));
+
+                continue;
+            }
+
+            // The pad octagon sits low and clips into the terrain; lift it like the combat sigils.
+            var newLoc = coreObject.m_location;
+            newLoc.Z += 5;
+            coreObject.m_location = newLoc;
+
+            CreateEntityActor(coreObject, template, objectInfo);
+        }
 
         // Initialize any objects found within the zone data.
         foreach (var objectInfo in zoneData.m_objectList) {

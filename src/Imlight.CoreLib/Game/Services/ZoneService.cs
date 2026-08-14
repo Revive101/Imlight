@@ -33,21 +33,20 @@
  * 
  * Created by: Jooty, Jeff
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 08/13/2026
  */
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using Akka.Actor;
-using Imcodec.Types;
 using Imcodec.CoreObject;
 using Imcodec.Cryptography;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
 using Imlight.Common;
+using Imlight.CoreLib.Game.Sigils;
 using Imlight.CoreLib.Game.WizBang;
 using Imlight.CoreLib.Game.World;
 using Imlight.CoreLib.Shared.Character;
@@ -73,6 +72,11 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         = ConfigurationManager.Settings["April Fools.RandomBackFlips"].AsBool();
     private bool _isTransferQueued;
     private uint _currentDynamicZoneId;
+
+    private const string SIGIL_ENTER_TIMER_KEY = "sigilenter";
+    private const float SIGIL_COUNTDOWN_SECONDS = 10.0f;
+    private const float SIGIL_YAW_ERROR_COMPENSATION = 1.58f; // Gamebryo yaw compensation
+    private ZONE_102_PROTOCOL.MSG_STARTSIGILENTRY _activeSigilEntry;
 
     private readonly CoreObjectSerializer _effectSerializer = new(
         behaviors: SerializerFlags.None
@@ -172,6 +176,95 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
         Logger.Debug("Client was not OK with zone transfer!");
         _isTransferQueued = false;
     }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_STARTSIGILENTRY))]
+    private void ReceiveStartSigilEntry(ZONE_102_PROTOCOL.MSG_STARTSIGILENTRY message) {
+        if (_isTransferQueued || _activeSigilEntry is not null) {
+            return;
+        }
+
+        if (string.IsNullOrEmpty(message.DestinationZone)) {
+            return;
+        }
+
+        // Force a dismount.
+        SessionActor.ActorRef.Tell(
+            new ZONE_102_PROTOCOL.MSG_ENFORCEINTERIORMOUNT { Force = true }
+        );
+
+        _activeSigilEntry = message;
+
+        SnapPlayerToSigilFace(message);
+
+        SendToSocket(new WIZARD_12_PROTOCOL.MSG_MINIGAMETIMERSTART {
+            Time = SIGIL_COUNTDOWN_SECONDS,
+            SigilGID = message.SigilGID,
+            Teleport = 0,
+        });
+
+        Timers.StartSingleTimer(
+            SIGIL_ENTER_TIMER_KEY,
+            new ZONE_102_PROTOCOL.MSG_SIGILENTER(),
+            TimeSpan.FromSeconds(SIGIL_COUNTDOWN_SECONDS));
+
+        Logger.Information("Dungeon sigil countdown started -> '{0}'",
+            Logger.Args(message.DestinationZone));
+    }
+
+    [MessageHandler(typeof(ZONE_102_PROTOCOL.MSG_SIGILENTER))]
+    private void ReceiveSigilEnter(ZONE_102_PROTOCOL.MSG_SIGILENTER message) {
+        if (_activeSigilEntry is null) {
+            return;
+        }
+
+        var wizard = GetActiveWizard();
+        var gameObj = GetActiveGameObject();
+        if (wizard is null || gameObj is null) {
+            return;
+        }
+
+        // If the player walked off the pad during the countdown and the client's walk-off cancel never
+        // arrived, drop the transfer instead of yanking them from across the street.
+        var pad = Util.GetVectorFromCompactString(_activeSigilEntry.SigilLoc);
+        var pos = wizard.Location;
+        var dx = pad.X - pos.X;
+        var dy = pad.Y - pos.Y;
+        var dz = pad.Z - pos.Z;
+        if ((dx * dx) + (dy * dy) + (dz * dz) > (_activeSigilEntry.Radius * _activeSigilEntry.Radius)) {
+            CancelSigilCountdown();
+
+            return;
+        }
+
+        var entry = _activeSigilEntry;
+        _activeSigilEntry = null;
+
+        Logger.Information("Entering dungeon instance '{0}' (owner {1})",
+            Logger.Args(entry.DestinationZone, wizard.CharId));
+
+        var tpMsg = new ZONE_102_PROTOCOL.MSG_ZONETRANSFER {
+            DestinationZone = entry.DestinationZone,
+            DestinationLocation = entry.DestinationLoc,
+            SendToClient = true,
+            IsPrivate = true,
+            OwnerCharId = wizard.CharId,
+            ResetInstance = true,
+        };
+
+        SendTeleportEffects();
+        ReceiveZoneTransferRequest(tpMsg);
+    }
+
+    [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_LEAVESIGILTIMERWAITING))]
+    private void ReceiveLeaveSigilTimerWaiting(WIZARD_12_PROTOCOL.MSG_LEAVESIGILTIMERWAITING message) {
+        if (_activeSigilEntry is null) {
+            return;
+        }
+
+        Logger.Information("Client left the dungeon sigil pad — cancelling countdown.");
+        CancelSigilCountdown();
+    }
+
 
     [MessageHandler(typeof(WIZARD_12_PROTOCOL.MSG_PATCHINGBLOCKED))]
     private void ReceivePatchingBlocked(WIZARD_12_PROTOCOL.MSG_PATCHINGBLOCKED message) {
@@ -815,6 +908,131 @@ internal class ZoneService(SessionActor sessionActor) : MessageService(sessionAc
             Selfless = false,
         };
         ReceiveZoneBroadcast(broadcastWrapper);
+    }
+
+    private void CancelSigilCountdown() {
+        var entry = _activeSigilEntry;
+        _activeSigilEntry = null;
+        Timers.Cancel(SIGIL_ENTER_TIMER_KEY);
+
+        if (entry is null) {
+            return;
+        }
+
+        SendToSocket(new WIZARD_12_PROTOCOL.MSG_MINIGAMETIMEREND { SigilGID = entry.SigilGID });
+
+        // Give the player their mount back.
+        SessionActor.ActorRef.Tell(new ZONE_102_PROTOCOL.MSG_ENFORCEINTERIORMOUNT());
+
+        Logger.Information("Dungeon sigil countdown cancelled (stepped off pad)");
+    }
+
+    private void SnapPlayerToSigilFace(ZONE_102_PROTOCOL.MSG_STARTSIGILENTRY entry) {
+        var gameObj = GetActiveGameObject();
+        var wizard = GetActiveWizard();
+        if (gameObj is null || wizard is null) {
+            return;
+        }
+
+        var pad = Util.GetVectorFromCompactString(entry.SigilLoc);
+        float faceX, faceY, faceZ = pad.Z, faceYaw;
+        if (TryGetSigilFaceSlot(entry, out var slotPos, out var slotYaw)) {
+            faceX = slotPos.X;
+            faceY = slotPos.Y;
+            faceZ = slotPos.Z;
+            faceYaw = slotYaw;
+        }
+        else {
+            // Fallback: offset off the pad centre toward where the player approached from, facing centre.
+            var here = wizard.Location;
+            double dx = here.X - pad.X, dy = here.Y - pad.Y;
+            double len = Math.Sqrt((dx * dx) + (dy * dy));
+            const double SIGIL_FACE_OFFSET = 220.0;
+            double ox, oy;
+            if (len > 1.0) {
+                ox = dx / len * SIGIL_FACE_OFFSET;
+                oy = dy / len * SIGIL_FACE_OFFSET;
+            }
+            else {
+                ox = -Math.Cos(pad.W) * SIGIL_FACE_OFFSET;
+                oy = -Math.Sin(pad.W) * SIGIL_FACE_OFFSET;
+            }
+
+            faceX = (float) (pad.X + ox);
+            faceY = (float) (pad.Y + oy);
+            double yaw = Math.Atan2(-oy, -ox);
+            yaw = (2 * Math.PI) - yaw - SIGIL_YAW_ERROR_COMPENSATION;
+            if (yaw < 0) {
+                yaw += 2 * Math.PI;
+            }
+
+            faceYaw = (float) yaw;
+        }
+
+        // Broadcast the slide (Selfless=false so the player sees their own drag-in) + set authoritative pos.
+        ReceiveZoneBroadcast(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+            Message = new WIZARD_12_PROTOCOL.MSG_AGGRO {
+                GlobalID = gameObj.m_globalID,
+                LocX = faceX,
+                LocY = faceY,
+                LocZ = faceZ,
+                Yaw = faceYaw,
+            },
+            Selfless = false,
+        });
+        gameObj.m_location = new Imcodec.Math.Vector3(faceX, faceY, faceZ);
+        gameObj.m_orientation = new Imcodec.Math.Vector3(0, 0, faceYaw);
+    }
+
+    private static bool TryGetSigilFaceSlot(ZONE_102_PROTOCOL.MSG_STARTSIGILENTRY entry,
+                                            out Imcodec.Math.Vector3 pos, out float yaw) {
+        pos = default;
+        yaw = 0f;
+        if (string.IsNullOrEmpty(entry.SigilType) || string.IsNullOrEmpty(entry.SigilLoc)) {
+            return false;
+        }
+
+        var template = SigilFactory.GetSigilTemplate(entry.SigilType);
+        var subCircles = template?.m_subCircles;
+        if (subCircles is null || subCircles.Count == 0) {
+            return false;
+        }
+
+        // Player faces only (dungeon-entry sigils shouldn't carry monster circles, but filter defensively).
+        var playerSlots = new List<SigilSubCircle>();
+        foreach (var sc in subCircles) {
+            if (sc is null || sc.m_locationType == "MonsterCircle") {
+                continue;
+            }
+
+            playerSlots.Add(sc);
+        }
+        if (playerSlots.Count == 0) {
+            return false;
+        }
+
+        var slot = playerSlots[0];
+        var pad = Util.GetVectorFromCompactString(entry.SigilLoc);
+
+        double sigilRotation = pad.W;
+        if (sigilRotation < 0) {
+            sigilRotation += 2 * Math.PI;
+        }
+
+        double rotationRadians = slot.m_rotation * (Math.PI / 180.0);
+        double sx = pad.X + (slot.m_radius * Math.Cos(rotationRadians - sigilRotation));
+        double sy = pad.Y + (slot.m_radius * Math.Sin(rotationRadians - sigilRotation));
+
+        double faceYaw = Math.Atan2(pad.Y - sy, pad.X - sx);
+        faceYaw = (2 * Math.PI) - faceYaw - SIGIL_YAW_ERROR_COMPENSATION;
+        if (faceYaw < 0) {
+            faceYaw += 2 * Math.PI;
+        }
+
+        pos = new Imcodec.Math.Vector3((float) sx, (float) sy, pad.Z);
+        yaw = (float) faceYaw;
+
+        return true;
     }
 
 }
