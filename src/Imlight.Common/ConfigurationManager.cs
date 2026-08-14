@@ -41,6 +41,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace Imlight.Common;
 
@@ -464,6 +465,17 @@ public static class ConfigurationManager {
         /// <returns>The string value or default</returns>
         public string AsString(string defaultValue)
             => string.IsNullOrEmpty(_value) ? defaultValue : _value;
+
+        /// <summary>
+        /// Converts the value to a list of strings, split on the given separator.
+        /// Empty entries are dropped.
+        /// </summary>
+        /// <param name="separator">The separator character (default comma)</param>
+        /// <returns>The list of trimmed values</returns>
+        public string[] AsList(char separator = ',')
+            => string.IsNullOrEmpty(_value)
+                ? []
+                : _value.Split(separator).Select(x => x.Trim()).Where(x => x.Length > 0).ToArray();
 
         /// <summary>
         /// Converts the value to a float
