@@ -74,13 +74,6 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ATTACH))]
     private void ReceivePostAttach(GAME_5_PROTOCOL.MSG_ATTACH msg) {
-        // The starter kit lands on the first attach: in the tutorial zones, or on first login
-        // anywhere when the tutorial is disabled (the wizard then starts in the configured zone).
-        var isTutorialZone = IsTutorialZone(msg.ZoneName.ToString());
-        if (isTutorialZone || ConfigurationManager.Settings["Character.TutorialDisabled"].AsBool()) {
-            GrantStarterKitIfNeeded(GetActiveWizard());
-        }
-
         if (!_serializer.Serialize(_tutorialInfo,
                                    PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit,
                                    out var tutorialInfoBuffer)) {
@@ -89,7 +82,7 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
             return;
         }
 
-        if (!isTutorialZone) {
+        if (!IsTutorialZone(msg.ZoneName.ToString())) {
             return;
         }
         var tutorialMsg = new GAME_5_PROTOCOL.MSG_TUTORIALS() {
@@ -107,7 +100,18 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
     [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE))]
     private void ReceiveAttachComplete(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE message) {
         var wizard = GetActiveWizard();
-        if (wizard is null || !IsTutorialZone(wizard.Zone)) {
+        if (wizard is null) {
+            return;
+        }
+
+        // The starter kit lands on the first completed attach: in the tutorial zones, or on first
+        // login anywhere when the tutorial is disabled. MSG_ATTACH is too early (AttachService
+        // registers the wizard while handling it), so the grant cannot run there.
+        if (IsTutorialZone(wizard.Zone) || ConfigurationManager.Settings["Character.TutorialDisabled"].AsBool()) {
+            GrantStarterKitIfNeeded(wizard);
+        }
+
+        if (!IsTutorialZone(wizard.Zone)) {
             return;
         }
 
@@ -471,9 +475,29 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
             return;
         }
 
-        wizard.GrantStarterItems(templateIds);
+        var grantedItems = wizard.GrantStarterItems(templateIds);
         Logger.Information("Granted starter kit ({0} items) to {1}.",
-            Logger.Args(templateIds.Length, wizard.PlayerNameBehavior.GetWizardName()));
+            Logger.Args(grantedItems.Count, wizard.PlayerNameBehavior.GetWizardName()));
+
+        // The attach payload (which carries the inventory) was already sent by the time this
+        // runs, so push each item to the client explicitly or the kit stays invisible this session.
+        foreach (var item in grantedItems) {
+            SendInventoryAdd(wizard, item);
+        }
+    }
+
+    private void SendInventoryAdd(Wizard wizard, WizClientObjectItem item) {
+        if (!s_configureItemSerializer.Serialize(item, 1, out var serializedItem)) {
+            Logger.Error("Failed to serialize starter kit item {0} for inventory-add.",
+                Logger.Args(item.m_globalID.Full));
+
+            return;
+        }
+
+        SendToSocket(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
+            GlobalID = wizard.CharId,
+            SerializedItem = serializedItem,
+        });
     }
 
     private void SendConfigurePlayerInventoryAdd(Wizard wizard) {

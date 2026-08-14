@@ -1233,7 +1233,7 @@ public class Wizard : IDisposable {
     /// Adds the starter kit items (config-driven) to the inventory and database.
     /// Called on first attach: in the tutorial, or on first login when the tutorial is disabled.
     /// </summary>
-    public void GrantStarterItems(IEnumerable<ulong> templateIds) {
+    public List<WizClientObjectItem> GrantStarterItems(IEnumerable<ulong> templateIds) {
         var itemsToAdd = new List<WizClientObjectItem>();
         foreach (var templateId in templateIds) {
             var cObj = (WizClientObjectItem) CoreObjectFactory.FinalizeCoreObject(templateId);
@@ -1260,6 +1260,7 @@ public class Wizard : IDisposable {
 
             itemsToAdd.Add(cObj);
             InventoryBehavior.InventoryItemIds.Add(cObj.m_globalID);
+            InventoryBehavior.Items.Add(cObj);
         }
 
         // This is a different method that bulk uploads items to the database.
@@ -1268,6 +1269,10 @@ public class Wizard : IDisposable {
             Logger.Error("Could not add default items for Wizard {0} to database.",
                 Logger.Args(CharId));
         }
+
+        WizardCollection.UpdateCharacterItems(this);
+
+        return itemsToAdd;
     }
 
     private void InitializeDefaultEquipment()
