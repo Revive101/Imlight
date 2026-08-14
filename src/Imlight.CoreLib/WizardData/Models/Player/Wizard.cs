@@ -109,26 +109,7 @@ public class Wizard : IDisposable {
 
     [JsonIgnore] private Vector3 _location;
     [JsonIgnore] private Vector3 _orientation;
-    [JsonIgnore]
-    private readonly List<ulong> _defaultItems = [
-        // warning: do not exceed 16 items! RavenDB has a batch limit of 16 items.
-        // Quality assurance hats, 05-10-25-50-100
-        1317127, 1317128, 1317125, 1317124, 1317126,
-
-        // Quality assurance robes, 05-10-25-50-100
-        1317129, 1317130, 1317131, 1317132, 1317133,
-
-        // Quality assurance boots, 100% speed bost
-        1317234,
-
-        // Weapons, each of different animation
-        87256,   // Antiquated Wand (starting wand)
-        1456120, // Celebration Staff
-
-        126412, // Black Cat Pet
-        284071, // Swift Gryphon (PERM)
-        126983, // Starter Deck
-    ];
+    private const string TutorialStartingZone = "WizardCity/Tutorial_Exterior";
 
     // Constructor: Used for deserialization. If this is not present, the default constructor will be used.
     [JsonConstructor]
@@ -137,7 +118,9 @@ public class Wizard : IDisposable {
     // Constructor: Used for character creation.
     public Wizard(MagicSchool wizardSchoolType, WizardCharacterBehavior avatar, uint nameIndices, byte level = 1) {
         CharId = RandomGen.GenerateGUID();
-        Zone = ConfigurationManager.Settings["Character.StartingZone"];
+        Zone = ConfigurationManager.Settings["Character.TutorialDisabled"].AsBool()
+            ? ConfigurationManager.Settings["Character.StartingZone"]
+            : TutorialStartingZone;
         World = ConfigurationManager.Settings["Character.StartingWorld"].AsByte();
 
         // Do behaviors.
@@ -1240,15 +1223,19 @@ public class Wizard : IDisposable {
         }
     }
 
-    private void InitializeDefaultInventory() {
-        InventoryBehavior = new ServerWizInventoryBehavior {
+    private void InitializeDefaultInventory()
+        => InventoryBehavior = new ServerWizInventoryBehavior {
             Items = [],
             InventoryItemIds = []
         };
 
-        // Add default items to the inventory.
+    /// <summary>
+    /// Adds the starter kit items (config-driven) to the inventory and database.
+    /// Called on first attach: in the tutorial, or on first login when the tutorial is disabled.
+    /// </summary>
+    public void GrantStarterItems(IEnumerable<ulong> templateIds) {
         var itemsToAdd = new List<WizClientObjectItem>();
-        _defaultItems.ForEach(templateId => {
+        foreach (var templateId in templateIds) {
             var cObj = (WizClientObjectItem) CoreObjectFactory.FinalizeCoreObject(templateId);
             CoreObjectFactory.InitializeCoreObjectBehaviors(cObj, templateId);
             cObj.m_characterId = (GID) CharId;
@@ -1273,7 +1260,7 @@ public class Wizard : IDisposable {
 
             itemsToAdd.Add(cObj);
             InventoryBehavior.InventoryItemIds.Add(cObj.m_globalID);
-        });
+        }
 
         // This is a different method that bulk uploads items to the database.
         var success = WizardItemCollection.AddDefaultItems(itemsToAdd);

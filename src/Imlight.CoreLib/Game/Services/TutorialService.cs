@@ -41,7 +41,6 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
     private const string TUTORIAL_INTERIOR_ZONE_NAME_CONTENTS = "Tutorial_Interior";
     private const string TUTORIAL_HEALTH_REFILL_QUEST = "WC-TUT-C09-014";
     private const string TUTORIAL_MANA_REFILL_QUEST = "WC-TUT-C09-016";
-    private const string TUTORIAL_EXIT_ZONE = "WizardCity/Interiors/WC_Headmistress_House";
     private const ulong AMBROSE_TEMPLATE_ID = 39394;
     private const double WALKING_AMBROSE_DESPAWN_SECONDS = 7.5;
 
@@ -74,6 +73,13 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_ATTACH))]
     private void ReceivePostAttach(GAME_5_PROTOCOL.MSG_ATTACH msg) {
+        // The starter kit lands on the first attach: in the tutorial zones, or on first login
+        // anywhere when the tutorial is disabled (the wizard then starts in the configured zone).
+        var isTutorialZone = IsTutorialZone(msg.ZoneName.ToString());
+        if (isTutorialZone || ConfigurationManager.Settings["Character.TutorialDisabled"].AsBool()) {
+            GrantStarterKitIfNeeded(GetActiveWizard());
+        }
+
         if (!_serializer.Serialize(_tutorialInfo,
                                    PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit,
                                    out var tutorialInfoBuffer)) {
@@ -82,10 +88,9 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
             return;
         }
 
-        if (!IsTutorialZone(msg.ZoneName.ToString())) {
+        if (!isTutorialZone) {
             return;
         }
-
         var tutorialMsg = new GAME_5_PROTOCOL.MSG_TUTORIALS() {
             GlobalID = 1,
             Remove = 0,
@@ -267,7 +272,7 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         if (goalName == "SkipTutorialGoal") {
             _tutorialInfo.m_tutorialStage = 99;
             RemoveControlQuests(wizard);
-            Teleport(TUTORIAL_EXIT_ZONE);
+            Teleport(ConfigurationManager.Settings["Character.StartingZone"]);
 
             return true;
         }
@@ -276,7 +281,7 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         // player out of the tutorial interior.
         if (goalName == "Teleport") {
             RemoveControlQuests(wizard);
-            Teleport(TUTORIAL_EXIT_ZONE);
+            Teleport(ConfigurationManager.Settings["Character.StartingZone"]);
 
             return true;
         }
@@ -450,6 +455,24 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
             Context.System.Scheduler.ScheduleTellOnce(TimeSpan.FromSeconds(delaySeconds), zoneActor, despawnMsg,
                 SessionActor.ActorRef);
         }
+    }
+
+    private void GrantStarterKitIfNeeded(Wizard wizard) {
+        if (wizard is null || wizard.InventoryBehavior.Items.Count > 0) {
+            return;
+        }
+
+        var templateIds = ConfigurationManager.Settings["Character.DefaultItems"].AsList()
+            .Select(id => ulong.TryParse(id, out var parsed) ? parsed : 0)
+            .Where(id => id > 0)
+            .ToArray();
+        if (templateIds.Length == 0) {
+            return;
+        }
+
+        wizard.GrantStarterItems(templateIds);
+        Logger.Information("Granted starter kit ({0} items) to {1}.",
+            Logger.Args(templateIds.Length, wizard.PlayerNameBehavior.GetWizardName()));
     }
 
     private void SendConfigurePlayerInventoryAdd(Wizard wizard) {
