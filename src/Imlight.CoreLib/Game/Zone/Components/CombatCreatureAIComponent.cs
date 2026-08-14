@@ -34,7 +34,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 3/18/2025
+ * Last Updated: 08/14/2026
  */
 
 using System;
@@ -168,7 +168,7 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
             return;
         }
 
-        if (_currentDuelComponent.IsTutorialDuel()) {
+        if (_currentDuelComponent.IsScriptedDuel()) {
             return;
         }
 

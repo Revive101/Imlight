@@ -32,6 +32,7 @@
  * This class is merely the director of the duel. The actual combat logic is
  * all handled within the `Imlight.CoreLib.Game.Combat` namespace.
  * Start at the `CombatResolver` class and work your way down.
+ * Tutorial duels are scripted by the `TutorialDuelDirector` in that namespace.
  * Combat positions are determined by sigil templates, with specific subcircle positions.
  * 
  * TODO:
@@ -41,7 +42,7 @@
  * 
  * Created by: Jooty
  * Version: KALI 1.0
- * Last Updated: 08/13/2026
+ * Last Updated: 08/14/2026
  */
 
 using System;
@@ -62,7 +63,6 @@ using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
-using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.CoreLib.WizardData.Models.World;
 
@@ -120,13 +120,6 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Monster && x.IsAlive && x.AddedToDuel);
     public ulong SigilId => Entity.ActiveGameObject.m_globalID;
 
-    private static readonly Dictionary<int, string[]> s_tutorialRoundGoals = new() {
-        [2] = ["mob damage 2", "mob damage 3"],
-        [3] = ["mob damage 4", "player heal"],
-        [4] = ["mob weakness", "player damage 2", "Give 3 pips to player"],
-        [5] = ["mob damage 5", "mob damage 6", "player blade"],
-        [6] = ["mob damage 7", "mob damage 8", "player damage 3", "give 4 pips to player"],
-    };
     private readonly Dictionary<CoreObject, IActorRef> _entitiesInRange = [];
     private readonly ObjectSerializer _serializer = new(
         Versionable: false,
@@ -144,7 +137,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     private CombatSigilTemplate _sigilTemplate;
     private bool _isActive;
     private bool _awaitingCombatMoves;
-    private uint[] _pendingTutorialHandGrant;
+    private TutorialDuelDirector _tutorialDirector;
     // Seconds of cinematics before a caster's cast; SummonMinion adds the animation delay to it.
     internal float CurrentActionCinematicOffsetSeconds;
 
@@ -156,6 +149,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         // Disable the RenderComponent. We'll activate it when the sigil is activated.
         _renderComponent = Entity.GetComponentOfType<RenderComponent>();
         _renderComponent?.Disable();
+
+        _tutorialDirector = new TutorialDuelDirector(this, Entity.Zone?.ZonePath ?? "");
     }
 
     public WizardClientDuelBehavior GetClientBehaviorInstance() => new() {
@@ -311,13 +306,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         SendCombatPhase((byte) Duel.m_duelPhase);
         SendUpFirst(Duel.m_roundNum);
 
-        // Tutorial: execute the round's quest-goal grants (rounds 2-6; round 1 is client-driven) so the
-        // golems' hands and the player's cards/pips are set before planning begins.
-        GrantTutorialRoundGrants();
-
-        // Tutorial: pre-queue the golems' scripted attacks for this round (they never pick moves on their own;
-        // without this the round can't complete and nothing hits the player).
-        ScriptTutorialEnemyMovesIfNeeded();
+        _tutorialDirector.OnNewRound(Duel.m_roundNum);
 
         var delay = TimeSpan.FromSeconds(DUEL_NEW_ROUND_DELAY);
         Timers.StartSingleTimer(PREPLANNING_TIME_KEY, new COMBAT_106_PROTOCOL.MSG_PLANNINGPHASEBEGIN(), delay);
@@ -338,25 +327,12 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         // Re-telegraph minion AI moves now that the planning HUD exists.
         ResendMinionMoveSelections();
 
-        // Reveal a queued tutorial card grant at the start of this planning phase, not the instant the client
-        // fired the goal (mid-execution, so an instant reveal would flash next round's card during the cast).
-        if (_pendingTutorialHandGrant is { Length: > 0 }) {
-            var pendingPlayer = SubCircles.FirstOrDefault(s => s is not null && s.AddedToDuel && s.IsAlive
-                                                              && s.OccupiedTeam == CombatTeam.Player);
-            if (pendingPlayer is not null) {
-                pendingPlayer.AddSpellsToHand(_pendingTutorialHandGrant);
-                SendCurrentCombatHand(pendingPlayer);
-            }
-            _pendingTutorialHandGrant = null;
-        }
-
-        // The golems cast whatever the quest goals granted them (empty hand = pass). Runs here so the grants
-        // fired mid-execution of the previous round are in their hands, and again when the player acts.
-        ScriptTutorialEnemyMovesIfNeeded();
+        // Tutorial duels flush queued card grants and re-script the golems before planning.
+        _tutorialDirector.OnPlanningPhaseBegin();
 
         // Tutorial fights have no planning countdown (m_disableTimer): the client drives pacing. Planning still
         // ends normally once every participant has enqueued a move (ReceiveCombatMove).
-        if (!IsTutorialDuel()) {
+        if (!_tutorialDirector.IsActive) {
             var delay = TimeSpan.FromSeconds(PLANNING_TIME);
             Timers.StartSingleTimer(PLANNING_TIME_KEY, new COMBAT_106_PROTOCOL.MSG_PLANNINGPHASEOVER(), delay);
         }
@@ -404,32 +380,11 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
 
     [MessageHandler(typeof(TUTORIAL_108_PROTOCOL.MSG_TUTORIALREBUILDDUELHAND))]
     private void ReceiveTutorialRebuildDuelHand(TUTORIAL_108_PROTOCOL.MSG_TUTORIALREBUILDDUELHAND message) {
-        if (!_isActive || message.SpellIdsToGrant is null || message.SpellIdsToGrant.Length == 0) {
+        if (!_isActive) {
             return;
         }
 
-        var recipient = SubCircles.FirstOrDefault(x => x.ParticipantActor == Sender);
-        if (message.RecipientTemplateId != 1) {
-            recipient = SubCircles.FirstOrDefault(x => x is not null && x.ParticipantObject is not null
-                && x.ParticipantObject.m_templateID == message.RecipientTemplateId);
-        }
-        if (recipient is null) {
-            Logger.Warning("Duel {0} | Tutorial hand grant for template {1} found no participant.",
-                Logger.Args(Duel.m_duelID.Full, message.RecipientTemplateId));
-
-            return;
-        }
-
-        // Player grants that land mid-execution are queued to the next planning phase so the card does not
-        // flash during the current cast; creature grants apply now (the round script reads them at planning).
-        if (message.RecipientTemplateId == 1 && Duel.m_duelPhase != kDuelPhase.kPhase_Planning) {
-            _pendingTutorialHandGrant = [.. _pendingTutorialHandGrant, .. message.SpellIdsToGrant];
-
-            return;
-        }
-
-        recipient.AddSpellsToHand(message.SpellIdsToGrant);
-        SendCurrentCombatHand(recipient);
+        _tutorialDirector.ReceiveRebuildDuelHand(Sender, message);
     }
 
     [MessageHandler(typeof(TUTORIAL_108_PROTOCOL.MSG_TUTORIALGRANTPIPS))]
@@ -438,16 +393,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             return;
         }
 
-        var caster = SubCircles.FirstOrDefault(x => x.ParticipantActor == Sender);
-        if (caster is null) {
-            Logger.Warning("Duel {0} | Tutorial pip grant from an actor that is not in the duel.",
-                Logger.Args(Duel.m_duelID.Full));
-
-            return;
-        }
-
-        caster.SetPips(message.Count);
-        SendCombatPips();
+        _tutorialDirector.ReceiveGrantPips(Sender, message);
     }
 
     [MessageHandler(typeof(COMBAT_106_PROTOCOL.MSG_ACTORCOMBATMOVE))]
@@ -456,9 +402,9 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         var caster = SubCircles.FirstOrDefault(x => x.ParticipantActor == message.Actor)
             ?? throw new Exception("Combat move received from an actor that is not in the duel.");
 
-        // Tutorial: the golems are fully server-scripted (ScriptTutorialEnemyMovesIfNeeded); drop their own AI
-        // moves so a pass cannot overwrite the scripted attack. Player moves still flow through normally.
-        if (IsTutorialDuel() && caster.OccupiedTeam == CombatTeam.Monster) {
+        // Tutorial duels script the golems' moves server-side; drop their own AI moves so a pass cannot
+        // overwrite the scripted attack. Player moves still flow through normally.
+        if (_tutorialDirector.IsActive && caster.OccupiedTeam == CombatTeam.Monster) {
             return;
         }
 
@@ -493,10 +439,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
                 break;
         }
 
-        // Round-1 grants land during planning, after the planning-begin script ran; enqueue the golems' moves
-        // now so the round resolves with them (AddCombatMove replaces the caster's queued action, so this is
-        // idempotent with the planning-begin pass).
-        ScriptTutorialEnemyMovesIfNeeded();
+        _tutorialDirector.OnCombatMoveQueued();
 
         // If by this point all participants have inputted their moves, we can start the next phase.
         var participantCount = AlivePlayerCount + AliveCreatureCount;
@@ -631,8 +574,9 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         SubCircles = CreateDuelActorSubCircles(_sigilTemplate);
         CombatResolver = new Combat.CombatResolver(Duel, SubCircles);
 
-        // Determine which team goes up first. In the tutorial the golems act first (retail pacing).
-        Duel.m_firstTeamToAct = IsTutorialDuel() ? (int) CombatTeam.Monster : (int) DetermineFirstTeam();
+        // Determine which team goes up first. Tutorial duels override this with the golems first.
+        Duel.m_firstTeamToAct = (int) DetermineFirstTeam();
+        _tutorialDirector.OnDuelCreated(Duel);
 
         // When the duel is created, it must be created by two suspects: the player and the creature.
         // The creatures will always be team A and the players will always be team B. Assign the first
@@ -663,9 +607,6 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     private Duel CreateDuelWithDefaults() => new() {
         m_duelID = SigilId,
         m_planningTimer = PLANNING_TIME,
-
-        m_tutorialMode = IsTutorialDuel(),
-        m_disableTimer = IsTutorialDuel(),
 
         m_scalarDamage = _sigilTemplate.m_scalarDamagePvE,
         m_scalarResist = _sigilTemplate.m_scalarResistPvE,
@@ -975,7 +916,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         });
     }
 
-    private void SendCurrentCombatHand(CombatDuelSubCircle circle) {
+    internal void SendCurrentCombatHand(CombatDuelSubCircle circle) {
         // As-is, no draw or refill, so a discarded slot stays visibly open for the vault draw.
         if (circle is null || circle.OccupiedTeam == CombatTeam.Monster) {
             return;
@@ -999,7 +940,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         circle.ParticipantActor.Tell(msg);
     }
 
-    private void SendCombatPips() {
+    internal void SendCombatPips() {
         var pips = new CombatPipListObj {
             m_pipList = new List<ParticipantPipData>(),
             m_duelID = SigilId
@@ -1190,86 +1131,8 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     private static CombatTeam DetermineFirstTeam()
         => (CombatTeam) new Random().Next(0, 2);
 
-    internal bool IsTutorialDuel()
-        => (Entity.Zone?.ZonePath ?? "").Contains("Tutorial", StringComparison.OrdinalIgnoreCase);
-
-    private void GrantTutorialRoundGrants() {
-        if (!IsTutorialDuel() || !s_tutorialRoundGoals.TryGetValue(Duel.m_roundNum, out var goalNames)) {
-            return;
-        }
-
-        var quest = QuestTemplateCollection.GetQuestByName("WC-TUT-C03-001");
-        if (quest is null) {
-            return;
-        }
-
-        var player = SubCircles.FirstOrDefault(s => s is not null && s.AddedToDuel && s.IsAlive
-                                                    && s.OccupiedTeam == CombatTeam.Player);
-
-        foreach (var goalName in goalNames) {
-            var goal = quest.m_goals.FirstOrDefault(g => g.m_goalName == goalName);
-            if (goal?.m_completeResults?.m_results is null) {
-                continue;
-            }
-
-            foreach (var result in goal.m_completeResults.m_results) {
-                if (result is ResGiveSpell give) {
-                    var recipientTemplate = give.m_spellID != 0 ? give.m_templateID : 1;
-                    var spellId = give.m_spellID != 0 ? give.m_spellID : give.m_templateID;
-                    var recipient = recipientTemplate == 1
-                        ? player
-                        : SubCircles.FirstOrDefault(s => s is not null && s.ParticipantObject is not null
-                            && s.ParticipantObject.m_templateID == recipientTemplate);
-                    recipient?.AddSpellsToHand([(uint) spellId]);
-                }
-                else if (result is ResDrawHand draw && draw.m_templateID != 0
-                         && CoreObjectFactory.GetCoreTemplate(draw.m_templateID) is SpellTemplate) {
-                    player?.AddSpellsToHand([(uint) draw.m_templateID]);
-                }
-            }
-
-            if (goal.m_tallyCounter?.m_count > 0 && player is not null) {
-                player.SetPips(goal.m_tallyCounter.m_count);
-                SendCombatPips();
-            }
-        }
-
-        if (player is not null) {
-            SendCurrentCombatHand(player);
-        }
-    }
-
-    private void ScriptTutorialEnemyMovesIfNeeded() {
-        if (!IsTutorialDuel() || CombatResolver is null) {
-            return;
-        }
-
-        var player = SubCircles.FirstOrDefault(s => s is not null && s.AddedToDuel && s.IsAlive
-                                                    && s.OccupiedTeam == CombatTeam.Player);
-        if (player is null) {
-            return;
-        }
-
-        foreach (var enemy in SubCircles
-                     .Where(s => s is not null && s.AddedToDuel && s.IsAlive && s.OccupiedTeam == CombatTeam.Monster)
-                     .OrderBy(s => s.SlotIndex)) {
-            var queued = CombatResolver.GetQueuedAction(enemy);
-            if (queued?.Spell is not null) {
-                continue;
-            }
-
-            var spell = enemy.GetSpellFromLastHand(0);
-            if (spell is not null) {
-                CombatResolver.AddCombatMove(CombatMoveType.Attack, enemy, player, spell);
-                enemy.ClearHand();
-                Logger.Information("[TUTFIGHT] round {0}: enemy slot {1} scripted to cast '{2}' at the player.",
-                    Logger.Args(Duel.m_roundNum, enemy.SlotIndex, spell.m_templateID));
-            }
-            else if (queued is null) {
-                CombatResolver.AddCombatMove(CombatMoveType.Pass, enemy, null, null);
-            }
-        }
-    }
+    internal bool IsScriptedDuel()
+        => _tutorialDirector.IsActive;
 
     private byte GetUpFirstSigilSlot() {
         // Prefer the acting team's first living participant, else any living participant.
@@ -1327,7 +1190,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         var creaturesWin = AliveAndInDuelPlayerCount <= 0;
 
         // A queued tutorial card grant must not leak into the next duel on this sigil.
-        _pendingTutorialHandGrant = null;
+        _tutorialDirector.OnDuelEnded();
 
         RemovePlayersFromDuel();
 

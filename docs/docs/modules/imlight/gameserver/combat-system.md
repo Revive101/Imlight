@@ -12,6 +12,10 @@ Combat is orchestrated through [zone components](./zone-components.md), with the
 - Handles messaging between all participants
 - Controls duel lifecycle from initiation to resolution
 
+**`TutorialDuelDirector`**
+- Scripts the tutorial golem duels (round-goal grants, queued hand reveals, scripted enemy moves)
+- Plain helper constructed by `CombatDuelComponent`, active only in zones whose path contains "Tutorial"
+
 **`CombatDuelSubCircle`**
 - Represents individual participant positions within the duel
 - Manages participant-specific state (health, mana, pips, effects)
