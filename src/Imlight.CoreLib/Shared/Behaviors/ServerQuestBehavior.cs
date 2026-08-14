@@ -41,7 +41,8 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
             return false;
         }
 
-        if (CurrentQuestIDs.Contains(quest.ID)) {
+        if (CurrentQuestIDs.Contains(quest.ID)
+            || CurrentQuestInstances.Any(q => q is not null && q.QuestName == quest.QuestName)) {
             return false;
         }
 
@@ -100,13 +101,15 @@ public class ServerQuestBehavior : IClientBehaviorProvider<ServerQuestBehavior> 
             return false;
         }
 
-        if (!CurrentQuestIDs.Contains(quest.ID)) {
-            return false;
-        }
+        var idsToDrop = new HashSet<ulong>(
+            CurrentQuestInstances.Where(q => q.QuestName == quest.QuestName).Select(q => q.ID)) {
+            quest.ID
+        };
 
-        CurrentQuestIDs.Remove(quest.ID);
+        var removedInstances = CurrentQuestInstances.RemoveAll(q => q.QuestName == quest.QuestName);
+        var removedIds = CurrentQuestIDs.RemoveAll(idsToDrop.Contains);
 
-        return true;
+        return removedInstances > 0 || removedIds > 0;
     }
 
     public bool HasQuest(string questName) {

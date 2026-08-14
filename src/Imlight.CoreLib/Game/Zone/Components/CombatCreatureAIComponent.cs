@@ -168,6 +168,10 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
             return;
         }
 
+        if (_currentDuelComponent.IsTutorialDuel()) {
+            return;
+        }
+
         _roundHand = _currentSubCircle.DrawHand();
 
         DetermineAttitude();
@@ -235,7 +239,7 @@ internal sealed class CombatCreatureAIComponent(ZoneEntity entity) : ZoneEntityC
             Entity.DeleteObject();
 
             // Free the sub-circle so a future summon can reuse the slot.
-            _currentDuelComponent.OnMinionRemoved(_currentSubCircle);
+            CombatDuelComponent.OnMinionRemoved(_currentSubCircle);
 
             return;
         }

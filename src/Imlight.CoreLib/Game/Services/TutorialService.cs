@@ -16,8 +16,11 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
+using Imcodec.CoreObject;
 using Imcodec.MessageLayer.Generated;
 using Imcodec.ObjectProperty;
 using Imcodec.ObjectProperty.TypeCache;
@@ -36,6 +39,22 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
     private const uint TUTORIAL_NAME_STRING_ID = 600062081;
     private const string TUTORIAL_EXTERIOR_ZONE_NAME_CONTENTS = "Tutorial_Exterior";
     private const string TUTORIAL_INTERIOR_ZONE_NAME_CONTENTS = "Tutorial_Interior";
+    private const string TUTORIAL_HEALTH_REFILL_QUEST = "WC-TUT-C09-014";
+    private const string TUTORIAL_MANA_REFILL_QUEST = "WC-TUT-C09-016";
+    private const string TUTORIAL_EXIT_ZONE = "WizardCity/Interiors/WC_Headmistress_House";
+    private const ulong AMBROSE_TEMPLATE_ID = 39394;
+    private const double WALKING_AMBROSE_DESPAWN_SECONDS = 7.5;
+
+    private static readonly Dictionary<string, string> s_goalEventPosts = new() {
+        ["Despawn Malistaire"] = "DespawnM",
+        ["Despawn Ambrose Inside"] = "DespawnAmbrose",
+    };
+    private static readonly string[] s_controlQuests = [
+        "WC-TUT-C05-001", "WC-TUT-C08-001", "WC-TUT-C03-001", "WC-TUT-C03-002",
+        "WC-TUT-C09-014", "WC-TUT-C09-016",
+    ];
+    private static readonly CoreObjectSerializer s_configureItemSerializer
+        = new(behaviors: SerializerFlags.None);
 
     private readonly ObjectSerializer _serializer = new(
         Versionable: false,
@@ -45,6 +64,10 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         m_tutorialNameID = TUTORIAL_NAME_STRING_ID,
         m_tutorialStage = 0,
     };
+
+    private static bool IsTutorialZone(string zoneName)
+        => zoneName.Contains(TUTORIAL_EXTERIOR_ZONE_NAME_CONTENTS)
+            || zoneName.Contains(TUTORIAL_INTERIOR_ZONE_NAME_CONTENTS);
 
     internal static Props Props(SessionActor parentActor)
         => Akka.Actor.Props.Create(() => new TutorialService(parentActor));
@@ -59,8 +82,34 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
             return;
         }
 
-        if (   !msg.ZoneName.ToString().Contains(TUTORIAL_EXTERIOR_ZONE_NAME_CONTENTS) 
-            || !msg.ZoneName.ToString().Contains(TUTORIAL_INTERIOR_ZONE_NAME_CONTENTS)) {
+        if (!IsTutorialZone(msg.ZoneName.ToString())) {
+            return;
+        }
+
+        var tutorialMsg = new GAME_5_PROTOCOL.MSG_TUTORIALS() {
+            GlobalID = 1,
+            Remove = 0,
+            TutorialInfo = tutorialInfoBuffer
+        };
+        // Sent twice per retail captures: the client drops the first delivery on some attach paths.
+        SendToSocket(tutorialMsg);
+        SendToSocket(tutorialMsg);
+
+        // We don't want to give the player the tutorial quest. The client's lua script handles that.
+    }
+
+    [MessageHandler(typeof(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE))]
+    private void ReceiveAttachComplete(SERVICE_101_PROTOCOL.MSG_ATTACHCOMPLETE message) {
+        var wizard = GetActiveWizard();
+        if (wizard is null || !IsTutorialZone(wizard.Zone)) {
+            return;
+        }
+
+        if (!_serializer.Serialize(_tutorialInfo,
+                                   PropertyFlags.Prop_Transmit | PropertyFlags.Prop_AuthorityTransmit,
+                                   out var tutorialInfoBuffer)) {
+            Logger.Error("Failed to serialize tutorial info (AttachComplete)");
+
             return;
         }
 
@@ -71,20 +120,22 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         };
         SendToSocket(tutorialMsg);
         SendToSocket(tutorialMsg);
-
-        // We don't want to give the player the tutorial quest. The client's lua script handles that.
     }
 
     [MessageHandler(typeof(GAME_5_PROTOCOL.MSG_SERVERTUTORIALCOMMAND))]
     private void ReceiveServerTutorialCommand(GAME_5_PROTOCOL.MSG_SERVERTUTORIALCOMMAND msg) {
-        // The tutorial is handled through a lua script on the client side, which sends commands to the server
-        // to force complete certain quests/goals. We need to respond to those commands here.
+        // The tutorial is a client-side lua script (Root.wad Scripts/Tutorials) that drives every beat through
+        // commands: add/remove quest, complete goal, post event, advance stage. The server executes, never directs.
 
-        // For starters, we only want to allow tutorial commands if they are in the tutorial area 
-        // and have not completed the tutorial quest yet.
         var wizard = GetActiveWizard();
-        if (   wizard.Zone.Contains(TUTORIAL_EXTERIOR_ZONE_NAME_CONTENTS) 
-            || wizard.Zone.Contains(TUTORIAL_INTERIOR_ZONE_NAME_CONTENTS)) {
+        if (wizard is null) {
+            Logger.Warning("Dropping tutorial command: wizard is not loaded yet.");
+
+            return;
+        }
+
+        // Only allow tutorial commands inside the tutorial zones, and only before the tutorial quest is complete.
+        if (!IsTutorialZone(wizard.Zone)) {
             return;
         }
         if (wizard.HasCompletedQuest(TUTORIAL_QUEST_NAME)) {
@@ -93,24 +144,33 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
 
         var playerObj = GetActiveGameObject();
 
-        // Dispatch the command based off type.
-        // Let GoalToComplete take priority over everything else, because sometimes the client will use both
-        // the QuestToAdd and GoalToComplete in the same message.
-        var commandSuccess = false;
+        // The fields are not mutually exclusive: the client packs QuestToAdd + GoalToComplete into one message.
+        // Add must run first so the goal has an instance to resolve against.
+        var commandSuccess = true;
+
+        if (msg.QuestToAdd != string.Empty) {
+            commandSuccess &= HandleCommandAddQuest(wizard, msg.QuestToAdd);
+
+            // The C09-014/016 levers are ADD->REMOVE with no goal ever completed, so the health/mana refill
+            // happens here on ADD.
+            if (msg.QuestToAdd == TUTORIAL_HEALTH_REFILL_QUEST) {
+                RefillHealth(wizard);
+            }
+            else if (msg.QuestToAdd == TUTORIAL_MANA_REFILL_QUEST) {
+                RefillMana(wizard);
+            }
+        }
         if (msg.GoalToComplete != string.Empty) {
-            commandSuccess = HandleCommandCompleteGoal(wizard, playerObj, msg.GoalToComplete);
+            commandSuccess &= HandleCommandCompleteGoal(wizard, playerObj, msg.GoalToComplete);
         }
-        else if (msg.QuestToAdd != string.Empty) {
-            commandSuccess = HandleCommandAddQuest(wizard, msg.QuestToAdd);
+        if (msg.QuestToRemove != string.Empty) {
+            commandSuccess &= HandleCommandRemoveQuest(wizard, msg.QuestToRemove);
         }
-        else if (msg.QuestToRemove != string.Empty) {
-            commandSuccess = HandleCommandRemoveQuest(wizard, msg.QuestToRemove);
+        if (msg.EventToPost != string.Empty) {
+            commandSuccess &= HandleCommandPostEvent(msg.EventToPost);
         }
-        else if (msg.EventToPost != string.Empty) {
-            commandSuccess = HandleCommandPostEvent(msg.EventToPost);
-        }
-        else if (msg.Action != string.Empty) {
-            // TODO: unsure of what an action is
+        if (msg.Action != string.Empty) {
+            commandSuccess &= HandleCommandAction(msg.Action, msg.Value);
         }
 
         if (!commandSuccess) {
@@ -147,30 +207,118 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         return;
     }
 
+    private bool HandleCommandAction(string action, int value) {
+        // Stage advances are client-driven; remember the stage so the next MSG_TUTORIALS (sent on zone attach)
+        // echoes it back, otherwise the client restarts the tutorial from stage 0 after a zone reload.
+        if (action == "Stage") {
+            _tutorialInfo.m_tutorialStage = value;
+            Logger.Information("Tutorial stage advanced to {0}", Logger.Args(value));
+
+            return true;
+        }
+
+        Logger.Debug("Unknown tutorial action '{0}' (value {1}), ignoring.", Logger.Args(action, value));
+
+        return true;
+    }
+
     private static bool HandleCommandAddQuest(Wizard wizard, string questName) {
+        // The client re-adds quests it already holds (add/remove flickers); re-adds are idempotent.
+        if (wizard.QuestBehavior.CurrentQuestInstances.Any(q => q.QuestName == questName)) {
+            return true;
+        }
+
         var questTemplate = QuestTemplateCollection.GetQuestByName(questName);
         if (questTemplate == null) {
-            Logger.Error("Tutorial quest template not found");
+            Logger.Error("Tutorial quest template not found for '{0}'", Logger.Args(questName));
 
             return false;
         }
 
-        // Create a new quest instance.
         var qInstance = new QuestInstance(questTemplate, wizard.CharId);
-        var addSuccess = wizard.AddQuest(qInstance);
 
-        return addSuccess;
+        return wizard.AddQuest(qInstance);
     }
 
-    private static bool HandleCommandRemoveQuest(Wizard wizard, string questName) {
-        var removeSuccess = wizard.RemoveQuest(questName);
+    private bool HandleCommandRemoveQuest(Wizard wizard, string questName) {
+        RemoveQuestAndClearFromJournal(wizard, questName);
 
-        return removeSuccess;
+        // Removing an absent quest is a harmless no-op.
+        return true;
+    }
+
+    private void RemoveQuestAndClearFromJournal(Wizard wizard, string questName) {
+        var instance = wizard.QuestBehavior.CurrentQuestInstances.FirstOrDefault(q => q.QuestName == questName);
+        var questId = instance?.ID ?? 0;
+        wizard.RemoveQuest(questName);
+
+        if (questId != 0) {
+            SendToSocket(new QUEST_MESSAGES_52_PROTOCOL.MSG_REMOVEQUEST {
+                QuestID = questId,
+            });
+        }
     }
 
     private bool HandleCommandCompleteGoal(Wizard wizard,
                                            CoreObject playerObj,
                                            string goalName) {
+        // Skip: the client fires this when the player presses the Skip button. Mark the tutorial done, clear
+        // the control quests so none leak into the normal world, and move the player to the headmaster's office.
+        if (goalName == "SkipTutorialGoal") {
+            _tutorialInfo.m_tutorialStage = 99;
+            RemoveControlQuests(wizard);
+            Teleport(TUTORIAL_EXIT_ZONE);
+
+            return true;
+        }
+
+        // Teleport: the finale (stage 8) fires this then blocks on OnTeleported; the server must move the
+        // player out of the tutorial interior.
+        if (goalName == "Teleport") {
+            RemoveControlQuests(wizard);
+            Teleport(TUTORIAL_EXIT_ZONE);
+
+            return true;
+        }
+
+        // ConfigurePlayer: right after firing this the client blocks on OnItemAddedToInventory waiting for an
+        // inventory item. C08-001's goals are not active, so the goal lookup below would never unblock it.
+        if (goalName == "ConfigurePlayer") {
+            SendConfigurePlayerInventoryAdd(wizard, playerObj);
+
+            return true;
+        }
+
+        // Transplant Player: a cinematic-only beat with no template goal. The client expects the server to
+        // reposition the player in-zone to the vantage point facing Ambrose's walk.
+        if (goalName == "Transplant Player") {
+            InZoneTeleport(wizard, 51.59f, -194.80f, 0.02f, 2.77f);
+
+            return true;
+        }
+
+        // Walk Ambrose: despawn the stationary Ambrose now so he and the walking one never overlap, then fall
+        // through to the normal goal path that posts WalkAmbrose (the client spawns the walking Ambrose).
+        if (goalName == "Walk Ambrose") {
+            DespawnTutorialObject(AMBROSE_TEMPLATE_ID, 0);
+            DespawnTutorialObject(AMBROSE_TEMPLATE_ID, WALKING_AMBROSE_DESPAWN_SECONDS);
+        }
+
+        // Trigger Wand Effect: the wand glare beat. The starter wand and deck were granted at character
+        // creation, so only the glare event is needed.
+        if (goalName == "Trigger Wand Effect") {
+            HandleCommandPostEvent("WandFX");
+
+            return true;
+        }
+
+        // End-of-tutorial trigger beats: post the zone event the interior trigger listens for.
+        if (s_goalEventPosts.TryGetValue(goalName, out var eventName)) {
+            HandleCommandPostEvent(eventName);
+
+            return true;
+        }
+
         // We need to find the quest that contains this goal.
         // We can search the player for quest/goal instances, as they do carry a name.
         var allWizardQuestInstances = wizard.QuestBehavior.CurrentQuestInstances;
@@ -199,6 +347,16 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
                 return false;
             }
 
+            // The pip goals carry their count in the goal's tally counter: the pip result types have no
+            // fields, so the template's m_tallyCounter.m_count is the data source.
+            if (goalName.Equals("Give 3 pips to player", StringComparison.OrdinalIgnoreCase)
+                || goalName.Equals("give 4 pips to player", StringComparison.OrdinalIgnoreCase)) {
+                var pipCount = goalTemplate.m_tallyCounter?.m_count ?? 0;
+                if (pipCount > 0) {
+                    SessionActor.ActorRef.Tell(new TUTORIAL_108_PROTOCOL.MSG_TUTORIALGRANTPIPS { Count = pipCount });
+                }
+            }
+
             ResultDispatcher.ExecuteResults(
                 actorContext: Context,
                 results: goalTemplate.m_completeResults,
@@ -212,7 +370,11 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
             return removeSuccess;
         }
 
-        return false;
+        // Client-only cinematic beats (e.g. "StopRain") have no template goal; acknowledge them as no-op successes.
+        Logger.Debug("Tutorial goal '{0}' not found on any active quest (client-only beat, ignoring).",
+            Logger.Args(goalName));
+
+        return true;
     }
 
     private bool HandleCommandPostEvent(string eventName) {
@@ -222,6 +384,93 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         });
 
         return true;
+    }
+
+    private void RefillHealth(Wizard wizard) {
+        var full = wizard.GameStats.m_baseHitpoints;
+        var clientMax = wizard.GameStats.GetClientTypeAlternative().m_baseHitpoints;
+        wizard.UpdateHealth(full);
+        SendToSocket(new WIZARD_12_PROTOCOL.MSG_UPDATEHEALTH {
+            CharacterID = wizard.CharId,
+            NewHealth = full,
+            NewHealthMax = clientMax,
+        });
+    }
+
+    private void RefillMana(Wizard wizard) {
+        var full = wizard.GameStats.m_baseMana;
+        var clientMax = wizard.GameStats.GetClientTypeAlternative().m_baseMana;
+        wizard.UpdateMana(full);
+        SendToSocket(new WIZARD_12_PROTOCOL.MSG_UPDATEMANA {
+            Mana = full,
+            MaxMana = clientMax,
+        });
+    }
+
+    private void RemoveControlQuests(Wizard wizard) {
+        foreach (var questName in s_controlQuests) {
+            RemoveQuestAndClearFromJournal(wizard, questName);
+        }
+    }
+
+    private void InZoneTeleport(Wizard wizard, float x, float y, float z, float yaw) {
+        var teleport = new GAME_5_PROTOCOL.MSG_SERVERTELEPORT {
+            Direction = (byte) Math.Round(yaw / Math.PI / 2 * 250),
+            LocationX = (ushort) (short) Math.Round(x / 4),
+            LocationY = (ushort) (short) Math.Round(y / 4),
+            LocationZ = (ushort) (short) Math.Round(z / 4),
+            MobileID = wizard.GameObject.m_nMobileID,
+        };
+        TellOtherServices(new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+            Sender = SessionActor.ActorRef,
+            Message = teleport,
+            Selfless = false,
+        });
+    }
+
+    private void DespawnTutorialObject(ulong templateId, double delaySeconds) {
+        var zoneActor = SessionActor.GetZoneActor();
+        if (zoneActor is null) {
+            Logger.Warning("Cannot despawn tutorial object {0}: no zone actor.", Logger.Args(templateId));
+
+            return;
+        }
+
+        var despawnMsg = new ZONE_102_PROTOCOL.MSG_ZONEBROADCAST {
+            Messages = [new ZONE_102_PROTOCOL.MSG_REMOVEOBJECT {
+                TemplateID = templateId,
+            }],
+            Targets = ZoneBroadcastTarget.Objects,
+        };
+
+        if (delaySeconds <= 0) {
+            zoneActor.Tell(despawnMsg, SessionActor.ActorRef);
+        }
+        else {
+            Context.System.Scheduler.ScheduleTellOnce(TimeSpan.FromSeconds(delaySeconds), zoneActor, despawnMsg,
+                SessionActor.ActorRef);
+        }
+    }
+
+    private void SendConfigurePlayerInventoryAdd(Wizard wizard, CoreObject playerObj) {
+        var kitItem = wizard.InventoryBehavior.Items.FirstOrDefault();
+        if (kitItem is null) {
+            Logger.Warning("ConfigurePlayer: no inventory item to re-add; the client may stay blocked.");
+
+            return;
+        }
+
+        if (!s_configureItemSerializer.Serialize(kitItem, 1, out var serializedItem)) {
+            Logger.Error("ConfigurePlayer: failed to serialize item {0} for inventory-add.",
+                Logger.Args(kitItem.m_globalID.Full));
+
+            return;
+        }
+
+        SendToSocket(new GAME_5_PROTOCOL.MSG_INVENTORYBEHAVIOR_ADDITEM {
+            GlobalID = wizard.CharId,
+            SerializedItem = serializedItem,
+        });
     }
 
 }

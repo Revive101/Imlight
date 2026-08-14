@@ -62,6 +62,7 @@ using Imlight.CoreLib.Shared.Behaviors;
 using Imlight.CoreLib.Shared.Networking;
 using Imlight.CoreLib.Shared.Packets;
 using Imlight.CoreLib.Shared.Resources;
+using Imlight.CoreLib.WizardData.Collections;
 using Imlight.CoreLib.WizardData.Models.Player;
 using Imlight.CoreLib.WizardData.Models.World;
 
@@ -119,6 +120,13 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         => (byte) SubCircles.Count(x => x.Occupied && x.OccupiedTeam == CombatTeam.Monster && x.IsAlive && x.AddedToDuel);
     public ulong SigilId => Entity.ActiveGameObject.m_globalID;
 
+    private static readonly Dictionary<int, string[]> s_tutorialRoundGoals = new() {
+        [2] = ["mob damage 2", "mob damage 3"],
+        [3] = ["mob damage 4", "player heal"],
+        [4] = ["mob weakness", "player damage 2", "Give 3 pips to player"],
+        [5] = ["mob damage 5", "mob damage 6", "player blade"],
+        [6] = ["mob damage 7", "mob damage 8", "player damage 3", "give 4 pips to player"],
+    };
     private readonly Dictionary<CoreObject, IActorRef> _entitiesInRange = [];
     private readonly ObjectSerializer _serializer = new(
         Versionable: false,
@@ -302,6 +310,10 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
         Duel.m_roundNum++;
         SendCombatPhase((byte) Duel.m_duelPhase);
         SendUpFirst(Duel.m_roundNum);
+
+        // Tutorial: execute the round's quest-goal grants (rounds 2-6; round 1 is client-driven) so the
+        // golems' hands and the player's cards/pips are set before planning begins.
+        GrantTutorialRoundGrants();
 
         // Tutorial: pre-queue the golems' scripted attacks for this round (they never pick moves on their own;
         // without this the round can't complete and nothing hits the player).
@@ -757,7 +769,7 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             TimeSpan.FromSeconds(spawnDelay));
     }
 
-    internal static void OnMinionRemoved(CombatDuelSubCircle circle) 
+    internal static void OnMinionRemoved(CombatDuelSubCircle circle)
         => circle.RemoveParticipant();
 
     private void SpawnAndAssignMinion(uint creatureTid, CombatDuelSubCircle caster) {
@@ -1160,8 +1172,54 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
     private static CombatTeam DetermineFirstTeam()
         => (CombatTeam) new Random().Next(0, 2);
 
-    private bool IsTutorialDuel()
+    internal bool IsTutorialDuel()
         => (Entity.Zone?.ZonePath ?? "").Contains("Tutorial", StringComparison.OrdinalIgnoreCase);
+
+    private void GrantTutorialRoundGrants() {
+        if (!IsTutorialDuel() || !s_tutorialRoundGoals.TryGetValue(Duel.m_roundNum, out var goalNames)) {
+            return;
+        }
+
+        var quest = QuestTemplateCollection.GetQuestByName("WC-TUT-C03-001");
+        if (quest is null) {
+            return;
+        }
+
+        var player = SubCircles.FirstOrDefault(s => s is not null && s.AddedToDuel && s.IsAlive
+                                                    && s.OccupiedTeam == CombatTeam.Player);
+
+        foreach (var goalName in goalNames) {
+            var goal = quest.m_goals.FirstOrDefault(g => g.m_goalName == goalName);
+            if (goal?.m_completeResults?.m_results is null) {
+                continue;
+            }
+
+            foreach (var result in goal.m_completeResults.m_results) {
+                if (result is ResGiveSpell give) {
+                    var recipientTemplate = give.m_spellID != 0 ? give.m_templateID : 1;
+                    var spellId = give.m_spellID != 0 ? give.m_spellID : give.m_templateID;
+                    var recipient = recipientTemplate == 1
+                        ? player
+                        : SubCircles.FirstOrDefault(s => s is not null && s.ParticipantObject is not null
+                            && s.ParticipantObject.m_templateID == recipientTemplate);
+                    recipient?.AddSpellsToHand([(uint) spellId]);
+                }
+                else if (result is ResDrawHand draw && draw.m_templateID != 0
+                         && CoreObjectFactory.GetCoreTemplate(draw.m_templateID) is SpellTemplate) {
+                    player?.AddSpellsToHand([(uint) draw.m_templateID]);
+                }
+            }
+
+            if (goal.m_tallyCounter?.m_count > 0 && player is not null) {
+                player.SetPips(goal.m_tallyCounter.m_count);
+                SendCombatPips();
+            }
+        }
+
+        if (player is not null) {
+            SendCurrentCombatHand(player);
+        }
+    }
 
     private void ScriptTutorialEnemyMovesIfNeeded() {
         if (!IsTutorialDuel() || CombatResolver is null) {
@@ -1174,22 +1232,24 @@ internal sealed class CombatDuelComponent(ZoneEntity entity)
             return;
         }
 
-        // Each golem casts the first card the quest goals granted it this round (WC-TUT-C03-001's ResGiveSpell
-        // results), then its hand is cleared; an empty hand means pass. The golems' own AI moves are dropped in
-        // ReceiveCombatMove, so nothing overwrites these.
         foreach (var enemy in SubCircles
                      .Where(s => s is not null && s.AddedToDuel && s.IsAlive && s.OccupiedTeam == CombatTeam.Monster)
                      .OrderBy(s => s.SlotIndex)) {
+            var queued = CombatResolver.GetQueuedAction(enemy);
+            if (queued?.Spell is not null) {
+                continue;
+            }
+
             var spell = enemy.GetSpellFromLastHand(0);
             if (spell is not null) {
                 CombatResolver.AddCombatMove(CombatMoveType.Attack, enemy, player, spell);
+                enemy.ClearHand();
                 Logger.Information("[TUTFIGHT] round {0}: enemy slot {1} scripted to cast '{2}' at the player.",
                     Logger.Args(Duel.m_roundNum, enemy.SlotIndex, spell.m_templateID));
             }
-            else {
+            else if (queued is null) {
                 CombatResolver.AddCombatMove(CombatMoveType.Pass, enemy, null, null);
             }
-            enemy.ClearHand();
         }
     }
 
