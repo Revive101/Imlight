@@ -284,7 +284,7 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         // ConfigurePlayer: right after firing this the client blocks on OnItemAddedToInventory waiting for an
         // inventory item. C08-001's goals are not active, so the goal lookup below would never unblock it.
         if (goalName == "ConfigurePlayer") {
-            SendConfigurePlayerInventoryAdd(wizard, playerObj);
+            SendConfigurePlayerInventoryAdd(wizard);
 
             return true;
         }
@@ -452,7 +452,7 @@ internal sealed class TutorialService(SessionActor sessionActor) : MessageServic
         }
     }
 
-    private void SendConfigurePlayerInventoryAdd(Wizard wizard, CoreObject playerObj) {
+    private void SendConfigurePlayerInventoryAdd(Wizard wizard) {
         var kitItem = wizard.InventoryBehavior.Items.FirstOrDefault();
         if (kitItem is null) {
             Logger.Warning("ConfigurePlayer: no inventory item to re-add; the client may stay blocked.");

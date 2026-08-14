@@ -28,7 +28,6 @@ internal sealed class ResDrawHandHandler : BaseResultHandler<ResDrawHand> {
     public override bool Execute(IResultContext context) {
         var tid = (uint) Result.m_templateID;
         if (tid == 0 || CoreObjectFactory.GetCoreTemplate(tid) is not SpellTemplate) {
-            // Creature-targeted draws (the retail golem draws) are superseded by the round script.
             return true;
         }
 

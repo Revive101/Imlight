@@ -208,8 +208,7 @@ public class CombatDuelSubCircle {
     }
 
     /// <summary>
-    /// Appends the given spells to the current hand, created from the template IDs. Used for the tutorial's
-    /// scripted card grants so the granted cards land in the server hand the casts resolve against.
+    /// Appends the given spells to the current hand, created from the template IDs.
     /// </summary>
     internal void AddSpellsToHand(uint[] spellTemplateIds) {
         if (_combatDeck is null) {
@@ -225,7 +224,7 @@ public class CombatDuelSubCircle {
     }
 
     /// <summary>
-    /// Empties the current hand. Used by the tutorial duel script after a golem casts its granted card.
+    /// Empties the current hand.
     /// </summary>
     internal void ClearHand() {
         _combatDeck?.ClearHand();
@@ -233,7 +232,7 @@ public class CombatDuelSubCircle {
 
     /// <summary>
     /// Sets this participant's pips to exactly the given count of generic pips, no power pips, capped at
-    /// the max. The tutorial's "Give N pips to player" beats mean exactly N, not add N.
+    /// the max.
     /// </summary>
     internal void SetPips(int count) {
         if (CombatParticipant is null) {
