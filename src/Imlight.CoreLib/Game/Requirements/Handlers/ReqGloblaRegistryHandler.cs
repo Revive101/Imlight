@@ -24,9 +24,7 @@ namespace Imlight.CoreLib.Game.Requirements.Handlers;
 internal sealed class ReqGlobalRegistryHandler : BaseRequirementHandler<ReqGlobalRegistryValue> {
 
     public override bool Evaluate(IRequirementContext context) {
-        return GlobalRegistryCollection.CheckGlobalRegistryRequirements(
-            context.GetFullRequirementList()
-        );
+        return GlobalRegistryCollection.GlobalRegistryValueMet(Requirement);
     }
 
 }
